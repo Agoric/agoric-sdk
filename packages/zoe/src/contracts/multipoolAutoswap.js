@@ -40,8 +40,7 @@ export const makeContract = harden(
       const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const amountMathKeywordRecord = {};
       keywords.forEach(keyword => {
-        const issuer = issuerKeywordRecord[keyword];
-        const brand = zcf.getBrandForIssuer(issuer);
+        const brand = zcf.getBrandForIssuer(issuerKeywordRecord[keyword]);
         assertNatMathHelpers(brand);
         amountMathKeywordRecord[keyword] = zcf.getAmountMath(brand);
       });
@@ -95,7 +94,6 @@ export const makeContract = harden(
     // Allows users to add new liquidity pools. `newTokenIssuer` and
     // `newTokenKeyword` must not have been already used
     const addPool = (newTokenIssuer, newTokenKeyword) => {
-      assertNatMathHelpers(newTokenIssuer.getBrand());
       assertKeywordName(newTokenKeyword);
       const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const keywords = Object.keys(issuerKeywordRecord);
@@ -120,10 +118,12 @@ export const makeContract = harden(
       return Promise.all([
         zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
         makeEmptyOffer(),
+        newTokenIssuer.getBrand(),
         zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
-      ]).then(([newTokenIssuerRecord, poolHandle]) => {
-        // The third element of the above array is intentionally
+      ]).then(([newTokenIssuerRecord, poolHandle, newTokenBrand]) => {
+        // The final element of the above array is intentionally
         // ignored, since we already have the liquidityIssuer and mint.
+        assertNatMathHelpers(newTokenBrand);
         liquidityTable.create(
           harden({
             poolHandle,
@@ -217,26 +217,11 @@ export const makeContract = harden(
         // eslint-disable-next-line no-unused-vars
         [key]: { [CENTRAL_TOKEN]: centralAmount, ...tokenAmountKeywordRecord },
       } = proposal;
-      const values = Object.values(tokenAmountKeywordRecord);
-      if (values.length !== 1) {
+      const tokenAmounts = Object.values(tokenAmountKeywordRecord);
+      if (tokenAmounts.length !== 1) {
         rejectOffer(offerHandle, `only one secondary brand should be present`);
       }
-      return values[0].brand;
-    };
-
-    const makeAdd = amountMaths => (key, obj1, obj2) =>
-      amountMaths[key].add(obj1[key], obj2[key]);
-
-    const makeSubtract = amountMaths => (key, obj1, obj2) =>
-      amountMaths[key].subtract(obj1[key], obj2[key]);
-
-    const makeGetAllEmpty = amountMaths => keywords => {
-      const newObj = {};
-      keywords.forEach(
-        keyword => (newObj[keyword] = amountMaths[keyword].getEmpty()),
-      );
-      // intentionally not hardened
-      return newObj;
+      return tokenAmounts[0].brand;
     };
 
     const rejectIfNotTokenBrand = (inviteHandle, brand) => {
@@ -263,23 +248,30 @@ export const makeContract = harden(
       } = liquidityTable.get(secondaryTokenBrand);
 
       // These are the keywords that will be used several times within this method
-      const liquidityKeys = harden([
+      const poolLiquidityKeys = harden([
         CENTRAL_TOKEN,
         tokenKeyword,
         liquidityKeyword,
       ]);
+      const amountMaths = buildAmountMathKeywordRecord(poolLiquidityKeys);
+      const userAmountMaths = {
+        In: amountMaths[tokenKeyword],
+        Out: amountMaths[liquidityKeyword],
+        [CENTRAL_TOKEN]: amountMaths[CENTRAL_TOKEN],
+      };
 
       const expected = harden({
         give: {
           [CENTRAL_TOKEN]: null,
-          [tokenKeyword]: null,
+          In: null,
         },
-        want: { [liquidityKeyword]: null },
+        want: { Out: null },
       });
       rejectIfNotProposal(offerHandle, expected);
+
       const userAmounts = zcf.getCurrentAllocation(
         offerHandle,
-        buildAmountMathKeywordRecord(liquidityKeys),
+        userAmountMaths,
       );
       const poolAmounts = getPoolAllocation(secondaryTokenBrand);
 
@@ -291,7 +283,6 @@ export const makeContract = harden(
           inputReserve: poolAmounts[CENTRAL_TOKEN].extent,
         }),
       );
-      const amountMaths = buildAmountMathKeywordRecord(liquidityKeys);
 
       const liquidityAmountOut = amountMaths[liquidityKeyword].make(
         liquidityExtentOut,
@@ -309,19 +300,27 @@ export const makeContract = harden(
       return escrowAndAllocateTo({
         amount: liquidityAmountOut,
         payment: liquidityPaymentP,
-        keyword: liquidityKeyword,
+        keywords: ['Liquidity', 'Out'],
         recipientHandle: offerHandle,
       }).then(() => {
-        const add = makeAdd(amountMaths);
-        const getAllEmpty = makeGetAllEmpty(amountMaths);
+        const addByKey = (key, obj1, obj2) =>
+          amountMaths[key].add(obj1[key], obj2[key]);
+        const newPoolTokenAmount = amountMaths[tokenKeyword].add(
+          userAmounts.In,
+          poolAmounts[tokenKeyword],
+        );
+
         const newPoolAmounts = harden({
-          [CENTRAL_TOKEN]: add(CENTRAL_TOKEN, userAmounts, poolAmounts),
-          [tokenKeyword]: add(tokenKeyword, userAmounts, poolAmounts),
+          [CENTRAL_TOKEN]: addByKey(CENTRAL_TOKEN, userAmounts, poolAmounts),
+          [tokenKeyword]: newPoolTokenAmount,
           [liquidityKeyword]: poolAmounts[liquidityKeyword],
         });
 
-        const newUserAmounts = getAllEmpty(liquidityKeys);
-        newUserAmounts[liquidityKeyword] = liquidityAmountOut;
+        const newUserAmounts = {
+          [CENTRAL_TOKEN]: amountMaths[CENTRAL_TOKEN].getEmpty(),
+          In: amountMaths[tokenKeyword].getEmpty(),
+          Out: liquidityAmountOut,
+        };
 
         zcf.reallocate(
           harden([offerHandle, poolHandle]),
@@ -345,24 +344,30 @@ export const makeContract = harden(
       } = liquidityTable.get(secondaryTokenBrand);
 
       const expected = harden({
-        want: { [CENTRAL_TOKEN]: null, [tokenKeyword]: null },
-        give: { [liquidityKeyword]: null },
+        want: { [CENTRAL_TOKEN]: null, Out: null },
+        give: { In: null },
       });
       rejectIfNotProposal(offerHandle, expected);
-      const amountMaths = buildAmountMathKeywordRecord([
+      const poolAmountMaths = buildAmountMathKeywordRecord([
         CENTRAL_TOKEN,
         tokenKeyword,
         liquidityKeyword,
       ]);
 
-      const userAllocation = zcf.getCurrentAllocation(offerHandle, amountMaths);
+      const userAmountMaths = {
+        In: poolAmountMaths[tokenKeyword],
+        Out: poolAmountMaths[liquidityKeyword],
+        [CENTRAL_TOKEN]: poolAmountMaths[CENTRAL_TOKEN],
+      };
+      const userAllocation = zcf.getCurrentAllocation(
+        offerHandle,
+        userAmountMaths,
+      );
       const poolAllocation = getPoolAllocation(secondaryTokenBrand);
-      const liquidityExtentIn = userAllocation[liquidityKeyword].extent;
-
-      const subtract = makeSubtract(amountMaths);
+      const liquidityExtentIn = userAllocation.In.extent;
 
       const newUserAmounts = harden({
-        [CENTRAL_TOKEN]: amountMaths[CENTRAL_TOKEN].make(
+        [CENTRAL_TOKEN]: poolAmountMaths[CENTRAL_TOKEN].make(
           calcExtentToRemove(
             harden({
               liqTokenSupply: liquidityTokenSupply,
@@ -371,7 +376,7 @@ export const makeContract = harden(
             }),
           ),
         ),
-        [tokenKeyword]: amountMaths[tokenKeyword].make(
+        Out: poolAmountMaths[tokenKeyword].make(
           calcExtentToRemove(
             harden({
               liqTokenSupply: liquidityTokenSupply,
@@ -380,19 +385,24 @@ export const makeContract = harden(
             }),
           ),
         ),
-        [liquidityKeyword]: amountMaths[liquidityKeyword].getEmpty(),
+        In: poolAmountMaths[liquidityKeyword].getEmpty(),
       });
 
+      const subtractByKey = (key, obj1, obj2) =>
+        poolAmountMaths[key].subtract(obj1[key], obj2[key]);
       const newPoolAmounts = harden({
-        [CENTRAL_TOKEN]: subtract(
+        [CENTRAL_TOKEN]: subtractByKey(
           CENTRAL_TOKEN,
           poolAllocation,
           newUserAmounts,
         ),
-        [tokenKeyword]: subtract(tokenKeyword, poolAllocation, newUserAmounts),
-        [liquidityKeyword]: amountMaths[liquidityKeyword].add(
+        [tokenKeyword]: poolAmountMaths[tokenKeyword].subtract(
+          poolAllocation[tokenKeyword],
+          newUserAmounts.Out,
+        ),
+        [liquidityKeyword]: poolAmountMaths[liquidityKeyword].add(
           poolAllocation[liquidityKeyword],
-          amountMaths[liquidityKeyword].make(liquidityExtentIn),
+          poolAmountMaths[liquidityKeyword].make(liquidityExtentIn),
         ),
       });
 
@@ -528,14 +538,6 @@ export const makeContract = harden(
           });
           return harden(brandKeywordRecord);
         },
-        // TODO (cth): why does anyone need the keyword?
-        getKeywordForBrand: brand => {
-          assert(
-            liquidityTable.has(brand),
-            details`There is no pool for this brand. To create a pool, call 'addPool'`,
-          );
-          return liquidityTable.get(brand).tokenKeyword;
-        },
         addPool,
         getPoolAllocation,
         getLiquidityIssuer: tokenBrand =>
@@ -543,8 +545,9 @@ export const makeContract = harden(
         /**
          * `getCurrentPrice` calculates the result of a trade, given a certain
          * amount of digital assets in.
-         * @param {object} amountIn - the amount of digital assets to be
+         * @param {Amount} amountIn - the amount of digital assets to be
          * sent in
+         * @param {Brand} brandOut - the brand of the requested payment.
          */
         getCurrentPrice: (amountIn, brandOut) => {
           const brandIn = amountIn.brand;

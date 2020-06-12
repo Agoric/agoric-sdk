@@ -4,7 +4,6 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
-import { getKeywords } from '../cleanProposal';
 
 /** @typedef {import('../zoe').ContractFacet} ContractFacet */
 

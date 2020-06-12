@@ -316,11 +316,11 @@ export const makeZoeHelpers = (zcf) => {
      * @param {Object} obj
      * @param {Amount} obj.amount
      * @param {Payment} obj.payment
-     * @param {String} obj.keyword
+     * @param {[String]} obj.keywords - [keywordIn and keywordOut]
      * @param {Handle} obj.recipientHandle
      * @returns {Promise<undefined>}
      */
-    escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
+    escrowAndAllocateTo: ({ amount, payment, keywords, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment
       // with Zoe.
       let tempHandle;
@@ -333,8 +333,8 @@ export const makeZoeHelpers = (zcf) => {
       );
       // To escrow the payment, we must get the Zoe Service facet and
       // make an offer
-      const proposal = harden({ give: { [keyword]: amount } });
-      const payments = harden({ [keyword]: payment });
+      const proposal = harden({ give: { [keywords[0]]: amount } });
+      const payments = harden({ [keywords[0]]: payment });
       const amountMath = zcf.getAmountMath(amount.brand);
 
       return zcf
@@ -345,25 +345,24 @@ export const makeZoeHelpers = (zcf) => {
           // payment but nothing else. The recipient offer may have any
           // allocation, so we can't assume the allocation is currently empty for this
           // keyword.
-          const amountMathKeywordRecord = harden({ [keyword]: amountMath });
 
           const recipientAlloc = zcf.getCurrentAllocation(
             recipientHandle,
-            amountMathKeywordRecord,
+            harden({ [keywords[1]]: amountMath }),
           );
           const tempAlloc = zcf.getCurrentAllocation(
             tempHandle,
-            amountMathKeywordRecord,
+            harden({ [keywords[0]]: amountMath }),
           );
 
           // Add the tempAlloc for the keyword to the recipientAlloc.
-          recipientAlloc[keyword] = amountMath.add(
-            recipientAlloc[keyword],
-            tempAlloc[keyword],
+          recipientAlloc[keywords[1]] = amountMath.add(
+            recipientAlloc[keywords[1]],
+            tempAlloc[keywords[0]],
           );
 
           // Set the temporary offer allocation to empty.
-          tempAlloc[keyword] = amountMath.getEmpty();
+          tempAlloc[keywords[0]] = amountMath.getEmpty();
 
           // Actually reallocate the amounts. Note that only the amounts
           // for `keyword` are reallocated.

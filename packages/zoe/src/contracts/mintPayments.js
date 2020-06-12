@@ -37,7 +37,7 @@ export const makeContract = harden(
           .escrowAndAllocateTo({
             amount: tokens1000,
             payment,
-            keyword: 'Token',
+            keywords: ['Token', 'Token'],
             recipientHandle: offerHandle,
           })
           .then(() => {

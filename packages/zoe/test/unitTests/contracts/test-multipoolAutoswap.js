@@ -14,7 +14,7 @@ import { setup } from '../setupBasicMints';
 const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap`;
 
 test('multipoolAutoSwap with valid offers', async t => {
-  t.plan(37);
+  t.plan(36);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -141,11 +141,11 @@ test('multipoolAutoSwap with valid offers', async t => {
     // 10 moola = 5 central tokens at the time of the liquidity adding
     // aka 2 moola = 1 central token
     const aliceProposal = harden({
-      want: { MoolaLiquidity: moolaLiquidity(50) },
-      give: { Moola: moola(100), CentralToken: centralTokens(50) },
+      want: { Out: moolaLiquidity(50) },
+      give: { In: moola(100), CentralToken: centralTokens(50) },
     });
     const alicePayments = {
-      Moola: aliceMoolaPayment,
+      In: aliceMoolaPayment,
       CentralToken: aliceCentralTokenPayment,
     };
 
@@ -161,7 +161,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
 
     const liquidityPayments = await aliceAddLiquidityPayoutP;
-    const liquidityPayout = await liquidityPayments.MoolaLiquidity;
+    const liquidityPayout = await liquidityPayments.Out;
 
     t.deepEquals(
       await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
@@ -207,12 +207,6 @@ test('multipoolAutoSwap with valid offers', async t => {
         SimoleansLiquidity: await E(simoleanLiquidityIssuer).getBrand(),
       }),
       `keywords have expected brands`,
-    );
-
-    t.equals(
-      await E(bobPublicAPI).getKeywordForBrand(moolaR.brand),
-      'Moola',
-      `moola keyword is Moola`,
     );
 
     // Bob looks up the price of 17 moola in central tokens
@@ -335,14 +329,14 @@ test('multipoolAutoSwap with valid offers', async t => {
     //
     const aliceSimCentralLiquidityInvite = publicAPI.makeAddLiquidityInvite();
     const aliceSimCentralProposal = harden({
-      want: { SimoleansLiquidity: simoleanLiquidity(43) },
-      give: { Simoleans: simoleans(398), CentralToken: centralTokens(43) },
+      want: { Out: simoleanLiquidity(43) },
+      give: { In: simoleans(398), CentralToken: centralTokens(43) },
     });
     const aliceCentralTokenPayment2 = await centralR.mint.mintPayment(
       centralTokens(43),
     );
     const aliceSimCentralPayments = {
-      Simoleans: aliceSimoleanPayment,
+      In: aliceSimoleanPayment,
       CentralToken: aliceCentralTokenPayment2,
     };
 
@@ -362,7 +356,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
 
     const simCentralPayments = await aliceSimCentralPayoutP;
-    const simoleanLiquidityPayout = await simCentralPayments.SimoleansLiquidity;
+    const simoleanLiquidityPayout = await simCentralPayments.Out;
 
     t.deepEquals(
       await simoleanLiquidityIssuer.getAmountOf(simoleanLiquidityPayout),
@@ -474,8 +468,8 @@ test('multipoolAutoSwap with valid offers', async t => {
     // She's not picky...
     const aliceRemoveLiquidityInvite = publicAPI.makeRemoveLiquidityInvite();
     const aliceRemoveLiquidityProposal = harden({
-      give: { MoolaLiquidity: moolaLiquidity(50) },
-      want: { Moola: moola(91), CentralToken: centralTokens(56) },
+      give: { In: moolaLiquidity(50) },
+      want: { Out: moola(91), CentralToken: centralTokens(56) },
     });
 
     const {
@@ -484,15 +478,15 @@ test('multipoolAutoSwap with valid offers', async t => {
     } = await zoe.offer(
       aliceRemoveLiquidityInvite,
       aliceRemoveLiquidityProposal,
-      harden({ MoolaLiquidity: liquidityPayout }),
+      harden({ In: liquidityPayout }),
     );
 
     t.equals(await removeLiquidityResultP, 'Liquidity successfully removed.');
 
     const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutP;
-    const aliceMoolaPayout = await aliceRemoveLiquidityPayout.Moola;
+    const aliceMoolaPayout = await aliceRemoveLiquidityPayout.Out;
     const aliceCentralTokenPayout = await aliceRemoveLiquidityPayout.CentralToken;
-    const aliceMoolaLiquidityPayout = await aliceRemoveLiquidityPayout.MoolaLiquidity;
+    const aliceMoolaLiquidityPayout = await aliceRemoveLiquidityPayout.In;
 
     t.deepEquals(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),

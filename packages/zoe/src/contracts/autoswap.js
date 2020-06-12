@@ -174,7 +174,7 @@ export const makeContract = harden(
           return escrowAndAllocateTo({
             amount: liquidityAmountOut,
             payment: liquidityPaymentP,
-            keyword: 'Liquidity',
+            keywords: ['Liquidity', 'Liquidity'],
             recipientHandle: offerHandle,
           }).then(() => {
             liqTokenSupply += liquidityExtentOut;
