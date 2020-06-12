@@ -91,7 +91,7 @@ export default function setup(syscall, state, helpers) {
           ),
         );
 
-        // Register all of the starting issuers.
+        // Register the moola and simolean issuers
         const issuerInfo = await Promise.all(
           issuerNames.map(async (issuerName, i) =>
             harden({
@@ -104,6 +104,21 @@ export default function setup(syscall, state, helpers) {
             }),
           ),
         );
+
+        // Add the Zoe invite issuer.
+        const zoeInviteIssuer = await E(zoe).getInviteIssuer();
+        const zoeInvitePetname = 'zoe invite';
+        issuerInfo.push(
+          harden({
+            issuer: zoeInviteIssuer,
+            petname: zoeInvitePetname,
+            brandRegKey: await E(registry).register(
+              zoeInvitePetname,
+              await E(zoeInviteIssuer).getBrand(),
+            ),
+          }),
+        );
+
         return harden({
           async createUserBundle(_nickname) {
             // Bind to some fresh ports (unspecified name) on the IBC implementation
@@ -246,6 +261,7 @@ export default function setup(syscall, state, helpers) {
         const pursePetnames = {
           moola: 'Fun budget',
           simolean: 'Nest egg',
+          'zoe invite': 'Default Zoe invite purse',
         };
         await Promise.all(
           issuerInfo.map(({ petname: issuerPetname }) => {

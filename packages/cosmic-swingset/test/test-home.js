@@ -107,6 +107,30 @@ test('home.mailboxAdmin', async t => {
   }
 });
 
+test('home.wallet', async t => {
+  try {
+    const { wallet, zoe } = E.G(home);
+
+    const zoeInviteIssuer = await E(zoe).getInviteIssuer();
+    const issuers = await E(wallet).getIssuers();
+    const issuersMap = new Map(issuers);
+    t.deepEquals(
+      issuersMap.get('zoe invite'),
+      zoeInviteIssuer,
+      `wallet knows about the Zoe invite issuer`,
+    );
+    const invitePurse = await E(wallet).getPurse('Default Zoe invite purse');
+    t.deepEquals(
+      await E(invitePurse).getAllegedBrand(),
+      await E(zoeInviteIssuer).getBrand(),
+    );
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
 // =========================================
 // This runs after all the tests.
 test('teardown', async t => {
