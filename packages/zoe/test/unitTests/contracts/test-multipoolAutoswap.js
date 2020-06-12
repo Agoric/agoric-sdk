@@ -13,7 +13,7 @@ import { setup } from '../setupBasicMints';
 
 const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap`;
 
-test.skip('multipoolAutoSwap with valid offers', async t => {
+test('multipoolAutoSwap with valid offers', async t => {
   t.plan(37);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
@@ -44,7 +44,6 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
     const installationHandle = zoe.install(source, moduleFormat);
     const { invite: aliceInvite } = await zoe.makeInstance(
       installationHandle,
-      harden({ CentralToken: centralR.issuer }),
       harden({ CentralToken: centralR.issuer }),
     );
 
@@ -168,8 +167,9 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
       await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
       moolaLiquidity(50),
     );
+    const foo = await E(publicAPI).getPoolAllocation(moolaR.brand);
     t.deepEquals(
-      await E(publicAPI).getPoolAllocation(moolaR.brand),
+      foo,
       harden({
         Moola: moola(100),
         CentralToken: centralTokens(50),
@@ -227,10 +227,10 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
     );
 
     const bobMoolaForCentralProposal = harden({
-      want: { CentralToken: centralTokens(7) },
-      give: { Moola: moola(17) },
+      want: { Out: centralTokens(7) },
+      give: { In: moola(17) },
     });
-    const bobMoolaForCentralPayments = harden({ Moola: bobMoolaPayment });
+    const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
     // Bob swaps
     const { outcome: offerOkP, payout: bobPayoutP } = await zoe.offer(
@@ -243,8 +243,8 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
 
     const bobPayout = await bobPayoutP;
 
-    const bobMoolaPayout1 = await bobPayout.Moola;
-    const bobCentralTokenPayout1 = await bobPayout.CentralToken;
+    const bobMoolaPayout1 = await bobPayout.In;
+    const bobCentralTokenPayout1 = await bobPayout.Out;
 
     t.deepEqual(
       await moolaR.issuer.getAmountOf(bobMoolaPayout1),
@@ -283,11 +283,11 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
     // Bob makes another offer and swaps
     const bobSwapInvite2 = bobPublicAPI.makeSwapInvite();
     const bobCentralForMoolaProposal = harden({
-      want: { Moola: moola(16) },
-      give: { CentralToken: centralTokens(7) },
+      want: { Out: moola(16) },
+      give: { In: centralTokens(7) },
     });
     const centralForMoolaPayments = harden({
-      CentralToken: await E(bobCentralTokenPurse).withdraw(centralTokens(7)),
+      In: await E(bobCentralTokenPurse).withdraw(centralTokens(7)),
     });
 
     const {
@@ -306,8 +306,8 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
     );
 
     const bobCentralForMoolaPayout = await bobCentralForMoolaPayoutP;
-    const bobMoolaPayout2 = await bobCentralForMoolaPayout.Moola;
-    const bobCentralPayout2 = await bobCentralForMoolaPayout.CentralToken;
+    const bobMoolaPayout2 = await bobCentralForMoolaPayout.Out;
+    const bobCentralPayout2 = await bobCentralForMoolaPayout.In;
 
     t.deepEqual(
       await moolaR.issuer.getAmountOf(bobMoolaPayout2),
@@ -419,11 +419,11 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
 
     const bobThirdInvite = await E(bobPublicAPI).makeSwapInvite();
     const bobSimsForMoolaProposal = harden({
-      want: { Moola: moola(10) },
-      give: { Simoleans: simoleans(74) },
+      want: { Out: moola(10) },
+      give: { In: simoleans(74) },
     });
     const simsForMoolaPayments = harden({
-      Simoleans: bobSimoleanPayment,
+      In: bobSimoleanPayment,
     });
 
     const { payout: bobSimsForMoolaPayoutP } = await zoe.offer(
@@ -433,8 +433,8 @@ test.skip('multipoolAutoSwap with valid offers', async t => {
     );
 
     const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutP;
-    const bobSimsPayout3 = await bobSimsForMoolaPayout.Simoleans;
-    const bobMoolaPayout3 = await bobSimsForMoolaPayout.Moola;
+    const bobSimsPayout3 = await bobSimsForMoolaPayout.In;
+    const bobMoolaPayout3 = await bobSimsForMoolaPayout.Out;
 
     t.deepEqual(
       await moolaR.issuer.getAmountOf(bobMoolaPayout3),
