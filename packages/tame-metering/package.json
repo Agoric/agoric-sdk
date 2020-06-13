@@ -10,9 +10,9 @@
     "build": "exit 0"
   },
   "dependencies": {
-    "@agoric/harden": "^0.0.8",
-    "@agoric/nat": "^2.0.1",
-    "re2": "^1.10.5"
+    "esm": "^3.2.5",
+    "tape": "^4.9.2",
+    "tape-promise": "^4.0.0"
   },
   "keywords": [],
   "files": [
