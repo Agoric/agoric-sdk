@@ -5,7 +5,7 @@ const shim = `\
 (() => {
   const globalThis = this;
 
-  // Declare to the metering tamer that we're using SES 1.
+  // Declare to the metering tamer that we're using SES 1 (pre-0.8).
   const SES1ErrorConstructor = Error;
 
   // Provide imported references to the metering tamer.

@@ -3,7 +3,7 @@ import * as c from './constants';
 
 let replaceGlobalMeter;
 
-// When using this function's text in a SES-1.0 shim, we redefine this
+// When using this function's text in a SES1 (pre-0.8) shim, we redefine this
 // constant to be Error.
 const SES1ErrorConstructor = null;
 
@@ -74,8 +74,14 @@ export function tameMetering() {
 
     let targetIsConstructor = false;
 
-    // Without this hack, SES-1.0 fails with:
+    // Without this ErrorConstructor hack, SES pre-0.8 fails with:
     // TypeError: prototype function Error() { [native code] } of unknown.global.EvalError is not already in the fringeSet
+    // This is due to an ordering constraint between when SES-pre-0.8 captures the intrinsics versus when it runs the shims.
+    //
+    // SES 0.8 and later do not have this constraint, since the vetted shims are installed before SES is even imported.
+    //
+    // Not wrapping the Error constructor doesn't cause much of an exposure, although it can be used to allocate large
+    // strings without counting towards the allocation meter.  That's not a problem we're trying to solve yet.
     if (
       typeof target !== 'function' ||
       target === FunctionPrototype ||
@@ -146,9 +152,6 @@ export function tameMetering() {
       ({ [name]: wrapper } = {
         [name](...args) {
           // Fast path:
-          if (name === 'eval') {
-            console.log('eval escaped', target);
-          }
           if (!globalMeter) {
             return apply(target, this, args);
           }
