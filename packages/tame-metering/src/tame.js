@@ -5,7 +5,7 @@ let replaceGlobalMeter;
 
 // When using this function's text in a SES-1.0 shim, we redefine this
 // constant to be Error.
-const SES1ErrorConstructor = Error;
+const SES1ErrorConstructor = null;
 
 export function tameMetering() {
   if (replaceGlobalMeter) {
@@ -33,6 +33,9 @@ export function tameMetering() {
   const wrapped = new WeakMap();
   const setWrapped = (...args) => apply(wmSet, wrapped, args);
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
+
+  // eslint-disable-next-line no-new-func
+  const globalEval = Function('return eval')();
 
   // How to test for a constructor: https://stackoverflow.com/a/48036194
   const isConstructorHandler = {
@@ -76,7 +79,8 @@ export function tameMetering() {
     if (
       typeof target !== 'function' ||
       target === FunctionPrototype ||
-      target === SES1ErrorConstructor
+      target === SES1ErrorConstructor ||
+      target === globalEval
     ) {
       // Preserve identity and mutate in place.
       wrapper = target;
@@ -142,6 +146,9 @@ export function tameMetering() {
       ({ [name]: wrapper } = {
         [name](...args) {
           // Fast path:
+          if (name === 'eval') {
+            console.log('eval escaped', target);
+          }
           if (!globalMeter) {
             return apply(target, this, args);
           }
