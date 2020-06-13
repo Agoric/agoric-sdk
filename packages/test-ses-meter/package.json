@@ -1,0 +1,14 @@
+{
+  "name": "@agoric/test-ses-meter",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "exit 0",
+    "test": "node -r esm test-5.js"
+  },
+  "devDependencies": {
+    "ses": "^0.8.0"
+  },
+  "dependencies": {
+    "@agoric/tame-metering": "^1.2.2"
+  }
+}
