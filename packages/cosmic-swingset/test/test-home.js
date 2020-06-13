@@ -1,4 +1,6 @@
 import { test } from 'tape-promise/tape';
+import bundleSource from '@agoric/bundle-source';
+
 import { makeFixture, E } from './captp-fixture';
 
 // This runs before all the tests.
@@ -107,10 +109,20 @@ test('home.mailboxAdmin', async t => {
   }
 });
 
-test('home.wallet', async t => {
+test('home.wallet - receive zoe invite', async t => {
   try {
-    const { wallet, zoe } = E.G(home);
+    const { wallet, zoe, mailboxAdmin, board } = E.G(home);
 
+    // Setup contract in order to get an invite to use in tests
+    const contractRoot = require.resolve(
+      '@agoric/zoe/src/contracts/automaticRefund',
+    );
+    const { source, moduleFormat } = await bundleSource(contractRoot);
+    const installationHandle = await E(zoe).install(source, moduleFormat);
+    const invite = await E(zoe).makeInstance(installationHandle);
+
+    // Check that the wallet knows about the Zoe invite issuer and starts out
+    // with a default Zoe invite issuer purse.
     const zoeInviteIssuer = await E(zoe).getInviteIssuer();
     const issuers = await E(wallet).getIssuers();
     const issuersMap = new Map(issuers);
@@ -120,9 +132,26 @@ test('home.wallet', async t => {
       `wallet knows about the Zoe invite issuer`,
     );
     const invitePurse = await E(wallet).getPurse('Default Zoe invite purse');
+    const zoeInviteBrand = await E(invitePurse).getAllegedBrand();
     t.deepEquals(
-      await E(invitePurse).getAllegedBrand(),
+      zoeInviteBrand,
       await E(zoeInviteIssuer).getBrand(),
+      `invite purse is actually a zoe invite purse`,
+    );
+
+    // The code below is meant to be carried out in a Dapp backend.
+    // The dapp gets the mailboxId for the default Zoe invite purse
+    // and sends the invite.
+    const inviteBrandBoardId = await E(board).getId(zoeInviteBrand);
+    const mailboxId = await E(wallet).getMailboxIdByBrand(inviteBrandBoardId);
+    await E(mailboxAdmin).sendPayment(mailboxId, invite);
+
+    // The invite was successfully received in the user's wallet.
+    const invitePurseBalance = await E(invitePurse).getCurrentAmount();
+    t.equals(
+      invitePurseBalance.extent[0].inviteDesc,
+      'getRefund',
+      `invite successfully deposited`,
     );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');

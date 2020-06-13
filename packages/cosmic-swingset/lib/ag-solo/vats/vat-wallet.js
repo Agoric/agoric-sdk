@@ -248,6 +248,15 @@ function build(E, _D, _log) {
                 };
               }
 
+              case 'walletGetMailboxIdByBrand': {
+                const { brandBoardId } = obj;
+                const result = await wallet.getMailboxIdByBrand(brandBoardId);
+                return {
+                  type: 'walletMailboxIdByBrandResponse',
+                  data: result,
+                };
+              }
+
               default:
                 return Promise.resolve(false);
             }

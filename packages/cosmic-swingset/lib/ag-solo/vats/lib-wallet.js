@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
@@ -86,6 +86,7 @@ export async function makeWallet({
   const issuerToIssuerNames = makeWeakStore();
   const brandTable = makeBrandTable();
   const purseToBrand = makeWeakStore();
+  const brandToMailboxId = makeWeakStore();
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore();
@@ -280,7 +281,9 @@ export async function makeWallet({
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
     assert(
       !purseMapping.petnameToVal.has(petnameForPurse),
-      details`Purse petname already used in wallet.`,
+      details`Purse petname ${openDetail(
+        petnameForPurse,
+      )} already used in wallet.`,
     );
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.get(brand);
@@ -533,6 +536,29 @@ export async function makeWallet({
     });
   }
 
+  function getMailboxIdByBrand(brandBoardId) {
+    return E(board)
+      .getValue(brandBoardId)
+      .then(brand => {
+        const mailboxId = brandToMailboxId.get(brand);
+        return mailboxId;
+      });
+  }
+
+  function makeMailbox(pursePetname) {
+    const purse = purseMapping.petnameToVal.get(pursePetname);
+    return E(mailboxAdmin)
+      .makeMailbox(purse)
+      .then(mailboxId => {
+        // Add as default unless a default already exists
+        const brand = purseToBrand.get(purse);
+        if (!brandToMailboxId.has(brand)) {
+          brandToMailboxId.init(brand, mailboxId);
+        }
+        return brandToMailboxId.get(brand);
+      });
+  }
+
   const wallet = harden({
     addIssuer,
     makeEmptyPurse,
@@ -551,6 +577,8 @@ export async function makeWallet({
     getOffers,
     getOfferHandle: id => idToOfferHandle.get(id),
     getOfferHandles: ids => ids.map(wallet.getOfferHandle),
+    makeMailbox,
+    getMailboxIdByBrand,
   });
 
   return wallet;
