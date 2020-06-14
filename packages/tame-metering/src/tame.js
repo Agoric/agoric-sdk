@@ -75,13 +75,22 @@ export function tameMetering() {
     let targetIsConstructor = false;
 
     // Without this ErrorConstructor hack, SES pre-0.8 fails with:
-    // TypeError: prototype function Error() { [native code] } of unknown.global.EvalError is not already in the fringeSet
-    // This is due to an ordering constraint between when SES-pre-0.8 captures the intrinsics versus when it runs the shims.
+    // TypeError: prototype function Error() { [native code] } of
+    //   unknown.global.EvalError is not already in the fringeSet
+    // This is due to an ordering constraint between when SES-pre-0.8
+    // captures the intrinsics versus when it runs the shims.
     //
-    // SES 0.8 and later do not have this constraint, since the vetted shims are installed before SES is even imported.
+    // SES 0.8 and later do not have this constraint, since the
+    // vetted shims are installed before SES is even imported.
     //
-    // Not wrapping the Error constructor doesn't cause much of an exposure, although it can be used to allocate large
-    // strings without counting towards the allocation meter.  That's not a problem we're trying to solve yet.
+    // Not wrapping the Error constructor doesn't cause much of an
+    // exposure, although it can be used to hold onto large
+    // strings without counting towards the allocation meter.
+    // That's not a problem we're trying to solve yet.
+    //
+    // Passing through globalEval's identity is alright, too, since
+    // only SES uses it directly, and wraps it with a rewriting
+    // version for user code.
     if (
       typeof target !== 'function' ||
       target === FunctionPrototype ||
