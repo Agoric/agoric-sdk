@@ -133,7 +133,7 @@ test('home.wallet - receive zoe invite', async t => {
     );
     const invitePurse = await E(wallet).getPurse('Default Zoe invite purse');
     const zoeInviteBrand = await E(invitePurse).getAllegedBrand();
-    t.deepEquals(
+    t.equals(
       zoeInviteBrand,
       await E(zoeInviteIssuer).getBrand(),
       `invite purse is actually a zoe invite purse`,
