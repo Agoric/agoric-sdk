@@ -16,7 +16,7 @@ import {
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
-import { printStats } from './printStats';
+import { printStats, printBenchmarkStats } from './printStats';
 
 const log = console.log;
 
@@ -55,6 +55,7 @@ FLAGS may be:
   --dumptag STR  - prefix kernel state dump filenames with STR (default "t")
   --raw          - perform kernel state dumps in raw mode
   --stats        - print performance stats at the end of a run
+  --benchmark N  - perform an N round benchmark after the initial run
 
 CMD is one of:
   help   - print this helpful usage information
@@ -105,6 +106,7 @@ export async function main() {
   let dumpTag = 't';
   let rawMode = false;
   let shouldPrintStats = false;
+  let benchmarkRounds = 0;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -144,6 +146,9 @@ export async function main() {
         break;
       case '--batchsize':
         batchSize = Number(argv.shift());
+        break;
+      case '--benchmark':
+        benchmarkRounds = Number(argv.shift());
         break;
       case '--dump':
         doDumps = true;
@@ -317,6 +322,14 @@ export async function main() {
           cli.displayPrompt();
         },
       });
+      cli.defineCommand('benchmark', {
+        help: 'Run <n> rounds of the benchmark protocol',
+        action: async rounds => {
+          const [steps, deltaT] = await runBenchmark(rounds);
+          log(`benchmark ${rounds} rounds, ${steps} cranks in ${deltaT} ns`);
+          cli.displayPrompt();
+        },
+      });
       cli.defineCommand('run', {
         help: 'Crank until the run queue is empty, without commit',
         action: async () => {
@@ -342,9 +355,37 @@ export async function main() {
     statLogger.close();
   }
 
+  function getCrankNumber() {
+    return Number(store.storage.get('crankNumber'));
+  }
+
   function kernelStateDump() {
     const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
     dumpStore(store.storage, dumpPath, rawMode);
+  }
+
+  async function runBenchmark(rounds) {
+    const cranksPre = getCrankNumber();
+    const statsPre = controller.getStats();
+    const args = { body: '[]', slots: [] };
+    let totalSteps = 0;
+    let totalDeltaT = BigInt(0);
+    for (let i = 0; i < rounds; i += 1) {
+      controller.queueToVatExport(
+        '_bootstrap',
+        'o+0',
+        'runBenchmarkRound',
+        args,
+      );
+      // eslint-disable-next-line no-await-in-loop
+      const [steps, deltaT] = await runBatch(0, false);
+      totalSteps += steps;
+      totalDeltaT += deltaT;
+    }
+    const cranksPost = getCrankNumber();
+    const statsPost = controller.getStats();
+    printBenchmarkStats(statsPre, statsPost, cranksPost - cranksPre, rounds);
+    return [totalSteps, totalDeltaT];
   }
 
   async function runBlock(requestedSteps, doCommit) {
@@ -428,13 +469,18 @@ export async function main() {
       auditRefCounts(store.storage);
     }
 
-    const [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
+    let [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
       store.commit();
     }
     if (shouldPrintStats) {
-      const cranks = Number(store.storage.get('crankNumber'));
+      const cranks = getCrankNumber();
       printStats(controller.getStats(), cranks);
+    }
+    if (benchmarkRounds > 0) {
+      const [moreSteps, moreDeltaT] = await runBenchmark(benchmarkRounds);
+      totalSteps += moreSteps;
+      deltaT += moreDeltaT;
     }
     store.close();
     if (logTimes) {
