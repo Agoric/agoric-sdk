@@ -56,11 +56,11 @@ test('barter with valid offers', async t => {
   // sell 3 moola and wants to receive at least 4 simoleans in
   // return.
   const aliceSellOrderProposal = harden({
-    give: { A: moola(3) },
-    want: { P: simoleans(4) },
+    give: { In: moola(3) },
+    want: { Out: simoleans(4) },
     exit: { onDemand: null },
   });
-  const alicePayments = { A: aliceMoolaPayment };
+  const alicePayments = { In: aliceMoolaPayment };
   // 4: Alice adds her sell order to the exchange
   const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
     aliceInvite,
@@ -82,11 +82,11 @@ test('barter with valid offers', async t => {
   // Bob creates a buy order, saying that he wants exactly 3 moola,
   // and is willing to pay up to 7 simoleans.
   const bobBuyOrderProposal = harden({
-    give: { Pay: simoleans(7) },
-    want: { Goods: moola(3) },
+    give: { In: simoleans(7) },
+    want: { Out: moola(3) },
     exit: { onDemand: null },
   });
-  const bobPayments = { Pay: bobSimoleanPayment };
+  const bobPayments = { In: bobSimoleanPayment };
 
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
@@ -107,10 +107,10 @@ test('barter with valid offers', async t => {
   const bobPayout = await bobPayoutP;
   const alicePayout = await alicePayoutP;
 
-  const bobMoolaPayout = await bobPayout.Goods;
-  const bobSimoleanPayout = await bobPayout.Pay;
-  const aliceMoolaPayout = await alicePayout.A;
-  const aliceSimoleanPayout = await alicePayout.P;
+  const bobMoolaPayout = await bobPayout.Out;
+  const bobSimoleanPayout = await bobPayout.In;
+  const aliceMoolaPayout = await alicePayout.In;
+  const aliceSimoleanPayout = await alicePayout.Out;
 
   // Alice gets paid at least what she wanted
   t.ok(
@@ -118,7 +118,7 @@ test('barter with valid offers', async t => {
       .get('simoleans')
       .isGTE(
         await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-        aliceSellOrderProposal.want.P,
+        aliceSellOrderProposal.want.Out,
       ),
   );
 

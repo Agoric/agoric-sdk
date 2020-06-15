@@ -13,6 +13,7 @@ import {
   calcLiqExtentToMint,
   calcExtentToRemove,
 } from '../contractSupport';
+import { filterObj } from '../objArrayConversion';
 
 /**
  * @typedef {import('../zoe').ContractFacet} ContractFacet
@@ -37,10 +38,10 @@ export const makeContract = harden(
     const CENTRAL_TOKEN = 'CentralToken';
 
     function buildAmountMathKeywordRecord(keywords) {
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
+      const { brandKeywordRecord } = zcf.getInstanceRecord();
       const amountMathKeywordRecord = {};
       keywords.forEach(keyword => {
-        const brand = zcf.getBrandForIssuer(issuerKeywordRecord[keyword]);
+        const brand = brandKeywordRecord[keyword];
         assertNatMathHelpers(brand);
         amountMathKeywordRecord[keyword] = zcf.getAmountMath(brand);
       });
@@ -48,15 +49,12 @@ export const makeContract = harden(
     }
 
     const getCentralTokenBrand = () => {
-      const {
-        issuerKeywordRecord: { CentralToken: centralTokenIssuer },
-      } = zcf.getInstanceRecord();
-      const centralTokenBrand = zcf.getBrandForIssuer(centralTokenIssuer);
+      const { brandKeywordRecord } = zcf.getInstanceRecord();
       assert(
-        centralTokenBrand !== undefined,
+        brandKeywordRecord.CentralToken !== undefined,
         details`centralTokenBrand must be present`,
       );
-      return centralTokenBrand;
+      return brandKeywordRecord.CentralToken;
     };
     const centralTokenBrand = getCentralTokenBrand();
 
@@ -95,16 +93,16 @@ export const makeContract = harden(
     // `newTokenKeyword` must not have been already used
     const addPool = (newTokenIssuer, newTokenKeyword) => {
       assertKeywordName(newTokenKeyword);
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
-      const keywords = Object.keys(issuerKeywordRecord);
-      const issuers = Object.values(issuerKeywordRecord);
+      const { brandKeywordRecord } = zcf.getInstanceRecord();
+      const keywords = Object.keys(brandKeywordRecord);
+      const brands = Object.values(brandKeywordRecord);
       assert(
         !keywords.includes(newTokenKeyword),
         details`newTokenKeyword must be unique`,
       );
       // TODO: handle newTokenIssuer as a potential promise
       assert(
-        !issuers.includes(newTokenIssuer),
+        !brands.includes(newTokenIssuer.brand),
         details`newTokenIssuer must not be already present`,
       );
       const newLiquidityKeyword = `${newTokenKeyword}Liquidity`;
@@ -118,12 +116,11 @@ export const makeContract = harden(
       return Promise.all([
         zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
         makeEmptyOffer(),
-        newTokenIssuer.getBrand(),
         zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
-      ]).then(([newTokenIssuerRecord, poolHandle, newTokenBrand]) => {
+      ]).then(([newTokenIssuerRecord, poolHandle]) => {
         // The final element of the above array is intentionally
         // ignored, since we already have the liquidityIssuer and mint.
-        assertNatMathHelpers(newTokenBrand);
+        assertNatMathHelpers(newTokenIssuerRecord.brand);
         liquidityTable.create(
           harden({
             poolHandle,
@@ -148,12 +145,13 @@ export const makeContract = harden(
       const { poolHandle, tokenKeyword, liquidityKeyword } = liquidityTable.get(
         tokenBrand,
       );
-      const amountMathKeywordRecord = buildAmountMathKeywordRecord([
-        tokenKeyword,
-        CENTRAL_TOKEN,
-        liquidityKeyword,
-      ]);
-      return zcf.getCurrentAllocation(poolHandle, amountMathKeywordRecord);
+
+      const brandKeywordRecord = filterObj(
+        zcf.getInstanceRecord().brandKeywordRecord,
+        [tokenKeyword, CENTRAL_TOKEN, liquidityKeyword],
+      );
+
+      return zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
     };
 
     const doGetCurrentPrice = ({
@@ -162,15 +160,15 @@ export const makeContract = harden(
       keywordOut,
       secondaryBrand,
     }) => {
-      const poolAmounts = getPoolAllocation(secondaryBrand);
+      const poolAllocation = getPoolAllocation(secondaryBrand);
       const { outputExtent } = getCurrentPrice(
         harden({
           inputExtent: amountIn.extent,
-          inputReserve: poolAmounts[keywordIn].extent,
-          outputReserve: poolAmounts[keywordOut].extent,
+          inputReserve: poolAllocation[keywordIn].extent,
+          outputReserve: poolAllocation[keywordOut].extent,
         }),
       );
-      const amountMathOut = zcf.getAmountMath(poolAmounts[keywordOut].brand);
+      const amountMathOut = zcf.getAmountMath(poolAllocation[keywordOut].brand);
       return amountMathOut.make(outputExtent);
     };
 
@@ -180,7 +178,6 @@ export const makeContract = harden(
       keywordOut,
       secondaryBrand,
     }) => {
-      const { poolHandle } = liquidityTable.get(secondaryBrand);
       const poolAllocation = getPoolAllocation(secondaryBrand);
       const {
         outputExtent,
@@ -207,6 +204,7 @@ export const makeContract = harden(
         [keywordOut]: amountMathOut.make(newOutputReserve),
       });
 
+      const { poolHandle } = liquidityTable.get(secondaryBrand);
       return harden({ poolHandle, newUserAmounts, newPoolAmounts });
     };
 
@@ -214,8 +212,7 @@ export const makeContract = harden(
       const { proposal } = zcf.getOffer(offerHandle);
       const key = isAddLiquidity ? 'give' : 'want';
       const {
-        // eslint-disable-next-line no-unused-vars
-        [key]: { [CENTRAL_TOKEN]: centralAmount, ...tokenAmountKeywordRecord },
+        [key]: { [CENTRAL_TOKEN]: _, ...tokenAmountKeywordRecord },
       } = proposal;
       const tokenAmounts = Object.values(tokenAmountKeywordRecord);
       if (tokenAmounts.length !== 1) {
@@ -247,17 +244,25 @@ export const makeContract = harden(
         poolHandle,
       } = liquidityTable.get(secondaryTokenBrand);
 
-      // These are the keywords that will be used several times within this method
+      // These are the keywords for the pool in this method
       const poolLiquidityKeys = harden([
         CENTRAL_TOKEN,
         tokenKeyword,
         liquidityKeyword,
       ]);
-      const amountMaths = buildAmountMathKeywordRecord(poolLiquidityKeys);
+      const {
+        brandKeywordRecord: poolBrandKeywordRecord,
+      } = zcf.getInstanceRecord();
+      const poolAmountMaths = buildAmountMathKeywordRecord(poolLiquidityKeys);
       const userAmountMaths = {
-        In: amountMaths[tokenKeyword],
-        Out: amountMaths[liquidityKeyword],
-        [CENTRAL_TOKEN]: amountMaths[CENTRAL_TOKEN],
+        In: poolAmountMaths[tokenKeyword],
+        Out: poolAmountMaths[liquidityKeyword],
+        [CENTRAL_TOKEN]: poolAmountMaths[CENTRAL_TOKEN],
+      };
+      const userBrandKeywordRecord = {
+        In: poolBrandKeywordRecord[tokenKeyword],
+        Out: poolBrandKeywordRecord[liquidityKeyword],
+        [CENTRAL_TOKEN]: poolBrandKeywordRecord[CENTRAL_TOKEN],
       };
 
       const expected = harden({
@@ -269,22 +274,22 @@ export const makeContract = harden(
       });
       rejectIfNotProposal(offerHandle, expected);
 
-      const userAmounts = zcf.getCurrentAllocation(
+      const userAllocation = zcf.getCurrentAllocation(
         offerHandle,
-        userAmountMaths,
+        userBrandKeywordRecord,
       );
-      const poolAmounts = getPoolAllocation(secondaryTokenBrand);
+      const poolAllocation = getPoolAllocation(secondaryTokenBrand);
 
       // Calculate how many liquidity tokens we should be minting.
       const liquidityExtentOut = calcLiqExtentToMint(
         harden({
           liqTokenSupply: liquidityTokenSupply,
-          inputExtent: userAmounts[CENTRAL_TOKEN].extent,
-          inputReserve: poolAmounts[CENTRAL_TOKEN].extent,
+          inputExtent: userAllocation[CENTRAL_TOKEN].extent,
+          inputReserve: poolAllocation[CENTRAL_TOKEN].extent,
         }),
       );
 
-      const liquidityAmountOut = amountMaths[liquidityKeyword].make(
+      const liquidityAmountOut = poolAmountMaths[liquidityKeyword].make(
         liquidityExtentOut,
       );
 
@@ -296,29 +301,33 @@ export const makeContract = harden(
       });
 
       // The contract needs to escrow the liquidity payment with Zoe
-      // to eventually pay as a payout to the user
+      // to eventually payout to the user
       return escrowAndAllocateTo({
         amount: liquidityAmountOut,
         payment: liquidityPaymentP,
-        keywords: ['Liquidity', 'Out'],
+        keyword: 'Out',
         recipientHandle: offerHandle,
       }).then(() => {
         const addByKey = (key, obj1, obj2) =>
-          amountMaths[key].add(obj1[key], obj2[key]);
-        const newPoolTokenAmount = amountMaths[tokenKeyword].add(
-          userAmounts.In,
-          poolAmounts[tokenKeyword],
+          poolAmountMaths[key].add(obj1[key], obj2[key]);
+        const newPoolTokenAmount = poolAmountMaths[tokenKeyword].add(
+          userAllocation.In,
+          poolAllocation[tokenKeyword],
         );
 
         const newPoolAmounts = harden({
-          [CENTRAL_TOKEN]: addByKey(CENTRAL_TOKEN, userAmounts, poolAmounts),
+          [CENTRAL_TOKEN]: addByKey(
+            CENTRAL_TOKEN,
+            userAllocation,
+            poolAllocation,
+          ),
           [tokenKeyword]: newPoolTokenAmount,
-          [liquidityKeyword]: poolAmounts[liquidityKeyword],
+          [liquidityKeyword]: poolAllocation[liquidityKeyword],
         });
 
         const newUserAmounts = {
-          [CENTRAL_TOKEN]: amountMaths[CENTRAL_TOKEN].getEmpty(),
-          In: amountMaths[tokenKeyword].getEmpty(),
+          [CENTRAL_TOKEN]: userAmountMaths[CENTRAL_TOKEN].getEmpty(),
+          In: userAmountMaths.In.getEmpty(),
           Out: liquidityAmountOut,
         };
 
@@ -354,14 +363,17 @@ export const makeContract = harden(
         liquidityKeyword,
       ]);
 
-      const userAmountMaths = {
-        In: poolAmountMaths[tokenKeyword],
-        Out: poolAmountMaths[liquidityKeyword],
-        [CENTRAL_TOKEN]: poolAmountMaths[CENTRAL_TOKEN],
+      const {
+        brandKeywordRecord: poolBrandKeywordRecord,
+      } = zcf.getInstanceRecord();
+      const userBrandKeywordRecord = {
+        In: poolBrandKeywordRecord[tokenKeyword],
+        Out: poolBrandKeywordRecord[liquidityKeyword],
+        [CENTRAL_TOKEN]: poolBrandKeywordRecord[CENTRAL_TOKEN],
       };
       const userAllocation = zcf.getCurrentAllocation(
         offerHandle,
-        userAmountMaths,
+        userBrandKeywordRecord,
       );
       const poolAllocation = getPoolAllocation(secondaryTokenBrand);
       const liquidityExtentIn = userAllocation.In.extent;
@@ -388,13 +400,10 @@ export const makeContract = harden(
         In: poolAmountMaths[liquidityKeyword].getEmpty(),
       });
 
-      const subtractByKey = (key, obj1, obj2) =>
-        poolAmountMaths[key].subtract(obj1[key], obj2[key]);
       const newPoolAmounts = harden({
-        [CENTRAL_TOKEN]: subtractByKey(
-          CENTRAL_TOKEN,
-          poolAllocation,
-          newUserAmounts,
+        [CENTRAL_TOKEN]: poolAmountMaths[CENTRAL_TOKEN].subtract(
+          poolAllocation[CENTRAL_TOKEN],
+          newUserAmounts[CENTRAL_TOKEN],
         ),
         [tokenKeyword]: poolAmountMaths[tokenKeyword].subtract(
           poolAllocation[tokenKeyword],
@@ -434,7 +443,8 @@ export const makeContract = harden(
       });
       rejectIfNotProposal(offerHandle, expected);
 
-      // we could be swapping (1) central to secondary, (2) secondary to central, or (3) secondary to secondary.
+      // we could be swapping (1) central to secondary, (2) secondary to
+      // central, or (3) secondary to secondary.
 
       // 1) central to secondary
       if (brandIn === centralTokenBrand) {
@@ -531,12 +541,7 @@ export const makeContract = harden(
     zcf.initPublicAPI(
       harden({
         getBrandKeywordRecord: () => {
-          const { issuerKeywordRecord } = zcf.getInstanceRecord();
-          const brandKeywordRecord = {};
-          Object.entries(issuerKeywordRecord).forEach(([keyword, issuer]) => {
-            brandKeywordRecord[keyword] = zcf.getBrandForIssuer(issuer);
-          });
-          return harden(brandKeywordRecord);
+          return zcf.getInstanceRecord().brandKeywordRecord;
         },
         addPool,
         getPoolAllocation,

@@ -10,7 +10,7 @@ import { makeZoeHelpers } from '../contractSupport';
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(
   /** @param {ContractFacet} zcf */ zcf => {
-    const { swap, assertKeywords, inviteAnOffer } = makeZoeHelpers(zcf);
+    const { swap, assertKeywords, checkHook } = makeZoeHelpers(zcf);
     assertKeywords(harden(['Asset', 'Price']));
 
     const makeMatchingInvite = firstOfferHandle => {
@@ -18,28 +18,26 @@ export const makeContract = harden(
         proposal: { want, give },
       } = zcf.getOffer(firstOfferHandle);
 
-      return inviteAnOffer({
-        offerHook: offerHandle => swap(firstOfferHandle, offerHandle),
-        customProperties: {
-          asset: give.Asset,
-          price: want.Price,
-          inviteDesc: 'matchOffer',
-        },
-      });
+      return zcf.makeInvitation(
+        offerHandle => swap(firstOfferHandle, offerHandle),
+        'matchOffer',
+        harden({
+          customProperties: {
+            asset: give.Asset,
+            price: want.Price,
+          },
+        }),
+      );
     };
 
-    const makeFirstOfferInvite = () =>
-      inviteAnOffer({
-        offerHook: makeMatchingInvite,
-        customProperties: {
-          inviteDesc: 'firstOffer',
-        },
-        expected: {
-          give: { Asset: null },
-          want: { Price: null },
-        },
-      });
+    const firstOfferExpected = harden({
+      give: { Asset: null },
+      want: { Price: null },
+    });
 
-    return makeFirstOfferInvite();
+    return zcf.makeInvitation(
+      checkHook(makeMatchingInvite, firstOfferExpected),
+      'firstOffer',
+    );
   },
 );

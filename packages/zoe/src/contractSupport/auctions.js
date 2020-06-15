@@ -29,13 +29,9 @@ export const closeAuction = (
   zcf,
   { auctionLogicFn, sellerOfferHandle, allBidHandles },
 ) => {
-  const { issuerKeywordRecord } = zcf.getInstanceRecord();
-  const bidAmountMath = zcf.getAmountMath(
-    zcf.getBrandForIssuer(issuerKeywordRecord.Ask),
-  );
-  const assetAmountMath = zcf.getAmountMath(
-    zcf.getBrandForIssuer(issuerKeywordRecord.Asset),
-  );
+  const { brandKeywordRecord } = zcf.getInstanceRecord();
+  const bidAmountMath = zcf.getAmountMath(brandKeywordRecord.Ask);
+  const assetAmountMath = zcf.getAmountMath(brandKeywordRecord.Asset);
 
   // Filter out any inactive bids
   const { active: activeBidHandles } = zcf.getOfferStatuses(

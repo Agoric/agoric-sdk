@@ -561,7 +561,7 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
   }
 });
 
-test('ZoeHelpers canTradeWithIgnoreKeywords', t => {
+test('ZoeHelpers canTradeWithMapKeywords', t => {
   t.plan(2);
   const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
   const leftOfferHandle = harden({});
@@ -631,10 +631,19 @@ test('ZoeHelpers canTradeWithIgnoreKeywords', t => {
         throw new Error('unexpected handle');
       },
     });
-    const { canTradeWithIgnoreKeywords } = makeZoeHelpers(mockZCF);
-    t.ok(canTradeWithIgnoreKeywords(leftOfferHandle, rightOfferHandle));
+    const { canTradeWithMapKeywords } = makeZoeHelpers(mockZCF);
+    t.ok(
+      canTradeWithMapKeywords(leftOfferHandle, rightOfferHandle, [
+        ['Asset', 'Price'],
+        ['Asset', 'Price'],
+      ]),
+    );
+
     t.notOk(
-      canTradeWithIgnoreKeywords(leftOfferHandle, cantTradeRightOfferHandle),
+      canTradeWithMapKeywords(leftOfferHandle, cantTradeRightOfferHandle, [
+        ['Asset', 'Price'],
+        ['Asset', 'Price'],
+      ]),
     );
   } catch (e) {
     t.assert(false, e);

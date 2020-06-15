@@ -38,19 +38,10 @@ export const makeContract = harden(
     };
 
     const buyerOfferHook = buyerOfferHandle => {
-      const amountMathKeywordRecord = {};
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
-      Object.getOwnPropertyNames(issuerKeywordRecord).forEach(keyword => {
-        const brand = zcf.getBrandForIssuer(issuerKeywordRecord[keyword]);
-        amountMathKeywordRecord[keyword] = zcf.getAmountMath(brand);
-      });
-      const sellerAllocation = zcf.getCurrentAllocation(
-        sellerOfferHandle,
-        amountMathKeywordRecord,
-      );
-      const buyerAllocation = zcf.getCurrentAllocation(
-        buyerOfferHandle,
-        amountMathKeywordRecord,
+      const { brandKeywordRecord } = zcf.getInstanceRecord();
+      const [sellerAllocation, buyerAllocation] = zcf.getCurrentAllocations(
+        [sellerOfferHandle, buyerOfferHandle],
+        brandKeywordRecord,
       );
       const currentItemsForSale = sellerAllocation.Items;
       const providedMoney = buyerAllocation.Money;

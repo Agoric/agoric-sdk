@@ -5,6 +5,7 @@ import { HandledPromise } from '@agoric/eventual-send';
 import { getKeywords } from '../cleanProposal';
 
 /**
+ * @typedef {import('../zoe').Handle} Handle
  * @typedef {import('../zoe').OfferHandle} OfferHandle
  * @typedef {import('../zoe').Invite} Invite
  * @typedef {import('../zoe').OfferHook} OfferHook
@@ -56,20 +57,6 @@ export const makeZoeHelpers = (zcf) => {
       return true;
     }
     return sameStructure(getKeysSorted(actual), getKeysSorted(expected));
-  };
-
-  const getKeywordAndBrand = (offerHandle, amountKeywordRecord) => {
-    const keywords = getKeys(amountKeywordRecord);
-    if (keywords.length !== 1) {
-      rejectOffer(
-        offerHandle,
-        `A swap requires giving one type of token for another, ${keywords.length} tokens were provided.`,
-      );
-    }
-    return harden({
-      keyword: keywords[0],
-      brand: amountKeywordRecord[keywords[0]].brand,
-    });
   };
 
   const helpers = harden({
@@ -130,88 +117,44 @@ export const makeZoeHelpers = (zcf) => {
         satisfied(right.want, leftAllocation)
       );
     },
+
+    /**
+     * Compare two proposals for compatibility, mapping keywords. This returns
+     * true if the left offer would accept what the right offer is offering,
+     * presuming that the goods at each keyword are transferred across.
+     *
+     * @param {OfferHandle} leftOfferHandle
+     * @param {OfferHandle} rightOfferHandle
+     * @param {[Keyword]} keywords
+     * @returns boolean
+     */
     canTradeWithMapKeywords: (leftOfferHandle, rightOfferHandle, keywords) => {
       const { proposal: left } = zcf.getOffer(leftOfferHandle);
       const { proposal: right } = zcf.getOffer(rightOfferHandle);
-      const [[leftKeywords], [rightKeywords]] = keywords;
+      const [leftKeywords, rightKeywords] = keywords;
       const leftAllocation = zcf.getCurrentAllocation(leftOfferHandle);
       const rightAllocation = zcf.getCurrentAllocation(rightOfferHandle);
       assert(
         leftKeywords.length === rightKeywords.length,
         details`Must provide the same number of keywords for both offers`,
       );
-      const satisfied = (want, availableForTrade) => {
-        for (let i = leftKeywords.label; i < leftKeywords.length; i += 1) {
-          const amountMath = zcf.getAmountMath(want[leftKeywords[i]].brand);
-          if (
-            !amountMath.isGTE(
-              availableForTrade[rightKeywords[i]],
-              want[leftKeywords[i]],
-            )
-          ) {
-            return false;
+      const satisfied = (want, availableForTrade, wKeywords, aKeywords) => {
+        for (let i = 0; i < leftKeywords.length; i += 1) {
+          const wantAmount = want[wKeywords[i]];
+          const availableAmount = availableForTrade[aKeywords[i]];
+          if (wantAmount) {
+            const amountMath = zcf.getAmountMath(wantAmount.brand);
+            if (!amountMath.isGTE(availableAmount, wantAmount)) {
+              return false;
+            }
           }
         }
         return true;
       };
 
       return (
-        satisfied(left.want, rightAllocation) &&
-        satisfied(right.want, leftAllocation)
-      );
-    },
-
-    // TODO: this will go away after simplifying barterExchange.
-    /**
-     * Compare two proposals for compatibility. This returns true
-     * if the left offer would accept whatever the right offer is offering,
-     * and vice versa. In contrast with canTradeWith(), this function ignores
-     * keywords.
-     *
-     * @param {OfferHandle} leftOfferHandle
-     * @param {OfferHandle} rightOfferHandle
-     * @returns boolean
-     */
-    canTradeWithIgnoreKeywords: (leftOfferHandle, rightOfferHandle) => {
-      const sumProposalByBrand = term => {
-        const sumByBrand = new Map();
-        Object.getOwnPropertyNames(term).forEach(keyword => {
-          const amount = term[keyword];
-
-          if (!sumByBrand.has(amount.brand)) {
-            const empty = zcf.getAmountMath(amount.brand).getEmpty();
-            sumByBrand.set(amount.brand, empty);
-          }
-          const prevSum = sumByBrand.get(amount.brand);
-          const amountMath = zcf.getAmountMath(amount.brand);
-
-          sumByBrand.set(amount.brand, amountMath.add(prevSum, amount));
-        });
-        return sumByBrand;
-      };
-
-      const isWantSatisfied = (want, offer) => {
-        for (const brand of want.keys()) {
-          const amountMath = zcf.getAmountMath(brand);
-          if (!amountMath.isGTE(offer.get(brand), want.get(brand))) {
-            return false;
-          }
-        }
-        return true;
-      };
-
-      const { proposal: left } = zcf.getOffer(leftOfferHandle);
-      const { proposal: right } = zcf.getOffer(rightOfferHandle);
-      const leftWant = sumProposalByBrand(left.want);
-      const rightWant = sumProposalByBrand(right.want);
-
-      const leftAllocation = zcf.getCurrentAllocation(leftOfferHandle);
-      const rightAllocation = zcf.getCurrentAllocation(rightOfferHandle);
-      const leftOffer = sumProposalByBrand(leftAllocation);
-      const rightOffer = sumProposalByBrand(rightAllocation);
-      return (
-        isWantSatisfied(leftWant, rightOffer) &&
-        isWantSatisfied(rightWant, leftOffer)
+        satisfied(left.want, rightAllocation, leftKeywords, rightKeywords) &&
+        satisfied(right.want, leftAllocation, rightKeywords, leftKeywords)
       );
     },
 
@@ -276,20 +219,6 @@ export const makeZoeHelpers = (zcf) => {
       return offerHook(offerHandle);
     },
 
-    // TODO DEPRECATED `inviteAnOffer` is deprecated legacy. Remove when we can.
-    inviteAnOffer: ({
-      offerHook = () => {},
-      inviteDesc,
-      customProperties = undefined,
-      expected = undefined,
-    }) => {
-      return zcf.makeInvitation(
-        expected ? helpers.checkHook(offerHook, expected) : offerHook,
-        inviteDesc || customProperties.inviteDesc,
-        customProperties && harden({ customProperties }),
-      );
-    },
-
     /**
      * Return a Promise for an OfferHandle.
      *
@@ -311,16 +240,16 @@ export const makeZoeHelpers = (zcf) => {
 
     /**
      * Escrow a payment with Zoe and reallocate the amount of the
-     * payment to a recipient.
+     * payment to a recipient. The same keyword will be used with both.
      *
      * @param {Object} obj
      * @param {Amount} obj.amount
      * @param {Payment} obj.payment
-     * @param {[String]} obj.keywords - [keywordIn and keywordOut]
+     * @param {String} obj.keyword
      * @param {Handle} obj.recipientHandle
      * @returns {Promise<undefined>}
      */
-    escrowAndAllocateTo: ({ amount, payment, keywords, recipientHandle }) => {
+    escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment
       // with Zoe.
       let tempHandle;
@@ -333,8 +262,8 @@ export const makeZoeHelpers = (zcf) => {
       );
       // To escrow the payment, we must get the Zoe Service facet and
       // make an offer
-      const proposal = harden({ give: { [keywords[0]]: amount } });
-      const payments = harden({ [keywords[0]]: payment });
+      const proposal = harden({ give: { [keyword]: amount } });
+      const payments = harden({ [keyword]: payment });
       const amountMath = zcf.getAmountMath(amount.brand);
 
       return zcf
@@ -345,24 +274,19 @@ export const makeZoeHelpers = (zcf) => {
           // payment but nothing else. The recipient offer may have any
           // allocation, so we can't assume the allocation is currently empty for this
           // keyword.
-
-          const recipientAlloc = zcf.getCurrentAllocation(
-            recipientHandle,
-            harden({ [keywords[1]]: amountMath }),
-          );
-          const tempAlloc = zcf.getCurrentAllocation(
-            tempHandle,
-            harden({ [keywords[0]]: amountMath }),
+          const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
+            harden([recipientHandle, tempHandle]),
+            harden({ [keyword]: amount.brand }),
           );
 
           // Add the tempAlloc for the keyword to the recipientAlloc.
-          recipientAlloc[keywords[1]] = amountMath.add(
-            recipientAlloc[keywords[1]],
-            tempAlloc[keywords[0]],
+          recipientAlloc[keyword] = amountMath.add(
+            recipientAlloc[keyword],
+            tempAlloc[keyword],
           );
 
           // Set the temporary offer allocation to empty.
-          tempAlloc[keywords[0]] = amountMath.getEmpty();
+          tempAlloc[keyword] = amountMath.getEmpty();
 
           // Actually reallocate the amounts. Note that only the amounts
           // for `keyword` are reallocated.
@@ -388,50 +312,6 @@ export const makeZoeHelpers = (zcf) => {
         amountMath.getMathHelpersName() === 'nat',
         details`issuer must have natMathHelpers`,
       );
-    },
-
-    extractOfferDetails: offerHandle => {
-      const { proposal } = zcf.getOffer(offerHandle);
-
-      const keywordAndBrandIn = getKeywordAndBrand(offerHandle, proposal.give);
-      const { brand: brandIn, keyword: keywordIn } = keywordAndBrandIn;
-      const keywordAndBrandOut = getKeywordAndBrand(offerHandle, proposal.want);
-      const { brand: brandOut, keyword: keywordOut } = keywordAndBrandOut;
-      const {
-        proposal: {
-          give: { [keywordIn]: amountIn },
-          want: { [keywordOut]: amountOut },
-        },
-      } = zcf.getOffer(offerHandle);
-      return {
-        offerHandle,
-        keywordOut,
-        brandOut,
-        amountOut,
-        keywordIn,
-        brandIn,
-        amountIn,
-      };
-    },
-
-    crossMatchAmounts: (leftDetails, rightDetails) => {
-      const amountMathLeftIn = zcf.getAmountMath(leftDetails.brandIn);
-      const amountMathLeftOut = zcf.getAmountMath(leftDetails.brandOut);
-      const newLeftAmountsRecord = {
-        [leftDetails.keywordOut]: leftDetails.amountOut,
-        [leftDetails.keywordIn]: amountMathLeftIn.subtract(
-          leftDetails.amountIn,
-          rightDetails.amountOut,
-        ),
-      };
-      const newRightAmountsRecord = {
-        [rightDetails.keywordOut]: rightDetails.amountOut,
-        [rightDetails.keywordIn]: amountMathLeftOut.subtract(
-          rightDetails.amountIn,
-          leftDetails.amountOut,
-        ),
-      };
-      return [newLeftAmountsRecord, newRightAmountsRecord];
     },
   });
   return helpers;

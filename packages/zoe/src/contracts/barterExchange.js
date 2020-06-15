@@ -6,8 +6,8 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 /** @typedef {import('../zoe').ContractFacet} ContractFacet */
 
 /**
- * The Barter Exchange ignores the keywords in offers. It takes advantage of
- * Zoe facet parameters by only paying attention the issuers in proposals.
+ * The Barter Exchange only accepts offers that look like
+ * { give: { In: amount }, want: { Out: amount} }
  *
  * The want and give amounts are both treated as minimums. Each successful
  * trader gets their `want` and may trade with counter-parties who specify any
@@ -15,18 +15,12 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  */
 export const makeContract = harden(
   /** @param {ContractFacet} zcf */ zcf => {
-    // bookOrders is a Map of Maps. The first key is the brand of each offer's
-    // give, and the second key is the brand of their want.
-    // for each offer, we store (see extractOfferDetails) the handle, as well as
-    // keywords, brands, and amount for both `give` and `want`. The keywords are
-    // only used to produce the payout.
+    // bookOrders is a Map of Maps. The first key is the brand of the offer's
+    // GIVE, and the second key is the brand of their WANT. For each offer, we
+    // store the handle and the amounts for `give` and `want`.
     const bookOrders = new Map();
 
-    const {
-      extractOfferDetails,
-      canTradeWithIgnoreKeywords,
-      crossMatchAmounts,
-    } = makeZoeHelpers(zcf);
+    const { canTradeWithMapKeywords } = makeZoeHelpers(zcf);
 
     function lookupBookOrders(brandIn, brandOut) {
       let ordersMap = bookOrders.get(brandIn);
@@ -44,37 +38,56 @@ export const makeContract = harden(
 
     function findMatchingTrade(newDetails, orders) {
       return orders.find(order => {
-        return canTradeWithIgnoreKeywords(
+        return canTradeWithMapKeywords(
           newDetails.offerHandle,
           order.offerHandle,
+          [
+            ['In', 'Out'],
+            ['Out', 'In'],
+          ],
         );
       });
     }
 
+    function crossMatchAmounts(leftDetails, rightDetails) {
+      const amountMathLeftIn = zcf.getAmountMath(leftDetails.amountIn.brand);
+      const amountMathLeftOut = zcf.getAmountMath(leftDetails.amountOut.brand);
+      const newLeftAmountsRecord = {
+        Out: leftDetails.amountOut,
+        In: amountMathLeftIn.subtract(
+          leftDetails.amountIn,
+          rightDetails.amountOut,
+        ),
+      };
+      const newRightAmountsRecord = {
+        Out: rightDetails.amountOut,
+        In: amountMathLeftOut.subtract(
+          rightDetails.amountIn,
+          leftDetails.amountOut,
+        ),
+      };
+      return [newLeftAmountsRecord, newRightAmountsRecord];
+    }
+
     function removeFromOrders(offerDetails) {
       const orders = lookupBookOrders(
-        offerDetails.brandIn,
-        offerDetails.brandOut,
+        offerDetails.amountIn.brand,
+        offerDetails.amountOut.brand,
       );
       orders.splice(orders.indexOf(offerDetails), 1);
     }
 
     function tradeWithMatchingOffer(offerDetails) {
       const orders = lookupBookOrders(
-        offerDetails.brandOut,
-        offerDetails.brandIn,
+        offerDetails.amountOut.brand,
+        offerDetails.amountIn.brand,
       );
       const matchingTrade = findMatchingTrade(offerDetails, orders);
       if (matchingTrade) {
-        // reallocate by switching the amount
+        // reallocate by switching the amounts
         const amounts = crossMatchAmounts(offerDetails, matchingTrade);
         const handles = [offerDetails.offerHandle, matchingTrade.offerHandle];
-        const keywords = [
-          [offerDetails.keywordIn, offerDetails.keywordOut],
-          [matchingTrade.keywordIn, matchingTrade.keywordOut],
-        ];
-        zcf.reallocate(handles, amounts, keywords);
-        // swap(offerDetails.offerHandle, matchingTrade.offerHandle);
+        zcf.reallocate(handles, amounts);
         removeFromOrders(matchingTrade);
         zcf.complete(handles);
 
@@ -85,12 +98,24 @@ export const makeContract = harden(
 
     function addToBook(offerDetails) {
       const orders = lookupBookOrders(
-        offerDetails.brandIn,
-        offerDetails.brandOut,
+        offerDetails.amountIn.brand,
+        offerDetails.amountOut.brand,
       );
       orders.push(offerDetails);
     }
 
+    function extractOfferDetails(offerHandle) {
+      const {
+        give: { In: amountIn },
+        want: { Out: amountOut },
+      } = zcf.getOffer(offerHandle).proposal;
+
+      return {
+        offerHandle,
+        amountIn,
+        amountOut,
+      };
+    }
     const exchangeOfferHook = offerHandle => {
       const offerDetails = extractOfferDetails(offerHandle);
 

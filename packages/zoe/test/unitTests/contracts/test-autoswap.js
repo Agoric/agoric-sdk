@@ -98,17 +98,17 @@ test('autoSwap with valid offers', async t => {
 
     // Bob looks up the price of 3 moola in simoleans
     const simoleanAmounts = bobAutoswap.getCurrentPrice(
-      harden({ In: moola(3) }),
+      harden({ TokenA: moola(3) }),
     );
     t.deepEquals(simoleanAmounts, simoleans(1));
 
     // Bob escrows
 
     const bobMoolaForSimProposal = harden({
-      want: { Out: simoleans(1) },
-      give: { In: moola(3) },
+      want: { TokenB: simoleans(1) },
+      give: { TokenA: moola(3) },
     });
-    const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
+    const bobMoolaForSimPayments = harden({ TokenA: bobMoolaPayment });
 
     const { payout: bobPayoutP, outcome: offerOkP } = await zoe.offer(
       bobExclInvite,
@@ -121,8 +121,8 @@ test('autoSwap with valid offers', async t => {
 
     const bobPayout = await bobPayoutP;
 
-    const bobMoolaPayout1 = await bobPayout.In;
-    const bobSimoleanPayout1 = await bobPayout.Out;
+    const bobMoolaPayout1 = await bobPayout.TokenA;
+    const bobSimoleanPayout1 = await bobPayout.TokenB;
 
     t.deepEqual(await moolaIssuer.getAmountOf(bobMoolaPayout1), moola(0));
     t.deepEqual(
@@ -137,17 +137,17 @@ test('autoSwap with valid offers', async t => {
 
     // Bob looks up the price of 3 simoleans
     const moolaAmounts = bobAutoswap.getCurrentPrice(
-      harden({ In: simoleans(3) }),
+      harden({ TokenB: simoleans(3) }),
     );
     t.deepEquals(moolaAmounts, moola(5));
 
     // Bob makes another offer and swaps
     const bobSecondInvite = bobAutoswap.makeSwapInvite();
     const bobSimsForMoolaProposal = harden({
-      want: { Out: moola(5) },
-      give: { In: simoleans(3) },
+      want: { TokenA: moola(5) },
+      give: { TokenB: simoleans(3) },
     });
-    const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
+    const simsForMoolaPayments = harden({ TokenB: bobSimoleanPayment });
 
     const {
       payout: bobSimsForMoolaPayoutP,
@@ -161,8 +161,8 @@ test('autoSwap with valid offers', async t => {
     t.equal(await simsForMoolaOkP, 'Swap successfully completed.');
 
     const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutP;
-    const bobMoolaPayout2 = await bobSimsForMoolaPayout.Out;
-    const bobSimoleanPayout2 = await bobSimsForMoolaPayout.In;
+    const bobMoolaPayout2 = await bobSimsForMoolaPayout.TokenA;
+    const bobSimoleanPayout2 = await bobSimsForMoolaPayout.TokenB;
 
     t.deepEqual(await moolaIssuer.getAmountOf(bobMoolaPayout2), moola(5));
     t.deepEqual(
@@ -305,16 +305,16 @@ test('autoSwap - test fee', async t => {
 
     // Bob looks up the price of 1000 moola in simoleans
     const simoleanAmounts = bobAutoswap.getCurrentPrice(
-      harden({ In: moola(1000) }),
+      harden({ TokenA: moola(1000) }),
     );
     t.deepEquals(simoleanAmounts, simoleans(906));
 
     // Bob escrows
     const bobMoolaForSimProposal = harden({
-      give: { In: moola(1000) },
-      want: { Out: simoleans(0) },
+      give: { TokenA: moola(1000) },
+      want: { TokenB: simoleans(0) },
     });
-    const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
+    const bobMoolaForSimPayments = harden({ TokenA: bobMoolaPayment });
 
     // Bob swaps
     const { payout: bobPayoutP, outcome: offerOkP } = await zoe.offer(
@@ -326,8 +326,8 @@ test('autoSwap - test fee', async t => {
     t.equal(await offerOkP, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;
-    const bobMoolaPayout = await bobPayout.In;
-    const bobSimoleanPayout = await bobPayout.Out;
+    const bobMoolaPayout = await bobPayout.TokenA;
+    const bobSimoleanPayout = await bobPayout.TokenB;
 
     t.deepEqual(await moolaIssuer.getAmountOf(bobMoolaPayout), moola(0));
     t.deepEqual(
