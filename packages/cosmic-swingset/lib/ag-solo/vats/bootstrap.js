@@ -280,6 +280,9 @@ export default function setup(syscall, state, helpers) {
         await E(wallet).deposit(pursePetnames.moola, moolaPayment);
         await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
 
+        // Make mailbox for Default Zoe invite purse
+        await E(wallet).makeMailbox(pursePetnames['zoe invite']);
+
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {
           send(obj, connectionHandles) {
