@@ -101,24 +101,47 @@ export default function makeKernelKeeper(storage) {
     return storage.get(key);
   }
 
-  // These are the defined kernel statistics counters.  For any counter 'foo'
-  // that is defined here, if there is also a defined counter named 'fooMax',
-  // the stats collection machinery will automatically track the latter as a
-  // high-water mark for the former.
+  // These are the defined kernel statistics counters.
+  //
+  // For any counter 'foo' that is defined here, if there is also a defined
+  // counter named 'fooMax', the stats collection machinery will automatically
+  // track the latter as a high-water mark for 'foo'.
+  //
+  // For any counter 'foo' that is defined here, if there is also a defined
+  // counter named 'fooUp', the stats collection machinery will automatically
+  // track the number of times 'foo' is incremented.  Similarly, 'fooDown' will
+  // track the number of times 'foo' is decremented.
   let kernelStats = {
     kernelObjects: 0,
+    kernelObjectsUp: 0,
+    kernelObjectsDown: 0,
+    kernelObjectsMax: 0,
     kernelDevices: 0,
+    kernelDevicesUp: 0,
+    kernelDevicesDown: 0,
+    kernelDevicesMax: 0,
     kernelPromises: 0,
+    kernelPromisesUp: 0,
+    kernelPromisesDown: 0,
     kernelPromisesMax: 0,
     kpUnresolved: 0,
+    kpUnresolvedUp: 0,
+    kpUnresolvedDown: 0,
     kpUnresolvedMax: 0,
     kpFulfilledToPresence: 0,
+    kpFulfilledToPresenceUp: 0,
+    kpFulfilledToPresenceDown: 0,
     kpFulfilledToPresenceMax: 0,
     kpFulfilledToData: 0,
+    kpFulfilledToDataUp: 0,
+    kpFulfilledToDataDown: 0,
     kpFulfilledToDataMax: 0,
     kpRejected: 0,
+    kpRejectedUp: 0,
+    kpRejectedDown: 0,
     kpRejectedMax: 0,
     runQueueLength: 0,
+    runQueueLengthUp: 0,
     runQueueLengthMax: 0,
     syscalls: 0,
     syscallSend: 0,
@@ -133,6 +156,8 @@ export default function makeKernelKeeper(storage) {
     dispatchNotifyFulfillToPresence: 0,
     dispatchReject: 0,
     clistEntries: 0,
+    clistEntriesUp: 0,
+    clistEntriesDown: 0,
     clistEntriesMax: 0,
   };
 
@@ -145,10 +170,18 @@ export default function makeKernelKeeper(storage) {
     ) {
       kernelStats[maxStat] = kernelStats[stat];
     }
+    const upStat = `${stat}Up`;
+    if (kernelStats[upStat] !== undefined) {
+      kernelStats[upStat] += 1;
+    }
   }
 
   function decStat(stat) {
     kernelStats[stat] -= 1;
+    const downStat = `${stat}Down`;
+    if (kernelStats[downStat] !== undefined) {
+      kernelStats[downStat] += 1;
+    }
   }
 
   function saveStats() {
