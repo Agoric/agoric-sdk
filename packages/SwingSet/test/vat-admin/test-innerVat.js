@@ -1,5 +1,5 @@
+import '@agoric/install-ses';
 import { test } from 'tape';
-import '../../install-ses.js';
 import path from 'path';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import bundleSource from '@agoric/bundle-source';
