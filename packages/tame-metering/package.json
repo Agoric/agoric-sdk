@@ -4,13 +4,14 @@
   "description": "tame-metering",
   "main": "src/index.js",
   "scripts": {
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "tap --no-coverage --reporter specy 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
   },
   "dependencies": {
     "esm": "^3.2.5",
+    "tap": "^14.10.5",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },
