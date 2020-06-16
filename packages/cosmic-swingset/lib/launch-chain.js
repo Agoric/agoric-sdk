@@ -154,7 +154,7 @@ export async function launch(
   }
 
   const [savedHeight, savedActions] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[0, []]',
+    storage.get(SWING_STORE_META_KEY) || '[-1, []]',
   );
   return {
     deliverInbound,

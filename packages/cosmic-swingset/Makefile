@@ -81,7 +81,7 @@ scenario2-setup-nobuild:
 	mkdir t1/bootstrap
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
-	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake
+	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
 	$(AGC) --home=t1/n0 gentx --keyring-backend=test --home-client=t1/bootstrap --name=bootstrap --amount=1000000uagstake
 	$(AGC) --home=t1/n0 collect-gentxs
@@ -91,17 +91,19 @@ scenario2-setup-nobuild:
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
-	ROLE=two_chain BOOT_ADDRESS=`cat t1/bootstrap-address` $(NODE_DEBUG) \
+	ROLE=two_chain $(NODE_DEBUG) \
 	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) --home=t1/n0 start --pruning=nothing
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one t1-start-ag-solo
 
-# Provision the ag-solo from the bootstrap address (idempotent).
+# Provision the ag-solo from an provisionpass-holding address (idempotent).
 t1-provision-one:
-	$(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
-		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		t1/$(BASE_PORT) `cat t1/$(BASE_PORT)/ag-cosmos-helper-address`
+	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
+	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.3 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q 'code: 0'
 
 # Actually start the ag-solo.
 t1-start-ag-solo:

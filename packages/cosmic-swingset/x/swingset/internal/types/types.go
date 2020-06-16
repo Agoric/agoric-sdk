@@ -3,9 +3,23 @@ package types
 import (
 	"encoding/json"
 	"errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const EmptyMailboxValue = `"{\"outbox\":[], \"ack\":0}"`
+
+type Egress struct {
+	Nickname string         `json:"nickname"`
+	Peer     sdk.AccAddress `json:"peer"`
+}
+
+func NewEgress(nickname string, peer sdk.AccAddress) Egress {
+	return Egress{
+		Nickname: nickname,
+		Peer:     peer,
+	}
+}
 
 type Storage struct {
 	Value string `json:"value"`

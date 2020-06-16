@@ -699,18 +699,7 @@ EOF
         }
 
         case 'sendPacket': {
-          const { packet, sender } = obj;
-          if (!packetSendersWhitelist.includes(sender)) {
-            console.error(
-              sender,
-              'does not appear in the sendPacket whitelist',
-              packetSendersWhitelist,
-            );
-            throw Error(
-              `${sender} does not appear in the sendPacket whitelist`,
-            );
-          }
-
+          const { packet } = obj;
           const { source_port: portID, source_channel: channelID } = packet;
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);

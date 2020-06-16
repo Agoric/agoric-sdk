@@ -15,7 +15,7 @@ function build(E) {
   }
 
   async function pleaseProvision(nickname, pubkey) {
-    const chainBundle = E(bundler).createUserBundle(nickname);
+    let chainBundle;
     const fetch = harden({
       getDemoBundle() {
         return chainBundle;
@@ -28,6 +28,10 @@ function build(E) {
 
     const INDEX = 1;
     await E(comms).addEgress(pubkey, INDEX, fetch);
+
+    // Do this here so that any side-effects don't happen unless
+    // the egress has been successfully added.
+    chainBundle = E(bundler).createUserBundle(nickname);
     return { ingressIndex: INDEX };
   }
 

@@ -12,6 +12,7 @@ const assigns = sargs.reduce((prior, assign) => {
     prior.push(
       `app_state.auth.params.tx_size_cost_per_byte="1"`,
       `app_state.staking.params.bond_denom="uagstake"`,
+      `consensus_params.block.time_iota_ms="1000"`,
     );
   } else {
     prior.push(assign);

@@ -12,6 +12,12 @@ import { makeBridgeManager } from './bridge';
 
 const NUM_IBC_PORTS = 3;
 
+// The old way of provisioning used an environment variable that
+// was an account ACL.  The new way uses "provisionpass", a
+// "bearer token" that is checked in handler.go before a provision
+// transaction is even sent to the JS side.
+const FIXME_DEPRECATED_BOOT_ADDRESS = true;
+
 console.debug(`loading bootstrap.js`);
 
 function parseArgs(argv) {
@@ -214,9 +220,6 @@ export default function setup(syscall, state, helpers) {
             async fromBridge(_srcID, obj) {
               switch (obj.type) {
                 case 'PLEASE_PROVISION': {
-                  if (!packetSendersWhitelist.includes(obj.submitter)) {
-                    throw Error('Permission denied');
-                  }
                   const { nickname, address } = obj;
                   return E(vats.provisioning)
                     .pleaseProvision(nickname, address, PROVISIONER_INDEX)
@@ -321,7 +324,7 @@ export default function setup(syscall, state, helpers) {
 
           D(devices.mailbox).registerInboundHandler(vats.vattp);
           await E(vats.vattp).registerMailboxDevice(devices.mailbox);
-          if (bootAddress) {
+          if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
             // FIXME: The old way: register egresses for the addresses.
             await Promise.all(
               [bootAddress, ...additionalAddresses].map(addr =>
@@ -349,23 +352,25 @@ export default function setup(syscall, state, helpers) {
               // Must occur after makeChainBundler.
               await registerNetworkProtocols(vats, bridgeManager, pswl);
 
-              // accept provisioning requests from the controller
-              const provisioner = harden({
-                pleaseProvision(nickname, pubkey) {
-                  console.debug('Provisioning', nickname, pubkey);
-                  return E(vats.provisioning).pleaseProvision(
-                    nickname,
-                    pubkey,
-                    PROVISIONER_INDEX,
-                  );
-                },
-              });
-              // bootAddress holds the pubkey of controller
-              await E(vats.comms).addEgress(
-                bootAddress,
-                KEY_REG_INDEX,
-                provisioner,
-              );
+              if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
+                // accept provisioning requests from the controller
+                const provisioner = harden({
+                  pleaseProvision(nickname, pubkey) {
+                    console.debug('Provisioning', nickname, pubkey);
+                    return E(vats.provisioning).pleaseProvision(
+                      nickname,
+                      pubkey,
+                      PROVISIONER_INDEX,
+                    );
+                  },
+                });
+                // bootAddress holds the pubkey of controller
+                await E(vats.comms).addEgress(
+                  bootAddress,
+                  KEY_REG_INDEX,
+                  provisioner,
+                );
+              }
               break;
             }
             case 'controller':
@@ -447,22 +452,23 @@ export default function setup(syscall, state, helpers) {
               );
 
               await registerNetworkProtocols(vats, bridgeManager, pswl);
-
-              const demoProvider = harden({
-                // build a chain-side bundle for a client.
-                async getDemoBundle(nickname) {
-                  return chainBundler.createUserBundle(nickname);
-                },
-              });
-              await Promise.all(
-                [bootAddress, ...additionalAddresses].map(addr =>
-                  E(vats.comms).addEgress(
-                    addr,
-                    PROVISIONER_INDEX,
-                    demoProvider,
+              if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
+                const demoProvider = harden({
+                  // build a chain-side bundle for a client.
+                  async getDemoBundle(nickname) {
+                    return chainBundler.createUserBundle(nickname);
+                  },
+                });
+                await Promise.all(
+                  [bootAddress, ...additionalAddresses].map(addr =>
+                    E(vats.comms).addEgress(
+                      addr,
+                      PROVISIONER_INDEX,
+                      demoProvider,
+                    ),
                   ),
-                ),
-              );
+                );
+              }
               break;
             }
             case 'two_client': {
