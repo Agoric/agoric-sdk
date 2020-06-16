@@ -142,8 +142,6 @@ tap.test('metering within a vat', async function withinVat(t) {
   log.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
-  // TODO: this doesn't seem to be caught right now
-  /*
   // metering should catch primordial allocation too
   ok = await runBundleThunkUnderMeter(() => stuff(log, 'allocate'));
   t.equal(log.length, 1, 'computation got started');
@@ -156,7 +154,6 @@ tap.test('metering within a vat', async function withinVat(t) {
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
-  */
 
 });
 

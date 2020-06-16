@@ -19,9 +19,7 @@ export default function stuff(log, explode = 'no') {
     } else if (explode === 'stack') {
       delve_forever_into_the_recursive_depths();
     } else if (explode === 'allocate') {
-      let a = [];
-      a.length = 4e9;
-      a.fill('stars'); // more like 1e24, really
+      let universe = Array(4e9); // more like 1e24, really
     }
     throw Error('I will be caught');
   } catch(e) {
