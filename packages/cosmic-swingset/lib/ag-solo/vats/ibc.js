@@ -80,14 +80,9 @@ let seed = 0;
  *
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
- * @param {string[]} [packetSendersWhitelist=[]]
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
-export function makeIBCProtocolHandler(
-  E,
-  callIBCDevice,
-  packetSendersWhitelist = [],
-) {
+export function makeIBCProtocolHandler(E, callIBCDevice) {
   /**
    * @type {Store<string, Promise<Connection>>}
    */

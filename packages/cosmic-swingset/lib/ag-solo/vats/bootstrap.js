@@ -159,11 +159,7 @@ export default function setup(syscall, state, helpers) {
         });
       }
 
-      async function registerNetworkProtocols(
-        vats,
-        bridgeMgr,
-        packetSendersWhitelist = [],
-      ) {
+      async function registerNetworkProtocols(vats, bridgeMgr) {
         const ps = [];
         // Every vat has a loopback device.
         ps.push(
@@ -183,10 +179,7 @@ export default function setup(syscall, state, helpers) {
               });
             },
           });
-          const ibcHandler = await E(vats.ibc).createInstance(
-            callbacks,
-            packetSendersWhitelist,
-          );
+          const ibcHandler = await E(vats.ibc).createInstance(callbacks);
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
             E(vats.network).registerProtocolHandler(
@@ -313,8 +306,6 @@ export default function setup(syscall, state, helpers) {
             devices.bridge && makeBridgeManager(E, D, devices.bridge);
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
 
-          const pswl = [bootAddress, ...additionalAddresses];
-
           async function addRemote(addr) {
             const { transmitter, setReceiver } = await E(vats.vattp).addRemote(
               addr,
@@ -350,7 +341,7 @@ export default function setup(syscall, state, helpers) {
               );
 
               // Must occur after makeChainBundler.
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              await registerNetworkProtocols(vats, bridgeManager);
 
               if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
                 // accept provisioning requests from the controller
@@ -379,7 +370,7 @@ export default function setup(syscall, state, helpers) {
                 throw new Error(`controller must be given GCI`);
               }
 
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              await registerNetworkProtocols(vats, bridgeManager);
 
               // Wire up the http server.
               await setupCommandDevice(vats.http, devices.command, {
@@ -410,7 +401,7 @@ export default function setup(syscall, state, helpers) {
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              await registerNetworkProtocols(vats, bridgeManager);
 
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
@@ -451,7 +442,7 @@ export default function setup(syscall, state, helpers) {
                 vats.vattp,
               );
 
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              await registerNetworkProtocols(vats, bridgeManager);
               if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
                 const demoProvider = harden({
                   // build a chain-side bundle for a client.
@@ -481,7 +472,7 @@ export default function setup(syscall, state, helpers) {
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              await registerNetworkProtocols(vats, bridgeManager);
               await addRemote(GCI);
               // addEgress(..., PROVISIONER_INDEX) is called in case two_chain
               const demoProvider = E(vats.comms).addIngress(
@@ -510,7 +501,7 @@ export default function setup(syscall, state, helpers) {
 
               // We pretend we're on-chain.
               const chainBundler = makeChainBundler(vats, devices.timer);
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              await registerNetworkProtocols(vats, bridgeManager);
 
               // Shared Setup (virtual chain side) ///////////////////////////
               await setupCommandDevice(vats.http, devices.command, {
