@@ -91,7 +91,7 @@ async function meteredImportBundle(bundle, endowments) {
 }
 
 
-tap.test('metering within a vat', async function withinVat(t) {
+tap.test('metering a single bundle', async function(t) {
   const bundle = await bundleSource(require.resolve('./metered-code.js'),
                                     'nestedEvaluate');
   harden(console.__proto__);
@@ -100,21 +100,21 @@ tap.test('metering within a vat', async function withinVat(t) {
         await meteredImportBundle(bundle, endowments);
 
   const log = [];
-  const stuff = ns.default;
+  const meterMe = ns.default;
   //console.log(`running without explosion`);
-  let ok = await runBundleThunkUnderMeter(() => stuff(log, false));
+  let ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
-  ok = await runBundleThunkUnderMeter(() => stuff(log, 'compute'));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'compute'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, false, 'meter should be exhausted (compute)');
 
   // Run the same code (without an infinite loop) against the old exhausted
   // meter. It should halt right away.
-  ok = await runBundleThunkUnderMeter(() => stuff(log, false));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
   t.equal(log.length, 0, 'computation did not start');
   t.equal(ok, false, 'meter should be exhausted (still compute)');
 
@@ -122,13 +122,13 @@ tap.test('metering within a vat', async function withinVat(t) {
   //refillFacet.combined(10000000);
   //refillFacet.allocate(10000000);
   refillFacet.compute(10000000);
-  ok = await runBundleThunkUnderMeter(() => stuff(log, false));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
   // now check that metering catches infinite stack
-  ok = await runBundleThunkUnderMeter(() => stuff(log, 'stack'));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'stack'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, false, 'meter should be exhausted (stack)');
@@ -137,25 +137,22 @@ tap.test('metering within a vat', async function withinVat(t) {
   //refillFacet.combined(10000000);
   //refillFacet.allocate(10000000);
   refillFacet.stack(10000000);
-  ok = await runBundleThunkUnderMeter(() => stuff(log, false));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
   // metering should catch primordial allocation too
-  ok = await runBundleThunkUnderMeter(() => stuff(log, 'allocate'));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'allocate'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, false, 'meter should be exhausted (allocate)');
 
   // Refill the meter, and the code should run again.
   refillFacet.allocate(10000000);
-  ok = await runBundleThunkUnderMeter(() => stuff(log, false));
+  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
   t.equal(log.length, 1, 'computation got started');
   log.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
 });
-
-//tap.test('metering of an entire vat', async function entireVat(t) {
-//});

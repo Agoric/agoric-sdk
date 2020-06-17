@@ -1,4 +1,4 @@
-/* global replaceGlobalMeter HandledPromise */
+/* global HandledPromise */
 import harden from '@agoric/harden';
 import { makeMarshal } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
@@ -29,13 +29,45 @@ export default function buildKernel(kernelEndowments) {
   const {
     waitUntilQuiescent,
     hostStorage,
-    runEndOfCrank,
     vatAdminVatSetup,
     vatAdminDevSetup,
+    replaceGlobalMeter,
+    transformMetering,
   } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
+
+  // It is important that tameMetering() was called by application startup,
+  // before install-ses. We expect the controller to run tameMetering() again
+  // (and rely upon its only-once behavior) to get the control facet
+  // (replaceGlobalMeter), and pass it in through kernelEndowments
+
+  // This is the active vat-at-a-time meter. It will be 'undefined' if we're
+  // in kernel-space or in a non-metered vat. We'll set it to some specific
+  // meter (and set the globals meter too) just before we give control to a
+  // metered vat. It might also get set while a vat is executing, if that vat
+  // exercises its setMeter() endowment. The kernel will clear this
+  // immediately at the end of each crank, when it regains control from the
+  // vat (using waitUntilQuiescent)
+  let meter = undefined;
+
+  function setMeter(newMeter) {
+    meter = newMeter;
+    if (replaceGlobalMeter) {
+      replaceGlobalMeter(newMeter);
+    }
+  }
+  harden(setMeter);
+
+  function clearMeter() {
+    const oldMeter = meter;
+    if (replaceGlobalMeter) {
+      replaceGlobalMeter(null);
+    }
+    return oldMeter;
+  }
+  harden(clearMeter);
 
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
@@ -94,17 +126,6 @@ export default function buildKernel(kernelEndowments) {
       // entry earlier.
       send(kpid, msg);
     }
-  }
-
-  // doEndOfCrank is provided to each vatMananger, to run inside doProcess
-  function doEndOfCrank() {
-    if (typeof replaceGlobalMeter !== 'undefined') {
-      // Turn off the global meter.
-      replaceGlobalMeter(null);
-    }
-
-    // Finish everything at the end of the crank.
-    runEndOfCrank();
   }
 
   function invoke(deviceSlot, method, args) {
@@ -181,7 +202,7 @@ export default function buildKernel(kernelEndowments) {
   const syscallManager = {
     kdebug,
     waitUntilQuiescent,
-    doEndOfCrank,
+    clearMeter,
     send,
     invoke,
     subscribe,
@@ -528,6 +549,8 @@ export default function buildKernel(kernelEndowments) {
       helpers,
       kernelKeeper,
       kernelKeeper.allocateVatKeeperIfNeeded(vatID),
+      setMeter,
+      transformMetering,
     );
   }
 
@@ -596,8 +619,8 @@ export default function buildKernel(kernelEndowments) {
                                }))
       .then(vatNS => {
         const buildFn = vatNS.default;
-        const setup = (syscall, state, helpers) => {
-          return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
+        const setup = (syscall, state, helpers, setMeter) => {
+          return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID, setMeter);
         };
         const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
         ephemeral.vats.set(vatID, harden({ manager }));

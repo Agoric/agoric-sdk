@@ -2,8 +2,10 @@
 /* global setImmediate Compartment harden */
 import fs from 'fs';
 import path from 'path';
+import re2 from 're2';
 import { assert } from '@agoric/assert';
 
+import { isTamed, tameMetering } from '@agoric/tame-metering';
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
@@ -131,9 +133,40 @@ export async function buildVatController(config, withSES = true, argv = []) {
                                       });
   const buildKernel = kernelNS.default;
 
+  // transformMetering() requires Babel, which imports 'fs' and 'path', so it
+  // cannot be implemented within a non-start-Compartment. We build it out
+  // here and pass it to the kernel, which then passes it to vats. This is
+  // intended to be powerless. TODO: when we remove metering within vats
+  // (leaving only vat-at-a-time metering), this function should only be used
+  // to build loadStaticVat and loadDynamicVat. It may still be passed to the
+  // kernel (for loadDynamicVat), but it should no longer be passed into the
+  // vats themselves. TODO: transformMetering() is sync because it is passed
+  // into c.evaluate (which of course cannot handle async), but in the
+  // future, this may live on the far side of a kernel/vatworker boundary, so
+  // we kind of want it to be async.
+  const mt = makeMeteringTransformer(babelCore);
+  function transformMetering(src, getMeter) {
+    // 'getMeter' provides the meter to which the transformation itself is
+    // billed (the COMPUTE meter is charged the length of the source string).
+    // The endowment must be present and truthy, otherwise the transformation
+    // is disabled. TODO: rethink that, and have @agoric/transform-metering
+    // export a simpler function (without 'endowments' or .rewrite).
+    const ss = mt.rewrite({ src, endowments: { getMeter } });
+    return ss.src;
+  }
+  harden(transformMetering);
+
   function vatRequire(what) {
     if (what === '@agoric/harden') {
       return harden;
+    } else if (what === 're2') {
+      // @agoric/transform-metering imports re2, to add it to the generated
+      // endowments. TODO Our transformers no longer traffic in endowments,
+      // so that could probably be removed, in which case we'd no longer need
+      // to provide it here. We do, however, want to continue to provide
+      // RegExp: re2 in the endowments below, to prevent vats from using
+      // backtracking expressions that can eat a lot of memory.
+      return re2;
     } else {
       throw Error(`vatRequire unprepared to satisfy require(${what})`);
     }
@@ -152,8 +185,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
                                          console,
                                          require: vatRequire,
                                          HandledPromise,
-                                         Buffer, // TODO unsafe: Buffer.allocUnsafe, Buffer.alloc(bigsize)
-                                         process: { env: {} },
+                                         // re2 is a RegExp work-a-like that
+                                         // disables backtracking expressions
+                                         // for safer memory consumption
+                                         RegExp: re2,
                                        },
                                      });
     const setup = vatNS.default;
@@ -162,12 +197,25 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
   const hostStorage = config.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
+
+  // It is important that tameMetering() was called by application startup,
+  // before install-ses. Rather than ask applications to capture the return
+  // value and pass it all the way through to here, we just run
+  // tameMetering() again (and rely upon its only-once behavior) to get the
+  // control facet (replaceGlobalMeter), and pass it in through
+  // kernelEndowments. If our enclosing application decided to not tame the
+  // globals, we detect that and refrain from touching it later.
+  const replaceGlobalMeter = isTamed() ? tameMetering() : undefined;
+
+  // we give the kernel a meteringTransform function, so it can offer it to
+
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
-    runEndOfCrank: () => 0, // not implemented
     vatAdminDevSetup: await loadStaticVat(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
     vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
+    replaceGlobalMeter,
+    transformMetering,
   };
 
   const kernel = buildKernel(kernelEndowments);
