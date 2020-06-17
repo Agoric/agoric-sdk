@@ -81,7 +81,7 @@ function build(buildStuff) {
   return harden(root);
 }
 
-export default function setup(syscall, state, helpers, setMeter, transformMetering) {
+export default function setup(syscall, state, helpers, vatPowers) {
   const { log, makeLiveSlots } = helpers;
-  return makeLiveSlots(syscall, state, (E, D, vatPowers) => build({E, D, vatPowers, log}), helpers.vatID, setMeter, transformMetering);
+  return makeLiveSlots(syscall, state, (E, D, vatPowers) => build({E, D, vatPowers, log}), helpers.vatID, vatPowers);
 }

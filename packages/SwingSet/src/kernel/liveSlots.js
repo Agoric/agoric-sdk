@@ -28,7 +28,7 @@ import { insistCapData } from '../capdata';
  *
  * @return an extended dispatcher object for the new vat
  */
-function build(syscall, _state, makeRoot, forVatID, setMeter, transformMetering) {
+function build(syscall, _state, makeRoot, forVatID, vatPowers) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -498,9 +498,6 @@ function build(syscall, _state, makeRoot, forVatID, setMeter, transformMetering)
   }
 
   // here we finally invoke the vat code, and get back the root object
-  // We need to pass in Remotable and getInterfaceOf so that they can
-  // access our own @agoric/marshal, not a separate instance in a bundle.
-  const vatPowers = { Remotable, getInterfaceOf, setMeter, transformMetering };
   const rootObject = makeRoot(E, D, vatPowers);
   mustPassByPresence(rootObject);
 
@@ -548,13 +545,13 @@ function build(syscall, _state, makeRoot, forVatID, setMeter, transformMetering)
  *     into the corresponding immediate invocation of the device (using, once
  *     again, the kernel syscall interface).
  */
-export function makeLiveSlots(syscall, state, makeRoot, forVatID = 'unknown', setMeter = undefined, transformMetering = undefined) {
+export function makeLiveSlots(syscall, state, makeRoot, forVatID = 'unknown', vatPowers = harden({})) {
   const {
     deliver,
     notifyFulfillToData,
     notifyFulfillToPresence,
     notifyReject,
-  } = build(syscall, state, makeRoot, forVatID, setMeter, transformMetering);
+  } = build(syscall, state, makeRoot, forVatID, vatPowers);
   return harden({
     deliver,
     notifyFulfillToData,

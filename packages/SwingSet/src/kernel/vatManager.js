@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
+import { Remotable, getInterfaceOf } from '@agoric/marshal';
 import djson from './djson';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
@@ -273,9 +274,16 @@ export default function makeVatManager(
     },
   });
 
-  // now build the runtime, which gives us back a dispatch function
-
-  const dispatch = setup(syscall, state, helpers, setMeter, transformMetering);
+  // now build the runtime, which gives us back a dispatch function. We need
+  // to give the vat the correct Remotable and getKernelPromise so that they
+  // can access our own @agoric/marshal, not a separate instance in a bundle.
+  // TODO: ideally the powerless ones (Remotable, getInterfaceOf, maybe
+  // transformMetering) are imported by the vat, not passed in an argument.
+  // The powerful one (setMeter) should only be given to the root object, to
+  // share with (or withhold from) other objects as it sees fit.
+  const vatPowers = harden({ Remotable, getInterfaceOf, setMeter,
+                             transformMetering });
+  const dispatch = setup(syscall, state, helpers, vatPowers);
   if (!dispatch || dispatch.deliver === undefined) {
     throw new Error(
       `vat setup() failed to return a 'dispatch' with .deliver: ${dispatch}`,
