@@ -3,6 +3,7 @@ import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import tap from 'tap';
 import { loadBasedir, buildVatController } from '../../src/index';
+import makeNextLog from '../make-nextlog';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -21,16 +22,7 @@ tap.test('metering within a vat', async t => {
   };
   config.vats.set('within', { sourcepath: require.resolve('./vat-within.js') });
   const c = await buildVatController(config, true, []);
-
-  // The log array we get from c.dump() is append only, but we only care
-  // about the most recent entries.
-  let logCount = 0;
-  function nextLog() {
-    const log = c.dump().log;
-    const next = log.slice(logCount);
-    logCount += next.length;
-    return next;
-  }
+  const nextLog = makeNextLog(c);
 
   // 'start' will import the bundle
   c.queueToVatExport('within', 'o+0', 'start', capargs([bundle]));
@@ -40,7 +32,8 @@ tap.test('metering within a vat', async t => {
   // 'run(no)' invokes the bundle in non-exhausting mode
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'no exception'], 'non-exhausting mode ok');
+  t.deepEqual(nextLog(), ['run no', 'log2: started done', 'no exception'],
+              'non-exhausting mode ok');
 
   // 'run(allocate)' tells the bundle to build an oversized array. If the
   // globals have been successfully instrumented, this will fire the global
@@ -48,20 +41,20 @@ tap.test('metering within a vat', async t => {
   // is lazy that way.
   c.queueToVatExport('within', 'o+0', 'run', capargs(['allocate']));
   await c.run();
-  t.deepEqual(nextLog(), ['run allocate', 'exception (RangeError: Allocate meter exceeded)'], 'allocate meter exhausted');
+  t.deepEqual(nextLog(), ['run allocate', 'log2: started', 'exception (RangeError: Allocate meter exceeded)'], 'allocate meter exhausted');
 
   // Now the meter should be exhausted, so running any code will fire it
-  // again right away. The exhaustion is "sticky" until the meter is
-  // refilled.
+  // again right away, before it even gets started. The exhaustion is
+  // "sticky" until the meter is refilled.
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'exception (RangeError: Allocate meter exceeded)'], 'allocate meter is sticky');
+  t.deepEqual(nextLog(), ['run no', 'log2: ', 'exception (RangeError: Allocate meter exceeded)'], 'allocate meter is sticky');
 
   // refilling the ALLOCATE meter should fix that
   c.queueToVatExport('within', 'o+0', 'refill', capargs(['allocate']));
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'no exception'], 'allocate meter refilled');
+  t.deepEqual(nextLog(), ['run no', 'log2: started done', 'no exception'], 'allocate meter refilled');
 
   // 'run(stack)' triggers infinite recursion. If metering is active, this
   // will raise an exception that cannot be caught by the metered code, so
@@ -70,32 +63,32 @@ tap.test('metering within a vat', async t => {
   // metered code, which will push a 'log2: caught' message.
   c.queueToVatExport('within', 'o+0', 'run', capargs(['stack']));
   await c.run();
-  t.deepEqual(nextLog(), ['run stack', 'exception (RangeError: Stack meter exceeded)'], 'stack meter exhausted');
+  t.deepEqual(nextLog(), ['run stack', 'log2: started', 'exception (RangeError: Stack meter exceeded)'], 'stack meter exhausted');
 
   // again, the exhaustion is sticky
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'exception (RangeError: Stack meter exceeded)'], 'stack meter is sticky');
+  t.deepEqual(nextLog(), ['run no', 'log2: ', 'exception (RangeError: Stack meter exceeded)'], 'stack meter is sticky');
   c.queueToVatExport('within', 'o+0', 'refill', capargs(['stack']));
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'no exception'], 'stack meter refilled');
+  t.deepEqual(nextLog(), ['run no', 'log2: started done', 'no exception'], 'stack meter refilled');
 
   // 'run(compute)' triggers an infinite loop. If metering is active, this
   // will raise a meter-exhausted exception. If it is not, this will run
   // forever and hang the process.
   c.queueToVatExport('within', 'o+0', 'run', capargs(['compute']));
   await c.run();
-  t.deepEqual(nextLog(), ['run compute', 'exception (RangeError: Compute meter exceeded)'], 'compute meter exhausted');
+  t.deepEqual(nextLog(), ['run compute', 'log2: started', 'exception (RangeError: Compute meter exceeded)'], 'compute meter exhausted');
 
   // again, the exhaustion is sticky
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'exception (RangeError: Compute meter exceeded)'], 'stack meter is sticky');
+  t.deepEqual(nextLog(), ['run no', 'log2: ', 'exception (RangeError: Compute meter exceeded)'], 'stack meter is sticky');
   c.queueToVatExport('within', 'o+0', 'refill', capargs(['compute']));
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'no exception'], 'compute meter refilled');
+  t.deepEqual(nextLog(), ['run no', 'log2: started done', 'no exception'], 'compute meter refilled');
 
   t.end();
 });

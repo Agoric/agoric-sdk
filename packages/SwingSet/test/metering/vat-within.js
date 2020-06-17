@@ -54,15 +54,14 @@ function build(buildStuff) {
         meterMe(log2, mode);
       } catch (e) {
         setMeter(null);
-        // console.log(`exception during meterMe`);
+        // console.log(`exception during meterMe`, e);
+        log(`log2: ${log2.join(' ')}`);
         log(`exception (${meter.isExhausted()})`);
-        if (log2.length) {
-          log(`log2: ${log2[0]}`);
-        }
         return;
       } finally {
         setMeter(null);
       }
+      log(`log2: ${log2.join(' ')}`);
       log(`no exception`);
     },
 

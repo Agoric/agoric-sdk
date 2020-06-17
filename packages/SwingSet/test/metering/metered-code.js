@@ -8,6 +8,7 @@ function delve_forever_into_the_recursive_depths() {
 }
 
 export default function meterMe(log2, explode = 'no') {
+  log2.push('started');
   // console.log(`explode mode ${explode}`);
   for (let i = 0; i < 10; i++) {
     sub();
@@ -20,6 +21,7 @@ export default function meterMe(log2, explode = 'no') {
     } else if (explode === 'allocate') {
       let universe = Array(4e9); // more like 1e24, really
     }
+    log2.push('done');
     // console.log(`survived the attempted explosion`);
   } catch (e) {
     // We can catch normal Errors (including a stack overflow that Node.js

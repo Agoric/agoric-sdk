@@ -99,60 +99,60 @@ tap.test('metering a single bundle', async function(t) {
   const { ns, runBundleThunkUnderMeter, refillFacet } =
         await meteredImportBundle(bundle, endowments);
 
-  const log = [];
+  const log2 = [];
   const meterMe = ns.default;
   //console.log(`running without explosion`);
-  let ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  let ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
+  t.deepEqual(log2, ['started', 'done'], 'computation completed');
+  log2.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'compute'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'compute'));
+  t.deepEqual(log2, ['started'], 'computation started but halted');
+  log2.splice(0);
   t.equal(ok, false, 'meter should be exhausted (compute)');
 
   // Run the same code (without an infinite loop) against the old exhausted
   // meter. It should halt right away.
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
-  t.equal(log.length, 0, 'computation did not start');
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
+  t.equal(log2.length, 0, 'computation did not start');
   t.equal(ok, false, 'meter should be exhausted (still compute)');
 
   // Refill the meter, and the code should run again.
   //refillFacet.combined(10000000);
   //refillFacet.allocate(10000000);
   refillFacet.compute(10000000);
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
+  t.deepEqual(log2, ['started', 'done'], 'computation completed');
+  log2.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
   // now check that metering catches infinite stack
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'stack'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'stack'));
+  t.deepEqual(log2, ['started'], 'computation started but halted');
+  log2.splice(0);
   t.equal(ok, false, 'meter should be exhausted (stack)');
 
   // Refill the meter, and the code should run again.
   //refillFacet.combined(10000000);
   //refillFacet.allocate(10000000);
   refillFacet.stack(10000000);
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
+  t.deepEqual(log2, ['started', 'done'], 'computation completed');
+  log2.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
   // metering should catch primordial allocation too
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'allocate'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'allocate'));
+  t.deepEqual(log2, ['started'], 'computation started but halted');
+  log2.splice(0);
   t.equal(ok, false, 'meter should be exhausted (allocate)');
 
   // Refill the meter, and the code should run again.
   refillFacet.allocate(10000000);
-  ok = await runBundleThunkUnderMeter(() => meterMe(log, 'no'));
-  t.equal(log.length, 1, 'computation got started');
-  log.splice(0);
+  ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
+  t.deepEqual(log2, ['started', 'done'], 'computation completed');
+  log2.splice(0);
   t.equal(ok, true, 'meter should not be exhausted');
 
 });
