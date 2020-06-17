@@ -1,6 +1,5 @@
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
-import path from 'path';
 import fs from 'fs';
 import bundleSource from '../../bundle-source';
 
@@ -26,9 +25,8 @@ const generateBundlesP = Promise.all(
   }),
 );
 
-async function main(basedir, withSES, argv) {
-  const dir = path.resolve('test/swingsetTests', basedir);
-  const config = await loadBasedir(dir);
+async function main(withSES, argv) {
+  const config = await loadBasedir(__dirname);
   const ldSrcPath = require.resolve(
     '@agoric/swingset-vat/src/devices/loopbox-src',
   );
@@ -43,7 +41,7 @@ const infiniteInstallLoopLog = ['installing infiniteInstallLoop'];
 test('zoe - metering - infinite loop in installation', async t => {
   t.plan(1);
   try {
-    const dump = await main('zoe-metering', true, ['infiniteInstallLoop']);
+    const dump = await main(true, ['infiniteInstallLoop']);
     t.deepEquals(dump.log, infiniteInstallLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -57,7 +55,7 @@ const infiniteInstanceLoopLog = [
 test('zoe - metering - infinite loop in instantiation', async t => {
   t.plan(1);
   try {
-    const dump = await main('zoe-metering', true, ['infiniteInstanceLoop']);
+    const dump = await main(true, ['infiniteInstanceLoop']);
     t.deepEquals(dump.log, infiniteInstanceLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -72,7 +70,7 @@ const infiniteTestLoopLog = [
 test('zoe - metering - infinite loop in contract method', async t => {
   t.plan(1);
   try {
-    const dump = await main('zoe-metering', true, ['infiniteTestLoop']);
+    const dump = await main(true, ['infiniteTestLoop']);
     t.deepEquals(dump.log, infiniteTestLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -87,7 +85,7 @@ const testBuiltinsLog = [
 test('zoe - metering - expensive builtins in contract method', async t => {
   t.plan(1);
   try {
-    const dump = await main('zoe-metering', true, ['testBuiltins']);
+    const dump = await main(true, ['testBuiltins']);
     t.deepEquals(dump.log, testBuiltinsLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
