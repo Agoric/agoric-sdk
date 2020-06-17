@@ -135,7 +135,7 @@ test('lib-wallet issuer and purse methods', async t => {
       `returns petname and brandRegKey`,
     );
     t.deepEquals(pursesStateChangeLog, [
-      '[{"issuerPetname":"moola","brandRegKey":"fakeRegKeyMoola","pursePetname":"fun money","extent":0}]',
+      '[{"issuerPetname":"moola","brandRegKey":"fakeRegKeyMoola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
     ]);
     t.deepEquals(inboxStateChangeLog, []);
   } catch (e) {
@@ -247,10 +247,10 @@ test('lib-wallet offer methods', async t => {
     t.deepEquals(
       pursesStateChangeLog,
       [
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":0}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":100}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":99}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":100}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":99,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":99}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":99}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
       ],
       `purses state change log`,
     );
