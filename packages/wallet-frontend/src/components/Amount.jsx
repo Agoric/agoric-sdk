@@ -12,7 +12,7 @@ const displayNonfungible = amount => {
   // TODO: base this on brandBoardId instead since petnames can change
   if (brand.petname === 'zoe invite') {
     if (extent.length === 0) {
-      return `"${brand.petname}" purse is empty.`;
+      return `${JSON.stringify(brand.petname)} purse is empty.`;
     }
     const elems = extent.map(elem => {
       return {

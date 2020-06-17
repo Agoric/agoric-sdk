@@ -37,11 +37,7 @@ export default function Purses() {
               </ListItemIcon>
               <ListItemText
                 primary={pursePetname}
-                secondary={
-                  <>
-                    <Amount amount={currentAmount} />
-                  </>
-                }
+                secondary={<Amount amount={currentAmount} />}
               />
             </ListItem>
           ))}
