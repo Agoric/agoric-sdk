@@ -11,6 +11,7 @@ import {
 import PurseIcon from '@material-ui/icons/BusinessCenter';
 
 import { useApplicationContext } from '../contexts/Application';
+import Amount from './Amount';
 
 const useStyles = makeStyles(theme => ({
   icon: {
@@ -29,26 +30,21 @@ export default function Purses() {
       <Typography variant="h6">Purses</Typography>
       {Array.isArray(purses) && purses.length > 0 ? (
         <List>
-          {purses.map(
-            ({ pursePetname, brandRegKey, issuerPetname, extent }) => (
-              <ListItem key={pursePetname} value={pursePetname} divider>
-                <ListItemIcon className={classes.icon}>
-                  <PurseIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={pursePetname}
-                  secondary={
-                    <>
-                      <b>
-                        {JSON.stringify(extent)} {issuerPetname}
-                      </b>{' '}
-                      {brandRegKey ? <i>({brandRegKey})</i> : ''}
-                    </>
-                  }
-                />
-              </ListItem>
-            ),
-          )}
+          {purses.map(({ pursePetname, currentAmount }) => (
+            <ListItem key={pursePetname} value={pursePetname} divider>
+              <ListItemIcon className={classes.icon}>
+                <PurseIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={pursePetname}
+                secondary={
+                  <>
+                    <Amount amount={currentAmount} />
+                  </>
+                }
+              />
+            </ListItem>
+          ))}
         </List>
       ) : (
         <Typography color="inherit">No purses.</Typography>

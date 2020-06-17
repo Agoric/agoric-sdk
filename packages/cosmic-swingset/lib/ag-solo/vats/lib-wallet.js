@@ -8,6 +8,8 @@ import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
 import { E } from '@agoric/eventual-send';
 
+import { makeMarshal } from '@agoric/marshal';
+
 import makeObservablePurse from './observable';
 import makeOfferCompiler from './offer-compiler';
 import { makeDehydrator } from './lib-dehydrate';
@@ -27,7 +29,7 @@ export async function makeWallet({
 }) {
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
-  const { makeMapping } = makeDehydrator();
+  const { makeMapping, dehydrate } = makeDehydrator();
   const purseMapping = makeMapping('purse');
   const brandMapping = makeMapping('brand');
 
@@ -120,17 +122,25 @@ export async function makeWallet({
     return getSortedValues(inboxState);
   }
 
+  const noOp = () => {};
+  const identityFn = slot => slot;
+  // Instead of { body, slots }, fill the slots. This is useful for
+  // display but not for data processing, since the special identifier
+  // @qclass is lost.
+  const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
+
   async function updatePursesState(pursePetname, purse) {
-    const [{ extent }, brand] = await Promise.all([
-      E(purse).getCurrentAmount(),
-      E(purse).getAllegedBrand(),
-    ]);
+    const currentAmount = await E(purse).getCurrentAmount();
+    const { extent, brand } = currentAmount;
     const { issuer } = brandTable.get(brand);
     const issuerNames = issuerToIssuerNames.get(issuer);
+    const dehydratedCurrentAmount = dehydrate(currentAmount);
     pursesState.set(pursePetname, {
-      ...issuerNames,
+      ...issuerNames, // brandRegKey, issuerPetname
       pursePetname,
       extent,
+      currentAmountSlots: dehydratedCurrentAmount,
+      currentAmount: fillInSlots(dehydratedCurrentAmount),
     });
     pursesStateChangeHandler(getPursesState());
   }
