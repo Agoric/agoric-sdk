@@ -1,3 +1,5 @@
+import harden from '@agoric/harden';
+
 function sub() {
   
   return 4;
@@ -9,6 +11,7 @@ function delve_forever_into_the_recursive_depths() {
 
 export default function meterMe(log2, explode = 'no') {
   log2.push('started');
+  harden({});
   // console.log(`explode mode ${explode}`);
   for (let i = 0; i < 10; i++) {
     sub();

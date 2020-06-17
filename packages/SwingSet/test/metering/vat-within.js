@@ -2,6 +2,14 @@ import harden from '@agoric/harden';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeter } from '@agoric/transform-metering';
 
+function vatRequire(what) {
+  if (what === '@agoric/harden') {
+    return harden;
+  } else {
+    throw Error(`vatRequire unprepared to satisfy require(${what})`);
+  }
+}
+
 function build(buildStuff) {
   const { E, D, vatPowers, log } = buildStuff;
   const { setMeter, transformMetering } = vatPowers;
@@ -34,7 +42,7 @@ function build(buildStuff) {
     async start(bundle) {
       //console.log(`vatPowers`, vatPowers);
       //console.log('bundle', bundle);
-      const endowments = { require: what => 0, console, getMeter };
+      const endowments = { require: vatRequire, console, getMeter };
       // console.log('doing importBundle');
       log('importing');
       const ns = await importBundle(bundle, {
