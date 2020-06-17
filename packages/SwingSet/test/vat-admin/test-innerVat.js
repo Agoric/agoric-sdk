@@ -5,7 +5,7 @@ import { initSwingStore } from '@agoric/swing-store-simple';
 import { buildVatController, loadBasedir } from '../../src';
 
 async function createConfig() {
-  const dir = path.resolve('./test/vat-admin');
+  const dir = __dirname;
   const config = await loadBasedir(dir);
 
   config.hostStorage = initSwingStore().storage;
