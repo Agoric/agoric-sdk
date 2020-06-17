@@ -27,10 +27,6 @@ const generateBundlesP = Promise.all(
 
 async function main(withSES, argv) {
   const config = await loadBasedir(__dirname);
-  const ldSrcPath = require.resolve(
-    '@agoric/swingset-vat/src/devices/loopbox-src',
-  );
-  config.devices = [['loopbox', ldSrcPath, {}]];
   await generateBundlesP;
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
