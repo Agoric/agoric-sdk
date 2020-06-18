@@ -241,7 +241,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       assert(
         sameStructure(
-          harden({ Asset: moolaIssuer, Bid: simoleanIssuer }),
+          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         details`issuerKeywordRecord was not as expected`,

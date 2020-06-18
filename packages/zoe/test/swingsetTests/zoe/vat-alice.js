@@ -130,7 +130,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaIssuer,
-      Bid: simoleanIssuer,
+      Ask: simoleanIssuer,
     });
     const terms = harden({ numBidsAllowed });
     const {
@@ -144,7 +144,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
     const proposal = harden({
       give: { Asset: moola(1) },
-      want: { Bid: simoleans(3) },
+      want: { Ask: simoleans(3) },
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
@@ -168,7 +168,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
     const payout = await payoutP;
     const moolaPayout = await payout.Asset;
-    const simoleanPayout = await payout.Bid;
+    const simoleanPayout = await payout.Ask;
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);

@@ -13,12 +13,7 @@ import {
   getKeywords,
   cleanKeywords,
 } from './cleanProposal';
-import {
-  arrayToObj,
-  filterObj,
-  filterFillAmounts,
-  assertSubset,
-} from './objArrayConversion';
+import { arrayToObj, filterFillAmounts, filterObj } from './objArrayConversion';
 import { isOfferSafeForOffer } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
@@ -113,8 +108,8 @@ import { makeTables } from './state';
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, sparseKeywords?: SparseKeywords) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], sparseKeywords?: SparseKeywords) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecords) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], brandKeywordRecord[]?: BrandKeywordRecords) => Allocation[]} getCurrentAllocations
  * @property {(installationHandle: InstallationHandle) => string} getInstallation
  * Get the source code for the installed contract. Throws an error if the
  * installationHandle is not found.
@@ -209,6 +204,9 @@ import { makeTables } from './state';
  *
  * @typedef {Keyword[]} SparseKeywords
  * @typedef {{[Keyword:string]:Amount}} Allocation
+ * @typedef {{[Keyword:string]:AmountMath}} AmountMathKeywordRecord
+ * @typedef {{[Keyword:string]:Brand}}
+ * BrandKeywordRecord
  */
 
 /**
@@ -225,27 +223,36 @@ import { makeTables } from './state';
  * @property {InitPublicAPI} initPublicAPI
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInviteIssuer
- * @property {(sparseKeywords: SparseKeywords) => {[Keyword:string]:AmountMath}} getAmountMaths
  * @property {(offerHandles: OfferHandle[]) => { active: OfferStatus[], inactive: OfferStatus[] }} getOfferStatuses
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, sparseKeywords?: SparseKeywords) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], sparseKeywords?: SparseKeywords) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecord) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord
- * @property {(issuer: Issuer) => IssuerRecord} getIssuerRecord
+ * @property {(issuer: Issuer) => Brand} getBrandForIssuer
+ * @property {(brand: Brand) => AmountMath} getAmountMath
  *
  * @callback Reallocate
- * The contract can propose a reallocation of extents per offer,
- * which will only succeed if the reallocation 1) conserves
- * rights, and 2) is 'offer-safe' for all parties involved. This
- * reallocation is partial, meaning that it applies only to the
- * amount associated with the offerHandles that are passed in.
- * We are able to ensure that with each reallocation, rights are
- * conserved and offer safety is enforced for all offers, even
- * though the reallocation is partial, because once these
- * invariants are true, they will remain true until changes are
- * made.
+ * The contract can propose a reallocation of extents across offers
+ * by providing two parallel arrays: offerHandles and newAllocations.
+ * Each element of newAllocations is an AmountKeywordRecord whose
+ * amount should replace the old amount for that keyword for the
+ * corresponding offer.
+ *
+ * The reallocation will only succeed if the reallocation 1) conserves
+ * rights (the amounts specified have the same total value as the
+ * current total amount), and 2) is 'offer-safe' for all parties involved.
+ *
+ * The reallocation is partial, meaning that it applies only to the
+ * amount associated with the offerHandles that are passed in. By
+ * induction, if rights conservation and offer safety hold before,
+ * they will hold after a safe reallocation, even though we only
+ * re-validate for the offers whose allocations will change. Since
+ * rights are conserved for the change, overall rights will be unchanged,
+ * and a reallocation can only effect offer safety for offers whose
+ * allocations change.
+ *
  * zcf.reallocate will throw an error if any of the
  * newAllocations do not have a value for all the
  * keywords in sparseKeywords. An error will also be thrown if
@@ -323,6 +330,7 @@ import { makeTables } from './state';
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
+
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
@@ -368,18 +376,6 @@ const makeZoe = (additionalEndowments = {}) => {
     }
   };
 
-  // presumes global keywords
-  const getAmountMaths = (instanceHandle, sparseKeywords) => {
-    const amountMathKeywordRecord = /** @type {Object.<string,AmountMath>} */ ({});
-    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-    // this method presumes that issuers have all been retrieved by this point
-    sparseKeywords.forEach(keyword => {
-      const brand = issuerTable.brandFromIssuer(issuerKeywordRecord[keyword]);
-      amountMathKeywordRecord[keyword] = issuerTable.get(brand).amountMath;
-    });
-    return amountMathKeywordRecord;
-  };
-
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
@@ -398,26 +394,27 @@ const makeZoe = (additionalEndowments = {}) => {
     });
   };
 
-  const doGetCurrentAllocation = (
-    instanceHandle,
-    offerHandle,
-    sparseKeywords,
-  ) => {
-    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-    const allKeywords = getKeywords(issuerKeywordRecord);
-    if (sparseKeywords === undefined) {
-      sparseKeywords = allKeywords;
-    }
-    const amountMathKeywordRecord = getAmountMaths(
-      instanceHandle,
-      sparseKeywords,
-    );
-    assertSubset(allKeywords, sparseKeywords);
+  const doGetCurrentAllocation = (offerHandle, brandKeywordRecord) => {
     const { currentAllocation } = offerTable.get(offerHandle);
-    return filterFillAmounts(
-      currentAllocation,
-      sparseKeywords,
-      amountMathKeywordRecord,
+    if (brandKeywordRecord === undefined) {
+      return currentAllocation;
+    }
+    const amountMathKeywordRecord = {};
+    Object.getOwnPropertyNames(brandKeywordRecord).forEach(keyword => {
+      const brand = brandKeywordRecord[keyword];
+      amountMathKeywordRecord[keyword] = issuerTable.get(brand).amountMath;
+    });
+    return filterFillAmounts(currentAllocation, amountMathKeywordRecord);
+  };
+
+  const doGetCurrentAllocations = (offerHandles, brandKeywordRecords) => {
+    if (brandKeywordRecords === undefined) {
+      return offerHandles.map(offerHandle =>
+        doGetCurrentAllocation(offerHandle),
+      );
+    }
+    return offerHandles.map((offerHandle, i) =>
+      doGetCurrentAllocation(offerHandle, brandKeywordRecords[i]),
     );
   };
 
@@ -449,50 +446,40 @@ const makeZoe = (additionalEndowments = {}) => {
           offerHandles.length >= 2,
           details`reallocating must be done over two or more offers`,
         );
+        assert(
+          offerHandles.length === newAllocations.length,
+          details`There must be as many offerHandles as entries in newAllocations`,
+        );
 
         // 1) Ensure 'offer safety' for each offer separately.
-
-        // Make the potential reallocation and test for offer safety
-        // by comparing the potential reallocation to the proposal.
-        const makePotentialReallocation = (offerHandle, newAllocation) => {
+        const makeOfferSafeReallocation = (offerHandle, newAllocation) => {
           const { proposal, currentAllocation } = offerTable.get(offerHandle);
-          const potentialReallocation = harden({
+          const reallocation = harden({
             ...currentAllocation,
             ...newAllocation,
           });
-          const proposalKeywords = [
-            ...getKeywords(proposal.want),
-            ...getKeywords(proposal.give),
-          ];
 
           assert(
-            isOfferSafeForOffer(
-              contractFacet.getAmountMaths(proposalKeywords),
-              proposal,
-              potentialReallocation,
-            ),
-            details`The proposed reallocation was not offer safe`,
+            isOfferSafeForOffer(getAmountMathForBrand, proposal, reallocation),
+            details`The reallocation was not offer safe`,
           );
-
-          // The reallocation passes the offer safety check
-          return potentialReallocation;
+          return reallocation;
         };
 
+        // Make the reallocation and test for offer safety by comparing the
+        // reallocation to the original proposal.
         const reallocations = offerHandles.map((offerHandle, i) =>
-          makePotentialReallocation(offerHandle, newAllocations[i]),
+          makeOfferSafeReallocation(offerHandle, newAllocations[i]),
         );
 
-        const flattened = arr => [].concat(...arr);
-
         // 2. Ensure that rights are conserved overall.
+        const flattened = arr => [].concat(...arr);
         const flattenAllocations = allocations =>
           flattened(allocations.map(allocation => Object.values(allocation)));
 
-        // Don't fill the allocations.
         const currentAllocations = offerTable
           .getOffers(offerHandles)
           .map(({ currentAllocation }) => currentAllocation);
-
         const previousAmounts = flattenAllocations(currentAllocations);
         const newAmounts = flattenAllocations(reallocations);
 
@@ -526,6 +513,7 @@ const makeZoe = (additionalEndowments = {}) => {
           'string',
           details`expected an inviteDesc string: ${inviteDesc}`,
         );
+
         const { customProperties = harden({}) } = options;
         const inviteHandle = harden({});
         const { installationHandle } = instanceTable.get(instanceHandle);
@@ -547,7 +535,9 @@ const makeZoe = (additionalEndowments = {}) => {
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
           assertKeywordName(keyword);
-          const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+          const { issuerKeywordRecord, brandKeywordRecord } = instanceTable.get(
+            instanceHandle,
+          );
           assert(
             !getKeywords(issuerKeywordRecord).includes(keyword),
             details`keyword ${keyword} must be unique`,
@@ -556,8 +546,13 @@ const makeZoe = (additionalEndowments = {}) => {
             ...issuerKeywordRecord,
             [keyword]: issuerRecord.issuer,
           };
+          const newBrandKeywordRecord = {
+            ...brandKeywordRecord,
+            [keyword]: issuerRecord.brand,
+          };
           instanceTable.update(instanceHandle, {
             issuerKeywordRecord: newIssuerKeywordRecord,
+            brandKeywordRecord: newBrandKeywordRecord,
           });
           return removePurse(issuerRecord);
         }),
@@ -576,8 +571,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // The methods below are pure and have no side-effects //
       getInviteIssuer: () => inviteIssuer,
-      getAmountMaths: sparseKeywords =>
-        getAmountMaths(instanceHandle, sparseKeywords),
+
       getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
       getOfferStatuses: offerHandles => {
         const { active, inactive } = offerTable.getOfferStatuses(offerHandles);
@@ -600,23 +594,17 @@ const makeZoe = (additionalEndowments = {}) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
         return removeAmountsAndNotifier(offerTable.get(offerHandle));
       },
-      getCurrentAllocation: (offerHandle, sparseKeywords) => {
+      getCurrentAllocation: (offerHandle, brandKeywordRecord) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
-        return doGetCurrentAllocation(
-          instanceHandle,
-          offerHandle,
-          sparseKeywords,
-        );
+        return doGetCurrentAllocation(offerHandle, brandKeywordRecord);
       },
-      getCurrentAllocations: (offerHandles, sparseKeywords) => {
+      getCurrentAllocations: (offerHandles, brandKeywordRecords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
-        return offerHandles.map(offerHandle =>
-          contractFacet.getCurrentAllocation(offerHandle, sparseKeywords),
-        );
+        return doGetCurrentAllocations(offerHandles, brandKeywordRecords);
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
-      getIssuerRecord: issuer =>
-        removePurse(issuerTable.get(issuerTable.brandFromIssuer(issuer))),
+      getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
+      getAmountMath: getAmountMathForBrand,
     });
     return contractFacet;
   };
@@ -695,15 +683,18 @@ const makeZoe = (additionalEndowments = {}) => {
 
         const makeInstanceRecord = issuerRecords => {
           const issuers = issuerRecords.map(record => record.issuer);
+          const brands = issuerRecords.map(record => record.brand);
           const cleanedIssuerKeywordRecord = arrayToObj(
             issuers,
             cleanedKeywords,
           );
+          const brandKeywordRecord = arrayToObj(brands, cleanedKeywords);
           const instanceRecord = harden({
             installationHandle,
             publicAPI: undefined,
             terms,
             issuerKeywordRecord: cleanedIssuerKeywordRecord,
+            brandKeywordRecord,
           });
 
           instanceTable.create(instanceRecord, instanceHandle);
@@ -782,10 +773,6 @@ const makeZoe = (additionalEndowments = {}) => {
             : [];
           const userKeywords = harden([...giveKeywords, ...wantKeywords]);
 
-          const {
-            extent: [{ instanceHandle, handle: inviteHandle }],
-          } = inviteAmount;
-
           const cleanedProposal = cleanProposal(
             getAmountMathForBrand,
             proposal,
@@ -811,6 +798,9 @@ const makeZoe = (additionalEndowments = {}) => {
             }
           });
 
+          const {
+            extent: [{ instanceHandle, handle: inviteHandle }],
+          } = inviteAmount;
           const offerHandle = harden({});
 
           // recordOffer() creates and stores a record in the offerTable. The
@@ -895,19 +885,10 @@ const makeZoe = (additionalEndowments = {}) => {
         offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier),
       getOffer: offerHandle =>
         removeAmountsAndNotifier(offerTable.get(offerHandle)),
-      getCurrentAllocation: (offerHandle, sparseKeywords) => {
-        const { instanceHandle } = offerTable.get(offerHandle);
-        return doGetCurrentAllocation(
-          instanceHandle,
-          offerHandle,
-          sparseKeywords,
-        );
-      },
-      getCurrentAllocations: (offerHandles, sparseKeywords) => {
-        return offerHandles.map(offerHandle =>
-          zoeService.getCurrentAllocation(offerHandle, sparseKeywords),
-        );
-      },
+      getCurrentAllocation: (offerHandle, brandKeywordRecord) =>
+        doGetCurrentAllocation(offerHandle, brandKeywordRecord),
+      getCurrentAllocations: (offerHandles, brandKeywordRecords) =>
+        doGetCurrentAllocations(offerHandles, brandKeywordRecords),
       getInstallation: installationHandle =>
         installationTable.get(installationHandle).code,
     },
