@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 
+import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';
 import installMain from './install';
@@ -47,6 +48,14 @@ const main = async (progname, rawArgs, powers) => {
     );
 
   // Add each of the commands.
+  program
+    .command('cosmos <command...>')
+    .description('client for an Agoric Cosmos chain')
+    .action(async (command, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(cosmosMain, ['cosmos', ...command], opts);
+    });
+
   program
     .command('init <project>')
     .description('create a new Dapp directory named <project>')
@@ -113,6 +122,12 @@ const main = async (progname, rawArgs, powers) => {
 
   // Throw an error instead of exiting directly.
   program.exitOverride();
+
+  // Hack: cosmos arguments are always unparsed.
+  const cosmosIndex = rawArgs.indexOf('cosmos');
+  if (cosmosIndex >= 0) {
+    rawArgs.splice(cosmosIndex + 1, 0, '--');
+  }
 
   try {
     await program.parseAsync(rawArgs, { from: 'user' });
