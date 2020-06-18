@@ -56,7 +56,7 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
 
   t.rejects(
     vicOutcomeP,
-    /The proposed reallocation was not offer safe/,
+    /The reallocation was not offer safe/,
     `vicOffer is rejected`,
   );
 });

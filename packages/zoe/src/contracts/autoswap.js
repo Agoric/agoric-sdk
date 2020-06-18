@@ -39,11 +39,17 @@ export const makeContract = harden(
     } = makeZoeHelpers(zcf);
 
     return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
-      const keywords = harden(['TokenA', 'TokenB', 'Liquidity']);
-      const amountMaths = zcf.getAmountMaths(keywords);
-      keywords.forEach(assertNatMathHelpers);
+      const { brandKeywordRecord } = zcf.getInstanceRecord();
+      const amountMaths = {};
+      harden(['TokenA', 'TokenB', 'Liquidity']).forEach(keyword => {
+        const brand = brandKeywordRecord[keyword];
+        assertNatMathHelpers(brand);
+        amountMaths[keyword] = zcf.getAmountMath(brand);
+      });
+
       return makeEmptyOffer().then(poolHandle => {
-        const getPoolAllocation = () => zcf.getCurrentAllocation(poolHandle);
+        const getPoolAllocation = () =>
+          zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
 
         const swap = (offerHandle, giveKeyword, wantKeyword) => {
           const { proposal } = zcf.getOffer(offerHandle);
