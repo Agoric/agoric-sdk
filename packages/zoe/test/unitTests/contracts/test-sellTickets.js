@@ -95,6 +95,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     count: 2,
     moneyIssuer: moolaIssuer,
     sellItemsInstallationHandle,
+    pricePerItem: moolaAmountMath.make(20),
   });
   const { publicAPI: salesPublicAPI2 } = await E(zoe).getInstanceRecord(
     sellItemsInstanceHandle2,
@@ -149,19 +150,15 @@ test(`mint and sell opera tickets`, async t => {
     amountMath: { make: moola },
   } = produceIssuer('moola');
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallationHandle = await E(zoe).install(
-    mintAndSellNFTBundle.source,
-    mintAndSellNFTBundle.moduleFormat,
+    mintAndSellNFTBundle,
   );
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  const sellItemsInstallationHandle = await E(zoe).install(
-    sellItemsBundle.source,
-    sellItemsBundle.moduleFormat,
-  );
+  const sellItemsInstallationHandle = await E(zoe).install(sellItemsBundle);
 
   // === Initial Opera de Bordeaux part ===
 

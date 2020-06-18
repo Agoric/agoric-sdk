@@ -5,6 +5,11 @@ import harden from '@agoric/harden';
 import { isOfferSafeForOffer } from '../../src/offerSafety';
 import { setup } from './setupBasicMints';
 
+function makeGetAmountMath(mapping) {
+  const brandToAmountMath = new Map(mapping);
+  return brand => brandToAmountMath.get(brand);
+}
+
 // Potential outcomes:
 // 1. Users can get what they wanted, get back what they gave, both, or
 // neither
@@ -27,18 +32,18 @@ test('isOfferSafeForOffer - more than want, more than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       give: { A: moola(8) },
       want: { B: simoleans(6), C: bucks(7) },
     });
     const amounts = harden({ A: moola(10), B: simoleans(7), C: bucks(8) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -48,19 +53,19 @@ test('isOfferSafeForOffer - more than want, more than give', t => {
 test('isOfferSafeForOffer - more than want, less than give', t => {
   t.plan(1);
   try {
-    const { amountMaths, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: amountMaths.get('moola'),
-      B: amountMaths.get('simoleans'),
-      C: amountMaths.get('bucks'),
-    });
+    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       give: { A: moola(8) },
       want: { B: simoleans(6), C: bucks(7) },
     });
     const amounts = harden({ A: moola(1), B: simoleans(7), C: bucks(8) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -70,19 +75,19 @@ test('isOfferSafeForOffer - more than want, less than give', t => {
 test('isOfferSafeForOffer - more than want, equal to give', t => {
   t.plan(1);
   try {
-    const { amountMaths, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: amountMaths.get('moola'),
-      B: amountMaths.get('simoleans'),
-      C: amountMaths.get('bucks'),
-    });
+    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { A: moola(8) },
       give: { B: simoleans(6), C: bucks(7) },
     });
     const amounts = harden({ A: moola(9), B: simoleans(6), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -93,18 +98,18 @@ test('isOfferSafeForOffer - less than want, more than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { A: moola(8) },
       give: { B: simoleans(6), C: bucks(7) },
     });
     const amounts = harden({ A: moola(7), B: simoleans(9), C: bucks(19) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -115,18 +120,18 @@ test('isOfferSafeForOffer - less than want, less than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { A: moola(8) },
       give: { B: simoleans(6), C: bucks(7) },
     });
     const amounts = harden({ A: moola(7), B: simoleans(5), C: bucks(6) });
 
-    t.notOk(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.notOk(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -137,18 +142,18 @@ test('isOfferSafeForOffer - less than want, equal to give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { B: simoleans(6) },
       give: { A: moola(1), C: bucks(7) },
     });
     const amounts = harden({ A: moola(1), B: simoleans(5), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -159,18 +164,18 @@ test('isOfferSafeForOffer - equal to want, more than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { B: simoleans(6) },
       give: { A: moola(1), C: bucks(7) },
     });
     const amounts = harden({ A: moola(2), B: simoleans(6), C: bucks(8) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -181,18 +186,18 @@ test('isOfferSafeForOffer - equal to want, less than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { B: simoleans(6) },
       give: { A: moola(1), C: bucks(7) },
     });
     const amounts = harden({ A: moola(0), B: simoleans(6), C: bucks(0) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -203,18 +208,18 @@ test('isOfferSafeForOffer - equal to want, equal to give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({
       want: { B: simoleans(6) },
       give: { A: moola(1), C: bucks(7) },
     });
     const amounts = harden({ A: moola(1), B: simoleans(6), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -224,15 +229,15 @@ test('isOfferSafeForOffer - empty proposal', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
+    const getAmountMath = makeGetAmountMath([
+      [moolaR.brand, moolaR.amountMath],
+      [simoleanR.brand, simoleanR.amountMath],
+      [bucksR.brand, bucksR.amountMath],
+    ]);
     const proposal = harden({ give: {}, want: {} });
     const amounts = harden({ A: moola(1), B: simoleans(6), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }

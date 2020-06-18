@@ -5,6 +5,7 @@ import { HandledPromise } from '@agoric/eventual-send';
 import { getKeywords } from '../cleanProposal';
 
 /**
+ * @typedef {import('../zoe').Handle} Handle
  * @typedef {import('../zoe').OfferHandle} OfferHandle
  * @typedef {import('../zoe').Invite} Invite
  * @typedef {import('../zoe').OfferHook} OfferHook
@@ -90,6 +91,7 @@ export const makeZoeHelpers = (zcf) => {
     getActiveOffers: handles =>
       zcf.getOffers(zcf.getOfferStatuses(handles).active),
     rejectOffer,
+
     /**
      * Compare two proposals for compatibility. This returns true
      * if the left offer would accept whatever the right offer is offering,
@@ -107,7 +109,7 @@ export const makeZoeHelpers = (zcf) => {
       const rightAllocation = zcf.getCurrentAllocation(rightOfferHandle);
       const satisfied = (want, availableForTrade) =>
         getKeywords(want).every(keyword => {
-          const amountMath = helpers.getAmountMath(keyword);
+          const amountMath = zcf.getAmountMath(want[keyword].brand);
           return amountMath.isGTE(availableForTrade[keyword], want[keyword]);
         });
       return (
@@ -115,6 +117,47 @@ export const makeZoeHelpers = (zcf) => {
         satisfied(right.want, leftAllocation)
       );
     },
+
+    /**
+     * Compare two proposals for compatibility, mapping keywords. This returns
+     * true if the left offer would accept what the right offer is offering,
+     * presuming that the goods at each keyword are transferred across.
+     *
+     * @param {OfferHandle} leftOfferHandle
+     * @param {OfferHandle} rightOfferHandle
+     * @param {[Keyword]} keywords
+     * @returns boolean
+     */
+    canTradeWithMapKeywords: (leftOfferHandle, rightOfferHandle, keywords) => {
+      const { proposal: left } = zcf.getOffer(leftOfferHandle);
+      const { proposal: right } = zcf.getOffer(rightOfferHandle);
+      const [leftKeywords, rightKeywords] = keywords;
+      const leftAllocation = zcf.getCurrentAllocation(leftOfferHandle);
+      const rightAllocation = zcf.getCurrentAllocation(rightOfferHandle);
+      assert(
+        leftKeywords.length === rightKeywords.length,
+        details`Must provide the same number of keywords for both offers`,
+      );
+      const satisfied = (want, availableForTrade, wKeywords, aKeywords) => {
+        for (let i = 0; i < leftKeywords.length; i += 1) {
+          const wantAmount = want[wKeywords[i]];
+          const availableAmount = availableForTrade[aKeywords[i]];
+          if (wantAmount) {
+            const amountMath = zcf.getAmountMath(wantAmount.brand);
+            if (!amountMath.isGTE(availableAmount, wantAmount)) {
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+
+      return (
+        satisfied(left.want, rightAllocation, leftKeywords, rightKeywords) &&
+        satisfied(right.want, leftAllocation, rightKeywords, leftKeywords)
+      );
+    },
+
     /**
      * If the two handles can trade, then swap their compatible assets,
      * marking both offers as complete.
@@ -176,20 +219,6 @@ export const makeZoeHelpers = (zcf) => {
       return offerHook(offerHandle);
     },
 
-    // TODO DEPRECATED `inviteAnOffer` is deprecated legacy. Remove when we can.
-    inviteAnOffer: ({
-      offerHook = () => {},
-      inviteDesc,
-      customProperties = undefined,
-      expected = undefined,
-    }) => {
-      return zcf.makeInvitation(
-        expected ? helpers.checkHook(offerHook, expected) : offerHook,
-        inviteDesc || customProperties.inviteDesc,
-        customProperties && harden({ customProperties }),
-      );
-    },
-
     /**
      * Return a Promise for an OfferHandle.
      *
@@ -199,7 +228,6 @@ export const makeZoeHelpers = (zcf) => {
      * to manage internal escrowed assets.
      *
      * @returns {Promise<OfferHandle>}
-     *
      */
     makeEmptyOffer: () =>
       new HandledPromise(resolve => {
@@ -209,6 +237,7 @@ export const makeZoeHelpers = (zcf) => {
         );
         zoeService.offer(invite);
       }),
+
     /**
      * Escrow a payment with Zoe and reallocate the amount of the
      * payment to a recipient.
@@ -219,14 +248,11 @@ export const makeZoeHelpers = (zcf) => {
      * @param {String} obj.keyword
      * @param {Handle} obj.recipientHandle
      * @returns {Promise<undefined>}
-     *
      */
     escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment
       // with Zoe.
       let tempHandle;
-
-      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
 
       // We need to make an invite and store the offerHandle of that
       // invite for future use.
@@ -238,6 +264,8 @@ export const makeZoeHelpers = (zcf) => {
       // make an offer
       const proposal = harden({ give: { [keyword]: amount } });
       const payments = harden({ [keyword]: payment });
+      const amountMath = zcf.getAmountMath(amount.brand);
+
       return zcf
         .getZoeService()
         .offer(contractSelfInvite, proposal, payments)
@@ -246,9 +274,10 @@ export const makeZoeHelpers = (zcf) => {
           // payment but nothing else. The recipient offer may have any
           // allocation, so we can't assume the allocation is currently empty for this
           // keyword.
+          const brandKeywordRecord = harden({ [keyword]: amount.brand });
           const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
             harden([recipientHandle, tempHandle]),
-            harden([keyword]),
+            [brandKeywordRecord, brandKeywordRecord],
           );
 
           // Add the tempAlloc for the keyword to the recipientAlloc.
@@ -275,21 +304,16 @@ export const makeZoeHelpers = (zcf) => {
         });
     },
     /*
-     * Given a keyword, assert that the mathHelpers for that issuer
+     * Given a brand, assert that the mathHelpers for that issuer
      * are 'nat' mathHelpers
      */
-    assertNatMathHelpers: keyword => {
-      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
+    assertNatMathHelpers: brand => {
+      const amountMath = zcf.getAmountMath(brand);
       assert(
         amountMath.getMathHelpersName() === 'nat',
-        details`issuer for ${keyword} must have natMathHelpers`,
+        details`issuer must have natMathHelpers`,
       );
     },
-    /**
-     * Get the amountMath associated with a keyword
-     * @param {Keyword} keyword
-     */
-    getAmountMath: keyword => zcf.getAmountMaths(harden([keyword]))[keyword],
   });
   return helpers;
 };

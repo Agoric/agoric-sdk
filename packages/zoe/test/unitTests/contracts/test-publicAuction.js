@@ -48,7 +48,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaR.issuer,
-      Bid: simoleanR.issuer,
+      Ask: simoleanR.issuer,
     });
     const terms = harden({ numBidsAllowed });
     const {
@@ -59,7 +59,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice escrows with zoe
     const aliceProposal = harden({
       give: { Asset: moola(1) },
-      want: { Bid: simoleans(3) },
+      want: { Ask: simoleans(3) },
     });
     const alicePayments = { Asset: aliceMoolaPayment };
     // Alice initializes the auction
@@ -93,7 +93,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
     t.deepEquals(
       bobIssuers,
-      { Asset: moolaR.issuer, Bid: simoleanR.issuer },
+      { Asset: moolaR.issuer, Ask: simoleanR.issuer },
       'bobIssuers',
     );
     t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
@@ -136,7 +136,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
     t.deepEquals(
       carolIssuers,
-      { Asset: moolaR.issuer, Bid: simoleanR.issuer },
+      { Asset: moolaR.issuer, Ask: simoleanR.issuer },
       'carolIssuers',
     );
     t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
@@ -182,7 +182,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
     t.deepEquals(
       daveIssuers,
-      { Asset: moolaR.issuer, Bid: simoleanR.issuer },
+      { Asset: moolaR.issuer, Ask: simoleanR.issuer },
       'daveIssuers',
     );
     t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
@@ -215,7 +215,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const daveResult = await davePayoutP;
 
     const aliceMoolaPayout = await aliceResult.Asset;
-    const aliceSimoleanPayout = await aliceResult.Bid;
+    const aliceSimoleanPayout = await aliceResult.Ask;
 
     const bobMoolaPayout = await bobResult.Asset;
     const bobSimoleanPayout = await bobResult.Bid;
@@ -338,7 +338,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaR.issuer,
-      Bid: simoleanR.issuer,
+      Ask: simoleanR.issuer,
     });
     const terms = harden({ numBidsAllowed });
     const {
@@ -349,7 +349,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice escrows with zoe
     const aliceProposal = harden({
       give: { Asset: moola(1) },
-      want: { Bid: simoleans(3) },
+      want: { Ask: simoleans(3) },
     });
     const alicePayments = harden({ Asset: aliceMoolaPayment });
     // Alice initializes the auction
@@ -398,7 +398,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const bobResult = await bobPayoutP;
 
     const aliceMoolaPayout = await aliceResult.Asset;
-    const aliceSimoleanPayout = await aliceResult.Bid;
+    const aliceSimoleanPayout = await aliceResult.Ask;
     const bobMoolaPayout = await bobResult.Asset;
     const bobSimoleanPayout = await bobResult.Bid;
 
@@ -487,7 +487,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const numBidsAllowed = 3;
   const issuerKeywordRecord = harden({
     Asset: ccIssuer,
-    Bid: moolaIssuer,
+    Ask: moolaIssuer,
   });
   const terms = harden({ numBidsAllowed });
   const {
@@ -498,7 +498,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Alice escrows with zoe
   const aliceProposal = harden({
     give: { Asset: cryptoCats(harden(['Felix'])) },
-    want: { Bid: moola(3) },
+    want: { Ask: moola(3) },
   });
   const alicePayments = { Asset: aliceCcPayment };
   // Alice initializes the auction
@@ -530,7 +530,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
-  t.deepEquals(bobIssuers, { Asset: ccIssuer, Bid: moolaIssuer }, 'bobIssuers');
+  t.deepEquals(bobIssuers, { Asset: ccIssuer, Ask: moolaIssuer }, 'bobIssuers');
   t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
   t.deepEquals(bobInviteExtent.minimumBid, moola(3), 'minimumBid');
   t.deepEquals(
@@ -575,7 +575,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
   t.deepEquals(
     carolIssuers,
-    { Asset: ccIssuer, Bid: moolaIssuer },
+    { Asset: ccIssuer, Ask: moolaIssuer },
     'carolIssuers',
   );
   t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
@@ -621,7 +621,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
   t.deepEquals(
     daveIssuers,
-    { Asset: ccIssuer, Bid: moolaIssuer },
+    { Asset: ccIssuer, Ask: moolaIssuer },
     'daveIssuers',
   );
   t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
@@ -658,7 +658,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const daveResult = await davePayoutP;
 
   const aliceCcPayout = await aliceResult.Asset;
-  const aliceMoolaPayout = await aliceResult.Bid;
+  const aliceMoolaPayout = await aliceResult.Ask;
 
   const bobCcPayout = await bobResult.Asset;
   const bobMoolaPayout = await bobResult.Bid;

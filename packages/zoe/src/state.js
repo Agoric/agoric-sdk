@@ -20,12 +20,19 @@ const makeInstallationTable = () => {
 };
 
 // Instance Table
-// Columns: handle | installationHandle | publicAPI | terms | issuerKeywordRecord
+// Columns: handle | installationHandle | publicAPI | terms |
+// issuerKeywordRecord | brandKeywordRecord
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['installationHandle', 'publicAPI', 'terms', 'issuerKeywordRecord']),
+    harden([
+      'installationHandle',
+      'publicAPI',
+      'terms',
+      'issuerKeywordRecord',
+      'brandKeywordRecord',
+    ]),
   );
 
   return makeTable(validateSomewhat);

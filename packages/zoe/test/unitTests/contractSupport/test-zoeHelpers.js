@@ -2,6 +2,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
+import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
 
 import {
@@ -26,21 +27,57 @@ test('ZoeHelpers messages', t => {
   }
 });
 
+function makeMockZoeBuilder() {
+  const offers = makeStore();
+  const allocs = makeStore();
+  let instanceRecord;
+  const amountMathToBrand = makeStore();
+  const completedHandles = [];
+  const reallocatedAmountObjs = [];
+  const reallocatedHandles = [];
+  let isOfferActive = true;
+
+  return harden({
+    addOffer: (keyword, offer) => offers.init(keyword, offer),
+    addAllocation: (keyword, alloc) => allocs.init(keyword, alloc),
+    setInstanceRecord: newRecord => (instanceRecord = newRecord),
+    addBrand: issuerRecord =>
+      amountMathToBrand.init(issuerRecord.brand, issuerRecord.amountMath),
+    setOffersInactive: () => (isOfferActive = false),
+    build: () =>
+      harden({
+        getInstanceRecord: () => instanceRecord,
+        getAmountMath: amountMath => amountMathToBrand.get(amountMath),
+        getZoeService: () => {},
+        isOfferActive: () => isOfferActive,
+        getOffer: handle => offers.get(handle),
+        getCurrentAllocation: handle => allocs.get(handle),
+        reallocate: (handles, amountObjs) => {
+          reallocatedHandles.push(...handles);
+          reallocatedAmountObjs.push(...amountObjs);
+        },
+        complete: handles =>
+          handles.map(handle => completedHandles.push(handle)),
+        getReallocatedAmountObjs: () => reallocatedAmountObjs,
+        getReallocatedHandles: () => reallocatedHandles,
+        getCompletedHandles: () => completedHandles,
+      }),
+  });
+}
+
 test('ZoeHelpers assertKeywords', t => {
   t.plan(5);
   const { moolaR, simoleanR } = setup();
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-        }),
-      getAmountMaths: () => {},
-      getZoeService: () => {},
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.setInstanceRecord({
+      issuerKeywordRecord: {
+        Asset: moolaR.issuer,
+        Price: simoleanR.issuer,
+      },
     });
+
+    const mockZCF = mockZCFBuilder.build();
     const { assertKeywords } = makeZoeHelpers(mockZCF);
     t.doesNotThrow(
       () => assertKeywords(['Asset', 'Price']),
@@ -72,49 +109,38 @@ test('ZoeHelpers assertKeywords', t => {
 
 test('ZoeHelpers rejectIfNotProposal', t => {
   t.plan(8);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
-  const completedOfferHandles = [];
+  const { moola, simoleans } = setup();
   const offerHandles = harden([{}, {}, {}, {}, {}, {}, {}]);
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-        }),
-      getAmountMaths: () => {},
-      getZoeService: () => {},
-      getOffer: handle => {
-        if (offerHandles.indexOf(handle) === 4) {
-          return harden({
-            proposal: {
-              want: { Asset: moola(4) },
-              give: { Price: simoleans(16) },
-              exit: { Waived: null },
-            },
-          });
-        }
-        if (offerHandles.indexOf(handle) === 5) {
-          return harden({
-            proposal: {
-              want: { Asset2: moola(4) },
-              give: { Price: simoleans(16) },
-              exit: { waived: null },
-            },
-          });
-        }
-        return harden({
-          proposal: {
-            want: { Asset: moola(4) },
-            give: { Price: simoleans(16) },
-            exit: { onDemand: null },
-          },
-        });
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addOffer(offerHandles[4], {
+      proposal: {
+        want: { Asset: moola(4) },
+        give: { Price: simoleans(16) },
+        exit: { Waived: null },
       },
-      complete: handles => completedOfferHandles.push(...handles),
     });
+    mockZCFBuilder.addOffer(offerHandles[5], {
+      proposal: {
+        want: { Asset2: moola(4) },
+        give: { Price: simoleans(16) },
+        exit: { waived: null },
+      },
+    });
+
+    const otherOffers = harden({
+      proposal: {
+        want: { Asset: moola(4) },
+        give: { Price: simoleans(16) },
+        exit: { onDemand: null },
+      },
+    });
+    // TODO: perhaps mockZCFBuilder could have a default Offer?
+    mockZCFBuilder.addOffer(offerHandles[0], otherOffers);
+    mockZCFBuilder.addOffer(offerHandles[1], otherOffers);
+    mockZCFBuilder.addOffer(offerHandles[2], otherOffers);
+    mockZCFBuilder.addOffer(offerHandles[3], otherOffers);
+    const mockZCF = mockZCFBuilder.build();
     const { rejectIfNotProposal } = makeZoeHelpers(mockZCF);
     // Vary expected.
     t.doesNotThrow(() =>
@@ -164,7 +190,7 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       `had the wrong exit rule`,
     );
     t.deepEquals(
-      completedOfferHandles,
+      mockZCF.getCompletedHandles(),
       [offerHandles[1], offerHandles[2], offerHandles[3]],
       `offers 1, 2, 3, (zero-indexed) should be completed`,
     );
@@ -197,7 +223,7 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       `had the wrong want`,
     );
     t.deepEquals(
-      completedOfferHandles,
+      mockZCF.getCompletedHandles(),
       [
         offerHandles[1],
         offerHandles[2],
@@ -214,32 +240,23 @@ test('ZoeHelpers rejectIfNotProposal', t => {
 
 test('ZoeHelpers checkIfProposal', t => {
   t.plan(3);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const { moola, simoleans } = setup();
+  const handle = {};
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-        }),
-      getAmountMaths: () => {},
-      getZoeService: () => {},
-      getOffer: _handle => {
-        return harden({
-          proposal: {
-            want: { Asset: moola(4) },
-            give: { Price: simoleans(16) },
-            exit: { onDemand: null },
-          },
-        });
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addOffer(handle, {
+      proposal: {
+        want: { Asset: moola(4) },
+        give: { Price: simoleans(16) },
+        exit: { onDemand: null },
       },
     });
+    const mockZCF = mockZCFBuilder.build();
+
     const { checkIfProposal } = makeZoeHelpers(mockZCF);
     t.ok(
       checkIfProposal(
-        harden({}),
+        handle,
         harden({
           want: { Asset: null },
           give: { Price: null },
@@ -250,7 +267,7 @@ test('ZoeHelpers checkIfProposal', t => {
     );
     t.notOk(
       checkIfProposal(
-        harden({}),
+        handle,
         harden({
           want: { Asset2: null },
           give: { Price: null },
@@ -259,7 +276,7 @@ test('ZoeHelpers checkIfProposal', t => {
       `want was not as expected`,
     );
     t.ok(
-      checkIfProposal(harden({}), harden({})),
+      checkIfProposal(handle, harden({})),
       `having no expectations passes trivially`,
     );
   } catch (e) {
@@ -269,32 +286,23 @@ test('ZoeHelpers checkIfProposal', t => {
 
 test('ZoeHelpers checkIfProposal multiple keys', t => {
   t.plan(2);
-  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-  const mockZCF = harden({
-    getInstanceRecord: () =>
-      harden({
-        issuerKeywordRecord: {
-          Asset: moolaR.issuer,
-          Fee: bucksR.issuer,
-          Price: simoleanR.issuer,
-        },
-      }),
-    getAmountMaths: () => {},
-    getZoeService: () => {},
-    getOffer: _handle => {
-      return harden({
-        proposal: {
-          want: { Asset: moola(4), Fee: bucks(1) },
-          give: { Price: simoleans(16) },
-          exit: { onDemand: null },
-        },
-      });
+  const { moola, simoleans, bucks } = setup();
+  const handle = {};
+  const mockZCFBuilder = makeMockZoeBuilder();
+  mockZCFBuilder.addOffer(handle, {
+    proposal: {
+      want: { Asset: moola(4), Fee: bucks(1) },
+      give: { Price: simoleans(16) },
+      exit: { onDemand: null },
     },
   });
+  mockZCFBuilder.addAllocation(handle, { Asset: moola(10) });
+  const mockZCF = mockZCFBuilder.build();
+
   const { checkIfProposal } = makeZoeHelpers(mockZCF);
   t.ok(
     checkIfProposal(
-      harden({}),
+      handle,
       harden({
         want: { Asset: null, Fee: null },
         give: { Price: null },
@@ -305,7 +313,7 @@ test('ZoeHelpers checkIfProposal multiple keys', t => {
   );
   t.ok(
     checkIfProposal(
-      harden({}),
+      handle,
       harden({
         want: { Fee: null, Asset: null },
         give: { Price: null },
@@ -318,17 +326,9 @@ test('ZoeHelpers checkIfProposal multiple keys', t => {
 
 test('ZoeHelpers getActiveOffers', t => {
   t.plan(1);
-  const { moolaR, simoleanR } = setup();
   try {
+    // uses its own mock because all it needs is a variant getOffers.
     const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-        }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
       getOfferStatuses: handles => {
         const [firstHandle, restHandles] = handles;
@@ -354,18 +354,9 @@ test('ZoeHelpers getActiveOffers', t => {
 
 test('ZoeHelpers rejectOffer', t => {
   t.plan(4);
-  const { moolaR, simoleanR } = setup();
   const completedOfferHandles = [];
   try {
     const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-        }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
       complete: handles => completedOfferHandles.push(...handles),
     });
@@ -395,61 +386,36 @@ test('ZoeHelpers canTradeWith', t => {
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-          keywords: ['Asset', 'Price'],
-        }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getZoeService: () => {},
-      getCurrentAllocation: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({ Asset: moola(10) });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({ Price: simoleans(6) });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({ Price: simoleans(6) });
-        }
-        throw new Error('unexpected handle');
-      },
-      getOffer: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Asset: moola(10) },
-              want: { Price: simoleans(4) },
-              exit: { onDemand: null },
-            },
-          });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(7) },
-              exit: { onDemand: null },
-            },
-          });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(100) },
-              exit: { onDemand: null },
-            },
-          });
-        }
-        throw new Error('unexpected handle');
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addBrand(moolaR);
+    mockZCFBuilder.addBrand(simoleanR);
+    mockZCFBuilder.addOffer(leftOfferHandle, {
+      proposal: {
+        give: { Asset: moola(10) },
+        want: { Price: simoleans(4) },
+        exit: { onDemand: null },
       },
     });
+    mockZCFBuilder.addOffer(rightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(7) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(cantTradeRightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(100) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addAllocation(leftOfferHandle, { Asset: moola(10) });
+    mockZCFBuilder.addAllocation(rightOfferHandle, { Price: simoleans(6) });
+    mockZCFBuilder.addAllocation(cantTradeRightOfferHandle, {
+      Price: simoleans(6),
+    });
+    const mockZCF = mockZCFBuilder.build();
     const { canTradeWith } = makeZoeHelpers(mockZCF);
     t.ok(canTradeWith(leftOfferHandle, rightOfferHandle));
     t.notOk(canTradeWith(leftOfferHandle, cantTradeRightOfferHandle));
@@ -470,10 +436,15 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
 
+  const amountMathToBrand = makeStore();
+  amountMathToBrand.init(moolaR.brand, moolaR.amountMath);
+  amountMathToBrand.init(simoleanR.brand, simoleanR.amountMath);
+
   let amountsAddedToLeft = false;
   const addAmountsToLeft = () => (amountsAddedToLeft = true);
   const removeAmountsFromLeft = () => (amountsAddedToLeft = false);
   try {
+    // uses its own mock because it wants to change the state of an offer.
     const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
@@ -483,8 +454,7 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getAmountMath: amountMathToBrand.get,
       getZoeService: () => {},
       getCurrentAllocation: handle => {
         if (handle === leftOfferHandle) {
@@ -564,78 +534,151 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
   }
 });
 
-test('ZoeHelpers swap ok', t => {
-  t.plan(4);
-  const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
+test('ZoeHelpers canTradeWithMapKeywords', t => {
+  t.plan(2);
+  const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
-  const reallocatedHandles = [];
-  const reallocatedAmountObjs = [];
-  const completedHandles = [];
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-          keywords: ['Asset', 'Price'],
-        }),
-      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getZoeService: () => {},
-      isOfferActive: () => true,
-      getCurrentAllocation: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({ Asset: moola(10) });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({ Price: simoleans(6) });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({ Price: simoleans(6) });
-        }
-        throw new Error('unexpected handle');
-      },
-      getOffer: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Asset: moola(10) },
-              want: { Price: simoleans(4) },
-              exit: { onDemand: null },
-            },
-          });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(7) },
-              exit: { onDemand: null },
-            },
-          });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(100) },
-              exit: { onDemand: null },
-            },
-          });
-        }
-        throw new Error('unexpected handle');
-      },
-      reallocate: (handles, amountObjs) => {
-        reallocatedHandles.push(...handles);
-        reallocatedAmountObjs.push(...amountObjs);
-      },
-      complete: handles => completedHandles.push(...handles),
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addBrand(moolaR);
+    mockZCFBuilder.addBrand(simoleanR);
+    mockZCFBuilder.addAllocation(leftOfferHandle, {
+      Asset: moola(10),
+      Price: simoleans(4),
     });
+    mockZCFBuilder.addAllocation(rightOfferHandle, {
+      Price: simoleans(6),
+      Asset: moola(7),
+    });
+    mockZCFBuilder.addAllocation(cantTradeRightOfferHandle, {
+      Price: simoleans(6),
+      Asset: moola(100),
+    });
+    mockZCFBuilder.addOffer(leftOfferHandle, {
+      proposal: {
+        give: { Asset: moola(10) },
+        want: { Price: simoleans(4) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(rightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(7) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(cantTradeRightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(100) },
+        exit: { onDemand: null },
+      },
+    });
+    const mockZCF = mockZCFBuilder.build();
+    const { canTradeWithMapKeywords } = makeZoeHelpers(mockZCF);
+    t.ok(
+      canTradeWithMapKeywords(leftOfferHandle, rightOfferHandle, [
+        ['Asset', 'Price'],
+        ['Asset', 'Price'],
+      ]),
+    );
+
+    t.notOk(
+      canTradeWithMapKeywords(leftOfferHandle, cantTradeRightOfferHandle, [
+        ['Asset', 'Price'],
+        ['Asset', 'Price'],
+      ]),
+    );
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
+test('ZoeHelpers canTradeWithMapKeywords different', t => {
+  t.plan(1);
+  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  try {
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addBrand(moolaR);
+    mockZCFBuilder.addBrand(simoleanR);
+    mockZCFBuilder.addAllocation(leftOfferHandle, {
+      A: moola(10),
+      P: simoleans(4),
+    });
+    mockZCFBuilder.addAllocation(rightOfferHandle, {
+      Cost: simoleans(6),
+      Goods: moola(7),
+    });
+    mockZCFBuilder.addOffer(leftOfferHandle, {
+      proposal: {
+        give: { A: moola(10) },
+        want: { P: simoleans(4) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(rightOfferHandle, {
+      proposal: {
+        give: { Cost: simoleans(6) },
+        want: { Goods: moola(7) },
+        exit: { onDemand: null },
+      },
+    });
+    const mockZCF = mockZCFBuilder.build();
+
+    const { canTradeWithMapKeywords } = makeZoeHelpers(mockZCF);
+    t.ok(
+      canTradeWithMapKeywords(leftOfferHandle, rightOfferHandle, [
+        ['A', 'P'],
+        ['Goods', 'Cost'],
+      ]),
+    );
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
+test('ZoeHelpers swap ok', t => {
+  t.plan(4);
+  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
+  try {
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addBrand(moolaR);
+    mockZCFBuilder.addBrand(simoleanR);
+    mockZCFBuilder.addAllocation(leftOfferHandle, { Asset: moola(10) });
+    mockZCFBuilder.addAllocation(rightOfferHandle, { Price: simoleans(6) });
+    mockZCFBuilder.addAllocation(cantTradeRightOfferHandle, {
+      Price: simoleans(6),
+    });
+    mockZCFBuilder.addOffer(leftOfferHandle, {
+      proposal: {
+        give: { Asset: moola(10) },
+        want: { Price: simoleans(4) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(rightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(7) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(cantTradeRightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(100) },
+        exit: { onDemand: null },
+      },
+    });
+    const mockZCF = mockZCFBuilder.build();
     const { swap } = makeZoeHelpers(mockZCF);
     t.ok(
       swap(
@@ -645,17 +688,17 @@ test('ZoeHelpers swap ok', t => {
       ),
     );
     t.deepEquals(
-      reallocatedHandles,
+      mockZCF.getReallocatedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles reallocated`,
     );
     t.deepEquals(
-      reallocatedAmountObjs,
+      mockZCF.getReallocatedAmountObjs(),
       harden([{ Price: simoleans(6) }, { Asset: moola(10) }]),
       `amounts reallocated passed to reallocate were as expected`,
     );
     t.deepEquals(
-      completedHandles,
+      mockZCF.getCompletedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles were completed`,
     );
@@ -666,66 +709,35 @@ test('ZoeHelpers swap ok', t => {
 
 test('ZoeHelpers swap keep inactive', t => {
   t.plan(4);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const { moola, simoleans } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
-  const reallocatedHandles = [];
-  const reallocatedAmountObjs = [];
-  const completedHandles = [];
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-          keywords: ['Asset', 'Price'],
-        }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getZoeService: () => {},
-      isOfferActive: () => false,
-      getOffer: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Asset: moola(10) },
-              want: { Price: simoleans(4) },
-              exit: { onDemand: null },
-            },
-            amounts: 'leftInviteAmounts',
-          });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(7) },
-              exit: { onDemand: null },
-            },
-            amounts: 'rightInviteAmounts',
-          });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(100) },
-              exit: { onDemand: null },
-            },
-            amounts: 'cantTradeRightInviteAmounts',
-          });
-        }
-        throw new Error('unexpected handle');
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addOffer(leftOfferHandle, {
+      proposal: {
+        give: { Asset: moola(10) },
+        want: { Price: simoleans(4) },
+        exit: { onDemand: null },
       },
-      reallocate: (handles, amountObjs) => {
-        reallocatedHandles.push(...handles);
-        reallocatedAmountObjs.push(...amountObjs);
-      },
-      complete: handles => handles.map(handle => completedHandles.push(handle)),
     });
+    mockZCFBuilder.addOffer(rightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(7) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(cantTradeRightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(100) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.setOffersInactive();
+    const mockZCF = mockZCFBuilder.build();
     const { swap } = makeZoeHelpers(mockZCF);
     t.throws(
       () =>
@@ -737,10 +749,12 @@ test('ZoeHelpers swap keep inactive', t => {
       /Error: prior offer no longer available/,
       `throws if keepHandle offer is not active`,
     );
+    const reallocatedHandles = mockZCF.getReallocatedHandles();
     t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
+    const reallocatedAmountObjs = mockZCF.getReallocatedAmountObjs();
     t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
     t.deepEquals(
-      completedHandles,
+      mockZCF.getCompletedHandles(),
       harden([rightOfferHandle]),
       `only tryHandle (right) was completed`,
     );
@@ -754,88 +768,53 @@ test(`ZoeHelpers swap - can't trade with`, t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
-  const cantTradeRightOfferHandle = harden({});
-  const reallocatedHandles = [];
-  const reallocatedAmountObjs = [];
-  const completedHandles = [];
+  const cantTradeHandle = harden({});
+
   try {
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-          keywords: ['Asset', 'Price'],
-        }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getZoeService: () => {},
-      isOfferActive: () => true,
-      getOffer: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Asset: moola(10) },
-              want: { Price: simoleans(4) },
-              exit: { onDemand: null },
-            },
-            amounts: 'leftInviteAmounts',
-          });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(7) },
-              exit: { onDemand: null },
-            },
-            amounts: 'rightInviteAmounts',
-          });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({
-            proposal: {
-              give: { Price: simoleans(6) },
-              want: { Asset: moola(100) },
-              exit: { onDemand: null },
-            },
-            amounts: 'cantTradeRightInviteAmounts',
-          });
-        }
-        throw new Error('unexpected handle');
+    const mockZCFBuilder = makeMockZoeBuilder();
+    mockZCFBuilder.addBrand(moolaR);
+    mockZCFBuilder.addBrand(simoleanR);
+    mockZCFBuilder.addOffer(leftOfferHandle, {
+      proposal: {
+        give: { Asset: moola(10) },
+        want: { Price: simoleans(4) },
+        exit: { onDemand: null },
       },
-      getCurrentAllocation: handle => {
-        if (handle === leftOfferHandle) {
-          return harden({ Asset: moola(10) });
-        }
-        if (handle === rightOfferHandle) {
-          return harden({ Price: simoleans(6) });
-        }
-        if (handle === cantTradeRightOfferHandle) {
-          return harden({ Price: simoleans(6) });
-        }
-        throw new Error('unexpected handle');
-      },
-      reallocate: (handles, amountObjs) => {
-        reallocatedHandles.push(...handles);
-        reallocatedAmountObjs.push(...amountObjs);
-      },
-      complete: handles => handles.map(handle => completedHandles.push(handle)),
     });
-    const { swap } = makeZoeHelpers(mockZCF);
+    mockZCFBuilder.addOffer(rightOfferHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(7) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addOffer(cantTradeHandle, {
+      proposal: {
+        give: { Price: simoleans(6) },
+        want: { Asset: moola(100) },
+        exit: { onDemand: null },
+      },
+    });
+    mockZCFBuilder.addAllocation(leftOfferHandle, { Asset: moola(10) });
+    mockZCFBuilder.addAllocation(rightOfferHandle, { Price: simoleans(6) });
+    mockZCFBuilder.addAllocation(cantTradeHandle, { Price: simoleans(6) });
+    const mockZcf = mockZCFBuilder.build();
+    const { swap } = makeZoeHelpers(mockZcf);
     t.throws(
       () =>
         swap(
           leftOfferHandle,
-          cantTradeRightOfferHandle,
+          cantTradeHandle,
           'prior offer no longer available',
         ),
       /Error: The offer was invalid. Please check your refund./,
       `throws if can't trade with left and right`,
     );
+    const reallocatedHandles = mockZcf.getReallocatedHandles();
     t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
+    const reallocatedAmountObjs = mockZcf.getReallocatedAmountObjs();
     t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    const completedHandles = mockZcf.getCompletedHandles();
     t.deepEquals(
       completedHandles,
       harden([rightOfferHandle]),
@@ -860,7 +839,6 @@ test('ZoeHelpers makeEmptyOffer', async t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () =>
         harden({
           offer: invite => {

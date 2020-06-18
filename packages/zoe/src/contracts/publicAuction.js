@@ -18,7 +18,7 @@ export const makeContract = harden(
   /** @param {ContractFacet} zcf */ zcf => {
     const {
       rejectOffer,
-      canTradeWith,
+      canTradeWithMapKeywords,
       assertKeywords,
       checkHook,
     } = makeZoeHelpers(zcf);
@@ -33,7 +33,8 @@ export const makeContract = harden(
     let auctionedAssets;
     const allBidHandles = [];
 
-    assertKeywords(harden(['Asset', 'Bid']));
+    // seller will use 'Asset' and 'Ask'. buyer will use 'Asset' and 'Bid'
+    assertKeywords(harden(['Asset', 'Ask']));
 
     const bidderOfferHook = offerHandle => {
       // Check that the item is still up for auction
@@ -44,7 +45,12 @@ export const makeContract = harden(
       if (allBidHandles.length >= numBidsAllowed) {
         throw rejectOffer(offerHandle, `No further bids allowed.`);
       }
-      if (!canTradeWith(sellerOfferHandle, offerHandle)) {
+      if (
+        !canTradeWithMapKeywords(sellerOfferHandle, offerHandle, [
+          ['Asset', 'Ask'],
+          ['Asset', 'Bid'],
+        ])
+      ) {
         const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
         throw rejectOffer(offerHandle, rejectMsg);
       }
@@ -86,13 +92,13 @@ export const makeContract = harden(
       sellerOfferHandle = offerHandle;
       const { proposal } = zcf.getOffer(offerHandle);
       auctionedAssets = proposal.give.Asset;
-      minimumBid = proposal.want.Bid;
+      minimumBid = proposal.want.Ask;
       return defaultAcceptanceMsg;
     };
 
     const sellerOfferExpected = harden({
       give: { Asset: null },
-      want: { Bid: null },
+      want: { Ask: null },
     });
 
     const makeSellerInvite = () =>
