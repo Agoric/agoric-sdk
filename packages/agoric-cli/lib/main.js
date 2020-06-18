@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 
+import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';
 import installMain from './install';
@@ -51,9 +52,8 @@ const main = async (progname, rawArgs, powers) => {
     .command('cosmos <command...>')
     .description('client for an Agoric Cosmos chain')
     .action(async (command, cmd) => {
-      const opts = {...program.opts(), ...cmd.opts()};
-      const mod = await import('./cosmos');
-      return subMain(mod.default, ['cosmos', ...command], opts);
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
 
   program
