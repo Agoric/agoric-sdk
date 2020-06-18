@@ -8,6 +8,7 @@ import (
 
 	// "github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -101,6 +102,15 @@ type sendPacketAction struct {
 }
 
 func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sdk.Result, error) {
+	onePass := sdk.NewInt64Coin("sendpacketpass", 1)
+	balance := keeper.GetBalance(ctx, msg.Sender, onePass.Denom)
+	if balance.IsLT(onePass) {
+		return nil, sdkerrors.Wrap(
+			sdkerrors.ErrInsufficientFee,
+			fmt.Sprintf("sender %s needs at least %s", msg.Sender, onePass.String()),
+		)
+	}
+
 	action := &sendPacketAction{
 		MsgSendPacket: msg,
 		Type:          "IBC_EVENT",
@@ -132,6 +142,15 @@ type provisionAction struct {
 }
 
 func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg MsgProvision) (*sdk.Result, error) {
+	onePass := sdk.NewInt64Coin("provisionpass", 1)
+	balance := keeper.GetBalance(ctx, msg.Submitter, onePass.Denom)
+	if balance.IsLT(onePass) {
+		return nil, sdkerrors.Wrap(
+			sdkerrors.ErrInsufficientFee,
+			fmt.Sprintf("submitter %s needs at least %s", msg.Submitter, onePass.String()),
+		)
+	}
+
 	action := &provisionAction{
 		MsgProvision: msg,
 		Type:         "PLEASE_PROVISION",
@@ -145,7 +164,8 @@ func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg MsgProvision) (*sdk.
 	}
 
 	// Create the account, if it doesn't already exist.
-	err = keeper.EnsureAccountExists(ctx, msg.Address)
+	egress := types.NewEgress(msg.Nickname, msg.Address)
+	err = keeper.SetEgress(ctx, egress)
 	if err != nil {
 		return nil, err
 	}

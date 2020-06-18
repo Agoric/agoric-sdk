@@ -1,6 +1,16 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
+
+type QueryResEgress struct {
+	Nickname string `json:"nickname"`
+}
+
+func (r QueryResEgress) String() string {
+	return r.Nickname
+}
 
 // Query Result Payload for a storage query
 type QueryResStorage struct {

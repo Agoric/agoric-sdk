@@ -105,7 +105,7 @@ func makeNewApp(sendToController Sender) func(logger log.Logger, db dbm.DB, trac
 		}
 
 		// fmt.Println("Starting daemon!")
-		abci := app.NewAgoricApp(
+		return app.NewAgoricApp(
 			sendToController, logger, db, traceStore, true, invCheckPeriod, skipUpgradeHeights,
 			viper.GetString(flags.FlagHome),
 			baseapp.SetPruning(store.NewPruningOptionsFromString(viper.GetString("pruning"))),
@@ -114,16 +114,6 @@ func makeNewApp(sendToController Sender) func(logger log.Logger, db dbm.DB, trac
 			baseapp.SetHaltTime(viper.GetUint64(server.FlagHaltTime)),
 			baseapp.SetInterBlockCache(cache),
 		)
-		msg := fmt.Sprintf(`{"type":"AG_COSMOS_INIT","ibcPort":%d}`, abci.IBCPort)
-
-		// fmt.Println("Sending to Node", msg)
-		_, err := sendToController(true, msg)
-		// fmt.Println("Received AG_COSMOS_INIT response", ret, err)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
-			os.Exit(1)
-		}
-		return abci
 	}
 }
 

@@ -80,14 +80,9 @@ let seed = 0;
  *
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
- * @param {string[]} [packetSendersWhitelist=[]]
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
-export function makeIBCProtocolHandler(
-  E,
-  callIBCDevice,
-  packetSendersWhitelist = [],
-) {
+export function makeIBCProtocolHandler(E, callIBCDevice) {
   /**
    * @type {Store<string, Promise<Connection>>}
    */
@@ -699,18 +694,7 @@ EOF
         }
 
         case 'sendPacket': {
-          const { packet, sender } = obj;
-          if (!packetSendersWhitelist.includes(sender)) {
-            console.error(
-              sender,
-              'does not appear in the sendPacket whitelist',
-              packetSendersWhitelist,
-            );
-            throw Error(
-              `${sender} does not appear in the sendPacket whitelist`,
-            );
-          }
-
+          const { packet } = obj;
           const { source_port: portID, source_channel: channelID } = packet;
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);

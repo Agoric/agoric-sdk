@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -121,6 +122,8 @@ type AgoricApp struct {
 	IBCPort int
 
 	invCheckPeriod uint
+
+	controllerInited bool
 
 	// keys to access the substores
 	keys    map[string]*sdk.KVStoreKey
@@ -287,7 +290,7 @@ func NewAgoricApp(
 	app.swingSetKeeper = swingset.NewKeeper(
 		app.cdc, keys[swingset.StoreKey],
 		app.ibcKeeper.ChannelKeeper, &app.ibcKeeper.PortKeeper,
-		app.accountKeeper,
+		app.accountKeeper, app.bankKeeper,
 		scopedSwingSetKeeper,
 	)
 	// This function is tricky to get right, so we inject it ourselves.
@@ -418,8 +421,24 @@ func NewAgoricApp(
 // Name returns the name of the App
 func (app *AgoricApp) Name() string { return app.BaseApp.Name() }
 
+func (app *AgoricApp) MustInitController(ctx sdk.Context) {
+	if app.controllerInited {
+		return
+	}
+	app.controllerInited = true
+
+	// Begin initializing the controller here.
+	msg := fmt.Sprintf(`{"type":"AG_COSMOS_INIT","ibcPort":%d,"storagePort":%d}`, app.IBCPort, swingset.GetPort("storage"))
+	_, err := app.swingSetKeeper.CallToController(ctx, msg)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
+		os.Exit(1)
+	}
+}
+
 // BeginBlocker application updates every begin block
 func (app *AgoricApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	app.MustInitController(ctx)
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -430,6 +449,8 @@ func (app *AgoricApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci
 
 // InitChainer application update at chain initialization
 func (app *AgoricApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+	app.MustInitController(ctx)
+
 	var genesisState simapp.GenesisState
 	app.cdc.MustUnmarshalJSON(req.AppStateBytes, &genesisState)
 

@@ -201,25 +201,25 @@ export default async function main(progname, args, { path, env, agcc }) {
 
   let blockManager;
   async function toSwingSet(action, _replier) {
-    // console.log(`toSwingSet`, action, replier);
-    if (action.type === AG_COSMOS_INIT) {
-      // console.error('got AG_COSMOS_INIT', action);
-      if (!process.env.BOOT_ADDRESS) {
-        throw Error(`You must set $BOOT_ADDRESS to run a chain node`);
-      }
+    // console.log(`toSwingSet`, action);
+    if (action.ibcPort) {
       portNums.dibc = action.ibcPort;
-      return true;
     }
 
     if (action.storagePort) {
       // Initialize the storage for this particular transaction.
       // console.log(` setting portNums.storage to`, action.storagePort);
       portNums.storage = action.storagePort;
+    }
 
-      if (!blockManager) {
-        const fns = await launchAndInitializeSwingSet();
-        blockManager = makeBlockManager(fns);
-      }
+    if (!blockManager) {
+      const fns = await launchAndInitializeSwingSet();
+      blockManager = makeBlockManager(fns);
+    }
+
+    if (action.type === AG_COSMOS_INIT) {
+      // console.error('got AG_COSMOS_INIT', action);
+      return true;
     }
 
     return blockManager(action);

@@ -26,6 +26,7 @@ var (
 
 type (
 	Keeper            = keeper.Keeper
+	Egress            = types.Egress
 	MsgDeliverInbound = types.MsgDeliverInbound
 	MsgProvision      = types.MsgProvision
 	MsgSendPacket     = types.MsgSendPacket
