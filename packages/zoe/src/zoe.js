@@ -317,9 +317,12 @@ import { makeTables } from './state';
  *
  * @param {Object.<string,any>} [additionalEndowments] pure or pure-ish
  * endowments to add to evaluator
+ * @param {Object.<string,any>} [vatPowers] provide 'setMeter' and
+ * 'transformMetering' (from the vat's buildRoot invocation) to enable
+ * within-vat metering of contract code
  * @returns {ZoeService} The created Zoe service.
  */
-const makeZoe = (additionalEndowments = {}) => {
+const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
   const {
@@ -634,7 +637,7 @@ const makeZoe = (additionalEndowments = {}) => {
        * different future formats without silent failures.
        */
       install: async (bundle) => {
-        const installation = await evalContractBundle(bundle, additionalEndowments);
+        const installation = await evalContractBundle(bundle, additionalEndowments, vatPowers);
         const installationHandle = installationTable.create(
           harden({ installation, bundle }),
         );

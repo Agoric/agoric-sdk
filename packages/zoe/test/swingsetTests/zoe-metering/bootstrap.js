@@ -13,27 +13,33 @@ function build(E, log) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
-        infiniteInstallLoop: () => E(zoe).install(infiniteInstallLoopBundle),
-        infiniteInstanceLoop: () => E(zoe).install(infiniteInstanceLoopBundle),
-        infiniteTestLoop: () => E(zoe).install(infiniteTestLoopBundle),
-        testBuiltins: () => E(zoe).install(testBuiltinsBundle),
+        infiniteInstallLoop: () => E(zoe).install(infiniteInstallLoopBundle.bundle),
+        infiniteInstanceLoop: () => E(zoe).install(infiniteInstanceLoopBundle.bundle),
+        infiniteTestLoop: () => E(zoe).install(infiniteTestLoopBundle.bundle),
+        testBuiltins: () => E(zoe).install(testBuiltinsBundle.bundle),
       };
 
       const [testName] = argv;
+      // depending upon the mode we're using ('testName'), one of these calls
+      // will go into an infinite loop and get killed by the meter
 
       log(`installing ${testName}`);
-      const installId = await installations[testName]();
-      log(`instantiating ${testName}`);
-      const inviteIssuer = E(zoe).getInviteIssuer();
-      const issuerKeywordRecord = harden({ Keyword1: inviteIssuer });
-      const invite = await E(zoe).makeInstance(installId, issuerKeywordRecord);
-      const {
-        extent: [{ instanceHandle }],
-      } = await E(inviteIssuer).getAmountOf(invite);
-      const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
-      log(`invoking ${testName}.doTest()`);
-      await E(publicAPI).doTest();
-      log(`complete`);
+      try{
+        const installId = await installations[testName]();
+        log(`instantiating ${testName}`);
+        const inviteIssuer = E(zoe).getInviteIssuer();
+        const issuerKeywordRecord = harden({ Keyword1: inviteIssuer });
+        const invite = await E(zoe).makeInstance(installId, issuerKeywordRecord);
+        const {
+          extent: [{ instanceHandle }],
+        } = await E(inviteIssuer).getAmountOf(invite);
+        const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+        log(`invoking ${testName}.doTest()`);
+        await E(publicAPI).doTest();
+        log(`complete`);
+      } catch(e) {
+        log(`error: ${e}`);
+      }
     },
   };
   return harden(obj0);

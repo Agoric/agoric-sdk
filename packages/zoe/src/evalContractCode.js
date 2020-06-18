@@ -9,7 +9,7 @@ import { producePromise } from '@agoric/produce-promise';
 import { sameStructure } from '@agoric/same-structure';
 import { importBundle } from '@agoric/import-bundle';
 
-const evalContractBundle = (bundle, additionalEndowments) => {
+const evalContractBundle = (bundle, additionalEndowments, vatPowers) => {
   // Make the console more verbose.
   const louderConsole = {
     ...console,
@@ -22,19 +22,41 @@ const evalContractBundle = (bundle, additionalEndowments) => {
     throw Error(`require(${what}) not implemented`);
   }
   harden(myRequire);
+
+  let transforms = [];
+  let meteringEndowments = {};
+  if (vatPowers && vatPowers.transformMetering && vatPowers.setMeter) {
+    // TODO for now, the meter will never get refilled. the next step is for
+    // the kernel to get involved and refill it for us between cranks
+    // (vatPowers will provide a kernel-supplied makeMeter)
+    const { setMeter, transformMetering } = vatPowers;
+    const { meter, refillFacet } = makeMeter();
+    function getMeter() {
+      // Tell the kernel to enable "global metering" on JS builtins. This will
+      // remain active until we call setMeter() again, or the crank is complete
+      // (whereupon the kernel will turn off metering).
+      setMeter(meter);
+      return meter;
+    }
+    transforms.push(src => transformMetering(src, getMeter));
+    meteringEndowments.getMeter = getMeter;
+  }
+
   const defaultEndowments = {
     console: louderConsole,
     harden,
+    require: myRequire,
     producePromise,
     assert,
     sameStructure,
     produceIssuer,
     Nat,
-    require: myRequire,
   };
+  // TODO(for mfig from warner): why the null prototype?
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
     ...Object.getOwnPropertyDescriptors(additionalEndowments),
+    ...Object.getOwnPropertyDescriptors(meteringEndowments),
   });
 
   /*
@@ -66,7 +88,10 @@ const evalContractBundle = (bundle, additionalEndowments) => {
   // Evaluate the export function, and use the resulting
   // module namespace as our installation.
 
-  const installation = importBundle(bundle, { endowments: fullEndowments });
+  const installation = importBundle(bundle,
+                                    { endowments: fullEndowments,
+                                      transforms,
+                                    });
   return installation;
 };
 
