@@ -52,11 +52,20 @@ export default function buildKernel(kernelEndowments) {
   // vat (using waitUntilQuiescent)
   let meter = undefined;
 
+  let complainedAboutGlobalMetering = false;
   function setMeter(newMeter) {
     meter = newMeter;
     if (replaceGlobalMeter) {
       replaceGlobalMeter(newMeter);
-    }
+    } else {
+      if (!complainedAboutGlobalMetering) {
+        console.log(`note: setMeter() cannot enable global metering, app must import @agoric/install-metering-and-ses`);
+        // to fix this, your application program must
+        // `import('@agoric/install-metering-and-ses')` instead of
+        // `import('@agoric/install-ses')`
+        complainedAboutGlobalMetering = true;
+      }
+  }
   }
   harden(setMeter);
 
