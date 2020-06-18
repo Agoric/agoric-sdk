@@ -7,8 +7,8 @@
  * independently. It *does* allow for returning a full refund plus
  * full winnings.
  *
- * @param  {object} amountMathKeywordRecord - a record with keywords as
- * keys and amountMath as values
+ * @param  {function} getAmountMath - a function that takes a brand and returns
+ * the appropriate amountMath
  * @param  {object} proposal - the rules that accompanied the
  * escrow of payments that dictate what the user expected to get back
  * from Zoe. A proposal is a record with keys `give`,
@@ -19,16 +19,9 @@
  * @param  {object} newAmountKeywordRecord - a record with keywords as keys and
  * amounts as values. These amounts are the reallocation to be given to a user.
  */
-function isOfferSafeForOffer(
-  amountMathKeywordRecord,
-  proposal,
-  newAmountKeywordRecord,
-) {
+function isOfferSafeForOffer(getAmountMath, proposal, newAmountKeywordRecord) {
   const isGTEByKeyword = ([keyword, amount]) =>
-    amountMathKeywordRecord[keyword].isGTE(
-      newAmountKeywordRecord[keyword],
-      amount,
-    );
+    getAmountMath(amount.brand).isGTE(newAmountKeywordRecord[keyword], amount);
 
   // For this allocation to count as a full refund, the allocated
   // amount must be greater than or equal to what was originally

@@ -36,7 +36,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       assert(
         sameStructure(
-          harden({ Asset: moolaIssuer, Bid: simoleanIssuer }),
+          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         details`issuerKeywordRecord were not as expected`,
@@ -89,8 +89,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`source code didn't match at "asset: give.Asset,"`,
       );
       assert(
-        installationCode.includes('firstOfferExpected'),
-        details`source code didn't match at "firstOfferExpected"`,
+        installationCode.includes('firstOfferHandle, offerHandle),'),
+        details`source code didn't match at "firstOfferHandle"`,
       );
       assert(
         installationCode.includes('makeMatchingInvite'),

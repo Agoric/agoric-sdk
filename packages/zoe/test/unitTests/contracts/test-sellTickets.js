@@ -98,6 +98,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     count: 2,
     moneyIssuer: moolaIssuer,
     sellItemsInstallationHandle,
+    pricePerItem: moolaAmountMath.make(20),
   });
   const { publicAPI: salesPublicAPI2 } = await E(zoe).getInstanceRecord(
     sellItemsInstanceHandle2,
