@@ -314,11 +314,6 @@ export const makeZoeHelpers = (zcf) => {
         details`issuer must have natMathHelpers`,
       );
     },
-    /**
-     * Get the amountMath associated with a keyword
-     * @param {Keyword} keyword
-     */
-    getAmountMath: keyword => zcf.getAmountMaths(harden([keyword]))[keyword],
   });
   return helpers;
 };
