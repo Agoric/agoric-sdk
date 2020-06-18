@@ -108,8 +108,8 @@ import { makeTables } from './state';
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, sparseKeywords?: SparseKeywords) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], sparseKeywords?: SparseKeywords) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecords) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], brandKeywordRecord[]?: BrandKeywordRecords) => Allocation[]} getCurrentAllocations
  * @property {(installationHandle: InstallationHandle) => string} getInstallation
  * Get the source code for the installed contract. Throws an error if the
  * installationHandle is not found.
@@ -205,6 +205,8 @@ import { makeTables } from './state';
  * @typedef {Keyword[]} SparseKeywords
  * @typedef {{[Keyword:string]:Amount}} Allocation
  * @typedef {{[Keyword:string]:AmountMath}} AmountMathKeywordRecord
+ * @typedef {{[Keyword:string]:Brand}}
+ * BrandKeywordRecord
  */
 
 /**
@@ -225,8 +227,8 @@ import { makeTables } from './state';
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, amountMathKeywordRecord?: AmountMathKeywordRecord) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], amountMathKeywordRecords?: AmountMathKeywordRecord[]) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecord) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => AmountMath} getAmountMath
@@ -403,6 +405,17 @@ const makeZoe = (additionalEndowments = {}) => {
       amountMathKeywordRecord[keyword] = issuerTable.get(brand).amountMath;
     });
     return filterFillAmounts(currentAllocation, amountMathKeywordRecord);
+  };
+
+  const doGetCurrentAllocations = (offerHandles, brandKeywordRecords) => {
+    if (brandKeywordRecords === undefined) {
+      return offerHandles.map(offerHandle =>
+        doGetCurrentAllocation(offerHandle),
+      );
+    }
+    return offerHandles.map((offerHandle, i) =>
+      doGetCurrentAllocation(offerHandle, brandKeywordRecords[i]),
+    );
   };
 
   // Zoe has two different facets: the public Zoe service and the
@@ -585,11 +598,9 @@ const makeZoe = (additionalEndowments = {}) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
         return doGetCurrentAllocation(offerHandle, brandKeywordRecord);
       },
-      getCurrentAllocations: (offerHandles, brandKeywordRecord) => {
+      getCurrentAllocations: (offerHandles, brandKeywordRecords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
-        return offerHandles.map(offerHandle =>
-          contractFacet.getCurrentAllocation(offerHandle, brandKeywordRecord),
-        );
+        return doGetCurrentAllocations(offerHandles, brandKeywordRecords);
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
@@ -876,10 +887,8 @@ const makeZoe = (additionalEndowments = {}) => {
         removeAmountsAndNotifier(offerTable.get(offerHandle)),
       getCurrentAllocation: (offerHandle, brandKeywordRecord) =>
         doGetCurrentAllocation(offerHandle, brandKeywordRecord),
-      getCurrentAllocations: (offerHandles, brandKeywordRecord) =>
-        offerHandles.map(offerHandle =>
-          zoeService.getCurrentAllocation(offerHandle, brandKeywordRecord),
-        ),
+      getCurrentAllocations: (offerHandles, brandKeywordRecords) =>
+        doGetCurrentAllocations(offerHandles, brandKeywordRecords),
       getInstallation: installationHandle =>
         installationTable.get(installationHandle).code,
     },

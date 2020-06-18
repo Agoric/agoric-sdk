@@ -35,6 +35,7 @@ export const makeContract = harden(
       makeEmptyOffer,
       checkHook,
       escrowAndAllocateTo,
+      assertNatMathHelpers,
     } = makeZoeHelpers(zcf);
 
     return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
@@ -42,6 +43,7 @@ export const makeContract = harden(
       const amountMaths = {};
       harden(['TokenA', 'TokenB', 'Liquidity']).forEach(keyword => {
         const brand = brandKeywordRecord[keyword];
+        assertNatMathHelpers(brand);
         amountMaths[keyword] = zcf.getAmountMath(brand);
       });
 

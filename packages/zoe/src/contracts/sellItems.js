@@ -41,7 +41,7 @@ export const makeContract = harden(
       const { brandKeywordRecord } = zcf.getInstanceRecord();
       const [sellerAllocation, buyerAllocation] = zcf.getCurrentAllocations(
         [sellerOfferHandle, buyerOfferHandle],
-        brandKeywordRecord,
+        [brandKeywordRecord, brandKeywordRecord],
       );
       const currentItemsForSale = sellerAllocation.Items;
       const providedMoney = buyerAllocation.Money;

@@ -48,8 +48,10 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
 
     const makeAmountMathFromIssuer = issuer =>
-      makeAmountMath(issuer.getBrand(), issuer.getMathHelpersName());
-
+      Promise.all([
+        E(issuer).getBrand(),
+        E(issuer).getMathHelpersName(),
+      ]).then(([brand, mathName]) => makeAmountMath(brand, mathName));
     const inviteAmountMath = await makeAmountMathFromIssuer(inviteIssuer);
 
     const aliceInviteAmount = await inviteIssuer.getAmountOf(aliceInvite);
@@ -167,9 +169,8 @@ test('multipoolAutoSwap with valid offers', async t => {
       await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
       moolaLiquidity(50),
     );
-    const foo = await E(publicAPI).getPoolAllocation(moolaR.brand);
     t.deepEquals(
-      foo,
+      await E(publicAPI).getPoolAllocation(moolaR.brand),
       harden({
         Moola: moola(100),
         CentralToken: centralTokens(50),

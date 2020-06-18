@@ -240,7 +240,7 @@ export const makeZoeHelpers = (zcf) => {
 
     /**
      * Escrow a payment with Zoe and reallocate the amount of the
-     * payment to a recipient. The same keyword will be used with both.
+     * payment to a recipient.
      *
      * @param {Object} obj
      * @param {Amount} obj.amount
@@ -274,9 +274,10 @@ export const makeZoeHelpers = (zcf) => {
           // payment but nothing else. The recipient offer may have any
           // allocation, so we can't assume the allocation is currently empty for this
           // keyword.
+          const brandKeywordRecord = harden({ [keyword]: amount.brand });
           const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
             harden([recipientHandle, tempHandle]),
-            harden({ [keyword]: amount.brand }),
+            [brandKeywordRecord, brandKeywordRecord],
           );
 
           // Add the tempAlloc for the keyword to the recipientAlloc.
