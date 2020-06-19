@@ -31,6 +31,7 @@
     "builtin-modules": "^3.1.0",
     "chalk": "^2.4.2",
     "commander": "^5.0.0",
+    "deterministic-json": "^1.0.5",
     "esm": "^3.2.25",
     "ws": "^7.2.0"
   },

@@ -172,6 +172,10 @@ export default function makeBlockManager({
         // Advance our saved state variables.
         savedActions = currentActions;
         computedHeight = action.blockHeight;
+        if (action.blockHeight === 0) {
+          // No replay, no errors on genesis init.
+          currentActions = [];
+        }
         break;
       }
 

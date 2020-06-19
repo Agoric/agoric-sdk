@@ -1,5 +1,10 @@
 import path from 'path';
 import chalk from 'chalk';
+import { createHash } from 'crypto';
+import djson from 'deterministic-json';
+
+const PROVISION_PASSES = '100provisionpass';
+const DELEGATE0_STAKE = '100000000uagstake';
 
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
@@ -11,6 +16,29 @@ const HOST_PORT = process.env.HOST_PORT || PORT;
 export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, os, process } = powers;
   const log = anylogger('agoric:start');
+
+  const finishGenesis = async genfile => {
+    // Fix up the genesis file.
+    log('finishing', genfile);
+    const genjson = await fs.readFile(genfile, 'utf-8');
+    const genesis = JSON.parse(genjson);
+
+    // Tweak the parameters we need.
+    genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
+    genesis.app_state.staking.params.bond_denom = 'uagstake';
+    genesis.consensus_params.block.time_iota_ms = '1000';
+
+    await fs.writeFile(genfile, JSON.stringify(genesis, undefined, 2));
+
+    // Calculate the GCI and save to disk.
+    const ds = djson.stringify(genesis);
+    const gci = createHash('sha256')
+      .update(ds)
+      .digest('hex');
+    const hashFile = `${genfile}.sha256`;
+    log('writing', hashFile);
+    await fs.writeFile(hashFile, gci);
+  };
 
   const pspawnEnv = { ...process.env };
   const pspawn = (
@@ -27,6 +55,48 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     pr.cp = cp;
     return pr;
   };
+
+  let keysSpawn;
+  if (opts.sdk) {
+    keysSpawn = (args, ...rest) =>
+      pspawn('ag-cosmos-helper', [`--home=_agstate/keys`, ...args], ...rest);
+  } else {
+    keysSpawn = (args, ...rest) =>
+      pspawn(
+        'docker',
+        [
+          'run',
+          `--volume=${process.cwd()}:/usr/src/dapp`,
+          `--rm`,
+          `-it`,
+          `--entrypoint=ag-cosmos-helper`,
+          'agoric/agoric-sdk',
+          `--home=/usr/src/dapp/_agstate/keys`,
+          ...args,
+        ],
+        ...rest,
+      );
+  }
+
+  const capture = (spawner, args) => {
+    const capret = [
+      spawner(args, { stdio: ['inherit', 'pipe', 'inherit'] }),
+      '',
+    ];
+    capret[0].cp.stdout.on('data', chunk => {
+      capret[1] += chunk.toString('utf-8');
+    });
+    return capret;
+  };
+
+  const showKey = keyName =>
+    capture(keysSpawn, [
+      'keys',
+      'show',
+      keyName,
+      '-a',
+      '--keyring-backend=test',
+    ]);
 
   const exists = async file => {
     try {
@@ -109,6 +179,132 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     });
     process.on('SIGINT', () => ps.cp.kill('SIGINT'));
     return ps;
+  }
+
+  async function startLocalChain(profileName, startArgs, popts) {
+    const IMAGE = `agoric/agoric-sdk`;
+
+    if (popts.pull) {
+      const status = await pspawn('docker', ['pull', IMAGE]);
+      if (status) {
+        return status;
+      }
+    }
+
+    let chainSpawn;
+    if (popts.sdk) {
+      chainSpawn = (args, spawnOpts = undefined) =>
+        pspawn('ag-chain-cosmos', [`--home=${agServer}`, ...args], spawnOpts);
+    } else {
+      chainSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+        pspawn(
+          'docker',
+          [
+            'run',
+            `--volume=${process.cwd()}:/usr/src/dapp`,
+            `--rm`,
+            ...dockerArgs,
+            `-it`,
+            IMAGE,
+            `--home=/usr/src/dapp/${agServer}`,
+            ...args,
+          ],
+          spawnOpts,
+        );
+    }
+
+    if (!(await exists(agServer))) {
+      const status = await chainSpawn([
+        'init',
+        'local-chain',
+        '--chain-id=agoric',
+      ]);
+      if (status) {
+        return status;
+      }
+    }
+
+    // Get or create the essential addresses.
+    const addrs = {};
+    for (const keyName of ['delegate0', 'provision']) {
+      /* eslint-disable no-await-in-loop */
+      let capret = showKey(keyName);
+      if (await capret[0]) {
+        const status = await keysSpawn([
+          'keys',
+          'add',
+          keyName,
+          '--keyring-backend=test',
+        ]);
+        if (status) {
+          return status;
+        }
+        capret = showKey(keyName);
+        const status2 = await capret[0];
+        if (status2) {
+          return status2;
+        }
+      }
+      addrs[keyName] = capret[1].trimRight();
+      /* eslint-enable no-await-in-loop */
+    }
+
+    const genfile = `${agServer}/config/genesis.json`;
+    if (!(await exists(`${genfile}.stamp`))) {
+      let status;
+      await chainSpawn([
+        'add-genesis-account',
+        addrs.provision,
+        PROVISION_PASSES,
+      ]);
+      if (status) {
+        return status;
+      }
+      await chainSpawn([
+        'add-genesis-account',
+        addrs.delegate0,
+        DELEGATE0_STAKE,
+      ]);
+      if (status) {
+        return status;
+      }
+      const keysHome = opts.sdk
+        ? `_agstate/keys`
+        : `/usr/src/dapp/_agstate/keys`;
+      status = await chainSpawn([
+        'gentx',
+        `--home-client=${keysHome}`,
+        '--keyring-backend=test',
+        '--name=delegate0',
+        `--amount=${DELEGATE0_STAKE}`,
+      ]);
+      if (status) {
+        return status;
+      }
+      status = await chainSpawn(['collect-gentxs']);
+      if (status) {
+        return status;
+      }
+      status = await chainSpawn(['validate-genesis']);
+      if (status) {
+        return status;
+      }
+      status = await fs.writeFile(`${genfile}.stamp`, Date.now());
+      if (status) {
+        return status;
+      }
+    }
+
+    // Complete the genesis file and launch the chain.
+    await finishGenesis(genfile);
+    return chainSpawn(
+      ['start', '--pruning=nothing'],
+      {
+        env: { ...process.env, ROLE: 'two_chain' },
+      },
+      // Accessible via either localhost or host.docker.internal
+      [`--publish=26657:26657`, `--name=agoric/n0`],
+    );
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
@@ -199,6 +395,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   const profiles = {
     dev: startFakeChain,
+    'local-chain': startLocalChain,
+    // 'local-solo': opts.sdk ? startLocalSoloSdk : startLocalSoloDocker,
     testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
   };
 
