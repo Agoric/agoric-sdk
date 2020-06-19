@@ -34,6 +34,7 @@ export default function buildKernel(kernelEndowments) {
     vatAdminDevSetup,
     replaceGlobalMeter,
     transformMetering,
+    transformTildot,
   } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
@@ -269,6 +270,7 @@ export default function buildKernel(kernelEndowments) {
     getInterfaceOf, 
     makeGetMeter,
     transformMetering,
+    transformTildot,
   });
 
   const syscallManager = harden({

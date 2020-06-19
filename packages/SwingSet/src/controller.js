@@ -18,6 +18,9 @@ import { HandledPromise } from '@agoric/eventual-send';
 
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
+import { makeTransform } from '@agoric/transform-eventual-send';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
 
 import anylogger from 'anylogger';
 
@@ -165,6 +168,9 @@ export async function buildVatController(config, withSES = true, argv = []) {
   }
   harden(transformMetering);
 
+  // the same is true for the tildot transform
+  const transformTildot = harden(makeTransform(babelParser, babelGenerate));
+
   function vatRequire(what) {
     if (what === '@agoric/harden') {
       return harden;
@@ -217,6 +223,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
     replaceGlobalMeter,
     transformMetering,
+    transformTildot,
   };
 
   const kernel = buildKernel(kernelEndowments);
