@@ -7,6 +7,6 @@
  * as yet not-entirely-ESM-supporting version of NodeJS.
  */
 import lmdb from 'node-lmdb';
-import '../../SwingSet/install-ses.js';
+import '@agoric/install-ses';
 import { main } from '../src/main.js';
 main();
