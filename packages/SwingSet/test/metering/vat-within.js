@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
 import { importBundle } from '@agoric/import-bundle';
-import { makeMeter } from '@agoric/transform-metering';
 
 function vatRequire(what) {
   if (what === '@agoric/harden') {
@@ -12,8 +11,8 @@ function vatRequire(what) {
 
 function build(buildStuff) {
   const { E, D, vatPowers, log } = buildStuff;
-  const { setMeter, transformMetering } = vatPowers;
-  const { meter, refillFacet } = makeMeter();
+  const { makeGetMeter, transformMetering } = vatPowers;
+  const { getMeter, isExhausted, resetMeterUsed, getMeterUsed, refillFacet, resetGlobalMeter } = makeGetMeter({refillEachCrank: false});
 
   // The guest code will be transformed by injecting code. The modifications
   // cause it to call getMeter() upon entry into each block (and other
@@ -21,19 +20,6 @@ function build(buildStuff) {
   // throw an exception if it runs out). We use getMeter() to sense when this
   // guest code gets control (we can pass a different getMeter() to each
   // guest).
-
-  let meterUsed = false;
-  function getMeter() {
-    if (!meterUsed) {
-      // console.log(`getMeter first time`);
-      meterUsed = true;
-    }
-    // Tell the kernel to enable "global metering" on JS builtins. This will
-    // remain active until we call setMeter() again, or the crank is complete
-    // (whereupon the kernel will turn off metering).
-    setMeter(meter);
-    return meter;
-  }
 
   const log2 = [];
   let meterMe;
@@ -57,17 +43,30 @@ function build(buildStuff) {
     run(mode) {
       log(`run ${mode}`);
       log2.splice(0);
-      meterUsed = false;
+      resetMeterUsed();
       try {
         meterMe(log2, mode);
       } catch (e) {
-        setMeter(null);
+        //resetGlobalMeter();
+        // The GlobalMeter is still active (billed to the bundle's meter),
+        // and might be exhausted, so any global objects we use here might
+        // throw (like console.log). TODO: but I seem to be able to use
+        // console.log (and Object.create({}), and other things which I think
+        // ought to be decrementing the global COMPUTE meter) even after
+        // meterMe() exhausted the compute meter, so something odd is going
+        // on.
+
+        // TODO when vats are metered as a whole, we can configure this
+        // vat-within.js to be metered, which will inject a call at the
+        // beginning of this catch block (and all blocks) to reset the global
+        // meter to our own meter, which *won't* be exhausted, and this
+        // warning comment can go away. For now, avoid touching any globals
+        // until the crank is done.
+
         // console.log(`exception during meterMe`, e);
         log(`log2: ${log2.join(' ')}`);
-        log(`exception (${meter.isExhausted()})`);
+        log(`exception (${isExhausted()})`);
         return;
-      } finally {
-        setMeter(null);
       }
       log(`log2: ${log2.join(' ')}`);
       log(`no exception`);

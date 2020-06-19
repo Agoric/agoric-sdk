@@ -118,6 +118,15 @@ export async function buildVatController(config, withSES = true, argv = []) {
   function kernelRequire(what) {
     if (what === '@agoric/harden') {
       return harden;
+    } else if (what === 're2') {
+      // The kernel imports @agoric/transform-metering to get makeMeter(),
+      // and transform-metering imports re2, to add it to the generated
+      // endowments. TODO Our transformers no longer traffic in endowments,
+      // so that could probably be removed, in which case we'd no longer need
+      // to provide it here. We should decide whether to let the kernel use
+      // the native RegExp or replace it with re2. TODO we also need to make
+      // sure vats get (and stick with) re2 for their 'RegExp'.
+      return re2;
     } else {
       throw Error(`kernelRequire unprepared to satisfy require(${what})`);
     }
@@ -159,14 +168,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
   function vatRequire(what) {
     if (what === '@agoric/harden') {
       return harden;
-    } else if (what === 're2') {
-      // @agoric/transform-metering imports re2, to add it to the generated
-      // endowments. TODO Our transformers no longer traffic in endowments,
-      // so that could probably be removed, in which case we'd no longer need
-      // to provide it here. We do, however, want to continue to provide
-      // RegExp: re2 in the endowments below, to prevent vats from using
-      // backtracking expressions that can eat a lot of memory.
-      return re2;
     } else {
       throw Error(`vatRequire unprepared to satisfy require(${what})`);
     }

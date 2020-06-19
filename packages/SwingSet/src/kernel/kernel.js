@@ -1,8 +1,9 @@
 /* global HandledPromise */
 import harden from '@agoric/harden';
-import { makeMarshal } from '@agoric/marshal';
+import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
+import { makeMeter } from '@agoric/transform-metering';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -43,6 +44,74 @@ export default function buildKernel(kernelEndowments) {
   // (and rely upon its only-once behavior) to get the control facet
   // (replaceGlobalMeter), and pass it in through kernelEndowments
 
+
+  // TODO: be more clever. Only refill meters that were touched. Use a
+  // WeakMap. Drop meters that vats forget. Minimize the fast path. Then wrap
+  // more (encapsulate importBundle?) and provide a single sensible thing to
+  // vats.
+  let complainedAboutGlobalMetering = false;
+  const allRefillers = new Set(); // refill() functions
+  function makeGetMeter(options = {}) {
+    options = {
+      refillEachCrank: true,
+      refillIfExhausted: true,
+      ...options,
+    };
+    const { meter, refillFacet } = makeMeter();
+    if (options.refillEachCrank) { 
+      function refill() {
+        if (meter.isExhausted() && !options.refillIfExhausted) {
+          return;
+        }
+        refillFacet.combined();
+      }
+      allRefillers.add(refill);
+    }
+    let meterUsed = false; // mostly for testing
+    function getMeter() {
+      meterUsed = true;
+      if (replaceGlobalMeter) {
+        replaceGlobalMeter(meter);
+      } else {
+        if (!complainedAboutGlobalMetering) {
+          console.log(`note: setMeter() cannot enable global metering, app must import @agoric/install-metering-and-ses`);
+          // to fix this, your application program must
+          // `import('@agoric/install-metering-and-ses')` instead of
+          // `import('@agoric/install-ses')`
+          complainedAboutGlobalMetering = true;
+        }
+      }
+      return meter;
+    }
+    function resetMeterUsed() {
+      meterUsed = false;
+    }
+    function getMeterUsed() {
+      return meterUsed;
+    }
+    function isExhausted() {
+      return meter.isExhausted();
+    }
+    // TODO: this will evolve. For now, we let the caller refill the meter as
+    // much as they want, although only tests will do this (normal vats will
+    // just rely on refillEachCrank). As this matures, vats will only be able
+    // to refill a meter by transferring credits from some other meter, so
+    // their total usage limit remains unchanged.
+    return harden({ getMeter, isExhausted, resetMeterUsed, getMeterUsed,
+                    refillFacet });
+  }
+  harden(makeGetMeter);
+
+  function endOfCrankMeterTask() {
+    if (replaceGlobalMeter) {
+      replaceGlobalMeter(null);
+    }
+    for (let refiller of allRefillers) {
+      refiller();
+    }
+  }
+  harden(endOfCrankMeterTask);
+
   // This is the active vat-at-a-time meter. It will be 'undefined' if we're
   // in kernel-space or in a non-metered vat. We'll set it to some specific
   // meter (and set the globals meter too) just before we give control to a
@@ -51,32 +120,6 @@ export default function buildKernel(kernelEndowments) {
   // immediately at the end of each crank, when it regains control from the
   // vat (using waitUntilQuiescent)
   let meter = undefined;
-
-  let complainedAboutGlobalMetering = false;
-  function setMeter(newMeter) {
-    meter = newMeter;
-    if (replaceGlobalMeter) {
-      replaceGlobalMeter(newMeter);
-    } else {
-      if (!complainedAboutGlobalMetering) {
-        console.log(`note: setMeter() cannot enable global metering, app must import @agoric/install-metering-and-ses`);
-        // to fix this, your application program must
-        // `import('@agoric/install-metering-and-ses')` instead of
-        // `import('@agoric/install-ses')`
-        complainedAboutGlobalMetering = true;
-      }
-  }
-  }
-  harden(setMeter);
-
-  function clearMeter() {
-    const oldMeter = meter;
-    if (replaceGlobalMeter) {
-      replaceGlobalMeter(null);
-    }
-    return oldMeter;
-  }
-  harden(clearMeter);
 
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
@@ -208,17 +251,37 @@ export default function buildKernel(kernelEndowments) {
     notifySubscribersAndQueue(kpid, subscribers, queue);
   }
 
-  const syscallManager = {
+  // The 'vatPowers' are given to vats as arguments of setup(). They
+  // represent controlled authorities that come from the kernel but that do
+  // not go through the syscall mechanism (so they aren't included in the
+  // replay transcript), so they must not be particularly stateful. These
+  // will eventually be provided by the in-worker supervisor instead.
+
+  // We need to give the vat the correct Remotable and getKernelPromise so
+  // that they can access our own @agoric/marshal, not a separate instance in
+  // a bundle. TODO: ideally the powerless ones (Remotable, getInterfaceOf,
+  // maybe transformMetering) are imported by the vat, not passed in an
+  // argument. The powerful one (makeGetMeter) should only be given to the
+  // root object, to share with (or withhold from) other objects as it sees
+  // fit.
+  const vatPowers = harden({
+    Remotable,
+    getInterfaceOf, 
+    makeGetMeter,
+    transformMetering,
+  });
+
+  const syscallManager = harden({
     kdebug,
-    waitUntilQuiescent,
-    clearMeter,
     send,
     invoke,
     subscribe,
     fulfillToPresence,
     fulfillToData,
     reject,
-  };
+    waitUntilQuiescent,
+    endOfCrankMeterTask,
+  });
 
   function vatNameToID(name) {
     const vatID = kernelKeeper.getVatIDForName(name);
@@ -558,8 +621,7 @@ export default function buildKernel(kernelEndowments) {
       helpers,
       kernelKeeper,
       kernelKeeper.allocateVatKeeperIfNeeded(vatID),
-      setMeter,
-      transformMetering,
+      vatPowers,
     );
   }
 

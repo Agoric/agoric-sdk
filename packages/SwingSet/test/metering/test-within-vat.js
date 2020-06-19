@@ -84,7 +84,7 @@ tap.test('metering within a vat', async t => {
   // again, the exhaustion is sticky
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();
-  t.deepEqual(nextLog(), ['run no', 'log2: ', 'exception (RangeError: Compute meter exceeded)'], 'stack meter is sticky');
+  t.deepEqual(nextLog(), ['run no', 'log2: ', 'exception (RangeError: Compute meter exceeded)'], 'compute meter is sticky');
   c.queueToVatExport('within', 'o+0', 'refill', capargs(['compute']));
   c.queueToVatExport('within', 'o+0', 'run', capargs(['no']));
   await c.run();

@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
-import { Remotable, getInterfaceOf } from '@agoric/marshal';
 import djson from './djson';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
@@ -15,10 +14,9 @@ export default function makeVatManager(
   helpers,
   kernelKeeper,
   vatKeeper,
-  setMeter,
-  transformMetering,
+  vatPowers,
 ) {
-  const { waitUntilQuiescent, clearMeter } = syscallManager;
+  const { waitUntilQuiescent, endOfCrankMeterTask } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -274,15 +272,7 @@ export default function makeVatManager(
     },
   });
 
-  // now build the runtime, which gives us back a dispatch function. We need
-  // to give the vat the correct Remotable and getKernelPromise so that they
-  // can access our own @agoric/marshal, not a separate instance in a bundle.
-  // TODO: ideally the powerless ones (Remotable, getInterfaceOf, maybe
-  // transformMetering) are imported by the vat, not passed in an argument.
-  // The powerful one (setMeter) should only be given to the root object, to
-  // share with (or withhold from) other objects as it sees fit.
-  const vatPowers = harden({ Remotable, getInterfaceOf, setMeter,
-                             transformMetering });
+  // now build the runtime, which gives us back a dispatch function
   const dispatch = setup(syscall, state, helpers, vatPowers);
   if (!dispatch || dispatch.deliver === undefined) {
     throw new Error(
@@ -321,8 +311,10 @@ export default function makeVatManager(
     const dispatchArgs = dispatchRecord.slice(1);
     transcriptStartDispatch(dispatchRecord);
     await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
-    const oldMeter = clearMeter();
-    // if (oldMeter && oldMeter.isExhausted()) { react to exhaustion }
+    // TODO: if the vat is metered, and requested death-before-confusion,
+    // then find the relevant meter, check whether it's exhausted, and react
+    // somehow
+    endOfCrankMeterTask();
 
     // TODO: if the dispatch failed, and we choose to destroy the vat, change
     // what we do with the transcript here.

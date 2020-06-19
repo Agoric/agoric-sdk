@@ -26,11 +26,11 @@ async function runUnderMeter(meter, thunk) {
   await waitUntilQuiescent();
   replaceGlobalMeter(null); // disable global metering
   if (meter.isExhausted()) {
-    console.log(`meter is exhausted`);
-    //throw Error("meter exhausted");
+    // console.log(`meter is exhausted`);
+    // throw Error("meter exhausted");
     return false;
   }
-  console.log(`meter is ok`);
+  // console.log(`meter is ok`);
   return true;
 }
 
