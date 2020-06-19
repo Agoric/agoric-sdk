@@ -3,9 +3,6 @@ import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
 import { makeConsole } from '@agoric/swingset-vat/src/makeConsole';
 import { E, HandledPromise } from '@agoric/eventual-send';
-import { makeTransform } from '@agoric/transform-eventual-send';
-import * as babelParser from '@agoric/babel-parser';
-import babelGenerate from '@babel/generator';
 
 import makeUIAgentMakers from './ui-agent';
 
@@ -83,6 +80,10 @@ export function stringify(
 }
 
 export function getReplHandler(homeObjects, send, vatPowers) {
+  // We use getInterfaceOf locally, and transformTildot is baked into the
+  // Compartment we use to evaluate REPL inputs. We provide getInterfaceOf
+  // and Remotable to REPL input code.
+  const { getInterfaceOf, Remotable, transformTildot } = vatPowers;
   let highestHistory = -1;
   const commands = {
     [highestHistory]: '',
@@ -109,7 +110,7 @@ export function getReplHandler(homeObjects, send, vatPowers) {
       if (typeof a === 'string') {
         s = a;
       } else {
-        s = stringify(a, 2, vatPowers.getInterfaceOf);
+        s = stringify(a, 2, getInterfaceOf);
       }
       ret += `${sep}${s}`;
       sep = ' ';
@@ -149,7 +150,8 @@ export function getReplHandler(homeObjects, send, vatPowers) {
 
   replConsole.log(`Welcome to Agoric!`);
   const endowments = {
-    ...vatPowers,
+    Remotable: Remotable,
+    getInterfaceOf: getInterfaceOf,
     console: replConsole,
     E,
     HandledPromise,
@@ -159,8 +161,7 @@ export function getReplHandler(homeObjects, send, vatPowers) {
     harden,
   };
   const modules = {};
-  const tildotTransformer = makeTransform(babelParser, babelGenerate);
-  const options = { transforms: [tildotTransformer] };
+  const options = { transforms: [transformTildot] };
   const c = new Compartment(endowments, modules, options);
 
   const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
@@ -205,7 +206,7 @@ export function getReplHandler(homeObjects, send, vatPowers) {
       try {
         r = c.evaluate(body, { sloppyGlobalsMode: true });
         history[histnum] = r;
-        display[histnum] = stringify(r, undefined, vatPowers.getInterfaceOf);
+        display[histnum] = stringify(r, undefined, getInterfaceOf);
       } catch (e) {
         console.log(`error in eval`, e);
         history[histnum] = e;
@@ -223,7 +224,7 @@ export function getReplHandler(homeObjects, send, vatPowers) {
             display[histnum] = stringify(
               res,
               undefined,
-              vatPowers.getInterfaceOf,
+              getInterfaceOf,
             );
           },
           rej => {

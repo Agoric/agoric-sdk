@@ -1,4 +1,7 @@
 import '@agoric/install-ses';
+import { makeTransform } from '@agoric/transform-eventual-send';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
 import { getReplHandler } from '../../lib/ag-solo/vats/repl';
 import { test } from 'tape-promise/tape';
 
@@ -6,7 +9,8 @@ function make() {
     const homeObjects = { base: 1, fries: 2, cooking: 3 };
     const sentMessages = [];
     const send = m => sentMessages.push(m);
-    const vatPowers = { power: { of: { love: 4 } } };
+    const transformTildot = makeTransform(babelParser, babelGenerate);
+    const vatPowers = { transformTildot };
     const rh = getReplHandler(homeObjects, send, vatPowers);
 
     const ch = rh.getCommandHandler();
@@ -80,10 +84,7 @@ test('repl: sloppyGlobals, home, endowments', async t => {
     t.deepEquals(m.type, 'updateHistory');
     t.equals(sentMessages.length, 0);
 
-    // on old-ses, this only works if we're in a vat, where @agoric/evaluate
-    // has been provided by a require() which maps it to a special SES thing.
-    // In new-SES, it works without that.
-    t.deepEquals(doEval(0, 'newGlobal = home.base + home.fries + home.cooking + power.of.love'), {});
+    t.deepEquals(doEval(0, 'newGlobal = home.base + home.fries + home.cooking'), {});
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
     t.equals(m.histnum, 0);
@@ -91,7 +92,7 @@ test('repl: sloppyGlobals, home, endowments', async t => {
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
     t.equals(m.histnum, 0);
-    t.equals(m.display, '10');
+    t.equals(m.display, '6');
     t.deepEquals(sentMessages, []);
 
     t.deepEquals(doEval(1, 'newGlobal'), {});
@@ -102,7 +103,7 @@ test('repl: sloppyGlobals, home, endowments', async t => {
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
     t.equals(m.histnum, 1);
-    t.equals(m.display, '10');
+    t.equals(m.display, '6');
     t.deepEquals(sentMessages, []);
 
   } catch (e) {
