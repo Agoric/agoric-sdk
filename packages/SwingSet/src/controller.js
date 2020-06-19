@@ -6,7 +6,6 @@ import re2 from 're2';
 import { assert } from '@agoric/assert';
 
 import { isTamed, tameMetering } from '@agoric/tame-metering';
-import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
