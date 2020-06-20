@@ -35,7 +35,6 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.0.6",
-    "@agoric/evaluate": "^2.2.5",
     "@agoric/eventual-send": "^0.9.1",
     "@agoric/harden": "^0.0.8",
     "@agoric/import-manager": "^0.0.5",
