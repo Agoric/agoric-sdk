@@ -20,7 +20,6 @@
     "packages/tame-metering",
     "packages/transform-metering",
     "packages/install-metering-and-ses",
-    "packages/default-evaluate-options",
     "packages/marshal",
     "packages/same-structure",
     "packages/captp",
