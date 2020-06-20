@@ -1,5 +1,6 @@
+/* global harden */
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
 import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 
 import { buildVatController } from '../src/index';

@@ -1,5 +1,6 @@
+/* global harden */
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
 import { producePromise } from '@agoric/produce-promise';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';

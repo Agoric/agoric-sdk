@@ -1,9 +1,9 @@
-/* global replaceGlobalMeter */
+/* global HandledPromise */
 import harden from '@agoric/harden';
-import { makeMarshal } from '@agoric/marshal';
-import evaluateProgram from '@agoric/evaluate';
+import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
-import { producePromise } from '@agoric/produce-promise';
+import { importBundle } from '@agoric/import-bundle';
+import { makeMeter } from '@agoric/transform-metering';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -28,15 +28,94 @@ function abbreviateReviver(_, arg) {
 
 export default function buildKernel(kernelEndowments) {
   const {
-    setImmediate,
+    waitUntilQuiescent,
     hostStorage,
-    runEndOfCrank,
     vatAdminVatSetup,
     vatAdminDevSetup,
+    replaceGlobalMeter,
+    transformMetering,
+    transformTildot,
   } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
+
+  // It is important that tameMetering() was called by application startup,
+  // before install-ses. We expect the controller to run tameMetering() again
+  // (and rely upon its only-once behavior) to get the control facet
+  // (replaceGlobalMeter), and pass it in through kernelEndowments
+
+  // TODO: be more clever. Only refill meters that were touched. Use a
+  // WeakMap. Drop meters that vats forget. Minimize the fast path. Then wrap
+  // more (encapsulate importBundle?) and provide a single sensible thing to
+  // vats.
+  let complainedAboutGlobalMetering = false;
+  const allRefillers = new Set(); // refill() functions
+  function makeGetMeter(options = {}) {
+    options = {
+      refillEachCrank: true,
+      refillIfExhausted: true,
+      ...options,
+    };
+    const { meter, refillFacet } = makeMeter();
+    function refill() {
+      if (meter.isExhausted() && !options.refillIfExhausted) {
+        return;
+      }
+      refillFacet.combined();
+    }
+    if (options.refillEachCrank) {
+      allRefillers.add(refill);
+    }
+    let meterUsed = false; // mostly for testing
+    function getMeter() {
+      meterUsed = true;
+      if (replaceGlobalMeter) {
+        replaceGlobalMeter(meter);
+      } else if (!complainedAboutGlobalMetering) {
+        console.log(
+          `note: setMeter() cannot enable global metering, app must import @agoric/install-metering-and-ses`,
+        );
+        // to fix this, your application program must
+        // `import('@agoric/install-metering-and-ses')` instead of
+        // `import('@agoric/install-ses')`
+        complainedAboutGlobalMetering = true;
+      }
+      return meter;
+    }
+    function resetMeterUsed() {
+      meterUsed = false;
+    }
+    function getMeterUsed() {
+      return meterUsed;
+    }
+    function isExhausted() {
+      return meter.isExhausted();
+    }
+    // TODO: this will evolve. For now, we let the caller refill the meter as
+    // much as they want, although only tests will do this (normal vats will
+    // just rely on refillEachCrank). As this matures, vats will only be able
+    // to refill a meter by transferring credits from some other meter, so
+    // their total usage limit remains unchanged.
+    return harden({
+      getMeter,
+      isExhausted,
+      resetMeterUsed,
+      getMeterUsed,
+      refillFacet,
+    });
+  }
+  harden(makeGetMeter);
+
+  function endOfCrankMeterTask() {
+    if (replaceGlobalMeter) {
+      replaceGlobalMeter(null);
+    }
+    for (const refiller of allRefillers) {
+      refiller();
+    }
+  }
+  harden(endOfCrankMeterTask);
 
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
@@ -105,30 +184,6 @@ export default function buildKernel(kernelEndowments) {
       // entry earlier.
       send(kpid, msg);
     }
-  }
-
-  // waitUntilQuiescent is provided to each vatManager
-  function waitUntilQuiescent() {
-    // the delivery might cause some number of (native) Promises to be
-    // created and resolved, so we use the IO queue to detect when the
-    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
-    // lower-priority than the Promise queue on browsers and Node 11, but on
-    // Node 10 it is higher. So this trick requires Node 11.
-    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
-    const { promise: queueEmptyP, resolve } = producePromise();
-    setImmediate(() => resolve());
-    return queueEmptyP;
-  }
-
-  // doEndOfCrank is provided to each vatMananger, to run inside doProcess
-  function doEndOfCrank() {
-    if (typeof replaceGlobalMeter !== 'undefined') {
-      // Turn off the global meter.
-      replaceGlobalMeter(null);
-    }
-
-    // Finish everything at the end of the crank.
-    runEndOfCrank();
   }
 
   function invoke(deviceSlot, method, args) {
@@ -212,17 +267,44 @@ export default function buildKernel(kernelEndowments) {
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
   }
 
-  const syscallManager = {
+  // The 'vatPowers' are given to vats as arguments of setup(). They
+  // represent controlled authorities that come from the kernel but that do
+  // not go through the syscall mechanism (so they aren't included in the
+  // replay transcript), so they must not be particularly stateful. If any of
+  // them behave differently from one invocation to the next, the vat code
+  // which uses it will not be a deterministic function of the transcript,
+  // breaking our orthogonal-persistence model. They can have access to
+  // state, but they must not let it influence the data they return to the
+  // vat.
+
+  // These will eventually be provided by the in-worker supervisor instead.
+
+  // We need to give the vat the correct Remotable and getKernelPromise so
+  // that they can access our own @agoric/marshal, not a separate instance in
+  // a bundle. TODO: ideally the powerless ones (Remotable, getInterfaceOf,
+  // maybe transformMetering) are imported by the vat, not passed in an
+  // argument. The powerful one (makeGetMeter) should only be given to the
+  // root object, to share with (or withhold from) other objects as it sees
+  // fit.
+  const vatPowers = harden({
+    Remotable,
+    getInterfaceOf,
+    makeGetMeter,
+    transformMetering,
+    transformTildot,
+  });
+
+  const syscallManager = harden({
     kdebug,
-    waitUntilQuiescent,
-    doEndOfCrank,
     send,
     invoke,
     subscribe,
     fulfillToPresence,
     fulfillToData,
     reject,
-  };
+    waitUntilQuiescent,
+    endOfCrankMeterTask,
+  });
 
   function vatNameToID(name) {
     const vatID = kernelKeeper.getVatIDForName(name);
@@ -572,48 +654,22 @@ export default function buildKernel(kernelEndowments) {
       helpers,
       kernelKeeper,
       kernelKeeper.allocateVatKeeperIfNeeded(vatID),
+      vatPowers,
     );
   }
 
-  // This kernel (and the genesis vats) will have been evaluated in a context in
-  // which these canonical symbols were available. That was achieved by running
-  // makeRequire() in controller.js. We want to provide the same context when we
-  // evaluate dynamic vats.
-  function kernelRequire(nameArg) {
-    const name = `${nameArg}`;
-    switch (name) {
-      case '@agoric/harden':
-        return harden;
-      case '@agoric/evaluate':
-        return evaluateProgram;
-      default:
-        throw Error(`require "${name}" is not supported`);
+  // Allow vats to import certain modules, by providing them the same values
+  // we imported here in the kernel, which came themselves from
+  // kernelRequire() defined in the controller. This will go away once
+  // 'harden' is used as a global everywhere, and vats no longer need to
+  // import anything outside their bundle.
+
+  function vatRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    } else {
+      throw Error(`vatRequire unprepared to satisfy require(${what})`);
     }
-  }
-
-  // Enqueue a message to the adminVat giving it the new vat's root object
-  function notifyAdminVatOfNewVat(vatID) {
-    const vatSlot = makeVatRootObjectSlot();
-    const kernelRootObjSlot = addExport(vatID, vatSlot);
-    const serializedArgs = {
-      body: `["${vatID}",{"@qclass":"slot","index":0}]`,
-      slots: [kernelRootObjSlot],
-    };
-    const vatAdminVatId = vatNameToID('vatAdmin');
-    queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
-  }
-
-  // Create a new vat and return the vatID.
-  function createVat(buildFn) {
-    const vatID = kernelKeeper.allocateUnusedVatID();
-
-    const setup = (syscall, state, helpers) => {
-      return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
-    };
-
-    const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
-    ephemeral.vats.set(vatID, harden({ manager }));
-    return vatID;
   }
 
   /** A function to be called from the vatAdmin device to create a new vat. It
@@ -621,23 +677,92 @@ export default function buildKernel(kernelEndowments) {
    * will be available soon, but we immediately return the vatID so the ultimate
    * requestor doesn't have to wait.
    *
-   * @param buildFnSrc Souce code for a build function to be passed to
-   * makeLiveSlots(), which means it takes E as a parameter and returns a root
-   * object.
+   * @param vatSourceBundle a source bundle (JSON-serializable data) which
+   * defines the vat. This should be generated by calling bundle-source on a
+   * module whose default export is makeRootObject(), which takes E as a
+   * parameter and returns a root object.
    *
-   * @return { vatID, error } either the vatID for a newly created vat, or the
-   * error message for the problem.
+   * @return { vatID } the vatID for a newly created vat. The success or
+   * failure of the operation will be reported in a message to the admin vat,
+   * citing this vatID
    */
-  function createVatDynamically(buildFnSrc) {
-    const endowments = { require: kernelRequire };
-    const buildFn = evaluateProgram(buildFnSrc, endowments);
-    try {
-      const vatID = createVat(buildFn);
-      notifyAdminVatOfNewVat(vatID);
-      return harden({ vatID });
-    } catch (e) {
-      return harden({ error: e });
-    }
+  function createVatDynamically(vatSourceBundle) {
+    const vatID = kernelKeeper.allocateUnusedVatID();
+
+    // importBundle is async, so we prepare a callback chain to execute the
+    // resulting setup function, create the new vat around the resulting
+    // dispatch object, and notify the admin vat of our success (or failure).
+    // We presume that importBundle's Promise will fire promptly (before
+    // setImmediate does, i.e. importBundle is async but doesn't really need
+    // to be async), because otherwise the queueToExport might fire (and
+    // insert messages into the kernel run queue) in the middle of some other
+    // vat's crank. TODO: find a safer way.
+
+    Promise.resolve()
+      .then(() => {
+        if (!vatSourceBundle.source || !vatSourceBundle.moduleFormat) {
+          throw Error(
+            `createVatDynamically() requires bundle, not a plain string`,
+          );
+        }
+      })
+      .then(() =>
+        importBundle(vatSourceBundle, {
+          filePrefix: vatID,
+          endowments: {
+            console,
+            require: vatRequire,
+            HandledPromise,
+          },
+        }),
+      )
+      .then(vatNS => {
+        const buildFn = vatNS.default;
+        const setup = (syscall, state, helpers, setMeter) => {
+          return helpers.makeLiveSlots(
+            syscall,
+            state,
+            buildFn,
+            helpers.vatID,
+            setMeter,
+          );
+        };
+        const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
+        ephemeral.vats.set(vatID, harden({ manager }));
+      })
+      .then(
+        () => {
+          // build success message, giving admin vat access to the new vat's root
+          // object
+          const kernelRootObjSlot = addExport(vatID, makeVatRootObjectSlot());
+          return {
+            body: JSON.stringify([
+              vatID,
+              { rootObject: { '@qclass': 'slot', index: 0 } },
+            ]),
+            slots: [kernelRootObjSlot],
+          };
+        },
+        error => ({
+          body: JSON.stringify([vatID, { error: `${error}` }]),
+          slots: [],
+        }),
+      )
+      .then(args => {
+        const vatAdminVatId = vatNameToID('vatAdmin');
+        const vatAdminRootObjectSlot = makeVatRootObjectSlot();
+        queueToExport(
+          vatAdminVatId,
+          vatAdminRootObjectSlot,
+          'newVatCallback',
+          args,
+        );
+      })
+      .catch(e => console.error(`error during createVatDynamically`, e));
+
+    // and we return the vatID right away, so the the admin vat can prepare
+    // for the notification
+    return harden(vatID);
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {

@@ -14,8 +14,9 @@ export default function makeVatManager(
   helpers,
   kernelKeeper,
   vatKeeper,
+  vatPowers,
 ) {
-  const { waitUntilQuiescent, doEndOfCrank } = syscallManager;
+  const { waitUntilQuiescent, endOfCrankMeterTask } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -302,8 +303,7 @@ export default function makeVatManager(
   });
 
   // now build the runtime, which gives us back a dispatch function
-
-  const dispatch = setup(syscall, state, helpers);
+  const dispatch = setup(syscall, state, helpers, vatPowers);
   if (!dispatch || dispatch.deliver === undefined) {
     throw new Error(
       `vat setup() failed to return a 'dispatch' with .deliver: ${dispatch}`,
@@ -341,15 +341,14 @@ export default function makeVatManager(
     const dispatchArgs = dispatchRecord.slice(1);
     transcriptStartDispatch(dispatchRecord);
     await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
-    // if (dispatch.notifyEndOfCrank) {
-    //   await runAndWait(dispatch.notifyEndOfCrank, errmsg);
-    // }
+    // TODO: if the vat is metered, and requested death-before-confusion,
+    // then find the relevant meter, check whether it's exhausted, and react
+    // somehow
+    endOfCrankMeterTask();
 
     // TODO: if the dispatch failed, and we choose to destroy the vat, change
-    // what we do with the transcript here. We might also choose to not call
-    // notifyEndOfCrank().
+    // what we do with the transcript here.
     transcriptFinishDispatch();
-    doEndOfCrank();
   }
 
   function vatStats() {

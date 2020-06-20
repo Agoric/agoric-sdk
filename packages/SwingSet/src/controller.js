@@ -1,32 +1,28 @@
 // eslint-disable-next-line no-redeclare
-/* global setImmediate */
+/* global Compartment harden */
 import fs from 'fs';
 import path from 'path';
-// import { rollup } from 'rollup';
-import harden from '@agoric/harden';
-import SES from 'ses';
+import re2 from 're2';
 import { assert } from '@agoric/assert';
 
-import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
+import { isTamed, tameMetering } from '@agoric/tame-metering';
 import bundleSource from '@agoric/bundle-source';
+import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
-import {
-  SES1ReplaceGlobalMeter,
-  SES1TameMeteringShim,
-} from '@agoric/tame-metering';
+import { HandledPromise } from '@agoric/eventual-send';
 
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
+import { makeTransform } from '@agoric/transform-eventual-send';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
 
 import anylogger from 'anylogger';
 
-// eslint-disable-next-line import/extensions
-import kernelSourceFunc from './bundles/kernel';
+import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
-import { SES1MakeConsole } from './makeConsole';
-import { SES1MakeNestedEvaluate } from './makeNestedEvaluate';
 
 const log = anylogger('SwingSet:controller');
 
@@ -37,6 +33,7 @@ process.on('unhandledRejection', e =>
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
+const KERNEL_SOURCE_PATH = require.resolve('./kernel/kernel.js');
 
 function byName(a, b) {
   if (a.name < b.name) {
@@ -101,214 +98,146 @@ export function loadBasedir(basedir) {
   return { vats, bootstrapIndexJS };
 }
 
-function getKernelSource() {
-  return `(${kernelSourceFunc})`;
-}
-
-// this feeds the SES realm's (real/safe) confine*() back into the Realm
-// when it does require('@agoric/evaluate'), so we can get the same
-// functionality both with and without SES
-// To support makeEvaluators, we create a new Compartment.
-function makeEvaluate(e) {
-  const { makeCompartment, rootOptions, confine, confineExpr } = e;
-  const makeEvaluators = (realmOptions = {}) => {
-    // Realm transforms need to be vetted by global transforms.
-    const transforms = (realmOptions.transforms || []).concat(
-      rootOptions.transforms || [],
-    );
-
-    const c = makeCompartment({
-      ...rootOptions,
-      ...realmOptions,
-      transforms,
-    });
-    transforms.forEach(t => t.closeOverSES && t.closeOverSES(c));
-    return {
-      evaluateExpr(source, endowments = {}, options = {}) {
-        return c.evaluate(`(${source}\n)`, endowments, options);
-      },
-      evaluateProgram(source, endowments = {}, options = {}) {
-        return c.evaluate(`${source}`, endowments, options);
-      },
-    };
-  };
-
-  // As an optimization, do not create a new compartment unless
-  // they call makeEvaluators explicitly.
-  const evaluateExpr = (source, endowments = {}, options = {}) =>
-    confineExpr(source, endowments, options);
-  const evaluateProgram = (source, endowments = {}, options = {}) =>
-    confine(source, endowments, options);
-  return Object.assign(evaluateExpr, {
-    evaluateExpr,
-    evaluateProgram,
-    makeEvaluators,
-  });
-}
-
-function makeSESEvaluator(registerEndOfCrank) {
-  const evaluateOptions = makeDefaultEvaluateOptions();
-  const { transforms = [], shims = [], ...otherOptions } = evaluateOptions;
-  // The metering transform only activates when a getMeter endowment
-  // is provided.
-  const meteringTransformer = makeMeteringTransformer(babelCore);
-  const s = SES.makeSESRootRealm({
-    ...otherOptions,
-    transforms: [...transforms, meteringTransformer],
-    errorStackMode: 'allow',
-    shims: [SES1TameMeteringShim, ...shims],
-    configurableGlobals: true,
-  });
-  const replaceGlobalMeter = SES1ReplaceGlobalMeter(s);
-  transforms.forEach(t => {
-    t.closeOverSES && t.closeOverSES(s);
-  });
-
-  // TODO: if the 'require' we provide here supplies a non-pure module,
-  // that could open a communication channel between otherwise isolated
-  // Vats. For now that's just harden, but others might get added in the
-  // future, so pay attention to what we allow in. We could build a new
-  // makeRequire for each Vat, but 1: performance and 2: the same comms
-  // problem exists between otherwise-isolated code within a single Vat
-  // so it doesn't really help anyways
-  const r = s.makeRequire({
-    '@agoric/evaluate': {
-      attenuatorSource: `${makeEvaluate}`,
-      confine: s.global.SES.confine,
-      confineExpr: s.global.SES.confineExpr,
-      rootOptions: evaluateOptions,
-      makeCompartment: (...args) => {
-        const c = s.global.Realm.makeCompartment(...args);
-        // FIXME: This call should be unnecessary.
-        // We currently need it because fresh Compartments
-        // do not inherit the configured stable globals.
-        Object.defineProperties(
-          c.global,
-          Object.getOwnPropertyDescriptors(s.global),
-        );
-        return c;
-      },
-    },
-    '@agoric/harden': true,
-  });
-
-  const realmRegisterEndOfCrank = s.evaluate(
-    `\
-function realmRegisterEndOfCrank(fn) {
-  try {
-    registerEndOfCrank(fn);
-  } catch (e) {
-    // do nothing.
-  }
-}`,
-    { registerEndOfCrank },
-  );
-
-  return (src, tag = 'anonymous') => {
-    const filePrefix = `/SwingSet/${tag}`;
-    const localConsole = SES1MakeConsole(s, anylogger(`SwingSet:${tag}`));
-
-    const nestedEvaluate = SES1MakeNestedEvaluate(s, {
-      // Support both getExport and nestedEvaluate module format.
-      require: r,
-
-      // This isn't installed on the global, but at least it's secure.
-      console: localConsole,
-
-      // Note that replaceGlobalMeter is evaluated within the SES realm.
-      // FIXME: Also note that this replaceGlobalMeter endowment is not any
-      // worse than before metering existed.  However, it probably is
-      // only necessary to be added to the kernel, rather than all
-      // static vats once we add metering support to the dynamic vat
-      // implementation.
-      replaceGlobalMeter,
-
-      // FIXME: Same for registerEndOfCrank.
-      registerEndOfCrank: realmRegisterEndOfCrank,
-    });
-
-    return nestedEvaluate(src)(filePrefix).default;
-  };
-}
-
-function buildSESKernel(sesEvaluator, endowments) {
-  const kernelSource = getKernelSource();
-  const buildKernel = sesEvaluator(kernelSource, 'kernel');
-  return buildKernel(endowments);
-}
-
 export async function buildVatController(config, withSES = true, argv = []) {
   if (!withSES) {
     throw Error('SES is now mandatory');
   }
+  if (typeof Compartment === 'undefined') {
+    throw Error('SES must be installed before calling buildVatController');
+  }
   // todo: move argv into the config
 
-  const endOfCrankHooks = new Set();
-  const registerEndOfCrank = hook => endOfCrankHooks.add(hook);
+  // https://github.com/Agoric/SES-shim/issues/292
+  harden(Object.getPrototypeOf(console));
+  harden(console);
 
-  const runEndOfCrank = () => {
-    endOfCrankHooks.forEach(h => {
-      try {
-        h();
-      } catch (e) {
-        try {
-          log.error('cannot run hook:', e);
-        } catch (e2) {
-          // Nothing to do.
-        }
-      }
-    });
-    endOfCrankHooks.clear();
-  };
+  function kernelRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    } else if (what === 're2') {
+      // The kernel imports @agoric/transform-metering to get makeMeter(),
+      // and transform-metering imports re2, to add it to the generated
+      // endowments. TODO Our transformers no longer traffic in endowments,
+      // so that could probably be removed, in which case we'd no longer need
+      // to provide it here. We should decide whether to let the kernel use
+      // the native RegExp or replace it with re2. TODO we also need to make
+      // sure vats get (and stick with) re2 for their 'RegExp'.
+      return re2;
+    } else {
+      throw Error(`kernelRequire unprepared to satisfy require(${what})`);
+    }
+  }
+  const kernelSource = await bundleSource(KERNEL_SOURCE_PATH);
+  const kernelNS = await importBundle(kernelSource, {
+    filePrefix: 'kernel',
+    endowments: {
+      console,
+      require: kernelRequire,
+      HandledPromise,
+    },
+  });
+  const buildKernel = kernelNS.default;
 
-  const sesEvaluator = makeSESEvaluator(registerEndOfCrank);
+  // transformMetering() requires Babel, which imports 'fs' and 'path', so it
+  // cannot be implemented within a non-start-Compartment. We build it out
+  // here and pass it to the kernel, which then passes it to vats. This is
+  // intended to be powerless. TODO: when we remove metering within vats
+  // (leaving only vat-at-a-time metering), this function should only be used
+  // to build loadStaticVat and loadDynamicVat. It may still be passed to the
+  // kernel (for loadDynamicVat), but it should no longer be passed into the
+  // vats themselves. TODO: transformMetering() is sync because it is passed
+  // into c.evaluate (which of course cannot handle async), but in the
+  // future, this may live on the far side of a kernel/vatworker boundary, so
+  // we kind of want it to be async.
+  const mt = makeMeteringTransformer(babelCore);
+  function transformMetering(src, getMeter) {
+    // 'getMeter' provides the meter to which the transformation itself is
+    // billed (the COMPUTE meter is charged the length of the source string).
+    // The endowment must be present and truthy, otherwise the transformation
+    // is disabled. TODO: rethink that, and have @agoric/transform-metering
+    // export a simpler function (without 'endowments' or .rewrite).
+    const ss = mt.rewrite({ src, endowments: { getMeter } });
+    return ss.src;
+  }
+  harden(transformMetering);
 
-  // Evaluate source to produce a setup function. This binds withSES from the
-  // enclosing context and evaluates it either in a SES context, or without SES
-  // by directly calling require().
-  async function evaluateToSetup(sourceIndex, tag = undefined) {
+  // the same is true for the tildot transform
+  const transformTildot = harden(makeTransform(babelParser, babelGenerate));
+
+  function vatRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    } else {
+      throw Error(`vatRequire unprepared to satisfy require(${what})`);
+    }
+  }
+
+  async function loadStaticVat(sourceIndex, name) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
       );
     }
-
-    // we load the sourceIndex (and everything it imports), and expect to get
-    // two symbols from each Vat: 'start' and 'dispatch'. The code in
-    // bootstrap.js gets a 'controller' object which can invoke start()
-    // (which is expected to initialize some state and export some facetIDs)
-    const { source, sourceMap } = await bundleSource(
-      `${sourceIndex}`,
-      'nestedEvaluate',
-    );
-    const actualSource = `(${source})\n${sourceMap}`;
-    const setup = sesEvaluator(actualSource, tag);
+    const bundle = await bundleSource(sourceIndex);
+    const vatNS = await importBundle(bundle, {
+      filePrefix: name,
+      endowments: {
+        console,
+        require: vatRequire,
+        HandledPromise,
+        // re2 is a RegExp work-a-like that
+        // disables backtracking expressions
+        // for safer memory consumption
+        RegExp: re2,
+      },
+    });
+    const setup = vatNS.default;
     return setup;
   }
 
   const hostStorage = config.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
+
+  // It is important that tameMetering() was called by application startup,
+  // before install-ses. Rather than ask applications to capture the return
+  // value and pass it all the way through to here, we just run
+  // tameMetering() again (and rely upon its only-once behavior) to get the
+  // control facet (replaceGlobalMeter), and pass it in through
+  // kernelEndowments. If our enclosing application decided to not tame the
+  // globals, we detect that and refrain from touching it later.
+  const replaceGlobalMeter = isTamed() ? tameMetering() : undefined;
+  console.log(
+    `SwingSet global metering is ${
+      isTamed() ? 'enabled' : 'disabled (no replaceGlobalMeter)'
+    }`,
+  );
+
+  // we give the kernel a meteringTransform function, so it can offer it to
+
   const kernelEndowments = {
-    setImmediate,
+    waitUntilQuiescent,
     hostStorage,
-    runEndOfCrank,
-    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
-    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, 'vat-vatAdmin'),
+    vatAdminDevSetup: await loadStaticVat(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
+    vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
+    replaceGlobalMeter,
+    transformMetering,
+    transformTildot,
   };
 
-  const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
+  const kernel = buildKernel(kernelEndowments);
+
   if (config.verbose) {
     kernel.kdebugEnable(true);
   }
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
     log.debug(`= adding vat '${name}' from ${sourceIndex}`);
-    const setup = await evaluateToSetup(sourceIndex, `vat-${name}`);
+    const setup = await loadStaticVat(sourceIndex, `vat-${name}`);
     kernel.addGenesisVat(name, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
-    const setup = await evaluateToSetup(sourceIndex, `dev-${name}`);
+    const setup = await loadStaticVat(sourceIndex, `dev-${name}`);
     kernel.addGenesisDevice(name, setup, endowments);
   }
 

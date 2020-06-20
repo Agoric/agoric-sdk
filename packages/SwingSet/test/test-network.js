@@ -1,7 +1,7 @@
-// @ts-check
+/* global harden */
+import '@agoric/install-ses'; // adds 'harden' to global
 import { test } from 'tape-promise/tape';
 import { producePromise } from '@agoric/produce-promise';
-import rawHarden from '@agoric/harden';
 
 import {
   parse,
@@ -13,8 +13,6 @@ import {
   dataToBase64,
   base64ToBytes,
 } from '../src/vats/network';
-
-const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
