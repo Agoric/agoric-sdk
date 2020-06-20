@@ -29,7 +29,6 @@
   "dependencies": {
     "@agoric/assert": "^0.0.6",
     "@agoric/bundle-source": "^1.1.4",
-    "@agoric/evaluate": "^2.2.5",
     "@agoric/eventual-send": "^0.9.1",
     "@agoric/harden": "^0.0.8",
     "@agoric/marshal": "^0.2.1",
