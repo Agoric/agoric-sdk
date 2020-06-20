@@ -9,10 +9,6 @@ import { isTamed, tameMetering } from '@agoric/tame-metering';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
-import {
-  SES1ReplaceGlobalMeter,
-  SES1TameMeteringShim,
-} from '@agoric/tame-metering';
 import { HandledPromise } from '@agoric/eventual-send';
 
 import { makeMeteringTransformer } from '@agoric/transform-metering';
