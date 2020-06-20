@@ -82,19 +82,21 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
       ).getInstanceRecord(instanceHandle);
-      const installationCode = await E(zoe).getInstallation(installationHandle);
+      const installationBundle = await E(zoe).getInstallation(
+        installationHandle,
+      );
       // pick some arbitrary code points as a signature.
       assert(
-        installationCode.includes('asset: give.Asset,'),
-        details`source code didn't match at "asset: give.Asset,"`,
+        installationBundle.source.includes('asset: give.Asset,'),
+        details`source bundle didn't match at "asset: give.Asset,"`,
       );
       assert(
-        installationCode.includes('firstOfferExpected'),
-        details`source code didn't match at "firstOfferExpected"`,
+        installationBundle.source.includes('firstOfferExpected'),
+        details`source bundle didn't match at "firstOfferExpected"`,
       );
       assert(
-        installationCode.includes('makeMatchingInvite'),
-        details`source code didn't match at "makeMatchingInvite"`,
+        installationBundle.source.includes('makeMatchingInvite'),
+        details`source bundle didn't match at "makeMatchingInvite"`,
       );
       assert(
         installationHandle === installations.atomicSwap,

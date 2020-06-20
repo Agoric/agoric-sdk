@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -21,13 +22,13 @@ test('zoe - atomicSwap', async t => {
     moola,
     simoleans,
   } = setup();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
 
   // pack the contract
-  const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
+  const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -148,13 +149,13 @@ test('zoe - non-fungible atomicSwap', async t => {
     createRpgItem,
   } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
 
   // pack the contract
-  const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
+  const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
 
   // Setup Alice
   const calico37Amount = cryptoCats(harden(['calico #37']));

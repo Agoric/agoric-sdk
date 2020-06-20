@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -22,7 +23,7 @@ test('autoSwap with valid offers', async t => {
       moola,
       simoleans,
     } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -38,9 +39,9 @@ test('autoSwap with valid offers', async t => {
     // Alice creates an autoswap instance
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(autoswapRoot);
+    const bundle = await bundleSource(autoswapRoot);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const issuerKeywordRecord = harden({
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
@@ -232,7 +233,7 @@ test('autoSwap - test fee', async t => {
       moola,
       simoleans,
     } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -246,9 +247,9 @@ test('autoSwap - test fee', async t => {
     // Alice creates an autoswap instance
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(autoswapRoot);
+    const bundle = await bundleSource(autoswapRoot);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const issuerKeywordRecord = harden({
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,

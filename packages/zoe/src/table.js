@@ -59,7 +59,7 @@ export const makeValidateProperties = ([...expectedProperties]) => {
     for (let i = 0; i < actualProperties.length; i += 1) {
       assert(
         expectedProperties[i] === actualProperties[i],
-        details`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`,
+        details`property '${expectedProperties[i]}' did not equal actual property '${actualProperties[i]}'`,
       );
     }
     return true;

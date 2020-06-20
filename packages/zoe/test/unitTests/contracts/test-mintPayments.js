@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -15,10 +16,10 @@ const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 test('zoe - mint payments', async t => {
   t.plan(2);
   try {
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(mintPaymentsRoot);
-    const installationHandle = await E(zoe).install(source, moduleFormat);
+    const bundle = await bundleSource(mintPaymentsRoot);
+    const installationHandle = await E(zoe).install(bundle);
     const inviteIssuer = await E(zoe).getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -56,10 +57,10 @@ test('zoe - mint payments', async t => {
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
   try {
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(mintPaymentsRoot);
-    const installationHandle = await E(zoe).install(source, moduleFormat);
+    const bundle = await bundleSource(mintPaymentsRoot);
+    const installationHandle = await E(zoe).install(bundle);
     const inviteIssuer = await E(zoe).getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 

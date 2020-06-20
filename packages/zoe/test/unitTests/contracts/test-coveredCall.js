@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -18,10 +19,10 @@ test('zoe - coveredCall', async t => {
   t.plan(13);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
-    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
+    const bundle = await bundleSource(coveredCallRoot);
+    const coveredCallInstallationHandle = await zoe.install(bundle);
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
@@ -143,10 +144,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   t.plan(13);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
-    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
+    const bundle = await bundleSource(coveredCallRoot);
+    const coveredCallInstallationHandle = await zoe.install(bundle);
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
@@ -278,17 +279,14 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Setup the environment
     const timer = buildManualTimer(console.log);
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+    const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
-    const {
-      source: swapSource,
-      moduleFormat: swapModuleFormat,
-    } = await bundleSource(atomicSwapRoot);
+    const coveredCallInstallationHandle = await zoe.install(coveredCallBundle);
+    const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-    const swapInstallationId = zoe.install(swapSource, swapModuleFormat);
+    const swapInstallationId = await zoe.install(atomicSwapBundle);
 
     // Setup Alice
     // Alice starts with 3 moola
@@ -544,11 +542,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Setup the environment
     const timer = buildManualTimer(console.log);
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+    const bundle = await bundleSource(coveredCallRoot);
 
-    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
+    const coveredCallInstallationHandle = await zoe.install(bundle);
 
     // Setup Alice
     // Alice starts with 3 moola
@@ -829,10 +827,10 @@ test('zoe - coveredCall non-fungible', async t => {
     createRpgItem,
   } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   // install the contract.
-  const { source, moduleFormat } = await bundleSource(coveredCallRoot);
-  const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
+  const bundle = await bundleSource(coveredCallRoot);
+  const coveredCallInstallationHandle = await zoe.install(bundle);
   const timer = buildManualTimer(console.log);
 
   // Setup Alice

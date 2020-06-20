@@ -23,7 +23,7 @@ import {
 } from './objArrayConversion';
 import { isOfferSafeForOffer } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
-import { evalContractCode } from './evalContractCode';
+import { evalContractBundle } from './evalContractCode';
 import { makeTables } from './state';
 
 // TODO Update types and documentatuon to describe the new API
@@ -316,9 +316,12 @@ import { makeTables } from './state';
  *
  * @param {Object.<string,any>} [additionalEndowments] pure or pure-ish
  * endowments to add to evaluator
+ * @param {Object.<string,any>} [vatPowers] provide 'setMeter' and
+ * 'transformMetering' (from the vat's buildRoot invocation) to enable
+ * within-vat metering of contract code
  * @returns {ZoeService} The created Zoe service.
  */
-const makeZoe = (additionalEndowments = {}) => {
+const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
   const {
@@ -644,22 +647,31 @@ const makeZoe = (additionalEndowments = {}) => {
        * registering it with Zoe. We have a moduleFormat to allow for
        * different future formats without silent failures.
        */
-      install: (code, moduleFormat = 'nestedEvaluate') => {
-        let installation;
-        switch (moduleFormat) {
-          case 'nestedEvaluate':
-          case 'getExport': {
-            installation = evalContractCode(code, additionalEndowments);
-            break;
-          }
-          default: {
-            assert.fail(
-              details`Unimplemented installation moduleFormat ${moduleFormat}`,
-            );
-          }
+      // TODO: we have 2 or 3 dapps (in separate repos) which do { source,
+      // moduleFormat } = bundleSource(..), then E(zoe).install(source,
+      // moduleFormat). Those will get the default
+      // moduleFormat="nestedEvaluate". We need to support those callers,
+      // even though our new preferred API is just install(bundle). We also
+      // look for getExport because that's easier to create in the unit
+      // tests. TODO once we've ugpraded and released all the dapps, consider
+      // removing this backwards-compatibility feature.
+      install: async (bundle, oldModuleFormat) => {
+        if (
+          oldModuleFormat === 'nestedEvaluate' ||
+          oldModuleFormat === 'getExport'
+        ) {
+          bundle = harden({
+            source: bundle,
+            moduleFormat: oldModuleFormat,
+          });
         }
+        const installation = await evalContractBundle(
+          bundle,
+          additionalEndowments,
+          vatPowers,
+        );
         const installationHandle = installationTable.create(
-          harden({ installation, code }),
+          harden({ installation, bundle }),
         );
         return installationHandle;
       },
@@ -915,7 +927,7 @@ const makeZoe = (additionalEndowments = {}) => {
         );
       },
       getInstallation: installationHandle =>
-        installationTable.get(installationHandle).code,
+        installationTable.get(installationHandle).bundle,
     },
   );
   return zoeService;
