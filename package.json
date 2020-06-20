@@ -22,6 +22,7 @@
     "packages/transform-metering",
     "packages/default-evaluate-options",
     "packages/evaluate",
+    "packages/install-metering-and-ses",
     "packages/marshal",
     "packages/same-structure",
     "packages/captp",
