@@ -22,11 +22,14 @@
     "tmp": "^0.1.0"
   },
   "dependencies": {
+    "@agoric/babel-parser": "^7.6.4",
     "@agoric/bundle-source": "^1.1.4",
     "@agoric/captp": "^1.3.1",
-    "@agoric/evaluate": "^2.2.5",
     "@agoric/eventual-send": "^0.9.1",
+    "@agoric/import-bundle": "^0.0.6",
     "@agoric/produce-promise": "^0.1.1",
+    "@agoric/transform-eventual-send": "^1.2.4",
+    "@babel/generator": "^7.6.4",
     "anylogger": "^0.21.0",
     "builtin-modules": "^3.1.0",
     "chalk": "^2.4.2",

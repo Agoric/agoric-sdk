@@ -1,12 +1,16 @@
 /* eslint-disable no-await-in-loop */
 import builtinModules from 'builtin-modules';
-import { evaluateProgram } from '@agoric/evaluate';
+import { importBundle } from '@agoric/import-bundle';
 import { E, HandledPromise, makeCapTP } from '@agoric/captp';
 import { producePromise } from '@agoric/produce-promise';
-
+import { makeTransform } from '@agoric/transform-eventual-send';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
 import bundleSource from '@agoric/bundle-source';
 
 import path from 'path';
+
+const transformTildot = makeTransform(babelParser, babelGenerate);
 
 const RETRY_DELAY_MS = 1000;
 
@@ -69,17 +73,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           const pathResolve = (...resArgs) =>
             path.resolve(path.dirname(moduleFile), ...resArgs);
           log('running', moduleFile);
-          const { source, sourceMap } = await bundleSource(
+          const bundle = await bundleSource(
             moduleFile,
             undefined,
             { externals: builtinModules },
           );
-
-          const nestedEvaluate = src =>
-            evaluateProgram(src, { require, HandledPromise, nestedEvaluate });
-
-          const actualSource = `(${source}\n)\n${sourceMap}`;
-          const mainNS = nestedEvaluate(actualSource)();
+          const mainNS = await importBundle(bundle, { endowments: { require, HandledPromise },
+                                                      transforms: [transformTildot],
+                                                    });
           const main = mainNS.default;
           if (typeof main !== 'function') {
             log.error(
