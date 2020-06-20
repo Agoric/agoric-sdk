@@ -12,6 +12,23 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-standalone/-/babel-standalone-7.9.5.tgz#1ca0c17844924199d31e49d6b67e8b2a629b8599"
   integrity sha512-1Aa23oPuRi4kywUyZODo8zey9Gq2NpD2xUnNvgJLoT8orMQRlVOtvbG3JeHq5sjJERlF/q6csg4/P8t8/5IABA==
 
+"@agoric/default-evaluate-options@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@agoric/default-evaluate-options/-/default-evaluate-options-0.3.6.tgz#ff71479f1709c7a2d264e102264191281a83f321"
+  integrity sha512-26L3QdtFPolca9S7p7+SE8YOGfZ9Jxsa1P2Kf2bQ1VqjuiPrFj0ad06iXHWWkBpMfDwGeVPwLlc0LSmfn/xtjw==
+  dependencies:
+    "@agoric/babel-parser" "^7.6.4"
+    "@agoric/transform-eventual-send" "^1.3.0"
+    "@babel/generator" "^7.6.4"
+
+"@agoric/evaluate@^2.1.3":
+  version "2.2.6"
+  resolved "https://registry.yarnpkg.com/@agoric/evaluate/-/evaluate-2.2.6.tgz#757c90f67f5437cd904f3d0205743331f0b69c9b"
+  integrity sha512-LWHM3h3z020O/oiPLTWbWVuShhPYb5cCsFxx3K2i1H36aKZoAKHENlehwlBzlKqDdDRbdrUnu9+dqojbj8Bvwg==
+  dependencies:
+    "@agoric/default-evaluate-options" "^0.3.6"
+    esm "^3.2.5"
+
 "@agoric/harden@^0.0.4":
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.4.tgz#b0d0b2fdfc1a8c7e60454374824442f5b37ea8bd"
@@ -65,6 +82,11 @@
     supercop.js "^2.0.1"
     varstruct "^6.1.1"
     websocket-stream "^5.1.1"
+
+"@agoric/transform-eventual-send@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@agoric/transform-eventual-send/-/transform-eventual-send-1.3.0.tgz#6f7d7642138e61c58fcd33aca16d9a3e1198aa60"
+  integrity sha512-Zy/h0BMTXZTvrQ2Wa0YgYs8YzBUTHITDB+aLH3YhAYUbRiq7u30K6yMfUNOBWPEAufkEYwaxmZdzqYusfUzwtA==
 
 "@agoric/transform-module@^0.3.0":
   version "0.3.0"
@@ -14226,7 +14248,7 @@ tape-promise@^4.0.0:
     is-promise "^2.1.0"
     onetime "^2.0.0"
 
-tape@^4.10.0, tape@^4.10.2, tape@^4.11.0, tape@^4.9.2:
+tape@^4.10.2, tape@^4.11.0, tape@^4.9.2:
   version "4.11.0"
   resolved "https://registry.yarnpkg.com/tape/-/tape-4.11.0.tgz#63d41accd95e45a23a874473051c57fdbc58edc1"
   integrity sha512-yixvDMX7q7JIs/omJSzSZrqulOV51EC9dK8dM0TzImTIkHWfe2/kFyL5v+d9C+SrCMaICk59ujsqFAVidDqDaA==
