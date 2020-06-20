@@ -20,7 +20,6 @@
     "packages/transform-eventual-send",
     "packages/tame-metering",
     "packages/transform-metering",
-    "packages/evaluate",
     "packages/install-metering-and-ses",
     "packages/marshal",
     "packages/same-structure",
