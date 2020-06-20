@@ -2,8 +2,8 @@ import harden from '@agoric/harden';
 
 import { makeZoe } from '@agoric/zoe';
 
-const build = (_E, _log) => {
-  const zoe = makeZoe({ require });
+const build = (vatPowers, _E, _log) => {
+  const zoe = makeZoe({}, vatPowers);
   return harden({
     getZoe: () => zoe,
   });
@@ -11,7 +11,7 @@ const build = (_E, _log) => {
 
 harden(build);
 
-function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers, vatPowers0) {
   function log(...args) {
     helpers.log(...args);
     console.debug(...args);
@@ -19,8 +19,9 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    (E, _D, vatPowers) => build(vatPowers, E, log),
     helpers.vatID,
+    vatPowers0,
   );
 }
 export default harden(setup);

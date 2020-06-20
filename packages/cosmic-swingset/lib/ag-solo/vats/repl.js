@@ -1,7 +1,7 @@
-import { makeEvaluators } from '@agoric/evaluate';
+/* global Compartment */
 import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
-import { makeConsole } from '@agoric/swingset-vat/src/makeConsole';
+import { E, HandledPromise } from '@agoric/eventual-send';
 
 import makeUIAgentMakers from './ui-agent';
 
@@ -79,7 +79,11 @@ export function stringify(
   return ret;
 }
 
-export function getReplHandler(E, homeObjects, send, vatPowers) {
+export function getReplHandler(homeObjects, send, vatPowers) {
+  // We use getInterfaceOf locally, and transformTildot is baked into the
+  // Compartment we use to evaluate REPL inputs. We provide getInterfaceOf
+  // and Remotable to REPL input code.
+  const { getInterfaceOf, Remotable, transformTildot } = vatPowers;
   let highestHistory = -1;
   const commands = {
     [highestHistory]: '',
@@ -106,7 +110,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
       if (typeof a === 'string') {
         s = a;
       } else {
-        s = stringify(a, 2, vatPowers.getInterfaceOf);
+        s = stringify(a, 2, getInterfaceOf);
       }
       ret += `${sep}${s}`;
       sep = ' ';
@@ -136,7 +140,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
     updateHistorySlot(Math.floor(consoleOffset / 2));
   }
 
-  const replConsole = makeConsole({
+  const replConsole = harden({
     debug: writeToConsole,
     log: writeToConsole,
     info: writeToConsole,
@@ -145,7 +149,26 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
   });
 
   replConsole.log(`Welcome to Agoric!`);
-  const { evaluateProgram } = makeEvaluators({ sloppyGlobals: true });
+  const endowments = {
+    Remotable,
+    getInterfaceOf,
+    console: replConsole,
+    E,
+    HandledPromise,
+    commands,
+    history,
+    home: homeObjects,
+    harden,
+  };
+  const modules = {};
+  const transforms = [];
+  if (typeof transformTildot === 'function') {
+    transforms.push(transformTildot);
+  } else {
+    console.log(`REPL was not given working transformTildot, disabled`);
+  }
+  const options = { transforms };
+  const c = new Compartment(endowments, modules, options);
 
   const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
   homeObjects.agent = agentMakers;
@@ -185,20 +208,11 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
       display[histnum] = `working on eval` + `(${body})`;
       updateHistorySlot(histnum);
 
-      const endowments = {
-        ...vatPowers,
-        console: replConsole,
-        E,
-        commands,
-        history,
-        home: homeObjects,
-        harden,
-      };
       let r;
       try {
-        r = evaluateProgram(body, endowments);
+        r = c.evaluate(body, { sloppyGlobalsMode: true });
         history[histnum] = r;
-        display[histnum] = stringify(r, undefined, vatPowers.getInterfaceOf);
+        display[histnum] = stringify(r, undefined, getInterfaceOf);
       } catch (e) {
         console.log(`error in eval`, e);
         history[histnum] = e;
@@ -213,11 +227,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
         r.then(
           res => {
             history[histnum] = res;
-            display[histnum] = stringify(
-              res,
-              undefined,
-              vatPowers.getInterfaceOf,
-            );
+            display[histnum] = stringify(res, undefined, getInterfaceOf);
           },
           rej => {
             // leave history[] alone: leave the rejected promise in place

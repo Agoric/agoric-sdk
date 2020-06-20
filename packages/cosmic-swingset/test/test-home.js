@@ -117,8 +117,8 @@ test('home.wallet - receive zoe invite', async t => {
     const contractRoot = require.resolve(
       '@agoric/zoe/src/contracts/automaticRefund',
     );
-    const { source, moduleFormat } = await bundleSource(contractRoot);
-    const installationHandle = await E(zoe).install(source, moduleFormat);
+    const bundle = await bundleSource(contractRoot);
+    const installationHandle = await E(zoe).install(bundle);
     const invite = await E(zoe).makeInstance(installationHandle);
 
     // Check that the wallet knows about the Zoe invite issuer and starts out

@@ -1,21 +1,21 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import evaluate from '@agoric/evaluate';
 
 import { makeContractHost } from '@agoric/spawner';
 
-function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers, vatPowers0) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E =>
+    (_E, _D, vatPowers) =>
       harden({
         makeHost() {
-          return harden(makeContractHost(E, evaluate, { require }));
+          return harden(makeContractHost(vatPowers));
         },
       }),
     helpers.vatID,
+    vatPowers0,
   );
 }
 export default harden(setup);

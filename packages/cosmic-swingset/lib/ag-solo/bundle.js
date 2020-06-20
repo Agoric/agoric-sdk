@@ -2,12 +2,16 @@
 import parseArgs from 'minimist';
 import WebSocket from 'ws';
 import { E, HandledPromise } from '@agoric/eventual-send';
-import { evaluateProgram } from '@agoric/evaluate';
+import bundleSource from '@agoric/bundle-source';
+import { importBundle } from '@agoric/import-bundle';
+import { makeTransform } from '@agoric/transform-eventual-send';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
 import { makeCapTP } from '@agoric/captp/lib/captp';
 import fs from 'fs';
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+const transformTildot = makeTransform(babelParser, babelGenerate);
 
 const makePromise = () => {
   const pr = {};
@@ -134,12 +138,10 @@ export default async function bundle(insistIsBasedir, args) {
       }
 
       for (const bundled of bundles) {
-        const actualSources = `(${bundled.main.source}\n)\n${bundled.main.sourceMap}`;
-        // console.debug(actualSources);
-        const mainNS = evaluateProgram(actualSources, {
-          require,
-          HandledPromise,
-        })();
+        const mainNS = await importBundle(bundle, {
+          endowments: { require, HandledPromise },
+          transforms: [transformTildot],
+        });
         const main = mainNS.default;
         if (typeof main !== 'function') {
           console.error(`Bundle main does not have an export default function`);

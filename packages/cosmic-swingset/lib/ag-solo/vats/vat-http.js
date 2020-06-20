@@ -68,7 +68,7 @@ function build(E, D, vatPowers) {
       if (ROLES.client) {
         handler.readyForClient = () => readyForClient.p;
 
-        const replHandler = getReplHandler(E, homeObjects, send, vatPowers);
+        const replHandler = getReplHandler(homeObjects, send, vatPowers);
         registerURLHandler(replHandler, '/private/repl');
 
         // Assign the captp handler.
@@ -206,13 +206,14 @@ function build(E, D, vatPowers) {
   };
 }
 
-export default function setup(syscall, state, helpers) {
+export default function setup(syscall, state, helpers, vatPowers0) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D, powers) => {
-      return harden(build(E, D, powers));
+    (E, D, vatPowers) => {
+      return harden(build(E, D, vatPowers));
     },
     helpers.vatID,
+    vatPowers0,
   );
 }
