@@ -1,66 +1,30 @@
 /* global Compartment lockdown */
-import {
-  tameMetering,
-  SES1TameMeteringShim,
-  SES1ReplaceGlobalMeter,
-} from '@agoric/tame-metering';
+import { replaceGlobalMeter } from './install-metering';
+import '@agoric/install-ses'; // calls lockdown()
 
 import test from 'tape-promise/tape';
 import * as babelCore from '@babel/core';
-
-import SES1 from 'ses';
 
 // Here's how we can try lockdown.
 // import { lockdown } from '@agoric/tame-metering/src/ses.esm.js';
 
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
 
-let replaceGlobalMeter;
-let makeEvaluator;
 let sesRealm;
 
-// Find out whether we are using the lockdown() or SES1 API.
-if (typeof lockdown !== 'undefined') {
-  console.error(
-    'May be blocked by https://github.com/Agoric/SES-beta/issues/8',
-  );
+// 'May be blocked by https://github.com/Agoric/SES-beta/issues/8',
 
-  // Do our taming of the globals,
-  replaceGlobalMeter = tameMetering();
-  // then lock down the rest of SES.
-  lockdown();
-
-  // Our SES evaluator uses a Compartment.
-  makeEvaluator = opts => {
-    const c = new Compartment(undefined, undefined, opts);
-    return {
-      evaluate(src, endowments = {}) {
-        return c.evaluate(src, { endowments });
-      },
-    };
+// Our SES evaluator uses a Compartment.
+const makeEvaluator = opts => {
+  const c = new Compartment(undefined, undefined, opts);
+  return {
+    evaluate(src, endowments = {}) {
+      return c.evaluate(src, { endowments });
+    },
   };
-} else {
-  sesRealm = SES1.makeSESRootRealm({
-    consoleMode: 'allow',
-    errorStackMode: 'allow',
-    shims: [SES1TameMeteringShim],
-    configurableGlobals: true,
-  });
-  replaceGlobalMeter = SES1ReplaceGlobalMeter(sesRealm);
-  makeEvaluator = opts => {
-    const c = sesRealm.global.Realm.makeCompartment(opts);
-    // FIXME: This call should be unnecessary.
-    // We currently need it because fresh Compartments
-    // do not inherit the configured stable globals.
-    Object.defineProperties(
-      c.global,
-      Object.getOwnPropertyDescriptors(sesRealm.global),
-    );
-    return c;
-  };
-}
+};
 
-test('metering evaluator', async t => {
+test.skip('metering evaluator', async t => {
   const rejectionHandler = (_e, _promise) => {
     // console.log('have', e);
   };
