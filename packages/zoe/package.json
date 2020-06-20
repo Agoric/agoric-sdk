@@ -34,7 +34,6 @@
   "dependencies": {
     "@agoric/assert": "^0.0.6",
     "@agoric/ertp": "^0.5.4",
-    "@agoric/evaluate": "^2.2.5",
     "@agoric/eventual-send": "^0.9.1",
     "@agoric/harden": "^0.0.8",
     "@agoric/import-bundle": "^0.0.6",
