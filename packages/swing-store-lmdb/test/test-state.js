@@ -1,3 +1,8 @@
+// import LMDB before SES lockdown, as workaround for
+// https://github.com/Agoric/SES-shim/issues/308
+import 'node-lmdb';
+import '@agoric/install-ses';
+
 import fs from 'fs';
 import path from 'path';
 
@@ -41,7 +46,7 @@ function testStorage(t, storage) {
   t.deepEqual(getAllState(storage), reference, 'check state after changes');
 }
 
-test('storageInLMDB', t => {
+test('storageInLMDB under SES', t => {
   fs.rmdirSync('testdb', { recursive: true });
   t.equal(isSwingStore('testdb'), false);
   const { storage, commit, close } = initSwingStore('testdb');
@@ -57,7 +62,7 @@ test('storageInLMDB', t => {
   t.end();
 });
 
-test('rejectSimple', t => {
+test('rejectSimple under SES', t => {
   const simpleDir = 'testdb-simple';
   fs.mkdirSync(simpleDir, { recursive: true });
   fs.writeFileSync(
