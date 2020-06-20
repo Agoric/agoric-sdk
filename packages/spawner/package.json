@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "test": "tap --no-coverage --jobs=1 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -30,8 +30,9 @@
   "dependencies": {
     "@agoric/assert": "^0.0.7",
     "@agoric/ertp": "^0.5.5",
-    "@agoric/evaluate": "^2.2.6",
+    "@agoric/eventual-send": "^0.9.2",
     "@agoric/harden": "^0.0.8",
+    "@agoric/import-bundle": "^0.0.7",
     "@agoric/nat": "^2.0.1",
     "@agoric/produce-promise": "^0.1.2",
     "@agoric/same-structure": "^0.0.7",
@@ -39,9 +40,11 @@
     "@agoric/weak-store": "0.0.7"
   },
   "devDependencies": {
+    "@agoric/install-metering-and-ses": "0.1.0",
+    "@agoric/install-ses": "0.1.0",
     "@agoric/swingset-vat": "^0.5.2",
     "esm": "^3.2.25",
-    "tap-spec": "^5.0.0",
+    "tap": "^14.10.5",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
   },

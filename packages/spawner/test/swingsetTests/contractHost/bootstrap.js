@@ -2,6 +2,7 @@
 
 import harden from '@agoric/harden';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
@@ -45,22 +46,32 @@ function build(E, log) {
     },
   });
 
-  function trivialContractTest(host) {
+  function trivialContractTest(host, oldformat) {
     log('starting trivialContractTest');
 
-    const trivContract = harden({
-      start: (terms, inviteMaker) => {
-        return inviteMaker.make('foo', 8);
-      },
-    });
-    const contractSrcs = harden({ start: `${trivContract.start} ` });
-
-    const installationP = E(host).install(contractSrcs);
+    function trivContractStart(terms, inviteMaker) {
+      return inviteMaker.make('foo', 8);
+    }
+    const contractBundle = bundleFunction(trivContractStart);
+    let installationP;
+    if (oldformat) {
+      installationP = E(host).install(
+        contractBundle.source,
+        contractBundle.moduleFormat,
+      );
+    } else {
+      installationP = E(host).install(contractBundle);
+    }
 
     return E(host)
-      .getInstallationSourceCode(installationP)
-      .then(src => {
-        log('Does source match? ', src.start === contractSrcs.start);
+      .getInstallationSourceBundle(installationP)
+      .then(bundle => {
+        // the contents of a bundle are generally opaque to us: that's
+        // between bundle-source and import-bundle . But we happen to know
+        // that these contain a .source property, which is a string that
+        // includes the contents of the function we bundled, which we can
+        // compare.
+        log('Does source match? ', bundle.source === contractBundle.source);
 
         const fooInviteP = E(installationP).spawn('foo terms');
 
@@ -85,25 +96,23 @@ function build(E, log) {
   function exhaustedContractTest(host) {
     log('starting exhaustedContractTest');
 
-    const exhContract = harden({
-      start: (terms, _inviteMaker) => {
-        if (terms === 'loop forever') {
-          for (;;) {
-            // Do nothing.
-          }
-        } else {
-          return 123;
+    function exhContractStart(terms, _inviteMaker) {
+      if (terms === 'loop forever') {
+        for (;;) {
+          // Do nothing.
         }
-      },
-    });
-    const contractSrcs = harden({ start: `${exhContract.start} ` });
+      } else {
+        return 123;
+      }
+    }
+    const contractBundle = bundleFunction(exhContractStart);
 
-    const installationP = E(host).install(contractSrcs);
+    const installationP = E(host).install(contractBundle);
 
     return E(host)
-      .getInstallationSourceCode(installationP)
-      .then(src => {
-        log('Does source match? ', src.start === contractSrcs.start);
+      .getInstallationSourceBundle(installationP)
+      .then(bundle => {
+        log('Does source match? ', bundle.source === contractBundle.source);
 
         return E(installationP)
           .spawn('loop forever')
@@ -355,6 +364,10 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
+        case 'trivial-oldformat': {
+          const host = await E(vats.host).makeHost();
+          return trivialContractTest(host, 'oldformat');
+        }
         case 'trivial': {
           const host = await E(vats.host).makeHost();
           return trivialContractTest(host);

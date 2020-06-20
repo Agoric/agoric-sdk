@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import path from 'path';
