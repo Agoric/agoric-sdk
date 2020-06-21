@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { assert, details, openDetail } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 
 import { arrayToObj, assertSubset } from './objArrayConversion';
@@ -18,13 +18,13 @@ export const assertKeywordName = keyword => {
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
   assert(
     firstCapASCII.test(keyword),
-    details`keyword ${openDetail(
+    details`keyword ${q(
       keyword,
     )} must be ascii and must start with a capital letter.`,
   );
   assert(
     keyword !== 'NaN' && keyword !== 'Infinity',
-    details`keyword ${openDetail(keyword)} must not be a number's name`,
+    details`keyword ${q(keyword)} must not be a number's name`,
   );
 };
 

@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache license 2.0
 
 import harden from '@agoric/harden';
-import { assert, details, openDetail } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 /**
  * Distinguishes between adding a new key (init) and updating or
  * referencing a key (get, set, delete).
@@ -13,12 +13,9 @@ import { assert, details, openDetail } from '@agoric/assert';
 function makeStore(keyName = 'key') {
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
-    assert(
-      !wm.has(key),
-      details`${openDetail(keyName)} already registered: ${key}`,
-    );
+    assert(!wm.has(key), details`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(wm.has(key), details`${openDetail(keyName)} not found: ${key}`);
+    assert(wm.has(key), details`${q(keyName)} not found: ${key}`);
   return harden({
     has: key => wm.has(key),
     init: (key, value) => {
