@@ -15,16 +15,16 @@ import { insistCapData } from './capdata';
  * @return nothing
  */
 export function insistMessage(message) {
-  assert.equal(
+  assert.typeof(
     message.method,
-    `${message.method}`,
+    'string',
     details`message has non-string .method ${message.method}`,
   );
   insistCapData(message.args);
   if (message.result) {
-    assert.equal(
+    assert.typeof(
       message.result,
-      `${message.result}`,
+      'string',
       details`message has non-string non-null .result ${message.result}`,
     );
   }
