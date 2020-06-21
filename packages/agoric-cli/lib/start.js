@@ -2,10 +2,13 @@ import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
 import djson from 'deterministic-json';
+import TOML from '@iarna/toml';
 
 const PROVISION_PASSES = '100provisionpass';
 const DELEGATE0_STAKE = '100000000uagstake';
 const CHAIN_ID = 'agoric';
+
+// This should be configurable.
 const CHAIN_PORT = 26657;
 
 const FAKE_CHAIN_DELAY =
@@ -40,6 +43,24 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const hashFile = `${genfile}.sha256`;
     log('writing', hashFile);
     await fs.writeFile(hashFile, gci);
+  };
+
+  const finishConfig = async (configfile, portNum) => {
+    // Fix up the server.toml file.
+    log('finishing', configfile);
+    const configtoml = await fs.readFile(configfile, 'utf-8');
+    const config = TOML.parse(configtoml);
+
+    const rpcPort = Number(portNum);
+    config.proxy_app = `kvstore`;
+    config.rpc.laddr = `tcp://127.0.0.1:${rpcPort}`;
+    config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
+
+    // Make blocks run faster than normal.
+    config.consensus.timeout_propose = '2s';
+    config.consensus.timeout_commit = '2s';
+
+    await fs.writeFile(configfile, TOML.stringify(config));
   };
 
   const pspawnEnv = { ...process.env };
@@ -189,11 +210,24 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   async function startLocalChain(profileName, startArgs, popts) {
     const IMAGE = `agoric/agoric-sdk`;
 
+    const portNum = startArgs[0] === undefined ? CHAIN_PORT : startArgs[0];
+    if (`${portNum}` !== `${Number(portNum)}`) {
+      log.error(`Argument to local-chain must be a port number`);
+      return 1;
+    }
+    agServer += `-${portNum}`;
+
     if (popts.pull) {
       const status = await pspawn('docker', ['pull', IMAGE]);
       if (status) {
         return status;
       }
+    }
+
+    if (popts.reset) {
+      log(chalk.green(`removing ${agServer}`));
+      // rm is available on all the unix-likes, so use it for speed.
+      await pspawn('rm', ['-rf', agServer]);
     }
 
     let chainSpawn;
@@ -302,13 +336,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Complete the genesis file and launch the chain.
     await finishGenesis(genfile);
+    await finishConfig(`${agServer}/config/config.toml`, portNum);
     return chainSpawn(
       ['start', '--pruning=nothing'],
       {
         env: { ...process.env, ROLE: 'two_chain' },
       },
       // Accessible via either localhost or host.docker.internal
-      [`--publish=${CHAIN_PORT}:${CHAIN_PORT}`, `--name=agoric/n0`],
+      [`--publish=${portNum}:${portNum}`, `--name=agoric/n0`],
     );
   }
 
@@ -321,6 +356,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 1;
     }
     agServer += `-${portNum}`;
+
+    if (popts.pull) {
+      const status = await pspawn('docker', ['pull', IMAGE]);
+      if (status) {
+        return status;
+      }
+    }
 
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
