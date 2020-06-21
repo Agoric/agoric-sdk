@@ -8,15 +8,13 @@ const PROVISION_PASSES = '100provisionpass';
 const DELEGATE0_STAKE = '100000000uagstake';
 const CHAIN_ID = 'agoric';
 
-// This should be configurable.
-const CHAIN_PORT = 26657;
-
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
     ? 0
     : Number(process.env.FAKE_CHAIN_DELAY);
 const PORT = process.env.PORT || 8000;
 const HOST_PORT = process.env.HOST_PORT || PORT;
+const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 
 export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, os, process } = powers;
@@ -57,7 +55,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
 
     // Make blocks run faster than normal.
-    config.consensus.timeout_propose = '2s';
     config.consensus.timeout_commit = '2s';
 
     await fs.writeFile(configfile, TOML.stringify(config));
@@ -340,7 +337,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return chainSpawn(
       ['start', '--pruning=nothing'],
       {
-        env: { ...process.env, ROLE: 'two_chain' },
+        env: { ...pspawnEnv, ROLE: 'two_chain' },
       },
       // Accessible via either localhost or host.docker.internal
       [`--publish=${portNum}:${portNum}`, `--name=agoric/n0`],
@@ -416,24 +413,23 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       rpcAddrs.push(`host.docker.internal:${CHAIN_PORT}`);
     }
 
+    let status;
+
     // Connect to the chain.
-    const gciFile = `_agstate/agoric-servers/local-chain/config/genesis.json.sha256`;
-    if (await exists(gciFile)) {
-      const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
-      const status = await soloSpawn(
-        ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, rpcAddrs.join(',')],
-        spawnOpts,
-      );
-      if (status) {
-        return status;
-      }
+    const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
+    const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
+    status = await soloSpawn(
+      ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, rpcAddrs.join(',')],
+      spawnOpts,
+    );
+    if (status) {
+      return status;
     }
 
     // Provision the ag-solo, if necessary.
     const soloAddr = (
       await fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8')
     ).trimRight();
-    let status;
     for (const rpcAddr of rpcAddrs) {
       // eslint-disable-next-line no-await-in-loop
       const egressNeeded = await keysSpawn([
@@ -557,7 +553,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         `${virtEnv}/bin/ag-setup-solo`,
         [`--webport=${PORT}`, ...bonusArgs, ...startArgs],
         {
-          env: { ...process.env, AG_SOLO_BASEDIR: agServer },
+          env: { ...pspawnEnv, AG_SOLO_BASEDIR: agServer },
         },
       );
 
