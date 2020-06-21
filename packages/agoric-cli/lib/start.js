@@ -5,6 +5,8 @@ import djson from 'deterministic-json';
 
 const PROVISION_PASSES = '100provisionpass';
 const DELEGATE0_STAKE = '100000000uagstake';
+const CHAIN_ID = 'agoric';
+const CHAIN_PORT = 26657;
 
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
@@ -78,12 +80,15 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       );
   }
 
-  const capture = (spawner, args) => {
+  const capture = (spawner, args, show = false) => {
     const capret = [
       spawner(args, { stdio: ['inherit', 'pipe', 'inherit'] }),
       '',
     ];
     capret[0].cp.stdout.on('data', chunk => {
+      if (show) {
+        process.stdout.write(chunk);
+      }
       capret[1] += chunk.toString('utf-8');
     });
     return capret;
@@ -217,7 +222,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       const status = await chainSpawn([
         'init',
         'local-chain',
-        '--chain-id=agoric',
+        `--chain-id=${CHAIN_ID}`,
       ]);
       if (status) {
         return status;
@@ -303,8 +308,139 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         env: { ...process.env, ROLE: 'two_chain' },
       },
       // Accessible via either localhost or host.docker.internal
-      [`--publish=26657:26657`, `--name=agoric/n0`],
+      [`--publish=${CHAIN_PORT}:${CHAIN_PORT}`, `--name=agoric/n0`],
     );
+  }
+
+  async function startLocalSolo(profileName, startArgs, popts) {
+    const IMAGE = `agoric/agoric-sdk`;
+
+    const portNum = startArgs[0] === undefined ? PORT : startArgs[0];
+    if (`${portNum}` !== `${Number(portNum)}`) {
+      log.error(`Argument to local-solo must be a port number`);
+      return 1;
+    }
+    agServer += `-${portNum}`;
+
+    if (popts.reset) {
+      log(chalk.green(`removing ${agServer}`));
+      // rm is available on all the unix-likes, so use it for speed.
+      await pspawn('rm', ['-rf', agServer]);
+    }
+
+    let soloSpawn;
+    if (popts.sdk) {
+      soloSpawn = (args, spawnOpts = undefined) =>
+        pspawn(agSolo, args, spawnOpts);
+    } else {
+      soloSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+        pspawn(
+          'docker',
+          [
+            'run',
+            `--volume=${process.cwd()}:/usr/src/dapp`,
+            `--rm`,
+            ...dockerArgs,
+            `-it`,
+            `--entrypoint=${agSolo}`,
+            ...dockerArgs,
+            IMAGE,
+            `--home=/usr/src/dapp/${agServer}`,
+            ...args,
+          ],
+          spawnOpts,
+        );
+    }
+
+    // Initialise the solo directory and key.
+    if (!(await exists(agServer))) {
+      const initArgs = [`--webport=${portNum}`];
+      if (!opts.sdk) {
+        initArgs.push(`--webhost=0.0.0.0`);
+      }
+      const status = await soloSpawn(['init', agServer, ...initArgs]);
+      if (status) {
+        return status;
+      }
+    }
+
+    const spawnOpts = {};
+    if (popts.sdk) {
+      spawnOpts.cwd = agServer;
+    }
+
+    const rpcAddrs = [`localhost:${CHAIN_PORT}`];
+    if (!popts.sdk) {
+      rpcAddrs.push(`host.docker.internal:${CHAIN_PORT}`);
+    }
+
+    // Connect to the chain.
+    const gciFile = `_agstate/agoric-servers/local-chain/config/genesis.json.sha256`;
+    if (await exists(gciFile)) {
+      const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
+      const status = await soloSpawn(
+        ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, rpcAddrs.join(',')],
+        spawnOpts,
+      );
+      if (status) {
+        return status;
+      }
+    }
+
+    // Provision the ag-solo, if necessary.
+    const soloAddr = (
+      await fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8')
+    ).trimRight();
+    let status;
+    for (const rpcAddr of rpcAddrs) {
+      // eslint-disable-next-line no-await-in-loop
+      const egressNeeded = await keysSpawn([
+        'query',
+        'swingset',
+        'egress',
+        soloAddr,
+        `--chain-id=${CHAIN_ID}`,
+        `--node=tcp://${rpcAddr}`,
+      ]);
+      if (egressNeeded) {
+        // We need to provision our address.
+        const capret = capture(
+          keysSpawn,
+          [
+            'tx',
+            'swingset',
+            'provision-one',
+            '--keyring-backend=test',
+            '--from=provision',
+            '--gas=auto',
+            '--gas-adjustment=1.5',
+            '--broadcast-mode=block',
+            '--yes',
+            `--chain-id=${CHAIN_ID}`,
+            `--node=tcp://${rpcAddr}`,
+            `local-solo-${portNum}`,
+            soloAddr,
+          ],
+          true,
+        );
+        // eslint-disable-next-line no-await-in-loop
+        status = await capret[0];
+        if (!status && !capret[1].includes('code: 0')) {
+          status = 2;
+        }
+      }
+      if (!status) {
+        break;
+      }
+    }
+    if (status) {
+      return status;
+    }
+
+    // Now actually start the solo.
+    return soloSpawn(['start', '--role=two_client'], spawnOpts, [
+      `--publish=${portNum}:${portNum}`,
+    ]);
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
@@ -396,7 +532,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const profiles = {
     dev: startFakeChain,
     'local-chain': startLocalChain,
-    // 'local-solo': opts.sdk ? startLocalSoloSdk : startLocalSoloDocker,
+    'local-solo': startLocalSolo,
     testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
   };
 
