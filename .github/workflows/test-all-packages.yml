@@ -76,16 +76,16 @@ jobs:
       run: cd packages/import-bundle && yarn test
     - name: yarn test (import-manager)
       run: cd packages/import-manager && yarn test
-    - name: yarn test (install-ses)
-      run: cd packages/install-ses && yarn test
     - name: yarn test (install-metering-and-ses)
       run: cd packages/install-metering-and-ses && yarn test
-    - name: yarn test (produce-promise)
-      run: cd packages/produce-promise && yarn test
+    - name: yarn test (install-ses)
+      run: cd packages/install-ses && yarn test
     - name: yarn test (marshal)
       run: cd packages/marshal && yarn test
     - name: yarn test (notifier)
       run: cd packages/notifier && yarn test
+    - name: yarn test (produce-promise)
+      run: cd packages/produce-promise && yarn test
     - name: yarn test (registrar)
       run: cd packages/registrar && yarn test
     - name: yarn test (same-structure)
