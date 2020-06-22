@@ -96,6 +96,8 @@ jobs:
       run: cd packages/sparse-ints && yarn test
     - name: yarn test (spawner)
       run: cd packages/spawner && yarn test
+    - name: yarn test (stat-logger)
+      run: cd packages/stat-logger && yarn test
     - name: yarn test (store)
       run: cd packages/store && yarn test
     - name: yarn test (swing-store-lmdb)
