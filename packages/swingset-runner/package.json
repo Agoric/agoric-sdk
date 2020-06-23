@@ -14,12 +14,61 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
+    "@agoric/assert": "^0.0.7",
+    "@agoric/bundle-source":  "^1.1.5",
+    "@agoric/ertp": "^0.5.5",
+    "@agoric/eventual-send": "^0.9.2",
     "@agoric/harden": "^0.0.8",
+    "@agoric/same-structure": "^0.0.7",
     "@agoric/stat-logger": "^0.2.5",
     "@agoric/swing-store-lmdb": "^0.3.2",
     "@agoric/swing-store-simple": "^0.2.2",
-    "@agoric/swingset-vat": "^0.5.2"
+    "@agoric/swingset-vat": "^0.5.2",
+    "@agoric/zoe": "^0.6.2"
   },
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended"
+    ],
+    "env": {
+      "es6": true
+    },
+    "rules": {
+      "implicit-arrow-linebreak": "off",
+      "function-paren-newline": "off",
+      "arrow-parens": "off",
+      "strict": "off",
+      "no-lonely-if": "off",
+      "prefer-destructuring": "off",
+      "no-else-return": "off",
+      "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "no-return-assign": "off",
+      "no-param-reassign": "off",
+      "no-restricted-syntax": [
+        "off",
+        "ForOfStatement"
+      ],
+      "no-unused-expressions": "off",
+      "no-loop-func": "off",
+      "no-inner-declarations": "off",
+      "yoda": ["error", "never", { "exceptRange": true }],
+      "import/prefer-default-export": "off"
+    },
+    "globals": {
+      "BigInt": "readonly"
+    }
+  },
+  "eslintIgnore": [
+    "bundle-*.js"
+  ],
   "devDependencies": {
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
