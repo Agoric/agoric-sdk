@@ -134,7 +134,7 @@ async function buildSwingset(
   // other inbound messages.
   const queuedDeliverInboundToMbx = withInputQueue(
     async function deliverInboundToMbx(sender, messages, ack) {
-      if (!(messages instanceof Array)) {
+      if (!Array.isArray(messages)) {
         throw new Error(`inbound given non-Array: ${messages}`);
       }
       // console.debug(`deliverInboundToMbx`, messages, ack);

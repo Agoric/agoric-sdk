@@ -2,7 +2,7 @@
 // @ts-check
 
 import rawHarden from '@agoric/harden';
-import { assert, details, openDetail } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
@@ -33,12 +33,9 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 function makeStore(keyName = 'key') {
   const store = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(
-      !store.has(key),
-      details`${openDetail(keyName)} already registered: ${key}`,
-    );
+    assert(!store.has(key), details`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(store.has(key), details`${openDetail(keyName)} not found: ${key}`);
+    assert(store.has(key), details`${q(keyName)} not found: ${key}`);
   return harden({
     has: key => store.has(key),
     init: (key, value) => {

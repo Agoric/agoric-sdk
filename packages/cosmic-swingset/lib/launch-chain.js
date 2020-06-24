@@ -123,7 +123,7 @@ export async function launch(
   }
 
   async function deliverInbound(sender, messages, ack) {
-    if (!(messages instanceof Array)) {
+    if (!Array.isArray(messages)) {
       throw new Error(`inbound given non-Array: ${messages}`);
     }
     if (!mb.deliverInbound(sender, messages, ack)) {

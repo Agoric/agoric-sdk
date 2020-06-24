@@ -337,7 +337,7 @@ test('issuer.combine bad payments', t => {
 
     t.rejects(
       () => E(issuer).combine(payments),
-      /payment not found/,
+      /"payment" not found/,
       'payment from other mint is not found',
     );
   } catch (e) {

@@ -13,13 +13,13 @@ import { assert, details } from '@agoric/assert';
  * @return nothing
  */
 export function insistCapData(capdata) {
-  assert.equal(
+  assert.typeof(
     capdata.body,
-    `${capdata.body}`,
+    'string',
     details`capdata has non-string .body ${capdata.body}`,
   );
   assert(
-    capdata.slots instanceof Array,
+    Array.isArray(capdata.slots),
     details`capdata has non-Array slots ${capdata.slots}`,
   );
   // TODO check that the .slots array elements are actually strings

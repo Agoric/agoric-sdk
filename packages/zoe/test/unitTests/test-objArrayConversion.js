@@ -38,14 +38,14 @@ test('objToArray', t => {
     const keywords2 = ['X', 'Y', 'Z'];
     t.throws(
       () => objToArray(obj, keywords2),
-      /Error: object keys \(X,Y\) and keywords \(X,Y,Z\) must be of equal length/,
+      /Error: object keys \["X","Y"\] and keywords \["X","Y","Z"\] must be of equal length/,
       `unequal length should throw`,
     );
 
     const obj2 = { X: 1, Y: 2, Z: 5 };
     t.throws(
       () => objToArray(obj2, keywords),
-      /Error: object keys \(X,Y,Z\) and keywords \(X,Y\) must be of equal length/,
+      /Error: object keys \["X","Y","Z"\] and keywords \["X","Y"\] must be of equal length/,
       `unequal length should throw`,
     );
   } catch (e) {
