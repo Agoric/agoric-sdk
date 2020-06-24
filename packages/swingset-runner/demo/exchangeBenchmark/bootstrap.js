@@ -3,9 +3,8 @@ import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 import { makePrintLog } from './printLog';
 
-/* eslint-disable import/no-unresolved, import/extensions */
+/* eslint-disable-next-line import/no-unresolved, import/extensions */
 import simpleExchangeBundle from './bundle-simpleExchange';
-/* eslint-enable import/no-unresolved, import/extensions */
 
 function setupBasicMints() {
   // prettier-ignore
@@ -60,8 +59,9 @@ function makeVats(E, log, vats, zoe, installations, startingExtents) {
 function build(E, log) {
   let alice;
   let bob;
+  let round = 0;
   return harden({
-    async bootstrap(_argv, vats) {
+    async bootstrap(argv, vats) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
@@ -84,10 +84,18 @@ function build(E, log) {
         installations,
         startingExtents,
       ));
+      // Zoe appears to do some one-time setup the first time it's used, so this
+      // is a sacrifical benchmark round to prime the pump.
+      if (argv[0] === '--prime') {
+        await E(alice).initiateSimpleExchange(bob);
+        await E(bob).initiateSimpleExchange(alice);
+      }
     },
     async runBenchmarkRound() {
+      round += 1;
       await E(alice).initiateSimpleExchange(bob);
       await E(bob).initiateSimpleExchange(alice);
+      log(`=> end of benchmark round ${round}`);
     },
   });
 }
