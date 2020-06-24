@@ -379,8 +379,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobAssetAmount = await bobMoolaPurse.deposit(bobAssetPayout);
   t.equals(bobAssetAmount.extent, 3);
   const bobPriceAmount = await bobMoolaPurse.deposit(bobPricePayout);
-  // deposit should return 0: https://github.com/Agoric/agoric-sdk/issues/1103
-  t.equals(bobPriceAmount.extent, bobAssetAmount.extent + 0);
+  t.equals(bobPriceAmount.extent, 0);
 
   // Assert that the correct payouts were received.
   // Alice had 3 moola from Asset and 0 from Price.
