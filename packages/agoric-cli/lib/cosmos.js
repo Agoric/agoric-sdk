@@ -55,9 +55,9 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
   }
 
   if (popts.pull) {
-    const status = await pspawn('docker', ['pull', IMAGE]);
-    if (status) {
-      return status;
+    const exitStatus = await pspawn('docker', ['pull', IMAGE]);
+    if (exitStatus) {
+      return exitStatus;
     }
   }
 

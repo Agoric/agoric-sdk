@@ -237,7 +237,10 @@ export async function connectToChain(
       // eslint-disable-next-line consistent-return
       ret => {
         const { stdout, stderr } = ret;
-        log.error(stderr);
+        const errMsg = stderr.trimRight();
+        if (errMsg) {
+          log.error(errMsg);
+        }
         log(`helper said: ${stdout}`);
         try {
           // Try to parse the stdout.
@@ -389,7 +392,10 @@ export async function connectToChain(
         args,
         ret => {
           const { stderr, stdout } = ret;
-          log.error(stderr);
+          const errMsg = stderr.trimRight();
+          if (errMsg) {
+            log.error(errMsg);
+          }
           log(`helper said: ${stdout}`);
           // TODO: parse the helper output (JSON), we want 'code' to be 0. If
           // not, look at .raw_log (also JSON) at .message.
