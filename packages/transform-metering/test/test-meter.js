@@ -107,3 +107,18 @@ test('meter running', async t => {
     t.end();
   }
 });
+
+test('getBalance', async t => {
+  try {
+    const { meter, refillFacet } = makeMeter({ budgetCompute: 10 });
+    t.equal(refillFacet.getComputeBalance(), 10);
+    meter[c.METER_COMPUTE](3);
+    t.equal(refillFacet.getComputeBalance(), 7);
+    t.equal(refillFacet.getAllocateBalance(), c.DEFAULT_COMBINED_METER);
+    t.equal(refillFacet.getCombinedBalance(), c.DEFAULT_COMBINED_METER);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});

@@ -24,6 +24,7 @@ const makeCounter = initBalance => {
   };
   counter.reset = (newBalance = undefined) =>
     (balance = newBalance === undefined ? initBalance : newBalance);
+  counter.getBalance = () => balance;
   return counter;
 };
 
@@ -202,6 +203,9 @@ export function makeMeter(budgets = {}) {
     stack: makeResetter(stackCounter),
     compute: makeResetter(computeCounter),
     combined: makeResetter(combinedCounter),
+    getAllocateBalance: allocateCounter.getBalance,
+    getComputeBalance: computeCounter.getBalance,
+    getCombinedBalance: combinedCounter.getBalance,
   };
 
   // Create the internal meter object.
