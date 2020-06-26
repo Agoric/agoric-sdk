@@ -345,6 +345,14 @@ export default function buildKernel(kernelEndowments) {
       runWithoutGlobalMeter(transformTildot, ...args),
   });
 
+  // dynamic vats don't get control over their own metering
+  const dynamicVatPowers = harden({
+    Remotable,
+    getInterfaceOf,
+    transformTildot: (...args) =>
+      runWithoutGlobalMeter(transformTildot, ...args),
+  });
+
   const syscallManager = harden({
     kdebug,
     send,
@@ -789,13 +797,13 @@ export default function buildKernel(kernelEndowments) {
       )
       .then(vatNS => {
         const buildFn = vatNS.default;
-        const setup = (syscall, state, helpers, vatPowers0) => {
+        const setup = (syscall, state, helpers, _vatPowers0) => {
           return helpers.makeLiveSlots(
             syscall,
             state,
             buildFn,
             helpers.vatID,
-            vatPowers0,
+            dynamicVatPowers,
           );
         };
         const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
