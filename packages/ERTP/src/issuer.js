@@ -295,6 +295,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       },
       getCurrentAmount: () => purseLedger.get(purse),
       getAllegedBrand: () => brand,
+      makeDepositFacet: () => harden({ receive: purse.deposit }),
     });
     return purse;
   };

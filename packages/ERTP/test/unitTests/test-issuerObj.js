@@ -101,7 +101,7 @@ test('issuer.makeEmptyPurse', t => {
     .catch(e => t.assert(false, e));
 });
 
-test('issuer.deposit', async t => {
+test('purse.deposit', async t => {
   t.plan(4);
   const { issuer, mint, amountMath } = produceIssuer('fungible');
   const fungible0 = amountMath.getEmpty();
@@ -136,7 +136,7 @@ test('issuer.deposit', async t => {
     .then(checkDeposit(fungible17, fungibleSum));
 });
 
-test('issuer.deposit promise', t => {
+test('purse.deposit promise', t => {
   t.plan(1);
   const { issuer, mint, amountMath } = produceIssuer('fungible');
   const fungible25 = amountMath.make(25);
@@ -150,6 +150,31 @@ test('issuer.deposit promise', t => {
     /deposit does not accept promises/,
     'failed to reject a promise for a payment',
   );
+});
+
+test('purse.makeDepositFacet', t => {
+  t.plan(2);
+  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const fungible25 = amountMath.make(25);
+
+  const purse = issuer.makeEmptyPurse();
+  const payment = mint.mintPayment(fungible25);
+
+  const checkDeposit = newPurseBalance => {
+    t.ok(
+      amountMath.isEqual(newPurseBalance, fungible25),
+      `the balance returned is the purse balance`,
+    );
+    t.ok(
+      amountMath.isEqual(purse.getCurrentAmount(), fungible25),
+      `the new purse balance is the payment's old balance`,
+    );
+  };
+
+  E(purse)
+    .makeDepositFacet()
+    .then(({ receive }) => receive(payment))
+    .then(checkDeposit);
 });
 
 test('issuer.burn', t => {
