@@ -6,6 +6,7 @@
   "workspaces": [
     "packages/assert",
     "packages/ses-adapter",
+    "packages/install-ses",
     "packages/import-manager",
     "packages/sparse-ints",
     "packages/registrar",
