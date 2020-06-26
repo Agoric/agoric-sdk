@@ -789,13 +789,13 @@ export default function buildKernel(kernelEndowments) {
       )
       .then(vatNS => {
         const buildFn = vatNS.default;
-        const setup = (syscall, state, helpers, setMeter) => {
+        const setup = (syscall, state, helpers, vatPowers0) => {
           return helpers.makeLiveSlots(
             syscall,
             state,
             buildFn,
             helpers.vatID,
-            setMeter,
+            vatPowers0,
           );
         };
         const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
