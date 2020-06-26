@@ -1,5 +1,6 @@
-import path from 'path';
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
 
 const RETIRE_KPIDS = true;

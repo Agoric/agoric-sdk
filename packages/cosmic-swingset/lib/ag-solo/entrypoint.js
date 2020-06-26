@@ -1,16 +1,15 @@
 #! /usr/bin/env node
 
-/* global globalThis */
+const esmRequire = require('esm')(module);
 
-// Suppress the "'@agoric/harden' is ineffective without SES" warning. This
-// only affects uses inside the parent ag-solo process. The actual SES
-// environment which SwingSet builds uses a separate globalThis, so the
-// warning is still enabled for SES-confined code (but not triggered, of
-// course, because it runs under SES). See #971 for details.
-globalThis.harden = null;
+// import node-lmdb early to work around SES incompatibility
+require('node-lmdb');
+
+// we need to enable Math.random as a workaround for 'brace-expansion' module
+// (dep chain: temp->glob->minimatch->brace-expansion)
+esmRequire('@agoric/install-metering-and-ses');
 
 const process = require('process');
-const esmRequire = require('esm')(module);
 
 // Configure logs.
 esmRequire('../anylogger-agoric.js');

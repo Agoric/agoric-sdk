@@ -6,7 +6,7 @@ export const makeContract = zoe => {
     invite,
     publicAPI: {
       doTest: () => {
-        new Array(1e7).map(Object.create);
+        new Array(1e9).map(Object.create);
       },
     },
   });

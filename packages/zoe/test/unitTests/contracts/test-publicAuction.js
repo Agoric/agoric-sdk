@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -16,7 +17,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   t.plan(34);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -43,9 +44,9 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice creates a secondPriceAuction instance
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
+    const bundle = await bundleSource(publicAuctionRoot);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaR.issuer,
@@ -322,7 +323,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   t.plan(10);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Setup Alice
@@ -338,9 +339,9 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice creates a secondPriceAuction instance
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
+    const bundle = await bundleSource(publicAuctionRoot);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaR.issuer,
@@ -466,7 +467,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     cryptoCats,
     moola,
   } = setupMixed();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -493,9 +494,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Alice creates a secondPriceAuction instance
 
   // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
+  const bundle = await bundleSource(publicAuctionRoot);
 
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
   const numBidsAllowed = 3;
   const issuerKeywordRecord = harden({
     Asset: ccIssuer,

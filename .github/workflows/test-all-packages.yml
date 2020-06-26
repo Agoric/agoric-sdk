@@ -66,40 +66,38 @@ jobs:
       run: cd packages/captp && yarn test
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
-    - name: yarn test (default-evaluate-options)
-      run: cd packages/default-evaluate-options && yarn test
     - name: yarn test (deployment)
       run: cd packages/deployment && yarn test
     - name: yarn test (ERTP)
       run: cd packages/ERTP && yarn test
-    - name: yarn test (evaluate)
-      run: cd packages/evaluate && yarn test
     - name: yarn test (eventual-send)
       run: cd packages/eventual-send && yarn test
     - name: yarn test (import-bundle)
       run: cd packages/import-bundle && yarn test
     - name: yarn test (import-manager)
       run: cd packages/import-manager && yarn test
+    - name: yarn test (install-metering-and-ses)
+      run: cd packages/install-metering-and-ses && yarn test
     - name: yarn test (install-ses)
       run: cd packages/install-ses && yarn test
-    - name: yarn test (produce-promise)
-      run: cd packages/produce-promise && yarn test
     - name: yarn test (marshal)
       run: cd packages/marshal && yarn test
     - name: yarn test (notifier)
       run: cd packages/notifier && yarn test
+    - name: yarn test (produce-promise)
+      run: cd packages/produce-promise && yarn test
     - name: yarn test (registrar)
       run: cd packages/registrar && yarn test
     - name: yarn test (same-structure)
       run: cd packages/same-structure && yarn test
-    - name: yarn test (ses-adapter)
-      run: cd packages/ses-adapter && yarn test
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
     - name: yarn test (sparse-ints)
       run: cd packages/sparse-ints && yarn test
     - name: yarn test (spawner)
       run: cd packages/spawner && yarn test
+    - name: yarn test (stat-logger)
+      run: cd packages/stat-logger && yarn test
     - name: yarn test (store)
       run: cd packages/store && yarn test
     - name: yarn test (swing-store-lmdb)

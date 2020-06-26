@@ -1,5 +1,6 @@
-import path from 'path';
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import path from 'path';
 import {
   initSwingStore,
   getAllState,

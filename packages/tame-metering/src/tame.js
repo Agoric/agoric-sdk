@@ -7,6 +7,13 @@ let replaceGlobalMeter;
 // constant to be Error.
 const SES1ErrorConstructor = null;
 
+export function isTamed() {
+  if (replaceGlobalMeter) {
+    return true;
+  }
+  return false;
+}
+
 export function tameMetering() {
   if (replaceGlobalMeter) {
     // Already installed.

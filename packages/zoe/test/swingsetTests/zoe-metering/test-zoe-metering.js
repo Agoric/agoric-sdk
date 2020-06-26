@@ -1,3 +1,4 @@
+import '@agoric/install-metering-and-ses';
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';
@@ -14,10 +15,8 @@ const CONTRACT_FILES = [
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const { source, moduleFormat } = await bundleSource(
-      `${__dirname}/${contract}`,
-    );
-    const obj = { source, moduleFormat, contract };
+    const bundle = await bundleSource(`${__dirname}/${contract}`);
+    const obj = { bundle, contract };
     fs.writeFileSync(
       `${__dirname}/bundle-${contract}.js`,
       `export default ${JSON.stringify(obj)};`,
@@ -33,7 +32,10 @@ async function main(withSES, argv) {
   return controller.dump();
 }
 
-const infiniteInstallLoopLog = ['installing infiniteInstallLoop'];
+const infiniteInstallLoopLog = [
+  'installing infiniteInstallLoop',
+  'error: RangeError: Compute meter exceeded',
+];
 test('zoe - metering - infinite loop in installation', async t => {
   t.plan(1);
   try {
@@ -47,6 +49,7 @@ test('zoe - metering - infinite loop in installation', async t => {
 const infiniteInstanceLoopLog = [
   'installing infiniteInstanceLoop',
   'instantiating infiniteInstanceLoop',
+  'error: RangeError: Compute meter exceeded',
 ];
 test('zoe - metering - infinite loop in instantiation', async t => {
   t.plan(1);
@@ -62,6 +65,7 @@ const infiniteTestLoopLog = [
   'installing infiniteTestLoop',
   'instantiating infiniteTestLoop',
   'invoking infiniteTestLoop.doTest()',
+  'error: RangeError: Compute meter exceeded',
 ];
 test('zoe - metering - infinite loop in contract method', async t => {
   t.plan(1);
@@ -77,6 +81,7 @@ const testBuiltinsLog = [
   'installing testBuiltins',
   'instantiating testBuiltins',
   'invoking testBuiltins.doTest()',
+  'error: RangeError: Allocate meter exceeded',
 ];
 test('zoe - metering - expensive builtins in contract method', async t => {
   t.plan(1);

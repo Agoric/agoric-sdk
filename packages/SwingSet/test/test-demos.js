@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '../src/index';
 

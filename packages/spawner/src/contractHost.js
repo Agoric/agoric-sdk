@@ -1,18 +1,14 @@
-/* global replaceGlobalMeter, registerEndOfCrank */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
+import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
-import {
-  allComparable,
-  mustBeSameStructure,
-  sameStructure,
-} from '@agoric/same-structure';
+import { allComparable } from '@agoric/same-structure';
 import produceIssuer from '@agoric/ertp';
 import { producePromise } from '@agoric/produce-promise';
-import { makeMeter } from '@agoric/transform-metering/src/meter';
+import { E, HandledPromise } from '@agoric/eventual-send';
 
 export { makeCollect } from './makeCollect';
 
@@ -23,13 +19,17 @@ export { makeCollect } from './makeCollect';
  * @param evaluate function to evaluate with endowments
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
-function makeContractHost(E, evaluate, additionalEndowments = {}) {
+function makeContractHost(vatPowers, additionalEndowments = {}) {
+  // To enforce metering, vatPowers must provide makeGetMeter and
+  // transformMetering. These will come from arguments passed to the vat's
+  // buildRoot function.
+
   // Maps from seat identity to seats
   const seats = makeStore('seatIdentity');
   // from seat identity to invite description.
   const seatDescriptions = makeStore('seatIdentity');
-  // from installation to source code string
-  const installationSources = makeStore('installation');
+  // from installation to source code bundle
+  const installationSourceBundles = makeStore('installation');
 
   const {
     mint: inviteMint,
@@ -47,126 +47,76 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     });
   }
 
+  function myRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    }
+    throw Error(`require(${what}) not implemented`);
+  }
+  harden(myRequire);
+
+  // TODO: this should really have console and HandledPromise. We need
+  // 'require' until we change the environment definition (and
+  // bundle-source's "externals" list) to get 'harden' from a global, not an
+  // import, and then change the nestedEvaluate format to stop needing
+  // 'require' even though nobody calls it. The bundles we install here
+  // should be standalone, with no remaining require() calls. Probably.
   const defaultEndowments = {
-    Nat,
-    harden,
     console,
     E,
+    harden,
+    Nat,
     producePromise,
-    // TODO: sameStructure is used in one check...() function. Figure out a
-    // more general approach to providing useful helpers.
-    // The best approach is to use the `getExport` moduleFormat, and
-    // bundle imported modules that implement the things we want to use.
-    sameStructure,
-    mustBeSameStructure,
+    require: myRequire,
+    HandledPromise,
   };
 
-  const fullEndowments = Object.create(null, {
-    ...Object.getOwnPropertyDescriptors(defaultEndowments),
-    ...Object.getOwnPropertyDescriptors(additionalEndowments),
-  });
+  // note: support for check functions was removed during warner's
+  // new-SES-ification, there were no (enabled) tests to exercise them. The
+  // comments that talk about special treatment of 'check' functions should
+  // be treated with suspicion.
 
-  function evaluateStringToFn(functionSrcString) {
-    // TODO these function strings shoudl be `details` but that disrupts tests
-    assert(
-      typeof functionSrcString === 'string',
-      `"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`,
-    );
-
-    // FIXME: Defeat ESM!
-    functionSrcString = functionSrcString.replace(
-      /sameStructure\.((mustBeS|s)ameStructure)/g,
-      '$1',
-    );
-
-    // Refill a meter each crank.
-    const { meter, refillFacet } = makeMeter();
-    const doRefill = () => {
-      if (!meter.isExhausted()) {
-        // We'd like to have fail-stop semantics, which means we associate
-        // a meter with a spawn and not with an installation, and failed
-        // spawns die forever.  Check functions, on the other hand, should
-        // be billed to the installation, which may die forever.
-
-        // Refill the meter, since we're leaving a crank.
-        refillFacet.combined();
-      }
-    };
-
-    // Make an endowment to get our meter.
-    const getMeter = m => {
-      if (m !== true && typeof replaceGlobalMeter !== 'undefined') {
-        // Replace the global meter and register our refiller.
-        replaceGlobalMeter(meter);
-      }
-      if (typeof registerEndOfCrank !== 'undefined') {
-        // Register our refiller.
-        registerEndOfCrank(doRefill);
-      }
-      return meter;
-    };
-
-    // Inject the evaluator.
-    const nestedEvaluate = src => {
-      const allEndowments = {
-        ...fullEndowments,
-        getMeter,
-        nestedEvaluate,
-      };
-      // console.log(allEndowments, src);
-      return evaluate(src, allEndowments);
-    };
-
-    const fn = nestedEvaluate(functionSrcString);
-    assert(
-      typeof fn === 'function',
-      `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,
-    );
-    return fn;
-  }
-
-  /**
-   * Build an object containing functions with names starting with 'check' from
-   * strings in the input contract.
-   */
-  function extractCheckFunctions(contractSrcs) {
-    const installation = {};
-    for (const fname of Object.getOwnPropertyNames(contractSrcs)) {
-      if (typeof fname === 'string' && fname.startsWith('check')) {
-        const fn = evaluateStringToFn(contractSrcs[fname]);
-        installation[fname] = (...args) => fn(installation, ...args);
-      }
-    }
-    return installation;
-  }
+  // TODO: We'd like to have fail-stop semantics, which means we associate a
+  // meter with a spawn and not with an installation, and failed spawns die
+  // forever. Check functions, on the other hand, should be billed to the
+  // installation, which may die forever.
 
   /** The contract host is designed to have a long-lived credible identity. */
   const contractHost = harden({
     getInviteIssuer() {
       return inviteIssuer;
     },
-    // contractSrcs is a record containing source code for the functions
-    // comprising a contract. `spawn` evaluates the `start` function
-    // (parameterized by `terms` and `inviteMaker`) to start the contract, and
-    // returns whatever the contract returns. The contract can also have any
-    // number of functions with names beginning 'check', each of which can be
-    // used by clients to help validate that they have terms that match the
-    // contract.
-    install(contractSrcs, moduleFormat = 'object') {
-      let installation;
-      if (moduleFormat === 'object') {
-        installation = extractCheckFunctions(contractSrcs);
-      } else if (
-        moduleFormat === 'getExport' ||
-        moduleFormat === 'nestedEvaluate'
+    // contractBundle is a record containing source code for the functions
+    // comprising a contract, as created by bundle-source. `spawn` evaluates
+    // the `start` function (parameterized by `terms` and `inviteMaker`) to
+    // start the contract, and returns whatever the contract returns. The
+    // contract can also have any number of functions with names beginning
+    // 'check', each of which can be used by clients to help validate that
+    // they have terms that match the contract.
+
+    // TODO: we have 2 or 3 dapps (in separate repos) which do { source,
+    // moduleFormat } = bundleSource(..), then E(spawner).install(source,
+    // moduleFormat). Those will get the default
+    // moduleFormat="nestedEvaluate". We need to support those callers, even
+    // though our new preferred API is just install(bundle). We also look for
+    // getExport because that's easier to create in the unit tests.
+    //
+    // TODO: once we've ugpraded and released all the dapps, consider
+    // removing this backwards-compatibility feature.
+
+    install(contractBundle, oldModuleFormat = undefined) {
+      console.log(`-- install ${oldModuleFormat}`);
+      if (
+        oldModuleFormat === 'nestedEvaluate' ||
+        oldModuleFormat === 'getExport'
       ) {
-        // We don't support 'check' functions in getExport format,
-        // because we only do a single evaluate, and the whole
-        // contract must be metered per-spawn, not per-installation.
-        installation = {};
-      } else {
-        assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
+        contractBundle = harden({
+          source: contractBundle,
+          moduleFormat: oldModuleFormat,
+        });
       }
+
+      const installation = {};
 
       // TODO: The `spawn` method should spin off a new vat for each new
       // contract instance.  In the current single-vat implementation we
@@ -177,21 +127,37 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       // it enables us to use the installation in descriptions rather than the
       // source code itself. The check... methods must be evaluated on install,
       // since they become properties of the installation.
-      function spawn(termsP) {
-        let startFn;
-        if (moduleFormat === 'object') {
-          startFn = evaluateStringToFn(contractSrcs.start);
-        } else if (
-          moduleFormat === 'getExport' ||
-          moduleFormat === 'nestedEvaluate'
+
+      async function spawn(termsP) {
+        // we create new meteringEndowments here, so each spawn gets a
+        // separate meter
+
+        const transforms = [];
+        const meteringEndowments = {};
+        if (
+          vatPowers &&
+          vatPowers.transformMetering &&
+          vatPowers.makeGetMeter
         ) {
-          // We support getExport because it is forward-compatible with nestedEvaluate.
-          const getExports = evaluateStringToFn(contractSrcs);
-          const ns = getExports();
-          startFn = ns.default;
-        } else {
-          assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
+          const { makeGetMeter, transformMetering } = vatPowers;
+          // This implements fail-stop, since a contract that exhausts the meter
+          // will not run again.
+          const { getMeter } = makeGetMeter({ refillIfExhausted: false });
+          transforms.push(src => transformMetering(src, getMeter));
+          meteringEndowments.getMeter = getMeter;
         }
+
+        const fullEndowments = Object.create(null, {
+          ...Object.getOwnPropertyDescriptors(defaultEndowments),
+          ...Object.getOwnPropertyDescriptors(additionalEndowments),
+          ...Object.getOwnPropertyDescriptors(meteringEndowments),
+        });
+
+        const ns = await importBundle(contractBundle, {
+          endowments: fullEndowments,
+          transforms,
+        });
+        const startFn = ns.default;
 
         return Promise.resolve(allComparable(termsP)).then(terms => {
           const inviteMaker = harden({
@@ -229,16 +195,16 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
 
       installation.spawn = spawn;
       harden(installation);
-      installationSources.init(installation, contractSrcs);
+      installationSourceBundles.init(installation, contractBundle);
       return installation;
     },
 
-    // Verify that this is a genuine installation and show its source
-    // code. Thus, all genuine installations are transparent if one
-    // has their contractHost.
-    getInstallationSourceCode(installationP) {
+    // Verify that this is a genuine installation and show its source code
+    // bundle. Thus, all genuine installations are transparent if one has
+    // their contractHost.
+    getInstallationSourceBundle(installationP) {
       return Promise.resolve(installationP).then(installation =>
-        installationSources.get(installation),
+        installationSourceBundles.get(installation),
       );
     },
 

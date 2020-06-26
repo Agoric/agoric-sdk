@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -18,10 +19,10 @@ test('zoe - simplest automaticRefund', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, moola } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-    const installationHandle = zoe.install(source, moduleFormat);
+    const bundle = await bundleSource(automaticRefundRoot);
+    const installationHandle = await zoe.install(bundle);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -64,10 +65,10 @@ test('zoe - automaticRefund same issuer', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, moola } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-    const installationHandle = zoe.install(source, moduleFormat);
+    const bundle = await bundleSource(automaticRefundRoot);
+    const installationHandle = await zoe.install(bundle);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(9));
@@ -113,7 +114,7 @@ test('zoe with automaticRefund', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -128,10 +129,10 @@ test('zoe with automaticRefund', async t => {
     const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(17));
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const bundle = await bundleSource(automaticRefundRoot);
 
     // 1: Alice creates an automatic refund instance
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const issuerKeywordRecord = harden({
       Contribution1: moolaR.issuer,
       Contribution2: simoleanR.issuer,
@@ -261,7 +262,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(30));
@@ -273,9 +274,9 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
 
     // 1: Alice creates 3 automatic refund instances
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const bundle = await bundleSource(automaticRefundRoot);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const issuerKeywordRecord = harden({
       ContributionA: moolaR.issuer,
       ContributionB: simoleanR.issuer,
@@ -371,7 +372,7 @@ test('zoe - alice cancels after completion', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -379,8 +380,8 @@ test('zoe - alice cancels after completion', async t => {
     const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-    const installationHandle = zoe.install(source, moduleFormat);
+    const bundle = await bundleSource(automaticRefundRoot);
+    const installationHandle = await zoe.install(bundle);
     const issuerKeywordRecord = harden({
       ContributionA: moolaR.issuer,
       ContributionB: simoleanR.issuer,
@@ -444,10 +445,10 @@ test('zoe - automaticRefund non-fungible', async t => {
   // Setup zoe and mints
   const { ccIssuer, ccMint, cryptoCats } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-  const installationHandle = zoe.install(source, moduleFormat);
+  const bundle = await bundleSource(automaticRefundRoot);
+  const installationHandle = await zoe.install(bundle);
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['tigger'])));

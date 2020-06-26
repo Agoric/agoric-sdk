@@ -4,18 +4,18 @@
   "description": "transform-metering",
   "main": "src/index.js",
   "scripts": {
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "tap --no-coverage --jobs=1 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
   },
   "devDependencies": {
+    "@agoric/install-ses": "0.1.0",
     "@babel/core": "^7.5.0",
     "esm": "^3.2.5",
     "rollup": "^1.16.6",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "ses": "^0.6.5",
-    "tap-spec": "^5.0.0",
+    "tap": "^14.10.5",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },

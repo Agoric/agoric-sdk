@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -15,10 +16,10 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moola, moolaR, moolaMint, bucksR, bucks } = setup();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(grifterRoot);
-  const installationHandle = zoe.install(source, moduleFormat);
+  const bundle = await bundleSource(grifterRoot);
+  const installationHandle = await zoe.install(bundle);
 
   const issuerKeywordRecord = harden({
     Asset: bucksR.issuer,

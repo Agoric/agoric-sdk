@@ -1,18 +1,29 @@
+import '@agoric/install-ses';
+import path from 'path';
 import { test } from 'tape';
 import { initSwingStore } from '@agoric/swing-store-simple';
-
+import bundleSource from '@agoric/bundle-source';
 import { buildVatController, loadBasedir } from '../../src';
 
-async function createConfig() {
-  const config = await loadBasedir(__dirname);
-
-  config.hostStorage = initSwingStore().storage;
-  return config;
+function nonBundleFunction(_E) {
+  return {};
 }
 
-async function testVatCreationFromBuild(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['newVat']);
+async function doTestSetup(mode) {
+  const config = await loadBasedir(__dirname);
+  config.hostStorage = initSwingStore().storage;
+  const newVatBundle = await bundleSource(path.join(__dirname, 'new-vat.js'));
+  const brokenVatBundle = await bundleSource(
+    path.join(__dirname, 'broken-vat.js'),
+  );
+  const nonBundle = `${nonBundleFunction}`;
+  const bundles = { newVatBundle, brokenVatBundle, nonBundle };
+  const c = await buildVatController(config, true, [mode, bundles]);
+  return c;
+}
+
+test('VatAdmin inner vat creation', async t => {
+  const c = await doTestSetup('newVat');
   t.equal(c.vatNameToID('vatAdmin'), 'v2');
   t.equal(c.vatNameToID('_bootstrap'), 'v1');
   for (let i = 0; i < 9; i += 1) {
@@ -21,43 +32,39 @@ async function testVatCreationFromBuild(t, withSES) {
   }
   t.deepEqual(c.dump().log, ['starting newVat test', '13']);
   t.end();
-}
-
-test('VatAdmin inner vat creation', async t => {
-  await testVatCreationFromBuild(t, true);
 });
 
-async function testVatCreationAndObjectHosting(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['counters']);
+test('VatAdmin counter test', async t => {
+  const c = await doTestSetup('counters');
   await c.run();
   await c.run();
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
   t.end();
-}
-
-test('VatAdmin inner vat creation', async t => {
-  await testVatCreationAndObjectHosting(t, true);
 });
 
-async function testBrokenVatCreation(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['brokenVat']);
+test('VatAdmin broken vat creation', async t => {
+  const c = await doTestSetup('brokenVat');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
     'yay, rejected: Error: Vat Creation Error: ReferenceError: missing is not defined',
   ]);
   t.end();
-}
-
-test('VatAdmin broken vat creation', async t => {
-  await testBrokenVatCreation(t, true);
 });
 
-async function testGetVatStats(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['vatStats']);
+test('error creating vat from non-bundle', async t => {
+  const c = await doTestSetup('non-bundle');
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'starting non-bundle test',
+    'yay, rejected: Error: Vat Creation Error: Error: createVatDynamically() requires bundle, not a plain string',
+  ]);
+  await c.run();
+  t.end();
+});
+
+test('VatAdmin get vat stats', async t => {
+  const c = await doTestSetup('vatStats');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting stats test',
@@ -67,8 +74,4 @@ async function testGetVatStats(t, withSES) {
   ]);
   await c.run();
   t.end();
-}
-
-test('VatAdmin get vat stats', async t => {
-  await testGetVatStats(t, true);
 });

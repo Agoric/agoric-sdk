@@ -1,3 +1,4 @@
+import '@agoric/install-metering-and-ses';
 import { test } from 'tape-promise/tape';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
@@ -41,6 +42,12 @@ const contractTrivialGolden = [
 ];
 test('run contractHost Demo --trivial with SES', async t => {
   const dump = await main(true, 'contractHost', ['trivial']);
+  t.deepEquals(dump.log, contractTrivialGolden);
+  t.end();
+});
+
+test('run contractHost Demo --trivial-oldformat with SES', async t => {
+  const dump = await main(true, 'contractHost', ['trivial-oldformat']);
   t.deepEquals(dump.log, contractTrivialGolden);
   t.end();
 });

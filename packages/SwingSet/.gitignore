@@ -70,6 +70,3 @@ typings/
 
 # next.js build output
 .next
-
-# generated source bundles
-src/bundles/

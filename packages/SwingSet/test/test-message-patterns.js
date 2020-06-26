@@ -2,8 +2,9 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-import path from 'path';
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import path from 'path';
 import {
   buildVatController,
   getCommsSourcePath,

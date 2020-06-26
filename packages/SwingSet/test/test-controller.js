@@ -1,6 +1,7 @@
-import path from 'path';
-import harden from '@agoric/harden';
+/* global harden */
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
 import { checkKT } from './util';
 

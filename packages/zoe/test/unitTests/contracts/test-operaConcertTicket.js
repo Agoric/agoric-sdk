@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -36,15 +37,14 @@ test(`Zoe opera ticket contract`, async t => {
     amountMath: { make: moola },
   } = produceIssuer('moola');
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
 
   // === Initial Opera de Bordeaux part ===
-  const contractReadyP = bundleSource(operaConcertTicketRoot).then(
-    ({ source, moduleFormat }) => {
+  const contractReadyP = bundleSource(operaConcertTicketRoot)
+    .then(bundle => zoe.install(bundle))
+    .then(installationHandle => {
       const expectedAmountPerTicket = moola(22);
-
-      const installationHandle = zoe.install(source, moduleFormat);
 
       return zoe
         .makeInstance(installationHandle, harden({ Money: moolaIssuer }), {
@@ -127,8 +127,7 @@ test(`Zoe opera ticket contract`, async t => {
               );
             });
         });
-    },
-  );
+    });
 
   const alicePartFinished = contractReadyP.then(({ publicAPI }) => {
     const ticketIssuer = publicAPI.getTicketIssuer();

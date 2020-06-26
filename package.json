@@ -5,7 +5,6 @@
   "useWorkspaces": true,
   "workspaces": [
     "packages/assert",
-    "packages/ses-adapter",
     "packages/install-ses",
     "packages/import-manager",
     "packages/sparse-ints",
@@ -20,8 +19,7 @@
     "packages/transform-eventual-send",
     "packages/tame-metering",
     "packages/transform-metering",
-    "packages/default-evaluate-options",
-    "packages/evaluate",
+    "packages/install-metering-and-ses",
     "packages/marshal",
     "packages/same-structure",
     "packages/captp",
@@ -64,9 +62,12 @@
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
-    "build": "yarn workspaces run build"
+    "build": "yarn workspaces run build",
+    "postinstall": "patch-package"
   },
   "dependencies": {
-    "@agoric/store": "^0.1.2"
+    "@agoric/store": "^0.1.2",
+    "patch-package": "^6.2.2",
+    "postinstall-postinstall": "^2.1.0"
   }
 }
