@@ -83,39 +83,49 @@ export const makeZoeHelpers = (zcf) => {
    * @property {AmountKeywordRecord} to
    */
   const calcNewAllocations = (allocations, toGains, fromLosses = undefined) => {
-    const fromAllocation = { ...allocations.from };
-    const toAllocation = { ...allocations.to };
     if (fromLosses === undefined) {
       fromLosses = toGains;
     }
-    // mutates allocation
-    const subtractFrom = (allocation, keyword, amount) => {
+
+    const subtract = (amount, amountToSubtract) => {
       const { brand } = amount;
       const amountMath = zcf.getAmountMath(brand);
-      allocation[keyword] = amountMath.subtract(allocation[keyword], amount);
-      return allocation;
+      if (amountToSubtract !== undefined) {
+        return amountMath.subtract(amount, amountToSubtract);
+      }
+      return amount;
     };
 
-    // mutates allocation
-    const addTo = (allocation, keyword, amount) => {
-      const { brand } = amount;
-      const amountMath = zcf.getAmountMath(brand);
-      const currentAmount =
-        allocation[keyword] !== undefined
-          ? allocation[keyword]
-          : amountMath.getEmpty();
-      allocation[keyword] = amountMath.add(currentAmount, amount);
-      return allocation;
+    const add = (amount, amountToAdd) => {
+      if (amount && amountToAdd) {
+        const { brand } = amount;
+        const amountMath = zcf.getAmountMath(brand);
+        return amountMath.add(amount, amountToAdd);
+      }
+      return amount || amountToAdd;
     };
-    Object.entries(fromLosses).forEach(([keyword, amount]) => {
-      subtractFrom(fromAllocation, keyword, amount);
-    });
-    Object.entries(toGains).forEach(([keyword, amount]) => {
-      addTo(toAllocation, keyword, amount);
-    });
+
+    const newFromAllocation = Object.fromEntries(
+      Object.entries(allocations.from).map(([keyword, allocAmount]) => {
+        return [keyword, subtract(allocAmount, fromLosses[keyword])];
+      }),
+    );
+
+    const allToKeywords = [
+      ...Object.keys(toGains),
+      ...Object.keys(allocations.to),
+    ];
+
+    const newToAllocation = Object.fromEntries(
+      allToKeywords.map(keyword => [
+        keyword,
+        add(allocations.to[keyword], toGains[keyword]),
+      ]),
+    );
+
     return harden({
-      from: fromAllocation,
-      to: toAllocation,
+      from: newFromAllocation,
+      to: newToAllocation,
     });
   };
 
