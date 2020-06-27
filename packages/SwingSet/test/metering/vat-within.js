@@ -15,8 +15,6 @@ function build(buildStuff) {
   const {
     getMeter,
     isExhausted,
-    resetMeterUsed,
-    // getMeterUsed,
     refillFacet,
     // resetGlobalMeter,
   } = makeGetMeter({ refillEachCrank: false });
@@ -50,7 +48,6 @@ function build(buildStuff) {
     run(mode) {
       log(`run ${mode}`);
       log2.splice(0);
-      resetMeterUsed();
       try {
         meterMe(log2, mode);
       } catch (e) {

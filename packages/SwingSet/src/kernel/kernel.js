@@ -73,34 +73,35 @@ export default function buildKernel(kernelEndowments) {
       budgetAllocate: FULL,
       budgetCompute: FULL,
     });
+
     function refill() {
       // console.error(`-- METER REFILL`);
       // console.error(`   allocate used: ${FULL - refillFacet.getAllocateBalance()}`);
       // console.error(`   compute used : ${FULL - refillFacet.getComputeBalance()}`);
+      const used = harden({
+        allocate: FULL - refillFacet.getAllocateBalance(),
+        compute: FULL - refillFacet.getComputeBalance(),
+      });
       if (meter.isExhausted() && !refillIfExhausted) {
-        return;
+        return used;
       }
       refillFacet.allocate();
       refillFacet.compute();
       refillFacet.stack();
+      return used;
     }
+
     if (refillEachCrank) {
       allRefillers.add(refill);
     }
-    let meterUsed = false; // mostly for testing
+
     function getMeter(dontReplaceGlobalMeter = false) {
-      meterUsed = true;
       if (replaceGlobalMeter && !dontReplaceGlobalMeter) {
         replaceGlobalMeter(meter);
       }
       return meter;
     }
-    function resetMeterUsed() {
-      meterUsed = false;
-    }
-    function getMeterUsed() {
-      return meterUsed;
-    }
+
     function isExhausted() {
       return meter.isExhausted();
     }
@@ -113,9 +114,8 @@ export default function buildKernel(kernelEndowments) {
     return harden({
       getMeter,
       isExhausted,
-      resetMeterUsed,
-      getMeterUsed,
       refillFacet,
+      refill,
       getAllocateBalance: refillFacet.getAllocateBalance,
       getComputeBalance: refillFacet.getComputeBalance,
       getCombinedBalance: refillFacet.getCombinedBalance,
