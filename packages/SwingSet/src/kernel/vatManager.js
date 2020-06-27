@@ -15,6 +15,8 @@ export default function makeVatManager(
   kernelKeeper,
   vatKeeper,
   vatPowers,
+  meterRecord,
+  notifyTermination,
 ) {
   const {
     waitUntilQuiescent,

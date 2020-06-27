@@ -713,7 +713,14 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  function addVatManager(vatID, name, setup, options = {}) {
+  function addVatManager(
+    vatID,
+    name,
+    setup,
+    options,
+    meterRecord,
+    notifyTermination,
+  ) {
     const { enablePipelining = false } = options;
     validateVatSetupFn(setup);
     const helpers = harden({
@@ -740,6 +747,8 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper,
       kernelKeeper.allocateVatKeeperIfNeeded(vatID),
       vatPowers,
+      meterRecord,
+      notifyTermination,
     );
     ephemeral.vats.set(
       vatID,
@@ -755,6 +764,8 @@ export default function buildKernel(kernelEndowments) {
     vatNameToID,
     vatEndowments,
     dynamicVatPowers,
+    transformMetering,
+    makeGetMeter,
     addVatManager,
     addExport,
     queueToExport,
@@ -811,7 +822,16 @@ export default function buildKernel(kernelEndowments) {
       const { setup, options } = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
-      addVatManager(vatID, name, setup, options);
+      const meterRecord = null; // static vats are not metered
+      const notifyTermination = null; // nobody watches static
+      addVatManager(
+        vatID,
+        name,
+        setup,
+        options,
+        meterRecord,
+        notifyTermination,
+      );
     }
 
     if (vatAdminDevSetup) {

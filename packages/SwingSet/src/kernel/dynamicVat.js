@@ -11,6 +11,8 @@ export function makeDynamicVatCreator(stuff) {
     vatNameToID,
     vatEndowments,
     dynamicVatPowers,
+    transformMetering,
+    makeGetMeter,
     addVatManager,
     addExport,
     queueToExport,
@@ -33,6 +35,9 @@ export function makeDynamicVatCreator(stuff) {
 
   function createVatDynamically(vatSourceBundle) {
     const vatID = allocateUnusedVatID();
+
+    const meterRecord = null;
+    const notifyTermination = null;
 
     async function makeBuildRootObject() {
       if (typeof vatSourceBundle !== 'object') {
@@ -60,7 +65,14 @@ export function makeDynamicVatCreator(stuff) {
           dynamicVatPowers,
         );
       }
-      addVatManager(vatID, `dynamicVat${vatID}`, setup);
+      addVatManager(
+        vatID,
+        `dynamicVat${vatID}`,
+        setup,
+        {},
+        meterRecord,
+        notifyTermination,
+      );
     }
 
     function makeSuccessResponse() {
