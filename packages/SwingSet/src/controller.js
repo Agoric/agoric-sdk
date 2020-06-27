@@ -265,7 +265,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
   // start() may queue bootstrap if state doesn't say we did it already. It
   // also replays the transcripts from a previous run, if any, which will
   // execute vat code (but all syscalls will be disabled)
-  await kernel.start(bootstrapVatName, JSON.stringify(argv));
+  const bootstrapResult = await kernel.start(
+    bootstrapVatName,
+    JSON.stringify(argv),
+  );
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
@@ -303,14 +306,16 @@ export async function buildVatController(config, withSES = true, argv = []) {
       return kernel.deviceNameToID(deviceName);
     },
 
-    queueToVatExport(vatName, exportID, method, args) {
+    queueToVatExport(vatName, exportID, method, args, resultPolicy = 'ignore') {
       const vatID = kernel.vatNameToID(vatName);
       parseVatSlot(exportID);
       assert.typeof(method, 'string');
       insistCapData(args);
       kernel.addExport(vatID, exportID);
-      kernel.queueToExport(vatID, exportID, method, args);
+      return kernel.queueToExport(vatID, exportID, method, args, resultPolicy);
     },
+
+    bootstrapResult,
   });
 
   return controller;

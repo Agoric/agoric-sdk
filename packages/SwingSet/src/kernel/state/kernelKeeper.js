@@ -266,21 +266,27 @@ export default function makeKernelKeeper(storage) {
     return owner;
   }
 
-  function addKernelPromise(deciderVatID) {
-    insistVatID(deciderVatID);
-    const kpid = Nat(Number(getRequired('kp.nextID')));
-    kdebug(`Adding kernel promise kp${kpid} for ${deciderVatID}`);
-    storage.set('kp.nextID', `${kpid + 1}`);
-    const s = makeKernelSlot('promise', kpid);
-    storage.set(`${s}.state`, 'unresolved');
-    storage.set(`${s}.decider`, deciderVatID);
-    storage.set(`${s}.subscribers`, '');
-    storage.set(`${s}.queue.nextID`, `0`);
-    storage.set(`${s}.refCount`, `0`);
+  function addKernelPromise() {
+    const kpidNum = Nat(Number(getRequired('kp.nextID')));
+    storage.set('kp.nextID', `${kpidNum + 1}`);
+    const kpid = makeKernelSlot('promise', kpidNum);
+    storage.set(`${kpid}.state`, 'unresolved');
+    storage.set(`${kpid}.subscribers`, '');
+    storage.set(`${kpid}.queue.nextID`, `0`);
+    storage.set(`${kpid}.refCount`, `0`);
+    storage.set(`${kpid}.decider`, '');
     // queue is empty, so no state[kp$NN.queue.$NN] keys yet
     incStat('kernelPromises');
     incStat('kpUnresolved');
-    return s;
+    return kpid;
+  }
+
+  function addKernelPromiseForVat(deciderVatID) {
+    insistVatID(deciderVatID);
+    const kpid = addKernelPromise();
+    kdebug(`Adding kernel promise ${kpid} for ${deciderVatID}`);
+    storage.set(`${kpid}.decider`, deciderVatID);
+    return kpid;
   }
 
   function getKernelPromise(kernelSlot) {
@@ -568,7 +574,7 @@ export default function makeKernelKeeper(storage) {
         storage,
         vatID,
         addKernelObject,
-        addKernelPromise,
+        addKernelPromiseForVat,
         incrementRefCount,
         decrementRefCount,
         incStat,
@@ -739,6 +745,7 @@ export default function makeKernelKeeper(storage) {
     ownerOfKernelDevice,
 
     addKernelPromise,
+    addKernelPromiseForVat,
     getKernelPromise,
     hasKernelPromise,
     fulfillKernelPromiseToPresence,

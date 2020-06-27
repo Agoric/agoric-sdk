@@ -393,7 +393,7 @@ test('kernelKeeper promises', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  const p1 = k.addKernelPromise('v4');
+  const p1 = k.addKernelPromiseForVat('v4');
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
     refCount: 0,
@@ -497,7 +497,7 @@ test('kernelKeeper promise resolveToData', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  const p1 = k.addKernelPromise('v4');
+  const p1 = k.addKernelPromiseForVat('v4');
   const capdata = harden({ body: 'bodyjson', slots: ['ko22', 'kp24', 'kd25'] });
   k.fulfillKernelPromiseToData(p1, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -516,7 +516,7 @@ test('kernelKeeper promise reject', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  const p1 = k.addKernelPromise('v4');
+  const p1 = k.addKernelPromiseForVat('v4');
   const capdata = harden({ body: 'bodyjson', slots: ['ko22', 'kp24', 'kd25'] });
   k.rejectKernelPromise(p1, capdata);
   t.deepEqual(k.getKernelPromise(p1), {

@@ -17,6 +17,7 @@ import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
 import { insistDeviceID, insistVatID } from './id';
+import { makeMessageResult } from './messageResult';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -158,6 +159,8 @@ export default function buildKernel(kernelEndowments) {
     log: [],
   };
 
+  const pendingMessageResults = new Map(); // kpid -> messageResult
+
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
   // * notifyFulfillToData/notifyFulfillToPresence/notifyReject:
@@ -248,6 +251,12 @@ export default function buildKernel(kernelEndowments) {
     return p;
   }
 
+  function notePendingMessageResolution(kpid, status, resolution) {
+    const result = pendingMessageResults.get(kpid);
+    pendingMessageResults.delete(kpid);
+    result.noteResolution(status, resolution);
+  }
+
   function fulfillToPresence(vatID, kpid, targetSlot) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
@@ -262,6 +271,13 @@ export default function buildKernel(kernelEndowments) {
     // the resolution ("you knew it was resolved, you shouldn't be sending
     // any more messages to it, send them to the resolution instead"), and we
     // must wait for those notifications to be delivered.
+    if (pendingMessageResults.has(kpid)) {
+      const data = {
+        body: '{"@qclass":"slot",index:0}',
+        slots: [targetSlot],
+      };
+      notePendingMessageResolution(kpid, 'fulfilled', data);
+    }
   }
 
   function fulfillToData(vatID, kpid, data) {
@@ -277,6 +293,9 @@ export default function buildKernel(kernelEndowments) {
     }
     kernelKeeper.fulfillKernelPromiseToData(kpid, data);
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
+    if (pendingMessageResults.has(kpid)) {
+      notePendingMessageResolution(kpid, 'fulfilled', data);
+    }
   }
 
   function reject(vatID, kpid, data) {
@@ -292,6 +311,9 @@ export default function buildKernel(kernelEndowments) {
     }
     kernelKeeper.rejectKernelPromise(kpid, data);
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
+    if (pendingMessageResults.has(kpid)) {
+      notePendingMessageResolution(kpid, 'rejected', data);
+    }
   }
 
   // The 'vatPowers' are given to vats as arguments of setup(). They
@@ -371,7 +393,16 @@ export default function buildKernel(kernelEndowments) {
     return vat.manager.mapVatSlotToKernelSlot(vatSlot);
   }
 
-  function queueToExport(vatID, vatSlot, method, args) {
+  // If `kernelPanic` is set to non-null, vat execution code will throw it as an
+  // error at the first opportunity
+  let kernelPanic = null;
+
+  function panic(problem) {
+    console.log(`##### KERNEL PANIC: ${problem} #####`);
+    kernelPanic = new Error(`kernel panic ${problem}`);
+  }
+
+  function queueToExport(vatID, vatSlot, method, args, resultPolicy = 'ignore') {
     // queue a message on the end of the queue, with 'absolute' kernelSlots.
     // Use 'step' or 'run' to execute it
     vatID = `${vatID}`;
@@ -396,9 +427,15 @@ export default function buildKernel(kernelEndowments) {
     insistCapData(args);
     args.slots.forEach(s => parseKernelSlot(s)); // typecheck
     // we use result=null because this will be json stringified
-    const msg = harden({ method, args, result: null });
+
+    const resultPromise = kernelKeeper.addKernelPromise();
+    const result = makeMessageResult(method, resultPolicy, panic);
+    pendingMessageResults.set(resultPromise, result);
+
+    const msg = harden({ method, args, result: resultPromise });
     const kernelSlot = addExport(vatID, vatSlot);
     send(kernelSlot, msg);
+    return result;
   }
 
   async function deliverToVat(vatID, target, msg) {
@@ -655,7 +692,13 @@ export default function buildKernel(kernelEndowments) {
     const args = harden([argv, vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootSlot = makeVatRootObjectSlot();
-    queueToExport(bootstrapVatID, rootSlot, 'bootstrap', m.serialize(args));
+    return queueToExport(
+      bootstrapVatID,
+      rootSlot,
+      'bootstrap',
+      m.serialize(args),
+      'panic',
+    );
   }
 
   function buildVatManager(vatID, name, setup) {
@@ -785,6 +828,7 @@ export default function buildKernel(kernelEndowments) {
           vatAdminRootObjectSlot,
           'newVatCallback',
           args,
+          'logFailure',
         );
       })
       .catch(e => console.error(`error during createVatDynamically`, e));
@@ -880,10 +924,11 @@ export default function buildKernel(kernelEndowments) {
     // And enqueue the bootstrap() call. If we're reloading from an
     // initialized state vector, this call will already be in the bootstrap
     // vat's transcript, so we don't re-queue it.
+    let bootstrapResult = null;
     if (!wasInitialized && bootstrapVatName) {
       const bootstrapVatID = vatNameToID(bootstrapVatName);
       console.debug(`=> queueing bootstrap()`);
-      callBootstrap(bootstrapVatID, argvString);
+      bootstrapResult = callBootstrap(bootstrapVatID, argvString);
     }
 
     // if it *was* initialized, replay the transcripts
@@ -910,15 +955,22 @@ export default function buildKernel(kernelEndowments) {
     kernelKeeper.saveStats();
     commitCrank(); // commit "crank 0"
     kernelKeeper.incrementCrankNumber();
+    return bootstrapResult;
   }
 
   async function step() {
+    if (kernelPanic) {
+      throw kernelPanic;
+    }
     if (!started) {
       throw new Error('must do kernel.start() before step()');
     }
     // process a single message
     if (!kernelKeeper.isRunQueueEmpty()) {
       await processQueueMessage(kernelKeeper.getNextMsg());
+      if (kernelPanic) {
+        throw kernelPanic;
+      }
       return 1;
     } else {
       return 0;
@@ -926,6 +978,9 @@ export default function buildKernel(kernelEndowments) {
   }
 
   async function run() {
+    if (kernelPanic) {
+      throw kernelPanic;
+    }
     if (!started) {
       throw new Error('must do kernel.start() before run()');
     }
@@ -933,6 +988,9 @@ export default function buildKernel(kernelEndowments) {
     while (!kernelKeeper.isRunQueueEmpty()) {
       // eslint-disable-next-line no-await-in-loop
       await processQueueMessage(kernelKeeper.getNextMsg());
+      if (kernelPanic) {
+        throw kernelPanic;
+      }
       count += 1;
     }
     return count;
