@@ -30,6 +30,7 @@ export default function buildKernel(kernelEndowments) {
   const {
     waitUntilQuiescent,
     hostStorage,
+    vatEndowments,
     vatAdminVatSetup,
     vatAdminDevSetup,
     replaceGlobalMeter,
@@ -744,24 +745,10 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  // Allow vats to import certain modules, by providing them the same values
-  // we imported here in the kernel, which came themselves from
-  // kernelRequire() defined in the controller. This will go away once
-  // 'harden' is used as a global everywhere, and vats no longer need to
-  // import anything outside their bundle.
-
-  function vatRequire(what) {
-    if (what === '@agoric/harden') {
-      return harden;
-    } else {
-      throw Error(`vatRequire unprepared to satisfy require(${what})`);
-    }
-  }
-
   const createVatDynamically = makeDynamicVatCreator({
     allocateUnusedVatID: kernelKeeper.allocateUnusedVatID,
     vatNameToID,
-    vatRequire,
+    vatEndowments,
     dynamicVatPowers,
     addVatManager,
     addExport,

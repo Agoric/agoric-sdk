@@ -1,4 +1,3 @@
-/* global HandledPromise */
 import { importBundle } from '@agoric/import-bundle';
 import { makeVatSlot } from '../parseVatSlots';
 
@@ -10,7 +9,7 @@ export function makeDynamicVatCreator(stuff) {
   const {
     allocateUnusedVatID,
     vatNameToID,
-    vatRequire,
+    vatEndowments,
     dynamicVatPowers,
     addVatManager,
     addExport,
@@ -44,12 +43,7 @@ export function makeDynamicVatCreator(stuff) {
 
       const vatNS = await importBundle(vatSourceBundle, {
         filePrefix: vatID,
-        endowments: {
-          console,
-          require: vatRequire,
-          HandledPromise,
-          // TODO: RegExp, or RegExp: re2, depending on what we were given
-        },
+        endowments: vatEndowments,
       });
       // TODO: use a named export, not default
       const buildRootObject = vatNS.default;
