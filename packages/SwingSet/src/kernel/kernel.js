@@ -708,7 +708,8 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  function buildVatManager(vatID, name, setup) {
+  function addVatManager(vatID, name, setup, options = {}) {
+    const { enablePipelining = false } = options;
     validateVatSetupFn(setup);
     const helpers = harden({
       vatID: name, // TODO: rename to 'name', update vats to match
@@ -726,7 +727,7 @@ export default function buildKernel(kernelEndowments) {
     // just more params to makeVatManager?
 
     // the vatManager invokes setup() to build the userspace image
-    return makeVatManager(
+    const manager = makeVatManager(
       vatID,
       syscallManager,
       setup,
@@ -734,6 +735,13 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper,
       kernelKeeper.allocateVatKeeperIfNeeded(vatID),
       vatPowers,
+    );
+    ephemeral.vats.set(
+      vatID,
+      harden({
+        manager,
+        enablePipelining: Boolean(enablePipelining),
+      }),
     );
   }
 
@@ -806,8 +814,7 @@ export default function buildKernel(kernelEndowments) {
             dynamicVatPowers,
           );
         };
-        const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
-        ephemeral.vats.set(vatID, harden({ manager }));
+        addVatManager(vatID, `dynamicVat${vatID}`, setup, {});
       })
       .then(
         () => {
@@ -896,14 +903,7 @@ export default function buildKernel(kernelEndowments) {
       const { setup, options } = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
-      const manager = buildVatManager(vatID, name, setup);
-      ephemeral.vats.set(
-        vatID,
-        harden({
-          manager,
-          enablePipelining: Boolean(options.enablePipelining),
-        }),
-      );
+      addVatManager(vatID, name, setup, options);
     }
 
     if (vatAdminDevSetup) {
