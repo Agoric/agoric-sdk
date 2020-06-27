@@ -123,15 +123,19 @@ export default function buildKernel(kernelEndowments) {
   }
   harden(makeGetMeter);
 
-  function endOfCrankMeterTask() {
+  function stopGlobalMeter() {
     if (replaceGlobalMeter) {
       replaceGlobalMeter(null);
     }
+  }
+  harden(stopGlobalMeter);
+
+  function refillAllMeters() {
     for (const refiller of allRefillers) {
       refiller();
     }
   }
-  harden(endOfCrankMeterTask);
+  harden(refillAllMeters);
 
   function runWithoutGlobalMeter(f, ...args) {
     if (!replaceGlobalMeter) {
@@ -362,7 +366,8 @@ export default function buildKernel(kernelEndowments) {
     fulfillToData,
     reject,
     waitUntilQuiescent,
-    endOfCrankMeterTask,
+    stopGlobalMeter,
+    refillAllMeters,
   });
 
   function vatNameToID(name) {
