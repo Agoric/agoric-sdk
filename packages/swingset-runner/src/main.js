@@ -383,10 +383,10 @@ export async function main() {
       const [steps, deltaT] = await runBatch(0, false);
       const status = roundResult.status();
       if (status === 'pending') {
-        log(`benchmark round ${i+1} did not finish`);
+        log(`benchmark round ${i + 1} did not finish`);
       } else {
         const resolution = JSON.stringify(roundResult.resolution());
-        log(`benchmark round ${i+1} ${status}: ${resolution}`);
+        log(`benchmark round ${i + 1} ${status}: ${resolution}`);
       }
       totalSteps += steps;
       totalDeltaT += deltaT;

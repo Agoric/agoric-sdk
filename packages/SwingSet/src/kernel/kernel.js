@@ -402,7 +402,7 @@ export default function buildKernel(kernelEndowments) {
     kernelPanic = new Error(`kernel panic ${problem}`);
   }
 
-  function queueToExport(vatID, vatSlot, method, args, resultPolicy = 'ignore') {
+  function queueToExport(vatID, vatSlot, method, args, policy = 'ignore') {
     // queue a message on the end of the queue, with 'absolute' kernelSlots.
     // Use 'step' or 'run' to execute it
     vatID = `${vatID}`;
@@ -429,7 +429,7 @@ export default function buildKernel(kernelEndowments) {
     // we use result=null because this will be json stringified
 
     const resultPromise = kernelKeeper.addKernelPromise();
-    const result = makeMessageResult(method, resultPolicy, panic);
+    const result = makeMessageResult(method, policy, panic);
     pendingMessageResults.set(resultPromise, result);
 
     const msg = harden({ method, args, result: resultPromise });
