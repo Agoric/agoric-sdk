@@ -32,6 +32,7 @@ const makeContract = zcf => {
     rejectOffer,
     checkHook,
     assertNatMathHelpers,
+    trade,
   } = makeZoeHelpers(zcf);
   assertKeywords(harden(allKeywords));
 
@@ -78,21 +79,13 @@ const makeContract = zcf => {
       );
     }
 
-    // Reallocate and complete the buyer offer.
-    const newSellerAllocation = {
-      Money: moneyAmountMaths.add(sellerAllocation.Money, providedMoney),
-      Items: itemsAmountMath.subtract(sellerAllocation.Items, wantedItems),
-    };
-
-    const newBuyerAllocation = {
-      Money: moneyAmountMaths.getEmpty(),
-      Items: itemsAmountMath.add(buyerAllocation.Items, wantedItems),
-    };
-
-    zcf.reallocate(
-      [sellerOfferHandle, buyerOfferHandle],
-      [newSellerAllocation, newBuyerAllocation],
+    // Reallocate.
+    trade(
+      { offerHandle: sellerOfferHandle, gains: { Money: providedMoney } },
+      { offerHandle: buyerOfferHandle, gains: { Items: wantedItems } },
     );
+
+    // Complete the buyer offer.
     zcf.complete([buyerOfferHandle]);
     return defaultAcceptanceMsg;
   };

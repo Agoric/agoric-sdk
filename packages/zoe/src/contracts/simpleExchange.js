@@ -35,7 +35,7 @@ const makeContract = zcf => {
     rejectOffer,
     checkIfProposal,
     swap,
-    canTradeWith,
+    satisfies,
     getActiveOffers,
     assertKeywords,
   } = makeZoeHelpers(zcf);
@@ -82,7 +82,15 @@ const makeContract = zcf => {
   // the caller can know to add the new offer to the book.
   function swapIfCanTrade(offerHandles, offerHandle) {
     for (const iHandle of offerHandles) {
-      if (canTradeWith(offerHandle, iHandle)) {
+      const iHandleSatisfied = satisfies(
+        iHandle,
+        zcf.getCurrentAllocation(offerHandle),
+      );
+      const offerHandleSatisfied = satisfies(
+        offerHandle,
+        zcf.getCurrentAllocation(iHandle),
+      );
+      if (iHandleSatisfied && offerHandleSatisfied) {
         swap(offerHandle, iHandle);
         // return handle to remove
         return iHandle;

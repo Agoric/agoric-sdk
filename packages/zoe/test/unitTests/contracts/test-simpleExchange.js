@@ -164,9 +164,9 @@ test('simpleExchange with valid offers', async t => {
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
   t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
+  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 4);
   t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
+  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 3);
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -362,7 +362,7 @@ test('simpleExchange with non-fungible assets', async t => {
   // sell a Spell of Binding and wants to receive CryptoCats in return.
   const aliceSellOrderProposal = harden({
     give: { Asset: rpgItems(spell) },
-    want: { Price: cryptoCats(harden([])) },
+    want: { Price: cryptoCats(harden(['Cheshire Cat'])) },
     exit: { onDemand: null },
   });
   const alicePayments = { Asset: aliceRpgPayment };
