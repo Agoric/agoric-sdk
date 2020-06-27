@@ -1,4 +1,4 @@
-import '@agoric/install-ses';
+import '@agoric/install-metering-and-ses';
 import path from 'path';
 import { test } from 'tape';
 import { initSwingStore } from '@agoric/swing-store-simple';

@@ -36,8 +36,43 @@ export function makeDynamicVatCreator(stuff) {
   function createVatDynamically(vatSourceBundle) {
     const vatID = allocateUnusedVatID();
 
-    const meterRecord = null;
-    const notifyTermination = null;
+    // fail-stop: we refill the meter after each crank (in vatManager
+    // doProcess()), but if the vat exhausts its meter within a single crank,
+    // it will never run again. We set refillEachCrank:false because we want
+    // doProcess to do the refilling itself, so it can count the usage
+    const meterRecord = makeGetMeter({
+      refillEachCrank: false,
+      refillIfExhausted: false,
+    });
+
+    let terminated = false;
+
+    function notifyTermination(error) {
+      if (terminated) {
+        return;
+      }
+      terminated = true;
+      const vatAdminVatId = vatNameToID('vatAdmin');
+      const vatAdminRootObjectSlot = makeVatRootObjectSlot();
+
+      const args = {
+        body: JSON.stringify([
+          vatID,
+          error
+            ? { '@qclass': 'error', name: error.name, message: error.message }
+            : { '@qclass': 'undefined' },
+        ]),
+        slots: [],
+      };
+
+      queueToExport(
+        vatAdminVatId,
+        vatAdminRootObjectSlot,
+        'vatTerminated',
+        args,
+        'logFailure',
+      );
+    }
 
     async function makeBuildRootObject() {
       if (typeof vatSourceBundle !== 'object') {
@@ -45,10 +80,13 @@ export function makeDynamicVatCreator(stuff) {
           `createVatDynamically() requires bundle, not a plain string`,
         );
       }
+      const getMeter = meterRecord.getMeter;
+      const transforms = [src => transformMetering(src, getMeter)];
 
       const vatNS = await importBundle(vatSourceBundle, {
         filePrefix: vatID,
-        endowments: vatEndowments,
+        transforms,
+        endowments: { ...vatEndowments, getMeter },
       });
       // TODO: use a named export, not default
       const buildRootObject = vatNS.default;
