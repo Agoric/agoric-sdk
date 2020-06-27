@@ -810,7 +810,7 @@ test('ZoeHelpers trade sameHandle', t => {
             losses: { Money: simoleans(4) },
           },
         ),
-      /the same offer cannot trade with itself/,
+      /an offer cannot trade with itself/,
       `safe offer trading with itself fails with nice error message`,
     );
     t.deepEquals(

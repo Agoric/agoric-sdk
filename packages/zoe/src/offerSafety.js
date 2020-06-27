@@ -13,7 +13,7 @@
  * @param {Proposal["give"] | Proposal["want"]} giveOrWant
  * @param {AmountKeywordRecord} allocation
  */
-const satisfies = (getAmountMath, giveOrWant, allocation) => {
+const satisfiesInternal = (getAmountMath, giveOrWant, allocation) => {
   const isGTEByKeyword = ([keyword, requiredAmount]) => {
     // If there is no allocation for a keyword, we know the giveOrWant
     // is not satisfied without checking further.
@@ -31,7 +31,8 @@ const satisfies = (getAmountMath, giveOrWant, allocation) => {
  * For this allocation to satisfy what the user wanted, their
  * allocated amounts must be greater than or equal to proposal.want.
  * @param  {(Brand) => AmountMath} getAmountMath - a function that
- * takes a brand and returns the appropriate amountMath
+ * takes a brand and returns the appropriate amountMath. The function
+ * must have an amountMath for every brand in proposal.want.
  * @param  {Proposal} proposal - the rules that accompanied the escrow
  * of payments that dictate what the user expected to get back from
  * Zoe. A proposal is a record with keys `give`, `want`, and `exit`.
@@ -43,14 +44,15 @@ const satisfies = (getAmountMath, giveOrWant, allocation) => {
  * to be given to a user.
  */
 const satisfiesWant = (getAmountMath, proposal, allocation) =>
-  satisfies(getAmountMath, proposal.want, allocation);
+  satisfiesInternal(getAmountMath, proposal.want, allocation);
 
 /**
  * For this allocation to count as a full refund, the allocated
  * amounts must be greater than or equal to what was originally
  * offered (proposal.give).
  * @param  {(Brand) => AmountMath} getAmountMath - a function that
- * takes a brand and returns the appropriate amountMath
+ * takes a brand and returns the appropriate amountMath. The function
+ * must have an amountMath for every brand in proposal.give.
  * @param  {Proposal} proposal - the rules that accompanied the escrow
  * of payments that dictate what the user expected to get back from
  * Zoe. A proposal is a record with keys `give`, `want`, and `exit`.
@@ -62,7 +64,7 @@ const satisfiesWant = (getAmountMath, proposal, allocation) =>
  * to be given to a user.
  */
 const satisfiesGive = (getAmountMath, proposal, allocation) =>
-  satisfies(getAmountMath, proposal.give, allocation);
+  satisfiesInternal(getAmountMath, proposal.give, allocation);
 
 /**
  * `isOfferSafe` checks offer safety for a single offer.
@@ -72,7 +74,9 @@ const satisfiesGive = (getAmountMath, proposal, allocation) =>
  * `proposal.want`. Both can be fully satisfied.
  *
  * @param  {(Brand) => AmountMath} getAmountMath - a function that
- * takes a brand and returns the appropriate amountMath
+ * takes a brand and returns the appropriate amountMath. The function
+ * must have an amountMath for every brand in proposal.want and
+ * proposal.give.
  * @param  {Proposal} proposal - the rules that accompanied the escrow
  * of payments that dictate what the user expected to get back from
  * Zoe. A proposal is a record with keys `give`, `want`, and `exit`.

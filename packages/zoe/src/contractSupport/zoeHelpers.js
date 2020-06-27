@@ -62,17 +62,20 @@ export const makeZoeHelpers = (zcf) => {
   };
 
   /**
-   * Given an amountKeywordRecord of the gains of a
-   * transfer, calculate the new allocations. The gains are added to
-   * allocations.to and taken from allocations.from.
+   * Given toGains (an AmountKeywordRecord), and allocations (a pair,
+   * 'to' and 'from', of AmountKeywordRecords), all the entries in
+   * toGains will be added to 'to'. If fromLosses is defined, all the
+   * entries in fromLosses are subtracted from 'from'. (If fromLosses
+   * is not defined, toGains is subtracted from 'from'.)
    *
-   * @param {FromToAllocations} allocations - the 'to' and 'from' allocations
+   * @param {FromToAllocations} allocations - the 'to' and 'from'
+   * allocations
    * @param {AmountKeywordRecord} toGains - what should be gained in
    * the 'to' allocation
    * @param {AmountKeywordRecord} fromLosses - what should be lost in
    * the 'from' allocation. If not defined, fromLosses is equal to
-   * toGains. Note that the total amounts should always be equal, it
-   * the keywords that might be different.
+   * toGains. Note that the total amounts should always be equal; it
+   * is the keywords that might be different.
    * @returns {FromToAllocations} allocations - new allocations
    *
    * @typedef FromToAllocations
@@ -203,12 +206,15 @@ export const makeZoeHelpers = (zcf) => {
      * @property {AmountKeywordRecord} gains - what the offer will
      * gain as a result of this trade
      * @property {AmountKeywordRecord=} losses - what the offer will
-     * lose as a result of this trade
+     * give up as a result of this trade. Losses is optional, but can
+     * only be omitted if the keywords for both offers are the same.
+     * If losses is not defined, the gains of the other offer is
+     * subtracted.
      */
     trade: (keepLeft, tryRight) => {
       assert(
         keepLeft.offerHandle !== tryRight.offerHandle,
-        details`the same offer cannot trade with itself`,
+        details`an offer cannot trade with itself`,
       );
       let leftAllocation = zcf.getCurrentAllocation(keepLeft.offerHandle);
       let rightAllocation = zcf.getCurrentAllocation(tryRight.offerHandle);

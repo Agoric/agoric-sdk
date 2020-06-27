@@ -82,15 +82,12 @@ const makeContract = zcf => {
   // the caller can know to add the new offer to the book.
   function swapIfCanTrade(offerHandles, offerHandle) {
     for (const iHandle of offerHandles) {
-      const iHandleSatisfied = satisfies(
-        iHandle,
-        zcf.getCurrentAllocation(offerHandle),
-      );
-      const offerHandleSatisfied = satisfies(
-        offerHandle,
-        zcf.getCurrentAllocation(iHandle),
-      );
-      if (iHandleSatisfied && offerHandleSatisfied) {
+      const satisfiedBy = (xHandle, yHandle) =>
+        satisfies(xHandle, zcf.getCurrentAllocation(yHandle));
+      if (
+        satisfiedBy(iHandle, offerHandle) &&
+        satisfiedBy(offerHandle, iHandle)
+      ) {
         swap(offerHandle, iHandle);
         // return handle to remove
         return iHandle;

@@ -42,12 +42,8 @@ const makeContract = zcf => {
   function findMatchingTrade(newDetails, orders) {
     return orders.find(order => {
       return (
-        satisfies(newDetails.offerHandle, {
-          Out: zcf.getCurrentAllocation(order.offerHandle).In,
-        }) &&
-        satisfies(order.offerHandle, {
-          Out: zcf.getCurrentAllocation(newDetails.offerHandle).In,
-        })
+        satisfies(newDetails.offerHandle, { Out: order.amountIn }) &&
+        satisfies(order.offerHandle, { Out: newDetails.amountIn })
       );
     });
   }

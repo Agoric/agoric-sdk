@@ -79,7 +79,10 @@ const makeContract = zcf => {
       );
     }
 
-    // Reallocate.
+    // Reallocate. We are able to trade by only defining the gains
+    // (omitting the losses) because the keywords for both offers are
+    // the same, so the gains for one offer are the losses for the
+    // other.
     trade(
       { offerHandle: sellerOfferHandle, gains: { Money: providedMoney } },
       { offerHandle: buyerOfferHandle, gains: { Items: wantedItems } },
