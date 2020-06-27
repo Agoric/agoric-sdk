@@ -8,16 +8,23 @@
 import harden from '@agoric/harden';
 import { producePromise } from '@agoric/produce-promise';
 
+function producePRR() {
+  const { promise, resolve, reject } = producePromise();
+  return [promise, { resolve, reject }];
+}
+
 export default function setup(syscall, state, helpers) {
   function build(E, D) {
-    const pending = new Map();
+    const pending = new Map(); // vatID -> { resolve, reject } for promise
 
     function createVatAdminService(vatAdminNode) {
       return harden({
         createVat(code) {
           const vatID = D(vatAdminNode).create(code);
-          const { promise, resolve, reject } = producePromise();
-          pending.set(vatID, { resolve, reject });
+
+          const [promise, pendingRR] = producePRR();
+          pending.set(vatID, pendingRR);
+
           const adminNode = harden({
             terminate() {
               D(vatAdminNode).terminate(vatID);
@@ -35,9 +42,9 @@ export default function setup(syscall, state, helpers) {
     }
 
     // this message is queued to us by createVatDynamically
-    function newVatCallback(vatId, results) {
-      const { resolve, reject } = pending.get(vatId);
-      pending.delete(vatId);
+    function newVatCallback(vatID, results) {
+      const { resolve, reject } = pending.get(vatID);
+      pending.delete(vatID);
       if (results.rootObject) {
         resolve(results.rootObject);
       } else {
