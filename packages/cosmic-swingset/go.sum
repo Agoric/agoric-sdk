@@ -35,6 +35,8 @@ github.com/Workiva/go-datastructures v1.0.52 h1:PLSK6pwn8mYdaoaCZEMsXBpBotr4HHn9
 github.com/Workiva/go-datastructures v1.0.52/go.mod h1:Z+F2Rca0qCsVYDS8z7bAGm8f3UkzuWYS/oBZz5a7VVA=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
+github.com/agoric-labs/cosmos-sdk v0.0.0-20200628000041-4699b719b4ff h1:KXDyssuWktP68jBoSQ0oXYPBLA8gGEDzc77zCiqY/3A=
+github.com/agoric-labs/cosmos-sdk v0.0.0-20200628000041-4699b719b4ff/go.mod h1:T3u1b0ahtqJpdI2Fk6JcmntR7/YLjMq+J6hZrHPZTzc=
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200428210309-3cf84258cc12 h1:xnDgoo7cqnbvMFXp7QYrNwYPpAe0wtBuVSkG40PHb1U=
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200428210309-3cf84258cc12/go.mod h1:tvCen72hkJxkYT1/CsOaKHjZ4PouX4Isp4w9aRL2K4c=
 github.com/agoric-labs/cosmos-sdk v0.37.0 h1:y9OTnnORhLHPnfxLIaK4Pv/7Z7KcpnbTxpE5xxWlUUY=
