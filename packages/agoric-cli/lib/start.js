@@ -4,8 +4,12 @@ import { createHash } from 'crypto';
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
-const PROVISION_COINS = '100000000uagstake,100provisionpass';
-const DELEGATE0_COINS = '50000000uagstake';
+const MINT_DENOM = 'uag';
+const STAKING_DENOM = 'uagstake';
+const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
+
+const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
+const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const CHAIN_ID = 'agoric';
 
 const FAKE_CHAIN_DELAY =
@@ -26,16 +30,35 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const genjson = await fs.readFile(genfile, 'utf-8');
     const genesis = JSON.parse(genjson);
 
+    // Use our own denominations.
+    genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
+    genesis.app_state.mint.params.mint_denom = MINT_DENOM;
+    genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
+    genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+
     // Tweak the parameters we need.
     genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
-    genesis.app_state.staking.params.bond_denom = 'uagstake';
-    genesis.app_state.crisis.constant_fee.denom = 'uagstake';
+
+    // Zero inflation, for now.
+    genesis.app_state.mint.minter.inflation = '0.0';
+    genesis.app_state.mint.params.inflation_rate_change = '0.0';
+    genesis.app_state.mint.params.inflation_min = '0.0';
+
+    // Remove IBC and capability state.
+    // TODO: This needs much more support to preserve contract state
+    // between exports in order to be able to carry forward IBC conns.
+    delete genesis.app_state.capability;
+    delete genesis.app_state.ibc;
+
+    // genesis.validators[0].address = '4688325E1761CAC253216A789DC895947C08F8EE'
+
+    // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
     genesis.consensus_params.block.time_iota_ms = '1000';
 
-    await fs.writeFile(genfile, JSON.stringify(genesis, undefined, 2));
+    const ds = djson.stringify(genesis);
+    await fs.writeFile(genfile, ds);
 
     // Calculate the GCI and save to disk.
-    const ds = djson.stringify(genesis);
     const gci = createHash('sha256')
       .update(ds)
       .digest('hex');
@@ -97,6 +120,19 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         ],
         ...rest,
       );
+  }
+
+  // Translate {inspectBrk: brkOpt} into [`--inspect-brk=${brkOpt}`]
+  const debugOpts = [];
+  for (const [prop, value] of Object.entries(opts)) {
+    if (prop.startsWith('inspect')) {
+      const name = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+      if (value === true) {
+        debugOpts.push(`--${name}`);
+      } else {
+        debugOpts.push(`--${name}=${value}`);
+      }
+    }
   }
 
   const capture = (spawner, args, show = false) => {
@@ -185,19 +221,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 0;
     }
 
-    // Translate {inspectBrk: brkOpt} into [`--inspect-brk=${brkOpt}`]
-    const debugOpts = [];
-    for (const [prop, value] of Object.entries(opts)) {
-      if (prop.startsWith('inspect')) {
-        const name = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
-        if (value === true) {
-          debugOpts.push(`--${name}`);
-        } else {
-          debugOpts.push(`--${name}=${value}`);
-        }
-      }
-    }
-
     const ps = pspawn(agSolo, [...debugOpts, 'start', '--role=two_client'], {
       cwd: agServer,
     });
@@ -233,7 +256,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       chainSpawn = (args, spawnOpts = undefined) =>
         pspawn(
           'ag-chain-cosmos',
-          [`--home=${localAgServer}`, ...args],
+          [...args, `--home=${localAgServer}`],
           spawnOpts,
         );
     } else {
@@ -247,8 +270,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             ...dockerArgs,
             `-it`,
             IMAGE,
-            `--home=/usr/src/dapp/${localAgServer}`,
             ...args,
+            `--home=/usr/src/dapp/${localAgServer}`,
           ],
           spawnOpts,
         );
@@ -340,7 +363,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     await finishGenesis(genfile);
     await finishConfig(`${localAgServer}/config/config.toml`, portNum);
     return chainSpawn(
-      ['start', '--pruning=nothing'],
+      [...debugOpts, 'start', '--pruning=nothing'],
       {
         env: { ...pspawnEnv, ROLE: 'two_chain' },
       },

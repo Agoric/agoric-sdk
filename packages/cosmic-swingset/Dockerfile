@@ -9,6 +9,7 @@ RUN go mod download
 
 COPY Makefile* *.go ./
 COPY app/ app/
+COPY bin/ bin/
 COPY x/ x/
 COPY cmd/ cmd/
 COPY lib/*.go lib/

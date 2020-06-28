@@ -75,7 +75,7 @@
 
 - name: "Symlink ag-chain-cosmos"
   file:
-    src: "/usr/src/cosmic-swingset/lib/ag-chain-cosmos"
+    src: "/usr/src/cosmic-swingset/bin/ag-chain-cosmos"
     dest: "/usr/local/bin/ag-chain-cosmos"
     state: link
 

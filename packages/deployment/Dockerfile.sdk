@@ -28,7 +28,7 @@ COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 RUN ln -s agoric-sdk/packages/cosmic-swingset app
 
 COPY --from=cosmic-swingset-go /go/bin/ag-cosmos-helper /usr/local/bin/
-RUN ln -s /usr/src/app/lib/ag-chain-cosmos /usr/local/bin/
+RUN ln -s /usr/src/app/bin/ag-chain-cosmos /usr/local/bin/
 
 # By default, run the daemon with specified arguments.
 WORKDIR /root

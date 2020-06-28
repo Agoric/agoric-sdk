@@ -29,7 +29,10 @@ const main = async (progname, rawArgs, powers) => {
   }
 
   function subMain(fn, args, options) {
-    return fn(progname, args, powers, options);
+    return fn(progname, args, powers, options).then(
+      // This seems to be the only way to propagate the exit code.
+      code => process.exit(code || 0),
+    );
   }
 
   program.storeOptionsAsProperties(false);

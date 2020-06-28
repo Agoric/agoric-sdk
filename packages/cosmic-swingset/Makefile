@@ -65,7 +65,7 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
-AGC = ./lib/ag-chain-cosmos
+AGC = ./bin/ag-chain-cosmos
 AGCH = ag-cosmos-helper
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
@@ -173,7 +173,7 @@ compile-gyp:
 install: go.sum
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
 	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; \
-	  ln -sf "$$PWD/lib/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$$bindir/"
+	  ln -sf "$$PWD/bin/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$$bindir/"
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
