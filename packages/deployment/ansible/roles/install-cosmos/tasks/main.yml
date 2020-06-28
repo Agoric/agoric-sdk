@@ -8,6 +8,20 @@
     group: "{{ service }}"
     mode: 0644
 
+- name: Set proxy_app
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^proxy_app *='
+    line: 'proxy_app = "kvstore"'
+
+- name: Set block commit cadence
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^timeout_commit *='
+    line: 'timeout_commit = "{{ BLOCK_CADENCE }}"'
+
 - name: Set persistent_peers
   lineinfile:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
