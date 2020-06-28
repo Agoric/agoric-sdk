@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import meterMe from './metered-code';
 
-export default function buildRoot(_dynamicVatPowers) {
+export function buildRootObject(_dynamicVatPowers) {
   return harden({
     async run() {
       meterMe([], 'no');

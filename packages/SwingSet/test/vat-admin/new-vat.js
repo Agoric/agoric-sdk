@@ -1,6 +1,6 @@
 const harden = require('@agoric/harden');
 
-export default function build(E) {
+export function buildRootObject(E) {
   function rcvrMaker(seed) {
     let count = 0;
     let sum = seed;

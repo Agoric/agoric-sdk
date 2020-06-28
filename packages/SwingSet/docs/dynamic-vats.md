@@ -14,11 +14,11 @@ The ability to create new vats is not ambient: it requires access to the Vat Adm
 
 ### Making the Source Bundle
 
-The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function at a local source file. This file should have a function named `buildRootObject` as its default export. Suppose your vat code is stored in `vat-counter.js`:
+The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function (from the `@agoric/bundle-source` package) at a local source file. This file should export a function named `buildRootObject` (it can export other things too, perhaps for unit tests, but only `buildRootObject` will be used by the dynamic vat loader). Suppose your vat code is stored in `vat-counter.js`:
 
 ```js
 /* global harden */
-export default function buildRootObject() {
+export function buildRootObject() {
   let counter = 0;
   const root = {
     increment() {
@@ -54,7 +54,7 @@ const control = await E(vatAdminService).createVat(bundle);
 
 ## Root Object and Admin Node
 
-The result of `createVat` gives you access to two things. One is a *Presence* through which you can send messages to the root object of the new vat (whatever the `buildRootObject()` function returned):
+The result of `createVat` gives you access to two things. One is a *Presence* through which you can send messages to the root object of the new vat (whatever `buildRootObject()` returned):
 
 
 ```js

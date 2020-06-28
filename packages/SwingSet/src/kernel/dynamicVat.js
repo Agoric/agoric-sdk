@@ -88,9 +88,12 @@ export function makeDynamicVatCreator(stuff) {
         transforms,
         endowments: { ...vatEndowments, getMeter },
       });
-      // TODO: use a named export, not default
-      const buildRootObject = vatNS.default;
-      return buildRootObject;
+      if (typeof vatNS.buildRootObject !== 'function') {
+        throw Error(
+          `vat source bundle does not export buildRootObject function`,
+        );
+      }
+      return vatNS.buildRootObject;
     }
 
     function makeVatManager(buildRootObject) {
