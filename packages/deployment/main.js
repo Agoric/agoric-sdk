@@ -415,7 +415,7 @@ show-config      display the client connection parameters
           'play',
           'install',
           `-eexecline=${shellEscape(
-            '/usr/src/cosmic-swingset/lib/ag-chain-cosmos start --pruning=nothing',
+            '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start --pruning=nothing',
           )}`,
           `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`,
         ]),

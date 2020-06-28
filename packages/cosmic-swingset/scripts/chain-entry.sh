@@ -17,6 +17,6 @@ single-node)
   ;;
 *)
   # Just run our chain.
-  exec "$DIR/../lib/ag-chain-cosmos" ${1+"$@"}
+  exec "$DIR/../bin/ag-chain-cosmos" ${1+"$@"}
   ;;
 esac
