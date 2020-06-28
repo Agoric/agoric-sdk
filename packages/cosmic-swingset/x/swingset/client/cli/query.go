@@ -41,7 +41,9 @@ func GetCmdGetEgress(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/egress/%s", queryRoute, bech32), nil)
 			if err != nil {
-				return err
+				// Exit while indicating failure.
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
 			}
 
 			var out types.QueryResEgress
