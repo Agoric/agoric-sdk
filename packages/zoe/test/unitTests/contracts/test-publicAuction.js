@@ -366,7 +366,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
-    // Alice cancels her offer, making the auction stop accepting
+    // Alice completes her offer, making the auction stop accepting
     // offers
     completeObj.complete();
 

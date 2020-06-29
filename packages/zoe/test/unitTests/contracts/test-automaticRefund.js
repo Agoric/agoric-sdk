@@ -366,7 +366,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   }
 });
 
-test('zoe - alice cancels after completion', async t => {
+test('zoe - alice tries to complete after completion has already occurred', async t => {
   t.plan(5);
   try {
     // Setup zoe and mints
