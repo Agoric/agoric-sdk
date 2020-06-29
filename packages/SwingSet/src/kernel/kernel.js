@@ -398,7 +398,7 @@ export default function buildKernel(kernelEndowments) {
   let kernelPanic = null;
 
   function panic(problem) {
-    console.log(`##### KERNEL PANIC: ${problem} #####`);
+    console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = new Error(`kernel panic ${problem}`);
   }
 
@@ -426,16 +426,15 @@ export default function buildKernel(kernelEndowments) {
     }
     insistCapData(args);
     args.slots.forEach(s => parseKernelSlot(s)); // typecheck
-    // we use result=null because this will be json stringified
 
     const resultPromise = kernelKeeper.addKernelPromise();
-    const result = makeMessageResult(method, policy, panic);
-    pendingMessageResults.set(resultPromise, result);
+    const [resultRead, resultWrite] = makeMessageResult(method, policy, panic);
+    pendingMessageResults.set(resultPromise, resultWrite);
 
     const msg = harden({ method, args, result: resultPromise });
     const kernelSlot = addExport(vatID, vatSlot);
     send(kernelSlot, msg);
-    return result;
+    return resultRead;
   }
 
   async function deliverToVat(vatID, target, msg) {

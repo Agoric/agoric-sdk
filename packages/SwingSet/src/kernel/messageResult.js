@@ -23,46 +23,50 @@ export function makeMessageResult(message, resultPolicy, panic) {
     );
   }
 
-  return harden({
-    status() {
-      return currentStatus;
+  return harden([
+    {
+      status() {
+        return currentStatus;
+      },
+      resolution() {
+        if (currentStatus === 'pending') {
+          throw new Error(`resolution of result is still pending`);
+        } else {
+          return eventualResolution;
+        }
+      },
     },
-    resolution() {
-      if (currentStatus === 'pending') {
-        throw new Error(`resolution of result is still pending`);
-      } else {
-        return eventualResolution;
-      }
-    },
-    noteResolution(newStatus, resolvedTo) {
-      assert(currentStatus === 'pending', 'already resolved');
-      assert(
-        newStatus === 'fulfilled' || newStatus === 'rejected',
-        details`invalid newStatus ${newStatus}`,
-      );
-      insistCapData(resolvedTo);
-      currentStatus = newStatus;
-      eventualResolution = resolvedTo;
-      switch (resultPolicy) {
-        case 'logAlways':
-          log();
-          break;
-        case 'logFailure':
-          if (newStatus === 'rejected') {
+    {
+      noteResolution(newStatus, resolvedTo) {
+        assert(currentStatus === 'pending', 'already resolved');
+        assert(
+          newStatus === 'fulfilled' || newStatus === 'rejected',
+          details`invalid newStatus ${newStatus}`,
+        );
+        insistCapData(resolvedTo);
+        currentStatus = newStatus;
+        eventualResolution = resolvedTo;
+        switch (resultPolicy) {
+          case 'logAlways':
             log();
-          }
-          break;
-        case 'panic':
-          if (newStatus === 'rejected') {
-            log();
-            panic(`${message} failure`);
-          }
-          break;
-        case 'ignore':
-          break;
-        default:
-          throw new Error("this can't happen");
-      }
+            break;
+          case 'logFailure':
+            if (newStatus === 'rejected') {
+              log();
+            }
+            break;
+          case 'panic':
+            if (newStatus === 'rejected') {
+              log();
+              panic(`${message} failure`);
+            }
+            break;
+          case 'ignore':
+            break;
+          default:
+            throw new Error("this can't happen");
+        }
+      },
     },
-  });
+  ]);
 }
