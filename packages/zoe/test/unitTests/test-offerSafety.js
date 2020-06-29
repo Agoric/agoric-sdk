@@ -2,7 +2,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { isOfferSafeForOffer } from '../../src/offerSafety';
+import { isOfferSafe } from '../../src/offerSafety';
 import { setup } from './setupBasicMints';
 
 function makeGetAmountMath(mapping) {
@@ -28,7 +28,7 @@ function makeGetAmountMath(mapping) {
 // equal to want, equal to give -> true
 
 // more than want, more than give -> isOfferSafe() = true
-test('isOfferSafeForOffer - more than want, more than give', t => {
+test('isOfferSafe - more than want, more than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -43,14 +43,14 @@ test('isOfferSafeForOffer - more than want, more than give', t => {
     });
     const amounts = harden({ A: moola(10), B: simoleans(7), C: bucks(8) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // more than want, less than give -> true
-test('isOfferSafeForOffer - more than want, less than give', t => {
+test('isOfferSafe - more than want, less than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -65,14 +65,14 @@ test('isOfferSafeForOffer - more than want, less than give', t => {
     });
     const amounts = harden({ A: moola(1), B: simoleans(7), C: bucks(8) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // more than want, equal to give -> true
-test('isOfferSafeForOffer - more than want, equal to give', t => {
+test('isOfferSafe - more than want, equal to give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -87,14 +87,14 @@ test('isOfferSafeForOffer - more than want, equal to give', t => {
     });
     const amounts = harden({ A: moola(9), B: simoleans(6), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // less than want, more than give -> true
-test('isOfferSafeForOffer - less than want, more than give', t => {
+test('isOfferSafe - less than want, more than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -109,14 +109,14 @@ test('isOfferSafeForOffer - less than want, more than give', t => {
     });
     const amounts = harden({ A: moola(7), B: simoleans(9), C: bucks(19) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // less than want, less than give -> false
-test('isOfferSafeForOffer - less than want, less than give', t => {
+test('isOfferSafe - less than want, less than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -131,14 +131,14 @@ test('isOfferSafeForOffer - less than want, less than give', t => {
     });
     const amounts = harden({ A: moola(7), B: simoleans(5), C: bucks(6) });
 
-    t.notOk(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.notOk(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // less than want, equal to give -> true
-test('isOfferSafeForOffer - less than want, equal to give', t => {
+test('isOfferSafe - less than want, equal to give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -153,14 +153,14 @@ test('isOfferSafeForOffer - less than want, equal to give', t => {
     });
     const amounts = harden({ A: moola(1), B: simoleans(5), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // equal to want, more than give -> true
-test('isOfferSafeForOffer - equal to want, more than give', t => {
+test('isOfferSafe - equal to want, more than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -175,14 +175,14 @@ test('isOfferSafeForOffer - equal to want, more than give', t => {
     });
     const amounts = harden({ A: moola(2), B: simoleans(6), C: bucks(8) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // equal to want, less than give -> true
-test('isOfferSafeForOffer - equal to want, less than give', t => {
+test('isOfferSafe - equal to want, less than give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -197,14 +197,14 @@ test('isOfferSafeForOffer - equal to want, less than give', t => {
     });
     const amounts = harden({ A: moola(0), B: simoleans(6), C: bucks(0) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
 // equal to want, equal to give -> true
-test('isOfferSafeForOffer - equal to want, equal to give', t => {
+test('isOfferSafe - equal to want, equal to give', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -219,13 +219,13 @@ test('isOfferSafeForOffer - equal to want, equal to give', t => {
     });
     const amounts = harden({ A: moola(1), B: simoleans(6), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('isOfferSafeForOffer - empty proposal', t => {
+test('isOfferSafe - empty proposal', t => {
   t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
@@ -237,7 +237,7 @@ test('isOfferSafeForOffer - empty proposal', t => {
     const proposal = harden({ give: {}, want: {} });
     const amounts = harden({ A: moola(1), B: simoleans(6), C: bucks(7) });
 
-    t.ok(isOfferSafeForOffer(getAmountMath, proposal, amounts));
+    t.ok(isOfferSafe(getAmountMath, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
   }

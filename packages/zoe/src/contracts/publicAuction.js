@@ -34,12 +34,9 @@ import {
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
-  const {
-    rejectOffer,
-    canTradeWithMapKeywords,
-    assertKeywords,
-    checkHook,
-  } = makeZoeHelpers(zcf);
+  const { rejectOffer, satisfies, assertKeywords, checkHook } = makeZoeHelpers(
+    zcf,
+  );
 
   let {
     terms: { numBidsAllowed },
@@ -63,12 +60,15 @@ const makeContract = zcf => {
     if (allBidHandles.length >= numBidsAllowed) {
       throw rejectOffer(offerHandle, `No further bids allowed.`);
     }
-    if (
-      !canTradeWithMapKeywords(sellerOfferHandle, offerHandle, [
-        ['Asset', 'Ask'],
-        ['Asset', 'Bid'],
-      ])
-    ) {
+    const sellerSatisfied = satisfies(sellerOfferHandle, {
+      Ask: zcf.getCurrentAllocation(offerHandle).Bid,
+      Asset: zcf.getAmountMath(auctionedAssets.brand).getEmpty(),
+    });
+    const bidderSatisfied = satisfies(offerHandle, {
+      Asset: zcf.getCurrentAllocation(sellerOfferHandle).Asset,
+      Bid: zcf.getAmountMath(minimumBid.brand).getEmpty(),
+    });
+    if (!(sellerSatisfied && bidderSatisfied)) {
       const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
       throw rejectOffer(offerHandle, rejectMsg);
     }

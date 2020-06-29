@@ -2,11 +2,10 @@
 
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
-import { assert, details } from '@agoric/assert';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
-  getCurrentPrice,
+  getInputPrice,
   calcLiqExtentToMint,
   calcExtentToRemove,
   makeZoeHelpers,
@@ -28,136 +27,99 @@ import {
  */
 const makeContract = zcf => {
   // Create the liquidity mint and issuer.
-  const { mint: liquidityMint, issuer: liquidityIssuer } = produceIssuer(
-    'liquidity',
-  );
+  const {
+    mint: liquidityMint,
+    issuer: liquidityIssuer,
+    amountMath: liquidityAmountMath,
+  } = produceIssuer('liquidity');
 
   let liqTokenSupply = 0;
 
   const {
-    checkIfProposal,
-    rejectOffer,
     makeEmptyOffer,
     checkHook,
     escrowAndAllocateTo,
     assertNatMathHelpers,
+    trade,
   } = makeZoeHelpers(zcf);
 
   return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
     const { brandKeywordRecord } = zcf.getInstanceRecord();
-    const amountMaths = {};
-    harden(['TokenA', 'TokenB', 'Liquidity']).forEach(keyword => {
-      const brand = brandKeywordRecord[keyword];
-      assertNatMathHelpers(brand);
-      amountMaths[keyword] = zcf.getAmountMath(brand);
-    });
+    Object.values(brandKeywordRecord).forEach(brand =>
+      assertNatMathHelpers(brand),
+    );
+    const getPoolKeyword = brandToMatch => {
+      const entries = Object.entries(brandKeywordRecord);
+      for (const [keyword, brand] of entries) {
+        if (brand === brandToMatch) {
+          return keyword;
+        }
+      }
+      throw new Error('getPoolKeyword: brand not found');
+    };
 
     return makeEmptyOffer().then(poolHandle => {
-      const getPoolAllocation = () =>
-        zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
+      const getPoolAmount = brand => {
+        const keyword = getPoolKeyword(brand);
+        return zcf.getCurrentAllocation(poolHandle)[keyword];
+      };
 
-      const swap = (offerHandle, giveKeyword, wantKeyword) => {
-        const { proposal } = zcf.getOffer(offerHandle);
-        if (proposal.want.Liquidity !== undefined) {
-          rejectOffer(
-            offerHandle,
-            `A Liquidity amount should not be present in a swap`,
-          );
-        }
-
-        const poolAllocation = getPoolAllocation();
+      const swapHook = offerHandle => {
         const {
-          outputExtent,
-          newInputReserve,
-          newOutputReserve,
-        } = getCurrentPrice(
+          proposal: {
+            give: { In: amountIn },
+            want: { Out: wantedAmountOut },
+          },
+        } = zcf.getOffer(offerHandle);
+        const outputExtent = getInputPrice(
           harden({
-            inputExtent: proposal.give[giveKeyword].extent,
-            inputReserve: poolAllocation[giveKeyword].extent,
-            outputReserve: poolAllocation[wantKeyword].extent,
+            inputExtent: amountIn.extent,
+            inputReserve: getPoolAmount(amountIn.brand).extent,
+            outputReserve: getPoolAmount(wantedAmountOut.brand).extent,
           }),
         );
-        const amountOut = amountMaths[wantKeyword].make(outputExtent);
-        const wantedAmount = proposal.want[wantKeyword];
-        const satisfiesWantedAmounts = () =>
-          amountMaths[wantKeyword].isGTE(amountOut, wantedAmount);
-        if (!satisfiesWantedAmounts()) {
-          throw rejectOffer(offerHandle);
-        }
+        const amountOut = zcf
+          .getAmountMath(wantedAmountOut.brand)
+          .make(outputExtent);
 
-        const newUserAmounts = {
-          Liquidity: amountMaths.Liquidity.getEmpty(),
-        };
-        newUserAmounts[giveKeyword] = amountMaths[giveKeyword].getEmpty();
-        newUserAmounts[wantKeyword] = amountOut;
-
-        const newPoolAmounts = { Liquidity: poolAllocation.Liquidity };
-        newPoolAmounts[giveKeyword] = amountMaths[giveKeyword].make(
-          newInputReserve,
-        );
-        newPoolAmounts[wantKeyword] = amountMaths[wantKeyword].make(
-          newOutputReserve,
-        );
-
-        zcf.reallocate(
-          harden([offerHandle, poolHandle]),
-          harden([newUserAmounts, newPoolAmounts]),
+        trade(
+          {
+            offerHandle: poolHandle,
+            gains: {
+              [getPoolKeyword(amountIn.brand)]: amountIn,
+            },
+            losses: {
+              [getPoolKeyword(amountOut.brand)]: amountOut,
+            },
+          },
+          {
+            offerHandle,
+            gains: { Out: amountOut },
+            losses: { In: amountIn },
+          },
         );
         zcf.complete(harden([offerHandle]));
         return `Swap successfully completed.`;
       };
 
-      const buyASellB = harden({
-        give: { TokenB: null },
-        want: { TokenA: null },
-      });
-
-      const buyBSellA = harden({
-        give: { TokenA: null },
-        want: { TokenB: null },
-      });
-
-      const swapHook = offerHandle => {
-        assert(
-          !checkIfProposal(offerHandle, { give: { Liquidity: null } }),
-          details`A Liquidity amount should not be present in a swap`,
-        );
-        assert(
-          !checkIfProposal(offerHandle, { want: { Liquidity: null } }),
-          details`A Liquidity amount should not be present in a swap`,
-        );
-        if (checkIfProposal(offerHandle, buyASellB)) {
-          return swap(offerHandle, 'TokenB', 'TokenA');
-          /* eslint-disable no-else-return */
-        } else if (checkIfProposal(offerHandle, buyBSellA)) {
-          return swap(offerHandle, 'TokenA', 'TokenB');
-        } else {
-          // Eject because the offer must be invalid
-          return rejectOffer(offerHandle);
-        }
-      };
-
       const addLiquidityHook = offerHandle => {
         const userAllocation = zcf.getCurrentAllocation(offerHandle);
-        const poolAllocation = getPoolAllocation();
 
         // Calculate how many liquidity tokens we should be minting.
         // Calculations are based on the extents represented by TokenA.
         // If the current supply is zero, start off by just taking the
         // extent at TokenA and using it as the extent for the
         // liquidity token.
+        const tokenAPoolAmount = getPoolAmount(userAllocation.TokenA.brand);
+        const inputReserve = tokenAPoolAmount ? tokenAPoolAmount.extent : 0;
         const liquidityExtentOut = calcLiqExtentToMint(
           harden({
             liqTokenSupply,
             inputExtent: userAllocation.TokenA.extent,
-            inputReserve: poolAllocation.TokenA.extent,
+            inputReserve,
           }),
         );
-
-        const liquidityAmountOut = amountMaths.Liquidity.make(
-          liquidityExtentOut,
-        );
-
+        const liquidityAmountOut = liquidityAmountMath.make(liquidityExtentOut);
         const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
 
         return escrowAndAllocateTo({
@@ -168,28 +130,69 @@ const makeContract = zcf => {
         }).then(() => {
           liqTokenSupply += liquidityExtentOut;
 
-          const add = (key, obj1, obj2) =>
-            amountMaths[key].add(obj1[key], obj2[key]);
-
-          const newPoolAmounts = harden({
-            TokenA: add('TokenA', userAllocation, poolAllocation),
-            TokenB: add('TokenB', userAllocation, poolAllocation),
-            Liquidity: poolAllocation.Liquidity,
-          });
-
-          const newUserAmounts = harden({
-            TokenA: amountMaths.TokenA.getEmpty(),
-            TokenB: amountMaths.TokenB.getEmpty(),
-            Liquidity: liquidityAmountOut,
-          });
-
-          zcf.reallocate(
-            harden([offerHandle, poolHandle]),
-            harden([newUserAmounts, newPoolAmounts]),
+          trade(
+            {
+              offerHandle: poolHandle,
+              gains: {
+                TokenA: userAllocation.TokenA,
+                TokenB: userAllocation.TokenB,
+              },
+            },
+            // We've already given the user their liquidity using
+            // escrowAndAllocateTo
+            { offerHandle, gains: {} },
           );
+
           zcf.complete(harden([offerHandle]));
           return 'Added liquidity.';
         });
+      };
+
+      const removeLiquidityHook = offerHandle => {
+        const userAllocation = zcf.getCurrentAllocation(offerHandle);
+        const liquidityExtentIn = userAllocation.Liquidity.extent;
+
+        const newUserTokenAAmount = zcf
+          .getAmountMath(userAllocation.TokenA.brand)
+          .make(
+            calcExtentToRemove(
+              harden({
+                liqTokenSupply,
+                poolExtent: getPoolAmount(userAllocation.TokenA.brand).extent,
+                liquidityExtentIn,
+              }),
+            ),
+          );
+        const newUserTokenBAmount = zcf
+          .getAmountMath(userAllocation.TokenB.brand)
+          .make(
+            calcExtentToRemove(
+              harden({
+                liqTokenSupply,
+                poolExtent: getPoolAmount(userAllocation.TokenB.brand).extent,
+                liquidityExtentIn,
+              }),
+            ),
+          );
+
+        liqTokenSupply -= liquidityExtentIn;
+
+        trade(
+          {
+            offerHandle: poolHandle,
+            gains: { Liquidity: userAllocation.Liquidity },
+          },
+          {
+            offerHandle,
+            gains: {
+              TokenA: newUserTokenAAmount,
+              TokenB: newUserTokenBAmount,
+            },
+          },
+        );
+
+        zcf.complete(harden([offerHandle]));
+        return 'Liquidity successfully removed.';
       };
 
       const addLiquidityExpected = harden({
@@ -197,66 +200,15 @@ const makeContract = zcf => {
         want: { Liquidity: null },
       });
 
-      const removeLiquidityHook = offerHandle => {
-        const userAllocation = zcf.getCurrentAllocation(offerHandle);
-        const liquidityExtentIn = userAllocation.Liquidity.extent;
-
-        const poolAllocation = getPoolAllocation();
-
-        const newUserTokenAAmount = amountMaths.TokenA.make(
-          calcExtentToRemove(
-            harden({
-              liqTokenSupply,
-              poolExtent: poolAllocation.TokenA.extent,
-              liquidityExtentIn,
-            }),
-          ),
-        );
-        const newUserTokenBAmount = amountMaths.TokenB.make(
-          calcExtentToRemove(
-            harden({
-              liqTokenSupply,
-              poolExtent: poolAllocation.TokenB.extent,
-              liquidityExtentIn,
-            }),
-          ),
-        );
-
-        const newUserAmounts = harden({
-          TokenA: newUserTokenAAmount,
-          TokenB: newUserTokenBAmount,
-          Liquidity: amountMaths.Liquidity.getEmpty(),
-        });
-
-        const newPoolAmounts = harden({
-          TokenA: amountMaths.TokenA.subtract(
-            poolAllocation.TokenA,
-            newUserAmounts.TokenA,
-          ),
-          TokenB: amountMaths.TokenB.subtract(
-            poolAllocation.TokenB,
-            newUserAmounts.TokenB,
-          ),
-          Liquidity: amountMaths.Liquidity.add(
-            poolAllocation.Liquidity,
-            amountMaths.Liquidity.make(liquidityExtentIn),
-          ),
-        });
-
-        liqTokenSupply -= liquidityExtentIn;
-
-        zcf.reallocate(
-          harden([offerHandle, poolHandle]),
-          harden([newUserAmounts, newPoolAmounts]),
-        );
-        zcf.complete(harden([offerHandle]));
-        return 'Liquidity successfully removed.';
-      };
-
       const removeLiquidityExpected = harden({
         want: { TokenA: null, TokenB: null },
         give: { Liquidity: null },
       });
+
+      const swapExpected = {
+        want: { Out: null },
+        give: { In: null },
+      };
 
       const makeAddLiquidityInvite = () =>
         zcf.makeInvitation(
@@ -264,55 +216,46 @@ const makeContract = zcf => {
           'autoswap add liquidity',
         );
 
+      const makeRemoveLiquidityInvite = () =>
+        zcf.makeInvitation(
+          checkHook(removeLiquidityHook, removeLiquidityExpected),
+          'autoswap remove liquidity',
+        );
+
+      const makeSwapInvite = () =>
+        zcf.makeInvitation(checkHook(swapHook, swapExpected), 'autoswap swap');
+
+      /**
+       * `getCurrentPrice` calculates the result of a trade, given a certain amount
+       * of digital assets in.
+       * @typedef {import('../zoe').Amount} Amount
+       * @param {Amount} amountIn - the amount of digital
+       * assets to be sent in
+       */
+      const getCurrentPrice = (amountIn, brandOut) => {
+        const inputReserve = getPoolAmount(amountIn.brand).extent;
+        const outputReserve = getPoolAmount(brandOut).extent;
+        const outputExtent = getInputPrice(
+          harden({
+            inputExtent: amountIn.extent,
+            inputReserve,
+            outputReserve,
+          }),
+        );
+        return zcf.getAmountMath(brandOut).make(outputExtent);
+      };
+
+      const getPoolAllocation = () =>
+        zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
+
       zcf.initPublicAPI(
         harden({
-          /**
-           * `getCurrentPrice` calculates the result of a trade, given a certain amount
-           * of digital assets in.
-           * @param {object} amountInObj - the amount of digital
-           * assets to be sent in, keyed by keyword
-           */
-          getCurrentPrice: amountInObj => {
-            const inKeywords = Object.getOwnPropertyNames(amountInObj);
-            assert(
-              inKeywords.length === 1,
-              details`argument to 'getCurrentPrice' must have one keyword`,
-            );
-            const [inKeyword] = inKeywords;
-            assert(
-              ['TokenA', 'TokenB'].includes(inKeyword),
-              details`keyword ${inKeyword} was not valid`,
-            );
-            const inputExtent = amountMaths[inKeyword].getExtent(
-              amountInObj[inKeyword],
-            );
-            const poolAllocation = getPoolAllocation();
-            const inputReserve = poolAllocation[inKeyword].extent;
-            const outKeyword = inKeyword === 'TokenA' ? 'TokenB' : 'TokenA';
-            const outputReserve = poolAllocation[outKeyword].extent;
-            const { outputExtent } = getCurrentPrice(
-              harden({
-                inputExtent,
-                inputReserve,
-                outputReserve,
-              }),
-            );
-            return amountMaths[outKeyword].make(outputExtent);
-          },
-
+          getCurrentPrice,
           getLiquidityIssuer: () => liquidityIssuer,
-
           getPoolAllocation,
-
-          makeSwapInvite: () => zcf.makeInvitation(swapHook, 'autoswap swap'),
-
+          makeSwapInvite,
           makeAddLiquidityInvite,
-
-          makeRemoveLiquidityInvite: () =>
-            zcf.makeInvitation(
-              checkHook(removeLiquidityHook, removeLiquidityExpected),
-              'autoswap remove liquidity',
-            ),
+          makeRemoveLiquidityInvite,
         }),
       );
 
