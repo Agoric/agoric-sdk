@@ -40,7 +40,7 @@ export function initializeVatState(storage, vatID) {
  * @param vatID  The vat ID string of the vat in question
  * @param addKernelObject  Kernel function to add a new object to the kernel's
  *    mapping tables.
- * @param addKernelPromise  Kernel function to add a new promise to the
+ * @param addKernelPromiseForVat  Kernel function to add a new promise to the
  *    kernel's mapping tables.
  *
  * @return an object to hold and access the kernel's state for the given vat
@@ -49,7 +49,7 @@ export function makeVatKeeper(
   storage,
   vatID,
   addKernelObject,
-  addKernelPromise,
+  addKernelPromiseForVat,
   incrementRefCount,
   decrementRefCount,
   incStat,
@@ -81,7 +81,7 @@ export function makeVatKeeper(
         } else if (type === 'device') {
           throw new Error(`normal vats aren't allowed to export device nodes`);
         } else if (type === 'promise') {
-          kernelSlot = addKernelPromise(vatID);
+          kernelSlot = addKernelPromiseForVat(vatID);
         } else {
           throw new Error(`unknown type ${type}`);
         }

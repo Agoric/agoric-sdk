@@ -77,7 +77,7 @@ test('simple call', async t => {
       msg: {
         method: 'foo',
         args: capdata('args'),
-        result: null,
+        result: 'kp40',
       },
     },
   ]);
@@ -128,7 +128,7 @@ test('map inbound', async t => {
       msg: {
         method: 'foo',
         args: capdata('args', [koFor5, koFor6]),
-        result: null,
+        result: 'kp40',
       },
     },
   ]);
@@ -140,6 +140,7 @@ test('map inbound', async t => {
     [koFor6, vat1, 'o-50'],
     [koFor6, vat2, 'o+6'],
     ['ko22', vat1, 'o+1'],
+    ['kp40', vat1, 'p-60'],
   ]);
 
   t.end();
@@ -236,7 +237,7 @@ test('outbound call', async t => {
       msg: {
         method: 'foo',
         args: capdata('args'),
-        result: null,
+        result: 'kp40',
       },
     },
   ]);
@@ -253,8 +254,8 @@ test('outbound call', async t => {
       target: vat2Obj5,
       msg: {
         method: 'bar',
-        args: capdata('bargs', [vat2Obj5, 'ko22', 'kp40']),
-        result: 'kp41',
+        args: capdata('bargs', [vat2Obj5, 'ko22', 'kp41']),
+        result: 'kp42',
       },
     },
   ]);
@@ -262,13 +263,21 @@ test('outbound call', async t => {
     {
       id: 'kp40',
       state: 'unresolved',
-      refCount: 2,
+      refCount: 1,
       decider: vat1,
       subscribers: [],
       queue: [],
     },
     {
       id: 'kp41',
+      state: 'unresolved',
+      refCount: 2,
+      decider: vat1,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: 'kp42',
       state: 'unresolved',
       refCount: 2,
       decider: undefined,
@@ -278,8 +287,9 @@ test('outbound call', async t => {
   ]);
 
   kt.push(['ko22', vat1, 'o+7']);
-  kt.push(['kp40', vat1, p7]);
-  kt.push(['kp41', vat1, 'p+5']);
+  kt.push(['kp40', vat1, 'p-60']);
+  kt.push(['kp41', vat1, p7]);
+  kt.push(['kp42', vat1, 'p+5']);
   checkKT(t, kernel, kt);
 
   await kernel.step();
@@ -292,13 +302,21 @@ test('outbound call', async t => {
         {
           id: 'kp40',
           state: 'unresolved',
-          refCount: 2,
+          refCount: 1,
           decider: vat1,
           subscribers: [],
           queue: [],
         },
         {
           id: 'kp41',
+          state: 'unresolved',
+          refCount: 2,
+          decider: vat1,
+          subscribers: [],
+          queue: [],
+        },
+        {
+          id: 'kp42',
           state: 'unresolved',
           refCount: 2,
           decider: vat2,
@@ -310,13 +328,21 @@ test('outbound call', async t => {
   ]);
 
   kt.push(['ko22', vat2, 'o-50']);
-  kt.push(['kp41', vat2, 'p-61']);
-  kt.push(['kp40', vat2, 'p-60']);
+  kt.push(['kp42', vat2, 'p-61']);
+  kt.push(['kp41', vat2, 'p-60']);
   checkKT(t, kernel, kt);
 
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
+      state: 'unresolved',
+      refCount: 1,
+      decider: vat1,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: 'kp41',
       state: 'unresolved',
       refCount: 2,
       decider: vat1,
@@ -328,7 +354,7 @@ test('outbound call', async t => {
       queue: [],
     },
     {
-      id: 'kp41',
+      id: 'kp42',
       state: 'unresolved',
       refCount: 2,
       decider: vat2,
@@ -428,7 +454,7 @@ test('three-party', async t => {
       msg: {
         method: 'intro',
         args: capdata('bargs', [carol]),
-        result: 'kp41',
+        result: 'kp42',
       },
     },
   ]);
@@ -444,19 +470,28 @@ test('three-party', async t => {
     {
       id: 'kp41',
       state: 'unresolved',
+      refCount: 1,
+      decider: vatA,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: 'kp42',
+      state: 'unresolved',
       refCount: 2,
       decider: undefined,
       subscribers: [],
       queue: [],
     },
   ]);
-  kt.push(['kp41', vatA, 'p+5']);
+  kt.push(['kp41', vatA, 'p-60']);
+  kt.push(['kp42', vatA, 'p+5']);
   checkKT(t, kernel, kt);
 
   await kernel.step();
   t.deepEqual(log, [['vatB', 'o+5', 'intro', capdata('bargs', ['o-50'])]]);
   kt.push([carol, vatB, 'o-50']);
-  kt.push(['kp41', vatB, 'p-60']);
+  kt.push(['kp42', vatB, 'p-60']);
   checkKT(t, kernel, kt);
 
   t.end();
@@ -882,7 +917,7 @@ test('transcript', async t => {
       aliceForAlice,
       'store',
       capdata('args string', [aliceForAlice, bobForAlice]),
-      null,
+      'p-60',
     ],
     syscalls: [
       {

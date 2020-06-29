@@ -246,6 +246,7 @@ export async function main() {
   }
 
   const controller = await buildVatController(config, true, bootstrapArgv);
+  let bootstrapResult = controller.bootstrapResult;
 
   let blockNumber = 0;
   let statLogger = null;
@@ -371,14 +372,22 @@ export async function main() {
     let totalSteps = 0;
     let totalDeltaT = BigInt(0);
     for (let i = 0; i < rounds; i += 1) {
-      controller.queueToVatExport(
+      const roundResult = controller.queueToVatExport(
         '_bootstrap',
         'o+0',
         'runBenchmarkRound',
         args,
+        'ignore',
       );
       // eslint-disable-next-line no-await-in-loop
       const [steps, deltaT] = await runBatch(0, false);
+      const status = roundResult.status();
+      if (status === 'pending') {
+        log(`benchmark round ${i + 1} did not finish`);
+      } else {
+        const resolution = JSON.stringify(roundResult.resolution());
+        log(`benchmark round ${i + 1} ${status}: ${resolution}`);
+      }
       totalSteps += steps;
       totalDeltaT += deltaT;
     }
@@ -483,6 +492,16 @@ export async function main() {
       deltaT += moreDeltaT;
     }
     store.close();
+    if (bootstrapResult) {
+      const status = bootstrapResult.status();
+      if (status === 'pending') {
+        log('bootstrap result still pending');
+      } else {
+        const resolution = JSON.stringify(bootstrapResult.resolution());
+        log(`bootstrap result ${status}: ${resolution}`);
+        bootstrapResult = null;
+      }
+    }
     if (logTimes) {
       if (totalSteps) {
         const per = deltaT / BigInt(totalSteps);

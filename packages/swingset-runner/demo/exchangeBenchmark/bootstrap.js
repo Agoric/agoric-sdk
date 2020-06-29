@@ -96,6 +96,7 @@ function build(E, log) {
       await E(alice).initiateSimpleExchange(bob);
       await E(bob).initiateSimpleExchange(alice);
       log(`=> end of benchmark round ${round}`);
+      return `round ${round} complete`;
     },
   });
 }

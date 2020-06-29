@@ -175,7 +175,16 @@ async function testCircularPromiseData(t, withSES) {
   await c.run();
   const expectedPromises = [
     {
-      id: 'kp40',
+      id: 'kp41',
+      state: 'fulfilledToData',
+      refCount: 3,
+      data: {
+        body: '[{"@qclass":"slot","index":0}]',
+        slots: ['kp42'],
+      },
+    },
+    {
+      id: 'kp42',
       state: 'fulfilledToData',
       refCount: 3,
       data: {
@@ -183,19 +192,10 @@ async function testCircularPromiseData(t, withSES) {
         slots: ['kp41'],
       },
     },
-    {
-      id: 'kp41',
-      state: 'fulfilledToData',
-      refCount: 3,
-      data: {
-        body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp40'],
-      },
-    },
   ];
   if (!RETIRE_KPIDS) {
     expectedPromises.push({
-      id: 'kp42',
+      id: 'kp43',
       state: 'fulfilledToData',
       refCount: 0,
       data: {

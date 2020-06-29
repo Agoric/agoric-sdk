@@ -52,7 +52,7 @@ async function simpleCall(t, withSES) {
       msg: {
         method: 'foo',
         args: capdata('args'),
-        result: null,
+        result: 'kp40',
       },
       target: 'ko20',
       type: 'send',
@@ -137,7 +137,7 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       msg: {
-        result: null,
+        result: 'kp40',
         method: 'bootstrap',
         args: {
           body:
@@ -158,7 +158,7 @@ async function bootstrapExport(t, withSES) {
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
   await c.step();
   // kernel promise for result of the foo() that bootstrap sends to vat-left
-  const fooP = 'kp40';
+  const fooP = 'kp41';
   t.deepEqual(c.dump().log, [
     'left.setup called',
     'right.setup called',
@@ -187,7 +187,7 @@ async function bootstrapExport(t, withSES) {
   ]);
 
   await c.step();
-  const barP = 'kp41';
+  const barP = 'kp42';
   t.deepEqual(c.dump().log, [
     'left.setup called',
     'right.setup called',
