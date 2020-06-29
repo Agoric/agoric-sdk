@@ -856,7 +856,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
             };
             const { exit } = cleanedProposal;
             const [exitKind] = Object.getOwnPropertyNames(exit);
-            // Automatically cancel on deadline.
+            // Automatically complete offer after deadline.
             if (exitKind === 'afterDeadline') {
               E(exit.afterDeadline.timer).setWakeup(
                 exit.afterDeadline.deadline,
@@ -865,22 +865,21 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
                     completeOffers(instanceHandle, harden([offerHandle])),
                 }),
               );
-              // Add an object with a cancel method to offerResult in
-              // order to cancel on demand.
+              // Add an object with a complete method to offerResult
+              // in order to complete offer on demand. Note: we cannot
+              // add the `complete` function to the offerResult
+              // directly because our marshalling layer only allows
+              // two kinds of objects: records (no methods and only
+              // data) and presences (local proxies for objects that
+              // may have methods). Having a method makes an object
+              // automatically a presence, but we want the offerResult
+              // to be a record.
             } else if (exitKind === 'onDemand') {
               const completeObj = {
                 complete: () =>
                   completeOffers(instanceHandle, harden([offerHandle])),
               };
               offerResult.completeObj = completeObj;
-              // The property "cancelObj" and method "cancel" are
-              // deprecated and will be removed in a later version.
-              // https://github.com/Agoric/agoric-sdk/issues/835
-              const cancelObj = {
-                cancel: () =>
-                  completeOffers(instanceHandle, harden([offerHandle])),
-              };
-              offerResult.cancelObj = cancelObj;
             } else {
               assert(
                 exitKind === 'waived',
@@ -889,7 +888,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
             }
 
             // if the exitRule.kind is 'waived' the user has no
-            // possibility of cancelling
+            // possibility of completing an offer on demand
             return harden(offerResult);
           };
           return Promise.all(paymentDepositedPs)
