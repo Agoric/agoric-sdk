@@ -189,7 +189,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const {
       publicAPI: bobPublicAPI,
       installationHandle: bobInstallationId,
-    } = zoe.getInstance(bobInviteExtent.instanceHandle);
+    } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
     t.equals(
       bobInstallationId,
       installationHandle,
