@@ -172,10 +172,11 @@ export const makeZoeHelpers = (zcf) => {
 
     /**
      * Check whether an update to currentAllocation satisfies
-     * proposal.want. Note that this is half of the offer safety check
-     * - whether the allocation is a refund is not checked. Allocation
-     * is merged with currentAllocation, overwriting if the keywords
-     * are the same to produce the newAllocation.
+     * proposal.want. Note that this is half of the offer safety
+     * check; whether the allocation constitutes a refund is not
+     * checked. Allocation is merged with currentAllocation
+     * (allocations' values prevailing if the keywords are the same)
+     * to produce the newAllocation.
      * @param {OfferHandle} offerHandle
      * @param {allocation} amountKeywordRecord
      * @returns {boolean}

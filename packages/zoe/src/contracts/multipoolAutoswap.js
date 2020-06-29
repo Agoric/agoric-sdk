@@ -182,14 +182,14 @@ const makeContract = zcf => {
   };
 
   const getPoolKeyword = brandToMatch => {
-    const { brandKeywordRecord } = zcf.getInstanceRecord();
-    const entries = Object.entries(brandKeywordRecord);
-    for (const [keyword, brand] of entries) {
-      if (brand === brandToMatch) {
-        return keyword;
-      }
+    if (brandToMatch === centralTokenBrand) {
+      return CENTRAL_TOKEN;
     }
-    throw new Error('getPoolKeyword: brand not found');
+    if (!liquidityTable.has(brandToMatch)) {
+      throw new Error('getPoolKeyword: brand not found');
+    }
+    const { tokenKeyword } = liquidityTable.get(brandToMatch);
+    return tokenKeyword;
   };
 
   const getPoolAmount = (poolAllocation, desiredBrand) => {
