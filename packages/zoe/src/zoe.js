@@ -641,24 +641,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
        * registering it with Zoe. We have a moduleFormat to allow for
        * different future formats without silent failures.
        */
-      // TODO: we have 2 or 3 dapps (in separate repos) which do { source,
-      // moduleFormat } = bundleSource(..), then E(zoe).install(source,
-      // moduleFormat). Those will get the default
-      // moduleFormat="nestedEvaluate". We need to support those callers,
-      // even though our new preferred API is just install(bundle). We also
-      // look for getExport because that's easier to create in the unit
-      // tests. TODO once we've ugpraded and released all the dapps, consider
-      // removing this backwards-compatibility feature.
-      install: async (bundle, oldModuleFormat) => {
-        if (
-          oldModuleFormat === 'nestedEvaluate' ||
-          oldModuleFormat === 'getExport'
-        ) {
-          bundle = harden({
-            source: bundle,
-            moduleFormat: oldModuleFormat,
-          });
-        }
+      install: async bundle => {
         const installation = await evalContractBundle(
           bundle,
           additionalEndowments,
@@ -746,14 +729,6 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
        */
       getInstanceRecord: instanceTable.get,
 
-      /**
-       * @deprecated renamed to getInstanceRecord
-       * Credibly retrieves an instance record given an instanceHandle.
-       * @param {object} instanceHandle - the unique, unforgeable
-       * identifier (empty object) for the instance
-       */
-      getInstance: instanceTable.get,
-
       /** Get a notifier (see @agoric/notify) for the offer. */
       getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
 
@@ -802,11 +777,10 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
               // cleaned proposal's amount that should be the same.
               const giveAmount = cleanedProposal.give[keyword];
               const { purse } = issuerTable.get(giveAmount.brand);
-              // TODO(1130). drop .then line when deposit() is repaired
-              // https://github.com/Agoric/agoric-sdk/pull/1130
-              return E(purse)
-                .deposit(paymentKeywordRecord[keyword], giveAmount)
-                .then(_ => giveAmount);
+              return E(purse).deposit(
+                paymentKeywordRecord[keyword],
+                giveAmount,
+              );
               // eslint-disable-next-line no-else-return
             } else {
               // payments outside the give: clause are ignored.
