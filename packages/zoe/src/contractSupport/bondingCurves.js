@@ -1,5 +1,3 @@
-import harden from '@agoric/harden';
-
 import { assert, details } from '@agoric/assert';
 import { natSafeMath } from './safeMath';
 
@@ -13,17 +11,19 @@ const { add, subtract, multiply, floorDivide } = natSafeMath;
  * is valid, getting the current price for an asset on user
  * request, and to do the actual reallocation after an offer has
  * been made.
- * @param  {extent} inputExtent - the extent of the assets sent in
- * to be swapped
- * @param  {extent} inputReserve - the extent in the liquidity
+ * @param {Object} params
+ * @param  {number} params.inputExtent - the extent of the asset sent
+ * in to be swapped
+ * @param  {number} params.inputReserve - the extent in the liquidity
  * pool of the kind of asset sent in
- * @param  {extent} outputReserve - the extent in the liquidity
+ * @param  {number} params.outputReserve - the extent in the liquidity
  * pool of the kind of asset to be sent out
- * @param  {number} feeBasisPoints=30 - the fee taken in
+ * @param  {number} params.feeBasisPoints=30 - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee is taken from
  * inputExtent
+ * @returns {number} outputExtent - the current price, in extent form
  */
-export const getCurrentPrice = ({
+export const getInputPrice = ({
   inputExtent,
   inputReserve,
   outputReserve,
@@ -35,9 +35,7 @@ export const getCurrentPrice = ({
   const denominator = add(multiply(inputReserve, 10000), inputWithFee);
 
   const outputExtent = floorDivide(numerator, denominator);
-  const newOutputReserve = subtract(outputReserve, outputExtent);
-  const newInputReserve = add(inputReserve, inputExtent);
-  return harden({ outputExtent, newInputReserve, newOutputReserve });
+  return outputExtent;
 };
 
 function assertDefined(label, value) {

@@ -14,7 +14,7 @@ import {
   cleanKeywords,
 } from './cleanProposal';
 import { arrayToObj, filterFillAmounts, filterObj } from './objArrayConversion';
-import { isOfferSafeForOffer } from './offerSafety';
+import { isOfferSafe } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractBundle } from './evalContractCode';
 import { makeTables } from './state';
@@ -73,7 +73,7 @@ import { makeTables } from './state';
  * @property {(installationHandle: InstallationHandle,
  *             issuerKeywordRecord: IssuerKeywordRecord,
  *             terms?: object)
- *            => Promise<Invite>} makeInstance
+ *            => Promise<InviteIssuerRecord>} makeInstance
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to
  * use, as well as the `issuerKeywordRecord` and `terms` of the contract. The
@@ -195,6 +195,8 @@ import { makeTables } from './state';
  * @property {Object.<string,function>} publicAPI - the invite-free publicly accessible API for the contract
  * @property {Object} terms - contract parameters
  * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
+ * @property {BrandKeywordRecord} brandKeywordRecord - record with
+ * keywords keys, brand values
  *
  * @typedef {TODO} IssuerRecord
  *
@@ -467,7 +469,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
           });
 
           assert(
-            isOfferSafeForOffer(getAmountMathForBrand, proposal, reallocation),
+            isOfferSafe(getAmountMathForBrand, proposal, reallocation),
             details`The reallocation was not offer safe`,
           );
           return reallocation;

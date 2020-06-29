@@ -181,9 +181,9 @@ const expectedSimpleExchangeOkLog = [
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":3}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":4}',
 ];
 
 test('zoe - simpleExchange - valid inputs', async t => {
@@ -208,21 +208,21 @@ const expectedSimpleExchangeNotificationLog = [
   '{"buys":[],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":0}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":17}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":20}',
   '{"buys":[{"want":{"Asset":{"brand":{},"extent":8}},"give":{"Price":{"brand":{},"extent":2}}}],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":15}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":18}',
   '{"buys":[{"want":{"Asset":{"brand":{},"extent":8}},"give":{"Price":{"brand":{},"extent":2}}},{"want":{"Asset":{"brand":{},"extent":20}},"give":{"Price":{"brand":{},"extent":13}}}],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":2}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":5}',
   '{"buys":[{"want":{"Asset":{"brand":{},"extent":8}},"give":{"Price":{"brand":{},"extent":2}}},{"want":{"Asset":{"brand":{},"extent":20}},"give":{"Price":{"brand":{},"extent":13}}},{"want":{"Asset":{"brand":{},"extent":5}},"give":{"Price":{"brand":{},"extent":2}}}],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":3}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":4}',
 ];
 
 test('zoe - simpleExchange - state Update', async t => {

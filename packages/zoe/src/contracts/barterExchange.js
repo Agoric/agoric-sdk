@@ -24,7 +24,7 @@ const makeContract = zcf => {
   // store its handle and the amounts for `give` and `want`.
   const bookOrders = makeStore('bookOrders');
 
-  const { canTradeWithMapKeywords } = makeZoeHelpers(zcf);
+  const { satisfies, trade } = makeZoeHelpers(zcf);
 
   function lookupBookOrders(brandIn, brandOut) {
     if (!bookOrders.has(brandIn)) {
@@ -41,35 +41,11 @@ const makeContract = zcf => {
 
   function findMatchingTrade(newDetails, orders) {
     return orders.find(order => {
-      return canTradeWithMapKeywords(
-        newDetails.offerHandle,
-        order.offerHandle,
-        [
-          ['In', 'Out'],
-          ['Out', 'In'],
-        ],
+      return (
+        satisfies(newDetails.offerHandle, { Out: order.amountIn }) &&
+        satisfies(order.offerHandle, { Out: newDetails.amountIn })
       );
     });
-  }
-
-  function crossMatchAmounts(leftDetails, rightDetails) {
-    const amountMathLeftIn = zcf.getAmountMath(leftDetails.amountIn.brand);
-    const amountMathLeftOut = zcf.getAmountMath(leftDetails.amountOut.brand);
-    const newLeftAmountsRecord = {
-      Out: leftDetails.amountOut,
-      In: amountMathLeftIn.subtract(
-        leftDetails.amountIn,
-        rightDetails.amountOut,
-      ),
-    };
-    const newRightAmountsRecord = {
-      Out: rightDetails.amountOut,
-      In: amountMathLeftOut.subtract(
-        rightDetails.amountIn,
-        leftDetails.amountOut,
-      ),
-    };
-    return [newLeftAmountsRecord, newRightAmountsRecord];
   }
 
   function removeFromOrders(offerDetails) {
@@ -87,12 +63,29 @@ const makeContract = zcf => {
     );
     const matchingTrade = findMatchingTrade(offerDetails, orders);
     if (matchingTrade) {
-      // reallocate by switching the amounts
-      const amounts = crossMatchAmounts(offerDetails, matchingTrade);
-      const handles = [offerDetails.offerHandle, matchingTrade.offerHandle];
-      zcf.reallocate(handles, amounts);
+      // reallocate by giving each side what it wants
+      trade(
+        {
+          offerHandle: matchingTrade.offerHandle,
+          gains: {
+            Out: matchingTrade.amountOut,
+          },
+          losses: {
+            In: offerDetails.amountOut,
+          },
+        },
+        {
+          offerHandle: offerDetails.offerHandle,
+          gains: {
+            Out: offerDetails.amountOut,
+          },
+          losses: {
+            In: matchingTrade.amountOut,
+          },
+        },
+      );
       removeFromOrders(matchingTrade);
-      zcf.complete(handles);
+      zcf.complete([offerDetails.offerHandle, matchingTrade.offerHandle]);
 
       return true;
     }
