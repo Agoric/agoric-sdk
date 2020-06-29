@@ -73,34 +73,35 @@ export default function buildKernel(kernelEndowments) {
       budgetAllocate: FULL,
       budgetCompute: FULL,
     });
+
     function refill() {
       // console.error(`-- METER REFILL`);
       // console.error(`   allocate used: ${FULL - refillFacet.getAllocateBalance()}`);
       // console.error(`   compute used : ${FULL - refillFacet.getComputeBalance()}`);
+      const used = harden({
+        allocate: FULL - refillFacet.getAllocateBalance(),
+        compute: FULL - refillFacet.getComputeBalance(),
+      });
       if (meter.isExhausted() && !refillIfExhausted) {
-        return;
+        return used;
       }
       refillFacet.allocate();
       refillFacet.compute();
       refillFacet.stack();
+      return used;
     }
+
     if (refillEachCrank) {
       allRefillers.add(refill);
     }
-    let meterUsed = false; // mostly for testing
+
     function getMeter(dontReplaceGlobalMeter = false) {
-      meterUsed = true;
       if (replaceGlobalMeter && !dontReplaceGlobalMeter) {
         replaceGlobalMeter(meter);
       }
       return meter;
     }
-    function resetMeterUsed() {
-      meterUsed = false;
-    }
-    function getMeterUsed() {
-      return meterUsed;
-    }
+
     function isExhausted() {
       return meter.isExhausted();
     }
@@ -113,9 +114,8 @@ export default function buildKernel(kernelEndowments) {
     return harden({
       getMeter,
       isExhausted,
-      resetMeterUsed,
-      getMeterUsed,
       refillFacet,
+      refill,
       getAllocateBalance: refillFacet.getAllocateBalance,
       getComputeBalance: refillFacet.getComputeBalance,
       getCombinedBalance: refillFacet.getCombinedBalance,
@@ -123,15 +123,19 @@ export default function buildKernel(kernelEndowments) {
   }
   harden(makeGetMeter);
 
-  function endOfCrankMeterTask() {
+  function stopGlobalMeter() {
     if (replaceGlobalMeter) {
       replaceGlobalMeter(null);
     }
+  }
+  harden(stopGlobalMeter);
+
+  function refillAllMeters() {
     for (const refiller of allRefillers) {
       refiller();
     }
   }
-  harden(endOfCrankMeterTask);
+  harden(refillAllMeters);
 
   function runWithoutGlobalMeter(f, ...args) {
     if (!replaceGlobalMeter) {
@@ -362,7 +366,8 @@ export default function buildKernel(kernelEndowments) {
     fulfillToData,
     reject,
     waitUntilQuiescent,
-    endOfCrankMeterTask,
+    stopGlobalMeter,
+    refillAllMeters,
   });
 
   function vatNameToID(name) {
@@ -708,7 +713,14 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  function addVatManager(vatID, name, setup, options = {}) {
+  function addVatManager(
+    vatID,
+    name,
+    setup,
+    options,
+    meterRecord,
+    notifyTermination,
+  ) {
     const { enablePipelining = false } = options;
     validateVatSetupFn(setup);
     const helpers = harden({
@@ -735,6 +747,8 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper,
       kernelKeeper.allocateVatKeeperIfNeeded(vatID),
       vatPowers,
+      meterRecord,
+      notifyTermination,
     );
     ephemeral.vats.set(
       vatID,
@@ -750,6 +764,8 @@ export default function buildKernel(kernelEndowments) {
     vatNameToID,
     vatEndowments,
     dynamicVatPowers,
+    transformMetering,
+    makeGetMeter,
     addVatManager,
     addExport,
     queueToExport,
@@ -806,7 +822,16 @@ export default function buildKernel(kernelEndowments) {
       const { setup, options } = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
-      addVatManager(vatID, name, setup, options);
+      const meterRecord = null; // static vats are not metered
+      const notifyTermination = null; // nobody watches static
+      addVatManager(
+        vatID,
+        name,
+        setup,
+        options,
+        meterRecord,
+        notifyTermination,
+      );
     }
 
     if (vatAdminDevSetup) {

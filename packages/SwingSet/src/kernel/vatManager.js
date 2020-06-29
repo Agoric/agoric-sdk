@@ -15,8 +15,14 @@ export default function makeVatManager(
   kernelKeeper,
   vatKeeper,
   vatPowers,
+  meterRecord,
+  notifyTermination,
 ) {
-  const { waitUntilQuiescent, endOfCrankMeterTask } = syscallManager;
+  const {
+    waitUntilQuiescent,
+    stopGlobalMeter,
+    refillAllMeters,
+  } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -336,15 +342,35 @@ export default function makeVatManager(
     return waitUntilQuiescent();
   }
 
+  function updateStats(_used) {
+    // TODO: accumulate used.allocate and used.compute into vatStats
+  }
+
   async function doProcess(dispatchRecord, errmsg) {
     const dispatchOp = dispatchRecord[0];
     const dispatchArgs = dispatchRecord.slice(1);
     transcriptStartDispatch(dispatchRecord);
     await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
-    // TODO: if the vat is metered, and requested death-before-confusion,
-    // then find the relevant meter, check whether it's exhausted, and react
-    // somehow
-    endOfCrankMeterTask();
+    stopGlobalMeter();
+
+    // refill this vat's meter, if any, accumulating its usage for stats
+    if (meterRecord) {
+      // note that refill() won't actually refill an exhausted meter
+      const used = meterRecord.refill();
+      const exhaustionError = meterRecord.isExhausted();
+      if (exhaustionError) {
+        // TODO: if the vat requested death-before-confusion, unwind this
+        // crank and pretend all its syscalls never happened
+        if (notifyTermination) {
+          notifyTermination(exhaustionError);
+        }
+      } else {
+        updateStats(used);
+      }
+    }
+
+    // refill all within-vat -created meters
+    refillAllMeters();
 
     // TODO: if the dispatch failed, and we choose to destroy the vat, change
     // what we do with the transcript here.
