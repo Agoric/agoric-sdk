@@ -71,7 +71,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       `invite extent is as expected`,
     );
 
-    const { publicAPI, handle: instanceHandle } = zoe.getInstance(
+    const { publicAPI, handle: instanceHandle } = zoe.getInstanceRecord(
       aliceInviteAmount.extent[0].instanceHandle,
     );
 
@@ -109,7 +109,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
     const simoleanLiquidity = simoleanLiquidityAmountMath.make;
 
-    const { issuerKeywordRecord } = zoe.getInstance(instanceHandle);
+    const { issuerKeywordRecord } = zoe.getInstanceRecord(instanceHandle);
     t.deepEquals(
       issuerKeywordRecord,
       harden({
@@ -189,7 +189,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const {
       publicAPI: bobPublicAPI,
       installationHandle: bobInstallationId,
-    } = zoe.getInstance(bobInviteExtent.instanceHandle);
+    } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
     t.equals(
       bobInstallationId,
       installationHandle,
