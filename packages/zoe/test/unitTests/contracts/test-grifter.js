@@ -7,7 +7,6 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../..';
-// TODO: Remove setupBasicMints and rename setupBasicMints2
 import { setup } from '../setupBasicMints';
 
 const grifterRoot = `${__dirname}/grifter`;

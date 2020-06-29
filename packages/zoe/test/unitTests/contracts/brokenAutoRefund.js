@@ -1,14 +1,11 @@
 // @ts-check
-import rawHarden from '@agoric/harden';
-
-// TODO: Until we have a version of harden that exports its type.
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
+import harden from '@agoric/harden';
 
 /**
  * This is a a broken contact to test zoe's error handling
  * @type {import('@agoric/zoe').MakeContract} zoe - the contract facet of zoe
  */
-export const makeContract = harden(zcf => {
+const makeContract = zcf => {
   const refundOfferHook = offerHandle => {
     zcf.complete(harden([offerHandle]));
     return `The offer was accepted`;
@@ -17,4 +14,7 @@ export const makeContract = harden(zcf => {
     zcf.makeInvitation(refundOfferHook, 'getRefund');
   // should be makeRefundInvite(). Intentionally wrong to provoke an error.
   return makeRefundInvite;
-});
+};
+
+harden(makeContract);
+export { makeContract };
