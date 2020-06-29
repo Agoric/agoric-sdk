@@ -164,6 +164,12 @@ export async function buildVatController(config, withSES = true, argv = []) {
   // the same is true for the tildot transform
   const transformTildot = harden(makeTransform(babelParser, babelGenerate));
 
+  // Allow vats to import certain modules, by providing them the same values
+  // we imported here in the kernel, which came themselves from
+  // kernelRequire() defined in the controller. This will go away once
+  // 'harden' is used as a global everywhere, and vats no longer need to
+  // import anything outside their bundle.
+
   function vatRequire(what) {
     if (what === '@agoric/harden') {
       return harden;
@@ -171,6 +177,15 @@ export async function buildVatController(config, withSES = true, argv = []) {
       throw Error(`vatRequire unprepared to satisfy require(${what})`);
     }
   }
+
+  const vatEndowments = harden({
+    console,
+    require: vatRequire,
+    HandledPromise,
+    // re2 is a RegExp work-a-like that disables backtracking expressions for
+    // safer memory consumption
+    RegExp: re2,
+  });
 
   async function loadStaticVat(sourceIndex, name) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
@@ -181,15 +196,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     const bundle = await bundleSource(sourceIndex);
     const vatNS = await importBundle(bundle, {
       filePrefix: name,
-      endowments: {
-        console,
-        require: vatRequire,
-        HandledPromise,
-        // re2 is a RegExp work-a-like that
-        // disables backtracking expressions
-        // for safer memory consumption
-        RegExp: re2,
-      },
+      endowments: vatEndowments,
     });
     const setup = vatNS.default;
     return setup;
@@ -217,6 +224,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
+    vatEndowments,
     vatAdminDevSetup: await loadStaticVat(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
     vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
     replaceGlobalMeter,
