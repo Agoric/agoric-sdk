@@ -191,11 +191,12 @@ export const makeZoeHelpers = (zcf) => {
     /**
      * Check whether an update to currentAllocation satisfies offer
      * safety. Note that this is the equivalent of `satisfiesWant` ||
-     * `satisfiesGive`. Allocation is merged with currentAllocation,
-     * overwriting if the keywords are the same to produce the
-     * newAllocation.
+     * `satisfiesGive`. Allocation is merged with currentAllocation
+     * (allocations' values prevailing if the keywords are the same)
+     * to produce the newAllocation.
+
      * @param {OfferHandle} offerHandle
-     * @param {allocation} amountKeywordRecord
+     * @param {AmountKeywordRecord} allocation
      * @returns {boolean}
      */
     isOfferSafe: (offerHandle, allocation) => {
