@@ -1,4 +1,4 @@
-const harden = require('@agoric/harden');
+/* global harden */
 
 export function buildRootObject(E) {
   function rcvrMaker(seed) {

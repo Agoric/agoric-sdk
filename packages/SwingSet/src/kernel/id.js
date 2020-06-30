@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import Nat from '@agoric/nat';
 
 // Vats are identified by an integer index, which (for typechecking purposes)

@@ -1,7 +1,8 @@
 // eslint-disable-next-line no-redeclare
-/* global setImmediate */
+/* global setImmediate harden */
+
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
 
 import { producePromise } from '@agoric/produce-promise';
 import { makeLiveSlots } from '../src/kernel/liveSlots';

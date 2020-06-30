@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { assert, details } from '@agoric/assert';
 
 // See ../../docs/delivery.md for a description of the architecture of the

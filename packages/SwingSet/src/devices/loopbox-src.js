@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 export default function setup(syscall, state, helpers, _endowments) {
   const inboundHandlers = harden(new Map());

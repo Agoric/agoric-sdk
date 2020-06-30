@@ -1,14 +1,12 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 function build(E, log) {
   const obj0 = {
     bootstrap(argv, _vats) {
       if (argv[0] === 'harden') {
         log('harden-1');
-        // eslint-disable-next-line global-require
-        const harden2 = require('@agoric/harden');
         const o1 = { o2: {} };
-        harden2(o1);
+        harden(o1);
         log(Object.isFrozen(o1));
         log(Object.isFrozen(o1.o2));
       }

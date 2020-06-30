@@ -1,11 +1,10 @@
+/* global harden */
 // @ts-check
+
 import makeStore from '@agoric/store';
-import rawHarden from '@agoric/harden';
 import { E as defaultE } from '@agoric/eventual-send';
 import { producePromise } from '@agoric/produce-promise';
 import { toBytes } from './bytes';
-
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * Compatibility note: this must match what our peers use,

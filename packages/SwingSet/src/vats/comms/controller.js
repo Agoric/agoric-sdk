@@ -1,5 +1,6 @@
+/* global harden */
+
 import Nat from '@agoric/nat';
-import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { addRemote } from './remote';
 import { addEgress, addIngress } from './clist';

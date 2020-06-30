@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { E, HandledPromise } from '@agoric/eventual-send';
 import {
   QCLASS,

@@ -1,8 +1,9 @@
+/* global harden */
+
 /**
  * Kernel's keeper of persistent state for a vat.
  */
 
-import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';

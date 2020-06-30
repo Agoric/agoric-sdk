@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { buildPatterns } from '../message-patterns';
 
 function build(E, log) {

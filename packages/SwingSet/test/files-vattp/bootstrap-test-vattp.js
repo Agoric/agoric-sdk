@@ -1,4 +1,4 @@
-const harden = require('@agoric/harden');
+/* global harden */
 
 function build(E, D, log) {
   const receiver = harden({

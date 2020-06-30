@@ -1,3 +1,5 @@
+/* global harden */
+
 /*
   The 'mailbox' device helps manage bidirectional communication with a number
   of 'peers'. Each peer is identified with a string. We exchange ordered
@@ -64,7 +66,6 @@
 
 */
 
-import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
 // This Map-based mailboxState object is a good starting point, but we may

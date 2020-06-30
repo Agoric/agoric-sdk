@@ -1,5 +1,6 @@
-// eslint-disable-next-line no-redeclare
 /* global Compartment harden */
+// eslint-disable-next-line no-redeclare
+
 import fs from 'fs';
 import path from 'path';
 import re2 from 're2';

@@ -1,3 +1,5 @@
+/* global harden */
+
 /**
  * A Timer device that provides a capability that can be used to schedule wake()
  * calls at particular times. The simpler form is a handler object with a wake()
@@ -24,7 +26,6 @@
  * expose only capabilities that don't reveal them.
  */
 
-import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 

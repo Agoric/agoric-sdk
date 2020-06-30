@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { producePromise } from '@agoric/produce-promise';
 
 console.log(`loading bootstrap`);

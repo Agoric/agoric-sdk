@@ -1,4 +1,4 @@
-const harden = require('@agoric/harden');
+/* global harden */
 
 export default function setup(syscall, state, helpers, endowments) {
   const { log } = helpers;
