@@ -87,7 +87,6 @@ export default function setup(syscall, state, helpers) {
 
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
-        const mailboxAdmin = await E(vats.mailbox).startup(board);
 
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
@@ -143,7 +142,6 @@ export default function setup(syscall, state, helpers) {
               registry,
               board,
               zoe,
-              mailboxAdmin,
             });
 
             const payments = await E(vats.mints).mintInitialPayments(
@@ -236,7 +234,7 @@ export default function setup(syscall, state, helpers) {
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
       async function createLocalBundle(vats, userBundle, payments, issuerInfo) {
-        const { zoe, registry, board, mailboxAdmin } = userBundle;
+        const { zoe, registry, board } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
         const spawner = E(vats.host).makeHost();
@@ -245,7 +243,7 @@ export default function setup(syscall, state, helpers) {
         const uploads = E(vats.uploads).getUploads();
 
         // Wallet for both end-user client and dapp dev client
-        await E(vats.wallet).startup({ zoe, registry, board, mailboxAdmin });
+        await E(vats.wallet).startup({ zoe, registry, board });
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
           issuerInfo.map(({ petname, issuer, brandRegKey }) =>
@@ -276,8 +274,8 @@ export default function setup(syscall, state, helpers) {
         await E(wallet).deposit(pursePetnames.moola, moolaPayment);
         await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
 
-        // Make mailbox for Default Zoe invite purse
-        await E(wallet).makeMailbox(pursePetnames['zoe invite']);
+        // Make deposit facet for Default Zoe invite purse
+        await E(wallet).addDepositFacet(pursePetnames['zoe invite']);
 
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {

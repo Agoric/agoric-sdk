@@ -12,7 +12,6 @@ import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 import { makeWallet } from '../../lib/ag-solo/vats/lib-wallet';
 import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
-import { makeMailboxAdmin } from '../../lib/ag-solo/vats/lib-mailbox';
 
 const setupTest = async () => {
   const pursesStateChangeLog = [];
@@ -30,7 +29,6 @@ const setupTest = async () => {
   const zoe = makeZoe();
   const registry = makeRegistrar();
   const board = makeBoard();
-  const mailboxAdmin = makeMailboxAdmin(board);
 
   // Create AutomaticRefund instance
   const automaticRefundContractRoot = require.resolve(
@@ -75,7 +73,6 @@ const setupTest = async () => {
     zoe,
     registry,
     board,
-    mailboxAdmin,
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
@@ -85,7 +82,6 @@ const setupTest = async () => {
     rpgBundle,
     zoe,
     registry,
-    mailboxAdmin,
     board,
     wallet,
     invite,

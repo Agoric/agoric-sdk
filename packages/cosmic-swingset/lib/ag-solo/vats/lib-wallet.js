@@ -20,8 +20,6 @@ const noActionStateChangeHandler = _newState => {};
 export async function makeWallet({
   zoe,
   // eslint-disable-next-line no-unused-vars
-  mailboxAdmin,
-  // eslint-disable-next-line no-unused-vars
   board,
   registry,
   pursesStateChangeHandler = noActionStateChangeHandler,
@@ -88,7 +86,7 @@ export async function makeWallet({
   const issuerToIssuerNames = makeWeakStore();
   const brandTable = makeBrandTable();
   const purseToBrand = makeWeakStore();
-  const brandToMailboxId = makeWeakStore();
+  const brandToDepositFacetId = makeWeakStore();
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore();
@@ -544,27 +542,30 @@ export async function makeWallet({
     });
   }
 
-  function getMailboxIdByBrand(brandBoardId) {
+  function getDepositFacetId(brandBoardId) {
     return E(board)
       .getValue(brandBoardId)
       .then(brand => {
-        const mailboxId = brandToMailboxId.get(brand);
-        return mailboxId;
+        const depositFacetBoardId = brandToDepositFacetId.get(brand);
+        return depositFacetBoardId;
       });
   }
 
-  function makeMailbox(pursePetname) {
+  function addDepositFacet(pursePetname) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
-    return E(mailboxAdmin)
-      .makeMailbox(purse)
-      .then(mailboxId => {
-        // Add as default unless a default already exists
-        const brand = purseToBrand.get(purse);
-        if (!brandToMailboxId.has(brand)) {
-          brandToMailboxId.init(brand, mailboxId);
-        }
-        return brandToMailboxId.get(brand);
-      });
+    const pinDepositFacet = depositFacet => E(board).getId(depositFacet);
+    const saveAsDefault = boardId => {
+      // Add as default unless a default already exists
+      const brand = purseToBrand.get(purse);
+      if (!brandToDepositFacetId.has(brand)) {
+        brandToDepositFacetId.init(brand, boardId);
+      }
+      return boardId;
+    };
+    return E(purse)
+      .makeDepositFacet()
+      .then(pinDepositFacet)
+      .then(saveAsDefault);
   }
 
   const wallet = harden({
@@ -585,8 +586,8 @@ export async function makeWallet({
     getOffers,
     getOfferHandle: id => idToOfferHandle.get(id),
     getOfferHandles: ids => ids.map(wallet.getOfferHandle),
-    makeMailbox,
-    getMailboxIdByBrand,
+    addDepositFacet,
+    getDepositFacetId,
   });
 
   return wallet;

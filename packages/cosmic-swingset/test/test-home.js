@@ -64,54 +64,9 @@ test('home.board', async t => {
   }
 });
 
-test('home.mailboxAdmin', async t => {
-  try {
-    const { mailboxAdmin, wallet } = E.G(home);
-    await E(wallet).makeEmptyPurse('moola', 'externalPurse');
-
-    const purses = await E(wallet).getPurses();
-    const purseMap = new Map(purses);
-    const sourcePurse = purseMap.get('Fun budget');
-    const externalPurse = purseMap.get('externalPurse');
-
-    const issuers = await E(wallet).getIssuers();
-    const issuersMap = new Map(issuers);
-    const moolaIssuer = issuersMap.get('moola');
-    const amountMath = await E(moolaIssuer).getAmountMath();
-
-    t.deepEquals(
-      await E(sourcePurse).getCurrentAmount(),
-      await E(amountMath).make(1900),
-      `balance starts at 1900`,
-    );
-    t.deepEquals(
-      await E(externalPurse).getCurrentAmount(),
-      await E(amountMath).make(0),
-      `balance for external purse starts at 0`,
-    );
-
-    const moola50 = await E(amountMath).make(50);
-    const payment = await E(sourcePurse).withdraw(moola50);
-    const mailboxId = await E(mailboxAdmin).makeMailbox(externalPurse);
-
-    // Someone else can send a payment given the mailboxId
-    const result = await E(mailboxAdmin).sendPayment(mailboxId, payment);
-    t.deepEquals(result, moola50, `result is 50 moola`);
-    t.deepEquals(
-      await E(externalPurse).getCurrentAmount(),
-      moola50,
-      `balance for external purse is 50 moola`,
-    );
-  } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
-  }
-});
-
 test('home.wallet - receive zoe invite', async t => {
   try {
-    const { wallet, zoe, mailboxAdmin, board } = E.G(home);
+    const { wallet, zoe, board } = E.G(home);
 
     // Setup contract in order to get an invite to use in tests
     const contractRoot = require.resolve(
@@ -143,8 +98,11 @@ test('home.wallet - receive zoe invite', async t => {
     // The dapp gets the mailboxId for the default Zoe invite purse
     // and sends the invite.
     const inviteBrandBoardId = await E(board).getId(zoeInviteBrand);
-    const mailboxId = await E(wallet).getMailboxIdByBrand(inviteBrandBoardId);
-    await E(mailboxAdmin).sendPayment(mailboxId, invite);
+    const depositBoardId = await E(wallet).getDepositFacetId(
+      inviteBrandBoardId,
+    );
+    const depositFacet = await E(board).getValue(depositBoardId);
+    await E(depositFacet).receive(invite);
 
     // The invite was successfully received in the user's wallet.
     const invitePurseBalance = await E(invitePurse).getCurrentAmount();
