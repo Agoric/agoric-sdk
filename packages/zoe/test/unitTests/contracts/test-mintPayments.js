@@ -1,3 +1,5 @@
+/* global harden */
+
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
@@ -5,7 +7,6 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 
 import { makeZoe } from '../../../src/zoe';

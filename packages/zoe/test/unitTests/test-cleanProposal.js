@@ -1,10 +1,9 @@
+/* global harden */
 // eslint-disable-next-line import/no-extraneous-dependencies
+
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-
 import makeStore from '@agoric/weak-store';
-
-import harden from '@agoric/harden';
-
 import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';

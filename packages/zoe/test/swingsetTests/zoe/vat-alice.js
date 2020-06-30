@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
 
 const build = async (E, log, zoe, issuers, payments, installations, timer) => {

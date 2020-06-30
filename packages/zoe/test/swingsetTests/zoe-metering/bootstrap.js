@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 /* eslint-disable import/extensions, import/no-unresolved */
 import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';

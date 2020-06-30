@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { assert } from '@agoric/assert';
 
 /* allowedTransitions is an array of arrays which gets turned into a

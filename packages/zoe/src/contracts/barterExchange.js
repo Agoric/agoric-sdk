@@ -1,6 +1,6 @@
+/* global harden */
 // @ts-check
 
-import harden from '@agoric/harden';
 import makeStore from '@agoric/store';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 

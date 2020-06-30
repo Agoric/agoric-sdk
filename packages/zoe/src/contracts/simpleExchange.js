@@ -1,6 +1,6 @@
+/* global harden */
 // @ts-check
 
-import harden from '@agoric/harden';
 import { produceNotifier } from '@agoric/notifier';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 

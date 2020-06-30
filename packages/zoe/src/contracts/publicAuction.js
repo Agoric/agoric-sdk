@@ -1,6 +1,6 @@
+/* global harden */
 // @ts-check
 
-import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'

@@ -1,6 +1,5 @@
+/* global harden */
 // @ts-check
-
-import harden from '@agoric/harden';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';

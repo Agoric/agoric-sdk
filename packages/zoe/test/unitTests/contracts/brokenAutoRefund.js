@@ -1,5 +1,5 @@
+/* global harden */
 // @ts-check
-import harden from '@agoric/harden';
 
 /**
  * This is a a broken contact to test zoe's error handling

@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 
