@@ -3,6 +3,90 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.5.0...@agoric/sdk@2.6.0) (2020-06-30)
+
+
+### Bug Fixes
+
+* adjust agoric-cli genesis and config.toml params ([41614a6](https://github.com/Agoric/agoric-sdk/commit/41614a64cb0943b03b9f805c2aca82ae25acd880))
+* better propagate and report egress query errors ([3489a6e](https://github.com/Agoric/agoric-sdk/commit/3489a6e316ca7a62f2085d5e1a7894bdc586a9bb))
+* correct the export process, using a temporary cosmos-sdk patch ([db139c3](https://github.com/Agoric/agoric-sdk/commit/db139c3da77a90ffc383d9f606ef675f284920ee))
+* remove controller-based provisioning in favour of tx ([023b0be](https://github.com/Agoric/agoric-sdk/commit/023b0be69c6805a6c85c7d1b199dac927448120e))
+* systematically use bin/ag-chain-cosmos ([527ae65](https://github.com/Agoric/agoric-sdk/commit/527ae655acc95ccf9fd2968e551adbe6d2453113))
+* use provisionpass for the bootstrap address ([b0c2b73](https://github.com/Agoric/agoric-sdk/commit/b0c2b73ec6ee5d0dda2d3a04c2b251a7ff0e0331))
+* **bundle-source:** tests use install-ses ([f793424](https://github.com/Agoric/agoric-sdk/commit/f793424ea4314f5cf0fe61c6e49590b2d78e13c6))
+* **captp:** stop creating dist bundles ([7067ae0](https://github.com/Agoric/agoric-sdk/commit/7067ae0e8afe122ee64f5652c45d0288b74516a5))
+* **ERTP:** use install-ses for tests ([41478e5](https://github.com/Agoric/agoric-sdk/commit/41478e53c35a087a69b4c1a741007c3170a7b6ce))
+* **swingset:** dynamic vats do not get control over their own metering ([c6e4118](https://github.com/Agoric/agoric-sdk/commit/c6e4118d0ef12a694586994e4c32b3569b6210b3))
+* **swingset:** dynamic vats use named buildRootObject export ([605183b](https://github.com/Agoric/agoric-sdk/commit/605183b81bc02191c50d2bdea52bb99861d17055))
+* **swingset:** raise meter FULL from 1e7 to 1e8 ([deb2c16](https://github.com/Agoric/agoric-sdk/commit/deb2c16fd6dd45e3e265fa450607ba4397b51505))
+* **top-level:** use patch-package to fix depd-vs-SES incompatibility ([a8f1308](https://github.com/Agoric/agoric-sdk/commit/a8f1308f49a604973a95eb5253bc4050d03d016c)), closes [Agoric/SES-shim#251](https://github.com/Agoric/SES-shim/issues/251)
+* add CSS to make REPL wrap correctly ([b156251](https://github.com/Agoric/agoric-sdk/commit/b156251dc79afee566ebcde5701e259a98b93e5b))
+* also tame symbol properties of globally-reachable objects ([09498f4](https://github.com/Agoric/agoric-sdk/commit/09498f40e641843366f065e585c33ccb8efc0588))
+* deal more gracefully with data sources that have a common base file name ([f05f3ba](https://github.com/Agoric/agoric-sdk/commit/f05f3ba70879d0312446f930881f32192fae42d6))
+* delete c-list entries *before* notifying vats about promise resolutions ([7fb8a1f](https://github.com/Agoric/agoric-sdk/commit/7fb8a1f567cd32198e90e14eebaa6d5575479611))
+* don't ignore duplicate packets ([bafac19](https://github.com/Agoric/agoric-sdk/commit/bafac19b73e4c385bfa7be3adeabe0a4a037c0b9))
+* don't retire promises that resolve to data structures containing promises ([00098da](https://github.com/Agoric/agoric-sdk/commit/00098da1d9bf80565956d78fe592d78b0be9f2c1))
+* don't simulate transactions since we don't use gas ([3f92256](https://github.com/Agoric/agoric-sdk/commit/3f92256dbd8a505f05ae262391a64dd76005580a))
+* ensure keywords do not collide with numbers ([#1133](https://github.com/Agoric/agoric-sdk/issues/1133)) ([15623f3](https://github.com/Agoric/agoric-sdk/commit/15623f333928dc57fc07085f246a419f916ef4c0))
+* eslint is tricksy, it is ([1245ebb](https://github.com/Agoric/agoric-sdk/commit/1245ebb686fd20112f17f6c3f5f422de76709e19))
+* handle circular module references in nestedEvaluate ([9790320](https://github.com/Agoric/agoric-sdk/commit/97903204fa1bd2fd4fec339d7e27e234148ca126))
+* make CHAIN_PORT configurable ([a3e76cb](https://github.com/Agoric/agoric-sdk/commit/a3e76cbd076979eeaca8bd0f901a3a388d610b19))
+* miscellaneous cleanups ([b184312](https://github.com/Agoric/agoric-sdk/commit/b184312046fa3425b8051601eece3bc5f9d68889))
+* much clearer IBC implementation ([d3ee754](https://github.com/Agoric/agoric-sdk/commit/d3ee75442d68daa019af184356ec81ed7804f78b))
+* preserve `eval` identity to support direct eval ([d263118](https://github.com/Agoric/agoric-sdk/commit/d263118920b3036abaddb81f6d953acd8829df61))
+* print circularity when it really is ([96b07d6](https://github.com/Agoric/agoric-sdk/commit/96b07d6484b1537d28e5e85f3348ebaf47873354))
+* Recipient-side resolved promise retirement ([65010cf](https://github.com/Agoric/agoric-sdk/commit/65010cf2a9b6a09e1e55ee63745a5cfc5ddf6cf5))
+* Recipient-side resolved promise retirement ([dc0aec9](https://github.com/Agoric/agoric-sdk/commit/dc0aec99658ec0a6dac1d3e52d1f17fdfcd40d0d))
+* replace openDetail with quoting q ([#1134](https://github.com/Agoric/agoric-sdk/issues/1134)) ([67808a4](https://github.com/Agoric/agoric-sdk/commit/67808a4df515630ef7dc77c59054382f626ece96))
+* Resolver-side resolved promise retirement ([401e86a](https://github.com/Agoric/agoric-sdk/commit/401e86a7eba8d018f7cb4284f86f473b94889ac8))
+* Resolver-side resolved promise retirement ([7cb2984](https://github.com/Agoric/agoric-sdk/commit/7cb2984ee33e8779ad8713637f125d7b0aaf8bb7))
+* shorten chain cadence to 2 seconds (instead of default 5) ([12a5688](https://github.com/Agoric/agoric-sdk/commit/12a568873236565491b90996c93b41b2edbdc055))
+* spawner leak, delete dead code ([#1132](https://github.com/Agoric/agoric-sdk/issues/1132)) ([201768f](https://github.com/Agoric/agoric-sdk/commit/201768f28597a706907f6108ca749f94e0eb5d19))
+* tweak the config.toml for local-chain ([a1e815b](https://github.com/Agoric/agoric-sdk/commit/a1e815bd7632574a2e3012651974182f536a9288))
+* update stat collection to account for promise retirement ([3f242dd](https://github.com/Agoric/agoric-sdk/commit/3f242dd2a80bf720830baaaafd4758a5888cd36c))
+
+
+### Features
+
+* **swingset:** activate metering of dynamic vats ([96eb63f](https://github.com/Agoric/agoric-sdk/commit/96eb63fbd641fdbddbd790c201af9420e9524937))
+* **swingset:** allow vats to be defined by a buildRootObject export ([dce1fd4](https://github.com/Agoric/agoric-sdk/commit/dce1fd423f70b2830c77f238586cb58a43aab930))
+* **zoe:** Zoe release 0.7.0 ([#1143](https://github.com/Agoric/agoric-sdk/issues/1143)) ([4a14455](https://github.com/Agoric/agoric-sdk/commit/4a14455e10f1e3807fd6633594c86a0f60026393))
+* add `agoric start local-solo` ([15165b4](https://github.com/Agoric/agoric-sdk/commit/15165b4d069b966e2dae35a38ef8d1b3518802e7))
+* add agoric start local-chain ([b2238aa](https://github.com/Agoric/agoric-sdk/commit/b2238aab3121e373ff31c2ef1d04a9597ac80bec))
+* add benchmarking support to swingset-runner ([19a4ef7](https://github.com/Agoric/agoric-sdk/commit/19a4ef7b87c661b6774a4532e401dd96a23b0a3d))
+* add facility for capturing and graphing kernel stats ([0df83b3](https://github.com/Agoric/agoric-sdk/commit/0df83b3b198632003abd38026b3136e21f99cd0b))
+* add hook to pre-execute one round of benchmarking before starting to measure ([890f88a](https://github.com/Agoric/agoric-sdk/commit/890f88a511e8346c926a4c6fbf2f2320b404a9c2))
+* add new transaction to provision a single address ([d75c867](https://github.com/Agoric/agoric-sdk/commit/d75c8675e3970d6b3bfa1cb048e648f290277d25))
+* add stats collection facility to kernel ([1ea7bb7](https://github.com/Agoric/agoric-sdk/commit/1ea7bb77a3795a9ebadbe80f27a8e4cece3b3c9e))
+* add stats dumping capability to swingset runner and kernel dumper ([83efadc](https://github.com/Agoric/agoric-sdk/commit/83efadc6325ea78097d00401888712f15ccf1dce))
+* count number of times various stats variables are incremented and decremented ([129f02f](https://github.com/Agoric/agoric-sdk/commit/129f02fb3c5a44950fa0ab12a715fc2f18911c08))
+* do not require accounts to exist before provisioning ([043dbcd](https://github.com/Agoric/agoric-sdk/commit/043dbcd745b799391f60be832cb1173ed9aea062))
+* enable ag-chain-cosmos Node.js debugging ([5779d6e](https://github.com/Agoric/agoric-sdk/commit/5779d6ecc507b9b01ce779d8db6efc0e2c9dd453))
+* inbound network connection metadata negotiation ([a7ecd9d](https://github.com/Agoric/agoric-sdk/commit/a7ecd9d9a60ba2769b6865fb6c195b569245a260))
+* set the parameters for starting with an exported genesis ([9b62335](https://github.com/Agoric/agoric-sdk/commit/9b623352b9740929f0ce6bf41d0f4a6684c0538e))
+* support value return from `bootstrap` and other exogenous messages ([a432606](https://github.com/Agoric/agoric-sdk/commit/a43260608412025991bcad3a48b20a486c3dbe15))
+* **cosmic-swingset:** add board, use board in mailboxAdmin ([#1167](https://github.com/Agoric/agoric-sdk/issues/1167)) ([1381ba6](https://github.com/Agoric/agoric-sdk/commit/1381ba6e1c65a9eb927fb097a058b56e23839b83))
+* **install-ses:** new package ([7fa8f2c](https://github.com/Agoric/agoric-sdk/commit/7fa8f2c95914578e703efb56b52b1c5686f6c06b))
+* **transform-metering:** add balance-getters to refillFacet ([8200188](https://github.com/Agoric/agoric-sdk/commit/82001883bd8313075882eedb5e33789c5871241e))
+* further along the path of state export and migration ([13dc588](https://github.com/Agoric/agoric-sdk/commit/13dc588ee3502df243e5e8038406b737df21ccd8))
+* implement `agoric cosmos ...` ([0587c6a](https://github.com/Agoric/agoric-sdk/commit/0587c6aec539cd6c7adb9fab4b3edddadf56c870))
+* just enough mechanism to support the provisioning transaction ([889a5db](https://github.com/Agoric/agoric-sdk/commit/889a5db37e61b1d654676abc248db58cf1266425))
+* kernel promise reference counting ([ba1ebc7](https://github.com/Agoric/agoric-sdk/commit/ba1ebc7b2561c6a4c856b16d4a24ba38a40d0d74))
+* outbound connection metadata negotiation ([5dd2e63](https://github.com/Agoric/agoric-sdk/commit/5dd2e63b8c1fac9543bbb9f9e2f5d8e932efc34a))
+* pass blockHeight and blockTime from all IBC events ([79bd316](https://github.com/Agoric/agoric-sdk/commit/79bd3160a3af232b183bcefb8b229fdbf6192c49))
+* pass local and remote address to onOpen callback ([2297a08](https://github.com/Agoric/agoric-sdk/commit/2297a089a0fc576a4d958427292b2f174215ad3f))
+* Zoe simpleExchange perf test in swingset-runner ([79da155](https://github.com/Agoric/agoric-sdk/commit/79da15578750485b25a64626248078aee844c42e))
+
+
+### Performance Improvements
+
+* Don't use the useWritemap option if we know we don't need it ([c272e43](https://github.com/Agoric/agoric-sdk/commit/c272e43f270cb9df47619cc95fed938520aec344))
+
+
+
+
+
 # [2.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.4.0...@agoric/sdk@2.5.0) (2020-05-17)
 
 

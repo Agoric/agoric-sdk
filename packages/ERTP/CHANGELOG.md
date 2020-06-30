@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.5.5...@agoric/ertp@0.6.0) (2020-06-30)
+
+
+### Bug Fixes
+
+* **ERTP:** use install-ses for tests ([41478e5](https://github.com/Agoric/agoric-sdk/commit/41478e53c35a087a69b4c1a741007c3170a7b6ce))
+* replace openDetail with quoting q ([#1134](https://github.com/Agoric/agoric-sdk/issues/1134)) ([67808a4](https://github.com/Agoric/agoric-sdk/commit/67808a4df515630ef7dc77c59054382f626ece96))
+
+
+### Features
+
+* **zoe:** Zoe release 0.7.0 ([#1143](https://github.com/Agoric/agoric-sdk/issues/1143)) ([4a14455](https://github.com/Agoric/agoric-sdk/commit/4a14455e10f1e3807fd6633594c86a0f60026393))
+
+
+
+
+
 ## [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.5.4...@agoric/ertp@0.5.5) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/ertp

@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.18.0...@agoric/cosmic-swingset@0.19.0) (2020-06-30)
+
+
+### Bug Fixes
+
+* add CSS to make REPL wrap correctly ([b156251](https://github.com/Agoric/agoric-sdk/commit/b156251dc79afee566ebcde5701e259a98b93e5b))
+* better propagate and report egress query errors ([3489a6e](https://github.com/Agoric/agoric-sdk/commit/3489a6e316ca7a62f2085d5e1a7894bdc586a9bb))
+* correct the export process, using a temporary cosmos-sdk patch ([db139c3](https://github.com/Agoric/agoric-sdk/commit/db139c3da77a90ffc383d9f606ef675f284920ee))
+* don't ignore duplicate packets ([bafac19](https://github.com/Agoric/agoric-sdk/commit/bafac19b73e4c385bfa7be3adeabe0a4a037c0b9))
+* don't simulate transactions since we don't use gas ([3f92256](https://github.com/Agoric/agoric-sdk/commit/3f92256dbd8a505f05ae262391a64dd76005580a))
+* much clearer IBC implementation ([d3ee754](https://github.com/Agoric/agoric-sdk/commit/d3ee75442d68daa019af184356ec81ed7804f78b))
+* print circularity when it really is ([96b07d6](https://github.com/Agoric/agoric-sdk/commit/96b07d6484b1537d28e5e85f3348ebaf47873354))
+* remove controller-based provisioning in favour of tx ([023b0be](https://github.com/Agoric/agoric-sdk/commit/023b0be69c6805a6c85c7d1b199dac927448120e))
+* replace openDetail with quoting q ([#1134](https://github.com/Agoric/agoric-sdk/issues/1134)) ([67808a4](https://github.com/Agoric/agoric-sdk/commit/67808a4df515630ef7dc77c59054382f626ece96))
+* systematically use bin/ag-chain-cosmos ([527ae65](https://github.com/Agoric/agoric-sdk/commit/527ae655acc95ccf9fd2968e551adbe6d2453113))
+* use provisionpass for the bootstrap address ([b0c2b73](https://github.com/Agoric/agoric-sdk/commit/b0c2b73ec6ee5d0dda2d3a04c2b251a7ff0e0331))
+
+
+### Features
+
+* **zoe:** Zoe release 0.7.0 ([#1143](https://github.com/Agoric/agoric-sdk/issues/1143)) ([4a14455](https://github.com/Agoric/agoric-sdk/commit/4a14455e10f1e3807fd6633594c86a0f60026393))
+* add agoric start local-chain ([b2238aa](https://github.com/Agoric/agoric-sdk/commit/b2238aab3121e373ff31c2ef1d04a9597ac80bec))
+* do not require accounts to exist before provisioning ([043dbcd](https://github.com/Agoric/agoric-sdk/commit/043dbcd745b799391f60be832cb1173ed9aea062))
+* enable ag-chain-cosmos Node.js debugging ([5779d6e](https://github.com/Agoric/agoric-sdk/commit/5779d6ecc507b9b01ce779d8db6efc0e2c9dd453))
+* further along the path of state export and migration ([13dc588](https://github.com/Agoric/agoric-sdk/commit/13dc588ee3502df243e5e8038406b737df21ccd8))
+* **cosmic-swingset:** add board, use board in mailboxAdmin ([#1167](https://github.com/Agoric/agoric-sdk/issues/1167)) ([1381ba6](https://github.com/Agoric/agoric-sdk/commit/1381ba6e1c65a9eb927fb097a058b56e23839b83))
+* add new transaction to provision a single address ([d75c867](https://github.com/Agoric/agoric-sdk/commit/d75c8675e3970d6b3bfa1cb048e648f290277d25))
+* inbound network connection metadata negotiation ([a7ecd9d](https://github.com/Agoric/agoric-sdk/commit/a7ecd9d9a60ba2769b6865fb6c195b569245a260))
+* just enough mechanism to support the provisioning transaction ([889a5db](https://github.com/Agoric/agoric-sdk/commit/889a5db37e61b1d654676abc248db58cf1266425))
+* pass blockHeight and blockTime from all IBC events ([79bd316](https://github.com/Agoric/agoric-sdk/commit/79bd3160a3af232b183bcefb8b229fdbf6192c49))
+* pass local and remote address to onOpen callback ([2297a08](https://github.com/Agoric/agoric-sdk/commit/2297a089a0fc576a4d958427292b2f174215ad3f))
+
+
+
+
+
 # [0.18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.17.0...@agoric/cosmic-swingset@0.18.0) (2020-05-17)
 
 

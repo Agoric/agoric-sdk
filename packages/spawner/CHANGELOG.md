@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.1.5...@agoric/spawner@0.1.6) (2020-06-30)
+
+
+### Bug Fixes
+
+* spawner leak, delete dead code ([#1132](https://github.com/Agoric/agoric-sdk/issues/1132)) ([201768f](https://github.com/Agoric/agoric-sdk/commit/201768f28597a706907f6108ca749f94e0eb5d19))
+
+
+
+
+
 ## [0.1.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.1.4...@agoric/spawner@0.1.5) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/spawner

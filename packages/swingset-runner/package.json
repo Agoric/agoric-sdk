@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-runner",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "main": "src/main.js",
@@ -14,17 +14,17 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.0.7",
-    "@agoric/bundle-source":  "^1.1.5",
-    "@agoric/ertp": "^0.5.5",
-    "@agoric/eventual-send": "^0.9.2",
+    "@agoric/assert": "^0.0.8",
+    "@agoric/bundle-source": "^1.1.6",
+    "@agoric/ertp": "^0.6.0",
+    "@agoric/eventual-send": "^0.9.3",
     "@agoric/harden": "^0.0.8",
-    "@agoric/same-structure": "^0.0.7",
-    "@agoric/stat-logger": "^0.2.5",
-    "@agoric/swing-store-lmdb": "^0.3.2",
-    "@agoric/swing-store-simple": "^0.2.2",
-    "@agoric/swingset-vat": "^0.5.2",
-    "@agoric/zoe": "^0.6.2"
+    "@agoric/same-structure": "^0.0.8",
+    "@agoric/stat-logger": "^0.3.0",
+    "@agoric/swing-store-lmdb": "^0.3.3",
+    "@agoric/swing-store-simple": "^0.2.3",
+    "@agoric/swingset-vat": "^0.6.0",
+    "@agoric/zoe": "^0.7.0"
   },
   "eslintConfig": {
     "extends": [
@@ -59,7 +59,13 @@
       "no-unused-expressions": "off",
       "no-loop-func": "off",
       "no-inner-declarations": "off",
-      "yoda": ["error", "never", { "exceptRange": true }],
+      "yoda": [
+        "error",
+        "never",
+        {
+          "exceptRange": true
+        }
+      ],
       "import/prefer-default-export": "off"
     },
     "globals": {

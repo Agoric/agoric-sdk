@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.2.2...@agoric/tame-metering@1.2.3) (2020-06-30)
+
+
+### Bug Fixes
+
+* also tame symbol properties of globally-reachable objects ([09498f4](https://github.com/Agoric/agoric-sdk/commit/09498f40e641843366f065e585c33ccb8efc0588))
+* preserve `eval` identity to support direct eval ([d263118](https://github.com/Agoric/agoric-sdk/commit/d263118920b3036abaddb81f6d953acd8829df61))
+
+
+
+
+
 ## [1.2.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.2.1...@agoric/tame-metering@1.2.2) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/tame-metering

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.2.5...@agoric/stat-logger@0.3.0) (2020-06-30)
+
+
+### Bug Fixes
+
+* deal more gracefully with data sources that have a common base file name ([f05f3ba](https://github.com/Agoric/agoric-sdk/commit/f05f3ba70879d0312446f930881f32192fae42d6))
+
+
+### Features
+
+* add facility for capturing and graphing kernel stats ([0df83b3](https://github.com/Agoric/agoric-sdk/commit/0df83b3b198632003abd38026b3136e21f99cd0b))
+
+
+
+
+
 ## [0.2.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.2.4...@agoric/stat-logger@0.2.5) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/stat-logger
