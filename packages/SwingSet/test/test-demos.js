@@ -2,12 +2,12 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '../src/index';
 
-async function main(withSES, basedir, argv) {
+async function main(basedir, argv) {
   const config = await loadBasedir(basedir);
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
 }
@@ -20,8 +20,8 @@ const encouragementBotGolden = [
   '=> user receives the encouragement: user, you are awesome, keep it up!',
 ];
 
-test('run encouragementBot Demo with SES', async t => {
-  const dump = await main(true, 'demo/encouragementBot', []);
+test('run encouragementBot Demo', async t => {
+  const dump = await main('demo/encouragementBot', []);
   t.deepEquals(dump.log, encouragementBotGolden);
   t.end();
 });

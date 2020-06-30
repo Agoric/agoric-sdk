@@ -4,7 +4,7 @@ import { buildVatController } from '../src/index';
 
 async function beginning(t, mode) {
   const config = { bootstrapIndexJS: require.resolve(`./vat-exomessages.js`) };
-  const controller = await buildVatController(config, true, [mode]);
+  const controller = await buildVatController(config, [mode]);
   t.equal(controller.bootstrapResult.status(), 'pending');
   return controller;
 }

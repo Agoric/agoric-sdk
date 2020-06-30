@@ -12,7 +12,7 @@ async function prep() {
     vats: new Map(),
     bootstrapIndexJS: undefined,
   };
-  const controller = await buildVatController(config, true);
+  const controller = await buildVatController(config);
   await controller.run();
 }
 

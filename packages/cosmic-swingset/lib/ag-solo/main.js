@@ -99,8 +99,7 @@ start
     }
     case 'start': {
       const basedir = insistIsBasedir();
-      const withSES = true;
-      await start(basedir, withSES, argv.slice(1));
+      await start(basedir, argv.slice(1));
       break;
     }
     case 'reset-state': {

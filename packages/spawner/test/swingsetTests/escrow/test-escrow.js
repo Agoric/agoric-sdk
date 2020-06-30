@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import path from 'path';
 
-async function main(withSES, basedir, argv) {
+async function main(basedir, argv) {
   const dir = path.resolve(`${__dirname}/..`, basedir);
   const config = await loadBasedir(dir);
   const ldSrcPath = require.resolve(
@@ -11,7 +11,7 @@ async function main(withSES, basedir, argv) {
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
 }
@@ -19,7 +19,7 @@ async function main(withSES, basedir, argv) {
 const escrowGolden = ['=> setup called', 'starting testEscrowServiceSuccess'];
 
 test('escrow checkUnits w/SES', async t => {
-  const dump = await main(true, 'escrow', ['escrow matches']);
+  const dump = await main('escrow', ['escrow matches']);
   t.deepEquals(dump.log, escrowGolden);
   t.end();
 });
@@ -31,7 +31,7 @@ const escrowMismatchGolden = [
 ];
 
 test.skip('escrow check misMatches w/SES', async t => {
-  const dump = await main(true, 'escrow', ['escrow misMatches']);
+  const dump = await main('escrow', ['escrow misMatches']);
   t.deepEquals(dump.log, escrowMismatchGolden);
   t.end();
 });
@@ -43,7 +43,7 @@ const escrowCheckPartialWrongPriceGolden = [
 ];
 
 test.skip('escrow check partial misMatches w/SES', async t => {
-  const dump = await main(true, 'escrow', ['escrow partial price']);
+  const dump = await main('escrow', ['escrow partial price']);
   t.deepEquals(dump.log, escrowCheckPartialWrongPriceGolden);
   t.end();
 });
@@ -55,7 +55,7 @@ const escrowCheckPartialWrongStockGolden = [
 ];
 
 test.skip('escrow check partial misMatches w/SES', async t => {
-  const dump = await main(true, 'escrow', ['escrow partial stock']);
+  const dump = await main('escrow', ['escrow partial stock']);
   t.deepEquals(dump.log, escrowCheckPartialWrongStockGolden);
   t.end();
 });
@@ -67,7 +67,7 @@ const escrowCheckPartialWrongSeatGolden = [
 ];
 
 test.skip('escrow check partial wrong seat w/SES', async t => {
-  const dump = await main(true, 'escrow', ['escrow partial seat']);
+  const dump = await main('escrow', ['escrow partial seat']);
   t.deepEquals(dump.log, escrowCheckPartialWrongSeatGolden);
   t.end();
 });

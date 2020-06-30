@@ -77,7 +77,6 @@ async function atomicReplaceFile(filename, contents) {
 async function buildSwingset(
   kernelStateDBDir,
   mailboxStateFile,
-  withSES,
   vatsDir,
   argv,
   broadcast,
@@ -108,7 +107,7 @@ async function buildSwingset(
   const { storage, commit } = openSwingStore(kernelStateDBDir);
   config.hostStorage = storage;
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
@@ -222,7 +221,7 @@ async function buildSwingset(
   };
 }
 
-export default async function start(basedir, withSES, argv) {
+export default async function start(basedir, argv) {
   const mailboxStateFile = path.resolve(
     basedir,
     'swingset-kernel-mailbox.json',
@@ -245,7 +244,6 @@ export default async function start(basedir, withSES, argv) {
   const d = await buildSwingset(
     stateDBDir,
     mailboxStateFile,
-    withSES,
     vatsDir,
     argv,
     broadcast,

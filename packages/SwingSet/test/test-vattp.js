@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import { buildVatController, getVatTPSourcePath } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
-async function testVatTP(t, withSES) {
+async function testVatTP(t) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -13,7 +13,7 @@ async function testVatTP(t, withSES) {
   };
   config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
 
-  const c = await buildVatController(config, withSES, ['1']);
+  const c = await buildVatController(config, ['1']);
   await c.run();
   t.deepEqual(s.exportToData(), {});
 
@@ -53,11 +53,11 @@ async function testVatTP(t, withSES) {
   t.end();
 }
 
-test('vattp with SES', async t => {
-  await testVatTP(t, true);
+test('vattp', async t => {
+  await testVatTP(t);
 });
 
-async function testVatTP2(t, withSES) {
+async function testVatTP2(t) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -67,7 +67,7 @@ async function testVatTP2(t, withSES) {
   };
   config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
 
-  const c = await buildVatController(config, withSES, ['2']);
+  const c = await buildVatController(config, ['2']);
   await c.run();
   t.deepEqual(s.exportToData(), {
     remote1: { outbox: [[1, 'out1']], inboundAck: 0 },
@@ -103,6 +103,6 @@ async function testVatTP2(t, withSES) {
   t.end();
 }
 
-test('vattp 2 with SES', async t => {
-  await testVatTP2(t, true);
+test('vattp 2', async t => {
+  await testVatTP2(t);
 });

@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
-async function main(withSES, basedir, argv) {
+async function main(basedir, argv) {
   const dir = path.resolve(`${__dirname}/..`, basedir);
   const config = await loadBasedir(dir);
   const ldSrcPath = require.resolve(
@@ -11,7 +11,7 @@ async function main(withSES, basedir, argv) {
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
 }
@@ -26,8 +26,8 @@ const contractMintGolden = [
   'payment balance {"label":{"assay":{},"allegedName":"bucks"},"extent":50}',
 ];
 
-test.skip('run contractHost Demo --mint with SES', async t => {
-  const dump = await main(true, 'contractHost', ['mint']);
+test.skip('run contractHost Demo --mint', async t => {
+  const dump = await main('contractHost', ['mint']);
   t.deepEquals(dump.log, contractMintGolden);
   t.end();
 });
@@ -40,14 +40,14 @@ const contractTrivialGolden = [
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
 ];
-test('run contractHost Demo --trivial with SES', async t => {
-  const dump = await main(true, 'contractHost', ['trivial']);
+test('run contractHost Demo --trivial', async t => {
+  const dump = await main('contractHost', ['trivial']);
   t.deepEquals(dump.log, contractTrivialGolden);
   t.end();
 });
 
-test('run contractHost Demo --trivial-oldformat with SES', async t => {
-  const dump = await main(true, 'contractHost', ['trivial-oldformat']);
+test('run contractHost Demo --trivial-oldformat', async t => {
+  const dump = await main('contractHost', ['trivial-oldformat']);
   t.deepEquals(dump.log, contractTrivialGolden);
   t.end();
 });
@@ -60,8 +60,8 @@ const contractExhaustedGolden = [
   'got return: 123',
 ];
 
-test('run contractHost Demo -- exhaust with SES', async t => {
-  const dump = await main(true, 'contractHost', ['exhaust']);
+test('run contractHost Demo -- exhaust', async t => {
+  const dump = await main('contractHost', ['exhaust']);
   t.deepEquals(dump.log, contractExhaustedGolden);
   t.end();
 });
@@ -73,8 +73,8 @@ const contractAliceFirstGolden = [
   '++ DONE',
 ];
 
-test.skip('run contractHost Demo --alice-first with SES', async t => {
-  const dump = await main(true, 'contractHost', ['alice-first']);
+test.skip('run contractHost Demo --alice-first', async t => {
+  const dump = await main('contractHost', ['alice-first']);
   t.deepEquals(dump.log, contractAliceFirstGolden);
   t.end();
 });
@@ -96,8 +96,8 @@ const contractBobFirstGolden = [
   'bob stock balance {"label":{"issuer":{},"allegedName":"fudco"},"extent":1996}',
 ];
 
-test.skip('run contractHost Demo --bob-first with SES', async t => {
-  const dump = await main(true, 'contractHost', ['bob-first']);
+test.skip('run contractHost Demo --bob-first', async t => {
+  const dump = await main('contractHost', ['bob-first']);
   t.deepEquals(dump.log, contractBobFirstGolden);
   t.end();
 });
@@ -120,8 +120,8 @@ const contractCoveredCallGolden = [
   'bob stock balance {"label":{"issuer":{},"allegedName":"yoyodyne"},"extent":1996}',
 ];
 
-test.skip('run contractHost Demo --covered-call with SES', async t => {
-  const dump = await main(true, 'contractHost', ['covered-call']);
+test.skip('run contractHost Demo --covered-call', async t => {
+  const dump = await main('contractHost', ['covered-call']);
   t.deepEquals(dump.log, contractCoveredCallGolden);
   t.end();
 });
@@ -151,8 +151,8 @@ const contractCoveredCallSaleGolden = [
   'fred fins balance {"label":{"issuer":{},"allegedName":"fins"},"extent":2946}',
 ];
 
-test.skip('run contractHost Demo --covered-call-sale with SES', async t => {
-  const dump = await main(true, 'contractHost', ['covered-call-sale']);
+test.skip('run contractHost Demo --covered-call-sale', async t => {
+  const dump = await main('contractHost', ['covered-call-sale']);
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);
   t.end();
 });

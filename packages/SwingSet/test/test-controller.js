@@ -24,19 +24,19 @@ test('load empty', async t => {
     vats: new Map(),
     bootstrapIndexJS: undefined,
   };
-  const controller = await buildVatController(config, true);
+  const controller = await buildVatController(config);
   await controller.run();
   t.ok(true);
   t.end();
 });
 
-async function simpleCall(t, withSES) {
+async function simpleCall(t) {
   const config = {
     vats: new Map([
       ['vat1', { sourcepath: require.resolve('./vat-controller-1') }],
     ]),
   };
-  const controller = await buildVatController(config, withSES);
+  const controller = await buildVatController(config);
   const data = controller.dump();
   const vat1 = controller.vatNameToID('vat1');
   const vat2 = controller.vatNameToID('vatAdmin');
@@ -71,8 +71,8 @@ async function simpleCall(t, withSES) {
   t.end();
 }
 
-test('simple call with SES', async t => {
-  await simpleCall(t, true);
+test('simple call', async t => {
+  await simpleCall(t);
 });
 
 test('reject module-like sourceIndex', async t => {
@@ -86,33 +86,33 @@ test('reject module-like sourceIndex', async t => {
   // that.
   vats.set('vat1', { sourcepath: 'vatsource' });
   t.rejects(
-    async () => buildVatController({ vats }, true),
+    async () => buildVatController({ vats }),
     /sourceIndex must be relative/,
   );
   t.end();
 });
 
-async function bootstrap(t, withSES) {
+async function bootstrap(t) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-controller-2'),
   );
   // the controller automatically runs the bootstrap function.
   // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
-  const c = await buildVatController(config, withSES);
+  const c = await buildVatController(config);
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.end();
 }
 
-test('bootstrap with SES', async t => {
-  await bootstrap(t, true);
+test('bootstrap', async t => {
+  await bootstrap(t);
 });
 
-async function bootstrapExport(t, withSES) {
+async function bootstrapExport(t) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-controller-3'),
   );
-  const c = await buildVatController(config, withSES);
+  const c = await buildVatController(config);
   const bootstrapVatID = c.vatNameToID('_bootstrap');
   const leftVatID = c.vatNameToID('left');
   const rightVatID = c.vatNameToID('right');
@@ -268,6 +268,6 @@ async function bootstrapExport(t, withSES) {
   t.end();
 }
 
-test('bootstrap export with SES', async t => {
-  await bootstrapExport(t, true);
+test('bootstrap export', async t => {
+  await bootstrapExport(t);
 });

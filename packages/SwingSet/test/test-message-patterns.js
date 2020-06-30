@@ -53,7 +53,7 @@ export async function runVatsLocally(t, name) {
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
   config.bootstrapIndexJS = path.join(bdir, 'bootstrap-local.js');
-  const c = await buildVatController(config, true, [name]);
+  const c = await buildVatController(config, [name]);
   // await runWithTrace(c);
   await c.run();
   return c.dump().log;
@@ -85,7 +85,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
   config.vats.set('rightvattp', { sourcepath: getVatTPSourcePath() });
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
-  const c = await buildVatController(config, true, [name]);
+  const c = await buildVatController(config, [name]);
   // await runWithTrace(c);
   await c.run();
   return c.dump().log;

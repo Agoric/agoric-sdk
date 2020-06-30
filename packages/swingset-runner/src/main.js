@@ -245,7 +245,7 @@ export async function main() {
     config.verbose = true;
   }
 
-  const controller = await buildVatController(config, true, bootstrapArgv);
+  const controller = await buildVatController(config, bootstrapArgv);
   let bootstrapResult = controller.bootstrapResult;
 
   let blockNumber = 0;

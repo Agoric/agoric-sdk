@@ -20,7 +20,6 @@ const log = anylogger('launch-chain');
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
 async function buildSwingset(
-  withSES,
   mailboxState,
   bridgeOutbound,
   storage,
@@ -56,7 +55,7 @@ async function buildSwingset(
   config.bootstrapIndexJS = require.resolve(`${vatsDir}/bootstrap.js`);
   config.hostStorage = storage;
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
 
   const bridgeInbound = bd.deliverInbound;
@@ -71,7 +70,6 @@ export async function launch(
   vatsDir,
   argv,
 ) {
-  const withSES = true;
   log.info('Launching SwingSet kernel');
 
   log(`checking for saved mailbox state`, mailboxStorage.has('mailbox'));
@@ -89,7 +87,6 @@ export async function launch(
   }
   log.debug(`buildSwingset`);
   const { controller, mb, mbs, bridgeInbound, timer } = await buildSwingset(
-    withSES,
     mailboxState,
     bridgeOutbound,
     storage,
