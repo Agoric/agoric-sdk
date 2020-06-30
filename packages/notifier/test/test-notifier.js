@@ -1,4 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { produceNotifier } from '../src/notifier';
 

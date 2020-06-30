@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { allSettled } from './allSettled';
 
 function makeCollect(E, log) {

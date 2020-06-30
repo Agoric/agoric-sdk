@@ -1,7 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
+/* global harden */
+
 import Nat from '@agoric/nat';
-import harden from '@agoric/harden';
 import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';

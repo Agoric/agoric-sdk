@@ -1,7 +1,7 @@
-/* global E producePromise */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import harden from '@agoric/harden';
+/* global harden E producePromise */
+
 import { mustBeSameStructure } from '@agoric/same-structure';
 
 // For clarity, the code below internally speaks of a scenario is which Alice is

@@ -1,6 +1,8 @@
+/* global harden */
 // eslint-disable-next-line import/no-extraneous-dependencies
+
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
 
 import makeAmountMath from '../../../src/amountMath';
 

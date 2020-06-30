@@ -1,13 +1,12 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
+
+/* global harden */
+
 // @ts-check
 
 // This module assumes the de-facto standard `console` host object.
 // To the extent that this `console` is considered a resource,
 // this module must be considered a resource module.
-
-import rawHarden from '@agoric/harden';
-
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * Prepend the correct indefinite article onto a noun, typically a typeof result

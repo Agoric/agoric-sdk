@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import harden from '@agoric/harden';
+/* global harden */
 
 // Generator function to produce a stream of positive integers that are
 // sparsely scattered across the number space. This supports IDs that

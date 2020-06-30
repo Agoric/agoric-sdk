@@ -1,5 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { makeGoodImportManager } from './goodImports';
 

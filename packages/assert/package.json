@@ -29,10 +29,10 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/harden": "^0.0.8"
   },
   "devDependencies": {
     "esm": "^3.2.25",
+    "@agoric/install-ses": "^0.2.0",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"

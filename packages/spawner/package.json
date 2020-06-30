@@ -31,7 +31,6 @@
     "@agoric/assert": "^0.0.8",
     "@agoric/ertp": "^0.6.0",
     "@agoric/eventual-send": "^0.9.3",
-    "@agoric/harden": "^0.0.8",
     "@agoric/import-bundle": "^0.0.8",
     "@agoric/nat": "^2.0.1",
     "@agoric/produce-promise": "^0.1.3",

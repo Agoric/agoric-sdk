@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 import { test } from 'tape';
 import { an, assert, details, q } from '../src/assert';
 import { throwsAndLogs } from './throwsAndLogs';

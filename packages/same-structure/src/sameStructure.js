@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { sameValueZero, passStyleOf } from '@agoric/marshal';
 import { assert, details, q } from '@agoric/assert';
 

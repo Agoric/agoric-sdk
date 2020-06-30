@@ -1,3 +1,5 @@
+import './install-ersatz-harden';
+
 import { Command } from 'commander';
 
 import cosmosMain from './cosmos';
