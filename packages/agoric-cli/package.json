@@ -31,6 +31,7 @@
     "commander": "^5.0.0",
     "deterministic-json": "^1.0.5",
     "esm": "^3.2.25",
+    "json-merge-patch": "^1.0.0",
     "ws": "^7.2.0"
   },
   "keywords": [],

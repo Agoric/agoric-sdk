@@ -2,11 +2,15 @@ import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
 import djson from 'deterministic-json';
+import jsonmergepatch from 'json-merge-patch';
 import TOML from '@iarna/toml';
 
-const MINT_DENOM = 'uag';
-const STAKING_DENOM = 'uagstake';
-const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
+import {
+  MINT_DENOM,
+  STAKING_DENOM,
+  genesisMergePatch,
+  makeConfigMergePatch,
+} from './chain-params';
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -30,32 +34,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const genjson = await fs.readFile(genfile, 'utf-8');
     const genesis = JSON.parse(genjson);
 
-    // Use our own denominations.
-    genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
-    genesis.app_state.mint.params.mint_denom = MINT_DENOM;
-    genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
-    genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+    const finishedGenesis = jsonmergepatch.apply(genesis, genesisMergePatch);
 
-    // Tweak the parameters we need.
-    genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
-
-    // Zero inflation, for now.
-    genesis.app_state.mint.minter.inflation = '0.0';
-    genesis.app_state.mint.params.inflation_rate_change = '0.0';
-    genesis.app_state.mint.params.inflation_min = '0.0';
-
-    // Remove IBC and capability state.
-    // TODO: This needs much more support to preserve contract state
-    // between exports in order to be able to carry forward IBC conns.
-    delete genesis.app_state.capability;
-    delete genesis.app_state.ibc;
-
-    // genesis.validators[0].address = '4688325E1761CAC253216A789DC895947C08F8EE'
-
-    // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
-    genesis.consensus_params.block.time_iota_ms = '1000';
-
-    const ds = djson.stringify(genesis);
+    const ds = djson.stringify(finishedGenesis);
     await fs.writeFile(genfile, ds);
 
     // Calculate the GCI and save to disk.
@@ -73,15 +54,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const configtoml = await fs.readFile(configfile, 'utf-8');
     const config = TOML.parse(configtoml);
 
-    const rpcPort = Number(portNum);
-    config.proxy_app = `kvstore`;
-    config.rpc.laddr = `tcp://127.0.0.1:${rpcPort}`;
-    config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
+    const configMergePatch = makeConfigMergePatch(portNum);
+    const finishedConfig = jsonmergepatch.apply(config, configMergePatch);
 
-    // Make blocks run faster than normal.
-    config.consensus.timeout_commit = '2s';
-
-    await fs.writeFile(configfile, TOML.stringify(config));
+    await fs.writeFile(configfile, TOML.stringify(finishedConfig));
   };
 
   const pspawnEnv = { ...process.env };
