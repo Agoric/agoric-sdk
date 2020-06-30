@@ -1,6 +1,7 @@
+/* global harden */
+
 import { E } from '@agoric/eventual-send';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
-import harden from '@agoric/harden';
 
 export async function showPurseBalance(purseP, name, log) {
   try {

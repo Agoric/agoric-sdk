@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 // A fake clock that also logs progress in tests.
 export default function buildManualTimer(log, startValue = 0) {

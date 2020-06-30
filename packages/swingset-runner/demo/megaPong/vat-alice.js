@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 // Ping Print Predicate, a hack to reduce log spam
 function ppp(count) {
