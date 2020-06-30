@@ -4,7 +4,6 @@ from twisted.web.template import Element, XMLFile, renderer, flattenString
 from twisted.internet import endpoints, defer, protocol
 from twisted.python import usage
 import wormhole
-import treq
 import os.path
 import os
 import json
@@ -27,14 +26,14 @@ class SetConfigOptions(usage.Options):
 
 class AddPubkeysOptions(usage.Options):
     optParameters = [
-        ["controller", "c", "http://localhost:8002/private/repl", "controller's listening port for us to send control messages"],
+        ["controller", "c", "NONE", "DEPRECATED"],
     ]
 
 class StartOptions(usage.Options):
     optParameters = [
         ["mountpoint", "m", "/", "controller's top level web page"],
         ["listen", "l", "tcp:8001", "client-visible HTTP listening port"],
-        ["controller", "c", "http://localhost:8002/private/repl", "controller's listening port for us to send control messages"],
+        ["controller", "c", "NONE", "DEPRECATED"],
     ]
 
 class Options(usage.Options):
@@ -46,7 +45,7 @@ class Options(usage.Options):
         ]
     optParameters = [
         ["home", None, os.path.join(os.environ["HOME"], '.ag-pserver'), "provisioning-server's state directory"],
-        ['initial-token', 'T', '1000uag', "initial tokens sent to the provisioned pubkey"],
+        ['initial-token', 'T', 'NONE', "DEPRECATED"],
         ]
 
 class SendInputAndWaitProtocol(protocol.ProcessProtocol):
@@ -205,39 +204,16 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
     def ret(server_message):
         return [mobj, server_message, config]
 
-    # FIXME: Make more resilient to DOS attacks, or attempts
-    # to drain all our uags.
     args = [
-        'tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey, opts['initial-token'],
-        '--yes', '--broadcast-mode', 'block', # Don't return until committed.
+        'tx', 'swingset', 'provision-one', '--keyring-backend=test', nickname, pubkey,
+        '--from=ag-solo', '--yes', '--broadcast-mode=block', # Don't return until committed.
+        '--gas=auto', '--gas-adjustment=1.4',
     ]
     code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
     if code != 0:
         return ret({"ok": False, "error": 'transfer returned ' + str(code)})
 
-    controller_url = opts["controller"]
-    print('contacting ' + controller_url)
-    m = json.dumps(mobj)
-
-    # this HTTP request goes to the controller machine, where it should
-    # be routed to vat-provisioning.js and the pleaseProvision() method.
-    try:
-        resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
-                                headers={
-                                    b'Content-Type': [b'application/json'],
-                                    b'Origin': [b'http://127.0.0.1'],
-                                })
-        if resp.code < 200 or resp.code >= 300:
-            raise Exception('invalid response code ' + str(resp.code))
-        rawResp = yield treq.json_content(resp)
-    except Exception as e:
-        print('controller error', e)
-        return ret({"ok": False, "error": str(e)})
-    if not rawResp.get("ok"):
-        print("provisioning server error", rawResp)
-        return ret({"ok": False, "error": rawResp.get('rej')})
-    r = rawResp['res']
-    ingressIndex = r["ingressIndex"]
+    ingressIndex = 1
     # this message is sent back to setup-solo/src/ag_setup_solo/main.py
     server_message = {
         "ok": True,
@@ -393,8 +369,7 @@ def agCosmosHelper(reactor, opts, config, args, retries = 1):
         reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
             program, *args,
             '--chain-id', config['chainName'], '-ojson',
-            '--node',
-            'tcp://' + rpcAddr,
+            '--node', 'tcp://' + rpcAddr,
             '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
             ])
         code, output, stderr = yield d
@@ -428,49 +403,21 @@ def agCosmosHelper(reactor, opts, config, args, retries = 1):
 
     return code, output
 
-def splitToken(token):
-    mo = re.search(r'^(\d+)(.*)$', token)
-    (amount_s, denom) = mo.groups()
-    return (int(amount_s), denom)
-
 @defer.inlineCallbacks
 def doEnablePubkeys(reactor, opts, config, pkobjs):
     txes = []
     needIngress = []
 
-    # Find the token and amount.
-    (amount, denom) = splitToken(opts['initial-token'])
-
     for pkobj in pkobjs:
         pubkey = pkobj['pubkey']
-        missing = False
-        try:
-            print('checking account', pubkey)
-            code, output = yield agCosmosHelper(reactor, opts, config, ['query', 'account', pubkey])
-            if code == 0 and output['type'] == 'cosmos-sdk/Account':
-                needIngress.append(pkobj)
-                missing = True
-                for coin in output['value']['coins']:
-                    # Check if they have some of our coins.
-                    # TODO: This is just a rudimentary check, we really need a better policy.
-                    if coin['denom'] == denom and int(coin['amount']) >= amount:
-                        missing = False
-                        break
-            elif code == 1 or code == 9:
-                needIngress.append(pkobj)
-                missing = True
-        except Exception as e:
-            missing = False
-            print(e)
-
-        if missing:
-            print('generating transaction for', pubkey)
-            # Estimate the gas, with a little bit of padding.
-            args = ['tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey,
-                opts['initial-token'], '--gas=auto', '--gas-adjustment=1.05']
-            code, output = yield agCosmosHelper(reactor, opts, config, args, 1)
-            if code == 0:
-                txes.append(output)
+        nickname = pkobj['nickname']
+        print('generating transaction for', pubkey)
+        # Estimate the gas, with a little bit of padding.
+        args = ['tx', 'swingset', 'provision-one', '--keyring-backend=test', nickname, pubkey,
+            '--from=ag-solo', '--gas=auto', '--gas-adjustment=1.4']
+        code, output = yield agCosmosHelper(reactor, opts, config, args, 1)
+        if code == 0:
+            txes.append(output)
 
     if len(txes) > 0:
         tx0 = txes[0]
@@ -507,35 +454,12 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
             # Now the temp.name contents are available
             args = [
                 'tx', 'broadcast', temp.name,
-                '--broadcast-mode', 'block',
+                '--broadcast-mode=block',
             ]
 
             code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
         if code != 0:
             raise Exception('Cannot broadcast transaction')
-
-    if len(needIngress) > 0:
-        controller_url = opts["controller"]
-        print('contacting ' + controller_url)
-
-        mobj = {
-            "type": "pleaseProvisionMany",
-            "applies": [[pkobj['nickname'], pkobj['pubkey']] for pkobj in needIngress]
-        }
-        m = json.dumps(mobj)
-
-        # this HTTP request goes to the controller machine, where it should
-        # be routed to vat-provisioning.js and the pleaseProvision() method.
-        resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
-                                headers={
-                                    b'Content-Type': [b'application/json'],
-                                    b'Origin': [b'http://127.0.0.1'],
-                                })
-        if resp.code < 200 or resp.code >= 300:
-            raise Exception('invalid response code ' + str(resp.code))
-        rawResp = yield treq.json_content(resp)
-        if not rawResp.get('ok', False):
-            raise Exception('response not ok ' + str(rawResp))
 
 def main():
     o = Options()
