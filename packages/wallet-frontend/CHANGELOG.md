@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-frontend@0.2.6...@agoric/wallet-frontend@0.2.7) (2020-06-30)
+
+
+### Bug Fixes
+
+* replace openDetail with quoting q ([#1134](https://github.com/Agoric/agoric-sdk/issues/1134)) ([67808a4](https://github.com/Agoric/agoric-sdk/commit/67808a4df515630ef7dc77c59054382f626ece96))
+
+
+
+
+
 ## [0.2.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-frontend@0.2.5...@agoric/wallet-frontend@0.2.6) (2020-05-17)
 
 

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.0.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/weak-store@0.0.7...@agoric/weak-store@0.0.8) (2020-06-30)
+
+
+### Bug Fixes
+
+* replace openDetail with quoting q ([#1134](https://github.com/Agoric/agoric-sdk/issues/1134)) ([67808a4](https://github.com/Agoric/agoric-sdk/commit/67808a4df515630ef7dc77c59054382f626ece96))
+
+
+
+
+
 ## [0.0.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/weak-store@0.0.6...@agoric/weak-store@0.0.7) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/weak-store

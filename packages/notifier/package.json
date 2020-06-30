@@ -1,6 +1,6 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "main": "src/notifier.js",
   "engines": {
@@ -29,7 +29,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/harden": "^0.0.8",
-    "@agoric/produce-promise": "^0.1.2"
+    "@agoric/produce-promise": "^0.1.3"
   },
   "devDependencies": {
     "esm": "^3.2.25",

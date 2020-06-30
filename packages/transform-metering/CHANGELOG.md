@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.2.5...@agoric/transform-metering@1.3.0) (2020-06-30)
+
+
+### Features
+
+* **transform-metering:** add balance-getters to refillFacet ([8200188](https://github.com/Agoric/agoric-sdk/commit/82001883bd8313075882eedb5e33789c5871241e))
+
+
+
+
+
 ## [1.2.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.2.4...@agoric/transform-metering@1.2.5) (2020-05-17)
 
 

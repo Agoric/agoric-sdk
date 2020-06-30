@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.19.3...@agoric/deployment@1.20.0) (2020-06-30)
+
+
+### Bug Fixes
+
+* shorten chain cadence to 2 seconds (instead of default 5) ([12a5688](https://github.com/Agoric/agoric-sdk/commit/12a568873236565491b90996c93b41b2edbdc055))
+* systematically use bin/ag-chain-cosmos ([527ae65](https://github.com/Agoric/agoric-sdk/commit/527ae655acc95ccf9fd2968e551adbe6d2453113))
+* use provisionpass for the bootstrap address ([b0c2b73](https://github.com/Agoric/agoric-sdk/commit/b0c2b73ec6ee5d0dda2d3a04c2b251a7ff0e0331))
+
+
+### Features
+
+* further along the path of state export and migration ([13dc588](https://github.com/Agoric/agoric-sdk/commit/13dc588ee3502df243e5e8038406b737df21ccd8))
+
+
+
+
+
 ## [1.19.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.19.2...@agoric/deployment@1.19.3) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/deployment

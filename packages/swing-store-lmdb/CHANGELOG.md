@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.2...@agoric/swing-store-lmdb@0.3.3) (2020-06-30)
+
+
+### Performance Improvements
+
+* Don't use the useWritemap option if we know we don't need it ([c272e43](https://github.com/Agoric/agoric-sdk/commit/c272e43f270cb9df47619cc95fed938520aec344))
+
+
+
+
+
 ## [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.1...@agoric/swing-store-lmdb@0.3.2) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
