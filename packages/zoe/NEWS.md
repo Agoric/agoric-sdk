@@ -1,5 +1,113 @@
 User-visible changes in @agoric/zoe:
 
+## Release v0.7.0 (29-June-2020)
+
+Zoe Service changes:
+
+* Instead of `zoe.makeInstance` returning an invite only, it now
+  returns a record of `{ invite, instanceRecord }` such that
+  information like the `instanceHandle` can be obtained directly from
+  the instanceRecord. 
+* `installationHandle`, the identifier for the code that is used to
+  create a new running contract instance, is added to the extent of
+  invites for contracts so that interested parties can easily check
+  whether their invite is using the code they expect.
+* `brandKeywordRecord` is added as a property of `instanceRecord`
+  alongside `issuerKeywordRecord`. `brandKeywordRecord` is an object
+  with keyword keys and brand values.
+* `zoe.makeContract` now only accepts a single argument (`bundle`) and
+  the old module format will error.
+
+
+Zoe Contract Facet (zcf) changes:
+* `zcf.reallocate` no longer accepts a third argument `sparseKeywords`
+  and no longer expects the keywords for different offers to be the
+  same. Within reallocate, the offer safety check compares the user's
+  proposal to the user's allocation, and the rights conservation check
+  adds up the amounts by brand to ensure the totals are the same.
+  Neither of these checks requires that the keywords for the
+  allocations be the same for different offers.
+* `zcf.getCurrentAllocation` and `zcf.getCurrentAllocations` no longer
+  take sparseKeywords as a parameter. Instead, brandKeywordRecord is
+  an optional parameter. If omitted, amounts are returned only for
+  brands for which an allocation currently exists.
+* `zcf.getInstanceRecord()` no longer takes a parameter
+* `brandKeywordRecord` is added as a property of `instanceRecord`
+  alongside `issuerKeywordRecord`. `brandKeywordRecord` is an object
+  with keyword keys and brand values.
+* `zcf.getAmountMaths` has been subsumed by `zcf.getAmountMath` which
+  takes a single brand parameter.
+* `zcf.getBrandForIssuer` has been added. It synchronously returns the
+  brand for a given issuer already known to Zoe.
+* `zoe.getInstance`, which was deprecated earlier, has been removed.
+* `cancelObj` and `cancelObj.cancel()`, which were deprecated earlier,
+  have been removed.
+
+Changes for Zoe contract developers:
+* Zoe contracts are now expected to return only an invite as the
+  result of `makeContract`. If the contracts want to have a
+  `publicAPI`, they can do so through `zcf.initPublicAPI`.
+* Contracts can allow different offers to use different keywords for
+  the same issuers. For example, publicAuction, the second price
+  auction contract, uses 'Asset' and 'Ask'
+  for the seller keywords and 'Asset' and 'Bid' for the buyer
+  keywords.
+
+
+Built-in Zoe contract changes:
+* We added more comments to the start of the built-in Zoe contracts.
+* The operaTickets contract has been split into two contracts: a
+  generic `sellItems` contract that sells fungible or nonfungible
+  items at a set price for money, and a generic `mintAndSellNFT`
+  contract that mints NFT tokens and then immediately creates a new
+  `sellItems` instance to sell them. The original operaTicket tests
+  are able to use these contracts. 
+* The `getCurrentPrice` helper in `bondingCurves.js` has been renamed
+  to `getInputPrice` and now only returns the `outputExtent`.
+* A new built-in contract was added: barter-exchange.js. Barter
+  Exchange takes offers for trading arbitrary goods for one another. 
+* Autoswap now has different keywords for different actions that can
+  be taken. For example, a swap should have the keywords 'In' and
+  'Out'.
+* Multipool Autoswap has new keywords for different actions that can
+  be taken as well. For example, adding liquidity has the keywords:
+  'SecondaryToken' and 'CentralToken' and returns a payout with
+  keyword `Liquidity`.
+* In Public Auction, the seller keywords are 'Asset' and 'Ask' and the
+  buyer keywords are 'Asset' and 'Bid'.
+
+
+ZoeHelpers changes:
+
+Some helpers were removed, and others were added. The built-in Zoe contracts were rewritten to
+  take advantage of these new helpers.
+* `satisfies` was added. It checks whether an allocation would satisfy
+  a single offer's wants if that was the allocation passed to
+  `reallocate`. 
+* `isOfferSafe` was added. It checks whether an
+  allocation for a particular offer would satisfy offer safety. Any
+  allocation that returns true under `satisfy` will also return true
+  under `isOfferSafe`. (`isOfferSafe` is equivalent of `satisfies` ||
+  gives a refund). 
+* `trade` was added. `Trade` performs a trade between
+  two offers given a declarative description of what each side loses
+  and gains. 
+* `Swap` remains but has slightly different behavior: any
+  surplus in a trade remains with the original offer
+* `canTradeWith`
+  was removed and subsumed by `satisfies`.
+* `inviteAnOffer` was already
+  deprecated and was removed. 
+* `assertNatMathHelpers` was added, which
+  checks whether a particular keyword is associated with an issuer
+  with natMathHelpers. 
+
+ERTP changes:
+* `purse.deposit()` now returns the amount of the deposit, rather than
+  the purse's new balance.
+* A deposit-only facet was added to purses, and can be created by
+  calling `makeDepositFacet` on any purse.
+
 ## Release v0.6.0 (1-May-2020)
 
 * We added `completeObj` with the method `complete` to what is given
