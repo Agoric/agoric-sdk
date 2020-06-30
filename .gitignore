@@ -56,3 +56,5 @@ typings/
 # bundles
 bundle-*.js
 /.vagrant
+.DS_Store
+.vscode/

@@ -20,7 +20,7 @@ scripts/have-news HEAD^ > have-news.md
 
 Then, create a release PR, pasting `have-news.md` into the body.
 
-Then you can run the following:
+Then, once tests pass, you can run the following:
 
 ```sh
 # Build all package generated files.
