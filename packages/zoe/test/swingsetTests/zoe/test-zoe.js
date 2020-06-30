@@ -273,6 +273,6 @@ test('zoe - sellTickets - valid inputs', async t => {
     [0, 0, 0],
     [22, 0, 0],
   ];
-  const dump = await main(true, ['sellTicketsOk', startingExtents]);
+  const dump = await main(['sellTicketsOk', startingExtents]);
   t.deepEquals(dump.log, expectedSellTicketsOkLog);
 });
