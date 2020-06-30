@@ -195,7 +195,20 @@ export async function buildVatController(config, argv = []) {
       filePrefix: name,
       endowments: vatEndowments,
     });
-    const setup = vatNS.default;
+    let setup;
+    if ('buildRootObject' in vatNS) {
+      setup = (syscall, state, helpers, vatPowers) => {
+        return helpers.makeLiveSlots(
+          syscall,
+          state,
+          (_E, _D, vatP) => vatNS.buildRootObject(vatP),
+          helpers.vatID,
+          vatPowers,
+        );
+      };
+    } else {
+      setup = vatNS.default;
+    }
     return setup;
   }
 

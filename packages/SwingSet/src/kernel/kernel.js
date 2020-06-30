@@ -415,6 +415,12 @@ export default function buildKernel(kernelEndowments) {
     kernelPanic = new Error(`kernel panic ${problem}`);
   }
 
+  // returns a message-result reader, with .status() (that returns one of
+  // 'pending', 'fulfilled', or 'rejected') and .resolution() (that returns a
+  // value only if status is not 'pending')
+  //
+  // 'policy' is one of 'ignore', 'logAlways', 'logFailure', or 'panic'
+  //
   function queueToExport(vatID, vatSlot, method, args, policy = 'ignore') {
     // queue a message on the end of the queue, with 'absolute' kernelSlots.
     // Use 'step' or 'run' to execute it
