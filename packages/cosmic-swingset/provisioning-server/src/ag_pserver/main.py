@@ -206,7 +206,8 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
 
     args = [
         'tx', 'swingset', 'provision-one', '--keyring-backend=test', nickname, pubkey,
-        '--yes', '--broadcast-mode', 'block', # Don't return until committed.
+        '--from=ag-solo', '--yes', '--broadcast-mode=block', # Don't return until committed.
+        '--gas=auto', '--gas-adjustment=1.4',
     ]
     code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
     if code != 0:
@@ -368,8 +369,7 @@ def agCosmosHelper(reactor, opts, config, args, retries = 1):
         reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
             program, *args,
             '--chain-id', config['chainName'], '-ojson',
-            '--node',
-            'tcp://' + rpcAddr,
+            '--node', 'tcp://' + rpcAddr,
             '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
             ])
         code, output, stderr = yield d
@@ -414,7 +414,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
         print('generating transaction for', pubkey)
         # Estimate the gas, with a little bit of padding.
         args = ['tx', 'swingset', 'provision-one', '--keyring-backend=test', nickname, pubkey,
-            '--gas=auto', '--gas-adjustment=1.4']
+            '--from=ag-solo', '--gas=auto', '--gas-adjustment=1.4']
         code, output = yield agCosmosHelper(reactor, opts, config, args, 1)
         if code == 0:
             txes.append(output)
@@ -454,7 +454,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
             # Now the temp.name contents are available
             args = [
                 'tx', 'broadcast', temp.name,
-                '--broadcast-mode', 'block',
+                '--broadcast-mode=block',
             ]
 
             code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
