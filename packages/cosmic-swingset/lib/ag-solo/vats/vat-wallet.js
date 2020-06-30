@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 

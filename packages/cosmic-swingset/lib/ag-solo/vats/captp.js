@@ -1,7 +1,8 @@
+/* global harden */
+
 // Avoid importing the full captp bundle, which would carry
 // in its own makeHardener, etc.
 import { makeCapTP } from '@agoric/captp/lib/captp';
-import harden from '@agoric/harden';
 
 export const getCapTPHandler = (E, send, getBootstrapObject) => {
   const chans = new Map();

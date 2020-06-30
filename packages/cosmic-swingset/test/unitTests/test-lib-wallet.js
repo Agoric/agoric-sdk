@@ -1,3 +1,5 @@
+/* global harden */
+
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
@@ -7,7 +9,6 @@ import makeAmountMath from '@agoric/ertp/src/amountMath';
 import produceIssuer from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import { makeRegistrar } from '@agoric/registrar';
-import harden from '@agoric/harden';
 
 import { E } from '@agoric/eventual-send';
 import { makeWallet } from '../../lib/ag-solo/vats/lib-wallet';

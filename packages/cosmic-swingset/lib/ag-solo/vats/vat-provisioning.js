@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.

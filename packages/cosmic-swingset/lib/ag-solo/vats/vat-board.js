@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { makeBoard } from './lib-board';
 
 function build(_E, _log) {

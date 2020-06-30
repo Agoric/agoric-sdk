@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';

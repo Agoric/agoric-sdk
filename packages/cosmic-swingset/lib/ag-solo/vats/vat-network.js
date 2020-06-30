@@ -1,5 +1,6 @@
+/* global harden */
 // @ts-check
-import harden from '@agoric/harden';
+
 import { makeRouterProtocol } from '@agoric/swingset-vat/src/vats/network/router';
 
 function build(E) {

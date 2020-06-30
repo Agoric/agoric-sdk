@@ -1,5 +1,5 @@
-/* global Compartment */
-import harden from '@agoric/harden';
+/* global harden Compartment */
+
 import { isPromise } from '@agoric/produce-promise';
 import { E, HandledPromise } from '@agoric/eventual-send';
 

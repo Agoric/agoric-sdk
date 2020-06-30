@@ -7,7 +7,6 @@ import { promisify } from 'util';
 import anylogger from 'anylogger';
 
 // import connect from 'lotion-connect';
-// import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
 import {

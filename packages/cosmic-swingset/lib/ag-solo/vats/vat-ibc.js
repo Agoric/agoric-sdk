@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { makeIBCProtocolHandler } from './ibc';
 
 function build(E, _log) {

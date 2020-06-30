@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 import { makeZoe } from '@agoric/zoe';
 

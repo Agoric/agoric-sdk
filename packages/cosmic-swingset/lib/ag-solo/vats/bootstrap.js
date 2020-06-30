@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { allComparable } from '@agoric/same-structure';
 import {
   makeLoopbackProtocolHandler,
