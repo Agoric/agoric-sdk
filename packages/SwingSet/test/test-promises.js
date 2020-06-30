@@ -5,22 +5,22 @@ import { buildVatController, loadBasedir } from '../src/index';
 
 const RETIRE_KPIDS = true;
 
-async function testFlush(t, withSES) {
+async function testFlush(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['flush']);
+  const c = await buildVatController(config, ['flush']);
   // all promises should settle before c.step() fires
   await c.step();
   t.deepEqual(c.dump().log, ['bootstrap called', 'then1', 'then2']);
   t.end();
 }
 
-test('flush with SES', async t => {
-  await testFlush(t, true);
+test('flush', async t => {
+  await testFlush(t);
 });
 
-async function testEThen(t, withSES) {
+async function testEThen(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['e-then']);
+  const c = await buildVatController(config, ['e-then']);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -33,13 +33,13 @@ async function testEThen(t, withSES) {
   t.end();
 }
 
-test('E() resolve with SES', async t => {
-  await testEThen(t, true);
+test('E() resolve', async t => {
+  await testEThen(t);
 });
 
-async function testChain1(t, withSES) {
+async function testChain1(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['chain1']);
+  const c = await buildVatController(config, ['chain1']);
 
   /*
   while (true) {
@@ -61,13 +61,13 @@ async function testChain1(t, withSES) {
   t.end();
 }
 
-test('E(E(x).foo()).bar() with SES', async t => {
-  await testChain1(t, true);
+test('E(E(x).foo()).bar()', async t => {
+  await testChain1(t);
 });
 
-async function testChain2(t, withSES) {
+async function testChain2(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['chain2']);
+  const c = await buildVatController(config, ['chain2']);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -80,13 +80,13 @@ async function testChain2(t, withSES) {
   t.end();
 }
 
-test('E(Promise.resolve(presence)).foo() with SES', async t => {
-  await testChain2(t, true);
+test('E(Promise.resolve(presence)).foo()', async t => {
+  await testChain2(t);
 });
 
-async function testLocal1(t, withSES) {
+async function testLocal1(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['local1']);
+  const c = await buildVatController(config, ['local1']);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -98,13 +98,13 @@ async function testLocal1(t, withSES) {
   t.end();
 }
 
-test('E(local).foo() with SES', async t => {
-  await testLocal1(t, true);
+test('E(local).foo()', async t => {
+  await testLocal1(t);
 });
 
-async function testLocal2(t, withSES) {
+async function testLocal2(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['local2']);
+  const c = await buildVatController(config, ['local2']);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -117,13 +117,13 @@ async function testLocal2(t, withSES) {
   t.end();
 }
 
-test('resolve-to-local with SES', async t => {
-  await testLocal2(t, true);
+test('resolve-to-local', async t => {
+  await testLocal2(t);
 });
 
-async function testSendPromise1(t, withSES) {
+async function testSendPromise1(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, withSES, ['send-promise1']);
+  const c = await buildVatController(config, ['send-promise1']);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -137,15 +137,15 @@ async function testSendPromise1(t, withSES) {
   t.end();
 }
 
-test('send-promise-resolve-to-local with SES', async t => {
-  await testSendPromise1(t, true);
+test('send-promise-resolve-to-local', async t => {
+  await testSendPromise1(t);
 });
 
-async function testHardenPromise1(t, withSES) {
+async function testHardenPromise1(t) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-promises-2'),
   );
-  const c = await buildVatController(config, withSES, ['harden-promise-1']);
+  const c = await buildVatController(config, ['harden-promise-1']);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -164,13 +164,13 @@ async function testHardenPromise1(t, withSES) {
   t.end();
 }
 
-test('send-harden-promise-1 with SES', async t => {
-  await testHardenPromise1(t, true);
+test('send-harden-promise-1', async t => {
+  await testHardenPromise1(t);
 });
 
-async function testCircularPromiseData(t, withSES) {
+async function testCircularPromiseData(t) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-circular'));
-  const c = await buildVatController(config, withSES);
+  const c = await buildVatController(config);
 
   await c.run();
   const expectedPromises = [
@@ -209,5 +209,5 @@ async function testCircularPromiseData(t, withSES) {
 }
 
 test('circular promise resolution data', async t => {
-  await testCircularPromiseData(t, true);
+  await testCircularPromiseData(t);
 });

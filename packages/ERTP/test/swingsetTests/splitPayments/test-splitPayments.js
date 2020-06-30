@@ -5,7 +5,7 @@ import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
 
-async function main(withSES, basedir, argv) {
+async function main(basedir, argv) {
   const dir = path.resolve(`${__dirname}/..`, basedir);
   const config = await loadBasedir(dir);
   const ldSrcPath = require.resolve(
@@ -13,7 +13,7 @@ async function main(withSES, basedir, argv) {
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
 }
@@ -26,8 +26,8 @@ const expectedTapFaucetLog = [
   'splitPayment[1] balance: {"brand":{},"extent":990}',
 ];
 
-test('test splitPayments with SES', async t => {
-  const dump = await main(true, 'splitPayments', ['splitPayments']);
+test('test splitPayments', async t => {
+  const dump = await main('splitPayments', ['splitPayments']);
   t.deepEquals(dump.log, expectedTapFaucetLog);
   t.end();
 });

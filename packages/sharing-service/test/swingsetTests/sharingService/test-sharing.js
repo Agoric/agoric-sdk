@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
-async function main(withSES, basedir, argv) {
+async function main(basedir, argv) {
   const dir = path.resolve(`${__dirname}/..`, basedir);
   const config = await loadBasedir(dir);
   const ldSrcPath = require.resolve(
@@ -11,7 +11,7 @@ async function main(withSES, basedir, argv) {
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
 
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
 }
@@ -22,7 +22,7 @@ const sharedMapContentsGolden = [
 ];
 
 test('run sharing Demo --sharedMap contents', async t => {
-  const dump = await main(true, 'sharingService', ['sharedMap']);
+  const dump = await main('sharingService', ['sharedMap']);
   t.deepEquals(dump.log, sharedMapContentsGolden);
   t.end();
 });
@@ -34,7 +34,7 @@ const sharingTestGolden = [
 ];
 
 test('run sharing Demo --sharing service', async t => {
-  const dump = await main(true, 'sharingService', ['sharing']);
+  const dump = await main('sharingService', ['sharing']);
   t.deepEquals(dump.log, sharingTestGolden);
   t.end();
 });
@@ -46,7 +46,7 @@ const twoPartySharingGolden = [
 ];
 
 test('run sharing Demo --Two Party handoff', async t => {
-  const dump = await main(true, 'sharingService', ['twoVatSharing']);
+  const dump = await main('sharingService', ['twoVatSharing']);
   t.deepEquals(dump.log, twoPartySharingGolden);
   t.end();
 });

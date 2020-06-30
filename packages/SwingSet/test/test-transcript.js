@@ -20,13 +20,13 @@ async function buildTrace(c, storage) {
   return states;
 }
 
-async function testSaveState(t, withSES) {
+async function testSaveState(t) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
   const { storage } = initSwingStore();
   config.hostStorage = storage;
-  const c1 = await buildVatController(config, withSES, ['one']);
+  const c1 = await buildVatController(config, ['one']);
   const states1 = await buildTrace(c1, storage);
   /*
   states1.forEach( (s, i) =>
@@ -35,7 +35,7 @@ async function testSaveState(t, withSES) {
 
   const storage2 = initSwingStore().storage;
   config.hostStorage = storage2;
-  const c2 = await buildVatController(config, withSES, ['one']);
+  const c2 = await buildVatController(config, ['one']);
   const states2 = await buildTrace(c2, storage2);
 
   states1.forEach((s, i) => {
@@ -44,17 +44,17 @@ async function testSaveState(t, withSES) {
   t.end();
 }
 
-test('transcript-one save with SES', async t => {
-  await testSaveState(t, true);
+test('transcript-one save', async t => {
+  await testSaveState(t);
 });
 
-async function testLoadState(t, withSES) {
+async function testLoadState(t) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
   const s0 = initSwingStore().storage;
   config.hostStorage = s0;
-  const c0 = await buildVatController(config, withSES, ['one']);
+  const c0 = await buildVatController(config, ['one']);
   const states = await buildTrace(c0, s0);
   // states.forEach((s,j) =>
   //               fs.writeFileSync(`kdata-${j}.json`,
@@ -69,7 +69,7 @@ async function testLoadState(t, withSES) {
     setAllState(s, states[i]);
     cfg.hostStorage = s;
     // eslint-disable-next-line no-await-in-loop
-    const c = await buildVatController(cfg, withSES, ['one']);
+    const c = await buildVatController(cfg, ['one']);
     // eslint-disable-next-line no-await-in-loop
     const newstates = await buildTrace(c, s);
     // newstates.forEach((s,j) =>
@@ -80,6 +80,6 @@ async function testLoadState(t, withSES) {
   t.end();
 }
 
-test('transcript-one load with SES', async t => {
-  await testLoadState(t, true);
+test('transcript-one load', async t => {
+  await testLoadState(t);
 });

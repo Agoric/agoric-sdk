@@ -18,7 +18,7 @@ async function doTestSetup(mode) {
   );
   const nonBundle = `${nonBundleFunction}`;
   const bundles = { newVatBundle, brokenVatBundle, nonBundle };
-  const c = await buildVatController(config, true, [mode, bundles]);
+  const c = await buildVatController(config, [mode, bundles]);
   return c;
 }
 

@@ -23,7 +23,7 @@ tap.test('metering dynamic vats', async t => {
     vats: new Map(),
     bootstrapIndexJS: require.resolve('./vat-load-dynamic.js'),
   };
-  const c = await buildVatController(config, true, []);
+  const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats

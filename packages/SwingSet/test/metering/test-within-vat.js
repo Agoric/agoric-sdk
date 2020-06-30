@@ -20,7 +20,7 @@ tap.test('metering within a vat', async t => {
     vats: new Map(),
   };
   config.vats.set('within', { sourcepath: require.resolve('./vat-within.js') });
-  const c = await buildVatController(config, true, []);
+  const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
 
   // 'start' will import the bundle

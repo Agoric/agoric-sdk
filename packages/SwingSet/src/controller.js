@@ -98,10 +98,7 @@ export function loadBasedir(basedir) {
   return { vats, bootstrapIndexJS };
 }
 
-export async function buildVatController(config, withSES = true, argv = []) {
-  if (!withSES) {
-    throw Error('SES is now mandatory');
-  }
+export async function buildVatController(config, argv = []) {
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling buildVatController');
   }

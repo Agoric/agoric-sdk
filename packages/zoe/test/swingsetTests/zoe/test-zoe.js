@@ -29,10 +29,10 @@ const generateBundlesP = Promise.all(
   }),
 );
 
-async function main(withSES, argv) {
+async function main(argv) {
   const config = await loadBasedir(__dirname);
   await generateBundlesP;
-  const controller = await buildVatController(config, withSES, argv);
+  const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
 }
@@ -48,14 +48,14 @@ const expectedAutomaticRefundOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":0}',
 ];
 
-test('zoe - automaticRefund - valid inputs - with SES', async t => {
+test('zoe - automaticRefund - valid inputs', async t => {
   t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
       [0, 17, 0],
     ];
-    const dump = await main(true, ['automaticRefundOk', startingExtents]);
+    const dump = await main(['automaticRefundOk', startingExtents]);
     t.deepEquals(dump.log, expectedAutomaticRefundOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -73,14 +73,14 @@ const expectedCoveredCallOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
-test('zoe - coveredCall - valid inputs - with SES', async t => {
+test('zoe - coveredCall - valid inputs', async t => {
   t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
       [0, 7, 0],
     ];
-    const dump = await main(true, ['coveredCallOk', startingExtents]);
+    const dump = await main(['coveredCallOk', startingExtents]);
     t.deepEquals(dump.log, expectedCoveredCallOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -105,7 +105,7 @@ const expectedSwapForOptionOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
-test('zoe - swapForOption - valid inputs - with SES', async t => {
+test('zoe - swapForOption - valid inputs', async t => {
   t.plan(1);
   try {
     const startingExtents = [
@@ -114,7 +114,7 @@ test('zoe - swapForOption - valid inputs - with SES', async t => {
       [0, 0, 0], // Carol starts with nothing
       [0, 7, 1], // Dave starts with 7 simoleans and 1 buck
     ];
-    const dump = await main(true, ['swapForOptionOk', startingExtents]);
+    const dump = await main(['swapForOptionOk', startingExtents]);
     t.deepEquals(dump.log, expectedSwapForOptionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -136,7 +136,7 @@ const expectedPublicAuctionOkLog = [
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
-test('zoe - publicAuction - valid inputs - with SES', async t => {
+test('zoe - publicAuction - valid inputs', async t => {
   t.plan(1);
   try {
     const startingExtents = [
@@ -145,7 +145,7 @@ test('zoe - publicAuction - valid inputs - with SES', async t => {
       [0, 7, 0],
       [0, 5, 0],
     ];
-    const dump = await main(true, ['publicAuctionOk', startingExtents]);
+    const dump = await main(['publicAuctionOk', startingExtents]);
     t.deepEquals(dump.log, expectedPublicAuctionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -160,14 +160,14 @@ const expectedAtomicSwapOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
   'bobSimoleanPurse: balance {"brand":{},"extent":0}',
 ];
-test('zoe - atomicSwap - valid inputs - with SES', async t => {
+test('zoe - atomicSwap - valid inputs', async t => {
   t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
       [0, 7, 0],
     ];
-    const dump = await main(true, ['atomicSwapOk', startingExtents]);
+    const dump = await main(['atomicSwapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -184,14 +184,14 @@ const expectedSimpleExchangeOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
-test('zoe - simpleExchange - valid inputs - with SES', async t => {
+test('zoe - simpleExchange - valid inputs', async t => {
   t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
       [0, 7, 0],
     ];
-    const dump = await main(true, ['simpleExchangeOk', startingExtents]);
+    const dump = await main(['simpleExchangeOk', startingExtents]);
     t.deepEquals(dump.log, expectedSimpleExchangeOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -223,13 +223,13 @@ const expectedSimpleExchangeNotificationLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
-test('zoe - simpleExchange - state Update - with SES', async t => {
+test('zoe - simpleExchange - state Update', async t => {
   t.plan(1);
   const startingExtents = [
     [3, 0, 0],
     [0, 24, 0],
   ];
-  const dump = await main(true, ['simpleExchangeNotifier', startingExtents]);
+  const dump = await main(['simpleExchangeNotifier', startingExtents]);
   t.deepEquals(dump.log, expectedSimpleExchangeNotificationLog);
 });
 
@@ -248,12 +248,12 @@ const expectedAutoswapOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
   'aliceLiquidityTokenPurse: balance {"brand":{},"extent":0}',
 ];
-test('zoe - autoswap - valid inputs - with SES', async t => {
+test('zoe - autoswap - valid inputs', async t => {
   t.plan(1);
   const startingExtents = [
     [10, 5, 0],
     [3, 7, 0],
   ];
-  const dump = await main(true, ['autoswapOk', startingExtents]);
+  const dump = await main(['autoswapOk', startingExtents]);
   t.deepEquals(dump.log, expectedAutoswapOkLog);
 });

@@ -24,7 +24,7 @@ test('bridge device', async t => {
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  const c = await buildVatController(config, true, argv);
+  const c = await buildVatController(config, argv);
   await c.run();
 
   t.deepEqual(outboundLog, argv);
@@ -63,7 +63,7 @@ test('bridge device', async t => {
     hostStorage: storage.storage,
   };
 
-  const c2 = await buildVatController(config2, true, argv);
+  const c2 = await buildVatController(config2, argv);
   await c2.run();
   // The bootstrap is reloaded from transcript, which means it doesn't run
   // any syscalls (they are switched off during replay), so it won't re-run
@@ -119,7 +119,7 @@ test('bridge device can return undefined', async t => {
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  const c = await buildVatController(config, true, argv);
+  const c = await buildVatController(config, argv);
   await c.run();
 
   t.deepEqual(outboundLog, argv);
