@@ -27,7 +27,6 @@ test('simpleExchange with valid offers', async t => {
   } = setup();
   const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
   const bundle = await bundleSource(simpleExchange);
@@ -44,14 +43,14 @@ test('simpleExchange with valid offers', async t => {
   const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
-  // 1: Simon creates a simpleExchange instance and spreads the invite far and
-  // wide with instructions on how to use it.
-  const simonInvite = await zoe.makeInstance(installationHandle, {
+  // 1: Simon creates a simpleExchange instance and spreads the publicAPI far
+  // and wide with instructions on how to call makeInvite().
+  const {
+    instanceRecord: { publicAPI },
+  } = await zoe.makeInstance(installationHandle, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
-  const instanceHandle = await getInstanceHandle(simonInvite);
-  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   const aliceInvite = publicAPI.makeInvite();
 
@@ -88,11 +87,13 @@ test('simpleExchange with valid offers', async t => {
 
   // 5: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
+  const bobInstanceHandle = await getInstanceHandle(bobExclusiveInvite);
 
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(instanceHandle);
+  } = zoe.getInstanceRecord(bobInstanceHandle);
 
   t.equals(bobInstallationId, installationHandle);
 
@@ -163,9 +164,9 @@ test('simpleExchange with valid offers', async t => {
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
   t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
+  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 4);
   t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
+  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 3);
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -181,7 +182,6 @@ test('simpleExchange with multiple sell offers', async t => {
     } = setup();
     const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Pack the contract.
     const bundle = await bundleSource(simpleExchange);
@@ -198,12 +198,12 @@ test('simpleExchange with multiple sell offers', async t => {
 
     // 1: Simon creates a simpleExchange instance and spreads the invite far and
     // wide with instructions on how to use it.
-    const simonInvite = await zoe.makeInstance(installationHandle, {
+    const {
+      instanceRecord: { publicAPI },
+    } = await zoe.makeInstance(installationHandle, {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const instanceHandle = await getInstanceHandle(simonInvite);
-    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
     const aliceInvite1 = publicAPI.makeInvite();
 
@@ -273,8 +273,6 @@ test('simpleExchange showPayoutRules', async t => {
   t.plan(1);
   const { moolaIssuer, simoleanIssuer, moolaMint, moola, simoleans } = setup();
   const zoe = makeZoe();
-  const inviteIssuer = zoe.getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
   const bundle = await bundleSource(simpleExchange);
@@ -285,12 +283,12 @@ test('simpleExchange showPayoutRules', async t => {
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
   // 1: Simon creates a simpleExchange instance and spreads the invite far and
   // wide with instructions on how to use it.
-  const simonInvite = await zoe.makeInstance(installationHandle, {
+  const {
+    instanceRecord: { publicAPI },
+  } = await zoe.makeInstance(installationHandle, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
-  const instanceHandle = await getInstanceHandle(simonInvite);
-  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   const aliceInvite = publicAPI.makeInvite();
 
@@ -332,7 +330,6 @@ test('simpleExchange with non-fungible assets', async t => {
 
   const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
   const bundle = await bundleSource(simpleExchange);
@@ -352,12 +349,12 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // 1: Simon creates a simpleExchange instance and spreads the invite far and
   // wide with instructions on how to use it.
-  const simonInvite = await zoe.makeInstance(installationHandle, {
+  const {
+    instanceRecord: { publicAPI },
+  } = await zoe.makeInstance(installationHandle, {
     Asset: rpgIssuer,
     Price: ccIssuer,
   });
-  const instanceHandle = await getInstanceHandle(simonInvite);
-  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   const aliceInvite = publicAPI.makeInvite();
 
@@ -365,7 +362,7 @@ test('simpleExchange with non-fungible assets', async t => {
   // sell a Spell of Binding and wants to receive CryptoCats in return.
   const aliceSellOrderProposal = harden({
     give: { Asset: rpgItems(spell) },
-    want: { Price: cryptoCats(harden([])) },
+    want: { Price: cryptoCats(harden(['Cheshire Cat'])) },
     exit: { onDemand: null },
   });
   const alicePayments = { Asset: aliceRpgPayment };
@@ -380,11 +377,13 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // 5: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
+  const bobInstanceHandle = await getInstanceHandle(bobExclusiveInvite);
 
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(instanceHandle);
+  } = zoe.getInstanceRecord(bobInstanceHandle);
 
   t.equals(bobInstallationId, installationHandle);
 

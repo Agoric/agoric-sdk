@@ -15,6 +15,8 @@ const CONTRACT_FILES = [
   'publicAuction',
   'atomicSwap',
   'simpleExchange',
+  'sellItems',
+  'mintAndSellNFT',
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
@@ -179,9 +181,9 @@ const expectedSimpleExchangeOkLog = [
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":3}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":4}',
 ];
 
 test('zoe - simpleExchange - valid inputs', async t => {
@@ -206,21 +208,21 @@ const expectedSimpleExchangeNotificationLog = [
   '{"buys":[],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":0}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":17}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":20}',
   '{"buys":[{"want":{"Asset":{"brand":{},"extent":8}},"give":{"Price":{"brand":{},"extent":2}}}],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":15}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":18}',
   '{"buys":[{"want":{"Asset":{"brand":{},"extent":8}},"give":{"Price":{"brand":{},"extent":2}}},{"want":{"Asset":{"brand":{},"extent":20}},"give":{"Price":{"brand":{},"extent":13}}}],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":2}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":5}',
   '{"buys":[{"want":{"Asset":{"brand":{},"extent":8}},"give":{"Price":{"brand":{},"extent":2}}},{"want":{"Asset":{"brand":{},"extent":20}},"give":{"Price":{"brand":{},"extent":13}}},{"want":{"Asset":{"brand":{},"extent":5}},"give":{"Price":{"brand":{},"extent":2}}}],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":3}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":4}',
 ];
 
 test('zoe - simpleExchange - state Update', async t => {
@@ -256,4 +258,21 @@ test('zoe - autoswap - valid inputs', async t => {
   ];
   const dump = await main(['autoswapOk', startingExtents]);
   t.deepEquals(dump.log, expectedAutoswapOkLog);
+});
+
+const expectedSellTicketsOkLog = [
+  '=> alice, bob, carol and dave are set up',
+  'availableTickets: {"brand":{},"extent":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":1},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
+  'boughtTicketAmount: {"brand":{},"extent":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":1}]}',
+  'after ticket1 purchased: {"brand":{},"extent":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
+  'alice earned: {"brand":{},"extent":22}',
+];
+test('zoe - sellTickets - valid inputs', async t => {
+  t.plan(1);
+  const startingExtents = [
+    [0, 0, 0],
+    [22, 0, 0],
+  ];
+  const dump = await main(['sellTicketsOk', startingExtents]);
+  t.deepEquals(dump.log, expectedSellTicketsOkLog);
 });

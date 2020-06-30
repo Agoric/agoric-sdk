@@ -2,18 +2,18 @@
 import { test } from 'tape-promise/tape';
 
 import {
-  getCurrentPrice,
+  getInputPrice,
   calcLiqExtentToMint,
 } from '../../../src/contractSupport';
 
 const testGetPrice = (t, input, expectedOutput) => {
-  const output = getCurrentPrice(input);
+  const output = getInputPrice(input);
   t.deepEquals(output, expectedOutput);
 };
 
-// If these tests of `getCurrentPrice` fail, it would indicate that we have
+// If these tests of `getInputPrice` fail, it would indicate that we have
 // diverged from the calculation in the Uniswap paper.
-test('getCurrentPrice ok 1', t => {
+test('getInputPrice ok 1', t => {
   t.plan(1);
   try {
     const input = {
@@ -21,18 +21,14 @@ test('getCurrentPrice ok 1', t => {
       outputReserve: 0,
       inputExtent: 1,
     };
-    const expectedOutput = {
-      outputExtent: 0,
-      newInputReserve: 1,
-      newOutputReserve: 0,
-    };
+    const expectedOutput = 0;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('getCurrentPrice ok 2', t => {
+test('getInputPrice ok 2', t => {
   t.plan(1);
   try {
     const input = {
@@ -40,18 +36,14 @@ test('getCurrentPrice ok 2', t => {
       outputReserve: 3028,
       inputExtent: 1398,
     };
-    const expectedOutput = {
-      outputExtent: 572,
-      newInputReserve: 7382,
-      newOutputReserve: 2456,
-    };
+    const expectedOutput = 572;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('getCurrentPrice ok 3', t => {
+test('getInputPrice ok 3', t => {
   t.plan(1);
   try {
     const input = {
@@ -59,18 +51,14 @@ test('getCurrentPrice ok 3', t => {
       outputReserve: 7743,
       inputExtent: 6635,
     };
-    const expectedOutput = {
-      outputExtent: 3466,
-      newInputReserve: 14795,
-      newOutputReserve: 4277,
-    };
+    const expectedOutput = 3466;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('getCurrentPrice reverse x and y amounts', t => {
+test('getInputPrice reverse x and y amounts', t => {
   t.plan(1);
   try {
     // Note: this is now the same test as the one above because we are
@@ -80,18 +68,14 @@ test('getCurrentPrice reverse x and y amounts', t => {
       outputReserve: 7743,
       inputExtent: 6635,
     };
-    const expectedOutput = {
-      outputExtent: 3466,
-      newInputReserve: 14795,
-      newOutputReserve: 4277,
-    };
+    const expectedOutput = 3466;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('getCurrentPrice ok 4', t => {
+test('getInputPrice ok 4', t => {
   t.plan(1);
   try {
     const input = {
@@ -99,18 +83,14 @@ test('getCurrentPrice ok 4', t => {
       outputReserve: 10,
       inputExtent: 1000,
     };
-    const expectedOutput = {
-      outputExtent: 9,
-      newInputReserve: 1010,
-      newOutputReserve: 1,
-    };
+    const expectedOutput = 9;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('getCurrentPrice ok 5', t => {
+test('getInputPrice ok 5', t => {
   t.plan(1);
   try {
     const input = {
@@ -118,18 +98,14 @@ test('getCurrentPrice ok 5', t => {
       outputReserve: 50,
       inputExtent: 17,
     };
-    const expectedOutput = {
-      outputExtent: 7,
-      newInputReserve: 117,
-      newOutputReserve: 43,
-    };
+    const expectedOutput = 7;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   }
 });
 
-test('getCurrentPrice ok 6', t => {
+test('getInputPrice ok 6', t => {
   t.plan(1);
   try {
     const input = {
@@ -137,11 +113,7 @@ test('getCurrentPrice ok 6', t => {
       inputReserve: 43,
       inputExtent: 7,
     };
-    const expectedOutput = {
-      outputExtent: 16,
-      newInputReserve: 50,
-      newOutputReserve: 101,
-    };
+    const expectedOutput = 16;
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);

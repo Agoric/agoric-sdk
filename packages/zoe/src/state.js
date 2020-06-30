@@ -5,6 +5,11 @@ import makeStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from './table';
 
+/**
+ * @typedef {import('./zoe').OfferHandle} OfferHandle
+ * @typedef {import('@agoric/ertp').Payment} Payment
+ */
+
 // Installation Table
 // Columns: handle | installation | bundle
 const makeInstallationTable = () => {
@@ -15,12 +20,19 @@ const makeInstallationTable = () => {
 };
 
 // Instance Table
-// Columns: handle | installationHandle | publicAPI | terms | issuerKeywordRecord
+// Columns: handle | installationHandle | publicAPI | terms |
+// issuerKeywordRecord | brandKeywordRecord
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['installationHandle', 'publicAPI', 'terms', 'issuerKeywordRecord']),
+    harden([
+      'installationHandle',
+      'publicAPI',
+      'terms',
+      'issuerKeywordRecord',
+      'brandKeywordRecord',
+    ]),
   );
 
   return makeTable(validateSomewhat);
@@ -92,8 +104,12 @@ const makeOfferTable = () => {
 };
 
 // Payout Map
-// PrivateName: offerHandle | payoutPromise
-const makePayoutMap = makeStore;
+/**
+ * Create payoutMap
+ * @returns {import('@agoric/store').Store<OfferHandle,
+ * Promise<Payment>>} Store
+ */
+const makePayoutMap = () => makeStore('offerHandle');
 
 // Issuer Table
 // Columns: brand | issuer | purse | amountMath

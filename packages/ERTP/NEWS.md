@@ -1,5 +1,12 @@
 User-visible changes in ERTP:
 
+## Release v0.6.0 (29-June-2020) 
+
+* `purse.deposit()` now returns the amount of the deposit, rather than
+  the purse's new balance.
+* A deposit-only facet was added to purses, and can be created by
+  calling `makeDepositFacet` on any purse.
+
 ## Release v0.5.0 (26-Mar-2020)
 
 Changed most ERTP methods to now accept promises for payments. The

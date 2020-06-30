@@ -7,7 +7,6 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../..';
-// TODO: Remove setupBasicMints and rename setupBasicMints2
 import { setup } from '../setupBasicMints';
 
 const grifterRoot = `${__dirname}/grifter`;
@@ -26,7 +25,7 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
     Price: moolaR.issuer,
   });
 
-  const malloryInvite = zoe.makeInstance(
+  const { invite: malloryInvite } = await zoe.makeInstance(
     installationHandle,
     issuerKeywordRecord,
   );
@@ -56,7 +55,7 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
 
   t.rejects(
     vicOutcomeP,
-    /The proposed reallocation was not offer safe/,
+    /The reallocation was not offer safe/,
     `vicOffer is rejected`,
   );
 });

@@ -26,7 +26,7 @@ export const makeContract = harden(
           const stepOne = [wantProposal, vicProposal];
           // safe because it doesn't change want, so winningsOK looks true
           const offerHandles = [firstOfferHandle, offerHandle];
-          zcf.reallocate(offerHandles, stepOne, ['Price']);
+          zcf.reallocate(offerHandles, stepOne);
           zcf.complete(harden(offerHandles));
         },
         'tantalizing offer',
@@ -42,11 +42,9 @@ export const makeContract = harden(
       want: { Price: null },
     });
 
-    return harden({
-      invite: zcf.makeInvitation(
-        checkHook(makeAccompliceInvite, firstOfferExpected),
-        'firstOffer',
-      ),
-    });
+    return zcf.makeInvitation(
+      checkHook(makeAccompliceInvite, firstOfferExpected),
+      'firstOffer',
+    );
   },
 );

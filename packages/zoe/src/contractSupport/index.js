@@ -1,7 +1,7 @@
 export { secondPriceLogic, closeAuction } from './auctions';
 
 export {
-  getCurrentPrice,
+  getInputPrice,
   calcLiqExtentToMint,
   calcExtentToRemove,
 } from './bondingCurves';

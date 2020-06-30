@@ -7,7 +7,6 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
-// TODO: Remove setupBasicMints and rename setupBasicMints2
 import { setup } from '../setupBasicMints';
 
 const automaticRefundRoot = `${__dirname}/brokenAutoRefund`;

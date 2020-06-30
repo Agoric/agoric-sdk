@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { HandledPromise } from '@agoric/eventual-send';
+import { satisfiesWant, isOfferSafe } from '../offerSafety';
 
 /**
  * @typedef {import('../zoe').OfferHandle} OfferHandle
@@ -9,6 +10,10 @@ import { HandledPromise } from '@agoric/eventual-send';
  * @typedef {import('../zoe').OfferHook} OfferHook
  * @typedef {import('../zoe').CustomProperties} CustomProperties
  * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * @typedef {import('../zoe').Keyword} Keyword
+ * @typedef {import('../zoe').AmountKeywordRecord} AmountKeywordRecord
+ * @typedef {import('../zoe').Amount} Amount
+ * @typedef {import('../zoe').Payment} Payment
  */
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
@@ -56,6 +61,82 @@ export const makeZoeHelpers = (zcf) => {
     return sameStructure(getKeysSorted(actual), getKeysSorted(expected));
   };
 
+  /**
+   * Given toGains (an AmountKeywordRecord), and allocations (a pair,
+   * 'to' and 'from', of AmountKeywordRecords), all the entries in
+   * toGains will be added to 'to'. If fromLosses is defined, all the
+   * entries in fromLosses are subtracted from 'from'. (If fromLosses
+   * is not defined, toGains is subtracted from 'from'.)
+   *
+   * @param {FromToAllocations} allocations - the 'to' and 'from'
+   * allocations
+   * @param {AmountKeywordRecord} toGains - what should be gained in
+   * the 'to' allocation
+   * @param {AmountKeywordRecord} fromLosses - what should be lost in
+   * the 'from' allocation. If not defined, fromLosses is equal to
+   * toGains. Note that the total amounts should always be equal; it
+   * is the keywords that might be different.
+   * @returns {FromToAllocations} allocations - new allocations
+   *
+   * @typedef FromToAllocations
+   * @property {AmountKeywordRecord} from
+   * @property {AmountKeywordRecord} to
+   */
+  const calcNewAllocations = (allocations, toGains, fromLosses = undefined) => {
+    if (fromLosses === undefined) {
+      fromLosses = toGains;
+    }
+
+    const subtract = (amount, amountToSubtract) => {
+      const { brand } = amount;
+      const amountMath = zcf.getAmountMath(brand);
+      if (amountToSubtract !== undefined) {
+        return amountMath.subtract(amount, amountToSubtract);
+      }
+      return amount;
+    };
+
+    const add = (amount, amountToAdd) => {
+      if (amount && amountToAdd) {
+        const { brand } = amount;
+        const amountMath = zcf.getAmountMath(brand);
+        return amountMath.add(amount, amountToAdd);
+      }
+      return amount || amountToAdd;
+    };
+
+    const newFromAllocation = Object.fromEntries(
+      Object.entries(allocations.from).map(([keyword, allocAmount]) => {
+        return [keyword, subtract(allocAmount, fromLosses[keyword])];
+      }),
+    );
+
+    const allToKeywords = [
+      ...Object.keys(toGains),
+      ...Object.keys(allocations.to),
+    ];
+
+    const newToAllocation = Object.fromEntries(
+      allToKeywords.map(keyword => [
+        keyword,
+        add(allocations.to[keyword], toGains[keyword]),
+      ]),
+    );
+
+    return harden({
+      from: newFromAllocation,
+      to: newToAllocation,
+    });
+  };
+
+  const mergeAllocations = (currentAllocation, allocation) => {
+    const newAllocation = {
+      ...currentAllocation,
+      ...allocation,
+    };
+    return newAllocation;
+  };
+
   const helpers = harden({
     getKeys,
     assertKeywords: expected => {
@@ -88,38 +169,114 @@ export const makeZoeHelpers = (zcf) => {
     getActiveOffers: handles =>
       zcf.getOffers(zcf.getOfferStatuses(handles).active),
     rejectOffer,
+
     /**
-     * Compare two proposals for compatibility. This returns true
-     * if the left offer would accept whatever the right offer is offering,
-     * and vice versa.
-     *
-     * @param {OfferHandle} leftOfferHandle
-     * @param {OfferHandle} rightOfferHandle
-     * @returns boolean
-     *
+     * Check whether an update to currentAllocation satisfies
+     * proposal.want. Note that this is half of the offer safety
+     * check; whether the allocation constitutes a refund is not
+     * checked. Allocation is merged with currentAllocation
+     * (allocations' values prevailing if the keywords are the same)
+     * to produce the newAllocation.
+     * @param {OfferHandle} offerHandle
+     * @param {allocation} amountKeywordRecord
+     * @returns {boolean}
      */
-    canTradeWith: (leftOfferHandle, rightOfferHandle) => {
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
-      const keywords = getKeys(issuerKeywordRecord);
-      const amountMaths = zcf.getAmountMaths(keywords);
-      const { proposal: left } = zcf.getOffer(leftOfferHandle);
-      const { proposal: right } = zcf.getOffer(rightOfferHandle);
-      const satisfied = (want, give) =>
-        keywords.every(keyword => {
-          if (want[keyword]) {
-            return amountMaths[keyword].isGTE(give[keyword], want[keyword]);
-          }
-          return true;
-        });
-      return (
-        satisfied(left.want, right.give) && satisfied(right.want, left.give)
-      );
+    satisfies: (offerHandle, allocation) => {
+      const currentAllocation = zcf.getCurrentAllocation(offerHandle);
+      const newAllocation = mergeAllocations(currentAllocation, allocation);
+      const { proposal } = zcf.getOffer(offerHandle);
+      return satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
     },
+
+    /**
+     * Check whether an update to currentAllocation satisfies offer
+     * safety. Note that this is the equivalent of `satisfiesWant` ||
+     * `satisfiesGive`. Allocation is merged with currentAllocation
+     * (allocations' values prevailing if the keywords are the same)
+     * to produce the newAllocation.
+
+     * @param {OfferHandle} offerHandle
+     * @param {AmountKeywordRecord} allocation
+     * @returns {boolean}
+     */
+    isOfferSafe: (offerHandle, allocation) => {
+      const currentAllocation = zcf.getCurrentAllocation(offerHandle);
+      const newAllocation = mergeAllocations(currentAllocation, allocation);
+      const { proposal } = zcf.getOffer(offerHandle);
+      return isOfferSafe(zcf.getAmountMath, proposal, newAllocation);
+    },
+
+    /**
+     * Trade between left and right so that left and right end up with
+     * the declared gains.
+     * @param {offerHandleGainsLossesRecord} keepLeft
+     * @param {offerHandleGainsLossesRecord} tryRight
+     * @returns {undefined | Error}
+     *
+     * @typedef {object} offerHandleGainsLossesRecord
+     * @property {OfferHandle} offerHandle
+     * @property {AmountKeywordRecord} gains - what the offer will
+     * gain as a result of this trade
+     * @property {AmountKeywordRecord=} losses - what the offer will
+     * give up as a result of this trade. Losses is optional, but can
+     * only be omitted if the keywords for both offers are the same.
+     * If losses is not defined, the gains of the other offer is
+     * subtracted.
+     */
+    trade: (keepLeft, tryRight) => {
+      assert(
+        keepLeft.offerHandle !== tryRight.offerHandle,
+        details`an offer cannot trade with itself`,
+      );
+      let leftAllocation = zcf.getCurrentAllocation(keepLeft.offerHandle);
+      let rightAllocation = zcf.getCurrentAllocation(tryRight.offerHandle);
+
+      try {
+        // for all the keywords and amounts in leftGains, transfer from
+        // right to left
+        ({ from: rightAllocation, to: leftAllocation } = calcNewAllocations(
+          { from: rightAllocation, to: leftAllocation },
+          keepLeft.gains,
+          tryRight.losses,
+        ));
+        // For all the keywords and amounts in rightGains, transfer from
+        // left to right
+        ({ from: leftAllocation, to: rightAllocation } = calcNewAllocations(
+          { from: leftAllocation, to: rightAllocation },
+          tryRight.gains,
+          keepLeft.losses,
+        ));
+      } catch (err) {
+        return rejectOffer(tryRight.offerHandle);
+      }
+
+      // Check whether reallocate would error before calling. If
+      // it would error, reject the right offer and return.
+      const offerSafeForLeft = helpers.isOfferSafe(
+        keepLeft.offerHandle,
+        leftAllocation,
+      );
+      const offerSafeForRight = helpers.isOfferSafe(
+        tryRight.offerHandle,
+        rightAllocation,
+      );
+      if (!(offerSafeForLeft && offerSafeForRight)) {
+        return rejectOffer(tryRight.offerHandle);
+      }
+      zcf.reallocate(
+        [keepLeft.offerHandle, tryRight.offerHandle],
+        [leftAllocation, rightAllocation],
+      );
+      return undefined;
+    },
+
     /**
      * If the two handles can trade, then swap their compatible assets,
      * marking both offers as complete.
      *
-     * TODO: The surplus is dispatched according to some policy TBD.
+     * The surplus remains with the original offer. For example if
+     * offer A gives 5 moola and offer B only wants 3 moola, offer A
+     * retains 2 moola.
      *
      * If the keep offer is no longer active (it was already completed), the try
      * offer will be rejected with a message (provided by 'keepHandleInactiveMsg').
@@ -141,15 +298,19 @@ export const makeZoeHelpers = (zcf) => {
       if (!zcf.isOfferActive(keepHandle)) {
         throw helpers.rejectOffer(tryHandle, keepHandleInactiveMsg);
       }
-      if (!helpers.canTradeWith(keepHandle, tryHandle)) {
-        throw helpers.rejectOffer(tryHandle);
-      }
-      const keepAmounts = zcf.getCurrentAllocation(keepHandle);
-      const tryAmounts = zcf.getCurrentAllocation(tryHandle);
-      // reallocate by switching the amount
-      const handles = harden([keepHandle, tryHandle]);
-      zcf.reallocate(handles, harden([tryAmounts, keepAmounts]));
-      zcf.complete(handles);
+
+      helpers.trade(
+        {
+          offerHandle: keepHandle,
+          gains: zcf.getOffer(keepHandle).proposal.want,
+        },
+        {
+          offerHandle: tryHandle,
+          gains: zcf.getOffer(tryHandle).proposal.want,
+        },
+      );
+
+      zcf.complete([keepHandle, tryHandle]);
       return defaultAcceptanceMsg;
     },
 
@@ -176,20 +337,6 @@ export const makeZoeHelpers = (zcf) => {
       return offerHook(offerHandle);
     },
 
-    // TODO DEPRECATED `inviteAnOffer` is deprecated legacy. Remove when we can.
-    inviteAnOffer: ({
-      offerHook = () => {},
-      inviteDesc,
-      customProperties = undefined,
-      expected = undefined,
-    }) => {
-      return zcf.makeInvitation(
-        expected ? helpers.checkHook(offerHook, expected) : offerHook,
-        inviteDesc || customProperties.inviteDesc,
-        customProperties && harden({ customProperties }),
-      );
-    },
-
     /**
      * Return a Promise for an OfferHandle.
      *
@@ -199,7 +346,6 @@ export const makeZoeHelpers = (zcf) => {
      * to manage internal escrowed assets.
      *
      * @returns {Promise<OfferHandle>}
-     *
      */
     makeEmptyOffer: () =>
       new HandledPromise(resolve => {
@@ -209,6 +355,7 @@ export const makeZoeHelpers = (zcf) => {
         );
         zoeService.offer(invite);
       }),
+
     /**
      * Escrow a payment with Zoe and reallocate the amount of the
      * payment to a recipient.
@@ -217,16 +364,13 @@ export const makeZoeHelpers = (zcf) => {
      * @param {Amount} obj.amount
      * @param {Payment} obj.payment
      * @param {String} obj.keyword
-     * @param {Handle} obj.recipientHandle
+     * @param {OfferHandle} obj.recipientHandle
      * @returns {Promise<undefined>}
-     *
      */
     escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment
       // with Zoe.
       let tempHandle;
-
-      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
 
       // We need to make an invite and store the offerHandle of that
       // invite for future use.
@@ -236,8 +380,9 @@ export const makeZoeHelpers = (zcf) => {
       );
       // To escrow the payment, we must get the Zoe Service facet and
       // make an offer
-      const proposal = harden({ give: { [keyword]: amount } });
-      const payments = harden({ [keyword]: payment });
+      const proposal = harden({ give: { Temp: amount } });
+      const payments = harden({ Temp: payment });
+
       return zcf
         .getZoeService()
         .offer(contractSelfInvite, proposal, payments)
@@ -246,26 +391,17 @@ export const makeZoeHelpers = (zcf) => {
           // payment but nothing else. The recipient offer may have any
           // allocation, so we can't assume the allocation is currently empty for this
           // keyword.
-          const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
-            harden([recipientHandle, tempHandle]),
-            harden([keyword]),
-          );
 
-          // Add the tempAlloc for the keyword to the recipientAlloc.
-          recipientAlloc[keyword] = amountMath.add(
-            recipientAlloc[keyword],
-            tempAlloc[keyword],
-          );
-
-          // Set the temporary offer allocation to empty.
-          tempAlloc[keyword] = amountMath.getEmpty();
-
-          // Actually reallocate the amounts. Note that only the amounts
-          // for `keyword` are reallocated.
-          zcf.reallocate(
-            harden([tempHandle, recipientHandle]),
-            harden([tempAlloc, recipientAlloc]),
-            harden([keyword]),
+          helpers.trade(
+            {
+              offerHandle: tempHandle,
+              gains: {},
+              losses: { Temp: amount },
+            },
+            {
+              offerHandle: recipientHandle,
+              gains: { [keyword]: amount },
+            },
           );
 
           // Complete the temporary offerHandle
@@ -274,6 +410,17 @@ export const makeZoeHelpers = (zcf) => {
           // Now, the temporary offer no longer exists, but the recipient
           // offer is allocated the value of the payment.
         });
+    },
+    /*
+     * Given a brand, assert that the mathHelpers for that issuer
+     * are 'nat' mathHelpers
+     */
+    assertNatMathHelpers: brand => {
+      const amountMath = zcf.getAmountMath(brand);
+      assert(
+        amountMath.getMathHelpersName() === 'nat',
+        details`issuer must have natMathHelpers`,
+      );
     },
   });
   return helpers;

@@ -10,6 +10,8 @@ import publicAuctionBundle from './bundle-publicAuction';
 import atomicSwapBundle from './bundle-atomicSwap';
 import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
+import sellItemsBundle from './bundle-sellItems';
+import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
 /* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
@@ -97,6 +99,8 @@ function build(E, log) {
         atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
         simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
         autoswap: await E(zoe).install(autoswapBundle.bundle),
+        sellItems: await E(zoe).install(sellItemsBundle.bundle),
+        mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
       };
 
       const [testName, startingExtents] = argv;

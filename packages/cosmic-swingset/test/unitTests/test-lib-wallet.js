@@ -2,22 +2,19 @@ import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import produceIssuer from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import { makeRegistrar } from '@agoric/registrar';
 import harden from '@agoric/harden';
-import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 
+import { E } from '@agoric/eventual-send';
 import { makeWallet } from '../../lib/ag-solo/vats/lib-wallet';
 import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
 import { makeMailboxAdmin } from '../../lib/ag-solo/vats/lib-mailbox';
 
 const setupTest = async () => {
-  const contractRoot = require.resolve(
-    '@agoric/zoe/src/contracts/automaticRefund',
-  );
-  const bundle = await bundleSource(contractRoot);
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
   const pursesStateChangeHandler = data => {
@@ -28,25 +25,50 @@ const setupTest = async () => {
   };
 
   const moolaBundle = produceIssuer('moola');
+  const simoleanBundle = produceIssuer('simolean');
   const rpgBundle = produceIssuer('rpg', 'strSet');
   const zoe = makeZoe();
   const registry = makeRegistrar();
   const board = makeBoard();
   const mailboxAdmin = makeMailboxAdmin(board);
 
-  const installationHandle = await zoe.install(bundle);
-
-  const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
-  const invite = await zoe.makeInstance(
-    installationHandle,
-    issuerKeywordRecord,
+  // Create AutomaticRefund instance
+  const automaticRefundContractRoot = require.resolve(
+    '@agoric/zoe/src/contracts/automaticRefund',
   );
-  const inviteIssuer = zoe.getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
-  const instanceHandle = getInstanceHandle(invite);
+  const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
+  const installationHandle = await zoe.install(automaticRefundBundle);
+  const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
+  const {
+    invite,
+    instanceRecord: { handle: instanceHandle },
+  } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
   const instanceRegKey = registry.register(
     'automaticRefundInstanceHandle',
     instanceHandle,
+  );
+
+  // Create Autoswap instance
+  const autoswapContractRoot = require.resolve(
+    '@agoric/zoe/src/contracts/autoswap',
+  );
+  const autoswapBundle = await bundleSource(autoswapContractRoot);
+  const autoswapInstallationHandle = await zoe.install(autoswapBundle);
+  const autoswapIssuerKeywordRecord = harden({
+    TokenA: moolaBundle.issuer,
+    TokenB: simoleanBundle.issuer,
+  });
+  const {
+    invite: addLiquidityInvite,
+    instanceRecord: { handle: autoswapInstanceHandle },
+  } = await zoe.makeInstance(
+    autoswapInstallationHandle,
+    autoswapIssuerKeywordRecord,
+  );
+
+  const autoswapInstanceRegKey = registry.register(
+    'autoswapInstanceHandle',
+    autoswapInstanceHandle,
   );
 
   const wallet = await makeWallet({
@@ -59,6 +81,7 @@ const setupTest = async () => {
   });
   return {
     moolaBundle,
+    simoleanBundle,
     rpgBundle,
     zoe,
     registry,
@@ -66,9 +89,11 @@ const setupTest = async () => {
     board,
     wallet,
     invite,
+    addLiquidityInvite,
     installationHandle,
     instanceHandle,
     instanceRegKey,
+    autoswapInstanceRegKey,
     pursesStateChangeLog,
     inboxStateChangeLog,
   };
@@ -214,7 +239,7 @@ test('lib-wallet offer methods', async t => {
                 pursePetname: 'Fun budget',
                 extent: 1,
                 issuerPetname: 'moola',
-                brandRegKey: 'moolabrand_2059',
+                brandRegKey: 'moolabrand_9794',
               },
             },
             exit: { onDemand: null },
@@ -248,10 +273,10 @@ test('lib-wallet offer methods', async t => {
     t.deepEquals(
       pursesStateChangeLog,
       [
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":99,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":99}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":99}}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_2059","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":99,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":99}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":99}}]',
+        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
       ],
       `purses state change log`,
     );
@@ -259,16 +284,163 @@ test('lib-wallet offer methods', async t => {
       inboxStateChangeLog,
       [
         '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"pending"}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_2059"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"decline"}]',
+        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
+        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"pending"}]',
+        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"}]',
+        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
+        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
+        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"decline"}]',
       ],
       `inbox state change log`,
     );
     // TODO: test cancelOffer with a contract that holds offers, like simpleExchange
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('lib-wallet addOffer for autoswap swap', async t => {
+  try {
+    const {
+      zoe,
+      moolaBundle,
+      simoleanBundle,
+      wallet,
+      autoswapInstanceRegKey,
+      addLiquidityInvite,
+      registry,
+    } = await setupTest();
+
+    const moolaBrandRegKey = registry.register('moolaBrand', moolaBundle.brand);
+    await wallet.addIssuer('moola', moolaBundle.issuer, moolaBrandRegKey);
+    await wallet.makeEmptyPurse('moola', 'Fun budget');
+    await wallet.deposit(
+      'Fun budget',
+      moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
+    );
+
+    const simoleanBrandRegKey = registry.register(
+      'simoleanBrand',
+      simoleanBundle.brand,
+    );
+    await wallet.addIssuer(
+      'simolean',
+      simoleanBundle.issuer,
+      simoleanBrandRegKey,
+    );
+    await wallet.makeEmptyPurse('simolean', 'Nest egg');
+    await wallet.deposit(
+      'Nest egg',
+      simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
+    );
+
+    const instanceHandle = await E(registry).get(autoswapInstanceRegKey);
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+
+    const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+
+    const getLocalAmountMath = issuer =>
+      Promise.all([
+        E(issuer).getBrand(),
+        E(issuer).getMathHelpersName(),
+      ]).then(([brand, mathHelpersName]) =>
+        makeAmountMath(brand, mathHelpersName),
+      );
+    const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
+
+    // Let's add liquidity using our wallet and the addLiquidityInvite
+    // we have.
+    const proposal = harden({
+      give: {
+        TokenA: moolaBundle.amountMath.make(900),
+        TokenB: simoleanBundle.amountMath.make(500),
+      },
+      want: {
+        Liquidity: liquidityAmountMath.getEmpty(),
+      },
+    });
+
+    const pursesArray = await E(wallet).getPurses();
+    const purses = new Map(pursesArray);
+
+    const moolaPurse = purses.get('Fun budget');
+    const simoleanPurse = purses.get('Nest egg');
+
+    const moolaPayment = await E(moolaPurse).withdraw(proposal.give.TokenA);
+    const simoleanPayment = await E(simoleanPurse).withdraw(
+      proposal.give.TokenB,
+    );
+
+    const payments = harden({
+      TokenA: moolaPayment,
+      TokenB: simoleanPayment,
+    });
+    const { outcome: addLiqOutcome } = await E(zoe).offer(
+      addLiquidityInvite,
+      proposal,
+      payments,
+    );
+    await addLiqOutcome;
+
+    const rawId = '1593482020370';
+    const id = `unknown#${rawId}`;
+
+    const offer = {
+      id: rawId,
+      instanceRegKey: autoswapInstanceRegKey,
+      hooks: {
+        publicAPI: {
+          getInvite: ['makeSwapInvite'],
+        },
+      },
+      proposalTemplate: {
+        give: {
+          In: {
+            pursePetname: 'Fun budget',
+            extent: 30,
+          },
+        },
+        want: {
+          Out: {
+            pursePetname: 'Nest egg',
+            extent: 1,
+          },
+        },
+        exit: {
+          onDemand: null,
+        },
+      },
+    };
+
+    const hooks = wallet.hydrateHooks(offer.hooks);
+    await wallet.addOffer(offer, hooks);
+
+    const { outcome, depositedP } = await wallet.acceptOffer(id);
+    t.equals(
+      await outcome,
+      'Swap successfully completed.',
+      `offer was accepted`,
+    );
+    await depositedP;
+    const offerHandles = wallet.getOfferHandles(harden([id]));
+    const offerHandle = wallet.getOfferHandle(id);
+    t.equals(
+      offerHandle,
+      offerHandles[0],
+      `both getOfferHandle(s) methods work`,
+    );
+    t.deepEquals(
+      await moolaPurse.getCurrentAmount(),
+      moolaBundle.amountMath.make(70),
+      `moola purse balance`,
+    );
+    t.deepEquals(
+      await simoleanPurse.getCurrentAmount(),
+      simoleanBundle.amountMath.make(516),
+      `simolean purse balance`,
+    );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {

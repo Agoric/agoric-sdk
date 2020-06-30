@@ -9,629 +9,562 @@ import { makeTable, makeValidateProperties } from '../table';
 import { assertKeywordName } from '../cleanProposal';
 import {
   makeZoeHelpers,
-  getCurrentPrice,
+  getInputPrice,
   calcLiqExtentToMint,
   calcExtentToRemove,
 } from '../contractSupport';
+import { filterObj } from '../objArrayConversion';
 
 /**
- * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * Autoswap is a rewrite of Uniswap. Please see the documentation for more
+ * https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
+ *
+ * We expect that this contract will have tens to hundreds of issuers.
+ * Each liquidity pool is between the central token and a secondary
+ * token. Secondary tokens can be exchanged with each other, but only
+ * through the central token. For example, if X and Y are two token
+ * types and C is the central token, a swap giving X and wanting Y
+ * would first use the pool (X, C) then the pool (Y, C). There are no
+ * liquidity pools between two secondary tokens.
+ *
+ * There should only need to be one instance of this contract, so liquidity can
+ * be shared as much as possible.
+ *
+ * When the contract is instantiated, the central token is specified in the
+ * issuerKeywordRecord. The party that calls makeInstance gets an invitation
+ * that can be used to request an invitation to add liquidity. The same
+ * invitation is available by calling `publicAPI.getLiquidityIssuer(brand)`.
+ * Separate invitations are available for adding and removing liquidity, and for
+ * making trades. Other API operations support monitoring prices and the sizes
+ * of pools.
+ *
  * @typedef {import('@agoric/ertp/src/issuer').Amount} Amount
+ * @typedef {import('@agoric/ertp/src/issuer').Brand} Brand
  * @typedef {import('../zoe').AmountKeywordRecords} AmountKeywordRecords
+ * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * @param {ContractFacet} zcf
  */
+const makeContract = zcf => {
+  // This contract must have a "central token" issuer in the terms.
+  const CENTRAL_TOKEN = 'CentralToken';
 
-// Autoswap is a rewrite of Uniswap. Please see the documentation for more
-// https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
+  const getCentralTokenBrand = () => {
+    const { brandKeywordRecord } = zcf.getInstanceRecord();
+    assert(
+      brandKeywordRecord.CentralToken !== undefined,
+      details`centralTokenBrand must be present`,
+    );
+    return brandKeywordRecord.CentralToken;
+  };
+  const centralTokenBrand = getCentralTokenBrand();
 
-// We expect that this contract will have tens to hundreds of issuers.
-// Each liquidity pool is between the central token and a secondary
-// token. Secondary tokens can be exchanged with each other, but only
-// through the central token. For example, if X and Y are two token
-// types and C is the central token, a swap giving X and wanting Y
-// would first use the pool (X, C) then the pool (Y, C). There are no
-// liquidity pools between two secondary tokens.
+  const {
+    trade,
+    rejectOffer,
+    makeEmptyOffer,
+    checkHook,
+    assertKeywords,
+    escrowAndAllocateTo,
+    assertNatMathHelpers,
+  } = makeZoeHelpers(zcf);
 
-export const makeContract = harden(
-  /** @param {ContractFacet} zcf */ zcf => {
-    // This contract must have a "central token" issuer in the terms.
-    const CENTRAL_TOKEN = 'CentralToken';
+  // There must be one keyword at the start, which is equal to the
+  // value of CENTRAL_TOKEN
+  assertKeywords([CENTRAL_TOKEN]);
 
-    const getCentralTokenBrand = () => {
-      const {
-        terms: { CentralToken: centralTokenIssuer },
-      } = zcf.getInstanceRecord();
-      const { brand: centralTokenBrand } = zcf.getIssuerRecord(
-        centralTokenIssuer,
+  // We need to be able to retrieve information about the liquidity
+  // pools by tokenBrand. Key: tokenBrand Columns: poolHandle,
+  // tokenIssuer, liquidityMint, liquidityIssuer, tokenKeyword,
+  // liquidityKeyword, liquidityTokenSupply
+  const liquidityTable = makeTable(
+    makeValidateProperties(
+      harden([
+        'poolHandle',
+        'tokenIssuer',
+        'tokenBrand',
+        'liquidityMint',
+        'liquidityIssuer',
+        'liquidityBrand',
+        'tokenKeyword',
+        'liquidityKeyword',
+        'liquidityTokenSupply',
+      ]),
+    ),
+  );
+
+  // Allows users to add new liquidity pools. `newTokenIssuer` and
+  // `newTokenKeyword` must not have been already used
+  const addPool = (newTokenIssuer, newTokenKeyword) => {
+    assertKeywordName(newTokenKeyword);
+    const { brandKeywordRecord } = zcf.getInstanceRecord();
+    const keywords = Object.keys(brandKeywordRecord);
+    const brands = Object.values(brandKeywordRecord);
+    assert(
+      !keywords.includes(newTokenKeyword),
+      details`newTokenKeyword must be unique`,
+    );
+    // TODO: handle newTokenIssuer as a potential promise
+    assert(
+      !brands.includes(newTokenIssuer.brand),
+      details`newTokenIssuer must not be already present`,
+    );
+    const newLiquidityKeyword = `${newTokenKeyword}Liquidity`;
+    assert(
+      !keywords.includes(newLiquidityKeyword),
+      details`newLiquidityKeyword must be unique`,
+    );
+    const {
+      mint: liquidityMint,
+      issuer: liquidityIssuer,
+      brand: liquidityBrand,
+    } = produceIssuer(newLiquidityKeyword);
+    return Promise.all([
+      zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
+      makeEmptyOffer(),
+      zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
+    ]).then(([newTokenIssuerRecord, poolHandle]) => {
+      // The final element of the above array is intentionally
+      // ignored, since we already have the liquidityIssuer and mint.
+      assertNatMathHelpers(newTokenIssuerRecord.brand);
+      liquidityTable.create(
+        harden({
+          poolHandle,
+          tokenIssuer: newTokenIssuer,
+          tokenBrand: newTokenIssuerRecord.brand,
+          liquidityMint,
+          liquidityIssuer,
+          liquidityBrand,
+          tokenKeyword: newTokenKeyword,
+          liquidityKeyword: newLiquidityKeyword,
+          liquidityTokenSupply: 0,
+        }),
+        newTokenIssuerRecord.brand,
       );
-      assert(
-        centralTokenBrand !== undefined,
-        details`centralTokenBrand must be present`,
-      );
-      return centralTokenBrand;
-    };
-    const centralTokenBrand = getCentralTokenBrand();
+      return `liquidity pool for ${newTokenKeyword} added`;
+    });
+  };
+
+  // The secondary token brand is used as the key of liquidityTable
+  // rows, and we use it to look up the pool allocation. We only
+  // return the keywords for the secondary token, the central token,
+  // and the associated liquidity token.
+  const getPoolAllocation = tokenBrand => {
+    const { poolHandle, tokenKeyword, liquidityKeyword } = liquidityTable.get(
+      tokenBrand,
+    );
+
+    const brandKeywordRecord = filterObj(
+      zcf.getInstanceRecord().brandKeywordRecord,
+      [tokenKeyword, CENTRAL_TOKEN, liquidityKeyword],
+    );
+
+    return zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
+  };
+
+  const findSecondaryTokenBrand = ({
+    brandIn,
+    brandOut,
+    offerHandleToReject,
+  }) => {
+    if (liquidityTable.has(brandIn)) {
+      return brandIn;
+    }
+    if (liquidityTable.has(brandOut)) {
+      return brandOut;
+    }
+    // We couldn't find either so throw. Reject the offer if
+    // offerHandleToReject is defined.
+    const msg = `No secondary token was found`;
+    if (offerHandleToReject !== undefined) {
+      rejectOffer(offerHandleToReject, msg);
+    }
+    throw new Error(msg);
+  };
+
+  const getPoolKeyword = brandToMatch => {
+    if (brandToMatch === centralTokenBrand) {
+      return CENTRAL_TOKEN;
+    }
+    if (!liquidityTable.has(brandToMatch)) {
+      throw new Error('getPoolKeyword: brand not found');
+    }
+    const { tokenKeyword } = liquidityTable.get(brandToMatch);
+    return tokenKeyword;
+  };
+
+  const getPoolAmount = (poolAllocation, desiredBrand) => {
+    const keyword = getPoolKeyword(desiredBrand);
+    return poolAllocation[keyword];
+  };
+
+  const doGetCurrentPrice = ({ amountIn, brandOut }) => {
+    const brandIn = amountIn.brand;
+    const secondaryTokenBrand = findSecondaryTokenBrand({
+      brandIn,
+      brandOut,
+    });
+    const poolAllocation = getPoolAllocation(secondaryTokenBrand);
+    const outputExtent = getInputPrice({
+      inputExtent: amountIn.extent,
+      inputReserve: getPoolAmount(poolAllocation, brandIn).extent,
+      outputReserve: getPoolAmount(poolAllocation, brandOut).extent,
+    });
+    return zcf.getAmountMath(brandOut).make(outputExtent);
+  };
+
+  const rejectIfNotTokenBrand = (inviteHandle, brand) => {
+    if (!liquidityTable.has(brand)) {
+      rejectOffer(inviteHandle, `brand ${brand} was not recognized`);
+    }
+  };
+
+  const addLiquidityExpected = harden({
+    give: {
+      CentralToken: null,
+      SecondaryToken: null,
+    },
+    want: { Liquidity: null },
+  });
+
+  const addLiquidityHook = offerHandle => {
+    // Get the brand of the secondary token so we can identify the liquidity pool.
+    const {
+      proposal: {
+        give: {
+          SecondaryToken: { brand: secondaryTokenBrand },
+        },
+      },
+    } = zcf.getOffer(offerHandle);
 
     const {
-      rejectOffer,
-      makeEmptyOffer,
-      rejectIfNotProposal,
-      assertKeywords,
-      getKeys,
-      escrowAndAllocateTo,
-    } = makeZoeHelpers(zcf);
+      tokenKeyword,
+      liquidityBrand,
+      liquidityTokenSupply,
+      liquidityMint,
+      poolHandle,
+    } = liquidityTable.get(secondaryTokenBrand);
 
-    // There must be one keyword at the start, which is equal to the
-    // value of CENTRAL_TOKEN
-    assertKeywords([CENTRAL_TOKEN]);
+    const userAllocation = zcf.getCurrentAllocation(offerHandle);
+    const poolAllocation = getPoolAllocation(secondaryTokenBrand);
 
-    // We need to be able to retrieve information about the liquidity
-    // pools by tokenBrand. Key: tokenBrand Columns: poolHandle,
-    // tokenIssuer, liquidityMint, liquidityIssuer, tokenKeyword,
-    // liquidityKeyword, liquidityTokenSupply
-    const liquidityTable = makeTable(
-      makeValidateProperties(
-        harden([
-          'poolHandle',
-          'tokenIssuer',
-          'liquidityMint',
-          'liquidityIssuer',
-          'tokenKeyword',
-          'liquidityKeyword',
-          'liquidityTokenSupply',
-        ]),
+    // Calculate how many liquidity tokens we should be minting.
+    const liquidityExtentOut = calcLiqExtentToMint(
+      harden({
+        liqTokenSupply: liquidityTokenSupply,
+        inputExtent: userAllocation.CentralToken.extent,
+        inputReserve: poolAllocation.CentralToken.extent,
+      }),
+    );
+
+    const liquidityAmountOut = zcf
+      .getAmountMath(liquidityBrand)
+      .make(liquidityExtentOut);
+
+    const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
+
+    // We update the liquidityTokenSupply before the next turn
+    liquidityTable.update(secondaryTokenBrand, {
+      liquidityTokenSupply: liquidityTokenSupply + liquidityExtentOut,
+    });
+
+    // The contract needs to escrow the liquidity payment with Zoe
+    // to eventually payout to the user
+    return escrowAndAllocateTo({
+      amount: liquidityAmountOut,
+      payment: liquidityPaymentP,
+      keyword: 'Liquidity',
+      recipientHandle: offerHandle,
+    }).then(() => {
+      trade(
+        {
+          offerHandle: poolHandle,
+          gains: {
+            CentralToken: userAllocation.CentralToken,
+            [tokenKeyword]: userAllocation.SecondaryToken,
+          },
+        },
+        // We reallocated liquidity in the call to
+        // escrowAndAllocateTo.
+        { offerHandle, gains: {}, losses: userAllocation },
+      );
+
+      zcf.complete(harden([offerHandle]));
+      return 'Added liquidity.';
+    });
+  };
+
+  const removeLiquidityExpected = harden({
+    want: {
+      CentralToken: null,
+      SecondaryToken: null,
+    },
+    give: {
+      Liquidity: null,
+    },
+  });
+
+  const removeLiquidityHook = offerHandle => {
+    // Get the brand of the secondary token so we can identify the liquidity pool.
+    const {
+      proposal: {
+        want: {
+          SecondaryToken: { brand: secondaryTokenBrand },
+        },
+      },
+    } = zcf.getOffer(offerHandle);
+
+    const {
+      tokenKeyword,
+      liquidityKeyword,
+      liquidityTokenSupply,
+      poolHandle,
+    } = liquidityTable.get(secondaryTokenBrand);
+
+    const userAllocation = zcf.getCurrentAllocation(offerHandle);
+    const poolAllocation = getPoolAllocation(secondaryTokenBrand);
+    const liquidityExtentIn = userAllocation.Liquidity.extent;
+
+    const centralTokenAmountOut = zcf.getAmountMath(centralTokenBrand).make(
+      calcExtentToRemove(
+        harden({
+          liqTokenSupply: liquidityTokenSupply,
+          poolExtent: poolAllocation[CENTRAL_TOKEN].extent,
+          liquidityExtentIn,
+        }),
       ),
     );
 
-    // Allows users to add new liquidity pools. `newTokenIssuer` and
-    // `newTokenKeyword` must not have been already used
-    const addPool = (newTokenIssuer, newTokenKeyword) => {
-      assertKeywordName(newTokenKeyword);
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
-      const keywords = Object.keys(issuerKeywordRecord);
-      const issuers = Object.values(issuerKeywordRecord);
-      assert(
-        !keywords.includes(newTokenKeyword),
-        details`newTokenKeyword must be unique`,
-      );
-      // TODO: handle newTokenIssuer as a potential promise
-      assert(
-        !issuers.includes(newTokenIssuer),
-        details`newTokenIssuer must not be already present`,
-      );
-      const newLiquidityKeyword = `${newTokenKeyword}Liquidity`;
-      assert(
-        !keywords.includes(newLiquidityKeyword),
-        details`newLiquidityKeyword must be unique`,
-      );
-      const { mint: liquidityMint, issuer: liquidityIssuer } = produceIssuer(
-        newLiquidityKeyword,
-      );
-      return Promise.all([
-        zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
-        makeEmptyOffer(),
-        zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
-      ]).then(([newTokenIssuerRecord, poolHandle]) => {
-        // The third element of the above array is intentionally
-        // ignored, since we already have the liquidityIssuer and mint.
-        const amountMaths = zcf.getAmountMaths(harden([newTokenKeyword]));
-        assert(
-          amountMaths[newTokenKeyword].getMathHelpersName() === 'nat',
-          details`tokenIssuer must have natMathHelpers`,
-        );
-        liquidityTable.create(
-          harden({
-            poolHandle,
-            tokenIssuer: newTokenIssuer,
-            liquidityMint,
-            liquidityIssuer,
-            tokenKeyword: newTokenKeyword,
-            liquidityKeyword: newLiquidityKeyword,
-            liquidityTokenSupply: 0,
-          }),
-          newTokenIssuerRecord.brand,
-        );
-        return `liquidity pool for ${newTokenKeyword} added`;
-      });
-    };
-
-    // The secondary token brand is used as the key of liquidityTable
-    // rows, and we use it to look up the pool allocation. We only
-    // return the keywords for the secondary token, the central token,
-    // and the associated liquidity token.
-    const getPoolAllocation = tokenBrand => {
-      const { poolHandle, tokenKeyword, liquidityKeyword } = liquidityTable.get(
-        tokenBrand,
-      );
-      return zcf.getCurrentAllocation(
-        poolHandle,
-        harden([tokenKeyword, CENTRAL_TOKEN, liquidityKeyword]),
-      );
-    };
-
-    const doGetCurrentPrice = ({
-      amountIn,
-      keywordIn,
-      keywordOut,
-      secondaryBrand,
-    }) => {
-      const poolAmounts = getPoolAllocation(secondaryBrand);
-      const { outputExtent } = getCurrentPrice(
-        harden({
-          inputExtent: amountIn.extent,
-          inputReserve: poolAmounts[keywordIn].extent,
-          outputReserve: poolAmounts[keywordOut].extent,
-        }),
-      );
-      const amountMaths = zcf.getAmountMaths(harden([keywordOut]));
-      return amountMaths[keywordOut].make(outputExtent);
-    };
-
-    const doSwap = ({
-      userAllocation,
-      keywordIn,
-      keywordOut,
-      secondaryBrand,
-    }) => {
-      const { poolHandle } = liquidityTable.get(secondaryBrand);
-      const poolAllocation = getPoolAllocation(secondaryBrand);
-      const {
-        outputExtent,
-        newInputReserve,
-        newOutputReserve,
-      } = getCurrentPrice(
-        harden({
-          inputExtent: userAllocation[keywordIn].extent,
-          inputReserve: poolAllocation[keywordIn].extent,
-          outputReserve: poolAllocation[keywordOut].extent,
-        }),
-      );
-      const amountMaths = zcf.getAmountMaths([keywordIn, keywordOut]);
-      const amountOut = amountMaths[keywordOut].make(outputExtent);
-
-      const newUserAmounts = harden({
-        [keywordIn]: amountMaths[keywordIn].getEmpty(),
-        [keywordOut]: amountOut,
-      });
-
-      const newPoolAmounts = harden({
-        [keywordIn]: amountMaths[keywordIn].make(newInputReserve),
-        [keywordOut]: amountMaths[keywordOut].make(newOutputReserve),
-      });
-
-      return harden({ poolHandle, newUserAmounts, newPoolAmounts });
-    };
-
-    const getSecondaryBrand = ({ offerHandle, isAddLiquidity }) => {
-      const { proposal } = zcf.getOffer(offerHandle);
-      const key = isAddLiquidity ? 'give' : 'want';
-      const {
-        // eslint-disable-next-line no-unused-vars
-        [key]: { [CENTRAL_TOKEN]: centralAmount, ...tokenAmountKeywordRecord },
-      } = proposal;
-      const values = Object.values(tokenAmountKeywordRecord);
-      if (values.length !== 1) {
-        rejectOffer(offerHandle, `only one secondary brand should be present`);
-      }
-      return values[0].brand;
-    };
-
-    const makeAdd = amountMaths => (key, obj1, obj2) =>
-      amountMaths[key].add(obj1[key], obj2[key]);
-
-    const makeSubtract = amountMaths => (key, obj1, obj2) =>
-      amountMaths[key].subtract(obj1[key], obj2[key]);
-
-    const makeGetAllEmpty = amountMaths => keywords => {
-      const newObj = {};
-      keywords.forEach(
-        keyword => (newObj[keyword] = amountMaths[keyword].getEmpty()),
-      );
-      // intentionally not hardened
-      return newObj;
-    };
-
-    const rejectIfNotTokenBrand = (inviteHandle, brand) => {
-      if (!liquidityTable.has(brand)) {
-        rejectOffer(inviteHandle, `brand ${brand} was not recognized`);
-      }
-    };
-
-    const addLiquidityHook = offerHandle => {
-      // Get the brand of the secondary token so we can identify the liquidity pool.
-      const secondaryTokenBrand = getSecondaryBrand(
-        harden({
-          offerHandle,
-          isAddLiquidity: true,
-        }),
-      );
-
-      const {
-        tokenKeyword,
-        liquidityKeyword,
-        liquidityTokenSupply,
-        liquidityMint,
-        poolHandle,
-      } = liquidityTable.get(secondaryTokenBrand);
-
-      // These are the keywords that will be used several times within this method
-      const liquidityKeys = harden([
-        CENTRAL_TOKEN,
-        tokenKeyword,
-        liquidityKeyword,
-      ]);
-
-      const expected = harden({
-        give: {
-          [CENTRAL_TOKEN]: null,
-          [tokenKeyword]: null,
-        },
-        want: { [liquidityKeyword]: null },
-      });
-      rejectIfNotProposal(offerHandle, expected);
-
-      const userAmounts = zcf.getCurrentAllocation(offerHandle, liquidityKeys);
-      const poolAmounts = getPoolAllocation(secondaryTokenBrand);
-
-      // Calculate how many liquidity tokens we should be minting.
-      const liquidityExtentOut = calcLiqExtentToMint(
+    const tokenKeywordAmountOut = zcf.getAmountMath(secondaryTokenBrand).make(
+      calcExtentToRemove(
         harden({
           liqTokenSupply: liquidityTokenSupply,
-          inputExtent: userAmounts[CENTRAL_TOKEN].extent,
-          inputReserve: poolAmounts[CENTRAL_TOKEN].extent,
+          poolExtent: poolAllocation[tokenKeyword].extent,
+          liquidityExtentIn,
+        }),
+      ),
+    );
+
+    liquidityTable.update(secondaryTokenBrand, {
+      liquidityTokenSupply: liquidityTokenSupply - liquidityExtentIn,
+    });
+
+    trade(
+      {
+        offerHandle: poolHandle,
+        gains: { [liquidityKeyword]: userAllocation.Liquidity },
+        losses: {
+          CentralToken: centralTokenAmountOut,
+          [tokenKeyword]: tokenKeywordAmountOut,
+        },
+      },
+      {
+        offerHandle,
+        gains: {
+          CentralToken: centralTokenAmountOut,
+          SecondaryToken: tokenKeywordAmountOut,
+        },
+        losses: {
+          Liquidity: userAllocation.Liquidity,
+        },
+      },
+    );
+
+    zcf.complete(harden([offerHandle]));
+    return 'Liquidity successfully removed.';
+  };
+
+  const swapExpected = harden({
+    give: {
+      In: null,
+    },
+    want: {
+      Out: null,
+    },
+  });
+
+  const swapHook = offerHandle => {
+    const {
+      give: { In: amountIn },
+      want: { Out: wantedAmountOut },
+    } = zcf.getOffer(offerHandle).proposal;
+    const brandIn = amountIn.brand;
+    const brandOut = wantedAmountOut.brand;
+
+    // we could be swapping (1) secondary to secondary, (2) central
+    // to secondary, or (3) secondary to central.
+
+    // 1) secondary to secondary
+    if (liquidityTable.has(brandIn) && liquidityTable.has(brandOut)) {
+      rejectIfNotTokenBrand(offerHandle, brandIn);
+      rejectIfNotTokenBrand(offerHandle, brandOut);
+
+      const centralTokenAmount = doGetCurrentPrice(
+        harden({
+          amountIn,
+          brandOut: centralTokenBrand,
         }),
       );
-      const amountMaths = zcf.getAmountMaths(liquidityKeys);
-
-      const liquidityAmountOut = amountMaths[liquidityKeyword].make(
-        liquidityExtentOut,
+      const amountOut = doGetCurrentPrice(
+        harden({
+          amountIn: centralTokenAmount,
+          brandOut,
+        }),
       );
 
-      const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
-
-      // We update the liquidityTokenSupply before the next turn
-      liquidityTable.update(secondaryTokenBrand, {
-        liquidityTokenSupply: liquidityTokenSupply + liquidityExtentOut,
+      const brandInAmountMath = zcf.getAmountMath(brandIn);
+      const finalUserAmounts = harden({
+        In: brandInAmountMath.getEmpty(),
+        Out: amountOut,
       });
 
-      // The contract needs to escrow the liquidity payment with Zoe
-      // to eventually pay as a payout to the user
-      return escrowAndAllocateTo({
-        amount: liquidityAmountOut,
-        payment: liquidityPaymentP,
-        keyword: liquidityKeyword,
-        recipientHandle: offerHandle,
-      }).then(() => {
-        const add = makeAdd(amountMaths);
-        const getAllEmpty = makeGetAllEmpty(amountMaths);
-        const newPoolAmounts = harden({
-          [CENTRAL_TOKEN]: add(CENTRAL_TOKEN, userAmounts, poolAmounts),
-          [tokenKeyword]: add(tokenKeyword, userAmounts, poolAmounts),
-          [liquidityKeyword]: poolAmounts[liquidityKeyword],
-        });
-
-        const newUserAmounts = getAllEmpty(liquidityKeys);
-        newUserAmounts[liquidityKeyword] = liquidityAmountOut;
-
-        zcf.reallocate(
-          harden([offerHandle, poolHandle]),
-          harden([newUserAmounts, newPoolAmounts]),
-          liquidityKeys,
-        );
-        zcf.complete(harden([offerHandle]));
-        return 'Added liquidity.';
-      });
-    };
-
-    const removeLiquidityHook = offerHandle => {
-      const secondaryTokenBrand = getSecondaryBrand(
-        harden({ offerHandle, isAddLiquidity: false }),
-      );
-
-      const {
-        tokenKeyword,
-        liquidityKeyword,
-        liquidityTokenSupply,
-        poolHandle,
-      } = liquidityTable.get(secondaryTokenBrand);
-
-      const expected = harden({
-        want: { [CENTRAL_TOKEN]: null, [tokenKeyword]: null },
-        give: { [liquidityKeyword]: null },
-      });
-      rejectIfNotProposal(offerHandle, expected);
-
-      const liquidityKeys = harden([
-        CENTRAL_TOKEN,
-        tokenKeyword,
-        liquidityKeyword,
-      ]);
-
-      const userAllocation = zcf.getCurrentAllocation(
-        offerHandle,
-        liquidityKeys,
-      );
-      const poolAllocation = getPoolAllocation(secondaryTokenBrand);
-      const liquidityExtentIn = userAllocation[liquidityKeyword].extent;
-
-      const amountMaths = zcf.getAmountMaths(liquidityKeys);
-
-      const subtract = makeSubtract(amountMaths);
-
-      const newUserAmounts = harden({
-        [CENTRAL_TOKEN]: amountMaths[CENTRAL_TOKEN].make(
-          calcExtentToRemove(
-            harden({
-              liqTokenSupply: liquidityTokenSupply,
-              poolExtent: poolAllocation[CENTRAL_TOKEN].extent,
-              liquidityExtentIn,
-            }),
-          ),
+      const { poolHandle: poolHandleA } = liquidityTable.get(brandIn);
+      const poolAllocationA = zcf.getCurrentAllocation(poolHandleA);
+      const poolKeywordBrandIn = getPoolKeyword(brandIn);
+      const centralTokenAmountMath = zcf.getAmountMath(centralTokenBrand);
+      const finalPoolAmountsA = {
+        [poolKeywordBrandIn]: brandInAmountMath.add(
+          poolAllocationA[poolKeywordBrandIn],
+          amountIn,
         ),
-        [tokenKeyword]: amountMaths[tokenKeyword].make(
-          calcExtentToRemove(
-            harden({
-              liqTokenSupply: liquidityTokenSupply,
-              poolExtent: poolAllocation[tokenKeyword].extent,
-              liquidityExtentIn,
-            }),
-          ),
+        CentralToken: centralTokenAmountMath.subtract(
+          poolAllocationA.CentralToken,
+          centralTokenAmount,
         ),
-        [liquidityKeyword]: amountMaths[liquidityKeyword].getEmpty(),
-      });
-
-      const newPoolAmounts = harden({
-        [CENTRAL_TOKEN]: subtract(
-          CENTRAL_TOKEN,
-          poolAllocation,
-          newUserAmounts,
-        ),
-        [tokenKeyword]: subtract(tokenKeyword, poolAllocation, newUserAmounts),
-        [liquidityKeyword]: amountMaths[liquidityKeyword].add(
-          poolAllocation[liquidityKeyword],
-          amountMaths[liquidityKeyword].make(liquidityExtentIn),
-        ),
-      });
-
-      liquidityTable.update(secondaryTokenBrand, {
-        liquidityTokenSupply: liquidityTokenSupply - liquidityExtentIn,
-      });
-
-      zcf.reallocate(
-        harden([offerHandle, poolHandle]),
-        harden([newUserAmounts, newPoolAmounts]),
-        liquidityKeys,
-      );
-      zcf.complete(harden([offerHandle]));
-      return 'Liquidity successfully removed.';
-    };
-
-    const swapHook = offerHandle => {
-      const { proposal } = zcf.getOffer(offerHandle);
-      const getKeywordAndBrand = amountKeywordRecord => {
-        const keywords = getKeys(amountKeywordRecord);
-        if (keywords.length !== 1) {
-          rejectOffer(
-            offerHandle,
-            `A swap requires giving one type of token for another, ${keywords.length} tokens were provided.`,
-          );
-        }
-        return harden({
-          keyword: keywords[0],
-          brand: Object.values(amountKeywordRecord)[0].brand,
-        });
       };
 
-      const { keyword: keywordIn, brand: brandIn } = getKeywordAndBrand(
-        proposal.give,
+      const { poolHandle: poolHandleB } = liquidityTable.get(brandOut);
+      const poolAllocationB = zcf.getCurrentAllocation(poolHandleB);
+      const poolKeywordBrandOut = getPoolKeyword(brandOut);
+      const brandOutAmountMath = zcf.getAmountMath(brandOut);
+      const finalPoolAmountsB = {
+        CentralToken: centralTokenAmountMath.add(
+          poolAllocationB.CentralToken,
+          centralTokenAmount,
+        ),
+        [poolKeywordBrandOut]: brandOutAmountMath.subtract(
+          poolAllocationB[poolKeywordBrandOut],
+          amountOut,
+        ),
+      };
+
+      zcf.reallocate(
+        harden([poolHandleA, poolHandleB, offerHandle]),
+        harden([finalPoolAmountsA, finalPoolAmountsB, finalUserAmounts]),
       );
-      const { keyword: keywordOut, brand: brandOut } = getKeywordAndBrand(
-        proposal.want,
-      );
-
-      const expected = harden({
-        give: { [keywordIn]: null },
-        want: { [keywordOut]: null },
-      });
-      rejectIfNotProposal(offerHandle, expected);
-
-      // we could be swapping (1) central to secondary, (2) secondary to central, or (3) secondary to secondary.
-
-      // 1) central to secondary
-      if (brandIn === centralTokenBrand) {
-        rejectIfNotTokenBrand(offerHandle, brandOut);
-
-        const keywords = harden([keywordIn, keywordOut]);
-        const { poolHandle, newUserAmounts, newPoolAmounts } = doSwap(
-          harden({
-            userAllocation: zcf.getCurrentAllocation(offerHandle, keywords),
-            keywordIn,
-            keywordOut,
-            secondaryBrand: brandOut,
-          }),
-        );
-        zcf.reallocate(
-          harden([offerHandle, poolHandle]),
-          harden([newUserAmounts, newPoolAmounts]),
-          keywords,
-        );
-        zcf.complete(harden([offerHandle]));
-        return `Swap successfully completed.`;
-
-        // eslint-disable-next-line no-else-return
-      } else if (brandOut === centralTokenBrand) {
-        // 2) secondary to central
-        rejectIfNotTokenBrand(offerHandle, brandIn);
-        const keywords = harden([keywordIn, keywordOut]);
-        const { poolHandle, newUserAmounts, newPoolAmounts } = doSwap(
-          harden({
-            userAllocation: zcf.getCurrentAllocation(offerHandle, keywords),
-            keywordIn,
-            keywordOut,
-            secondaryBrand: brandIn,
-          }),
-        );
-        zcf.reallocate(
-          harden([offerHandle, poolHandle]),
-          harden([newUserAmounts, newPoolAmounts]),
-          keywords,
-        );
-        zcf.complete(harden([offerHandle]));
-        return `Swap successfully completed.`;
-      } else {
-        // 3) secondary to secondary
-        rejectIfNotTokenBrand(offerHandle, brandIn);
-        rejectIfNotTokenBrand(offerHandle, brandOut);
-
-        const {
-          poolHandle: poolHandleA,
-          newUserAmounts: newUserAmountsA,
-          newPoolAmounts: newPoolAmountsA,
-        } = doSwap(
-          harden({
-            userAllocation: zcf.getCurrentAllocation(
-              offerHandle,
-              harden([keywordIn, CENTRAL_TOKEN]),
-            ),
-            keywordIn,
-            keywordOut: CENTRAL_TOKEN,
-            secondaryBrand: brandIn,
-          }),
-        );
-        const {
-          poolHandle: poolHandleB,
-          newUserAmounts,
-          newPoolAmounts: newPoolAmountsB,
-        } = doSwap(
-          harden({
-            userAllocation: newUserAmountsA,
-            keywordIn: CENTRAL_TOKEN,
-            keywordOut,
-            secondaryBrand: brandOut,
-          }),
-        );
-        const keywords = harden([keywordIn, keywordOut, CENTRAL_TOKEN]);
-        const amountMaths = zcf.getAmountMaths(keywords);
-        const finalPoolAmountsA = {
-          ...newPoolAmountsA,
-          [keywordOut]: amountMaths[keywordOut].getEmpty(),
-        };
-        const finalPoolAmountsB = {
-          ...newPoolAmountsB,
-          [keywordIn]: amountMaths[keywordIn].getEmpty(),
-        };
-        const finalUserAmounts = {
-          ...newUserAmounts,
-          [keywordIn]: newUserAmountsA[keywordIn],
-        };
-        zcf.reallocate(
-          harden([poolHandleA, poolHandleB, offerHandle]),
-          harden([finalPoolAmountsA, finalPoolAmountsB, finalUserAmounts]),
-          keywords,
-        );
-        zcf.complete(harden([offerHandle]));
-        return `Swap successfully completed.`;
-      }
-    };
-
-    const makeAddLiquidityInvite = () =>
-      zcf.makeInvitation(addLiquidityHook, 'multipool autoswap add liquidity');
-
-    return harden({
-      invite: makeAddLiquidityInvite(),
-      publicAPI: {
-        getBrandKeywordRecord: () => {
-          const { issuerKeywordRecord } = zcf.getInstanceRecord();
-          const brandKeywordRecord = {};
-          Object.entries(issuerKeywordRecord).forEach(([keyword, issuer]) => {
-            const { brand } = zcf.getIssuerRecord(issuer);
-            brandKeywordRecord[keyword] = brand;
-          });
-          return harden(brandKeywordRecord);
-        },
-        getKeywordForBrand: brand => {
-          assert(
-            liquidityTable.has(brand),
-            details`There is no pool for this brand. To create a pool, call 'addPool'`,
-          );
-          return liquidityTable.get(brand).tokenKeyword;
-        },
-        addPool,
-        getPoolAllocation,
-        getLiquidityIssuer: tokenBrand =>
-          liquidityTable.get(tokenBrand).liquidityIssuer,
-        /**
-         * `getCurrentPrice` calculates the result of a trade, given a certain
-         * amount of digital assets in.
-         * @param {object} amountIn - the amount of digital assets to be
-         * sent in
-         */
-        getCurrentPrice: (amountIn, brandOut) => {
-          const brandIn = amountIn.brand;
-          // brandIn could either be the central token brand, or one of
-          // the secondary token brands
-
-          // CentralToken to SecondaryToken
-          if (brandIn === centralTokenBrand) {
-            assert(
-              liquidityTable.has(brandOut),
-              details`brandOut ${brandOut} was not recognized`,
-            );
-            return doGetCurrentPrice(
-              harden({
-                amountIn,
-                keywordIn: CENTRAL_TOKEN,
-                keywordOut: liquidityTable.get(brandOut).tokenKeyword,
-                secondaryBrand: brandOut,
-              }),
-            );
-            // eslint-disable-next-line no-else-return
-          } else if (brandOut === centralTokenBrand) {
-            // SecondaryToken to CentralToken
-            assert(
-              liquidityTable.has(brandIn),
-              details`amountIn brand ${amountIn} was not recognized`,
-            );
-            return doGetCurrentPrice(
-              harden({
-                amountIn,
-                keywordIn: liquidityTable.get(brandIn).tokenKeyword,
-                keywordOut: CENTRAL_TOKEN,
-                secondaryBrand: brandIn,
-              }),
-            );
-          } else {
-            // SecondaryToken to SecondaryToken
-            assert(
-              liquidityTable.has(brandIn) && liquidityTable.has(brandOut),
-              details`amountIn brand ${brandIn} or brandOut ${brandOut} was not recognized`,
-            );
-
-            // We must do two consecutive `doGetCurrentPrice` calls: from
-            // the brandIn to the central token, then from the central
-            // token to the brandOut
-            const centralTokenAmount = doGetCurrentPrice(
-              harden({
-                amountIn,
-                keywordIn: liquidityTable.get(brandIn).tokenKeyword,
-                keywordOut: CENTRAL_TOKEN,
-                secondaryBrand: brandIn,
-              }),
-            );
-            return doGetCurrentPrice(
-              harden({
-                amountIn: centralTokenAmount,
-                keywordIn: CENTRAL_TOKEN,
-                keywordOut: liquidityTable.get(brandOut).tokenKeyword,
-                secondaryBrand: brandOut,
-              }),
-            );
-          }
-        },
-        makeSwapInvite: () => zcf.makeInvitation(swapHook, 'autoswap swap'),
-        makeAddLiquidityInvite,
-        makeRemoveLiquidityInvite: () =>
-          zcf.makeInvitation(removeLiquidityHook, 'autoswap remove liquidity'),
-      },
+      zcf.complete(harden([offerHandle]));
+      return `Swap successfully completed.`;
+    }
+    // 2) central to secondary and 3) secondary to central
+    const secondaryTokenBrand = findSecondaryTokenBrand({
+      brandIn,
+      brandOut,
+      offerHandleToReject: offerHandle,
     });
-  },
-);
+    const { poolHandle } = liquidityTable.get(secondaryTokenBrand);
+
+    const amountOut = doGetCurrentPrice(
+      harden({
+        amountIn,
+        brandOut,
+      }),
+    );
+    trade(
+      {
+        offerHandle: poolHandle,
+        gains: {
+          [getPoolKeyword(brandIn)]: amountIn,
+        },
+        losses: {
+          [getPoolKeyword(brandOut)]: amountOut,
+        },
+      },
+      {
+        offerHandle,
+        gains: { Out: amountOut },
+        losses: { In: amountIn },
+      },
+    );
+    zcf.complete(harden([offerHandle]));
+    return `Swap successfully completed.`;
+  };
+
+  /**
+   * `getCurrentPrice` calculates the result of a trade, given a certain
+   * amount of digital assets in.
+   * @param {Amount} amountIn - the amount of digital assets to be
+   * sent in
+   * @param {Brand} brandOut - the brand of the requested payment.
+   */
+  const getCurrentPrice = (amountIn, brandOut) => {
+    const brandIn = amountIn.brand;
+    // brandIn could either be the central token brand, or one of
+    // the secondary token brands
+
+    // SecondaryToken to SecondaryToken
+    if (brandIn !== centralTokenBrand && brandOut !== centralTokenBrand) {
+      assert(
+        liquidityTable.has(brandIn) && liquidityTable.has(brandOut),
+        details`amountIn brand ${brandIn} or brandOut ${brandOut} was not recognized`,
+      );
+
+      // We must do two consecutive `doGetCurrentPrice` calls: from
+      // the brandIn to the central token, then from the central
+      // token to the brandOut
+      const centralTokenAmount = doGetCurrentPrice(
+        harden({
+          amountIn,
+          brandOut: centralTokenBrand,
+        }),
+      );
+      return doGetCurrentPrice(
+        harden({
+          amountIn: centralTokenAmount,
+          brandOut,
+        }),
+      );
+    }
+
+    // All other cases: secondaryToken to CentralToken or vice versa.
+    return doGetCurrentPrice(
+      harden({
+        amountIn,
+        brandOut,
+      }),
+    );
+  };
+
+  const getLiquidityIssuer = tokenBrand =>
+    liquidityTable.get(tokenBrand).liquidityIssuer;
+
+  const makeAddLiquidityInvite = () =>
+    zcf.makeInvitation(
+      checkHook(addLiquidityHook, addLiquidityExpected),
+      'multipool autoswap add liquidity',
+    );
+
+  const makeSwapInvite = () =>
+    zcf.makeInvitation(checkHook(swapHook, swapExpected), 'autoswap swap');
+
+  const makeRemoveLiquidityInvite = () =>
+    zcf.makeInvitation(
+      checkHook(removeLiquidityHook, removeLiquidityExpected),
+      'autoswap remove liquidity',
+    );
+
+  zcf.initPublicAPI(
+    harden({
+      addPool,
+      getPoolAllocation,
+      getLiquidityIssuer,
+      getCurrentPrice,
+      makeSwapInvite,
+      makeAddLiquidityInvite,
+      makeRemoveLiquidityInvite,
+    }),
+  );
+
+  return makeAddLiquidityInvite();
+};
+
+harden(makeContract);
+export { makeContract };
