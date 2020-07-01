@@ -47,10 +47,9 @@ function build(E, _D, _log) {
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
-  async function startup({ zoe, registry, board, mailboxAdmin }) {
+  async function startup({ zoe, registry, board }) {
     wallet = await makeWallet({
       zoe,
-      mailboxAdmin,
       board,
       registry,
       pursesStateChangeHandler: pursesPublish,
@@ -248,11 +247,11 @@ function build(E, _D, _log) {
                 };
               }
 
-              case 'walletGetMailboxIdByBrand': {
+              case 'walletGetDepositFacetId': {
                 const { brandBoardId } = obj;
-                const result = await wallet.getMailboxIdByBrand(brandBoardId);
+                const result = await wallet.getDepositFacetId(brandBoardId);
                 return {
-                  type: 'walletMailboxIdByBrandResponse',
+                  type: 'walletDepositFacetIdResponse',
                   data: result,
                 };
               }
