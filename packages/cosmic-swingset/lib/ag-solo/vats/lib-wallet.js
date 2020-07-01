@@ -12,7 +12,6 @@ import { E } from '@agoric/eventual-send';
 import { makeMarshal } from '@agoric/marshal';
 
 import makeObservablePurse from './observable';
-import makeOfferCompiler from './offer-compiler';
 import { makeDehydrator } from './lib-dehydrate';
 
 // does nothing
@@ -22,7 +21,6 @@ export async function makeWallet({
   zoe,
   // eslint-disable-next-line no-unused-vars
   board,
-  registry,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
@@ -191,29 +189,43 @@ export async function makeWallet({
       });
   }
 
-  async function executeOffer(compiledOfferP, inviteP) {
-    const [invite, { purses, proposal }] = await Promise.all([
-      inviteP,
-      compiledOfferP,
-    ]);
+  async function executeOffer(compiledOfferP) {
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
+
+    const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
 
     // =====================
     // === AWAITING TURN ===
     // =====================
 
+    const invite = await inviteP;
+
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
     // Payments are made for the keywords in proposal.give.
-    const payment = {};
-    await Promise.all(
-      Object.entries(proposal.give || {}).map(([keyword, amount]) => {
-        const purse = purses[keyword];
-        if (purse) {
-          return E(purse)
-            .withdraw(amount)
-            .then(pmt => (payment[keyword] = pmt));
-        }
-        return undefined;
-      }),
+    const keywords = [];
+
+    const paymentPs = Object.entries(proposal.give || {}).map(
+      ([keyword, amount]) => {
+        const purse = purseKeywordRecord[keyword];
+        assert(
+          purse !== undefined,
+          details`purse was not found for keyword '${keyword}'`,
+        );
+        keywords.push(keyword);
+        return E(purse).withdraw(amount);
+      },
+    );
+
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
+
+    const payments = await Promise.all(paymentPs);
+
+    const paymentKeywordRecord = Object.fromEntries(
+      keywords.map((keyword, i) => [keyword, payments[i]]),
     );
 
     // =====================
@@ -225,7 +237,11 @@ export async function makeWallet({
       completeObj,
       outcome: outcomeP,
       offerHandle: offerHandleP,
-    } = await E(zoe).offer(invite, harden(proposal), harden(payment));
+    } = await E(zoe).offer(
+      invite,
+      harden(proposal),
+      harden(paymentKeywordRecord),
+    );
 
     // =====================
     // === AWAITING TURN ===
@@ -254,7 +270,7 @@ export async function makeWallet({
         Promise.all(
           payoutArray.map(async (payoutP, payoutIndex) => {
             const keyword = payoutIndexToKeyword[payoutIndex];
-            const purse = purses[keyword];
+            const purse = purseKeywordRecord[keyword];
             if (purse && payoutP) {
               const payout = await payoutP;
               return E(purse).deposit(payout);
@@ -345,24 +361,57 @@ export async function makeWallet({
       .map(([_id, offer]) => harden(offer));
   }
 
-  const compileOffer = makeOfferCompiler({
-    E,
-    zoe,
-    registry,
+  const compileOffer = async offer => {
+    const {
+      want = {},
+      give = {},
+      exit = { onDemand: null },
+    } = offer.proposalTemplate;
+    const { inviteHandleBoardId } = offer;
+    const purseKeywordRecord = {};
 
-    collections: {
-      idToOffer,
-      brandTable,
-      purseToBrand,
-      issuerToIssuerNames,
-      purseMapping,
-    },
-  });
-  async function addOffer(
-    rawOffer,
-    hooks = undefined,
-    requestContext = { origin: 'unknown' },
-  ) {
+    const compile = amountKeywordRecord => {
+      return Object.fromEntries(
+        Object.entries(amountKeywordRecord).map(
+          ([keyword, { pursePetname, extent }]) => {
+            const purse = getPurse(pursePetname);
+            purseKeywordRecord[keyword] = purse;
+            const brand = purseToBrand.get(purse);
+            const amount = { brand, extent };
+            return [keyword, amount];
+          },
+        ),
+      );
+    };
+
+    const hydratedWant = compile(want);
+    const hydratedGive = compile(give);
+
+    // Find invite in wallet and withdraw
+    // TODO: make this less tightly coupled to bootstrap.js
+    const defaultInvitePurse = getPurse('Default Zoe invite purse');
+    const { extent: inviteExtentElems } = await E(
+      defaultInvitePurse,
+    ).getCurrentAmount();
+    const inviteHandle = await E(board).getValue(inviteHandleBoardId);
+    const matchInvite = element => element.handle === inviteHandle;
+    const inviteBrand = purseToBrand.get(defaultInvitePurse);
+    const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
+    const inviteAmount = inviteAmountMath.make(
+      harden([inviteExtentElems.find(matchInvite)]),
+    );
+    const inviteP = E(defaultInvitePurse).withdraw(inviteAmount);
+
+    const proposal = {
+      want: hydratedWant,
+      give: hydratedGive,
+      exit,
+    };
+
+    return { proposal, inviteP, purseKeywordRecord };
+  };
+
+  async function addOffer(rawOffer, requestContext = { origin: 'unknown' }) {
     const { id: rawId } = rawOffer;
     const id = `${requestContext.origin}#${rawId}`;
     const offer = {
@@ -375,7 +424,7 @@ export async function makeWallet({
     updateInboxState(id, offer);
 
     // Start compiling the template, saving a promise for it.
-    idToCompiledOfferP.set(id, compileOffer(id, offer, hooks));
+    idToCompiledOfferP.set(id, compileOffer(offer));
 
     // Our inbox state may have an enriched offer.
     updateInboxState(id, idToOffer.get(id));
@@ -441,18 +490,11 @@ export async function makeWallet({
       const compiledOffer = await idToCompiledOfferP.get(id);
 
       const {
-        publicAPI,
-        invite,
-        hooks: { publicAPI: publicAPIHooks = {} } = {},
-      } = compiledOffer;
-
-      const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
-      const {
         depositedP,
         completeObj,
         outcome,
         offerHandle,
-      } = await executeOffer(compiledOffer, inviteP);
+      } = await executeOffer(compiledOffer);
 
       idToComplete.set(id, () => {
         alreadyResolved = true;
@@ -489,8 +531,6 @@ export async function makeWallet({
             idToOffer.set(id, acceptedOffer);
             updateInboxState(id, acceptedOffer);
           }
-          // Allow the offer to hook what the return value should be.
-          return E(publicAPIHooks).deposited(publicAPI);
         })
         .catch(rejected);
     } catch (e) {
@@ -505,45 +545,6 @@ export async function makeWallet({
     return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
       const { issuer } = brandTable.get(brand);
       return [petname, issuer];
-    });
-  }
-
-  const hydrateHook = ([hookMethod, ...hookArgs] = []) => object => {
-    if (hookMethod === undefined) {
-      return undefined;
-    }
-    return E(object)[hookMethod](...hookArgs);
-  };
-
-  function hydrateHooks({
-    publicAPI: { getInvite, deposited, ...publicAPIRest } = {},
-    ...targetsRest
-  } = {}) {
-    const assertSpecs = [
-      [targetsRest, 'targets'],
-      [publicAPIRest, 'publicAPI hooks'],
-    ];
-    for (const [rest, desc] of assertSpecs) {
-      assert(
-        Object.keys(rest).length === 0,
-        details`Unrecognized extra ${desc} ${rest}`,
-      );
-    }
-
-    // Individual hook functions aren't general-purpose.
-    // They're special-purpose for the extension points
-    // of the specific wallet we use.  We hydrate them
-    // individually to provide some error checking in case
-    // the hook specification is wrong or was accidentally
-    // supplied in the wrong target.
-    return harden({
-      publicAPI: {
-        // This hook is to get the invite on the publicAPI.
-        getInvite: hydrateHook(getInvite),
-        // This hook is to return a value for the deposited promise.
-        // It is run after all the spoils are deposited to their purses.
-        deposited: hydrateHook(deposited),
-      },
     });
   }
 
@@ -583,7 +584,6 @@ export async function makeWallet({
     getPurseIssuer,
     // TODO: remove when removing brandRegKey
     getIssuerNames: issuerToIssuerNames.get,
-    hydrateHooks,
     addOffer,
     declineOffer,
     cancelOffer,
