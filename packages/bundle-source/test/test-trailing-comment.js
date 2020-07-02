@@ -8,10 +8,10 @@ function evaluate(src, endowments) {
   return c.evaluate(src);
 }
 
-test('circular export', async t => {
+test('trailing comment', async t => {
   try {
-    const { source: src1, sourceMap: map1 } = await bundleSource(
-      `${__dirname}/../demo/circular/a.js`,
+    const { source: src1 } = await bundleSource(
+      `${__dirname}/../demo/trailing-comment.js`,
       'nestedEvaluate',
     );
 
@@ -22,11 +22,15 @@ test('circular export', async t => {
       return evaluate(src, { require, nestedEvaluate });
     };
     // console.log(src1);
-    const srcMap1 = `(${src1})\n${map1}`;
+    const srcMap1 = `(${src1})`;
     const ex1 = nestedEvaluate(srcMap1)();
 
     // console.log(err.stack);
-    t.equals(ex1.default, 'Foo', `circular export is Foo`);
+    t.equals(
+      typeof ex1.buildRootObject,
+      'function',
+      `buildRootObject is exported`,
+    );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
