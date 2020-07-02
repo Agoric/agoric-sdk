@@ -135,7 +135,9 @@ export async function makeWallet({
     const { extent, brand } = currentAmount;
     const brandPetname = brandMapping.valToPetname.get(brand);
     const dehydratedCurrentAmount = dehydrate(currentAmount);
+    const brandBoardId = await E(board).getId(brand);
     pursesState.set(pursePetname, {
+      brandBoardId,
       brandPetname,
       pursePetname,
       extent,
