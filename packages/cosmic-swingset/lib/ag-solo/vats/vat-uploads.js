@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import makeScratchPad from './scratch';
 
 // This vat contains the private upload scratch pad.

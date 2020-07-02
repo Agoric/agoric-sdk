@@ -1,10 +1,11 @@
+/* global harden */
+
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
-import harden from '@agoric/harden';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import produceIssuer from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';

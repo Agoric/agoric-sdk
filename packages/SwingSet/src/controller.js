@@ -1,5 +1,5 @@
-// eslint-disable-next-line no-redeclare
 /* global Compartment harden */
+
 import fs from 'fs';
 import path from 'path';
 import re2 from 're2';
@@ -168,11 +168,7 @@ export async function buildVatController(config, argv = []) {
   // import anything outside their bundle.
 
   function vatRequire(what) {
-    if (what === '@agoric/harden') {
-      return harden;
-    } else {
-      throw Error(`vatRequire unprepared to satisfy require(${what})`);
-    }
+    throw Error(`vatRequire unprepared to satisfy require(${what})`);
   }
 
   const vatEndowments = harden({

@@ -1,3 +1,5 @@
+/* global harden */
+
 /**
  * The VatAdmin wrapper vat.
  *
@@ -5,7 +7,6 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
-import harden from '@agoric/harden';
 import { producePromise } from '@agoric/produce-promise';
 
 function producePRR() {

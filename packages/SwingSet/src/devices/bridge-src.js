@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 function sanitize(data) {
   // TODO: Use @agoric/marshal:pureCopy when it exists.

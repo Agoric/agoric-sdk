@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 function build(_E, _log) {
   const other = harden({

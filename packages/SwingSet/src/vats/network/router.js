@@ -1,10 +1,9 @@
+/* global harden */
 // @ts-check
+
 import { E as defaultE } from '@agoric/eventual-send';
-import rawHarden from '@agoric/harden';
 import makeStore from '@agoric/store';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network';
-
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {import('./network').Protocol} Protocol

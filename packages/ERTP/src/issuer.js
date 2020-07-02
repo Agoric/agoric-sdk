@@ -1,7 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
+
+/* global harden */
 // @ts-check
 
-import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
 import { isPromise } from '@agoric/produce-promise';

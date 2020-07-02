@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import meterMe from './metered-code';
 
 export function buildRootObject(_dynamicVatPowers) {

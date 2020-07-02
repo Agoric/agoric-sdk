@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 import { showPurseBalance, setupPurses } from './helpers';
 import { makePrintLog } from './printLog';

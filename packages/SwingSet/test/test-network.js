@@ -1,4 +1,5 @@
 /* global harden */
+
 import '@agoric/install-ses'; // adds 'harden' to global
 import { test } from 'tape-promise/tape';
 import { producePromise } from '@agoric/produce-promise';

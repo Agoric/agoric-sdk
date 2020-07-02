@@ -1,7 +1,7 @@
+/* global harden */
 // @ts-check
 
 /* eslint-disable no-use-before-define */
-import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 

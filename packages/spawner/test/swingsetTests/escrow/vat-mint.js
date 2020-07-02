@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import harden from '@agoric/harden';
+/* global harden */
+
 import produceIssuer from '@agoric/ertp';
 
 function build(_E, _log) {

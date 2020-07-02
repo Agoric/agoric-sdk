@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 export default function makeScratchPad() {
   const map = new Map();

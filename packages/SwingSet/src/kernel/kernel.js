@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { makeMeter } from '@agoric/transform-metering';

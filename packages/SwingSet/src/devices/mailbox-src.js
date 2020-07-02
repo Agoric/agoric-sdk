@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import Nat from '@agoric/nat';
 
 export default function setup(syscall, state, helpers, endowments) {

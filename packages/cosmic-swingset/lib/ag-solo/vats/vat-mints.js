@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import produceIssuer from '@agoric/ertp';
 
 import makeStore from '@agoric/store';

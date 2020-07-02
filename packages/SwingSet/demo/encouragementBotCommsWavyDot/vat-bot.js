@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.

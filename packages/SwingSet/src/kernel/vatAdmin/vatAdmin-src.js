@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 /**
  * A Vat management device that provides a capability that can be used to

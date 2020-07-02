@@ -1,5 +1,6 @@
+/* global harden */
+
 import Nat from '@agoric/nat';
-import harden from '@agoric/harden';
 
 import produceIssuer from '@agoric/ertp';
 import { assert } from '@agoric/assert';

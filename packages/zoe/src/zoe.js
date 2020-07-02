@@ -1,5 +1,6 @@
+/* global harden */
 // @ts-check
-import harden from '@agoric/harden';
+
 import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';

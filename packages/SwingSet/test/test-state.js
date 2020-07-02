@@ -1,4 +1,6 @@
-import harden from '@agoric/harden';
+/* global harden */
+
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import {
   initSwingStore,

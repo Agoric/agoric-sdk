@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import harden from '@agoric/harden';
+/* global harden */
 
 // ImportManager allows a package to make some code available that can be run
 // locally by a calling vat without requiring a remote round trip to the hosting

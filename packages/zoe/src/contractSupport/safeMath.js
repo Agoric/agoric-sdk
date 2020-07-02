@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import Nat from '@agoric/nat';
 /**
  * These operations should be used for calculations with the

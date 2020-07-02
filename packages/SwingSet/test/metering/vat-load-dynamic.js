@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { E } from '@agoric/eventual-send';
 
 function build(buildStuff) {

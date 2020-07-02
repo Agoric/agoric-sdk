@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { makeRegistrar } from '@agoric/registrar';
 
 // This vat contains the registrar for the demo.

@@ -1,10 +1,9 @@
 // Copyright (C) 2019 Agoric, under Apache license 2.0
+
+/* global harden */
 // @ts-check
 
-import rawHarden from '@agoric/harden';
 import { assert, details, q } from '@agoric/assert';
-
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @template K,V

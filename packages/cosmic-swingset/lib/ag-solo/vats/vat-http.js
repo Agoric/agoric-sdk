@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';

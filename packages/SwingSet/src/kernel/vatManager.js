@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { assert, details } from '@agoric/assert';
 import djson from './djson';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';

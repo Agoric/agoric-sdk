@@ -1,9 +1,10 @@
+/* global harden */
+
 /* eslint no-lone-blocks: "off" */
 /* eslint dot-notation: "off" */
 // I turned off dot-notation so eslint won't rewrite the grep-preserving
 // test.stuff patterns.
 
-import harden from '@agoric/harden';
 import { producePromise } from '@agoric/produce-promise';
 
 // Exercise a set of increasingly complex object-capability message patterns,

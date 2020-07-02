@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';

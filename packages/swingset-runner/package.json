@@ -18,7 +18,6 @@
     "@agoric/bundle-source": "^1.1.6",
     "@agoric/ertp": "^0.6.0",
     "@agoric/eventual-send": "^0.9.3",
-    "@agoric/harden": "^0.0.8",
     "@agoric/same-structure": "^0.0.8",
     "@agoric/stat-logger": "^0.3.0",
     "@agoric/swing-store-lmdb": "^0.3.3",

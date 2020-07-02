@@ -1,7 +1,7 @@
+/* global harden */
 /* eslint-disable no-use-before-define */
 // @ts-check
 
-import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 

@@ -8,7 +8,7 @@ test('SwingSet bug', async t => {
     const bundle = await rollup({
       input: require.resolve('../encouragementBotCommsWavyDot/bootstrap.js'),
       treeshake: false,
-      external: ['@agoric/evaluate', '@agoric/nat', '@agoric/harden'],
+      external: [],
       acornInjectPlugins: [eventualSend(acorn)],
     });
     t.ok(bundle);

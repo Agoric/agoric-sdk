@@ -1,5 +1,6 @@
+/* global harden */
 // @ts-check
-import harden from '@agoric/harden';
+
 import { HandledPromise } from '@agoric/eventual-send';
 
 /**

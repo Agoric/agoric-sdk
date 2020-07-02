@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { insistStorageAPI } from '../../storageAPI';
 
 // We manage a host-realm Storage object with a has/getKeys/get/set/del API.

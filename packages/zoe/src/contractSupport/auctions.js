@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 export const secondPriceLogic = (bidAmountMath, bidOfferHandles, bids) => {
   let highestBid = bidAmountMath.getEmpty();

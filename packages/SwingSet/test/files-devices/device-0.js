@@ -1,4 +1,4 @@
-const harden = require('@agoric/harden');
+/* global harden */
 
 export default function setup(_syscall, _state, _helpers, _endowments) {
   const dispatch = harden({

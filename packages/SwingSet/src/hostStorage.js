@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { initSwingStore } from '@agoric/swing-store-simple';
 
 /*

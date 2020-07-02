@@ -1,7 +1,8 @@
+/* global harden */
+
 /* eslint-disable no-use-before-define */
 // @ts-check
 
-import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 import { makeZoeHelpers } from '../contractSupport';
 

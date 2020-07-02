@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import harden from '@agoric/harden';
+/* global harden */
 
 function makeAliceMaker(E, _host, _log) {
   return harden({

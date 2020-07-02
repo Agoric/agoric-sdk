@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { importBundle } from '@agoric/import-bundle';
 
 function vatRequire(what) {

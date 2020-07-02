@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global harden */
+
 import { assert, details, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 

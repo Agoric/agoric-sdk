@@ -1,9 +1,7 @@
+/* global harden */
 // @ts-check
-import rawHarden from '@agoric/harden';
-import makeStore from '@agoric/store';
 
-/* TODO: remove when types are done */
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
+import makeStore from '@agoric/store';
 
 /**
  * @template T

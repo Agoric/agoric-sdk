@@ -1,7 +1,8 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
-import harden from '@agoric/harden';
+/* global harden */
+
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { allComparable } from '@agoric/same-structure';
 

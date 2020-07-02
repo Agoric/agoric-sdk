@@ -1,5 +1,5 @@
+/* global harden */
 // @ts-check
-import harden from '@agoric/harden';
 
 /**
  * This is a very trivial contract to explain and test Zoe.

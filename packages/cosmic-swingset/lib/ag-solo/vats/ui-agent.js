@@ -1,3 +1,4 @@
+/* global harden */
 // @ts-check
 
 /**
@@ -7,7 +8,6 @@
 
 /**
  * @typedef {Object} UIAgentEndowments
- * @property {typeof import('@agoric/harden')} harden
  * @property {typeof console} console
  */
 
@@ -17,7 +17,7 @@
  * @param {UIAgentEndowments} param0
  * @returns {{[maker: string]: (petname: string, ext = {}) => UIAgent}}
  */
-export default function makeAgentMakers({ harden, console: agentConsole }) {
+export default function makeAgentMakers({ console: agentConsole }) {
   return harden({
     /**
      * Create an agent that prints to the console with a petname.

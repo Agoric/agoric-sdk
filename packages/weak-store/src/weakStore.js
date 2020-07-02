@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache license 2.0
 
-import harden from '@agoric/harden';
+/* global harden */
+
 import { assert, details, q } from '@agoric/assert';
 /**
  * Distinguishes between adding a new key (init) and updating or

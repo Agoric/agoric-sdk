@@ -16,12 +16,14 @@
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "@agoric/install-ses": "^0.2.0",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0",
     "tmp": "^0.1.0"
   },
   "dependencies": {
+    "@agoric/harden": "^0.0.8",
     "@agoric/bundle-source": "^1.1.6",
     "@agoric/captp": "^1.3.3",
     "@agoric/produce-promise": "^0.1.3",

@@ -1,4 +1,4 @@
-import harden from '@agoric/harden';
+/* global harden */
 
 // buildBlockBuffer() is used by all hosts, to wrap whatever hostDB they use
 

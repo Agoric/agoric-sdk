@@ -1,5 +1,6 @@
+/* global harden */
+
 import { producePromise } from '@agoric/produce-promise';
-import harden from '@agoric/harden';
 
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
