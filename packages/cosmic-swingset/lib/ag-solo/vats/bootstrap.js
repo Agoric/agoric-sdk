@@ -103,26 +103,8 @@ export default function setup(syscall, state, helpers) {
             harden({
               issuer: issuers[i],
               petname: issuerName,
-              brandRegKey: await E(registry).register(
-                issuerName,
-                await E(issuers[i]).getBrand(),
-              ),
             }),
           ),
-        );
-
-        // Add the Zoe invite issuer.
-        const zoeInviteIssuer = await E(zoe).getInviteIssuer();
-        const zoeInvitePetname = 'zoe invite';
-        issuerInfo.push(
-          harden({
-            issuer: zoeInviteIssuer,
-            petname: zoeInvitePetname,
-            brandRegKey: await E(registry).register(
-              zoeInvitePetname,
-              await E(zoeInviteIssuer).getBrand(),
-            ),
-          }),
         );
 
         return harden({
@@ -247,8 +229,8 @@ export default function setup(syscall, state, helpers) {
         await E(vats.wallet).startup({ zoe, board });
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
-          issuerInfo.map(({ petname, issuer, brandRegKey }) =>
-            E(wallet).addIssuer(petname, issuer, brandRegKey),
+          issuerInfo.map(({ petname, issuer }) =>
+            E(wallet).addIssuer(petname, issuer),
           ),
         );
 
@@ -256,7 +238,6 @@ export default function setup(syscall, state, helpers) {
         const pursePetnames = {
           moola: 'Fun budget',
           simolean: 'Nest egg',
-          'zoe invite': 'Default Zoe invite purse',
         };
         await Promise.all(
           issuerInfo.map(({ petname: issuerPetname }) => {
@@ -274,9 +255,6 @@ export default function setup(syscall, state, helpers) {
 
         await E(wallet).deposit(pursePetnames.moola, moolaPayment);
         await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
-
-        // Make deposit facet for Default Zoe invite purse
-        await E(wallet).addDepositFacet(pursePetnames['zoe invite']);
 
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {

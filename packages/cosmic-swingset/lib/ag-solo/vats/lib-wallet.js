@@ -19,11 +19,13 @@ const noActionStateChangeHandler = _newState => {};
 
 export async function makeWallet({
   zoe,
-  // eslint-disable-next-line no-unused-vars
   board,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
+  const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
+  const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate } = makeDehydrator();
@@ -85,8 +87,6 @@ export async function makeWallet({
     return brandTable;
   };
 
-  // issuerNames have properties like 'brandRegKey' and 'issuerPetname'.
-  const issuerToIssuerNames = makeWeakStore('issuer');
   const brandTable = makeBrandTable();
   const purseToBrand = makeWeakStore('purse');
   const brandToDepositFacetId = makeWeakStore('brand');
@@ -133,11 +133,10 @@ export async function makeWallet({
   async function updatePursesState(pursePetname, purse) {
     const currentAmount = await E(purse).getCurrentAmount();
     const { extent, brand } = currentAmount;
-    const { issuer } = brandTable.get(brand);
-    const issuerNames = issuerToIssuerNames.get(issuer);
+    const brandPetname = brandMapping.valToPetname.get(brand);
     const dehydratedCurrentAmount = dehydrate(currentAmount);
     pursesState.set(pursePetname, {
-      ...issuerNames, // brandRegKey, issuerPetname
+      brandPetname,
       pursePetname,
       extent,
       currentAmountSlots: dehydratedCurrentAmount,
@@ -286,25 +285,13 @@ export async function makeWallet({
 
   // === API
 
-  // TODO: remove brandRegKey
-  const addIssuer = async (
-    petnameForBrand,
-    issuer,
-    brandRegKey = undefined,
-  ) => {
+  const addIssuer = async (petnameForBrand, issuer) => {
     const issuerSavedP = brandTable.addIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
       brandMapping.addPetname(petnameForBrand, brand);
-
-      // TODO: remove issuerToIssuerNames
-      issuerToIssuerNames.init(issuer, {
-        issuerPetname: petnameForBrand,
-        brandRegKey,
-      });
-    };
-    return issuerSavedP.then(addBrandPetname).then(() => {
       return `issuer ${petnameForBrand} successfully added to wallet`;
-    });
+    };
+    return issuerSavedP.then(addBrandPetname);
   };
 
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
@@ -388,8 +375,7 @@ export async function makeWallet({
     const hydratedGive = compile(give);
 
     // Find invite in wallet and withdraw
-    // TODO: make this less tightly coupled to bootstrap.js
-    const defaultInvitePurse = getPurse('Default Zoe invite purse');
+    const defaultInvitePurse = getPurse(ZOE_INVITE_PURSE_PETNAME);
     const { extent: inviteExtentElems } = await E(
       defaultInvitePurse,
     ).getCurrentAmount();
@@ -582,8 +568,6 @@ export async function makeWallet({
     getPurses,
     getPurse,
     getPurseIssuer,
-    // TODO: remove when removing brandRegKey
-    getIssuerNames: issuerToIssuerNames.get,
     addOffer,
     declineOffer,
     cancelOffer,
@@ -594,6 +578,18 @@ export async function makeWallet({
     addDepositFacet,
     getDepositFacetId,
   });
+
+  // Make Zoe invite purse
+  const inviteIssuerP = E(zoe).getInviteIssuer();
+  const addZoeIssuer = issuerP =>
+    wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerP);
+  const makeInvitePurse = () =>
+    wallet.makeEmptyPurse(ZOE_INVITE_BRAND_PETNAME, ZOE_INVITE_PURSE_PETNAME);
+  const addInviteDepositFacet = () =>
+    E(wallet).addDepositFacet(ZOE_INVITE_PURSE_PETNAME);
+  await addZoeIssuer(inviteIssuerP)
+    .then(makeInvitePurse)
+    .then(addInviteDepositFacet);
 
   return wallet;
 }

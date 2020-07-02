@@ -19,9 +19,13 @@ test('makeDehydrator', async t => {
     instanceHandleMapping.addPetname('simpleExchange', handle1);
     instanceHandleMapping.addPetname('atomicSwap', handle2);
     instanceHandleMapping.addPetname('automaticRefund', handle3);
+    console.log(`ERROR EXPECTED 'already has a petname' >>>>`);
     t.throws(
       () => instanceHandleMapping.addPetname('simpleExchange2', handle1),
       `cannot add a second petname for the same value`,
+    );
+    console.log(
+      `ERROR EXPECTED 'petname simpleExchange is already in use' >>>>`,
     );
     t.throws(
       () => instanceHandleMapping.addPetname('simpleExchange', harden({})),
