@@ -26,10 +26,10 @@ jobs:
     #    restore-keys: |
     #      ${{ runner.os }}-yarn-
 
-    - name: Set up Go 1.13
+    - name: Set up Go 1.14
       uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.14
 
     # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
     #- name: cache Go modules
