@@ -350,13 +350,13 @@ export async function makeWallet({
       .map(([_id, offer]) => harden(offer));
   }
 
-  const compileOffer = async offer => {
+  const compileProposal = proposalTemplate => {
     const {
       want = {},
       give = {},
       exit = { onDemand: null },
-    } = offer.proposalTemplate;
-    const { inviteHandleBoardId } = offer;
+    } = proposalTemplate;
+
     const purseKeywordRecord = {};
 
     const compile = amountKeywordRecord => {
@@ -373,8 +373,48 @@ export async function makeWallet({
       );
     };
 
-    const hydratedWant = compile(want);
-    const hydratedGive = compile(give);
+    const proposal = {
+      want: compile(want),
+      give: compile(give),
+      exit,
+    };
+
+    return { proposal, purseKeywordRecord };
+  };
+
+  const display = value => fillInSlots(dehydrate(harden(value)));
+
+  const displayProposal = proposalTemplate => {
+    const {
+      want = {},
+      give = {},
+      exit = { onDemand: null },
+    } = proposalTemplate;
+    const compile = pursePetnameExtentKeywordRecord => {
+      return Object.fromEntries(
+        Object.entries(pursePetnameExtentKeywordRecord).map(
+          ([keyword, { pursePetname, extent }]) => {
+            const purse = getPurse(pursePetname);
+            const brand = purseToBrand.get(purse);
+            const amount = { brand, extent };
+            return [keyword, { pursePetname, amount: display(amount) }];
+          },
+        ),
+      );
+    };
+    const proposal = {
+      want: compile(want),
+      give: compile(give),
+      exit,
+    };
+    return proposal;
+  };
+
+  const compileOffer = async offer => {
+    const { inviteHandleBoardId } = offer;
+    const { proposal, purseKeywordRecord } = compileProposal(
+      offer.proposalTemplate,
+    );
 
     // Find invite in wallet and withdraw
     const defaultInvitePurse = getPurse(ZOE_INVITE_PURSE_PETNAME);
@@ -390,24 +430,30 @@ export async function makeWallet({
     );
     const inviteP = E(defaultInvitePurse).withdraw(inviteAmount);
 
-    const proposal = {
-      want: hydratedWant,
-      give: hydratedGive,
-      exit,
-    };
-
     return { proposal, inviteP, purseKeywordRecord };
   };
 
   async function addOffer(rawOffer, requestContext = { origin: 'unknown' }) {
-    const { id: rawId } = rawOffer;
+    const {
+      id: rawId,
+      instanceHandleBoardId,
+      installationHandleBoardId,
+      proposalTemplate,
+    } = rawOffer;
     const id = `${requestContext.origin}#${rawId}`;
-    const offer = {
+    const instanceHandle = await E(board).getValue(instanceHandleBoardId);
+    const installationHandle = await E(board).getValue(
+      installationHandleBoardId,
+    );
+    const offer = harden({
       ...rawOffer,
       id,
       requestContext,
       status: undefined,
-    };
+      instancePetname: display(instanceHandle).petname,
+      installationPetname: display(installationHandle).petname,
+      proposalForDisplay: displayProposal(proposalTemplate),
+    });
     idToOffer.init(id, offer);
     updateInboxState(id, offer);
 

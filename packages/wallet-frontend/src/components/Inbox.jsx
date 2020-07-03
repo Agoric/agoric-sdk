@@ -106,30 +106,27 @@ export default function Inbox() {
     dispatch(acceptOffer(id));
   }
 
-//  const offer = {
-//    id: Date.now(),
-//    instanceRegKey: instanceId,
-//    contractIssuerIndexToRole: ['TokenA', 'TokenB', 'Liquidity'],
-//    instanceInviteHook: ['makeInvite'], // E(publicAPI).makeInvite()
-//    instanceAcceptedHook: undefined, // Could be E(publicAPI)...
-//    seatTriggerHook: ['swap'], // E(seat).swap()
-//
-//    proposalTemplate: {
-//     give: {
-//       'Token*': {
-//          pursePetname: inputPurse.pursePetname,
-//          extent: inputAmount,
-//        },
-//      },
-//      want: {
-//        'Token*': {
-//          pursePetname: outputPurse.pursePetname,
-//          extent: outputAmount,
-//        },
-//      },
-//      exit: { onDemand: null },
-//    },
-//  };
+  //  const offer = {
+  //    id: Date.now(),
+  //    instancePetname,
+  //    installationPetname,
+  //
+  //    proposalForDisplay: {
+  //     give: {
+  //       [keyword]: {
+  //          amount: { brand: { petname: brandPetname }, extent },
+  //          pursePetname: inputPurse.pursePetname,
+  //        },
+  //      },
+  //      want: {
+  //        [keyword2]: {
+  //          amount: { brand: { petname: brandPetname }, extent },
+  //          pursePetname: outputPurse.pursePetname,
+  //        },
+  //      },
+  //      exit: { onDemand: null },
+  //    },
+  //  };
 
   return (
     <>
@@ -141,9 +138,8 @@ export default function Inbox() {
             ({
               requestContext: { date, origin = 'unknown origin'} = {},
               id,
-              instanceRegKey,
               instancePetname,
-              proposalTemplate: { give = {}, want = {} } = {},
+              proposalForDisplay: { give = {}, want = {} } = {},
               status,
             }) => (
               <ListItem key={id} value={date} divider>
@@ -164,39 +160,38 @@ export default function Inbox() {
                         {pet(instancePetname)}
                         &nbsp;
                       </Box>
-                      {!instancePetname && <i>({instanceRegKey})&nbsp;</i>}
                       says:
                     </Typography>
                   </Grid>
                   <Grid item>
                     {Object.entries(give).map(
-                      ([role, { issuerPetname, pursePetname, brandRegKey, extent }], i) => (
+                      ([role, { amount: { brand: { petname: brandPetname }, extent }, pursePetname }], i) => (
                         <Typography key={`give${role}`} variant="body1">
                           {i === 0 ? 'Give' : <>and&nbsp;give</>}&nbsp;
                           <Box component="span" fontWeight={800}>
                             {JSON.stringify(extent)}
                             &nbsp;
-                            {pet(issuerPetname)}
+                            {pet(brandPetname)}
                           </Box>
-                          {!issuerPetname && <>&nbsp;<i>({brandRegKey})</i></>} from&nbsp;
+                          &nbsp;from&nbsp;
                           <Box component="span" fontWeight={800}>
                             {pet(pursePetname)}
                           </Box>
                         </Typography>
                       ))}
                     {Object.entries(want).map(
-                      ([role, { issuerPetname, pursePetname, brandRegKey, extent }], i) => (
+                      ([role, { amount: { brand: { petname: brandPetname }, extent }, pursePetname }], i) => (
                         <Typography key={`want${role}`} variant="body1">
                           {i === 0 ?
                             (Object.keys(give).length > 0 ? <>to&nbsp;receive</> : 'Receive') :
-                            <>and&nbsp;receieve</>
+                            <>and&nbsp;receive</>
                           }&nbsp;
                           <Box component="span" fontWeight={800}>
                             {JSON.stringify(extent)}
                             &nbsp;
-                            {pet(issuerPetname)}
+                            {pet(brandPetname)}
                           </Box>
-                          {!issuerPetname && <>&nbsp;<i>({brandRegKey})</i></>} into&nbsp;
+                          &nbsp;into&nbsp;
                           <Box component="span" fontWeight={800}>
                             {pet(pursePetname)}
                           </Box>
