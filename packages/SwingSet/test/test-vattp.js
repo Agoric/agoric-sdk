@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import { buildVatController, getVatTPSourcePath } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
-async function testVatTP(t) {
+test('vattp', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -51,13 +51,9 @@ async function testVatTP(t) {
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
   t.end();
-}
-
-test('vattp', async t => {
-  await testVatTP(t);
 });
 
-async function testVatTP2(t) {
+test('vattp 2', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -101,8 +97,4 @@ async function testVatTP2(t) {
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
   t.end();
-}
-
-test('vattp 2', async t => {
-  await testVatTP2(t);
 });

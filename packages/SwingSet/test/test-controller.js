@@ -93,7 +93,7 @@ test('reject module-like sourceIndex', async t => {
   t.end();
 });
 
-async function bootstrap(t) {
+test('bootstrap', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-controller-2'),
   );
@@ -103,13 +103,9 @@ async function bootstrap(t) {
   const c = await buildVatController(config);
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.end();
-}
-
-test('bootstrap', async t => {
-  await bootstrap(t);
 });
 
-async function bootstrapExport(t) {
+test('bootstrap export', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-controller-3'),
   );
@@ -267,8 +263,4 @@ async function bootstrapExport(t) {
   t.deepEqual(c.dump().runQueue, []);
 
   t.end();
-}
-
-test('bootstrap export', async t => {
-  await bootstrapExport(t);
 });

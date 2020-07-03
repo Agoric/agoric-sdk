@@ -16,7 +16,7 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-async function test0(t) {
+test('d0', async t => {
   const config = {
     vats: new Map(),
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
@@ -39,13 +39,9 @@ async function test0(t) {
   ]);
   t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'o-50', 'd-70', 'd-71']);
   t.end();
-}
-
-test('d0', async t => {
-  await test0(t);
 });
 
-async function test1(t) {
+test('d1', async t => {
   const sharedArray = [];
   const config = {
     vats: new Map(),
@@ -72,10 +68,6 @@ async function test1(t) {
   ]);
   t.deepEqual(sharedArray, ['pushed']);
   t.end();
-}
-
-test('d1', async t => {
-  await test1(t);
 });
 
 async function test2(t, mode) {
@@ -158,7 +150,7 @@ test('d2.5', async t => {
   await test2(t, '5');
 });
 
-async function testState(t) {
+test('device state', async t => {
   const { storage } = initSwingStore();
   const config = {
     vats: new Map(),
@@ -178,13 +170,9 @@ async function testState(t) {
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 
   t.end();
-}
-
-test('device state', async t => {
-  await testState(t);
 });
 
-async function testMailboxOutbound(t) {
+test('mailbox outbound', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -218,13 +206,9 @@ async function testMailboxOutbound(t) {
   t.deepEqual(s.exportToData(), s2.exportToData());
 
   t.end();
-}
-
-test('mailbox outbound', async t => {
-  await testMailboxOutbound(t);
 });
 
-async function testMailboxInbound(t) {
+test('mailbox inbound', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -335,13 +319,9 @@ async function testMailboxInbound(t) {
   ]);
 
   t.end();
-}
-
-test('mailbox inbound', async t => {
-  await testMailboxInbound(t);
 });
 
-async function testCommandBroadcast(t) {
+test('command broadcast', async t => {
   const broadcasts = [];
   const cm = buildCommand(body => broadcasts.push(body));
   const config = {
@@ -355,13 +335,9 @@ async function testCommandBroadcast(t) {
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 
   t.end();
-}
-
-test('command broadcast', async t => {
-  await testCommandBroadcast(t);
 });
 
-async function testCommandDeliver(t) {
+test('command deliver', async t => {
   const cm = buildCommand(() => {});
   const config = {
     vats: new Map(),
@@ -390,8 +366,4 @@ async function testCommandDeliver(t) {
   t.deepEqual(rejection, { response: 'body' });
 
   t.end();
-}
-
-test('command deliver', async t => {
-  await testCommandDeliver(t);
 });
