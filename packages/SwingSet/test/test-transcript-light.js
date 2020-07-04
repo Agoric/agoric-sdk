@@ -8,7 +8,7 @@ import {
 } from '@agoric/swing-store-simple';
 import { buildVatController, loadBasedir } from '../src/index';
 
-async function testLoadState(t) {
+test('transcript-light load', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
@@ -100,8 +100,4 @@ async function testLoadState(t) {
   t.deepEqual(state5, getAllState(storage2), `p14`);
 
   t.end();
-}
-
-test('transcript-light load', async t => {
-  await testLoadState(t);
 });

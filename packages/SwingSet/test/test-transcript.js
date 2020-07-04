@@ -20,7 +20,7 @@ async function buildTrace(c, storage) {
   return states;
 }
 
-async function testSaveState(t) {
+test('transcript-one save', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
@@ -42,13 +42,9 @@ async function testSaveState(t) {
     t.deepEqual(s, states2[i]);
   });
   t.end();
-}
-
-test('transcript-one save', async t => {
-  await testSaveState(t);
 });
 
-async function testLoadState(t) {
+test('transcript-one load', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
@@ -78,8 +74,4 @@ async function testLoadState(t) {
     t.deepEqual(states.slice(i), newstates);
   }
   t.end();
-}
-
-test('transcript-one load', async t => {
-  await testLoadState(t);
 });

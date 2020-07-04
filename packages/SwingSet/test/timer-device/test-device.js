@@ -5,7 +5,7 @@ import { buildTimer } from '../../src/devices/timer';
 
 const TimerSrc = '../../src/devices/timer-src';
 
-async function testSimpleWake(t) {
+test('wake', async t => {
   const timer = buildTimer();
   const config = {
     vats: new Map(),
@@ -19,13 +19,9 @@ async function testSimpleWake(t) {
   await c.step();
   t.deepEqual(c.dump().log, ['starting wake test', 'handler.wake()']);
   t.end();
-}
-
-test('wake', async t => {
-  await testSimpleWake(t);
 });
 
-async function testRepeater(t) {
+test('repeater', async t => {
   const timer = buildTimer();
   const config = {
     vats: new Map(),
@@ -42,13 +38,9 @@ async function testRepeater(t) {
     'handler.wake(3) called 1 times.',
   ]);
   t.end();
-}
-
-test('repeater', async t => {
-  await testRepeater(t);
 });
 
-async function testRepeater2(t) {
+test('repeater2', async t => {
   const timer = buildTimer();
   const config = {
     vats: new Map(),
@@ -68,13 +60,9 @@ async function testRepeater2(t) {
     'handler.wake(7) called 2 times.',
   ]);
   t.end();
-}
-
-test('repeater2', async t => {
-  await testRepeater2(t);
 });
 
-async function testRepeaterZero(t) {
+test('repeaterZero', async t => {
   const timer = buildTimer();
   const config = {
     vats: new Map(),
@@ -109,8 +97,4 @@ async function testRepeaterZero(t) {
     'handler.wake(9) called 3 times.',
   ]);
   t.end();
-}
-
-test('repeaterZero', async t => {
-  await testRepeaterZero(t);
 });
