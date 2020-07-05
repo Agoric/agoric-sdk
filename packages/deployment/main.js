@@ -407,9 +407,6 @@ show-config      display the client connection parameters
         needReMain(['play', 'install-cosmos']),
       );
 
-      const bootAddress = await needBacktick(
-        `${shellEscape(progname)} show-bootstrap-address`,
-      );
       await guardFile(`${COSMOS_DIR}/service.stamp`, () =>
         needReMain([
           'play',
@@ -417,7 +414,6 @@ show-config      display the client connection parameters
           `-eexecline=${shellEscape(
             '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start --pruning=nothing',
           )}`,
-          `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`,
         ]),
       );
       await guardFile(`${COSMOS_DIR}/start.stamp`, () =>
@@ -459,43 +455,6 @@ show-config      display the client connection parameters
       await guardFile(`${CONTROLLER_DIR}/install.stamp`, () =>
         needReMain(['play', 'install-controller']),
       );
-
-      await guardFile(`${CONTROLLER_DIR}/solo-service.stamp`, () =>
-        needReMain([
-          'play',
-          'install',
-          '-eservice=ag-controller',
-          '-euser=ag-pserver',
-          '-echdir=/home/ag-pserver/controller',
-          `-eexecline="/usr/local/bin/ag-solo start --role=controller"`,
-        ]),
-      );
-      await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, async () => {
-        await needReMain([
-          'play',
-          'start',
-          '-eservice=ag-controller',
-          '-euser=ag-pserver',
-        ]);
-
-        const svc = 'ag-controller';
-        await waitForStatus(
-          'ag-pserver', // user
-          PROVISIONER_NODE, // host
-          svc, // service
-          _retries =>
-            sleep(
-              SECONDS_BETWEEN_BLOCKS + 1,
-              `to check if ${chalk.underline(svc)} has found a block`,
-            ),
-          (buf, code) => {
-            if (code) {
-              return undefined;
-            }
-            return buf.match(/: new block on/) ? true : undefined;
-          },
-        );
-      });
 
       // Install any pubkeys from a former instantiation.
       await guardFile(`${CONTROLLER_DIR}/pubkeys.stamp`, () =>
@@ -578,15 +537,6 @@ ${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
       break;
     }
 
-    case 'show-bootstrap-address': {
-      await inited();
-      const bootAddress = await trimReadFile(
-        `${CONTROLLER_DIR}/data/${PROVISIONER_NODE}/boot-address.txt`,
-      );
-      process.stdout.write(bootAddress);
-      break;
-    }
-
     case 'ssh': {
       const [host, ...sshArgs] = args.slice(1);
       if (!host) {
@@ -618,19 +568,12 @@ ${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
       setSilent(true);
       await chdir(SETUP_HOME);
       await inited();
-      const [
-        chainName,
-        gci,
-        peers,
-        rpcAddrs,
-        bootstrapAddress,
-      ] = await Promise.all(
+      const [chainName, gci, peers, rpcAddrs] = await Promise.all(
         [
           'show-chain-name',
           'show-gci',
           'show-peers',
           'show-rpcaddrs',
-          'show-bootstrap-address',
         ].map(subcmd =>
           needBacktick([progname, subcmd].map(shellEscape).join(' ')),
         ),
@@ -640,7 +583,6 @@ ${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
         gci,
         peers: peers.split(','),
         rpcAddrs: rpcAddrs.split(','),
-        bootstrapAddress,
       };
       process.stdout.write(`${JSON.stringify(obj, undefined, 2)}\n`);
       break;
@@ -959,7 +901,6 @@ ${name}:
               ? `\
   units:
   - ag-pserver.service
-  - ag-controller.service
   - ag-chain-cosmos.service
 `
               : '';

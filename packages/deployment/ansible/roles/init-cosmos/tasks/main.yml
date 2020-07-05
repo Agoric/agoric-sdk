@@ -24,8 +24,3 @@
   become: yes
   become_user: "{{ service }}"
   shell: "{{ service }} init --overwrite {{ inventory_hostname }} --chain-id={{ CHAIN_NAME }}"
-
-#- name: "Add coins to {{ service }}"
-#  become: yes
-#  become_user: "{{ service }}"
-#  shell: "{{ service }} add-genesis-account {{ BOOTSTRAP_ADDRESS }} {{ BOOTSTRAP_TOKENS }}"
