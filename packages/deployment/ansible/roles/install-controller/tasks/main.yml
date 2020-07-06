@@ -34,13 +34,6 @@
     path: "/home/{{ service }}/.{{ service }}/wwwroot/current"
     src: "{{ CHAIN_NAME }}"
 
-- name: "set-gci-ingress for controller"
-  become_user: "{{ service }}"
-  become: true
-  shell:
-    cmd: "ag-solo set-gci-ingress --chainID={{ CHAIN_NAME }} {{ GCI }} {{ RPC_ADDRS }}"
-    chdir: "/home/{{ service }}/controller"
-
 - name: "Add {{ NETWORK_NAME }} keys"
   synchronize:
     src: "{{ SETUP_HOME }}/{{ NETWORK_NAME }}.{{ item }}"

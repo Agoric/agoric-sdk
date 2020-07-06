@@ -21,10 +21,6 @@ show-*)
   TTY=-i
   ;;
 esac
-if test -n "$CONTROLLER_VATS"; then
-  # Mount the specified controller vats directory.
-  FLAGS="$FLAGS --volume=`cd "$CONTROLLER_VATS" && pwd`:/usr/src/app/lib/ag-solo/vats"
-fi
 exec docker run --rm $TTY $FLAGS \
   --volume=ag-setup-cosmos-chains:/usr/src/app/chains \
   --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
