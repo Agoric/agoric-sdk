@@ -23,9 +23,6 @@ export async function makeWallet({
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
-  const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
-  const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
-
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate } = makeDehydrator();
@@ -104,6 +101,9 @@ export async function makeWallet({
   // Client-side representation of the purses inbox;
   const pursesState = new Map();
   const inboxState = new Map();
+
+  // The default Zoe invite purse is used to make an offer.
+  let zoeInvitePurse;
 
   function getSortedValues(map) {
     const entries = [...map.entries()];
@@ -212,7 +212,7 @@ export async function makeWallet({
         const purse = purseKeywordRecord[keyword];
         assert(
           purse !== undefined,
-          details`purse was not found for keyword '${keyword}'`,
+          details`purse was not found for keyword ${q(keyword)}`,
         );
         keywords.push(keyword);
         return E(purse).withdraw(amount);
@@ -291,7 +291,7 @@ export async function makeWallet({
     const issuerSavedP = brandTable.addIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
       brandMapping.addPetname(petnameForBrand, brand);
-      return `issuer ${petnameForBrand} successfully added to wallet`;
+      return `issuer ${q(petnameForBrand)} successfully added to wallet`;
     };
     return issuerSavedP.then(addBrandPetname);
   };
@@ -417,18 +417,17 @@ export async function makeWallet({
     );
 
     // Find invite in wallet and withdraw
-    const defaultInvitePurse = getPurse(ZOE_INVITE_PURSE_PETNAME);
     const { extent: inviteExtentElems } = await E(
-      defaultInvitePurse,
+      zoeInvitePurse,
     ).getCurrentAmount();
     const inviteHandle = await E(board).getValue(inviteHandleBoardId);
     const matchInvite = element => element.handle === inviteHandle;
-    const inviteBrand = purseToBrand.get(defaultInvitePurse);
+    const inviteBrand = purseToBrand.get(zoeInvitePurse);
     const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
     const inviteAmount = inviteAmountMath.make(
       harden([inviteExtentElems.find(matchInvite)]),
     );
-    const inviteP = E(defaultInvitePurse).withdraw(inviteAmount);
+    const inviteP = E(zoeInvitePurse).withdraw(inviteAmount);
 
     return { proposal, inviteP, purseKeywordRecord };
   };
@@ -441,6 +440,14 @@ export async function makeWallet({
       proposalTemplate,
     } = rawOffer;
     const id = `${requestContext.origin}#${rawId}`;
+    assert(
+      typeof instanceHandleBoardId === 'string',
+      details`instanceHandleBoardId must be a string`,
+    );
+    assert(
+      typeof installationHandleBoardId === 'string',
+      details`installationHandleBoardId must be a string`,
+    );
     const instanceHandle = await E(board).getValue(instanceHandleBoardId);
     const installationHandle = await E(board).getValue(
       installationHandleBoardId,
@@ -628,6 +635,8 @@ export async function makeWallet({
   });
 
   // Make Zoe invite purse
+  const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
+  const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
   const inviteIssuerP = E(zoe).getInviteIssuer();
   const addZoeIssuer = issuerP =>
     wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerP);
@@ -638,6 +647,7 @@ export async function makeWallet({
   await addZoeIssuer(inviteIssuerP)
     .then(makeInvitePurse)
     .then(addInviteDepositFacet);
+  zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
 
   return wallet;
 }

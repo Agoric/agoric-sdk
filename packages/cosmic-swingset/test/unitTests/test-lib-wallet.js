@@ -80,6 +80,7 @@ const setupTest = async () => {
     installationHandle,
     instanceHandle,
     autoswapInstanceHandle,
+    autoswapInstallationHandle,
     pursesStateChangeLog,
     inboxStateChangeLog,
   };
@@ -151,7 +152,7 @@ test('lib-wallet issuer and purse methods', async t => {
     const moolaPayment = moolaBundle.mint.mintPayment(
       moolaBundle.amountMath.make(100),
     );
-    wallet.deposit('fun money', moolaPayment);
+    await wallet.deposit('fun money', moolaPayment);
     t.deepEquals(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(100),
@@ -160,8 +161,8 @@ test('lib-wallet issuer and purse methods', async t => {
     t.deepEquals(
       pursesStateChangeLog,
       [
-        '[{"brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
-        '[{"brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}},{"brandPetname":"moola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
       ],
       `pursesStateChangeLog`,
     );
@@ -172,7 +173,7 @@ test('lib-wallet issuer and purse methods', async t => {
 });
 
 test('lib-wallet offer methods', async t => {
-  t.plan(4);
+  t.plan(5);
   try {
     const {
       moolaBundle,
@@ -192,10 +193,12 @@ test('lib-wallet offer methods', async t => {
 
     const inviteIssuer = await E(zoe).getInviteIssuer();
     const {
-      extent: [{ handle: inviteHandle }],
+      extent: [{ handle: inviteHandle, installationHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
     const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
     await wallet.deposit('Default Zoe invite purse', invite);
+    const instanceHandleBoardId = await E(board).getId(instanceHandle);
+    const installationHandleBoardId = await E(board).getId(installationHandle);
 
     const formulateBasicOffer = (id, inviteHandleBoardId) =>
       harden({
@@ -203,6 +206,8 @@ test('lib-wallet offer methods', async t => {
         id,
 
         inviteHandleBoardId,
+        instanceHandleBoardId,
+        installationHandleBoardId,
 
         proposalTemplate: {
           give: {
@@ -227,15 +232,49 @@ test('lib-wallet offer methods', async t => {
       [
         {
           id: 'unknown#1588645041696',
-          inviteHandleBoardId: '3812059',
+          inviteHandleBoardId: '15765496',
+          instanceHandleBoardId: '15326650',
+          installationHandleBoardId: '7279951',
           proposalTemplate: {
             give: { Contribution: { pursePetname: 'Fun budget', extent: 1 } },
             exit: { onDemand: null },
           },
           requestContext: { origin: 'unknown' },
           status: undefined,
+          instancePetname: 'unnamed-2',
+          installationPetname: 'unnamed-3',
+          proposalForDisplay: {
+            want: {},
+            give: {
+              Contribution: {
+                pursePetname: 'Fun budget',
+                amount: {
+                  brand: { kind: 'brand', petname: 'moola' },
+                  extent: 1,
+                },
+              },
+            },
+            exit: { onDemand: null },
+          },
         },
       ],
+      `offer structure`,
+    );
+    t.deepEquals(
+      wallet.getOffers()[0].proposalForDisplay,
+      {
+        want: {},
+        give: {
+          Contribution: {
+            pursePetname: 'Fun budget',
+            amount: {
+              brand: { kind: 'brand', petname: 'moola' },
+              extent: 1,
+            },
+          },
+        },
+        exit: { onDemand: null },
+      },
       `offer structure`,
     );
     const { outcome, depositedP } = await wallet.acceptOffer(id);
@@ -281,6 +320,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       wallet,
       addLiquidityInvite,
       autoswapInstanceHandle,
+      autoswapInstallationHandle,
       board,
     } = await setupTest();
 
@@ -360,9 +400,16 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const rawId = '1593482020370';
     const id = `unknown#${rawId}`;
 
+    const instanceHandleBoardId = await E(board).getId(autoswapInstanceHandle);
+    const installationHandleBoardId = await E(board).getId(
+      autoswapInstallationHandle,
+    );
+
     const offer = {
       id: rawId,
       inviteHandleBoardId,
+      instanceHandleBoardId,
+      installationHandleBoardId,
       proposalTemplate: {
         give: {
           In: {
