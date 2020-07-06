@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
+require = require('esm')(module);
+require('@agoric/install-ses');
+
 const process = require('process');
 const repl = require('repl');
-require = require('esm')(module);
 const util = require('util');
 
 const { loadBasedir, buildVatController } = require('../src/index.js');
