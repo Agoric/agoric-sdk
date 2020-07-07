@@ -126,7 +126,7 @@ const makeContract = zcf => {
           amount: liquidityAmountOut,
           payment: liquidityPaymentP,
           keyword: 'Liquidity',
-          recipientHandle: offerHandle,
+          recipientHandle: poolHandle,
         }).then(() => {
           liqTokenSupply += liquidityExtentOut;
 
@@ -140,7 +140,9 @@ const makeContract = zcf => {
             },
             // We've already given the user their liquidity using
             // escrowAndAllocateTo
-            { offerHandle, gains: {} },
+            { offerHandle, 
+              gains: { Liquidity: liquidityAmountOut },
+            },
           );
 
           zcf.complete(harden([offerHandle]));

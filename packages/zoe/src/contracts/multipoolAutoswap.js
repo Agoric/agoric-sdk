@@ -273,7 +273,7 @@ const makeContract = zcf => {
       amount: liquidityAmountOut,
       payment: liquidityPaymentP,
       keyword: 'Liquidity',
-      recipientHandle: offerHandle,
+      recipientHandle: poolHandle,
     }).then(() => {
       trade(
         {
@@ -285,7 +285,7 @@ const makeContract = zcf => {
         },
         // We reallocated liquidity in the call to
         // escrowAndAllocateTo.
-        { offerHandle, gains: {}, losses: userAllocation },
+        { offerHandle, gains: { Liquidity: liquidityAmountOut }, losses: userAllocation },
       );
 
       zcf.complete(harden([offerHandle]));
