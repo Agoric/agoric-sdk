@@ -1,5 +1,4 @@
 ---
 
 - name: stop service
-  service: "name={{service}} state=stopped"
-
+  service: "name={{service}} state=stopped enabled=no"

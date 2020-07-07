@@ -2,4 +2,4 @@
   fetch:
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/boot-address.txt"
     flat: yes
-    src: "/home/{{ service }}/controller/ag-cosmos-helper-address"
+    src: "/home/{{ service }}/.{{ service }}/ag-cosmos-helper-address"

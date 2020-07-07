@@ -1,5 +1,4 @@
 ---
 
 - name: start service
-  service: "name={{service}} state=started"
-
+  service: "name={{service}} state=started enabled=yes"
