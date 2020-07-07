@@ -122,14 +122,14 @@ const makeContract = zcf => {
         const liquidityAmountOut = liquidityAmountMath.make(liquidityExtentOut);
         const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
 
+        liqTokenSupply += liquidityExtentOut;
+
         return escrowAndAllocateTo({
           amount: liquidityAmountOut,
           payment: liquidityPaymentP,
           keyword: 'Liquidity',
-          recipientHandle: offerHandle,
+          recipientHandle: poolHandle,
         }).then(() => {
-          liqTokenSupply += liquidityExtentOut;
-
           trade(
             {
               offerHandle: poolHandle,
@@ -138,9 +138,12 @@ const makeContract = zcf => {
                 TokenB: userAllocation.TokenB,
               },
             },
-            // We've already given the user their liquidity using
-            // escrowAndAllocateTo
-            { offerHandle, gains: {} },
+            {
+              offerHandle,
+              gains: {
+                Liquidity: liquidityAmountOut,
+              },
+            },
           );
 
           zcf.complete(harden([offerHandle]));
