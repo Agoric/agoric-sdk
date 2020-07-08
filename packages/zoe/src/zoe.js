@@ -319,7 +319,7 @@ import { makeTables } from './state';
  * @param {Keyword} keyword Keyword for added issuer
  * @returns {Promise<IssuerRecord>} Issuer is added and ready
  *
- *  * @callback InitPublicAPI
+ * @callback InitPublicAPI
  * Initialize the publicAPI for the contract instance, as stored by Zoe in
  * the instanceRecord.
  * @param {Object} publicAPI - an object whose methods are the API
@@ -337,7 +337,7 @@ import { makeTables } from './state';
  * within-vat metering of contract code
  * @returns {ZoeService} The created Zoe service.
  */
-const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
+function makeZoe(additionalEndowments = {}, vatPowers = {}) {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
 
@@ -886,6 +886,6 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
     },
   );
   return zoeService;
-};
+}
 
 export { makeZoe };
