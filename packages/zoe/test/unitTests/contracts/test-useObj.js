@@ -9,9 +9,9 @@ import bundleSource from '@agoric/bundle-source';
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
-const contractRoot = `${__dirname}/../../../src/contracts/useObj`;
+const contractRoot = `${__dirname}/useObjExample`;
 
-test.only('zoe - useObj', async t => {
+test('zoe - useObj', async t => {
   t.plan(3);
   const { moolaIssuer, moolaMint, moola } = setup();
   const zoe = makeZoe();

@@ -3,12 +3,12 @@
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { assert, details } from '@agoric/assert';
-import { makeZoeHelpers } from '../contractSupport';
+import { makeZoeHelpers } from '../../../src/contractSupport';
 
 /**
  * Give a use object when a payment is escrowed
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -19,7 +19,7 @@ const makeContract = zcf => {
 
   const makeUseObjHook = offerHandle => {
     return harden({
-      colorPixels: (color, amountToColor) => {
+      colorPixels: (color, amountToColor = undefined) => {
         assert(
           zcf.isOfferActive(offerHandle),
           `the escrowing offer is no longer active`,
