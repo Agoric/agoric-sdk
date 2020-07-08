@@ -227,7 +227,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           localAddr,
           remoteAddr,
         );
-        const connP = /** @type {Promise<Connection, any>} */ (E.when(conn));
+        const connP = E.when(conn);
         channelKeyToConnP.init(channelKey, connP);
       },
       onReceive,
@@ -515,14 +515,10 @@ EOF
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
 
           // See if we allow an inbound attempt for this address pair (without rejecting).
-          const attemptP =
-            /** @type {Promise<InboundAttempt>} */
-            (E(protocolImpl).inbound(localAddr, remoteAddr));
+          const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);
 
           // Tell what version string we negotiated.
-          const attemptedLocal =
-            /** @type {string} */
-            (await E(attemptP).getLocalAddress());
+          const attemptedLocal = await E(attemptP).getLocalAddress();
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
             new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
@@ -643,7 +639,6 @@ EOF
           E(connP)
             .send(data)
             .then(ack => {
-              /** @type {Data} */
               const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
               const ack64 = dataToBase64(realAck);
               return callIBCDevice('packetExecuted', { packet, ack: ack64 });
