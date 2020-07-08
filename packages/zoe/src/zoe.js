@@ -614,6 +614,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
+      getIssuerForBrand: brand => issuerTable.get(brand).issuer,
       getAmountMath: getAmountMathForBrand,
     });
     return contractFacet;
