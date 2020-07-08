@@ -39,7 +39,7 @@ test('zoe - useObj', async t => {
   });
   const alicePayments = { Pixels: aliceMoolaPayment };
 
-  // Alice makes the first offer in the swap.
+  // Alice makes an offer
   const {
     payout: alicePayoutP,
     outcome: useObjP,

@@ -9,6 +9,7 @@ import { makeZoeHelpers } from '../../../src/contractSupport';
  * Give a use object when a payment is escrowed
  *
  * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
+ * @typedef {import('@agoric/ERTP').Amount} Amount
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -18,8 +19,15 @@ const makeContract = zcf => {
   const amountMath = zcf.getAmountMath(brandKeywordRecord.Pixels);
 
   const makeUseObjHook = offerHandle => {
-    return harden({
+    const useObj = harden({
+      /**
+       * (Pretend to) color some pixels.
+       * @param {string} color
+       * @param {Amount} amountToColor
+       */
       colorPixels: (color, amountToColor = undefined) => {
+        // Throw if the offer is no longer active, i.e. the user has
+        // completed their offer and the assets are no longer escrowed.
         assert(
           zcf.isOfferActive(offerHandle),
           `the escrowing offer is no longer active`,
@@ -28,16 +36,23 @@ const makeContract = zcf => {
           offerHandle,
           brandKeywordRecord,
         );
+        // If no amountToColor is provided, color all the pixels
+        // escrowed for this offer.
         if (amountToColor === undefined) {
           amountToColor = escrowedAmount;
         }
+        // Ensure that the amount of pixels that we want to color is
+        // covered by what is actually escrowed.
         assert(
           amountMath.isGTE(escrowedAmount, amountToColor),
           details`The pixels to color were not all escrowed. Currently escrowed: ${escrowedAmount}, amount to color: ${amountToColor}`,
         );
+
+        // Pretend to color
         return `successfully colored ${amountToColor.extent} pixels ${color}`;
       },
     });
+    return useObj;
   };
 
   const expected = harden({
@@ -48,9 +63,11 @@ const makeContract = zcf => {
     zcf.makeInvitation(checkHook(makeUseObjHook, expected), 'use object');
 
   zcf.initPublicAPI({
+    // The only publicAPI method is to make an invite.
     makeInvite: makeUseObjInvite,
   });
 
+  // Return an invite.
   return makeUseObjInvite();
 };
 
