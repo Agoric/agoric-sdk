@@ -5,8 +5,8 @@ import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 
 function makeBoard(seed = 0) {
-  const idToVal = makeStore();
-  const valToId = makeStore();
+  const idToVal = makeStore('boardId');
+  const valToId = makeStore('value');
   const sparseInts = generateSparseInts(seed);
 
   const board = harden({

@@ -5,10 +5,11 @@ import { assert, details } from '@agoric/assert';
 
 export const makeTable = (
   validateFn,
+  key = undefined,
   makeCustomMethodsFn = () => undefined,
 ) => {
   // The WeakMap that stores the records
-  const handleToRecord = makeStore();
+  const handleToRecord = makeStore(key);
 
   const table = harden({
     validate: validateFn,

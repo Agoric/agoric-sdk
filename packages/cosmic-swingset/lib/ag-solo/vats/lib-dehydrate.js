@@ -10,14 +10,14 @@ import { assert, details } from '@agoric/assert';
 export const makeDehydrator = (initialUnnamedCount = 0) => {
   let unnamedCount = initialUnnamedCount;
 
-  const petnameKindToMapping = makeStore();
+  const petnameKindToMapping = makeStore('petnameKind');
 
   const searchOrder = [];
 
   const makeMapping = kind => {
     assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
-    const valToPetname = makeStore();
-    const petnameToVal = makeStore();
+    const valToPetname = makeStore('value');
+    const petnameToVal = makeStore('petname');
     const addPetname = (petname, val) => {
       assert(
         !petnameToVal.has(petname),
