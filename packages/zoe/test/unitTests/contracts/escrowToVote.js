@@ -28,7 +28,8 @@ const makeContract = zcf => {
 
   // TODO: Validate that the response is of the format: { [question]: 'YES'|'NO'}
   const validateResponse = (_offerHandle, _response) => {
-    // Complete the offer if the response is not valid and then throw.
+    // Throw an error if the response is not valid, but do not
+    // complete the offer. We should allow the voter to recast their vote.
   };
 
   const voterHook = voterOfferHandle => {
@@ -69,12 +70,15 @@ const makeContract = zcf => {
   const expectedSecretaryProposal = harden({});
 
   const secretaryHook = secretaryOfferHandle => {
+    // TODO: what if the secretary offer is no longer active?
     const secretary = harden({
       // TODO: complete function
       closeElection: () => {
         // YES | NO to Nat
         const tally = new Map();
         // Iterate through offerHandleToResponse
+
+        // Check if the offer is still active.
 
         // Get the amount currently escrowed for each offerHandle
         // const escrowedAmount = zcf.getCurrentAllocation(offerHandle).Assets;
@@ -87,7 +91,10 @@ const makeContract = zcf => {
 
         // Complete the secretary offer?
 
-        return harden(tally);
+        return harden({
+          YES: tally.get('YES'),
+          NO: tally.get('NO'),
+        });
       },
       // TODO: prevent this from working if election is closed?
       makeVoterInvite,
