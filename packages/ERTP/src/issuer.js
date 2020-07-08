@@ -214,6 +214,7 @@ import makeAmountMath from './amountMath';
  *
  * @param {string} allegedName
  * @param {string} mathHelpersName
+ * @returns {IssuerResults}
  */
 function produceIssuer(allegedName, mathHelpersName = 'nat') {
   assert.typeof(allegedName, 'string');

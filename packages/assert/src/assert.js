@@ -180,6 +180,7 @@ harden(details);
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
  * @param {Details} [optDetails] The details of what was asserted
+ * @returns {never}
  */
 function fail(optDetails = details`Assert failed`) {
   if (typeof optDetails === 'string') {
