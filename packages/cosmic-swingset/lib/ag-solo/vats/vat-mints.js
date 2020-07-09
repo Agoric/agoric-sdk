@@ -8,7 +8,7 @@ import makeStore from '@agoric/store';
 // simoleanMint.
 
 function build(_E, _log) {
-  const mintsAndMath = makeStore();
+  const mintsAndMath = makeStore('issuerName');
 
   const api = harden({
     getAllIssuerNames: () => mintsAndMath.keys(),

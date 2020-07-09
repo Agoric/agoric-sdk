@@ -90,6 +90,7 @@ const makeContract = zcf => {
         'liquidityTokenSupply',
       ]),
     ),
+    'tokenBrand',
   );
 
   // Allows users to add new liquidity pools. `newTokenIssuer` and

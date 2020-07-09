@@ -339,7 +339,7 @@ import { makeTables } from './state';
  */
 function makeZoe(additionalEndowments = {}, vatPowers = {}) {
   // Zoe maps the inviteHandles to contract offerHook upcalls
-  const inviteHandleToOfferHook = makeStore();
+  const inviteHandleToOfferHook = makeStore('inviteHandle');
 
   const {
     mint: inviteMint,

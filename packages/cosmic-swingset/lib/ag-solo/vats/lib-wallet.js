@@ -39,8 +39,8 @@ export async function makeWallet({
       harden(['brand', 'issuer', 'amountMath']),
     );
 
-    const issuersInProgress = makeStore();
-    const issuerToBrand = makeWeakStore();
+    const issuersInProgress = makeStore('issuer');
+    const issuerToBrand = makeWeakStore('issuer');
     const makeCustomProperties = table =>
       harden({
         addIssuer: issuerP => {
@@ -79,19 +79,23 @@ export async function makeWallet({
         },
         getBrandForIssuer: issuerToBrand.get,
       });
-    const brandTable = makeTable(validateSomewhat, makeCustomProperties);
+    const brandTable = makeTable(
+      validateSomewhat,
+      'brand',
+      makeCustomProperties,
+    );
     return brandTable;
   };
 
   // issuerNames have properties like 'brandRegKey' and 'issuerPetname'.
-  const issuerToIssuerNames = makeWeakStore();
+  const issuerToIssuerNames = makeWeakStore('issuer');
   const brandTable = makeBrandTable();
-  const purseToBrand = makeWeakStore();
-  const brandToDepositFacetId = makeWeakStore();
+  const purseToBrand = makeWeakStore('purse');
+  const brandToDepositFacetId = makeWeakStore('brand');
 
   // Offers that the wallet knows about (the inbox).
-  const idToOffer = makeStore();
-  const idToNotifierP = makeStore();
+  const idToOffer = makeStore('offerId');
+  const idToNotifierP = makeStore('offerId');
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();

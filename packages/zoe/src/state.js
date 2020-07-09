@@ -17,7 +17,7 @@ const makeInstallationTable = () => {
   const validateSomewhat = makeValidateProperties(
     harden(['installation', 'bundle']),
   );
-  return makeTable(validateSomewhat);
+  return makeTable(validateSomewhat, 'installationHandle');
 };
 
 // Instance Table
@@ -36,7 +36,7 @@ const makeInstanceTable = () => {
     ]),
   );
 
-  return makeTable(validateSomewhat);
+  return makeTable(validateSomewhat, 'instanceHandle');
 };
 
 // Offer Table
@@ -101,7 +101,7 @@ const makeOfferTable = () => {
     return customMethods;
   };
 
-  return makeTable(validateSomewhat, makeCustomMethods);
+  return makeTable(validateSomewhat, 'offerHandle', makeCustomMethods);
 };
 
 // Payout Map
@@ -128,8 +128,8 @@ const makeIssuerTable = () => {
   );
 
   const makeCustomMethods = table => {
-    const issuersInProgress = makeStore();
-    const issuerToBrand = makeStore();
+    const issuersInProgress = makeStore('issuer');
+    const issuerToBrand = makeStore('issuer');
 
     // We can't be sure we can build the table entry soon enough that the first
     // caller will get the actual data, so we start by saving a promise in the
@@ -190,7 +190,7 @@ const makeIssuerTable = () => {
     return customMethods;
   };
 
-  return makeTable(validateSomewhat, makeCustomMethods);
+  return makeTable(validateSomewhat, 'brand', makeCustomMethods);
 };
 
 const makeTables = () =>

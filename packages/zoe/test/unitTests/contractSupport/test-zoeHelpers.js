@@ -30,10 +30,10 @@ test('ZoeHelpers messages', t => {
 });
 
 function makeMockZoeBuilder() {
-  const offers = makeStore();
-  const allocs = makeStore();
+  const offers = makeStore('offerHandle');
+  const allocs = makeStore('offerHandle');
   let instanceRecord;
-  const amountMathToBrand = makeStore();
+  const amountMathToBrand = makeStore('amountMath');
   const completedHandles = [];
   const reallocatedAmountObjs = [];
   const reallocatedHandles = [];
