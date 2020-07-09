@@ -79,7 +79,11 @@ export async function makeWallet({
         },
         getBrandForIssuer: issuerToBrand.get,
       });
-    const brandTable = makeTable(validateSomewhat, makeCustomProperties);
+    const brandTable = makeTable(
+      validateSomewhat,
+      'brand',
+      makeCustomProperties,
+    );
     return brandTable;
   };
 
