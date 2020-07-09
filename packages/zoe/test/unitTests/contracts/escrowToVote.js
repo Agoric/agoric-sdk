@@ -27,7 +27,15 @@ const makeContract = zcf => {
   const offerHandleToResponse = makeStore('offerHandle');
 
   // TODO: Validate that the response is of the format: { [question]: 'YES'|'NO'}
-  const validateResponse = (_offerHandle, _response) => {
+  const validateResponse = (response) => {
+
+   assert((question in response) !== false,
+    details`The question ${Object.keys(response)[0]} did not match the question ${question}`,
+    );
+
+   assert(!(response[question] !== "NO" && response[question] !== "YES"),
+   details`the answer ${response[question]} was not 'YES' or 'NO'`,
+   );
     // Throw an error if the response is not valid, but do not
     // complete the offer. We should allow the voter to recast their vote.
   };
