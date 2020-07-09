@@ -238,6 +238,7 @@ import { makeTables } from './state';
  * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
+ * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {(brand: Brand) => AmountMath} getAmountMath
  *
  * @callback Reallocate
@@ -614,6 +615,7 @@ function makeZoe(additionalEndowments = {}, vatPowers = {}) {
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
+      getIssuerForBrand: brand => issuerTable.get(brand).issuer,
       getAmountMath: getAmountMathForBrand,
     });
     return contractFacet;
