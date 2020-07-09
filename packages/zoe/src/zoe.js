@@ -508,6 +508,7 @@ function makeZoe(additionalEndowments = {}, vatPowers = {}) {
       },
 
       complete: offerHandles => {
+        assert(Array.isArray(offerHandles), details`zcf.complete(offerHandles) must be Array, not ${offerHandles}`);
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
         return completeOffers(instanceHandle, offerHandles);
       },
