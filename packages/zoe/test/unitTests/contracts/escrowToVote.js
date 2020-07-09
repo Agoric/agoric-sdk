@@ -83,20 +83,18 @@ const makeContract = zcf => {
   const secretaryHook = secretaryOfferHandle => {
     // TODO: what if the secretary offer is no longer active?
     const secretary = harden({
-      // TODO: complete function
       closeElection: () => {
         // YES | NO to Nat
         const tally = new Map();
 
         for (const [offerHandle, response] of offerHandleToResponse.entries()) {
-          if (zcf.isOfferActive(offerHandle)){
+          if (zcf.isOfferActive(offerHandle)) {
             const escrowedAmount = zcf.getCurrentAllocation(offerHandle).Assets;
             tally.set(response[question], escrowedAmount.extent);
-            zcf.complete(offerHandle);
+            zcf.complete([offerHandle]);
           }
         }
-        zcf.complete(secretaryOfferHandle);
-
+        zcf.complete([secretaryOfferHandle]);
 
         return harden({
           YES: tally.get('YES'),
