@@ -2,7 +2,7 @@
 // @ts-check
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import { makeZoeHelpers } from '../../../src/contractSupport';
 
@@ -26,8 +26,19 @@ const makeContract = zcf => {
 
   const offerHandleToResponse = makeStore('offerHandle');
 
-  // TODO: Validate that the response is of the format: { [question]: 'YES'|'NO'}
-  const validateResponse = (_offerHandle, _response) => {
+  const validateResponse = response => {
+    assert(
+      Object.keys(response).length === 1 &&
+        Object.keys(response)[0] === question,
+      `The question ${
+        Object.keys(response)[0]
+      } did not match the question ${question}`,
+    );
+
+    assert(
+      response[question] === 'NO' || response[question] === 'YES',
+      `the answer ${response[question]} was not 'YES' or 'NO'`,
+    );
     // Throw an error if the response is not valid, but do not
     // complete the offer. We should allow the voter to recast their vote.
   };
@@ -72,24 +83,18 @@ const makeContract = zcf => {
   const secretaryHook = secretaryOfferHandle => {
     // TODO: what if the secretary offer is no longer active?
     const secretary = harden({
-      // TODO: complete function
       closeElection: () => {
         // YES | NO to Nat
         const tally = new Map();
-        // Iterate through offerHandleToResponse
 
-        // Check if the offer is still active.
-
-        // Get the amount currently escrowed for each offerHandle
-        // const escrowedAmount = zcf.getCurrentAllocation(offerHandle).Assets;
-
-        // Add to the running tally weighting by the extent escrowed.
-        // tally.set(response[question], escrowedAmount.extent)
-
-        // Complete all the voting offers
-        // zcf.complete(offerHandleToResponse.keys())
-
-        // Complete the secretary offer?
+        for (const [offerHandle, response] of offerHandleToResponse.entries()) {
+          if (zcf.isOfferActive(offerHandle)) {
+            const escrowedAmount = zcf.getCurrentAllocation(offerHandle).Assets;
+            tally.set(response[question], escrowedAmount.extent);
+            zcf.complete([offerHandle]);
+          }
+        }
+        zcf.complete([secretaryOfferHandle]);
 
         return harden({
           YES: tally.get('YES'),

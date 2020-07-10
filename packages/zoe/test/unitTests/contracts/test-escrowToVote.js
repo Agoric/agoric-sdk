@@ -115,12 +115,12 @@ test('zoe - escrowToVote', async t => {
     );
 
     const voter = await voterP;
-    t.throws(
+    t.rejects(
       () => E(voter).vote({ 'not a question': 'NO' }),
       /The question 'not a question' did not match the question 'Should we upgrade\?'/,
       `A vote for the wrong question throws`,
     );
-    t.throws(
+    t.rejects(
       () => E(voter).vote({ [QUESTION]: 'NOT A VALID ANSWER' }),
       /the answer 'NOT A VALID ANSWER' was not 'YES' or 'NO'/,
       `A vote with an invalid answer throws`,
