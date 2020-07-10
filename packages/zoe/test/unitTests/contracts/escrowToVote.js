@@ -18,26 +18,25 @@ const makeContract = zcf => {
   const { assertKeywords, checkHook } = makeZoeHelpers(zcf);
   assertKeywords(harden(['Assets']));
   const {
-    brandKeywordRecord,
     terms: { question },
   } = zcf.getInstanceRecord();
-  // We assume the only valid responses are 'YES' and 'NO'
-  const amountMath = zcf.getAmountMath(brandKeywordRecord.Assets);
 
   const offerHandleToResponse = makeStore('offerHandle');
 
+  // `question` is a string defined in the terms.
+  // We assume the only valid answers are 'YES' and 'NO'
   const validateResponse = response => {
     assert(
       Object.keys(response).length === 1 &&
         Object.keys(response)[0] === question,
-      `The question ${
+      `The question '${
         Object.keys(response)[0]
-      } did not match the question ${question}`,
+      }' did not match the question '${question}'`,
     );
 
     assert(
       response[question] === 'NO' || response[question] === 'YES',
-      `the answer ${response[question]} was not 'YES' or 'NO'`,
+      `the answer '${response[question]}' was not 'YES' or 'NO'`,
     );
     // Throw an error if the response is not valid, but do not
     // complete the offer. We should allow the voter to recast their vote.

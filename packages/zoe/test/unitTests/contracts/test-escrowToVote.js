@@ -40,11 +40,9 @@ test('zoe - escrowToVote', async t => {
     terms,
   );
 
-  // Alice makes an offer to use the secretary invite and get a
+  // Alice makes an offer to use the secretary invite and gets a
   // secretary use object back.
-  const { outcome: secretaryUseObjP, completeObj } = await E(zoe).offer(
-    secretaryInvite,
-  );
+  const { outcome: secretaryUseObjP } = await E(zoe).offer(secretaryInvite);
 
   const secretary = await secretaryUseObjP;
 
@@ -115,11 +113,13 @@ test('zoe - escrowToVote', async t => {
     );
 
     const voter = await voterP;
+    console.log('EXPECTED ERROR ->>>');
     t.rejects(
       () => E(voter).vote({ 'not a question': 'NO' }),
       /The question 'not a question' did not match the question 'Should we upgrade\?'/,
       `A vote for the wrong question throws`,
     );
+    console.log('EXPECTED ERROR ->>>');
     t.rejects(
       () => E(voter).vote({ [QUESTION]: 'NOT A VALID ANSWER' }),
       /the answer 'NOT A VALID ANSWER' was not 'YES' or 'NO'/,
@@ -209,10 +209,7 @@ test('zoe - escrowToVote', async t => {
 
   // Secretary closes election and tallies the votes.
   const electionResults = await E(secretary).closeElection();
-  t.deepEquals(electionResults, [
-    ['YES', 3],
-    ['NO', 5],
-  ]);
+  t.deepEquals(electionResults, { YES: 3, NO: 5 });
 
   // Once the election is closed, the voters get their escrowed funds
   // back and can no longer vote. See the voter functions for the
