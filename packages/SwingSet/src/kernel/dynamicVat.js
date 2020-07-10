@@ -9,7 +9,7 @@ export function makeDynamicVatCreator(stuff) {
   const {
     allocateUnusedVatID,
     vatNameToID,
-    vatEndowments,
+    makeVatEndowments,
     dynamicVatPowers,
     transformMetering,
     makeGetMeter,
@@ -86,7 +86,7 @@ export function makeDynamicVatCreator(stuff) {
       const vatNS = await importBundle(vatSourceBundle, {
         filePrefix: vatID,
         transforms,
-        endowments: { ...vatEndowments, getMeter },
+        endowments: { ...makeVatEndowments(vatID), getMeter },
       });
       if (typeof vatNS.buildRootObject !== 'function') {
         throw Error(

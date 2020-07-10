@@ -20,12 +20,12 @@ const RETRY_DELAY_MS = 1000;
 
 export default async function deployMain(progname, rawArgs, powers, opts) {
   const { anylogger, makeWebSocket } = powers;
-  const log = anylogger('agoric:deploy');
+  const console = anylogger('agoric:deploy');
 
   const args = rawArgs.slice(1);
 
   if (args.length === 0) {
-    log.error('you must specify at least one deploy.js to run');
+    console.error('you must specify at least one deploy.js to run');
     return 1;
   }
 
@@ -34,7 +34,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
       return;
     }
     const body = JSON.stringify(obj);
-    log.debug('sendJSON', body.slice(0, 200));
+    console.debug('sendJSON', body.slice(0, 200));
     ws.send(body);
   };
 
@@ -44,25 +44,25 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   let retries = 0;
   const retryWebsocket = () => {
     retries += 1;
-    log.info(`Open CapTP connection to ${wsurl} (try=${retries})...`);
+    console.info(`Open CapTP connection to ${wsurl} (try=${retries})...`);
     const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
     ws.on('open', async () => {
       connected = true;
       try {
-        log.info('Connected to CapTP!');
+        console.debug('Connected to CapTP!');
         const { dispatch, getBootstrap } = makeCapTP('bundle', obj =>
           sendJSON(ws, obj),
         );
         ws.on('message', data => {
           try {
             const obj = JSON.parse(data);
-            log.debug('receiving', data.slice(0, 200));
+            console.debug('receiving', data.slice(0, 200));
             if (obj.type === 'CTP_ERROR') {
               throw obj.error;
             }
             dispatch(obj);
           } catch (e) {
-            log.error('server error processing message', data, e);
+            console.error('server error processing message', data, e);
             exit.reject(e);
           }
         });
@@ -70,7 +70,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         // Wait for the chain to become ready.
         let bootP = getBootstrap();
         const loaded = await E.G(bootP).LOADING;
-        log.info('Chain loaded:', loaded);
+        console.debug('Chain loaded:', loaded);
         // Take a new copy, since the chain objects have been added to bootstrap.
         bootP = getBootstrap();
 
@@ -78,14 +78,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           const moduleFile = path.resolve(process.cwd(), arg);
           const pathResolve = (...resArgs) =>
             path.resolve(path.dirname(moduleFile), ...resArgs);
-          log('running', moduleFile);
+          console.log('running', moduleFile);
 
           // use a dynamic import to load the deploy script, it is unconfined
           // eslint-disable-next-line import/no-dynamic-require,global-require
           const mainNS = require(pathResolve(moduleFile));
           const main = mainNS.default;
           if (typeof main !== 'function') {
-            log.error(
+            console.error(
               `${moduleFile} does not have an export default function main`,
             );
           } else {
@@ -96,7 +96,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           }
         }
 
-        log.info('Done!');
+        console.debug('Done!');
         ws.close();
         exit.resolve(0);
       } catch (e) {
@@ -104,7 +104,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
       }
     });
     ws.on('close', (_code, _reason) => {
-      log.debug('connection closed');
+      console.debug('connection closed');
       if (connected) {
         exit.resolve(1);
       }

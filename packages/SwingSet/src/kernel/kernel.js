@@ -31,7 +31,7 @@ export default function buildKernel(kernelEndowments) {
   const {
     waitUntilQuiescent,
     hostStorage,
-    vatEndowments,
+    makeVatEndowments,
     vatAdminVatSetup,
     vatAdminDevSetup,
     replaceGlobalMeter,
@@ -769,7 +769,7 @@ export default function buildKernel(kernelEndowments) {
   const createVatDynamically = makeDynamicVatCreator({
     allocateUnusedVatID: kernelKeeper.allocateUnusedVatID,
     vatNameToID,
-    vatEndowments,
+    makeVatEndowments,
     dynamicVatPowers,
     transformMetering,
     makeGetMeter,
