@@ -49,6 +49,7 @@ import { makeTables } from './state';
  * There doesn't seem to be any way in JSDoc to specify a record consisting of
  * an arbitrary number of key-value pairs of specified type.
  * @typedef {Object.<string,Payment>} PaymentKeywordRecord
+ * @typedef {Object.<string,Promise<Payment>>} PaymentPKeywordRecord
  */
 
 /**
@@ -124,7 +125,7 @@ import { makeTables } from './state';
  *
  * @typedef {Object} OfferResultRecord This is returned by a call to `offer` on Zoe.
  * @property {OfferHandle} offerHandle
- * @property {Promise<PaymentKeywordRecord>} payout A promise that resolves
+ * @property {Promise<PaymentPKeywordRecord>} payout A promise that resolves
  * to a record which has keywords as keys and promises for payments
  * as values. Note that while the payout promise resolves when an offer
  * is completed, the promise for each payment resolves after the remote
