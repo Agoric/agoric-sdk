@@ -178,11 +178,11 @@ function build(E, _D, _log) {
   function getCommandHandler() {
     return harden({
       onOpen(_obj, meta) {
-        console.error('Adding adminHandle', meta);
+        console.debug('Adding adminHandle', meta);
         adminHandles.add(meta.channelHandle);
       },
       onClose(_obj, meta) {
-        console.error('Removing adminHandle', meta);
+        console.debug('Removing adminHandle', meta);
         adminHandles.delete(meta.channelHandle);
       },
       onMessage: adminOnMessage,

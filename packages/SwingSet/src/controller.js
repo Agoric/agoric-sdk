@@ -24,11 +24,19 @@ import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 
-const log = anylogger('SwingSet:controller');
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
+}
+const console = makeConsole('SwingSet:controller');
 
 // FIXME: Put this somewhere better.
 process.on('unhandledRejection', e =>
-  log.error('UnhandledPromiseRejectionWarning:', e),
+  console.error('UnhandledPromiseRejectionWarning:', e),
 );
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
@@ -62,7 +70,7 @@ function byName(a, b) {
  * lots of places).
  */
 export function loadBasedir(basedir) {
-  log.debug(`= loading config from basedir ${basedir}`);
+  console.debug(`= loading config from basedir ${basedir}`);
   const vats = new Map(); // name -> { sourcepath, options }
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
@@ -82,7 +90,7 @@ export function loadBasedir(basedir) {
       const vatSourcePath = path.resolve(basedir, dirent.name);
       vats.set(name, { sourcepath: vatSourcePath, options: {} });
     } else {
-      log.debug('ignoring ', dirent.name);
+      console.debug('ignoring ', dirent.name);
     }
   });
   let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
@@ -128,7 +136,7 @@ export async function buildVatController(config, argv = []) {
   const kernelNS = await importBundle(kernelSource, {
     filePrefix: 'kernel',
     endowments: {
-      console,
+      console: makeConsole('SwingSet:kernel'),
       require: kernelRequire,
       HandledPromise,
     },
@@ -171,14 +179,16 @@ export async function buildVatController(config, argv = []) {
     throw Error(`vatRequire unprepared to satisfy require(${what})`);
   }
 
-  const vatEndowments = harden({
-    console,
-    require: vatRequire,
-    HandledPromise,
-    // re2 is a RegExp work-a-like that disables backtracking expressions for
-    // safer memory consumption
-    RegExp: re2,
-  });
+  function makeVatEndowments(consoleTag) {
+    return harden({
+      require: vatRequire,
+      console: makeConsole(`SwingSet:${consoleTag}`),
+      HandledPromise,
+      // re2 is a RegExp work-a-like that disables backtracking expressions for
+      // safer memory consumption
+      RegExp: re2,
+    });
+  }
 
   async function loadStaticVat(sourceIndex, name) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
@@ -189,7 +199,7 @@ export async function buildVatController(config, argv = []) {
     const bundle = await bundleSource(sourceIndex);
     const vatNS = await importBundle(bundle, {
       filePrefix: name,
-      endowments: vatEndowments,
+      endowments: makeVatEndowments(name),
     });
     let setup;
     if ('buildRootObject' in vatNS) {
@@ -230,7 +240,7 @@ export async function buildVatController(config, argv = []) {
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
-    vatEndowments,
+    makeVatEndowments,
     vatAdminDevSetup: await loadStaticVat(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
     vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
     replaceGlobalMeter,
@@ -245,7 +255,7 @@ export async function buildVatController(config, argv = []) {
   }
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
-    log.debug(`= adding vat '${name}' from ${sourceIndex}`);
+    console.debug(`= adding vat '${name}' from ${sourceIndex}`);
     const setup = await loadStaticVat(sourceIndex, `vat-${name}`);
     kernel.addGenesisVat(name, setup, options);
   }
