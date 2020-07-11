@@ -202,7 +202,7 @@ test('zoe - simpleExchange - valid inputs', async t => {
 
 const expectedSimpleExchangeNotificationLog = [
   '=> alice, bob, carol and dave are set up',
-  '',
+  '{"buys":[],"sells":[]}',
   '{"buys":[],"sells":[{"want":{"Price":{"brand":{},"extent":4}},"give":{"Asset":{"brand":{},"extent":3}}}]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   '{"buys":[],"sells":[]}',

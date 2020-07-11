@@ -15,7 +15,7 @@ import { makeGetInstanceHandle } from '../../../src/clientSupport';
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 test('simpleExchange with valid offers', async t => {
-  t.plan(14);
+  t.plan(17);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -52,6 +52,13 @@ test('simpleExchange with valid offers', async t => {
     Price: simoleanIssuer,
   });
 
+  const initialOrders = publicAPI.getNotifier().getCurrentUpdate().value;
+  t.deepEquals(
+    initialOrders,
+    { buys: [], sells: [] },
+    `order notifier is initialized`,
+  );
+
   const aliceInvite = publicAPI.makeInvite();
 
   // 2: Alice escrows with zoe to create a sell order. She wants to
@@ -70,9 +77,24 @@ test('simpleExchange with valid offers', async t => {
     offerHandle: aliceOfferHandle,
   } = await zoe.offer(aliceInvite, aliceSellOrderProposal, alicePayments);
 
+  const afterAliceOrders = publicAPI.getNotifier().getCurrentUpdate().value;
+  t.deepEquals(
+    afterAliceOrders,
+    {
+      buys: [],
+      sells: [
+        {
+          want: aliceSellOrderProposal.want,
+          give: aliceSellOrderProposal.give,
+        },
+      ],
+    },
+    `order notifier is updated with Alices sell order`,
+  );
+
   aliceOfferHandle.then(handle => {
     const aliceNotifier = zoe.getOfferNotifier(handle);
-    const firstUpdate = aliceNotifier.getUpdateSince();
+    const firstUpdate = aliceNotifier.getCurrentUpdate();
     t.notOk(firstUpdate.value, 'notifier start state is empty');
     t.notOk(firstUpdate.done, 'notifier start state is not done');
     t.ok(firstUpdate.updateHandle, 'notifier start state has handle');
@@ -121,6 +143,13 @@ test('simpleExchange with valid offers', async t => {
     bobExclusiveInvite,
     bobBuyOrderProposal,
     bobPayments,
+  );
+
+  const afterBobOrders = publicAPI.getNotifier().getCurrentUpdate().value;
+  t.deepEquals(
+    afterBobOrders,
+    { buys: [], sells: [] },
+    `order notifier is updated when Bob fulfills the order`,
   );
 
   t.equals(
@@ -259,7 +288,7 @@ test('simpleExchange with multiple sell offers', async t => {
         ],
       };
       t.deepEquals(
-        publicAPI.getNotifier().getUpdateSince().value,
+        publicAPI.getNotifier().getCurrentUpdate().value,
         expectedBook,
       );
     });
