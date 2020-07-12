@@ -29,7 +29,8 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 const makeContract = zcf => {
   let sellOfferHandles = [];
   let buyOfferHandles = [];
-  const { notifier, updater } = produceNotifier();
+  // eslint-disable-next-line no-use-before-define
+  const { notifier, updater } = produceNotifier(getBookOrders());
 
   const {
     rejectOffer,

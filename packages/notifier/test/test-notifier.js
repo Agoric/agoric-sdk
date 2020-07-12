@@ -1,47 +1,75 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { produceNotifier } from '../src/notifier';
 
-test('notifier - initital state', t => {
+/**
+ * @template T
+ * @typedef {import('../src/notifier').NotifierRecord<T>} NotifierRecord<T>
+ */
+
+test('notifier - initial state', async t => {
+  /** @type {NotifierRecord<1>} */
   const { notifier, updater } = produceNotifier();
   updater.updateState(1);
 
-  const updateDeNovo = notifier.getUpdateSince();
-  const updateFromNonExistent = notifier.getUpdateSince({});
+  const updateDeNovo = await notifier.getUpdateSince();
+  const updateFromNonExistent = await notifier.getUpdateSince({});
 
   t.equals(updateDeNovo.value, 1, 'state is one');
   t.deepEquals(updateDeNovo, updateFromNonExistent, 'no param same as unknown');
   t.end();
 });
 
-test('notifier - single update', t => {
+test('notifier - single update', async t => {
   t.plan(3);
+  /** @type {NotifierRecord<number>} */
   const { notifier, updater } = produceNotifier();
   updater.updateState(1);
 
-  const updateDeNovo = notifier.getUpdateSince();
+  const updateDeNovo = await notifier.getUpdateSince();
+  t.equals(updateDeNovo.value, 1, 'initial state is one');
 
   const updateInWaiting = notifier.getUpdateSince(updateDeNovo.updateHandle);
-  t.equals(updateDeNovo.value, 1, 'initial state is one');
-  Promise.all([updateInWaiting]).then(([update]) => {
+  const all = Promise.all([updateInWaiting]).then(([update]) => {
     t.equals(update.value, 3, 'updated state is eventually three');
   });
 
-  t.equals(notifier.getUpdateSince({}).value, 1);
+  const update2 = await notifier.getUpdateSince({});
+  t.equals(update2.value, 1);
   updater.updateState(3);
+  await all;
 });
 
-test('notifier - update after state change', t => {
-  t.plan(5);
-  const { notifier, updater } = produceNotifier();
-  updater.updateState(1);
+test('notifier - initial update', async t => {
+  t.plan(3);
+  /** @type {NotifierRecord<number>} */
+  const { notifier, updater } = produceNotifier(1);
 
-  const updateDeNovo = notifier.getUpdateSince();
+  const updateDeNovo = notifier.getCurrentUpdate();
+  t.equals(updateDeNovo.value, 1, 'initial state is one');
+
+  const updateInWaiting = notifier.getUpdateSince(updateDeNovo.updateHandle);
+  const all = Promise.all([updateInWaiting]).then(([update]) => {
+    t.equals(update.value, 3, 'updated state is eventually three');
+  });
+
+  const update2 = await notifier.getUpdateSince({});
+  t.equals(update2.value, 1);
+  updater.updateState(3);
+  await all;
+});
+
+test('notifier - update after state change', async t => {
+  t.plan(5);
+  const { notifier, updater } = produceNotifier(1);
+
+  const updateDeNovo = notifier.getCurrentUpdate();
 
   const updateInWaiting = notifier.getUpdateSince(updateDeNovo.updateHandle);
   t.equals(updateDeNovo.value, 1, 'first state check (1)');
-  Promise.all([updateInWaiting]).then(([update1]) => {
+  const all = Promise.all([updateInWaiting]).then(([update1]) => {
     t.equals(update1.value, 3, '4th check (delayed) 3');
     const thirdStatePromise = notifier.getUpdateSince(update1.updateHandle);
     Promise.all([thirdStatePromise]).then(([update2]) => {
@@ -49,22 +77,23 @@ test('notifier - update after state change', t => {
     });
   });
 
-  t.equals(notifier.getUpdateSince({}).value, 1, '2nd check (1)');
+  t.equals(notifier.getCurrentUpdate().value, 1, '2nd check (1)');
   updater.updateState(3);
 
-  t.equals(notifier.getUpdateSince({}).value, 3, '3rd check (3)');
+  t.equals(notifier.getCurrentUpdate().value, 3, '3rd check (3)');
   updater.updateState(5);
+  await all;
 });
 
-test('notifier - final state', t => {
+test('notifier - final state', async t => {
   t.plan(6);
-  const { notifier, updater } = produceNotifier();
-  updater.updateState(1);
+  /** @type {NotifierRecord<number|string>} */
+  const { notifier, updater } = produceNotifier(1);
 
-  const updateDeNovo = notifier.getUpdateSince();
+  const updateDeNovo = notifier.getCurrentUpdate();
   const updateInWaiting = notifier.getUpdateSince(updateDeNovo.updateHandle);
   t.equals(updateDeNovo.value, 1, 'initial state is one');
-  Promise.all([updateInWaiting]).then(([update]) => {
+  const all = Promise.all([updateInWaiting]).then(([update]) => {
     t.equals(update.value, 'final', 'state is "final"');
     t.notOk(update.updateHandle, 'no handle after close');
     const postFinalUpdate = notifier.getUpdateSince(update.updateHandle);
@@ -74,6 +103,8 @@ test('notifier - final state', t => {
     });
   });
 
-  t.equals(notifier.getUpdateSince({}).value, 1, 'still one');
+  const invalidHandle = await notifier.getUpdateSince({});
+  t.equals(invalidHandle.value, 1, 'still one');
   updater.resolve('final');
+  await all;
 });
