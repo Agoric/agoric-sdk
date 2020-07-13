@@ -42,10 +42,6 @@ const setupTest = async () => {
     invite,
     instanceRecord: { handle: instanceHandle },
   } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
-  const instanceRegKey = registry.register(
-    'automaticRefundInstanceHandle',
-    instanceHandle,
-  );
 
   // Create Autoswap instance
   const autoswapContractRoot = require.resolve(
@@ -65,14 +61,8 @@ const setupTest = async () => {
     autoswapIssuerKeywordRecord,
   );
 
-  const autoswapInstanceRegKey = registry.register(
-    'autoswapInstanceHandle',
-    autoswapInstanceHandle,
-  );
-
   const wallet = await makeWallet({
     zoe,
-    registry,
     board,
     pursesStateChangeHandler,
     inboxStateChangeHandler,
@@ -89,28 +79,36 @@ const setupTest = async () => {
     addLiquidityInvite,
     installationHandle,
     instanceHandle,
-    instanceRegKey,
-    autoswapInstanceRegKey,
+    autoswapInstanceHandle,
+    autoswapInstallationHandle,
     pursesStateChangeLog,
     inboxStateChangeLog,
   };
 };
 
 test('lib-wallet issuer and purse methods', async t => {
+  t.plan(10);
   try {
     const {
+      zoe,
       moolaBundle,
       rpgBundle,
       wallet,
       inboxStateChangeLog,
       pursesStateChangeLog,
     } = await setupTest();
-    t.deepEquals(wallet.getIssuers(), [], `wallet starts off with 0 issuers`);
-    await wallet.addIssuer('moola', moolaBundle.issuer, 'fakeRegKeyMoola');
-    await wallet.addIssuer('rpg', rpgBundle.issuer, 'fakeRegKeyRpg');
+    const inviteIssuer = await E(zoe).getInviteIssuer();
+    t.deepEquals(
+      wallet.getIssuers(),
+      [['zoe invite', inviteIssuer]],
+      `wallet starts off with only the zoe invite issuer`,
+    );
+    await wallet.addIssuer('moola', moolaBundle.issuer);
+    await wallet.addIssuer('rpg', rpgBundle.issuer);
     t.deepEquals(
       wallet.getIssuers(),
       [
+        ['zoe invite', inviteIssuer],
         ['moola', moolaBundle.issuer],
         ['rpg', rpgBundle.issuer],
       ],
@@ -122,7 +120,15 @@ test('lib-wallet issuer and purse methods', async t => {
       moolaBundle.issuer,
       `can get issuer by issuer petname`,
     );
-    t.deepEquals(wallet.getPurses(), [], `starts off with no purses`);
+
+    const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
+    const invitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
+    t.deepEquals(
+      wallet.getPurses(),
+      [['Default Zoe invite purse', invitePurse]],
+      `starts off with only the invite purse`,
+    );
     await wallet.makeEmptyPurse('moola', 'fun money');
     const moolaPurse = wallet.getPurse('fun money');
     t.deepEquals(
@@ -132,8 +138,11 @@ test('lib-wallet issuer and purse methods', async t => {
     );
     t.deepEquals(
       wallet.getPurses(),
-      [['fun money', moolaPurse]],
-      `one purse currently`,
+      [
+        ['Default Zoe invite purse', invitePurse],
+        ['fun money', moolaPurse],
+      ],
+      `two purses currently`,
     );
     t.deepEquals(
       wallet.getPurseIssuer('fun money'),
@@ -143,66 +152,62 @@ test('lib-wallet issuer and purse methods', async t => {
     const moolaPayment = moolaBundle.mint.mintPayment(
       moolaBundle.amountMath.make(100),
     );
-    wallet.deposit('fun money', moolaPayment);
+    await wallet.deposit('fun money', moolaPayment);
     t.deepEquals(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(100),
       `deposit successful`,
     );
     t.deepEquals(
-      wallet.getIssuerNames(moolaBundle.issuer),
-      {
-        issuerPetname: 'moola',
-        brandRegKey: 'fakeRegKeyMoola',
-      },
-      `returns petname and brandRegKey`,
+      pursesStateChangeLog,
+      [
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
+      ],
+      `pursesStateChangeLog`,
     );
-    t.deepEquals(pursesStateChangeLog, [
-      '[{"issuerPetname":"moola","brandRegKey":"fakeRegKeyMoola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
-    ]);
-    t.deepEquals(inboxStateChangeLog, []);
+    t.deepEquals(inboxStateChangeLog, [], `inboxStateChangeLog`);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
 test('lib-wallet offer methods', async t => {
+  t.plan(5);
   try {
     const {
       moolaBundle,
       wallet,
-      instanceRegKey,
-      registry,
-      inboxStateChangeLog,
-      pursesStateChangeLog,
+      invite,
+      zoe,
+      board,
+      instanceHandle,
     } = await setupTest();
 
-    const moolaBrandRegKey = registry.register('moolaBrand', moolaBundle.brand);
-    await wallet.addIssuer('moola', moolaBundle.issuer, moolaBrandRegKey);
+    await wallet.addIssuer('moola', moolaBundle.issuer);
     await wallet.makeEmptyPurse('moola', 'Fun budget');
     await wallet.deposit(
       'Fun budget',
       moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
     );
-    const formulateBasicOffer = id =>
+
+    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const {
+      extent: [{ handle: inviteHandle, installationHandle }],
+    } = await E(inviteIssuer).getAmountOf(invite);
+    const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
+    await wallet.deposit('Default Zoe invite purse', invite);
+    const instanceHandleBoardId = await E(board).getId(instanceHandle);
+    const installationHandleBoardId = await E(board).getId(installationHandle);
+
+    const formulateBasicOffer = (id, inviteHandleBoardId) =>
       harden({
         // JSONable ID for this offer.  This is scoped to the origin.
         id,
 
-        // Contract-specific metadata.
-        instanceRegKey,
-
-        // Format is:
-        //   hooks[targetName][hookName] = [hookMethod, ...hookArgs].
-        // Then is called within the wallet as:
-        //   E(target)[hookMethod](...hookArgs)
-        hooks: {
-          publicAPI: {
-            getInvite: ['makeInvite'], // E(publicAPI).makeInvite()
-          },
-        },
+        inviteHandleBoardId,
+        instanceHandleBoardId,
+        installationHandleBoardId,
 
         proposalTemplate: {
           give: {
@@ -218,33 +223,58 @@ test('lib-wallet offer methods', async t => {
 
     const rawId = '1588645041696';
     const id = `unknown#${rawId}`;
-    const offer = formulateBasicOffer(rawId);
+    const offer = formulateBasicOffer(rawId, inviteHandleBoardId1);
 
-    const hooks = wallet.hydrateHooks(offer.hooks);
-    await wallet.addOffer(offer, hooks);
+    await wallet.addOffer(offer);
 
     t.deepEquals(
       wallet.getOffers(),
       [
         {
-          id,
-          instanceRegKey: 'automaticrefundinstancehandle_3467',
-          hooks: { publicAPI: { getInvite: ['makeInvite'] } },
+          id: 'unknown#1588645041696',
+          inviteHandleBoardId: '15765496',
+          instanceHandleBoardId: '15326650',
+          installationHandleBoardId: '7279951',
           proposalTemplate: {
-            give: {
-              Contribution: {
-                pursePetname: 'Fun budget',
-                extent: 1,
-                issuerPetname: 'moola',
-                brandRegKey: 'moolabrand_9794',
-              },
-            },
+            give: { Contribution: { pursePetname: 'Fun budget', extent: 1 } },
             exit: { onDemand: null },
           },
           requestContext: { origin: 'unknown' },
           status: undefined,
+          instancePetname: 'unnamed-2',
+          installationPetname: 'unnamed-3',
+          proposalForDisplay: {
+            want: {},
+            give: {
+              Contribution: {
+                pursePetname: 'Fun budget',
+                amount: {
+                  brand: { kind: 'brand', petname: 'moola' },
+                  extent: 1,
+                },
+              },
+            },
+            exit: { onDemand: null },
+          },
         },
       ],
+      `offer structure`,
+    );
+    t.deepEquals(
+      wallet.getOffers()[0].proposalForDisplay,
+      {
+        want: {},
+        give: {
+          Contribution: {
+            pursePetname: 'Fun budget',
+            amount: {
+              brand: { kind: 'brand', petname: 'moola' },
+              extent: 1,
+            },
+          },
+        },
+        exit: { onDemand: null },
+      },
       `offer structure`,
     );
     const { outcome, depositedP } = await wallet.acceptOffer(id);
@@ -264,77 +294,53 @@ test('lib-wallet offer methods', async t => {
     );
     const rawId2 = '1588645230204';
     const id2 = `unknown#${rawId2}`;
-    const offer2 = formulateBasicOffer(rawId2);
-    await wallet.addOffer(offer2, wallet.hydrateHooks(offer2.hooks));
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const invite2 = await E(publicAPI).makeInvite();
+    const {
+      extent: [{ handle: inviteHandle2 }],
+    } = await E(inviteIssuer).getAmountOf(invite2);
+    const inviteHandleBoardId2 = await E(board).getId(inviteHandle2);
+    const offer2 = formulateBasicOffer(rawId2, inviteHandleBoardId2);
+    await wallet.deposit('Default Zoe invite purse', invite2);
+    await wallet.addOffer(offer2);
     wallet.declineOffer(id2);
-    t.deepEquals(
-      pursesStateChangeLog,
-      [
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":99,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":99}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":99}}]',
-        '[{"issuerPetname":"moola","brandRegKey":"moolabrand_9794","pursePetname":"Fun budget","extent":100,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":100}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":100}}]',
-      ],
-      `purses state change log`,
-    );
-    t.deepEquals(
-      inboxStateChangeLog,
-      [
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"pending"}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"}}]',
-        '[{"id":"unknown#1588645041696","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"accept"},{"id":"unknown#1588645230204","instanceRegKey":"automaticrefundinstancehandle_3467","hooks":{"publicAPI":{"getInvite":["makeInvite"]}},"proposalTemplate":{"give":{"Contribution":{"pursePetname":"Fun budget","extent":1,"issuerPetname":"moola","brandRegKey":"moolabrand_9794"}},"exit":{"onDemand":null}},"requestContext":{"origin":"unknown"},"status":"decline"}]',
-      ],
-      `inbox state change log`,
-    );
     // TODO: test cancelOffer with a contract that holds offers, like simpleExchange
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
 test('lib-wallet addOffer for autoswap swap', async t => {
+  t.plan(4);
   try {
     const {
       zoe,
       moolaBundle,
       simoleanBundle,
       wallet,
-      autoswapInstanceRegKey,
       addLiquidityInvite,
-      registry,
+      autoswapInstanceHandle,
+      autoswapInstallationHandle,
+      board,
     } = await setupTest();
 
-    const moolaBrandRegKey = registry.register('moolaBrand', moolaBundle.brand);
-    await wallet.addIssuer('moola', moolaBundle.issuer, moolaBrandRegKey);
+    await wallet.addIssuer('moola', moolaBundle.issuer);
     await wallet.makeEmptyPurse('moola', 'Fun budget');
     await wallet.deposit(
       'Fun budget',
       moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
     );
 
-    const simoleanBrandRegKey = registry.register(
-      'simoleanBrand',
-      simoleanBundle.brand,
-    );
-    await wallet.addIssuer(
-      'simolean',
-      simoleanBundle.issuer,
-      simoleanBrandRegKey,
-    );
+    await wallet.addIssuer('simolean', simoleanBundle.issuer);
     await wallet.makeEmptyPurse('simolean', 'Nest egg');
     await wallet.deposit(
       'Nest egg',
       simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
     );
 
-    const instanceHandle = await E(registry).get(autoswapInstanceRegKey);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const { publicAPI } = await E(zoe).getInstanceRecord(
+      autoswapInstanceHandle,
+    );
 
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
 
@@ -381,17 +387,29 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     );
     await addLiqOutcome;
 
+    const invite = await E(publicAPI).makeSwapInvite();
+    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const {
+      extent: [{ handle: inviteHandle }],
+    } = await E(inviteIssuer).getAmountOf(invite);
+    const inviteHandleBoardId = await E(board).getId(inviteHandle);
+
+    // add inviteIssuer and create invite purse
+    await wallet.deposit('Default Zoe invite purse', invite);
+
     const rawId = '1593482020370';
     const id = `unknown#${rawId}`;
 
+    const instanceHandleBoardId = await E(board).getId(autoswapInstanceHandle);
+    const installationHandleBoardId = await E(board).getId(
+      autoswapInstallationHandle,
+    );
+
     const offer = {
       id: rawId,
-      instanceRegKey: autoswapInstanceRegKey,
-      hooks: {
-        publicAPI: {
-          getInvite: ['makeSwapInvite'],
-        },
-      },
+      inviteHandleBoardId,
+      instanceHandleBoardId,
+      installationHandleBoardId,
       proposalTemplate: {
         give: {
           In: {
@@ -411,8 +429,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       },
     };
 
-    const hooks = wallet.hydrateHooks(offer.hooks);
-    await wallet.addOffer(offer, hooks);
+    await wallet.addOffer(offer);
 
     const { outcome, depositedP } = await wallet.acceptOffer(id);
     t.equals(
@@ -440,7 +457,5 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });

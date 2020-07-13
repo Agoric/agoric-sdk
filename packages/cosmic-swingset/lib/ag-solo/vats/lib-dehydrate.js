@@ -63,7 +63,15 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         });
       }
     }
-    // not found in any map
+    // Val was not found in any named petname map. It may be in
+    // unnamedMapping already.
+    if (unnamedMapping.valToPetname.has(val)) {
+      return harden({
+        kind: 'unnamed',
+        petname: unnamedMapping.valToPetname.get(val),
+      });
+    }
+    // Val was not found anywhere, so we need to add it.
     const placeholderName = addToUnnamed(val);
     return placeholderName;
   };

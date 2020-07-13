@@ -48,11 +48,10 @@ function build(E, _D, _log) {
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
-  async function startup({ zoe, registry, board }) {
+  async function startup({ zoe, board }) {
     wallet = await makeWallet({
       zoe,
       board,
-      registry,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
     });
@@ -82,11 +81,9 @@ function build(E, _D, _log) {
         };
       }
       case 'walletAddOffer': {
-        // We only need to do this because we can't reach addOffer.
-        const hooks = wallet.hydrateHooks(data.hooks);
         return {
           type: 'walletOfferAdded',
-          data: await wallet.addOffer(data, hooks, meta),
+          data: await wallet.addOffer(data, meta),
         };
       }
       case 'walletDeclineOffer': {
