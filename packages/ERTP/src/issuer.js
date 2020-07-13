@@ -128,6 +128,16 @@ import makeAmountMath from './amountMath';
  */
 
 /**
+ * @typedef {Object} DepositFacet
+ * @property {(payment: Payment, optAmount?: Amount) => Amount} receive
+ * Deposit all the contents of payment into the purse that made this facet, returning the
+ * amount. If the optional argument `optAmount` does not equal the
+ * amount of digital assets in the payment, throw an error.
+ *
+ * If payment is an unresolved promise, throw an error.
+ */
+
+/**
  * @typedef {Object} Purse
  * Purses hold amount of digital assets of the same brand, but unlike Payments, they are
  * not meant to be sent to others. To transfer digital assets, a
@@ -143,12 +153,15 @@ import makeAmountMath from './amountMath';
  * @property {() => Amount} getCurrentAmount
  * Get the amount contained in this purse, confirmed by the issuer.
  *
- * @property {(payment: PaymentP, optAmount?: Amount) => Amount} deposit
+ * @property {(payment: Payment, optAmount?: Amount) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
  * If payment is an unresolved promise, throw an error.
+ *
+ * @property {() => DepositFacet} makeDepositFacet
+ * Create an object whose `deposit` method deposits to the current Purse.
  *
  * @property {(amount: Amount) => Payment} withdraw
  * Withdraw amount from this purse into a new Payment.

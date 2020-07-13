@@ -7,13 +7,13 @@ import { assert, details, q } from '@agoric/assert';
 
 /**
  * @template K,V
- * @typedef {Object} Store - A wrapper around a Map
+ * @typedef {Object} Store - A safety wrapper around a Map
  * @property {(key: K) => boolean} has - Check if a key exists
  * @property {(key: K, value: V) => void} init - Initialize the key only if it doesn't already exist
  * @property {(key: K) => V} get - Return a value for the key. Throws
  * if not found.
- * @property {(key: K, value: V) => void} set - Unconditionally set the key
- * @property {(key: K) => void} delete - Remove the key
+ * @property {(key: K, value: V) => void} set - Set the key. Throws if not found.
+ * @property {(key: K) => void} delete - Remove the key. Throws if not found.
  * @property {() => K[]} keys - Return an array of keys
  * @property {() => V[]} values - Return an array of values
  * @property {() => [K, V][]} entries - Return an array of entries
@@ -26,8 +26,8 @@ import { assert, details, q } from '@agoric/assert';
  * `init` is only allowed if the key does not already exist. `Get`,
  * `set` and `delete` are only allowed if the key does already exist.
  * @template K,V
- * @param  {string} keyName - the column name for the key
- * @returns {Store.<K,V>}
+ * @param  {string} [keyName='key'] - the column name for the key
+ * @returns {Store<K,V>}
  */
 function makeStore(keyName = 'key') {
   const store = new Map();
