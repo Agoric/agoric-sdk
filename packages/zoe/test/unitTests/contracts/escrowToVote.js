@@ -7,8 +7,14 @@ import makeStore from '@agoric/store';
 import { makeZoeHelpers } from '../../../src/contractSupport';
 
 /**
- * Implement coin voting. Give a voting capability when a payment is
- * escrowed.
+ * This contract implements coin voting. There are two roles: the
+ * Secretary, who can determine the question (a string), make voting
+ * invites, and close the election; and the Voters, who can vote YES or
+ * NO on the question. The voters can only get the capability to vote
+ * by making an offer using a voter invite and escrowing assets. The
+ * brand of assets is determined on contract instantiation through an
+ * issuerKeywordRecord. The instantiator gets the only Secretary
+ * invite.
  *
  * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
  * @typedef {import('@agoric/ERTP').Amount} Amount
