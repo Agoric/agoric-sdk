@@ -13,7 +13,7 @@ import { setup } from '../setupBasicMints';
 const contractRoot = `${__dirname}/escrowToVote`;
 
 test('zoe - escrowToVote', async t => {
-  t.plan(13);
+  t.plan(14);
   const { moolaIssuer, moolaMint, moola } = setup();
   const zoe = makeZoe();
 
@@ -50,6 +50,7 @@ test('zoe - escrowToVote', async t => {
   const voterInvite1 = E(secretary).makeVoterInvite();
   const voterInvite2 = E(secretary).makeVoterInvite();
   const voterInvite3 = E(secretary).makeVoterInvite();
+  const voterInvite4 = E(secretary).makeVoterInvite();
 
   // Let's imagine that we send the voterInvites to various parties
   // who use them to make an offer with Zoe in which they escrow moola.
@@ -69,13 +70,9 @@ test('zoe - escrowToVote', async t => {
     );
 
     const voter = await voterP;
-    const result = await E(voter).vote({ [QUESTION]: 'YES' });
+    const result = await E(voter).vote('YES');
 
-    t.equals(
-      result,
-      `Successfully voted ${{ [QUESTION]: 'YES' }}`,
-      `voter1 votes YES`,
-    );
+    t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
     payoutP.then(async payout => {
       const moolaPayment = await payout.Assets;
@@ -88,7 +85,7 @@ test('zoe - escrowToVote', async t => {
 
       console.log('EXPECTED ERROR ->>>');
       t.throws(
-        () => voter.vote({ [QUESTION]: 'NO' }),
+        () => voter.vote('NO'),
         /the escrowing offer is no longer active/,
         `voter1 voting fails once offer is withdrawn or amounts are reallocated`,
       );
@@ -115,31 +112,17 @@ test('zoe - escrowToVote', async t => {
     const voter = await voterP;
     console.log('EXPECTED ERROR ->>>');
     t.rejects(
-      () => E(voter).vote({ 'not a question': 'NO' }),
-      /The question 'not a question' did not match the question 'Should we upgrade\?'/,
-      `A vote for the wrong question throws`,
-    );
-    console.log('EXPECTED ERROR ->>>');
-    t.rejects(
-      () => E(voter).vote({ [QUESTION]: 'NOT A VALID ANSWER' }),
-      /the answer 'NOT A VALID ANSWER' was not 'YES' or 'NO'/,
+      () => E(voter).vote('NOT A VALID ANSWER'),
+      /the answer "NOT A VALID ANSWER" was not 'YES' or 'NO'/,
       `A vote with an invalid answer throws`,
     );
 
-    const result1 = await E(voter).vote({ [QUESTION]: 'YES' });
-    t.equals(
-      result1,
-      `Successfully voted ${{ [QUESTION]: 'YES' }}`,
-      `voter2 votes YES`,
-    );
+    const result1 = await E(voter).vote('YES');
+    t.equals(result1, `Successfully voted 'YES'`, `voter2 votes YES`);
 
     // Votes can be recast at any time
-    const result2 = await E(voter).vote({ [QUESTION]: 'NO' });
-    t.equals(
-      result2,
-      `Successfully voted ${{ [QUESTION]: 'NO' }}`,
-      `voter 2 recast vote for NO`,
-    );
+    const result2 = await E(voter).vote('NO');
+    t.equals(result2, `Successfully voted 'NO'`, `voter 2 recast vote for NO`);
 
     payoutP.then(async payout => {
       const moolaPayment = await payout.Assets;
@@ -152,7 +135,7 @@ test('zoe - escrowToVote', async t => {
 
       console.log('EXPECTED ERROR ->>>');
       t.throws(
-        () => voter.vote({ [QUESTION]: 'NO' }),
+        () => voter.vote('NO'),
         /the escrowing offer is no longer active/,
         `voter2 voting fails once offer is withdrawn or amounts are reallocated`,
       );
@@ -176,12 +159,8 @@ test('zoe - escrowToVote', async t => {
     ).offer(invite, proposal, payments);
 
     const voter = await voterP;
-    const result = await E(voter).vote({ [QUESTION]: 'NO' });
-    t.equals(
-      result,
-      `Successfully voted ${{ [QUESTION]: 'NO' }}`,
-      `voter3 votes NOT`,
-    );
+    const result = await E(voter).vote('NO');
+    t.equals(result, `Successfully voted 'NO'`, `voter3 votes NOT`);
 
     // Voter3 completes their offer and exits before the election is
     // closed. Voter3's vote will not be counted.
@@ -199,7 +178,7 @@ test('zoe - escrowToVote', async t => {
 
     console.log('EXPECTED ERROR ->>>');
     t.throws(
-      () => voter.vote({ [QUESTION]: 'NO' }),
+      () => voter.vote('NO'),
       /the escrowing offer is no longer active/,
       `voter3 voting fails once offer is withdrawn or amounts are reallocated`,
     );
@@ -207,9 +186,41 @@ test('zoe - escrowToVote', async t => {
 
   await voter3Votes(voterInvite3);
 
+  // Voter4 votes YES with a weight of 4
+  const voter4Votes = async invite => {
+    const proposal = harden({
+      give: { Assets: moola(4) },
+    });
+    const payments = harden({
+      Assets: moolaMint.mintPayment(moola(4)),
+    });
+    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
+      invite,
+      proposal,
+      payments,
+    );
+
+    const voter = await voterP;
+    const result = await E(voter).vote('YES');
+
+    t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
+
+    payoutP.then(async payout => {
+      const moolaPayment = await payout.Assets;
+
+      t.deepEquals(
+        await moolaIssuer.getAmountOf(moolaPayment),
+        moola(4),
+        `voter4 gets everything she escrowed back`,
+      );
+    });
+  };
+
+  await voter4Votes(voterInvite4);
+
   // Secretary closes election and tallies the votes.
   const electionResults = await E(secretary).closeElection();
-  t.deepEquals(electionResults, { YES: 3, NO: 5 });
+  t.deepEquals(electionResults, { YES: moola(7), NO: moola(5) });
 
   // Once the election is closed, the voters get their escrowed funds
   // back and can no longer vote. See the voter functions for the

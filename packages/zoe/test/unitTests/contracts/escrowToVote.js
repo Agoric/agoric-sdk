@@ -1,9 +1,9 @@
 /* global harden */
 // @ts-check
 
-// Eventually will be importable from '@agoric/zoe-contract-support'
-import { assert } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
+// Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../../../src/contractSupport';
 
 /**
@@ -19,24 +19,18 @@ const makeContract = zcf => {
   assertKeywords(harden(['Assets']));
   const {
     terms: { question },
+    brandKeywordRecord: { Assets: assetsBrand },
   } = zcf.getInstanceRecord();
+  assert.typeof(question, 'string');
+  const amountMath = zcf.getAmountMath(assetsBrand);
 
   const offerHandleToResponse = makeStore('offerHandle');
 
-  // `question` is a string defined in the terms.
-  // We assume the only valid answers are 'YES' and 'NO'
-  const validateResponse = response => {
+  // We assume the only valid responses are 'YES' and 'NO'
+  const assertResponse = response => {
     assert(
-      Object.keys(response).length === 1 &&
-        Object.keys(response)[0] === question,
-      `The question '${
-        Object.keys(response)[0]
-      }' did not match the question '${question}'`,
-    );
-
-    assert(
-      response[question] === 'NO' || response[question] === 'YES',
-      `the answer '${response[question]}' was not 'YES' or 'NO'`,
+      response === 'NO' || response === 'YES',
+      details`the answer ${q(response)} was not 'YES' or 'NO'`,
     );
     // Throw an error if the response is not valid, but do not
     // complete the offer. We should allow the voter to recast their vote.
@@ -46,17 +40,17 @@ const makeContract = zcf => {
     const voter = harden({
       /**
        * Vote on a particular issue
-       * @param {object} response: { [question]: answer }
+       * @param {string} response - 'YES' || 'NO'
        */
       vote: response => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
         assert(
           zcf.isOfferActive(voterOfferHandle),
-          `the escrowing offer is no longer active`,
+          details`the escrowing offer is no longer active`,
         );
 
-        validateResponse(response);
+        assertResponse(response);
 
         // Record the response
         if (offerHandleToResponse.has(voterOfferHandle)) {
@@ -64,7 +58,7 @@ const makeContract = zcf => {
         } else {
           offerHandleToResponse.init(voterOfferHandle, response);
         }
-        return `Successfully voted ${response}`;
+        return `Successfully voted '${response}'`;
       },
     });
     return voter;
@@ -85,11 +79,14 @@ const makeContract = zcf => {
       closeElection: () => {
         // YES | NO to Nat
         const tally = new Map();
+        tally.set('YES', amountMath.getEmpty());
+        tally.set('NO', amountMath.getEmpty());
 
         for (const [offerHandle, response] of offerHandleToResponse.entries()) {
           if (zcf.isOfferActive(offerHandle)) {
             const escrowedAmount = zcf.getCurrentAllocation(offerHandle).Assets;
-            tally.set(response[question], escrowedAmount.extent);
+            const sumSoFar = tally.get(response);
+            tally.set(response, amountMath.add(escrowedAmount, sumSoFar));
             zcf.complete([offerHandle]);
           }
         }
