@@ -21,13 +21,14 @@ import { makeZoeHelpers } from '../../../src/contractSupport';
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
-  const { assertKeywords, checkHook } = makeZoeHelpers(zcf);
+  const { assertKeywords, assertNatMathHelpers, checkHook } = makeZoeHelpers(zcf);
   assertKeywords(harden(['Assets']));
   const {
     terms: { question },
     brandKeywordRecord: { Assets: assetsBrand },
   } = zcf.getInstanceRecord();
   assert.typeof(question, 'string');
+  assertNatMathHelpers(assetsBrand);
   const amountMath = zcf.getAmountMath(assetsBrand);
 
   const offerHandleToResponse = makeStore('offerHandle');
@@ -74,15 +75,16 @@ const makeContract = zcf => {
     give: { Assets: null },
   });
 
-  const makeVoterInvite = () =>
-    zcf.makeInvitation(checkHook(voterHook, expectedVoterProposal), 'voter');
-
   const expectedSecretaryProposal = harden({});
 
   const secretaryHook = secretaryOfferHandle => {
     // TODO: what if the secretary offer is no longer active?
     const secretary = harden({
       closeElection: () => {
+        assert(
+          zcf.isOfferActive(secretaryOfferHandle),
+          'the election is already closed',
+        );
         // YES | NO to Nat
         const tally = new Map();
         tally.set('YES', amountMath.getEmpty());
@@ -103,8 +105,16 @@ const makeContract = zcf => {
           NO: tally.get('NO'),
         });
       },
-      // TODO: prevent this from working if election is closed?
-      makeVoterInvite,
+      makeVoterInvite: () => {
+        assert(
+          zcf.isOfferActive(secretaryOfferHandle),
+          'the election is closed',
+        );
+        return zcf.makeInvitation(
+          checkHook(voterHook, expectedVoterProposal),
+          'voter',
+        );
+      },
     });
     return secretary;
   };
