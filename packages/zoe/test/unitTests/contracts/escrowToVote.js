@@ -21,7 +21,9 @@ import { makeZoeHelpers } from '../../../src/contractSupport';
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
-  const { assertKeywords, assertNatMathHelpers, checkHook } = makeZoeHelpers(zcf);
+  const { assertKeywords, assertNatMathHelpers, checkHook } = makeZoeHelpers(
+    zcf,
+  );
   assertKeywords(harden(['Assets']));
   const {
     terms: { question },
