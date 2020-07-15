@@ -16,7 +16,7 @@ import { makeZoeHelpers } from '../contractSupport';
  * internally rather than sharing that ability widely as this one does.
  *
  * makeInstance returns an invitation that, when exercised, provides 1000 of the
- * new tokens. publicAPI.makeInvite() returns an invitation that accepts an
+ * new tokens. await E(publicAPI).makeInvite() returns an invitation that accepts an
  * empty offer and provides 1000 tokens.
  *
  * @typedef {import('../zoe').ContractFacet} ContractFacet

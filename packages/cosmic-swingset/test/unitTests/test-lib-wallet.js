@@ -8,6 +8,7 @@ import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import makeIssuerKit from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
+import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeRegistrar } from '@agoric/registrar';
 
 import { E } from '@agoric/eventual-send';
@@ -27,7 +28,7 @@ const setupTest = async () => {
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', 'strSet');
-  const zoe = makeZoe();
+  const zoe = makeZoe(fakeVatAdmin);
   const registry = makeRegistrar();
   const board = makeBoard();
 

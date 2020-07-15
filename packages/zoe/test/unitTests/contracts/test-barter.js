@@ -6,10 +6,13 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+import { E } from '@agoric/eventual-send';
 
+// noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
+import fakeVatAdmin from './fakeVatAdmin';
 
 const barter = `${__dirname}/../../../src/contracts/barterExchange`;
 
@@ -24,7 +27,7 @@ test('barter with valid offers', async t => {
     moola,
     simoleans,
   } = setup();
-  const zoe = makeZoe();
+  const zoe = makeZoe(fakeVatAdmin);
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -52,7 +55,7 @@ test('barter with valid offers', async t => {
   const instanceHandle = await getInstanceHandle(simonInvite);
   const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
-  const aliceInvite = publicAPI.makeInvite();
+  const aliceInvite = await E(publicAPI).makeInvite();
 
   // 2: Alice escrows with zoe to create a sell order. She wants to
   // sell 3 moola and wants to receive at least 4 simoleans in
@@ -70,7 +73,7 @@ test('barter with valid offers', async t => {
     alicePayments,
   );
 
-  const bobInvite = publicAPI.makeInvite();
+  const bobInvite = await E(publicAPI).makeInvite();
 
   // 5: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);

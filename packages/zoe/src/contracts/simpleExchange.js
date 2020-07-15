@@ -21,7 +21,7 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  * not partially fill orders.
  *
  * The invitation returned on installation of the contract is the same as what
- * is returned by calling `publicAPI.makeInvite().
+ * is returned by calling `await E(publicAPI).makeInvite().
  *
  * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf

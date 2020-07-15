@@ -18,7 +18,7 @@ import {
  * When the contract is instantiated, the two tokens are specified in the
  * issuerKeywordRecord. The party that calls makeInstance gets an invitation
  * to add liquidity. The same invitation is available by calling
- * `publicAPI.makeAddLiquidityInvite()`. Separate invitations are available for
+ * `await E(publicAPI).makeAddLiquidityInvite()`. Separate invitations are available for
  * adding and removing liquidity, and for doing a swap. Other API operations
  * support monitoring the price and the size of the liquidity pool.
  *

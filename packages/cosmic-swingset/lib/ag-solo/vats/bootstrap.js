@@ -75,7 +75,7 @@ export function buildRootObject(vatPowers) {
   }
 
   // Make services that are provided on the real or virtual chain side
-  async function makeChainBundler(vats, timerDevice) {
+  async function makeChainBundler(vats, timerDevice, vatAdminSvc) {
     // Create singleton instances.
     const sharingService = await E(vats.sharing).getSharingService();
     const registry = await E(vats.registrar).getSharedRegistrar();
@@ -84,7 +84,7 @@ export function buildRootObject(vatPowers) {
       timerDevice,
     );
 
-    const zoe = await E(vats.zoe).getZoe();
+    const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
     const contractHost = await E(vats.host).makeHost();
 
     // Make the other demo mints
@@ -297,6 +297,10 @@ export function buildRootObject(vatPowers) {
         );
       }
 
+      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+
       console.debug(`${ROLE} bootstrap starting`);
       // scenario #1: Cloud has: multi-node chain, controller solo node,
       // provisioning server (python). New clients run provisioning
@@ -308,7 +312,7 @@ export function buildRootObject(vatPowers) {
           // provisioning vat can ask the demo server for bundles, and can
           // register client pubkeys with comms
           await E(vats.provisioning).register(
-            await makeChainBundler(vats, devices.timer),
+            await makeChainBundler(vats, devices.timer, vatAdminSvc),
             vats.comms,
             vats.vattp,
           );
@@ -406,7 +410,11 @@ export function buildRootObject(vatPowers) {
           // localhost, HTML frontend on localhost. Single-player mode.
 
           // bootAddress holds the pubkey of localclient
-          const chainBundler = await makeChainBundler(vats, devices.timer);
+          const chainBundler = await makeChainBundler(
+            vats,
+            devices.timer,
+            vatAdminSvc,
+          );
 
           // Allow manual provisioning requests via `agoric cosmos`.
           await E(vats.provisioning).register(
@@ -466,7 +474,11 @@ export function buildRootObject(vatPowers) {
           // frontend. Limited subset of demo runs inside the solo node.
 
           // We pretend we're on-chain.
-          const chainBundler = makeChainBundler(vats, devices.timer);
+          const chainBundler = makeChainBundler(
+            vats,
+            devices.timer,
+            vatAdminSvc,
+          );
           await registerNetworkProtocols(vats, bridgeManager);
 
           // Shared Setup (virtual chain side) ///////////////////////////

@@ -2,6 +2,7 @@
 
 import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makePrintLog } from './printLog';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
@@ -65,7 +66,7 @@ export function buildRootObject(_vatPowers) {
   let round = 0;
   return harden({
     async bootstrap(argv, vats) {
-      const zoe = await E(vats.zoe).getZoe();
+      const zoe = await E(vats.zoe).buildZoe(fakeVatAdmin);
 
       const installations = {
         simpleExchange: await E(zoe).install(simpleExchangeBundle),

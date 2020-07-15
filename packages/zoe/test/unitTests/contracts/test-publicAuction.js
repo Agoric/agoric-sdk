@@ -5,10 +5,13 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+import { E } from '@agoric/eventual-send';
 
+// noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 import { setupMixed } from '../setupMixedMints';
+import fakeVatAdmin from './fakeVatAdmin';
 
 const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
 
@@ -16,7 +19,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   t.plan(34);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe();
+    const zoe = makeZoe(fakeVatAdmin);
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Setup Alice
@@ -69,7 +72,9 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       alicePayments,
     );
 
-    const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
+    const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
+      3,
+    );
 
     t.equals(
       await aliceOutcomeP,
@@ -317,7 +322,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   t.plan(10);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe();
+    const zoe = makeZoe(fakeVatAdmin);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));
@@ -359,7 +364,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       outcome: aliceOutcomeP,
     } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-    const [bobInvite] = publicAPI.makeInvites(1);
+    const [bobInvite] = await E(publicAPI).makeInvites(1);
 
     t.equals(
       await aliceOutcomeP,
@@ -455,7 +460,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     cryptoCats,
     moola,
   } = setupMixed();
-  const zoe = makeZoe();
+  const zoe = makeZoe(fakeVatAdmin);
   const inviteIssuer = zoe.getInviteIssuer();
 
   // Setup Alice
@@ -508,7 +513,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     alicePayments,
   );
 
-  const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
+  const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
+    3,
+  );
 
   t.equals(
     await aliceOutcomeP,

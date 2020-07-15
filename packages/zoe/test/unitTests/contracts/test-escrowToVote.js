@@ -9,13 +9,14 @@ import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
+import fakeVatAdmin from './fakeVatAdmin';
 
 const contractRoot = `${__dirname}/escrowToVote`;
 
 test('zoe - escrowToVote', async t => {
   t.plan(14);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const zoe = makeZoe();
+  const zoe = makeZoe(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

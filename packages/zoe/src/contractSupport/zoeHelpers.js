@@ -2,7 +2,7 @@
 
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { HandledPromise } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import { satisfiesWant, isOfferSafe } from '../offerSafety';
 
 /**
@@ -380,7 +380,7 @@ export const makeZoeHelpers = (zcf) => {
           offerHandle => resolve(offerHandle),
           'empty offer',
         );
-        zoeService.offer(invite);
+        E(zoeService).offer(invite);
       }),
 
     /**
@@ -410,8 +410,7 @@ export const makeZoeHelpers = (zcf) => {
       const proposal = harden({ give: { Temp: amount } });
       const payments = harden({ Temp: payment });
 
-      return zcf
-        .getZoeService()
+      return E(zcf.getZoeService())
         .offer(contractSelfInvite, proposal, payments)
         .then(() => {
           // At this point, the temporary offer has the amount from the

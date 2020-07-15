@@ -1,0 +1,54 @@
+
+@startuml Zoe communication with Zcf
+scale 8
+
+participant SwingSet
+actor Alice
+participant Zoe
+box new vat per contract
+collections Zcf
+database contract
+end box
+
+SwingSet -> Zoe : create
+Alice -> Zoe : install bundle
+Alice //-- Zoe : <font color=gray><size:12> installHandle
+Alice -> Zoe : makeInstance(handle, ...)
+Zoe -> Zoe : createVat()
+Zoe -> Zoe : makeZoeForZcf
+Zoe -> Zcf : startContract(zoeForZcf)
+Zcf -> Zcf : evalContractBundle()
+Zcf -> Zcf : makeZcfForContract
+Zcf -> contract : makeContract(zcfForContract)
+contract --\\ Zcf : <font color=gray><size:12> invite
+Zcf --\\ Zoe : <font color=gray><size:12> {invite, zcfForZoe}
+Alice //-- Zoe : <font color=gray><size:12> { invite, instanceRecord }
+
+====
+contract -> Zcf : makeInvitation(...)
+Zcf -> Zoe : makeInvitation(...)
+note right
+build invokable object around hook
+call Zoe.makeInvitation(callbackObj)
+end note
+note left
+create inviteHandle
+save callBackObj keyed by InviteHandle
+create InviteAmount
+mint invitePayment
+end note
+
+Zoe --\\ Zcf : <font color=gray><size:12> invite
+Zcf -> Bob :  <font color=slategray><size:12>//<out of band>// <font color=gray><size:12> invite
+Bob -> Zoe : offer(invite)
+note left
+record Deposit
+create payout
+end note
+Zoe -> Zcf : addOffer
+Zcf -> Zcf : setup completion actions
+Zcf --\\ Zoe : <font color=gray><size:12> completeObj
+Zoe -> Zcf : seatCallBack.invoke()
+Zoe --\\ Bob : <font color=gray><size:12> offerResult
+
+@enduml

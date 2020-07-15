@@ -8,7 +8,9 @@ import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 import makeIssuerKit from '@agoric/ertp';
+import fakeVatAdmin from './fakeVatAdmin';
 
+// noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoe';
 
 const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
@@ -16,7 +18,7 @@ const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 test('zoe - mint payments', async t => {
   t.plan(2);
   try {
-    const zoe = makeZoe();
+    const zoe = makeZoe(fakeVatAdmin);
     // Pack the contract.
     const bundle = await bundleSource(mintPaymentsRoot);
     const installationHandle = await E(zoe).install(bundle);
@@ -56,7 +58,7 @@ test('zoe - mint payments', async t => {
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
   try {
-    const zoe = makeZoe();
+    const zoe = makeZoe(fakeVatAdmin);
     // Pack the contract.
     const bundle = await bundleSource(mintPaymentsRoot);
     const installationHandle = await E(zoe).install(bundle);
