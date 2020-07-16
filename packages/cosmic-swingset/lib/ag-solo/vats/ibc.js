@@ -220,7 +220,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
 
     return harden({
       async onOpen(conn, localAddr, remoteAddr, _handler) {
-        console.info(
+        console.debug(
           'onOpen Remote IBC Connection',
           channelID,
           portID,
@@ -304,7 +304,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
    */
   const protocol = harden({
     async onCreate(impl, _protocolHandler) {
-      console.info('IBC onCreate');
+      console.debug('IBC onCreate');
       protocolImpl = impl;
     },
     async generatePortID(_localAddr, _protocolHandler) {
@@ -324,7 +324,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
       return callIBCDevice('bindPort', { packet });
     },
     async onConnect(port, localAddr, remoteAddr, chandler, _protocolHandler) {
-      console.warn('IBC onConnect', localAddr, remoteAddr);
+      console.debug('IBC onConnect', localAddr, remoteAddr);
       const portID = localAddrToPortID(localAddr);
       const pendingConns = portToPendingConns.get(port);
 
@@ -423,14 +423,14 @@ EOF
         .catch(rethrowUnlessMissing);
       return onConnectP.promise;
     },
-    async onListen(_port, _localAddr, _listenHandler) {
-      // console.warn('IBC onListen', localAddr);
+    async onListen(_port, localAddr, _listenHandler) {
+      console.debug('IBC onListen', localAddr);
     },
     async onListenRemove(_port, localAddr, _listenHandler) {
-      console.warn('IBC onListenRemove', localAddr);
+      console.debug('IBC onListenRemove', localAddr);
     },
     async onRevoke(port, localAddr, _protocolHandler) {
-      console.warn('IBC onRevoke', localAddr);
+      console.debug('IBC onRevoke', localAddr);
       const pendingConns = portToPendingConns.get(port);
       portToPendingConns.delete(port);
       portToCircuits.delete(port);
@@ -444,7 +444,7 @@ EOF
   return harden({
     ...protocol,
     async fromBridge(srcID, obj) {
-      console.warn('IBC fromBridge', srcID, obj);
+      console.debug('IBC fromBridge', srcID, obj);
       switch (obj.event) {
         case 'channelOpenInit': {
           // This event is sent by a naive relayer that wants to initiate
@@ -512,7 +512,7 @@ EOF
           const versionSuffix = version ? `/${version}` : '';
           const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}${versionSuffix}`;
           const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
-          const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
+          const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
 
           // See if we allow an inbound attempt for this address pair (without rejecting).
           const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);

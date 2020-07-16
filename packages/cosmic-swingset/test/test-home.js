@@ -96,7 +96,7 @@ test('home.wallet - receive zoe invite', async t => {
     );
 
     // The code below is meant to be carried out in a Dapp backend.
-    // The dapp gets the mailboxId for the default Zoe invite purse
+    // The dapp gets the depositBoardId for the default Zoe invite purse
     // and sends the invite.
     const inviteBrandBoardId = await E(board).getId(zoeInviteBrand);
     const depositBoardId = await E(wallet).getDepositFacetId(

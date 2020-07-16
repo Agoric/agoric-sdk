@@ -103,26 +103,8 @@ export default function setup(syscall, state, helpers) {
             harden({
               issuer: issuers[i],
               petname: issuerName,
-              brandRegKey: await E(registry).register(
-                issuerName,
-                await E(issuers[i]).getBrand(),
-              ),
             }),
           ),
-        );
-
-        // Add the Zoe invite issuer.
-        const zoeInviteIssuer = await E(zoe).getInviteIssuer();
-        const zoeInvitePetname = 'zoe invite';
-        issuerInfo.push(
-          harden({
-            issuer: zoeInviteIssuer,
-            petname: zoeInvitePetname,
-            brandRegKey: await E(registry).register(
-              zoeInvitePetname,
-              await E(zoeInviteIssuer).getBrand(),
-            ),
-          }),
         );
 
         return harden({
@@ -235,7 +217,7 @@ export default function setup(syscall, state, helpers) {
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
       async function createLocalBundle(vats, userBundle, payments, issuerInfo) {
-        const { zoe, registry, board } = userBundle;
+        const { zoe, board } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
         const spawner = E(vats.host).makeHost();
@@ -244,11 +226,11 @@ export default function setup(syscall, state, helpers) {
         const uploads = E(vats.uploads).getUploads();
 
         // Wallet for both end-user client and dapp dev client
-        await E(vats.wallet).startup({ zoe, registry, board });
+        await E(vats.wallet).startup({ zoe, board });
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
-          issuerInfo.map(({ petname, issuer, brandRegKey }) =>
-            E(wallet).addIssuer(petname, issuer, brandRegKey),
+          issuerInfo.map(({ petname, issuer }) =>
+            E(wallet).addIssuer(petname, issuer),
           ),
         );
 
@@ -256,7 +238,6 @@ export default function setup(syscall, state, helpers) {
         const pursePetnames = {
           moola: 'Fun budget',
           simolean: 'Nest egg',
-          'zoe invite': 'Default Zoe invite purse',
         };
         await Promise.all(
           issuerInfo.map(({ petname: issuerPetname }) => {
@@ -274,9 +255,6 @@ export default function setup(syscall, state, helpers) {
 
         await E(wallet).deposit(pursePetnames.moola, moolaPayment);
         await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
-
-        // Make deposit facet for Default Zoe invite purse
-        await E(wallet).addDepositFacet(pursePetnames['zoe invite']);
 
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {
