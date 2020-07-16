@@ -262,14 +262,26 @@ export const makeZoeHelpers = (zcf) => {
         rightAllocation,
       );
       if (!(offerSafeForLeft && offerSafeForRight)) {
-        console.log(`currentLeftAllocation`, zcf.getCurrentAllocation(keepLeft.offerHandle));
-        console.log(`currentRightAllocation`, zcf.getCurrentAllocation(tryRight.offerHandle));
+        console.log(
+          `currentLeftAllocation`,
+          zcf.getCurrentAllocation(keepLeft.offerHandle),
+        );
+        console.log(
+          `currentRightAllocation`,
+          zcf.getCurrentAllocation(tryRight.offerHandle),
+        );
         console.log(`proposed left reallocation`, leftAllocation);
         console.log(`proposed right reallocation`, rightAllocation);
         // show the contraints
-        console.log(`left want`, zcf.getOffer(keepLeft.offerHandle).proposal.want);
-        console.log(`right want`, zcf.getOffer(tryRight.offerHandle).proposal.want);
-        
+        console.log(
+          `left want`,
+          zcf.getOffer(keepLeft.offerHandle).proposal.want,
+        );
+        console.log(
+          `right want`,
+          zcf.getOffer(tryRight.offerHandle).proposal.want,
+        );
+
         if (!offerSafeForLeft) {
           console.log(`offer not safe for left`);
         }
