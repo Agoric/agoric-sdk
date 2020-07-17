@@ -14,7 +14,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   const genesisFile = `${configDir}/genesis.json`;
   const configFile = `${configDir}/config.toml`;
-  const { importFrom } = opts;
+  const { importFrom, persistentPeers } = opts;
   const [genesisJson, configToml, exportedGenesisJson] = await Promise.all([
     fs.readFile(genesisFile, 'utf-8'),
     fs.readFile(configFile, 'utf-8'),
@@ -24,6 +24,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     genesisJson,
     configToml,
     exportedGenesisJson,
+    persistentPeers,
   });
 
   const create = (fileName, contents) => {

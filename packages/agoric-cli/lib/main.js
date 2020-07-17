@@ -87,6 +87,11 @@ const main = async (progname, rawArgs, powers) => {
       '--import-from <dir>',
       'import the exported configuration from <dir>',
     )
+    .option(
+      '--persistent-peers <addrs>',
+      'set the config.toml p2p.persistent_peers value',
+      '',
+    )
     .action(async (prog, configDir, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
