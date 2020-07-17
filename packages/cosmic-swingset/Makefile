@@ -86,7 +86,7 @@ scenario2-setup-nobuild:
 	$(AGC) --home=t1/n0 gentx --keyring-backend=test --home-client=t1/bootstrap --name=bootstrap --amount=1000000uagstake
 	$(AGC) --home=t1/n0 collect-gentxs
 	$(AGC) --home=t1/n0 validate-genesis
-	../deployment/set-json.js t1/n0/config/genesis.json --agoric-genesis-overrides
+	../agoric-cli/bin/agoric set-defaults ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
 	$(MAKE) set-local-gci-ingress
 

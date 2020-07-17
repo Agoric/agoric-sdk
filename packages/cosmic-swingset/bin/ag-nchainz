@@ -65,9 +65,10 @@ testnet)
       --home-client=$chainid/ag-solo-$port/$CLI-statedir --keyring-backend=test \
       ag-solo 1000uag
 	done
-	# $thisdir/../../deployment/set-json.js $n0d/config/genesis.json --agoric-genesis-overrides
+	"$thisdir/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos $n0d/config
   for node in `ls -d $chainid/n[1-9]* 2>/dev/null || true`; do
     cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
+	  "$thisdir/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos $node/$DAEMON/config
   done
   exit 0
   ;;
