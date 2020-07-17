@@ -1,34 +1,28 @@
 /* global harden */
 
-console.log(`=> loading bootstrap.js`);
+import { E } from '@agoric/eventual-send';
 
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
+const log = console.log;
+
+log(`=> loading bootstrap.js`);
+
+export function buildRootObject(_vatPowers) {
   log(`=> setup called`);
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E =>
-      harden({
-        bootstrap(argv, vats) {
-          console.log('=> bootstrap() called');
-          E(vats.user)
-            .talkToBot(vats.bot, 'encouragementBot')
-            .then(
-              r =>
-                log(
-                  `=> the promise given by the call to user.talkToBot resolved to '${r}'`,
-                ),
-              err =>
-                log(
-                  `=> the promise given by the call to user.talkToBot was rejected '${err}''`,
-                ),
-            );
-        },
-      }),
-    helpers.vatID,
-  );
+  return harden({
+    bootstrap(argv, vats) {
+      log('=> bootstrap() called');
+      E(vats.user)
+        .talkToBot(vats.bot, 'encouragementBot')
+        .then(
+          r =>
+            log(
+              `=> the promise given by the call to user.talkToBot resolved to '${r}'`,
+            ),
+          err =>
+            log(
+              `=> the promise given by the call to user.talkToBot was rejected '${err}''`,
+            ),
+        );
+    },
+  });
 }

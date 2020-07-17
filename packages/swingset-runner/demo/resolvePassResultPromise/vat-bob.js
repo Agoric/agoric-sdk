@@ -1,8 +1,10 @@
 /* global harden */
 
-function build(_E, log) {
+const log = console.log;
+
+export function buildRootObject(_vatPowers) {
   let resolver;
-  return {
+  return harden({
     first() {
       log('=> Bob: in first');
       const answer = new Promise((theResolver, _theRejector) => {
@@ -20,18 +22,5 @@ function build(_E, log) {
       log('=> Bob: second done');
       return `Bob's second answer`;
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, log)),
-    helpers.vatID,
-  );
+  });
 }

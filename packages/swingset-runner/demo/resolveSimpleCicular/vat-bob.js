@@ -8,10 +8,10 @@ function makePR() {
   return [p, r];
 }
 
-function build(_E, _log) {
+export function buildRootObject(_vatPowers) {
   let p;
   let r;
-  return {
+  return harden({
     genPromise() {
       [p, r] = makePR();
       return p;
@@ -19,18 +19,5 @@ function build(_E, _log) {
     usePromise(pa) {
       r(pa);
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, log)),
-    helpers.vatID,
-  );
+  });
 }

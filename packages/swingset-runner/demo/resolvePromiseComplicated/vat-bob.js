@@ -1,6 +1,10 @@
 /* global harden */
 
-function build(E, log) {
+import { E } from '@agoric/eventual-send';
+
+const log = console.log;
+
+export function buildRootObject(_vatPowers) {
   let resolver;
   let carol;
   return harden({
@@ -26,17 +30,4 @@ function build(E, log) {
       return `Bob's second answer`;
     },
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, log),
-    helpers.vatID,
-  );
 }

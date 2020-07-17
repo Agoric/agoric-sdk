@@ -8,10 +8,10 @@ function makePR() {
   return [p, r];
 }
 
-function build(_E, _log) {
+export function buildRootObject(_vatPowers) {
   let r = null;
   let value = 0;
-  return {
+  return harden({
     init() {
       let p;
       // eslint-disable-next-line prefer-const
@@ -26,18 +26,5 @@ function build(_E, _log) {
       r(answer);
       r = newR;
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, log)),
-    helpers.vatID,
-  );
+  });
 }

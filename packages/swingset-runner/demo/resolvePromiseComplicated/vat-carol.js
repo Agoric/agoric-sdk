@@ -1,6 +1,8 @@
 /* global harden */
 
-function build(_E, log) {
+const log = console.log;
+
+export function buildRootObject(_vatPowers) {
   return harden({
     foo(p) {
       log('=> Carol: in foo');
@@ -21,17 +23,4 @@ function build(_E, log) {
       return 'Carol says bar';
     },
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, log),
-    helpers.vatID,
-  );
 }

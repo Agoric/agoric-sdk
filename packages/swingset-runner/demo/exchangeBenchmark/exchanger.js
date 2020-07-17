@@ -1,10 +1,12 @@
 /* global harden */
 
-import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
+import { E } from '@agoric/eventual-send';
 import { showPurseBalance, setupPurses } from './helpers';
 import { makePrintLog } from './printLog';
 
-async function build(E, log, name, zoe, issuers, payments, installations) {
+const log = makePrintLog();
+
+async function build(name, zoe, issuers, payments, installations) {
   const { moola, simoleans, purses } = await setupPurses(
     zoe,
     issuers,
@@ -17,7 +19,6 @@ async function build(E, log, name, zoe, issuers, payments, installations) {
     Asset: moolaIssuer,
   });
   const inviteIssuer = await E(zoe).getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
   const { simpleExchange } = installations;
 
   async function preReport() {
@@ -42,12 +43,10 @@ async function build(E, log, name, zoe, issuers, payments, installations) {
   async function initiateSimpleExchange(otherP) {
     await preReport();
 
-    const addOrderInvite = await E(zoe).makeInstance(
-      simpleExchange,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(addOrderInvite);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const {
+      invite: addOrderInvite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(simpleExchange, issuerKeywordRecord);
 
     const mySellOrderProposal = harden({
       give: { Asset: moola(1) },
@@ -57,13 +56,11 @@ async function build(E, log, name, zoe, issuers, payments, installations) {
     const paymentKeywordRecord = {
       Asset: await E(moolaPurseP).withdraw(moola(1)),
     };
-    const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
+    const { payout: payoutP } = await E(zoe).offer(
       addOrderInvite,
       mySellOrderProposal,
       paymentKeywordRecord,
     );
-
-    log(await outcomeP);
 
     const inviteP = E(publicAPI).makeInvite();
     await E(otherP).respondToSimpleExchange(inviteP);
@@ -87,13 +84,11 @@ async function build(E, log, name, zoe, issuers, payments, installations) {
       Price: await E(simoleanPurseP).withdraw(simoleans(1)),
     };
 
-    const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
+    const { payout: payoutP } = await E(zoe).offer(
       exclInvite,
       myBuyOrderProposal,
       paymentKeywordRecord,
     );
-
-    log(await outcomeP);
 
     await receivePayout(payoutP);
     await postReport();
@@ -105,13 +100,8 @@ async function build(E, log, name, zoe, issuers, payments, installations) {
   });
 }
 
-export default function setup(syscall, state, helpers, name) {
-  // prettier-ignore
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden({
-      build: (...args) => build(E, makePrintLog(helpers.log), name, ...args),
-    }),
-  );
+export function buildRootObjectCommon(name, _vatPowers) {
+  return harden({
+    build: (...args) => build(name, ...args),
+  });
 }

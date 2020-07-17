@@ -1,6 +1,5 @@
-export function makePrintLog(kernelLog) {
+export function makePrintLog() {
   return function printLog(...args) {
-    kernelLog(...args);
     const rendered = args.map(arg =>
       typeof arg === 'string' ? arg : JSON.stringify(arg),
     );
