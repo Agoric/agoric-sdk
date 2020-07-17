@@ -23,6 +23,7 @@ import {
   streamFromString,
   createFile,
   mkdir,
+  readdir,
 } from './files';
 import {
   SETUP_HOME,
@@ -34,12 +35,11 @@ import {
 
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
-const INITIAL_VALIDATOR_POWER = '10';
 const COSMOS_DIR = 'ag-chain-cosmos';
 const CONTROLLER_DIR = 'ag-pserver';
 const SECONDS_BETWEEN_BLOCKS = 5;
 
-// This is needed for hyphenated groups.
+// This is needed for hyphenated group names not to trigger Ansible.
 process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
 
 const trimReadFile = async file => String(await readFile(file)).trimRight();
@@ -168,7 +168,6 @@ show-config      display the client connection parameters
       case 'bootstrap':
       case 'init':
       case 'destroy':
-      case 'show-genesis':
       case 'show-config':
       case 'ssh':
         break;
@@ -242,16 +241,14 @@ show-config      display the client connection parameters
       );
 
       switch (subArgs[0]) {
-        case 'dapp': {
-          await needReMain(['bootstrap-cosmos-dapp', ...subArgs.slice(1)]);
-          break;
-        }
-
         case undefined: {
           await createFile('boot-tokens.txt', bootTokens);
           const bootOpts = [];
-          if (subOpts.bump) {
-            bootOpts.push(`--bump=${subOpts.bump}`);
+          for (const propagate of ['bump', 'import-from']) {
+            const val = subOpts[propagate];
+            if (val !== undefined) {
+              bootOpts.push(`--${propagate}=${val}`);
+            }
           }
           await needReMain(['bootstrap-cosmos', ...bootOpts]);
           break;
@@ -335,9 +332,24 @@ show-config      display the client connection parameters
       await inited();
       // eslint-disable-next-line no-unused-vars
       const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        string: ['bump'],
+        string: ['bump', 'import-from'],
         stopEarly: true,
       });
+
+      // See where we're importing the chain state from.
+      const importFlags = [];
+      const importFrom = subOpts['import-from'];
+      if (importFrom) {
+        console.error(
+          chalk.redBright('FIXME: --import-from is not yet supported!'),
+        );
+        return 1;
+        // Add the exported prefix if not absolute.
+        /*
+        const absImportFrom = resolve(`${SETUP_HOME}/exported`, importFrom);
+        importFlags.push(`--import-from=${absImportFrom}`);
+        */
+      }
 
       if (subOpts.bump) {
         const bumpOpts = subOpts.bump ? [subOpts.bump] : [];
@@ -386,15 +398,44 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/prepare.stamp`, () =>
         needReMain(['play', 'prepare-cosmos']),
       );
-      await guardFile(`${COSMOS_DIR}/genesis.stamp`, async () => {
-        await needReMain(['play', 'cosmos-genesis']);
+      await guardFile(`${COSMOS_DIR}/genesis.stamp`, () =>
+        needReMain(['play', 'cosmos-genesis']),
+      );
 
-        // Apply the Agoric overrides from set-json.js.
-        await needDoRun([
-          resolve(__dirname, 'set-json.js'),
-          `${COSMOS_DIR}/data/genesis.json`,
-          '--agoric-genesis-overrides',
-        ]);
+      await guardFile(`${COSMOS_DIR}/set-defaults.stamp`, async () => {
+        await needReMain(['play', 'cosmos-clone-config']);
+
+        const agoricCli = resolve(
+          __dirname,
+          `../agoric-cli/bin/agoric`,
+        ).replace('/cosmic-swingset/', '/');
+        // FIXME: The above .replace hacks around legacy /usr/src/agoric-sdk/packages/cosmic-swingset/setup location.
+        // TODO: Should change the Dockerfiles to use /usr/src/agoric-sdk/packages/deployment instead.
+
+        // Apply the Agoric set-defaults to all the .dst dirs.
+        const files = await readdir(`${COSMOS_DIR}/data`);
+        const dsts = files.filter(fname => fname.endsWith('.dst'));
+        const peers = await needBacktick(`${shellEscape(progname)} show-peers`);
+        await Promise.all(
+          dsts.map(async (dst, i) => {
+            // Update the config.toml and genesis.json.
+            await needDoRun([
+              agoricCli,
+              `set-defaults`,
+              `ag-chain-cosmos`,
+              `--persistent-peers=${peers}`,
+              ...importFlags,
+              `${COSMOS_DIR}/data/${dst}`,
+            ]);
+            if (i === 0) {
+              // Make a canonical copy of the genesis.json.
+              const data = await readFile(
+                `${COSMOS_DIR}/data/${dst}/genesis.json`,
+              );
+              await createFile(`${COSMOS_DIR}/data/genesis.json`, data);
+            }
+          }),
+        );
       });
 
       const peersFile = `${COSMOS_DIR}/data/peers.txt`;
@@ -752,61 +793,6 @@ ${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
         .update(s)
         .digest('hex');
       process.stdout.write(gci);
-      break;
-    }
-
-    case 'show-genesis': {
-      const files = args.slice(1);
-      const ps = files.map(file => readFile(file));
-      const bodies = await Promise.all(ps);
-      const namePkbody = await Promise.all(
-        files.map(async file => {
-          const match = file.match(/^(.*\/)([^/]*)\/genesis.json$/);
-          if (match) {
-            const name = match[2];
-            const pkFile = `${match[1]}${name}/priv_validator_key.json`;
-            if (await exists(pkFile)) {
-              const contents = await readFile(pkFile);
-              return [name, contents];
-            }
-          }
-          return [];
-        }),
-      );
-      let first;
-      const validators = [];
-      bodies.forEach((body, index) => {
-        const text = String(body);
-        const obj = JSON.parse(text);
-        if (!first) {
-          first = obj;
-        }
-        if (obj.validators) {
-          validators.push(...obj.validators);
-        } else {
-          const [name, pkBody] = namePkbody[index];
-          if (pkBody) {
-            // eslint-disable-next-line no-unused-vars
-            const { priv_key: privKey, ...pubkey } = JSON.parse(String(pkBody));
-            validators.push({
-              name,
-              ...pubkey,
-              power: INITIAL_VALIDATOR_POWER,
-            });
-          }
-        }
-      });
-      first.validators = validators;
-
-      const stdin = streamFromString(JSON.stringify(first, undefined, 2));
-
-      // Apply the Agoric overrides from set-json.js.
-      setSilent(true);
-      await needDoRun(
-        [resolve(__dirname, 'set-json.js'), '-', '--agoric-genesis-overrides'],
-        stdin,
-      );
-
       break;
     }
 
