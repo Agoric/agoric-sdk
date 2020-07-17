@@ -7,6 +7,9 @@ export const STAKING_DENOM = 'uagstake';
 export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
 export const BLOCK_CADENCE_S = 2;
 
+export const ORIG_BLOCK_CADENCE_S = 5;
+export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
+
 // TODO: When Tendermint non-zero height exports work, we can improve.
 // TODO: When we export Agoric vat state as well, don't blacklist.
 const EXPORTED_APP_STATE_BLACKLIST = ['capability', 'ibc'];
@@ -21,18 +24,6 @@ export function finishCosmosConfigs({
 }) {
   const genesis = JSON.parse(genesisJson);
   const config = TOML.parse(configToml);
-
-  const { consensus: { timeout_commit = '5s' } = {} } = config;
-  const match = timeout_commit.match(/^(\d+(\.\d*)?)s$/);
-
-  const {
-    app_state: {
-      slashing: { params: { signed_blocks_window = '100' } = {} } = {},
-    } = {},
-  } = genesis;
-
-  const ORIG_BLOCK_CADENCE_S = match ? Number(match[1]) : 5;
-  const ORIG_SIGNED_BLOCKS_WINDOW = Number(signed_blocks_window);
 
   const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
