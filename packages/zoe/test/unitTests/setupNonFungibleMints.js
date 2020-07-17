@@ -1,10 +1,10 @@
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 const setupNonFungible = () => {
-  const ccBundle = produceIssuer('CryptoCats', 'strSet');
-  const rpgBundle = produceIssuer('MMORPG Items', 'set');
+  const ccBundle = makeIssuerKit('CryptoCats', 'strSet');
+  const rpgBundle = makeIssuerKit('MMORPG Items', 'set');
   const allBundles = { cc: ccBundle, rpg: rpgBundle };
   const mints = new Map();
   const issuers = new Map();

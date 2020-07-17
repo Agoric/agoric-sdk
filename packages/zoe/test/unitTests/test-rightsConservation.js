@@ -3,13 +3,13 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
 import makeStore from '@agoric/weak-store';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { areRightsConserved } from '../../src/rightsConservation';
 
 const setupAmountMaths = () => {
-  const moolaIssuerResults = produceIssuer('moola');
-  const simoleanIssuerResults = produceIssuer('simoleans');
-  const bucksIssuerResults = produceIssuer('bucks');
+  const moolaIssuerResults = makeIssuerKit('moola');
+  const simoleanIssuerResults = makeIssuerKit('simoleans');
+  const bucksIssuerResults = makeIssuerKit('bucks');
 
   const all = [moolaIssuerResults, simoleanIssuerResults, bucksIssuerResults];
   const amountMathArray = all.map(objs => objs.amountMath);

@@ -98,7 +98,7 @@ import makeAmountMath from './amountMath';
  * @typedef {Object} IssuerMaker
  * Makes Issuers.
  *
- * @property {(allegedName: string, mathHelperName: string) => IssuerResults} produceIssuer
+ * @property {(allegedName: string, mathHelperName: string) => IssuerResults} makeIssuerKit
  * The allegedName becomes part of the brand in asset descriptions. The
  * allegedName doesn't have to be a string, but it will only be used for
  * its value. The allegedName is useful for debugging and double-checking
@@ -109,7 +109,7 @@ import makeAmountMath from './amountMath';
  * default, is used for basic fungible tokens.
  *
  * @typedef {Object} IssuerResults
- * The return value of produceIssuer
+ * The return value of makeIssuerKit
  *
  * @property {Mint} mint
  * @property {Issuer} issuer
@@ -229,7 +229,7 @@ import makeAmountMath from './amountMath';
  * @param {string} mathHelpersName
  * @returns {IssuerResults}
  */
-function produceIssuer(allegedName, mathHelpersName = 'nat') {
+function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
   assert.typeof(allegedName, 'string');
 
   const brand = harden({
@@ -500,6 +500,6 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
   });
 }
 
-harden(produceIssuer);
+harden(makeIssuerKit);
 
-export default produceIssuer;
+export default makeIssuerKit;

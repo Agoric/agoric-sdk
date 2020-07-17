@@ -1,11 +1,11 @@
 /* global harden */
 
-import produceIssuer from '../../../src/issuer';
+import makeIssuerKit from '../../../src/issuer';
 
 function build(E, log) {
   function testSplitPayments(aliceMaker) {
     log('start test splitPayments');
-    const { mint: moolaMint, issuer, amountMath } = produceIssuer('moola');
+    const { mint: moolaMint, issuer, amountMath } = makeIssuerKit('moola');
     const moolaPayment = moolaMint.mintPayment(amountMath.make(1000));
 
     const aliceP = E(aliceMaker).make(issuer, amountMath, moolaPayment);

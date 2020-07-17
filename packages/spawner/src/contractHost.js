@@ -7,7 +7,7 @@ import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { producePromise } from '@agoric/produce-promise';
 import { E, HandledPromise } from '@agoric/eventual-send';
 
@@ -36,7 +36,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     mint: inviteMint,
     issuer: inviteIssuer,
     amountMath: inviteAmountMath,
-  } = produceIssuer('contract host', 'set');
+  } = makeIssuerKit('contract host', 'set');
 
   function redeem(allegedInvitePayment) {
     return inviteIssuer.getAmountOf(allegedInvitePayment).then(inviteAmount => {

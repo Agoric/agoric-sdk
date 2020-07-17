@@ -2,10 +2,10 @@
 
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 function build(_E, _log) {
-  return harden({ produceIssuer });
+  return harden({ makeIssuerKit });
 }
 harden(build);
 

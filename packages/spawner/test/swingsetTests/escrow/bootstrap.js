@@ -2,7 +2,7 @@
 
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 import { assert, details } from '@agoric/assert';
 
@@ -175,9 +175,9 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const host = await E(vats.host).makeHost();
-      const { mint: randMintP } = E(vats.mint).produceIssuer('rand');
+      const { mint: randMintP } = E(vats.mint).makeIssuerKit('rand');
 
-      const { mint: artMintP } = produceIssuer('art', 'set');
+      const { mint: artMintP } = makeIssuerKit('art', 'set');
       switch (argv[0]) {
         case 'escrow misMatches': {
           return testEscrowServiceMismatches(host, randMintP, artMintP);

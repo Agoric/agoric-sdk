@@ -1,6 +1,6 @@
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePrintLog } from './printLog';
 
@@ -12,8 +12,8 @@ const log = makePrintLog();
 function setupBasicMints() {
   // prettier-ignore
   const all = [
-    produceIssuer('moola'),
-    produceIssuer('simoleans'),
+    makeIssuerKit('moola'),
+    makeIssuerKit('simoleans'),
   ];
   const mints = all.map(objs => objs.mint);
   const issuers = all.map(objs => objs.issuer);

@@ -137,7 +137,7 @@ function build(E, log) {
 
     const { mint: moneyMint, issuer: moneyIssuer } = await E(
       mint,
-    ).produceIssuer('moola');
+    ).makeIssuerKit('moola');
     const moolaAmountMath = await getLocalAmountMath(moneyIssuer);
     const moola = moolaAmountMath.make;
     const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
@@ -145,7 +145,7 @@ function build(E, log) {
 
     const { mint: stockMint, issuer: stockIssuer } = await E(
       mint,
-    ).produceIssuer('Tyrell');
+    ).makeIssuerKit('Tyrell');
     const stockAmountMath = await getLocalAmountMath(stockIssuer);
     const stocks = stockAmountMath.make;
     const aliceStockPaymentP = E(stockMint).mintPayment(stocks(2002));
@@ -188,7 +188,7 @@ function build(E, log) {
 
     const { mint: moneyMint, issuer: moneyIssuer } = await E(
       mint,
-    ).produceIssuer('clams');
+    ).makeIssuerKit('clams');
     const moneyAmountMath = await getLocalAmountMath(moneyIssuer);
     const money = moneyAmountMath.make;
     const aliceMoneyPayment = await E(moneyMint).mintPayment(money(1000));
@@ -196,7 +196,7 @@ function build(E, log) {
 
     const { mint: stockMint, issuer: stockIssuer } = await E(
       mint,
-    ).produceIssuer('fudco');
+    ).makeIssuerKit('fudco');
     const stockAmountMath = await getLocalAmountMath(stockIssuer);
     const stocks = stockAmountMath.make;
     const aliceStockPayment = await E(stockMint).mintPayment(stocks(2002));

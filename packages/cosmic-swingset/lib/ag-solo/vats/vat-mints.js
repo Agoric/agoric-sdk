@@ -1,6 +1,6 @@
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
 
@@ -25,7 +25,7 @@ function build(_E, _log) {
     getMints: issuerNames => issuerNames.map(api.getMint),
     // For example, issuerNameSingular might be 'moola', or 'simolean'
     makeMintAndIssuer: issuerNameSingular => {
-      const { mint, issuer, amountMath } = produceIssuer(issuerNameSingular);
+      const { mint, issuer, amountMath } = makeIssuerKit(issuerNameSingular);
       mintsAndMath.init(issuerNameSingular, { mint, amountMath });
       return issuer;
     },

@@ -6,7 +6,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import { makeRegistrar } from '@agoric/registrar';
 
@@ -24,9 +24,9 @@ const setupTest = async () => {
     inboxStateChangeLog.push(data);
   };
 
-  const moolaBundle = produceIssuer('moola');
-  const simoleanBundle = produceIssuer('simolean');
-  const rpgBundle = produceIssuer('rpg', 'strSet');
+  const moolaBundle = makeIssuerKit('moola');
+  const simoleanBundle = makeIssuerKit('simolean');
+  const rpgBundle = makeIssuerKit('rpg', 'strSet');
   const zoe = makeZoe();
   const registry = makeRegistrar();
   const board = makeBoard();

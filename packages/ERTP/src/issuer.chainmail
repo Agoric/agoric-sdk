@@ -119,13 +119,13 @@ interface Brand {
  * default, is used for basic fungible tokens.
  */
 interface IssuerMaker {
-  produceIssuer(
+  makeIssuerKit(
       allegedName :String,
       mathHelperName :String) -> (IssuerResults);
 }
 
 /**
- * The return value of produceIssuer
+ * The return value of makeIssuerKit
  */
 struct IssuerResults ( ) {
   mint :Mint;

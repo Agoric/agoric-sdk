@@ -2,7 +2,7 @@
 // @ts-check
 
 /* eslint-disable no-use-before-define */
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
 import { makeTable, makeValidateProperties } from '../table';
@@ -118,7 +118,7 @@ const makeContract = zcf => {
       mint: liquidityMint,
       issuer: liquidityIssuer,
       brand: liquidityBrand,
-    } = produceIssuer(newLiquidityKeyword);
+    } = makeIssuerKit(newLiquidityKeyword);
     return Promise.all([
       zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
       makeEmptyOffer(),

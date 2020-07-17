@@ -6,7 +6,7 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
@@ -27,7 +27,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const sellItemsBundle = await bundleSource(sellItemsRoot);
   const sellItemsInstallationHandle = await E(zoe).install(sellItemsBundle);
 
-  const { issuer: moolaIssuer, amountMath: moolaAmountMath } = produceIssuer(
+  const { issuer: moolaIssuer, amountMath: moolaAmountMath } = makeIssuerKit(
     'moola',
   );
 
@@ -149,7 +149,7 @@ test(`mint and sell opera tickets`, async t => {
     mint: moolaMint,
     issuer: moolaIssuer,
     amountMath: { make: moola },
-  } = produceIssuer('moola');
+  } = makeIssuerKit('moola');
 
   const zoe = makeZoe();
 

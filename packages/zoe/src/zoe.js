@@ -3,7 +3,7 @@
 
 import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { assert, details, q } from '@agoric/assert';
 import { produceNotifier } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
@@ -346,7 +346,7 @@ function makeZoe(additionalEndowments = {}, vatPowers = {}) {
     mint: inviteMint,
     issuer: inviteIssuer,
     amountMath: inviteAmountMath,
-  } = produceIssuer('zoeInvite', 'set');
+  } = makeIssuerKit('zoeInvite', 'set');
 
   // All of the Zoe state is stored in these tables built on WeakMaps
   const {

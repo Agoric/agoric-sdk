@@ -1,7 +1,7 @@
 /* global harden */
 // @ts-check
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -31,7 +31,7 @@ const makeContract = zcf => {
     mint: liquidityMint,
     issuer: liquidityIssuer,
     amountMath: liquidityAmountMath,
-  } = produceIssuer('liquidity');
+  } = makeIssuerKit('liquidity');
 
   let liqTokenSupply = 0;
 

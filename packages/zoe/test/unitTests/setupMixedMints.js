@@ -1,10 +1,10 @@
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 const setupMixed = () => {
-  const ccBundle = produceIssuer('CryptoCats', 'strSet');
-  const moolaBundle = produceIssuer('moola');
+  const ccBundle = makeIssuerKit('CryptoCats', 'strSet');
+  const moolaBundle = makeIssuerKit('moola');
   const allBundles = { cc: ccBundle, moola: moolaBundle };
   const mints = new Map();
   const issuers = new Map();
