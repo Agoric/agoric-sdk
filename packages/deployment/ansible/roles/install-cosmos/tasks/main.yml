@@ -8,33 +8,15 @@
     group: "{{ service }}"
     mode: 0644
 
-- name: Set proxy_app
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^proxy_app *='
-    line: 'proxy_app = "kvstore"'
-
-- name: Set block commit cadence
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^timeout_commit *='
-    line: 'timeout_commit = "{{ BLOCK_CADENCE }}"'
-
-- name: Set persistent_peers
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^persistent_peers *='
-    line: 'persistent_peers = "{{ PERSISTENT_PEERS }}"'
-
-- name: Index all keys (needed for IBC)
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^index_all_keys *='
-    line: 'index_all_keys = true'
+- name: "Install {{ data | default(service + '/data') }}/*.dst/config/config.toml"
+  become_user: root
+  become: true
+  copy:
+    src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/config.toml"
+    dest: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    owner: "{{ service }}"
+    group: "{{ service }}"
+    mode: 0644
 
 - name: Set addr_book_strict=false
   lineinfile:
