@@ -1,8 +1,9 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden */
-
 // @ts-check
+
+// eslint-disable-next-line spaced-comment
+/// <reference types="ses"/>
 
 // This module assumes the de-facto standard `console` host object.
 // To the extent that this `console` is considered a resource,
@@ -123,7 +124,7 @@ harden(q);
  *
  * @typedef {string|Complainer} Details Either a plain string, or made by details``
  *
- * @param {TemplateStringsArray} template The template to format
+ * @param {TemplateStringsArray | string[]} template The template to format
  * @param {any[]} args Arguments to the template
  * @returns {Complainer} The complainer for these details
  */
@@ -145,7 +146,7 @@ function details(template, ...args) {
 
         // Remove the extra spaces (since console.error puts them
         // between each interleaved).
-        const priorWithoutSpace = interleaved.pop().replace(/ $/, '');
+        const priorWithoutSpace = (interleaved.pop() || '').replace(/ $/, '');
         if (priorWithoutSpace !== '') {
           interleaved.push(priorWithoutSpace);
         }
@@ -212,10 +213,11 @@ function fail(optDetails = details`Assert failed`) {
  * with the nodejs assertion library.
  * @param {*} flag The truthy/falsy value
  * @param {Details} [optDetails] The details to throw
+ * @returns {asserts flag}
  */
 function assert(flag, optDetails = details`Check failed`) {
   if (!flag) {
-    fail(optDetails);
+    throw fail(optDetails);
   }
 }
 
@@ -224,6 +226,7 @@ function assert(flag, optDetails = details`Check failed`) {
  * @param {*} actual The value we received
  * @param {*} expected What we wanted
  * @param {Details} [optDetails] The details to throw
+ * @returns {asserts actual is expected}
  */
 function equal(
   actual,
