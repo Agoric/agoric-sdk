@@ -31,18 +31,18 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
+const makeVats = (E, log, vats, zoe, installations, startingValues) => {
   const timer = buildManualTimer(log);
   const { mints, issuers, amountMaths } = setupBasicMints();
-  const makePayments = extents =>
-    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(extents[i])));
-  const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
+  const makePayments = values =>
+    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(values[i])));
+  const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 
   // Setup Alice
   const aliceP = E(vats.alice).build(
     zoe,
     issuers,
-    makePayments(aliceExtents),
+    makePayments(aliceValues),
     installations,
     timer,
   );
@@ -51,7 +51,7 @@ const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
   const bobP = E(vats.bob).build(
     zoe,
     issuers,
-    makePayments(bobExtents),
+    makePayments(bobValues),
     installations,
     timer,
   );
@@ -61,22 +61,22 @@ const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
     bobP,
   };
 
-  if (carolExtents) {
+  if (carolValues) {
     const carolP = E(vats.carol).build(
       zoe,
       issuers,
-      makePayments(carolExtents),
+      makePayments(carolValues),
       installations,
       timer,
     );
     result.carolP = carolP;
   }
 
-  if (daveExtents) {
+  if (daveValues) {
     const daveP = E(vats.dave).build(
       zoe,
       issuers,
-      makePayments(daveExtents),
+      makePayments(daveValues),
       installations,
       timer,
     );
@@ -103,7 +103,7 @@ function build(E, log) {
         mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
       };
 
-      const [testName, startingExtents] = argv;
+      const [testName, startingValues] = argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         E,
@@ -111,7 +111,7 @@ function build(E, log) {
         vats,
         zoe,
         installations,
-        startingExtents,
+        startingValues,
       );
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },

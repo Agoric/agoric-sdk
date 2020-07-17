@@ -10,8 +10,8 @@ import { assertKeywordName } from '../cleanProposal';
 import {
   makeZoeHelpers,
   getInputPrice,
-  calcLiqExtentToMint,
-  calcExtentToRemove,
+  calcLiqValueToMint,
+  calcValueToRemove,
 } from '../contractSupport';
 import { filterObj } from '../objArrayConversion';
 
@@ -205,12 +205,12 @@ const makeContract = zcf => {
       brandOut,
     });
     const poolAllocation = getPoolAllocation(secondaryTokenBrand);
-    const outputExtent = getInputPrice({
-      inputExtent: amountIn.extent,
-      inputReserve: getPoolAmount(poolAllocation, brandIn).extent,
-      outputReserve: getPoolAmount(poolAllocation, brandOut).extent,
+    const outputValue = getInputPrice({
+      inputValue: amountIn.value,
+      inputReserve: getPoolAmount(poolAllocation, brandIn).value,
+      outputReserve: getPoolAmount(poolAllocation, brandOut).value,
     });
-    return zcf.getAmountMath(brandOut).make(outputExtent);
+    return zcf.getAmountMath(brandOut).make(outputValue);
   };
 
   const rejectIfNotTokenBrand = (inviteHandle, brand) => {
@@ -249,23 +249,23 @@ const makeContract = zcf => {
     const poolAllocation = getPoolAllocation(secondaryTokenBrand);
 
     // Calculate how many liquidity tokens we should be minting.
-    const liquidityExtentOut = calcLiqExtentToMint(
+    const liquidityValueOut = calcLiqValueToMint(
       harden({
         liqTokenSupply: liquidityTokenSupply,
-        inputExtent: userAllocation.CentralToken.extent,
-        inputReserve: poolAllocation.CentralToken.extent,
+        inputValue: userAllocation.CentralToken.value,
+        inputReserve: poolAllocation.CentralToken.value,
       }),
     );
 
     const liquidityAmountOut = zcf
       .getAmountMath(liquidityBrand)
-      .make(liquidityExtentOut);
+      .make(liquidityValueOut);
 
     const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
 
     // We update the liquidityTokenSupply before the next turn
     liquidityTable.update(secondaryTokenBrand, {
-      liquidityTokenSupply: liquidityTokenSupply + liquidityExtentOut,
+      liquidityTokenSupply: liquidityTokenSupply + liquidityValueOut,
     });
 
     // The contract needs to escrow the liquidity payment with Zoe
@@ -323,30 +323,30 @@ const makeContract = zcf => {
 
     const userAllocation = zcf.getCurrentAllocation(offerHandle);
     const poolAllocation = getPoolAllocation(secondaryTokenBrand);
-    const liquidityExtentIn = userAllocation.Liquidity.extent;
+    const liquidityValueIn = userAllocation.Liquidity.value;
 
     const centralTokenAmountOut = zcf.getAmountMath(centralTokenBrand).make(
-      calcExtentToRemove(
+      calcValueToRemove(
         harden({
           liqTokenSupply: liquidityTokenSupply,
-          poolExtent: poolAllocation[CENTRAL_TOKEN].extent,
-          liquidityExtentIn,
+          poolValue: poolAllocation[CENTRAL_TOKEN].value,
+          liquidityValueIn,
         }),
       ),
     );
 
     const tokenKeywordAmountOut = zcf.getAmountMath(secondaryTokenBrand).make(
-      calcExtentToRemove(
+      calcValueToRemove(
         harden({
           liqTokenSupply: liquidityTokenSupply,
-          poolExtent: poolAllocation[tokenKeyword].extent,
-          liquidityExtentIn,
+          poolValue: poolAllocation[tokenKeyword].value,
+          liquidityValueIn,
         }),
       ),
     );
 
     liquidityTable.update(secondaryTokenBrand, {
-      liquidityTokenSupply: liquidityTokenSupply - liquidityExtentIn,
+      liquidityTokenSupply: liquidityTokenSupply - liquidityValueIn,
     });
 
     trade(

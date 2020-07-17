@@ -18,7 +18,7 @@ const rejectMsg = `The covered call option is expired.`;
  * exit record with the key "afterDeadline".
  *
  * The invite received by the covered call creator is the call option. It has
- * this additional information in the invite's extent:
+ * this additional information in the invite's value:
  * { expirationDate, timerAuthority, underlyingAsset, strikePrice }
  *
  * The initial proposal should be:

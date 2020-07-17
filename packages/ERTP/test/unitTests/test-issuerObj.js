@@ -35,7 +35,7 @@ test('issuer.getAmountMath', t => {
         fungible(150),
       ),
     );
-    t.equals(fungible(4000).extent, 4000);
+    t.equals(fungible(4000).value, 4000);
     t.equals(fungible(0).brand, brand);
   } catch (e) {
     t.assert(false, e);
@@ -121,11 +121,11 @@ test('purse.deposit', async t => {
     const delta = amountMath.subtract(expectedNewBalance, expectedOldBalance);
     t.ok(
       amountMath.isEqual(depositResult, delta),
-      `the balance changes by the deposited amount: ${delta.extent}`,
+      `the balance changes by the deposited amount: ${delta.value}`,
     );
     t.ok(
       amountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
-      `the new purse balance ${depositResult.extent} is the expected amount: ${expectedNewBalance.extent}`,
+      `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
     );
   };
 
@@ -349,7 +349,7 @@ test('issuer.combine array of promises', t => {
 
   const checkCombinedResult = paymentP => {
     issuer.getAmountOf(paymentP).then(pAmount => {
-      t.equals(pAmount.extent, 100);
+      t.equals(pAmount.value, 100);
     });
   };
 

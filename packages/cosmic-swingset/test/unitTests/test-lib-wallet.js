@@ -161,8 +161,8 @@ test('lib-wallet issuer and purse methods', async t => {
     t.deepEquals(
       pursesStateChangeLog,
       [
-        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
-        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","value":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"value":0}}]',
       ],
       `pursesStateChangeLog`,
     );
@@ -193,7 +193,7 @@ test('lib-wallet offer methods', async t => {
 
     const inviteIssuer = await E(zoe).getInviteIssuer();
     const {
-      extent: [{ handle: inviteHandle, installationHandle }],
+      value: [{ handle: inviteHandle, installationHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
     const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
     await wallet.deposit('Default Zoe invite purse', invite);
@@ -214,7 +214,7 @@ test('lib-wallet offer methods', async t => {
             Contribution: {
               // The pursePetname identifies which purse we want to use
               pursePetname: 'Fun budget',
-              extent: 1,
+              value: 1,
             },
           },
           exit: { onDemand: null },
@@ -236,7 +236,7 @@ test('lib-wallet offer methods', async t => {
           instanceHandleBoardId: '15326650',
           installationHandleBoardId: '7279951',
           proposalTemplate: {
-            give: { Contribution: { pursePetname: 'Fun budget', extent: 1 } },
+            give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
             exit: { onDemand: null },
           },
           requestContext: { origin: 'unknown' },
@@ -250,7 +250,7 @@ test('lib-wallet offer methods', async t => {
                 pursePetname: 'Fun budget',
                 amount: {
                   brand: { kind: 'brand', petname: 'moola' },
-                  extent: 1,
+                  value: 1,
                 },
               },
             },
@@ -269,7 +269,7 @@ test('lib-wallet offer methods', async t => {
             pursePetname: 'Fun budget',
             amount: {
               brand: { kind: 'brand', petname: 'moola' },
-              extent: 1,
+              value: 1,
             },
           },
         },
@@ -297,7 +297,7 @@ test('lib-wallet offer methods', async t => {
     const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
     const invite2 = await E(publicAPI).makeInvite();
     const {
-      extent: [{ handle: inviteHandle2 }],
+      value: [{ handle: inviteHandle2 }],
     } = await E(inviteIssuer).getAmountOf(invite2);
     const inviteHandleBoardId2 = await E(board).getId(inviteHandle2);
     const offer2 = formulateBasicOffer(rawId2, inviteHandleBoardId2);
@@ -390,7 +390,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const invite = await E(publicAPI).makeSwapInvite();
     const inviteIssuer = await E(zoe).getInviteIssuer();
     const {
-      extent: [{ handle: inviteHandle }],
+      value: [{ handle: inviteHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
     const inviteHandleBoardId = await E(board).getId(inviteHandle);
 
@@ -414,13 +414,13 @@ test('lib-wallet addOffer for autoswap swap', async t => {
         give: {
           In: {
             pursePetname: 'Fun budget',
-            extent: 30,
+            value: 30,
           },
         },
         want: {
           Out: {
             pursePetname: 'Nest egg',
-            extent: 1,
+            value: 1,
           },
         },
         exit: {

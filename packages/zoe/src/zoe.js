@@ -224,7 +224,7 @@ import { makeTables } from './state';
  * access the Zoe state for that instance. The Zoe Contract Facet is accessed
  * synchronously from within the contract, and usually is referred to in code as
  * zcf.
- * @property {Reallocate} reallocate Propose a reallocation of extents per offer
+ * @property {Reallocate} reallocate Propose a reallocation of values per offer
  * @property {Complete} complete Complete an offer
  * @property {MakeInvitation} makeInvitation
  * @property {AddNewIssuer} addNewIssuer
@@ -242,7 +242,7 @@ import { makeTables } from './state';
  * @property {(brand: Brand) => AmountMath} getAmountMath
  *
  * @callback Reallocate
- * The contract can propose a reallocation of extents across offers
+ * The contract can propose a reallocation of values across offers
  * by providing two parallel arrays: offerHandles and newAllocations.
  * Each element of newAllocations is an AmountKeywordRecord whose
  * amount should replace the old amount for that keyword for the
@@ -286,7 +286,7 @@ import { makeTables } from './state';
  * @callback MakeInvitation
  * Make a credible Zoe invite for a particular smart contract
  * indicated by the unique `instanceHandle`. The other
- * information in the extent of this invite is decided by the
+ * information in the value of this invite is decided by the
  * governing contract and should include whatever information is
  * necessary for a potential buyer of the invite to know what
  * they are getting. Note: if information can be derived in
@@ -302,7 +302,7 @@ import { makeTables } from './state';
  *
  * @typedef MakeInvitationOptions
  * @property {CustomProperties} [customProperties] - an object of
- * information to include in the extent, as defined by the smart
+ * information to include in the value, as defined by the smart
  * contract
  *
  * @callback OfferHook
@@ -512,7 +512,7 @@ function makeZoe(additionalEndowments = {}, vatPowers = {}) {
         return completeOffers(instanceHandle, offerHandles);
       },
 
-      // Make a Zoe invite payment with an extent that is a mix of credible
+      // Make a Zoe invite payment with a value that is a mix of credible
       // information from Zoe (the `handle` and `instanceHandle`) and
       // other information defined by the smart contract (the mandatory
       // `inviteDesc` and the optional`options.customProperties`).
@@ -757,7 +757,7 @@ function makeZoe(additionalEndowments = {}, vatPowers = {}) {
       ) => {
         return inviteIssuer.burn(invite).then(inviteAmount => {
           assert(
-            inviteAmount.extent.length === 1,
+            inviteAmount.value.length === 1,
             'only one invite should be redeemed',
           );
           const giveKeywords = proposal.give
@@ -793,7 +793,7 @@ function makeZoe(additionalEndowments = {}, vatPowers = {}) {
           });
 
           const {
-            extent: [{ instanceHandle, handle: inviteHandle }],
+            value: [{ instanceHandle, handle: inviteHandle }],
           } = inviteAmount;
           const offerHandle = harden({});
 

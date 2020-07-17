@@ -55,7 +55,7 @@ export const closeAuction = (
   const newSellerAmounts = { Asset: assetAmountMath.getEmpty(), Ask: price };
   const newWinnerAmounts = { Asset: assetAmount, Bid: winnerRefund };
 
-  // Everyone else gets a refund so their extents remain the
+  // Everyone else gets a refund so their values remain the
   // same.
   zcf.reallocate(
     harden([sellerOfferHandle, winnerOfferHandle]),

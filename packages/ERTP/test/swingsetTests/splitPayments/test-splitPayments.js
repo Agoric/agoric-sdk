@@ -21,9 +21,9 @@ async function main(basedir, argv) {
 const expectedTapFaucetLog = [
   '=> setup called',
   'start test splitPayments',
-  'oldPayment balance:{"brand":{},"extent":1000}',
-  'splitPayment[0] balance: {"brand":{},"extent":10}',
-  'splitPayment[1] balance: {"brand":{},"extent":990}',
+  'oldPayment balance:{"brand":{},"value":1000}',
+  'splitPayment[0] balance: {"brand":{},"value":10}',
+  'splitPayment[1] balance: {"brand":{},"value":990}',
 ];
 
 test('test splitPayments', async t => {

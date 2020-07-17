@@ -7,14 +7,14 @@ import {
 } from '@material-ui/core';
 
 const displayNonfungible = amount => {
-  const { brand, extent } = amount;
+  const { brand, value } = amount;
 
   // TODO: base this on brandBoardId instead since petnames can change
   if (brand.petname === 'zoe invite') {
-    if (extent.length === 0) {
+    if (value.length === 0) {
       return `${JSON.stringify(brand.petname)} purse is empty.`;
     }
-    const elems = extent.map(elem => {
+    const elems = value.map(elem => {
       return {
         instance: elem.instanceHandle.petname,
         inviteDesc: elem.inviteDesc,
@@ -43,7 +43,7 @@ const displayNonfungible = amount => {
       <b>
 {brand.petname} (Non-fungible)</b>
       <List>
-        {extent.map(elem => (
+        {value.map(elem => (
           <ListItem key={JSON.stringify(elem)} divider>
             <ListItemText primary={JSON.stringify(elem)} />
           </ListItem>
@@ -56,12 +56,12 @@ const displayNonfungible = amount => {
 export default function Amount({ amount }) {
   return (
     <>
-      {Array.isArray(amount.extent) ? (
+      {Array.isArray(amount.value) ? (
         displayNonfungible(amount)
       ) : (
         <b>
           {' '}
-          {amount.extent} 
+          {amount.value} 
 {' '}
 {amount.brand.petname}
         </b>

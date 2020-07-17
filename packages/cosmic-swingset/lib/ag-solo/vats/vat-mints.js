@@ -29,14 +29,14 @@ function build(_E, _log) {
       mintsAndMath.init(issuerNameSingular, { mint, amountMath });
       return issuer;
     },
-    mintInitialPayment: (issuerName, extent) => {
+    mintInitialPayment: (issuerName, value) => {
       const { mint, amountMath } = mintsAndMath.get(issuerName);
-      const amount = amountMath.make(extent);
+      const amount = amountMath.make(value);
       return mint.mintPayment(amount);
     },
-    mintInitialPayments: (issuerNames, extents) =>
+    mintInitialPayments: (issuerNames, values) =>
       issuerNames.map((issuerName, i) =>
-        api.mintInitialPayment(issuerName, extents[i]),
+        api.mintInitialPayment(issuerName, values[i]),
       ),
   });
 

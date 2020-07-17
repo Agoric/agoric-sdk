@@ -35,18 +35,18 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (vats, zoe, installations, startingExtents) => {
+const makeVats = (vats, zoe, installations, startingValues) => {
   const timer = buildManualTimer(log);
   const { mints, issuers, amountMaths } = setupBasicMints();
-  const makePayments = extents =>
-    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(extents[i])));
-  const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
+  const makePayments = values =>
+    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(values[i])));
+  const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 
   // Setup Alice
   const aliceP = E(vats.alice).build(
     zoe,
     issuers,
-    makePayments(aliceExtents),
+    makePayments(aliceValues),
     installations,
     timer,
   );
@@ -55,7 +55,7 @@ const makeVats = (vats, zoe, installations, startingExtents) => {
   const bobP = E(vats.bob).build(
     zoe,
     issuers,
-    makePayments(bobExtents),
+    makePayments(bobValues),
     installations,
     timer,
   );
@@ -65,22 +65,22 @@ const makeVats = (vats, zoe, installations, startingExtents) => {
     bobP,
   };
 
-  if (carolExtents) {
+  if (carolValues) {
     const carolP = E(vats.carol).build(
       zoe,
       issuers,
-      makePayments(carolExtents),
+      makePayments(carolValues),
       installations,
       timer,
     );
     result.carolP = carolP;
   }
 
-  if (daveExtents) {
+  if (daveValues) {
     const daveP = E(vats.dave).build(
       zoe,
       issuers,
-      makePayments(daveExtents),
+      makePayments(daveValues),
       installations,
       timer,
     );
@@ -117,14 +117,14 @@ export function buildRootObject(_vatPowers) {
       // autoswapOk '[[10,5,0],[3,7,0]]'
       // sellTicketsOk '[[0,0,0],[22,0,0]]'
 
-      const [testName, startingExtentsStr] = argv;
-      const startingExtents = JSON.parse(startingExtentsStr);
+      const [testName, startingValuesStr] = argv;
+      const startingValues = JSON.parse(startingValuesStr);
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         vats,
         zoe,
         installations,
-        startingExtents,
+        startingValues,
       );
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },

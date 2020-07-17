@@ -14,13 +14,11 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
   return harden({
     doPublicAuction: async inviteP => {
       const invite = await E(inviteIssuer).claim(inviteP);
-      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
-        invite,
-      );
+      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(invite);
 
       const { installationHandle, terms, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstanceRecord(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteValue[0].instanceHandle);
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
@@ -33,8 +31,8 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
         details`issuerKeywordRecord were not as expected`,
       );
       assert(terms.numBidsAllowed === 3, details`terms not as expected`);
-      assert(sameStructure(inviteExtent[0].minimumBid, simoleans(3)));
-      assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
+      assert(sameStructure(inviteValue[0].minimumBid, simoleans(3)));
+      assert(sameStructure(inviteValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },

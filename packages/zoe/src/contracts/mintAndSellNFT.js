@@ -11,7 +11,7 @@ import produceIssuer from '@agoric/ertp';
  * ticketMaker with a `.sellTokens()` method. `.sellTokens()` takes a
  * specification of what is being sold, such as:
  * {
- *   customExtentProperties: { ...arbitrary },
+ *   customValueProperties: { ...arbitrary },
  *   count: 3,
  *   moneyIssuer: moolaIssuer,
  *   sellItemsInstallationHandle,
@@ -37,7 +37,7 @@ const makeContract = zcf => {
   const zoeService = zcf.getZoeService();
 
   const sellTokens = ({
-    customExtentProperties,
+    customValueProperties,
     count,
     moneyIssuer,
     sellItemsInstallationHandle,
@@ -51,7 +51,7 @@ const makeContract = zcf => {
           .map((_, i) => {
             const tokenNumber = i + 1;
             return {
-              ...customExtentProperties,
+              ...customValueProperties,
               number: tokenNumber,
             };
           }),

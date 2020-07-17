@@ -138,8 +138,8 @@ test('barter with valid offers', async t => {
   // Assert that the correct payout were received.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 4);
-  t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 3);
+  t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
+  t.equals(aliceSimoleanPurse.getCurrentAmount().value, 4);
+  t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
+  t.equals(bobSimoleanPurse.getCurrentAmount().value, 3);
 });

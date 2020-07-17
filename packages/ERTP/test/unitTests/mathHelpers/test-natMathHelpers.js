@@ -24,7 +24,7 @@ test('natMathHelpers', t => {
       getMathHelpersName,
       make,
       coerce,
-      getExtent,
+      getValue,
       getEmpty,
       isEmpty,
       isGTE,
@@ -40,7 +40,7 @@ test('natMathHelpers', t => {
     t.deepEquals(getMathHelpersName(), 'nat', 'mathHelpersName is nat');
 
     // make
-    t.deepEquals(make(4), { brand: mockBrand, extent: 4 });
+    t.deepEquals(make(4), { brand: mockBrand, value: 4 });
     t.throws(
       () => make('abc'),
       /RangeError: not a safe integer/,
@@ -50,17 +50,17 @@ test('natMathHelpers', t => {
 
     // coerce
     t.deepEquals(
-      coerce(harden({ brand: mockBrand, extent: 4 })),
+      coerce(harden({ brand: mockBrand, value: 4 })),
       {
         brand: mockBrand,
-        extent: 4,
+        value: 4,
       },
       `coerce can take an amount`,
     );
     t.throws(
       () =>
         coerce(
-          harden({ brand: { getAllegedName: () => 'somename' }, extent: 4 }),
+          harden({ brand: { getAllegedName: () => 'somename' }, value: 4 }),
         ),
       /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
       `coerce can't take the wrong brand`,
@@ -71,15 +71,15 @@ test('natMathHelpers', t => {
       `coerce needs a brand`,
     );
 
-    // getExtent
-    t.equals(getExtent(make(4)), 4);
+    // getValue
+    t.equals(getValue(make(4)), 4);
 
     // getEmpty
     t.deepEquals(getEmpty(), make(0), `empty is 0`);
 
     // isEmpty
-    t.ok(isEmpty({ brand: mockBrand, extent: 0 }), `isEmpty(0) is true`);
-    t.notOk(isEmpty({ brand: mockBrand, extent: 6 }), `isEmpty(6) is false`);
+    t.ok(isEmpty({ brand: mockBrand, value: 0 }), `isEmpty(0) is true`);
+    t.notOk(isEmpty({ brand: mockBrand, value: 6 }), `isEmpty(6) is false`);
     t.ok(isEmpty(make(0)), `isEmpty(0) is true`);
     t.notOk(isEmpty(make(6)), `isEmpty(6) is false`);
     t.throws(
@@ -88,7 +88,7 @@ test('natMathHelpers', t => {
       `isEmpty('abc') throws because it cannot be coerced`,
     );
     t.throws(
-      () => isEmpty({ brand: mockBrand, extent: 'abc' }),
+      () => isEmpty({ brand: mockBrand, value: 'abc' }),
       /RangeError: not a safe integer/,
       `isEmpty('abc') throws because it cannot be coerced`,
     );
@@ -102,7 +102,7 @@ test('natMathHelpers', t => {
     t.ok(isGTE(make(5), make(3)), `5 >= 3`);
     t.ok(isGTE(make(3), make(3)), `3 >= 3`);
     t.notOk(
-      isGTE({ brand: mockBrand, extent: 3 }, { brand: mockBrand, extent: 4 }),
+      isGTE({ brand: mockBrand, value: 3 }, { brand: mockBrand, value: 4 }),
       `3 < 4`,
     );
 

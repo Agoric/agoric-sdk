@@ -71,18 +71,18 @@ test('zoe - atomicSwap', async t => {
 
   const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
   const {
-    extent: [bobInviteExtent],
+    value: [bobInviteValue],
   } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
 
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: simoleanIssuer });
-  t.deepEquals(bobInviteExtent.asset, moola(3));
-  t.deepEquals(bobInviteExtent.price, simoleans(7));
+  t.deepEquals(bobInviteValue.asset, moola(3));
+  t.deepEquals(bobInviteValue.price, simoleans(7));
 
   const bobProposal = harden({
     give: { Price: simoleans(7) },
@@ -131,10 +131,10 @@ test('zoe - atomicSwap', async t => {
   // Assert that the correct payouts were received.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
-  t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
+  t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
+  t.equals(aliceSimoleanPurse.getCurrentAmount().value, 7);
+  t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
+  t.equals(bobSimoleanPurse.getCurrentAmount().value, 0);
 });
 
 test('zoe - non-fungible atomicSwap', async t => {
@@ -201,18 +201,18 @@ test('zoe - non-fungible atomicSwap', async t => {
 
   const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
   const {
-    extent: [bobInviteExtent],
+    value: [bobInviteValue],
   } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
 
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: ccIssuer, Price: rpgIssuer });
-  t.deepEquals(bobInviteExtent.asset, calico37Amount);
-  t.deepEquals(bobInviteExtent.price, vorpalAmount);
+  t.deepEquals(bobInviteValue.asset, calico37Amount);
+  t.deepEquals(bobInviteValue.price, vorpalAmount);
 
   const bobProposal = harden({
     give: { Price: vorpalAmount },
@@ -264,10 +264,10 @@ test('zoe - non-fungible atomicSwap', async t => {
   // Assert that the correct payouts were received.
   // Alice had a CryptoCat and no RPG tokens.
   // Bob had an empty CryptoCat purse and a Vorpal Sword.
-  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
-  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, vorpalSword);
-  t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['calico #37']);
-  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
+  t.deepEquals(aliceCcPurse.getCurrentAmount().value, []);
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().value, vorpalSword);
+  t.deepEquals(bobCcPurse.getCurrentAmount().value, ['calico #37']);
+  t.deepEquals(bobRpgPurse.getCurrentAmount().value, []);
 });
 
 // Checking handling of duplicate issuers. I'd have preferred a raffle contract
@@ -321,18 +321,18 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
   const {
-    extent: [bobInviteExtent],
+    value: [bobInviteValue],
   } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
 
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
-  t.deepEquals(bobInviteExtent.asset, moola(3));
-  t.deepEquals(bobInviteExtent.price, moola(7));
+  t.deepEquals(bobInviteValue.asset, moola(3));
+  t.deepEquals(bobInviteValue.price, moola(7));
 
   const bobProposal = harden({
     give: { Price: moola(7) },
@@ -372,19 +372,19 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   // Alice deposits her payout to ensure she can
   const aliceAssetAmount = await aliceMoolaPurse.deposit(aliceAssetPayout);
-  t.equals(aliceAssetAmount.extent, 0);
+  t.equals(aliceAssetAmount.value, 0);
   const alicePriceAmount = await aliceMoolaPurse.deposit(alicePricePayout);
-  t.equals(alicePriceAmount.extent, 7);
+  t.equals(alicePriceAmount.value, 7);
 
   // Bob deposits his original payments to ensure he can
   const bobAssetAmount = await bobMoolaPurse.deposit(bobAssetPayout);
-  t.equals(bobAssetAmount.extent, 3);
+  t.equals(bobAssetAmount.value, 3);
   const bobPriceAmount = await bobMoolaPurse.deposit(bobPricePayout);
-  t.equals(bobPriceAmount.extent, 0);
+  t.equals(bobPriceAmount.value, 0);
 
   // Assert that the correct payouts were received.
   // Alice had 3 moola from Asset and 0 from Price.
   // Bob had 0 moola from Asset and 7 from Price.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 7);
-  t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
+  t.equals(aliceMoolaPurse.getCurrentAmount().value, 7);
+  t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
 });

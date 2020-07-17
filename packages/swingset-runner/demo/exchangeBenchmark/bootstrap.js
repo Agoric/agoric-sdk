@@ -26,19 +26,19 @@ function setupBasicMints() {
   });
 }
 
-function makeVats(vats, zoe, installations, startingExtents) {
+function makeVats(vats, zoe, installations, startingValues) {
   const { mints, issuers, amountMaths } = setupBasicMints();
   // prettier-ignore
-  function makePayments(extents) {
-    return mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(extents[i])));
+  function makePayments(values) {
+    return mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(values[i])));
   }
-  const [aliceExtents, bobExtents] = startingExtents;
+  const [aliceValues, bobValues] = startingValues;
 
   // Setup Alice
   const alice = E(vats.alice).build(
     zoe,
     issuers,
-    makePayments(aliceExtents),
+    makePayments(aliceValues),
     installations,
   );
 
@@ -46,7 +46,7 @@ function makeVats(vats, zoe, installations, startingExtents) {
   const bob = E(vats.bob).build(
     zoe,
     issuers,
-    makePayments(bobExtents),
+    makePayments(bobValues),
     installations,
   );
 
@@ -71,12 +71,12 @@ export function buildRootObject(_vatPowers) {
         simpleExchange: await E(zoe).install(simpleExchangeBundle),
       };
 
-      const startingExtents = [
+      const startingValues = [
         [3, 0], // Alice: 3 moola, no simoleans
         [0, 3], // Bob:   no moola, 3 simoleans
       ];
 
-      ({ alice, bob } = makeVats(vats, zoe, installations, startingExtents));
+      ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
       // Zoe appears to do some one-time setup the first time it's used, so this
       // is a sacrifical benchmark round to prime the pump.
       if (argv[0] === '--prime') {

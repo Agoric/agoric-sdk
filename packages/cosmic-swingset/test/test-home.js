@@ -108,7 +108,7 @@ test('home.wallet - receive zoe invite', async t => {
     // The invite was successfully received in the user's wallet.
     const invitePurseBalance = await E(invitePurse).getCurrentAmount();
     t.equals(
-      invitePurseBalance.extent[0].inviteDesc,
+      invitePurseBalance.value[0].inviteDesc,
       'getRefund',
       `invite successfully deposited`,
     );
