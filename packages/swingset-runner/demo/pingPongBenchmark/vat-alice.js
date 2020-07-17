@@ -1,6 +1,10 @@
 /* global harden */
 
-function build(E, log) {
+import { E } from '@agoric/eventual-send';
+
+const log = console.log;
+
+export function buildRootObject(_vatPowers) {
   let myNickname;
   let otherNickname = 'unknown';
   let otherContact = null;
@@ -32,17 +36,4 @@ function build(E, log) {
       E(otherContact).ping(tag);
     },
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, log),
-    helpers.vatID,
-  );
 }

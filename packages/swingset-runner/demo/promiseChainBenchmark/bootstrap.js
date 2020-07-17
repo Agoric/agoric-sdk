@@ -1,8 +1,12 @@
 /* global harden */
 
-console.log(`=> loading bootstrap.js`);
+import { E } from '@agoric/eventual-send';
 
-function build(E, log) {
+const log = console.log;
+
+log(`=> loading bootstrap.js`);
+
+export function buildRootObject(_vatPowers) {
   let bob;
   let p;
   function waitForNextResolution() {
@@ -18,7 +22,7 @@ function build(E, log) {
     );
   }
 
-  return {
+  return harden({
     bootstrap(argv, vats) {
       bob = vats.bob;
       p = E(bob).init();
@@ -27,18 +31,5 @@ function build(E, log) {
     runBenchmarkRound() {
       waitForNextResolution();
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, log)),
-    helpers.vatID,
-  );
+  });
 }
