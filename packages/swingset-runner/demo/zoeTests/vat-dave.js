@@ -1,12 +1,15 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 import { showPurseBalance, setupIssuers } from './helpers';
 import { makePrintLog } from './printLog';
 
-const build = async (E, log, zoe, issuers, payments, installations, timer) => {
+const log = makePrintLog();
+
+const build = async (zoe, issuers, payments, installations, timer) => {
   const {
     moola,
     simoleans,
@@ -38,7 +41,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       assert(
         sameStructure(
-          harden({ Asset: moolaIssuer, Bid: simoleanIssuer }),
+          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         details`issuerKeywordRecord were not as expected`,
@@ -191,10 +194,6 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   });
 };
 
-const setup = (syscall, state, helpers) =>
-  helpers.makeLiveSlots(syscall, state, E =>
-    harden({
-      build: (...args) => build(E, makePrintLog(helpers.log), ...args),
-    }),
-  );
-export default harden(setup);
+export function buildRootObject(_vatPowers) {
+  return harden({ build });
+}

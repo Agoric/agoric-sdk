@@ -9,6 +9,8 @@ const CONTRACT_FILES = [
   'publicAuction',
   'atomicSwap',
   'simpleExchange',
+  'sellItems',
+  'mintAndSellNFT',
 ];
 
 const generateBundlesP = Promise.all(

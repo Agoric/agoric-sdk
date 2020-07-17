@@ -21,7 +21,6 @@ export function getLocalAmountMath(issuer) {
 
 export async function setupPurses(zoe, issuers, payments) {
   const purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
-  const inviteIssuer = await E(zoe).getInviteIssuer();
   const [moolaIssuer, simoleanIssuer] = issuers;
 
   const [moolaPayment, simoleanPayment] = payments;
@@ -37,7 +36,6 @@ export async function setupPurses(zoe, issuers, payments) {
 
   return harden({
     issuers: harden([moolaIssuer, simoleanIssuer]),
-    inviteIssuer,
     moolaIssuer,
     simoleanIssuer,
     moolaAmountMath,

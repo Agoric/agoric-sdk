@@ -1,5 +1,6 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
 import produceIssuer from '@agoric/ertp';
 import buildManualTimer from './manualTimer';
 import { makePrintLog } from './printLog';
@@ -11,7 +12,11 @@ import publicAuctionBundle from './bundle-publicAuction';
 import atomicSwapBundle from './bundle-atomicSwap';
 import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
+import sellItemsBundle from './bundle-sellItems';
+import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
 /* eslint-enable import/no-unresolved, import/extensions */
+
+const log = makePrintLog();
 
 const setupBasicMints = () => {
   const all = [
@@ -30,7 +35,7 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
+const makeVats = (vats, zoe, installations, startingExtents) => {
   const timer = buildManualTimer(log);
   const { mints, issuers, amountMaths } = setupBasicMints();
   const makePayments = extents =>
@@ -86,7 +91,7 @@ const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
   return harden(result);
 };
 
-function build(E, log) {
+export function buildRootObject(_vatPowers) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const zoe = await E(vats.zoe).getZoe();
@@ -98,6 +103,8 @@ function build(E, log) {
         atomicSwap: await E(zoe).install(atomicSwapBundle),
         simpleExchange: await E(zoe).install(simpleExchangeBundle),
         autoswap: await E(zoe).install(autoswapBundle),
+        sellItems: await E(zoe).install(sellItemsBundle),
+        mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle),
       };
 
       // automaticRefundOk '[[3,0,0],[0,17,0]]'
@@ -108,13 +115,12 @@ function build(E, log) {
       // simpleExchangeOk '[[3,0,0],[0,7,0]]'
       // simpleExchangeNotifier '[[3,0,0],[0,24,0]]'
       // autoswapOk '[[10,5,0],[3,7,0]]'
+      // sellTicketsOk '[[0,0,0],[22,0,0]]'
 
       const [testName, startingExtentsStr] = argv;
       const startingExtents = JSON.parse(startingExtentsStr);
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
-        E,
-        log,
         vats,
         zoe,
         installations,
@@ -125,14 +131,3 @@ function build(E, log) {
   };
   return harden(obj0);
 }
-harden(build);
-
-function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, makePrintLog(helpers.log)),
-    helpers.vatID,
-  );
-}
-export default harden(setup);
