@@ -7,11 +7,17 @@ export const STAKING_DENOM = 'uagstake';
 export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
 export const BLOCK_CADENCE_S = 2;
 
+// TODO: When Tendermint non-zero height exports work, we can improve.
+// TODO: When we export Agoric vat state as well, don't blacklist.
+const EXPORTED_APP_STATE_BLACKLIST = ['capability', 'ibc'];
+
 // Rewrite the config.toml and genesis.json.
 export function finishCosmosConfigs({
   genesisJson,
   configToml,
+  exportedGenesisJson,
   portNum = '26657',
+  persistentPeers = '',
 }) {
   const genesis = JSON.parse(genesisJson);
   const config = TOML.parse(configToml);
@@ -27,6 +33,8 @@ export function finishCosmosConfigs({
 
   const ORIG_BLOCK_CADENCE_S = match ? Number(match[1]) : 5;
   const ORIG_SIGNED_BLOCKS_WINDOW = Number(signed_blocks_window);
+
+  const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
   const genesisMergePatch = {
     app_state: {
@@ -78,12 +86,6 @@ export function finishCosmosConfigs({
       capability: null,
       ibc: null,
     },
-    consensus_params: {
-      block: {
-        // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
-        time_iota_ms: '1000',
-      },
-    },
   };
 
   // The JSON merge patch for the config.toml.
@@ -91,18 +93,38 @@ export function finishCosmosConfigs({
   const configMergePatch = {
     proxy_app: 'kvstore',
     consensus: {
-      // Make blocks run faster than normal.
+      // Enforce our inter-block delays for this node.
       timeout_commit: `${BLOCK_CADENCE_S}s`,
     },
     p2p: {
       laddr: `tcp://0.0.0.0:${rpcPort - 1}`,
+      persistent_peers: persistentPeers,
     },
     rpc: {
       laddr: `tcp://127.0.0.1:${rpcPort}`,
     },
+    tx_index: {
+      // Needed for IBC.
+      index_all_keys: true,
+    },
   };
 
   const finishedGenesis = jsonmergepatch.apply(genesis, genesisMergePatch);
+
+  // We upgrade from export data, blacklisting states we don't support.
+  const { app_state: exportedAppState = {} } = exported;
+  for (const state in exportedAppState) {
+    if (!EXPORTED_APP_STATE_BLACKLIST.includes(state)) {
+      finishedGenesis.app_state[state] = exportedAppState[state];
+    }
+  }
+  if ('consensus_params' in exported) {
+    finishedGenesis.consensus_params = exported.consensus_params;
+  }
+
+  // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
+  finishedGenesis.consensus_params.block.time_iota_ms = '1000';
+
   const newGenesisJson = djson.stringify(finishedGenesis);
 
   const finishedConfig = jsonmergepatch.apply(config, configMergePatch);

@@ -296,6 +296,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     // Complete the genesis file and launch the chain.
+    log('read ag-chain-cosmos config');
     const configFile = `${localAgServer}/config/config.toml`;
     const [genesisJson, configToml] = await Promise.all([
       fs.readFile(genesisFile, 'utf-8'),
@@ -308,7 +309,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     });
 
     const create = (fileName, contents) => {
-      log('creating', fileName);
+      log('create', fileName);
       return fs.writeFile(fileName, contents);
     };
 
