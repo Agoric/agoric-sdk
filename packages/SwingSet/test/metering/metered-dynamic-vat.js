@@ -1,6 +1,5 @@
 /* global harden */
-
-import meterMe from './metered-code';
+import { meterMe } from './metered-code';
 
 export function buildRootObject(_dynamicVatPowers) {
   return harden({

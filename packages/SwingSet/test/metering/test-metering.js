@@ -109,7 +109,7 @@ tap.test('metering a single bundle', async function testSingleBundle(t) {
   } = await meteredImportBundle(bundle, endowments);
 
   const log2 = [];
-  const meterMe = ns.default;
+  const meterMe = ns.meterMe;
   // console.log(`running without explosion`);
   let ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
   t.deepEqual(log2, ['started', 'done'], 'computation completed');

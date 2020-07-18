@@ -42,7 +42,7 @@ function build(buildStuff) {
         transforms: [src => transformMetering(src, getMeter)],
       });
       // console.log('ns', ns);
-      meterMe = ns.default;
+      meterMe = ns.meterMe;
       log('imported');
     },
 
