@@ -1,5 +1,5 @@
-import commonSetup from './exchanger';
+import { buildRootObjectCommon } from './exchanger';
 
-export default function setup(syscall, state, helpers) {
-  return commonSetup(syscall, state, helpers, 'bob');
+export function buildRootObject(vatPowers) {
+  return buildRootObjectCommon('bob', vatPowers);
 }

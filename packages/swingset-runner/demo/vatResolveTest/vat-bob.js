@@ -1,5 +1,9 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
+
+const log = console.log;
+
 function makePR() {
   let r;
   const p = new Promise((resolve, _reject) => {
@@ -15,10 +19,10 @@ function hush(p) {
   );
 }
 
-function build(E, log) {
+export function buildRootObject(_vatPowers) {
   let p1;
   const [p0, r0] = makePR();
-  return {
+  return harden({
     promise(p) {
       p1 = p;
       p1.then(
@@ -49,18 +53,5 @@ function build(E, log) {
       hush(p5);
       log(`did all calls`);
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, log)),
-    helpers.vatID,
-  );
+  });
 }

@@ -1,5 +1,9 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
+
+const log = console.log;
+
 // Ping Print Predicate, a hack to reduce log spam
 function ppp(count) {
   if (count > 10000) {
@@ -15,7 +19,7 @@ function ppp(count) {
   }
 }
 
-function build(E, log) {
+export function buildRootObject(_vatPowers) {
   let myNickname;
   let otherContact = null;
 
@@ -63,17 +67,4 @@ function build(E, log) {
       E(otherContact).ping(tag, count);
     },
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, log),
-    helpers.vatID,
-  );
 }

@@ -4,36 +4,33 @@ This runtime treats vats as if they were userspace processes in an operating sys
 
 "Liveslots" is a particular dispatch mechanism that uses Maps/WeakMaps to track "live objects". Imported references to objects on other vats are represented by special "Presence" objects. Liveslots implements the `E` wrapper which allows messages to be sent through presences: `promise = E(presence).methodname(args)`. Presences can be sent in arguments or returned from method calls.
 
-In the future, we expect to have a syntax desugaring phase, so `E(p).foo(arg)` can be written as `p!foo(arg)`. This "bang notation" indicates that we're effectively calling `p.foo(arg)`, but 1: it always happens in a later turn (and always returns a Promise), and 2: `p` can refer to something on a remote host.
+In the future, we expect to have a syntax desugaring phase, so `E(p).foo(arg)` can be written as `p~.foo(arg)`. This "tildot notation" indicates that we're effectively calling `p.foo(arg)`, but 1: it always happens in a later turn (and always returns a Promise), and 2: `p` can refer to something on a remote host.
 
-The nice thing about Liveslots is that user code looks pretty close to regular non-distributed code. Objects are retained (protected against garbage collection) by virtue of being referenced by external vats, starting with the "root occupant" (aka "Object 0") as registered by the `startup()` function.
+The nice thing about Liveslots is that user code looks pretty close to regular non-distributed code. Objects are retained (protected against garbage collection) by virtue of being referenced by external vats, starting with the "root occupant" (aka "Object 0") as created by the `buildRootObject()` function.
 
 The downside is that we don't have a good way to persist a vat using Liveslots. Since any living object could reference any javascript object, including functions, closures, and iterators, we can't turn the entire vat into data and store it for later resumption. This impacts our ability to use this mechanism on blockchain-based machines, as well as our ability to migrate vats from one kernel to another.
 
-## setup()
+## buildRootObject()
 
-The stereotypical setup process when using Liveslots is:
+Most SwingSet vats use liveslots (with the notable exception of the comms vat). The stereotypical vat definition file when using Liveslots is:
 
 ```js
-import harden from '@agoric/harden';
+/* global harden */
 
-export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-
+export buildRootObject(_vatPowers) {
   const obj0 = {
     foo(arg1, arg2) {
       // implement foo
       return 'value';
     },
   };
-  registerRoot(harden(obj0));
-  return dispatch;
+  return harden(obj0);
 }
 ```
 
-All vats in this runtime are expected to export a default function (usually named `setup`) that accepts the `syscall` object and a `helpers` object. `helpers` provides the `makeLiveSlots()` factory function (in the future this will be delivered as an importable module, rather than via `helpers`). `makeLiveSlots` is used to instantiate the object tables and returns the `dispatch` function which `setup` is expected to return.
+See `static-vats.md`, `dynamic-vats.md`, and `vat-environment.md` in this directory for details.
 
-`registerRoot` must be called exactly once, with "Object 0" (the "root occupant"). A remote reference to this object will be made available to the bootstrap vat, which can use it to trigger whatever initialization needs to happen.
+This function returns the "root object". A remote reference to it will be made available to the bootstrap vat, which can use it to trigger whatever initialization needs to happen.
 
 ## Returning New Objects
 
@@ -49,9 +46,20 @@ All vats in this runtime are expected to export a default function (usually name
 ## Calling Objects
 
 ```js
+import { E } from '@agoric/eventual-send';
+
 const p = E(target).foo('arg1');
 p.then(obj2 => E(obj2).bar('arg2'))
 ```
+
+All vats are subject to the "tildot transformation", which means these calls may also be written like:
+
+```js
+const p = target~.foo('arg1');
+p.then(obj2 => obj2~.bar('arg2'))
+```
+
+However, most editors and linters are not yet aware of the tildot syntax, so they may complain. As a result, most of the agoric-sdk vats are written with the `E()` syntax for now.
 
 ## What can be serialized
 
@@ -75,10 +83,7 @@ Uncertain:
 
 ## How things get serialized
 
-* pass-by-presence: `{@qclass: "slot", index: slotIndex}`
-* `E(presence)`: rejected to avoid infinite recursion
-* promise returned by `E(p).foo()`: treated as normal Promise (todo: enable pipelining)
+* pass-by-presence objects: `{@qclass: "slot", index: slotIndex}`
+* local Promises: passed as a promise
+* promise returned by `E(p).foo()`: passes as a promise, with pipelining enabled
 * Function: rejected (todo: wrap)
-* Promise: ?? (todo: wrap and register)
-* resolver: treated as normal function (todo: register somehow)
-

@@ -1,10 +1,13 @@
 /* global harden */
 
 import produceIssuer from '@agoric/ertp';
+import { E } from '@agoric/eventual-send';
 import { makePrintLog } from './printLog';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
 import simpleExchangeBundle from './bundle-simpleExchange';
+
+const log = makePrintLog();
 
 function setupBasicMints() {
   // prettier-ignore
@@ -23,7 +26,7 @@ function setupBasicMints() {
   });
 }
 
-function makeVats(E, log, vats, zoe, installations, startingExtents) {
+function makeVats(vats, zoe, installations, startingExtents) {
   const { mints, issuers, amountMaths } = setupBasicMints();
   // prettier-ignore
   function makePayments(extents) {
@@ -56,7 +59,7 @@ function makeVats(E, log, vats, zoe, installations, startingExtents) {
   return harden(result);
 }
 
-function build(E, log) {
+export function buildRootObject(_vatPowers) {
   let alice;
   let bob;
   let round = 0;
@@ -65,10 +68,7 @@ function build(E, log) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
-        simpleExchange: await E(zoe).install(
-          simpleExchangeBundle.source,
-          simpleExchangeBundle.moduleFormat,
-        ),
+        simpleExchange: await E(zoe).install(simpleExchangeBundle),
       };
 
       const startingExtents = [
@@ -76,14 +76,7 @@ function build(E, log) {
         [0, 3], // Bob:   no moola, 3 simoleans
       ];
 
-      ({ alice, bob } = makeVats(
-        E,
-        log,
-        vats,
-        zoe,
-        installations,
-        startingExtents,
-      ));
+      ({ alice, bob } = makeVats(vats, zoe, installations, startingExtents));
       // Zoe appears to do some one-time setup the first time it's used, so this
       // is a sacrifical benchmark round to prime the pump.
       if (argv[0] === '--prime') {
@@ -95,18 +88,7 @@ function build(E, log) {
       round += 1;
       await E(alice).initiateSimpleExchange(bob);
       await E(bob).initiateSimpleExchange(alice);
-      log(`=> end of benchmark round ${round}`);
       return `round ${round} complete`;
     },
   });
 }
-
-function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, makePrintLog(helpers.log)),
-    helpers.vatID,
-  );
-}
-export default harden(setup);

@@ -1,30 +1,23 @@
 /* global harden */
 
-console.log(`=> loading bootstrap.js`);
+import { E } from '@agoric/eventual-send';
 
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  log(`=> setup called`);
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E =>
-      harden({
-        bootstrap(argv, vats) {
-          console.log('=> Bootstrap: bootstrap() called');
-          // prettier-ignore
-          E(vats.alice)
-            .sendPromiseTo(vats.bob)
-            .then(
-              r => log(`=> Bootstrap: alice.sendPromiseTo(bob) resolved to '${r}'`),
-              e => log(`=> Bootstrap: alice.sendPromiseTo(bob) rejected as '${e}'`),
-            );
-          console.log('=> Bootstrap: bootstrap() done');
-        },
-      }),
-    helpers.vatID,
-  );
+const log = console.log;
+
+log(`=> loading bootstrap.js`);
+
+export function buildRootObject(_vatPowers) {
+  return harden({
+    bootstrap(argv, vats) {
+      log('=> Bootstrap: bootstrap() called');
+      // prettier-ignore
+      E(vats.alice)
+        .sendPromiseTo(vats.bob)
+        .then(
+          r => log(`=> Bootstrap: alice.sendPromiseTo(bob) resolved to '${r}'`),
+          e => log(`=> Bootstrap: alice.sendPromiseTo(bob) rejected as '${e}'`),
+        );
+      log('=> Bootstrap: bootstrap() done');
+    },
+  });
 }

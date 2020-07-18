@@ -1,11 +1,15 @@
 /* global harden */
 
-console.log(`=> loading bootstrap.js`);
+import { E } from '@agoric/eventual-send';
 
-function build(E, log) {
-  return {
+const log = console.log;
+
+log(`=> loading bootstrap.js`);
+
+export function buildRootObject(_vatPowers) {
+  return harden({
     bootstrap(argv, vats) {
-      console.log('=> Alice: bootstrap() called');
+      log('=> Alice: bootstrap() called');
 
       const p1 = E(vats.bob).first();
       const p2 = E(vats.bob).second(p1);
@@ -33,19 +37,5 @@ function build(E, log) {
       log('=> Alice: bootstrap() done');
       return 'Alice started';
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  log(`=> setup called`);
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, log)),
-    helpers.vatID,
-  );
+  });
 }
