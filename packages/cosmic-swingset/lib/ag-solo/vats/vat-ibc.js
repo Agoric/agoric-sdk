@@ -1,8 +1,8 @@
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import { makeIBCProtocolHandler } from './ibc';
 
-function build(E, _log) {
+export function buildRootObject(_vatPowers) {
   function createInstance(callbacks, powers = {}) {
     const ibcHandler = makeIBCProtocolHandler(
       E,
@@ -14,13 +14,4 @@ function build(E, _log) {
   return harden({
     createInstance,
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, helpers.log),
-    helpers.vatID,
-  );
 }
