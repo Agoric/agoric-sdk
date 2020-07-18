@@ -1,14 +1,14 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
 
-function build(E, log) {
+function build(log) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
@@ -437,7 +437,7 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    _vatPowers => build(log),
     helpers.vatID,
   );
 }

@@ -2,13 +2,13 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { allComparable } from '@agoric/same-structure';
 
 import { makeCollect } from '../../../src/makeCollect';
 
-function makeFredMaker(E, host, log) {
+function makeFredMaker(host, log) {
   const collect = makeCollect(E, log);
 
   const getLocalAmountMath = issuer =>
@@ -110,10 +110,10 @@ function setup(syscall, state, helpers) {
     helpers.log(...args);
     console.log(...args);
   }
-  return helpers.makeLiveSlots(syscall, state, E =>
+  return helpers.makeLiveSlots(syscall, state, _vatPowers =>
     harden({
       makeFredMaker(host) {
-        return harden(makeFredMaker(E, host, log));
+        return harden(makeFredMaker(host, log));
       },
     }),
   );
