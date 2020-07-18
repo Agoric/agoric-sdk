@@ -8,7 +8,7 @@ function delveForeverIntoTheRecursiveDepths() {
   return delveForeverIntoTheRecursiveDepths();
 }
 
-export default function meterMe(log2, explode = 'no') {
+export function meterMe(log2, explode = 'no') {
   log2.push('started');
   harden({});
   // console.log(`explode mode ${explode}`);

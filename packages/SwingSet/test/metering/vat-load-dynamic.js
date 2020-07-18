@@ -40,6 +40,29 @@ function build(buildStuff) {
         log(`did explode: ${err}`);
       }
     },
+
+    async load(grandchildBundle) {
+      await E(control.root).load(grandchildBundle);
+      return 'ok';
+    },
+
+    async bundleRun() {
+      try {
+        await E(control.root).meterThem('no');
+        log('did run');
+      } catch (err) {
+        log(`run exploded: ${err}`);
+      }
+    },
+
+    async bundleExplode(how) {
+      try {
+        await E(control.root).meterThem(how);
+        log('failed to explode');
+      } catch (err) {
+        log(`did explode: ${err}`);
+      }
+    },
   });
 }
 

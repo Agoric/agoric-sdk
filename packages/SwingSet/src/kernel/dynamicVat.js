@@ -81,12 +81,14 @@ export function makeDynamicVatCreator(stuff) {
         );
       }
       const getMeter = meterRecord.getMeter;
-      const transforms = [src => transformMetering(src, getMeter)];
+      const inescapableTransforms = [src => transformMetering(src, getMeter)];
+      const inescapableGlobalLexicals = { getMeter };
 
       const vatNS = await importBundle(vatSourceBundle, {
         filePrefix: vatID,
-        transforms,
-        endowments: { ...makeVatEndowments(vatID), getMeter },
+        endowments: makeVatEndowments(vatID),
+        inescapableTransforms,
+        inescapableGlobalLexicals,
       });
       if (typeof vatNS.buildRootObject !== 'function') {
         throw Error(
