@@ -1,8 +1,9 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
-function makeBobMaker(E, _host, _log) {
+function makeBobMaker() {
   return harden({
     make(sharingServiceP) {
       const bob = harden({
@@ -19,17 +20,10 @@ function makeBobMaker(E, _host, _log) {
   });
 }
 
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  return helpers.makeLiveSlots(syscall, state, E =>
-    harden({
-      makeBobMaker(host) {
-        return harden(makeBobMaker(E, host, log));
-      },
-    }),
-  );
+export function buildRootObject(_vatPowers) {
+  return harden({
+    makeBobMaker(_host) {
+      return harden(makeBobMaker());
+    },
+  });
 }
-export default harden(setup);
