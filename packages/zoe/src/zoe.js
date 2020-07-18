@@ -135,7 +135,8 @@ import { makeTables } from './state';
  * @property {(() => undefined)} [completeObj]
  * completeObj will only be present if exitKind was 'onDemand'
  *
- * @typedef {{give?:AmountKeywordRecord,want?:AmountKeywordRecord,exit?:ExitRule}} Proposal
+ * @typedef {{give:AmountKeywordRecord,want:AmountKeywordRecord,exit:ExitRule}} ZcfProposal
+ * @typedef {Partial<ZcfProposal>} Proposal
  *
  * @typedef {Object.<string,Amount>} AmountKeywordRecord
  *
@@ -188,6 +189,12 @@ import { makeTables } from './state';
  * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
  * @property {Proposal} proposal - the offer proposal (including want, give, exit)
  * @property {AmountKeywordRecord} amounts - the amountKeywordRecord that will be turned into payouts
+ * 
+ * @typedef {object} ZcfOfferRecord
+ * @property {OfferHandle} handle - opaque identifier for the offer, used as the key
+ * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
+ * @property {ZcfProposal} proposal - the offer proposal (including want, give, exit)
+ * @property {AmountKeywordRecord} amounts - the amountKeywordRecord that will be turned into payouts
  *
  * @typedef {object} InstanceRecord
  * @property {InstanceHandle} handle - opaque identifier for the instance, used as the table key
@@ -231,8 +238,8 @@ import { makeTables } from './state';
  * @property {() => Issuer} getInviteIssuer
  * @property {(offerHandles: OfferHandle[]) => { active: OfferStatus[], inactive: OfferStatus[] }} getOfferStatuses
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
- * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
- * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
+ * @property {(offerHandles: OfferHandle[]) => ZcfOfferRecord[]} getOffers
+ * @property {(offerHandle: OfferHandle) => ZcfOfferRecord} getOffer
  * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecord) => Allocation} getCurrentAllocation
  * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord

@@ -2,6 +2,7 @@
 
 /* global harden */
 // @ts-check
+/// <reference types="ses2" />
 
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';

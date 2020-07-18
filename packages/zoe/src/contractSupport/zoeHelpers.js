@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global harden */
 
 import { assert, details } from '@agoric/assert';
