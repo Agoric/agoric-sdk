@@ -7,5 +7,5 @@
     "downlevelIteration": true,
     "strictNullChecks": true,
   },
-  "include": ["src/*.js", "types.js"],
+  "include": ["src/*.js", "exports.js"],
 }

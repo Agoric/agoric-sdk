@@ -26,13 +26,6 @@ import { makeTables } from './state';
  */
 
 /**
- * @typedef {import('@agoric/ertp').Amount} Amount
- * @typedef {import('@agoric/ertp').Brand} Brand
- * @typedef {import('@agoric/ertp').AmountMath} AmountMath
- * @typedef {import('@agoric/ertp').Payment} Payment
- * @typedef {import('@agoric/ertp').Issuer} Issuer
- * @typedef {import('@agoric/ertp').Purse} Purse
- *
  * @typedef {any} TODO Needs to be typed
  * @typedef {string} Keyword
  * @typedef {{}} InstallationHandle
