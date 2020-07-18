@@ -2,7 +2,7 @@
 
 import { makeMarshal } from '@agoric/marshal';
 import makeStore from '@agoric/store';
-import { assert, details } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 
 // Marshalling for the UI should only use the user's petnames. We will
 // call marshalling for the UI "dehydration" and "hydration" to distinguish it from
@@ -27,10 +27,43 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
     };
+    const renamePetname = (petname, val) => {
+      assert(
+        valToPetname.has(val),
+        details`val ${val} has not been previously named, would you like to add it instead?`,
+      );
+      assert(
+        !petnameToVal.has(petname),
+        details`petname ${petname} is already in use`,
+      );
+      // Delete the old mappings.
+      const oldPetname = valToPetname.get(val);
+      petnameToVal.delete(oldPetname);
+      valToPetname.delete(val);
+
+      // Add the new mappings.
+      petnameToVal.init(petname, val);
+      valToPetname.init(val, petname);
+    };
+    const deletePetname = petname => {
+      assert(
+        petnameToVal.has(petname),
+        details`petname ${q(
+          petname,
+        )} has not been previously named, would you like to add it instead?`,
+      );
+
+      // Delete the mappings.
+      const val = petnameToVal.get(petname);
+      petnameToVal.delete(petname);
+      valToPetname.delete(val);
+    };
     const mapping = harden({
       valToPetname,
       petnameToVal,
       addPetname,
+      renamePetname,
+      deletePetname,
       kind,
     });
     petnameKindToMapping.init(kind, mapping);

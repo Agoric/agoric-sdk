@@ -28,6 +28,8 @@ export async function makeWallet({
   const { makeMapping, dehydrate } = makeDehydrator();
   const purseMapping = makeMapping('purse');
   const brandMapping = makeMapping('brand');
+  const instanceMapping = makeMapping('instance');
+  const installationMapping = makeMapping('installation');
 
   // Brand Table
   // Columns: key:brand | issuer | amountMath
@@ -75,6 +77,7 @@ export async function makeWallet({
           });
         },
         getBrandForIssuer: issuerToBrand.get,
+        hasIssuer: issuerToBrand.has,
       });
     const brandTable = makeTable(
       validateSomewhat,
@@ -294,6 +297,22 @@ export async function makeWallet({
       return `issuer ${q(petnameForBrand)} successfully added to wallet`;
     };
     return issuerSavedP.then(addBrandPetname);
+  };
+
+  const addInstance = async (petname, instanceHandle) => {
+    // We currently just add the petname mapped to the instanceHandle
+    // value, but we could have a list of known instances for
+    // possible display in the wallet.
+    instanceMapping.addPetname(petname, instanceHandle);
+    return `instance ${q(petname)} successfully added to wallet`;
+  };
+
+  const addInstallation = async (petname, installationHandle) => {
+    // We currently just add the petname mapped to the installationHandle
+    // value, but we could have a list of known installations for
+    // possible display in the wallet.
+    installationMapping.addPetname(petname, installationHandle);
+    return `installation ${q(petname)} successfully added to wallet`;
   };
 
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
@@ -615,10 +634,91 @@ export async function makeWallet({
       .then(saveAsDefault);
   }
 
+  function acceptPetname(acceptFn, suggestedPetname, boardId) {
+    return E(board)
+      .getValue(boardId)
+      .then(value => acceptFn(suggestedPetname, value));
+  }
+
+  async function suggestIssuer(suggestedPetname, issuerBoardId) {
+    // TODO: add an approval step in the wallet UI in which
+    // suggestion can be rejected and the suggested petname can be
+    // changed
+    // eslint-disable-next-line no-use-before-define
+    return acceptPetname(wallet.addIssuer, suggestedPetname, issuerBoardId);
+  }
+
+  async function suggestInstance(suggestedPetname, instanceHandleBoardId) {
+    // TODO: add an approval step in the wallet UI in which
+    // suggestion can be rejected and the suggested petname can be
+    // changed
+
+    return acceptPetname(
+      // eslint-disable-next-line no-use-before-define
+      wallet.addInstance,
+      suggestedPetname,
+      instanceHandleBoardId,
+    );
+  }
+
+  function suggestInstallation(suggestedPetname, installationHandleBoardId) {
+    // TODO: add an approval step in the wallet UI in which
+    // suggestion can be rejected and the suggested petname can be
+    // changed
+
+    return acceptPetname(
+      // eslint-disable-next-line no-use-before-define
+      wallet.addInstallation,
+      suggestedPetname,
+      installationHandleBoardId,
+    );
+  }
+
+  function renameIssuer(petname, issuer) {
+    assert(
+      brandTable.hasIssuer(issuer),
+      `issuer has not been previously added`,
+    );
+    const brand = brandTable.getBrandForIssuer(issuer);
+    brandMapping.renamePetname(petname, brand);
+    return `issuer ${q(petname)} successfully renamed in wallet`;
+  }
+
+  function renameInstance(petname, instance) {
+    instanceMapping.renamePetname(petname, instance);
+    return `instance ${q(petname)} successfully renamed in wallet`;
+  }
+
+  function renameInstallation(petname, installation) {
+    installationMapping.renamePetname(petname, installation);
+    return `installation ${q(petname)} successfully renamed in wallet`;
+  }
+
+  function getIssuer(petname) {
+    const brand = brandMapping.petnameToVal.get(petname);
+    return brandTable.get(brand).issuer;
+  }
+
+  function getInstance(petname) {
+    return instanceMapping.petnameToVal.get(petname);
+  }
+
+  function getInstallation(petname) {
+    return installationMapping.petnameToVal.get(petname);
+  }
+
   const wallet = harden({
     addIssuer,
+    addInstance,
+    addInstallation,
+    renameIssuer,
+    renameInstance,
+    renameInstallation,
+    getInstance,
+    getInstallation,
     makeEmptyPurse,
     deposit,
+    getIssuer,
     getIssuers,
     getPurses,
     getPurse,
@@ -632,6 +732,9 @@ export async function makeWallet({
     getOfferHandles: ids => ids.map(wallet.getOfferHandle),
     addDepositFacet,
     getDepositFacetId,
+    suggestIssuer,
+    suggestInstance,
+    suggestInstallation,
   });
 
   // Make Zoe invite purse

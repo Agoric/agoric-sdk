@@ -172,6 +172,90 @@ test('lib-wallet issuer and purse methods', async t => {
   }
 });
 
+test('lib-wallet dapp suggests issuer, instance, installation petnames', async t => {
+  t.plan(7);
+  try {
+    const {
+      board,
+      installationHandle,
+      autoswapInstallationHandle,
+      instanceHandle,
+      wallet,
+    } = await setupTest();
+
+    const { issuer: bucksIssuer } = produceIssuer('bucks');
+    const bucksIssuerBoardId = await E(board).getId(bucksIssuer);
+    await wallet.suggestIssuer('bucks', bucksIssuerBoardId);
+
+    t.equals(
+      wallet.getIssuer('bucks'),
+      bucksIssuer,
+      `bucksIssuer is stored in wallet`,
+    );
+
+    const automaticRefundInstanceBoardId = await E(board).getId(instanceHandle);
+    await wallet.suggestInstance(
+      'automaticRefund',
+      automaticRefundInstanceBoardId,
+    );
+
+    t.equals(
+      wallet.getInstance('automaticRefund'),
+      instanceHandle,
+      `automaticRefund instanceHandle stored in wallet`,
+    );
+
+    const automaticRefundInstallationBoardId = await E(board).getId(
+      installationHandle,
+    );
+    await wallet.suggestInstallation(
+      'automaticRefund',
+      automaticRefundInstallationBoardId,
+    );
+
+    t.equals(
+      wallet.getInstallation('automaticRefund'),
+      installationHandle,
+      `automaticRefund installationHandle stored in wallet`,
+    );
+
+    const autoswapInstallationBoardId = await E(board).getId(
+      autoswapInstallationHandle,
+    );
+    await wallet.suggestInstallation('autoswap', autoswapInstallationBoardId);
+
+    t.equals(
+      wallet.getInstallation('autoswap'),
+      autoswapInstallationHandle,
+      `autoswap installationHandle stored in wallet`,
+    );
+
+    console.log('EXPECTED ERROR ->>> "petname" not found/');
+    t.throws(
+      () => wallet.getInstallation('whatever'),
+      /"petname" not found/,
+      `using a petname that doesn't exit errors`,
+    );
+
+    console.log('EXPECTED ERROR ->>> already has a petname');
+    t.rejects(
+      () => wallet.suggestInstallation('autoswap', autoswapInstallationBoardId),
+      /already has a petname/,
+      `using a petname that already exists errors`,
+    );
+
+    wallet.renameInstallation('autoswap2', autoswapInstallationHandle);
+
+    t.equals(
+      wallet.getInstallation('autoswap2'),
+      autoswapInstallationHandle,
+      `autoswap installationHandle renamed in wallet`,
+    );
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  }
+});
+
 test('lib-wallet offer methods', async t => {
   t.plan(5);
   try {

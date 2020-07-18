@@ -254,6 +254,36 @@ function build(E, _D, _log) {
                 };
               }
 
+              case 'walletSuggestIssuer': {
+                const { petname, boardId } = obj;
+                const result = await wallet.suggestIssuer(petname, boardId);
+                return {
+                  type: 'walletSuggestIssuerResponse',
+                  data: result,
+                };
+              }
+
+              case 'walletSuggestInstance': {
+                const { petname, boardId } = obj;
+                const result = await wallet.suggestInstance(petname, boardId);
+                return {
+                  type: 'walletSuggestInstanceResponse',
+                  data: result,
+                };
+              }
+
+              case 'walletSuggestInstallation': {
+                const { petname, boardId } = obj;
+                const result = await wallet.suggestInstallation(
+                  petname,
+                  boardId,
+                );
+                return {
+                  type: 'walletSuggestInstallationResponse',
+                  data: result,
+                };
+              }
+
               default:
                 return Promise.resolve(false);
             }

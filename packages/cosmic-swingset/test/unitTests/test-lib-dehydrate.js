@@ -32,6 +32,62 @@ test('makeDehydrator', async t => {
       `cannot add another value for the same petname`,
     );
 
+    // Test renaming.
+    instanceHandleMapping.renamePetname('whatever', handle1);
+    t.equals(
+      instanceHandleMapping.valToPetname.get(handle1),
+      'whatever',
+      `renaming is successful going from val to petname`,
+    );
+    t.deepEquals(
+      instanceHandleMapping.petnameToVal.get('whatever'),
+      handle1,
+      `renaming is successful going from val to petname`,
+    );
+    console.log(
+      `ERROR EXPECTED 'has not been previously named, would you like to add it instead?' >>>>`,
+    );
+    t.throws(
+      () => instanceHandleMapping.renamePetname('new value', harden({})),
+      /has not been previously named, would you like to add it instead\?/,
+      `can't rename something that was never added`,
+    );
+    // rename it back
+    instanceHandleMapping.renamePetname('simpleExchange', handle1);
+    t.equals(
+      instanceHandleMapping.valToPetname.get(handle1),
+      'simpleExchange',
+      `second renaming is successful going from val to petname`,
+    );
+    t.deepEquals(
+      instanceHandleMapping.petnameToVal.get('simpleExchange'),
+      handle1,
+      `second renaming is successful going from val to petname`,
+    );
+
+    // Test deletion.
+    const temp = harden({});
+    instanceHandleMapping.addPetname('to be deleted', temp);
+    t.equals(
+      instanceHandleMapping.valToPetname.get(temp),
+      'to be deleted',
+      `'to be deleted' present going from val to petname`,
+    );
+    t.deepEquals(
+      instanceHandleMapping.petnameToVal.get('to be deleted'),
+      handle1,
+      `'to be deleted' present going from val to petname`,
+    );
+    instanceHandleMapping.deletePetname('to be deleted');
+    console.log(
+      `ERROR EXPECTED '"petname" not found' >>>>`,
+    );
+    t.throws(
+      () => instanceHandleMapping.petnameToVal.get('to be deleted'),
+      /"petname" not found/,
+      `can't get what has been deleted`,
+    );
+
     const makeMockBrand = () =>
       harden({
         isMyIssuer: _allegedIssuer => {},
