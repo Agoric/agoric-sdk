@@ -207,7 +207,7 @@ export async function buildVatController(config, argv = []) {
         return helpers.makeLiveSlots(
           syscall,
           state,
-          (_E, _D, vatP) => vatNS.buildRootObject(vatP),
+          vatP => vatNS.buildRootObject(vatP),
           helpers.vatID,
           vatPowers,
         );

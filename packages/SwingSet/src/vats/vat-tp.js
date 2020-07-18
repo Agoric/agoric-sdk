@@ -1,6 +1,7 @@
 /* global harden */
 
 import { assert, details } from '@agoric/assert';
+import { E } from '@agoric/eventual-send';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -18,7 +19,8 @@ import { assert, details } from '@agoric/assert';
 //   const receiver = await E(vats.comms).addRemote(name, transmitter);
 //   await E(setReceiver).setReceiver(receiver);
 
-function build(E, D) {
+export function buildRootObject(vatPowers) {
+  const { D } = vatPowers;
   let mailbox; // mailbox device
   const remotes = new Map();
   // { outbound: { highestRemoved, highestAdded },
@@ -88,8 +90,4 @@ function build(E, D) {
   });
 
   return handler;
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }

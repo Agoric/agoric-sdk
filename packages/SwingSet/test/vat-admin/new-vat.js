@@ -1,6 +1,6 @@
 /* global harden */
 
-export function buildRootObject(E) {
+export function buildRootObject(_vatPowers) {
   function rcvrMaker(seed) {
     let count = 0;
     let sum = seed;

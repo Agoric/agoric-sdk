@@ -1,6 +1,6 @@
 /* global harden */
 
-import { E, HandledPromise } from '@agoric/eventual-send';
+import { HandledPromise } from '@agoric/eventual-send';
 import {
   QCLASS,
   Remotable,
@@ -23,12 +23,12 @@ import { insistCapData } from '../capdata';
  *
  * @param syscall  Kernel syscall interface that the vat will have access to
  * @param state  Object to store and retrieve state; not used // TODO fix wart
- * @param makeRoot  Function that will create a root object for the new vat
+ * @param buildRootObject  Function that will create a root object for the new vat
  * @param forVatID  Vat ID label, for use in debug diagostics
  *
  * @return an extended dispatcher object for the new vat
  */
-function build(syscall, _state, makeRoot, forVatID, vatPowers) {
+function build(syscall, _state, buildRootObject, forVatID, vatPowers) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -509,8 +509,11 @@ function build(syscall, _state, makeRoot, forVatID, vatPowers) {
     retirePromiseIDIfEasy(promiseID, data);
   }
 
+  // vats which use D are in: acorn-eventual-send, cosmic-swingset
+  // (bootstrap, bridge, vat-http), swingset
+
   // here we finally invoke the vat code, and get back the root object
-  const rootObject = makeRoot(E, D, vatPowers);
+  const rootObject = buildRootObject(harden({ D, ...vatPowers }));
   mustPassByPresence(rootObject);
 
   const rootSlot = makeVatSlot('object', true, 0);
@@ -533,34 +536,36 @@ function build(syscall, _state, makeRoot, forVatID, vatPowers) {
  *
  * @param syscall  Kernel syscall interface that the vat will have access to
  * @param state  Object to store and retrieve state
- * @param makeRoot  Function that will create a root object for the new vat
+ * @param buildRootObject  Function that will create a root object for the new vat
  * @param forVatID  Vat ID label, for use in debug diagostics
  *
  * @return a dispatcher object for the new vat
  *
- * The caller provided makeRoot function produces and returns the new vat's
+ * The caller provided buildRootObject function produces and returns the new vat's
  * root object:
  *
- *     makeRoot(E, // eventual send facility for the vat
- *              D) // device invocation facility for the vat
+ *     buildRootObject(vatPowers)
  *
- *     Within the vat, for any object x, E(x) returns a proxy object that
- *     converts any method invocation into a corresponding eventual send to x.
- *     That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1, arg2)
+ *     Within the vat, `import { E } from '@agoric/eventual-send'` will
+ *     provide the E wrapper. For any object x, E(x) returns a proxy object
+ *     that converts any method invocation into a corresponding eventual send
+ *     to x. That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1,
+ *     arg2)
  *
  *     If x is the presence in this vat of a remote object (that is, an object
  *     outside the vat), this will result in a message send out of the vat via
  *     the kernel syscall interface.
  *
  *     In the same vein, if x is the presence in this vat of a kernel device,
- *     D(x) returns a proxy such that a method invocation on it is translated
- *     into the corresponding immediate invocation of the device (using, once
- *     again, the kernel syscall interface).
+ *     vatPowers.D(x) returns a proxy such that a method invocation on it is
+ *     translated into the corresponding immediate invocation of the device
+ *     (using, once again, the kernel syscall interface). D(x).foo(args) will
+ *     perform an immediate syscall.callNow on the device node.
  */
 export function makeLiveSlots(
   syscall,
   state,
-  makeRoot,
+  buildRootObject,
   forVatID = 'unknown',
   vatPowers = harden({}),
 ) {
@@ -569,7 +574,7 @@ export function makeLiveSlots(
     notifyFulfillToData,
     notifyFulfillToPresence,
     notifyReject,
-  } = build(syscall, state, makeRoot, forVatID, vatPowers);
+  } = build(syscall, state, buildRootObject, forVatID, vatPowers);
   return harden({
     deliver,
     notifyFulfillToData,
