@@ -21,8 +21,8 @@ export function buildRootObject(vatPowers) {
 
   function createVatAdminService(vatAdminNode) {
     return harden({
-      createVat(code) {
-        const vatID = D(vatAdminNode).create(code);
+      createVat(code, options) {
+        const vatID = D(vatAdminNode).create(code, options);
 
         const [promise, pendingRR] = producePRR();
         pending.set(vatID, pendingRR);
