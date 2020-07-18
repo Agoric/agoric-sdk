@@ -1,6 +1,7 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
-function build(E, D, log) {
+function build(D, log) {
   const receiver = harden({
     receive(body) {
       log(`ch.receive ${body}`);
@@ -32,7 +33,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) => build(E, D, log),
+    vatPowers => build(vatPowers.D, log),
     helpers.vatID,
   );
 }

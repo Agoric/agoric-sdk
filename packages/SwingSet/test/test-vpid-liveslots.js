@@ -4,6 +4,7 @@
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
+import { E } from '@agoric/eventual-send';
 import { producePromise } from '@agoric/produce-promise';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
@@ -192,7 +193,7 @@ async function doVatResolveCase1(t, mode) {
   // case 1
   const { log, syscall } = buildSyscall();
 
-  function build(E) {
+  function build(_vatPowers) {
     const pr = producePromise();
     return harden({
       async run(target1, target2) {
@@ -302,7 +303,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   let stashP1;
 
-  function build(E) {
+  function build(_vatPowers) {
     let p1;
     const pr = producePromise();
     const p0 = pr.promise;
@@ -571,7 +572,7 @@ for (const caseNum of [2, 3]) {
 async function doVatResolveCase4(t, mode) {
   const { log, syscall } = buildSyscall();
 
-  function build(E) {
+  function build(_vatPowers) {
     let p1;
     return harden({
       async get(p) {

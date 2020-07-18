@@ -9,7 +9,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _E =>
+    _vatPowers =>
       harden({
         encourageMe(name) {
           log(`=> encouragementBot.encourageMe got the name: ${name}`);

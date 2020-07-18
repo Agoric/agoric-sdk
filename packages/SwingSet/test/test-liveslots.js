@@ -2,6 +2,7 @@
 
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import { E } from '@agoric/eventual-send';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -39,7 +40,7 @@ test('calls', async t => {
   kernel.addGenesisVat('bootstrap', setupBootstrap);
 
   function setup(syscallVat, state, helpers) {
-    function build(E, _D) {
+    function build(_vatPowers) {
       return harden({
         one() {
           log.push('one');
@@ -119,7 +120,7 @@ test('liveslots pipelines to syscall.send', async t => {
   const log = [];
 
   function setupA(syscallA, state, helpers) {
-    function build(E, _D) {
+    function build(_vatPowers) {
       return harden({
         one(x) {
           const p1 = E(x).pipe1();
@@ -198,7 +199,7 @@ function buildSyscall() {
 test('liveslots pipeline/non-pipeline calls', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(E, _D) {
+  function build(_vatPowers) {
     let p1;
     return harden({
       one(p) {
@@ -274,7 +275,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
 async function doOutboundPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
-  function build(E, _D) {
+  function build(_vatPowers) {
     return harden({
       run(target, resolution) {
         let p; // vat creates the promise
@@ -394,7 +395,7 @@ function hush(p) {
 async function doResultPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
-  function build(E, _D) {
+  function build(_vatPowers) {
     return harden({
       async run(target1) {
         const p1 = E(target1).getTarget2();

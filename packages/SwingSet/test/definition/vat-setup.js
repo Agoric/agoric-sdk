@@ -1,6 +1,6 @@
 /* global harden */
 
-function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers) {
   let counter = 0;
   return harden({
     increment() {
@@ -17,14 +17,4 @@ function buildRootObject(vatPowers) {
       return vatPowers.getInterfaceOf(r);
     },
   });
-}
-
-export default function setup(syscall, state, helpers, vatPowers0) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    (E, D, vatPowers) => buildRootObject(vatPowers),
-    helpers.vatID,
-    vatPowers0,
-  );
 }

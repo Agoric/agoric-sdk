@@ -2,8 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 
-function build(buildStuff) {
-  const { log } = buildStuff;
+function build(log) {
   let service;
   let control;
 
@@ -71,7 +70,7 @@ export default function setup(syscall, state, helpers, vatPowers0) {
   return makeLiveSlots(
     syscall,
     state,
-    (_E, _D, _vatPowers) => build({ log }),
+    _vatPowers => build(log),
     helpers.vatID,
     vatPowers0,
   );

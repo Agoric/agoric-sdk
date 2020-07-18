@@ -11,7 +11,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) =>
+    ({ D }) =>
       harden({
         async bootstrap(argv, vats, devices) {
           harden(argv);

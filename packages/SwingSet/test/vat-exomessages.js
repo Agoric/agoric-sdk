@@ -1,6 +1,6 @@
 /* global harden */
 
-function build(_E, _log) {
+export function buildRootObject(_vatPowers) {
   const other = harden({
     something(arg) {
       return arg;
@@ -18,21 +18,12 @@ function build(_E, _log) {
     return undefined;
   }
 
-  return {
+  return harden({
     bootstrap(argv, _vats) {
       return behave(argv[0]);
     },
     extra(mode) {
       return behave(mode);
     },
-  };
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => harden(build(E, helpers.log)),
-    helpers.vatID,
-  );
+  });
 }

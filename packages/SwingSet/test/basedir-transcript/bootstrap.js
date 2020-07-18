@@ -1,8 +1,9 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
 console.log(`loading bootstrap`);
 
-function build(E, log) {
+function build(log) {
   return harden({
     bootstrap(argv, vats) {
       const mode = argv[0];
@@ -29,7 +30,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    _vatPowers => build(log),
     helpers.vatID,
   );
 }
