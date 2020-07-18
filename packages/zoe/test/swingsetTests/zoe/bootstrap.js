@@ -1,5 +1,6 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
 import produceIssuer from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
@@ -31,7 +32,7 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
+const makeVats = (log, vats, zoe, installations, startingExtents) => {
   const timer = buildManualTimer(log);
   const { mints, issuers, amountMaths } = setupBasicMints();
   const makePayments = extents =>
@@ -87,7 +88,7 @@ const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
   return harden(result);
 };
 
-function build(E, log) {
+function build(log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const zoe = await E(vats.zoe).getZoe();
@@ -106,7 +107,6 @@ function build(E, log) {
       const [testName, startingExtents] = argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
-        E,
         log,
         vats,
         zoe,
@@ -124,7 +124,7 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, helpers.log),
+    _vatPowers => build(helpers.log),
     helpers.vatID,
   );
 }

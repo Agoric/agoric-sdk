@@ -1,5 +1,6 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
 /* eslint-disable import/extensions, import/no-unresolved */
 import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';
 import infiniteInstanceLoopBundle from './bundle-infiniteInstanceLoop';
@@ -7,7 +8,7 @@ import infiniteTestLoopBundle from './bundle-infiniteTestLoop';
 import testBuiltinsBundle from './bundle-testBuiltins';
 /* eslint-enable import/extensions, import/no-unresolved */
 
-function build(E, log) {
+function build(log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const zoe = await E(vats.zoe).getZoe();
@@ -50,7 +51,7 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, helpers.log),
+    _vatPowers => build(helpers.log),
     helpers.vatID,
   );
 }
