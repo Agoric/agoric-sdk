@@ -23,13 +23,16 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       const dir = `${sdkPackagesDir}/${pkg}`;
       let packageJSON;
       try {
+        // eslint-disable-next-line no-await-in-loop
         packageJSON = await fs.readFile(`${dir}/package.json`);
       } catch (e) {
+        // eslint-disable-next-line no-continue
         continue;
       }
       if (packageJSON) {
         const pj = JSON.parse(packageJSON);
         if (!pj.private) {
+          // eslint-disable-next-line no-await-in-loop
           if (await pspawn('yarn', ['link'], { stdio: 'inherit', cwd: dir })) {
             log.error('Cannot yarn link', dir);
             return 1;
@@ -47,7 +50,13 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     );
     const sdkPackages = [...packages.values()].sort();
     for (const subdir of subdirs) {
-      if (await pspawn('yarn', ['link', ...sdkPackages], { stdio: 'inherit', cwd: subdir })) {
+      if (
+        // eslint-disable-next-line no-await-in-loop
+        await pspawn('yarn', ['link', ...sdkPackages], {
+          stdio: 'inherit',
+          cwd: subdir,
+        })
+      ) {
         log.error('Cannot yarn link', ...sdkPackages);
         return 1;
       }
