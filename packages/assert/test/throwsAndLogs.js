@@ -1,5 +1,3 @@
-/* global harden */
-
 const { defineProperty } = Object;
 
 // Patterned after

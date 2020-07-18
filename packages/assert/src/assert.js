@@ -193,6 +193,111 @@ function fail(optDetails = details`Assert failed`) {
 }
 
 /**
+ * @param {*} flag The truthy/falsy value
+ * @param {Details} [optDetails] The details to throw
+ * @returns {asserts flag}
+ */
+function assert(flag, optDetails = details`Check failed`) {
+  if (!flag) {
+    throw fail(optDetails);
+  }
+}
+
+/**
+ * Assert that two values must be `Object.is`.
+ * @param {*} actual The value we received
+ * @param {*} expected What we wanted
+ * @param {Details} [optDetails] The details to throw
+ * @returns {void}
+ */
+function equal(
+  actual,
+  expected,
+  optDetails = details`Expected ${actual} is same as ${expected}`,
+) {
+  assert(Object.is(actual, expected), optDetails);
+}
+
+// Type all the overloads of the assertTypeof function.
+// There may eventually be a better way to do this, but
+// thems the breaks with Typescript 4.0.
+/**
+ * @callback AssertTypeofBigint
+ * @param {any} specimen
+ * @param {'bigint'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is bigint}
+ *
+ * @callback AssertTypeofBoolean
+ * @param {any} specimen
+ * @param {'boolean'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is boolean}
+ *
+ * @callback AssertTypeofFunction
+ * @param {any} specimen
+ * @param {'function'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is Function}
+ *
+ * @callback AssertTypeofNumber
+ * @param {any} specimen
+ * @param {'number'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is number}
+ *
+ * @callback AssertTypeofObject
+ * @param {any} specimen
+ * @param {'object'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is object}
+ *
+ * @callback AssertTypeofString
+ * @param {any} specimen
+ * @param {'string'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is string}
+ *
+ * @callback AssertTypeofSymbol
+ * @param {any} specimen
+ * @param {'symbol'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is symbol}
+ *
+ * @callback AssertTypeofUndefined
+ * @param {any} specimen
+ * @param {'undefined'} typename
+ * @param {Details} [optDetails]
+ * @returns {asserts specimen is undefined}
+ *
+ * @typedef {AssertTypeofBigint & AssertTypeofBoolean & AssertTypeofFunction & AssertTypeofNumber & AssertTypeofObject & AssertTypeofString & AssertTypeofSymbol & AssertTypeofUndefined} AssertTypeof
+ */
+
+/**
+ * Assert an expected typeof result.
+ * @type {AssertTypeof}
+ * @param {any} specimen The value to get the typeof
+ * @param {string} typename The expected name
+ * @param {Details} [optDetails] The details to throw
+ */
+const assertTypeof = (specimen, typename, optDetails) => {
+  assert(
+    typeof typename === 'string',
+    details`${q(typename)} must be a string`,
+  );
+  if (optDetails === undefined) {
+    // Like
+    // ```js
+    // optDetails = details`${specimen} must be ${q(an(typename))}`;
+    // ```
+    // except it puts the typename into the literal part of the template
+    // so it doesn't get quoted.
+    optDetails = details(['', ` must be ${an(typename)}`], specimen);
+  }
+  equal(typeof specimen, typename, optDetails);
+};
+
+/**
  * assert that expr is truthy, with an optional details to describe
  * the assertion. It is a tagged template literal like
  * ```js
@@ -211,58 +316,13 @@ function fail(optDetails = details`Assert failed`) {
  *
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
- * @param {*} flag The truthy/falsy value
- * @param {Details} [optDetails] The details to throw
- * @returns {asserts flag}
+ * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal }}
  */
-function assert(flag, optDetails = details`Check failed`) {
-  if (!flag) {
-    throw fail(optDetails);
-  }
-}
+const assertCombined = Object.assign(assert, {
+  equal,
+  fail,
+  typeof: assertTypeof,
+});
+harden(assertCombined);
 
-/**
- * Assert that two values must be `Object.is`.
- * @param {*} actual The value we received
- * @param {*} expected What we wanted
- * @param {Details} [optDetails] The details to throw
- * @returns {asserts actual is expected}
- */
-function equal(
-  actual,
-  expected,
-  optDetails = details`Expected ${actual} is same as ${expected}`,
-) {
-  assert(Object.is(actual, expected), optDetails);
-}
-
-/**
- * Assert an expected typeof result.
- *
- * @param {*} specimen The value to get the typeof
- * @param {string} typename The expected name
- * @param {Details} [optDetails] The details to throw
- */
-function assertTypeof(specimen, typename, optDetails) {
-  assert(
-    typeof typename === 'string',
-    details`${q(typename)} must be a string`,
-  );
-  if (optDetails === undefined) {
-    // Like
-    // ```js
-    // optDetails = details`${specimen} must be ${q(an(typename))}`;
-    // ```
-    // except it puts the typename into the literal part of the template
-    // so it doesn't get quoted.
-    optDetails = details(['', ` must be ${an(typename)}`], specimen);
-  }
-  equal(typeof specimen, typename, optDetails);
-}
-
-assert.equal = equal;
-assert.fail = fail;
-assert.typeof = assertTypeof;
-harden(assert);
-
-export { assert, details, q, an };
+export { assertCombined as assert, details, q, an };
