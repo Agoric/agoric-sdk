@@ -5,4 +5,5 @@
  * @typedef {import('./src/issuer').Payment} Payment
  * @typedef {import('./src/issuer').Issuer} Issuer
  * @typedef {import('./src/issuer').Purse} Purse
+ * @typedef {import('./src/issuer').IssuerResults} IssuerResults
  */
