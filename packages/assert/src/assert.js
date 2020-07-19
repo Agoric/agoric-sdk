@@ -1,7 +1,5 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden */
-
 // @ts-check
 
 // This module assumes the de-facto standard `console` host object.
@@ -123,7 +121,7 @@ harden(q);
  *
  * @typedef {string|Complainer} Details Either a plain string, or made by details``
  *
- * @param {TemplateStringsArray} template The template to format
+ * @param {TemplateStringsArray | string[]} template The template to format
  * @param {any[]} args Arguments to the template
  * @returns {Complainer} The complainer for these details
  */
@@ -145,7 +143,7 @@ function details(template, ...args) {
 
         // Remove the extra spaces (since console.error puts them
         // between each interleaved).
-        const priorWithoutSpace = interleaved.pop().replace(/ $/, '');
+        const priorWithoutSpace = (interleaved.pop() || '').replace(/ $/, '');
         if (priorWithoutSpace !== '') {
           interleaved.push(priorWithoutSpace);
         }
@@ -192,6 +190,56 @@ function fail(optDetails = details`Assert failed`) {
 }
 
 /**
+ * @param {*} flag The truthy/falsy value
+ * @param {Details} [optDetails] The details to throw
+ * @returns {asserts flag}
+ */
+function assert(flag, optDetails = details`Check failed`) {
+  if (!flag) {
+    throw fail(optDetails);
+  }
+}
+
+/**
+ * Assert that two values must be `Object.is`.
+ * @param {*} actual The value we received
+ * @param {*} expected What we wanted
+ * @param {Details} [optDetails] The details to throw
+ * @returns {void}
+ */
+function equal(
+  actual,
+  expected,
+  optDetails = details`Expected ${actual} is same as ${expected}`,
+) {
+  assert(Object.is(actual, expected), optDetails);
+}
+
+/**
+ * Assert an expected typeof result.
+ * @type {AssertTypeof}
+ * @param {any} specimen The value to get the typeof
+ * @param {string} typename The expected name
+ * @param {Details} [optDetails] The details to throw
+ */
+const assertTypeof = (specimen, typename, optDetails) => {
+  assert(
+    typeof typename === 'string',
+    details`${q(typename)} must be a string`,
+  );
+  if (optDetails === undefined) {
+    // Like
+    // ```js
+    // optDetails = details`${specimen} must be ${q(an(typename))}`;
+    // ```
+    // except it puts the typename into the literal part of the template
+    // so it doesn't get quoted.
+    optDetails = details(['', ` must be ${an(typename)}`], specimen);
+  }
+  equal(typeof specimen, typename, optDetails);
+};
+
+/**
  * assert that expr is truthy, with an optional details to describe
  * the assertion. It is a tagged template literal like
  * ```js
@@ -210,56 +258,13 @@ function fail(optDetails = details`Assert failed`) {
  *
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
- * @param {*} flag The truthy/falsy value
- * @param {Details} [optDetails] The details to throw
+ * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal }}
  */
-function assert(flag, optDetails = details`Check failed`) {
-  if (!flag) {
-    fail(optDetails);
-  }
-}
+const assertCombined = Object.assign(assert, {
+  equal,
+  fail,
+  typeof: assertTypeof,
+});
+harden(assertCombined);
 
-/**
- * Assert that two values must be `Object.is`.
- * @param {*} actual The value we received
- * @param {*} expected What we wanted
- * @param {Details} [optDetails] The details to throw
- */
-function equal(
-  actual,
-  expected,
-  optDetails = details`Expected ${actual} is same as ${expected}`,
-) {
-  assert(Object.is(actual, expected), optDetails);
-}
-
-/**
- * Assert an expected typeof result.
- *
- * @param {*} specimen The value to get the typeof
- * @param {string} typename The expected name
- * @param {Details} [optDetails] The details to throw
- */
-function assertTypeof(specimen, typename, optDetails) {
-  assert(
-    typeof typename === 'string',
-    details`${q(typename)} must be a string`,
-  );
-  if (optDetails === undefined) {
-    // Like
-    // ```js
-    // optDetails = details`${specimen} must be ${q(an(typename))}`;
-    // ```
-    // except it puts the typename into the literal part of the template
-    // so it doesn't get quoted.
-    optDetails = details(['', ` must be ${an(typename)}`], specimen);
-  }
-  equal(typeof specimen, typename, optDetails);
-}
-
-assert.equal = equal;
-assert.fail = fail;
-assert.typeof = assertTypeof;
-harden(assert);
-
-export { assert, details, q, an };
+export { assertCombined as assert, details, q, an };

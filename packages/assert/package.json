@@ -7,7 +7,7 @@
     "node": ">=11.0"
   },
   "scripts": {
-    "build": "exit 0",
+    "build": "tsc -p jsconfig.json",
     "test": "tape -r esm test/**/test*.js",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
@@ -48,6 +48,9 @@
     ],
     "env": {
       "es6": true
+    },
+    "globals": {
+      "harden": "readonly"
     },
     "rules": {
       "implicit-arrow-linebreak": "off",
