@@ -3,19 +3,19 @@ import { E } from '@agoric/eventual-send';
 
 console.log(`left loaded`);
 
-export default function setup(syscall, state, helpers) {
-  const { log } = helpers;
-  log(`left.setup called`);
+export default function setup(syscall, state, helpers, vatPowers0) {
+  helpers.testLog(`left.setup called`);
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _vatPowers =>
+    vatPowers =>
       harden({
         foo(arg1, right) {
-          log(`left.foo ${arg1}`);
+          vatPowers.testLog(`left.foo ${arg1}`);
           E(right).bar(2, right);
         },
       }),
     helpers.vatID,
+    vatPowers0,
   );
 }

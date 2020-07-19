@@ -13,7 +13,6 @@ async function main(basedir, argv) {
 }
 
 const encouragementBotGolden = [
-  '=> setup called',
   '=> user.talkToBot is called with encouragementBot',
   '=> encouragementBot.encourageMe got the name: user',
   "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",

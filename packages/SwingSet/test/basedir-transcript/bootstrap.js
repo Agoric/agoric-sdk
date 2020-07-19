@@ -21,16 +21,13 @@ function build(log) {
   });
 }
 
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  log(`bootstrap called`);
+export default function setup(syscall, state, helpers, vatPowers0) {
+  helpers.testLog(`bootstrap called`);
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _vatPowers => build(log),
+    vatPowers => build(vatPowers.testLog),
     helpers.vatID,
+    vatPowers0,
   );
 }

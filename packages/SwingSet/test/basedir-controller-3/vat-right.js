@@ -1,22 +1,22 @@
 /* global harden */
 
-function build(log) {
+function build(testLog) {
   const obj0 = {
     bar(arg2, self) {
-      log(`right.obj0.bar ${arg2} ${self === obj0}`);
+      testLog(`right.obj0.bar ${arg2} ${self === obj0}`);
       return 3;
     },
   };
   return harden(obj0);
 }
 
-export default function setup(syscall, state, helpers) {
-  const { log } = helpers;
-  log(`right.setup called`);
+export default function setup(syscall, state, helpers, vatPowers0) {
+  helpers.testLog(`right.setup called`);
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _vatPowers => build(log),
+    vatPowers => build(vatPowers.testLog),
     helpers.vatID,
+    vatPowers0,
   );
 }

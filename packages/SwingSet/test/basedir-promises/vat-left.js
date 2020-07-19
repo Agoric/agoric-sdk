@@ -47,11 +47,12 @@ function build(log) {
   return harden(obj0);
 }
 
-export default function setup(syscall, state, helpers) {
+export default function setup(syscall, state, helpers, vatPowers0) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _vatPowers => build(helpers.log),
+    vatPowers => build(vatPowers.testLog),
     helpers.vatID,
+    vatPowers0,
   );
 }

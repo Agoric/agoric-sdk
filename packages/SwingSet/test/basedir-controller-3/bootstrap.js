@@ -3,20 +3,20 @@ import { E } from '@agoric/eventual-send';
 
 console.log(`loading bootstrap`);
 
-export default function setup(syscall, state, helpers) {
-  const { log } = helpers;
-  log(`bootstrap called`);
+export default function setup(syscall, state, helpers, vatPowers0) {
+  helpers.testLog(`bootstrap called`);
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _vatPowers =>
+    vatPowers =>
       harden({
         bootstrap(argv, vats) {
-          helpers.log(`bootstrap.obj0.bootstrap()`);
+          vatPowers.testLog(`bootstrap.obj0.bootstrap()`);
           console.log(`obj0.bootstrap`, argv, vats);
           E(vats.left).foo(1, vats.right);
         },
       }),
     helpers.vatID,
+    vatPowers0,
   );
 }

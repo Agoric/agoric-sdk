@@ -57,7 +57,7 @@ test('simple call', async t => {
   function setup1(syscall, state, helpers) {
     function deliver(facetID, method, args) {
       log.push([facetID, method, args]);
-      helpers.log(JSON.stringify({ facetID, method, args }));
+      helpers.testLog(JSON.stringify({ facetID, method, args }));
     }
     return { deliver };
   }

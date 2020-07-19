@@ -10,8 +10,9 @@ function vatRequire(what) {
   }
 }
 
-function build(vatPowers, log) {
+export function buildRootObject(vatPowers) {
   const { makeGetMeter, transformMetering } = vatPowers;
+  const log = vatPowers.testLog;
   const {
     getMeter,
     isExhausted,
@@ -81,15 +82,4 @@ function build(vatPowers, log) {
     },
   };
   return harden(root);
-}
-
-export default function setup(syscall, state, helpers, vatPowers0) {
-  const { log, makeLiveSlots } = helpers;
-  return makeLiveSlots(
-    syscall,
-    state,
-    vatPowers => build(vatPowers, log),
-    helpers.vatID,
-    vatPowers0,
-  );
 }

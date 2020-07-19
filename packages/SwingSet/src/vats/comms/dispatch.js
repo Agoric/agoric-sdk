@@ -19,7 +19,7 @@ function transmit(syscall, state, remoteID, msg) {
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(syscall, _state, _helpers) {
+export function buildCommsDispatch(syscall) {
   // TODO: state.activate(), put this data on state.stuff instead of closing
   // over a local object
   const state = makeState();

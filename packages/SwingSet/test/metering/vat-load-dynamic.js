@@ -2,7 +2,8 @@
 
 import { E } from '@agoric/eventual-send';
 
-function build(log) {
+export function buildRootObject(vatPowers) {
+  const log = vatPowers.testLog;
   let service;
   let control;
 
@@ -63,15 +64,4 @@ function build(log) {
       }
     },
   });
-}
-
-export default function setup(syscall, state, helpers, vatPowers0) {
-  const { log, makeLiveSlots } = helpers;
-  return makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers => build(log),
-    helpers.vatID,
-    vatPowers0,
-  );
 }

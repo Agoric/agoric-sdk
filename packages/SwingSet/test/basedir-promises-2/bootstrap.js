@@ -36,16 +36,17 @@ function build(log) {
   });
 }
 
-export default function setup(syscall, state, helpers) {
+export default function setup(syscall, state, helpers, vatPowers0) {
   function log(what) {
-    helpers.log(what);
+    helpers.testLog(what);
     console.log(what);
   }
   log(`bootstrap called`);
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _vatPowers => build(log),
+    vatPowers => build(vatPowers.testLog),
     helpers.vatID,
+    vatPowers0,
   );
 }
