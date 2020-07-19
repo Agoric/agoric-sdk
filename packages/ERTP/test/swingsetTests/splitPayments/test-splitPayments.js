@@ -19,7 +19,6 @@ async function main(basedir, argv) {
 }
 
 const expectedTapFaucetLog = [
-  '=> setup called',
   'start test splitPayments',
   'oldPayment balance:{"brand":{},"value":1000}',
   'splitPayment[0] balance: {"brand":{},"value":10}',
