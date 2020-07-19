@@ -9,16 +9,17 @@ on:
  pull_request:
 
 jobs:
-  build:
+  dapp-encouragement:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12.18.0, 14.4.0]
+        node-version: ['12.x', '14.x']
     steps:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+        check-latest: true
     - name: Checkout agoric-sdk
       uses: actions/checkout@v2
     - name: Set up Go 1.13
