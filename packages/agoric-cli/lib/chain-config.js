@@ -9,83 +9,77 @@ export const BLOCK_CADENCE_S = 2;
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 
-// Rewrite the config.toml and genesis.json.
-export function finishCosmosConfigs({
-  genesisJson,
+// Rewrite the config.toml.
+export function finishCosmosConfig({
   configToml,
-  exportedGenesisJson,
   portNum = '26657',
   persistentPeers = '',
 }) {
   const rpcPort = Number(portNum);
-  const ret = {};
 
-  if (genesisJson) {
-    const genesis = JSON.parse(genesisJson);
-    const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
+  // Adjust the config.toml.
+  const config = TOML.parse(configToml);
+  config.proxy_app = 'kvstore';
 
-    genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
+  // Enforce our inter-block delays for this node.
+  config.consensus.timeout_commit = `${BLOCK_CADENCE_S}s`;
 
-    // We scale this parameter according to our own block cadence, so
-    // that we tolerate the same downtime as the old genesis.
-    genesis.app_state.slashing.params.signed_blocks_window = `${Math.ceil(
-      (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
-    )}`;
+  // Update addresses in the config.
+  config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
+  config.p2p.persistent_peers = persistentPeers;
+  config.rpc.laddr = `tcp://127.0.0.1:${rpcPort}`;
 
-    // Zero inflation, for now.
-    genesis.app_state.mint.minter.inflation = '0.0';
-    genesis.app_state.mint.params.inflation_rate_change = '0.0';
-    genesis.app_state.mint.params.inflation_min = '0.0';
+  // Needed for IBC.
+  config.tx_index.index_all_keys = true;
 
-    // Set the denomination for different modules.
-    genesis.app_state.mint.params.mint_denom = MINT_DENOM;
-    genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
-    genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+  // Stringify the new config.toml.
+  return TOML.stringify(config);
+}
 
-    // Reduce the cost of a transaction.
-    genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
+// Rewrite/import the genesis.json.
+export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
+  const genesis = JSON.parse(genesisJson);
+  const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
-    // We upgrade from export data.
-    const { app_state: exportedAppState = {} } = exported;
-    for (const state of Object.keys(exportedAppState)) {
-      genesis.app_state[state] = exportedAppState[state];
-    }
+  genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
 
-    // Remove IBC and capability state.
-    // TODO: This needs much more support to preserve contract state
-    // between exports in order to be able to carry forward IBC conns.
-    delete genesis.app_state.capability;
-    delete genesis.app_state.ibc;
+  // We scale this parameter according to our own block cadence, so
+  // that we tolerate the same downtime as the old genesis.
+  genesis.app_state.slashing.params.signed_blocks_window = `${Math.ceil(
+    (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
+  )}`;
 
-    // Use the same consensus_params.
-    if ('consensus_params' in exported) {
-      genesis.consensus_params = exported.consensus_params;
-    }
+  // Zero inflation, for now.
+  genesis.app_state.mint.minter.inflation = '0.0';
+  genesis.app_state.mint.params.inflation_rate_change = '0.0';
+  genesis.app_state.mint.params.inflation_min = '0.0';
 
-    // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
-    genesis.consensus_params.block.time_iota_ms = '1000';
-    ret.newGenesisJson = djson.stringify(genesis);
+  // Set the denomination for different modules.
+  genesis.app_state.mint.params.mint_denom = MINT_DENOM;
+  genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
+  genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+
+  // Reduce the cost of a transaction.
+  genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
+
+  // We upgrade from export data.
+  const { app_state: exportedAppState = {} } = exported;
+  for (const state of Object.keys(exportedAppState)) {
+    genesis.app_state[state] = exportedAppState[state];
   }
 
-  if (configToml) {
-    // Adjust the config.toml.
-    const config = TOML.parse(configToml);
-    config.proxy_app = 'kvstore';
+  // Remove IBC and capability state.
+  // TODO: This needs much more support to preserve contract state
+  // between exports in order to be able to carry forward IBC conns.
+  delete genesis.app_state.capability;
+  delete genesis.app_state.ibc;
 
-    // Enforce our inter-block delays for this node.
-    config.consensus.timeout_commit = `${BLOCK_CADENCE_S}s`;
-
-    // Update addresses in the config.
-    config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
-    config.p2p.persistent_peers = persistentPeers;
-    config.rpc.laddr = `tcp://127.0.0.1:${rpcPort}`;
-
-    // Needed for IBC.
-    config.tx_index.index_all_keys = true;
-
-    // Stringify the new config.toml.
-    ret.newConfigToml = TOML.stringify(config);
+  // Use the same consensus_params.
+  if ('consensus_params' in exported) {
+    genesis.consensus_params = exported.consensus_params;
   }
 
-  return ret;
+  // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
+  genesis.consensus_params.block.time_iota_ms = '1000';
+  return djson.stringify(genesis);
 }

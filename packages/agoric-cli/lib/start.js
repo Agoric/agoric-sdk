@@ -2,7 +2,12 @@ import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
 
-import { STAKING_DENOM, MINT_DENOM, finishCosmosConfigs } from './chain-config';
+import {
+  STAKING_DENOM,
+  MINT_DENOM,
+  finishCosmosConfig,
+  finishCosmosGenesis,
+} from './chain-config';
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -302,8 +307,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       fs.readFile(genesisFile, 'utf-8'),
       fs.readFile(configFile, 'utf-8'),
     ]);
-    const { newGenesisJson, newConfigToml } = finishCosmosConfigs({
+    const newGenesisJson = finishCosmosGenesis({
       genesisJson,
+    });
+    const newConfigToml = finishCosmosConfig({
       configToml,
       portNum,
     });
