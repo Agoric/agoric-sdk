@@ -269,7 +269,9 @@ function equal(
  * @param {'undefined'} typename
  * @param {Details} [optDetails]
  * @returns {asserts specimen is undefined}
- *
+ */
+
+/**
  * @typedef {AssertTypeofBigint & AssertTypeofBoolean & AssertTypeofFunction & AssertTypeofNumber & AssertTypeofObject & AssertTypeofString & AssertTypeofSymbol & AssertTypeofUndefined} AssertTypeof
  */
 

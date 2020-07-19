@@ -1,11 +1,11 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "compilerOptions": {
-    "noEmit": false,
+    // "noEmit": false,
     "declaration": true,
-    "emitDeclarationOnly": true,
+    // "emitDeclarationOnly": true,
     "downlevelIteration": true,
     "strictNullChecks": true,
   },
-  "include": ["src/*.js"],
+  "include": ["src/**/*.js", "exported.js"],
 }
