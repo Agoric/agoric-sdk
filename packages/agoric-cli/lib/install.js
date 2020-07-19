@@ -5,6 +5,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 
+  // Notify the preinstall guard that we are running.
+  process.env.AGORIC_INSTALL = 'true';
+
   const pspawn = (...args) =>
     new Promise((resolve, _reject) => {
       const cp = spawn(...args);
@@ -15,10 +18,15 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const rimraf = file => pspawn('rm', ['-rf', file]);
   const subdirs = ['.', '_agstate/agoric-servers', 'contract', 'api'].sort();
 
+  const linkFolder = path.resolve(`_agstate/yarn-links`);
+  const linkFlags = [`--link-folder=${linkFolder}`, 'link'];
+
   if (opts.sdk) {
     const sdkPackagesDir = path.resolve(__dirname, '../../../packages');
     const allPackages = await fs.readdir(sdkPackagesDir);
     const packages = new Map();
+    log('removing', linkFolder);
+    await rimraf(linkFolder);
     for (const pkg of allPackages) {
       const dir = `${sdkPackagesDir}/${pkg}`;
       let packageJSON;
@@ -32,8 +40,13 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       if (packageJSON) {
         const pj = JSON.parse(packageJSON);
         if (!pj.private) {
-          // eslint-disable-next-line no-await-in-loop
-          if (await pspawn('yarn', ['link'], { stdio: 'inherit', cwd: dir })) {
+          if (
+            // eslint-disable-next-line no-await-in-loop
+            await pspawn('yarn', linkFlags, {
+              stdio: 'inherit',
+              cwd: dir,
+            })
+          ) {
             log.error('Cannot yarn link', dir);
             return 1;
           }
@@ -44,15 +57,15 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     await Promise.all(
       subdirs.map(subdir => {
         const nm = `${subdir}/node_modules`;
-        log(chalk.bold.green(`removing ${nm}`));
-        return rimraf(nm);
+        log(chalk.bold.green(`removing ${nm} link`));
+        return fs.unlink(nm).catch(_ => {});
       }),
     );
     const sdkPackages = [...packages.values()].sort();
     for (const subdir of subdirs) {
       if (
         // eslint-disable-next-line no-await-in-loop
-        await pspawn('yarn', ['link', ...sdkPackages], {
+        await pspawn('yarn', [...linkFlags, ...sdkPackages], {
           stdio: 'inherit',
           cwd: subdir,
         })
@@ -72,13 +85,18 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     );
   }
 
-  if (await pspawn('yarn', ['install'], { stdio: 'inherit' })) {
+  if (await pspawn('yarn', [linkFlags[0], 'install'], { stdio: 'inherit' })) {
     // Try to install via Yarn.
     log.error('Cannot yarn install');
     return 1;
   }
 
-  if (await pspawn('yarn', ['install'], { stdio: 'inherit', cwd: 'ui' })) {
+  if (
+    await pspawn('yarn', [linkFlags[0], 'install'], {
+      stdio: 'inherit',
+      cwd: 'ui',
+    })
+  ) {
     // Try to install via Yarn.
     log.warn('Cannot yarn install in ui directory');
     return 1;
