@@ -16,10 +16,7 @@ async function main(basedir, argv) {
   return controller.dump();
 }
 
-const sharedMapContentsGolden = [
-  '=> setup called',
-  'starting testSharedMapStorage',
-];
+const sharedMapContentsGolden = ['starting testSharedMapStorage'];
 
 test('run sharing Demo --sharedMap contents', async t => {
   const dump = await main('sharingService', ['sharedMap']);
@@ -28,7 +25,6 @@ test('run sharing Demo --sharedMap contents', async t => {
 });
 
 const sharingTestGolden = [
-  '=> setup called',
   'starting testSharingStorage',
   'expected validate to throw',
 ];
@@ -40,7 +36,6 @@ test('run sharing Demo --sharing service', async t => {
 });
 
 const twoPartySharingGolden = [
-  '=> setup called',
   'starting testSharingStorage',
   'expecting coordination on 42.',
 ];
