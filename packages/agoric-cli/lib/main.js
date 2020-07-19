@@ -6,6 +6,7 @@ import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';
 import installMain from './install';
+import setDefaultsMain from './set-defaults';
 import startMain from './start';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-encouragement';
@@ -77,6 +78,23 @@ const main = async (progname, rawArgs, powers) => {
     .action(async (project, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(initMain, ['init', project], opts);
+    });
+
+  program
+    .command('set-defaults <program> <config-dir>')
+    .description('update the configuration files for <program> in <config-dir>')
+    .option(
+      '--import-from <dir>',
+      'import the exported configuration from <dir>',
+    )
+    .option(
+      '--persistent-peers <addrs>',
+      'set the config.toml p2p.persistent_peers value',
+      '',
+    )
+    .action(async (prog, configDir, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
 
   program

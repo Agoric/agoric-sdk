@@ -1,16 +1,13 @@
 import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
-import djson from 'deterministic-json';
-import jsonmergepatch from 'json-merge-patch';
-import TOML from '@iarna/toml';
 
 import {
-  MINT_DENOM,
   STAKING_DENOM,
-  genesisMergePatch,
-  makeConfigMergePatch,
-} from './chain-params';
+  MINT_DENOM,
+  finishCosmosConfig,
+  finishCosmosGenesis,
+} from './chain-config';
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -27,38 +24,6 @@ const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, os, process } = powers;
   const log = anylogger('agoric:start');
-
-  const finishGenesis = async genfile => {
-    // Fix up the genesis file.
-    log('finishing', genfile);
-    const genjson = await fs.readFile(genfile, 'utf-8');
-    const genesis = JSON.parse(genjson);
-
-    const finishedGenesis = jsonmergepatch.apply(genesis, genesisMergePatch);
-
-    const ds = djson.stringify(finishedGenesis);
-    await fs.writeFile(genfile, ds);
-
-    // Calculate the GCI and save to disk.
-    const gci = createHash('sha256')
-      .update(ds)
-      .digest('hex');
-    const hashFile = `${genfile}.sha256`;
-    log('writing', hashFile);
-    await fs.writeFile(hashFile, gci);
-  };
-
-  const finishConfig = async (configfile, portNum) => {
-    // Fix up the server.toml file.
-    log('finishing', configfile);
-    const configtoml = await fs.readFile(configfile, 'utf-8');
-    const config = TOML.parse(configtoml);
-
-    const configMergePatch = makeConfigMergePatch(portNum);
-    const finishedConfig = jsonmergepatch.apply(config, configMergePatch);
-
-    await fs.writeFile(configfile, TOML.stringify(finishedConfig));
-  };
 
   const pspawnEnv = { ...process.env };
   const pspawn = (
@@ -289,8 +254,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       /* eslint-enable no-await-in-loop */
     }
 
-    const genfile = `${localAgServer}/config/genesis.json`;
-    if (!(await exists(`${genfile}.stamp`))) {
+    const genesisFile = `${localAgServer}/config/genesis.json`;
+    if (!(await exists(`${genesisFile}.stamp`))) {
       let exitStatus;
       await chainSpawn([
         'add-genesis-account',
@@ -329,15 +294,45 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (exitStatus) {
         return exitStatus;
       }
-      exitStatus = await fs.writeFile(`${genfile}.stamp`, Date.now());
+      exitStatus = await fs.writeFile(`${genesisFile}.stamp`, Date.now());
       if (exitStatus) {
         return exitStatus;
       }
     }
 
     // Complete the genesis file and launch the chain.
-    await finishGenesis(genfile);
-    await finishConfig(`${localAgServer}/config/config.toml`, portNum);
+    log('read ag-chain-cosmos config');
+    const configFile = `${localAgServer}/config/config.toml`;
+    const [genesisJson, configToml] = await Promise.all([
+      fs.readFile(genesisFile, 'utf-8'),
+      fs.readFile(configFile, 'utf-8'),
+    ]);
+    const newGenesisJson = finishCosmosGenesis({
+      genesisJson,
+    });
+    const newConfigToml = finishCosmosConfig({
+      configToml,
+      portNum,
+    });
+
+    const create = (fileName, contents) => {
+      log('create', fileName);
+      return fs.writeFile(fileName, contents);
+    };
+
+    // Calculate the GCI for the updated genesis.json.
+    const hashFile = `${genesisFile}.sha256`;
+    const gci = createHash('sha256')
+      .update(newGenesisJson)
+      .digest('hex');
+
+    // Save all the files to disk.
+    await Promise.all([
+      create(configFile, newConfigToml),
+      create(genesisFile, newGenesisJson),
+      create(hashFile, gci),
+    ]);
+
     return chainSpawn(
       [...debugOpts, 'start', '--pruning=nothing'],
       {

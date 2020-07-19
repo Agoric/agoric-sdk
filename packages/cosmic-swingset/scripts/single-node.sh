@@ -44,7 +44,7 @@ case $DAEMON in
 ag-chain-cosmos)
   # For Agoric
   DIR=$(dirname -- "${BASH_SOURCE[0]}")
-  "$DIR/../../deployment/set-json.js" ~/.$DAEMON/config/genesis.json --agoric-genesis-overrides
+  "$DIR/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos ~/.$DAEMON/config
   
   export BOOTSTRAP_ADDRESS=$GENACCT
   export ROLE=two_chain
