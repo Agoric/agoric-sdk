@@ -8,7 +8,8 @@ import infiniteTestLoopBundle from './bundle-infiniteTestLoop';
 import testBuiltinsBundle from './bundle-testBuiltins';
 /* eslint-enable import/extensions, import/no-unresolved */
 
-function build(log) {
+export function buildRootObject(vatPowers) {
+  const log = vatPowers.testLog;
   const obj0 = {
     async bootstrap(argv, vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
@@ -47,14 +48,3 @@ function build(log) {
   };
   return harden(obj0);
 }
-harden(build);
-
-function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers => build(helpers.log),
-    helpers.vatID,
-  );
-}
-export default harden(setup);
