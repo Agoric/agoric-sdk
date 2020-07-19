@@ -1,0 +1,1 @@
+import '@agoric/ertp/exports';

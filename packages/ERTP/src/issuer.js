@@ -11,9 +11,6 @@ import { isPromise } from '@agoric/produce-promise';
 import makeAmountMath from './amountMath';
 
 /**
- * @typedef {import('./amountMath').Amount} Amount
- * @typedef {import('./amountMath').Extent} Extent
- * @typedef {import('./amountMath').AmountMath} AmountMath
  * @typedef {Payment|Promise<Payment>} PaymentP
  */
 
