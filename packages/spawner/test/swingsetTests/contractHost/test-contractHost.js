@@ -17,7 +17,6 @@ async function main(basedir, argv) {
 }
 
 const contractMintGolden = [
-  '=> setup called',
   'starting mintTestDescOps',
   'starting mintTestNumber',
   'alice balance {"label":{"assay":{},"allegedName":"quatloos"},"value":950}',
@@ -33,7 +32,6 @@ test.skip('run contractHost Demo --mint', async t => {
 });
 
 const contractTrivialGolden = [
-  '=> setup called',
   'starting trivialContractTest',
   'Does source match? true',
   'foo balance {"brand":{},"value":[{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}]}',
@@ -53,7 +51,6 @@ test('run contractHost Demo --trivial-oldformat', async t => {
 });
 
 const contractExhaustedGolden = [
-  '=> setup called',
   'starting exhaustedContractTest',
   'Does source match? true',
   'spawn rejected: Compute meter exceeded',
@@ -67,7 +64,6 @@ test('run contractHost Demo -- exhaust', async t => {
 });
 
 const contractAliceFirstGolden = [
-  '=> setup called',
   '++ alice.payBobWell starting',
   '++ ifItFitsP done:If it fits, ware it.',
   '++ DONE',
@@ -80,7 +76,6 @@ test.skip('run contractHost Demo --alice-first', async t => {
 });
 
 const contractBobFirstGolden = [
-  '=> setup called',
   '++ bob.tradeWell starting',
   '++ alice.acceptInvite starting',
   'alice invite balance {"label":{"issuer":{},"allegedName":"contract host"},"value":{"installation":{},"terms":{"left":{"label":{"issuer":{},"allegedName":"clams"},"value":10},"right":{"label":{"issuer":{},"allegedName":"fudco"},"value":7}},"seatIdentity":{},"seatDesc":"left"}}',
@@ -103,7 +98,6 @@ test.skip('run contractHost Demo --bob-first', async t => {
 });
 
 const contractCoveredCallGolden = [
-  '=> setup called',
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionDirectly starting',
   'Pretend singularity never happens',
@@ -127,7 +121,6 @@ test.skip('run contractHost Demo --covered-call', async t => {
 });
 
 const contractCoveredCallSaleGolden = [
-  '=> setup called',
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionForFred starting',
   '++ alice.completeOptionsSale starting',

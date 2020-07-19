@@ -8,7 +8,9 @@ import { bundleFunction } from '../../make-function-bundle';
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
 
-function build(log) {
+export function buildRootObject(vatPowers) {
+  const log = vatPowers.testLog;
+
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
@@ -426,19 +428,3 @@ function build(log) {
   };
   return harden(obj0);
 }
-harden(build);
-
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  log(`=> setup called`);
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers => build(log),
-    helpers.vatID,
-  );
-}
-export default harden(setup);
