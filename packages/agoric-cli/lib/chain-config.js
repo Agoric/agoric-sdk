@@ -1,4 +1,3 @@
-import jsonmergepatch from 'json-merge-patch';
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
@@ -10,10 +9,6 @@ export const BLOCK_CADENCE_S = 2;
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 
-// TODO: When Tendermint non-zero height exports work, we can improve.
-// TODO: When we export Agoric vat state as well, don't blacklist.
-const EXPORTED_APP_STATE_BLACKLIST = ['capability', 'ibc'];
-
 // Rewrite the config.toml and genesis.json.
 export function finishCosmosConfigs({
   genesisJson,
@@ -22,104 +17,75 @@ export function finishCosmosConfigs({
   portNum = '26657',
   persistentPeers = '',
 }) {
-  const genesis = JSON.parse(genesisJson);
-  const config = TOML.parse(configToml);
-
-  const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
-
-  const genesisMergePatch = {
-    app_state: {
-      staking: {
-        params: {
-          bond_denom: STAKING_DENOM,
-        },
-      },
-      slashing: {
-        params: {
-          // We scale this parameter according to our own block cadence, so
-          // that we tolerate the same downtime as the old genesis.
-          signed_blocks_window: `${Math.ceil(
-            (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) /
-              BLOCK_CADENCE_S,
-          )}`,
-        },
-      },
-      mint: {
-        // Zero inflation, for now.
-        minter: {
-          inflation: '0.0',
-        },
-        params: {
-          inflation_rate_change: '0.0',
-          inflation_min: '0.0',
-          mint_denom: MINT_DENOM,
-        },
-      },
-      crisis: {
-        constant_fee: {
-          denom: MINT_DENOM,
-        },
-      },
-      gov: {
-        deposit_params: {
-          min_deposit: GOV_DEPOSIT_COINS,
-        },
-      },
-      auth: {
-        params: {
-          tx_size_cost_per_byte: '1',
-        },
-      },
-
-      // Remove IBC and capability state.
-      // TODO: This needs much more support to preserve contract state
-      // between exports in order to be able to carry forward IBC conns.
-      capability: null,
-      ibc: null,
-    },
-  };
-
-  // The JSON merge patch for the config.toml.
   const rpcPort = Number(portNum);
-  const configMergePatch = {
-    proxy_app: 'kvstore',
-    consensus: {
-      // Enforce our inter-block delays for this node.
-      timeout_commit: `${BLOCK_CADENCE_S}s`,
-    },
-    p2p: {
-      laddr: `tcp://0.0.0.0:${rpcPort - 1}`,
-      persistent_peers: persistentPeers,
-    },
-    rpc: {
-      laddr: `tcp://127.0.0.1:${rpcPort}`,
-    },
-    tx_index: {
-      // Needed for IBC.
-      index_all_keys: true,
-    },
-  };
+  const ret = {};
 
-  const finishedGenesis = jsonmergepatch.apply(genesis, genesisMergePatch);
+  if (genesisJson) {
+    const genesis = JSON.parse(genesisJson);
+    const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
-  // We upgrade from export data, blacklisting states we don't support.
-  const { app_state: exportedAppState = {} } = exported;
-  for (const state in exportedAppState) {
-    if (!EXPORTED_APP_STATE_BLACKLIST.includes(state)) {
-      finishedGenesis.app_state[state] = exportedAppState[state];
+    genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
+
+    // We scale this parameter according to our own block cadence, so
+    // that we tolerate the same downtime as the old genesis.
+    genesis.app_state.slashing.params.signed_blocks_window = `${Math.ceil(
+      (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
+    )}`;
+
+    // Zero inflation, for now.
+    genesis.app_state.mint.minter.inflation = '0.0';
+    genesis.app_state.mint.params.inflation_rate_change = '0.0';
+    genesis.app_state.mint.params.inflation_min = '0.0';
+
+    // Set the denomination for different modules.
+    genesis.app_state.mint.params.mint_denom = MINT_DENOM;
+    genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
+    genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+
+    // Reduce the cost of a transaction.
+    genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
+
+    // We upgrade from export data.
+    const { app_state: exportedAppState = {} } = exported;
+    for (const state of Object.keys(exportedAppState)) {
+      genesis.app_state[state] = exportedAppState[state];
     }
+
+    // Remove IBC and capability state.
+    // TODO: This needs much more support to preserve contract state
+    // between exports in order to be able to carry forward IBC conns.
+    delete genesis.app_state.capability;
+    delete genesis.app_state.ibc;
+
+    // Use the same consensus_params.
+    if ('consensus_params' in exported) {
+      genesis.consensus_params = exported.consensus_params;
+    }
+
+    // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
+    genesis.consensus_params.block.time_iota_ms = '1000';
+    ret.newGenesisJson = djson.stringify(genesis);
   }
-  if ('consensus_params' in exported) {
-    finishedGenesis.consensus_params = exported.consensus_params;
+
+  if (configToml) {
+    // Adjust the config.toml.
+    const config = TOML.parse(configToml);
+    config.proxy_app = 'kvstore';
+
+    // Enforce our inter-block delays for this node.
+    config.consensus.timeout_commit = `${BLOCK_CADENCE_S}s`;
+
+    // Update addresses in the config.
+    config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
+    config.p2p.persistent_peers = persistentPeers;
+    config.rpc.laddr = `tcp://127.0.0.1:${rpcPort}`;
+
+    // Needed for IBC.
+    config.tx_index.index_all_keys = true;
+
+    // Stringify the new config.toml.
+    ret.newConfigToml = TOML.stringify(config);
   }
 
-  // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
-  finishedGenesis.consensus_params.block.time_iota_ms = '1000';
-
-  const newGenesisJson = djson.stringify(finishedGenesis);
-
-  const finishedConfig = jsonmergepatch.apply(config, configMergePatch);
-  const newConfigToml = TOML.stringify(finishedConfig);
-
-  return { newGenesisJson, newConfigToml };
+  return ret;
 }
