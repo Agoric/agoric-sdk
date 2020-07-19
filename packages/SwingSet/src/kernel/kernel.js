@@ -164,6 +164,18 @@ export default function buildKernel(kernelEndowments) {
     log: [],
   };
 
+  // This is a low-level output-only string logger used by old unit tests to
+  // see whether vats made progress or not. The array it appends to is
+  // available as c.dump().log . New unit tests should instead use the
+  // 'result' value returned by c.queueToExport()
+  function testLog(...args) {
+    const rendered = args.map(arg =>
+      typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReviver),
+    );
+    ephemeral.log.push(rendered.join(''));
+  }
+  harden(testLog);
+
   const pendingMessageResults = new Map(); // kpid -> messageResult
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
@@ -348,9 +360,10 @@ export default function buildKernel(kernelEndowments) {
       runWithoutGlobalMeter(transformMetering, ...args),
     transformTildot: (...args) =>
       runWithoutGlobalMeter(transformTildot, ...args),
+    testLog,
   });
 
-  // dynamic vats don't get control over their own metering
+  // dynamic vats don't get control over their own metering, nor testLog
   const dynamicVatPowers = harden({
     Remotable,
     getInterfaceOf,
@@ -733,14 +746,7 @@ export default function buildKernel(kernelEndowments) {
     const helpers = harden({
       vatID: name, // TODO: rename to 'name', update vats to match
       makeLiveSlots,
-      log(...args) {
-        const rendered = args.map(arg =>
-          typeof arg === 'string'
-            ? arg
-            : JSON.stringify(arg, abbreviateReviver),
-        );
-        ephemeral.log.push(rendered.join(''));
-      },
+      testLog,
     });
     // XXX why does 'helpers' exist as a separate bucket of stuff instead of as
     // just more params to makeVatManager?
