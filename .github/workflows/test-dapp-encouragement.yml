@@ -19,7 +19,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-        check-latest: true
     - name: Checkout agoric-sdk
       uses: actions/checkout@v2
 

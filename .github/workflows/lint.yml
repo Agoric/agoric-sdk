@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v1
     - uses: actions/setup-node@v1
       with:
-        node-version: '12.16.1'
+        node-version: '12.x'
 
     # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
     #- name: cache node modules
