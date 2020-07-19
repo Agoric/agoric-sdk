@@ -1,4 +1,5 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
 console.log(`left loaded`);
 
@@ -8,7 +9,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E =>
+    _vatPowers =>
       harden({
         foo(arg1, right) {
           log(`left.foo ${arg1}`);

@@ -5,7 +5,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) =>
+    ({ D }) =>
       harden({
         left5(d2) {
           log(`left5`);

@@ -10,8 +10,7 @@ function vatRequire(what) {
   }
 }
 
-function build(buildStuff) {
-  const { vatPowers, log } = buildStuff;
+function build(vatPowers, log) {
   const { makeGetMeter, transformMetering } = vatPowers;
   const {
     getMeter,
@@ -89,7 +88,7 @@ export default function setup(syscall, state, helpers, vatPowers0) {
   return makeLiveSlots(
     syscall,
     state,
-    (E, D, vatPowers) => build({ E, D, vatPowers, log }),
+    vatPowers => build(vatPowers, log),
     helpers.vatID,
     vatPowers0,
   );

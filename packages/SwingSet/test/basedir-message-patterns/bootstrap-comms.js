@@ -1,7 +1,9 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
-function build(E, D) {
-  const root = harden({
+export function buildRootObject(vatPowers) {
+  const { D } = vatPowers;
+  return harden({
     async bootstrap(argv, vats, devices) {
       // setup
       const LEFT = 'left'; // for vat A
@@ -53,9 +55,4 @@ function build(E, D) {
       await E(vats.a).run(which);
     },
   });
-  return root;
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }

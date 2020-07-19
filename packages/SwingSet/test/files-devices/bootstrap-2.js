@@ -1,11 +1,12 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
 export default function setup(syscall, state, helpers) {
   const { log } = helpers;
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) =>
+    ({ D }) =>
       harden({
         async bootstrap(argv, vats, devices) {
           if (argv[0] === '1') {

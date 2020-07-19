@@ -1,11 +1,11 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import { makeSharedMap } from '../../../src/sharedMap';
 import { makeSharingService } from '../../../src/sharing';
 
-function build(E, log) {
+function build(log) {
   function testSharedMapStorage() {
     log('starting testSharedMapStorage');
     const wb = makeSharedMap('whiteboard');
@@ -113,7 +113,7 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    _vatPowers => build(log),
     helpers.vatID,
   );
 }

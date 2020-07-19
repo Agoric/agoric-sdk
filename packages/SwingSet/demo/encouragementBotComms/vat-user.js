@@ -10,7 +10,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _E =>
+    _vatPowers =>
       harden({
         talkToBot(pbot, botName) {
           log(`=> user.talkToBot is called with ${botName}`);

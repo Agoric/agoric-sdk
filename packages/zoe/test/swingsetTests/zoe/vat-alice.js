@@ -1,8 +1,9 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
 import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
 
-const build = async (E, log, zoe, issuers, payments, installations, timer) => {
+const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
   const [moolaPayment, simoleanPayment] = payments;
@@ -468,9 +469,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 };
 
 const setup = (syscall, state, helpers) =>
-  helpers.makeLiveSlots(syscall, state, E =>
+  helpers.makeLiveSlots(syscall, state, _vatPowers =>
     harden({
-      build: (...args) => build(E, helpers.log, ...args),
+      build: (...args) => build(helpers.log, ...args),
     }),
   );
 export default harden(setup);

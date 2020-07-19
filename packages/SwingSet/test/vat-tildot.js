@@ -1,6 +1,6 @@
 /* global harden */
 
-function build(E, log, vatPowers) {
+function build(log, vatPowers) {
   const root = {
     bootstrap(argv, vats) {
       log('tildot');
@@ -19,5 +19,5 @@ function build(E, log, vatPowers) {
 
 export default function setup(syscall, state, helpers, vatPowers) {
   const { log, makeLiveSlots } = helpers;
-  return makeLiveSlots(syscall, state, (E, _D, vatPowers) => build(E, log, vatPowers), helpers.vatID, vatPowers);
+  return makeLiveSlots(syscall, state, vatPowers => build(log, vatPowers), helpers.vatID, vatPowers);
 }

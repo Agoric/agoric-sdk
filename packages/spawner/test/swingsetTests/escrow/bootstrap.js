@@ -1,14 +1,14 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import produceIssuer from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 import { assert, details } from '@agoric/assert';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 
-function build(E, log) {
+function build(log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckMismatches');
     const installationP = E(host).install(escrowExchangeSrcs);
@@ -213,7 +213,7 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    _vatPowers => build(log),
     helpers.vatID,
   );
 }

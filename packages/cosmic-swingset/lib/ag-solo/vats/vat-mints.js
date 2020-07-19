@@ -7,7 +7,7 @@ import makeStore from '@agoric/store';
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.
 
-function build(_E, _log) {
+export function buildRootObject(_vatPowers) {
   const mintsAndMath = makeStore('issuerName');
 
   const api = harden({
@@ -41,13 +41,4 @@ function build(_E, _log) {
   });
 
   return api;
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    E => build(E, helpers.log),
-    helpers.vatID,
-  );
 }

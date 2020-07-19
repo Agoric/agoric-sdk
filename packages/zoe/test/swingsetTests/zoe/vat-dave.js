@@ -1,11 +1,12 @@
 /* global harden */
 
+import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
-const build = async (E, log, zoe, issuers, payments, installations, timer) => {
+const build = async (log, zoe, issuers, payments, installations, timer) => {
   const {
     moola,
     simoleans,
@@ -191,9 +192,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 };
 
 const setup = (syscall, state, helpers) =>
-  helpers.makeLiveSlots(syscall, state, E =>
+  helpers.makeLiveSlots(syscall, state, _vatPowers =>
     harden({
-      build: (...args) => build(E, helpers.log, ...args),
+      build: (...args) => build(helpers.log, ...args),
     }),
   );
 export default harden(setup);

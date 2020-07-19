@@ -3,7 +3,8 @@
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 
-function build(E, D) {
+export function buildRootObject(vatPowers) {
+  const { D } = vatPowers;
   const repeaters = new Map();
 
   async function createTimerService(timerNode) {
@@ -46,8 +47,4 @@ function build(E, D) {
   }
 
   return harden({ createTimerService });
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }

@@ -15,7 +15,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    _E =>
+    _vatPowers =>
       harden({
         encourageMe(nameObj) {
           // Test of tildot property get.

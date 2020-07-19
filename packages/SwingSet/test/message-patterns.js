@@ -5,6 +5,7 @@
 // I turned off dot-notation so eslint won't rewrite the grep-preserving
 // test.stuff patterns.
 
+import { E } from '@agoric/eventual-send';
 import { producePromise } from '@agoric/produce-promise';
 
 // Exercise a set of increasingly complex object-capability message patterns,
@@ -48,7 +49,7 @@ import { producePromise } from '@agoric/produce-promise';
 // All messages should be sent twice, to check that the recipient gets the
 // same object reference in both messages
 
-export function buildPatterns(E, log) {
+export function buildPatterns(log) {
   let a;
   let b;
 

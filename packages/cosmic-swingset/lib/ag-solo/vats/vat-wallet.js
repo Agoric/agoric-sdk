@@ -1,9 +1,9 @@
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
-function build(E, _D, _log) {
+export function buildRootObject(_vatPowers) {
   let wallet;
   let pursesState;
   let inboxState = JSON.stringify([]);
@@ -271,13 +271,4 @@ function build(E, _D, _log) {
     getBridgeURLHandler,
     setPresences,
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    (E, D) => build(E, D, helpers.log),
-    helpers.vatID,
-  );
 }

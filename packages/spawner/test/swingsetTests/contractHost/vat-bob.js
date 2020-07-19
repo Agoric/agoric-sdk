@@ -2,12 +2,12 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import { makeCollect } from '../../../src/makeCollect';
 
-function makeBobMaker(E, host, log) {
+function makeBobMaker(host, log) {
   const collect = makeCollect(E, log);
 
   const getLocalAmountMath = issuer =>
@@ -121,10 +121,10 @@ function setup(syscall, state, helpers) {
     helpers.log(...args);
     console.log(...args);
   }
-  return helpers.makeLiveSlots(syscall, state, E =>
+  return helpers.makeLiveSlots(syscall, state, _vatPowers =>
     harden({
       makeBobMaker(host) {
-        return harden(makeBobMaker(E, host, log));
+        return harden(makeBobMaker(host, log));
       },
     }),
   );

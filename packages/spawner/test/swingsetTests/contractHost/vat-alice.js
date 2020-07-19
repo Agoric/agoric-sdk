@@ -1,13 +1,13 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import { allComparable } from '@agoric/same-structure';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import { makeCollect } from '../../../src/makeCollect';
 
-function makeAliceMaker(E, host, log) {
+function makeAliceMaker(host, log) {
   const collect = makeCollect(E, log);
 
   // TODO BUG: All callers should wait until settled before doing
@@ -201,10 +201,10 @@ function setup(syscall, state, helpers) {
     helpers.log(...args);
     console.log(...args);
   }
-  return helpers.makeLiveSlots(syscall, state, E =>
+  return helpers.makeLiveSlots(syscall, state, _vatPowers =>
     harden({
       makeAliceMaker(host) {
-        return harden(makeAliceMaker(E, host, log));
+        return harden(makeAliceMaker(host, log));
       },
     }),
   );

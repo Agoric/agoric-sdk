@@ -1,6 +1,7 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
-function build(E, log) {
+function build(log) {
   const obj0 = {
     callRight(arg1, right) {
       log(`left.callRight ${arg1}`);
@@ -50,7 +51,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, helpers.log),
+    _vatPowers => build(helpers.log),
     helpers.vatID,
   );
 }

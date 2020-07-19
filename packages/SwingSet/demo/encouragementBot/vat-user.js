@@ -1,4 +1,5 @@
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
 export default function setup(syscall, state, helpers) {
   function log(what) {
@@ -8,7 +9,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E =>
+    _vatPowers =>
       harden({
         talkToBot(bot, botName) {
           log(`=> user.talkToBot is called with ${botName}`);

@@ -1,8 +1,9 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 /* global harden */
+import { E } from '@agoric/eventual-send';
 
-function makeAliceMaker(E, _host, _log) {
+function makeAliceMaker() {
   return harden({
     make(sharingServiceP) {
       const alice = harden({
@@ -17,17 +18,10 @@ function makeAliceMaker(E, _host, _log) {
   });
 }
 
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  return helpers.makeLiveSlots(syscall, state, E =>
-    harden({
-      makeAliceMaker(host) {
-        return harden(makeAliceMaker(E, host, log));
-      },
-    }),
-  );
+export function buildRootObject(_vatPowers) {
+  return harden({
+    makeAliceMaker(_host) {
+      return harden(makeAliceMaker());
+    },
+  });
 }
-export default harden(setup);

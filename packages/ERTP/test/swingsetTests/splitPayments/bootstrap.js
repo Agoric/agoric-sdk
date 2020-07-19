@@ -1,8 +1,8 @@
 /* global harden */
-
+import { E } from '@agoric/eventual-send';
 import produceIssuer from '../../../src/issuer';
 
-function build(E, log) {
+function build(log) {
   function testSplitPayments(aliceMaker) {
     log('start test splitPayments');
     const { mint: moolaMint, issuer, amountMath } = produceIssuer('moola');
@@ -38,7 +38,7 @@ function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    _vatPowers => build(log),
     helpers.vatID,
   );
 }

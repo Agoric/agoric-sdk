@@ -2,13 +2,13 @@
 
 import { buildPatterns } from '../message-patterns';
 
-function build(E, log) {
+function build(log) {
   const bert = harden({ toString: () => 'obj-bert' });
   const bill = harden({ toString: () => 'obj-bill' });
 
   const root = harden({
     init() {
-      const { setB, objB } = buildPatterns(E, log);
+      const { setB, objB } = buildPatterns(log);
       const b = harden({ bob: objB, bert, bill });
       setB(b);
       return harden({ bob: objB, bert });
@@ -21,7 +21,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, helpers.log),
+    _vatPowers => build(helpers.log),
     helpers.vatID,
   );
 }

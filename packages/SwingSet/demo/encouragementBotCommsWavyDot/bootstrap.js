@@ -17,9 +17,10 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (_E, D) =>
+    vatPowers =>
       harden({
         async bootstrap(argv, vats, devices) {
+          const { D } = vatPowers;
           console.log('=> bootstrap() called');
 
           const BOT = 'bot';
