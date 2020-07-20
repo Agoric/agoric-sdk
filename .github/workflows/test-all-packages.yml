@@ -11,6 +11,9 @@ on:
 jobs:
   test-all:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['12.16.1', '12.x']
     steps:
     - uses: actions/checkout@v1
 
