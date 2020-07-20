@@ -62,12 +62,9 @@
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
-    "build": "yarn workspaces run build",
-    "postinstall": "patch-package"
+    "build": "yarn workspaces run build"
   },
   "dependencies": {
-    "@agoric/store": "^0.2.0",
-    "patch-package": "^6.2.2",
-    "postinstall-postinstall": "^2.1.0"
+    "@agoric/store": "^0.2.0"
   }
 }
