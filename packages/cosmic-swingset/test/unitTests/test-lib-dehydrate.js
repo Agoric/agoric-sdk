@@ -79,9 +79,7 @@ test('makeDehydrator', async t => {
       `'to be deleted' present going from val to petname`,
     );
     instanceHandleMapping.deletePetname('to be deleted');
-    console.log(
-      `ERROR EXPECTED '"petname" not found' >>>>`,
-    );
+    console.log(`ERROR EXPECTED '"petname" not found' >>>>`);
     t.throws(
       () => instanceHandleMapping.petnameToVal.get('to be deleted'),
       /"petname" not found/,

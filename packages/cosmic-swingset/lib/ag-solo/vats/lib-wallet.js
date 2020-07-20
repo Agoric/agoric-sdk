@@ -661,7 +661,10 @@ export async function makeWallet({
     );
   }
 
-  function suggestInstallation(suggestedPetname, installationHandleBoardId) {
+  async function suggestInstallation(
+    suggestedPetname,
+    installationHandleBoardId,
+  ) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
