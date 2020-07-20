@@ -117,9 +117,7 @@ export async function buildVatController(config, argv = []) {
   harden(console);
 
   function kernelRequire(what) {
-    if (what === '@agoric/harden') {
-      return harden;
-    } else if (what === 're2') {
+    if (what === 're2') {
       // The kernel imports @agoric/transform-metering to get makeMeter(),
       // and transform-metering imports re2, to add it to the generated
       // endowments. TODO Our transformers no longer traffic in endowments,
