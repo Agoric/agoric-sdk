@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { numIsEmpty, listIsEmpty } from './extentOps';
+import { numIsEmpty, listIsEmpty } from './valueOps';
 import { importManager } from '../../src/importManager';
 
 // This file models the way a module could export functionality to be run

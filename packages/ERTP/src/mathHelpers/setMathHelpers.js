@@ -41,7 +41,7 @@ const checkForDupes = buckets => {
       for (let j = i + 1; j < maybeMatches.length; j += 1) {
         assert(
           !sameStructure(maybeMatches[i], maybeMatches[j]),
-          details`extent has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
+          details`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
         );
       }
     }

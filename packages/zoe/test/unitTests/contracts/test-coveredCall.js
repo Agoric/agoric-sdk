@@ -71,23 +71,23 @@ test('zoe - coveredCall', async t => {
     const inviteIssuer = zoe.getInviteIssuer();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const {
-      extent: [optionExtent],
+      value: [optionValue],
     } = await inviteIssuer.getAmountOf(bobExclOption);
     const { installationHandle } = zoe.getInstanceRecord(
-      optionExtent.instanceHandle,
+      optionValue.instanceHandle,
     );
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionExtent.inviteDesc, 'exerciseOption');
-    t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
-    t.ok(simoleanR.amountMath.isEqual(optionExtent.strikePrice, simoleans(7)));
-    t.equal(optionExtent.expirationDate, 1);
-    t.deepEqual(optionExtent.timerAuthority, timer);
+    t.equal(optionValue.inviteDesc, 'exerciseOption');
+    t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
+    t.ok(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
+    t.equal(optionValue.expirationDate, 1);
+    t.deepEqual(optionValue.timerAuthority, timer);
 
     const bobPayments = { StrikePrice: bobSimoleanPayment };
 
     const bobProposal = harden({
-      want: { UnderlyingAsset: optionExtent.underlyingAsset },
-      give: { StrikePrice: optionExtent.strikePrice },
+      want: { UnderlyingAsset: optionValue.underlyingAsset },
+      give: { StrikePrice: optionValue.strikePrice },
       exit: { onDemand: null },
     });
 
@@ -132,10 +132,10 @@ test('zoe - coveredCall', async t => {
     // Assert that the correct payouts were received.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
-    t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-    t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
+    t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 7);
+    t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
+    t.equals(bobSimoleanPurse.getCurrentAmount().value, 0);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   }
@@ -201,23 +201,23 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const inviteIssuer = zoe.getInviteIssuer();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const {
-      extent: [optionExtent],
+      value: [optionValue],
     } = await inviteIssuer.getAmountOf(bobExclOption);
     const { installationHandle } = zoe.getInstanceRecord(
-      optionExtent.instanceHandle,
+      optionValue.instanceHandle,
     );
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionExtent.inviteDesc, 'exerciseOption');
-    t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
-    t.ok(simoleanR.amountMath.isEqual(optionExtent.strikePrice, simoleans(7)));
-    t.equal(optionExtent.expirationDate, 1);
-    t.deepEqual(optionExtent.timerAuthority, timer);
+    t.equal(optionValue.inviteDesc, 'exerciseOption');
+    t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
+    t.ok(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
+    t.equal(optionValue.expirationDate, 1);
+    t.deepEqual(optionValue.timerAuthority, timer);
 
     const bobPayments = { StrikePrice: bobSimoleanPayment };
 
     const bobProposal = harden({
-      want: { UnderlyingAsset: optionExtent.underlyingAsset },
-      give: { StrikePrice: optionExtent.strikePrice },
+      want: { UnderlyingAsset: optionValue.underlyingAsset },
+      give: { StrikePrice: optionValue.strikePrice },
     });
 
     // Bob escrows
@@ -356,7 +356,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const inviteAmountMath = inviteIssuer.getAmountMath();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const optionAmount = await inviteIssuer.getAmountOf(bobExclOption);
-    const optionDesc = optionAmount.extent[0];
+    const optionDesc = optionAmount.value[0];
     const { installationHandle } = zoe.getInstanceRecord(
       optionDesc.instanceHandle,
     );
@@ -399,7 +399,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     // optionAmounts (basically, the description of the option)
 
     const {
-      extent: [{ instanceHandle: swapInstanceHandle }],
+      value: [{ instanceHandle: swapInstanceHandle }],
     } = await inviteIssuer.getAmountOf(daveSwapInviteP);
 
     const {
@@ -518,16 +518,16 @@ test('zoe - coveredCall with swap for invite', async t => {
     await daveSimoleanPurse.deposit(daveSimoleanPayout);
     await daveBucksPurse.deposit(daveBucksPayout);
 
-    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
+    t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 7);
 
-    t.equals(bobMoolaPurse.getCurrentAmount().extent, 0);
-    t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
-    t.equals(bobBucksPurse.getCurrentAmount().extent, 1);
+    t.equals(bobMoolaPurse.getCurrentAmount().value, 0);
+    t.equals(bobSimoleanPurse.getCurrentAmount().value, 0);
+    t.equals(bobBucksPurse.getCurrentAmount().value, 1);
 
-    t.equals(daveMoolaPurse.getCurrentAmount().extent, 3);
-    t.equals(daveSimoleanPurse.getCurrentAmount().extent, 0);
-    t.equals(daveBucksPurse.getCurrentAmount().extent, 0);
+    t.equals(daveMoolaPurse.getCurrentAmount().value, 3);
+    t.equals(daveSimoleanPurse.getCurrentAmount().value, 0);
+    t.equals(daveBucksPurse.getCurrentAmount().value, 0);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   }
@@ -618,17 +618,17 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const inviteAmountMath = inviteIssuer.getAmountMath();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const {
-      extent: [optionExtent],
+      value: [optionValue],
     } = await inviteIssuer.getAmountOf(bobExclOption);
     const { installationHandle } = zoe.getInstanceRecord(
-      optionExtent.instanceHandle,
+      optionValue.instanceHandle,
     );
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionExtent.inviteDesc, 'exerciseOption');
-    t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
-    t.ok(simoleanR.amountMath.isEqual(optionExtent.strikePrice, simoleans(7)));
-    t.equal(optionExtent.expirationDate, 100);
-    t.deepEqual(optionExtent.timerAuthority, timer);
+    t.equal(optionValue.inviteDesc, 'exerciseOption');
+    t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
+    t.ok(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
+    t.equal(optionValue.expirationDate, 100);
+    t.deepEqual(optionValue.timerAuthority, timer);
 
     // Let's imagine that Bob wants to create another coveredCall, but
     // this time to trade this invite for bucks.
@@ -672,37 +672,34 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // checks that this invite matches what he wants
     const daveExclOption = await inviteIssuer.claim(inviteForDaveP);
     const {
-      extent: [daveOptionExtent],
+      value: [daveOptionValue],
     } = await inviteIssuer.getAmountOf(daveExclOption);
     const {
       installationHandle: daveOptionInstallationHandle,
-    } = zoe.getInstanceRecord(daveOptionExtent.instanceHandle);
+    } = zoe.getInstanceRecord(daveOptionValue.instanceHandle);
     t.equal(daveOptionInstallationHandle, coveredCallInstallationHandle);
-    t.equal(daveOptionExtent.inviteDesc, 'exerciseOption');
-    t.ok(bucksR.amountMath.isEqual(daveOptionExtent.strikePrice, bucks(1)));
-    t.equal(daveOptionExtent.expirationDate, 100);
-    t.deepEqual(daveOptionExtent.timerAuthority, timer);
+    t.equal(daveOptionValue.inviteDesc, 'exerciseOption');
+    t.ok(bucksR.amountMath.isEqual(daveOptionValue.strikePrice, bucks(1)));
+    t.equal(daveOptionValue.expirationDate, 100);
+    t.deepEqual(daveOptionValue.timerAuthority, timer);
 
     // What about the underlying asset (the other option)?
     t.equal(
-      daveOptionExtent.underlyingAsset.extent[0].inviteDesc,
+      daveOptionValue.underlyingAsset.value[0].inviteDesc,
       'exerciseOption',
     );
-    t.equal(daveOptionExtent.underlyingAsset.extent[0].expirationDate, 100);
+    t.equal(daveOptionValue.underlyingAsset.value[0].expirationDate, 100);
     t.ok(
       simoleanR.amountMath.isEqual(
-        daveOptionExtent.underlyingAsset.extent[0].strikePrice,
+        daveOptionValue.underlyingAsset.value[0].strikePrice,
         simoleans(7),
       ),
     );
-    t.deepEqual(
-      daveOptionExtent.underlyingAsset.extent[0].timerAuthority,
-      timer,
-    );
+    t.deepEqual(daveOptionValue.underlyingAsset.value[0].timerAuthority, timer);
 
     // Dave's planned proposal
     const daveProposalCoveredCall = harden({
-      want: { UnderlyingAsset: daveOptionExtent.underlyingAsset },
+      want: { UnderlyingAsset: daveOptionValue.underlyingAsset },
       give: { StrikePrice: bucks(1) },
     });
 
@@ -798,16 +795,16 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     await daveSimoleanPurse.deposit(daveSimoleanPayout);
     await daveBucksPurse.deposit(daveBucksPayout);
 
-    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
+    t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 7);
 
-    t.equals(bobMoolaPurse.getCurrentAmount().extent, 0);
-    t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
-    t.equals(bobBucksPurse.getCurrentAmount().extent, 1);
+    t.equals(bobMoolaPurse.getCurrentAmount().value, 0);
+    t.equals(bobSimoleanPurse.getCurrentAmount().value, 0);
+    t.equals(bobBucksPurse.getCurrentAmount().value, 1);
 
-    t.equals(daveMoolaPurse.getCurrentAmount().extent, 3);
-    t.equals(daveSimoleanPurse.getCurrentAmount().extent, 0);
-    t.equals(daveBucksPurse.getCurrentAmount().extent, 0);
+    t.equals(daveMoolaPurse.getCurrentAmount().value, 3);
+    t.equals(daveSimoleanPurse.getCurrentAmount().value, 0);
+    t.equals(daveBucksPurse.getCurrentAmount().value, 0);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   }
@@ -887,31 +884,31 @@ test('zoe - coveredCall non-fungible', async t => {
   const inviteIssuer = zoe.getInviteIssuer();
   const bobExclOption = await inviteIssuer.claim(optionP);
   const {
-    extent: [optionExtent],
+    value: [optionValue],
   } = await inviteIssuer.getAmountOf(bobExclOption);
   const { installationHandle } = zoe.getInstanceRecord(
-    optionExtent.instanceHandle,
+    optionValue.instanceHandle,
   );
   t.equal(installationHandle, coveredCallInstallationHandle);
-  t.equal(optionExtent.inviteDesc, 'exerciseOption');
+  t.equal(optionValue.inviteDesc, 'exerciseOption');
   t.ok(
     amountMaths
       .get('cc')
-      .isEqual(optionExtent.underlyingAsset, growlTigerAmount),
+      .isEqual(optionValue.underlyingAsset, growlTigerAmount),
   );
   t.ok(
     amountMaths
       .get('rpg')
-      .isEqual(optionExtent.strikePrice, aGloriousShieldAmount),
+      .isEqual(optionValue.strikePrice, aGloriousShieldAmount),
   );
-  t.equal(optionExtent.expirationDate, 1);
-  t.deepEqual(optionExtent.timerAuthority, timer);
+  t.equal(optionValue.expirationDate, 1);
+  t.deepEqual(optionValue.timerAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };
 
   const bobProposal = harden({
-    want: { UnderlyingAsset: optionExtent.underlyingAsset },
-    give: { StrikePrice: optionExtent.strikePrice },
+    want: { UnderlyingAsset: optionValue.underlyingAsset },
+    give: { StrikePrice: optionValue.strikePrice },
     exit: { onDemand: null },
   });
 
@@ -959,8 +956,8 @@ test('zoe - coveredCall non-fungible', async t => {
   // Assert that the correct payouts were received.
   // Alice had growlTiger and no RPG tokens.
   // Bob had an empty CryptoCat purse and the Glorious Shield.
-  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
-  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, aGloriousShield);
-  t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['GrowlTiger']);
-  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
+  t.deepEquals(aliceCcPurse.getCurrentAmount().value, []);
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().value, aGloriousShield);
+  t.deepEquals(bobCcPurse.getCurrentAmount().value, ['GrowlTiger']);
+  t.deepEquals(bobRpgPurse.getCurrentAmount().value, []);
 });

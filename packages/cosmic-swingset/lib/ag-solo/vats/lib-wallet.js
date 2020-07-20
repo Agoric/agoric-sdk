@@ -135,7 +135,7 @@ export async function makeWallet({
 
   async function updatePursesState(pursePetname, purse) {
     const currentAmount = await E(purse).getCurrentAmount();
-    const { extent, brand } = currentAmount;
+    const { value, brand } = currentAmount;
     const brandPetname = brandMapping.valToPetname.get(brand);
     const dehydratedCurrentAmount = dehydrate(currentAmount);
     const brandBoardId = await E(board).getId(brand);
@@ -143,7 +143,7 @@ export async function makeWallet({
       brandBoardId,
       brandPetname,
       pursePetname,
-      extent,
+      value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
     });
@@ -162,17 +162,17 @@ export async function makeWallet({
 
   const displayProposal = proposalTemplate => {
     const { want, give, exit = { onDemand: null } } = proposalTemplate;
-    const compile = pursePetnameExtentKeywordRecord => {
-      if (pursePetnameExtentKeywordRecord === undefined) {
+    const compile = pursePetnameValueKeywordRecord => {
+      if (pursePetnameValueKeywordRecord === undefined) {
         return undefined;
       }
       return Object.fromEntries(
-        Object.entries(pursePetnameExtentKeywordRecord).map(
-          ([keyword, { pursePetname, extent }]) => {
+        Object.entries(pursePetnameValueKeywordRecord).map(
+          ([keyword, { pursePetname, value }]) => {
             // eslint-disable-next-line no-use-before-define
             const purse = getPurse(pursePetname);
             const brand = purseToBrand.get(purse);
-            const amount = { brand, extent };
+            const amount = { brand, value };
             return [keyword, { pursePetname, amount: display(amount) }];
           },
         ),
@@ -456,11 +456,11 @@ export async function makeWallet({
     const compile = amountKeywordRecord => {
       return Object.fromEntries(
         Object.entries(amountKeywordRecord).map(
-          ([keyword, { pursePetname, extent }]) => {
+          ([keyword, { pursePetname, value }]) => {
             const purse = getPurse(pursePetname);
             purseKeywordRecord[keyword] = purse;
             const brand = purseToBrand.get(purse);
-            const amount = { brand, extent };
+            const amount = { brand, value };
             return [keyword, amount];
           },
         ),
@@ -483,7 +483,7 @@ export async function makeWallet({
     );
 
     // Find invite in wallet and withdraw
-    const { extent: inviteExtentElems } = await E(
+    const { value: inviteValueElems } = await E(
       zoeInvitePurse,
     ).getCurrentAmount();
     const inviteHandle = await E(board).getValue(inviteHandleBoardId);
@@ -491,7 +491,7 @@ export async function makeWallet({
     const inviteBrand = purseToBrand.get(zoeInvitePurse);
     const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
     const inviteAmount = inviteAmountMath.make(
-      harden([inviteExtentElems.find(matchInvite)]),
+      harden([inviteValueElems.find(matchInvite)]),
     );
     const inviteP = E(zoeInvitePurse).withdraw(inviteAmount);
 

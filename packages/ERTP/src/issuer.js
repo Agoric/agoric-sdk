@@ -11,7 +11,7 @@ import makeAmountMath from './amountMath';
 
 /**
  * @typedef {import('./amountMath').Amount} Amount
- * @typedef {import('./amountMath').Extent} Extent
+ * @typedef {import('./amountMath').Value} Value
  * @typedef {import('./amountMath').AmountMath} AmountMath
  * @typedef {Payment|Promise<Payment>} PaymentP
  */
@@ -192,33 +192,33 @@ import makeAmountMath from './amountMath';
 /**
  * @typedef {Object} MathHelpers
  * All of the difference in how digital asset amount are manipulated can be reduced to
- * the behavior of the math on extents. We extract this
- * custom logic into mathHelpers. MathHelpers are about extent
+ * the behavior of the math on values. We extract this
+ * custom logic into mathHelpers. MathHelpers are about value
  * arithmetic, whereas AmountMath is about amounts, which are the
- * extents labeled with a brand. AmountMath use mathHelpers to do their extent arithmetic,
+ * values labeled with a brand. AmountMath use mathHelpers to do their value arithmetic,
  * and then brand the results, making a new amount.
  *
- * @property {(allegedExtent: Extent) => Extent} doCoerce
- * Check the kind of this extent and throw if it is not the
+ * @property {(allegedValue: Value) => Value} doCoerce
+ * Check the kind of this value and throw if it is not the
  * expected kind.
  *
- * @property {() => Extent} doGetEmpty
+ * @property {() => Value} doGetEmpty
  * Get the representation for the identity element (often 0 or an
  * empty array)
  *
- * @property {(extent: Extent) => boolean} doIsEmpty
- * Is the extent the identity element?
+ * @property {(value: Value) => boolean} doIsEmpty
+ * Is the value the identity element?
  *
- * @property {(left: Extent, right: Extent) => boolean} doIsGTE
+ * @property {(left: Value, right: Value) => boolean} doIsGTE
  * Is the left greater than or equal to the right?
  *
- * @property {(left: Extent, right: Extent) => boolean} doIsEqual
+ * @property {(left: Value, right: Value) => boolean} doIsEqual
  * Does left equal right?
  *
- * @property {(left: Extent, right: Extent) => Extent} doAdd
+ * @property {(left: Value, right: Value) => Value} doAdd
  * Return the left combined with the right.
  *
- * @property {(left: Extent, right: Extent) => Extent} doSubtract
+ * @property {(left: Value, right: Value) => Value} doSubtract
  * Return what remains after removing the right from the left. If
  * something in the right was not in the left, we throw an error.
  */

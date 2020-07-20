@@ -93,11 +93,11 @@ const escrowExchange = harden({
   },
 
   checkUnits: (installation, allegedInviteUnits, expectedTerms, seat) => {
-    mustBeSameStructure(allegedInviteUnits.extent.seatDesc, seat);
-    const allegedTerms = allegedInviteUnits.extent.terms;
+    mustBeSameStructure(allegedInviteUnits.value.seatDesc, seat);
+    const allegedTerms = allegedInviteUnits.value.terms;
     mustBeSameStructure(allegedTerms, expectedTerms, 'Escrow checkUnits');
     mustBeSameStructure(
-      allegedInviteUnits.extent.installation,
+      allegedInviteUnits.value.installation,
       installation,
       'escrow checkUnits installation',
     );
@@ -107,7 +107,7 @@ const escrowExchange = harden({
   // Check the left or right side, and return the other. Useful when this is a
   // trade of goods for an invite, for example.
   checkPartialUnits: (installation, allegedInvite, expectedTerms, seat) => {
-    const allegedSeat = allegedInvite.extent.terms;
+    const allegedSeat = allegedInvite.value.terms;
     mustBeSameStructure(
       allegedSeat[seat],
       expectedTerms,
@@ -115,7 +115,7 @@ const escrowExchange = harden({
     );
 
     mustBeSameStructure(
-      allegedInvite.extent.installation,
+      allegedInvite.value.installation,
       installation,
       'escrow checkPartialUnits installation',
     );

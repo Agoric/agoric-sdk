@@ -24,22 +24,20 @@ const setupAmountMaths = () => {
   };
 };
 
-const makeAmountMatrix = (amountMathArray, extentMatrix) =>
-  extentMatrix.map(row =>
-    row.map((extent, i) => amountMathArray[i].make(extent)),
-  );
+const makeAmountMatrix = (amountMathArray, valueMatrix) =>
+  valueMatrix.map(row => row.map((value, i) => amountMathArray[i].make(value)));
 
-// rights are conserved for amount with Nat extents
-test(`areRightsConserved - true for amount with nat extents`, t => {
+// rights are conserved for amount with Nat values
+test(`areRightsConserved - true for amount with nat values`, t => {
   t.plan(1);
   try {
     const { amountMathArray, getAmountMathForBrand } = setupAmountMaths();
-    const previousExtents = [
+    const previousValues = [
       [0, 1, 0],
       [4, 1, 0],
       [6, 3, 0],
     ];
-    const newExtents = [
+    const newValues = [
       [1, 2, 0],
       [3, 1, 0],
       [6, 2, 0],
@@ -47,9 +45,9 @@ test(`areRightsConserved - true for amount with nat extents`, t => {
 
     const previousAmounts = makeAmountMatrix(
       amountMathArray,
-      previousExtents,
+      previousValues,
     ).flat();
-    const newAmounts = makeAmountMatrix(amountMathArray, newExtents).flat();
+    const newAmounts = makeAmountMatrix(amountMathArray, newValues).flat();
 
     t.ok(
       areRightsConserved(getAmountMathForBrand, previousAmounts, newAmounts),
@@ -59,24 +57,24 @@ test(`areRightsConserved - true for amount with nat extents`, t => {
   }
 });
 
-// rights are *not* conserved for amount with Nat extents
-test(`areRightsConserved - false for amount with Nat extents`, t => {
+// rights are *not* conserved for amount with Nat values
+test(`areRightsConserved - false for amount with Nat values`, t => {
   t.plan(1);
   try {
     const { amountMathArray, getAmountMathForBrand } = setupAmountMaths();
-    const oldExtents = [
+    const oldValues = [
       [0, 1, 4],
       [4, 1, 0],
       [6, 3, 0],
     ];
-    const newExtents = [
+    const newValues = [
       [1, 2, 0],
       [3, 1, 0],
       [6, 2, 0],
     ];
 
-    const oldAmounts = makeAmountMatrix(amountMathArray, oldExtents).flat();
-    const newAmounts = makeAmountMatrix(amountMathArray, newExtents).flat();
+    const oldAmounts = makeAmountMatrix(amountMathArray, oldValues).flat();
+    const newAmounts = makeAmountMatrix(amountMathArray, newValues).flat();
 
     t.notOk(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
   } catch (e) {
@@ -97,4 +95,4 @@ test(`areRightsConserved - empty arrays`, t => {
   }
 });
 
-// TODO: add tests for non-Nat extents
+// TODO: add tests for non-Nat values

@@ -244,10 +244,10 @@ test('zoe with automaticRefund', async t => {
     // Assert that the correct refund was achieved.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
-    t.equals(bobMoolaPurse.getCurrentAmount().extent, 0);
-    t.equals(bobSimoleanPurse.getCurrentAmount().extent, 17);
+    t.equals(aliceMoolaPurse.getCurrentAmount().value, 3);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 0);
+    t.equals(bobMoolaPurse.getCurrentAmount().value, 0);
+    t.equals(bobSimoleanPurse.getCurrentAmount().value, 17);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -292,7 +292,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       issuerKeywordRecord,
     );
     const {
-      extent: [{ instanceHandle: instanceHandle2 }],
+      value: [{ instanceHandle: instanceHandle2 }],
     } = await inviteIssuer.getAmountOf(aliceInvite2);
     const { publicAPI: publicAPI2 } = zoe.getInstanceRecord(instanceHandle2);
 
@@ -429,8 +429,8 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
     // Assert that the correct refund was achieved.
     // Alice had 3 moola and 0 simoleans.
-    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
+    t.equals(aliceMoolaPurse.getCurrentAmount().value, 3);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 0);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
