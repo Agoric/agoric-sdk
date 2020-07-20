@@ -2,7 +2,7 @@
 
 import Nat from '@agoric/nat';
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { assert } from '@agoric/assert';
 import { producePromise } from '@agoric/produce-promise';
 import { sameStructure } from '@agoric/same-structure';
@@ -29,7 +29,7 @@ const evalContractBundle = (bundle, additionalEndowments, vatPowers) => {
     console: louderConsole,
     harden,
     Nat,
-    produceIssuer,
+    makeIssuerKit,
     producePromise,
     sameStructure,
     HandledPromise,

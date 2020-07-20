@@ -3,7 +3,7 @@
 /* eslint-disable no-use-before-define */
 // @ts-check
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { makeZoeHelpers } from '../contractSupport';
 
 /**
@@ -24,7 +24,7 @@ import { makeZoeHelpers } from '../contractSupport';
  */
 const makeContract = zcf => {
   // Create the internal token mint for a fungible digital asset
-  const { issuer, mint, amountMath } = produceIssuer('tokens');
+  const { issuer, mint, amountMath } = makeIssuerKit('tokens');
 
   const zoeHelpers = makeZoeHelpers(zcf);
 

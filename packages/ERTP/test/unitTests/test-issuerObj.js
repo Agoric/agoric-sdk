@@ -3,17 +3,17 @@ import '@agoric/install-ses';
 import test from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
 
-import produceIssuer from '../../src/issuer';
+import makeIssuerKit from '../../src/issuer';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
   try {
-    const { issuer, brand } = produceIssuer('fungible');
+    const { issuer, brand } = makeIssuerKit('fungible');
     const myBrand = issuer.getBrand();
     t.ok(myBrand.isMyIssuer(issuer));
     t.equals(
       brand,
       myBrand,
-      'brand returned from `produceIssuer` and from `getBrand` the same',
+      'brand returned from `makeIssuerKit` and from `getBrand` the same',
     );
     t.equals(issuer.getAllegedName(), myBrand.getAllegedName());
     t.equals(issuer.getAllegedName(), 'fungible');
@@ -26,7 +26,7 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
 
 test('issuer.getAmountMath', t => {
   try {
-    const { issuer, amountMath, brand } = produceIssuer('fungible');
+    const { issuer, amountMath, brand } = makeIssuerKit('fungible');
     t.equals(issuer.getAmountMath(), amountMath);
     const fungible = amountMath.make;
     t.ok(
@@ -46,7 +46,7 @@ test('issuer.getAmountMath', t => {
 
 test('issuer.getMathHelpersName', t => {
   try {
-    const { issuer } = produceIssuer('fungible');
+    const { issuer } = makeIssuerKit('fungible');
     t.equals(issuer.getMathHelpersName(), 'nat');
   } catch (e) {
     t.assert(false, e);
@@ -57,7 +57,7 @@ test('issuer.getMathHelpersName', t => {
 
 test('issuer.makeEmptyPurse', t => {
   t.plan(6);
-  const { issuer, mint, amountMath, brand } = produceIssuer('fungible');
+  const { issuer, mint, amountMath, brand } = makeIssuerKit('fungible');
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(amountMath.make(837));
 
@@ -104,7 +104,7 @@ test('issuer.makeEmptyPurse', t => {
 
 test('purse.deposit', async t => {
   t.plan(4);
-  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const fungible0 = amountMath.getEmpty();
   const fungible17 = amountMath.make(17);
   const fungible25 = amountMath.make(25);
@@ -139,7 +139,7 @@ test('purse.deposit', async t => {
 
 test('purse.deposit promise', t => {
   t.plan(1);
-  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const fungible25 = amountMath.make(25);
 
   const purse = issuer.makeEmptyPurse();
@@ -155,7 +155,7 @@ test('purse.deposit promise', t => {
 
 test('purse.makeDepositFacet', t => {
   t.plan(2);
-  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const fungible25 = amountMath.make(25);
 
   const purse = issuer.makeEmptyPurse();
@@ -180,7 +180,7 @@ test('purse.makeDepositFacet', t => {
 
 test('issuer.burn', t => {
   t.plan(2);
-  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const payment1 = mint.mintPayment(amountMath.make(837));
 
   E(issuer)
@@ -197,7 +197,7 @@ test('issuer.burn', t => {
 
 test('issuer.claim', t => {
   t.plan(3);
-  const { issuer, amountMath, mint } = produceIssuer('fungible');
+  const { issuer, amountMath, mint } = makeIssuerKit('fungible');
   const payment1 = mint.mintPayment(amountMath.make(2));
   E(issuer)
     .claim(payment1, amountMath.make(2))
@@ -220,7 +220,7 @@ test('issuer.claim', t => {
 
 test('issuer.splitMany bad amount', t => {
   try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
+    const { mint, issuer, amountMath } = makeIssuerKit('fungible');
     const payment = mint.mintPayment(amountMath.make(1000));
     const badAmounts = Array(2).fill(amountMath.make(10));
     t.rejects(
@@ -237,7 +237,7 @@ test('issuer.splitMany bad amount', t => {
 
 test('issuer.splitMany good amount', t => {
   t.plan(11);
-  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const oldPayment = mint.mintPayment(amountMath.make(100));
   const goodAmounts = Array(10).fill(amountMath.make(10));
 
@@ -265,8 +265,8 @@ test('issuer.splitMany good amount', t => {
 
 test('issuer.split bad amount', t => {
   try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const { amountMath: otherUnitOps } = produceIssuer('other fungible');
+    const { mint, issuer, amountMath } = makeIssuerKit('fungible');
+    const { amountMath: otherUnitOps } = makeIssuerKit('other fungible');
     const payment = mint.mintPayment(amountMath.make(1000));
     t.rejects(
       _ => E(issuer).split(payment, otherUnitOps.make(10)),
@@ -282,7 +282,7 @@ test('issuer.split bad amount', t => {
 
 test('issuer.split good amount', t => {
   t.plan(3);
-  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const oldPayment = mint.mintPayment(amountMath.make(20));
 
   const checkPayments = splitPayments => {
@@ -309,7 +309,7 @@ test('issuer.split good amount', t => {
 
 test('issuer.combine good payments', t => {
   t.plan(101);
-  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
     payments.push(mint.mintPayment(amountMath.make(1)));
@@ -339,7 +339,7 @@ test('issuer.combine good payments', t => {
 
 test('issuer.combine array of promises', t => {
   t.plan(1);
-  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const paymentsP = [];
   for (let i = 0; i < 100; i += 1) {
     const freshPayment = mint.mintPayment(amountMath.make(1));
@@ -361,8 +361,8 @@ test('issuer.combine array of promises', t => {
 
 test('issuer.combine bad payments', t => {
   try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const { mint: otherMint, amountMath: otherAmountMath } = produceIssuer(
+    const { mint, issuer, amountMath } = makeIssuerKit('fungible');
+    const { mint: otherMint, amountMath: otherAmountMath } = makeIssuerKit(
       'other fungible',
     );
     const payments = [];

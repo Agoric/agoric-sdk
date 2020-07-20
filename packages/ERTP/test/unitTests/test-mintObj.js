@@ -4,11 +4,11 @@
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
-import produceIssuer from '../../src/issuer';
+import makeIssuerKit from '../../src/issuer';
 
 test('mint.getIssuer', t => {
   try {
-    const { mint, issuer } = produceIssuer('fungible');
+    const { mint, issuer } = makeIssuerKit('fungible');
     t.equals(mint.getIssuer(), issuer);
   } catch (e) {
     t.assert(false, e);
@@ -19,7 +19,7 @@ test('mint.getIssuer', t => {
 
 test('mint.mintPayment default natMathHelper', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const fungible1000 = amountMath.make(1000);
   const payment1 = mint.mintPayment(fungible1000);
   issuer.getAmountOf(payment1).then(paymentBalance1 => {
@@ -34,7 +34,7 @@ test('mint.mintPayment default natMathHelper', t => {
 
 test('mint.mintPayment strSetMathHelpers', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = produceIssuer('items', 'strSet');
+  const { mint, issuer, amountMath } = makeIssuerKit('items', 'strSet');
   const items1and2and4 = amountMath.make(harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
   issuer.getAmountOf(payment1).then(paymentBalance1 => {
@@ -50,7 +50,7 @@ test('mint.mintPayment strSetMathHelpers', t => {
 
 test('mint.mintPayment setMathHelpers', t => {
   t.plan(3);
-  const { mint, issuer, amountMath } = produceIssuer('items', 'set');
+  const { mint, issuer, amountMath } = makeIssuerKit('items', 'set');
   const item1handle = {};
   const item2handle = {};
   const item3handle = {};
@@ -76,7 +76,7 @@ test('mint.mintPayment setMathHelpers', t => {
 
 test('mint.mintPayment setMathHelpers with invites', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = produceIssuer('items', 'set');
+  const { mint, issuer, amountMath } = makeIssuerKit('items', 'set');
   const instanceHandle1 = {};
   const invite1Value = { handle: {}, instanceHandle: instanceHandle1 };
   const invite2Value = { handle: {}, instanceHandle: instanceHandle1 };
@@ -102,7 +102,7 @@ test('non-fungible tokens example', t => {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,
     amountMath,
-  } = produceIssuer('Agoric Ballet Opera tickets', 'set');
+  } = makeIssuerKit('Agoric Ballet Opera tickets', 'set');
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 

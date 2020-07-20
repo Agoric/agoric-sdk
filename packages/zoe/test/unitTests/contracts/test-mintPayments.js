@@ -7,7 +7,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 import { makeZoe } from '../../../src/zoe';
 
@@ -62,8 +62,8 @@ test('zoe - mint payments with unrelated give and want', async t => {
     const installationHandle = await E(zoe).install(bundle);
     const inviteIssuer = await E(zoe).getInviteIssuer();
 
-    const moolaBundle = produceIssuer('moola');
-    const simoleanBundle = produceIssuer('simolean');
+    const moolaBundle = makeIssuerKit('moola');
+    const simoleanBundle = makeIssuerKit('simolean');
 
     // Alice creates a contract instance
     const issuerKeywordRecord = harden({

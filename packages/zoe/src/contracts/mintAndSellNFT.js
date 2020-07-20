@@ -1,7 +1,7 @@
 /* global harden */
 // @ts-check
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -29,7 +29,7 @@ const makeContract = zcf => {
   const { tokenName = 'token' } = terms;
 
   // Create the internal token mint
-  const { issuer, mint, amountMath: tokenAmountMath } = produceIssuer(
+  const { issuer, mint, amountMath: tokenAmountMath } = makeIssuerKit(
     tokenName,
     'set',
   );

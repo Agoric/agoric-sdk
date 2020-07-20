@@ -7,7 +7,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 import makeAmountMath from '@agoric/ertp/src/amountMath';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
@@ -23,7 +23,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Set up central token
-    const centralR = produceIssuer('central');
+    const centralR = makeIssuerKit('central');
     const centralTokens = centralR.amountMath.make;
 
     // Setup Alice

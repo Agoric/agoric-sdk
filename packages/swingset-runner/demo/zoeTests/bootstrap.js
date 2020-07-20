@@ -1,7 +1,7 @@
 /* global harden */
 
 import { E } from '@agoric/eventual-send';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import buildManualTimer from './manualTimer';
 import { makePrintLog } from './printLog';
 
@@ -20,9 +20,9 @@ const log = makePrintLog();
 
 const setupBasicMints = () => {
   const all = [
-    produceIssuer('moola'),
-    produceIssuer('simoleans'),
-    produceIssuer('bucks'),
+    makeIssuerKit('moola'),
+    makeIssuerKit('simoleans'),
+    makeIssuerKit('bucks'),
   ];
   const mints = all.map(objs => objs.mint);
   const issuers = all.map(objs => objs.issuer);
