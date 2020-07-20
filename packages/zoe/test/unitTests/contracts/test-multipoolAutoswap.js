@@ -81,8 +81,8 @@ test('multipoolAutoSwap with valid offers', async t => {
       'Moola',
     );
     t.equals(
-      addMoolaPoolResult,
-      `liquidity pool for Moola added`,
+      addMoolaPoolResult.tokenIssuer,
+      moolaR.issuer,
       `adding pool for moola`,
     );
     const moolaLiquidityIssuer = await E(publicAPI).getLiquidityIssuer(
@@ -98,8 +98,8 @@ test('multipoolAutoSwap with valid offers', async t => {
       'Simoleans',
     );
     t.equals(
-      addSimoleansPoolResult,
-      `liquidity pool for Simoleans added`,
+      addSimoleansPoolResult.tokenIssuer,
+      simoleanR.issuer,
       `adding pool for simoleans`,
     );
     const simoleanLiquidityIssuer = await E(publicAPI).getLiquidityIssuer(

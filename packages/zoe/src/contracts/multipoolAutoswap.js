@@ -141,7 +141,14 @@ const makeContract = zcf => {
         }),
         newTokenIssuerRecord.brand,
       );
-      return `liquidity pool for ${newTokenKeyword} added`;
+      return harden({
+        tokenIssuer: newTokenIssuer,
+        tokenBrand: newTokenIssuerRecord.brand,
+        liquidityIssuer,
+        liquidityBrand,
+        tokenKeyword: newTokenKeyword,
+        liquidityKeyword: newLiquidityKeyword,
+      });
     });
   };
 
