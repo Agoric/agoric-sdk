@@ -167,19 +167,8 @@ export async function buildVatController(config, argv = []) {
   // the same is true for the tildot transform
   const transformTildot = harden(makeTransform(babelParser, babelGenerate));
 
-  // Allow vats to import certain modules, by providing them the same values
-  // we imported here in the kernel, which came themselves from
-  // kernelRequire() defined in the controller. This will go away once
-  // 'harden' is used as a global everywhere, and vats no longer need to
-  // import anything outside their bundle.
-
-  function vatRequire(what) {
-    throw Error(`vatRequire unprepared to satisfy require(${what})`);
-  }
-
   function makeVatEndowments(consoleTag) {
     return harden({
-      require: vatRequire,
       console: makeConsole(`SwingSet:${consoleTag}`),
       HandledPromise,
       // re2 is a RegExp work-a-like that disables backtracking expressions for
