@@ -1,5 +1,10 @@
 User-visible changes in ERTP:
 
+## Release v0.7.0 (21-July-2020)
+
+* Rename `extent` to `value`
+* Rename `produceIssuer` to `makeIssuerKit`
+
 ## Release v0.6.0 (29-June-2020) 
 
 * `purse.deposit()` now returns the amount of the deposit, rather than
