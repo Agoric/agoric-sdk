@@ -188,7 +188,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       inboxStateChangeLog,
     } = await setupTest();
 
-    const { issuer: bucksIssuer } = produceIssuer('bucks');
+    const { issuer: bucksIssuer } = makeIssuerKit('bucks');
     const bucksIssuerBoardId = await E(board).getId(bucksIssuer);
     await wallet.suggestIssuer('bucks', bucksIssuerBoardId);
 
