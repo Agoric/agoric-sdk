@@ -28,6 +28,8 @@ export async function makeWallet({
   const { makeMapping, dehydrate } = makeDehydrator();
   const purseMapping = makeMapping('purse');
   const brandMapping = makeMapping('brand');
+  const instanceMapping = makeMapping('instance');
+  const installationMapping = makeMapping('installation');
 
   // Brand Table
   // Columns: key:brand | issuer | amountMath
@@ -75,6 +77,7 @@ export async function makeWallet({
           });
         },
         getBrandForIssuer: issuerToBrand.get,
+        hasIssuer: issuerToBrand.has,
       });
     const brandTable = makeTable(
       validateSomewhat,
@@ -147,10 +150,81 @@ export async function makeWallet({
     pursesStateChangeHandler(getPursesState());
   }
 
+  async function updateAllPurseState() {
+    return Promise.all(
+      purseMapping.petnameToVal
+        .entries()
+        .map(([petname, purse]) => updatePursesState(petname, purse)),
+    );
+  }
+
+  const display = value => fillInSlots(dehydrate(harden(value)));
+
+  const displayProposal = proposalTemplate => {
+    const { want, give, exit = { onDemand: null } } = proposalTemplate;
+    const compile = pursePetnameExtentKeywordRecord => {
+      if (pursePetnameExtentKeywordRecord === undefined) {
+        return undefined;
+      }
+      return Object.fromEntries(
+        Object.entries(pursePetnameExtentKeywordRecord).map(
+          ([keyword, { pursePetname, extent }]) => {
+            // eslint-disable-next-line no-use-before-define
+            const purse = getPurse(pursePetname);
+            const brand = purseToBrand.get(purse);
+            const amount = { brand, extent };
+            return [keyword, { pursePetname, amount: display(amount) }];
+          },
+        ),
+      );
+    };
+    const proposal = {
+      want: compile(want),
+      give: compile(give),
+      exit,
+    };
+    return proposal;
+  };
+
   async function updateInboxState(id, offer) {
     // Only sent the uncompiled offer to the client.
-    inboxState.set(id, offer);
+    const {
+      instanceHandleBoardId,
+      installationHandleBoardId,
+      proposalTemplate,
+    } = offer;
+    // We could get the instanceHandle and installationHandle from the
+    // board and store them to prevent having to make this call each
+    // time, but if we want the offers to be able to sent to the
+    // frontend, we cannot store the instanceHandle and
+    // installationHandle in these offer objects because the handles
+    // are presences and we don't wish to send presences to the
+    // frontend.
+    const instanceHandle = await E(board).getValue(instanceHandleBoardId);
+    const installationHandle = await E(board).getValue(
+      installationHandleBoardId,
+    );
+    const offerForDisplay = {
+      ...offer,
+      instancePetname: display(instanceHandle).petname,
+      installationPetname: display(installationHandle).petname,
+      proposalForDisplay: displayProposal(proposalTemplate),
+    };
+
+    inboxState.set(id, offerForDisplay);
     inboxStateChangeHandler(getInboxState());
+  }
+
+  async function updateAllInboxState() {
+    return Array.from(inboxState.entries()).map(([id, offer]) =>
+      updateInboxState(id, offer),
+    );
+  }
+
+  // TODO: fix this horribly inefficient update on every potential
+  // petname change.
+  async function updateAllState() {
+    return Promise.all([updateAllPurseState(), updateAllInboxState()]);
   }
 
   // handle the update, which has already resolved to a record. If the offer is
@@ -293,7 +367,27 @@ export async function makeWallet({
       brandMapping.addPetname(petnameForBrand, brand);
       return `issuer ${q(petnameForBrand)} successfully added to wallet`;
     };
-    return issuerSavedP.then(addBrandPetname);
+    return issuerSavedP.then(addBrandPetname).then(updateAllState);
+  };
+
+  const addInstance = (petname, instanceHandle) => {
+    // We currently just add the petname mapped to the instanceHandle
+    // value, but we could have a list of known instances for
+    // possible display in the wallet.
+    instanceMapping.addPetname(petname, instanceHandle);
+    // We don't wait for the update before returning.
+    updateAllState();
+    return `instance ${q(petname)} successfully added to wallet`;
+  };
+
+  const addInstallation = (petname, installationHandle) => {
+    // We currently just add the petname mapped to the installationHandle
+    // value, but we could have a list of known installations for
+    // possible display in the wallet.
+    installationMapping.addPetname(petname, installationHandle);
+    // We don't wait for the update before returning.
+    updateAllState();
+    return `installation ${q(petname)} successfully added to wallet`;
   };
 
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
@@ -382,34 +476,6 @@ export async function makeWallet({
     return { proposal, purseKeywordRecord };
   };
 
-  const display = value => fillInSlots(dehydrate(harden(value)));
-
-  const displayProposal = proposalTemplate => {
-    const {
-      want = {},
-      give = {},
-      exit = { onDemand: null },
-    } = proposalTemplate;
-    const compile = pursePetnameExtentKeywordRecord => {
-      return Object.fromEntries(
-        Object.entries(pursePetnameExtentKeywordRecord).map(
-          ([keyword, { pursePetname, extent }]) => {
-            const purse = getPurse(pursePetname);
-            const brand = purseToBrand.get(purse);
-            const amount = { brand, extent };
-            return [keyword, { pursePetname, amount: display(amount) }];
-          },
-        ),
-      );
-    };
-    const proposal = {
-      want: compile(want),
-      give: compile(give),
-      exit,
-    };
-    return proposal;
-  };
-
   const compileOffer = async offer => {
     const { inviteHandleBoardId } = offer;
     const { proposal, purseKeywordRecord } = compileProposal(
@@ -437,7 +503,6 @@ export async function makeWallet({
       id: rawId,
       instanceHandleBoardId,
       installationHandleBoardId,
-      proposalTemplate,
     } = rawOffer;
     const id = `${requestContext.origin}#${rawId}`;
     assert(
@@ -448,24 +513,17 @@ export async function makeWallet({
       typeof installationHandleBoardId === 'string',
       details`installationHandleBoardId must be a string`,
     );
-    const instanceHandle = await E(board).getValue(instanceHandleBoardId);
-    const installationHandle = await E(board).getValue(
-      installationHandleBoardId,
-    );
     const offer = harden({
       ...rawOffer,
       id,
       requestContext,
       status: undefined,
-      instancePetname: display(instanceHandle).petname,
-      installationPetname: display(installationHandle).petname,
-      proposalForDisplay: displayProposal(proposalTemplate),
     });
     idToOffer.init(id, offer);
     updateInboxState(id, offer);
 
-    // Start compiling the template, saving a promise for it.
-    idToCompiledOfferP.set(id, compileOffer(offer));
+    // Compile the offer
+    idToCompiledOfferP.set(id, await compileOffer(offer));
 
     // Our inbox state may have an enriched offer.
     updateInboxState(id, idToOffer.get(id));
@@ -615,10 +673,100 @@ export async function makeWallet({
       .then(saveAsDefault);
   }
 
+  function acceptPetname(acceptFn, suggestedPetname, boardId) {
+    return E(board)
+      .getValue(boardId)
+      .then(value => acceptFn(suggestedPetname, value));
+  }
+
+  async function suggestIssuer(suggestedPetname, issuerBoardId) {
+    // TODO: add an approval step in the wallet UI in which
+    // suggestion can be rejected and the suggested petname can be
+    // changed
+    // eslint-disable-next-line no-use-before-define
+    return acceptPetname(wallet.addIssuer, suggestedPetname, issuerBoardId);
+  }
+
+  async function suggestInstance(suggestedPetname, instanceHandleBoardId) {
+    // TODO: add an approval step in the wallet UI in which
+    // suggestion can be rejected and the suggested petname can be
+    // changed
+
+    return acceptPetname(
+      // eslint-disable-next-line no-use-before-define
+      wallet.addInstance,
+      suggestedPetname,
+      instanceHandleBoardId,
+    );
+  }
+
+  async function suggestInstallation(
+    suggestedPetname,
+    installationHandleBoardId,
+  ) {
+    // TODO: add an approval step in the wallet UI in which
+    // suggestion can be rejected and the suggested petname can be
+    // changed
+
+    return acceptPetname(
+      // eslint-disable-next-line no-use-before-define
+      wallet.addInstallation,
+      suggestedPetname,
+      installationHandleBoardId,
+    );
+  }
+
+  function renameIssuer(petname, issuer) {
+    assert(
+      brandTable.hasIssuer(issuer),
+      `issuer has not been previously added`,
+    );
+    const brand = brandTable.getBrandForIssuer(issuer);
+    brandMapping.renamePetname(petname, brand);
+    // We don't wait for the update before returning.
+    updateAllState();
+    return `issuer ${q(petname)} successfully renamed in wallet`;
+  }
+
+  function renameInstance(petname, instance) {
+    instanceMapping.renamePetname(petname, instance);
+    // We don't wait for the update before returning.
+    updateAllState();
+    return `instance ${q(petname)} successfully renamed in wallet`;
+  }
+
+  function renameInstallation(petname, installation) {
+    installationMapping.renamePetname(petname, installation);
+    // We don't wait for the update before returning.
+    updateAllState();
+    return `installation ${q(petname)} successfully renamed in wallet`;
+  }
+
+  function getIssuer(petname) {
+    const brand = brandMapping.petnameToVal.get(petname);
+    return brandTable.get(brand).issuer;
+  }
+
+  function getInstance(petname) {
+    return instanceMapping.petnameToVal.get(petname);
+  }
+
+  function getInstallation(petname) {
+    return installationMapping.petnameToVal.get(petname);
+  }
+
   const wallet = harden({
     addIssuer,
+    addInstance,
+    addInstallation,
+    renameIssuer,
+    renameInstance,
+    renameInstallation,
+    getInstance,
+    getInstallation,
     makeEmptyPurse,
     deposit,
+    getIssuer,
     getIssuers,
     getPurses,
     getPurse,
@@ -632,6 +780,9 @@ export async function makeWallet({
     getOfferHandles: ids => ids.map(wallet.getOfferHandle),
     addDepositFacet,
     getDepositFacetId,
+    suggestIssuer,
+    suggestInstance,
+    suggestInstallation,
   });
 
   // Make Zoe invite purse
