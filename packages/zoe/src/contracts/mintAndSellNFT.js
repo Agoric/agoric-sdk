@@ -1,7 +1,7 @@
 /* global harden */
 // @ts-check
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -11,7 +11,7 @@ import produceIssuer from '@agoric/ertp';
  * ticketMaker with a `.sellTokens()` method. `.sellTokens()` takes a
  * specification of what is being sold, such as:
  * {
- *   customExtentProperties: { ...arbitrary },
+ *   customValueProperties: { ...arbitrary },
  *   count: 3,
  *   moneyIssuer: moolaIssuer,
  *   sellItemsInstallationHandle,
@@ -29,7 +29,7 @@ const makeContract = zcf => {
   const { tokenName = 'token' } = terms;
 
   // Create the internal token mint
-  const { issuer, mint, amountMath: tokenAmountMath } = produceIssuer(
+  const { issuer, mint, amountMath: tokenAmountMath } = makeIssuerKit(
     tokenName,
     'set',
   );
@@ -37,7 +37,7 @@ const makeContract = zcf => {
   const zoeService = zcf.getZoeService();
 
   const sellTokens = ({
-    customExtentProperties,
+    customValueProperties,
     count,
     moneyIssuer,
     sellItemsInstallationHandle,
@@ -51,7 +51,7 @@ const makeContract = zcf => {
           .map((_, i) => {
             const tokenNumber = i + 1;
             return {
-              ...customExtentProperties,
+              ...customValueProperties,
               number: tokenNumber,
             };
           }),

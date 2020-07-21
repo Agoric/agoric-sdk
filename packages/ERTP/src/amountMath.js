@@ -9,7 +9,7 @@ import mathHelpersLib from './mathHelpersLib';
 /**
  * @typedef {Object} Amount
  * Amounts are descriptions of digital assets, answering the questions
- * "how much" and "of what kind". Amounts are extents labeled with a brand.
+ * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
  * assets are merged, separated, or otherwise manipulated. For
  * example, a deposit of 2 bucks into a purse that already has 3 bucks
@@ -18,17 +18,17 @@ import mathHelpersLib from './mathHelpersLib';
  * portion.
  *
  * @property {Brand} brand
- * @property {Extent} extent
+ * @property {Value} value
  */
 
 /**
- * @typedef {Object} Extent
- * Extents describe the extent of something that can be owned or shared.
- * Fungible extents are normally represented by natural numbers. Other
- * extents may be represented as strings naming a particular right, or
+ * @typedef {Object} Value
+ * Values describe the value of something that can be owned or shared.
+ * Fungible values are normally represented by natural numbers. Other
+ * values may be represented as strings naming a particular right, or
  * an arbitrary object that sensibly represents the rights at issue.
  *
- * Extent must be Comparable. (This IDL doesn't yet provide a way to specify
+ * Value must be Comparable. (This IDL doesn't yet provide a way to specify
  * subtype relationships for structs.)
  */
 
@@ -46,14 +46,14 @@ import mathHelpersLib from './mathHelpersLib';
  * Get the name of the mathHelpers used. This can be used as an
  * argument to `makeAmountMath` to create local amountMath.
  *
- * @property {(allegedExtent: Extent) => Amount} make
- * Make an amount from an extent by adding the brand.
+ * @property {(allegedValue: Value) => Amount} make
+ * Make an amount from a value by adding the brand.
  *
  * @property {(allegedAmount: Amount) => Amount} coerce
  * Make sure this amount is valid and return it if so.
  *
- * @property {(amount: Amount) => Extent} getExtent
- * Extract and return the extent.
+ * @property {(amount: Amount) => Value} getValue
+ * Extract and return the value.
  *
  * @property {() => Amount} getEmpty
  * Return the amount representing an empty amount. This is the
@@ -76,7 +76,7 @@ import mathHelpersLib from './mathHelpersLib';
  * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} add
  * Returns a new amount that is the union of both leftAmount and rightAmount.
  *
- * For fungible amount this means adding the extents. For other kinds of
+ * For fungible amount this means adding the values. For other kinds of
  * amount, it usually means including all of the elements from both
  * left and right.
  *
@@ -106,9 +106,9 @@ import mathHelpersLib from './mathHelpersLib';
 
 // Amounts describe digital assets. From an amount, you can learn the
 // kind of digital asset as well as "how much" or "how many". Amounts
-// have two parts: a brand (the kind of digital asset) and the extent
+// have two parts: a brand (the kind of digital asset) and the value
 // (the answer to "how much"). For example, in the phrase "5 bucks",
-// "bucks" takes the role of the brand and the extent is 5. Amounts
+// "bucks" takes the role of the brand and the value is 5. Amounts
 // can describe fungible and non-fungible digital assets. Amounts are
 // pass-by-copy and can be made by and sent to anyone.
 
@@ -128,9 +128,9 @@ import mathHelpersLib from './mathHelpersLib';
 // operation does not succeed.
 
 // amountMath uses mathHelpers to do most of the work, but then adds
-// the brand to the result. The function `extent` gets the extent from
-// the amount by removing the brand (amount -> extent), and the function
-// `make` adds the brand to produce an amount (extent -> amount). The
+// the brand to the result. The function `value` gets the value from
+// the amount by removing the brand (amount -> value), and the function
+// `make` adds the brand to produce an amount (value -> amount). The
 // function `coerce` takes an amount and checks it, returning an amount (amount
 // -> amount).
 
@@ -167,10 +167,10 @@ function makeAmountMath(brand, mathHelpersName) {
     getBrand: () => brand,
     getMathHelpersName: () => mathHelpersName,
 
-    // Make an amount from an extent by adding the brand.
-    make: allegedExtent => {
-      const extent = helpers.doCoerce(allegedExtent);
-      const amount = harden({ brand, extent });
+    // Make an amount from a value by adding the brand.
+    make: allegedValue => {
+      const value = helpers.doCoerce(allegedValue);
+      const amount = harden({ brand, value });
       cache.add(amount);
       return amount;
     },
@@ -182,51 +182,51 @@ function makeAmountMath(brand, mathHelpersName) {
       if (cache.has(allegedAmount)) {
         return allegedAmount;
       }
-      const { brand: allegedBrand, extent } = allegedAmount;
+      const { brand: allegedBrand, value } = allegedAmount;
       assert(
         allegedBrand !== undefined,
-        details`alleged brand is undefined. Did you pass an extent rather than an amount?`,
+        details`alleged brand is undefined. Did you pass a value rather than an amount?`,
       );
       assert(
         brand === allegedBrand,
         details`the brand in the allegedAmount in 'coerce' didn't match the amountMath brand`,
       );
-      // Will throw on inappropriate extent
-      return amountMath.make(extent);
+      // Will throw on inappropriate value
+      return amountMath.make(value);
     },
 
-    // Get the extent from the amount.
-    getExtent: amount => amountMath.coerce(amount).extent,
+    // Get the value from the amount.
+    getValue: amount => amountMath.coerce(amount).value,
 
     // Represents the empty set/mathematical identity.
     // eslint-disable-next-line no-use-before-define
     getEmpty: () => empty,
 
     // Is the amount equal to the empty set?
-    isEmpty: amount => helpers.doIsEmpty(amountMath.getExtent(amount)),
+    isEmpty: amount => helpers.doIsEmpty(amountMath.getValue(amount)),
 
     // Is leftAmount greater than or equal to rightAmount? In other
     // words, is everything in the rightAmount included in the
     // leftAmount?
     isGTE: (leftAmount, rightAmount) =>
       helpers.doIsGTE(
-        amountMath.getExtent(leftAmount),
-        amountMath.getExtent(rightAmount),
+        amountMath.getValue(leftAmount),
+        amountMath.getValue(rightAmount),
       ),
 
     // Is leftAmount equal to rightAmount?
     isEqual: (leftAmount, rightAmount) =>
       helpers.doIsEqual(
-        amountMath.getExtent(leftAmount),
-        amountMath.getExtent(rightAmount),
+        amountMath.getValue(leftAmount),
+        amountMath.getValue(rightAmount),
       ),
 
     // Combine leftAmount and rightAmount.
     add: (leftAmount, rightAmount) =>
       amountMath.make(
         helpers.doAdd(
-          amountMath.getExtent(leftAmount),
-          amountMath.getExtent(rightAmount),
+          amountMath.getValue(leftAmount),
+          amountMath.getValue(rightAmount),
         ),
       ),
 
@@ -236,8 +236,8 @@ function makeAmountMath(brand, mathHelpersName) {
     subtract: (leftAmount, rightAmount) =>
       amountMath.make(
         helpers.doSubtract(
-          amountMath.getExtent(leftAmount),
-          amountMath.getExtent(rightAmount),
+          amountMath.getValue(leftAmount),
+          amountMath.getValue(rightAmount),
         ),
       ),
   });

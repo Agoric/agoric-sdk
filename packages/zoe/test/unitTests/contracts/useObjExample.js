@@ -49,7 +49,7 @@ const makeContract = zcf => {
         );
 
         // Pretend to color
-        return `successfully colored ${amountToColor.extent} pixels ${color}`;
+        return `successfully colored ${amountToColor.value} pixels ${color}`;
       },
     });
     return useObj;

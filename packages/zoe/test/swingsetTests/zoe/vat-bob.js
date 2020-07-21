@@ -86,32 +86,30 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
 
       // Bob checks that the invite is for the right covered call
-      const { extent: optionExtent } = await E(inviteIssuer).getAmountOf(
+      const { value: optionValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
       assert(
-        optionExtent[0].installationHandle === installations.coveredCall,
+        optionValue[0].installationHandle === installations.coveredCall,
         details`wrong installation`,
       );
       assert(
-        optionExtent[0].inviteDesc === 'exerciseOption',
+        optionValue[0].inviteDesc === 'exerciseOption',
         details`wrong invite`,
       );
+      assert(moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)));
       assert(
-        moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
+        simoleanAmountMath.isEqual(optionValue[0].strikePrice, simoleans(7)),
       );
       assert(
-        simoleanAmountMath.isEqual(optionExtent[0].strikePrice, simoleans(7)),
-      );
-      assert(
-        optionExtent[0].expirationDate === 1,
+        optionValue[0].expirationDate === 1,
         details`wrong expirationDate`,
       );
-      assert(optionExtent[0].timerAuthority === timer, 'wrong timer');
+      assert(optionValue[0].timerAuthority === timer, 'wrong timer');
 
       const {
         issuerKeywordRecord: { UnderlyingAsset, StrikePrice },
-      } = await E(zoe).getInstanceRecord(optionExtent[0].instanceHandle);
+      } = await E(zoe).getInstanceRecord(optionValue[0].instanceHandle);
 
       assert(
         UnderlyingAsset === moolaIssuer,
@@ -150,32 +148,32 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Bob checks that the invite is for the right covered call
       const optionAmounts = await E(inviteIssuer).getAmountOf(exclInvite);
-      const optionExtent = optionAmounts.extent;
+      const optionValue = optionAmounts.value;
 
       assert(
-        optionExtent[0].installationHandle === installations.coveredCall,
+        optionValue[0].installationHandle === installations.coveredCall,
         details`wrong installation`,
       );
       assert(
-        optionExtent[0].inviteDesc === 'exerciseOption',
+        optionValue[0].inviteDesc === 'exerciseOption',
         details`wrong invite`,
       );
       assert(
-        moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
+        moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)),
         details`wrong underlying asset`,
       );
       assert(
-        simoleanAmountMath.isEqual(optionExtent[0].strikePrice, simoleans(7)),
+        simoleanAmountMath.isEqual(optionValue[0].strikePrice, simoleans(7)),
         details`wrong strike price`,
       );
       assert(
-        optionExtent[0].expirationDate === 100,
+        optionValue[0].expirationDate === 100,
         details`wrong expiration date`,
       );
-      assert(optionExtent[0].timerAuthority === timer, details`wrong timer`);
+      assert(optionValue[0].timerAuthority === timer, details`wrong timer`);
       const {
         issuerKeywordRecord: { UnderlyingAsset, StrikePrice },
-      } = await E(zoe).getInstanceRecord(optionExtent[0].instanceHandle);
+      } = await E(zoe).getInstanceRecord(optionValue[0].instanceHandle);
       assert(
         UnderlyingAsset === moolaIssuer,
         details`The underlyingAsset issuer should be the moola issuer`,
@@ -230,13 +228,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doPublicAuction: async inviteP => {
       const invite = await inviteP;
       const exclInvite = await E(inviteIssuer).claim(invite);
-      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
 
       const { installationHandle, issuerKeywordRecord, terms } = await E(
         zoe,
-      ).getInstanceRecord(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteValue[0].instanceHandle);
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
@@ -249,8 +247,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         details`issuerKeywordRecord was not as expected`,
       );
       assert(terms.numBidsAllowed === 3, details`terms not as expected`);
-      assert(sameStructure(inviteExtent[0].minimumBid, simoleans(3)));
-      assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
+      assert(sameStructure(inviteValue[0].minimumBid, simoleans(3)));
+      assert(sameStructure(inviteValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },
@@ -279,13 +277,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doAtomicSwap: async inviteP => {
       const invite = await inviteP;
       const exclInvite = await E(inviteIssuer).claim(invite);
-      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
 
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstanceRecord(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteValue[0].instanceHandle);
       assert(
         installationHandle === installations.atomicSwap,
         details`wrong installation`,
@@ -299,11 +297,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       assert(
-        sameStructure(inviteExtent[0].asset, moola(3)),
+        sameStructure(inviteValue[0].asset, moola(3)),
         details`Alice made a different offer than expected`,
       );
       assert(
-        sameStructure(inviteExtent[0].price, simoleans(7)),
+        sameStructure(inviteValue[0].price, simoleans(7)),
         details`Alice made a different offer than expected`,
       );
 
@@ -334,13 +332,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doSimpleExchange: async inviteP => {
       const invite = await inviteP;
       const exclInvite = await E(inviteIssuer).claim(invite);
-      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
 
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstanceRecord(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteValue[0].instanceHandle);
       assert(
         installationHandle === installations.simpleExchange,
         details`wrong installation`,
@@ -381,12 +379,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
     doSimpleExchangeUpdates: async (inviteP, m, s) => {
       const invite = await E(inviteIssuer).claim(inviteP);
-      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
-        invite,
-      );
+      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(invite);
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstanceRecord(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteValue[0].instanceHandle);
       assert(
         installationHandle === installations.simpleExchange,
         details`wrong installation`,
@@ -526,13 +522,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       ).getAvailableItems();
       log('availableTickets: ', availableTickets);
 
-      // find the extent corresponding to ticket #1
-      const ticket1Extent = availableTickets.extent.find(
+      // find the value corresponding to ticket #1
+      const ticket1Value = availableTickets.value.find(
         ticket => ticket.number === 1,
       );
       // make the corresponding amount
       const ticket1Amount = await E(ticketAmountMath).make(
-        harden([ticket1Extent]),
+        harden([ticket1Value]),
       );
 
       const proposal = harden({

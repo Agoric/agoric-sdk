@@ -1,11 +1,11 @@
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 const setup = () => {
-  const moolaBundle = produceIssuer('moola');
-  const simoleanBundle = produceIssuer('simoleans');
-  const bucksBundle = produceIssuer('bucks');
+  const moolaBundle = makeIssuerKit('moola');
+  const simoleanBundle = makeIssuerKit('simoleans');
+  const bucksBundle = makeIssuerKit('bucks');
   const allBundles = {
     moola: moolaBundle,
     simoleans: simoleanBundle,

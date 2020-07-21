@@ -4,11 +4,11 @@
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
-import produceIssuer from '../../src/issuer';
+import makeIssuerKit from '../../src/issuer';
 
 test('mint.getIssuer', t => {
   try {
-    const { mint, issuer } = produceIssuer('fungible');
+    const { mint, issuer } = makeIssuerKit('fungible');
     t.equals(mint.getIssuer(), issuer);
   } catch (e) {
     t.assert(false, e);
@@ -19,7 +19,7 @@ test('mint.getIssuer', t => {
 
 test('mint.mintPayment default natMathHelper', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const fungible1000 = amountMath.make(1000);
   const payment1 = mint.mintPayment(fungible1000);
   issuer.getAmountOf(payment1).then(paymentBalance1 => {
@@ -34,7 +34,7 @@ test('mint.mintPayment default natMathHelper', t => {
 
 test('mint.mintPayment strSetMathHelpers', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = produceIssuer('items', 'strSet');
+  const { mint, issuer, amountMath } = makeIssuerKit('items', 'strSet');
   const items1and2and4 = amountMath.make(harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
   issuer.getAmountOf(payment1).then(paymentBalance1 => {
@@ -50,7 +50,7 @@ test('mint.mintPayment strSetMathHelpers', t => {
 
 test('mint.mintPayment setMathHelpers', t => {
   t.plan(3);
-  const { mint, issuer, amountMath } = produceIssuer('items', 'set');
+  const { mint, issuer, amountMath } = makeIssuerKit('items', 'set');
   const item1handle = {};
   const item2handle = {};
   const item3handle = {};
@@ -76,18 +76,18 @@ test('mint.mintPayment setMathHelpers', t => {
 
 test('mint.mintPayment setMathHelpers with invites', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = produceIssuer('items', 'set');
+  const { mint, issuer, amountMath } = makeIssuerKit('items', 'set');
   const instanceHandle1 = {};
-  const invite1Extent = { handle: {}, instanceHandle: instanceHandle1 };
-  const invite2Extent = { handle: {}, instanceHandle: instanceHandle1 };
-  const invite3Extent = { handle: {}, instanceHandle: {} };
-  const invites1and2 = amountMath.make(harden([invite1Extent, invite2Extent]));
+  const invite1Value = { handle: {}, instanceHandle: instanceHandle1 };
+  const invite2Value = { handle: {}, instanceHandle: instanceHandle1 };
+  const invite3Value = { handle: {}, instanceHandle: {} };
+  const invites1and2 = amountMath.make(harden([invite1Value, invite2Value]));
   const payment1 = mint.mintPayment(invites1and2);
   issuer.getAmountOf(payment1).then(paymentBalance1 => {
     t.ok(amountMath.isEqual(paymentBalance1, invites1and2));
   });
 
-  const invite3 = amountMath.make(harden([invite3Extent]));
+  const invite3 = amountMath.make(harden([invite3Value]));
   const payment2 = mint.mintPayment(invite3);
   issuer.getAmountOf(payment2).then(paymentBalance2 => {
     t.ok(amountMath.isEqual(paymentBalance2, invite3));
@@ -102,7 +102,7 @@ test('non-fungible tokens example', t => {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,
     amountMath,
-  } = produceIssuer('Agoric Ballet Opera tickets', 'set');
+  } = makeIssuerKit('Agoric Ballet Opera tickets', 'set');
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 
@@ -139,10 +139,10 @@ test('non-fungible tokens example', t => {
     balletTicketIssuer
       .getAmountOf(myTicketPaymentAlice)
       .then(paymentAmountAlice => {
-        t.equals(paymentAmountAlice.extent.length, 1);
-        t.equals(paymentAmountAlice.extent[0].seat, 1);
-        t.equals(paymentAmountAlice.extent[0].show, 'The Sofa');
-        t.equals(paymentAmountAlice.extent[0].start, startDateString);
+        t.equals(paymentAmountAlice.value.length, 1);
+        t.equals(paymentAmountAlice.value[0].seat, 1);
+        t.equals(paymentAmountAlice.value[0].show, 'The Sofa');
+        t.equals(paymentAmountAlice.value[0].start, startDateString);
       });
   });
 
@@ -150,13 +150,13 @@ test('non-fungible tokens example', t => {
   // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because it's public
   balletTicketIssuer.claim(paymentForBob).then(bobTicketPayment => {
     balletTicketIssuer.getAmountOf(bobTicketPayment).then(paymentAmountBob => {
-      t.equals(paymentAmountBob.extent.length, 2);
-      t.equals(paymentAmountBob.extent[0].seat, 3);
-      t.equals(paymentAmountBob.extent[1].seat, 4);
-      t.equals(paymentAmountBob.extent[0].show, 'The Sofa');
-      t.equals(paymentAmountBob.extent[1].show, 'The Sofa');
-      t.equals(paymentAmountBob.extent[0].start, startDateString);
-      t.equals(paymentAmountBob.extent[1].start, startDateString);
+      t.equals(paymentAmountBob.value.length, 2);
+      t.equals(paymentAmountBob.value[0].seat, 3);
+      t.equals(paymentAmountBob.value[1].seat, 4);
+      t.equals(paymentAmountBob.value[0].show, 'The Sofa');
+      t.equals(paymentAmountBob.value[1].show, 'The Sofa');
+      t.equals(paymentAmountBob.value[0].start, startDateString);
+      t.equals(paymentAmountBob.value[1].start, startDateString);
     });
   });
 });

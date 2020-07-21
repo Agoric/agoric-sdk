@@ -114,13 +114,13 @@ export default function Inbox() {
   //    proposalForDisplay: {
   //     give: {
   //       [keyword]: {
-  //          amount: { brand: { petname: brandPetname }, extent },
+  //          amount: { brand: { petname: brandPetname }, value },
   //          pursePetname: inputPurse.pursePetname,
   //        },
   //      },
   //      want: {
   //        [keyword2]: {
-  //          amount: { brand: { petname: brandPetname }, extent },
+  //          amount: { brand: { petname: brandPetname }, value },
   //          pursePetname: outputPurse.pursePetname,
   //        },
   //      },
@@ -165,11 +165,11 @@ export default function Inbox() {
                   </Grid>
                   <Grid item>
                     {Object.entries(give).map(
-                      ([role, { amount: { brand: { petname: brandPetname }, extent }, pursePetname }], i) => (
+                      ([role, { amount: { brand: { petname: brandPetname }, value }, pursePetname }], i) => (
                         <Typography key={`give${role}`} variant="body1">
                           {i === 0 ? 'Give' : <>and&nbsp;give</>}&nbsp;
                           <Box component="span" fontWeight={800}>
-                            {JSON.stringify(extent)}
+                            {JSON.stringify(value)}
                             &nbsp;
                             {pet(brandPetname)}
                           </Box>
@@ -180,14 +180,14 @@ export default function Inbox() {
                         </Typography>
                       ))}
                     {Object.entries(want).map(
-                      ([role, { amount: { brand: { petname: brandPetname }, extent }, pursePetname }], i) => (
+                      ([role, { amount: { brand: { petname: brandPetname }, value }, pursePetname }], i) => (
                         <Typography key={`want${role}`} variant="body1">
                           {i === 0 ?
                             (Object.keys(give).length > 0 ? <>to&nbsp;receive</> : 'Receive') :
                             <>and&nbsp;receive</>
                           }&nbsp;
                           <Box component="span" fontWeight={800}>
-                            {JSON.stringify(extent)}
+                            {JSON.stringify(value)}
                             &nbsp;
                             {pet(brandPetname)}
                           </Box>

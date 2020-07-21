@@ -27,7 +27,7 @@ test('escrow checkUnits w/SES', async t => {
 const escrowMismatchGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckMismatches',
-  'expected unsuccessful check Error: Escrow checkUnits: different at top.right.extent: ((a string)) vs ((a string))\nSee console for error data.',
+  'expected unsuccessful check Error: Escrow checkUnits: different at top.right.value: ((a string)) vs ((a string))\nSee console for error data.',
 ];
 
 test.skip('escrow check misMatches w/SES', async t => {
@@ -39,7 +39,7 @@ test.skip('escrow check misMatches w/SES', async t => {
 const escrowCheckPartialWrongPriceGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckPartial wrong price',
-  'expected wrong price Error: Escrow checkPartialUnits seat: different at top.extent: ((a number)) vs ((a number))\nSee console for error data.',
+  'expected wrong price Error: Escrow checkPartialUnits seat: different at top.value: ((a number)) vs ((a number))\nSee console for error data.',
 ];
 
 test.skip('escrow check partial misMatches w/SES', async t => {
@@ -51,7 +51,7 @@ test.skip('escrow check partial misMatches w/SES', async t => {
 const escrowCheckPartialWrongStockGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckPartial wrong stock',
-  'expected wrong stock Error: Escrow checkPartialUnits seat: different at top.extent: ((a string)) vs ((a string))\nSee console for error data.',
+  'expected wrong stock Error: Escrow checkPartialUnits seat: different at top.value: ((a string)) vs ((a string))\nSee console for error data.',
 ];
 
 test.skip('escrow check partial misMatches w/SES', async t => {

@@ -56,12 +56,12 @@ const makeContract = zcf => {
 
     const { proposal } = zcf.getOffer(buyerOfferHandle);
     const wantedItems = proposal.want.Items;
-    const numItemsWanted = wantedItems.extent.length;
-    const totalCostExtent = pricePerItem.extent * numItemsWanted;
+    const numItemsWanted = wantedItems.value.length;
+    const totalCostValue = pricePerItem.value * numItemsWanted;
     const moneyAmountMaths = zcf.getAmountMath(pricePerItem.brand);
     const itemsAmountMath = zcf.getAmountMath(wantedItems.brand);
 
-    const totalCost = moneyAmountMaths.make(totalCostExtent);
+    const totalCost = moneyAmountMaths.make(totalCostValue);
 
     // Check that the wanted items are still for sale.
     if (!itemsAmountMath.isGTE(currentItemsForSale, wantedItems)) {

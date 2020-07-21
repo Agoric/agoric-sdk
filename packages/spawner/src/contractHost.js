@@ -7,7 +7,7 @@ import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { producePromise } from '@agoric/produce-promise';
 import { E, HandledPromise } from '@agoric/eventual-send';
 
@@ -36,12 +36,12 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     mint: inviteMint,
     issuer: inviteIssuer,
     amountMath: inviteAmountMath,
-  } = produceIssuer('contract host', 'set');
+  } = makeIssuerKit('contract host', 'set');
 
   function redeem(allegedInvitePayment) {
     return inviteIssuer.getAmountOf(allegedInvitePayment).then(inviteAmount => {
       assert(!inviteAmountMath.isEmpty(inviteAmount), details`No invites left`);
-      const [{ seatIdentity }] = inviteAmountMath.getExtent(inviteAmount);
+      const [{ seatIdentity }] = inviteAmountMath.getValue(inviteAmount);
       return Promise.resolve(
         inviteIssuer.burn(allegedInvitePayment, inviteAmount),
       ).then(_ => seats.get(seatIdentity));
@@ -184,7 +184,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
               seatDescriptions.init(seatIdentity, seatDescription);
               const inviteAmount = inviteAmountMath.make(seatDescription);
               // This should be the only use of the invite mint, to
-              // make an invite payment whose extent describes this
+              // make an invite payment whose value describes this
               // seat.
               return inviteMint.mintPayment(inviteAmount);
             },

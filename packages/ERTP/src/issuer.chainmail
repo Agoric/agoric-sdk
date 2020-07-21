@@ -5,7 +5,7 @@
  * exclusively). The issuer should be gotten from a trusted source and
  * then relied upon as the decider of whether an untrusted payment is valid. 
  */
-interface Issuer (Amount (Extent)) {
+interface Issuer (Amount (Value)) {
   /**
    * Get the Brand for this Issuer. The Brand indicates the kind of
    * digital asset and is shared by the mint, the issuer, and any purses
@@ -119,13 +119,13 @@ interface Brand {
  * default, is used for basic fungible tokens.
  */
 interface IssuerMaker {
-  produceIssuer(
+  makeIssuerKit(
       allegedName :String,
       mathHelperName :String) -> (IssuerResults);
 }
 
 /**
- * The return value of produceIssuer
+ * The return value of makeIssuerKit
  */
 struct IssuerResults ( ) {
   mint :Mint;
@@ -138,7 +138,7 @@ struct IssuerResults ( ) {
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  */
-interface Mint (Amount (Extent)) {
+interface Mint (Amount (Value)) {
   /** Get the Issuer for this mint. */
   getIssuer() -> (Issuer);
 
@@ -206,40 +206,40 @@ interface Payment (Amount) {
 
 /** 
  * All of the difference in how digital asset amount are manipulated can be reduced to
- * the behavior of the math on extents. We extract this
- * custom logic into mathHelpers. MathHelpers are about extent
+ * the behavior of the math on values. We extract this
+ * custom logic into mathHelpers. MathHelpers are about value
  * arithmetic, whereas AmountMath is about amounts, which are the
- * extents labeled with a brand. AmountMath use mathHelpers to do their extent arithmetic,
+ * values labeled with a brand. AmountMath use mathHelpers to do their value arithmetic,
  * and then brand the results, making a new amount. 
  */ 
 interface mathHelpers () {
   /** 
-   * Check the kind of this extent and throw if it is not the
+   * Check the kind of this value and throw if it is not the
    * expected kind. 
    */
-  doCoerce(allegedExtent :Extent) -> (Extent);
+  doCoerce(allegedValue :Value) -> (Value);
 
   /**
    * Get the representation for the identity element (often 0 or an
    * empty array)
    */
-  doGetEmpty() -> (Extent);
+  doGetEmpty() -> (Value);
 
-  /** Is the extent the identity element? */
-  doIsEmpty(extent :Extent) -> (boolean);
+  /** Is the value the identity element? */
+  doIsEmpty(value :Value) -> (boolean);
 
   /** Is the left greater than or equal to the right? */
-  doIsGTE(left :Extent, right :Extent) -> (boolean);
+  doIsGTE(left :Value, right :Value) -> (boolean);
 
   /** Does left equal right? */
-  doIsEqual(left :Extent, right :Extent) -> (boolean);
+  doIsEqual(left :Value, right :Value) -> (boolean);
 
   /** Return the left combined with the right */
-  doAdd(left :Extent, right :Extent) -> (Extent);
+  doAdd(left :Value, right :Value) -> (Value);
 
   /**
    * Return what remains after removing the right from the left. If
    * something in the right was not in the left, we throw an error.
    */
-  doSubtract(left :Extent, right :Extent) -> (Extent);
+  doSubtract(left :Value, right :Value) -> (Value);
 }

@@ -6,7 +6,7 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
@@ -27,7 +27,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const sellItemsBundle = await bundleSource(sellItemsRoot);
   const sellItemsInstallationHandle = await E(zoe).install(sellItemsBundle);
 
-  const { issuer: moolaIssuer, amountMath: moolaAmountMath } = produceIssuer(
+  const { issuer: moolaIssuer, amountMath: moolaAmountMath } = makeIssuerKit(
     'moola',
   );
 
@@ -40,7 +40,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const { outcome: escrowTicketsOutcome, sellItemsInstanceHandle } = await E(
     ticketMaker,
   ).sellTokens({
-    customExtentProperties: {
+    customValueProperties: {
       show: 'Steven Universe, the Opera',
       start: 'Wed, March 25th 2020 at 8pm',
     },
@@ -65,7 +65,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     ticketsForSale,
     {
       brand: ticketBrand,
-      extent: [
+      value: [
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
@@ -89,7 +89,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const { sellItemsInstanceHandle: sellItemsInstanceHandle2 } = await E(
     ticketMaker,
   ).sellTokens({
-    customExtentProperties: {
+    customValueProperties: {
       show: 'Reserved for private party',
       start: 'Tues May 12, 2020 at 8pm',
     },
@@ -106,7 +106,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     ticketsForSale2,
     {
       brand: ticketBrand,
-      extent: [
+      value: [
         {
           show: 'Reserved for private party',
           start: 'Tues May 12, 2020 at 8pm',
@@ -149,7 +149,7 @@ test(`mint and sell opera tickets`, async t => {
     mint: moolaMint,
     issuer: moolaIssuer,
     amountMath: { make: moola },
-  } = produceIssuer('moola');
+  } = makeIssuerKit('moola');
 
   const zoe = makeZoe();
 
@@ -180,7 +180,7 @@ test(`mint and sell opera tickets`, async t => {
       payout,
       completeObj,
     } = await E(ticketSeller).sellTokens({
-      customExtentProperties: {
+      customValueProperties: {
         show: 'Steven Universe, the Opera',
         start: 'Wed, March 25th 2020 at 8pm',
       },
@@ -196,7 +196,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const ticketsForSale = await E(ticketSalesPublicAPI).getAvailableItems();
 
-    t.equal(ticketsForSale.extent.length, 3, `3 tickets for sale`);
+    t.equal(ticketsForSale.value.length, 3, `3 tickets for sale`);
 
     return harden({
       ticketIssuer,
@@ -231,29 +231,29 @@ test(`mint and sell opera tickets`, async t => {
     const availableTickets = await E(ticketSalesPublicAPI).getAvailableItems();
 
     t.equal(
-      availableTickets.extent.length,
+      availableTickets.value.length,
       3,
       'Alice should see 3 available tickets',
     );
     t.ok(
-      availableTickets.extent.find(ticket => ticket.number === 1),
+      availableTickets.value.find(ticket => ticket.number === 1),
       `availableTickets contains ticket number 1`,
     );
     t.ok(
-      availableTickets.extent.find(ticket => ticket.number === 2),
+      availableTickets.value.find(ticket => ticket.number === 2),
       `availableTickets contains ticket number 2`,
     );
     t.ok(
-      availableTickets.extent.find(ticket => ticket.number === 3),
+      availableTickets.value.find(ticket => ticket.number === 3),
       `availableTickets contains ticket number 3`,
     );
 
-    // find the extent corresponding to ticket #1
-    const ticket1Extent = availableTickets.extent.find(
+    // find the value corresponding to ticket #1
+    const ticket1Value = availableTickets.value.find(
       ticket => ticket.number === 1,
     );
     // make the corresponding amount
-    const ticket1Amount = ticketAmountMath.make(harden([ticket1Extent]));
+    const ticket1Amount = ticketAmountMath.make(harden([ticket1Value]));
 
     const aliceProposal = harden({
       give: { Money: terms.pricePerItem },
@@ -275,12 +275,12 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     t.equal(
-      aliceBoughtTicketAmount.extent[0].show,
+      aliceBoughtTicketAmount.value[0].show,
       'Steven Universe, the Opera',
       'Alice should have receieved the ticket for the correct show',
     );
     t.equal(
-      aliceBoughtTicketAmount.extent[0].number,
+      aliceBoughtTicketAmount.value[0].number,
       1,
       'Alice should have received the ticket for the correct number',
     );
@@ -443,32 +443,32 @@ test(`mint and sell opera tickets`, async t => {
 
     // Bob sees the currently available tickets
     t.equal(
-      availableTickets.extent.length,
+      availableTickets.value.length,
       2,
       'Bob should see 2 available tickets',
     );
     t.ok(
-      !availableTickets.extent.find(ticket => ticket.number === 1),
+      !availableTickets.value.find(ticket => ticket.number === 1),
       `availableTickets should NOT contain ticket number 1`,
     );
     t.ok(
-      availableTickets.extent.find(ticket => ticket.number === 2),
+      availableTickets.value.find(ticket => ticket.number === 2),
       `availableTickets should still contain ticket number 2`,
     );
     t.ok(
-      availableTickets.extent.find(ticket => ticket.number === 3),
+      availableTickets.value.find(ticket => ticket.number === 3),
       `availableTickets should still contain ticket number 3`,
     );
 
     // Bob buys tickets 2 and 3
     const ticket2and3Amount = ticketAmountMath.make(
       harden([
-        availableTickets.extent.find(ticket => ticket.number === 2),
-        availableTickets.extent.find(ticket => ticket.number === 3),
+        availableTickets.value.find(ticket => ticket.number === 2),
+        availableTickets.value.find(ticket => ticket.number === 3),
       ]),
     );
 
-    const totalCost = moola(2 * terms.pricePerItem.extent);
+    const totalCost = moola(2 * terms.pricePerItem.value);
 
     const bobProposal = harden({
       give: { Money: totalCost },
@@ -487,16 +487,16 @@ test(`mint and sell opera tickets`, async t => {
     const payout = await payoutP;
     const bobTicketAmount = await E(ticketIssuer).getAmountOf(payout.Items);
     t.equal(
-      bobTicketAmount.extent.length,
+      bobTicketAmount.value.length,
       2,
       'Bob should have received 2 tickets',
     );
     t.ok(
-      bobTicketAmount.extent.find(ticket => ticket.number === 2),
+      bobTicketAmount.value.find(ticket => ticket.number === 2),
       'Bob should have received tickets #2',
     );
     t.ok(
-      bobTicketAmount.extent.find(ticket => ticket.number === 3),
+      bobTicketAmount.value.find(ticket => ticket.number === 3),
       'Bob should have received tickets #3',
     );
   };
@@ -525,7 +525,7 @@ test(`mint and sell opera tickets`, async t => {
     const currentPurseBalance = await E(operaPurse).getCurrentAmount();
 
     t.equal(
-      currentPurseBalance.extent,
+      currentPurseBalance.value,
       3 * 22,
       `The Opera should get ${3 * 22} moolas from ticket sales`,
     );

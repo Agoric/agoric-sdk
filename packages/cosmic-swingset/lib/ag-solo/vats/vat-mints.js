@@ -1,6 +1,6 @@
 /* global harden */
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
 
@@ -25,18 +25,18 @@ export function buildRootObject(_vatPowers) {
     getMints: issuerNames => issuerNames.map(api.getMint),
     // For example, issuerNameSingular might be 'moola', or 'simolean'
     makeMintAndIssuer: issuerNameSingular => {
-      const { mint, issuer, amountMath } = produceIssuer(issuerNameSingular);
+      const { mint, issuer, amountMath } = makeIssuerKit(issuerNameSingular);
       mintsAndMath.init(issuerNameSingular, { mint, amountMath });
       return issuer;
     },
-    mintInitialPayment: (issuerName, extent) => {
+    mintInitialPayment: (issuerName, value) => {
       const { mint, amountMath } = mintsAndMath.get(issuerName);
-      const amount = amountMath.make(extent);
+      const amount = amountMath.make(value);
       return mint.mintPayment(amount);
     },
-    mintInitialPayments: (issuerNames, extents) =>
+    mintInitialPayments: (issuerNames, values) =>
       issuerNames.map((issuerName, i) =>
-        api.mintInitialPayment(issuerName, extents[i]),
+        api.mintInitialPayment(issuerName, values[i]),
       ),
   });
 

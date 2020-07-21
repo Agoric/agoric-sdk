@@ -192,10 +192,10 @@ test('simpleExchange with valid offers', async t => {
   // Assert that the correct payout were received.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 4);
-  t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 3);
+  t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
+  t.equals(aliceSimoleanPurse.getCurrentAmount().value, 4);
+  t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
+  t.equals(bobSimoleanPurse.getCurrentAmount().value, 3);
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -485,8 +485,8 @@ test('simpleExchange with non-fungible assets', async t => {
   // Assert that the correct payout were received.
   // Alice has an empty RPG purse, and the Cheshire Cat.
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
-  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, []);
-  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, ['Cheshire Cat']);
-  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, spell);
-  t.deepEquals(bobCcPurse.getCurrentAmount().extent, []);
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().value, []);
+  t.deepEquals(aliceCcPurse.getCurrentAmount().value, ['Cheshire Cat']);
+  t.deepEquals(bobRpgPurse.getCurrentAmount().value, spell);
+  t.deepEquals(bobCcPurse.getCurrentAmount().value, []);
 });

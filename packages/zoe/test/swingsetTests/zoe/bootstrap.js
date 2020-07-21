@@ -1,7 +1,7 @@
 /* global harden */
 
 import { E } from '@agoric/eventual-send';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
 /* eslint-disable import/no-unresolved, import/extensions */
@@ -17,9 +17,9 @@ import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
 
 const setupBasicMints = () => {
   const all = [
-    produceIssuer('moola'),
-    produceIssuer('simoleans'),
-    produceIssuer('bucks'),
+    makeIssuerKit('moola'),
+    makeIssuerKit('simoleans'),
+    makeIssuerKit('bucks'),
   ];
   const mints = all.map(objs => objs.mint);
   const issuers = all.map(objs => objs.issuer);
@@ -32,18 +32,18 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (log, vats, zoe, installations, startingExtents) => {
+const makeVats = (log, vats, zoe, installations, startingValues) => {
   const timer = buildManualTimer(log);
   const { mints, issuers, amountMaths } = setupBasicMints();
-  const makePayments = extents =>
-    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(extents[i])));
-  const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
+  const makePayments = values =>
+    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(values[i])));
+  const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 
   // Setup Alice
   const aliceP = E(vats.alice).build(
     zoe,
     issuers,
-    makePayments(aliceExtents),
+    makePayments(aliceValues),
     installations,
     timer,
   );
@@ -52,7 +52,7 @@ const makeVats = (log, vats, zoe, installations, startingExtents) => {
   const bobP = E(vats.bob).build(
     zoe,
     issuers,
-    makePayments(bobExtents),
+    makePayments(bobValues),
     installations,
     timer,
   );
@@ -62,22 +62,22 @@ const makeVats = (log, vats, zoe, installations, startingExtents) => {
     bobP,
   };
 
-  if (carolExtents) {
+  if (carolValues) {
     const carolP = E(vats.carol).build(
       zoe,
       issuers,
-      makePayments(carolExtents),
+      makePayments(carolValues),
       installations,
       timer,
     );
     result.carolP = carolP;
   }
 
-  if (daveExtents) {
+  if (daveValues) {
     const daveP = E(vats.dave).build(
       zoe,
       issuers,
-      makePayments(daveExtents),
+      makePayments(daveValues),
       installations,
       timer,
     );
@@ -104,14 +104,14 @@ function build(log) {
         mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
       };
 
-      const [testName, startingExtents] = argv;
+      const [testName, startingValues] = argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         log,
         vats,
         zoe,
         installations,
-        startingExtents,
+        startingValues,
       );
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },

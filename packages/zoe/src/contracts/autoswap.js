@@ -1,13 +1,13 @@
 /* global harden */
 // @ts-check
 
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   getInputPrice,
-  calcLiqExtentToMint,
-  calcExtentToRemove,
+  calcLiqValueToMint,
+  calcValueToRemove,
   makeZoeHelpers,
 } from '../contractSupport';
 
@@ -31,7 +31,7 @@ const makeContract = zcf => {
     mint: liquidityMint,
     issuer: liquidityIssuer,
     amountMath: liquidityAmountMath,
-  } = produceIssuer('liquidity');
+  } = makeIssuerKit('liquidity');
 
   let liqTokenSupply = 0;
 
@@ -71,16 +71,16 @@ const makeContract = zcf => {
             want: { Out: wantedAmountOut },
           },
         } = zcf.getOffer(offerHandle);
-        const outputExtent = getInputPrice(
+        const outputValue = getInputPrice(
           harden({
-            inputExtent: amountIn.extent,
-            inputReserve: getPoolAmount(amountIn.brand).extent,
-            outputReserve: getPoolAmount(wantedAmountOut.brand).extent,
+            inputValue: amountIn.value,
+            inputReserve: getPoolAmount(amountIn.brand).value,
+            outputReserve: getPoolAmount(wantedAmountOut.brand).value,
           }),
         );
         const amountOut = zcf
           .getAmountMath(wantedAmountOut.brand)
-          .make(outputExtent);
+          .make(outputValue);
 
         trade(
           {
@@ -106,20 +106,20 @@ const makeContract = zcf => {
         const userAllocation = zcf.getCurrentAllocation(offerHandle);
 
         // Calculate how many liquidity tokens we should be minting.
-        // Calculations are based on the extents represented by TokenA.
+        // Calculations are based on the values represented by TokenA.
         // If the current supply is zero, start off by just taking the
-        // extent at TokenA and using it as the extent for the
+        // value at TokenA and using it as the value for the
         // liquidity token.
         const tokenAPoolAmount = getPoolAmount(userAllocation.TokenA.brand);
-        const inputReserve = tokenAPoolAmount ? tokenAPoolAmount.extent : 0;
-        const liquidityExtentOut = calcLiqExtentToMint(
+        const inputReserve = tokenAPoolAmount ? tokenAPoolAmount.value : 0;
+        const liquidityValueOut = calcLiqValueToMint(
           harden({
             liqTokenSupply,
-            inputExtent: userAllocation.TokenA.extent,
+            inputValue: userAllocation.TokenA.value,
             inputReserve,
           }),
         );
-        const liquidityAmountOut = liquidityAmountMath.make(liquidityExtentOut);
+        const liquidityAmountOut = liquidityAmountMath.make(liquidityValueOut);
         const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
 
         return escrowAndAllocateTo({
@@ -128,7 +128,7 @@ const makeContract = zcf => {
           keyword: 'Liquidity',
           recipientHandle: offerHandle,
         }).then(() => {
-          liqTokenSupply += liquidityExtentOut;
+          liqTokenSupply += liquidityValueOut;
 
           trade(
             {
@@ -150,32 +150,32 @@ const makeContract = zcf => {
 
       const removeLiquidityHook = offerHandle => {
         const userAllocation = zcf.getCurrentAllocation(offerHandle);
-        const liquidityExtentIn = userAllocation.Liquidity.extent;
+        const liquidityValueIn = userAllocation.Liquidity.value;
 
         const newUserTokenAAmount = zcf
           .getAmountMath(userAllocation.TokenA.brand)
           .make(
-            calcExtentToRemove(
+            calcValueToRemove(
               harden({
                 liqTokenSupply,
-                poolExtent: getPoolAmount(userAllocation.TokenA.brand).extent,
-                liquidityExtentIn,
+                poolValue: getPoolAmount(userAllocation.TokenA.brand).value,
+                liquidityValueIn,
               }),
             ),
           );
         const newUserTokenBAmount = zcf
           .getAmountMath(userAllocation.TokenB.brand)
           .make(
-            calcExtentToRemove(
+            calcValueToRemove(
               harden({
                 liqTokenSupply,
-                poolExtent: getPoolAmount(userAllocation.TokenB.brand).extent,
-                liquidityExtentIn,
+                poolValue: getPoolAmount(userAllocation.TokenB.brand).value,
+                liquidityValueIn,
               }),
             ),
           );
 
-        liqTokenSupply -= liquidityExtentIn;
+        liqTokenSupply -= liquidityValueIn;
 
         trade(
           {
@@ -233,16 +233,16 @@ const makeContract = zcf => {
        * assets to be sent in
        */
       const getCurrentPrice = (amountIn, brandOut) => {
-        const inputReserve = getPoolAmount(amountIn.brand).extent;
-        const outputReserve = getPoolAmount(brandOut).extent;
-        const outputExtent = getInputPrice(
+        const inputReserve = getPoolAmount(amountIn.brand).value;
+        const outputReserve = getPoolAmount(brandOut).value;
+        const outputValue = getInputPrice(
           harden({
-            inputExtent: amountIn.extent,
+            inputValue: amountIn.value,
             inputReserve,
             outputReserve,
           }),
         );
-        return zcf.getAmountMath(brandOut).make(outputExtent);
+        return zcf.getAmountMath(brandOut).make(outputValue);
       };
 
       const getPoolAllocation = () =>

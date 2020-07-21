@@ -1,6 +1,6 @@
 /**
  * Amounts are descriptions of digital assets, answering the questions
- * "how much" and "of what kind". Amounts are extents labeled with a brand. 
+ * "how much" and "of what kind". Amounts are values labeled with a brand. 
  * AmountMath executes the logic of how amounts are changed when digital 
  * assets are merged, separated, or otherwise manipulated. For
  * example, a deposit of 2 bucks into a purse that already has 3 bucks
@@ -8,21 +8,21 @@
  * relies heavily on polymorphic MathHelpers, which manipulate the unbranded
  * portion.
  */
-struct Amount (Brand, Extent) {
+struct Amount (Brand, Value) {
   brand :Brand;
-  extent :Extent;
+  value :Value;
 }
 
 /**
- * Extents describe the extent of something that can be owned or shared.
- * Fungible extents are normally represented by natural numbers. Other 
- * extents may be represented as strings naming a particular right, or 
+ * Values describe the value of something that can be owned or shared.
+ * Fungible values are normally represented by natural numbers. Other 
+ * values may be represented as strings naming a particular right, or 
  * an arbitrary object that sensibly represents the rights at issue. 
  *
- * Extent must be Comparable. (This IDL doesn't yet provide a way to specify
+ * Value must be Comparable. (This IDL doesn't yet provide a way to specify
  * subtype relationships for structs.)
  */
-struct Extent {
+struct Value {
 }
 
 /**
@@ -34,7 +34,7 @@ struct Extent {
  * abstract right to participate in a particular exchange.
  *
  */
-interface AmountMath (Amount (Brand, Extent)) {
+interface AmountMath (Amount (Brand, Value)) {
 
   /** Return the brand. */
   getBrand() -> (Brand);
@@ -45,16 +45,16 @@ interface AmountMath (Amount (Brand, Extent)) {
    */
   getMathHelpersName -> (String);
 
-  /**  Make an amount from an extent by adding the brand. */
-  make(allegedExtent :Extent) -> (Amount);
+  /**  Make an amount from a value by adding the brand. */
+  make(allegedValue :Value) -> (Amount);
 
   /**
    * Make sure this amount is valid and return it if so.
    */
   coerce(allegedAmount :Amount) -> (Amount);
 
-  /** Extract and return the extent. */
-  extent(amount :Amount) -> (Extent);
+  /** Extract and return the value. */
+  value(amount :Amount) -> (Value);
 
   /** Return the amount representing an empty amount. This is the
    * identity element for MathHelpers.add and MatHelpers.subtract.
@@ -82,7 +82,7 @@ interface AmountMath (Amount (Brand, Extent)) {
   /**
    * Returns a new amount that is the union of both leftAmount and rightAmount.
    *
-   * For fungible amount this means adding the extents. For other kinds of
+   * For fungible amount this means adding the values. For other kinds of
    * amount, it usually means including all of the elements from both
    * left and right. 
    */

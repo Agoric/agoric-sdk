@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { importManager } from '../../src/importManager';
-import { listIsEmpty, numIsEmpty } from './extentOps';
+import { listIsEmpty, numIsEmpty } from './valueOps';
 
 function makeBadImportManager() {
   const mgr = importManager();

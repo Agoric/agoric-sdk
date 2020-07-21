@@ -7,7 +7,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 import makeAmountMath from '@agoric/ertp/src/amountMath';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
@@ -23,7 +23,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Set up central token
-    const centralR = produceIssuer('central');
+    const centralR = makeIssuerKit('central');
     const centralTokens = centralR.amountMath.make;
 
     // Setup Alice
@@ -63,17 +63,17 @@ test('multipoolAutoSwap with valid offers', async t => {
         harden([
           {
             inviteDesc: 'multipool autoswap add liquidity',
-            instanceHandle: aliceInviteAmount.extent[0].instanceHandle,
+            instanceHandle: aliceInviteAmount.value[0].instanceHandle,
             installationHandle,
-            handle: aliceInviteAmount.extent[0].handle,
+            handle: aliceInviteAmount.value[0].handle,
           },
         ]),
       ),
-      `invite extent is as expected`,
+      `invite value is as expected`,
     );
 
     const { publicAPI, handle: instanceHandle } = zoe.getInstanceRecord(
-      aliceInviteAmount.extent[0].instanceHandle,
+      aliceInviteAmount.value[0].instanceHandle,
     );
 
     const addMoolaPoolResult = await E(publicAPI).addPool(
@@ -185,12 +185,12 @@ test('multipoolAutoSwap with valid offers', async t => {
     const bobSwapInvite1 = await E(publicAPI).makeSwapInvite();
 
     const {
-      extent: [bobInviteExtent],
+      value: [bobInviteValue],
     } = await inviteIssuer.getAmountOf(bobSwapInvite1);
     const {
       publicAPI: bobPublicAPI,
       installationHandle: bobInstallationId,
-    } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
+    } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
     t.equals(
       bobInstallationId,
       installationHandle,

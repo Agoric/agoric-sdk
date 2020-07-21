@@ -118,9 +118,9 @@ test('makeDehydrator', async t => {
       `deserialize val with petname`,
     );
     t.deepEquals(
-      dehydrate(harden({ brand: brand1, extent: 40 })),
+      dehydrate(harden({ brand: brand1, value: 40 })),
       harden({
-        body: '{"brand":{"@qclass":"slot","index":0},"extent":40}',
+        body: '{"brand":{"@qclass":"slot","index":0},"value":40}',
         slots: [{ kind: 'brand', petname: 'moola' }],
       }),
       `serialize brand with petname`,
@@ -128,20 +128,20 @@ test('makeDehydrator', async t => {
     t.deepEquals(
       hydrate(
         harden({
-          body: '{"brand":{"@qclass":"slot","index":0},"extent":40}',
+          body: '{"brand":{"@qclass":"slot","index":0},"value":40}',
           slots: [{ kind: 'brand', petname: 'moola' }],
         }),
       ),
-      harden({ brand: brand1, extent: 40 }),
+      harden({ brand: brand1, value: 40 }),
       `deserialize brand with petname`,
     );
     const proposal = harden({
       want: {
-        Asset1: { brand: brand1, extent: 60 },
-        Asset2: { brand: brand3, extent: { instanceHandle: handle3 } },
+        Asset1: { brand: brand1, value: 60 },
+        Asset2: { brand: brand3, value: { instanceHandle: handle3 } },
       },
       give: {
-        Price: { brand: brand2, extent: 3 },
+        Price: { brand: brand2, value: 3 },
       },
       exit: {
         afterDeadline: {
@@ -154,7 +154,7 @@ test('makeDehydrator', async t => {
       dehydrate(proposal),
       {
         body:
-          '{"want":{"Asset1":{"brand":{"@qclass":"slot","index":0},"extent":60},"Asset2":{"brand":{"@qclass":"slot","index":1},"extent":{"instanceHandle":{"@qclass":"slot","index":2}}}},"give":{"Price":{"brand":{"@qclass":"slot","index":3},"extent":3}},"exit":{"afterDeadline":{"timer":{"@qclass":"slot","index":4},"deadline":55}}}',
+          '{"want":{"Asset1":{"brand":{"@qclass":"slot","index":0},"value":60},"Asset2":{"brand":{"@qclass":"slot","index":1},"value":{"instanceHandle":{"@qclass":"slot","index":2}}}},"give":{"Price":{"brand":{"@qclass":"slot","index":3},"value":3}},"exit":{"afterDeadline":{"timer":{"@qclass":"slot","index":4},"deadline":55}}}',
         slots: [
           { kind: 'brand', petname: 'moola' },
           { kind: 'brand', petname: 'zoeInvite' },
@@ -169,7 +169,7 @@ test('makeDehydrator', async t => {
       hydrate(
         harden({
           body:
-            '{"want":{"Asset1":{"brand":{"@qclass":"slot","index":0},"extent":60},"Asset2":{"brand":{"@qclass":"slot","index":1},"extent":{"instanceHandle":{"@qclass":"slot","index":2}}}},"give":{"Price":{"brand":{"@qclass":"slot","index":3},"extent":3}},"exit":{"afterDeadline":{"timer":{"@qclass":"slot","index":4},"deadline":55}}}',
+            '{"want":{"Asset1":{"brand":{"@qclass":"slot","index":0},"value":60},"Asset2":{"brand":{"@qclass":"slot","index":1},"value":{"instanceHandle":{"@qclass":"slot","index":2}}}},"give":{"Price":{"brand":{"@qclass":"slot","index":3},"value":3}},"exit":{"afterDeadline":{"timer":{"@qclass":"slot","index":4},"deadline":55}}}',
           slots: [
             { kind: 'brand', petname: 'moola' },
             { kind: 'brand', petname: 'zoeInvite' },

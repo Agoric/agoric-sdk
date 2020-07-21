@@ -401,7 +401,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       payout: payoutP,
       completeObj,
     } = await E(ticketSeller).sellTokens({
-      customExtentProperties: {
+      customValueProperties: {
         show: 'Steven Universe, the Opera',
         start: 'Wed, March 25th 2020 at 8pm',
       },

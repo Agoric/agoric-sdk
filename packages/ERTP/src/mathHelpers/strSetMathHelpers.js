@@ -15,12 +15,12 @@ const identity = harden([]);
 
 const checkForDupes = list => {
   const set = new Set(list);
-  assert(set.size === list.length, details`extent has duplicates: ${list}`);
+  assert(set.size === list.length, details`value has duplicates: ${list}`);
 };
 
 const strSetMathHelpers = harden({
   doCoerce: list => {
-    assert(passStyleOf(list) === 'copyArray', 'extent must be an array');
+    assert(passStyleOf(list) === 'copyArray', 'value must be an array');
     list.forEach(elem => assert.typeof(elem, 'string'));
     checkForDupes(list);
     return list;
