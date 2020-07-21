@@ -162,6 +162,8 @@ test('lib-wallet issuer and purse methods', async t => {
       pursesStateChangeLog,
       [
         '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
+        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}}]',
         '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","extent":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"extent":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","extent":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"extent\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"extent":0}}]',
       ],
       `pursesStateChangeLog`,
@@ -173,14 +175,17 @@ test('lib-wallet issuer and purse methods', async t => {
 });
 
 test('lib-wallet dapp suggests issuer, instance, installation petnames', async t => {
-  t.plan(7);
+  t.plan(14);
   try {
     const {
       board,
-      installationHandle,
+      zoe,
+      invite,
       autoswapInstallationHandle,
       instanceHandle,
       wallet,
+      pursesStateChangeLog,
+      inboxStateChangeLog,
     } = await setupTest();
 
     const { issuer: bucksIssuer } = produceIssuer('bucks');
@@ -191,6 +196,108 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       wallet.getIssuer('bucks'),
       bucksIssuer,
       `bucksIssuer is stored in wallet`,
+    );
+
+    // We will deposit an invite and add an offer to the wallet to
+    // look at how changes in petnames affect the inboxState changes.
+    // Later we will deposit another invite (with no offer) to look at
+    // how changes in petnames affect the purseState changes. Note
+    // that we withdraw an invite for the offer during the
+    // `addOffer` call, so any invites associated with an offer are no
+    // longer in the purse.
+    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
+    const {
+      extent: [{ handle: inviteHandle, installationHandle }],
+    } = await E(inviteIssuer).getAmountOf(invite);
+    const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
+    await wallet.deposit('Default Zoe invite purse', invite);
+
+    const instanceHandleBoardId = await E(board).getId(instanceHandle);
+    const installationHandleBoardId = await E(board).getId(installationHandle);
+
+    const formulateBasicOffer = (id, inviteHandleBoardId) =>
+      harden({
+        // JSONable ID for this offer.  This is scoped to the origin.
+        id,
+
+        inviteHandleBoardId,
+        instanceHandleBoardId,
+        installationHandleBoardId,
+
+        proposalTemplate: {},
+      });
+
+    const rawId = '1588645041696';
+    const offer = formulateBasicOffer(rawId, inviteHandleBoardId1);
+
+    await wallet.addOffer(offer);
+
+    // Deposit a zoe invite in the wallet so that we can see how the
+    // invite purse balance is rendered with petnames. We should see
+    // unnamed first, then the petnames after those are suggested by
+    // the dapp.
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const invite2 = await E(publicAPI).makeInvite();
+    const {
+      extent: [{ handle: inviteHandle2 }],
+    } = await E(inviteIssuer).getAmountOf(invite2);
+    await wallet.deposit('Default Zoe invite purse', invite2);
+
+    const currentAmount = await E(zoeInvitePurse).getCurrentAmount();
+    t.deepEquals(
+      currentAmount.extent,
+      [
+        {
+          inviteDesc: 'getRefund',
+          handle: inviteHandle2,
+          instanceHandle,
+          installationHandle,
+        },
+      ],
+      `a single invite in zoe purse`,
+    );
+
+    const zoeInvitePurseState = JSON.parse(
+      pursesStateChangeLog[pursesStateChangeLog.length - 1],
+    )[0];
+    t.deepEquals(
+      zoeInvitePurseState,
+      {
+        brandBoardId: '6043467',
+        brandPetname: 'zoe invite',
+        pursePetname: 'Default Zoe invite purse',
+        extent: [
+          {
+            inviteDesc: 'getRefund',
+            handle: {},
+            instanceHandle: {},
+            installationHandle: {},
+          },
+        ],
+        currentAmountSlots: {
+          body:
+            '{"brand":{"@qclass":"slot","index":0},"extent":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+          slots: [
+            { kind: 'brand', petname: 'zoe invite' },
+            { kind: 'unnamed', petname: 'unnamed-4' },
+            { kind: 'unnamed', petname: 'unnamed-2' },
+            { kind: 'unnamed', petname: 'unnamed-3' },
+          ],
+        },
+        currentAmount: {
+          brand: { kind: 'brand', petname: 'zoe invite' },
+          extent: [
+            {
+              inviteDesc: 'getRefund',
+              handle: { kind: 'unnamed', petname: 'unnamed-4' },
+              instanceHandle: { kind: 'unnamed', petname: 'unnamed-2' },
+              installationHandle: { kind: 'unnamed', petname: 'unnamed-3' },
+            },
+          ],
+        },
+      },
+      `zoeInvitePurseState with no names and invite2`,
     );
 
     const automaticRefundInstanceBoardId = await E(board).getId(instanceHandle);
@@ -230,26 +337,172 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `autoswap installationHandle stored in wallet`,
     );
 
+    const zoeInvitePurseState2 = JSON.parse(
+      pursesStateChangeLog[pursesStateChangeLog.length - 1],
+    )[0];
+
+    t.deepEquals(
+      zoeInvitePurseState2,
+      {
+        brandBoardId: '6043467',
+        brandPetname: 'zoe invite',
+        pursePetname: 'Default Zoe invite purse',
+        extent: [
+          {
+            inviteDesc: 'getRefund',
+            handle: {},
+            instanceHandle: {},
+            installationHandle: {},
+          },
+        ],
+        currentAmountSlots: {
+          body:
+            '{"brand":{"@qclass":"slot","index":0},"extent":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+          slots: [
+            { kind: 'brand', petname: 'zoe invite' },
+            { kind: 'unnamed', petname: 'unnamed-4' },
+            { kind: 'instance', petname: 'automaticRefund' },
+            { kind: 'installation', petname: 'automaticRefund' },
+          ],
+        },
+        currentAmount: {
+          brand: { kind: 'brand', petname: 'zoe invite' },
+          extent: [
+            {
+              inviteDesc: 'getRefund',
+              handle: { kind: 'unnamed', petname: 'unnamed-4' },
+              instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
+              installationHandle: {
+                kind: 'installation',
+                petname: 'automaticRefund',
+              },
+            },
+          ],
+        },
+      },
+      `zoeInvitePurseState with names`,
+    );
+
+    const inboxState1 = JSON.parse(
+      inboxStateChangeLog[inboxStateChangeLog.length - 1],
+    )[0];
+    t.deepEquals(
+      inboxState1,
+      {
+        id: 'unknown#1588645041696',
+        inviteHandleBoardId: '15765496',
+        instanceHandleBoardId: '15326650',
+        installationHandleBoardId: '7279951',
+        proposalTemplate: {},
+        requestContext: { origin: 'unknown' },
+        instancePetname: 'automaticRefund',
+        installationPetname: 'automaticRefund',
+        proposalForDisplay: { exit: { onDemand: null } },
+      },
+      `inboxStateChangeLog with names`,
+    );
+
     console.log('EXPECTED ERROR ->>> "petname" not found/');
     t.throws(
       () => wallet.getInstallation('whatever'),
       /"petname" not found/,
-      `using a petname that doesn't exit errors`,
+      `using a petname that doesn't exist errors`,
     );
 
-    console.log('EXPECTED ERROR ->>> already has a petname');
+    console.log('EXPECTED ERROR ->>> is already in use');
     t.rejects(
       () => wallet.suggestInstallation('autoswap', autoswapInstallationBoardId),
-      /already has a petname/,
+      /is already in use/,
       `using a petname that already exists errors`,
     );
 
-    wallet.renameInstallation('autoswap2', autoswapInstallationHandle);
+    wallet.renameInstallation('automaticRefund2', installationHandle);
 
     t.equals(
-      wallet.getInstallation('autoswap2'),
-      autoswapInstallationHandle,
-      `autoswap installationHandle renamed in wallet`,
+      wallet.getInstallation('automaticRefund2'),
+      installationHandle,
+      `automaticRefund installationHandle renamed in wallet`,
+    );
+
+    // We need this await for the pursesStateChangeLog to be updated
+    // by the time we check it.
+    // TODO: check the pursesState changes in a less fragile way.
+    const currentAmount2 = await E(zoeInvitePurse).getCurrentAmount();
+    t.deepEquals(
+      currentAmount2.extent,
+      [
+        {
+          inviteDesc: 'getRefund',
+          handle: inviteHandle2,
+          instanceHandle,
+          installationHandle,
+        },
+      ],
+      `a single invite in zoe purse`,
+    );
+
+    const zoeInvitePurseState3 = JSON.parse(
+      pursesStateChangeLog[pursesStateChangeLog.length - 1],
+    )[0];
+
+    t.deepEquals(
+      zoeInvitePurseState3,
+      {
+        brandBoardId: '6043467',
+        brandPetname: 'zoe invite',
+        pursePetname: 'Default Zoe invite purse',
+        extent: [
+          {
+            inviteDesc: 'getRefund',
+            handle: inviteHandle2,
+            instanceHandle,
+            installationHandle,
+          },
+        ],
+        currentAmountSlots: {
+          body:
+            '{"brand":{"@qclass":"slot","index":0},"extent":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+          slots: [
+            { kind: 'brand', petname: 'zoe invite' },
+            { kind: 'unnamed', petname: 'unnamed-4' },
+            { kind: 'instance', petname: 'automaticRefund' },
+            { kind: 'installation', petname: 'automaticRefund2' },
+          ],
+        },
+        currentAmount: {
+          brand: { kind: 'brand', petname: 'zoe invite' },
+          extent: [
+            {
+              inviteDesc: 'getRefund',
+              handle: { kind: 'unnamed', petname: 'unnamed-4' },
+              instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
+              installationHandle: {
+                kind: 'installation',
+                petname: 'automaticRefund2',
+              },
+            },
+          ],
+        },
+      },
+      `zoeInvitePurseState with new names`,
+    );
+    const inboxState2 = JSON.parse(
+      inboxStateChangeLog[inboxStateChangeLog.length - 1],
+    )[0];
+    t.deepEquals(
+      inboxState2,
+      {
+        id: 'unknown#1588645041696',
+        inviteHandleBoardId: '15765496',
+        instanceHandleBoardId: '15326650',
+        installationHandleBoardId: '7279951',
+        proposalTemplate: {},
+        requestContext: { origin: 'unknown' },
+        instancePetname: 'automaticRefund',
+        installationPetname: 'automaticRefund2',
+        proposalForDisplay: { exit: { onDemand: null } },
+      },
+      `inboxStateChangeLog with new names`,
     );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -257,7 +510,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 });
 
 test('lib-wallet offer methods', async t => {
-  t.plan(5);
+  t.plan(8);
   try {
     const {
       moolaBundle,
@@ -266,6 +519,8 @@ test('lib-wallet offer methods', async t => {
       zoe,
       board,
       instanceHandle,
+      pursesStateChangeLog,
+      inboxStateChangeLog,
     } = await setupTest();
 
     await wallet.addIssuer('moola', moolaBundle.issuer);
@@ -325,40 +580,8 @@ test('lib-wallet offer methods', async t => {
           },
           requestContext: { origin: 'unknown' },
           status: undefined,
-          instancePetname: 'unnamed-2',
-          installationPetname: 'unnamed-3',
-          proposalForDisplay: {
-            want: {},
-            give: {
-              Contribution: {
-                pursePetname: 'Fun budget',
-                amount: {
-                  brand: { kind: 'brand', petname: 'moola' },
-                  extent: 1,
-                },
-              },
-            },
-            exit: { onDemand: null },
-          },
         },
       ],
-      `offer structure`,
-    );
-    t.deepEquals(
-      wallet.getOffers()[0].proposalForDisplay,
-      {
-        want: {},
-        give: {
-          Contribution: {
-            pursePetname: 'Fun budget',
-            amount: {
-              brand: { kind: 'brand', petname: 'moola' },
-              extent: 1,
-            },
-          },
-        },
-        exit: { onDemand: null },
-      },
       `offer structure`,
     );
     const { outcome, depositedP } = await wallet.acceptOffer(id);
@@ -375,6 +598,7 @@ test('lib-wallet offer methods', async t => {
     t.deepEquals(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(100),
+      `moolaPurse balance`,
     );
     const rawId2 = '1588645230204';
     const id2 = `unknown#${rawId2}`;
@@ -386,9 +610,117 @@ test('lib-wallet offer methods', async t => {
     const inviteHandleBoardId2 = await E(board).getId(inviteHandle2);
     const offer2 = formulateBasicOffer(rawId2, inviteHandleBoardId2);
     await wallet.deposit('Default Zoe invite purse', invite2);
+    // `addOffer` withdraws the invite from the Zoe invite purse.
     await wallet.addOffer(offer2);
-    wallet.declineOffer(id2);
-    // TODO: test cancelOffer with a contract that holds offers, like simpleExchange
+    await wallet.declineOffer(id2);
+    // TODO: test cancelOffer with a contract that holds offers, like
+    // simpleExchange
+    const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
+    const zoePurseAmount = await E(zoeInvitePurse).getCurrentAmount();
+    t.deepEquals(zoePurseAmount.extent, [], `zoeInvitePurse balance`);
+    const lastPurseState = JSON.parse(pursesStateChangeLog.pop());
+    const [zoeInvitePurseState, moolaPurseState] = lastPurseState;
+    t.deepEquals(
+      zoeInvitePurseState,
+      {
+        brandBoardId: '6043467',
+        brandPetname: 'zoe invite',
+        pursePetname: 'Default Zoe invite purse',
+        extent: [],
+        currentAmountSlots: {
+          body: '{"brand":{"@qclass":"slot","index":0},"extent":[]}',
+          slots: [{ kind: 'brand', petname: 'zoe invite' }],
+        },
+        currentAmount: {
+          brand: { kind: 'brand', petname: 'zoe invite' },
+          extent: [],
+        },
+      },
+      `zoeInvitePurseState`,
+    );
+    t.deepEquals(
+      moolaPurseState,
+      {
+        brandBoardId: '16679794',
+        brandPetname: 'moola',
+        pursePetname: 'Fun budget',
+        extent: 100,
+        currentAmountSlots: {
+          body: '{"brand":{"@qclass":"slot","index":0},"extent":100}',
+          slots: [{ kind: 'brand', petname: 'moola' }],
+        },
+        currentAmount: {
+          brand: { kind: 'brand', petname: 'moola' },
+          extent: 100,
+        },
+      },
+      `moolaPurseState`,
+    );
+    const lastInboxState = JSON.parse(inboxStateChangeLog.pop());
+    t.deepEquals(
+      lastInboxState,
+      [
+        {
+          id: 'unknown#1588645041696',
+          inviteHandleBoardId: '15765496',
+          instanceHandleBoardId: '15326650',
+          installationHandleBoardId: '7279951',
+          proposalTemplate: {
+            give: { Contribution: { pursePetname: 'Fun budget', extent: 1 } },
+            exit: { onDemand: null },
+          },
+          requestContext: { origin: 'unknown' },
+          status: 'accept',
+          instancePetname: 'unnamed-2',
+          installationPetname: 'unnamed-3',
+          proposalForDisplay: {
+            give: {
+              Contribution: {
+                pursePetname: 'Fun budget',
+                amount: {
+                  brand: {
+                    kind: 'brand',
+                    petname: 'moola',
+                  },
+                  extent: 1,
+                },
+              },
+            },
+            exit: { onDemand: null },
+          },
+        },
+        {
+          id: 'unknown#1588645230204',
+          inviteHandleBoardId: '3715714',
+          instanceHandleBoardId: '15326650',
+          installationHandleBoardId: '7279951',
+          proposalTemplate: {
+            give: { Contribution: { pursePetname: 'Fun budget', extent: 1 } },
+            exit: { onDemand: null },
+          },
+          requestContext: { origin: 'unknown' },
+          status: 'decline',
+          instancePetname: 'unnamed-2',
+          installationPetname: 'unnamed-3',
+          proposalForDisplay: {
+            give: {
+              Contribution: {
+                pursePetname: 'Fun budget',
+                amount: {
+                  brand: {
+                    kind: 'brand',
+                    petname: 'moola',
+                  },
+                  extent: 1,
+                },
+              },
+            },
+            exit: { onDemand: null },
+          },
+        },
+      ],
+      `inboxStateChangeLog`,
+    );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   }
