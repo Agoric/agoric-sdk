@@ -1,5 +1,3 @@
-/* global harden */
-
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';

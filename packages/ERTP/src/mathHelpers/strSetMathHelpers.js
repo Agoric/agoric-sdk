@@ -1,5 +1,3 @@
-/* global harden */
-
 import { passStyleOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 

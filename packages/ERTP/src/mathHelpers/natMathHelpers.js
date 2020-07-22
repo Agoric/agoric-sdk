@@ -1,5 +1,3 @@
-/* global harden */
-
 import Nat from '@agoric/nat';
 
 // Fungible digital assets use the natMathHelpers to manage balances -

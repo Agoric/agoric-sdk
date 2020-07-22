@@ -1,5 +1,3 @@
-/* global harden */
-
 import makeIssuerKit from '@agoric/ertp';
 
 const setup = () => {
