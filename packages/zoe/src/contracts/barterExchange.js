@@ -14,7 +14,6 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  * successful trader gets their `want` and may trade with counter-parties who
  * specify any amount up to their specified `give`.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

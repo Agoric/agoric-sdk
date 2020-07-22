@@ -21,7 +21,6 @@ import {
  * adding and removing liquidity, and for doing a swap. Other API operations
  * support monitoring the price and the size of the liquidity pool.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -227,7 +226,6 @@ const makeContract = zcf => {
       /**
        * `getCurrentPrice` calculates the result of a trade, given a certain amount
        * of digital assets in.
-       * @typedef {import('../zoe').Amount} Amount
        * @param {Amount} amountIn - the amount of digital
        * assets to be sent in
        */

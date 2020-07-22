@@ -84,16 +84,21 @@ export const cleanKeywords = keywordRecord => {
   return keywords;
 };
 
-// cleanProposal checks the keys and values of the proposal, including
-// the keys and values of the internal objects. The proposal may have
-// the following keys: `give`, `want`, and `exit`. These keys may be
-// omitted in the `proposal` argument passed to cleanProposal, but
-// anything other than these keys is not allowed. The values of `give`
-// and `want` must be "amountKeywordRecords", meaning that the keys
-// must be keywords and the values must be amounts. The value of
-// `exit`, if present, must be a record of one of the following forms:
-// `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
-// :Timer, deadline :Number } }
+/**
+ * cleanProposal checks the keys and values of the proposal, including
+ * the keys and values of the internal objects. The proposal may have
+ * the following keys: `give`, `want`, and `exit`. These keys may be
+ * omitted in the `proposal` argument passed to cleanProposal, but
+ * anything other than these keys is not allowed. The values of `give`
+ * and `want` must be "amountKeywordRecords", meaning that the keys
+ * must be keywords and the values must be amounts. The value of
+ * `exit`, if present, must be a record of one of the following forms:
+ * `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
+ * :Timer, deadline :Number } }
+ * @param {(brand: Brand) => AmountMath} getAmountMath
+ * @param {Proposal} proposal
+ * @returns {ProposalRecord}
+ */
 export const cleanProposal = (getAmountMath, proposal) => {
   const rootKeysAllowed = ['want', 'give', 'exit'];
   mustBeComparable(proposal);

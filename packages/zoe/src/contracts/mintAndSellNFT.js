@@ -21,7 +21,6 @@ import { E } from '@agoric/eventual-send';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

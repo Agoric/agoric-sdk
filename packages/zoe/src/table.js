@@ -5,17 +5,6 @@ const DEFAULT_CUSTOM_METHODS = () => ({});
 
 /**
  * @template T
- * @typedef {Object} Table
- * @property {(record: any) => record is T} validate
- * @property {(record: T, handle = harden({})) => {}} create
- * @property {(handle: {}) => T} get
- * @property {(handle: {}) => boolean} has
- * @property {(handle: {}) => void} delete
- * @property {(handle: {}, partialRecord: Partial<T>) => {}} update
- */
-
-/**
- * @template T
  * @template U
  * @param {(record: any) => record is T} validateFn
  * @param {string?} key

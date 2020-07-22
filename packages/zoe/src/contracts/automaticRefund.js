@@ -12,7 +12,6 @@
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

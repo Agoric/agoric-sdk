@@ -12,6 +12,4 @@
     "strictNullChecks": true,
   },
   "include": ["src/**/*.js", "exports.js"],
-  // FIXME: Remove the next line when the contracts pass typing.
-  "exclude": ["src/contracts/**"],
 }

@@ -41,7 +41,7 @@ import zcfContractBundle from '../bundles/bundle-contractFacet';
 function makeZoe(vatAdminSvc) {
   /**
    * A weakMap from the inviteHandles to contract offerHook upcalls
-   * @type {import('@agoric/weak-store').WeakStore<InviteHandle,OfferHook>}
+   * @type {import('@agoric/weak-store').WeakStore<InviteHandle,InviteCallback>}
    */
   const inviteHandleToHandler = makeWeakStore('inviteHandle');
 
@@ -64,7 +64,7 @@ function makeZoe(vatAdminSvc) {
 
   /**
    * @param {InstanceHandle} instanceHandle
-   * @param {Iterable<OfferHandle>} offerHandles
+   * @param {OfferHandle[]} offerHandles
    */
   const completeOffers = (instanceHandle, offerHandles) => {
     const { inactive } = offerTable.getOfferStatuses(offerHandles);
@@ -130,8 +130,9 @@ function makeZoe(vatAdminSvc) {
    * of `handle` and `instanceHandle`.
    *
    * @param {InstanceHandle} instanceHandle
-   * @param {OfferHook} offerHook
+   * @param {InviteCallback} inviteCallback
    * @param {Object} options
+   * @returns {Payment}
    */
   const makeInvitation = (
     instanceHandle,
@@ -178,10 +179,15 @@ function makeZoe(vatAdminSvc) {
       'brandKeywordRecord',
     ]);
 
+  /**
+   * @param {InstanceHandle} instanceHandle
+   * @param {import('@agoric/produce-promise').PromiseRecord<PublicAPI>} publicApiP
+   * @returns {ZoeForZcf}
+   */
   const makeZoeForZcf = (instanceHandle, publicApiP) => {
     return harden({
-      makeInvitation: (offerHook, inviteDesc, options = undefined) =>
-        makeInvitation(instanceHandle, offerHook, inviteDesc, options),
+      makeInvitation: (inviteCallback, inviteDesc, options = undefined) =>
+        makeInvitation(instanceHandle, inviteCallback, inviteDesc, options),
       updateAmounts: (offerHandles, reallocations) =>
         offerTable.updateAmounts(offerHandles, reallocations),
       updatePublicAPI: publicAPI => publicApiP.resolve(publicAPI),
@@ -363,7 +369,11 @@ function makeZoe(vatAdminSvc) {
       filterInstanceRecord(instanceTable.get(instanceHandle)),
 
     /** Get a notifier (see @agoric/notify) for the offer. */
-    getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
+    getOfferNotifier: offerHandle => {
+      const { notifier } = offerTable.get(offerHandle);
+      assert(notifier, `notifier is not set within Zoe`);
+      return notifier;
+    },
 
     /**
      * Redeem the invite to receive a payout promise and an
@@ -373,7 +383,7 @@ function makeZoe(vatAdminSvc) {
      * @param  {Proposal} [proposal={}] - the proposal, a record
      * with properties `want`, `give`, and `exit`. The keys of
      * `want` and `give` are keywords and the values are amounts.
-     * @param  {Object.<string,Payment>} [paymentKeywordRecord={}] - a record with
+     * @param  {PaymentKeywordRecord} [paymentKeywordRecord={}] - a record with
      * keyword keys and values which are payments that will be escrowed by
      * Zoe.
      * @returns OfferResultRecord

@@ -5,14 +5,11 @@
  * @typedef {any} TODO Needs to be typed
  * @typedef {string} Keyword
  * @typedef {{}} InstallationHandle
- * @typedef {Object<string,Issuer>} IssuerKeywordRecord
- * @typedef {Object<string,Brand>} BrandKeywordRecord
- * @typedef {Object<string,Payment>} PaymentKeywordRecord
- * @typedef {Object<string,Promise<Payment>>} PaymentPKeywordRecord
- * @typedef {Object} SourceBundle
- * @property {string} source
- * @property {string} sourceMap
- * @property {string} moduleFormat
+ * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
+ * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
+ * @typedef {Record<Keyword,Payment>} PaymentKeywordRecord
+ * @typedef {Record<Keyword,Promise<Payment>>} PaymentPKeywordRecord
+ * @typedef {Object} SourceBundle Opaque type for a JSONable source bundle
  */
 
 /**
@@ -40,7 +37,7 @@
  * that represent the right to interact with a smart contract in
  * particular ways.
  *
- * @property {(bundle: SourceBundle, moduleFormat?: string) => InstallationHandle} install
+ * @property {(bundle: SourceBundle) => InstallationHandle} install
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installationHandle.
  *
@@ -86,6 +83,7 @@
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
+ * @property {(offerHandle: OfferHandle) => import('@agoric/notifier').Notifier<Allocation>} getOfferNotifier
  * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecords) => Allocation} getCurrentAllocation
  * @property {(offerHandles: OfferHandle[], brandKeywordRecord[]?: BrandKeywordRecords) => Allocation[]} getCurrentAllocations
  * @property {(installationHandle: InstallationHandle) => SourceBundle} getInstallation
@@ -113,9 +111,10 @@
  * @property {CompleteObj} [completeObj]
  * completeObj will only be present if exitKind was 'onDemand'
  *
- * @typedef {{give?:AmountKeywordRecord,want?:AmountKeywordRecord,exit?:ExitRule}} Proposal
+ * @typedef {Partial<ProposalRecord>} Proposal
+ * @typedef {{give:AmountKeywordRecord,want:AmountKeywordRecord,exit:ExitRule}} ProposalRecord
  *
- * @typedef {Object.<string,Amount>} AmountKeywordRecord
+ * @typedef {Record<Keyword,Amount>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
@@ -123,12 +122,17 @@
  * @typedef {AmountKeywordRecord[]} AmountKeywordRecords
  *
  * @typedef {Object} MakeInstanceResult
- * @property {Promise<Invite>} invite
+ * @property {Invite} invite
  * @property {InstanceRecord} instanceRecord
  */
 
 /**
+ * @typedef {Object} Waker
+ * @property {() => void} wake
+ *
  * @typedef {Object} Timer
+ * @property {(deadline: Deadline, wakerP: Waker|PromiseLike<Waker>) => void} setWakeup
+ *
  * @typedef {number} Deadline
  *
  * @typedef {{waived:null}} Waived
@@ -136,7 +140,7 @@
  *
  * @typedef {{afterDeadline:{timer:Timer, deadline:Deadline}}} AfterDeadline
  *
- * @typedef {(Waived|OnDemand|AfterDeadline)} ExitRule
+ * @typedef {Partial<Waived>&Partial<OnDemand>&Partial<AfterDeadline>} ExitRule
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` key.
  * The possible records are:
@@ -146,17 +150,161 @@
  */
 
 /**
- * @typedef {Object} Invite
+ * @typedef {Payment} Invite
  * An invitation to participate in a Zoe contract.
  * Invites are Payments, so they can be transferred, stored in Purses, and
  * verified. Only Zoe can create new Invites.
- * @property {() => Brand} getAllegedBrand
  */
 
 /**
  * @callback MakeContract The type exported from a Zoe contract
  * @param {ContractFacet} zcf The Zoe Contract Facet
  * @returns {Invite} invite The closely-held administrative invite
+ */
+
+/**
+ * @typedef {Object} ContractFacet
+ * The Zoe interface specific to a contract instance.
+ * The Zoe Contract Facet is an API object used by running contract instances to
+ * access the Zoe state for that instance. The Zoe Contract Facet is accessed
+ * synchronously from within the contract, and usually is referred to in code as
+ * zcf.
+ * @property {Reallocate} reallocate Propose a reallocation of extents per offer
+ * @property {Complete} complete Complete an offer
+ * @property {MakeInvitation} makeInvitation
+ * @property {AddNewIssuer} addNewIssuer
+ * @property {InitPublicAPI} initPublicAPI
+ * @property {() => ZoeService} getZoeService
+ * @property {() => Issuer} getInviteIssuer
+ * @property {(offerHandles: OfferHandle[]) => OfferStatus} getOfferStatuses
+ * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
+ * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
+ * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
+ * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecord) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle) => Promise<import('@agoric/notifier').Notifier<Allocation>>} getOfferNotifier
+ * @property {() => InstanceRecord} getInstanceRecord
+ * @property {(issuer: Issuer) => Brand} getBrandForIssuer
+ * @property {(brand: Brand) => AmountMath} getAmountMath
+ * @property {() => VatAdmin} getVatAdmin
+ *
+ * @callback Reallocate
+ * The contract can propose a reallocation of extents across offers
+ * by providing two parallel arrays: offerHandles and newAllocations.
+ * Each element of newAllocations is an AmountKeywordRecord whose
+ * amount should replace the old amount for that keyword for the
+ * corresponding offer.
+ *
+ * The reallocation will only succeed if the reallocation 1) conserves
+ * rights (the amounts specified have the same total value as the
+ * current total amount), and 2) is 'offer-safe' for all parties involved.
+ *
+ * The reallocation is partial, meaning that it applies only to the
+ * amount associated with the offerHandles that are passed in. By
+ * induction, if rights conservation and offer safety hold before,
+ * they will hold after a safe reallocation, even though we only
+ * re-validate for the offers whose allocations will change. Since
+ * rights are conserved for the change, overall rights will be unchanged,
+ * and a reallocation can only effect offer safety for offers whose
+ * allocations change.
+ *
+ * zcf.reallocate will throw an error if any of the
+ * newAllocations do not have a value for all the
+ * keywords in sparseKeywords. An error will also be thrown if
+ * any newAllocations have keywords that are not in
+ * sparseKeywords.
+ *
+ * @param  {OfferHandle[]} offerHandles An array of offerHandles
+ * @param  {AmountKeywordRecord[]} newAllocations An
+ * array of amountKeywordRecords  - objects with keyword keys
+ * and amount values, with one keywordRecord per offerHandle.
+ * @returns {void}
+ *
+ * @callback Complete
+ * The contract can "complete" an offer to remove it from the
+ * ongoing contract and resolve the player's payouts (either
+ * winnings or refunds). Because Zoe only allows for
+ * reallocations that conserve rights and are 'offer-safe', we
+ * don't need to do those checks at this step and can assume
+ * that the invariants hold.
+ * @param  {OfferHandle[]} offerHandles - an array of offerHandles
+ * @returns {void}
+ *
+ * @callback MakeInvitation
+ * Make a credible Zoe invite for a particular smart contract
+ * indicated by the unique `instanceHandle`. The other
+ * information in the extent of this invite is decided by the
+ * governing contract and should include whatever information is
+ * necessary for a potential buyer of the invite to know what
+ * they are getting. Note: if information can be derived in
+ * queries based on other information, we choose to omit it. For
+ * instance, `installationHandle` can be derived from
+ * `instanceHandle` and is omitted even though it is useful.
+ * @param {OfferHook} offerHook - a function that will be handed the
+ * offerHandle at the right time, and returns a contract-specific
+ * OfferOutcome which will be put in the OfferResultRecord.
+ * @param {string} inviteDesc
+ * @param {MakeInvitationOptions} [options]
+ * @returns {Promise<Invite>}
+ *
+ * @typedef MakeInvitationOptions
+ * @property {CustomProperties} [customProperties] - an object of
+ * information to include in the extent, as defined by the smart
+ * contract
+ *
+ * @callback OfferHook
+ * This function will be called with the OfferHandle when the offer
+ * is prepared. It should return a contract-specific "OfferOutcome"
+ * value that will be put in the OfferResultRecord.
+ * @param {OfferHandle} offerHandle
+ * @returns {OfferOutcome}
+ *
+ * @callback AddNewIssuer
+ * Informs Zoe about an issuer and returns a promise for acknowledging
+ * when the issuer is added and ready.
+ * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
+ * @param {Keyword} keyword Keyword for added issuer
+ * @returns {Promise<IssuerRecord>} Issuer is added and ready
+ *
+ * @typedef {Record<string,function>} PublicAPI
+ *
+ * @callback InitPublicAPI
+ * Initialize the publicAPI for the contract instance, as stored by Zoe in
+ * the instanceRecord.
+ * @param {PublicAPI} publicAPI - an object whose methods are the API
+ * available to anyone who knows the instanceHandle
+ * @returns {void}
+ *
+ * @callback StartContract
+ * Makes a contract instance from an installation and returns a
+ * unique handle for the instance that can be shared, as well as
+ * other information, such as the terms used in the instance.
+ * @param {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
+ * @param {Record<Keyword,Issuer>} issuerKeywordRecord - a record mapping
+ * keyword keys to issuer values
+ * @param {SourceBundle} bundle an object containing source code and moduleFormat
+ * @param {Object} instanceData, fields for the instanceRecord
+ * @param innerZoe - An inner facet of Zoe for the contractFacet's use
+ * @param {Issuer} inviteIssuerIn, Zoe's inviteIssuer, for the contract to use
+ * @returns {Promise<{ inviteP: Promise<Invite>, zcfForZoe: ZcfForZoe }>}
+ */
+
+/**
+ * @typedef {Object} VatAdmin
+ * A powerful object that can be used to terminate the vat in which a contract
+ * is running, to get statistics, or to be notified when it terminates. The
+ * VatAdmin object is only available to the contract from within the contract so
+ * that clients of the contract can tell (by getting the source code from Zoe
+ * using the instanceHandle) what use the contract makes of it. If they want to
+ * be assured of discretion, or want to know that the contract doesn't have the
+ * ability to call terminate(), Zoe makes this visible.
+ *
+ * @property {() => Object} done
+ * provides a promise that will be fullfilled when the contract is terminated.
+ * @property {() => undefined} terminate
+ * kills the vat in which the contract is running
+ * @property {() => Object} adminData
+ * provides some statistics about the vat in which the contract is running.
  */
 
 /**
@@ -168,19 +316,20 @@
  * @typedef {object} OfferRecord
  * @property {OfferHandle=} handle - opaque identifier, used as the table key
  * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
- * @property {Proposal} proposal - the offer proposal (including want, give, exit)
+ * @property {ProposalRecord} proposal - the offer proposal (including want, give, exit)
  * @property {Allocation} currentAllocation - the allocation corresponding to this offer
- * @property {Notifier<any>} notifier - the notifier for XXX
+ * @property {import('@agoric/notifier').Notifier<Allocation>=} notifier - the notifier for allocation changes
+ * @property {import('@agoric/notifier').Updater<Allocation>} updater - the notifier for allocation changes
  *
  * @typedef {object} InstanceRecord
  * @property {InstanceHandle=} handle - opaque identifier for the instance, used as the table key
  * @property {InstallationHandle} installationHandle - opaque identifier for the installation
- * @property {Promise<Object.<string,function>>} publicAPI - the invite-free publicly accessible API for the contract
+ * @property {TODO|PublicAPI} publicAPI - the invite-free publicly accessible API for the contract
  * @property {Object} terms - contract parameters
  * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
  * @property {BrandKeywordRecord} brandKeywordRecord - record with
  * keywords keys, brand values
- * @property {Promise<ZcfInnerFacet>} zcfForZoe - the inner facet for Zoe to use
+ * @property {Promise<ZcfForZoe>} zcfForZoe - the inner facet for Zoe to use
  * @property {Set<OfferHandle>} offerHandles - the offer handles for this instance
  *
  * @typedef {Object} IssuerRecord
@@ -205,14 +354,39 @@
  */
 
 /**
- * @typedef {Object} ZcfInnerFacet
+ * @typedef {Object} ZcfForZoe
  * The facet ZCF presents to Zoe.
  *
- * @property {(OfferHandle, Proposal, Allocation) => (CompleteObj | undefined)} addOffer
+ * @property {(offerHandle: OfferHandle, proposal: Proposal, allocation: Allocation) => (CompleteObj | undefined)} addOffer
  * Add a single offer to this contract instance.
+ */
+
+/**
+ * @typedef {Object} ZoeForZcf
+ * @property {(inviteCallback: InviteCallback, inviteDesc: string, options?: MakeInvitationOptions) => Payment} makeInvitation
+ * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
+ * @property {(publicAPI: PublicAPI) => InstanceHandle} updatePublicAPI
+ * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
+ * @property {(offerHandles: OfferHandle[]) => void} completeOffers
+ */
+
+/**
+ * @typedef {Object} InviteCallback
+ * @property {OfferHook} invoke
  */
 
 /**
  * @template T
  * @typedef {(record: any) => record is T} Validator
+ */
+
+/**
+ * @template T
+ * @typedef {Object} Table
+ * @property {(record: any) => record is T} validate
+ * @property {(record: T, handle = harden({})) => {}} create
+ * @property {(handle: {}) => T} get
+ * @property {(handle: {}) => boolean} has
+ * @property {(handle: {}) => void} delete
+ * @property {(handle: {}, partialRecord: Partial<T>) => {}} update
  */

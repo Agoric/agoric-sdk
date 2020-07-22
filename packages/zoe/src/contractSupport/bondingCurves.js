@@ -18,7 +18,7 @@ const { add, subtract, multiply, floorDivide } = natSafeMath;
  * pool of the kind of asset sent in
  * @param  {number} params.outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
- * @param  {number} params.feeBasisPoints=30 - the fee taken in
+ * @param  {number} [params.feeBasisPoints=30] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee is taken from
  * inputValue
  * @returns {number} outputValue - the current price, in value form

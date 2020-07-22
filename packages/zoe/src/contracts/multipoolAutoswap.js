@@ -37,10 +37,6 @@ import { filterObj } from '../objArrayConversion';
  * making trades. Other API operations support monitoring prices and the sizes
  * of pools.
  *
- * @typedef {import('@agoric/ertp/src/issuer').Amount} Amount
- * @typedef {import('@agoric/ertp/src/issuer').Brand} Brand
- * @typedef {import('../zoe').AmountKeywordRecords} AmountKeywordRecords
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -118,11 +114,15 @@ const makeContract = zcf => {
       issuer: liquidityIssuer,
       brand: liquidityBrand,
     } = makeIssuerKit(newLiquidityKeyword);
-    return Promise.all([
+
+    /** @type {Promise<[IssuerRecord, OfferHandle, IssuerRecord]>} */
+    // @ts-ignore
+    const promiseAll = Promise.all([
       zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
       makeEmptyOffer(),
       zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
-    ]).then(([newTokenIssuerRecord, poolHandle]) => {
+    ]);
+    return promiseAll.then(([newTokenIssuerRecord, poolHandle]) => {
       // The final element of the above array is intentionally
       // ignored, since we already have the liquidityIssuer and mint.
       assertNatMathHelpers(newTokenIssuerRecord.brand);
@@ -168,6 +168,13 @@ const makeContract = zcf => {
     return zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
   };
 
+  /**
+   * @param {Object} args
+   * @param {Brand} args.brandIn
+   * @param {Brand} args.brandOut
+   * @param {OfferHandle=} args.offerHandleToReject
+   * @returns {Brand}
+   */
   const findSecondaryTokenBrand = ({
     brandIn,
     brandOut,

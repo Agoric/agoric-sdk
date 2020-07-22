@@ -106,9 +106,15 @@ const makeOfferTable = () => {
     return true;
   };
 
+  /**
+   * 
+   * @param {Table<OfferRecord>} table 
+   */
   const makeCustomMethods = table => {
     const customMethods = harden({
+      /** @param {OfferHandle[]} offerHandles */
       getOffers: offerHandles => offerHandles.map(table.get),
+      /** @param {OfferHandle[]} offerHandles */
       getOfferStatuses: offerHandles => {
         const active = [];
         const inactive = [];
@@ -124,7 +130,9 @@ const makeOfferTable = () => {
           inactive,
         });
       },
+      /** @param {OfferHandle} offerHandle */
       isOfferActive: offerHandle => table.has(offerHandle),
+      /** @param {OfferHandle[]} offerHandles */
       deleteOffers: offerHandles => {
         return offerHandles.map(offerHandle => {
           const { updater } = table.get(offerHandle);
@@ -132,6 +140,10 @@ const makeOfferTable = () => {
           return table.delete(offerHandle);
         });
       },
+      /**
+       * @param {OfferHandle[]} offerHandles
+       * @param {Allocation[]} newAllocations
+       */
       updateAmounts: (offerHandles, newAllocations) =>
         offerHandles.map((offerHandle, i) => {
           // newAllocation can replace the old allocation entirely

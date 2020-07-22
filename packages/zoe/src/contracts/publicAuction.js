@@ -29,7 +29,6 @@ import {
  * publicAPI also has methods to find out what's being auctioned
  * (getAuctionedAssetsAmounts()), or the minimum bid (getMinimumBid()).
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

@@ -12,7 +12,6 @@ import { makeZoeHelpers } from '../contractSupport';
  * amount no greater than the original's give, and a give amount at least as
  * large as the original's want.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

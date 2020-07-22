@@ -17,7 +17,6 @@ import { makeZoeHelpers } from '../contractSupport';
  * new tokens. await E(publicAPI).makeInvite() returns an invitation that accepts an
  * empty offer and provides 1000 tokens.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
