@@ -25,7 +25,7 @@ import { producePromise } from '@agoric/produce-promise';
  * return the current record.
  * Otherwise, after the next state change, the promise will resolve to the
  * then-current value of the record.
- * @returns {Promise<UpdateRecord<T>>} resolves to the corresponding update
+ * @returns {Promise<UpdateRecord<T>|undefined>} resolves to the corresponding update
  */
 
 /**
@@ -69,7 +69,7 @@ const supportLegacy = true;
  * update promises.
  *
  * @template T the type of the notifier state
- * @param {T} [initialState] the first state to be returned
+ * @param {T[]} args the first state to be returned
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 // The initial state argument has to be truly optional even though it can
@@ -81,8 +81,11 @@ const supportLegacy = true;
 // an initial state. Its initial state will instead be the state of the first
 // update.
 export const makeNotifierKit = (...args) => {
+  /** @type {import('@agoric/produce-promise').PromiseRecord<UpdateRecord<T>>|undefined} */
   let nextPromiseKit = producePromise();
+  /** @type {UpdateCount} */
   let currentUpdateCount = 1; // avoid falsy numbers
+  /** @type {UpdateRecord<T>|undefined} */
   let currentResponse;
 
   const hasState = () => currentResponse !== undefined;

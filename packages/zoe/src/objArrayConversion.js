@@ -1,10 +1,16 @@
 import { assert, details, q } from '@agoric/assert';
 
+/**
+ * @template T
+ * @param {T[]} array
+ * @param {string[]} keywords
+ */
 export const arrayToObj = (array, keywords) => {
   assert(
     array.length === keywords.length,
     details`array and keywords must be of equal length`,
   );
+  /** @type {{[Keyword: string]: T}} */
   const obj = {};
   keywords.forEach((keyword, i) => (obj[keyword] = array[i]));
   return obj;

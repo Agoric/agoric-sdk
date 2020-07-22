@@ -166,21 +166,22 @@
  * @typedef {Object} CustomProperties
  *
  * @typedef {object} OfferRecord
+ * @property {OfferHandle=} handle - opaque identifier, used as the table key
  * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
  * @property {Proposal} proposal - the offer proposal (including want, give, exit)
  * @property {Allocation} currentAllocation - the allocation corresponding to this offer
  * @property {Notifier<any>} notifier - the notifier for XXX
  *
  * @typedef {object} InstanceRecord
- * @property {InstanceHandle} handle - opaque identifier for the instance, used as the table key
+ * @property {InstanceHandle=} handle - opaque identifier for the instance, used as the table key
  * @property {InstallationHandle} installationHandle - opaque identifier for the installation
- * @property {Object.<string,function>} publicAPI - the invite-free publicly accessible API for the contract
+ * @property {Promise<Object.<string,function>>} publicAPI - the invite-free publicly accessible API for the contract
  * @property {Object} terms - contract parameters
  * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
  * @property {BrandKeywordRecord} brandKeywordRecord - record with
  * keywords keys, brand values
  * @property {Promise<ZcfInnerFacet>} zcfForZoe - the inner facet for Zoe to use
- * @property {OfferHandle[]} offerHandles - the offer handles for this instance
+ * @property {Set<OfferHandle>} offerHandles - the offer handles for this instance
  *
  * @typedef {Object} IssuerRecord
  * @property {Brand} brand
@@ -189,15 +190,14 @@
  * @property {AmountMath} amountMath
  *
  * @typedef {Object} InstallationRecord
- * @property {InstallationHandle} handle - opaque identifier, used as the table key
+ * @property {InstallationHandle=} handle - opaque identifier, used as the table key
  * @property {SourceBundle} bundle - contract code
  *
  * @typedef {Object} OfferStatus
  * @property {OfferHandle[]} active
  * @property {OfferHandle[]} inactive
  *
- * @typedef {Object} OfferHook
- * @property {(offerHandle: OfferHandle) => void} invoke
+ * @typedef {(offerHandle: OfferHandle) => void} OfferHook
  *
  * @typedef {Keyword[]} SparseKeywords
  * @typedef {{[Keyword:string]:Amount}} Allocation

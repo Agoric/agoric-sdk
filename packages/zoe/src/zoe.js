@@ -64,7 +64,7 @@ function makeZoe(vatAdminSvc) {
 
   /**
    * @param {InstanceHandle} instanceHandle
-   * @param {OfferHandle[]} offerHandles
+   * @param {Iterable<OfferHandle>} offerHandles
    */
   const completeOffers = (instanceHandle, offerHandles) => {
     const { inactive } = offerTable.getOfferStatuses(offerHandles);
@@ -277,10 +277,13 @@ function makeZoe(vatAdminSvc) {
           // We'll store an initial version of InstanceRecord before invoking
           // ZCF and fill in the zcfForZoe when we get it.
           const zcfForZoePromise = producePromise();
+          /** @type {InstanceRecord} */
           const instanceRecord = {
             installationHandle,
             publicAPI: publicApiP.promise,
             terms,
+            issuerKeywordRecord: {},
+            brandKeywordRecord: {},
             zcfForZoe: zcfForZoePromise.promise,
             offerHandles: new Set(),
           };

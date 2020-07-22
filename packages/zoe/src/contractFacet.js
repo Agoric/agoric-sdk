@@ -39,7 +39,7 @@ import { evalContractBundle } from './evalContractCode';
  * @property {() => InstanceRecord} getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => AmountMath} getAmountMath
- * @property {() => Promise<Notifier>} getOfferNotifier
+ * @property {() => Promise<import('@agoric/notifier').Notifier<OfferRecord>>} getOfferNotifier
  * @property {() => VatAdmin} getVatAdmin
 ` *
  * @callback Reallocate
