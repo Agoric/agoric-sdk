@@ -1,11 +1,10 @@
-/* global harden */
 /* eslint-disable no-use-before-define */
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
-/** @typedef {import('../zoe').ContractFacet} ContractFacet */
+import '../types';
 
 /**
  * Sell items in exchange for money. Items may be fungible or
@@ -22,7 +21,6 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  * available to sell, and the money should be pricePerItem times the number of
  * items requested.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

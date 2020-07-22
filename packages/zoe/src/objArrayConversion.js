@@ -34,8 +34,10 @@ export const assertSubset = (whole, part) => {
 /**
  * Return a new object with only the keys in subsetKeywords.
  * `obj` must have values for all the `subsetKeywords`.
+ * @template T
  * @param {Object} obj
- * @param {import('./zoe').Keyword[]} subsetKeywords
+ * @param {Keyword[]} subsetKeywords
+ * @returns {T}
  */
 export const filterObj = (obj, subsetKeywords) => {
   const newObj = {};
@@ -52,9 +54,9 @@ export const filterObj = (obj, subsetKeywords) => {
 /**
  * Return a new object with only the keys in `amountMathKeywordRecord`, but fill
  * in empty amounts for any key that is undefined in the original allocation
- * @param {import('./zoe').Allocation} allocation
- * @param {import('./zoe').AmountMathKeywordRecord} amountMathKeywordRecord
- * @returns Allocation
+ * @param {Allocation} allocation
+ * @param {AmountMathKeywordRecord} amountMathKeywordRecord
+ * @returns {Allocation}
  * */
 export const filterFillAmounts = (allocation, amountMathKeywordRecord) => {
   const filledAllocation = {};

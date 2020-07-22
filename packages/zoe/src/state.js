@@ -1,21 +1,27 @@
-/* global harden */
+// @ts-check
 
 import { E } from '@agoric/eventual-send';
 
-import makeStore from '@agoric/weak-store';
+import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from './table';
 
 /**
- * @typedef {import('./zoe').OfferHandle} OfferHandle
- * @typedef {import('@agoric/ertp').Payment} Payment
+ * @template K,V
+ * @typedef {import('@agoric/weak-store').WeakStore<K,V>} WeakStore
  */
 
 // Installation Table key: installationHandle
 // Columns: bundle
+/**
+ *
+ */
 const makeInstallationTable = () => {
+  /**
+   * @type {Validator<InstallationRecord>}
+   */
   const validateSomewhat = makeValidateProperties(harden(['bundle']));
-  return makeTable(validateSomewhat, 'installationHandle');
+  return makeTable(validateSomewhat, 'installationHandle', () => ({}));
 };
 
 // Instance Table key: instanceHandle
@@ -28,8 +34,12 @@ const makeInstallationTable = () => {
 // received from the newly created vat. Zoe needs to know the offerHandles in
 // order to fulfill its responsibility for exit safety.
 const makeInstanceTable = () => {
-  // TODO: make sure this validate function protects against malicious
-  //  misshapen objects rather than just a general check.
+  /**
+   * TODO: make sure this validate function protects against malicious
+   * misshapen objects rather than just a general check.
+   *
+   * @type {Validator<InstanceRecord>}
+   */
   const validateSomewhat = makeValidateProperties(
     harden([
       'installationHandle',
@@ -72,8 +82,10 @@ const makeInstanceTable = () => {
 // authoritative. Zcf doesn't store a notifier, but does store a no-action
 // updater, so updateAmounts can work polymorphically.
 const makeOfferTable = () => {
-  // TODO: make sure this validate function protects against malicious
-  //  misshapen objects rather than just a general check.
+  /**
+   * TODO: make sure this validate function protects against malicious
+   * misshapen objects rather than just a general check.
+   */
   const validateProperties = makeValidateProperties(
     harden([
       'instanceHandle',
@@ -83,6 +95,10 @@ const makeOfferTable = () => {
       'updater',
     ]),
   );
+
+  /**
+   * @type {Validator<OfferRecord>}
+   */
   const validateSomewhat = obj => {
     validateProperties(obj);
     // TODO: Should check the rest of the representation of the proposal
@@ -137,10 +153,10 @@ const makeOfferTable = () => {
 // Columns: payout
 /**
  * Create payoutMap
- * @returns {import('@agoric/store').Store<OfferHandle,
- * Promise<Payment>>} Store
+ * @returns {WeakStore<OfferHandle,
+ * import('@agoric/produce-promise').PromiseRecord<PaymentPKeywordRecord>>} Store
  */
-const makePayoutMap = () => makeStore('offerHandle');
+const makePayoutMap = () => makeWeakStore('offerHandle');
 
 // Issuer Table key: brand
 // Columns: issuer | purse | amountMath
@@ -154,8 +170,11 @@ const makePayoutMap = () => makeStore('offerHandle');
 // Zoe main has an issuerTable that stores the purses with deposited assets.
 // Zoe contract facet has everything but the purses.
 const makeIssuerTable = (withPurses = true) => {
-  // TODO: make sure this validate function protects against malicious
-  //  misshapen objects rather than just a general check.
+  /**
+   * TODO: make sure this validate function protects against malicious
+   * misshapen objects rather than just a general check.
+   * @type {Validator<IssuerRecord & { purse?: Purse }>}
+   */
   const validateSomewhat = makeValidateProperties(
     withPurses
       ? harden(['brand', 'issuer', 'purse', 'amountMath'])
@@ -163,22 +182,31 @@ const makeIssuerTable = (withPurses = true) => {
   );
 
   const makeCustomMethods = table => {
-    const issuersInProgress = makeStore('issuer');
-    const issuerToBrand = makeStore('issuer');
+    /** @type {WeakStore<Issuer,any>} */
+    const issuersInProgress = makeWeakStore('issuer');
+
+    /** @type {WeakStore<Issuer,Brand>} */
+    const issuerToBrand = makeWeakStore('issuer');
 
     // We can't be sure we can build the table entry soon enough that the first
     // caller will get the actual data, so we start by saving a promise in the
     // inProgress table, and once we have the Issuer, build the record, fill in
     // the table, and resolve the promise.
+    /**
+     * @param {Issuer} issuer
+     */
     function buildTableEntryAndPlaceHolder(issuer) {
       // remote calls which immediately return a promise
       const mathHelpersNameP = E(issuer).getMathHelpersName();
       const brandP = E(issuer).getBrand();
 
-      // a promise for a synchronously accessible record
-      const promiseRecord = [brandP, mathHelpersNameP];
+      /**
+       * a promise for a synchronously accessible record
+       * @type {[PromiseLike<Brand>, PromiseLike<string>, PromiseLike<Purse> | undefined]}
+       */
+      const promiseRecord = [brandP, mathHelpersNameP, undefined];
       if (withPurses) {
-        promiseRecord.push(E(issuer).makeEmptyPurse());
+        promiseRecord[2] = E(issuer).makeEmptyPurse();
       }
       const synchronousRecordP = Promise.all(promiseRecord).then(
         ([brand, mathHelpersName, purse]) => {
@@ -221,6 +249,7 @@ const makeIssuerTable = (withPurses = true) => {
           }
         });
       },
+      /** @type {(issuerPs: (Issuer|PromiseLike<Issuer>)[]) => Promise<IssuerRecord[]>} */
       getPromiseForIssuerRecords: issuerPs =>
         Promise.all(issuerPs.map(customMethods.getPromiseForIssuerRecord)),
       brandFromIssuer: issuer => issuerToBrand.get(issuer),

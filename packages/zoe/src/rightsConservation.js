@@ -1,11 +1,11 @@
+// @ts-check
+
 import makeStore from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 
 /**
- * @typedef {import('@agoric/ertp').Amount} Amount
- * @typedef {import('@agoric/ertp').Brand} Brand
- * @typedef {import('@agoric/ertp').AmountMath} AmountMath
- * @typedef {import('@agoric/store').Store<Brand, Amount>} Store
+ * @template K,V
+ * @typedef {import('@agoric/store').Store<K, V>} Store
  */
 
 /**
@@ -14,7 +14,7 @@ import { assert, details } from '@agoric/assert';
  * @param  {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
  * @param  {Amount[]} amounts - an array of amounts
- * @returns {Store} sumsByBrand - a map of Brand keys and
+ * @returns {Store<Brand, Amount>} sumsByBrand - a map of Brand keys and
  * Amount values. The amounts are the sums.
  */
 const sumByBrand = (getAmountMath, amounts) => {
@@ -35,8 +35,8 @@ const sumByBrand = (getAmountMath, amounts) => {
  * Do the left sums by brand equal the right sums by brand?
  * @param  {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
- * @param  {Store} leftSumsByBrand - a map of brands to sums
- * @param  {Store} rightSumsByBrand - a map of brands to sums
+ * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
+ * @param  {Store<Brand, Amount>} rightSumsByBrand - a map of brands to sums
  * indexed by issuer
  */
 const isEqualPerBrand = (getAmountMath, leftSumsByBrand, rightSumsByBrand) => {

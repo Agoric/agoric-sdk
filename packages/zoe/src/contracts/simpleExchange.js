@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import { makeNotifierKit } from '@agoric/notifier';

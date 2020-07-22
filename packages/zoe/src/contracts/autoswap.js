@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import makeIssuerKit from '@agoric/ertp';

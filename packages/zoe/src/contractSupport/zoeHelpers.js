@@ -1,21 +1,7 @@
-/* global harden */
-
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { satisfiesWant, isOfferSafe } from '../offerSafety';
-
-/**
- * @typedef {import('../zoe').OfferHandle} OfferHandle
- * @typedef {import('../zoe').Invite} Invite
- * @typedef {import('../zoe').OfferHook} OfferHook
- * @typedef {import('../zoe').CustomProperties} CustomProperties
- * @typedef {import('../zoe').ContractFacet} ContractFacet
- * @typedef {import('../zoe').Keyword} Keyword
- * @typedef {import('../zoe').AmountKeywordRecord} AmountKeywordRecord
- * @typedef {import('../zoe').Amount} Amount
- * @typedef {import('../zoe').Payment} Payment
- */
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;

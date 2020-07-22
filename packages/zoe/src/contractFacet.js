@@ -5,7 +5,6 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-/* global harden */
 // @ts-check
 
 import { assert, details, q } from '@agoric/assert';
@@ -127,6 +126,19 @@ import { evalContractBundle } from './evalContractCode';
  * @param {Object} publicAPI - an object whose methods are the API
  * available to anyone who knows the instanceHandle
  * @returns {void}
+ * 
+ * @callback StartContract
+ * Makes a contract instance from an installation and returns a
+ * unique handle for the instance that can be shared, as well as
+ * other information, such as the terms used in the instance.
+ * @param {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
+ * @param innerZoe - An inner facet of Zoe for the contractFacet's use
+ * @param {Object<string,Issuer>} issuerKeywordRecord - a record mapping
+ * keyword keys to issuer values
+ * @param {SourceBundle} bundle an object containing source code and moduleFormat
+ * @param {Issuer} inviteIssuerIn, Zoe's inviteIssuer, for the contract to use
+ * @param {Object} instanceData, fields for the instanceRecord
+ * @returns {Promise<{ inviteP: Promise<Invite>, zcfForZoe: ZcfInnerFacet }>}
  */
 
 /**
@@ -148,9 +160,9 @@ import { evalContractBundle } from './evalContractCode';
  */
 
 /**
- * Create the contract facet.
+ * Create the contract instance.
  *
- * @returns {ContractFacet} The returned facet
+ * @returns {{ startContract: StartContract }} The returned instance
  */
 export function buildRootObject(_vatPowers) {
   const visibleInstanceRecordFields = [
@@ -183,6 +195,7 @@ export function buildRootObject(_vatPowers) {
     if (brandKeywordRecord === undefined) {
       return currentAllocation;
     }
+    /** @type {AmountMathKeywordRecord} */
     const amountMathKeywordRecord = {};
     Object.getOwnPropertyNames(brandKeywordRecord).forEach(keyword => {
       const brand = brandKeywordRecord[keyword];
@@ -285,7 +298,7 @@ export function buildRootObject(_vatPowers) {
     return E(zoeForZcf).completeOffers(offerHandlesToDrop);
   }
 
-  /** @type {ContractFacet} */
+  /** @returns {ContractFacet} */
   const makeContractFacet = (
     zoeService,
     instanceRecord,
@@ -355,15 +368,7 @@ export function buildRootObject(_vatPowers) {
   };
 
   /**
-   * @typedef {import('@agoric/zoe').CompleteObj} CompleteObj
-   *
-   * @typedef {Object} ZcfForZoe
-   * The facet ZCF presents to Zoe.
-   *
-   * @property {(OfferHandle, Proposal, Allocation) => CompleteObj} addOffer
-   * Add a single offer to this contract instance.
-   *
-   * @return CompleteObj
+   * @type {ZcfInnerFacet}
    */
   const makeZcfForZoe = (instanceHandle, zoeForZcf) =>
     harden({
@@ -383,6 +388,7 @@ export function buildRootObject(_vatPowers) {
         const { exit } = proposal;
         const [exitKind] = Object.getOwnPropertyNames(exit);
 
+        /** @type {CompleteObj | undefined} */
         let completeObj;
         const completeOffer = () => {
           return completeOffers(harden([offerHandle]), zoeForZcf);
@@ -423,9 +429,8 @@ export function buildRootObject(_vatPowers) {
    * Makes a contract instance from an installation and returns a
    * unique handle for the instance that can be shared, as well as
    * other information, such as the terms used in the instance.
-   * @param params - a record containing { zoeService, bundle, instanceData,
-   *    zoeForZcf, inviteIssuer }
-   * @returns { Promise<Invite>, ZcfForZoe }
+   *
+   * @type {StartContract}
    */
   const startContract = params => {
     const contractCode = evalContractBundle(params.bundle);
@@ -444,6 +449,7 @@ export function buildRootObject(_vatPowers) {
         params.inviteIssuer,
         params.zoeForZcf,
       );
+      /** @type {Promise<Invite>} */
       const inviteP = E(contractCode).makeContract(contractFacet);
       return {
         inviteP,

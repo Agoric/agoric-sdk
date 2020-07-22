@@ -1,11 +1,4 @@
 /**
- * @typedef {import('@agoric/ertp/src/issuer').Brand} Brand
- * @typedef {import('@agoric/ertp/src/issuer').AmountMath} AmountMath
- * @typedef {import('./zoe').Proposal} Proposal
- * @typedef {import('./zoe').AmountKeywordRecord} AmountKeywordRecord
- */
-
-/**
  * Helper to perform satisfiesWant and satisfiesGive. Is
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?

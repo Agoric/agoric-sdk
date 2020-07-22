@@ -1,5 +1,3 @@
-/* global harden */
-
 /* eslint-disable no-use-before-define */
 // @ts-check
 
