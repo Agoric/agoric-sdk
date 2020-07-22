@@ -7,7 +7,7 @@
     "node": ">=11.0"
   },
   "scripts": {
-    "build": "exit 0",
+    "build": "tsc -p jsconfig.json",
     "test": "tap --no-coverage --jobs=1 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -65,6 +65,9 @@
     ],
     "env": {
       "es6": true
+    },
+    "globals": {
+      "harden": "readonly"
     },
     "rules": {
       "implicit-arrow-linebreak": "off",

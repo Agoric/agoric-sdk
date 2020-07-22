@@ -4,24 +4,32 @@
 import { HandledPromise } from '@agoric/eventual-send';
 
 /**
- * @template U,V
+ * @template T
  * @typedef {Object} PromiseRecord A reified Promise
- * @property {(value?: U) => void} resolve
- * @property {(reason?: V) => void} reject
- * @property {Promise.<U, V>} promise
+ * @property {(value: T) => void} resolve
+ * @property {(reason: any) => void} reject
+ * @property {Promise<T>} promise
  */
+
+/**
+ * Needed to prevent type errors where functions are detected to be undefined.
+ */
+const NOOP_INITIALIZER = harden(_ => {});
 
 /**
  * producePromise() builds a HandledPromise object, and returns a record
  * containing the promise itself, as well as separate facets for resolving
  * and rejecting it.
  *
- * @template U,V
- * @returns {PromiseRecord.<U,V>}
+ * @template T
+ * @returns {PromiseRecord<T>}
  */
 export function producePromise() {
-  let res;
-  let rej;
+  /** @type {(value: T) => void} */
+  let res = NOOP_INITIALIZER;
+  /** @type {(reason: any) => void} */
+  let rej = NOOP_INITIALIZER;
+
   // We use a HandledPromise so that we can run HandledPromise.unwrap(p)
   // even if p doesn't travel through a comms system (like SwingSet's).
   const p = new HandledPromise((resolve, reject) => {
