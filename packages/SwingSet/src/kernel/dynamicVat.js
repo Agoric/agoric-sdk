@@ -1,5 +1,6 @@
 import { importBundle } from '@agoric/import-bundle';
 import { makeVatSlot } from '../parseVatSlots';
+import { makeLiveSlots } from './liveSlots';
 
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -100,7 +101,7 @@ export function makeDynamicVatCreator(stuff) {
 
     function makeVatManager(buildRootObject) {
       function setup(syscall, state, helpers, _vatPowers) {
-        return helpers.makeLiveSlots(
+        return makeLiveSlots(
           syscall,
           state,
           buildRootObject,

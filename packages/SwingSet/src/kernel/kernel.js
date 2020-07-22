@@ -4,7 +4,6 @@ import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { makeMeter } from '@agoric/transform-metering';
 import makeVatManager from './vatManager';
-import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
@@ -745,7 +744,6 @@ export default function buildKernel(kernelEndowments) {
     validateVatSetupFn(setup);
     const helpers = harden({
       vatID: name, // TODO: rename to 'name', update vats to match
-      makeLiveSlots,
       testLog,
     });
     // XXX why does 'helpers' exist as a separate bucket of stuff instead of as
