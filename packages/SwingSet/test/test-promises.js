@@ -10,7 +10,7 @@ test('flush', async t => {
   const c = await buildVatController(config, ['flush']);
   // all promises should settle before c.step() fires
   await c.step();
-  t.deepEqual(c.dump().log, ['bootstrap called', 'then1', 'then2']);
+  t.deepEqual(c.dump().log, ['then1', 'then2']);
   t.end();
 });
 
@@ -20,7 +20,6 @@ test('E() resolve', async t => {
 
   await c.run();
   t.deepEqual(c.dump().log, [
-    'bootstrap called',
     'left.callRight 1',
     'right 2',
     'b.resolved 3',
@@ -44,7 +43,6 @@ test('E(E(x).foo()).bar()', async t => {
   await c.run();
 
   t.deepEqual(c.dump().log, [
-    'bootstrap called',
     'b.call2',
     'left.call2 1',
     'left.call3 2',
@@ -59,7 +57,6 @@ test('E(Promise.resolve(presence)).foo()', async t => {
 
   await c.run();
   t.deepEqual(c.dump().log, [
-    'bootstrap called',
     'b.call2',
     'left.call2 1',
     'left.call3 2',
@@ -73,12 +70,7 @@ test('E(local).foo()', async t => {
   const c = await buildVatController(config, ['local1']);
 
   await c.run();
-  t.deepEqual(c.dump().log, [
-    'bootstrap called',
-    'b.local1.finish',
-    'local.foo 1',
-    'b.resolved 2',
-  ]);
+  t.deepEqual(c.dump().log, ['b.local1.finish', 'local.foo 1', 'b.resolved 2']);
   t.end();
 });
 
@@ -88,7 +80,6 @@ test('resolve-to-local', async t => {
 
   await c.run();
   t.deepEqual(c.dump().log, [
-    'bootstrap called',
     'b.local2.finish',
     'left.returnArg',
     'local.foo 2',
@@ -103,7 +94,6 @@ test('send-promise-resolve-to-local', async t => {
 
   await c.run();
   t.deepEqual(c.dump().log, [
-    'bootstrap called',
     'b.send-promise1.finish',
     'left.takePromise',
     'left.takePromise.then',
@@ -121,7 +111,6 @@ test('send-harden-promise-1', async t => {
 
   await c.run();
   t.deepEqual(c.dump().log, [
-    'bootstrap called',
     'p2 frozen true',
     'p3 frozen true',
     // TODO: p4 = x!foo(), and we'd like it to be frozen, but the Handled
