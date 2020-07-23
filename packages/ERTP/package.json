@@ -7,7 +7,8 @@
     "node": ">=11.0"
   },
   "scripts": {
-    "build": "tsc -p jsconfig.json",
+    "build": "yarn build:types",
+    "build:types": "tsc -p jsconfig.json",
     "test": "tap --no-coverage --jobs=1 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",

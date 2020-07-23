@@ -6,10 +6,10 @@ import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from './table';
 
-/**
- * @template K,V
- * @typedef {import('@agoric/weak-store').WeakStore<K,V>} WeakStore
- */
+import '../exported';
+import './internal-types';
+
+export { makeHandle } from './table';
 
 // Installation Table key: installationHandle
 // Columns: bundle
@@ -38,7 +38,7 @@ const makeInstanceTable = () => {
    * TODO: make sure this validate function protects against malicious
    * misshapen objects rather than just a general check.
    *
-   * @type {Validator<InstanceRecord>}
+   * @type {Validator<InstanceRecord & PrivateInstanceRecord>}
    */
   const validateSomewhat = makeValidateProperties(
     harden([
@@ -97,7 +97,7 @@ const makeOfferTable = () => {
   );
 
   /**
-   * @type {Validator<OfferRecord>}
+   * @type {Validator<OfferRecord & PrivateOfferRecord>}
    */
   const validateSomewhat = obj => {
     validateProperties(obj);
@@ -107,8 +107,7 @@ const makeOfferTable = () => {
   };
 
   /**
-   * 
-   * @param {Table<OfferRecord>} table 
+   * @param {Table<OfferRecord & PrivateOfferRecord>} table
    */
   const makeCustomMethods = table => {
     const customMethods = harden({
@@ -143,6 +142,7 @@ const makeOfferTable = () => {
       /**
        * @param {OfferHandle[]} offerHandles
        * @param {Allocation[]} newAllocations
+       * @returns {OfferHandle[]}
        */
       updateAmounts: (offerHandles, newAllocations) =>
         offerHandles.map((offerHandle, i) => {
@@ -165,8 +165,7 @@ const makeOfferTable = () => {
 // Columns: payout
 /**
  * Create payoutMap
- * @returns {WeakStore<OfferHandle,
- * import('@agoric/produce-promise').PromiseRecord<PaymentPKeywordRecord>>} Store
+ * @returns {WeakStore<OfferHandle,PromiseRecord<PaymentPKeywordRecord>>} Store
  */
 const makePayoutMap = () => makeWeakStore('offerHandle');
 
@@ -214,7 +213,7 @@ const makeIssuerTable = (withPurses = true) => {
 
       /**
        * a promise for a synchronously accessible record
-       * @type {[PromiseLike<Brand>, PromiseLike<string>, PromiseLike<Purse> | undefined]}
+       * @type {[PromiseLike<Brand>, PromiseLike<MathHelpersName>, PromiseLike<Purse> | undefined]}
        */
       const promiseRecord = [brandP, mathHelpersNameP, undefined];
       if (withPurses) {

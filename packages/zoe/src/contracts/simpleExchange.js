@@ -3,6 +3,8 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
+import '../../exported';
+
 /**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows
  * an unlimited number of parties to create new orders or accept existing

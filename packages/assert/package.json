@@ -7,7 +7,8 @@
     "node": ">=11.0"
   },
   "scripts": {
-    "build": "tsc -p jsconfig.json",
+    "build": "yarn build:types",
+    "build:types": "tsc -p jsconfig.json",
     "test": "tape -r esm test/**/test*.js",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",

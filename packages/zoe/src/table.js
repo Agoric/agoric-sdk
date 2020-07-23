@@ -1,7 +1,25 @@
 import makeWeakStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 
+import '../exported';
+import './internal-types';
+
+// This definition is used to ensure the proper typing of
+// makeCustomMethodsFn.
 const DEFAULT_CUSTOM_METHODS = () => ({});
+
+/**
+ * Create an opaque handle object.
+ *
+ * @template {string} H
+ * @param {H} handleType the string literal type of the handle
+ */
+export const makeHandle = handleType => {
+  // This assert ensures that handleType is referenced.
+  assert.typeof(handleType, 'string', 'handleType must be a string');
+  // Return the intersection type (really just an empty object).
+  return /** @type {Handle<H>} */ (harden({}));
+};
 
 /**
  * @template T
@@ -18,7 +36,7 @@ export const makeTable = (
 ) => {
   // The WeakMap that stores the records
   /**
-   * @type {import('@agoric/weak-store').WeakStore<{},T>}
+   * @type {WeakStore<{},T>}
    */
   const handleToRecord = makeWeakStore(key);
 

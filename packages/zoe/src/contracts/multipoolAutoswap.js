@@ -14,6 +14,8 @@ import {
 } from '../contractSupport';
 import { filterObj } from '../objArrayConversion';
 
+import '../../exported';
+
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for more
  * https://agoric.com/documentation/zoe/guide/contracts/autoswap.html

@@ -3,10 +3,8 @@
 import makeStore from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 
-/**
- * @template K,V
- * @typedef {import('@agoric/store').Store<K, V>} Store
- */
+import '../exported';
+import './internal-types';
 
 /**
  * Iterate over the amounts and sum, storing the sums in a

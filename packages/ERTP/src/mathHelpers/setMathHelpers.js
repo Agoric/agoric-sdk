@@ -1,6 +1,10 @@
+// @ts-check
+
 import { passStyleOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
+
+import '../types';
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
@@ -59,6 +63,9 @@ const hasElement = (buckets, elem) => {
 // bucketing.
 // only use sameStructure within that bucket.
 
+/**
+ * @type {MathHelpers}
+ */
 const setMathHelpers = harden({
   doCoerce: list => {
     assert(passStyleOf(list) === 'copyArray', 'list must be an array');

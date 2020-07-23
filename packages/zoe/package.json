@@ -7,7 +7,8 @@
     "node": ">=11.0"
   },
   "scripts": {
-    "build": "yarn build-zcfBundle",
+    "build": "yarn build-zcfBundle && yarn build:types",
+    "build:types": "tsc -p jsconfig.json",
     "test": "yarn build && tap --no-coverage --jobs=1 --timeout 600 'test/**/test-*.js'",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "eslint --fix '**/*.js'",

@@ -1,13 +1,7 @@
+// @ts-check
+
 import { passStyleOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
-
-// Operations for arrays with unique string elements. More information
-// about these assets might be provided by some other mechanism, such as
-// an off-chain API or physical records. strSetMathHelpers are highly
-// efficient, but if the users rely on an external resource to learn
-// more about the digital assets (for example, looking up a string ID
-// in a database), the administrator of the external resource could
-// potentially change the external definition at any time.
 
 const identity = harden([]);
 
@@ -16,6 +10,17 @@ const checkForDupes = list => {
   assert(set.size === list.length, details`value has duplicates: ${list}`);
 };
 
+/**
+ * Operations for arrays with unique string elements. More information
+ * about these assets might be provided by some other mechanism, such as
+ * an off-chain API or physical records. strSetMathHelpers are highly
+ * efficient, but if the users rely on an external resource to learn
+ * more about the digital assets (for example, looking up a string ID
+ * in a database), the administrator of the external resource could
+ * potentially change the external definition at any time.
+ *
+ * @type {MathHelpers}
+ */
 const strSetMathHelpers = harden({
   doCoerce: list => {
     assert(passStyleOf(list) === 'copyArray', 'value must be an array');

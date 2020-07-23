@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E, HandledPromise } from '@agoric/eventual-send';
+import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 import makeIssuerKit from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
@@ -10,11 +10,12 @@ import { producePromise } from '@agoric/produce-promise';
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  */
-import '@agoric/ertp/exported';
+import '../exported';
+import './internal-types';
 
 import { cleanProposal, cleanKeywords } from './cleanProposal';
 import { arrayToObj, filterFillAmounts, filterObj } from './objArrayConversion';
-import { makeZoeTables } from './state';
+import { makeZoeTables, makeHandle } from './state';
 
 // This is the Zoe contract facet from contractFacet.js, packaged as a bundle
 // that can be used to create a new vat. Every time it is edited, it must be
@@ -28,10 +29,6 @@ import zcfContractBundle from '../bundles/bundle-contractFacet';
 /* eslint-enable import/no-unresolved, import/extensions */
 
 /**
- * @typedef {TODO} ContractFacet FIXME: Need definition, and move to types.js.
- */
-
-/**
  * Create an instance of Zoe.
  *
  * @param {Object} vatAdminSvc - The vatAdmin Service, which carries the power
@@ -41,7 +38,7 @@ import zcfContractBundle from '../bundles/bundle-contractFacet';
 function makeZoe(vatAdminSvc) {
   /**
    * A weakMap from the inviteHandles to contract offerHook upcalls
-   * @type {import('@agoric/weak-store').WeakStore<InviteHandle,InviteCallback>}
+   * @type {WeakStore<InviteHandle,InviteCallback>}
    */
   const inviteHandleToHandler = makeWeakStore('inviteHandle');
 
@@ -93,7 +90,7 @@ function makeZoe(vatAdminSvc) {
     instanceTable.removeCompletedOffers(instanceHandle, offerHandles);
   };
 
-  const removeAmountsAndNotifier = offerRecord =>
+  const filterOfferRecord = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
 
   const doGetCurrentAllocation = (offerHandle, brandKeywordRecord) => {
@@ -147,7 +144,7 @@ function makeZoe(vatAdminSvc) {
     );
 
     const { customProperties = harden({}) } = options;
-    const inviteHandle = harden({});
+    const inviteHandle = makeHandle('InviteHandle');
     const { installationHandle } = instanceTable.get(instanceHandle);
     const inviteAmount = inviteAmountMath.make(
       harden([
@@ -181,7 +178,7 @@ function makeZoe(vatAdminSvc) {
 
   /**
    * @param {InstanceHandle} instanceHandle
-   * @param {import('@agoric/produce-promise').PromiseRecord<PublicAPI>} publicApiP
+   * @param {PromiseRecord<PublicAPI>} publicApiP
    * @returns {ZoeForZcf}
    */
   const makeZoeForZcf = (instanceHandle, publicApiP) => {
@@ -238,7 +235,7 @@ function makeZoe(vatAdminSvc) {
      * Makes a contract instance from an installation and returns the
      * invitation and InstanceRecord.
      *
-     * @param  {object} installationHandle - the unique handle for the
+     * @param  {InstallationHandle} installationHandle - the unique handle for the
      * installation
      * @param {Object.<string,Issuer>} issuerKeywordRecord - a record mapping
      * keyword keys to issuer values
@@ -259,7 +256,7 @@ function makeZoe(vatAdminSvc) {
       return E(vatAdminSvc)
         .createVat(zcfContractBundle)
         .then(({ root: zcfRoot, adminNode }) => {
-          const instanceHandle = harden({});
+          const instanceHandle = makeHandle('InstanceHandle');
           const zoeForZcf = makeZoeForZcf(instanceHandle, publicApiP);
 
           const cleanedKeywords = cleanKeywords(issuerKeywordRecord);
@@ -283,7 +280,7 @@ function makeZoe(vatAdminSvc) {
           // We'll store an initial version of InstanceRecord before invoking
           // ZCF and fill in the zcfForZoe when we get it.
           const zcfForZoePromise = producePromise();
-          /** @type {InstanceRecord} */
+          /** @type {InstanceRecord & PrivateInstanceRecord} */
           const instanceRecord = {
             installationHandle,
             publicAPI: publicApiP.promise,
@@ -378,7 +375,7 @@ function makeZoe(vatAdminSvc) {
     /**
      * Redeem the invite to receive a payout promise and an
      * outcome promise.
-     * @param {Invite} invite - an invite (ERTP payment) to join a
+     * @param {Invite|PromiseLike<Invite>} invite - an invite (ERTP payment) to join a
      * Zoe smart contract instance
      * @param  {Proposal} [proposal={}] - the proposal, a record
      * with properties `want`, `give`, and `exit`. The keys of
@@ -386,7 +383,7 @@ function makeZoe(vatAdminSvc) {
      * @param  {PaymentKeywordRecord} [paymentKeywordRecord={}] - a record with
      * keyword keys and values which are payments that will be escrowed by
      * Zoe.
-     * @returns OfferResultRecord
+     * @returns {Promise<OfferResultRecord>}
      *
      * The default arguments allow remote invocations to specify empty
      * objects. Otherwise, explicitly-provided empty objects would be
@@ -431,7 +428,7 @@ function makeZoe(vatAdminSvc) {
         const {
           value: [{ instanceHandle, handle: inviteHandle }],
         } = inviteAmount;
-        const offerHandle = harden({});
+        const offerHandle = makeHandle('OfferHandle');
 
         // recordOffer() creates and stores a record in the offerTable. The
         // allocations are according to the keywords in the offer's proposal,
@@ -464,7 +461,7 @@ function makeZoe(vatAdminSvc) {
         const makeOfferResult = completeObj => {
           const offerHandler = inviteHandleToHandler.get(inviteHandle);
           const offerResult = {
-            offerHandle: HandledPromise.resolve(offerHandle),
+            offerHandle: E.when(offerHandle),
             payout: payoutMap.get(offerHandle).promise,
             outcome: offerHandler(offerHandle),
             completeObj,
@@ -479,9 +476,8 @@ function makeZoe(vatAdminSvc) {
 
     isOfferActive: offerTable.isOfferActive,
     getOffers: offerHandles =>
-      offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier),
-    getOffer: offerHandle =>
-      removeAmountsAndNotifier(offerTable.get(offerHandle)),
+      offerTable.getOffers(offerHandles).map(filterOfferRecord),
+    getOffer: offerHandle => filterOfferRecord(offerTable.get(offerHandle)),
     getCurrentAllocation: (offerHandle, brandKeywordRecord) =>
       doGetCurrentAllocation(offerHandle, brandKeywordRecord),
     getCurrentAllocations: (offerHandles, brandKeywordRecords) =>

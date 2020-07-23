@@ -16,6 +16,9 @@ import { makeContractTables } from './state';
 import { filterObj, filterFillAmounts } from './objArrayConversion';
 import { evalContractBundle } from './evalContractCode';
 
+import '../exported';
+import './internal-types';
+
 /**
  * Create the contract facet.
  *

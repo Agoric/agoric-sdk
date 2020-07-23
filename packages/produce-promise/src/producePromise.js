@@ -61,8 +61,8 @@ harden(producePromise);
 /**
  * Determine if the argument is a Promise.
  *
- * @param {Promise} maybePromise The value to examine
- * @returns {boolean} Whether it is a promise
+ * @param {any} maybePromise The value to examine
+ * @returns {maybePromise is Promise} Whether it is a promise
  */
 export function isPromise(maybePromise) {
   return HandledPromise.resolve(maybePromise) === maybePromise;

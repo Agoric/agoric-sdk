@@ -4,7 +4,7 @@
 import { assert, details } from '@agoric/assert';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
-import '../types';
+import '../../exported';
 
 /**
  * Sell items in exchange for money. Items may be fungible or

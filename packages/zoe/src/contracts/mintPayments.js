@@ -4,6 +4,8 @@
 import makeIssuerKit from '@agoric/ertp';
 import { makeZoeHelpers } from '../contractSupport';
 
+import '../../exported';
+
 /**
  * This is a very simple contract that creates a new issuer and mints payments
  * from it, in order to give an example of how that can be done.  This contract

@@ -17,14 +17,17 @@
  */
 
 /**
- * @typedef {Object} Value
+ * @typedef {any} Value
  * Values describe the value of something that can be owned or shared.
  * Fungible values are normally represented by natural numbers. Other
  * values may be represented as strings naming a particular right, or
  * an arbitrary object that sensibly represents the rights at issue.
  *
- * Value must be Comparable. (This IDL doesn't yet provide a way to specify
- * subtype relationships for structs.)
+ * Value must be Comparable. (Would be nice to type this correctly.)
+ */
+
+/**
+ * @typedef {'nat'|'set'|'strSet'} MathHelpersName
  */
 
 /**
@@ -37,7 +40,7 @@
  * abstract right to participate in a particular exchange.
  *
  * @property {() => Brand} getBrand Return the brand.
- * @property {() => string} getMathHelpersName
+ * @property {() => MathHelpersName} getMathHelpersName
  * Get the name of the mathHelpers used. This can be used as an
  * argument to `makeAmountMath` to create local amountMath.
  *
@@ -119,7 +122,7 @@
  *
  * @property {() => string} getAllegedName Get the allegedName for this mint/issuer
  * @property {() => AmountMath} getAmountMath Get the AmountMath for this Issuer.
- * @property {() => string} getMathHelpersName Get the name of the MathHelpers for this Issuer.
+ * @property {() => MathHelpersName} getMathHelpersName Get the name of the MathHelpers for this Issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
  * @property {(payment: PaymentP) => Promise<boolean>} isLive
  * Return true if the payment continues to exist.

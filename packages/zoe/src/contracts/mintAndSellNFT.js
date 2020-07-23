@@ -3,6 +3,8 @@
 import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
+import '../../exported';
+
 /**
  * This contract mints non-fungible tokens and creates a selling contract
  * instance to sell the tokens in exchange for some sort of money.

@@ -3,6 +3,8 @@
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
 
+import '../../exported';
+
 /**
  * Trade one item for another.
  *

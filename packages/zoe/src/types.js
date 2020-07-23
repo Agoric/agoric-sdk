@@ -2,9 +2,18 @@
 /// <reference types="ses"/>
 
 /**
- * @typedef {any} TODO Needs to be typed
+ * @template {string} H - the name of the handle
+ * @typedef {H & {}} Handle A type constructor for an opaque type identified by the H string.
+ * This uses an intersection type ('MyHandle' & {}) to tag the handle's type even though the
+ * actual value is just an empty object.
+ */
+
+/**
  * @typedef {string} Keyword
- * @typedef {{}} InstallationHandle
+ * @typedef {Handle<'InstallationHandle'>} InstallationHandle - an opaque handle for an bundle installation
+ * @typedef {Handle<'InstanceHandle'>} InstanceHandle - an opaque handle for a contract instance
+ * @typedef {Handle<'OfferHandle'>} OfferHandle - an opaque handle for an offer
+ * @typedef {Handle<'InviteHandle'>} InviteHandle - an opaque handle for an invite
  * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
  * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
  * @typedef {Record<Keyword,Payment>} PaymentKeywordRecord
@@ -37,7 +46,7 @@
  * that represent the right to interact with a smart contract in
  * particular ways.
  *
- * @property {(bundle: SourceBundle) => InstallationHandle} install
+ * @property {(bundle: SourceBundle) => Promise<InstallationHandle>} install
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installationHandle.
  *
@@ -63,7 +72,7 @@
  * Credibly get information about the instance (such as the installation
  * and terms used).
  *
- * @property {(invite: Invite,
+ * @property {(invite: Invite|PromiseLike<Invite>,
  *             proposal?: Proposal,
  *             paymentKeywordRecord?: PaymentKeywordRecord)
  *            => Promise<OfferResultRecord>} offer
@@ -97,7 +106,7 @@
  * A contract-specific value that is returned by the OfferHook.
  *
  * @typedef {Object} OfferResultRecord This is returned by a call to `offer` on Zoe.
- * @property {OfferHandle} offerHandle
+ * @property {Promise<OfferHandle>} offerHandle
  * @property {Promise<PaymentPKeywordRecord>} payout A promise that resolves
  * to a record which has keywords as keys and promises for payments
  * as values. Note that while the payout promise resolves when an offer
@@ -274,19 +283,6 @@
  * @param {PublicAPI} publicAPI - an object whose methods are the API
  * available to anyone who knows the instanceHandle
  * @returns {void}
- *
- * @callback StartContract
- * Makes a contract instance from an installation and returns a
- * unique handle for the instance that can be shared, as well as
- * other information, such as the terms used in the instance.
- * @param {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
- * @param {Record<Keyword,Issuer>} issuerKeywordRecord - a record mapping
- * keyword keys to issuer values
- * @param {SourceBundle} bundle an object containing source code and moduleFormat
- * @param {Object} instanceData, fields for the instanceRecord
- * @param innerZoe - An inner facet of Zoe for the contractFacet's use
- * @param {Issuer} inviteIssuerIn, Zoe's inviteIssuer, for the contract to use
- * @returns {Promise<{ inviteP: Promise<Invite>, zcfForZoe: ZcfForZoe }>}
  */
 
 /**
@@ -308,29 +304,21 @@
  */
 
 /**
- * @typedef {{}} InstanceHandle - an opaque handle for a contract instance
- * @typedef {{}} OfferHandle - an opaque handle for an offer
- * @typedef {{}} InviteHandle - an opaque handle for an invite
  * @typedef {Object} CustomProperties
  *
  * @typedef {object} OfferRecord
  * @property {OfferHandle=} handle - opaque identifier, used as the table key
  * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
  * @property {ProposalRecord} proposal - the offer proposal (including want, give, exit)
- * @property {Allocation} currentAllocation - the allocation corresponding to this offer
- * @property {import('@agoric/notifier').Notifier<Allocation>=} notifier - the notifier for allocation changes
- * @property {import('@agoric/notifier').Updater<Allocation>} updater - the notifier for allocation changes
  *
  * @typedef {object} InstanceRecord
  * @property {InstanceHandle=} handle - opaque identifier for the instance, used as the table key
  * @property {InstallationHandle} installationHandle - opaque identifier for the installation
- * @property {TODO|PublicAPI} publicAPI - the invite-free publicly accessible API for the contract
+ * @property {FIXME|PublicAPI} publicAPI - the invite-free publicly accessible API for the contract
  * @property {Object} terms - contract parameters
  * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
  * @property {BrandKeywordRecord} brandKeywordRecord - record with
  * keywords keys, brand values
- * @property {Promise<ZcfForZoe>} zcfForZoe - the inner facet for Zoe to use
- * @property {Set<OfferHandle>} offerHandles - the offer handles for this instance
  *
  * @typedef {Object} IssuerRecord
  * @property {Brand} brand
@@ -351,42 +339,4 @@
  * @typedef {Keyword[]} SparseKeywords
  * @typedef {{[Keyword:string]:Amount}} Allocation
  * @typedef {{[Keyword:string]:AmountMath}} AmountMathKeywordRecord
- */
-
-/**
- * @typedef {Object} ZcfForZoe
- * The facet ZCF presents to Zoe.
- *
- * @property {(offerHandle: OfferHandle, proposal: Proposal, allocation: Allocation) => (CompleteObj | undefined)} addOffer
- * Add a single offer to this contract instance.
- */
-
-/**
- * @typedef {Object} ZoeForZcf
- * @property {(inviteCallback: InviteCallback, inviteDesc: string, options?: MakeInvitationOptions) => Payment} makeInvitation
- * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
- * @property {(publicAPI: PublicAPI) => InstanceHandle} updatePublicAPI
- * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
- * @property {(offerHandles: OfferHandle[]) => void} completeOffers
- */
-
-/**
- * @typedef {Object} InviteCallback
- * @property {OfferHook} invoke
- */
-
-/**
- * @template T
- * @typedef {(record: any) => record is T} Validator
- */
-
-/**
- * @template T
- * @typedef {Object} Table
- * @property {(record: any) => record is T} validate
- * @property {(record: T, handle = harden({})) => {}} create
- * @property {(handle: {}) => T} get
- * @property {(handle: {}) => boolean} has
- * @property {(handle: {}) => void} delete
- * @property {(handle: {}, partialRecord: Partial<T>) => {}} update
  */

@@ -3,6 +3,8 @@
 import makeStore from '@agoric/store';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
+import '../../exported';
+
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
  * things. It doesn't require registration of Issuers. If two offers satisfy

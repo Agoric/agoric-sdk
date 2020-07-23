@@ -5,6 +5,8 @@ import { assert, details } from '@agoric/assert';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
 
+import '../../exported';
+
 const rejectMsg = `The covered call option is expired.`;
 
 /**

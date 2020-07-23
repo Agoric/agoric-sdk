@@ -10,6 +10,8 @@ import {
   closeAuction,
 } from '../contractSupport';
 
+import '../../exported';
+
 /**
  * An auction contract in which the seller offers an Asset for sale, and states
  * a minimum price. A pre-announced number of bidders compete to offer the best

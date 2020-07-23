@@ -1,7 +1,11 @@
+// @ts-check
+
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { satisfiesWant, isOfferSafe } from '../offerSafety';
+
+import '../../exported';
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
@@ -10,13 +14,11 @@ const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 /**
- * @function makeZoeHelpers - makes an object with helper functions useful to zoe contracts.
+ * Makes an object with helper functions useful to zoe contracts.
  *
  * @param {ContractFacet} zcf
  */
-// zcf only picks up the type if the param is in parens, which eslint dislikes
-// eslint-disable-next-line
-export const makeZoeHelpers = (zcf) => {
+export const makeZoeHelpers = zcf => {
   const zoeService = zcf.getZoeService();
 
   const rejectOffer = (offerHandle, msg = defaultRejectMsg) => {
@@ -31,13 +33,13 @@ export const makeZoeHelpers = (zcf) => {
     actual,
     expected,
     msg = defaultRejectMsg,
-    // eslint-disable-next-line consistent-return
   ) => {
     if (expected !== undefined) {
       if (!sameStructure(getKeysSorted(actual), getKeysSorted(expected))) {
         return rejectOffer(offerHandle, msg);
       }
     }
+    return undefined;
   };
   // Compare actual keys to expected keys. If expectedKeys is
   // undefined, return true trivially.
@@ -59,7 +61,7 @@ export const makeZoeHelpers = (zcf) => {
    * allocations
    * @param {AmountKeywordRecord} toGains - what should be gained in
    * the 'to' allocation
-   * @param {AmountKeywordRecord} fromLosses - what should be lost in
+   * @param {AmountKeywordRecord} [fromLosses=toGains] - what should be lost in
    * the 'from' allocation. If not defined, fromLosses is equal to
    * toGains. Note that the total amounts should always be equal; it
    * is the keywords that might be different.
@@ -69,11 +71,7 @@ export const makeZoeHelpers = (zcf) => {
    * @property {AmountKeywordRecord} from
    * @property {AmountKeywordRecord} to
    */
-  const calcNewAllocations = (allocations, toGains, fromLosses = undefined) => {
-    if (fromLosses === undefined) {
-      fromLosses = toGains;
-    }
-
+  const calcNewAllocations = (allocations, toGains, fromLosses = toGains) => {
     const subtract = (amount, amountToSubtract) => {
       const { brand } = amount;
       const amountMath = zcf.getAmountMath(brand);
@@ -181,7 +179,6 @@ export const makeZoeHelpers = (zcf) => {
      * `satisfiesGive`. Allocation is merged with currentAllocation
      * (allocations' values prevailing if the keywords are the same)
      * to produce the newAllocation.
-
      * @param {OfferHandle} offerHandle
      * @param {AmountKeywordRecord} allocation
      * @returns {boolean}
@@ -200,7 +197,7 @@ export const makeZoeHelpers = (zcf) => {
      * @param {offerHandleGainsLossesRecord} tryRight
      * @returns {undefined | Error}
      *
-     * @typedef {object} offerHandleGainsLossesRecord
+     * @typedef {Object} offerHandleGainsLossesRecord
      * @property {OfferHandle} offerHandle
      * @property {AmountKeywordRecord} gains - what the offer will
      * gain as a result of this trade
@@ -337,13 +334,13 @@ export const makeZoeHelpers = (zcf) => {
      * null contents. If the client submits an Offer which does not match
      * these expectations, that offer will be rejected (and refunded).
      *
+     * @typedef ExpectedRecord
+     * @property {Record<keyof ProposalRecord['give'],null>} [want]
+     * @property {Record<keyof ProposalRecord['want'],null>} [give]
+     * @property {Partial<Record<keyof ProposalRecord['exit'],null>>} [exit]
+     *
      * @param {OfferHook} offerHook
      * @param {ExpectedRecord} expected
-     *
-     * @typedef ExpectedRecord
-     * @property {TODO} [want]
-     * @property {TODO} [give]
-     * @property {TODO} [exit]
      */
     checkHook: (offerHook, expected) => offerHandle => {
       helpers.rejectIfNotProposal(offerHandle, expected);
@@ -378,7 +375,7 @@ export const makeZoeHelpers = (zcf) => {
      * @param {Payment} obj.payment
      * @param {String} obj.keyword
      * @param {OfferHandle} obj.recipientHandle
-     * @returns {Promise<undefined>}
+     * @returns {Promise<void>}
      */
     escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment

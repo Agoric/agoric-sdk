@@ -8,10 +8,12 @@ import { isPromise } from '@agoric/produce-promise';
 
 import makeAmountMath from './amountMath';
 
+import './types';
+
 /**
  *
  * @param {string} allegedName
- * @param {string} mathHelpersName
+ * @param {MathHelpersName} [mathHelpersName='nat']
  * @returns {IssuerKit}
  */
 function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
@@ -52,7 +54,11 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     }
   };
 
+  /**
+   * @returns {Purse}
+   */
   const makePurse = () => {
+    /** @type {Purse} */
     const purse = harden({
       deposit: (srcPayment, optAmount = undefined) => {
         if (isPromise(srcPayment)) {
@@ -164,6 +170,7 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     return harden(newPayments);
   };
 
+  /** @type {Issuer} */
   const issuer = harden({
     getBrand: () => brand,
     getAllegedName: () => allegedName,
@@ -267,6 +274,7 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     },
   });
 
+  /** @type {Mint} */
   const mint = harden({
     getIssuer: () => issuer,
     mintPayment: newAmount => {
