@@ -6,99 +6,14 @@ import { E as defaultE } from '@agoric/eventual-send';
 import { producePromise } from '@agoric/produce-promise';
 import { toBytes } from './bytes';
 
+import './types';
+import './internal-types';
+
 /**
  * Compatibility note: this must match what our peers use,
  * so don't change it casually.
  */
 export const ENDPOINT_SEPARATOR = '/';
-
-/**
- * @template T,U
- * @typedef {import('@agoric/store').Store<T,U>} Store
- */
-
-/**
- * @template T,U
- * @typedef {import('@agoric/produce-promise').PromiseRecord<T, U>} PromiseRecord
- */
-
-/**
- * @typedef {import('./bytes').Bytes} Bytes
- * @typedef {import('./bytes').Data} Data
- */
-
-/**
- * @typedef {string} Endpoint A local or remote address
- * See multiaddr.js for an opinionated router implementation
- */
-
-/**
- * @typedef {Object} Closable A closable object
- * @property {() => Promise<void>} close Terminate the object
- */
-
-/**
- * @typedef {Object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
- */
-
-/**
- * @typedef {Object} Port A port that has been bound to a protocol
- * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
- * @property {(acceptHandler: ListenHandler) => Promise<void>} addListener Begin accepting incoming connections
- * @property {(remote: Endpoint, connectionHandler: ConnectionHandler = {}) => Promise<Connection>} connect Make an outbound connection
- * @property {(acceptHandler: ListenHandler) => Promise<void>} removeListener Remove the currently-bound listener
- * @property {() => void} revoke Deallocate the port entirely, removing all listeners and closing all active connections
- */
-
-/**
- * @typedef {Object} ListenHandler A handler for incoming connections
- * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
- * @property {(port: Port, listenAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<Endpoint>} [onInbound] Return metadata for inbound connection attempt
- * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
- * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<void>} onReject The connection was rejected
- * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
- * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
- */
-
-/**
- * @typedef {Object} Connection
- * @property {(packetBytes: Data) => Promise<Bytes>} send Send a packet on the connection
- * @property {() => Promise<void>} close Close both ends of the connection
- * @property {() => Endpoint} getLocalAddress Get the locally bound name of this connection
- * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
- */
-
-/**
- * @typedef {Object} ConnectionHandler A handler for a given Connection
- * @property {(connection: Connection, localAddr: Endpoint, remoteAddr: Endpoint, c: ConnectionHandler) => void} [onOpen] The connection has been opened
- * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler) => Promise<Data>} [onReceive] The connection received a packet
- * @property {(connection: Connection, reason?: CloseReason, c: ConnectionHandler) => Promise<void>} [onClose] The connection has been closed
- *
- * @typedef {any?} CloseReason The reason a connection was closed
- */
-
-/**
- * @typedef {Object} ProtocolHandler A handler for things the protocol implementation will invoke
- * @property {(protocol: ProtocolImpl, p: ProtocolHandler) => Promise<void>} onCreate This protocol is created
- * @property {(localAddr: Endpoint, p: ProtocolHandler) => Promise<string>} generatePortID Create a fresh port identifier for this protocol
- * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
- * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
- * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<[Endpoint, ConnectionHandler]>} onConnect A port initiates an outbound connection
- * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
- *
- * @typedef {Object} InboundAttempt An inbound connection attempt
- * @property {(connectionHandler: ConnectionHandler) => Promise<Connection>} accept Establish the connection
- * @property {() => Endpoint} getLocalAddress Return the local address for this attempt
- * @property {() => Endpoint} getRemoteAddress Return the remote address for this attempt
- * @property {() => Promise<void>} close Abort the attempt
- *
- * @typedef {Object} ProtocolImpl Things the protocol can do for us
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
- * @property {(listenAddr: Endpoint, remoteAddr: Endpoint) => Promise<InboundAttempt>} inbound Make an attempt to connect into this protocol
- * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Create an outbound connection
- */
 
 export const rethrowUnlessMissing = err => {
   // Ugly hack rather than being able to determine if the function
@@ -131,7 +46,7 @@ export const makeConnection = (
 ) => {
   let closed;
   /**
-   * @type {Set<PromiseRecord<Bytes,any>>}
+   * @type {Set<PromiseRecord<Bytes>>}
    */
   const pendingAcks = new Set();
   /**
@@ -635,9 +550,6 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
       // TODO: Maybe handle a bind?
     },
     async onConnect(_port, localAddr, remoteAddr, _chandler, _protocolHandler) {
-      if (!listeners.has(remoteAddr)) {
-        return undefined;
-      }
       const [lport, lhandler] = listeners.get(remoteAddr);
       // console.log(`looking up onAccept in`, lhandler);
       const remoteSuffix =

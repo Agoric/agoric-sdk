@@ -1,7 +1,6 @@
-/**
- * @typedef {string|Buffer|ArrayBuffer} Data
- * @typedef {string} Bytes
- */
+// @ts-check
+
+import './types';
 
 /* eslint-disable no-bitwise */
 /*
@@ -90,7 +89,7 @@ export function dataToBase64(data) {
 }
 
 /**
- * @type {Object{string, number}}
+ * @type {Record<string, number>}
  */
 const revChars64 = {};
 chars64.split('').forEach((c, i) => (revChars64[c] = i));

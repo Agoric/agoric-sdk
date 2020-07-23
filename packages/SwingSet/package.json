@@ -16,8 +16,10 @@
     "test-nosort": "tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint-fix": "yarn lint --fix",
+    "lint-check": "yarn lint",
+    "lint": "yarn lint:types && eslint '**/*.js'",
+    "lint:types": "tsc -p jsconfig.json"
   },
   "devDependencies": {
     "@agoric/install-metering-and-ses": "^0.1.1",
