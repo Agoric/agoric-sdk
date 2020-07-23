@@ -2,7 +2,7 @@
 // @ts-check
 
 import makeStore from '@agoric/store';
-import { E as defaultE } from '@agoric/eventual-send';
+import { E } from '@agoric/eventual-send';
 import { producePromise } from '@agoric/produce-promise';
 import { toBytes } from './bytes';
 
@@ -34,7 +34,6 @@ export const rethrowUnlessMissing = err => {
  * @param {Endpoint} localAddr
  * @param {Endpoint} remoteAddr
  * @param {Set<Closable>} [current=new Set()]
- * @param {typeof defaultE} [E=defaultE] Eventual send function
  * @returns {Connection}
  */
 export const makeConnection = (
@@ -42,7 +41,6 @@ export const makeConnection = (
   localAddr,
   remoteAddr,
   current = new Set(),
-  E = defaultE,
 ) => {
   let closed;
   /**
@@ -112,7 +110,6 @@ export const makeConnection = (
  * @param {ConnectionHandler} handler1
  * @param {Endpoint} addr1
  * @param {WeakSet<Connection>} [current=new WeakSet()]
- * @param {typeof defaultE} [E=defaultE]
  * @returns {[Connection, Connection]}
  */
 export function crossoverConnection(
@@ -121,7 +118,6 @@ export function crossoverConnection(
   handler1,
   addr1,
   current = new WeakSet(),
-  E = defaultE,
 ) {
   /**
    * @type {Connection[]}
@@ -213,10 +209,9 @@ export function getPrefixes(addr) {
  * Create a protocol that has a handler.
  *
  * @param {ProtocolHandler} protocolHandler
- * @param {typeof defaultE} [E=defaultE] Eventual send function
  * @returns {Protocol} the local capability for connecting and listening
  */
-export function makeNetworkProtocol(protocolHandler, E = defaultE) {
+export function makeNetworkProtocol(protocolHandler) {
   /** @type {Store<Port, Set<Closable>>} */
   const currentConnections = makeStore('port');
 
@@ -441,7 +436,6 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
               rchandler,
               remoteAddr,
               current,
-              E,
             )[1];
           },
         });
@@ -485,7 +479,6 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         rchandler,
         connectedAddress,
         current,
-        E,
       )[0];
     },
   });
@@ -526,10 +519,9 @@ export function makeEchoConnectionHandler() {
 /**
  * Create a protocol handler that just connects to itself.
  *
- * @param {typeof defaultE} [E=defaultE] Eventual sender
  * @returns {ProtocolHandler} The localhost handler
  */
-export function makeLoopbackProtocolHandler(E = defaultE) {
+export function makeLoopbackProtocolHandler() {
   /**
    * @type {Store<string, [Port, ListenHandler]>}
    */
