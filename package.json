@@ -61,6 +61,7 @@
     "link-cli": "node ./scripts/link-cli.cjs",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
+    "lint": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
     "build": "yarn workspaces run build"
   },
