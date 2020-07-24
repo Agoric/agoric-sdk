@@ -322,10 +322,7 @@ export function buildRootObject(_vatPowers) {
       const inviteP = E(contractCode).makeContract(contractFacet);
       return {
         inviteP,
-        zcfForZoe: makeZcfForZoe(
-          params.instanceData.instanceHandle,
-          params.zoeForZcf,
-        ),
+        zcfForZoe: makeZcfForZoe(params.instanceData.handle, params.zoeForZcf),
       };
     };
 

@@ -325,12 +325,12 @@
  * @typedef {Object} CustomProperties
  *
  * @typedef {object} OfferRecord
- * @property {OfferHandle=} handle - opaque identifier, used as the table key
+ * @property {OfferHandle} handle - opaque identifier, used as the table key
  * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
  * @property {ProposalRecord} proposal - the offer proposal (including want, give, exit)
  *
  * @typedef {object} InstanceRecord
- * @property {InstanceHandle=} handle - opaque identifier for the instance, used as the table key
+ * @property {InstanceHandle} handle - opaque identifier for the instance, used as the table key
  * @property {InstallationHandle} installationHandle - opaque identifier for the installation
  * @property {FIXME|PublicAPI} publicAPI - the invite-free publicly accessible API for the contract
  * @property {Object} terms - contract parameters
@@ -345,7 +345,7 @@
  * @property {AmountMath} amountMath
  *
  * @typedef {Object} InstallationRecord
- * @property {InstallationHandle=} handle - opaque identifier, used as the table key
+ * @property {InstallationHandle} handle - opaque identifier, used as the table key
  * @property {SourceBundle} bundle - contract code
  *
  * @typedef {Object} OfferStatus

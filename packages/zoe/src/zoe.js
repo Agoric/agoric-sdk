@@ -128,7 +128,7 @@ function makeZoe(vatAdminSvc) {
    *
    * @template OC - the offer outcome
    * @param {InstanceHandle} instanceHandle
-   * @param {InviteCallback<OC>} inviteCallback
+   * @param {InviteCallback<OC>} inviteHandler
    * @param {string} inviteDesc
    * @param {Object} options
    * @returns {Invite<OC>}
@@ -242,7 +242,9 @@ function makeZoe(vatAdminSvc) {
       const publicApiP = producePromise();
       return E(vatAdminSvc)
         .createVat(zcfContractBundle)
-        .then(({ root: zcfRoot, adminNode }) => {
+        .then(({ root, adminNode }) => {
+          /** @type {{ startContract: StartContract }} */
+          const zcfRoot = root;
           const instanceHandle = makeHandle('InstanceHandle');
           const zoeForZcf = makeZoeForZcf(instanceHandle, publicApiP);
 
@@ -267,7 +269,7 @@ function makeZoe(vatAdminSvc) {
           // We'll store an initial version of InstanceRecord before invoking
           // ZCF and fill in the zcfForZoe when we get it.
           const zcfForZoePromise = producePromise();
-          /** @type {InstanceRecord & PrivateInstanceRecord} */
+          /** @type {Omit<InstanceRecord, 'handle'> & PrivateInstanceRecord} */
           const instanceRecord = {
             installationHandle,
             publicAPI: publicApiP.promise,
@@ -290,12 +292,12 @@ function makeZoe(vatAdminSvc) {
             instanceTable.create(instanceRecord, instanceHandle);
             E(adminNode)
               .done()
-              .then(makeCleanup('doneSuccess'), makeCleanup('done reject'));
+              .then(makeCleanup('done success'), makeCleanup('done reject'));
           };
 
           const callStartContract = () => {
             const instanceData = harden({
-              instanceHandle,
+              handle: instanceHandle,
               installationHandle,
               publicAPI: instanceRecord.publicAPI,
               terms,

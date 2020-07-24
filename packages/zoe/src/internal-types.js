@@ -25,7 +25,7 @@
  * @typedef {Object} ZoeForZcf
  * @property {<OC>(inviteCallback: InviteCallback<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
  * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
- * @property {(publicAPI: PublicAPI) => InstanceHandle} updatePublicAPI
+ * @property {(publicAPI: PublicAPI) => void} updatePublicAPI
  * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
  * @property {(offerHandles: OfferHandle[]) => void} completeOffers
  */
@@ -37,17 +37,18 @@
  */
 
 /**
+ * @typedef StartContractParams
+ * @property {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
+ * @property {SourceBundle} bundle an object containing source code and moduleFormat
+ * @property {InstanceRecord} instanceData, fields for the instanceRecord
+ * @property {ZoeForZcf} zoeForZcf - An inner facet of Zoe for the contractFacet's use
+ * @property {Issuer} inviteIssuer, Zoe's inviteIssuer, for the contract to use
+ *
  * @callback StartContract
  * Makes a contract instance from an installation and returns a
  * unique handle for the instance that can be shared, as well as
  * other information, such as the terms used in the instance.
- * @param {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
- * @param {Record<Keyword,Issuer>} issuerKeywordRecord - a record mapping
- * keyword keys to issuer values
- * @param {SourceBundle} bundle an object containing source code and moduleFormat
- * @param {Object} instanceData, fields for the instanceRecord
- * @param {ZoeForZcf} zoeForZcf - An inner facet of Zoe for the contractFacet's use
- * @param {Issuer} inviteIssuerIn, Zoe's inviteIssuer, for the contract to use
+ * @param {StartContractParams} params
  * @returns {Promise<{ inviteP: Promise<Invite>, zcfForZoe: ZcfForZoe }>}
  */
 
@@ -60,7 +61,7 @@
  * @template T
  * @typedef {Object} Table
  * @property {(record: any) => record is T} validate
- * @property {<H>(record: T, handle: H = harden({})) => H} create
+ * @property {<H>(record: Omit<T, 'handle'>, handle: H = harden({})) => H} create
  * @property {(handle: any) => T} get
  * @property {(handle: any) => boolean} has
  * @property {(handle: any) => void} delete
