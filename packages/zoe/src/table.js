@@ -22,23 +22,22 @@ export const makeHandle = handleType => {
 };
 
 /**
- * @template T
- * @template U
+ * @template T,U
  * @param {(record: any) => record is T} validateFn
- * @param {string?} key
+ * @param {string} [keyDebugName='Handle'] the debug name for the table key
  * @param {(table: Table<T>) => U} makeCustomMethodsFn
  * @return {Table<T> & U}
  */
 export const makeTable = (
   validateFn,
-  key = undefined,
+  keyDebugName = 'Handle',
   makeCustomMethodsFn = DEFAULT_CUSTOM_METHODS,
 ) => {
   // The WeakMap that stores the records
   /**
    * @type {WeakStore<{},T>}
    */
-  const handleToRecord = makeWeakStore(key);
+  const handleToRecord = makeWeakStore(keyDebugName);
 
   /** @type {Table<T>} */
   const table = harden({

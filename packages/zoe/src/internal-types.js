@@ -62,7 +62,7 @@
  * @typedef {Object} Table
  * @property {(record: any) => record is T} validate
  * @property {<H>(record: Omit<T, 'handle'>, handle: H = harden({})) => H} create
- * @property {(handle: any) => T} get
+ * @property {(handle: any) => T & {handle: {}}} get
  * @property {(handle: any) => boolean} has
  * @property {(handle: any) => void} delete
  * @property {<H>(handle: H, partialRecord: Partial<T>) => H} update

@@ -45,8 +45,8 @@ import './types';
  * `getAmountMath` on a remote issuer, it will be a remote object and
  * each call will incur the costs of calling a remote object. However,
  * you can create a local amountMath by importing this module locally
- * and recreating by passing in a brand and an mathHelpers name, both
- * of which can be passed-by-copy (since there are no calls to brand
+ * and calling makeAmountMath(), passing in a brand and a mathHelpers name,
+ * both of which can be passed-by-copy (since there are no calls to brand
  * in this module).
  *
  * Each issuer of digital assets has an associated brand in a one-to-one
@@ -88,9 +88,9 @@ function makeAmountMath(brand, mathHelpersName) {
     },
 
     /**
-     * Make sure this amount is valid and return it if so.
+     * Make sure this amount is valid and return it if so, throwing if invalid.
      * @param {any} allegedAmount
-     * @returns {Amount}
+     * @returns {Amount} or throws if invalid
      */
     coerce: allegedAmount => {
       // If the cache already has the allegedAmount, that

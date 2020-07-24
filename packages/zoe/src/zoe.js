@@ -269,7 +269,7 @@ function makeZoe(vatAdminSvc) {
           // We'll store an initial version of InstanceRecord before invoking
           // ZCF and fill in the zcfForZoe when we get it.
           const zcfForZoePromise = producePromise();
-          /** @type {Omit<InstanceRecord, 'handle'> & PrivateInstanceRecord} */
+          /** @type {Omit<InstanceRecord & PrivateInstanceRecord,'handle'>} */
           const instanceRecord = {
             installationHandle,
             publicAPI: publicApiP.promise,
@@ -296,6 +296,7 @@ function makeZoe(vatAdminSvc) {
           };
 
           const callStartContract = () => {
+            /** @type {InstanceRecord} */
             const instanceData = harden({
               handle: instanceHandle,
               installationHandle,
