@@ -2,6 +2,7 @@
 // @ts-check
 
 import makeIssuerKit from '@agoric/ertp';
+import { E } from '@agoric/eventual-send';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -79,14 +80,14 @@ const makeContract = zcf => {
     const sellItemsTerms = harden({
       pricePerItem,
     });
-    return zoeService
+    return E(zoeService)
       .makeInstance(
         sellItemsInstallationHandle,
         issuerKeywordRecord,
         sellItemsTerms,
       )
       .then(({ invite, instanceRecord: { handle: instanceHandle } }) => {
-        return zoeService
+        return E(zoeService)
           .offer(invite, proposal, paymentKeywordRecord)
           .then(offerResult => {
             return harden({

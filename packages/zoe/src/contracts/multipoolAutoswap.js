@@ -33,7 +33,7 @@ import { filterObj } from '../objArrayConversion';
  * When the contract is instantiated, the central token is specified in the
  * issuerKeywordRecord. The party that calls makeInstance gets an invitation
  * that can be used to request an invitation to add liquidity. The same
- * invitation is available by calling `publicAPI.getLiquidityIssuer(brand)`.
+ * invitation is available by calling `await E(publicAPI).getLiquidityIssuer(brand)`.
  * Separate invitations are available for adding and removing liquidity, and for
  * making trades. Other API operations support monitoring prices and the sizes
  * of pools.

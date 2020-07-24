@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import makeIssuerKit from '@agoric/ertp';
+import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import buildManualTimer from './manualTimer';
 import { makePrintLog } from './printLog';
 
@@ -94,7 +95,7 @@ const makeVats = (vats, zoe, installations, startingValues) => {
 export function buildRootObject(_vatPowers) {
   const obj0 = {
     async bootstrap(argv, vats) {
-      const zoe = await E(vats.zoe).getZoe();
+      const zoe = await E(vats.zoe).buildZoe(fakeVatAdmin);
 
       const installations = {
         automaticRefund: await E(zoe).install(automaticRefundBundle),

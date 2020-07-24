@@ -1,4 +1,4 @@
-import '@agoric/install-ses';
+import '@agoric/install-metering-and-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies

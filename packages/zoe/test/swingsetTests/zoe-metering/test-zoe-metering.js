@@ -34,6 +34,7 @@ async function main(argv) {
 
 const infiniteInstallLoopLog = [
   'installing infiniteInstallLoop',
+  'instantiating infiniteInstallLoop',
   'error: RangeError: Compute meter exceeded',
 ];
 test('zoe - metering - infinite loop in installation', async t => {

@@ -24,7 +24,7 @@ import {
  * { give: { Asset: asset }, want: { Ask: minimumBidAmount } }
  * The asset can be non-fungible, but the Ask amount should be of a fungible
  * brand.
- * The bidder invitations are available from publicAPI.makeInvites(n). Each
+ * The bidder invitations are available from await E(publicAPI).makeInvites(n). Each
  * bidder can submit an offer: { give: { Bid: null } want: { Asset: null } }.
  *
  * publicAPI also has methods to find out what's being auctioned

@@ -2,9 +2,8 @@
 
 import { makeZoe } from '@agoric/zoe';
 
-export function buildRootObject(vatPowers) {
-  const zoe = makeZoe({}, vatPowers);
+export function buildRootObject(_vatPowers) {
   return harden({
-    getZoe: () => zoe,
+    buildZoe: adminVat => makeZoe(adminVat),
   });
 }

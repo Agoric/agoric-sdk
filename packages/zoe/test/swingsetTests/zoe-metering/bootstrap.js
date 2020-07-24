@@ -10,9 +10,11 @@ import testBuiltinsBundle from './bundle-testBuiltins';
 
 function build(log) {
   const obj0 = {
-    async bootstrap(argv, vats) {
-      const zoe = await E(vats.zoe).getZoe();
-
+    async bootstrap(argv, vats, devices) {
+      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
       const installations = {
         infiniteInstallLoop: () =>
           E(zoe).install(infiniteInstallLoopBundle.bundle),

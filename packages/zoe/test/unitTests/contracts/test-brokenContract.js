@@ -6,8 +6,10 @@ import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
+// noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
+import fakeVatAdmin from './fakeVatAdmin';
 
 const automaticRefundRoot = `${__dirname}/brokenAutoRefund`;
 
@@ -15,7 +17,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moolaR } = setup();
-  const zoe = makeZoe();
+  const zoe = makeZoe(fakeVatAdmin);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   const installationHandle = await zoe.install(bundle);

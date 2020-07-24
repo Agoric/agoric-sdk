@@ -5,10 +5,13 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+import { E } from '@agoric/eventual-send';
 
+// noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
+import fakeVatAdmin from './fakeVatAdmin';
 
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 
@@ -23,7 +26,7 @@ test('autoSwap with valid offers', async t => {
       moola,
       simoleans,
     } = setup();
-    const zoe = makeZoe();
+    const zoe = makeZoe(fakeVatAdmin);
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -50,7 +53,7 @@ test('autoSwap with valid offers', async t => {
       invite: aliceInvite,
       instanceRecord: { publicAPI },
     } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
-    const liquidityIssuer = publicAPI.getLiquidityIssuer();
+    const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
 
     // Alice adds liquidity
@@ -81,7 +84,7 @@ test('autoSwap with valid offers', async t => {
       `liquidity payout`,
     );
     t.deepEquals(
-      publicAPI.getPoolAllocation(),
+      await E(publicAPI).getPoolAllocation(),
       {
         TokenA: moola(10),
         TokenB: simoleans(5),
@@ -91,7 +94,7 @@ test('autoSwap with valid offers', async t => {
     );
 
     // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = publicAPI.makeSwapInvite();
+    const bobInvite = await E(publicAPI).makeSwapInvite();
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
@@ -103,7 +106,7 @@ test('autoSwap with valid offers', async t => {
     t.equals(bobInstallationId, installationHandle, `installationHandle`);
 
     // Bob looks up the price of 3 moola in simoleans
-    const simoleanAmounts = bobAutoswap.getCurrentPrice(
+    const simoleanAmounts = await E(bobAutoswap).getCurrentPrice(
       moola(3),
       simoleans(0).brand,
     );
@@ -142,7 +145,7 @@ test('autoSwap with valid offers', async t => {
       `bob simoleans`,
     );
     t.deepEquals(
-      bobAutoswap.getPoolAllocation(),
+      await E(bobAutoswap).getPoolAllocation(),
       {
         TokenA: moola(13),
         TokenB: simoleans(4),
@@ -152,14 +155,14 @@ test('autoSwap with valid offers', async t => {
     );
 
     // Bob looks up the price of 3 simoleans
-    const moolaAmounts = bobAutoswap.getCurrentPrice(
+    const moolaAmounts = await E(bobAutoswap).getCurrentPrice(
       simoleans(3),
       moola(0).brand,
     );
     t.deepEquals(moolaAmounts, moola(5), `price 2`);
 
     // Bob makes another offer and swaps
-    const bobSecondInvite = bobAutoswap.makeSwapInvite();
+    const bobSecondInvite = await E(bobAutoswap).makeSwapInvite();
     const bobSimsForMoolaProposal = harden({
       want: { Out: moola(5) },
       give: { In: simoleans(3) },
@@ -190,7 +193,7 @@ test('autoSwap with valid offers', async t => {
       await simoleanIssuer.getAmountOf(bobSimoleanPayout2),
       simoleans(0),
     );
-    t.deepEqual(bobAutoswap.getPoolAllocation(), {
+    t.deepEqual(await E(bobAutoswap).getPoolAllocation(), {
       TokenA: moola(8),
       TokenB: simoleans(7),
       Liquidity: liquidity(0),
@@ -198,7 +201,7 @@ test('autoSwap with valid offers', async t => {
 
     // Alice removes her liquidity
     // She's not picky...
-    const aliceSecondInvite = publicAPI.makeRemoveLiquidityInvite();
+    const aliceSecondInvite = await E(publicAPI).makeRemoveLiquidityInvite();
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
       want: { TokenA: moola(0), TokenB: simoleans(0) },
@@ -229,7 +232,7 @@ test('autoSwap with valid offers', async t => {
       await liquidityIssuer.getAmountOf(aliceLiquidityPayout),
       liquidity(0),
     );
-    t.deepEquals(publicAPI.getPoolAllocation(), {
+    t.deepEquals(await E(publicAPI).getPoolAllocation(), {
       TokenA: moola(0),
       TokenB: simoleans(0),
       Liquidity: liquidity(10),
@@ -251,7 +254,7 @@ test('autoSwap - test fee', async t => {
       moola,
       simoleans,
     } = setup();
-    const zoe = makeZoe();
+    const zoe = makeZoe(fakeVatAdmin);
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -276,7 +279,7 @@ test('autoSwap - test fee', async t => {
       invite: aliceAddLiquidityInvite,
       instanceRecord: { publicAPI },
     } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
-    const liquidityIssuer = publicAPI.getLiquidityIssuer();
+    const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
 
     // Alice adds liquidity
@@ -306,14 +309,14 @@ test('autoSwap - test fee', async t => {
       await liquidityIssuer.getAmountOf(liquidityPayout),
       liquidity(10000),
     );
-    t.deepEquals(publicAPI.getPoolAllocation(), {
+    t.deepEquals(await E(publicAPI).getPoolAllocation(), {
       TokenA: moola(10000),
       TokenB: simoleans(10000),
       Liquidity: liquidity(0),
     });
 
     // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = publicAPI.makeSwapInvite();
+    const bobInvite = await E(publicAPI).makeSwapInvite();
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
@@ -325,7 +328,7 @@ test('autoSwap - test fee', async t => {
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 1000 moola in simoleans
-    const simoleanAmounts = bobAutoswap.getCurrentPrice(
+    const simoleanAmounts = await E(bobAutoswap).getCurrentPrice(
       moola(1000),
       simoleans(0).brand,
     );
@@ -356,7 +359,7 @@ test('autoSwap - test fee', async t => {
       await simoleanIssuer.getAmountOf(bobSimoleanPayout),
       simoleans(906),
     );
-    t.deepEquals(bobAutoswap.getPoolAllocation(), {
+    t.deepEquals(await E(bobAutoswap).getPoolAllocation(), {
       TokenA: moola(11000),
       TokenB: simoleans(9094),
       Liquidity: liquidity(0),
