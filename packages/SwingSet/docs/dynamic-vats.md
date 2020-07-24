@@ -4,7 +4,7 @@ A SwingSet machine has two sets of vats. The first are the *Static Vats*, which 
 
 The second set are the *Dynamic Vats*. These are created after startup, with source code bundles that were not known at boot time. Typically these bundles arrive over the network from external providers. In the Agoric system, contracts are installed as dynamic vats (each spawned instance goes into a separate vat).
 
-Dynamic vats are metered: each message delivered gets a limited amount of resources (CPU cycles, memory, stack frames). If it exceeds this budget, the vat is terminated. All outstanding messages will be rejected, any future messages will be rejected, and it will never get CPU time again.
+Dynamic vats are metered by default: each message delivered gets a limited amount of resources (CPU cycles, memory, stack frames). If it exceeds this budget, the vat is terminated. All outstanding messages will be rejected, any future messages will be rejected, and it will never get CPU time again.
 
 ## Creating a Dynamic Vat
 
@@ -44,13 +44,28 @@ async function run() {
 
 The next step is to somehow get this bundle into an existing vat. The bundle can be turned into a string with `s = JSON.stringify(bundle)`, and back into an object with `bundle = JSON.parse(s)`. In the Agoric system, the bundling and transfer is managed by the `agoric deploy` command.
 
+### Options
+
+There is currently only one option recognized by `createVat()`:
+
+* `metered` (boolean, default `true`). If `true`, the new dynamic vat is subject to metering restrictions, and may be terminated if any single crank uses too much. If `false`, the vat is unmetered, and may cause the overall SwingSet machine to cease making progress (by going into an infinite loop, or consuming too much memory, or too many stack frames).
+
+Note that any vat which can reach `createVat()` can create a new unmetered vat, even if the caller was metered themselves. So do not share an unattenuated Vat Admin object with an unmetered vat if you wish them to remain confined to metered operation.
+
 ### Invoking createVat()
 
 Once the bundle object is present within a vat that has access to the Vat Admin Service, you create the vat with a `createVat` call:
 
 ```js
-const control = await E(vatAdminService).createVat(bundle);
+const control = await E(vatAdminService).createVat(bundle, options);
 ```
+
+To create an unmetered dynamic vat, set `metered: false`:
+
+```js
+const control = await E(vatAdminService).createVat(bundle, { metered: false });
+```
+
 
 ## Root Object and Admin Node
 
