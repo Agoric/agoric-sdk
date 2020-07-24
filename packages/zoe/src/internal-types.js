@@ -23,7 +23,7 @@
 
 /**
  * @typedef {Object} ZoeForZcf
- * @property {(inviteCallback: InviteCallback, inviteDesc: string, options?: MakeInvitationOptions) => Payment} makeInvitation
+ * @property {<OC>(inviteCallback: InviteCallback<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
  * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
  * @property {(publicAPI: PublicAPI) => InstanceHandle} updatePublicAPI
  * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
@@ -31,9 +31,12 @@
  */
 
 /**
- * @typedef {Object} InviteCallback
- * @property {OfferHook} invoke
- *
+ * @template OC - the offer outcome
+ * @typedef {Object} InviteCallback<OC>
+ * @property {OfferHook<OC>} invoke
+ */
+
+/**
  * @callback StartContract
  * Makes a contract instance from an installation and returns a
  * unique handle for the instance that can be shared, as well as

@@ -318,7 +318,7 @@ export function buildRootObject(_vatPowers) {
         params.inviteIssuer,
         params.zoeForZcf,
       );
-      /** @type {Promise<Invite>} */
+      /** @type {Promise<Invite<any>>} */
       const inviteP = E(contractCode).makeContract(contractFacet);
       return {
         inviteP,

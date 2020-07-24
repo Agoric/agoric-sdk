@@ -50,10 +50,10 @@
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installationHandle.
  *
- * @property {(installationHandle: InstallationHandle,
+ * @property {<OC>(installationHandle: InstallationHandle,
  *             issuerKeywordRecord: IssuerKeywordRecord,
  *             terms?: object)
- *            => Promise<InviteIssuerRecord>} makeInstance
+ *            => Promise<MakeInstanceResult<OC>>} makeInstance
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to
  * use, as well as the `issuerKeywordRecord` and `terms` of the contract. The
@@ -68,14 +68,14 @@
  * Terms are up to the discretion of the smart contract. We get back
  * an invite (an ERTP payment) to participate in the contract.
  *
- * @property {(InstanceHandle) => InstanceRecord} getInstanceRecord
+ * @property {(instanceHandle: InstanceHandle) => InstanceRecord} getInstanceRecord
  * Credibly get information about the instance (such as the installation
  * and terms used).
  *
- * @property {(invite: Invite|PromiseLike<Invite>,
+ * @property {<OC>(invite: Invite<OC>|PromiseLike<Invite<OC>>,
  *             proposal?: Proposal,
  *             paymentKeywordRecord?: PaymentKeywordRecord)
- *            => Promise<OfferResultRecord>} offer
+ *            => Promise<OfferResultRecord<OC>>} offer
  * To redeem an invite, the user normally provides a proposal (their rules for the
  * offer) as well as payments to be escrowed by Zoe.  If either the proposal or payments
  * would be empty, indicate this by omitting that argument or passing undefined, rather
@@ -93,6 +93,7 @@
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
  * @property {(offerHandle: OfferHandle) => import('@agoric/notifier').Notifier<Allocation>} getOfferNotifier
+ * Get a notifier (see `@agoric/notify`) for the offer's reallocations.
  * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecords) => Allocation} getCurrentAllocation
  * @property {(offerHandles: OfferHandle[], brandKeywordRecord[]?: BrandKeywordRecords) => Allocation[]} getCurrentAllocations
  * @property {(installationHandle: InstallationHandle) => SourceBundle} getInstallation
@@ -101,10 +102,10 @@
  *
  * @typedef {Object} CompleteObj
  * @property {() => void} complete attempt to exit the contract and return a refund
- *
- * @typedef {any} OfferOutcome
- * A contract-specific value that is returned by the OfferHook.
- *
+ */
+
+/**
+ * @template OC - the offer outcome
  * @typedef {Object} OfferResultRecord This is returned by a call to `offer` on Zoe.
  * @property {Promise<OfferHandle>} offerHandle
  * @property {Promise<PaymentPKeywordRecord>} payout A promise that resolves
@@ -113,13 +114,15 @@
  * is completed, the promise for each payment resolves after the remote
  * issuer successfully withdraws the payment.
  *
- * @property {Promise<OfferOutcome>} outcome Note that if the offerHook throws,
+ * @property {Promise<OC>} outcome Note that if the offerHook throws,
  * this outcome Promise will reject, but the rest of the OfferResultRecord is
  * still meaningful.
  *
  * @property {CompleteObj} [completeObj]
  * completeObj will only be present if exitKind was 'onDemand'
- *
+ */
+
+/**
  * @typedef {Partial<ProposalRecord>} Proposal
  * @typedef {{give:AmountKeywordRecord,want:AmountKeywordRecord,exit:ExitRule}} ProposalRecord
  *
@@ -129,9 +132,12 @@
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
  *
  * @typedef {AmountKeywordRecord[]} AmountKeywordRecords
- *
+ */
+
+/**
+ * @template OC - the offer outcome
  * @typedef {Object} MakeInstanceResult
- * @property {Invite} invite
+ * @property {Invite<OC>} invite
  * @property {InstanceRecord} instanceRecord
  */
 
@@ -159,16 +165,18 @@
  */
 
 /**
- * @typedef {Payment} Invite
+ * @template OC - the offer outcome
+ * @typedef {Payment & { _inviteOutcome: OC }} Invite
  * An invitation to participate in a Zoe contract.
  * Invites are Payments, so they can be transferred, stored in Purses, and
  * verified. Only Zoe can create new Invites.
  */
 
 /**
+ * @template OC - the offer outcome
  * @callback MakeContract The type exported from a Zoe contract
  * @param {ContractFacet} zcf The Zoe Contract Facet
- * @returns {Invite} invite The closely-held administrative invite
+ * @returns {Invite<OC>} invite The closely-held administrative invite
  */
 
 /**
@@ -238,7 +246,10 @@
  * that the invariants hold.
  * @param  {OfferHandle[]} offerHandles - an array of offerHandles
  * @returns {void}
- *
+ */
+
+/**
+ * @template OC - the offer outcome
  * @callback MakeInvitation
  * Make a credible Zoe invite for a particular smart contract
  * indicated by the unique `instanceHandle`. The other
@@ -249,25 +260,32 @@
  * queries based on other information, we choose to omit it. For
  * instance, `installationHandle` can be derived from
  * `instanceHandle` and is omitted even though it is useful.
- * @param {OfferHook} offerHook - a function that will be handed the
+ * @param {OfferHook<OC>} offerHook - a function that will be handed the
  * offerHandle at the right time, and returns a contract-specific
  * OfferOutcome which will be put in the OfferResultRecord.
  * @param {string} inviteDesc
  * @param {MakeInvitationOptions} [options]
- * @returns {Promise<Invite>}
- *
+ * @returns {Promise<Invite<OC>>}
+ */
+
+/**
  * @typedef MakeInvitationOptions
  * @property {CustomProperties} [customProperties] - an object of
  * information to include in the extent, as defined by the smart
  * contract
- *
+ */
+
+/**
+ * @template OC - the outcome type
  * @callback OfferHook
  * This function will be called with the OfferHandle when the offer
  * is prepared. It should return a contract-specific "OfferOutcome"
  * value that will be put in the OfferResultRecord.
  * @param {OfferHandle} offerHandle
- * @returns {OfferOutcome}
- *
+ * @returns {OC}
+ */
+
+/**
  * @callback AddNewIssuer
  * Informs Zoe about an issuer and returns a promise for acknowledging
  * when the issuer is added and ready.

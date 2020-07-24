@@ -38,7 +38,7 @@ import zcfContractBundle from '../bundles/bundle-contractFacet';
 function makeZoe(vatAdminSvc) {
   /**
    * A weakMap from the inviteHandles to contract offerHook upcalls
-   * @type {WeakStore<InviteHandle,InviteCallback>}
+   * @type {WeakStore<InviteHandle,OfferHook<any>>}
    */
   const inviteHandleToHandler = makeWeakStore('inviteHandle');
 
@@ -126,10 +126,12 @@ function makeZoe(vatAdminSvc) {
    * Note that the smart contract cannot override or change the values
    * of `handle` and `instanceHandle`.
    *
+   * @template OC - the offer outcome
    * @param {InstanceHandle} instanceHandle
-   * @param {InviteCallback} inviteCallback
+   * @param {InviteCallback<OC>} inviteCallback
+   * @param {string} inviteDesc
    * @param {Object} options
-   * @returns {Payment}
+   * @returns {Invite<OC>}
    */
   const makeInvitation = (
     instanceHandle,
@@ -159,7 +161,8 @@ function makeZoe(vatAdminSvc) {
     );
     const handler = offerHandle => E(inviteHandler).invoke(offerHandle);
     inviteHandleToHandler.init(inviteHandle, handler);
-    return inviteMint.mintPayment(inviteAmount);
+    const invite = inviteMint.mintPayment(inviteAmount);
+    return /** @type {Invite<OC>} */ (invite);
   };
 
   /**
@@ -222,27 +225,11 @@ function makeZoe(vatAdminSvc) {
   // an object with a complete method for leaving the contract on demand.
 
   /** @type {ZoeService} */
-  const zoeService = harden({
+  const zoeService = {
     getInviteIssuer: () => inviteIssuer,
 
-    /**
-     * Create an installation by permanently storing the bundle. It will be
-     * evaluated each time it is used to make a new instance of a contract.
-     */
     install: bundle => installationTable.create(harden({ bundle })),
 
-    /**
-     * Makes a contract instance from an installation and returns the
-     * invitation and InstanceRecord.
-     *
-     * @param  {InstallationHandle} installationHandle - the unique handle for the
-     * installation
-     * @param {Object.<string,Issuer>} issuerKeywordRecord - a record mapping
-     * keyword keys to issuer values
-     * @param  {object} terms - optional, arguments to the contract. These
-     * arguments depend on the contract.
-     * @returns {Promise<MakeInstanceResult>}
-     */
     makeInstance: (
       installationHandle,
       issuerKeywordRecord = harden({}),
@@ -357,38 +344,15 @@ function makeZoe(vatAdminSvc) {
         });
     },
 
-    /**
-     * Credibly retrieves an instance record given an instanceHandle.
-     * @param {InstanceHandle} instanceHandle - the unique, unforgeable
-     * identifier (empty object) for the instance
-     */
     getInstanceRecord: instanceHandle =>
       filterInstanceRecord(instanceTable.get(instanceHandle)),
 
-    /** Get a notifier (see @agoric/notify) for the offer. */
     getOfferNotifier: offerHandle => {
       const { notifier } = offerTable.get(offerHandle);
       assert(notifier, `notifier is not set within Zoe`);
       return notifier;
     },
 
-    /**
-     * Redeem the invite to receive a payout promise and an
-     * outcome promise.
-     * @param {Invite|PromiseLike<Invite>} invite - an invite (ERTP payment) to join a
-     * Zoe smart contract instance
-     * @param  {Proposal} [proposal={}] - the proposal, a record
-     * with properties `want`, `give`, and `exit`. The keys of
-     * `want` and `give` are keywords and the values are amounts.
-     * @param  {PaymentKeywordRecord} [paymentKeywordRecord={}] - a record with
-     * keyword keys and values which are payments that will be escrowed by
-     * Zoe.
-     * @returns {Promise<OfferResultRecord>}
-     *
-     * The default arguments allow remote invocations to specify empty
-     * objects. Otherwise, explicitly-provided empty objects would be
-     * marshaled as presences.
-     */
     offer: (
       invite,
       proposal = harden({}),
@@ -484,9 +448,9 @@ function makeZoe(vatAdminSvc) {
       doGetCurrentAllocations(offerHandles, brandKeywordRecords),
     getInstallation: installationHandle =>
       installationTable.get(installationHandle).bundle,
-  });
+  };
 
-  return zoeService;
+  return harden(zoeService);
 }
 
 export { makeZoe };

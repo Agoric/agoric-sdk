@@ -325,6 +325,13 @@ export const makeZoeHelpers = zcf => {
     },
 
     /**
+     * @typedef ExpectedRecord
+     * @property {Record<keyof ProposalRecord['give'],null>} [want]
+     * @property {Record<keyof ProposalRecord['want'],null>} [give]
+     * @property {Partial<Record<keyof ProposalRecord['exit'],null>>} [exit]
+     */
+
+    /**
      * Make an offerHook that wraps the provided `offerHook`, to first
      * check the submitted offer against an `expected` record that says
      * what shape of proposal is acceptable.
@@ -334,18 +341,16 @@ export const makeZoeHelpers = zcf => {
      * null contents. If the client submits an Offer which does not match
      * these expectations, that offer will be rejected (and refunded).
      *
-     * @typedef ExpectedRecord
-     * @property {Record<keyof ProposalRecord['give'],null>} [want]
-     * @property {Record<keyof ProposalRecord['want'],null>} [give]
-     * @property {Partial<Record<keyof ProposalRecord['exit'],null>>} [exit]
-     *
-     * @param {OfferHook} offerHook
+     * @template OC
+     * @param {OfferHook<OC>} offerHook
      * @param {ExpectedRecord} expected
      */
-    checkHook: (offerHook, expected) => offerHandle => {
-      helpers.rejectIfNotProposal(offerHandle, expected);
-      return offerHook(offerHandle);
-    },
+    checkHook: (offerHook, expected) =>
+      /** @param {OfferHandle} offerHandle */
+      offerHandle => {
+        helpers.rejectIfNotProposal(offerHandle, expected);
+        return offerHook(offerHandle);
+      },
 
     /**
      * Return a Promise for an OfferHandle.
