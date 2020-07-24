@@ -12,8 +12,8 @@ export function buildRootObject(vatPowers) {
       service = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },
 
-    async createVat(bundle) {
-      control = await E(service).createVat(bundle);
+    async createVat(bundle, options) {
+      control = await E(service).createVat(bundle, options);
       E(control.adminNode)
         .done()
         .then(
