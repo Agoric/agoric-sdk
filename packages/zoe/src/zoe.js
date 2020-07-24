@@ -632,10 +632,14 @@ function makeZoe(vatAdminSvc) {
 
         const makeOfferResult = completeObj => {
           const offerHandler = inviteHandleToHandler.get(inviteHandle);
+          const offerOutcome = offerHandler(offerHandle).catch(err => {
+            completeOffers(instanceHandle, [offerHandle]);
+            throw err;
+          });
           const offerResult = {
             offerHandle: HandledPromise.resolve(offerHandle),
             payout: payoutMap.get(offerHandle).promise,
-            outcome: offerHandler(offerHandle),
+            outcome: offerOutcome,
             completeObj,
           };
           return harden(offerResult);

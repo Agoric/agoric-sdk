@@ -34,7 +34,6 @@ export const makeZoeHelpers = (zcf) => {
   const zoeService = zcf.getZoeService();
 
   const rejectOffer = (offerHandle, msg = defaultRejectMsg) => {
-    zcf.complete(harden([offerHandle]));
     assert.fail(msg);
   };
 
