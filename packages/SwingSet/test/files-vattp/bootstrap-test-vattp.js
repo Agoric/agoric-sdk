@@ -1,7 +1,8 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-function build(D, log) {
+export function buildRootObject(vatPowers) {
+  const { D, testLog: log } = vatPowers;
   const receiver = harden({
     receive(body) {
       log(`ch.receive ${body}`);
@@ -26,14 +27,4 @@ function build(D, log) {
       }
     },
   });
-}
-
-export default function setup(syscall, state, helpers) {
-  const { log } = helpers;
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    vatPowers => build(vatPowers.D, log),
-    helpers.vatID,
-  );
 }

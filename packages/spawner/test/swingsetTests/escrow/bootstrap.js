@@ -8,7 +8,9 @@ import { assert, details } from '@agoric/assert';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 
-function build(log) {
+export function buildRootObject(vatPowers) {
+  const log = vatPowers.testLog;
+
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckMismatches');
     const installationP = E(host).install(escrowExchangeSrcs);
@@ -202,19 +204,3 @@ function build(log) {
   };
   return harden(obj0);
 }
-harden(build);
-
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  log(`=> setup called`);
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers => build(log),
-    helpers.vatID,
-  );
-}
-export default harden(setup);

@@ -116,17 +116,10 @@ function makeBobMaker(host, log) {
   });
 }
 
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  return helpers.makeLiveSlots(syscall, state, _vatPowers =>
-    harden({
-      makeBobMaker(host) {
-        return harden(makeBobMaker(host, log));
-      },
-    }),
-  );
+export function buildRootObject(vatPowers) {
+  return harden({
+    makeBobMaker(host) {
+      return harden(makeBobMaker(host, vatPowers.log));
+    },
+  });
 }
-export default harden(setup);

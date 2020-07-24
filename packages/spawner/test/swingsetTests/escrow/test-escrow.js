@@ -16,7 +16,7 @@ async function main(basedir, argv) {
   return controller.dump();
 }
 
-const escrowGolden = ['=> setup called', 'starting testEscrowServiceSuccess'];
+const escrowGolden = ['starting testEscrowServiceSuccess'];
 
 test('escrow checkUnits w/SES', async t => {
   const dump = await main('escrow', ['escrow matches']);
@@ -25,7 +25,6 @@ test('escrow checkUnits w/SES', async t => {
 });
 
 const escrowMismatchGolden = [
-  '=> setup called',
   'starting testEscrowServiceCheckMismatches',
   'expected unsuccessful check Error: Escrow checkUnits: different at top.right.value: ((a string)) vs ((a string))\nSee console for error data.',
 ];
@@ -37,7 +36,6 @@ test.skip('escrow check misMatches w/SES', async t => {
 });
 
 const escrowCheckPartialWrongPriceGolden = [
-  '=> setup called',
   'starting testEscrowServiceCheckPartial wrong price',
   'expected wrong price Error: Escrow checkPartialUnits seat: different at top.value: ((a number)) vs ((a number))\nSee console for error data.',
 ];
@@ -49,7 +47,6 @@ test.skip('escrow check partial misMatches w/SES', async t => {
 });
 
 const escrowCheckPartialWrongStockGolden = [
-  '=> setup called',
   'starting testEscrowServiceCheckPartial wrong stock',
   'expected wrong stock Error: Escrow checkPartialUnits seat: different at top.value: ((a string)) vs ((a string))\nSee console for error data.',
 ];
@@ -61,7 +58,6 @@ test.skip('escrow check partial misMatches w/SES', async t => {
 });
 
 const escrowCheckPartialWrongSeatGolden = [
-  '=> setup called',
   'starting testEscrowServiceCheckPartial wrong seat',
   'expected wrong side Error: Escrow checkPartialUnits seat: label not found on right at top: ((an object)) vs ((an object))\nSee console for error data.',
 ];

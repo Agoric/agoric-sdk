@@ -1,7 +1,7 @@
 /* global harden */
 
-export default function setup(syscall, state, helpers, _devices) {
-  const { log } = helpers;
+export default function setup(syscall, state, helpers, _vatPowers0) {
+  const log = helpers.testLog;
   const dispatch = harden({
     deliver(facetid, method, args, _result) {
       log(args.body);

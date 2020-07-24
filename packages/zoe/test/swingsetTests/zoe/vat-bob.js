@@ -552,10 +552,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   });
 };
 
-const setup = (syscall, state, helpers) =>
-  helpers.makeLiveSlots(syscall, state, _vatPowers =>
-    harden({
-      build: (...args) => build(helpers.log, ...args),
-    }),
-  );
-export default harden(setup);
+export function buildRootObject(vatPowers) {
+  return harden({
+    build: (...args) => build(vatPowers.testLog, ...args),
+  });
+}

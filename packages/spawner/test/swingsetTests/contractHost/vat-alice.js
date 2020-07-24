@@ -196,17 +196,10 @@ function makeAliceMaker(host, log) {
   });
 }
 
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  return helpers.makeLiveSlots(syscall, state, _vatPowers =>
-    harden({
-      makeAliceMaker(host) {
-        return harden(makeAliceMaker(host, log));
-      },
-    }),
-  );
+export function buildRootObject(vatPowers) {
+  return harden({
+    makeAliceMaker(host) {
+      return harden(makeAliceMaker(host, vatPowers.log));
+    },
+  });
 }
-export default harden(setup);

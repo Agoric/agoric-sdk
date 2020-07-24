@@ -19,6 +19,7 @@ import babelGenerate from '@babel/generator';
 
 import anylogger from 'anylogger';
 
+import { makeLiveSlots } from './kernel/liveSlots';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
@@ -191,7 +192,7 @@ export async function buildVatController(config, argv = []) {
     let setup;
     if ('buildRootObject' in vatNS) {
       setup = (syscall, state, helpers, vatPowers) => {
-        return helpers.makeLiveSlots(
+        return makeLiveSlots(
           syscall,
           state,
           vatP => vatNS.buildRootObject(vatP),

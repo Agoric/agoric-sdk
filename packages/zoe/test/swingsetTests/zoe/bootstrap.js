@@ -88,7 +88,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   return harden(result);
 };
 
-function build(log) {
+export function buildRootObject(vatPowers) {
   const obj0 = {
     async bootstrap(argv, vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
@@ -109,7 +109,7 @@ function build(log) {
       const [testName, startingValues] = argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
-        log,
+        vatPowers.testLog,
         vats,
         zoe,
         installations,
@@ -120,14 +120,3 @@ function build(log) {
   };
   return harden(obj0);
 }
-harden(build);
-
-function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers => build(helpers.log),
-    helpers.vatID,
-  );
-}
-export default harden(setup);

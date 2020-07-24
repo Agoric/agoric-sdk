@@ -1,21 +1,12 @@
 /* global harden */
 
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers =>
-      harden({
-        encourageMe(name) {
-          log(`=> encouragementBot.encourageMe got the name: ${name}`);
-          return `${name}, you are awesome, keep it up!`;
-        },
-      }),
-    helpers.vatID,
-  );
+export function buildRootObject(vatPowers) {
+  return harden({
+    encourageMe(name) {
+      vatPowers.testLog(
+        `=> encouragementBot.encourageMe got the name: ${name}`,
+      );
+      return `${name}, you are awesome, keep it up!`;
+    },
+  });
 }

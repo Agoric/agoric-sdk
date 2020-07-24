@@ -147,21 +147,12 @@ test('bootstrap export', async t => {
     },
   ]);
 
-  t.deepEqual(c.dump().log, [
-    'left.setup called',
-    'right.setup called',
-    'bootstrap called',
-  ]);
+  t.deepEqual(c.dump().log, []);
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
   await c.step();
   // kernel promise for result of the foo() that bootstrap sends to vat-left
   const fooP = 'kp41';
-  t.deepEqual(c.dump().log, [
-    'left.setup called',
-    'right.setup called',
-    'bootstrap called',
-    'bootstrap.obj0.bootstrap()',
-  ]);
+  t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()']);
   kt.push([left0, bootstrapVatID, 'o-50']);
   kt.push([right0, bootstrapVatID, 'o-51']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
@@ -185,13 +176,7 @@ test('bootstrap export', async t => {
 
   await c.step();
   const barP = 'kp42';
-  t.deepEqual(c.dump().log, [
-    'left.setup called',
-    'right.setup called',
-    'bootstrap called',
-    'bootstrap.obj0.bootstrap()',
-    'left.foo 1',
-  ]);
+  t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
   kt.push([right0, leftVatID, 'o-50']);
   kt.push([barP, leftVatID, 'p+5']);
   checkKT(t, c, kt);
@@ -215,9 +200,6 @@ test('bootstrap export', async t => {
   await c.step();
 
   t.deepEqual(c.dump().log, [
-    'left.setup called',
-    'right.setup called',
-    'bootstrap called',
     'bootstrap.obj0.bootstrap()',
     'left.foo 1',
     'right.obj0.bar 2 true',
@@ -233,9 +215,6 @@ test('bootstrap export', async t => {
   await c.step();
 
   t.deepEqual(c.dump().log, [
-    'left.setup called',
-    'right.setup called',
-    'bootstrap called',
     'bootstrap.obj0.bootstrap()',
     'left.foo 1',
     'right.obj0.bar 2 true',
@@ -250,9 +229,6 @@ test('bootstrap export', async t => {
   await c.step();
 
   t.deepEqual(c.dump().log, [
-    'left.setup called',
-    'right.setup called',
-    'bootstrap called',
     'bootstrap.obj0.bootstrap()',
     'left.foo 1',
     'right.obj0.bar 2 true',

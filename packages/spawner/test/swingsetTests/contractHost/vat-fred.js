@@ -105,17 +105,10 @@ function makeFredMaker(host, log) {
   });
 }
 
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  return helpers.makeLiveSlots(syscall, state, _vatPowers =>
-    harden({
-      makeFredMaker(host) {
-        return harden(makeFredMaker(host, log));
-      },
-    }),
-  );
+export function buildRootObject(vatPowers) {
+  return harden({
+    makeFredMaker(host) {
+      return harden(makeFredMaker(host, vatPowers.log));
+    },
+  });
 }
-export default harden(setup);

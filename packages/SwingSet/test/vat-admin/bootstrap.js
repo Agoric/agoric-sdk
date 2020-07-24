@@ -1,76 +1,68 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-export default function setup(syscall, state, helpers) {
-  const { log } = helpers;
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    _vatPowers =>
-      harden({
-        async bootstrap(argv, vats, devices) {
-          const bundles = argv[1];
-          const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-            devices.vatAdmin,
-          );
-          switch (argv[0]) {
-            case 'newVat':
-              {
-                log(`starting newVat test`);
-                const { root } = await E(vatAdminSvc).createVat(
-                  bundles.newVatBundle,
-                );
-                const n = await E(root).getANumber();
-                log(n);
-              }
-              break;
-            case 'counters': {
-              log(`starting counter test`);
-              const { root } = await E(vatAdminSvc).createVat(
-                bundles.newVatBundle,
-              );
-              const c = E(root).createRcvr(1);
-              log(await E(c).increment(3));
-              log(await E(c).increment(5));
-              log(await E(c).ticker());
-              return;
-            }
-            case 'brokenVat': {
-              log(`starting brokenVat test`);
-              E(vatAdminSvc)
-                .createVat(bundles.brokenVatBundle)
-                .then(
-                  result => log(`didn't expect success ${result}`),
-                  rejection => log(`yay, rejected: ${rejection}`),
-                );
-              return;
-            }
-            case 'non-bundle': {
-              log(`starting non-bundle test`);
-              E(vatAdminSvc)
-                .createVat(bundles.nonBundle)
-                .then(
-                  result => log(`didn't expect success ${result}`),
-                  rejection => log(`yay, rejected: ${rejection}`),
-                );
-              return;
-            }
-            case 'vatStats': {
-              log(`starting stats test`);
-              const { root, adminNode } = await E(vatAdminSvc).createVat(
-                bundles.newVatBundle,
-              );
-              log(await E(adminNode).adminData());
-              const c = E(root).createRcvr(1);
-              log(await E(c).increment(3));
-              log(await E(adminNode).adminData());
-              return;
-            }
-            default:
-              throw new Error(`unknown argv mode '${argv[0]}'`);
+export function buildRootObject(vatPowers) {
+  const log = vatPowers.testLog;
+  return harden({
+    async bootstrap(argv, vats, devices) {
+      const bundles = argv[1];
+      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+      switch (argv[0]) {
+        case 'newVat':
+          {
+            log(`starting newVat test`);
+            const { root } = await E(vatAdminSvc).createVat(
+              bundles.newVatBundle,
+            );
+            const n = await E(root).getANumber();
+            log(n);
           }
-        },
-      }),
-    helpers.vatID,
-  );
+          break;
+        case 'counters': {
+          log(`starting counter test`);
+          const { root } = await E(vatAdminSvc).createVat(bundles.newVatBundle);
+          const c = E(root).createRcvr(1);
+          log(await E(c).increment(3));
+          log(await E(c).increment(5));
+          log(await E(c).ticker());
+          return;
+        }
+        case 'brokenVat': {
+          log(`starting brokenVat test`);
+          E(vatAdminSvc)
+            .createVat(bundles.brokenVatBundle)
+            .then(
+              result => log(`didn't expect success ${result}`),
+              rejection => log(`yay, rejected: ${rejection}`),
+            );
+          return;
+        }
+        case 'non-bundle': {
+          log(`starting non-bundle test`);
+          E(vatAdminSvc)
+            .createVat(bundles.nonBundle)
+            .then(
+              result => log(`didn't expect success ${result}`),
+              rejection => log(`yay, rejected: ${rejection}`),
+            );
+          return;
+        }
+        case 'vatStats': {
+          log(`starting stats test`);
+          const { root, adminNode } = await E(vatAdminSvc).createVat(
+            bundles.newVatBundle,
+          );
+          log(await E(adminNode).adminData());
+          const c = E(root).createRcvr(1);
+          log(await E(c).increment(3));
+          log(await E(adminNode).adminData());
+          return;
+        }
+        default:
+          throw new Error(`unknown argv mode '${argv[0]}'`);
+      }
+    },
+  });
 }
