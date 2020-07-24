@@ -202,6 +202,7 @@
  * @property {(offerHandle: OfferHandle) => Promise<import('@agoric/notifier').Notifier<Allocation>>} getOfferNotifier
  * @property {() => InstanceRecord} getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
+ * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {(brand: Brand) => AmountMath} getAmountMath
  * @property {() => VatAdmin} getVatAdmin
  *

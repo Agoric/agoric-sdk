@@ -172,7 +172,8 @@ export function buildRootObject(_vatPowers) {
   ) => {
     let publicApiInitialized = false;
 
-    return harden({
+    /** @type {ContractFacet} */
+    const contractFacet = {
       reallocate: (offerHandles, newAllocations) =>
         reallocate(offerHandles, newAllocations, zoeForZcf),
       addNewIssuer: (issuerP, keyword) =>
@@ -230,14 +231,16 @@ export function buildRootObject(_vatPowers) {
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
       getAmountMath: getAmountMathForBrand,
       getVatAdmin: instanceRecord.adminNode,
-    });
+    };
+    return harden(contractFacet);
   };
 
   /**
    * @returns {ZcfForZoe}
    */
-  const makeZcfForZoe = (instanceHandle, zoeForZcf) =>
-    harden({
+  const makeZcfForZoe = (instanceHandle, zoeForZcf) => {
+    /** @type {ZcfForZoe} */
+    const zcfForZoe = {
       addOffer: (offerHandle, proposal, allocation) => {
         const ignoringUpdater = harden({
           updateState: () => {},
@@ -292,7 +295,9 @@ export function buildRootObject(_vatPowers) {
         offerTable.create(offerRecord, offerHandle);
         return completeObj;
       },
-    });
+    };
+    return harden(zcfForZoe);
+  };
 
   /**
    * Makes a contract instance from an installation and returns a

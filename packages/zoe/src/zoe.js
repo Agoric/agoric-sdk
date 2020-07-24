@@ -128,7 +128,7 @@ function makeZoe(vatAdminSvc) {
    *
    * @template OC - the offer outcome
    * @param {InstanceHandle} instanceHandle
-   * @param {InviteCallback<OC>} inviteHandler
+   * @param {InviteHandler<OC>} inviteHandler
    * @param {string} inviteDesc
    * @param {Object} options
    * @returns {Invite<OC>}
@@ -186,8 +186,8 @@ function makeZoe(vatAdminSvc) {
    */
   const makeZoeForZcf = (instanceHandle, publicApiP) => {
     return harden({
-      makeInvitation: (inviteCallback, inviteDesc, options = undefined) =>
-        makeInvitation(instanceHandle, inviteCallback, inviteDesc, options),
+      makeInvitation: (inviteHandler, inviteDesc, options = undefined) =>
+        makeInvitation(instanceHandle, inviteHandler, inviteDesc, options),
       updateAmounts: (offerHandles, reallocations) =>
         offerTable.updateAmounts(offerHandles, reallocations),
       updatePublicAPI: publicAPI => publicApiP.resolve(publicAPI),

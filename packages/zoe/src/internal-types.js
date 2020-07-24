@@ -23,7 +23,7 @@
 
 /**
  * @typedef {Object} ZoeForZcf
- * @property {<OC>(inviteCallback: InviteCallback<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
+ * @property {<OC>(inviteHandler: InviteHandler<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
  * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
  * @property {(publicAPI: PublicAPI) => void} updatePublicAPI
  * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
@@ -32,7 +32,7 @@
 
 /**
  * @template OC - the offer outcome
- * @typedef {Object} InviteCallback<OC>
+ * @typedef {Object} InviteHandler<OC>
  * @property {OfferHook<OC>} invoke
  */
 
