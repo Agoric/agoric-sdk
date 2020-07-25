@@ -13,7 +13,7 @@ import { isOfferSafe } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { assertKeywordName, cleanProposal, getKeywords } from './cleanProposal';
 import { makeContractTables } from './state';
-import { filterObj, filterFillAmounts } from './objArrayConversion';
+import { filterObj, filterFillAmounts, tuple } from './objArrayConversion';
 import { evalContractBundle } from './evalContractCode';
 
 import '../exported';
@@ -25,14 +25,22 @@ import './internal-types';
  * @returns {{ startContract: StartContract }} The returned instance
  */
 export function buildRootObject(_vatPowers) {
-  const visibleInstanceRecordFields = [
-    'instanceHandle',
+  // Need to make this variable a tuple type, since technically
+  // it could be mutated before we pass it to filterObj.
+  //
+  // If we want to avoid this type magic, just supply it as the
+  // verbatim argument of filterObj.
+  const visibleInstanceRecordFields = tuple(
+    'handle',
     'installationHandle',
     'publicAPI',
     'terms',
     'issuerKeywordRecord',
     'brandKeywordRecord',
-  ];
+  );
+  /**
+   * @param {InstanceRecord} instanceRecord
+   */
   const visibleInstanceRecord = instanceRecord =>
     filterObj(instanceRecord, visibleInstanceRecordFields);
 
@@ -45,8 +53,10 @@ export function buildRootObject(_vatPowers) {
       assert(offerTable.has(offerHandle), details`Offer is not active`),
     );
 
+  /** @param {OfferRecord} offerRecord */
   const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
+  /** @param {IssuerRecord} issuerRecord */
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 

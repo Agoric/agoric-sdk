@@ -47,8 +47,7 @@ const makeContract = zcf => {
     const tokenAmount = tokenAmountMath.make(
       harden(
         Array(count)
-          // @ts-ignore
-          .fill()
+          .fill(undefined)
           .map((_, i) => {
             const tokenNumber = i + 1;
             return {

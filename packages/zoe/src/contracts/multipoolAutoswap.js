@@ -3,6 +3,7 @@
 /* eslint-disable no-use-before-define */
 import makeIssuerKit from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
+import { E } from '@agoric/eventual-send';
 
 import { makeTable, makeValidateProperties } from '../table';
 import { assertKeywordName } from '../cleanProposal';
@@ -74,25 +75,27 @@ const makeContract = zcf => {
   // tokenIssuer, liquidityMint, liquidityIssuer, tokenKeyword,
   // liquidityKeyword, liquidityTokenSupply
   const liquidityTable = makeTable(
-    makeValidateProperties(
-      harden([
-        'poolHandle',
-        'tokenIssuer',
-        'tokenBrand',
-        'liquidityMint',
-        'liquidityIssuer',
-        'liquidityBrand',
-        'tokenKeyword',
-        'liquidityKeyword',
-        'liquidityTokenSupply',
-      ]),
-    ),
+    makeValidateProperties([
+      'poolHandle',
+      'tokenIssuer',
+      'tokenBrand',
+      'liquidityMint',
+      'liquidityIssuer',
+      'liquidityBrand',
+      'tokenKeyword',
+      'liquidityKeyword',
+      'liquidityTokenSupply',
+    ]),
     'tokenBrand',
   );
 
-  // Allows users to add new liquidity pools. `newTokenIssuer` and
-  // `newTokenKeyword` must not have been already used
-  const addPool = (newTokenIssuer, newTokenKeyword) => {
+  /**
+   * Allows users to add new liquidity pools. `newTokenIssuer` and
+   * `newTokenKeyword` must not have been already used
+   * @param {Issuer} newTokenIssuer
+   * @param {Keyword} newTokenKeyword
+   */
+  const addPool = async (newTokenIssuer, newTokenKeyword) => {
     assertKeywordName(newTokenKeyword);
     const { brandKeywordRecord } = zcf.getInstanceRecord();
     const keywords = Object.keys(brandKeywordRecord);
@@ -101,9 +104,9 @@ const makeContract = zcf => {
       !keywords.includes(newTokenKeyword),
       details`newTokenKeyword must be unique`,
     );
-    // TODO: handle newTokenIssuer as a potential promise
+    const newTokenBrand = await E(newTokenIssuer).getBrand();
     assert(
-      !brands.includes(newTokenIssuer.brand),
+      !brands.includes(newTokenBrand),
       details`newTokenIssuer must not be already present`,
     );
     const newLiquidityKeyword = `${newTokenKeyword}Liquidity`;
@@ -117,8 +120,7 @@ const makeContract = zcf => {
       brand: liquidityBrand,
     } = makeIssuerKit(newLiquidityKeyword);
 
-    /** @type {Promise<[IssuerRecord, OfferHandle, IssuerRecord]>} */
-    // @ts-ignore
+    /** @type {Promise<[Omit<IssuerRecord,'purse'>, OfferHandle, Omit<IssuerRecord,'purse'>]>} */
     const promiseAll = Promise.all([
       zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
       makeEmptyOffer(),

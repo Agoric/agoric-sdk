@@ -1,18 +1,22 @@
 import { assert, details, q } from '@agoric/assert';
 
+/** @type {<T extends string[]>(...args: T) => T} */
+export const tuple = (...args) => args;
+
 /**
  * @template T
+ * @template U
  * @param {T[]} array
- * @param {string[]} keywords
+ * @param {U[]} keys
  */
-export const arrayToObj = (array, keywords) => {
+export const arrayToObj = (array, keys) => {
   assert(
-    array.length === keywords.length,
-    details`array and keywords must be of equal length`,
+    array.length === keys.length,
+    details`array and keys must be of equal length`,
   );
-  /** @type {{[Keyword: string]: T}} */
+  /** @type {{[Keyword: U]: T}} */
   const obj = {};
-  keywords.forEach((keyword, i) => (obj[keyword] = array[i]));
+  keys.forEach((key, i) => (obj[key] = array[i]));
   return obj;
 };
 
@@ -38,21 +42,22 @@ export const assertSubset = (whole, part) => {
 };
 
 /**
- * Return a new object with only the keys in subsetKeywords.
- * `obj` must have values for all the `subsetKeywords`.
+ * Return a new object with only the keys in subsetKeys.
+ * `obj` must have values for all the `subsetKeys`.
  * @template T
- * @param {Object} obj
- * @param {Keyword[]} subsetKeywords
- * @returns {T}
+ * @template {(keyof T)[]} U
+ * @param {T} obj
+ * @param {U} subsetKeys
+ * @returns {Pick<T,U[number]>}
  */
-export const filterObj = (obj, subsetKeywords) => {
+export const filterObj = (obj, subsetKeys) => {
   const newObj = {};
-  subsetKeywords.forEach(keyword => {
+  subsetKeys.forEach(key => {
     assert(
-      obj[keyword] !== undefined,
-      details`obj[keyword] must be defined for keyword ${q(keyword)}`,
+      obj[key] !== undefined,
+      details`obj[key] must be defined for keyword ${q(key)}`,
     );
-    newObj[keyword] = obj[keyword];
+    newObj[key] = obj[key];
   });
   return newObj;
 };

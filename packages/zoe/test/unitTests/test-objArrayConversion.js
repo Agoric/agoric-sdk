@@ -14,14 +14,14 @@ test('arrayToObj', t => {
     const keywords2 = ['X', 'Y', 'Z'];
     t.throws(
       () => arrayToObj(array, keywords2),
-      /Error: array and keywords must be of equal length/,
+      /Error: array and keys must be of equal length/,
       `unequal length should throw`,
     );
 
     const array2 = [4, 5, 2];
     t.throws(
       () => arrayToObj(array2, keywords),
-      /Error: array and keywords must be of equal length/,
+      /Error: array and keys must be of equal length/,
       `unequal length should throw`,
     );
   } catch (e) {

@@ -292,7 +292,7 @@
  * when the issuer is added and ready.
  * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord>} Issuer is added and ready
+ * @returns {Promise<Omit<IssuerRecord,'purse'>>} Issuer is added and ready
  *
  * @typedef {Record<string,function>} PublicAPI
  *

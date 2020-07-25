@@ -20,8 +20,8 @@ const makeInstallationTable = () => {
   /**
    * @type {Validator<InstallationRecord>}
    */
-  const validateSomewhat = makeValidateProperties(harden(['bundle']));
-  return makeTable(validateSomewhat, 'installationHandle', () => ({}));
+  const validateSomewhat = makeValidateProperties(['bundle']);
+  return makeTable(validateSomewhat, 'installationHandle');
 };
 
 // Instance Table key: instanceHandle
@@ -40,17 +40,15 @@ const makeInstanceTable = () => {
    *
    * @type {Validator<InstanceRecord & PrivateInstanceRecord>}
    */
-  const validateSomewhat = makeValidateProperties(
-    harden([
-      'installationHandle',
-      'publicAPI',
-      'terms',
-      'issuerKeywordRecord',
-      'brandKeywordRecord',
-      'zcfForZoe',
-      'offerHandles',
-    ]),
-  );
+  const validateSomewhat = makeValidateProperties([
+    'installationHandle',
+    'publicAPI',
+    'terms',
+    'issuerKeywordRecord',
+    'brandKeywordRecord',
+    'zcfForZoe',
+    'offerHandles',
+  ]);
 
   const makeCustomMethods = table => {
     const customMethods = harden({
@@ -188,8 +186,8 @@ const makeIssuerTable = (withPurses = true) => {
    */
   const validateSomewhat = makeValidateProperties(
     withPurses
-      ? harden(['brand', 'issuer', 'purse', 'amountMath'])
-      : harden(['brand', 'issuer', 'amountMath']),
+      ? ['brand', 'issuer', 'purse', 'amountMath']
+      : ['brand', 'issuer', 'amountMath'],
   );
 
   const makeCustomMethods = table => {
