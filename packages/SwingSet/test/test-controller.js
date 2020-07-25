@@ -61,7 +61,7 @@ async function simpleCall(t) {
   ]);
   await controller.run();
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
-    facetID: 'o+1',
+    target: 'o+1',
     method: 'foo',
     args: capdata('args'),
   });

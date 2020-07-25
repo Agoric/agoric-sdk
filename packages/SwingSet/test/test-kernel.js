@@ -54,10 +54,10 @@ test('build kernel', async t => {
 test('simple call', async t => {
   const kernel = buildKernel(makeEndowments());
   const log = [];
-  function setup1(syscall, state, helpers) {
+  function setup1(syscall, state, _helpers, vatPowers) {
     function deliver(facetID, method, args) {
       log.push([facetID, method, args]);
-      helpers.testLog(JSON.stringify({ facetID, method, args }));
+      vatPowers.testLog(JSON.stringify({ facetID, method, args }));
     }
     return { deliver };
   }

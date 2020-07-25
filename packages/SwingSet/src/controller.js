@@ -223,13 +223,19 @@ export async function buildVatController(config, argv = []) {
     }`,
   );
 
-  // we give the kernel a meteringTransform function, so it can offer it to
+  const VAname = 'dev-vatAdmin';
+  const VAbundle = await bundleSource(ADMIN_DEVICE_PATH);
+  const VANS = await importBundle(VAbundle, {
+    filePrefix: VAname,
+    endowments: makeVatEndowments(VAname),
+  });
+  const vatAdminDevBuildRootDeviceNode = VANS.buildRootDeviceNode;
 
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
     makeVatEndowments,
-    vatAdminDevSetup: await loadStaticVat(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
+    vatAdminDevBuildRootDeviceNode,
     vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
     replaceGlobalMeter,
     transformMetering,
@@ -249,8 +255,12 @@ export async function buildVatController(config, argv = []) {
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
-    const setup = await loadStaticVat(sourceIndex, `dev-${name}`);
-    kernel.addGenesisDevice(name, setup, endowments);
+    const bundle = await bundleSource(sourceIndex);
+    const NS = await importBundle(bundle, {
+      filePrefix: `dev-${name}`,
+      endowments: makeVatEndowments(`dev-${name}`),
+    });
+    kernel.addGenesisDevice(name, NS.buildRootDeviceNode, endowments);
   }
 
   if (config.devices) {

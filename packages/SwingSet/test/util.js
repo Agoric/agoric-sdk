@@ -22,7 +22,6 @@ export function checkKT(t, kernel, expected) {
   t.deepEqual(got, expected);
 }
 
-
 export function buildDispatch(onDispatchCallback = undefined) {
   const log = [];
 

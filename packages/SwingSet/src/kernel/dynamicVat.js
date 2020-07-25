@@ -1,6 +1,4 @@
-import { importBundle } from '@agoric/import-bundle';
 import { makeVatSlot } from '../parseVatSlots';
-import { makeLiveSlots } from './liveSlots';
 
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -10,10 +8,7 @@ export function makeDynamicVatCreator(stuff) {
   const {
     allocateUnusedVatID,
     vatNameToID,
-    makeVatEndowments,
-    dynamicVatPowers,
-    transformMetering,
-    makeGetMeter,
+    vatManagerFactory,
     addVatManager,
     addExport,
     queueToExport,
@@ -48,18 +43,6 @@ export function makeDynamicVatCreator(stuff) {
     }
 
     const vatID = allocateUnusedVatID();
-    let meterRecord = null;
-    if (metered) {
-      // fail-stop: we refill the meter after each crank (in vatManager
-      // doProcess()), but if the vat exhausts its meter within a single crank,
-      // it will never run again. We set refillEachCrank:false because we want
-      // doProcess to do the refilling itself, so it can count the usage
-      meterRecord = makeGetMeter({
-        refillEachCrank: false,
-        refillIfExhausted: false,
-      });
-    }
-
     let terminated = false;
 
     function notifyTermination(error) {
@@ -89,52 +72,26 @@ export function makeDynamicVatCreator(stuff) {
       );
     }
 
-    async function makeBuildRootObject() {
+    const managerOptions = {
+      metered,
+      notifyTermination: metered ? notifyTermination : undefined,
+      vatPowerType: 'dynamic',
+    };
+
+    async function build() {
       if (typeof vatSourceBundle !== 'object') {
         throw Error(
           `createVatDynamically() requires bundle, not a plain string`,
         );
       }
-      const inescapableTransforms = [];
-      const inescapableGlobalLexicals = {};
-      if (metered) {
-        const getMeter = meterRecord.getMeter;
-        inescapableTransforms.push(src => transformMetering(src, getMeter));
-        inescapableGlobalLexicals.getMeter = getMeter;
-      }
 
-      const vatNS = await importBundle(vatSourceBundle, {
-        filePrefix: vatID,
-        endowments: makeVatEndowments(vatID),
-        inescapableTransforms,
-        inescapableGlobalLexicals,
-      });
-      if (typeof vatNS.buildRootObject !== 'function') {
-        throw Error(
-          `vat source bundle does not export buildRootObject function`,
-        );
-      }
-      return vatNS.buildRootObject;
-    }
-
-    function makeVatManager(buildRootObject) {
-      function setup(syscall, state, helpers, _vatPowers) {
-        return makeLiveSlots(
-          syscall,
-          state,
-          buildRootObject,
-          helpers.vatID,
-          dynamicVatPowers,
-        );
-      }
-      addVatManager(
+      const manager = await vatManagerFactory.createFromBundle(
+        vatSourceBundle,
         vatID,
-        `dynamicVat${vatID}`,
-        setup,
-        {},
-        meterRecord,
-        notifyTermination,
+        managerOptions,
       );
+      const addOptions = {}; // enablePipelining:false
+      addVatManager(vatID, manager, addOptions);
     }
 
     function makeSuccessResponse() {
@@ -170,8 +127,8 @@ export function makeDynamicVatCreator(stuff) {
       );
     }
 
-    // importBundle is async, so we prepare a callback chain to execute the
-    // resulting setup function, create the new vat around the resulting
+    // vatManagerFactory is async, so we prepare a callback chain to execute
+    // the resulting setup function, create the new vat around the resulting
     // dispatch object, and notify the admin vat of our success (or failure).
     // We presume that importBundle's Promise will fire promptly (before
     // setImmediate does, i.e. importBundle is async but doesn't do any IO,
@@ -181,8 +138,7 @@ export function makeDynamicVatCreator(stuff) {
     // way, maybe the response should go out to the controller's "queue
     // things single file into the kernel" queue, once such a thing exists.
     Promise.resolve()
-      .then(makeBuildRootObject)
-      .then(makeVatManager)
+      .then(build)
       .then(makeSuccessResponse, makeErrorResponse)
       .then(sendResponse)
       .catch(err => console.error(`error in createVatDynamically`, err));

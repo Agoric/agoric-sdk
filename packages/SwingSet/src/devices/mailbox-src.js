@@ -2,7 +2,8 @@
 
 import Nat from '@agoric/nat';
 
-export default function setup(syscall, state, helpers, endowments) {
+export function buildRootDeviceNode(tools) {
+  const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const highestInboundDelivered = harden(new Map());
   const highestInboundAck = harden(new Map());
 
@@ -52,68 +53,63 @@ export default function setup(syscall, state, helpers, endowments) {
 
   // we keep no state in the device, it all lives elsewhere, as decided by
   // the host
+  let { inboundHandler } = getDeviceState() || {};
 
-  function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
-    let { inboundHandler } = getDeviceState() || {};
-    // console.debug(`mailbox-src build: inboundHandler is`, inboundHandler);
-    deliverInboundMessages = (peer, newMessages) => {
-      if (!inboundHandler) {
-        throw new Error(`deliverInboundMessages before registerInboundHandler`);
+  // console.debug(`mailbox-src build: inboundHandler is`, inboundHandler);
+  deliverInboundMessages = (peer, newMessages) => {
+    if (!inboundHandler) {
+      throw new Error(`deliverInboundMessages before registerInboundHandler`);
+    }
+    try {
+      SO(inboundHandler).deliverInboundMessages(peer, newMessages);
+    } catch (e) {
+      console.error(`error during deliverInboundMessages: ${e}`, e);
+    }
+  };
+
+  deliverInboundAck = (peer, ack) => {
+    if (!inboundHandler) {
+      throw new Error(`deliverInboundAck before registerInboundHandler`);
+    }
+    try {
+      SO(inboundHandler).deliverInboundAck(peer, ack);
+    } catch (e) {
+      console.error(`error during deliverInboundAck:`, e);
+    }
+  };
+
+  // the Root Device Node.
+  return harden({
+    registerInboundHandler(handler) {
+      if (inboundHandler) {
+        throw new Error(`already registered`);
       }
+      inboundHandler = handler;
+      setDeviceState(harden({ inboundHandler }));
+    },
+
+    add(peer, msgnum, body) {
       try {
-        SO(inboundHandler).deliverInboundMessages(peer, newMessages);
+        endowments.add(`${peer}`, Nat(msgnum), `${body}`);
       } catch (e) {
-        console.error(`error during deliverInboundMessages: ${e}`, e);
+        throw new Error(`error in add: ${e}`);
       }
-    };
+    },
 
-    deliverInboundAck = (peer, ack) => {
-      if (!inboundHandler) {
-        throw new Error(`deliverInboundAck before registerInboundHandler`);
-      }
+    remove(peer, msgnum) {
       try {
-        SO(inboundHandler).deliverInboundAck(peer, ack);
+        endowments.remove(`${peer}`, Nat(msgnum));
       } catch (e) {
-        console.error(`error during deliverInboundAck:`, e);
+        throw new Error(`error in remove: ${e}`);
       }
-    };
+    },
 
-    // the Root Device Node.
-    return harden({
-      registerInboundHandler(handler) {
-        if (inboundHandler) {
-          throw new Error(`already registered`);
-        }
-        inboundHandler = handler;
-        setDeviceState(harden({ inboundHandler }));
-      },
-
-      add(peer, msgnum, body) {
-        try {
-          endowments.add(`${peer}`, Nat(msgnum), `${body}`);
-        } catch (e) {
-          throw new Error(`error in add: ${e}`);
-        }
-      },
-
-      remove(peer, msgnum) {
-        try {
-          endowments.remove(`${peer}`, Nat(msgnum));
-        } catch (e) {
-          throw new Error(`error in remove: ${e}`);
-        }
-      },
-
-      ackInbound(peer, msgnum) {
-        try {
-          endowments.setAcknum(`${peer}`, Nat(msgnum));
-        } catch (e) {
-          throw new Error(`error in ackInbound: ${e}`);
-        }
-      },
-    });
-  }
-
-  // return the dispatch object.
-  return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
+    ackInbound(peer, msgnum) {
+      try {
+        endowments.setAcknum(`${peer}`, Nat(msgnum));
+      } catch (e) {
+        throw new Error(`error in ackInbound: ${e}`);
+      }
+    },
+  });
 }

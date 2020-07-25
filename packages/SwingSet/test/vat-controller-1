@@ -1,7 +1,7 @@
 // -*- js -*-
-export default function start(syscall, _state, helpers) {
-  function deliver(facetID, method, args) {
-    helpers.testLog(JSON.stringify({ facetID, method, args }));
+export default function setup(syscall, _state, _helpers, vatPowers) {
+  function deliver(target, method, args) {
+    vatPowers.testLog(JSON.stringify({ target, method, args }));
   }
   return { deliver };
 }
