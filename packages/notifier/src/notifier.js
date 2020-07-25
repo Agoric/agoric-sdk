@@ -56,7 +56,7 @@ import { producePromise } from '@agoric/produce-promise';
  * @param {T} [initialState] the first state to be returned
  * @returns {NotifierRecord<T>} the notifier and updater
  */
-export const produceNotifier = (initialState = undefined) => {
+export const makeNotifierKit = (initialState = undefined) => {
   let currentPromiseRec = producePromise();
   let currentResponse = harden({
     value: initialState,
@@ -104,3 +104,7 @@ export const produceNotifier = (initialState = undefined) => {
   const updater = harden({ updateState, resolve });
   return harden({ notifier, updater });
 };
+
+// Deprecated. TODO remove
+
+export { makeNotifierKit as produceNotifier };

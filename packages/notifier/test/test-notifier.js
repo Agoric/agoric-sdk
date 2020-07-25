@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import { produceNotifier } from '../src/notifier';
+import { makeNotifierKit } from '../src/notifier';
 
 /**
  * @template T
@@ -11,7 +11,7 @@ import { produceNotifier } from '../src/notifier';
 
 test('notifier - initial state', async t => {
   /** @type {NotifierRecord<1>} */
-  const { notifier, updater } = produceNotifier();
+  const { notifier, updater } = makeNotifierKit();
   updater.updateState(1);
 
   const updateDeNovo = await notifier.getUpdateSince();
@@ -25,7 +25,7 @@ test('notifier - initial state', async t => {
 test('notifier - single update', async t => {
   t.plan(3);
   /** @type {NotifierRecord<number>} */
-  const { notifier, updater } = produceNotifier();
+  const { notifier, updater } = makeNotifierKit();
   updater.updateState(1);
 
   const updateDeNovo = await notifier.getUpdateSince();
@@ -45,7 +45,7 @@ test('notifier - single update', async t => {
 test('notifier - initial update', async t => {
   t.plan(3);
   /** @type {NotifierRecord<number>} */
-  const { notifier, updater } = produceNotifier(1);
+  const { notifier, updater } = makeNotifierKit(1);
 
   const updateDeNovo = notifier.getCurrentUpdate();
   t.equals(updateDeNovo.value, 1, 'initial state is one');
@@ -63,7 +63,7 @@ test('notifier - initial update', async t => {
 
 test('notifier - update after state change', async t => {
   t.plan(5);
-  const { notifier, updater } = produceNotifier(1);
+  const { notifier, updater } = makeNotifierKit(1);
 
   const updateDeNovo = notifier.getCurrentUpdate();
 
@@ -88,7 +88,7 @@ test('notifier - update after state change', async t => {
 test('notifier - final state', async t => {
   t.plan(6);
   /** @type {NotifierRecord<number|string>} */
-  const { notifier, updater } = produceNotifier(1);
+  const { notifier, updater } = makeNotifierKit(1);
 
   const updateDeNovo = notifier.getCurrentUpdate();
   const updateInWaiting = notifier.getUpdateSince(updateDeNovo.updateHandle);
