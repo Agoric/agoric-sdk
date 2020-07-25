@@ -611,13 +611,13 @@ function makeZoe(vatAdminSvc) {
         // deposited. Keywords in the want clause are mapped to the empty
         // amount for that keyword's Issuer.
         const recordOffer = amountsArray => {
-          const notifierRec = makeNotifierKit();
+          const notifierKit = makeNotifierKit(undefined);
           const offerRecord = {
             instanceHandle,
             proposal: cleanedProposal,
             currentAllocation: arrayToObj(amountsArray, userKeywords),
-            notifier: notifierRec.notifier,
-            updater: notifierRec.updater,
+            notifier: notifierKit.notifier,
+            updater: notifierKit.updater,
           };
           const { zcfForZoe } = instanceTable.get(instanceHandle);
           payoutMap.init(offerHandle, producePromise());

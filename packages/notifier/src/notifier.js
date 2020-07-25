@@ -5,40 +5,49 @@
 import { producePromise } from '@agoric/produce-promise';
 
 /**
- * @typedef {Object} UpdateHandle a value used to mark the position in the update stream
+ * @typedef {number | undefined} UpdateCount a value used to mark the position
+ * in the update stream. For the last state, the updateCount is undefined.
  */
 
 /**
  * @template T the type of the state value
  * @typedef {Object} UpdateRecord<T>
  * @property {T} value is whatever state the service wants to publish
- * @property {UpdateHandle} updateHandle is a value that identifies the update
- * @property {boolean} done false until the updater publishes a final state
+ * @property {UpdateCount} updateCount is a value that identifies the update
  */
 
 /**
  * @template T the type of the notifier state
- * @callback GetUpdateSince<T> Can be called repeatedly to get a sequence of update records
- * @param {UpdateHandle} [updateHandle] return update record as of a handle
- * If the handle argument is omitted or differs from the current handle, return the current record.
- * Otherwise, after the next state change, the promise will resolve to the then-current value of the record.
+ * @callback GetUpdateSince<T> Can be called repeatedly to get a sequence of
+ * update records
+ * @param {UpdateCount} [updateCount] return update record as of a handle
+ * If the handle argument is omitted or differs from the current handle,
+ * return the current record.
+ * Otherwise, after the next state change, the promise will resolve to the
+ * then-current value of the record.
  * @returns {Promise<UpdateRecord<T>>} resolves to the corresponding update
  */
 
 /**
  * @template T the type of the notifier state
- * @typedef {Object} Notifier<T> an object that can be used to get the current state or updates
- * @property {GetUpdateSince<T>} getUpdateSince return update record as of a handle
- * @property {() => UpdateRecord<T>} getCurrentUpdate return the current update record
+ * @typedef {Object} Notifier<T> an object that can be used to get the current
+ * state or updates
+ * @property {GetUpdateSince<T>} getUpdateSince return update record as of a
+ * handle
  */
 
 /**
  * @template T the type of the notifier state
- * @typedef {Object} Updater<T> an object that should be closely held, as anyone with access to
+ * @typedef {Object} Updater<T> an object that should be closely held, as
+ * anyone with access to
  * it can provide updates
- * @property {(state: T) => void} updateState sets the new state, and resolves the outstanding promise to send an update
- * @property {(finalState: T) => void} resolve sets the final state, sends a final update, and freezes the
+ * @property {(state: T) => void} updateState sets the new state, and resolves
+ * the outstanding promise to send an update
+ * @property {(finalState: T) => void} finish sets the final state, sends a
+ * final update, and freezes the
  * updater
+ * @property {(reason: T) => void} reject the stream becomes erroneously
+ * terminated, allegedly for the stated reason.
  */
 
 /**
@@ -49,6 +58,13 @@ import { producePromise } from '@agoric/produce-promise';
  */
 
 /**
+ * Whether to enable deprecated legacy features to support legacy clients
+ * during the transition. TODO once all clients are updated to the new API,
+ * remove this flag and all code enabled by this flag.
+ */
+const supportLegacy = true;
+
+/**
  * Produces a pair of objects, which allow a service to produce a stream of
  * update promises.
  *
@@ -56,55 +72,112 @@ import { producePromise } from '@agoric/produce-promise';
  * @param {T} [initialState] the first state to be returned
  * @returns {NotifierRecord<T>} the notifier and updater
  */
-export const makeNotifierKit = (initialState = undefined) => {
-  let currentPromiseRec = producePromise();
-  let currentResponse = harden({
-    value: initialState,
-    updateHandle: {},
-    done: false,
-  });
+// The initial state argument has to be truly optional even though it can
+// be any first class value including `undefined`. We need to distinguish the
+// presence vs the absence of it, which we cannot do with the optional argument
+// syntax. Rather we use the arity of the arguments array.
+//
+// If no initial state is provided to `makeNotifierKit`, then it starts without
+// an initial state. Its initial state will instead be the state of the first
+// update.
+export const makeNotifierKit = (...args) => {
+  let nextPromiseKit = producePromise();
+  let currentUpdateCount = 1; // avoid falsy numbers
+  let currentResponse;
 
-  function getCurrentUpdate() {
-    return currentResponse;
+  const hasState = () => currentResponse !== undefined;
+
+  const final = () => currentUpdateCount === undefined;
+
+  const extraProperties = () =>
+    supportLegacy
+      ? {
+          updateHandle: currentUpdateCount,
+          done: final(),
+        }
+      : {};
+
+  if (args.length >= 1) {
+    // start as hasState() && !final()
+    currentResponse = harden({
+      value: args[0],
+      updateCount: currentUpdateCount,
+      ...extraProperties(),
+    });
   }
+  // else start as !hasState() && !final()
 
-  function getUpdateSince(updateHandle = undefined) {
-    if (updateHandle === currentResponse.updateHandle) {
-      return currentPromiseRec.promise;
+  // NaN matches nothing
+  function getUpdateSince(updateCount = NaN) {
+    if (
+      hasState() &&
+      (final() || currentResponse.updateCount !== updateCount)
+    ) {
+      // If hasState() and either it is final() or it is
+      // not the state of updateCount, return the current state.
+      return Promise.resolve(currentResponse);
     }
-    return Promise.resolve(currentResponse);
+    // otherwise return a promise for the next state.
+    return nextPromiseKit.promise;
   }
 
   function updateState(state) {
-    if (!currentResponse.updateHandle) {
-      throw new Error('Cannot update state after resolve.');
+    if (final()) {
+      throw new Error('Cannot update state after termination.');
     }
 
-    currentResponse = harden({ value: state, updateHandle: {}, done: false });
-    currentPromiseRec.resolve(currentResponse);
-    currentPromiseRec = producePromise();
+    // become hasState() && !final()
+    currentUpdateCount += 1;
+    currentResponse = harden({
+      value: state,
+      updateCount: currentUpdateCount,
+      ...extraProperties(),
+    });
+    nextPromiseKit.resolve(currentResponse);
+    nextPromiseKit = producePromise();
   }
 
-  function resolve(finalState) {
-    if (!currentResponse.updateHandle) {
-      throw new Error('Cannot resolve again.');
+  function finish(finalState) {
+    if (final()) {
+      throw new Error('Cannot finish after termination.');
     }
 
+    // become hasState() && final()
+    currentUpdateCount = undefined;
     currentResponse = harden({
       value: finalState,
-      updateHandle: undefined,
-      done: true,
+      updateCount: currentUpdateCount,
+      ...extraProperties(),
     });
-    currentPromiseRec.resolve(currentResponse);
+    nextPromiseKit.resolve(currentResponse);
+    nextPromiseKit = undefined;
   }
 
-  // notifier facet is separate so it can be handed out loosely while updater is
-  // tightly held
-  const notifier = harden({ getUpdateSince, getCurrentUpdate });
-  const updater = harden({ updateState, resolve });
+  function reject(reason) {
+    if (final()) {
+      throw new Error('Cannot reject after termination.');
+    }
+
+    // become !hasState() && final()
+    currentUpdateCount = undefined;
+    currentResponse = undefined;
+    nextPromiseKit.reject(reason);
+  }
+
+  // notifier facet is separate so it can be handed out loosely while updater
+  // is tightly held
+  const notifier = harden({ getUpdateSince });
+  const updater = harden({
+    updateState,
+    finish,
+    reject,
+    ...(supportLegacy ? { resolve: finish } : {}),
+  });
   return harden({ notifier, updater });
 };
 
-// Deprecated. TODO remove
-
-export { makeNotifierKit as produceNotifier };
+// Deprecated. TODO remove once no clients need it.
+// Unlike makeNotifierKit, produceIssuerKit always produces
+// a notifier with an initial state, which defaults to undefined.
+export const produceNotifier = (initialState = undefined) =>
+  makeNotifierKit(initialState);

@@ -253,11 +253,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  function logStateOnChanges(notifier, lastHandle = undefined) {
-    const updateRecordP = E(notifier).getUpdateSince(lastHandle);
+  function logStateOnChanges(notifier, lastCount = undefined) {
+    const updateRecordP = E(notifier).getUpdateSince(lastCount);
     updateRecordP.then(updateRec => {
       log(updateRec.value);
-      logStateOnChanges(notifier, updateRec.updateHandle);
+      logStateOnChanges(notifier, updateRec.updateCount);
     });
   }
 

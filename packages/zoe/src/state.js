@@ -112,7 +112,7 @@ const makeOfferTable = () => {
       deleteOffers: offerHandles => {
         return offerHandles.map(offerHandle => {
           const { updater } = table.get(offerHandle);
-          updater.resolve(undefined);
+          updater.finish(undefined);
           return table.delete(offerHandle);
         });
       },
