@@ -7,10 +7,10 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 function producePRR() {
-  const { promise, resolve, reject } = producePromise();
+  const { promise, resolve, reject } = makePromiseKit();
   return [promise, { resolve, reject }];
 }
 

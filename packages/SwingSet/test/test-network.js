@@ -2,7 +2,7 @@
 
 import '@agoric/install-ses'; // adds 'harden' to global
 import { test } from 'tape-promise/tape';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 import {
   parse,
@@ -80,7 +80,7 @@ test('handled protocol', async t => {
   try {
     const protocol = makeNetworkProtocol(makeProtocolHandler(t));
 
-    const closed = producePromise();
+    const closed = makePromiseKit();
     const port = await protocol.bind('/ibc/*/ordered');
     await port.connect(
       '/ibc/*/ordered/echo',
@@ -114,7 +114,7 @@ test('protocol connection listen', async t => {
   try {
     const protocol = makeNetworkProtocol(makeProtocolHandler(t));
 
-    const closed = producePromise();
+    const closed = makePromiseKit();
 
     const port = await protocol.bind('/net/ordered/ordered/some-portname');
 
@@ -226,7 +226,7 @@ test('loopback protocol', async t => {
   try {
     const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
 
-    const closed = producePromise();
+    const closed = makePromiseKit();
 
     const port = await protocol.bind('/loopback/foo');
 

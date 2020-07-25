@@ -2,7 +2,7 @@
 
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -80,7 +80,7 @@ export function buildRootObject(vatPowers) {
     const {
       promise: theirLocatorUnum,
       resolve: gotTheirLocatorUnum,
-    } = producePromise();
+    } = makePromiseKit();
     const name = makeConnectionName();
     let openCalled = false;
     assert(!connectionNames.has(name), `already have host for ${name}`);

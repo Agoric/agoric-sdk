@@ -5,7 +5,7 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
 import { E } from '@agoric/eventual-send';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 const RETIRE_VPIDS = true;
@@ -194,7 +194,7 @@ async function doVatResolveCase1(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    const pr = producePromise();
+    const pr = makePromiseKit();
     return harden({
       async run(target1, target2) {
         const p1 = pr.promise;
@@ -305,7 +305,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   function build(_vatPowers) {
     let p1;
-    const pr = producePromise();
+    const pr = makePromiseKit();
     const p0 = pr.promise;
     return harden({
       promise(p) {

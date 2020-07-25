@@ -2,7 +2,7 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { assert } from '@agoric/assert';
 import {
   makeAsyncIterableFromNotifier,
@@ -30,7 +30,7 @@ import './types';
  */
 export const makeNotifierKit = (...args) => {
   /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
-  let nextPromiseKit = producePromise();
+  let nextPromiseKit = makePromiseKit();
   /** @type {UpdateCount} */
   let currentUpdateCount = 1; // avoid falsy numbers
   /** @type {UpdateRecord<T>|undefined} */
@@ -80,7 +80,7 @@ export const makeNotifierKit = (...args) => {
         updateCount: currentUpdateCount,
       });
       nextPromiseKit.resolve(currentResponse);
-      nextPromiseKit = producePromise();
+      nextPromiseKit = makePromiseKit();
     },
 
     finish(finalState) {

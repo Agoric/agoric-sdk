@@ -9,7 +9,7 @@ import {
   makeMarshal,
 } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
-import { isPromise } from '@agoric/produce-promise';
+import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 

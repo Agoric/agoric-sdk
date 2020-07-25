@@ -1,7 +1,7 @@
 /* global harden */
 
 import { E } from '@agoric/eventual-send';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
@@ -56,7 +56,7 @@ export function buildRootObject(vatPowers) {
             return 3;
           },
         });
-        const { promise: p1, resolve: r1 } = producePromise();
+        const { promise: p1, resolve: r1 } = makePromiseKit();
         console.log(`here1`, Object.isFrozen(p1));
         const p2 = E(vats.left).takePromise(p1);
         console.log(`here2`);
