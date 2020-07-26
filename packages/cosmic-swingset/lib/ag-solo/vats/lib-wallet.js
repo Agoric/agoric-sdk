@@ -230,8 +230,8 @@ export async function makeWallet({
   // handle the update, which has already resolved to a record. If the offer is
   // 'done', mark the offer 'complete', otherwise resubscribe to the notifier.
   function updateOrResubscribe(id, offerHandle, update) {
-    const { updateHandle, done } = update;
-    if (done) {
+    const { updateCount } = update;
+    if (updateCount === undefined) {
       // TODO do we still need these?
       idToOfferHandle.delete(id);
 
@@ -245,7 +245,7 @@ export async function makeWallet({
       idToNotifierP.delete(id);
     } else {
       E(idToNotifierP.get(id))
-        .getUpdateSince(updateHandle)
+        .getUpdateSince(updateCount)
         .then(nextUpdate => updateOrResubscribe(id, offerHandle, nextUpdate));
     }
   }
