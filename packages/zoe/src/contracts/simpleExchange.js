@@ -1,7 +1,7 @@
 /* global harden */
 // @ts-check
 
-import { produceNotifier } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
 /**
@@ -30,7 +30,7 @@ const makeContract = zcf => {
   let sellOfferHandles = [];
   let buyOfferHandles = [];
   // eslint-disable-next-line no-use-before-define
-  const { notifier, updater } = produceNotifier(getBookOrders());
+  const { notifier, updater } = makeNotifierKit(getBookOrders());
 
   const {
     rejectOffer,

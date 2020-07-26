@@ -5,7 +5,7 @@ import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import makeIssuerKit from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
-import { produceNotifier } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
 
 import { cleanProposal, cleanKeywords } from './cleanProposal';
@@ -611,7 +611,7 @@ function makeZoe(vatAdminSvc) {
         // deposited. Keywords in the want clause are mapped to the empty
         // amount for that keyword's Issuer.
         const recordOffer = amountsArray => {
-          const notifierRec = produceNotifier();
+          const notifierRec = makeNotifierKit();
           const offerRecord = {
             instanceHandle,
             proposal: cleanedProposal,
