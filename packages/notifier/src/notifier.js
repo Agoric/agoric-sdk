@@ -58,13 +58,6 @@ import { producePromise } from '@agoric/produce-promise';
  */
 
 /**
- * Whether to enable deprecated legacy features to support legacy clients
- * during the transition. TODO once all clients are updated to the new API,
- * remove this flag and all code enabled by this flag.
- */
-const supportLegacy = true;
-
-/**
  * Produces a pair of objects, which allow a service to produce a stream of
  * update promises.
  *
@@ -89,20 +82,11 @@ export const makeNotifierKit = (...args) => {
 
   const final = () => currentUpdateCount === undefined;
 
-  const extraProperties = () =>
-    supportLegacy
-      ? {
-          updateHandle: currentUpdateCount,
-          done: final(),
-        }
-      : {};
-
   if (args.length >= 1) {
     // start as hasState() && !final()
     currentResponse = harden({
       value: args[0],
       updateCount: currentUpdateCount,
-      ...extraProperties(),
     });
   }
   // else start as !hasState() && !final()
@@ -131,7 +115,6 @@ export const makeNotifierKit = (...args) => {
     currentResponse = harden({
       value: state,
       updateCount: currentUpdateCount,
-      ...extraProperties(),
     });
     nextPromiseKit.resolve(currentResponse);
     nextPromiseKit = producePromise();
@@ -147,7 +130,6 @@ export const makeNotifierKit = (...args) => {
     currentResponse = harden({
       value: finalState,
       updateCount: currentUpdateCount,
-      ...extraProperties(),
     });
     nextPromiseKit.resolve(currentResponse);
     nextPromiseKit = undefined;
@@ -171,13 +153,6 @@ export const makeNotifierKit = (...args) => {
     updateState,
     finish,
     reject,
-    ...(supportLegacy ? { resolve: finish } : {}),
   });
   return harden({ notifier, updater });
 };
-
-// Deprecated. TODO remove once no clients need it.
-// Unlike makeNotifierKit, produceIssuerKit always produces
-// a notifier with an initial state, which defaults to undefined.
-export const produceNotifier = (initialState = undefined) =>
-  makeNotifierKit(initialState);

@@ -371,6 +371,7 @@ export function buildRootObject(_vatPowers) {
         const ignoringUpdater = harden({
           updateState: () => {},
           finish: () => {},
+          reject: () => {},
         });
         const offerRecord = {
           instanceHandle,
