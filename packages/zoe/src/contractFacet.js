@@ -256,12 +256,11 @@ export function buildRootObject(_vatPowers) {
     const zcfForZoe = {
       addOffer: (offerHandle, proposal, allocation) => {
         /** @type {Updater<Allocation>} */
-        const ignoringUpdater = {
+        const ignoringUpdater = harden({
           updateState: _ => {},
           finish: _ => {},
           reject: _ => {},
-        };
-        harden(ignoringUpdater);
+        });
 
         /** @type {Omit<OfferRecord & PrivateOfferRecord, 'handle'>} */
         const offerRecord = {
