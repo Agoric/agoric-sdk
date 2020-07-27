@@ -75,7 +75,7 @@
           </div>
         {/each}
       </div>
-      <div>decline|rejected|accept|pending|cancel</div>
+      <div><b>status</b> (decline|rejected|accept|pending|cancel)</div>
     </li>
     {/each}
     </ul>

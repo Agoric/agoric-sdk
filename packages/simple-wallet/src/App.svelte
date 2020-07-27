@@ -1,20 +1,14 @@
 <script>
 import Purses from './Purses.svelte';
 import Transactions from "./Transactions.svelte";
-
-const updatePurses = // {"type":"walletUpdatePurses","data":"[{\"brandBoardId\":\"6043467\",\"brandPetname\":\"zoe invite\",\"pursePetname\":\"Default Zoe invite purse\",\"value\":[],\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":[]}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"zoe invite\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"zoe invite\"},\"value\":[]}},{\"brandBoardId\":\"16679794\",\"brandPetname\":\"moola\",\"pursePetname\":\"Fun budget\",\"value\":1900,\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":1900}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"moola\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"moola\"},\"value\":1900}},{\"brandBoardId\":\"15765496\",\"brandPetname\":\"simolean\",\"pursePetname\":\"Nest egg\",\"value\":1900,\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":1900}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"simolean\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"simolean\"},\"value\":1900}},{\"brandBoardId\":\"14561541\",\"brandPetname\":\"encouragement\",\"pursePetname\":\"Emotional bank account\",\"value\":[],\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":[]}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"encouragement\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"encouragement\"},\"value\":[]}}]"};
-{"type":"walletUpdatePurses","data":"[{\"brandBoardId\":\"6043467\",\"brandPetname\":\"zoe invite\",\"pursePetname\":\"Default Zoe invite purse\",\"value\":[],\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":[]}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"zoe invite\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"zoe invite\"},\"value\":[]}},{\"brandBoardId\":\"16679794\",\"brandPetname\":\"moola\",\"pursePetname\":\"Fun budget\",\"value\":1899,\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":1899}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"moola\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"moola\"},\"value\":1899}},{\"brandBoardId\":\"15765496\",\"brandPetname\":\"simolean\",\"pursePetname\":\"Nest egg\",\"value\":1900,\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":1900}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"simolean\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"simolean\"},\"value\":1900}},{\"brandBoardId\":\"14561541\",\"brandPetname\":\"encouragement\",\"pursePetname\":\"Emotional bank account\",\"value\":[1],\"currentAmountSlots\":{\"body\":\"{\\\"brand\\\":{\\\"@qclass\\\":\\\"slot\\\",\\\"index\\\":0},\\\"value\\\":[1]}\",\"slots\":[{\"kind\":\"brand\",\"petname\":\"encouragement\"}]},\"currentAmount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"encouragement\"},\"value\":[1]}}]"};
-export const purses = JSON.parse(updatePurses.data);
-
-const updateInbox = {"type":"walletUpdateInbox","data":"[{\"id\":\"http://localhost:8000#1595885386482\",\"instanceHandleBoardId\":\"7279951\",\"installationHandleBoardId\":\"15326650\",\"proposalTemplate\":{\"give\":{\"Tip\":{\"pursePetname\":\"Fun budget\",\"value\":1}},\"want\":{\"Assurance\":{\"pursePetname\":\"Emotional bank account\",\"value\":[]}},\"exit\":{\"onDemand\":null}},\"inviteHandleBoardId\":\"5007165\",\"requestContext\":{\"origin\":\"http://localhost:8000\",\"url\":\"/private/wallet-bridge\",\"date\":1595885388238,\"channelHandle\":{}},\"instancePetname\":\"unnamed-2\",\"installationPetname\":\"unnamed-3\",\"proposalForDisplay\":{\"want\":{\"Assurance\":{\"pursePetname\":\"Emotional bank account\",\"amount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"encouragement\"},\"value\":[]}}},\"give\":{\"Tip\":{\"pursePetname\":\"Fun budget\",\"amount\":{\"brand\":{\"kind\":\"brand\",\"petname\":\"moola\"},\"value\":1}}},\"exit\":{\"onDemand\":null}}}]"};
-export const inbox = JSON.parse(updateInbox.data);
+import { purses, inbox } from './store';
 </script>
 
 <main>
   <h1>Simple Agoric Wallet</h1>
   <h2>Purses</h2>
-  <Purses {purses} />
+  <Purses purses={$purses} />
 
   <h2>Transactions</h2>
-  <Transactions {inbox} />
+  <Transactions inbox={$inbox} />
 </main>
