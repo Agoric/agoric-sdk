@@ -3,6 +3,8 @@
 /// <reference types="ses"/>
 
 import { producePromise } from '@agoric/produce-promise';
+// eslint-disable-next-line import/no-cycle
+import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor';
 
 /**
  * @typedef {number | undefined} UpdateCount a value used to mark the position
@@ -82,77 +84,77 @@ export const makeNotifierKit = (...args) => {
 
   const final = () => currentUpdateCount === undefined;
 
+  const baseNotifier = harden({
+    // NaN matches nothing
+    getUpdateSince(updateCount = NaN) {
+      if (
+        hasState() &&
+        (final() || currentResponse.updateCount !== updateCount)
+      ) {
+        // If hasState() and either it is final() or it is
+        // not the state of updateCount, return the current state.
+        return Promise.resolve(currentResponse);
+      }
+      // otherwise return a promise for the next state.
+      return nextPromiseKit.promise;
+    },
+  });
+
+  const asyncIterable = makeAsyncIterableFromNotifier(baseNotifier);
+
+  const notifier = harden({
+    ...baseNotifier,
+    ...asyncIterable,
+  });
+
+  const updater = harden({
+    updateState(state) {
+      if (final()) {
+        throw new Error('Cannot update state after termination.');
+      }
+
+      // become hasState() && !final()
+      currentUpdateCount += 1;
+      currentResponse = harden({
+        value: state,
+        updateCount: currentUpdateCount,
+      });
+      nextPromiseKit.resolve(currentResponse);
+      nextPromiseKit = producePromise();
+    },
+
+    finish(finalState) {
+      if (final()) {
+        throw new Error('Cannot finish after termination.');
+      }
+
+      // become hasState() && final()
+      currentUpdateCount = undefined;
+      currentResponse = harden({
+        value: finalState,
+        updateCount: currentUpdateCount,
+      });
+      nextPromiseKit.resolve(currentResponse);
+      nextPromiseKit = undefined;
+    },
+
+    reject(reason) {
+      if (final()) {
+        throw new Error('Cannot reject after termination.');
+      }
+
+      // become !hasState() && final()
+      currentUpdateCount = undefined;
+      currentResponse = undefined;
+      nextPromiseKit.reject(reason);
+    },
+  });
+
   if (args.length >= 1) {
-    // start as hasState() && !final()
-    currentResponse = harden({
-      value: args[0],
-      updateCount: currentUpdateCount,
-    });
-  }
-  // else start as !hasState() && !final()
-
-  // NaN matches nothing
-  function getUpdateSince(updateCount = NaN) {
-    if (
-      hasState() &&
-      (final() || currentResponse.updateCount !== updateCount)
-    ) {
-      // If hasState() and either it is final() or it is
-      // not the state of updateCount, return the current state.
-      return Promise.resolve(currentResponse);
-    }
-    // otherwise return a promise for the next state.
-    return nextPromiseKit.promise;
-  }
-
-  function updateState(state) {
-    if (final()) {
-      throw new Error('Cannot update state after termination.');
-    }
-
-    // become hasState() && !final()
-    currentUpdateCount += 1;
-    currentResponse = harden({
-      value: state,
-      updateCount: currentUpdateCount,
-    });
-    nextPromiseKit.resolve(currentResponse);
-    nextPromiseKit = producePromise();
-  }
-
-  function finish(finalState) {
-    if (final()) {
-      throw new Error('Cannot finish after termination.');
-    }
-
-    // become hasState() && final()
-    currentUpdateCount = undefined;
-    currentResponse = harden({
-      value: finalState,
-      updateCount: currentUpdateCount,
-    });
-    nextPromiseKit.resolve(currentResponse);
-    nextPromiseKit = undefined;
-  }
-
-  function reject(reason) {
-    if (final()) {
-      throw new Error('Cannot reject after termination.');
-    }
-
-    // become !hasState() && final()
-    currentUpdateCount = undefined;
-    currentResponse = undefined;
-    nextPromiseKit.reject(reason);
+    updater.updateState(args[0]);
   }
 
   // notifier facet is separate so it can be handed out loosely while updater
   // is tightly held
-  const notifier = harden({ getUpdateSince });
-  const updater = harden({
-    updateState,
-    finish,
-    reject,
-  });
   return harden({ notifier, updater });
 };
