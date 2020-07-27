@@ -32,6 +32,7 @@
     "packages/spawner",
     "packages/sharing-service",
     "packages/zoe",
+    "packages/simple-wallet",
     "packages/wallet-frontend",
     "packages/cosmic-swingset",
     "packages/agoric-cli",
