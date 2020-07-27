@@ -7,7 +7,6 @@ import './internal-types';
 /**
  * This definition is used to ensure the proper typing of
  * makeCustomMethodsFn.
- * @2type {_ => {}}
  */
 const DEFAULT_CUSTOM_METHODS = _ => ({});
 
@@ -39,12 +38,12 @@ export const makeTable = (
 ) => {
   // The WeakMap that stores the records
   /**
-   * @type {WeakStore<{},T>}
+   * @type {WeakStore<{},U>}
    */
   const handleToRecord = makeWeakStore(handleDebugName);
 
-  /** @type {Table<T>} */
-  const table = harden({
+  /** @type {Table<U>} */
+  const table = {
     validate: validateFn,
     create: (record, handle = harden({})) => {
       record = harden({
@@ -68,9 +67,8 @@ export const makeTable = (
       handleToRecord.set(handle, updatedRecord);
       return handle;
     },
-  });
+  };
 
-  /** @type {typeof table & U} */
   const customMethodsTable = harden({
     ...makeCustomMethodsFn(table),
     ...table,

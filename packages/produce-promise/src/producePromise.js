@@ -1,6 +1,9 @@
 /* global harden */
 // @ts-check
 
+// eslint-disable-next-line spaced-comment
+/// <reference types="ses"/>
+
 import { HandledPromise } from '@agoric/eventual-send';
 
 /**

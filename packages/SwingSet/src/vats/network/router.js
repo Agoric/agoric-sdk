@@ -5,21 +5,14 @@ import { E as defaultE } from '@agoric/eventual-send';
 import makeStore from '@agoric/store';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network';
 
-/**
- * @typedef {import('./network').Protocol} Protocol
- * @typedef {import('./network').ProtocolHandler} ProtocolHandler
- */
-
-/**
- * @template T,U
- * @typedef {import('@agoric/store').Store<T,U>} Store
- */
+import './types';
+import './internal-types';
 
 /**
  * @typedef {Object} Router A delimited string router implementation
- * @property {(addr: string) => [string, any][]} getRoutes Return the match and route in order of preference
- * @property {(prefix: string, route: any) => void} register Add a prefix->route to the database
- * @property {(prefix: string, route: any) => void} unregister Remove a prefix->route from the database
+ * @property {(addr: string) => [string, Protocol][]} getRoutes Return the match and route in order of preference
+ * @property {(prefix: string, route: Protocol) => void} register Add a prefix->route to the database
+ * @property {(prefix: string, route: Protocol) => void} unregister Remove a prefix->route from the database
  */
 
 /**
@@ -36,7 +29,7 @@ export default function makeRouter() {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
       /**
-       * @type {[string, any][]}
+       * @type {[string, Protocol][]}
        */
       const ret = [];
       for (let i = parts.length; i > 0; i -= 1) {
