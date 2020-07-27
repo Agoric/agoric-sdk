@@ -16,7 +16,11 @@ export function buildRootObject(vatPowers) {
     loaded.rej = reject;
   });
   harden(loaded);
-  const homeObjects = { LOADING: loaded.p };
+  const replObjects = {
+    home: { LOADING: loaded.p }, // TODO: Remove
+    agoric: { LOADING: loaded.p },
+    local: {},
+  };
   let isReady = false;
   const readyForClient = {};
   let exportedToCapTP = {
@@ -69,7 +73,7 @@ export function buildRootObject(vatPowers) {
       if (ROLES.client) {
         handler.readyForClient = () => readyForClient.p;
 
-        const replHandler = getReplHandler(homeObjects, send, vatPowers);
+        const replHandler = getReplHandler(replObjects, send, vatPowers);
         registerURLHandler(replHandler, '/private/repl');
 
         // Assign the captp handler.
@@ -116,16 +120,41 @@ export function buildRootObject(vatPowers) {
       provisioner = p;
     },
 
-    setPresences(ps, privateObjects) {
+    setPresences(
+      privateObjects,
+      decentralObjects = undefined,
+      handyObjects = undefined,
+    ) {
       exportedToCapTP = {
-        LOADING: loaded.p,
-        READY: exportedToCapTP.READY,
-        ...ps,
-        ...privateObjects,
+        ...decentralObjects, // TODO: Remove; replaced by .agoric
+        ...privateObjects, // TODO: Remove; replaced by .local
+        ...handyObjects,
+        LOADING: loaded.p, // TODO: Remove; replaced by .agoric.LOADING
+        agoric: { decentralObjects, LOADING: loaded.p },
+        local: privateObjects,
       };
-      Object.assign(homeObjects, ps, privateObjects);
-      loaded.res('chain bundle loaded');
-      delete homeObjects.LOADING;
+
+      // We need to mutate the repl subobjects instead of replacing them.
+      if (privateObjects) {
+        Object.assign(replObjects.local, privateObjects);
+      }
+
+      if (decentralObjects) {
+        loaded.res('chain bundle loaded');
+        Object.assign(replObjects.agoric, decentralObjects);
+        delete replObjects.agoric.LOADING;
+      }
+
+      // TODO: Remove; home object is deprecated.
+      if (decentralObjects) {
+        Object.assign(
+          replObjects.home,
+          decentralObjects,
+          privateObjects,
+          handyObjects,
+        );
+        delete replObjects.home.LOADING;
+      }
     },
 
     // devices.command invokes our inbound() because we passed to

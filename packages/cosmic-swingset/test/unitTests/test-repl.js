@@ -11,7 +11,7 @@ function make() {
   const send = m => sentMessages.push(m);
   const transformTildot = makeTransform(babelParser, babelGenerate);
   const vatPowers = { transformTildot };
-  const rh = getReplHandler(homeObjects, send, vatPowers);
+  const rh = getReplHandler({ home: homeObjects }, send, vatPowers);
 
   const ch = rh.getCommandHandler();
   function getHighestHistory() {

@@ -79,7 +79,7 @@ export function stringify(
   return ret;
 }
 
-export function getReplHandler(homeObjects, send, vatPowers) {
+export function getReplHandler(replObjects, send, vatPowers) {
   // We use getInterfaceOf locally, and transformTildot is baked into the
   // Compartment we use to evaluate REPL inputs. We provide getInterfaceOf
   // and Remotable to REPL input code.
@@ -149,6 +149,10 @@ export function getReplHandler(homeObjects, send, vatPowers) {
   });
 
   replConsole.log(`Welcome to Agoric!`);
+
+  // TODO: Remove
+  const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
+
   const endowments = {
     Remotable,
     getInterfaceOf,
@@ -157,8 +161,9 @@ export function getReplHandler(homeObjects, send, vatPowers) {
     HandledPromise,
     commands,
     history,
-    home: homeObjects,
     harden,
+    agent: agentMakers, // TODO: Remove
+    ...replObjects,
   };
   const modules = {};
   const transforms = [];
@@ -169,9 +174,6 @@ export function getReplHandler(homeObjects, send, vatPowers) {
   }
   const options = { transforms };
   const c = new Compartment(endowments, modules, options);
-
-  const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
-  homeObjects.agent = agentMakers;
 
   const handler = {
     getHighestHistory() {

@@ -398,10 +398,9 @@ export function buildRootObject(vatPowers) {
             payments,
             issuerInfo,
           );
-          await E(vats.http).setPresences(
-            { ...bundle, localTimerService },
-            localBundle,
-          );
+          await E(vats.http).setPresences(localBundle, bundle, {
+            localTimerService,
+          });
           await setupWalletVat(localBundle.http, vats.http, vats.wallet);
           break;
         }
@@ -462,10 +461,9 @@ export function buildRootObject(vatPowers) {
             payments,
             issuerInfo,
           );
-          await E(vats.http).setPresences(
-            { ...bundle, localTimerService },
-            localBundle,
-          );
+          await E(vats.http).setPresences(localBundle, bundle, {
+            localTimerService,
+          });
           await setupWalletVat(localBundle.http, vats.http, vats.wallet);
           break;
         }
@@ -496,10 +494,9 @@ export function buildRootObject(vatPowers) {
             payments,
             issuerInfo,
           );
-          await E(vats.http).setPresences(
-            { ...bundle, localTimerService: bundle.chainTimerService },
-            localBundle,
-          );
+          await E(vats.http).setPresences(localBundle, bundle, {
+            localTimerService: bundle.chainTimerService,
+          });
 
           setupWalletVat(localBundle.http, vats.http, vats.wallet);
           break;
