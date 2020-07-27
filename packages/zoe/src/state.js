@@ -182,7 +182,7 @@ const makeIssuerTable = (withPurses = true) => {
   /**
    * TODO: make sure this validate function protects against malicious
    * misshapen objects rather than just a general check.
-   * @type {Validator<IssuerRecord & { purse?: Purse }>}
+   * @type {Validator<IssuerRecord & PrivateIssuerRecord>}
    */
   const validateSomewhat = makeValidateProperties(
     withPurses

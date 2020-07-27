@@ -17,7 +17,7 @@
  * @typedef {Object} ZcfForZoe
  * The facet ZCF presents to Zoe.
  *
- * @property {(offerHandle: OfferHandle, proposal: Proposal, allocation: Allocation) => (CompleteObj | undefined)} addOffer
+ * @property {(offerHandle: OfferHandle, proposal: ProposalRecord, allocation: Allocation) => (CompleteObj | undefined)} addOffer
  * Add a single offer to this contract instance.
  */
 
@@ -40,7 +40,7 @@
  * @typedef StartContractParams
  * @property {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
  * @property {SourceBundle} bundle an object containing source code and moduleFormat
- * @property {InstanceRecord} instanceData, fields for the instanceRecord
+ * @property {InstanceRecord&InternalInstanceRecord} instanceData, fields for the instanceRecord
  * @property {ZoeForZcf} zoeForZcf - An inner facet of Zoe for the contractFacet's use
  * @property {Issuer} inviteIssuer, Zoe's inviteIssuer, for the contract to use
  *
@@ -72,6 +72,12 @@
  * @typedef {Object} PrivateInstanceRecord
  * @property {Promise<ZcfForZoe>} zcfForZoe - the inner facet for Zoe to use
  * @property {Set<OfferHandle>} offerHandles - the offer handles for this instance
+ *
+ * @typedef {Object} ZcfInstanceRecord
+ * @property {VatAdmin} adminNode
+ *
+ * @typedef {Object} PrivateIssuerRecord
+ * @property {Purse} purse
  *
  * @typedef {Object} PrivateOfferRecord
  * @property {Allocation} currentAllocation - the allocation corresponding to this offer

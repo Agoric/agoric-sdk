@@ -11,7 +11,7 @@ import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isOfferSafe } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
-import { assertKeywordName, cleanProposal, getKeywords } from './cleanProposal';
+import { assertKeywordName, getKeywords } from './cleanProposal';
 import { makeContractTables } from './state';
 import { filterObj, filterFillAmounts, tuple } from './objArrayConversion';
 import { evalContractBundle } from './evalContractCode';
@@ -39,7 +39,7 @@ export function buildRootObject(_vatPowers) {
     'brandKeywordRecord',
   );
   /**
-   * @param {InstanceRecord} instanceRecord
+   * @param {InstanceRecord & ZcfInstanceRecord} instanceRecord
    */
   const visibleInstanceRecord = instanceRecord =>
     filterObj(instanceRecord, visibleInstanceRecordFields);
@@ -56,7 +56,7 @@ export function buildRootObject(_vatPowers) {
   /** @param {OfferRecord} offerRecord */
   const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
-  /** @param {IssuerRecord} issuerRecord */
+  /** @param {IssuerRecord&PrivateIssuerRecord} issuerRecord */
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
@@ -172,6 +172,9 @@ export function buildRootObject(_vatPowers) {
    * Create the contract-facing Zoe facet.
    *
    * @param {ZoeService} zoeService
+   * @param {InstanceRecord & ZcfInstanceRecord} instanceRecord
+   * @param {Issuer} inviteIssuer
+   * @param {ZoeForZcf} zoeForZcf
    * @returns {ContractFacet}
    */
   const makeContractFacet = (
@@ -240,7 +243,7 @@ export function buildRootObject(_vatPowers) {
       getIssuerForBrand: brand => issuerTable.get(brand).issuer,
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
       getAmountMath: getAmountMathForBrand,
-      getVatAdmin: instanceRecord.adminNode,
+      getVatAdmin: () => instanceRecord.adminNode,
     };
     return harden(contractFacet);
   };
@@ -257,16 +260,15 @@ export function buildRootObject(_vatPowers) {
           finish: () => {},
         });
 
-        const cleanedProposal = cleanProposal(getAmountMathForBrand, proposal);
         const offerRecord = {
           instanceHandle,
-          proposal: cleanedProposal,
+          proposal,
           currentAllocation: allocation,
           notifier: undefined,
           updater: ignoringUpdater,
         };
 
-        const { exit } = cleanedProposal;
+        const { exit } = proposal;
         const [exitKind] = Object.getOwnPropertyNames(exit);
 
         /** @type {CompleteObj | undefined} */
