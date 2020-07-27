@@ -1,5 +1,3 @@
-/* global harden */
-
 import '@agoric/install-ses';
 
 // eslint-disable-next-line import/no-extraneous-dependencies

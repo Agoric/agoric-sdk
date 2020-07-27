@@ -2,6 +2,8 @@
 
 // @ts-check
 
+import './types';
+
 // This module assumes the de-facto standard `console` host object.
 // To the extent that this `console` is considered a resource,
 // this module must be considered a resource module.

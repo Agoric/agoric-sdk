@@ -1,12 +1,22 @@
 import { assert, details, q } from '@agoric/assert';
 
-export const arrayToObj = (array, keywords) => {
+/** @type {<T extends string[]>(...args: T) => T} */
+export const tuple = (...args) => args;
+
+/**
+ * @template T
+ * @template U
+ * @param {T[]} array
+ * @param {U[]} keys
+ */
+export const arrayToObj = (array, keys) => {
   assert(
-    array.length === keywords.length,
-    details`array and keywords must be of equal length`,
+    array.length === keys.length,
+    details`array and keys must be of equal length`,
   );
+  /** @type {{[Keyword: U]: T}} */
   const obj = {};
-  keywords.forEach((keyword, i) => (obj[keyword] = array[i]));
+  keys.forEach((key, i) => (obj[key] = array[i]));
   return obj;
 };
 
@@ -32,19 +42,22 @@ export const assertSubset = (whole, part) => {
 };
 
 /**
- * Return a new object with only the keys in subsetKeywords.
- * `obj` must have values for all the `subsetKeywords`.
- * @param {Object} obj
- * @param {import('./zoe').Keyword[]} subsetKeywords
+ * Return a new object with only the keys in subsetKeys.
+ * `obj` must have values for all the `subsetKeys`.
+ * @template T
+ * @template {(keyof T)[]} U
+ * @param {T} obj
+ * @param {U} subsetKeys
+ * @returns {Pick<T,U[number]>}
  */
-export const filterObj = (obj, subsetKeywords) => {
+export const filterObj = (obj, subsetKeys) => {
   const newObj = {};
-  subsetKeywords.forEach(keyword => {
+  subsetKeys.forEach(key => {
     assert(
-      obj[keyword] !== undefined,
-      details`obj[keyword] must be defined for keyword ${q(keyword)}`,
+      obj[key] !== undefined,
+      details`obj[key] must be defined for keyword ${q(key)}`,
     );
-    newObj[keyword] = obj[keyword];
+    newObj[key] = obj[key];
   });
   return newObj;
 };
@@ -52,9 +65,9 @@ export const filterObj = (obj, subsetKeywords) => {
 /**
  * Return a new object with only the keys in `amountMathKeywordRecord`, but fill
  * in empty amounts for any key that is undefined in the original allocation
- * @param {import('./zoe').Allocation} allocation
- * @param {import('./zoe').AmountMathKeywordRecord} amountMathKeywordRecord
- * @returns Allocation
+ * @param {Allocation} allocation
+ * @param {AmountMathKeywordRecord} amountMathKeywordRecord
+ * @returns {Allocation}
  * */
 export const filterFillAmounts = (allocation, amountMathKeywordRecord) => {
   const filledAllocation = {};

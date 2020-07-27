@@ -1,5 +1,6 @@
-/* global harden */
 // @ts-check
+
+import '../../exported';
 
 /**
  * This is a very trivial contract to explain and test Zoe.
@@ -13,7 +14,6 @@
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

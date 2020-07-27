@@ -1,8 +1,9 @@
-/* global harden */
 // @ts-check
 
 import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+
+import '../../exported';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -22,7 +23,6 @@ import { E } from '@agoric/eventual-send';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -47,8 +47,7 @@ const makeContract = zcf => {
     const tokenAmount = tokenAmountMath.make(
       harden(
         Array(count)
-          // @ts-ignore
-          .fill()
+          .fill(undefined)
           .map((_, i) => {
             const tokenNumber = i + 1;
             return {

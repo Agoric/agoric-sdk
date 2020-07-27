@@ -1,5 +1,3 @@
-/* global harden */
-
 export const secondPriceLogic = (bidAmountMath, bidOfferHandles, bids) => {
   let highestBid = bidAmountMath.getEmpty();
   let secondHighestBid = bidAmountMath.getEmpty();

@@ -1,5 +1,3 @@
-/* global harden */
-
 import { E } from '@agoric/eventual-send';
 import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
 

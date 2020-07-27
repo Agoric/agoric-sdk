@@ -1,5 +1,3 @@
-/* global harden */
-
 import { E } from '@agoric/eventual-send';
 /* eslint-disable import/extensions, import/no-unresolved */
 import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';

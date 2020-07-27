@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 
 function makeAliceMaker(log) {

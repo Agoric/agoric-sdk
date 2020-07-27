@@ -118,7 +118,7 @@ test('workflow', async t => {
         });
       }
 
-      let timeout = setTimeout(startResult.resolve, 30000, 'timeout');
+      let timeout = setTimeout(startResult.resolve, 60000, 'timeout');
       t.equals(
         await startResult.promise,
         true,

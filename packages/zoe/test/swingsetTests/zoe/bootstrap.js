@@ -1,5 +1,3 @@
-/* global harden */
-
 import { E } from '@agoric/eventual-send';
 import makeIssuerKit from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';

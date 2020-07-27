@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import { assert, details, q } from '@agoric/assert';

@@ -7,9 +7,9 @@ import { assert, details, q } from '@agoric/assert';
 /**
  * @template K,V
  * @typedef {Object} WeakStore - A safety wrapper around a WeakMap
- * @property {(key: K) => boolean} has - Check if a key exists
+ * @property {(key: any) => boolean} has - Check if a key exists
  * @property {(key: K, value: V) => void} init - Initialize the key only if it doesn't already exist
- * @property {(key: K) => V} get - Return a value for the key. Throws
+ * @property {(key: any) => V} get - Return a value for the key. Throws
  * if not found.
  * @property {(key: K, value: V) => void} set - Set the key. Throws if not found.
  * @property {(key: K) => void} delete - Remove the key. Throws if not found.

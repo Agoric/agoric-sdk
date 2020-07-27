@@ -1,3 +1,5 @@
+// @ts-check
+
 // This is the Zoe contract facet. Each time we make a new instance of a
 // contract we will start by creating a new vat and running this code in it. In
 // order to install this code in a vat, Zoe needs to import a bundle containing
@@ -5,162 +7,40 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-/* global harden */
-// @ts-check
-
 import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isOfferSafe } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { assertKeywordName, getKeywords } from './cleanProposal';
 import { makeContractTables } from './state';
-import { filterObj, filterFillAmounts } from './objArrayConversion';
+import { filterObj, filterFillAmounts, tuple } from './objArrayConversion';
 import { evalContractBundle } from './evalContractCode';
 
-/**
- * @typedef {Object} ContractFacet
- * The Zoe interface specific to a contract instance.
- * The Zoe Contract Facet is an API object used by running contract instances to
- * access the Zoe state for that instance. The Zoe Contract Facet is accessed
- * synchronously from within the contract, and usually is referred to in code as
- * zcf.
- * @property {Reallocate} reallocate Propose a reallocation of amounts per offer
- * @property {Complete} complete Complete an offer
- * @property {MakeInvitation} makeInvitation
- * @property {AddNewIssuer} addNewIssuer
- * @property {InitPublicAPI} initPublicAPI
- * @property {() => ZoeService} getZoeService
- * @property {() => Issuer} getInviteIssuer
- * @property {(offerHandles: OfferHandle[]) => { active: OfferStatus[], inactive: OfferStatus[] }} getOfferStatuses
- * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
- * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
- * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecord) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
- * @property {() => InstanceRecord} getInstanceRecord
- * @property {(issuer: Issuer) => Brand} getBrandForIssuer
- * @property {(brand: Brand) => AmountMath} getAmountMath
- * @property {() => Promise<Notifier>} getOfferNotifier
- * @property {() => VatAdmin} getVatAdmin
-` *
- * @callback Reallocate
- * The contract can propose a reallocation of amounts across offers
- * by providing two parallel arrays: offerHandles and newAllocations.
- * Each element of newAllocations is an AmountKeywordRecord whose
- * amount should replace the old amount for that keyword for the
- * corresponding offer.
- *
- * The reallocation will only succeed if the reallocation 1) conserves
- * rights (the amounts specified have the same total value as the
- * current total amount), and 2) is 'offer-safe' for all parties involved.
- *
- * The reallocation is partial, meaning that it applies only to the
- * amount associated with the offerHandles that are passed in. By
- * induction, if rights conservation and offer safety hold before,
- * they will hold after a safe reallocation, even though we only
- * re-validate for the offers whose allocations will change. Since
- * rights are conserved for the change, overall rights will be unchanged,
- * and a reallocation can only effect offer safety for offers whose
- * allocations change.
- *
- * zcf.reallocate will throw an error if any of the
- * newAllocations do not have a value for all the
- * keywords in sparseKeywords. An error will also be thrown if
- * any newAllocations have keywords that are not in
- * sparseKeywords.
- *
- * @param  {OfferHandle[]} offerHandles An array of offerHandles
- * @param  {AmountKeywordRecord[]} newAllocations An
- * array of amountKeywordRecords  - objects with keyword keys
- * and amount values, with one keywordRecord per offerHandle.
- * @returns {undefined}
- *
- * @callback Complete
- * The contract can "complete" an offer to remove it from the
- * ongoing contract and resolve the player's payouts (either
- * winnings or refunds). Because Zoe only allows for
- * reallocations that conserve rights and are 'offer-safe', we
- * don't need to do those checks at this step and can assume
- * that the invariants hold.
- * @param  {OfferHandle[]} offerHandles - an array of offerHandles
- * @returns {void}
- *
- * @callback MakeInvitation
- * Make a credible Zoe invite for a particular smart contract
- * indicated by the unique `instanceHandle`. The other
- * information in the value of this invite is decided by the
- * governing contract and should include whatever information is
- * necessary for a potential buyer of the invite to know what
- * they are getting. Note: if information can be derived in
- * queries based on other information, we choose to omit it. For
- * instance, `installationHandle` can be derived from
- * `instanceHandle` and is omitted even though it is useful.
- * @param {OfferHook} offerHook - a function that will be handed the
- * offerHandle at the right time, and returns a contract-specific
- * OfferOutcome which will be put in the OfferResultRecord.
- * @param {string} inviteDesc
- * @param {MakeInvitationOptions} [options]
- * @returns {Invite}
- *
- * @typedef MakeInvitationOptions
- * @property {CustomProperties} [customProperties] - an object containing
- * information to include in the invitation's value, as defined by the smart
- * contract
- *
- * @callback OfferHook
- * This function will be called with the OfferHandle when the offer
- * is prepared. It should return a contract-specific "OfferOutcome"
- * value that will be put in the OfferResultRecord.
- * @param {OfferHandle} offerHandle
- * @returns {OfferOutcome}
- *
- * @callback AddNewIssuer
- * Informs Zoe about an issuer and returns a promise for acknowledging
- * when the issuer is added and ready.
- * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
- * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord>} Issuer is added and ready
- *
- * @callback InitPublicAPI
- * Initialize the publicAPI for the contract instance, as stored by Zoe in
- * the instanceRecord.
- * @param {Object} publicAPI - an object whose methods are the API
- * available to anyone who knows the instanceHandle
- * @returns {void}
- */
-
-/**
- * @typedef {Object} VatAdmin
- * A powerful object that can be used to terminate the vat in which a contract
- * is running, to get statistics, or to be notified when it terminates. The
- * VatAdmin object is only available to the contract from within the contract so
- * that clients of the contract can tell (by getting the source code from Zoe
- * using the instanceHandle) what use the contract makes of it. If they want to
- * be assured of discretion, or want to know that the contract doesn't have the
- * ability to call terminate(), Zoe makes this visible.
- *
- * @property {() => Object} done
- * provides a promise that will be fullfilled when the contract is terminated.
- * @property {() => undefined} terminate
- * kills the vat in which the contract is running
- * @property {() => Object} adminData
- * provides some statistics about the vat in which the contract is running.
- */
+import '../exported';
+import './internal-types';
 
 /**
  * Create the contract facet.
  *
- * @returns {ContractFacet} The returned facet
+ * @returns {{ startContract: StartContract }} The returned instance
  */
 export function buildRootObject(_vatPowers) {
-  const visibleInstanceRecordFields = [
-    'instanceHandle',
+  // Need to make this variable a tuple type, since technically
+  // it could be mutated before we pass it to filterObj.
+  //
+  // If we want to avoid this type magic, just supply it as the
+  // verbatim argument of filterObj.
+  const visibleInstanceRecordFields = tuple(
+    'handle',
     'installationHandle',
     'publicAPI',
     'terms',
     'issuerKeywordRecord',
     'brandKeywordRecord',
-  ];
+  );
+  /**
+   * @param {InstanceRecord & ZcfInstanceRecord} instanceRecord
+   */
   const visibleInstanceRecord = instanceRecord =>
     filterObj(instanceRecord, visibleInstanceRecordFields);
 
@@ -173,8 +53,10 @@ export function buildRootObject(_vatPowers) {
       assert(offerTable.has(offerHandle), details`Offer is not active`),
     );
 
+  /** @param {OfferRecord & PrivateOfferRecord} offerRecord */
   const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
+  /** @param {IssuerRecord & PrivateIssuerRecord} issuerRecord */
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
@@ -183,6 +65,7 @@ export function buildRootObject(_vatPowers) {
     if (brandKeywordRecord === undefined) {
       return currentAllocation;
     }
+    /** @type {AmountMathKeywordRecord} */
     const amountMathKeywordRecord = {};
     Object.getOwnPropertyNames(brandKeywordRecord).forEach(keyword => {
       const brand = brandKeywordRecord[keyword];
@@ -285,7 +168,15 @@ export function buildRootObject(_vatPowers) {
     return E(zoeForZcf).completeOffers(offerHandlesToDrop);
   }
 
-  /** @type {ContractFacet} */
+  /**
+   * Create the contract-facing Zoe facet.
+   *
+   * @param {ZoeService} zoeService
+   * @param {InstanceRecord & ZcfInstanceRecord} instanceRecord
+   * @param {Issuer} inviteIssuer
+   * @param {ZoeForZcf} zoeForZcf
+   * @returns {ContractFacet}
+   */
   const makeContractFacet = (
     zoeService,
     instanceRecord,
@@ -294,7 +185,8 @@ export function buildRootObject(_vatPowers) {
   ) => {
     let publicApiInitialized = false;
 
-    return harden({
+    /** @type {ContractFacet} */
+    const contractFacet = {
       reallocate: (offerHandles, newAllocations) =>
         reallocate(offerHandles, newAllocations, zoeForZcf),
       addNewIssuer: (issuerP, keyword) =>
@@ -319,7 +211,8 @@ export function buildRootObject(_vatPowers) {
 
       getInviteIssuer: () => inviteIssuer,
 
-      getOfferNotifier: E(zoeService).getOfferNotifier,
+      getOfferNotifier: offerHandle =>
+        E(zoeService).getOfferNotifier(offerHandle),
 
       getOfferStatuses: offerHandles => {
         const { active, inactive } = offerTable.getOfferStatuses(offerHandles);
@@ -350,28 +243,27 @@ export function buildRootObject(_vatPowers) {
       getIssuerForBrand: brand => issuerTable.get(brand).issuer,
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
       getAmountMath: getAmountMathForBrand,
-      getVatAdmin: instanceRecord.adminNode,
-    });
+      getVatAdmin: () => instanceRecord.adminNode,
+    };
+    return harden(contractFacet);
   };
 
   /**
-   * @typedef {import('@agoric/zoe').CompleteObj} CompleteObj
-   *
-   * @typedef {Object} ZcfForZoe
-   * The facet ZCF presents to Zoe.
-   *
-   * @property {(OfferHandle, Proposal, Allocation) => CompleteObj} addOffer
-   * Add a single offer to this contract instance.
-   *
-   * @return CompleteObj
+   * @returns {ZcfForZoe}
    */
-  const makeZcfForZoe = (instanceHandle, zoeForZcf) =>
-    harden({
+  const makeZcfForZoe = (instanceHandle, zoeForZcf) => {
+    /** @type {ZcfForZoe} */
+    const zcfForZoe = {
       addOffer: (offerHandle, proposal, allocation) => {
-        const ignoringUpdater = harden({
-          updateState: () => {},
-          finish: () => {},
-        });
+        /** @type {Updater<Allocation>} */
+        const ignoringUpdater = {
+          updateState: _ => {},
+          finish: _ => {},
+          reject: _ => {},
+        };
+        harden(ignoringUpdater);
+
+        /** @type {Omit<OfferRecord & PrivateOfferRecord, 'handle'>} */
         const offerRecord = {
           instanceHandle,
           proposal,
@@ -383,6 +275,7 @@ export function buildRootObject(_vatPowers) {
         const { exit } = proposal;
         const [exitKind] = Object.getOwnPropertyNames(exit);
 
+        /** @type {CompleteObj | undefined} */
         let completeObj;
         const completeOffer = () => {
           return completeOffers(harden([offerHandle]), zoeForZcf);
@@ -390,6 +283,7 @@ export function buildRootObject(_vatPowers) {
 
         if (exitKind === 'afterDeadline') {
           // Automatically complete offer after deadline.
+          assert(exit.afterDeadline);
           E(exit.afterDeadline.timer).setWakeup(
             exit.afterDeadline.deadline,
             harden({
@@ -417,15 +311,16 @@ export function buildRootObject(_vatPowers) {
         offerTable.create(offerRecord, offerHandle);
         return completeObj;
       },
-    });
+    };
+    return harden(zcfForZoe);
+  };
 
   /**
    * Makes a contract instance from an installation and returns a
    * unique handle for the instance that can be shared, as well as
    * other information, such as the terms used in the instance.
-   * @param params - a record containing { zoeService, bundle, instanceData,
-   *    zoeForZcf, inviteIssuer }
-   * @returns { Promise<Invite>, ZcfForZoe }
+   *
+   * @type {StartContract}
    */
   const startContract = params => {
     const contractCode = evalContractBundle(params.bundle);
@@ -444,13 +339,11 @@ export function buildRootObject(_vatPowers) {
         params.inviteIssuer,
         params.zoeForZcf,
       );
+      /** @type {Promise<Invite<any>>} */
       const inviteP = E(contractCode).makeContract(contractFacet);
       return {
         inviteP,
-        zcfForZoe: makeZcfForZoe(
-          params.instanceData.instanceHandle,
-          params.zoeForZcf,
-        ),
+        zcfForZoe: makeZcfForZoe(params.instanceData.handle, params.zoeForZcf),
       };
     };
 

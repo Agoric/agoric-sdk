@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import makeIssuerKit from '@agoric/ertp';
@@ -11,6 +10,8 @@ import {
   makeZoeHelpers,
 } from '../contractSupport';
 
+import '../../exported';
+
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for
  * more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
@@ -22,7 +23,6 @@ import {
  * adding and removing liquidity, and for doing a swap. Other API operations
  * support monitoring the price and the size of the liquidity pool.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -228,7 +228,6 @@ const makeContract = zcf => {
       /**
        * `getCurrentPrice` calculates the result of a trade, given a certain amount
        * of digital assets in.
-       * @typedef {import('../zoe').Amount} Amount
        * @param {Amount} amountIn - the amount of digital
        * assets to be sent in
        */

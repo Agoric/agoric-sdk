@@ -1,8 +1,11 @@
-/* global harden */
 // @ts-check
+
+import { assert, details } from '@agoric/assert';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
+
+import '../../exported';
 
 const rejectMsg = `The covered call option is expired.`;
 
@@ -33,7 +36,6 @@ const rejectMsg = `The covered call option is expired.`;
  * underlying asset is available on the specified terms, the invite itself can
  * be traded as a valuable good.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -51,6 +53,11 @@ const makeContract = zcf => {
       give: { StrikePrice: null },
       want: { UnderlyingAsset: null },
     });
+
+    assert(
+      exit && exit.afterDeadline,
+      details`exit must be afterDeadline, not ${exit}`,
+    );
 
     return zcf.makeInvitation(
       checkHook(exerciseOptionHook, exerciseOptionExpected),

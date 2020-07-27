@@ -1,10 +1,10 @@
-/* global harden */
-
 /* eslint-disable no-use-before-define */
 // @ts-check
 
 import makeIssuerKit from '@agoric/ertp';
 import { makeZoeHelpers } from '../contractSupport';
+
+import '../../exported';
 
 /**
  * This is a very simple contract that creates a new issuer and mints payments
@@ -19,7 +19,6 @@ import { makeZoeHelpers } from '../contractSupport';
  * new tokens. await E(publicAPI).makeInvite() returns an invitation that accepts an
  * empty offer and provides 1000 tokens.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

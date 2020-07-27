@@ -1,8 +1,9 @@
-/* global harden */
 // @ts-check
 
 import makeStore from '@agoric/store';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
+
+import '../../exported';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
@@ -15,7 +16,6 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  * successful trader gets their `want` and may trade with counter-parties who
  * specify any amount up to their specified `give`.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {

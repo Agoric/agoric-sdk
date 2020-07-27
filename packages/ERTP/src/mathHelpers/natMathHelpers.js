@@ -1,18 +1,22 @@
-/* global harden */
+// @ts-check
 
 import Nat from '@agoric/nat';
 
-// Fungible digital assets use the natMathHelpers to manage balances -
-// the operations are merely arithmetic on natural, non-negative
-// numbers.
-
-// Natural numbers are used for fungible erights such as money because
-// rounding issues make floats problematic. All operations should be
-// done with the smallest whole unit such that the NatMathHelpers never
-// deals with fractional parts.
+import '../types';
 
 const identity = 0;
 
+/**
+ * Fungible digital assets use the natMathHelpers to manage balances -
+ * the operations are merely arithmetic on natural, non-negative
+ * numbers.
+ *
+ * Natural numbers are used for fungible erights such as money because
+ * rounding issues make floats problematic. All operations should be
+ * done with the smallest whole unit such that the NatMathHelpers never
+ * deals with fractional parts.
+ * @type {MathHelpers}
+ */
 const natMathHelpers = harden({
   doCoerce: Nat,
   doGetEmpty: _ => identity,
@@ -23,4 +27,5 @@ const natMathHelpers = harden({
   doSubtract: (left, right) => Nat(left - right),
 });
 
-export default harden(natMathHelpers);
+harden(natMathHelpers);
+export default natMathHelpers;

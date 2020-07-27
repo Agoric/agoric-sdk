@@ -1,5 +1,3 @@
-/* global harden */
-
 import Nat from '@agoric/nat';
 
 import makeIssuerKit from '@agoric/ertp';

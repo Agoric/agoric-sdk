@@ -1,9 +1,9 @@
-/* global harden */
 // @ts-check
 
 /* eslint-disable no-use-before-define */
 import makeIssuerKit from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
+import { E } from '@agoric/eventual-send';
 
 import { makeTable, makeValidateProperties } from '../table';
 import { assertKeywordName } from '../cleanProposal';
@@ -14,6 +14,8 @@ import {
   calcValueToRemove,
 } from '../contractSupport';
 import { filterObj } from '../objArrayConversion';
+
+import '../../exported';
 
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for more
@@ -38,10 +40,6 @@ import { filterObj } from '../objArrayConversion';
  * making trades. Other API operations support monitoring prices and the sizes
  * of pools.
  *
- * @typedef {import('@agoric/ertp/src/issuer').Amount} Amount
- * @typedef {import('@agoric/ertp/src/issuer').Brand} Brand
- * @typedef {import('../zoe').AmountKeywordRecords} AmountKeywordRecords
- * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -77,25 +75,27 @@ const makeContract = zcf => {
   // tokenIssuer, liquidityMint, liquidityIssuer, tokenKeyword,
   // liquidityKeyword, liquidityTokenSupply
   const liquidityTable = makeTable(
-    makeValidateProperties(
-      harden([
-        'poolHandle',
-        'tokenIssuer',
-        'tokenBrand',
-        'liquidityMint',
-        'liquidityIssuer',
-        'liquidityBrand',
-        'tokenKeyword',
-        'liquidityKeyword',
-        'liquidityTokenSupply',
-      ]),
-    ),
+    makeValidateProperties([
+      'poolHandle',
+      'tokenIssuer',
+      'tokenBrand',
+      'liquidityMint',
+      'liquidityIssuer',
+      'liquidityBrand',
+      'tokenKeyword',
+      'liquidityKeyword',
+      'liquidityTokenSupply',
+    ]),
     'tokenBrand',
   );
 
-  // Allows users to add new liquidity pools. `newTokenIssuer` and
-  // `newTokenKeyword` must not have been already used
-  const addPool = (newTokenIssuer, newTokenKeyword) => {
+  /**
+   * Allows users to add new liquidity pools. `newTokenIssuer` and
+   * `newTokenKeyword` must not have been already used
+   * @param {Issuer} newTokenIssuer
+   * @param {Keyword} newTokenKeyword
+   */
+  const addPool = async (newTokenIssuer, newTokenKeyword) => {
     assertKeywordName(newTokenKeyword);
     const { brandKeywordRecord } = zcf.getInstanceRecord();
     const keywords = Object.keys(brandKeywordRecord);
@@ -104,9 +104,9 @@ const makeContract = zcf => {
       !keywords.includes(newTokenKeyword),
       details`newTokenKeyword must be unique`,
     );
-    // TODO: handle newTokenIssuer as a potential promise
+    const newTokenBrand = await E(newTokenIssuer).getBrand();
     assert(
-      !brands.includes(newTokenIssuer.brand),
+      !brands.includes(newTokenBrand),
       details`newTokenIssuer must not be already present`,
     );
     const newLiquidityKeyword = `${newTokenKeyword}Liquidity`;
@@ -119,11 +119,14 @@ const makeContract = zcf => {
       issuer: liquidityIssuer,
       brand: liquidityBrand,
     } = makeIssuerKit(newLiquidityKeyword);
-    return Promise.all([
+
+    /** @type {Promise<[Omit<IssuerRecord,'purse'>, OfferHandle, Omit<IssuerRecord,'purse'>]>} */
+    const promiseAll = Promise.all([
       zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
       makeEmptyOffer(),
       zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
-    ]).then(([newTokenIssuerRecord, poolHandle]) => {
+    ]);
+    return promiseAll.then(([newTokenIssuerRecord, poolHandle]) => {
       // The final element of the above array is intentionally
       // ignored, since we already have the liquidityIssuer and mint.
       assertNatMathHelpers(newTokenIssuerRecord.brand);
@@ -169,6 +172,13 @@ const makeContract = zcf => {
     return zcf.getCurrentAllocation(poolHandle, brandKeywordRecord);
   };
 
+  /**
+   * @param {Object} args
+   * @param {Brand} args.brandIn
+   * @param {Brand} args.brandOut
+   * @param {OfferHandle=} args.offerHandleToReject
+   * @returns {Brand}
+   */
   const findSecondaryTokenBrand = ({
     brandIn,
     brandOut,
