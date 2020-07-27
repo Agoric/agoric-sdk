@@ -11,14 +11,16 @@
   }
 
   const pet = petname => petname || '???';
+
+  export let dispatch;
 </script>
 
 <main>
-  {#if !Array.isArray(inbox) || inbox.length === 0}
+  {#if !Array.isArray($inbox) || $inbox.length === 0}
     No transactions.
   {:else}
     <ul>
-    {#each inbox as {
+    {#each $inbox as {
       requestContext: { date, origin = 'unknown origin' } = {},
       id,
       instancePetname,
@@ -75,7 +77,10 @@
           </div>
         {/each}
       </div>
-      <div><b>status</b> (decline|rejected|accept|pending|cancel)</div>
+      <div><b>{status}</b>
+        <button on:click={() => dispatch.accept(id)}>Accept</button>
+        <button on:click={() => dispatch.decline(id)}>Decline</button>
+        <button on:click={() => dispatch.cancel(id)}>Cancel</button>(rejected|pending)</div>
     </li>
     {/each}
     </ul>

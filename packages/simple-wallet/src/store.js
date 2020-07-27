@@ -32,24 +32,24 @@ const sendMessage = (obj) => {
 	}
 };
 
-const accept = (entry) => {
+const accept = (id) => {
   sendMessage({
     type: 'walletAcceptOffer',
-    data: entry.id,
+    data: id,
   });
 };
 
-const decline = (offer) => {
+const decline = (id) => {
   sendMessage({
     type: 'walletDeclineOffer',
-    data: entry.id,
+    data: id,
   });
 };
 
-const cancel = (offer) => {
+const cancel = (id) => {
   sendMessage({
     type: 'walletCancelOffer',
-    data: entry.id,
+    data: id,
   });
 };
 

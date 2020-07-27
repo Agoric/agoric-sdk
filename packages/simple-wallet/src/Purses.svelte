@@ -1,15 +1,14 @@
 <script>
   import Amount from './Amount.svelte';
-
-  export let purses;
+  import { purses } from './store';
 </script>
 
 <main>
-  {#if !Array.isArray(purses) || purses.length === 0}
+  {#if !Array.isArray($purses) || $purses.length === 0}
     No purses.
   {:else}
     <ul>
-    {#each purses as { pursePetname, currentAmount }}
+    {#each $purses as { pursePetname, currentAmount } (pursePetname)}
     <li>
       <div>{pursePetname}</div>
       <Amount amount={currentAmount} />
