@@ -3,6 +3,12 @@
 /// <reference types="ses"/>
 
 import { producePromise } from '@agoric/produce-promise';
+import { assert } from '@agoric/assert';
+
+/**
+ * @template T
+ * @typedef {import('@agoric/produce-promise').PromiseRecord<T>} PromiseRecord
+ */
 
 /**
  * @typedef {number | undefined} UpdateCount a value used to mark the position
@@ -81,7 +87,7 @@ const supportLegacy = true;
 // an initial state. Its initial state will instead be the state of the first
 // update.
 export const makeNotifierKit = (...args) => {
-  /** @type {import('@agoric/produce-promise').PromiseRecord<UpdateRecord<T>>|undefined} */
+  /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
   let nextPromiseKit = producePromise();
   /** @type {UpdateCount} */
   let currentUpdateCount = 1; // avoid falsy numbers
@@ -114,13 +120,15 @@ export const makeNotifierKit = (...args) => {
   function getUpdateSince(updateCount = NaN) {
     if (
       hasState() &&
-      (final() || currentResponse.updateCount !== updateCount)
+      (final() ||
+        (currentResponse && currentResponse.updateCount !== updateCount))
     ) {
       // If hasState() and either it is final() or it is
       // not the state of updateCount, return the current state.
       return Promise.resolve(currentResponse);
     }
     // otherwise return a promise for the next state.
+    assert(nextPromiseKit);
     return nextPromiseKit.promise;
   }
 
@@ -130,6 +138,7 @@ export const makeNotifierKit = (...args) => {
     }
 
     // become hasState() && !final()
+    assert(nextPromiseKit && currentUpdateCount);
     currentUpdateCount += 1;
     currentResponse = harden({
       value: state,
@@ -146,6 +155,7 @@ export const makeNotifierKit = (...args) => {
     }
 
     // become hasState() && final()
+    assert(nextPromiseKit);
     currentUpdateCount = undefined;
     currentResponse = harden({
       value: finalState,
@@ -162,6 +172,7 @@ export const makeNotifierKit = (...args) => {
     }
 
     // become !hasState() && final()
+    assert(nextPromiseKit);
     currentUpdateCount = undefined;
     currentResponse = undefined;
     nextPromiseKit.reject(reason);
@@ -180,7 +191,7 @@ export const makeNotifierKit = (...args) => {
 };
 
 // Deprecated. TODO remove once no clients need it.
-// Unlike makeNotifierKit, produceIssuerKit always produces
+// Unlike makeNotifierKit, produceNotifier always produces
 // a notifier with an initial state, which defaults to undefined.
 export const produceNotifier = (initialState = undefined) =>
   makeNotifierKit(initialState);

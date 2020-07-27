@@ -9,6 +9,11 @@
  */
 
 /**
+ * @template T
+ * @typedef {import('@agoric/notifier').Notifier<T>} Notifier
+ */
+
+/**
  * @typedef {string} Keyword
  * @typedef {Handle<'InstallationHandle'>} InstallationHandle - an opaque handle for an bundle installation
  * @typedef {Handle<'InstanceHandle'>} InstanceHandle - an opaque handle for a contract instance
@@ -92,7 +97,7 @@
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle) => import('@agoric/notifier').Notifier<Allocation>} getOfferNotifier
+ * @property {(offerHandle: OfferHandle) => Notifier<Allocation|undefined>} getOfferNotifier
  * Get a notifier (see `@agoric/notify`) for the offer's reallocations.
  * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecords) => Allocation} getCurrentAllocation
  * @property {(offerHandles: OfferHandle[], brandKeywordRecord[]?: BrandKeywordRecords) => Allocation[]} getCurrentAllocations
@@ -199,7 +204,7 @@
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
  * @property {(offerHandle: OfferHandle, brandKeywordRecord?: BrandKeywordRecord) => Allocation} getCurrentAllocation
  * @property {(offerHandles: OfferHandle[], brandKeywordRecords?: BrandKeywordRecord[]) => Allocation[]} getCurrentAllocations
- * @property {(offerHandle: OfferHandle) => Promise<import('@agoric/notifier').Notifier<Allocation>>} getOfferNotifier
+ * @property {(offerHandle: OfferHandle) => Promise<Notifier<Allocation|undefined>>} getOfferNotifier
  * @property {() => InstanceRecord} getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand

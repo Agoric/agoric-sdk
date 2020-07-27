@@ -84,15 +84,13 @@ const makeOfferTable = () => {
    * TODO: make sure this validate function protects against malicious
    * misshapen objects rather than just a general check.
    */
-  const validateProperties = makeValidateProperties(
-    harden([
-      'instanceHandle',
-      'proposal',
-      'currentAllocation',
-      'notifier',
-      'updater',
-    ]),
-  );
+  const validateProperties = makeValidateProperties([
+    'instanceHandle',
+    'proposal',
+    'currentAllocation',
+    'notifier',
+    'updater',
+  ]);
 
   /**
    * @type {Validator<OfferRecord & PrivateOfferRecord>}

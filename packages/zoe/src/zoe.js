@@ -406,7 +406,9 @@ function makeZoe(vatAdminSvc) {
         // deposited. Keywords in the want clause are mapped to the empty
         // amount for that keyword's Issuer.
         const recordOffer = amountsArray => {
+          /** @type {NotifierRecord<Allocation|undefined>} */
           const notifierKit = makeNotifierKit(undefined);
+          /** @type {Omit<OfferRecord & PrivateOfferRecord, 'handle'>} */
           const offerRecord = {
             instanceHandle,
             proposal: cleanedProposal,

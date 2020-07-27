@@ -53,10 +53,10 @@ export function buildRootObject(_vatPowers) {
       assert(offerTable.has(offerHandle), details`Offer is not active`),
     );
 
-  /** @param {OfferRecord} offerRecord */
+  /** @param {OfferRecord & PrivateOfferRecord} offerRecord */
   const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
-  /** @param {IssuerRecord&PrivateIssuerRecord} issuerRecord */
+  /** @param {IssuerRecord & PrivateIssuerRecord} issuerRecord */
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
@@ -255,11 +255,15 @@ export function buildRootObject(_vatPowers) {
     /** @type {ZcfForZoe} */
     const zcfForZoe = {
       addOffer: (offerHandle, proposal, allocation) => {
-        const ignoringUpdater = harden({
-          updateState: () => {},
-          finish: () => {},
-        });
+        /** @type {Updater<Allocation>} */
+        const ignoringUpdater = {
+          updateState: _ => {},
+          finish: _ => {},
+          reject: _ => {},
+        };
+        harden(ignoringUpdater);
 
+        /** @type {Omit<OfferRecord & PrivateOfferRecord, 'handle'>} */
         const offerRecord = {
           instanceHandle,
           proposal,
