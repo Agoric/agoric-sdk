@@ -77,15 +77,21 @@ export function buildRootObject(vatPowers) {
   // Make services that are provided on the real or virtual chain side
   async function makeChainBundler(vats, timerDevice, vatAdminSvc) {
     // Create singleton instances.
-    const sharingService = await E(vats.sharing).getSharingService();
-    const registry = await E(vats.registrar).getSharedRegistrar();
-    const board = await E(vats.board).getBoard();
-    const chainTimerService = await E(vats.timer).createTimerService(
-      timerDevice,
-    );
-
-    const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
-    const contractHost = await E(vats.host).makeHost();
+    const [
+      sharingService,
+      registry,
+      board,
+      chainTimerService,
+      zoe,
+      contractHost,
+    ] = await Promise.all([
+      E(vats.sharing).getSharingService(),
+      E(vats.registrar).getSharedRegistrar(),
+      E(vats.board).getBoard(),
+      E(vats.timer).createTimerService(timerDevice),
+      E(vats.zoe).buildZoe(vatAdminSvc),
+      E(vats.host).makeHost(),
+    ]);
 
     // Make the other demo mints
     const issuerNames = ['moola', 'simolean'];
@@ -398,10 +404,9 @@ export function buildRootObject(vatPowers) {
             payments,
             issuerInfo,
           );
-          await E(vats.http).setPresences(
-            { ...bundle, localTimerService },
-            localBundle,
-          );
+          await E(vats.http).setPresences(localBundle, bundle, {
+            localTimerService,
+          });
           await setupWalletVat(localBundle.http, vats.http, vats.wallet);
           break;
         }
@@ -462,10 +467,9 @@ export function buildRootObject(vatPowers) {
             payments,
             issuerInfo,
           );
-          await E(vats.http).setPresences(
-            { ...bundle, localTimerService },
-            localBundle,
-          );
+          await E(vats.http).setPresences(localBundle, bundle, {
+            localTimerService,
+          });
           await setupWalletVat(localBundle.http, vats.http, vats.wallet);
           break;
         }
@@ -496,10 +500,9 @@ export function buildRootObject(vatPowers) {
             payments,
             issuerInfo,
           );
-          await E(vats.http).setPresences(
-            { ...bundle, localTimerService: bundle.chainTimerService },
-            localBundle,
-          );
+          await E(vats.http).setPresences(localBundle, bundle, {
+            localTimerService: bundle.chainTimerService,
+          });
 
           setupWalletVat(localBundle.http, vats.http, vats.wallet);
           break;

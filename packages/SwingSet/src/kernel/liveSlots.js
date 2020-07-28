@@ -4,6 +4,7 @@ import { HandledPromise } from '@agoric/eventual-send';
 import {
   QCLASS,
   Remotable,
+  getInterfaceOf,
   mustPassByPresence,
   makeMarshal,
 } from '@agoric/marshal';
@@ -574,7 +575,11 @@ export function makeLiveSlots(
     notifyFulfillToData,
     notifyFulfillToPresence,
     notifyReject,
-  } = build(syscall, state, buildRootObject, forVatID, vatPowers);
+  } = build(syscall, state, buildRootObject, forVatID, {
+    ...vatPowers,
+    getInterfaceOf,
+    Remotable,
+  });
   return harden({
     deliver,
     notifyFulfillToData,

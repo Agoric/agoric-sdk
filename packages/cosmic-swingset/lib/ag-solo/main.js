@@ -8,7 +8,6 @@ import { assert } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 // Start a network service
-import bundle from './bundle';
 import initBasedir from './init-basedir';
 import resetState from './reset-state';
 import setGCIIngress from './set-gci-ingress';
@@ -105,18 +104,6 @@ start
     case 'reset-state': {
       const basedir = insistIsBasedir();
       await resetState(basedir);
-      break;
-    }
-    case 'bundle': {
-      await bundle(insistIsBasedir, argv.slice(1));
-      break;
-    }
-    case 'upload-contract': {
-      await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
-      break;
-    }
-    case 'register-http': {
-      await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
       break;
     }
     case 'calc-gci':
