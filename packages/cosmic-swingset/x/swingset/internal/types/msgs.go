@@ -118,18 +118,20 @@ func (msg MsgSendPacket) Type() string {
 
 // MsgProvision defines a Provision message
 type MsgProvision struct {
-	Nickname  string         `json:"nickname" yaml:"nickname"`
-	Address   sdk.AccAddress `json:"address" yaml:"address"`
-	Submitter sdk.AccAddress `json:"submitter" yaml:"submitter"`
+	Nickname   string         `json:"nickname" yaml:"nickname"`
+	Address    sdk.AccAddress `json:"address" yaml:"address"`
+	PowerFlags []string       `json:"powerFlags" yaml:"powerFlags"`
+	Submitter  sdk.AccAddress `json:"submitter" yaml:"submitter"`
 }
 
 var _ sdk.Msg = &MsgProvision{}
 
-func NewMsgProvision(nickname string, addr sdk.AccAddress, submitter sdk.AccAddress) MsgProvision {
+func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) MsgProvision {
 	return MsgProvision{
-		Nickname:  nickname,
-		Address:   addr,
-		Submitter: submitter,
+		Nickname:   nickname,
+		Address:    addr,
+		PowerFlags: powerFlags,
+		Submitter:  submitter,
 	}
 }
 
@@ -150,11 +152,17 @@ func (msg MsgProvision) ValidateBasic() error {
 	if len(msg.Nickname) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
 	}
+	if msg.PowerFlags == nil {
+		msg.PowerFlags = []string{}
+	}
 	return nil
 }
 
 // GetSignBytes encodes the message for signing
 func (msg MsgProvision) GetSignBytes() []byte {
+	if msg.PowerFlags == nil {
+		msg.PowerFlags = []string{}
+	}
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 

@@ -5,7 +5,8 @@ import (
 )
 
 type QueryResEgress struct {
-	Nickname string `json:"nickname"`
+	Nickname   string   `json:"nickname"`
+	PowerFlags []string `json:"powerFlags"`
 }
 
 func (r QueryResEgress) String() string {

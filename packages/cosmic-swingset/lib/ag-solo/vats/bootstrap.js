@@ -67,12 +67,7 @@ export function buildRootObject(vatPowers) {
   }
 
   // Make services that are provided on the real or virtual chain side
-  async function makeChainBundler(
-    vats,
-    timerDevice,
-    vatAdminSvc,
-    giveMeAllTheAgoricPowers = false,
-  ) {
+  async function makeChainBundler(vats, timerDevice, vatAdminSvc) {
     // Create singleton instances.
     const [
       sharingService,
@@ -120,10 +115,7 @@ export function buildRootObject(vatPowers) {
 
         const additionalPowers = {};
         const { vattp, comms } = vats;
-        if (
-          giveMeAllTheAgoricPowers ||
-          powerFlags.includes('agoric.vattp.makeNetworkHost')
-        ) {
+        if (powerFlags.includes('agoric.vattp')) {
           // Give the authority to create a new host for vattp to share objects with.
           additionalPowers.vattp = {
             makeNetworkHost(allegedName) {
@@ -211,9 +203,9 @@ export function buildRootObject(vatPowers) {
         async fromBridge(_srcID, obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {
-              const { nickname, address } = obj;
+              const { nickname, address, powerFlags } = obj;
               return E(vats.provisioning)
-                .pleaseProvision(nickname, address, PROVISIONER_INDEX)
+                .pleaseProvision(nickname, address, powerFlags)
                 .catch(e =>
                   console.error(
                     `Error provisioning ${nickname} ${address}:`,
@@ -386,7 +378,6 @@ export function buildRootObject(vatPowers) {
             vats,
             devices.timer,
             vatAdminSvc,
-            giveMeAllTheAgoricPowers,
           );
 
           // Allow manual provisioning requests via `agoric cosmos`.
@@ -404,6 +395,14 @@ export function buildRootObject(vatPowers) {
           const demoProvider = harden({
             // build a chain-side bundle for a client.
             async getDemoBundle(nickname) {
+              if (giveMeAllTheAgoricPowers) {
+                // NOTE: This is a special exception to the security model,
+                // to give capabilities to all clients (since we are running
+                // locally with the `--give-me-all-the-agoric-powers` flag).
+                return chainBundler.createUserBundle(nickname, [
+                  'agoric.vattp',
+                ]);
+              }
               return chainBundler.createUserBundle(nickname);
             },
           });

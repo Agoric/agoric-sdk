@@ -51,7 +51,7 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("egress %s not found", bech32))
 	}
 
-	bz, err := codec.MarshalJSONIndent(keeper.cdc, types.QueryResEgress{egress.Nickname})
+	bz, err := codec.MarshalJSONIndent(keeper.cdc, types.QueryResEgress{egress.Nickname, egress.PowerFlags})
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}

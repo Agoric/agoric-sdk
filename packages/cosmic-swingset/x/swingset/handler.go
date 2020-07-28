@@ -164,7 +164,7 @@ func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg MsgProvision) (*sdk.
 	}
 
 	// Create the account, if it doesn't already exist.
-	egress := types.NewEgress(msg.Nickname, msg.Address)
+	egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
 	err = keeper.SetEgress(ctx, egress)
 	if err != nil {
 		return nil, err
