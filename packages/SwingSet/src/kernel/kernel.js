@@ -98,18 +98,11 @@ export default function buildKernel(kernelEndowments) {
 
   // We need to give the vat the correct Remotable and getKernelPromise so
   // that they can access our own @agoric/marshal, not a separate instance in
-  // a bundle. TODO: ideally the powerless ones (Remotable, getInterfaceOf,
-  // maybe transformMetering) are imported by the vat, not passed in an
-  // argument. The powerful one (makeGetMeter) should only be given to the
-  // root object, to share with (or withhold from) other objects as it sees
-  // fit. TODO: makeGetMeter and transformMetering will go away once #1288
-  // lands and zoe no longer needs to do metering within a vat.
+  // a bundle. TODO: ideally the powerless ones (Remotable, getInterfaceOf)
+  // are imported by the vat, not passed in an argument.
   const staticVatPowers = harden({
     Remotable,
     getInterfaceOf,
-    makeGetMeter: meterManager.makeGetMeter,
-    transformMetering: (...args) =>
-      meterManager.runWithoutGlobalMeter(transformMetering, ...args),
     transformTildot: (...args) =>
       meterManager.runWithoutGlobalMeter(transformTildot, ...args),
     testLog,
