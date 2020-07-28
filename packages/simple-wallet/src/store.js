@@ -1,14 +1,14 @@
 import { writable } from 'svelte/store';
 
 // like React useHook, return a store and a setter for it
-function privateStore(value, start = undefined) {
+function makeReadable(value, start = undefined) {
   const store = writable(value, start);
   return [{ subscribe: store.subscribe }, store.set];
 }
 
-const [inbox, setInbox] = privateStore([]);
-const [purses, setPurses] = privateStore([]);
-const [connected, setConnected] = privateStore(false);
+const [inbox, setInbox] = makeReadable([]);
+const [purses, setPurses] = makeReadable([]);
+const [connected, setConnected] = makeReadable(false);
 
 // INITALIZATION
 
