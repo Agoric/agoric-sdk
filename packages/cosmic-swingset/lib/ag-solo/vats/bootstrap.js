@@ -272,6 +272,7 @@ export function buildRootObject(vatPowers) {
 
     return allComparable(
       harden({
+        comms: vats.comms,
         uploads,
         spawner,
         wallet,
