@@ -172,23 +172,12 @@ export default function buildKernel(
   // state, but they must not let it influence the data they return to the
   // vat.
 
-  // Not all vats get all powers. We're phasing out in-vat metering, so
-  // `makeGetMeter` and `transformMetering` are only available to static vats
-  // in a local worker, and will eventually go away entirely once Spawner
-  // uses dynamic vats.
-
   // These will eventually be provided by the in-worker supervisor instead.
 
-  // TODO: ideally the powerless ones (maybe transformMetering) are imported
-  // by the vat, not passed in an argument. The powerful one (makeGetMeter)
-  // should only be given to the root object, to share with (or withhold
-  // from) other objects as it sees fit. TODO: makeGetMeter and
-  // transformMetering will go away
+  // TODO: ideally the powerless ones (maybe transformTildot) are imported by
+  // the vat, not passed in an argument.
 
   const allVatPowers = harden({
-    makeGetMeter: meterManager.makeGetMeter,
-    transformMetering: (...args) =>
-      meterManager.runWithoutGlobalMeter(transformMetering, ...args),
     transformTildot: (...args) =>
       meterManager.runWithoutGlobalMeter(transformTildot, ...args),
     testLog,

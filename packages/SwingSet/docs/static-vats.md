@@ -12,7 +12,7 @@ The source code for all static vats must be available at the time the host appli
 
 Static vats are defined by a JS module file which exports a function named `buildRootObject`. The file may export other names; these are currently ignored. The module can import other modules, as long as they are pure JS (no native modules or binary libraries), and they are compatible with SES. See `vat-environment.md` for details of the kind of JS you can use. The static vat file will be scanned for its imports, and the entire dependency graph will be merged into a single "source bundle" object when the kernel first launches.
 
-The `buildRootObject` function will be called with one object, named `vatPowers`. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports (such as `tildotTransform`), and vat-specific authorities that are not easy to express through syscalls (such as control over local metering). See below for the current property list.
+The `buildRootObject` function will be called with one object, named `vatPowers`. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports (such as `tildotTransform`), and vat-specific authorities that are not easy to express through syscalls. See below for the current property list.
 
 `buildRootObject` is expected to return a hardened object with callable methods and no data properties (note that `harden` is available as a global). For example:
 
@@ -63,20 +63,10 @@ A few vats do not use liveslots. The main one is the "comms vat", which performs
 
 Static vats currently receive the following objects in their `buildRootObject()`'s sole `vatPowers` argument:
 
-* `makeGetMeter`
-* `transformMetering`
 * `transformTildot`
 * `exitVat`
 * `exitVatWithFailure`
 * `disavow`, but only if `creationOptions.enableDisavow` was truthy
-
-(dynamic vats do not get `makeGetMeter` or `transformMetering`)
-
-### metering: `makeGetMeter`, `transformMetering`
-
-Static vats are, for now, allowed to apply metering enforcement within their own walls. These vat powers provide the tools they need to do this. `makeGetMeter` returns a new `getMeter` function and a collection of functions to check and refill the meter it wraps. `transformMetering` takes a string of code and returns a new string into which metering code has been injected. By including `getMeter` in the `endowments` of a new `Compartment`, and adding `transformMetering` in the `transforms` of that compartment, vats can impose metering limits on other code evaluated inside the new compartment. When the meter runs out, the code subject to that meter starts throwing exceptions (which it cannot catch itself), and keeps throwing them until the meter is refilled.
-
-This approach is not yet complete or sound (the evaluated code may be able to consume more CPU or memory than the meter ought to allow), and it is easy for the vat code to get confused about how much progress it has made. The metered code might call back into the vat's code, and cause a metering exception to happen halfway through that call, leaving the vat in a confused state. The safest way to meter code is to run it in a completely separate (dynamic) vat, which will live or die as a single unit.
 
 ### wavy-dot: `transformTildot`
 

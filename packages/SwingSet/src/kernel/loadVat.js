@@ -203,7 +203,6 @@ export function makeVatLoader(stuff) {
       enableDisavow,
       enableSetup,
       enablePipelining,
-      enableInternalMetering: !isDynamic,
       notifyTermination,
       vatConsole: makeVatConsole('vat', vatID),
       liveSlotsConsole: makeVatConsole('ls', vatID),
@@ -211,14 +210,6 @@ export function makeVatLoader(stuff) {
       virtualObjectCacheSize,
       name,
     };
-
-    // TODO: We need to support within-vat metering (for the Spawner) until
-    // #1343 is fixed, after which we can remove
-    // managerOptions.enableInternalMetering.  For now, it needs to be enabled
-    // for our internal unit test (which could easily add this to its config
-    // object) and for the spawner vat (not so easy). To avoid deeper changes,
-    // we enable it for *all* static vats here. Once #1343 is fixed, remove
-    // this addition and all support for internal metering.
 
     const translators = makeVatTranslators(vatID, kernelKeeper);
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);

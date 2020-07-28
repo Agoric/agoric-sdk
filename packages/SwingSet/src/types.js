@@ -23,7 +23,6 @@
  * @typedef {{
  *   managerType: ManagerType,
  *   metered?: boolean,
- *   enableInternalMetering?: boolean,
  *   enableDisavow?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
