@@ -94,9 +94,16 @@ scenario2-run-chain:
 	$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --pruning=nothing
 
 # Provision and start a client.
-scenario2-run-client: t1-provision-one t1-start-ag-solo
+scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
+t1-provision-one-with-powers:
+	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
+	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.3 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  t1/$(BASE_PORT) $$addr agoric.vattp.makeNetworkHost | tee /dev/stderr | grep -q 'code: 0'
+
 t1-provision-one:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
