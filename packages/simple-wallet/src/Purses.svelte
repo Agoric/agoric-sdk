@@ -27,7 +27,7 @@
 </style>
 
 <main>
-  All {JSON.stringify($purses)}
+  <!-- All {JSON.stringify($purses)} -->
   {#if !Array.isArray($purses) || $purses.length === 0}
     No purses.
   {:else}
