@@ -277,6 +277,7 @@ export function buildRootObject(vatPowers) {
         wallet,
         network: vats.network,
         http: httpRegCallback,
+        vattp: vats.vattp,
       }),
     );
   }
