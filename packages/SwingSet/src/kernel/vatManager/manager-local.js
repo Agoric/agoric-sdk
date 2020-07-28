@@ -26,10 +26,6 @@ export function makeLocalVatManagerFactory(tools) {
     makeMarshal: allVatPowers.makeMarshal,
     transformTildot: allVatPowers.transformTildot,
   };
-  const internalMeteringVP = {
-    makeGetMeter: allVatPowers.makeGetMeter,
-    transformMetering: allVatPowers.transformMetering,
-  };
   // testLog is also a vatPower, only for unit tests
 
   function prepare(vatID, vatSyscallHandler, meterRecord) {
@@ -63,7 +59,6 @@ export function makeLocalVatManagerFactory(tools) {
 
   function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
     assert(!managerOptions.metered, X`unsupported`);
-    assert(!managerOptions.enableInternalMetering, X`unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
 
     const { syscall, finish } = prepare(vatID, vatSyscallHandler, null);
@@ -87,7 +82,6 @@ export function makeLocalVatManagerFactory(tools) {
       metered = false,
       enableDisavow = false,
       enableSetup = false,
-      enableInternalMetering = false,
       vatParameters = {},
       vatConsole,
       liveSlotsConsole,
@@ -110,10 +104,8 @@ export function makeLocalVatManagerFactory(tools) {
 
     const { syscall, finish } = prepare(vatID, vatSyscallHandler, meterRecord);
 
-    const imVP = enableInternalMetering ? internalMeteringVP : {};
     const vatPowers = harden({
       ...baseVP,
-      ...imVP,
       vatParameters,
       testLog: allVatPowers.testLog,
     });

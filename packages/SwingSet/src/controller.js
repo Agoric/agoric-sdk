@@ -186,14 +186,7 @@ export async function makeSwingsetController(
   // transformMetering() requires Babel, which imports 'fs' and 'path', so it
   // cannot be implemented within a non-start-Compartment. We build it out
   // here and pass it to the kernel, which then passes it to vats. This is
-  // intended to be powerless. TODO: when we remove metering within vats
-  // (leaving only vat-at-a-time metering), this function should only be used
-  // to build loadStaticVat and loadDynamicVat. It may still be passed to the
-  // kernel (for loadDynamicVat), but it should no longer be passed into the
-  // vats themselves. TODO: transformMetering() is sync because it is passed
-  // into c.evaluate (which of course cannot handle async), but in the
-  // future, this may live on the far side of a kernel/vatworker boundary, so
-  // we kind of want it to be async.
+  // intended to be powerless.
   const mt = makeMeteringTransformer(babelCore);
   function transformMetering(src, getMeter) {
     // 'getMeter' provides the meter to which the transformation itself is
