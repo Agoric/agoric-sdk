@@ -9,11 +9,6 @@
  */
 
 /**
- * @template T
- * @typedef {import('@agoric/notifier').Notifier<T>} Notifier
- */
-
-/**
  * @typedef {string} Keyword
  * @typedef {Handle<'InstallationHandle'>} InstallationHandle - an opaque handle for an bundle installation
  * @typedef {Handle<'InstanceHandle'>} InstanceHandle - an opaque handle for a contract instance

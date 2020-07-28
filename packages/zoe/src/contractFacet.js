@@ -259,7 +259,7 @@ export function buildRootObject(_vatPowers) {
         const ignoringUpdater = harden({
           updateState: _ => {},
           finish: _ => {},
-          reject: _ => {},
+          fail: _ => {},
         });
 
         /** @type {Omit<OfferRecord & PrivateOfferRecord, 'handle'>} */

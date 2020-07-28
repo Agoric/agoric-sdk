@@ -14,16 +14,6 @@
  */
 
 /**
- * @template T
- * @typedef {import('@agoric/notifier').Updater<T>} Updater
- */
-
-/**
- * @template T
- * @typedef {import('@agoric/notifier').NotifierRecord<T>} NotifierRecord
- */
-
-/**
  * @typedef {Object} ZcfForZoe
  * The facet ZCF presents to Zoe.
  *
