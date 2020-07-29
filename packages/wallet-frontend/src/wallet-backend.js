@@ -53,7 +53,8 @@ function onClose(event)  {
 }
 
 async function onOpen(event) {
-  const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } = makeCapTP('simple-wallet', sendMessage);
+  const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } =
+    makeCapTP('@agoric/wallet-frontend', sendMessage);
   abort = ctpAbort;
   dispatch = ctpDispatch;
 

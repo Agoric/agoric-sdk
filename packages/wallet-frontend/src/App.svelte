@@ -1,13 +1,13 @@
 <script>
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import { purses, inbox, connected, walletP } from "./store";
+  import { purses, inbox, connected, walletP } from "./store-no-captp";
 
   connected.connect();
 </script>
 
 <main>
-  <h1>Simple Agoric Wallet</h1>
+  <h1>Agoric Wallet</h1>
   {#if $connected}
     <b>Connected</b>
     <button on:click={connected.disconnect}>Disconnect</button>
