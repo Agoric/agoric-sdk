@@ -7,7 +7,7 @@ function makeReadable(value, start = undefined) {
 }
 
 // Find a default url if we are running in dev mode.  FIXME: Make better.
-const base = location.port === '5000' ? 'http://localhost:8000' : location.url;
+const base = location.port === '5000' ? 'http://localhost:8000' : location;
 
 export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
   const [connected, setConnected] = makeReadable(false);
