@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { makeCapTP, E, HandledPromise } from '@agoric/captp';
 import { producePromise } from '@agoric/produce-promise';
+import { makeWebSocket } from './websocket';
 
 // like React useHook, return a store and a setter for it
 function makeReadable(value, start = undefined) {
@@ -10,7 +11,6 @@ function makeReadable(value, start = undefined) {
 
 const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
-const [connected, setConnected] = makeReadable(false);
 
 // INITALIZATION
 
@@ -37,19 +37,18 @@ function adaptNotifierUpdates(notifier, observer) {
   E(notifier).getUpdateSince().then(handleUpdate);
 }
 
-let onMessage;
-let onClose;
+const handlers = { onOpen };
 
 function onOpen(event) {
   const { abort, dispatch, getBootstrap } = makeCapTP('simple-wallet', sendMessage);
-  onMessage = (event) => {
+  handlers.onMessage = (event) => {
     const obj = JSON.parse(event.data);
     dispatch(obj);
   };
-  onClose = (event) => {
+  handlers.onClose = (event) => {
     // Throw away our state.
     resetClientState();
-    // abort();
+    abort();
   };
 
   // Wait for the other side to finish loading.
@@ -59,61 +58,6 @@ function onOpen(event) {
     E.G(getBootstrap()).wallet
   ).then(walletPresence => walletPK.resolve(walletPresence));
 }
-
-// === WEB SOCKET
-const RECONNECT_BACKOFF_SECONDS = 3;
-function reopen() {
-  console.log(`Reconnecting in ${RECONNECT_BACKOFF_SECONDS} seconds`);
-  setTimeout(openSocket, RECONNECT_BACKOFF_SECONDS * 1000);
-}
-
-let socket = null;
-let retryStrategy = null;
-function openSocket() {
-  if (socket) {
-    return;
-  }
-  socket = new WebSocket('ws://localhost:8000/private/captp');
-  retryStrategy = reopen;
-
-  // Connection opened
-  socket.addEventListener('open', event => {
-    setConnected(true);
-    onOpen(event);
-  });
-
-  // Listen for messages
-  socket.addEventListener('message', onMessage);
-
-  socket.addEventListener('error', ev => {
-    console.log(`ws.error`, ev);
-    socket.close();
-  });
-
-  socket.addEventListener('close', ev => {
-    socket = null;
-    setConnected(false);
-    onClose(ev);
-    if (retryStrategy) {
-      retryStrategy();
-    }
-  });
-}
-
-function disconnect() {
-  retryStrategy = null;
-  if (socket) {
-    socket.close();
-  }
-}
-
-const sendMessage = (obj) => {
-  if (socket && socket.readyState <= 1) {
-    socket.send(JSON.stringify(obj));
-  }
-};
-
-const connectedExt = { connect: openSocket, disconnect, ...connected };
 
 // This is the public state, a promise that never resolves,
 // but pipelines messages to the walletPK.promise.
@@ -127,10 +71,11 @@ const walletP = new HandledPromise(() => {}, {
 });
 
 resetClientState();
+const { connected, sendMessage } = makeWebSocket('/private/captp', handlers)
 
 export {
   inbox,
   purses,
-  connectedExt as connected,
+  connected,
   walletP,
 }
