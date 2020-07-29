@@ -7,7 +7,7 @@ import pubsub from './pubsub';
 
 export function buildRootObject(_vatPowers) {
   let wallet;
-  let pursesState;
+  let pursesState = JSON.stringify([]);
   let inboxState = JSON.stringify([]);
   let http;
   const adminHandles = new Set();
@@ -48,11 +48,11 @@ export function buildRootObject(_vatPowers) {
   };
 
   const { updater: pursesUpdater, notifier: pursesNotifier } = makeNotifierKit(
-    [],
+    pursesState,
   );
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { updater: inboxUpdater, notifier: inboxNotifier } = makeNotifierKit(
-    [],
+    inboxState,
   );
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
@@ -83,7 +83,7 @@ export function buildRootObject(_vatPowers) {
   }
 
   async function adminOnMessage(obj, meta = { origin: 'unknown' }) {
-    const { type, data } = obj;
+    const { type, data, dappOrigin = meta.origin } = obj;
     switch (type) {
       case 'walletGetPurses': {
         return {
@@ -100,7 +100,7 @@ export function buildRootObject(_vatPowers) {
       case 'walletAddOffer': {
         return {
           type: 'walletOfferAdded',
-          data: await wallet.addOffer(data, meta),
+          data: await wallet.addOffer(data, { ...meta, dappOrigin }),
         };
       }
       case 'walletDeclineOffer': {
@@ -131,7 +131,7 @@ export function buildRootObject(_vatPowers) {
 
       case 'walletGetOffers':
       case 'walletGetOfferDescriptions': {
-        const result = await wallet.getOffers({ origin: meta.origin });
+        const result = await wallet.getOffers({ origin: dappOrigin });
         return {
           type: 'walletOfferDescriptions',
           data: result,

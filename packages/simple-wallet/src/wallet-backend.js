@@ -28,50 +28,60 @@ function resetClientState() {
 
 // LIBRARY - captp adaptation
 
-function adaptNotifierUpdates(notifier, observer) {
-  function handleUpdate(update) {
-    const { value, updateCount } = update;
+async function adaptNotifierUpdates(notifier, observer) {
+  let lastUpdateCount = 0;
+  while (lastUpdateCount !== undefined) {
+    const prior = lastUpdateCount;
+    const { value, updateCount } = await E(notifier).getUpdateSince(prior);
     observer(value);
-    E(notifier).getUpdateSince(updateCount).then(handleUpdate);
+    lastUpdateCount = updateCount;
   }
-  E(notifier).getUpdateSince().then(handleUpdate);
 }
 
-const handlers = { onOpen };
+let dispatch;
+let abort;
 
-function onOpen(event) {
-  const { abort, dispatch, getBootstrap } = makeCapTP('simple-wallet', sendMessage);
-  handlers.onMessage = (event) => {
-    const obj = JSON.parse(event.data);
-    dispatch(obj);
-  };
-  handlers.onClose = (event) => {
-    // Throw away our state.
-    resetClientState();
-    abort();
-  };
+function onMessage(event) {
+  const obj = JSON.parse(event.data);
+  dispatch(obj);
+}
+
+function onClose(event)  {
+  // Throw away our state.
+  resetClientState();
+  abort();
+}
+
+async function onOpen(event) {
+  const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } = makeCapTP('simple-wallet', sendMessage);
+  abort = ctpAbort;
+  dispatch = ctpDispatch;
 
   // Wait for the other side to finish loading.
-  E.G(getBootstrap()).LOADING.then(_ => 
-    // Begin the flow of messages to our wallet, which
-    // we refetch from the new, loaded, bootstrap object.
-    E.G(getBootstrap()).wallet
-  ).then(walletPresence => walletPK.resolve(walletPresence));
+  await E.G(getBootstrap()).LOADING;
+
+  // Begin the flow of messages to our wallet, which
+  // we refetch from the new, loaded, bootstrap object.
+  const walletPresence = E.G(getBootstrap()).wallet;
+  
+  walletPK.resolve(walletPresence);
 }
 
 // This is the public state, a promise that never resolves,
 // but pipelines messages to the walletPK.promise.
-const walletP = new HandledPromise(() => {}, {
-  applyMethod(_p, name, args) {
-    return E(walletPK.promise)[name](...args);
-  },
-  get(_p, name) {
-    return E(walletPK.promise)[name];
-  },
+const walletP = new HandledPromise((_resolve, _reject, resolveWithPresence) => {
+  resolveWithPresence({
+    applyMethod(_p, name, args) {
+      return E(walletPK.promise)[name](...args);
+    },
+    get(_p, name) {
+      return E(walletPK.promise)[name];
+    },
+  });
 });
 
 resetClientState();
-const { connected, sendMessage } = makeWebSocket('/private/captp', handlers)
+const { connected, sendMessage } = makeWebSocket('/private/captp', { onOpen, onMessage, onClose })
 
 export {
   inbox,
