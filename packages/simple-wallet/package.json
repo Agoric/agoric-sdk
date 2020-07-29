@@ -1,7 +1,7 @@
 {
   "name": "@agoric/simple-wallet",
   "version": "1.0.0",
-  "homepage": ".",
+  "private": true,
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
