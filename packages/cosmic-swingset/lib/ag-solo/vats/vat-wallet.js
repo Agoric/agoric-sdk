@@ -218,7 +218,12 @@ export function buildRootObject(_vatPowers) {
           },
 
           async onMessage(obj, meta) {
-            const { type } = obj;
+            const { type, suggestedDappPetname = meta.origin } = obj;
+            const { dappPetname } = await wallet.waitForDappApproval(
+              suggestedDappPetname,
+              meta.origin,
+            );
+
             switch (type) {
               case 'walletGetPurses':
               case 'walletAddOffer':
@@ -275,7 +280,11 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestIssuer(petname, boardId);
+                const result = await wallet.suggestIssuer(
+                  dappPetname,
+                  petname,
+                  boardId,
+                );
                 return {
                   type: 'walletSuggestIssuerResponse',
                   data: result,
@@ -284,7 +293,11 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestInstance(petname, boardId);
+                const result = await wallet.suggestInstance(
+                  dappPetname,
+                  petname,
+                  boardId,
+                );
                 return {
                   type: 'walletSuggestInstanceResponse',
                   data: result,
@@ -294,6 +307,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstallation(
+                  dappPetname,
                   petname,
                   boardId,
                 );

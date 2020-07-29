@@ -13,6 +13,7 @@ import { makeMarshal } from '@agoric/marshal';
 
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
+import { producePromise } from '@agoric/produce-promise';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -44,14 +45,11 @@ export async function makeWallet({
       harden({
         addIssuer: issuerP => {
           return Promise.resolve(issuerP).then(issuer => {
-            assert(
-              !table.has(issuer),
-              details`issuer ${issuer} is already in wallet`,
-            );
             if (issuersInProgress.has(issuer)) {
               // a promise which resolves to the issuer record
               return issuersInProgress.get(issuer);
             }
+
             // remote calls which immediately return a promise
             const mathHelpersNameP = E(issuer).getMathHelpersName();
             const brandP = E(issuer).getBrand();
@@ -61,14 +59,16 @@ export async function makeWallet({
               brandP,
               mathHelpersNameP,
             ]).then(([brand, mathHelpersName]) => {
-              const amountMath = makeAmountMath(brand, mathHelpersName);
-              const issuerRecord = {
-                issuer,
-                brand,
-                amountMath,
-              };
-              table.create(issuerRecord, brand);
-              issuerToBrand.init(issuer, brand);
+              if (!issuerToBrand.has(issuer)) {
+                const amountMath = makeAmountMath(brand, mathHelpersName);
+                const issuerRecord = {
+                  issuer,
+                  brand,
+                  amountMath,
+                };
+                table.create(issuerRecord, brand);
+                issuerToBrand.init(issuer, brand);
+              }
               issuersInProgress.delete(issuer);
               return table.get(brand);
             });
@@ -498,6 +498,30 @@ export async function makeWallet({
     return { proposal, inviteP, purseKeywordRecord };
   };
 
+  const dappOrigins = makeStore('dappOrigin');
+  async function waitForDappApproval(suggestedPetname, origin) {
+    let originRecord;
+    if (dappOrigins.has(origin)) {
+      originRecord = dappOrigins.get(origin);
+    } else {
+      originRecord = {
+        status: 'pending',
+        approvalP: producePromise(),
+        dappPetname: suggestedPetname,
+        origin,
+      };
+      dappOrigins.init(origin, originRecord);
+    }
+
+    // TODO: Actually approve the origin!
+    originRecord.approvalP.resolve(true);
+
+    await originRecord.approvalP.promise;
+    // AWAIT
+    // Refetch the origin record.
+    return dappOrigins.get(origin);
+  }
+
   async function addOffer(rawOffer, requestContext = { origin: 'unknown' }) {
     const {
       id: rawId,
@@ -673,21 +697,34 @@ export async function makeWallet({
       .then(saveAsDefault);
   }
 
-  function acceptPetname(acceptFn, suggestedPetname, boardId) {
+  function acceptPetname(acceptFn, dappPetname, suggestedPetname, boardId) {
+    const petname = `${dappPetname}.${suggestedPetname}`;
     return E(board)
       .getValue(boardId)
-      .then(value => acceptFn(suggestedPetname, value));
+      .then(value => acceptFn(petname, value));
   }
 
-  async function suggestIssuer(suggestedPetname, issuerBoardId) {
+  async function suggestIssuer(dappPetname, suggestedPetname, issuerBoardId) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
-    // eslint-disable-next-line no-use-before-define
-    return acceptPetname(wallet.addIssuer, suggestedPetname, issuerBoardId);
+    return acceptPetname(
+      async (petname, issuer) => {
+        // In most cases, after we accept an issuer we want at least one purse.
+        await addIssuer(petname, issuer);
+        return makeEmptyPurse(petname, petname);
+      },
+      dappPetname,
+      suggestedPetname,
+      issuerBoardId,
+    );
   }
 
-  async function suggestInstance(suggestedPetname, instanceHandleBoardId) {
+  async function suggestInstance(
+    dappPetname,
+    suggestedPetname,
+    instanceHandleBoardId,
+  ) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
@@ -695,12 +732,14 @@ export async function makeWallet({
     return acceptPetname(
       // eslint-disable-next-line no-use-before-define
       wallet.addInstance,
+      dappPetname,
       suggestedPetname,
       instanceHandleBoardId,
     );
   }
 
   async function suggestInstallation(
+    dappPetname,
     suggestedPetname,
     installationHandleBoardId,
   ) {
@@ -711,6 +750,7 @@ export async function makeWallet({
     return acceptPetname(
       // eslint-disable-next-line no-use-before-define
       wallet.addInstallation,
+      dappPetname,
       suggestedPetname,
       installationHandleBoardId,
     );
@@ -756,6 +796,7 @@ export async function makeWallet({
   }
 
   const wallet = harden({
+    waitForDappApproval,
     addIssuer,
     addInstance,
     addInstallation,
