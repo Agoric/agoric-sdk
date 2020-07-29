@@ -1,7 +1,7 @@
 <script>
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import { purses, inbox, connected, walletP } from "./store-no-captp";
+  import { purses, inbox, connected, walletP } from "./store";
 
   connected.connect();
 </script>
