@@ -85,7 +85,7 @@
   {/each}
 </div>
 <div>
-  <b>{status ? statusText[status] : 'pending'}</b>
+  <b>{statusText[status || 'pending']}</b>
   <button on:click={() => dispatch.accept(id)}>Accept</button>
   <button on:click={() => dispatch.decline(id)}>Decline</button>
   <button on:click={() => dispatch.cancel(id)}>Cancel</button>
