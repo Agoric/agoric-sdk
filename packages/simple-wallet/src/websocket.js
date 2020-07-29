@@ -73,6 +73,6 @@ export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
     }
   };
 
-  const connectedExt = { connect: openSocket, disconnect, ...connected };
+  const connectedExt = { ...connected, connect: openSocket, disconnect };
   return { connected: connectedExt, sendMessage };
 }

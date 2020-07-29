@@ -14,7 +14,7 @@
 
   const pet = petname => petname || "???";
 
-  export let dispatch;
+  export let walletP;
 </script>
 
 <style>
@@ -46,7 +46,7 @@
     <ul>
       {#each $inbox as txn (txn.id)}
         <li>
-          <Transaction {txn} id={txn.id} {dispatch} />
+          <Transaction {txn} id={txn.id} {walletP} />
         </li>
       {/each}
     </ul>

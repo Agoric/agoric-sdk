@@ -1,7 +1,8 @@
 <script>
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import { purses, inbox, connected, accept, decline, cancel } from "./store";
+  import { purses, inbox, connected, walletP } from "./store";
+
   connected.connect();
 </script>
 
@@ -18,5 +19,5 @@
   <Purses {purses} />
 
   <h2>Transactions</h2>
-  <Transactions {inbox} dispatch={{ accept, decline, cancel }} />
+  <Transactions {inbox} {walletP} />
 </main>

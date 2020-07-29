@@ -1,7 +1,9 @@
 <script>
+  import { E } from '@agoric/eventual-send';
+
   export let txn;
   export let id;
-  export let dispatch;
+  export let walletP;
 
   function formatDateNow(stamp) {
     const date = new Date(stamp);
@@ -86,7 +88,7 @@
 </div>
 <div>
   <b>{statusText[status || 'pending']}</b>
-  <button on:click={() => dispatch.accept(id)}>Accept</button>
-  <button on:click={() => dispatch.decline(id)}>Decline</button>
-  <button on:click={() => dispatch.cancel(id)}>Cancel</button>
+  <button on:click={() => E(walletP).acceptOffer(id)}>Accept</button>
+  <button on:click={() => E(walletP).declineOffer(id)}>Decline</button>
+  <button on:click={() => E(walletP).cancelOffer(id)}>Cancel</button>
 </div>
