@@ -11,7 +11,7 @@ import { deleteCListEntryIfEasy } from './cleanup';
  * Return a function that converts KernelDelivery objects into VatDelivery
  * objects
  */
-export function makeKDTranslator(vatID, kernelKeeper) {
+function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
@@ -95,7 +95,7 @@ export function makeKDTranslator(vatID, kernelKeeper) {
  * return a function that converts VatSyscall objects into KernelSyscall
  * objects
  */
-export function makeVSTranslator(vatID, kernelKeeper) {
+function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
   const { mapVatSlotToKernelSlot } = vatKeeper;
 
@@ -236,7 +236,10 @@ export function makeVSTranslator(vatID, kernelKeeper) {
  * return a function that converts KernelSyscallResult objects into
  * VatSyscallResult objects
  */
-export function makeKSRTranslator(vatID, kernelKeeper) {
+function makeTranslateKernelSyscallResultToVatSyscallResult(
+  vatID,
+  kernelKeeper,
+) {
   const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
 
   const { mapKernelSlotToVatSlot } = vatKeeper;
@@ -260,12 +263,13 @@ export function makeKSRTranslator(vatID, kernelKeeper) {
 }
 
 export function makeVatTranslators(vatID, kernelKeeper) {
+  const mKD = makeTranslateKernelDeliveryToVatDelivery;
+  const mVS = makeTranslateVatSyscallToKernelSyscall;
+  const mKSR = makeTranslateKernelSyscallResultToVatSyscallResult;
+
   return harden({
-    kernelDeliveryToVatDelivery: makeKDTranslator(vatID, kernelKeeper),
-    vatSyscallToKernelSyscall: makeVSTranslator(vatID, kernelKeeper),
-    kernelSyscallResultToVatSyscallResult: makeKSRTranslator(
-      vatID,
-      kernelKeeper,
-    ),
+    kernelDeliveryToVatDelivery: mKD(vatID, kernelKeeper),
+    vatSyscallToKernelSyscall: mVS(vatID, kernelKeeper),
+    kernelSyscallResultToVatSyscallResult: mKSR(vatID, kernelKeeper),
   });
 }
