@@ -1,5 +1,7 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
+import { makeNotifierKit } from '@agoric/notifier';
+
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
@@ -45,8 +47,23 @@ export function buildRootObject(_vatPowers) {
     pushOfferSubscriptions(channelHandle, inboxState);
   };
 
+  const { updater: pursesUpdater, notifier: pursesNotifier } = makeNotifierKit(
+    [],
+  );
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
+  const { updater: inboxUpdater, notifier: inboxNotifier } = makeNotifierKit(
+    [],
+  );
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
+
+  const notifiers = harden({
+    getInboxNotifier() {
+      return inboxNotifier;
+    },
+    getPursesNotifier() {
+      return pursesNotifier;
+    },
+  });
 
   async function startup({ zoe, board }) {
     wallet = await makeWallet({
@@ -58,7 +75,7 @@ export function buildRootObject(_vatPowers) {
   }
 
   async function getWallet() {
-    return harden(wallet);
+    return harden({ ...wallet, ...notifiers });
   }
 
   function setHTTPObject(o, _ROLES) {
@@ -134,6 +151,7 @@ export function buildRootObject(_vatPowers) {
       harden({
         notify(m) {
           pursesState = m;
+          pursesUpdater.updateState(pursesState);
           if (http) {
             E(http).send(
               {
@@ -153,6 +171,7 @@ export function buildRootObject(_vatPowers) {
       harden({
         notify(m) {
           inboxState = m;
+          inboxUpdater.updateState(inboxState);
           if (http) {
             E(http).send(
               {
