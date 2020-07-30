@@ -1,6 +1,6 @@
 ## Zoe and ZCF
 
-At the current time, Zoe is split into an "upper" part, which is the facet that the contract communicates with, and the "middle", which contains all the common pieces shared across all contracts. The middle has the InviteIssuer, manages the purses for all contract instances, and is the central point of contact for installing and instantiating contracts. Each time a contract is instantiated with makeInstance(), a new vat is created, and the code for ZCF (the Zoe Contract Facet) is executed, immediately running the code for the contract itself. 
+At the current time, Zoe is split into two parts: the part that contains common pieces shared across all contracts (called "zoe" for now) and ZCF, the Zoe contract facet that contracts communicate with. The main part is expected to eventually be divided into a an escrow service (which would hold deposited assets) and a coordinator, constituting the main point of contact along with the invite issuer. Each time a contract is instantiated with makeInstance(), a new vat is created, and the code for ZCF (the Zoe Contract Facet) is executed, immediately running the code for the contract itself. 
 
  * [Plan for current split](https://github.com/Agoric/agoric-sdk/issues/553)
  * [PR for split](https://github.com/Agoric/agoric-sdk/pull/1288)
@@ -10,7 +10,7 @@ At the current time, Zoe is split into an "upper" part, which is the facet that 
 
 Zoe has a single InviteMint, which it uses to mint Invitations which verify the authenticity of contracts and seats. Zoe freely shares the corresponding Issuer, so everyone can recognize valid Invitatations.
 
-Zoe is created with SwingSet. Any user can call `E(zoe).install(bundle)` to create a new verified installation of a contract. From that point, anyone can validate  the source code, or get assurances from Zoe that a particular instance of that contract is running that code.
+Zoe is created by CosmicSwingset. Any user can call `E(zoe).install(bundle)` to create a new installation of a contract. From that point, anyone can use  the installation to get access to the code and to get assurances from Zoe that a particular instance of that contract is running that code.
 
 Anyone with an installationHandle can ask Zoe to create a new instance of a contract with a particular assignment of keywords to Brands, and specified terms. When Zoe receives the `E(zoe).makeInstance()` call, it creates a new vat (getting the vat's root object in return) and a private copy of the internal zoeForZcf facet for that contract.
 
