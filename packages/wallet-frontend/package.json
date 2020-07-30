@@ -22,7 +22,9 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
-    "sirv-cli": "^1.0.0"
+    "sirv-cli": "^1.0.0",
+    "svelte-mui": "^0.3.3-4",
+    "svelte-themer": "^0.1.4"
   },
   "files": [
     "public"

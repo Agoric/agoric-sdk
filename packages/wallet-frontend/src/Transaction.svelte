@@ -52,6 +52,10 @@
       max-width: none;
     }
   }
+
+  button:hover {
+    background-color: red;
+  }
 </style>
 
 <div>

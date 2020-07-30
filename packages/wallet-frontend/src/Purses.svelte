@@ -5,6 +5,16 @@
 </script>
 
 <style>
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 0;
+  }
+  li {
+    margin: 1rem;
+    border: 1px solid grey;
+  }
+
   main {
     /* text-align: center; */
     padding: 1em;
@@ -13,7 +23,7 @@
   }
 
   h1 {
-    color: #ff3e00;
+    color: var(--text-color-normal);
     text-transform: uppercase;
     font-size: 4em;
     font-weight: 100;
