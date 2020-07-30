@@ -14,7 +14,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
 
 import makeObservablePurse from './observable';
-import { makeDehydrator } from './lib-dehydrate';
+import { makeDehydrator, isEdgename } from './lib-dehydrate';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -752,14 +752,13 @@ export async function makeWallet({
       .then(saveAsDefault);
   }
 
-  function acceptPetname(acceptFn, dappPetname, suggestedPetname, boardId) {
-    const petname = `${dappPetname}.${suggestedPetname}`;
+  function acceptPetname(acceptFn, suggestedPetname, boardId) {
     return E(board)
       .getValue(boardId)
-      .then(value => acceptFn(petname, value));
+      .then(value => acceptFn(suggestedPetname, value));
   }
 
-  async function suggestIssuer(dappPetname, suggestedPetname, issuerBoardId) {
+  async function suggestIssuer(suggestedPetname, issuerBoardId) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
@@ -769,17 +768,12 @@ export async function makeWallet({
         await addIssuer(petname, issuer);
         return makeEmptyPurse(petname, petname);
       },
-      dappPetname,
       suggestedPetname,
       issuerBoardId,
     );
   }
 
-  async function suggestInstance(
-    dappPetname,
-    suggestedPetname,
-    instanceHandleBoardId,
-  ) {
+  async function suggestInstance(suggestedPetname, instanceHandleBoardId) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
@@ -787,14 +781,12 @@ export async function makeWallet({
     return acceptPetname(
       // eslint-disable-next-line no-use-before-define
       wallet.addInstance,
-      dappPetname,
       suggestedPetname,
       instanceHandleBoardId,
     );
   }
 
   async function suggestInstallation(
-    dappPetname,
     suggestedPetname,
     installationHandleBoardId,
   ) {
@@ -805,7 +797,6 @@ export async function makeWallet({
     return acceptPetname(
       // eslint-disable-next-line no-use-before-define
       wallet.addInstallation,
-      dappPetname,
       suggestedPetname,
       installationHandleBoardId,
     );

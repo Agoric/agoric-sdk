@@ -281,8 +281,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestIssuer(
-                  dappPetname,
-                  petname,
+                  [dappPetname, petname],
                   boardId,
                 );
                 return {
@@ -294,8 +293,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstance(
-                  dappPetname,
-                  petname,
+                  [dappPetname, petname],
                   boardId,
                 );
                 return {
@@ -307,8 +305,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstallation(
-                  dappPetname,
-                  petname,
+                  [dappPetname, petname],
                   boardId,
                 );
                 return {

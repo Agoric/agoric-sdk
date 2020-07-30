@@ -96,6 +96,12 @@ test('makeDehydrator', async t => {
     const brand2 = makeMockBrand();
     const brand3 = makeMockBrand();
     brandMapping.addPetname('moola', brand1);
+    brandMapping.addEdgename(['agoric', 'Moola'], brand1);
+    t.deepEquals(
+      brandMapping.valToEdgenames.get(brand1),
+      [['agoric', 'Moola']],
+      `use valToEdgenames`,
+    );
     brandMapping.addPetname('simolean', brand2);
     brandMapping.addPetname('zoeInvite', brand3);
 
@@ -111,7 +117,12 @@ test('makeDehydrator', async t => {
       hydrate(
         harden({
           body: '{"handle":{"@qclass":"slot","index":0}}',
-          slots: [{ kind: 'instanceHandle', petname: 'simpleExchange' }],
+          slots: [
+            {
+              kind: 'instanceHandle',
+              petname: 'simpleExchange',
+            },
+          ],
         }),
       ),
       harden({ handle: handle1 }),
@@ -240,7 +251,9 @@ test('makeDehydrator', async t => {
           slots: [],
         }),
       ),
-      { handle: { kind: 'instanceHandle', petname: 'autoswap' } },
+      {
+        handle: { kind: 'instanceHandle', petname: 'autoswap' },
+      },
       `deserialize with no slots does not produce the real object`,
     );
   } catch (e) {
