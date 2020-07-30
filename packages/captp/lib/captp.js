@@ -3,14 +3,19 @@
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
 // Defects in it are mfig's fault.
 import { Remotable, makeMarshal, QCLASS } from '@agoric/marshal';
-import Nat from '@agoric/nat';
-import { HandledPromise, E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/produce-promise';
 
-export { E, HandledPromise, Nat };
+export { E, HandledPromise };
 
-export function makeCapTP(ourId, send, bootstrapObj = undefined) {
+export function makeCapTP(ourId, rawSend, bootstrapObj = undefined) {
   let unplug = false;
+  function send(...args) {
+    if (unplug !== false) {
+      throw unplug;
+    }
+    return rawSend(...args);
+  }
 
   // convertValToSlot and convertSlotToVal both perform side effects,
   // populating the c-lists (imports/exports/questions/answers) upon
@@ -108,6 +113,9 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
     // as also being questions / remote handled promises
     const handler = {
       get(_o, prop) {
+        if (unplug !== false) {
+          throw unplug;
+        }
         const [questionID, pr] = makeQuestion();
         send({
           type: 'CTP_CALL',
@@ -118,6 +126,9 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
         return harden(pr.p);
       },
       applyMethod(_o, prop, args) {
+        if (unplug !== false) {
+          throw unplug;
+        }
         // Support: o~.[prop](...args) remote method invocation
         const [questionID, pr] = makeQuestion();
         send({
@@ -253,7 +264,6 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
     // Pull the plug!
     CTP_ABORT(obj) {
       const { exception } = obj;
-      unplug = true;
       for (const pr of questions.values()) {
         pr.rej(exception);
       }
@@ -261,11 +271,15 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
         pr.rej(exception);
       }
       send(obj);
+      unplug = exception;
     },
   };
 
   // Get a reference to the other side's bootstrap object.
-  const getBootstrap = () => {
+  const getBootstrap = async () => {
+    if (unplug !== false) {
+      throw unplug;
+    }
     const [questionID, pr] = makeQuestion();
     send({
       type: 'CTP_BOOTSTRAP',
@@ -277,7 +291,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
 
   // Return a dispatch function.
   const dispatch = obj => {
-    if (unplug) {
+    if (unplug !== false) {
       return false;
     }
     const fn = handler[obj.type];
@@ -289,7 +303,9 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
   };
 
   // Abort a connection.
-  const abort = exception => dispatch({ type: 'CTP_ABORT', exception });
+  const abort = (
+    exception = Error(`disconnected from ${JSON.stringify(ourId)}`),
+  ) => dispatch({ type: 'CTP_ABORT', exception });
 
   return harden({ abort, dispatch, getBootstrap });
 }
