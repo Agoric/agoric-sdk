@@ -20,7 +20,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/harden": "^0.0.8",
+    "@agoric/harden": "^0.0.4",
     "@agoric/nat": "^2.0.1",
     "@agoric/tame-metering": "^1.2.3",
     "re2": "^1.10.5"
