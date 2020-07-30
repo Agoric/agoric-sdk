@@ -7862,6 +7862,16 @@ supports-color@^7.0.0, supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
+svelte-mui@^0.3.3-4:
+  version "0.3.3-4"
+  resolved "https://registry.yarnpkg.com/svelte-mui/-/svelte-mui-0.3.3-4.tgz#ca136de4e0578a614a328849cd3da1f18cc435e4"
+  integrity sha512-FytBWkvTQFLCqqkoFHkldGWcKj/vg8Qqinv/NH98VzGyAWY5xrK6alZw1HXmWXWGRKTl2AR6zeOf7ZO0aYoI4g==
+
+svelte-themer@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/svelte-themer/-/svelte-themer-0.1.4.tgz#b061d63ceeba5a3b2078d172e01c34ea63875edc"
+  integrity sha512-jyjLRRyML7WuOyeUt/RG7Oo0yoqBRmAkqyDAjeNf13YhWC4j2xaQ9OZr7UGZDJOyRgosEM1SID9/FyTiyjWVpg==
+
 svelte@^3.0.0:
   version "3.24.0"
   resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.24.0.tgz#6565a42c9705796fa66c6abb4fedc09f4323a4a8"

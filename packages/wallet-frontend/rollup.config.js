@@ -52,7 +52,7 @@ export default {
 		// consult the documentation for details:
 		// https://github.com/rollup/plugins/tree/master/packages/commonjs
 		resolve({
-			browser: true,
+			mainFields: ['module', 'browser', 'main'],
 			dedupe: ['svelte']
 		}),
 		commonjs(),
