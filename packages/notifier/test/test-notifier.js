@@ -1,13 +1,10 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+
+import test from 'tape-promise/tape';
 import { makeNotifierKit } from '../src/notifier';
 
-/**
- * @template T
- * @typedef {import('../src/notifier').NotifierRecord<T>} NotifierRecord<T>
- */
+import '../src/types';
 
 test('notifier - initial state', async t => {
   /** @type {NotifierRecord<1>} */
@@ -15,7 +12,7 @@ test('notifier - initial state', async t => {
   updater.updateState(1);
 
   const updateDeNovo = await notifier.getUpdateSince();
-  const updateFromNonExistent = await notifier.getUpdateSince({});
+  const updateFromNonExistent = await notifier.getUpdateSince();
 
   t.equals(updateDeNovo.value, 1, 'state is one');
   t.deepEquals(updateDeNovo, updateFromNonExistent, 'no param same as unknown');
