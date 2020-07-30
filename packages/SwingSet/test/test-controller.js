@@ -39,8 +39,11 @@ async function simpleCall(t) {
   };
   const controller = await buildVatController(config);
   const data = controller.dump();
-  const vat1 = controller.vatNameToID('vat1');
-  const vat2 = controller.vatNameToID('vatAdmin');
+  // note: data.vatTables is sorted by vatID, but we have no particular
+  // reason to believe that vat1 will get a lower ID than vatAdmin, because
+  // genesisVats processed in Map.keys() order
+  const vat1 = controller.vatNameToID('vatAdmin');
+  const vat2 = controller.vatNameToID('vat1');
   t.deepEqual(data.vatTables, [
     { vatID: vat1, state: { transcript: [] } },
     { vatID: vat2, state: { transcript: [] } },
@@ -76,23 +79,6 @@ test('simple call', async t => {
   await simpleCall(t);
 });
 
-test('reject module-like sourceIndex', async t => {
-  const vats = new Map();
-  // the keys of 'vats' have a 'sourcepath' property which are vat source
-  // index strings: something that require() or rollup can use to
-  // import/stringify the source graph that should be loaded into the vat. We
-  // want this to be somewhere on local disk, so it should start with '/' or
-  // '.'. If it doesn't, the name will be treated as something to load from
-  // node_modules/ (i.e. something installed from npm), so we want to reject
-  // that.
-  vats.set('vat1', { sourcepath: 'vatsource' });
-  t.rejects(
-    async () => buildVatController({ vats }),
-    /sourceIndex must be relative/,
-  );
-  t.end();
-});
-
 test('bootstrap', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-controller-2'),
@@ -110,6 +96,8 @@ test('bootstrap export', async t => {
     path.resolve(__dirname, 'basedir-controller-3'),
   );
   const c = await buildVatController(config);
+  const vatAdminVatID = c.vatNameToID('vatAdmin');
+  const vatAdminDevID = c.deviceNameToID('vatAdmin');
   const bootstrapVatID = c.vatNameToID('_bootstrap');
   const leftVatID = c.vatNameToID('left');
   const rightVatID = c.vatNameToID('right');
@@ -123,11 +111,11 @@ test('bootstrap export', async t => {
   const adminDev = 'kd30';
   const vatAdminSvc = 'ko23';
   const kt = [
-    [adminDev, 'd7', 'd+0'],
+    [adminDev, vatAdminDevID, 'd+0'],
     [boot0, bootstrapVatID, 'o+0'],
     [left0, leftVatID, 'o+0'],
     [right0, rightVatID, 'o+0'],
-    [vatAdminSvc, 'v4', 'o+0'],
+    [vatAdminSvc, vatAdminVatID, 'o+0'],
   ];
   checkKT(t, c, kt);
 
@@ -156,9 +144,10 @@ test('bootstrap export', async t => {
   kt.push([left0, bootstrapVatID, 'o-50']);
   kt.push([right0, bootstrapVatID, 'o-51']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
-  kt.push([adminDev, 'v3', 'd-70']);
-  kt.push([vatAdminSvc, 'v3', 'o-52']);
+  kt.push([adminDev, bootstrapVatID, 'd-70']);
+  kt.push([vatAdminSvc, bootstrapVatID, 'o-52']);
   checkKT(t, c, kt);
+
   t.deepEqual(c.dump().runQueue, [
     {
       type: 'send',

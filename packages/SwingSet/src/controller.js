@@ -19,7 +19,6 @@ import babelGenerate from '@babel/generator';
 
 import anylogger from 'anylogger';
 
-import { makeLiveSlots } from './kernel/liveSlots';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
@@ -178,34 +177,6 @@ export async function buildVatController(config, argv = []) {
     });
   }
 
-  async function loadStaticVat(sourceIndex, name) {
-    if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
-      throw Error(
-        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
-      );
-    }
-    const bundle = await bundleSource(sourceIndex);
-    const vatNS = await importBundle(bundle, {
-      filePrefix: name,
-      endowments: makeVatEndowments(name),
-    });
-    let setup;
-    if ('buildRootObject' in vatNS) {
-      setup = (syscall, state, helpers, vatPowers) => {
-        return makeLiveSlots(
-          syscall,
-          state,
-          vatP => vatNS.buildRootObject(vatP),
-          helpers.vatID,
-          vatPowers,
-        );
-      };
-    } else {
-      setup = vatNS.default;
-    }
-    return setup;
-  }
-
   const hostStorage = config.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
 
@@ -223,20 +194,10 @@ export async function buildVatController(config, argv = []) {
     }`,
   );
 
-  const VAname = 'dev-vatAdmin';
-  const VAbundle = await bundleSource(ADMIN_DEVICE_PATH);
-  const VANS = await importBundle(VAbundle, {
-    filePrefix: VAname,
-    endowments: makeVatEndowments(VAname),
-  });
-  const vatAdminDevBuildRootDeviceNode = VANS.buildRootDeviceNode;
-
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
     makeVatEndowments,
-    vatAdminDevBuildRootDeviceNode,
-    vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
@@ -248,26 +209,22 @@ export async function buildVatController(config, argv = []) {
     kernel.kdebugEnable(true);
   }
 
+  // the vatAdminDevice is given endowments by the kernel itself
+  const vatAdminVatBundle = await bundleSource(ADMIN_VAT_PATH);
+  kernel.addGenesisVat('vatAdmin', vatAdminVatBundle);
+  const vatAdminDeviceBundle = await bundleSource(ADMIN_DEVICE_PATH);
+  kernel.addVatAdminDevice(vatAdminDeviceBundle);
+
+  for (const [name, srcpath, endowments] of config.devices || []) {
+    // eslint-disable-next-line no-await-in-loop
+    const bundle = await bundleSource(srcpath);
+    kernel.addGenesisDevice(name, bundle, endowments);
+  }
+
   async function addGenesisVat(name, sourceIndex, options = {}) {
     console.debug(`= adding vat '${name}' from ${sourceIndex}`);
-    const setup = await loadStaticVat(sourceIndex, `vat-${name}`);
-    kernel.addGenesisVat(name, setup, options);
-  }
-
-  async function addGenesisDevice(name, sourceIndex, endowments) {
     const bundle = await bundleSource(sourceIndex);
-    const NS = await importBundle(bundle, {
-      filePrefix: `dev-${name}`,
-      endowments: makeVatEndowments(`dev-${name}`),
-    });
-    kernel.addGenesisDevice(name, NS.buildRootDeviceNode, endowments);
-  }
-
-  if (config.devices) {
-    for (const [name, srcpath, endowments] of config.devices) {
-      // eslint-disable-next-line no-await-in-loop
-      await addGenesisDevice(name, srcpath, endowments);
-    }
+    kernel.addGenesisVat(name, bundle, options);
   }
 
   if (config.vats) {
@@ -281,7 +238,7 @@ export async function buildVatController(config, argv = []) {
   let bootstrapVatName;
   if (config.bootstrapIndexJS) {
     bootstrapVatName = '_bootstrap';
-    await addGenesisVat(bootstrapVatName, config.bootstrapIndexJS, {});
+    await addGenesisVat(bootstrapVatName, config.bootstrapIndexJS);
   }
 
   // start() may queue bootstrap if state doesn't say we did it already. It
