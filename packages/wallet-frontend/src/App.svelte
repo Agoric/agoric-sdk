@@ -1,5 +1,5 @@
 <script>
-  import { Button, Icon } from 'svelte-mui';
+  import { Button, Icon } from "svelte-mui";
   import Dapps from "./Dapps.svelte";
   import Payments from "./Payments.svelte";
   import Purses from "./Purses.svelte";
@@ -51,7 +51,7 @@
     grid-area: header;
     display: grid;
     grid-template-columns: 1fr auto auto;
-    background-color:#ab2328;
+    background-color: #ab2328;
     color: #f1f1f1;
     padding: 10px 20px;
   }
@@ -64,7 +64,7 @@
   }
   main {
     grid-area: content;
-  	padding: 8px;
+    padding: 8px;
   }
   aside {
     grid-area: side;
@@ -75,7 +75,38 @@
   }
 
   xxx {
-    border:1px solid red;  
+    border: 1px solid red;
+  }
+
+  main {
+    display: grid;
+    grid-template-areas: 
+      "dapps dapps"
+      "txns txns"
+      "purses payments"
+      "issuers issuers";
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+
+    height: 100vh;
+  }
+  .dapps {
+    grid-area: dapps;
+  }
+
+  .purses {
+    grid-area: purses;
+  }
+
+  .payments {
+    grid-area: payments;
+  }
+
+  .txns {
+    grid-area: txns;
+  }
+  .issuers {
+    grid-area: txns;
   }
 </style>
 
@@ -88,29 +119,41 @@
     <header>
       <h1>Agoric Wallet</h1>
       <div class="controls">
-      {#if $connected}
-        <b>Connected</b>
-        <Button outlined dense title="Disconnect" on:click={connected.disconnect}>Disconnect</Button>
-      {:else}
-        <b>Disconnected</b>
-        <Button outlined dense title="Connect" on:click={connected.connect}>Connect</Button>
-      {/if}
+        {#if $connected}
+          <b>Connected</b>
+          <Button
+            outlined
+            dense
+            title="Disconnect"
+            on:click={connected.disconnect}>
+            Disconnect
+          </Button>
+        {:else}
+          <b>Disconnected</b>
+          <Button outlined dense title="Connect" on:click={connected.connect}>
+            Connect
+          </Button>
+        {/if}
       </div>
     </header>
 
     <main>
-
-      <h2>Dapps</h2>
-      <Dapps {dapps} />
-
-      <h2>Purses</h2>
-      <Purses {purses} />
-
-      <h2>Incoming Payments</h2>
-      <Payments {payments} />
-
-      <h2>Transactions</h2>
-      <Transactions {inbox} {walletP} />
+      <div class="dapps">
+        <h2>Dapps</h2>
+        <Dapps {dapps} />
+      </div>
+      <div class="payments">
+        <h2>Incoming Payments</h2>
+        <Payments {payments} />
+      </div>
+      <div class="txns">
+        <h2>Transactions</h2>
+        <Transactions {inbox} {walletP} />
+      </div>
+      <div class="purses">
+        <h2>Purses</h2>
+        <Purses {purses} />
+      </div>
     </main>
 
     <nav>

@@ -13,6 +13,7 @@ const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
 const [payments, setPayments] = makeReadable([]);
+const [issuers, setIssuers] = makeReadable([]);
 
 // INITALIZATION
 
