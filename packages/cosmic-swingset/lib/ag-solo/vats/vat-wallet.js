@@ -219,7 +219,7 @@ export function buildRootObject(_vatPowers) {
 
           async onMessage(obj, meta) {
             const { type, suggestedDappPetname = meta.origin } = obj;
-            const { dappPetname } = await wallet.waitForDappApproval(
+            const { petname: dappPetname } = await wallet.waitForDappApproval(
               suggestedDappPetname,
               meta.origin,
             );

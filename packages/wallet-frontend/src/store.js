@@ -11,6 +11,8 @@ function makeReadable(value, start = undefined) {
 
 const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
+const [dapps, setDapps] = makeReadable([]);
+const [payments, setPayments] = makeReadable([]);
 
 // INITALIZATION
 
@@ -24,6 +26,7 @@ function resetClientState() {
   // Set up our subscriptions.
   adaptNotifierUpdates(E(walletP).getPursesNotifier(), pjs => setPurses(JSON.parse(pjs)));
   adaptNotifierUpdates(E(walletP).getInboxNotifier(), ijs => setInbox(JSON.parse(ijs)));
+  adaptNotifierUpdates(E(walletP).getDappRecordNotifier(), setDapps)
 }
 
 // LIBRARY - captp adaptation
@@ -85,8 +88,10 @@ resetClientState();
 const { connected, sendMessage } = makeWebSocket('/private/captp', { onOpen, onMessage, onClose })
 
 export {
+  dapps,
   inbox,
   purses,
+  payments,
   connected,
   walletP,
 }

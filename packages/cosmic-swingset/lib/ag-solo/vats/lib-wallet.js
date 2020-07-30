@@ -10,10 +10,11 @@ import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal } from '@agoric/marshal';
+import { makeNotifierKit } from '@agoric/notifier';
+import { producePromise } from '@agoric/produce-promise';
 
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
-import { producePromise } from '@agoric/produce-promise';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -499,24 +500,78 @@ export async function makeWallet({
   };
 
   const dappOrigins = makeStore('dappOrigin');
+  const { notifier: dappNotifier, updater: dappUpdater } = makeNotifierKit([]);
+
+  function updateDappRecord(dappRecord) {
+    harden(dappRecord);
+    dappOrigins.set(dappRecord.origin, dappRecord);
+    dappUpdater.updateState([...dappOrigins.values()]);
+  }
+
+  function getDappRecordNotifier() {
+    return dappNotifier;
+  }
+
   async function waitForDappApproval(suggestedPetname, origin) {
-    let originRecord;
+    let dappRecord;
     if (dappOrigins.has(origin)) {
-      originRecord = dappOrigins.get(origin);
+      dappRecord = dappOrigins.get(origin);
     } else {
-      originRecord = {
-        status: 'pending',
-        approvalP: producePromise(),
-        dappPetname: suggestedPetname,
+      let resolve;
+      let reject;
+      let approvalP;
+      dappRecord = {
+        suggestedPetname,
+        petname: suggestedPetname,
         origin,
       };
-      dappOrigins.init(origin, originRecord);
+
+      dappRecord.actions = {
+        setPetname(petname) {
+          dappRecord = {
+            ...dappRecord,
+            petname,
+          };
+          updateDappRecord(dappRecord);
+        },
+        enable() {
+          // Enable the dapp with the attached petname.
+          dappRecord = {
+            ...dappRecord,
+            enable: true,
+          };
+          updateDappRecord(dappRecord);
+
+          // Allow the pending requests to pass.
+          resolve();
+        },
+        disable(reason = undefined) {
+          // Reject the pending dapp requests.
+          if (reject) {
+            reject(reason);
+          }
+          // Create a new, suspended-approval record.
+          ({ resolve, reject, promise: approvalP } = producePromise());
+          dappRecord = {
+            ...dappRecord,
+            enable: false,
+            approvalP,
+          };
+          updateDappRecord(dappRecord);
+        },
+      };
+
+      // Prepare the table entry to be updated.
+      dappOrigins.init(origin, {});
+
+      // Initially disable it.
+      dappRecord.actions.disable();
     }
 
     // TODO: Actually approve the origin!
-    originRecord.approvalP.resolve(true);
+    // dappRecord.actions.enable(suggestedPetname);
 
-    await originRecord.approvalP.promise;
+    await dappRecord.approvalP;
     // AWAIT
     // Refetch the origin record.
     return dappOrigins.get(origin);
@@ -797,6 +852,7 @@ export async function makeWallet({
 
   const wallet = harden({
     waitForDappApproval,
+    getDappRecordNotifier,
     addIssuer,
     addInstance,
     addInstallation,
