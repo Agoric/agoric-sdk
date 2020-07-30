@@ -12,19 +12,19 @@
   },
   "devDependencies": {
     "@agoric/captp": "^1.3.3",
-    "@agoric/harden": "^0.0.4",
+    "@agoric/harden": "^0.0.6",
     "@rollup/plugin-commonjs": "^12.0.0",
     "@rollup/plugin-node-resolve": "^8.0.0",
     "rollup": "^2.3.4",
     "rollup-plugin-livereload": "^1.0.0",
     "rollup-plugin-svelte": "^5.0.3",
     "rollup-plugin-terser": "^6.1.0",
-    "svelte": "^3.0.0"
-  },
-  "dependencies": {
-    "sirv-cli": "^1.0.0",
+    "svelte": "^3.0.0",
     "svelte-mui": "^0.3.3-4",
     "svelte-themer": "^0.1.4"
+  },
+  "dependencies": {
+    "sirv-cli": "^1.0.0"
   },
   "files": [
     "public"

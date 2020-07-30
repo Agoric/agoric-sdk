@@ -36,6 +36,20 @@
   dependencies:
     "@agoric/make-hardener" "0.0.4"
 
+"@agoric/harden@^0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.6.tgz#81f25d008c1bddf7f85fc6878be60490c445bf2b"
+  integrity sha512-U0WCac9p3GpSmGaoPfo+3hJnwvZVHjqPI249+AFC3h0ZAaUahoW8ZUv+otkpaONtXNHF1EuVbNNd/BfzyTgapA==
+  dependencies:
+    "@agoric/make-hardener" "0.0.8"
+
+"@agoric/harden@^0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.8.tgz#1bb7d4b4b9bc884578cb0d87f140bdbe70f563ba"
+  integrity sha512-psxe8nC9wphyeaIhdSFs45CcZnncb4JdoeqBldPNcmcStao8Keuzda9n6t3lqW3WuGm/DNikUyMJ5pE/LeLutQ==
+  dependencies:
+    "@agoric/make-hardener" "0.0.8"
+
 "@agoric/layer-cake@^0.0.1":
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/@agoric/layer-cake/-/layer-cake-0.0.1.tgz#fb131324b35d0b6e2f9e5ef7a72d8729993c3605"
@@ -48,6 +62,11 @@
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.4.tgz#9b5d6692bc2fbbac2fff0a6682959ac5e69c582d"
   integrity sha512-0k/wGkIVQO3IY7p/H/5OS3BIXsRK9Qb7nHnqyvj6hzvSyumwgPp8e4rz5QaVWSen43TGJl+zQn4mW9ZZShT1aw==
+
+"@agoric/make-hardener@0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.8.tgz#7f9e9d6874600b2e1b0543ce9456fbf62463be2d"
+  integrity sha512-bd83IYEMQbzpprwyA10RjHIGWmWeUMdsd5EzaHwke+zLH0HyqP6UKxFLv5mqkmrMeQyOMhNgKN1hCagjRyjlxQ==
 
 "@agoric/make-hardener@^0.1.0":
   version "0.1.0"
