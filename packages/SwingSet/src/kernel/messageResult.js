@@ -58,6 +58,8 @@ export function makeMessageResult(message, resultPolicy, panic) {
           case 'panic':
             if (newStatus === 'rejected') {
               log();
+              // TODO: unmarshal resolvedTo.data into an Error object and
+              // pass it to panic()
               panic(`${message} failure`);
             }
             break;

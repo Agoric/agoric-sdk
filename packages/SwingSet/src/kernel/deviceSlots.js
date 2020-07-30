@@ -7,11 +7,18 @@ import { insistCapData } from '../capdata';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
-function build(syscall, state, makeRoot, forDeviceName) {
+export function makeDeviceSlots(
+  syscall,
+  state,
+  buildRootDeviceNode,
+  forDeviceName,
+  endowments,
+  testLog,
+) {
   assert(state.get && state.set, 'deviceSlots.build got bad "state" argument');
   assert(
-    typeof makeRoot === 'function',
-    'deviceSlots.build got bad "makeRoot"',
+    typeof buildRootDeviceNode === 'function',
+    'deviceSlots.build got bad "buildRootDeviceNode"',
   );
   const enableLSDebug = false;
   function lsdebug(...args) {
@@ -144,14 +151,27 @@ function build(syscall, state, makeRoot, forDeviceName) {
     state.set(ser);
   }
 
-  // here we finally invoke the device code, and get back the root devnode
-  const rootObject = makeRoot(harden({ SO, getDeviceState, setDeviceState }));
+  // Here we finally invoke the device code, and get back the root devnode.
+  // Note that we do *not* harden() the argument, since the provider might
+  // not have wanted the endowments hardened.
+  const rootObject = buildRootDeviceNode({
+    SO,
+    getDeviceState,
+    setDeviceState,
+    testLog,
+    endowments,
+  });
   mustPassByPresence(rootObject);
 
   const rootSlot = makeVatSlot('device', true, 0);
   valToSlot.set(rootObject, rootSlot);
   slotToVal.set(rootSlot, rootObject);
 
+  // Exceptions in device invocations are fatal to the kernel. This returns a
+  // VatInvocationResult object: ['ok', capdata].
+
+  // this function throws an exception if anything goes wrong, or if the
+  // device node itself throws an exception during invocation
   function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);
     insistCapData(args);
@@ -175,30 +195,10 @@ function build(syscall, state, makeRoot, forDeviceName) {
       );
     }
     const res = t[method](...m.unserialize(args));
-    const resultdata = m.serialize(res);
-    lsdebug(` results ${resultdata.body} ${JSON.stringify(resultdata.slots)}`);
-    return resultdata;
+    const vres = harden(['ok', m.serialize(res)]);
+    lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
+    return vres;
   }
 
-  return {
-    m,
-    invoke,
-  };
-}
-
-export function makeDeviceSlots(
-  syscall,
-  state,
-  makeRoot,
-  forDeviceName = 'unknown',
-) {
-  const { invoke } = build(syscall, state, makeRoot, forDeviceName);
-  return harden({
-    invoke,
-  });
-}
-
-// for tests
-export function makeMarshaller(syscall) {
-  return { m: build(syscall, () => harden({})).m };
+  return harden({ invoke });
 }

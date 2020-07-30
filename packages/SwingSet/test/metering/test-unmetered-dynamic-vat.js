@@ -39,12 +39,13 @@ tap.test('unmetered dynamic vat', async t => {
     'o+0',
     'createVat',
     capargs([dynamicVatBundle, { metered: false }]),
+    'panic',
   );
   await c.run();
   t.deepEqual(nextLog(), ['created'], 'first create');
 
   // First, send a message to the dynamic vat that runs normally
-  c.queueToVatExport('_bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatExport('_bootstrap', 'o+0', 'run', capargs([]), 'panic');
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -52,7 +53,13 @@ tap.test('unmetered dynamic vat', async t => {
   // Tell the dynamic vat to call `Array(4e9)`. If metering was in place,
   // this would be rejected. Without metering, it's harmless (Arrays are
   // lazy).
-  c.queueToVatExport('_bootstrap', 'o+0', 'explode', capargs(['allocate']));
+  c.queueToVatExport(
+    '_bootstrap',
+    'o+0',
+    'explode',
+    capargs(['allocate']),
+    'panic',
+  );
   await c.run();
   t.deepEqual(nextLog(), ['failed to explode'], 'metering disabled');
 

@@ -13,11 +13,9 @@
  * guarantee that the wake() calls will come at that exact time, but repeated
  * scheduling will not accumulate drift.
  *
- * The main entry point is setup(). The other exports are for testing.
- * setup(...) calls makeDeviceSlots(..., makeRootDevice, ...), which calls
- * deviceSlots' build() function (which invokes makeRootDevice) to create the
- * root device. Selected vats that need to schedule events can be given access
- * to the device.
+ * The main entry point is buildRootDeviceNode(). The other exports are for
+ * testing. Selected vats that need to schedule events can be given access to
+ * the device.
  *
  * This code runs in the inner half of the device vat. It handles kernel objects
  * in serialized format, and uses SO() to send messages to them. The only device
@@ -179,114 +177,111 @@ function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
   return poll;
 }
 
-export default function setup(syscall, state, helpers, endowments) {
-  function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
-    const restart = getDeviceState();
+export function buildRootDeviceNode(tools) {
+  const { SO, getDeviceState, setDeviceState, endowments } = tools;
+  const restart = getDeviceState();
 
-    // A MultiMap from times to schedule objects, with optional repeaters
-    const deadlines = makeTimerMap(restart ? restart.deadlines : undefined);
+  // A MultiMap from times to schedule objects, with optional repeaters
+  const deadlines = makeTimerMap(restart ? restart.deadlines : undefined);
 
-    // repeaters is an array storing repeater objects by index. When we delete,
-    // we fill the hole with undefined so the indexes don't change. Copy
-    // repeaters because it's frozen.
-    const repeaters = restart ? restart.repeaters.slice(0) : [];
+  // repeaters is an array storing repeater objects by index. When we delete,
+  // we fill the hole with undefined so the indexes don't change. Copy
+  // repeaters because it's frozen.
+  const repeaters = restart ? restart.repeaters.slice(0) : [];
 
-    // The latest time poll() was called. This might be a block height or it
-    // might be a time from Date.now(). The current time is not reflected back
-    // to the user.
-    let lastPolled = restart ? restart.lastPolled : 0;
-    let nextRepeater = restart ? restart.nextRepeater : 0;
+  // The latest time poll() was called. This might be a block height or it
+  // might be a time from Date.now(). The current time is not reflected back
+  // to the user.
+  let lastPolled = restart ? restart.lastPolled : 0;
+  let nextRepeater = restart ? restart.nextRepeater : 0;
 
-    function getLastPolled() {
-      return lastPolled;
-    }
-
-    function saveState() {
-      setDeviceState(
-        harden({
-          lastPolled,
-          nextRepeater,
-          // send copies of these so we can still modify them.
-          repeaters: repeaters.slice(0),
-          deadlines: deadlines.cloneSchedule(),
-        }),
-      );
-    }
-
-    function updateTime(time) {
-      assert(
-        time >= lastPolled,
-        details`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
-      );
-      lastPolled = time;
-      saveState();
-    }
-
-    const innerPoll = curryPollFn(
-      SO,
-      repeaters,
-      deadlines,
-      getLastPolled,
-      saveState,
-    );
-    const poll = t => {
-      updateTime(t);
-      return innerPoll(t);
-    };
-    endowments.registerDevicePollFunction(harden(poll));
-
-    // The Root Device Node. There are two ways to schedule a callback. The
-    // first is a straight setWakeup(), which says how soon, and what object to
-    // send wake() to. The second is to create a repeater, which makes it
-    // possible for vat code to reliably schedule repeating event. There's no
-    // guarantee that the handler will be called at the precise desired time,
-    // but the repeated calls won't accumulate timing drift, so the trigger
-    // point will be reached at consistent intervals.
-    return harden({
-      setWakeup(delaySecs, handler) {
-        deadlines.add(lastPolled + Nat(delaySecs), handler);
-        saveState();
-        return lastPolled + Nat(delaySecs);
-      },
-      removeWakeup(handler) {
-        const times = deadlines.remove(handler);
-        saveState();
-        return times;
-      },
-      getLastPolled,
-
-      // We can't persist device objects at this point
-      // (https://github.com/Agoric/SwingSet/issues/175), so we represent the
-      // identity of Repeaters using unique indexes. The indexes are exposed
-      // directly to the wrapper vat, and we rely on the wrapper vat to manage
-      // the authority they represent as capabilities.
-      createRepeater(startTime, interval) {
-        const index = nextRepeater;
-        repeaters.push({
-          startTime: Nat(startTime),
-          interval: Nat(interval),
-        });
-        nextRepeater += 1;
-        saveState();
-        return index;
-      },
-      deleteRepeater(index) {
-        repeaters[index] = undefined;
-        saveState();
-        return index;
-      },
-      schedule(index, handler) {
-        const nextTime = nextScheduleTime(index, repeaters, lastPolled);
-        deadlines.add(nextTime, handler, index);
-        saveState();
-        return nextTime;
-      },
-    });
+  function getLastPolled() {
+    return lastPolled;
   }
 
-  // return dispatch object
-  return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
+  function saveState() {
+    setDeviceState(
+      harden({
+        lastPolled,
+        nextRepeater,
+        // send copies of these so we can still modify them.
+        repeaters: repeaters.slice(0),
+        deadlines: deadlines.cloneSchedule(),
+      }),
+    );
+  }
+
+  function updateTime(time) {
+    assert(
+      time >= lastPolled,
+      details`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
+    );
+    lastPolled = time;
+    saveState();
+  }
+
+  const innerPoll = curryPollFn(
+    SO,
+    repeaters,
+    deadlines,
+    getLastPolled,
+    saveState,
+  );
+  const poll = t => {
+    updateTime(t);
+    return innerPoll(t);
+  };
+  endowments.registerDevicePollFunction(harden(poll));
+
+  // The Root Device Node. There are two ways to schedule a callback. The
+  // first is a straight setWakeup(), which says how soon, and what object to
+  // send wake() to. The second is to create a repeater, which makes it
+  // possible for vat code to reliably schedule repeating event. There's no
+  // guarantee that the handler will be called at the precise desired time,
+  // but the repeated calls won't accumulate timing drift, so the trigger
+  // point will be reached at consistent intervals.
+  return harden({
+    setWakeup(delaySecs, handler) {
+      deadlines.add(lastPolled + Nat(delaySecs), handler);
+      saveState();
+      return lastPolled + Nat(delaySecs);
+    },
+    removeWakeup(handler) {
+      const times = deadlines.remove(handler);
+      saveState();
+      return times;
+    },
+    getLastPolled,
+
+    // We can't persist device objects at this point
+    // (https://github.com/Agoric/SwingSet/issues/175), so we represent the
+    // identity of Repeaters using unique indexes. The indexes are exposed
+    // directly to the wrapper vat, and we rely on the wrapper vat to manage
+    // the authority they represent as capabilities.
+    createRepeater(startTime, interval) {
+      const index = nextRepeater;
+      repeaters.push({
+        startTime: Nat(startTime),
+        interval: Nat(interval),
+      });
+      nextRepeater += 1;
+      saveState();
+      return index;
+    },
+    deleteRepeater(index) {
+      repeaters[index] = undefined;
+      saveState();
+      return index;
+    },
+    schedule(index, handler) {
+      const nextTime = nextScheduleTime(index, repeaters, lastPolled);
+      deadlines.add(nextTime, handler, index);
+      saveState();
+      return nextTime;
+    },
+  });
 }
 
-// exported for testing. Only the default export is intended for production use.
+// exported for testing. Only buildRootDeviceNode is intended for production
+// use.
 export { makeTimerMap, curryPollFn };

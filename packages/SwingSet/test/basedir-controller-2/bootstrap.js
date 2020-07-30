@@ -1,14 +1,5 @@
-console.log(`loading bootstrap`);
-export default function setup(syscall, _state, helpers) {
-  console.log(`bootstrap called`);
-  helpers.testLog(`bootstrap called`);
-  function deliver(facetid, method, argsbytes, caps) {
-    console.log(
-      `bootstrap dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`,
-    );
-    syscall.log(
-      `bootstrap dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`,
-    );
-  }
-  return { deliver };
+/* global harden */
+export function buildRootObject(vatPowers) {
+  vatPowers.testLog(`bootstrap called`);
+  return harden({});
 }

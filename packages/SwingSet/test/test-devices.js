@@ -60,11 +60,10 @@ test('d1', async t => {
   await c.step();
   c.queueToVatExport('_bootstrap', 'o+0', 'step1', capargs([]));
   await c.step();
-  console.log(c.dump().log);
   t.deepEqual(c.dump().log, [
     'callNow',
-    'invoke d+0 set',
-    JSON.stringify(capargs([])),
+    'invoke 1 2',
+    JSON.stringify(capargs({ ret: 3 })),
   ]);
   t.deepEqual(sharedArray, ['pushed']);
   t.end();
@@ -166,7 +165,7 @@ test('device state', async t => {
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
   const s = getAllState(storage);
-  t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), { s: 'new' });
+  t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), capargs({ s: 'new' }));
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 
   t.end();

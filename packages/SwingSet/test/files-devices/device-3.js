@@ -1,24 +1,19 @@
 /* global harden */
 
-export default function setup(syscall, state, helpers, _endowments) {
-  const { log } = helpers;
+export function buildRootDeviceNode({
+  setDeviceState,
+  getDeviceState,
+  testLog,
+}) {
+  testLog(typeof getDeviceState());
 
-  log(state.get());
-
-  return helpers.makeDeviceSlots(
-    syscall,
-    state,
-    _s => {
-      return harden({
-        setState(arg) {
-          state.set(arg);
-          return 'ok';
-        },
-        getState() {
-          return harden(state.get());
-        },
-      });
+  return harden({
+    setState(arg) {
+      setDeviceState(arg);
+      return 'ok';
     },
-    helpers.name,
-  );
+    getState() {
+      return harden(getDeviceState());
+    },
+  });
 }

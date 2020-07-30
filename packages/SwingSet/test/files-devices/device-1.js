@@ -1,16 +1,11 @@
 /* global harden */
 
-export default function setup(syscall, state, helpers, endowments) {
-  const { log } = helpers;
-  const dispatch = harden({
-    invoke(targetID, method, _args) {
-      log(`invoke ${targetID} ${method}`);
+export function buildRootDeviceNode({ testLog, endowments }) {
+  return harden({
+    set(arg1, arg2) {
+      testLog(`invoke ${arg1} ${arg2}`);
       endowments.shared.push('pushed');
-      return harden({ body: JSON.stringify([]), slots: [] });
-    },
-    getState() {
-      return '';
+      return harden({ ret: 3 });
     },
   });
-  return dispatch;
 }

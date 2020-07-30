@@ -1,6 +1,7 @@
 /* global harden */
 
-export default function setup(syscall, state, helpers, _vatPowers) {
+export default function setup(syscall, state, _helpers, vatPowers) {
+  const { testLog } = vatPowers;
   let deviceRef;
   const dispatch = harden({
     deliver(facetid, method, args, _result) {
@@ -12,11 +13,10 @@ export default function setup(syscall, state, helpers, _vatPowers) {
           throw new Error(`bad deviceRef ${deviceRef}`);
         }
       } else if (method === 'step1') {
-        console.log('in step1');
-        helpers.testLog(`callNow`);
-        const setArgs = harden({ body: JSON.stringify([]), slots: [] });
+        testLog(`callNow`);
+        const setArgs = harden({ body: JSON.stringify([1, 2]), slots: [] });
         const ret = syscall.callNow(deviceRef, 'set', setArgs);
-        helpers.testLog(JSON.stringify(ret));
+        testLog(JSON.stringify(ret));
       }
     },
   });
