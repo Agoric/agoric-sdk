@@ -42,11 +42,18 @@ async function simpleCall(t) {
   // note: data.vatTables is sorted by vatID, but we have no particular
   // reason to believe that vat1 will get a lower ID than vatAdmin, because
   // genesisVats processed in Map.keys() order
-  const vat1 = controller.vatNameToID('vatAdmin');
-  const vat2 = controller.vatNameToID('vat1');
+  const adminVatID = controller.vatNameToID('vatAdmin');
+  const vat1ID = controller.vatNameToID('vat1');
+  const commsVatID = controller.vatNameToID('comms');
+  const vattpVatID = controller.vatNameToID('vattp');
+  const timerVatID = controller.vatNameToID('timer');
+
   t.deepEqual(data.vatTables, [
-    { vatID: vat1, state: { transcript: [] } },
-    { vatID: vat2, state: { transcript: [] } },
+    { vatID: adminVatID, state: { transcript: [] } },
+    { vatID: commsVatID, state: { transcript: [] } },
+    { vatID: vattpVatID, state: { transcript: [] } },
+    { vatID: timerVatID, state: { transcript: [] } },
+    { vatID: vat1ID, state: { transcript: [] } },
   ]);
   t.deepEqual(data.kernelTable, []);
 
@@ -98,24 +105,38 @@ test('bootstrap export', async t => {
   const c = await buildVatController(config);
   const vatAdminVatID = c.vatNameToID('vatAdmin');
   const vatAdminDevID = c.deviceNameToID('vatAdmin');
+  const commsVatID = c.vatNameToID('comms');
+  const vatTPVatID = c.vatNameToID('vattp');
+  const timerVatID = c.vatNameToID('timer');
   const bootstrapVatID = c.vatNameToID('_bootstrap');
   const leftVatID = c.vatNameToID('left');
   const rightVatID = c.vatNameToID('right');
   // console.log(c.dump());
   // console.log('SLOTS: ', c.dump().runQueue[0].slots);
 
-  // the expected kernel object indices
+  // The expected kernel object indices. There's no guarantee that these will
+  // be assigned in any particular order, so each time we add a built-in vat,
+  // they tend to get shuffled and this test must be updated. TODO: find a
+  // better test, probably by sorting the list of vats by their vatID, and
+  // then asserting that their root objects are assigned `koNN` numbers in
+  // matching order.
   const boot0 = 'ko20';
-  const left0 = 'ko21';
-  const right0 = 'ko22';
+  const comms0 = 'ko21';
+  const left0 = 'ko22';
+  const right0 = 'ko23';
+  const timer0 = 'ko24';
+  const vatAdminSvc = 'ko25';
+  const vattp0 = 'ko26';
   const adminDev = 'kd30';
-  const vatAdminSvc = 'ko23';
   const kt = [
     [adminDev, vatAdminDevID, 'd+0'],
     [boot0, bootstrapVatID, 'o+0'],
     [left0, leftVatID, 'o+0'],
     [right0, rightVatID, 'o+0'],
     [vatAdminSvc, vatAdminVatID, 'o+0'],
+    [comms0, commsVatID, 'o+0'],
+    [vattp0, vatTPVatID, 'o+0'],
+    [timer0, timerVatID, 'o+0'],
   ];
   checkKT(t, c, kt);
 
@@ -126,8 +147,17 @@ test('bootstrap export', async t => {
         method: 'bootstrap',
         args: {
           body:
-            '[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2},"vatAdmin":{"@qclass":"slot","index":3}},{"_dummy":"dummy","vatAdmin":{"@qclass":"slot","index":4}}]',
-          slots: [boot0, left0, right0, vatAdminSvc, adminDev],
+            '[[],{"_bootstrap":{"@qclass":"slot","index":0},"comms":{"@qclass":"slot","index":1},"left":{"@qclass":"slot","index":2},"right":{"@qclass":"slot","index":3},"timer":{"@qclass":"slot","index":4},"vatAdmin":{"@qclass":"slot","index":5},"vattp":{"@qclass":"slot","index":6}},{"_dummy":"dummy","vatAdmin":{"@qclass":"slot","index":7}}]',
+          slots: [
+            boot0,
+            comms0,
+            left0,
+            right0,
+            timer0,
+            vatAdminSvc,
+            vattp0,
+            adminDev,
+          ],
         },
       },
       target: boot0,
@@ -141,11 +171,14 @@ test('bootstrap export', async t => {
   // kernel promise for result of the foo() that bootstrap sends to vat-left
   const fooP = 'kp41';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()']);
-  kt.push([left0, bootstrapVatID, 'o-50']);
-  kt.push([right0, bootstrapVatID, 'o-51']);
+  kt.push([comms0, bootstrapVatID, 'o-50']);
+  kt.push([left0, bootstrapVatID, 'o-51']);
+  kt.push([right0, bootstrapVatID, 'o-52']);
+  kt.push([timer0, bootstrapVatID, 'o-53']);
+  kt.push([vatAdminSvc, bootstrapVatID, 'o-54']);
+  kt.push([vattp0, bootstrapVatID, 'o-55']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
   kt.push([adminDev, bootstrapVatID, 'd-70']);
-  kt.push([vatAdminSvc, bootstrapVatID, 'o-52']);
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [

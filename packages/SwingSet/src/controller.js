@@ -215,6 +215,25 @@ export async function buildVatController(config, argv = []) {
   const vatAdminDeviceBundle = await bundleSource(ADMIN_DEVICE_PATH);
   kernel.addVatAdminDevice(vatAdminDeviceBundle);
 
+  // comms vat is added automatically, but TODO: bootstraps must still
+  // connect it to vat-tp. TODO: test-message-patterns builds two comms and
+  // two vattps, must handle somehow.
+  const commsVatSourcePath = require.resolve('./vats/comms');
+  const commsVatBundle = await bundleSource(commsVatSourcePath);
+  kernel.addGenesisVat('comms', commsVatBundle, { enablePipelining: true }); // todo: allowSetup
+
+  // vat-tp is added automatically, but TODO: bootstraps must still connect
+  // it to comms
+  const vatTPSourcePath = require.resolve('./vats/vat-tp');
+  const vatTPBundle = await bundleSource(vatTPSourcePath);
+  kernel.addGenesisVat('vattp', vatTPBundle);
+
+  // timer wrapper vat is added automatically, but TODO: bootstraps must
+  // still provide a timer device, and connect it to the wrapper vat
+  const timerWrapperSourcePath = require.resolve('./vats/vat-timerWrapper');
+  const timerWrapperBundle = await bundleSource(timerWrapperSourcePath);
+  kernel.addGenesisVat('timer', timerWrapperBundle);
+
   for (const [name, srcpath, endowments] of config.devices || []) {
     // eslint-disable-next-line no-await-in-loop
     const bundle = await bundleSource(srcpath);

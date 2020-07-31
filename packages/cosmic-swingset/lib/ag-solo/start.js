@@ -16,9 +16,6 @@ import {
   buildMailboxStateMap,
   buildMailbox,
   buildTimer,
-  getVatTPSourcePath,
-  getCommsSourcePath,
-  getTimerWrapperSourcePath,
 } from '@agoric/swingset-vat';
 import { getBestSwingStore } from '../check-lmdb';
 
@@ -94,12 +91,6 @@ async function buildSwingset(
     ['command', cm.srcPath, cm.endowments],
     ['timer', timer.srcPath, timer.endowments],
   ];
-  config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
-  config.vats.set('comms', {
-    sourcepath: getCommsSourcePath(),
-    options: { enablePipelining: true },
-  });
-  config.vats.set('timer', { sourcepath: getTimerWrapperSourcePath() });
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);

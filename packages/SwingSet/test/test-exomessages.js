@@ -35,7 +35,7 @@ test('bootstrap returns presence', async t => {
     t,
     'presence',
     '{"@qclass":"slot",index:0}',
-    ['ko22'],
+    ['ko25'],
   );
 });
 
@@ -102,7 +102,7 @@ test('extra message returns presence', async t => {
     'presence',
     'fulfilled',
     '{"@qclass":"slot",index:0}',
-    ['ko22'],
+    ['ko25'],
   );
 });
 

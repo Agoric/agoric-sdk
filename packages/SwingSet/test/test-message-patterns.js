@@ -5,12 +5,7 @@
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import path from 'path';
-import {
-  buildVatController,
-  getCommsSourcePath,
-  getVatTPSourcePath,
-  loadBasedir,
-} from '../src/index';
+import { buildVatController, loadBasedir } from '../src/index';
 import { buildPatterns } from './message-patterns';
 
 // This exercises all the patterns in 'message-patterns.js' twice (once with
@@ -72,17 +67,20 @@ function testLocalPatterns() {
 }
 testLocalPatterns();
 
+const commsSourcePath = require.resolve('../src/vats/comms');
+const vatTPSourcePath = require.resolve('../src/vats/vat-tp');
+
 export async function runVatsInComms(t, enablePipelining, name) {
   console.log(`------ testing pattern (comms) -- ${name}`);
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
   config.bootstrapIndexJS = path.join(bdir, 'bootstrap-comms.js');
-  config.vats.set('leftcomms', { sourcepath: getCommsSourcePath() });
+  config.vats.set('leftcomms', { sourcepath: commsSourcePath });
   config.vats.get('leftcomms').options = { enablePipelining };
-  config.vats.set('rightcomms', { sourcepath: getCommsSourcePath() });
+  config.vats.set('rightcomms', { sourcepath: commsSourcePath });
   config.vats.get('rightcomms').options = { enablePipelining };
-  config.vats.set('leftvattp', { sourcepath: getVatTPSourcePath() });
-  config.vats.set('rightvattp', { sourcepath: getVatTPSourcePath() });
+  config.vats.set('leftvattp', { sourcepath: vatTPSourcePath });
+  config.vats.set('rightvattp', { sourcepath: vatTPSourcePath });
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
   const c = await buildVatController(config, [name]);
