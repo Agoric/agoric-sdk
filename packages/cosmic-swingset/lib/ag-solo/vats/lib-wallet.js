@@ -386,11 +386,21 @@ export async function makeWallet({
 
   // === API
 
-  const addIssuer = async (petnameForBrand, issuer) => {
+  const addIssuer = async (petnameForBrand, issuer, makePurse = false) => {
     const issuerSavedP = brandTable.addIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
+      let p;
+      const already = brandMapping.valToPetname.has(brand);
       brandMapping.suggestPetname(petnameForBrand, brand);
-      return `issuer ${q(petnameForBrand)} successfully added to wallet`;
+      if (!already && makePurse) {
+        // eslint-disable-next-line no-use-before-define
+        p = makeEmptyPurse(petnameForBrand, petnameForBrand);
+      } else {
+        p = Promise.resolve();
+      }
+      return p.then(
+        _ => `issuer ${q(petnameForBrand)} successfully added to wallet`,
+      );
     };
     return issuerSavedP.then(addBrandPetname).then(updateAllState);
   };
@@ -801,6 +811,12 @@ export async function makeWallet({
       .then(saveAsDefault);
   }
 
+  /**
+   * @param {(petname: string | string[], value: any) => void} acceptFn
+   * @param {string | string[]} suggestedPetname
+   * @param {string} boardId
+   * @param {string} [dappOrigin]
+   */
   function acceptPetname(
     acceptFn,
     suggestedPetname,
@@ -829,11 +845,8 @@ export async function makeWallet({
     // suggestion can be rejected and the suggested petname can be
     // changed
     return acceptPetname(
-      async (petname, issuer) => {
-        // In most cases, after we accept an issuer we want at least one purse.
-        await addIssuer(petname, issuer);
-        return makeEmptyPurse(petname, petname);
-      },
+      // Make a purse if we add the issuer.
+      (petname, value) => addIssuer(petname, value, true),
       suggestedPetname,
       issuerBoardId,
       dappOrigin,
@@ -850,8 +863,7 @@ export async function makeWallet({
     // changed
 
     return acceptPetname(
-      // eslint-disable-next-line no-use-before-define
-      wallet.addInstance,
+      addInstance,
       suggestedPetname,
       instanceHandleBoardId,
       dappOrigin,
@@ -868,8 +880,7 @@ export async function makeWallet({
     // changed
 
     return acceptPetname(
-      // eslint-disable-next-line no-use-before-define
-      wallet.addInstallation,
+      addInstallation,
       suggestedPetname,
       installationHandleBoardId,
       dappOrigin,
