@@ -175,16 +175,23 @@ export async function makeWallet({
       }
       return Object.fromEntries(
         Object.entries(pursePetnameValueKeywordRecord).map(
-          ([keyword, { pursePetname, value }]) => {
-            // eslint-disable-next-line no-use-before-define
-            const purse = getPurse(pursePetname);
-            const brand = purseToBrand.get(purse);
-            const amount = { brand, value };
+          ([keyword, { pursePetname, value, amount, purse }]) => {
+            if (!amount) {
+              // eslint-disable-next-line no-use-before-define
+              purse = getPurse(pursePetname);
+              amount = { value };
+            } else {
+              pursePetname = purseMapping.valToPetname.get(purse);
+            }
+
+            amount = harden({ ...amount, brand: purseToBrand.get(purse) });
+            const displayAmount = display(amount);
             return [
               keyword,
               {
                 pursePetname,
-                amount: display(amount),
+                purse,
+                amount: displayAmount,
               },
             ];
           },
@@ -219,11 +226,14 @@ export async function makeWallet({
     );
     const instance = display(instanceHandle);
     const installation = display(installationHandle);
+    const alreadyDisplayed =
+      inboxState.has(id) && inboxState.get(id).proposalForDisplay;
+
     const offerForDisplay = {
       ...offer,
       instancePetname: instance.petname,
       installationPetname: installation.petname,
-      proposalForDisplay: displayProposal(proposalTemplate),
+      proposalForDisplay: displayProposal(alreadyDisplayed || proposalTemplate),
     };
 
     inboxState.set(id, offerForDisplay);
@@ -239,7 +249,7 @@ export async function makeWallet({
   // TODO: fix this horribly inefficient update on every potential
   // petname change.
   async function updateAllState() {
-    return Promise.all([updateAllPurseState(), updateAllInboxState()]);
+    return updateAllPurseState().then(updateAllInboxState);
   }
 
   // handle the update, which has already resolved to a record. If the offer is
@@ -418,7 +428,7 @@ export async function makeWallet({
     const doNotUse = await E(issuer).makeEmptyPurse();
 
     const purse = makeObservablePurse(E, doNotUse, () =>
-      updatePursesState(petnameForPurse, doNotUse),
+      updatePursesState(purseMapping.valToPetname.get(purse), doNotUse),
     );
 
     purseToBrand.init(purse, brand);
