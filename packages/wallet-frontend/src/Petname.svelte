@@ -3,9 +3,18 @@
 </script>
 
 {#if Array.isArray(name)}
-<span style="color: orange">{name[0]}</span><span>{
+<span class="confirmedPetname">{name[0]}</span><span class="untrustedName">{
   #each name.slice(1) as path}.{path}{
   /each}</span>
 {:else}
-{name}
+<span class="confirmedPetname">{name}</span>
 {/if}
+
+<style>
+.confirmedPetname {
+  /* color: green; */
+}
+.untrustedName {
+  color: orange;
+}
+</style>

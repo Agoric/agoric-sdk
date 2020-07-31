@@ -9,21 +9,21 @@ function makeReadable(value, start = undefined) {
   return [{ subscribe: store.subscribe }, store.set];
 }
 
+// INITALIZATION
+
+// Get some properties of the bootstrap object.
+export const walletP = makePermanentPresence('wallet');
+export const boardP = makePermanentPresence('board');
+
 const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
 const [payments, setPayments] = makeReadable([]);
 const [issuers, setIssuers] = makeReadable([]);
 
-// INITALIZATION
+export { inbox, purses, dapps, payments, issuers };
 
-// This is the internal state: a promise kit that doesn't
-// resolve until we are connected.  It is replaced by
-// a new promise kit when we reset our state.
-let walletPK;
 function resetClientState() {
-  walletPK = producePromise();
-
   // Set up our subscriptions.
   adaptNotifierUpdates(E(walletP).getPursesNotifier(), pjs => setPurses(JSON.parse(pjs)));
   adaptNotifierUpdates(E(walletP).getInboxNotifier(), ijs => setInbox(JSON.parse(ijs)));
@@ -42,6 +42,10 @@ async function adaptNotifierUpdates(notifier, observer) {
   }
 }
 
+// This is the internal state: a promise kit that doesn't
+// resolve until we are connected.  It is replaced by
+// a new promise kit when we reset our state.
+let homePK = producePromise();
 let dispatch;
 let abort;
 
@@ -52,6 +56,7 @@ function onMessage(event) {
 
 function onClose(event)  {
   // Throw away our state.
+  homePK = producePromise();
   resetClientState();
   abort();
 }
@@ -67,32 +72,27 @@ async function onOpen(event) {
 
   // Begin the flow of messages to our wallet, which
   // we refetch from the new, loaded, bootstrap object.
-  const walletPresence = E.G(getBootstrap()).wallet;
+  const homePresence = getBootstrap();
   
-  walletPK.resolve(walletPresence);
+  homePK.resolve(homePresence);
 }
 
 // This is the public state, a promise that never resolves,
-// but pipelines messages to the walletPK.promise.
-const walletP = new HandledPromise((_resolve, _reject, resolveWithPresence) => {
-  resolveWithPresence({
-    applyMethod(_p, name, args) {
-      return E(walletPK.promise)[name](...args);
-    },
-    get(_p, name) {
-      return E(walletPK.promise)[name];
-    },
+// but pipelines messages to the homePK.promise.
+function makePermanentPresence(prop) {
+  return new HandledPromise((_resolve, _reject, resolveWithPresence) => {
+    resolveWithPresence({
+      applyMethod(_p, name, args) {
+        return E(E.G(homePK.promise)[prop])[name](...args);
+      },
+      get(_p, name) {
+        return E(E.G(homePK.promise)[prop])[name];
+      },
+    });
   });
-});
+}
 
 resetClientState();
 const { connected, sendMessage } = makeWebSocket('/private/captp', { onOpen, onMessage, onClose })
 
-export {
-  dapps,
-  inbox,
-  purses,
-  payments,
-  connected,
-  walletP,
-}
+export { connected };

@@ -1,4 +1,6 @@
 <script>
+  import { E } from '@agoric/eventual-send';
+
   import { Button, Icon } from "svelte-mui";
   import Dapps from "./Dapps.svelte";
   import Payments from "./Payments.svelte";

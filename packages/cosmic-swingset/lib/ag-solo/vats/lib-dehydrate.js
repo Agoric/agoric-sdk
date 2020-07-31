@@ -7,6 +7,7 @@ import { assert, details, q } from '@agoric/assert';
 
 /**
  * @typedef {string[]} Edgename
+ * @typedef {{} & 'Strongname'} Strongname
  * @param {any} x
  * @returns {x is Edgename}
  */
@@ -43,8 +44,15 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    */
   const uniqueEdgename = makeStore('name');
 
-  const uniquify = edgename => {
-    const explode = [...edgename];
+  /**
+   * @param {Edgename | string} strongname
+   * @returns {Strongname}
+   */
+  const uniquify = strongname => {
+    if (!isEdgename(strongname)) {
+      return /** @type {Strongname} */ (strongname);
+    }
+    const explode = [...strongname];
     let store = uniqueEdgename;
     let name = explode.shift();
     while (name !== undefined) {
@@ -60,26 +68,58 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       if (!explode.length) {
         if (ent[0] === undefined) {
           // Install the unique edgename.
-          ent[0] = harden([...edgename]);
+          ent[0] = harden([...strongname]);
           store.set(name, ent);
         }
         // eslint-disable-next-line prefer-destructuring
-        edgename = ent[0];
+        strongname = ent[0];
       }
 
       // eslint-disable-next-line prefer-destructuring
       store = ent[1];
       name = explode.shift();
     }
-    return edgename;
+    // eslint-disable-next-line prettier/prettier
+    return /** @type {Strongname} */ (
+      /** @type {unknown} */ (strongname)
+    );
   };
 
   const makeMapping = kind => {
     assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
+    /** @type {Store<any, Strongname>} */
+    const rawValToPetname = makeStore('value');
     /** @type {Store<any, string | Edgename>} */
-    const valToPetname = makeStore('value');
+    const valToPetname = {
+      ...rawValToPetname,
+      set(key, val) {
+        return rawValToPetname.set(key, uniquify(val));
+      },
+      init(key, val) {
+        return rawValToPetname.init(key, uniquify(val));
+      },
+    };
+    /** @type {Store<Strongname, any>} */
+    const rawPetnameToVal = makeStore('petname');
     /** @type {Store<Edgename | string, any>} */
-    const petnameToVal = makeStore('petname');
+    const petnameToVal = {
+      ...rawPetnameToVal,
+      has(key) {
+        return rawPetnameToVal.has(uniquify(key));
+      },
+      get(key) {
+        return rawPetnameToVal.get(uniquify(key));
+      },
+      set(key, val) {
+        return rawPetnameToVal.set(uniquify(key), val);
+      },
+      delete(key) {
+        return rawPetnameToVal.delete(uniquify(key));
+      },
+      init(key, val) {
+        return rawPetnameToVal.init(uniquify(key), val);
+      },
+    };
 
     /**
      * @param {Edgename} edgename
@@ -91,15 +131,13 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         details`edgename ${q(edgename)} must be an array of strings`,
       );
 
-      edgename = uniquify(edgename);
-
       if (
         !valToPetname.has(val) &&
         // eslint-disable-next-line no-use-before-define
         rootEdgeMapping.valToPetname.has(edgename[0])
       ) {
         // We have a petname for the root of the edgename, so use it as our strongname.
-        valToPetname.init(val, edgename);
+        valToPetname.init(val, uniquify(edgename));
       }
 
       // Check all the extant edgenames for this value.
