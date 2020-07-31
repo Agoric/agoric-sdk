@@ -30,13 +30,6 @@
   {#if !Array.isArray($payments) || $payments.length === 0}
     No payments.
   {:else}
-    <ul>
-      {#each $payments as { pursePetname, currentAmount } (pursePetname)}
-        <li> FIXME
-          <div>{pursePetname}</div>
-          <Amount amount={currentAmount} />
-        </li>
-      {/each}
-    </ul>
+    Some payments.
   {/if}
 </main>

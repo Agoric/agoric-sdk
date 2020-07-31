@@ -14,7 +14,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
 
 import makeObservablePurse from './observable';
-import { makeDehydrator, isEdgename } from './lib-dehydrate';
+import { makeDehydrator } from './lib-dehydrate';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -27,7 +27,12 @@ export async function makeWallet({
 }) {
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
-  const { makeMapping, dehydrate } = makeDehydrator();
+  const {
+    makeMapping,
+    dehydrate,
+    rootEdgeMapping,
+    canonicalize,
+  } = makeDehydrator();
   const purseMapping = makeMapping('purse');
   const brandMapping = makeMapping('brand');
   const instanceMapping = makeMapping('instance');
@@ -142,8 +147,8 @@ export async function makeWallet({
     const brandBoardId = await E(board).getId(brand);
     pursesState.set(pursePetname, {
       brandBoardId,
-      brandPetname,
-      pursePetname,
+      brandPetname: canonicalize(brandPetname),
+      pursePetname: canonicalize(pursePetname),
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
@@ -174,7 +179,13 @@ export async function makeWallet({
             const purse = getPurse(pursePetname);
             const brand = purseToBrand.get(purse);
             const amount = { brand, value };
-            return [keyword, { pursePetname, amount: display(amount) }];
+            return [
+              keyword,
+              {
+                pursePetname: canonicalize(pursePetname),
+                amount: display(amount),
+              },
+            ];
           },
         ),
       );
@@ -205,10 +216,12 @@ export async function makeWallet({
     const installationHandle = await E(board).getValue(
       installationHandleBoardId,
     );
+    const instance = display(instanceHandle);
+    const installation = display(installationHandle);
     const offerForDisplay = {
       ...offer,
-      instancePetname: display(instanceHandle).petname,
-      installationPetname: display(installationHandle).petname,
+      instancePetname: canonicalize(instance.petname),
+      installationPetname: canonicalize(installation.petname),
       proposalForDisplay: displayProposal(proposalTemplate),
     };
 
@@ -522,19 +535,31 @@ export async function makeWallet({
       let approvalP;
       dappRecord = {
         suggestedPetname,
-        petname: suggestedPetname,
         origin,
       };
 
       dappRecord.actions = {
         setPetname(petname) {
+          if (dappRecord.petname === petname) {
+            return;
+          }
+          if (dappRecord.petname === undefined) {
+            rootEdgeMapping.addPetname(petname, origin);
+          } else {
+            rootEdgeMapping.renamePetname(petname, origin);
+          }
           dappRecord = {
             ...dappRecord,
             petname,
           };
           updateDappRecord(dappRecord);
+          updateAllState();
         },
         enable() {
+          // Update the petname before enabling.
+          dappRecord.actions.setPetname(
+            dappRecord.petname || dappRecord.suggestedPetname,
+          );
           // Enable the dapp with the attached petname.
           dappRecord = {
             ...dappRecord,

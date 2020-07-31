@@ -1,5 +1,6 @@
 <script>
   import Amount from "./Amount.svelte";
+  import Petname from './Petname.svelte';
   // a store of purses
   export let purses;
 </script>
@@ -35,10 +36,10 @@
     No purses.
   {:else}
     <ul>
-      {#each $purses as { pursePetname, currentAmount } (pursePetname)}
+      {#each $purses as purse}
         <li>
-          <div>{pursePetname}</div>
-          <Amount amount={currentAmount} />
+          <div><Petname name={purse.pursePetname} /></div>
+          <Amount amount={purse.currentAmount} />
         </li>
       {/each}
     </ul>

@@ -219,7 +219,7 @@ export function buildRootObject(_vatPowers) {
 
           async onMessage(obj, meta) {
             const { type, suggestedDappPetname = meta.origin } = obj;
-            const { petname: dappPetname } = await wallet.waitForDappApproval(
+            const { origin: dappOrigin } = await wallet.waitForDappApproval(
               suggestedDappPetname,
               meta.origin,
             );
@@ -230,7 +230,7 @@ export function buildRootObject(_vatPowers) {
                 return adminOnMessage(obj, meta);
 
               case 'walletSubscribeOffers': {
-                const { status = null, dappOrigin } = obj;
+                const { status = null } = obj;
                 const { channelHandle } = meta;
 
                 if (!channelHandle) {
@@ -252,7 +252,7 @@ export function buildRootObject(_vatPowers) {
               }
 
               case 'walletGetOffers': {
-                const { dappOrigin, status = null } = obj;
+                const { status = null } = obj;
 
                 // Override the origin since we got it from the bridge.
                 let result = await wallet.getOffers({ origin: dappOrigin });
@@ -281,7 +281,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestIssuer(
-                  [dappPetname, petname],
+                  [dappOrigin, petname],
                   boardId,
                 );
                 return {
@@ -293,7 +293,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstance(
-                  [dappPetname, petname],
+                  [dappOrigin, petname],
                   boardId,
                 );
                 return {
@@ -305,7 +305,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstallation(
-                  [dappPetname, petname],
+                  [dappOrigin, petname],
                   boardId,
                 );
                 return {

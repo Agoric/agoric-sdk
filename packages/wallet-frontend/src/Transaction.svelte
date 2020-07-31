@@ -1,5 +1,6 @@
 <script>
   import { E } from '@agoric/eventual-send';
+  import Petname from './Petname.svelte';
 
   export let txn;
   export let id;
@@ -14,8 +15,6 @@
     return `${match[1]} ${match[2]}`;
   }
 
-  const pet = petname => petname || "???";
-
   const statusText = {
     decline: "Declined",
     rejected: "Rejected",
@@ -23,13 +22,12 @@
     pending: "Pending"
   };
 
-  const {
+  $: ({
     instancePetname,
     requestContext: { date, origin = "unknown origin" } = {},
-    proposalForDisplay: { give = {}, want = {} } = {}
-  } = txn;
-
-  $: status = txn.status;
+    proposalForDisplay: { give = {}, want = {} } = {},
+    status,
+  } = txn);
 </script>
 
 <style>
@@ -67,26 +65,26 @@
   {/if}
   via&nbsp;{origin}
 </div>
-<div>{pet(instancePetname)}&nbsp;</div>
+<div><Petname name={instancePetname}/>&nbsp;</div>
 <div>
-  {#each Object.entries(give) as [role, { amount: { brand: { petname: brandPetname }, value, pursePetname } }], i}
+  {#each Object.entries(give) as [role, { amount: { brand, value, pursePetname } }], i}
     <div>
       {#if i === 0}Give{:else}and&nbsp;give{/if}
       &nbsp;
-      <div>{JSON.stringify(value)}&nbsp; {pet(brandPetname)}</div>
+      <div>{JSON.stringify(value)}&nbsp; <Petname name={brand.petname} /></div>
       &nbsp;from&nbsp;
-      <div>{pet(pursePetname)}</div>
+      <Petname name={pursePetname} />
     </div>
   {/each}
-  {#each Object.entries(want) as [role, { amount: { brand: { petname: brandPetname }, value, pursePetname } }], i}
+  {#each Object.entries(give) as [role, { amount: { brand, value, pursePetname } }], i}
     <div>
       {#if i === 0}
         {#if Object.keys(give).length > 0}to&nbsp;receive{:else}Receive{/if}
       {:else}and&nbsp;receive{/if}
       &nbsp;
-      <div>{JSON.stringify(value)}&nbsp; {pet(brandPetname)}</div>
+      <div>{JSON.stringify(value)}&nbsp; <Petname name={brand.petname} /></div>
       &nbsp;into&nbsp;
-      <div>{pet(pursePetname)}</div>
+      <Petname name={pursePetname} />
     </div>
   {/each}
 </div>
