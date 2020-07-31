@@ -1,5 +1,6 @@
 <script>
   export let name;
+  export let board = undefined;
 </script>
 
 {#if Array.isArray(name)}
@@ -8,6 +9,7 @@
   /each}</span>
 {:else}
 <span class="confirmedPetname">{name}</span>
+{#if board}(Board Id: {board}){/if}
 {/if}
 
 <style>

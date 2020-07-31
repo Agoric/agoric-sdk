@@ -13,12 +13,14 @@
   }
   li {
     margin: 1rem;
-    border: 1px solid grey;
+    padding: 10px;
+    /* border: 1px solid grey; */
+    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
   }
 
   main {
     /* text-align: center; */
-    padding: 1em;
+    /* padding: 1em; */
     max-width: 240px;
     margin: 0 auto;
   }

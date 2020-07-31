@@ -30,6 +30,8 @@
 
   $: ({
     instancePetname,
+    instanceHandleBoardId,
+    installationHandleBoardId,
     requestContext: { date, origin = "unknown origin" } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
     status,
@@ -41,7 +43,8 @@
     /* text-align: center; */
     padding: 1em;
     max-width: 240px;
-    margin: 0 auto;
+    margin: 10px auto;
+    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
   }
 
   h1 {
@@ -64,32 +67,25 @@
 
 <main>
   <div>
-    At {formatDateNow(date)} via
-    <Petname name={instancePetname} />
-    ({origin})
+   <Petname name={instancePetname} board={instanceHandleBoardId} />
+    at {formatDateNow(date)} 
+    via ({origin})
   </div>
   <div>
-    {#each Object.entries(give) as [role, { amount: { brand, value, pursePetname } }], i}
+    {#each Object.entries(give) as [role, { amount: { brand, value }, pursePetname }], i}
       <div>
-        {#if i === 0}Give{:else}and&nbsp;give{/if}
-        &nbsp;
+        <h2>Give</h2>
         <div>
-          {JSON.stringify(value)}&nbsp;
-          <Petname name={brand.petname} />
+          {JSON.stringify(value)}&nbsp;<Petname name={brand.petname} /> 
+          from <Petname name={pursePetname} />
         </div>
-        &nbsp;from&nbsp;
-        <Petname name={pursePetname} />
       </div>
     {/each}
-    {#each Object.entries(give) as [role, { amount: { brand, value, pursePetname } }], i}
+    {#each Object.entries(want) as [role, { amount: { brand, value }, pursePetname }], i}
       <div>
-        {#if i === 0}
-          {#if Object.keys(give).length > 0}to&nbsp;receive{:else}Receive{/if}
-        {:else}and&nbsp;receive{/if}
-        &nbsp;
+        <h2>Want</h2>
         <div>
-          {JSON.stringify(value)}&nbsp;
-          <Petname name={brand.petname} />
+          {JSON.stringify(value)}&nbsp;<Petname name={brand.petname} />
         </div>
         &nbsp;into&nbsp;
         <Petname name={pursePetname} />

@@ -108,12 +108,12 @@
   }
 
 /* DEBUGGING */
-  * {
+  /* * {
     border: 1px solid red;
   }
   :global(*) {
     border: thin dashed gray;
-  }
+  } */
 
 </style>
 
