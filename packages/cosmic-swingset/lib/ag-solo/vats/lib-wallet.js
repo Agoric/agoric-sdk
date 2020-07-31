@@ -646,8 +646,15 @@ export async function makeWallet({
     return id;
   }
 
+  function consummated(offer) {
+    return offer.status !== undefined;
+  }
+
   function declineOffer(id) {
     const offer = idToOffer.get(id);
+    if (consummated(offer)) {
+      return;
+    }
     // Update status, drop the proposal
     const declinedOffer = {
       ...offer,
@@ -665,6 +672,7 @@ export async function makeWallet({
 
     completeFn()
       .then(_ => {
+        idToComplete.delete(id);
         const offer = idToOffer.get(id);
         const cancelledOffer = {
           ...offer,
@@ -679,9 +687,13 @@ export async function makeWallet({
   }
 
   async function acceptOffer(id) {
+    const offer = idToOffer.get(id);
+    if (consummated(offer)) {
+      return undefined;
+    }
+
     let ret = {};
     let alreadyResolved = false;
-    const offer = idToOffer.get(id);
     const rejected = e => {
       if (alreadyResolved) {
         return;
