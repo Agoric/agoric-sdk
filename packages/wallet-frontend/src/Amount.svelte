@@ -12,7 +12,8 @@
       <b><Petname name={brand.petname} /> purse is empty.</b>
     {:else if brand.petname === 'zoe invite'}
       <b><Petname name={brand.petname} /> (Non-fungible)</b>
-      {#each value as { instanceHandle: { petname }, inviteDesc } (petname)}
+      <!-- <pre>{JSON.stringify(value, null, 2)}</pre> -->
+      {#each value as { instanceHandle: { petname }, inviteDesc }}
         instance: {petname}, inviteDesc: {inviteDesc}
       {/each}
     {:else}

@@ -74,17 +74,13 @@
     grid-area: footer;
   }
 
-  xxx {
-    border: 1px solid red;
-  }
-
   main {
     display: grid;
     grid-template-areas: 
       "dapps dapps"
       "txns txns"
-      "purses payments"
-      "issuers issuers";
+      "payments payments"
+      "purses issuers";
     grid-template-columns: 1fr 1fr;
     grid-gap: 10px;
 
@@ -106,8 +102,17 @@
     grid-area: txns;
   }
   .issuers {
-    grid-area: txns;
+    grid-area: issuers;
   }
+
+/* DEBUGGING */
+  * {
+    border: 1px solid red;
+  }
+  :global(*) {
+    border: thin dashed gray;
+  }
+
 </style>
 
 <svelte:head>
@@ -153,6 +158,10 @@
       <div class="purses">
         <h2>Purses</h2>
         <Purses {purses} />
+      </div>
+      <div class="issuers">
+        <h2>Issuers</h2>
+        Nothing here yet
       </div>
     </main>
 

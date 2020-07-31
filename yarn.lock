@@ -7881,6 +7881,13 @@ supports-color@^7.0.0, supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
+svelte-awesome@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/svelte-awesome/-/svelte-awesome-2.3.0.tgz#03735c1ba1940e931c41271a5ebf72e2ae9e292c"
+  integrity sha512-xXU3XYJmr5PK9e3pCpW6feU/tNpAhERWDrgDxkC0DU6LNum02zzc00I17bmUWTSRdKLf+IFbA5hWvCm1V8g+/A==
+  dependencies:
+    svelte "^3.15.0"
+
 svelte-mui@^0.3.3-4:
   version "0.3.3-4"
   resolved "https://registry.yarnpkg.com/svelte-mui/-/svelte-mui-0.3.3-4.tgz#ca136de4e0578a614a328849cd3da1f18cc435e4"
@@ -7891,7 +7898,7 @@ svelte-themer@^0.1.4:
   resolved "https://registry.yarnpkg.com/svelte-themer/-/svelte-themer-0.1.4.tgz#b061d63ceeba5a3b2078d172e01c34ea63875edc"
   integrity sha512-jyjLRRyML7WuOyeUt/RG7Oo0yoqBRmAkqyDAjeNf13YhWC4j2xaQ9OZr7UGZDJOyRgosEM1SID9/FyTiyjWVpg==
 
-svelte@^3.0.0:
+svelte@^3.0.0, svelte@^3.15.0:
   version "3.24.0"
   resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.24.0.tgz#6565a42c9705796fa66c6abb4fedc09f4323a4a8"
   integrity sha512-VFXom6EP2DK83kxy4ZlBbaZklSbZIrpNH3oNXlPYHJUuW4q1OuAr3ZoYbfIVTVYPDgrI7Yq0gQcOhDlAtO4qfw==

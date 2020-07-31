@@ -14,7 +14,7 @@ export function stringify(
   depth = 0,
 ) {
   if (Object(value) !== value) {
-    return JSON.stringify(value, spaces);
+    return JSON.stringify(value, null, spaces);
   }
 
   // Identify functions.
