@@ -676,6 +676,7 @@ test('lib-wallet offer methods', async t => {
             give: {
               Contribution: {
                 pursePetname: 'Fun budget',
+                purse: {}, // JSON doesn't keep the purse.
                 amount: {
                   brand: {
                     kind: 'brand',
@@ -705,6 +706,7 @@ test('lib-wallet offer methods', async t => {
             give: {
               Contribution: {
                 pursePetname: 'Fun budget',
+                purse: {}, // JSON doesn't keep the purse.
                 amount: {
                   brand: {
                     kind: 'brand',
