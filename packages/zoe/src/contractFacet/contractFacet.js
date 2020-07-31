@@ -11,7 +11,7 @@ import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeAmountMath, MathKind } from '@agoric/ertp/src/amountMath';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { areRightsConserved } from './rightsConservation';
@@ -92,18 +92,18 @@ export function buildRootObject() {
     const allSeatStagings = new WeakSet();
 
     /** @type MakeZCFMint */
-    const makeZCFMint = async (keyword, mathHelperName = 'nat') => {
+    const makeZCFMint = async (keyword, amountMathKind = MathKind.NAT) => {
       assert(
         !(keyword in instanceRecord.terms.issuers),
         details`Keyword ${keyword} already registered`,
       );
 
-      const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, mathHelperName);
+      const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, amountMathKind);
       const { brand: mintyBrand, issuer: mintyIssuer } = await E(
         zoeMintP,
       ).getIssuerRecord();
       // AWAIT
-      const mintyAmountMath = makeAmountMath(mintyBrand, mathHelperName);
+      const mintyAmountMath = makeAmountMath(mintyBrand, amountMathKind);
       const mintyIssuerRecord = harden({
         brand: mintyBrand,
         issuer: mintyIssuer,

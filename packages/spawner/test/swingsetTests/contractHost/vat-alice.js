@@ -3,7 +3,7 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 import { allComparable } from '@agoric/same-structure';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
 
 import { makeCollect } from '../../../src/makeCollect';
 
@@ -22,6 +22,7 @@ function makeAliceMaker(host, log) {
     });
   }
 
+<<<<<<< HEAD
   const getLocalAmountMath = issuer =>
     Promise.all([
       E(issuer).getBrand(),
@@ -30,6 +31,8 @@ function makeAliceMaker(host, log) {
       makeAmountMath(brand, mathHelpersName),
     );
 
+=======
+>>>>>>> refactor: move AmountMath from names to Kinds; easier local creation
   return harden({
     async make(
       escrowExchangeInstallationP,
@@ -44,8 +47,8 @@ function makeAliceMaker(host, log) {
     ) {
       const inviteIssuerP = E(host).getInvitationIssuer();
 
-      const moneyMath = await getLocalAmountMath(moneyIssuerP);
-      const stockMath = await getLocalAmountMath(stockIssuerP);
+      const moneyMath = await makeLocalAmountMath(moneyIssuerP);
+      const stockMath = await makeLocalAmountMath(stockIssuerP);
 
       const alice = harden({
         payBobWell(bob) {

@@ -5,8 +5,8 @@ import makeStore from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
-  assertNatMathHelpers,
   assertProposalKeywords,
+  assertUsesNatMath,
 } from '../../../src/contractSupport';
 
 import '../../../exported';
@@ -31,7 +31,7 @@ const start = zcf => {
   let electionOpen = true;
   assertIssuerKeywords(zcf, harden(['Assets']));
   assert.typeof(question, 'string');
-  assertNatMathHelpers(zcf, assetsBrand);
+  assertUsesNatMath(zcf, assetsBrand);
   const amountMath = zcf.getAmountMath(assetsBrand);
 
   const seatToResponse = makeStore('seat');

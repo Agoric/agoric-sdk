@@ -9,7 +9,7 @@ import './types';
 
 const manager = importManager();
 /**
- * @type {Record<MathHelpersName,MathHelpers>}
+ * @type {Record<AmountMathKind,MathHelpers>}
  */
 const mathHelpersLib = manager.addExports({
   nat: natMathHelpers,

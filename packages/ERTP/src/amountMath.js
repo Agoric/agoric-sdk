@@ -7,6 +7,14 @@ import mathHelpersLib from './mathHelpersLib';
 
 import './types';
 
+// constants for the kinds of amountMath we support.
+/** @enum {string} */
+const MathKind = {
+  NAT: 'nat',
+  SET: 'set',
+  STR_SET: 'strSet',
+};
+
 /**
  * Amounts describe digital assets. From an amount, you can learn the
  * kind of digital asset as well as "how much" or "how many". Amounts
@@ -38,16 +46,19 @@ import './types';
  * function `coerce` takes an amount and checks it, returning an amount (amount
  * -> amount).
  *
- * `makeAmount` takes in a brand and the name of the particular
- * mathHelpers to use.
+ * `makeAmountMath` takes in a brand and the kind of mathHelpers to use.
  *
  * amountMath is unfortunately not pass-by-copy. If you call
- * `getAmountMath` on a remote issuer, it will be a remote object and
+ * `getAmountMath` on a remote issuer, it will return a remote object and
  * each call will incur the costs of calling a remote object. However,
  * you can create a local amountMath by importing this module locally
- * and calling makeAmountMath(), passing in a brand and a mathHelpers name,
- * both of which can be passed-by-copy (since there are no calls to brand
- * in this module).
+ * and passing `makeAmountMath` the brand and the kind of amountMath. The
+ * amountMath kind is a pass-by-copy string, while the brand is a presence.
+ * There's no performance cost for the brand being a presence, as the only
+ * operations on the brand in this module are equality tests.
+ *
+ * AmountMath exports amountMathKinds, which contains constants for the kinds:
+ * NAT, SET, and STR_SET.
  *
  * Each issuer of digital assets has an associated brand in a one-to-one
  * mapping. In untrusted contexts, such as in analyzing payments and
@@ -55,27 +66,26 @@ import './types';
  * brand. The issuer and the brand mutually validate each other.
  *
  * @param {Brand} brand
- * @param {MathHelpersName} mathHelpersName
+ * @param {AmountMathKind} amountMathKind
  * @returns {AmountMath}
  */
-function makeAmountMath(brand, mathHelpersName) {
+function makeAmountMath(brand, amountMathKind) {
   mustBeComparable(brand);
-  assert.typeof(mathHelpersName, 'string');
+  assert.typeof(amountMathKind, 'string');
 
-  const helpers = mathHelpersLib[mathHelpersName];
+  const helpers = mathHelpersLib[amountMathKind];
   assert(
     helpers !== undefined,
-    details`unrecognized mathHelpersName: ${mathHelpersName}`,
+    details`unrecognized amountMathKind: ${amountMathKind}`,
   );
 
   // Cache the amount if we can.
   const cache = new WeakSet();
 
+  /** @type {AmountMath} */
   const amountMath = harden({
     getBrand: () => brand,
-    /** @deprecated Use getMathHelperName */
-    getMathHelpersName: () => mathHelpersName,
-    getMathHelperName: () => mathHelpersName,
+    getAmountMathKind: () => amountMathKind,
 
     /**
      * Make an amount from a value by adding the brand.
@@ -164,3 +174,5 @@ function makeAmountMath(brand, mathHelpersName) {
 }
 
 export default harden(makeAmountMath);
+
+export { makeAmountMath, MathKind };

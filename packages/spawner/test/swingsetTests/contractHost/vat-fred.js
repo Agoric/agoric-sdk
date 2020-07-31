@@ -3,7 +3,7 @@
 
 /* global harden */
 import { E } from '@agoric/eventual-send';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 
 import { makeCollect } from '../../../src/makeCollect';
@@ -11,6 +11,7 @@ import { makeCollect } from '../../../src/makeCollect';
 function makeFredMaker(host, log) {
   const collect = makeCollect(E, log);
 
+<<<<<<< HEAD
   const getLocalAmountMath = issuer =>
     Promise.all([
       E(issuer).getBrand(),
@@ -19,6 +20,8 @@ function makeFredMaker(host, log) {
       makeAmountMath(brand, mathHelpersName),
     );
 
+=======
+>>>>>>> refactor: move AmountMath from names to Kinds; easier local creation
   return harden({
     async make(
       escrowExchangeInstallationP,
@@ -39,9 +42,9 @@ function makeFredMaker(host, log) {
       await E(myStockPurseP).deposit(myStockPaymentP);
       await E(myFinPaymentP).deposit(myFinPaymentP);
 
-      const moneyMath = await getLocalAmountMath(moneyIssuerP);
-      const stockMath = await getLocalAmountMath(stockIssuerP);
-      const finMath = await getLocalAmountMath(finIssuerP);
+      const moneyMath = await makeLocalAmountMath(moneyIssuerP);
+      const stockMath = await makeLocalAmountMath(stockIssuerP);
+      const finMath = await makeLocalAmountMath(finIssuerP);
       const dough10 = moneyMath.make(10);
       const wonka7 = stockMath.make(7);
       const fin55 = finMath.make(55);

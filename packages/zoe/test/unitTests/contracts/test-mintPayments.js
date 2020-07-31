@@ -5,7 +5,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 import fakeVatAdmin from './fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
@@ -60,7 +60,7 @@ test('zoe - mint payments', async t => {
           // what we get as our payout
           const publicFacet = await E(zoe).getPublicFacet(instance);
           const tokenIssuer = await E(publicFacet).getTokenIssuer();
-          const amountMath = await E(tokenIssuer).getAmountMath();
+          const amountMath = await makeLocalAmountMath(tokenIssuer);
 
           const tokens1000 = await E(amountMath).make(1000);
           const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(paymentP);
@@ -154,7 +154,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
           // what we get as our payout
           const publicFacet = await E(zoe).getPublicFacet(instance);
           const tokenIssuer = await E(publicFacet).getTokenIssuer();
-          const amountMath = await E(tokenIssuer).getAmountMath();
+          const amountMath = await makeLocalAmountMath(tokenIssuer);
 
           const tokens1000 = await E(amountMath).make(1000);
           const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(

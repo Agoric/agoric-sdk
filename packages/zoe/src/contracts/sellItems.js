@@ -4,10 +4,10 @@
 import { assert, details } from '@agoric/assert';
 import {
   assertIssuerKeywords,
-  assertNatMathHelpers,
   trade,
   defaultAcceptanceMsg,
   assertProposalKeywords,
+  assertUsesNatMath,
 } from '../contractSupport';
 
 import '../../exported';
@@ -37,7 +37,7 @@ const start = zcf => {
   } = zcf.getTerms();
   const allKeywords = ['Items', 'Money'];
   assertIssuerKeywords(zcf, harden(allKeywords));
-  assertNatMathHelpers(zcf, pricePerItem.brand);
+  assertUsesNatMath(zcf, pricePerItem.brand);
 
   let sellerSeat;
 

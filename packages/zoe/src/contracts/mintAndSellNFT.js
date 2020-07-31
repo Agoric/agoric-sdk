@@ -4,6 +4,7 @@ import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import '../../exported';
+import { MathKind } from '@agoric/ertp/src/amountMath';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -30,7 +31,7 @@ const start = zcf => {
   // Create the internal token mint
   const { issuer, mint, amountMath: tokenAmountMath } = makeIssuerKit(
     tokenName,
-    'set',
+    MathKind.SET,
   );
 
   const zoeService = zcf.getZoeService();

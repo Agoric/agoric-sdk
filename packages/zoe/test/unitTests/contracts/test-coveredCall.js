@@ -6,6 +6,7 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import { sameStructure } from '@agoric/same-structure';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 import buildManualTimer from '../../../tools/manualTimer';
 import { setup } from '../setupBasicMints';
@@ -389,7 +390,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     // expected covered call installation (code)? Does it use the issuers
     // that he expects (moola and simoleans)?
     const invitationIssuer = zoe.getInvitationIssuer();
-    const invitationAmountMath = invitationIssuer.getAmountMath();
+    const invitationAmountMath = await makeLocalAmountMath(invitationIssuer);
     const bobExclOption = await invitationIssuer.claim(optionP);
     const optionAmount = await invitationIssuer.getAmountOf(bobExclOption);
     const optionDesc = optionAmount.value[0];
@@ -645,7 +646,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     // expected covered call installation (code)? Does it use the issuers
     // that he expects (moola and simoleans)?
     const invitationIssuer = zoe.getInvitationIssuer();
-    const invitationAmountMath = invitationIssuer.getAmountMath();
+    const invitationAmountMath = await makeLocalAmountMath(invitationIssuer);
     const bobExclOption = await invitationIssuer.claim(optionP);
     const {
       value: [optionValue],

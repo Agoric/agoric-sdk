@@ -4,7 +4,7 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import makeWeakStore from '@agoric/weak-store';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { makeTable, makeValidateProperties } from './table';
 
 import '../exported';
@@ -59,26 +59,25 @@ const makeIssuerTable = () => {
      */
     function buildTableEntryAndPlaceHolder(issuer) {
       // remote calls which immediately return a promise
-      const mathHelpersNameP = E(issuer).getMathHelpersName();
       const brandP = E(issuer).getBrand();
       const brandIssuerMatchP = E(brandP).isMyIssuer(issuer);
+      const localAmountMathP = makeLocalAmountMath(issuer);
 
       /**
        * @type {[
        *  PromiseLike<Brand>,
-       *  PromiseLike<'nat' | 'set' | 'strSet'>,
-       *  PromiseLike<boolean>
+       *  PromiseLike<boolean>,
+       *  PromiseLike<AmountMath>,
        * ]}
        * */
-      const promiseArray = [brandP, mathHelpersNameP, brandIssuerMatchP];
+      const promiseArray = [brandP, brandIssuerMatchP, localAmountMathP];
       // a promise for a synchronously accessible record
       const synchronousRecordP = Promise.all(promiseArray).then(
-        ([brand, mathHelpersName, brandIssuerMatch]) => {
+        ([brand, brandIssuerMatch, amountMath]) => {
           assert(
             brandIssuerMatch,
             `issuer was using a brand which was not its own`,
           );
-          const amountMath = makeAmountMath(brand, mathHelpersName);
           const issuerRecord = {
             brand,
             issuer,

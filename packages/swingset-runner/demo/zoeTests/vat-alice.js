@@ -1,7 +1,8 @@
 /* global harden */
 
 import { E } from '@agoric/eventual-send';
-import { showPurseBalance, setupIssuers, getLocalAmountMath } from './helpers';
+import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { showPurseBalance, setupIssuers } from './helpers';
 import { makePrintLog } from './printLog';
 
 const log = makePrintLog();
@@ -321,7 +322,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
       instanceRecord: { publicAPI, handle: instanceHandle },
     } = await E(zoe).startInstance(installations.autoswap, issuerKeywordRecord);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
-    const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
+    const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
     const liquidity = liquidityAmountMath.make;
 
     // Alice adds liquidity

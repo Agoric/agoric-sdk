@@ -5,7 +5,7 @@ import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 import bundleSource from '@agoric/bundle-source';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp/src/issuer';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from './fakeVatAdmin';
 
@@ -195,7 +195,7 @@ test(`mint and sell opera tickets`, async t => {
     const ticketSalesPublicFacet = await E(zoe).getPublicFacet(instance);
     const terms = await E(zoe).getTerms(instance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
-    const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+    const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
     const alicePurse = await E(moolaIssuer).makeEmptyPurse();
     await E(alicePurse).deposit(moola100Payment);
@@ -275,7 +275,7 @@ test(`mint and sell opera tickets`, async t => {
       ticketSalesInstance,
     );
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
-    const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+    const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
     const jokerPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(jokerPurse).deposit(moola100Payment);
@@ -350,7 +350,7 @@ test(`mint and sell opera tickets`, async t => {
       ticketSalesInstance,
     );
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
-    const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+    const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
     const jokerPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(jokerPurse).deposit(moola100Payment);
@@ -421,7 +421,7 @@ test(`mint and sell opera tickets`, async t => {
     );
     const terms = await E(zoe).getTerms(ticketSalesInstance);
     const ticketIssuer = await E(ticketSalesPublicFacet).getItemsIssuer();
-    const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+    const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
     const bobPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(bobPurse).deposit(moola100Payment);
@@ -500,7 +500,7 @@ test(`mint and sell opera tickets`, async t => {
   ) => {
     const availableTickets = await E(sellItemsCreatorFacet).getAvailableItems();
     const ticketIssuer = await E(sellItemsCreatorFacet).getItemsIssuer();
-    const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+    const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
     t.ok(
       ticketAmountMath.isEmpty(availableTickets),
       'All the tickets have been sold',

@@ -3,6 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from './helpers';
 import { makePrintLog } from './printLog';
 
@@ -519,7 +520,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
         zoe,
       ).getInstanceRecord(ticketSalesInstanceHandle);
       const ticketIssuer = await E(ticketSalesPublicAPI).getItemsIssuer();
-      const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+      const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
       // Bob makes an invite
       const invite = await E(ticketSalesPublicAPI).makeBuyerInvite();

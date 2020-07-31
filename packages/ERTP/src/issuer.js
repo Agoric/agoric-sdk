@@ -5,17 +5,18 @@
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
 import { isPromise } from '@agoric/promise-kit';
+import { E } from '@agoric/eventual-send';
 
-import makeAmountMath from './amountMath';
+import { makeAmountMath, MathKind } from './amountMath';
 
 import './types';
 
 /**
  * @param {string} allegedName
- * @param {MathHelpersName} [mathHelpersName='nat']
+ * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
  * @returns {IssuerKit}
  */
-function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
+function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   assert.typeof(allegedName, 'string');
 
   const brand = harden({
@@ -24,7 +25,7 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     getAllegedName: () => allegedName,
   });
 
-  const amountMath = makeAmountMath(brand, mathHelpersName);
+  const amountMath = makeAmountMath(brand, amountMathKind);
 
   const paymentLedger = makeStore('payment');
   const purseLedger = makeStore('purse');
@@ -173,10 +174,7 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
   const issuer = harden({
     getBrand: () => brand,
     getAllegedName: () => allegedName,
-    getAmountMath: () => amountMath,
-    /** @deprecated Use getMathHelperName */
-    getMathHelpersName: () => mathHelpersName,
-    getMathHelperName: () => mathHelpersName,
+    getAmountMathKind: () => amountMathKind,
     makeEmptyPurse: () => {
       const purse = makePurse();
       purseLedger.init(purse, amountMath.getEmpty());
@@ -297,3 +295,18 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
 harden(makeIssuerKit);
 
 export default makeIssuerKit;
+
+/**
+ * @param {Issuer} issuer
+ * @returns {Promise<AmountMath>}
+ */
+const makeLocalAmountMath = async issuer => {
+  return Promise.all([
+    E(issuer).getBrand(),
+    E(issuer).getAmountMathKind(),
+  ]).then(([brand, amountMathKind]) => {
+    return makeAmountMath(brand, amountMathKind);
+  });
+};
+
+export { makeLocalAmountMath, makeIssuerKit };

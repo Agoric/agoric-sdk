@@ -201,7 +201,7 @@
 /**
  * @callback MakeZCFMint
  * @param {Keyword} keyword
- * @param {MathHelpersName=} mathHelperName
+ * @param {AmountMathKind=} amountMathKind
  * @returns {ZCFMint}
  */
 
