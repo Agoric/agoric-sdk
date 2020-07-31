@@ -7,9 +7,8 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import fakeVatAdmin from './fakeVatAdmin';
 
 const barter = `${__dirname}/../../../src/contracts/barterExchange`;
@@ -27,7 +26,6 @@ test('barter with valid offers', async t => {
   } = setup();
   const zoe = makeZoe(fakeVatAdmin);
   const inviteIssuer = zoe.getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
   const bundle = await bundleSource(barter);
@@ -50,6 +48,10 @@ test('barter with valid offers', async t => {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
+  const getInstanceHandle = iP =>
+    E(inviteIssuer)
+      .getAmountOf(iP)
+      .then(amount => amount.value[0].instanceHandle);
   const instanceHandle = await getInstanceHandle(simonInvite);
   const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 

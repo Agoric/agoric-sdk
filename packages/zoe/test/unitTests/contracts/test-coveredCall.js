@@ -8,7 +8,7 @@ import { sameStructure } from '@agoric/same-structure';
 
 import buildManualTimer from '../../../tools/manualTimer';
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
 import fakeVatAdmin from './fakeVatAdmin';

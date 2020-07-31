@@ -1,9 +1,5 @@
-import Nat from '@agoric/nat';
+// @ts-check
 
-import makeIssuerKit from '@agoric/ertp';
-import { assert } from '@agoric/assert';
-import { producePromise } from '@agoric/produce-promise';
-import { sameStructure } from '@agoric/same-structure';
 import { importBundle } from '@agoric/import-bundle';
 import { HandledPromise } from '@agoric/eventual-send';
 
@@ -21,15 +17,8 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   }
   harden(myRequire);
 
-  // TODO: this should really only be console and HandledPromise
   const defaultEndowments = {
-    assert,
     console: louderConsole,
-    harden,
-    Nat,
-    makeIssuerKit,
-    producePromise,
-    sameStructure,
     HandledPromise,
   };
 

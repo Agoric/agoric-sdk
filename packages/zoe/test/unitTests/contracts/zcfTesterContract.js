@@ -5,7 +5,7 @@ import { assert } from '@agoric/assert';
 /**
  * Tests ZCF
  *
- * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
+ * @typedef {import('../../../src/zoeService/zoe').ContractFacet} ContractFacet
  * @typedef {import('@agoric/ERTP').Amount} Amount
  * @param {ContractFacet} zcf
  */

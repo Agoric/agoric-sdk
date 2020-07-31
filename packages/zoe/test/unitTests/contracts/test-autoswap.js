@@ -6,9 +6,8 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import fakeVatAdmin from './fakeVatAdmin';
 
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
@@ -26,7 +25,6 @@ test('autoSwap with valid offers', async t => {
     } = setup();
     const zoe = makeZoe(fakeVatAdmin);
     const inviteIssuer = zoe.getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
@@ -96,6 +94,10 @@ test('autoSwap with valid offers', async t => {
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
+    const getInstanceHandle = iP =>
+      E(inviteIssuer)
+        .getAmountOf(iP)
+        .then(amount => amount.value[0].instanceHandle);
     const bobInstanceHandle = await getInstanceHandle(bobExclInvite);
     const {
       publicAPI: bobAutoswap,
@@ -254,7 +256,6 @@ test('autoSwap - test fee', async t => {
     } = setup();
     const zoe = makeZoe(fakeVatAdmin);
     const inviteIssuer = zoe.getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaMint.mintPayment(moola(10000));
@@ -318,6 +319,10 @@ test('autoSwap - test fee', async t => {
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
+    const getInstanceHandle = iP =>
+      E(inviteIssuer)
+        .getAmountOf(iP)
+        .then(amount => amount.value[0].instanceHandle);
     const bobInstanceHandle = await getInstanceHandle(bobExclInvite);
     const {
       publicAPI: bobAutoswap,

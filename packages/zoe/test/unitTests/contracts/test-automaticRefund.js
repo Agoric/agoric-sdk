@@ -6,9 +6,8 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+
 import { setup } from '../setupBasicMints';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import { setupNonFungible } from '../setupNonFungibleMints';
 import fakeVatAdmin from './fakeVatAdmin';
 
@@ -116,7 +115,6 @@ test('zoe with automaticRefund', async t => {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe(fakeVatAdmin);
     const inviteIssuer = zoe.getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -173,6 +171,10 @@ test('zoe with automaticRefund', async t => {
     // will check that the installationId and terms match what he
     // expects
     const exclusBobInvite = await inviteIssuer.claim(bobInvite);
+    const getInstanceHandle = iP =>
+      E(inviteIssuer)
+        .getAmountOf(iP)
+        .then(amount => amount.value[0].instanceHandle);
     const bobInstanceHandle = await getInstanceHandle(exclusBobInvite);
 
     const {
@@ -280,11 +282,14 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       ContributionB: simoleanR.issuer,
     });
     const inviteIssuer = zoe.getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
     const { invite: aliceInvite1 } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
+    const getInstanceHandle = iP =>
+      E(inviteIssuer)
+        .getAmountOf(iP)
+        .then(amount => amount.value[0].instanceHandle);
     const instanceHandle1 = await getInstanceHandle(aliceInvite1);
     const { publicAPI: publicAPI1 } = zoe.getInstanceRecord(instanceHandle1);
 

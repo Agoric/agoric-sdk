@@ -3,7 +3,6 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 import { showPurseBalance, setupIssuers } from './helpers';
 import { makePrintLog } from './printLog';
 
@@ -22,7 +21,6 @@ const build = async (zoe, issuers, payments, installations, timer) => {
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   return harden({
     doPublicAuction: async inviteP => {
@@ -83,6 +81,10 @@ const build = async (zoe, issuers, payments, installations, timer) => {
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
+      const getInstanceHandle = iP =>
+        E(inviteIssuer)
+          .getAmountOf(iP)
+          .then(amount => amount.value[0].instanceHandle);
       const instanceHandle = await getInstanceHandle(exclInvite);
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,

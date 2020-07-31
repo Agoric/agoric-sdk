@@ -3,16 +3,17 @@
 import makeStore from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 
-import '../exported';
-import './internal-types';
+import '../../exported';
+import '../internal-types';
 
 /**
+ * @template {string} T
  * Iterate over the amounts and sum, storing the sums in a
  * map by brand.
- * @param  {(brand: Brand) => AmountMath} getAmountMath - a function
+ * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath - a function
  * to get amountMath given a brand.
- * @param  {Amount[]} amounts - an array of amounts
- * @returns {Store<Brand, Amount>} sumsByBrand - a map of Brand keys and
+ * @param  {Amount<any>[]} amounts - an array of amounts
+ * @returns {Store<Brand<T>, Amount<T>>} sumsByBrand - a map of Brand keys and
  * Amount values. The amounts are the sums.
  */
 const sumByBrand = (getAmountMath, amounts) => {
@@ -30,11 +31,12 @@ const sumByBrand = (getAmountMath, amounts) => {
 };
 
 /**
+ * @template {string} T
  * Do the left sums by brand equal the right sums by brand?
- * @param  {(brand: Brand) => AmountMath} getAmountMath - a function
+ * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath - a function
  * to get amountMath given a brand.
- * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
- * @param  {Store<Brand, Amount>} rightSumsByBrand - a map of brands to sums
+ * @param  {Store<Brand<T>, Amount<T>>} leftSumsByBrand - a map of brands to sums
+ * @param  {Store<Brand<T>, Amount<T>>} rightSumsByBrand - a map of brands to sums
  * indexed by issuer
  */
 const isEqualPerBrand = (getAmountMath, leftSumsByBrand, rightSumsByBrand) => {
@@ -56,13 +58,14 @@ const isEqualPerBrand = (getAmountMath, leftSumsByBrand, rightSumsByBrand) => {
 };
 
 /**
+ * @template {string} T
  * `areRightsConserved` checks that the total amount per brand is
  * equal to the total amount per brand in the proposed reallocation
- * @param  {(brand: Brand) => AmountMath} getAmountMath - a function
+ * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath - a function
  * to get amountMath given a brand.
- * @param  {Amount[]} previousAmounts - an array of the amounts before the
+ * @param  {Amount<any>[]} previousAmounts - an array of the amounts before the
  * proposed reallocation
- * @param  {Amount[]} newAmounts - an array of the amounts in the
+ * @param  {Amount<any>[]} newAmounts - an array of the amounts in the
  * proposed reallocation
  *
  * @returns {boolean} isEqualPerBrand

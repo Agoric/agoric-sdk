@@ -9,7 +9,7 @@ import makeIssuerKit from '@agoric/ertp';
 import fakeVatAdmin from './fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 
 const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 

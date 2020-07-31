@@ -24,45 +24,6 @@
  */
 
 /**
- * @typedef {Object} ZcfForZoe
- * The facet ZCF presents to Zoe.
- *
- * @property {(offerHandle: OfferHandle, proposal: ProposalRecord, allocation: Allocation) => (CompleteObj | undefined)} addOffer
- * Add a single offer to this contract instance.
- */
-
-/**
- * @typedef {Object} ZoeForZcf
- * @property {<OC>(inviteHandler: InviteHandler<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
- * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
- * @property {(publicAPI: PublicAPI) => void} updatePublicAPI
- * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
- * @property {(offerHandles: OfferHandle[]) => void} completeOffers
- */
-
-/**
- * @template OC - the offer outcome
- * @typedef {Object} InviteHandler<OC>
- * @property {OfferHook<OC>} invoke
- */
-
-/**
- * @typedef StartContractParams
- * @property {ZoeService} zoeService - The canonical Zoe service in case the contract wants it
- * @property {SourceBundle} bundle an object containing source code and moduleFormat
- * @property {InstanceRecord&InternalInstanceRecord} instanceData, fields for the instanceRecord
- * @property {ZoeForZcf} zoeForZcf - An inner facet of Zoe for the contractFacet's use
- * @property {Issuer} inviteIssuer, Zoe's inviteIssuer, for the contract to use
- *
- * @callback StartContract
- * Makes a contract instance from an installation and returns a
- * unique handle for the instance that can be shared, as well as
- * other information, such as the terms used in the instance.
- * @param {StartContractParams} params
- * @returns {Promise<{ inviteP: Promise<Invite>, zcfForZoe: ZcfForZoe }>}
- */
-
-/**
  * @template T
  * @typedef {(record: any) => record is T} Validator
  */
@@ -93,4 +54,112 @@
  * @property {Allocation} currentAllocation - the allocation corresponding to this offer
  * @property {Notifier<Allocation|undefined>|undefined} notifier - the notifier for allocation changes
  * @property {Updater<Allocation|undefined>} updater - the notifier for allocation changes
+ */
+
+/**
+ * @typedef {Object} ZoeSeat
+ * @property {() => void} exit - exit seat
+ * @property {(replacementAllocation: Allocation) => void} replaceAllocation - replace the
+ * currentAllocation with this allocation
+ */
+
+/**
+ * @typedef {Object} ZCFSeatAdmin
+ * @property {(stagedSeat: StagedSeat) => void} commit
+ */
+
+/**
+ * @typedef {Object} SeatData
+ * @property {ProposalRecord} proposal
+ * @property {Notifier<Allocation>} notifier
+ * @property {Allocation} initialAllocation
+ */
+
+/**
+ * Make the ZCF seat and seat admin
+ * @callback MakeSeatAdmin
+ * @param {Set<StagedSeat>} allStagedSeats - a set of valid
+ * stagedSeats where allocations have been checked for offerSafety
+ * @param {ZoeSeat} zoeSeat - a presence from Zoe such that ZCF can tell Zoe
+ * about seat events
+ * @param {SeatData} seatData - pass-by-copy data to use to make the seat
+ * @param {(brand: Brand) => AmountMath} getAmountMath
+ * @returns {{seatAdmin: ZCFSeatAdmin, seat: ZCFSeat}}
+ */
+
+/**
+ * @typedef {Object} AddSeatResult
+ * @property {Promise<any>} offerResultP
+ * @property {boolean} canExit
+ * @property {Object} exitObj
+ */
+
+/**
+ * @typedef {Object} InstanceAdmin
+ * @property {(invitationHandle: InvitationHandle, seatAdmin:
+ * ZCFSeatAdmin, seatData: SeatData) => Promise<AddSeatResult>} addSeatAdmin
+ * @property {(seatAdmin: ZCFSeatAdmin) => void} removeSeatAdmin
+ * @property {() => Instance} getInstance
+ * @property {() => PublicFacet} getPublicFacet
+ */
+
+/**
+ * @typedef {Object} AddSeatObj
+ * @property {(invitationHandle, zoeSeat, seatData) => AddSeatResult} addSeat
+ */
+
+/**
+ * @typedef {Object} ZoeInstanceAdmin
+ * @property {(invitationHandle: InvitationHandle, description:
+ * string, customProperties?: {}) => Payment<'Invitation'>}
+ * makeInvitation
+ * @property {() => void} shutdown
+ * @property {(issuerP: Issuer|Promise<Issuer>, keyword: Keyword) => void} saveIssuer
+ */
+
+/**
+ * @typedef {Object} InstanceData
+ */
+
+/**
+ * @typedef {Object} ZCFRoot
+ * @property {ExecuteContract} executeContract
+ *
+ * @typedef {Object} ExecuteContractResult
+ * @property {Object} adminFacet
+ * @property {Promise<Invitation>} adminInvitation
+ * @property {Object} publicFacet
+ * @property {AddSeatObj} addSeatObj
+ *
+ *
+ * @callback ExecuteContract
+ * @param {SourceBundle} bundle
+ * @param {ZoeService} zoeService
+ * @param {Issuer<'ZoeInvitation'>} invitationIssuer
+ * @param {ZoeInstanceAdmin} zoeInstanceAdmin
+ * @param {InstanceRecord} instanceRecord
+ * @returns {ExecuteContractResult}
+ *
+ */
+
+/**
+ * @callback MakeMakeInstanceFn
+ * @param {VatAdminSvc} vatAdminSvc,
+ * @param {GetPromiseForIssuerRecord} getPromiseForIssuerRecord,
+ * @param {IssuerKit<'ZoeInvitation'>} invitationKit,
+ * @param {HasInstallation} hasInstallation,
+ * @param {ZoeService} zoeService,
+ * @param {AddInstance} addInstance,
+ * @returns MakeInstance
+ */
+
+/**
+ * @callback MakeExitObj
+ * @param {ProposalRecord} proposal
+ * @param {ZoeSeat} zoeSeat
+ */
+
+/**
+ * @typedef {Object} ExitObj
+ * @property {() => void} exit
  */

@@ -6,7 +6,7 @@ import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import { makeTable, makeValidateProperties } from '../table';
-import { assertKeywordName } from '../cleanProposal';
+import { assertKeywordName } from '../zoeService/cleanProposal';
 import {
   makeZoeHelpers,
   getInputPrice,

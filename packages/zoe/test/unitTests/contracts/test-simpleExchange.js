@@ -8,10 +8,9 @@ import { E } from '@agoric/eventual-send';
 
 import { assert, details } from '@agoric/assert';
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import fakeVatAdmin from './fakeVatAdmin';
 
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
@@ -118,7 +117,10 @@ test('simpleExchange with valid offers', async t => {
 
   // 5: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
+  const getInstanceHandle = iP =>
+    E(inviteIssuer)
+      .getAmountOf(iP)
+      .then(amount => amount.value[0].instanceHandle);
   const bobInstanceHandle = await getInstanceHandle(bobExclusiveInvite);
 
   const {
@@ -425,7 +427,10 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // 5: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
+  const getInstanceHandle = iP =>
+    E(inviteIssuer)
+      .getAmountOf(iP)
+      .then(amount => amount.value[0].instanceHandle);
   const bobInstanceHandle = await getInstanceHandle(bobExclusiveInvite);
 
   const {

@@ -13,5 +13,8 @@ export { makeStateMachine } from './stateMachine';
 export {
   defaultAcceptanceMsg,
   defaultRejectMsg,
-  makeZoeHelpers,
+  trade,
+  swap,
+  assertProposalKeywords,
+  assertIssuerKeywords,
 } from './zoeHelpers';

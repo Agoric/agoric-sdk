@@ -10,7 +10,7 @@ import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from './fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 
 const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap`;
