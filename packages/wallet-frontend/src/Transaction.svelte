@@ -26,6 +26,7 @@
     rejected: "Rejected",
     accept: "Accepted",
     pending: "Pending",
+    proposed: "Proposed",
   };
 
   $: ({
@@ -87,13 +88,12 @@
         <div>
           {JSON.stringify(value)}&nbsp;<Petname name={brand.petname} />
         </div>
-        &nbsp;into&nbsp;
-        <Petname name={pursePetname} />
+        &nbsp;into&nbsp;<Petname name={pursePetname} />
       </div>
     {/each}
   </div> 
   <div>
-    <b>{statusText[status || 'pending']}</b>
+    <b>{statusText[status || 'proposed']}</b>
     <button on:click={() => E(walletP).acceptOffer(id)}>Accept</button>
     <button on:click={() => E(walletP).declineOffer(id)}>Decline</button>
     <button on:click={() => E(walletP).cancelOffer(id)}>Cancel</button>

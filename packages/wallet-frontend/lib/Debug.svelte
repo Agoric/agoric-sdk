@@ -9,7 +9,7 @@
 
   export let title = "Debug Info";
   export let target;
-  const display = stringify(target, 2);
+  $: display = stringify(target, 2);
 
   let showModal = false;
 </script>
