@@ -290,27 +290,10 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       const kind = searchOrder[i];
       const { valToPetname } = petnameKindToMapping.get(kind);
       if (valToPetname.has(val)) {
-        const strongname = valToPetname.get(val);
-        if (!isPath(strongname)) {
-          // It's a user-assigned petname.
-          return harden({
-            kind,
-            petname: strongname,
-          });
-        }
-
-        const [edgename, ...rest] = strongname;
-        if (edgeMapping.valToPetname.has(edgename)) {
-          // It's an path whose root has a petname.
-          const edgePetname = edgeMapping.valToPetname.get(edgename);
-          assert(!isPath(edgePetname));
-
-          // Just as strong as a petname, but still has context.
-          return harden({
-            kind,
-            petname: [edgePetname, ...rest],
-          });
-        }
+        return harden({
+          kind,
+          petname: valToPetname.get(val),
+        });
       }
     }
     // Val was not found in any named petname map. It may be in
