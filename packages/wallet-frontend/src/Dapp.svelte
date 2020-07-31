@@ -16,9 +16,9 @@
     }
    }} bind:value={petname} />
   {#if enable}
-  <button on:click={() => E(actions).setPetname(petname).then(() => E(actions).disable())}>Disable</button>
+  <button on:click={() => E(E(actions).setPetname(petname)).disable()}>Disable</button>
   {:else}
-  <button on:click={() => E(actions).setPetname(petname).then(() => E(actions).enable())}>Enable</button>
+  <button on:click={() => E(E(actions).setPetname(petname)).enable()}>Enable</button>
   {/if}
 </dd>
 {/each}

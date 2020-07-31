@@ -410,11 +410,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `using a petname that doesn't exist errors`,
     );
 
-    console.log('EXPECTED ERROR ->>> is already in use');
-    t.rejects(
-      () => wallet.suggestInstallation('autoswap', autoswapInstallationBoardId),
-      /is already in use/,
-      `using a petname that already exists errors`,
+    await t.doesNotReject(
+      wallet.suggestInstallation('autoswap', autoswapInstallationBoardId),
+      `resuggesting a petname doesn't error`,
     );
 
     wallet.renameInstallation('automaticRefund2', installationHandle);
@@ -467,7 +465,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-4' },
             { kind: 'instance', petname: 'automaticRefund' },
-            { kind: 'installation', petname: 'automaticRefund2' },
+            { kind: 'installation', petname: 'automaticRefund' },
           ],
         },
         currentAmount: {
@@ -479,7 +477,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
               instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
               installationHandle: {
                 kind: 'installation',
-                petname: 'automaticRefund2',
+                petname: 'automaticRefund',
               },
             },
           ],

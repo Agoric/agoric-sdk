@@ -27,12 +27,7 @@ export async function makeWallet({
 }) {
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
-  const {
-    makeMapping,
-    dehydrate,
-    rootEdgeMapping,
-    canonicalize,
-  } = makeDehydrator();
+  const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
   const purseMapping = makeMapping('purse');
   const brandMapping = makeMapping('brand');
   const instanceMapping = makeMapping('instance');
@@ -140,15 +135,21 @@ export async function makeWallet({
   const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
 
   async function updatePursesState(pursePetname, purse) {
+    const purseKey = purseMapping.implode(pursePetname);
+    for (const key of pursesState.keys()) {
+      if (!purseMapping.petnameToVal.has(purseMapping.explode(key))) {
+        pursesState.delete(key);
+      }
+    }
     const currentAmount = await E(purse).getCurrentAmount();
     const { value, brand } = currentAmount;
     const brandPetname = brandMapping.valToPetname.get(brand);
     const dehydratedCurrentAmount = dehydrate(currentAmount);
     const brandBoardId = await E(board).getId(brand);
-    pursesState.set(pursePetname, {
+    pursesState.set(purseKey, {
       brandBoardId,
-      brandPetname: canonicalize(brandPetname),
-      pursePetname: canonicalize(pursePetname),
+      brandPetname,
+      pursePetname,
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
@@ -182,7 +183,7 @@ export async function makeWallet({
             return [
               keyword,
               {
-                pursePetname: canonicalize(pursePetname),
+                pursePetname,
                 amount: display(amount),
               },
             ];
@@ -220,8 +221,8 @@ export async function makeWallet({
     const installation = display(installationHandle);
     const offerForDisplay = {
       ...offer,
-      instancePetname: canonicalize(instance.petname),
-      installationPetname: canonicalize(installation.petname),
+      instancePetname: instance.petname,
+      installationPetname: installation.petname,
       proposalForDisplay: displayProposal(proposalTemplate),
     };
 
@@ -378,7 +379,7 @@ export async function makeWallet({
   const addIssuer = async (petnameForBrand, issuer) => {
     const issuerSavedP = brandTable.addIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
-      brandMapping.addPetname(petnameForBrand, brand);
+      brandMapping.suggestPetname(petnameForBrand, brand);
       return `issuer ${q(petnameForBrand)} successfully added to wallet`;
     };
     return issuerSavedP.then(addBrandPetname).then(updateAllState);
@@ -388,7 +389,7 @@ export async function makeWallet({
     // We currently just add the petname mapped to the instanceHandle
     // value, but we could have a list of known instances for
     // possible display in the wallet.
-    instanceMapping.addPetname(petname, instanceHandle);
+    instanceMapping.suggestPetname(petname, instanceHandle);
     // We don't wait for the update before returning.
     updateAllState();
     return `instance ${q(petname)} successfully added to wallet`;
@@ -398,7 +399,7 @@ export async function makeWallet({
     // We currently just add the petname mapped to the installationHandle
     // value, but we could have a list of known installations for
     // possible display in the wallet.
-    installationMapping.addPetname(petname, installationHandle);
+    installationMapping.suggestPetname(petname, installationHandle);
     // We don't wait for the update before returning.
     updateAllState();
     return `installation ${q(petname)} successfully added to wallet`;
@@ -421,7 +422,7 @@ export async function makeWallet({
     );
 
     purseToBrand.init(purse, brand);
-    purseMapping.addPetname(petnameForPurse, purse);
+    purseMapping.suggestPetname(petnameForPurse, purse);
     updatePursesState(petnameForPurse, purse);
   };
 
@@ -535,18 +536,19 @@ export async function makeWallet({
       let approvalP;
       dappRecord = {
         suggestedPetname,
+        petname: suggestedPetname,
         origin,
       };
 
       dappRecord.actions = {
         setPetname(petname) {
           if (dappRecord.petname === petname) {
-            return;
+            return dappRecord.actions;
           }
-          if (dappRecord.petname === undefined) {
-            rootEdgeMapping.addPetname(petname, origin);
+          if (edgeMapping.valToPetname.has(origin)) {
+            edgeMapping.renamePetname(petname, origin);
           } else {
-            rootEdgeMapping.renamePetname(petname, origin);
+            edgeMapping.suggestPetname(petname, origin);
           }
           dappRecord = {
             ...dappRecord,
@@ -554,21 +556,20 @@ export async function makeWallet({
           };
           updateDappRecord(dappRecord);
           updateAllState();
+          return dappRecord.actions;
         },
         enable() {
-          // Update the petname before enabling.
-          dappRecord.actions.setPetname(
-            dappRecord.petname || dappRecord.suggestedPetname,
-          );
           // Enable the dapp with the attached petname.
           dappRecord = {
             ...dappRecord,
             enable: true,
           };
+          edgeMapping.suggestPetname(dappRecord.petname, origin);
           updateDappRecord(dappRecord);
 
           // Allow the pending requests to pass.
           resolve();
+          return dappRecord.actions;
         },
         disable(reason = undefined) {
           // Reject the pending dapp requests.
@@ -583,6 +584,7 @@ export async function makeWallet({
             approvalP,
           };
           updateDappRecord(dappRecord);
+          return dappRecord.actions;
         },
       };
 
@@ -777,13 +779,30 @@ export async function makeWallet({
       .then(saveAsDefault);
   }
 
-  function acceptPetname(acceptFn, suggestedPetname, boardId) {
+  function acceptPetname(
+    acceptFn,
+    suggestedPetname,
+    boardId,
+    dappOrigin = undefined,
+  ) {
+    let petname;
+    if (dappOrigin === undefined) {
+      petname = suggestedPetname;
+    } else {
+      const edgename = edgeMapping.valToPetname.get(dappOrigin);
+      petname = [edgename, suggestedPetname];
+    }
+
     return E(board)
       .getValue(boardId)
-      .then(value => acceptFn(suggestedPetname, value));
+      .then(value => acceptFn(petname, value));
   }
 
-  async function suggestIssuer(suggestedPetname, issuerBoardId) {
+  async function suggestIssuer(
+    suggestedPetname,
+    issuerBoardId,
+    dappOrigin = undefined,
+  ) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
@@ -795,10 +814,15 @@ export async function makeWallet({
       },
       suggestedPetname,
       issuerBoardId,
+      dappOrigin,
     );
   }
 
-  async function suggestInstance(suggestedPetname, instanceHandleBoardId) {
+  async function suggestInstance(
+    suggestedPetname,
+    instanceHandleBoardId,
+    dappOrigin = undefined,
+  ) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
@@ -808,12 +832,14 @@ export async function makeWallet({
       wallet.addInstance,
       suggestedPetname,
       instanceHandleBoardId,
+      dappOrigin,
     );
   }
 
   async function suggestInstallation(
     suggestedPetname,
     installationHandleBoardId,
+    dappOrigin = undefined,
   ) {
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
@@ -824,6 +850,7 @@ export async function makeWallet({
       wallet.addInstallation,
       suggestedPetname,
       installationHandleBoardId,
+      dappOrigin,
     );
   }
 

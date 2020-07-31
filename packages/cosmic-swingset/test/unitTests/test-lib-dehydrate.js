@@ -96,11 +96,11 @@ test('makeDehydrator', async t => {
     const brand2 = makeMockBrand();
     const brand3 = makeMockBrand();
     brandMapping.addPetname('moola', brand1);
-    brandMapping.addEdgename(['agoric', 'Moola'], brand1);
+    brandMapping.addPath(['agoric', 'Moola'], brand1);
     t.deepEquals(
-      brandMapping.valToEdgenames.get(brand1),
+      brandMapping.valToPaths.get(brand1),
       [['agoric', 'Moola']],
-      `use valToEdgenames`,
+      `use valToPaths`,
     );
     brandMapping.addPetname('simolean', brand2);
     brandMapping.addPetname('zoeInvite', brand3);

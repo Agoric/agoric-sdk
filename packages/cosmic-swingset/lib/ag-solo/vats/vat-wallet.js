@@ -281,8 +281,9 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestIssuer(
-                  [dappOrigin, petname],
+                  petname,
                   boardId,
+                  dappOrigin,
                 );
                 return {
                   type: 'walletSuggestIssuerResponse',
@@ -293,8 +294,9 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstance(
-                  [dappOrigin, petname],
+                  petname,
                   boardId,
+                  dappOrigin,
                 );
                 return {
                   type: 'walletSuggestInstanceResponse',
@@ -305,8 +307,9 @@ export function buildRootObject(_vatPowers) {
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
                 const result = await wallet.suggestInstallation(
-                  [dappOrigin, petname],
+                  petname,
                   boardId,
+                  dappOrigin,
                 );
                 return {
                   type: 'walletSuggestInstallationResponse',

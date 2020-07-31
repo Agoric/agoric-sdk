@@ -6,12 +6,12 @@ import makeStore from '@agoric/store';
 import { assert, details, q } from '@agoric/assert';
 
 /**
- * @typedef {string[]} Edgename
+ * @typedef {string[]} Path
  * @typedef {{} & 'Strongname'} Strongname
  * @param {any} x
- * @returns {x is Edgename}
+ * @returns {x is Path}
  */
-export const isEdgename = x => {
+export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
   }
@@ -22,6 +22,8 @@ export const isEdgename = x => {
   }
   return true;
 };
+
+const IMPLODE_PREFIX = 'IE:';
 
 // Marshalling for the UI should only use the user's petnames. We will
 // call marshalling for the UI "dehydration" and "hydration" to distinguish it from
@@ -34,137 +36,163 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   /** @type {string[]} */
   const searchOrder = [];
 
-  // Edgenames are kept across all kinds.
-  /** @type {Store<string, Edgename[]>} */
-  const valToEdgenames = makeStore('value');
+  // Paths are kept across all kinds.
+  /** @type {Store<string, Path[]>} */
+  const valToPaths = makeStore('value');
 
   /**
-   * @typedef {Store<string, [Edgename | undefined, any]>} UniqueEdgename
-   * @type {UniqueEdgename}
+   * @param {string} data
+   * @returns {string | Path}
    */
-  const uniqueEdgename = makeStore('name');
-
-  /**
-   * @param {Edgename | string} strongname
-   * @returns {Strongname}
-   */
-  const uniquify = strongname => {
-    if (!isEdgename(strongname)) {
-      return /** @type {Strongname} */ (strongname);
-    }
-    const explode = [...strongname];
-    let store = uniqueEdgename;
-    let name = explode.shift();
-    while (name !== undefined) {
-      /** @type {[Edgename | undefined, UniqueEdgename]} */
-      let ent;
-      if (store.has(name)) {
-        ent = store.get(name);
-      } else {
-        ent = [undefined, makeStore('name')];
-        store.init(name, ent);
-      }
-
-      if (!explode.length) {
-        if (ent[0] === undefined) {
-          // Install the unique edgename.
-          ent[0] = harden([...strongname]);
-          store.set(name, ent);
-        }
-        // eslint-disable-next-line prefer-destructuring
-        strongname = ent[0];
-      }
-
-      // eslint-disable-next-line prefer-destructuring
-      store = ent[1];
-      name = explode.shift();
-    }
-    // eslint-disable-next-line prettier/prettier
-    return /** @type {Strongname} */ (
-      /** @type {unknown} */ (strongname)
+  const explode = data => {
+    assert(
+      data.startsWith(IMPLODE_PREFIX),
+      details`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
     );
+    const strongname = JSON.parse(data.slice(IMPLODE_PREFIX.length));
+    if (!isPath(strongname)) {
+      return strongname;
+    }
+    // eslint-disable-next-line no-use-before-define
+    const { valToPetname: rootToPetname } = edgeMapping;
+    const petname = rootToPetname.get(strongname[0]);
+    assert(!isPath(petname));
+    strongname[0] = petname;
+    return harden(strongname);
+  };
+
+  /**
+   * @param {string | Path} strongname
+   * @returns {string}
+   */
+  const implode = strongname => {
+    if (!isPath(strongname)) {
+      return `${IMPLODE_PREFIX}${JSON.stringify(strongname)}`;
+    }
+
+    // A strong path must have a root name we have mapped.
+    const path = [...strongname];
+    // eslint-disable-next-line no-use-before-define
+    const { petnameToVal: petnameToRoot } = edgeMapping;
+    if (!petnameToRoot.has(path[0])) {
+      // Avoid asserting, which fills up the logs.
+      throw Error(`Edgename for ${q(path[0])} petname not found`);
+    }
+    const root = petnameToRoot.get(path[0]);
+    path[0] = root;
+
+    return `${IMPLODE_PREFIX}${JSON.stringify(path)}`;
   };
 
   const makeMapping = kind => {
     assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
-    /** @type {Store<any, Strongname>} */
+    /** @type {Store<any, string>} */
     const rawValToPetname = makeStore('value');
-    /** @type {Store<any, string | Edgename>} */
+    /** @type {Store<any, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
-        return rawValToPetname.set(key, uniquify(val));
+        rawValToPetname.set(key, implode(val));
       },
       init(key, val) {
-        return rawValToPetname.init(key, uniquify(val));
-      },
-    };
-    /** @type {Store<Strongname, any>} */
-    const rawPetnameToVal = makeStore('petname');
-    /** @type {Store<Edgename | string, any>} */
-    const petnameToVal = {
-      ...rawPetnameToVal,
-      has(key) {
-        return rawPetnameToVal.has(uniquify(key));
+        rawValToPetname.init(key, implode(val));
       },
       get(key) {
-        return rawPetnameToVal.get(uniquify(key));
+        return explode(rawValToPetname.get(key));
+      },
+      entries() {
+        return rawValToPetname
+          .entries()
+          .map(([key, val]) => [key, explode(val)]);
+      },
+      values() {
+        return rawValToPetname.values().map(val => explode(val));
+      },
+    };
+    /** @type {Store<string, any>} */
+    const rawPetnameToVal = makeStore('petname');
+    /** @type {Store<Path | string, any>} */
+    const petnameToVal = {
+      ...rawPetnameToVal,
+      init(key, val) {
+        return rawPetnameToVal.init(implode(key), val);
       },
       set(key, val) {
-        return rawPetnameToVal.set(uniquify(key), val);
+        return rawPetnameToVal.set(implode(key), val);
+      },
+      has(key) {
+        try {
+          return rawPetnameToVal.has(implode(key));
+        } catch (e) {
+          // console.error(e);
+          return false;
+        }
+      },
+      get(key) {
+        return rawPetnameToVal.get(implode(key));
       },
       delete(key) {
-        return rawPetnameToVal.delete(uniquify(key));
+        return rawPetnameToVal.delete(implode(key));
       },
-      init(key, val) {
-        return rawPetnameToVal.init(uniquify(key), val);
+      keys() {
+        return rawPetnameToVal.keys().map(key => explode(key));
+      },
+      entries() {
+        return rawPetnameToVal
+          .entries()
+          .map(([key, val]) => [explode(key), val]);
       },
     };
 
     /**
-     * @param {Edgename} edgename
+     * @param {Path} path
      * @param {any} val
      */
-    const addEdgename = (edgename, val) => {
+    const addPath = (path, val) => {
       assert(
-        isEdgename(edgename),
-        details`edgename ${q(edgename)} must be an array of strings`,
+        isPath(path),
+        details`path ${q(path)} must be an array of strings`,
       );
 
       if (
         !valToPetname.has(val) &&
         // eslint-disable-next-line no-use-before-define
-        rootEdgeMapping.valToPetname.has(edgename[0])
+        edgeMapping.valToPetname.has(path[0])
       ) {
-        // We have a petname for the root of the edgename, so use it as our strongname.
-        valToPetname.init(val, uniquify(edgename));
+        // We have a petname for the root of the path, so use it as our strongname.
+        valToPetname.init(val, path);
       }
 
-      // Check all the extant edgenames for this value.
-      const edgenames = valToEdgenames.has(val)
-        ? valToEdgenames.get(val)
-        : harden([]);
+      // Check all the extant paths for this value.
+      if (!valToPaths.has(val)) {
+        valToPaths.init(val, harden([path]));
+        return;
+      }
+      const paths = valToPaths.get(val);
 
-      // See if we already have the edgename in the list.
-      const found = edgenames.find(ename => {
-        if (ename.length !== edgename.length) {
+      // See if we already have the path in the list.
+      const found = paths.find(ename => {
+        if (ename.length !== path.length) {
           return false;
         }
         for (let i = 0; i < ename.length; i += 1) {
-          if (ename[i] !== edgename[i]) {
+          if (ename[i] !== path[i]) {
             return false;
           }
         }
         return true;
       });
 
-      // Set the new edgename if not found.
+      // Set the new path if not found.
       if (!found) {
-        valToEdgenames.set(val, harden([...edgenames, edgename]));
+        valToPaths.set(val, harden([...paths, path]));
       }
     };
 
     const addPetname = (petname, val) => {
+      if (petnameToVal.has(petname) && petnameToVal.get(petname) === val) {
+        return;
+      }
       assert(
         !petnameToVal.has(petname),
         details`petname ${petname} is already in use`,
@@ -175,12 +203,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       );
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
-      if (!valToEdgenames.has(val)) {
-        valToEdgenames.init(val, harden([]));
-      }
 
-      if (isEdgename(petname)) {
-        addEdgename(petname, val);
+      if (isPath(petname)) {
+        addPath(petname, val);
       }
     };
 
@@ -195,15 +220,25 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       );
       // Delete the old mappings.
       const oldPetname = valToPetname.get(val);
-      if (!isEdgename(oldPetname)) {
-        petnameToVal.delete(oldPetname);
-      }
+      petnameToVal.delete(oldPetname);
       valToPetname.delete(val);
 
       // Add the new mappings.
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
     };
+
+    const suggestPetname = (petname, val) => {
+      if (petnameToVal.has(petname)) {
+        return;
+      }
+      if (valToPetname.has(val)) {
+        return;
+      }
+
+      addPetname(petname, val);
+    };
+
     const deletePetname = petname => {
       assert(
         petnameToVal.has(petname),
@@ -218,20 +253,23 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       valToPetname.delete(val);
     };
     const mapping = harden({
+      implode,
+      explode,
       valToPetname,
-      valToEdgenames,
+      valToPaths,
       petnameToVal,
       addPetname,
-      addEdgename,
+      addPath,
       renamePetname,
       deletePetname,
+      suggestPetname,
       kind,
     });
     petnameKindToMapping.init(kind, mapping);
     return mapping;
   };
 
-  const rootEdgeMapping = makeMapping('rootEdge');
+  const edgeMapping = makeMapping('edge');
   const unnamedMapping = makeMapping('unnamed');
 
   const addToUnnamed = val => {
@@ -245,21 +283,6 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     return placeholderName;
   };
 
-  const canonicalize = strongname => {
-    if (!isEdgename(strongname)) {
-      return strongname;
-    }
-
-    // A strong edgename must have a root name we have mapped.
-    const explode = [...strongname];
-    const { valToPetname: rootNameToPetname } = rootEdgeMapping;
-    const rootPetname = rootNameToPetname.get(strongname[0]);
-    assert(!isEdgename(rootPetname));
-    explode[0] = rootPetname;
-
-    return uniquify(explode);
-  };
-
   // look through the petname stores in order and create a new
   // unnamed record if not found.
   const convertValToName = val => {
@@ -268,7 +291,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       const { valToPetname } = petnameKindToMapping.get(kind);
       if (valToPetname.has(val)) {
         const strongname = valToPetname.get(val);
-        if (!isEdgename(strongname)) {
+        if (!isPath(strongname)) {
           // It's a user-assigned petname.
           return harden({
             kind,
@@ -276,16 +299,16 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
           });
         }
 
-        const [rootName] = strongname;
-        if (rootEdgeMapping.valToPetname.has(rootName)) {
-          // It's an edgename whose root has a petname.
-          const rootPetname = rootEdgeMapping.valToPetname.get(rootName);
-          assert(!isEdgename(rootPetname));
+        const [edgename, ...rest] = strongname;
+        if (edgeMapping.valToPetname.has(edgename)) {
+          // It's an path whose root has a petname.
+          const edgePetname = edgeMapping.valToPetname.get(edgename);
+          assert(!isPath(edgePetname));
 
           // Just as strong as a petname, but still has context.
           return harden({
             kind,
-            petname: canonicalize(strongname),
+            petname: [edgePetname, ...rest],
           });
         }
       }
@@ -305,7 +328,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
 
   const convertNameToVal = ({ kind, petname }) => {
     const { petnameToVal } = petnameKindToMapping.get(kind);
-    return petnameToVal.get(canonicalize(petname));
+    return petnameToVal.get(petname);
   };
 
   const { serialize: dehydrate, unserialize: hydrate } = makeMarshal(
@@ -315,8 +338,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   return harden({
     hydrate,
     dehydrate,
-    canonicalize,
-    rootEdgeMapping,
+    edgeMapping,
     makeMapping: kind => {
       const mapping = makeMapping(kind);
       searchOrder.push(kind);
