@@ -29,15 +29,26 @@ test('d0', async t => {
     [],
     {
       _bootstrap: { '@qclass': 'slot', index: 0 },
-      vatAdmin: { '@qclass': 'slot', index: 1 },
+      comms: { '@qclass': 'slot', index: 1 },
+      timer: { '@qclass': 'slot', index: 2 },
+      vatAdmin: { '@qclass': 'slot', index: 3 },
+      vattp: { '@qclass': 'slot', index: 4 },
     },
     {
       _dummy: 'dummy',
-      d0: { '@qclass': 'slot', index: 2 },
-      vatAdmin: { '@qclass': 'slot', index: 3 },
+      d0: { '@qclass': 'slot', index: 5 },
+      vatAdmin: { '@qclass': 'slot', index: 6 },
     },
   ]);
-  t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'o-50', 'd-70', 'd-71']);
+  t.deepEqual(JSON.parse(c.dump().log[1]), [
+    'o+0',
+    'o-50',
+    'o-51',
+    'o-52',
+    'o-53',
+    'd-70',
+    'd-71',
+  ]);
   t.end();
 });
 

@@ -39,7 +39,7 @@ function buildRawVat(name, kernel, onDispatchCallback = undefined) {
   function getSyscall() {
     return syscall;
   }
-  kernel.addGenesisVat(name, setup);
+  kernel.addGenesisVatSetup(name, setup);
   return { log, getSyscall };
 }
 

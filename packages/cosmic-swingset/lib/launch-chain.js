@@ -9,9 +9,6 @@ import {
   buildTimer,
   buildBridge,
   buildVatController,
-  getCommsSourcePath,
-  getTimerWrapperSourcePath,
-  getVatTPSourcePath,
 } from '@agoric/swingset-vat';
 import { getBestSwingStore } from './check-lmdb';
 
@@ -46,12 +43,6 @@ async function buildSwingset(
       });
     }
   }
-  config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
-  config.vats.set('comms', {
-    sourcepath: getCommsSourcePath(),
-    options: { enablePipelining: true },
-  });
-  config.vats.set('timer', { sourcepath: getTimerWrapperSourcePath() });
   config.bootstrapIndexJS = require.resolve(`${vatsDir}/bootstrap.js`);
   config.hostStorage = storage;
 

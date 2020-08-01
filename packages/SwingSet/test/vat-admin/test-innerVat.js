@@ -24,8 +24,6 @@ async function doTestSetup(mode) {
 
 test('VatAdmin inner vat creation', async t => {
   const c = await doTestSetup('newVat');
-  t.equal(c.vatNameToID('vatAdmin'), 'v2');
-  t.equal(c.vatNameToID('_bootstrap'), 'v1');
   for (let i = 0; i < 9; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await c.step();

@@ -61,7 +61,7 @@ test('simple call', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vat1', setup1);
+  kernel.addGenesisVatSetup('vat1', setup1);
   await kernel.start();
   const vat1 = kernel.vatNameToID('vat1');
   let data = kernel.dump();
@@ -106,8 +106,8 @@ test('map inbound', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vat1', setup1);
-  kernel.addGenesisVat('vat2', setup1);
+  kernel.addGenesisVatSetup('vat1', setup1);
+  kernel.addGenesisVatSetup('vat2', setup1);
   await kernel.start();
   const vat1 = kernel.vatNameToID('vat1');
   const vat2 = kernel.vatNameToID('vat2');
@@ -153,8 +153,8 @@ test('addImport', async t => {
     function deliver(_facetID, _method, _args) {}
     return { deliver };
   }
-  kernel.addGenesisVat('vat1', setup);
-  kernel.addGenesisVat('vat2', setup);
+  kernel.addGenesisVatSetup('vat1', setup);
+  kernel.addGenesisVatSetup('vat2', setup);
   await kernel.start();
   const vat1 = kernel.vatNameToID('vat1');
   const vat2 = kernel.vatNameToID('vat2');
@@ -194,7 +194,7 @@ test('outbound call', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vat1', setup1);
+  kernel.addGenesisVatSetup('vat1', setup1);
 
   function setup2(_syscall) {
     function deliver(facetID, method, args) {
@@ -204,7 +204,7 @@ test('outbound call', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vat2', setup2);
+  kernel.addGenesisVatSetup('vat2', setup2);
   await kernel.start();
   const vat1 = kernel.vatNameToID('vat1');
   const vat2 = kernel.vatNameToID('vat2');
@@ -389,7 +389,7 @@ test('three-party', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   function setupB(_syscall) {
     function deliver(facetID, method, args) {
@@ -398,7 +398,7 @@ test('three-party', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB);
+  kernel.addGenesisVatSetup('vatB', setupB);
 
   function setupC(_syscall) {
     function deliver(facetID, method, args) {
@@ -406,7 +406,7 @@ test('three-party', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatC', setupC);
+  kernel.addGenesisVatSetup('vatC', setupC);
 
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
@@ -509,7 +509,7 @@ test('transfer promise', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   let syscallB;
   const logB = [];
@@ -520,7 +520,7 @@ test('transfer promise', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB);
+  kernel.addGenesisVatSetup('vatB', setupB);
 
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
@@ -613,8 +613,8 @@ test('subscribe to promise', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vat1', setup);
-  kernel.addGenesisVat('vat2', emptySetup);
+  kernel.addGenesisVatSetup('vat1', setup);
+  kernel.addGenesisVatSetup('vat2', emptySetup);
 
   await kernel.start();
   const vat1 = kernel.vatNameToID('vat1');
@@ -658,7 +658,7 @@ test('promise resolveToData', async t => {
     }
     return { deliver, notifyFulfillToData };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   let syscallB;
   function setupB(s) {
@@ -666,7 +666,7 @@ test('promise resolveToData', async t => {
     function deliver() {}
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB);
+  kernel.addGenesisVatSetup('vatB', setupB);
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
@@ -735,7 +735,7 @@ test('promise resolveToPresence', async t => {
     }
     return { deliver, notifyFulfillToPresence };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   let syscallB;
   function setupB(s) {
@@ -743,7 +743,7 @@ test('promise resolveToPresence', async t => {
     function deliver() {}
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB);
+  kernel.addGenesisVatSetup('vatB', setupB);
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
@@ -815,7 +815,7 @@ test('promise reject', async t => {
     }
     return { deliver, notifyReject };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   let syscallB;
   function setupB(s) {
@@ -823,7 +823,7 @@ test('promise reject', async t => {
     function deliver() {}
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB);
+  kernel.addGenesisVatSetup('vatB', setupB);
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
@@ -890,8 +890,8 @@ test('transcript', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatA', setup);
-  kernel.addGenesisVat('vatB', emptySetup);
+  kernel.addGenesisVatSetup('vatA', setup);
+  kernel.addGenesisVatSetup('vatB', emptySetup);
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
@@ -946,7 +946,7 @@ test('non-pipelined promise queueing', async t => {
     function deliver() {}
     return { deliver };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   function setupB(_s) {
     function deliver(target, method, args, result) {
@@ -954,7 +954,7 @@ test('non-pipelined promise queueing', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB);
+  kernel.addGenesisVatSetup('vatB', setupB);
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
@@ -1063,7 +1063,7 @@ test('pipelined promise queueing', async t => {
     function deliver() {}
     return { deliver };
   }
-  kernel.addGenesisVat('vatA', setupA);
+  kernel.addGenesisVatSetup('vatA', setupA);
 
   function setupB(_s) {
     function deliver(target, method, args, result) {
@@ -1071,7 +1071,7 @@ test('pipelined promise queueing', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVat('vatB', setupB, { enablePipelining: true });
+  kernel.addGenesisVatSetup('vatB', setupB, { enablePipelining: true });
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');

@@ -2,6 +2,7 @@
 
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
+import { importBundle } from '@agoric/import-bundle';
 import { makeVatManagerFactory } from './vatManager/vatManager';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
@@ -34,8 +35,6 @@ export default function buildKernel(kernelEndowments) {
     waitUntilQuiescent,
     hostStorage,
     makeVatEndowments,
-    vatAdminVatSetup,
-    vatAdminDevBuildRootDeviceNode,
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
@@ -396,34 +395,54 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  function addGenesisVat(name, setup, options = {}) {
-    name = `${name}`;
-    // for now, we guard against 'options' by treating it as JSON-able data
-    options = JSON.parse(JSON.stringify(options));
-    // todo: consider having vats indicate 'enablePipelining' during setup(),
-    // rather than using options= during kernel.addGenesisVat()
+  // this is for unit tests
+  function addGenesisVatSetup(name, setup, options = {}) {
+    if (typeof setup !== 'function') {
+      throw Error(`setup is not a function, rather ${setup}`);
+    }
     const knownOptions = new Set(['enablePipelining']);
     for (const k of Object.getOwnPropertyNames(options)) {
       if (!knownOptions.has(k)) {
-        throw new Error(`unknown option ${k}`);
+        throw Error(`unknown option ${k}`);
       }
     }
 
     if (started) {
-      throw new Error(`addGenesisVat() cannot be called after kernel.start`);
+      throw Error(`addGenesisVat() cannot be called after kernel.start`);
     }
     if (genesisVats.has(name)) {
-      throw new Error(`vatID ${name} already added`);
+      throw Error(`vatID ${name} already added`);
     }
 
     genesisVats.set(name, { setup, options });
   }
 
-  function addGenesisDevice(name, buildRootDeviceNode, endowments) {
+  function addGenesisVat(name, bundle, options = {}) {
+    // todo: consider having vats indicate 'enablePipelining' by exporting a
+    // boolean, rather than options= . We'd have to retrieve the flag from
+    // the VatManager, since it isn't available until the bundle is evaluated
+    if (typeof bundle !== 'object') {
+      throw Error(`bundle is not an object, rather ${bundle}`);
+    }
+    const knownOptions = new Set(['enablePipelining']);
+    for (const k of Object.getOwnPropertyNames(options)) {
+      if (!knownOptions.has(k)) {
+        throw Error(`unknown option ${k}`);
+      }
+    }
+    if (started) {
+      throw Error(`addGenesisVat() cannot be called after kernel.start`);
+    }
+    if (genesisVats.has(name)) {
+      throw Error(`vatID ${name} already added`);
+    }
+    genesisVats.set(name, { bundle, options });
+  }
+
+  function addGenesisDevice(name, bundle, endowments) {
     console.debug(`kernel.addDevice(${name})`);
-    harden(buildRootDeviceNode);
-    if (!(buildRootDeviceNode instanceof Function)) {
-      throw Error('buildRootDeviceNode is not an in-realm function');
+    if (typeof bundle !== 'object') {
+      throw Error(`bundle is not an object, rather ${bundle}`);
     }
     if (started) {
       throw new Error(`addDevice() cannot be called after kernel.start`);
@@ -431,7 +450,15 @@ export default function buildKernel(kernelEndowments) {
     if (genesisDevices.has(name)) {
       throw new Error(`deviceName ${name} already added`);
     }
-    genesisDevices.set(name, { buildRootDeviceNode, endowments });
+    genesisDevices.set(name, { bundle, endowments });
+  }
+
+  // todo: we condition on having vatAdminDeviceBundle because some kernel
+  // tests don't use controller.buildVatController (they don't care about
+  // vats and devices), so this isn't called. We should fix those tests.
+  let vatAdminDeviceBundle;
+  function addVatAdminDevice(bundle) {
+    vatAdminDeviceBundle = bundle;
   }
 
   function makeVatRootObjectSlot() {
@@ -664,13 +691,6 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper.createStartingKernelState();
     }
 
-    // TESTONLY: we condition on vatAdminVatSetup and vatAdminDevSetup because
-    // some kernel tests don't care about vats and devices and so don't
-    // initialize properly. We should fix those tests.
-    if (vatAdminVatSetup) {
-      genesisVats.set('vatAdmin', { setup: vatAdminVatSetup, options: {} });
-    }
-
     // instantiate all vats
     for (const name of genesisVats.keys()) {
       const { setup, bundle, options } = genesisVats.get(name);
@@ -680,35 +700,44 @@ export default function buildKernel(kernelEndowments) {
       const manager = await (setup
         ? vatManagerFactory.createFromSetup(setup, vatID)
         : vatManagerFactory.createFromBundle(bundle, vatID, {
+            metered: false,
             vatPowerType: 'static',
+            allowSetup: true, // TODO: only needed by comms, disallow elsewhere
           }));
       addVatManager(vatID, manager, options);
     }
 
-    if (vatAdminDevBuildRootDeviceNode) {
-      const params = {
-        buildRootDeviceNode: vatAdminDevBuildRootDeviceNode,
-        endowments: {
-          create: createVatDynamically,
-          stats: collectVatStats,
-          /* TODO: terminate */
-        },
+    if (vatAdminDeviceBundle) {
+      // if we have a device bundle, then vats[vatAdmin] will be present too
+      const endowments = {
+        create: createVatDynamically,
+        stats: collectVatStats,
+        /* TODO: terminate */
       };
-      genesisDevices.set('vatAdmin', params);
+      genesisDevices.set('vatAdmin', {
+        bundle: vatAdminDeviceBundle,
+        endowments,
+      });
     }
 
     // instantiate all devices
     for (const name of genesisDevices.keys()) {
-      const {
-        buildRootDeviceNode,
-        endowments: devEndowments,
-      } = genesisDevices.get(name);
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
       console.debug(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
+      const { bundle, endowments: devEndowments } = genesisDevices.get(name);
+      // eslint-disable-next-line no-await-in-loop
+      const NS = await importBundle(bundle, {
+        filePrefix: `dev-${name}`,
+        endowments: makeVatEndowments(`dev-${name}`),
+      });
+      assert(
+        typeof NS.buildRootDeviceNode === 'function',
+        `device ${name} lacks buildRootDeviceNode`,
+      );
       const manager = buildDeviceManager(
         deviceID,
         name,
-        buildRootDeviceNode,
+        NS.buildRootDeviceNode,
         devEndowments,
       );
       addDeviceManager(deviceID, name, manager);
@@ -793,12 +822,15 @@ export default function buildKernel(kernelEndowments) {
     // these are meant for the controller
     addGenesisVat,
     addGenesisDevice,
+    addVatAdminDevice,
     start,
 
     step,
     run,
 
     // the rest are for testing and debugging
+
+    addGenesisVatSetup,
 
     log(str) {
       ephemeral.log.push(`${str}`);

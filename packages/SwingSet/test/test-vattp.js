@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import { buildVatController, getVatTPSourcePath } from '../src/index';
+import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
 test('vattp', async t => {
@@ -11,7 +11,6 @@ test('vattp', async t => {
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
-  config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
 
   const c = await buildVatController(config, ['1']);
   await c.run();
@@ -61,7 +60,6 @@ test('vattp 2', async t => {
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
-  config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
 
   const c = await buildVatController(config, ['2']);
   await c.run();

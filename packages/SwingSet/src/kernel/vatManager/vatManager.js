@@ -75,7 +75,7 @@ export function makeVatManagerFactory(tools) {
   async function createFromBundle(bundle, vatID, options) {
     const {
       allowSetup = false,
-      metered = true,
+      metered = false,
       notifyTermination = undefined,
       vatPowerType, // 'static' or 'dynamic'
       ...unknownOptions
