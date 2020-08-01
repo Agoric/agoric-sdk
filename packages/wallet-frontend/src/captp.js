@@ -17,7 +17,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
   }
 
   // Stable identity for the connection handler.
-  function onClose(event)  {
+  function onClose(_event)  {
     // Throw away our state.
     bootPK = producePromise();
     onReset();
@@ -43,14 +43,14 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
 
   // This is the public state, a promise that never resolves,
   // but pipelines messages to the bootPK.promise.
-  function makePermanentPresence(prop) {
+  function makeStableForwarder(fromBootP = x => x) {
     return new HandledPromise((_resolve, _reject, resolveWithPresence) => {
       resolveWithPresence({
         applyMethod(_p, name, args) {
-          return E(E.G(bootPK.promise)[prop])[name](...args);
+          return E(fromBootP(bootPK.promise))[name](...args);
         },
         get(_p, name) {
-          return E(E.G(bootPK.promise)[prop])[name];
+          return E(fromBootP(bootPK.promise))[name];
         },
       });
     });
@@ -62,5 +62,5 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
   // can use makePermanentPresence.
   setTimeout(onReset, 1);
 
-  return { connected, makePermanentPresence };
+  return { connected, makeStableForwarder };
 }
