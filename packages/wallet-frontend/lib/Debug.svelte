@@ -15,17 +15,15 @@
 </script>
 
 <style>
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
+  div {
+    float: right;
   }
 </style>
-
-<Button icon raised dense color="sccondary" on:click={() => (showModal = true)}>
-  <Icon data={code} label={title} />
+<div>
+<Button class="right" dense color="secondary" on:click={() => (showModal = true)}>
+  <Icon data={code} label={title} scale="1" />
 </Button>
+</div>
 <!-- <pre>{display}</pre> -->
 {#if showModal}
   <Modal on:close={() => (showModal = false)}>

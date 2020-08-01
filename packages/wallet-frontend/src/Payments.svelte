@@ -4,7 +4,7 @@
 </script>
 
 <style>
-  main {
+  section {
     /* text-align: center; */
     padding: 1em;
     max-width: 240px;
@@ -19,17 +19,17 @@
   }
 
   @media (min-width: 640px) {
-    main {
+    section {
       max-width: none;
     }
   }
 </style>
 
-<main>
+<section>
   <!-- All {JSON.stringify($payments)} -->
   {#if !Array.isArray($payments) || $payments.length === 0}
     No payments.
   {:else}
     Some payments.
   {/if}
-</main>
+</section>

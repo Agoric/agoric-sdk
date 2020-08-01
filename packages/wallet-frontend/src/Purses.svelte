@@ -1,6 +1,5 @@
 <script>
-  import Amount from "./Amount.svelte";
-  import Petname from './Petname.svelte';
+  import Purse from "./Purse.svelte";
   // a store of purses
   export let purses;
 </script>
@@ -18,7 +17,7 @@
     box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
   }
 
-  main {
+  section {
     /* text-align: center; */
     /* padding: 1em; */
     max-width: 240px;
@@ -26,13 +25,13 @@
   }
 
   @media (min-width: 640px) {
-    main {
+    section {
       max-width: none;
     }
   }
 </style>
 
-<main>
+<section>
   <!-- All {JSON.stringify($purses)} -->
   {#if !Array.isArray($purses) || $purses.length === 0}
     No purses.
@@ -40,10 +39,9 @@
     <ul>
       {#each $purses as purse}
         <li>
-          <div><Petname name={purse.pursePetname} /></div>
-          <Amount amount={purse.currentAmount} />
+          <Purse {purse} />
         </li>
       {/each}
     </ul>
   {/if}
-</main>
+</section>

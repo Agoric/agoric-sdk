@@ -79,5 +79,5 @@
   <hr />
 
   <!-- svelte-ignore a11y-autofocus -->
-  <button autofocus on:click={close}>close modal</button>
+  <button autofocus on:click={close}>Close</button>
 </div>

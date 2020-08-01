@@ -48,7 +48,7 @@
 </script>
 
 <style>
-  main {
+  section {
     /* text-align: center; */
     padding: 1em;
     max-width: 240px;
@@ -64,7 +64,7 @@
   }
 
   @media (min-width: 640px) {
-    main {
+    section {
       max-width: none;
     }
   }
@@ -74,11 +74,12 @@
   }
 </style>
 
-<main>
+<section>
   <div>
    <Petname name={instancePetname} board={instanceHandleBoardId} />
     at {formatDateNow(date)} 
     via ({origin})
+	<Debug title="Transaction Detail" target={txn} />
   </div>
   <div>
     {#each Object.entries(give) as [role, { amount: { brand, value }, pursePetname }], i}
@@ -106,6 +107,4 @@
     <button on:click={() => E(walletP).declineOffer(id)}>Decline</button>
     <button on:click={() => E(walletP).cancelOffer(id)}>Cancel</button>
   </div>
-
-	<Debug title="Transaction Detail" target={txn} />
-</main>
+</section>
