@@ -2,10 +2,18 @@
   import Amount from "./Amount.svelte";
   import Petname from "./Petname.svelte";
   import Debug from "../lib/Debug.svelte";
-import { E } from "@agoric/captp";
+  import { E } from "@agoric/eventual-send";
 
   export let purse;
   export let walletP;
+
+  function toggleAutoDeposit({ target: { checked } }) {
+    if (checked) {
+      E(walletP).enableAutoDeposit(purse.pursePetname);
+    } else {
+      E(walletP).disableAutoDeposit(purse.pursePetname);
+    }
+  }
 </script>
 
 <style>
@@ -19,12 +27,9 @@ import { E } from "@agoric/captp";
   </div>
   <Amount amount={purse.currentAmount} />
   <div>
-    AutoDeposit:
+    <label for="ad{purse.pursePetname}"><input id="ad{purse.pursePetname}" type="checkbox" on:click={toggleAutoDeposit} checked={purse.depositBoardId} /> AutoDeposit</label>
     {#if purse.depositBoardId}
-      {purse.depositBoardId}
-      <button on:click={() => E(walletP).disableAutoDeposit(purse.pursePetname)}>Disable</button>
-    {:else}
-      <button on:click={() => E(walletP).enableAutoDeposit(purse.pursePetname)}>Enable</button>
+      ({purse.depositBoardId})
     {/if}
   </div>
 </section>

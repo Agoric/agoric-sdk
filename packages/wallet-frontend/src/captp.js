@@ -56,11 +56,12 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
     });
   }
 
-  const { connected, sendMessage } = makeConnection({ onOpen, onMessage, onClose });
+  const props = makeConnection({ onOpen, onMessage, onClose });
+  const { sendMessage } = props;
 
   // Prepare the first reset, delayed so that our caller
   // can use makePermanentPresence.
   setTimeout(onReset, 1);
 
-  return { connected, makeStableForwarder };
+  return { makeStableForwarder, ...props };
 }
