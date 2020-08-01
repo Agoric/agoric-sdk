@@ -90,7 +90,8 @@ export async function makeWallet({
 
   const brandTable = makeBrandTable();
   const purseToBrand = makeWeakStore('purse');
-  const brandToDepositFacetId = makeWeakStore('brand');
+  const brandToDepositFacetId = makeStore('brand');
+  const brandToAutoDepositPurse = makeStore('brand');
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore('offerId');
@@ -146,7 +147,18 @@ export async function makeWallet({
     const brandPetname = brandMapping.valToPetname.get(brand);
     const dehydratedCurrentAmount = dehydrate(currentAmount);
     const brandBoardId = await E(board).getId(brand);
+
+    let depositBoardId;
+    if (
+      brandToAutoDepositPurse.has(brand) &&
+      brandToAutoDepositPurse.get(brand) === purse &&
+      brandToDepositFacetId.has(brand)
+    ) {
+      // We have a depositId for the purse.
+      depositBoardId = brandToDepositFacetId.get(brand);
+    }
     pursesState.set(purseKey, {
+      depositBoardId,
       brandBoardId,
       brandPetname,
       pursePetname,
@@ -440,12 +452,12 @@ export async function makeWallet({
     const doNotUse = await E(issuer).makeEmptyPurse();
 
     const purse = makeObservablePurse(E, doNotUse, () =>
-      updatePursesState(purseMapping.valToPetname.get(purse), doNotUse),
+      updatePursesState(purseMapping.valToPetname.get(purse), purse),
     );
 
     purseToBrand.init(purse, brand);
     purseMapping.suggestPetname(petnameForPurse, purse);
-    updatePursesState(petnameForPurse, purse);
+    updatePursesState(purseMapping.valToPetname.get(purse), purse);
   };
 
   function deposit(pursePetname, payment) {
@@ -796,21 +808,59 @@ export async function makeWallet({
       });
   }
 
-  function addDepositFacet(pursePetname) {
+  async function disableAutoDeposit(pursePetname) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
-    const pinDepositFacet = depositFacet => E(board).getId(depositFacet);
-    const saveAsDefault = boardId => {
-      // Add as default unless a default already exists
-      const brand = purseToBrand.get(purse);
-      if (!brandToDepositFacetId.has(brand)) {
-        brandToDepositFacetId.init(brand, boardId);
-      }
-      return boardId;
-    };
-    return E(purse)
-      .makeDepositFacet()
-      .then(pinDepositFacet)
-      .then(saveAsDefault);
+    const brand = purseToBrand.get(purse);
+    if (
+      !brandToAutoDepositPurse.has(brand) ||
+      brandToAutoDepositPurse.get(brand) !== purse
+    ) {
+      return;
+    }
+
+    brandToAutoDepositPurse.delete(brand);
+    await updateAllPurseState();
+  }
+
+  const pendingEnableAutoDeposits = makeStore('brand');
+  async function enableAutoDeposit(pursePetname) {
+    const purse = purseMapping.petnameToVal.get(pursePetname);
+    const brand = purseToBrand.get(purse);
+    if (brandToAutoDepositPurse.has(brand)) {
+      brandToAutoDepositPurse.set(brand, purse);
+    } else {
+      brandToAutoDepositPurse.init(brand, purse);
+    }
+
+    const pendingP =
+      pendingEnableAutoDeposits.has(brand) &&
+      pendingEnableAutoDeposits.get(brand);
+    if (pendingP) {
+      updateAllPurseState();
+      return pendingP;
+    }
+
+    const pr = producePromise();
+    pendingEnableAutoDeposits.init(brand, pr.promise);
+
+    const depositor = harden({
+      receive(payment) {
+        if (!brandToAutoDepositPurse.has(brand)) {
+          // TODO: Queue as an incoming payment.
+          throw Error(`Incoming payments not implemented`);
+        }
+        // Plop into the current purse.
+        const currentPurse = brandToAutoDepositPurse.get(brand);
+        return E(currentPurse).deposit(payment);
+      },
+    });
+
+    const boardId = await E(board).getId(depositor);
+    brandToDepositFacetId.init(brand, boardId);
+
+    pr.resolve(boardId);
+    updateAllPurseState();
+    return pr.promise;
   }
 
   /**
@@ -953,7 +1003,8 @@ export async function makeWallet({
     getOffers,
     getOfferHandle: id => idToOfferHandle.get(id),
     getOfferHandles: ids => ids.map(wallet.getOfferHandle),
-    addDepositFacet,
+    enableAutoDeposit,
+    disableAutoDeposit,
     getDepositFacetId,
     suggestIssuer,
     suggestInstance,
@@ -969,7 +1020,7 @@ export async function makeWallet({
   const makeInvitePurse = () =>
     wallet.makeEmptyPurse(ZOE_INVITE_BRAND_PETNAME, ZOE_INVITE_PURSE_PETNAME);
   const addInviteDepositFacet = () =>
-    E(wallet).addDepositFacet(ZOE_INVITE_PURSE_PETNAME);
+    E(wallet).enableAutoDeposit(ZOE_INVITE_PURSE_PETNAME);
   await addZoeIssuer(inviteIssuerP)
     .then(makeInvitePurse)
     .then(addInviteDepositFacet);

@@ -88,7 +88,7 @@ const setupTest = async () => {
 };
 
 test('lib-wallet issuer and purse methods', async t => {
-  t.plan(10);
+  t.plan(11);
   try {
     const {
       zoe,
@@ -159,14 +159,10 @@ test('lib-wallet issuer and purse methods', async t => {
       moolaBundle.amountMath.make(100),
       `deposit successful`,
     );
-    t.deepEquals(
-      pursesStateChangeLog,
-      [
-        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}}]',
-        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}}]',
-        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}}]',
-        '[{"brandBoardId":"6043467","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","value":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"value":0}}]',
-      ],
+    t.equals(pursesStateChangeLog.length, 5, `pursesStateChangeLog length`);
+    t.equals(
+      pursesStateChangeLog[pursesStateChangeLog.length - 1],
+      '[{"depositBoardId":"6043467","brandBoardId":"3812059","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","value":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"value":0}}]',
       `pursesStateChangeLog`,
     );
     t.deepEquals(inboxStateChangeLog, [], `inboxStateChangeLog`);
@@ -265,7 +261,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.deepEquals(
       zoeInvitePurseState,
       {
-        brandBoardId: '6043467',
+        brandBoardId: '3812059',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [
@@ -345,7 +341,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.deepEquals(
       zoeInvitePurseState2,
       {
-        brandBoardId: '6043467',
+        brandBoardId: '3812059',
+        depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [
@@ -447,7 +444,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.deepEquals(
       zoeInvitePurseState3,
       {
-        brandBoardId: '6043467',
+        brandBoardId: '3812059',
+        depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [
@@ -622,7 +620,7 @@ test('lib-wallet offer methods', async t => {
     t.deepEquals(
       zoeInvitePurseState,
       {
-        brandBoardId: '6043467',
+        brandBoardId: '3812059',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [],

@@ -168,7 +168,7 @@
       </div>
       <div class="purses">
         <h2>Purses</h2>
-        <Purses {purses} />
+        <Purses {purses} {walletP} />
       </div>
       <div class="issuers">
         <h2>Issuers</h2>
