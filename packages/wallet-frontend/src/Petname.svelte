@@ -9,7 +9,7 @@
     /* color: green; */
   }
   .untrustedName {
-    color: orange;
+    color: rgb(194, 50, 50);
   }
 </style>
 

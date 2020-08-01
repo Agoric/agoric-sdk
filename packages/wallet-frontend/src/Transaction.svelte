@@ -1,6 +1,7 @@
 <script>
   import { E } from "@agoric/eventual-send";
   import Petname from "./Petname.svelte";
+  import Amount from "./Amount.svelte";
   import Debug from "../lib/Debug.svelte";
   import { stringify } from "../lib/helpers";
   import { Button, Icon } from "svelte-mui";
@@ -56,11 +57,12 @@
     box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
   }
 
-  h1 {
-    color: #ff3e00;
+  h2 {
+    /* color: #ff3e00; */
     text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
+    font-size: 1em;
+    font-weight: bold;
+    margin-top: 1em;
   }
 
   @media (min-width: 640px) {
@@ -72,6 +74,10 @@
   button:hover {
     background-color: red;
   }
+
+  .actions {
+    margin-top: 1em;
+  }
 </style>
 
 <section>
@@ -82,26 +88,20 @@
 	<Debug title="Transaction Detail" target={txn} />
   </div>
   <div>
-    {#each Object.entries(give) as [role, { amount: { brand, value }, pursePetname }], i}
+    {#each Object.entries(give) as [role, { amount, pursePetname }], i}
       <div>
         <h2>Give</h2>
-        <div>
-          {JSON.stringify(value)}&nbsp;<Petname name={brand.petname} /> 
-          from <Petname name={pursePetname} />
-        </div>
+        <Amount {amount} /> from <Petname name={pursePetname} />
       </div>
     {/each}
-    {#each Object.entries(want) as [role, { amount: { brand, value }, pursePetname }], i}
+    {#each Object.entries(want) as [role, { amount, pursePetname }], i}
       <div>
         <h2>Want</h2>
-        <div>
-          {JSON.stringify(value)}&nbsp;<Petname name={brand.petname} />
-        </div>
-        &nbsp;into&nbsp;<Petname name={pursePetname} />
+        <Amount {amount} /> into <Petname name={pursePetname} />
       </div>
     {/each}
   </div> 
-  <div>
+  <div class="actions">
     <b>{statusText[status || 'proposed']}</b>
     <button on:click={() => E(walletP).acceptOffer(id).then(showOutcome)}>Accept</button>
     <button on:click={() => E(walletP).declineOffer(id)}>Decline</button>

@@ -9,6 +9,12 @@
   $: ({ brand, value } = amount);
 </script>
 
+<style>
+  section, div {
+    display: inline;
+  }
+</style>
+
 <section>
   {#if Array.isArray(value)}
     <!-- amount is non-fungible -->

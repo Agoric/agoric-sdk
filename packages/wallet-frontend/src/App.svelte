@@ -1,5 +1,5 @@
 <script>
-  import { E } from '@agoric/eventual-send';
+  import { E } from "@agoric/eventual-send";
 
   import { Button, Icon } from "svelte-mui";
   import Dapps from "./Dapps.svelte";
@@ -78,7 +78,7 @@
 
   main {
     display: grid;
-    grid-template-areas: 
+    grid-template-areas:
       "dapps dapps"
       "txns txns"
       "payments payments"
@@ -107,14 +107,20 @@
     grid-area: issuers;
   }
 
-/* DEBUGGING */
+  .disconnected-background {
+    grid-row: 2 / 3;
+    grid-column: 1 / 4;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1000; 
+  }
+
+  /* DEBUGGING */
   /* * {
     border: 1px solid red;
   }
   :global(*) {
     border: thin dashed gray;
   } */
-
 </style>
 
 <svelte:head>
@@ -144,6 +150,9 @@
       </div>
     </header>
 
+    {#if !$connected}
+      <div class="disconnected-background" on:click|preventDefault|stopPropagation={() => {}} />
+    {/if}
     <main>
       <div class="dapps">
         <h2>Dapps</h2>

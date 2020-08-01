@@ -29,6 +29,10 @@
   .tooltip:hover div {
     visibility: visible;
   }
+
+  section {
+    display: inherit;
+  }
 </style>
 
 {#if disable}
