@@ -21,19 +21,29 @@ const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
 const [payments, setPayments] = makeReadable([]);
+const [contacts, setContacts] = makeReadable([]);
+const [selfContact, setSelfContact] = makeReadable();
 const [issuers, setIssuers] = makeReadable([]);
 
-export { inbox, purses, dapps, payments, issuers };
+export { inbox, purses, dapps, payments, issuers, contacts, selfContact };
 
 function onReset(_bootP) {
+  E(walletP).getSelfContact().then(setSelfContact);
   // Set up our subscriptions.
-  const subs = [
-    [E(walletP).getPursesNotifier(), pjs => setPurses(JSON.parse(pjs))],
-    [E(walletP).getInboxNotifier(), ijs => setInbox(JSON.parse(ijs))],
-    [E(walletP).getDappRecordNotifier(), setDapps],
-  ];
-  subs.map(([notifier, updateState]) =>
-    updateFromNotifier({ updateState }, notifier));
+  updateFromNotifier({
+    updateState(pjs) {
+      setPurses(JSON.parse(pjs));
+    },
+   }, E(walletP).getPursesJSONNotifier(),
+  );
+  updateFromNotifier({
+    updateState(ijs) {
+      setInbox(JSON.parse(ijs));
+    },
+   }, E(walletP).getInboxJSONNotifier(),
+  );
+  updateFromNotifier({ updateState: setDapps}, E(walletP).getDappNotifier());
+  updateFromNotifier({ updateState: setContacts }, E(walletP).getContactsNotifier());
 }
 
 // like React useHook, return a store and a setter for it

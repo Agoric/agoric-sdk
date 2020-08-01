@@ -4,11 +4,13 @@
   import { Button, Icon } from "svelte-mui";
   import Dapps from "./Dapps.svelte";
   import Payments from "./Payments.svelte";
+  import Contacts from "./Contacts.svelte";
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import { dapps, payments, purses, inbox, connected, walletP } from "./store";
+  import { dapps, payments, purses, inbox, connected, contacts, walletP } from "./store";
 
   import { ThemeWrapper, ThemeToggle } from "svelte-themer";
+  import BoardId from "./BoardId.svelte";
 
   connected.connect();
 </script>
@@ -157,6 +159,10 @@
       <div class="dapps">
         <h2>Dapps</h2>
         <Dapps {dapps} />
+      </div>
+      <div class="contacts">
+        <h2>Contacts</h2>
+        <Contacts {contacts} />
       </div>
       <div class="payments">
         <h2>Incoming Payments</h2>

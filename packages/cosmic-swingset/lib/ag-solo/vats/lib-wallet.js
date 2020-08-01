@@ -30,6 +30,7 @@ export async function makeWallet({
   const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
   const purseMapping = makeMapping('purse');
   const brandMapping = makeMapping('brand');
+  const contactMapping = makeMapping('contact');
   const instanceMapping = makeMapping('instance');
   const installationMapping = makeMapping('installation');
 
@@ -158,8 +159,8 @@ export async function makeWallet({
       depositBoardId = brandToDepositFacetId.get(brand);
     }
     pursesState.set(purseKey, {
-      depositBoardId,
       brandBoardId,
+      ...(depositBoardId && { depositBoardId }),
       brandPetname,
       pursePetname,
       value,
@@ -419,6 +420,30 @@ export async function makeWallet({
     return issuerSavedP.then(addBrandPetname).then(updateAllState);
   };
 
+  const {
+    updater: contactsUpdate,
+    notifier: contactsNotifier,
+  } = makeNotifierKit();
+
+  const addContact = async (petname, actions) => {
+    const depositFacet = harden({ receive: actions.receive });
+    const depositBoardId = await E(board).getId(depositFacet);
+    const contact = harden({
+      actions: {
+        ...actions,
+      },
+      depositBoardId,
+    });
+
+    contactMapping.suggestPetname(petname, contact);
+    contactsUpdate.updateState([...contactMapping.petnameToVal.entries()]);
+    return contact;
+  };
+
+  const getContactsNotifier = () => {
+    return contactsNotifier;
+  };
+
   const addInstance = (petname, instanceHandle) => {
     // We currently just add the petname mapped to the instanceHandle
     // value, but we could have a list of known instances for
@@ -550,13 +575,13 @@ export async function makeWallet({
   const dappOrigins = makeStore('dappOrigin');
   const { notifier: dappNotifier, updater: dappUpdater } = makeNotifierKit([]);
 
-  function updateDappRecord(dappRecord) {
+  function updateDapp(dappRecord) {
     harden(dappRecord);
     dappOrigins.set(dappRecord.origin, dappRecord);
     dappUpdater.updateState([...dappOrigins.values()]);
   }
 
-  function getDappRecordNotifier() {
+  function getDappNotifier() {
     return dappNotifier;
   }
 
@@ -588,7 +613,7 @@ export async function makeWallet({
             ...dappRecord,
             petname,
           };
-          updateDappRecord(dappRecord);
+          updateDapp(dappRecord);
           updateAllState();
           return dappRecord.actions;
         },
@@ -599,7 +624,7 @@ export async function makeWallet({
             enable: true,
           };
           edgeMapping.suggestPetname(dappRecord.petname, origin);
-          updateDappRecord(dappRecord);
+          updateDapp(dappRecord);
 
           // Allow the pending requests to pass.
           resolve();
@@ -617,7 +642,7 @@ export async function makeWallet({
             enable: false,
             approvalP,
           };
-          updateDappRecord(dappRecord);
+          updateDapp(dappRecord);
           return dappRecord.actions;
         },
       };
@@ -799,6 +824,20 @@ export async function makeWallet({
     });
   }
 
+  // Allow people to send us payments.
+  const selfContact = await addContact('Self', {
+    async receive(payment) {
+      const brand = await E(payment).getAllegedBrand();
+      if (!brandToAutoDepositPurse.has(brand)) {
+        // TODO: Queue as an incoming payment.
+        throw Error(`Incoming payments not implemented`);
+      }
+      // Plop into the current purse.
+      const currentPurse = brandToAutoDepositPurse.get(brand);
+      return E(currentPurse).deposit(payment);
+    },
+  });
+
   function getDepositFacetId(brandBoardId) {
     return E(board)
       .getValue(brandBoardId)
@@ -831,35 +870,23 @@ export async function makeWallet({
     } else {
       brandToAutoDepositPurse.init(brand, purse);
     }
+    await updateAllPurseState();
 
     const pendingP =
       pendingEnableAutoDeposits.has(brand) &&
       pendingEnableAutoDeposits.get(brand);
     if (pendingP) {
-      updateAllPurseState();
       return pendingP;
     }
 
     const pr = producePromise();
     pendingEnableAutoDeposits.init(brand, pr.promise);
 
-    const depositor = harden({
-      receive(payment) {
-        if (!brandToAutoDepositPurse.has(brand)) {
-          // TODO: Queue as an incoming payment.
-          throw Error(`Incoming payments not implemented`);
-        }
-        // Plop into the current purse.
-        const currentPurse = brandToAutoDepositPurse.get(brand);
-        return E(currentPurse).deposit(payment);
-      },
-    });
-
-    const boardId = await E(board).getId(depositor);
+    const boardId = selfContact.depositBoardId;
     brandToDepositFacetId.init(brand, boardId);
 
     pr.resolve(boardId);
-    updateAllPurseState();
+    await updateAllPurseState();
     return pr.promise;
   }
 
@@ -970,6 +997,10 @@ export async function makeWallet({
     return brandTable.get(brand).issuer;
   }
 
+  function getSelfContact() {
+    return selfContact;
+  }
+
   function getInstance(petname) {
     return instanceMapping.petnameToVal.get(petname);
   }
@@ -980,13 +1011,14 @@ export async function makeWallet({
 
   const wallet = harden({
     waitForDappApproval,
-    getDappRecordNotifier,
+    getDappNotifier,
     addIssuer,
     addInstance,
     addInstallation,
     renameIssuer,
     renameInstance,
     renameInstallation,
+    getSelfContact,
     getInstance,
     getInstallation,
     makeEmptyPurse,
@@ -1009,6 +1041,8 @@ export async function makeWallet({
     suggestIssuer,
     suggestInstance,
     suggestInstallation,
+    addContact,
+    getContactsNotifier,
   });
 
   // Make Zoe invite purse
@@ -1021,6 +1055,7 @@ export async function makeWallet({
     wallet.makeEmptyPurse(ZOE_INVITE_BRAND_PETNAME, ZOE_INVITE_PURSE_PETNAME);
   const addInviteDepositFacet = () =>
     E(wallet).enableAutoDeposit(ZOE_INVITE_PURSE_PETNAME);
+
   await addZoeIssuer(inviteIssuerP)
     .then(makeInvitePurse)
     .then(addInviteDepositFacet);

@@ -57,10 +57,10 @@ export function buildRootObject(_vatPowers) {
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({
-    getInboxNotifier() {
+    getInboxJSONNotifier() {
       return inboxNotifier;
     },
-    getPursesNotifier() {
+    getPursesJSONNotifier() {
       return pursesNotifier;
     },
   });

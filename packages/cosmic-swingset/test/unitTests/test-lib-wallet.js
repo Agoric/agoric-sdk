@@ -159,10 +159,40 @@ test('lib-wallet issuer and purse methods', async t => {
       moolaBundle.amountMath.make(100),
       `deposit successful`,
     );
-    t.equals(pursesStateChangeLog.length, 5, `pursesStateChangeLog length`);
-    t.equals(
-      pursesStateChangeLog[pursesStateChangeLog.length - 1],
-      '[{"depositBoardId":"6043467","brandBoardId":"3812059","brandPetname":"zoe invite","pursePetname":"Default Zoe invite purse","value":[],"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":[]}","slots":[{"kind":"brand","petname":"zoe invite"}]},"currentAmount":{"brand":{"kind":"brand","petname":"zoe invite"},"value":[]}},{"brandBoardId":"16679794","brandPetname":"moola","pursePetname":"fun money","value":0,"currentAmountSlots":{"body":"{\\"brand\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0},\\"value\\":0}","slots":[{"kind":"brand","petname":"moola"}]},"currentAmount":{"brand":{"kind":"brand","petname":"moola"},"value":0}}]',
+    t.equals(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
+    t.deepEquals(
+      JSON.parse(pursesStateChangeLog[pursesStateChangeLog.length - 1]),
+      [
+        {
+          brandBoardId: '3812059',
+          depositBoardId: '6043467',
+          brandPetname: 'zoe invite',
+          pursePetname: 'Default Zoe invite purse',
+          value: [],
+          currentAmountSlots: {
+            body: '{"brand":{"@qclass":"slot","index":0},"value":[]}',
+            slots: [{ kind: 'brand', petname: 'zoe invite' }],
+          },
+          currentAmount: {
+            brand: { kind: 'brand', petname: 'zoe invite' },
+            value: [],
+          },
+        },
+        {
+          brandBoardId: '16679794',
+          brandPetname: 'moola',
+          pursePetname: 'fun money',
+          value: 0,
+          currentAmountSlots: {
+            body: '{"brand":{"@qclass":"slot","index":0},"value":0}',
+            slots: [{ kind: 'brand', petname: 'moola' }],
+          },
+          currentAmount: {
+            brand: { kind: 'brand', petname: 'moola' },
+            value: 0,
+          },
+        },
+      ],
       `pursesStateChangeLog`,
     );
     t.deepEquals(inboxStateChangeLog, [], `inboxStateChangeLog`);
@@ -256,12 +286,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     );
 
     const zoeInvitePurseState = JSON.parse(
-      pursesStateChangeLog[pursesStateChangeLog.length - 1],
-    )[0];
+      pursesStateChangeLog[pursesStateChangeLog.length - 2],
+    );
     t.deepEquals(
-      zoeInvitePurseState,
+      zoeInvitePurseState[0],
       {
         brandBoardId: '3812059',
+        depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [
@@ -277,7 +308,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             '{"brand":{"@qclass":"slot","index":0},"value":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
-            { kind: 'unnamed', petname: 'unnamed-4' },
+            { kind: 'unnamed', petname: 'unnamed-1' },
             { kind: 'unnamed', petname: 'unnamed-2' },
             { kind: 'unnamed', petname: 'unnamed-3' },
           ],
@@ -287,7 +318,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           value: [
             {
               inviteDesc: 'getRefund',
-              handle: { kind: 'unnamed', petname: 'unnamed-4' },
+              handle: { kind: 'unnamed', petname: 'unnamed-1' },
               instanceHandle: { kind: 'unnamed', petname: 'unnamed-2' },
               installationHandle: { kind: 'unnamed', petname: 'unnamed-3' },
             },
@@ -400,7 +431,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `inboxStateChangeLog with names`,
     );
 
-    console.log('EXPECTED ERROR ->>> "petname" not found/');
+    console.log('EXPECTED ERROR ->>> "petname" not found');
     t.throws(
       () => wallet.getInstallation('whatever'),
       /"petname" not found/,
@@ -621,6 +652,7 @@ test('lib-wallet offer methods', async t => {
       zoeInvitePurseState,
       {
         brandBoardId: '3812059',
+        depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [],
