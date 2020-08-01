@@ -189,7 +189,7 @@ export const trade = (zcf, keepLeft, tryRight) => {
     console.log(`currentRightAllocation`, tryRight.seat.getCurrentAllocation());
     console.log(`proposed left reallocation`, leftAllocation);
     console.log(`proposed right reallocation`, rightAllocation);
-    // show the contraints
+    // show the constraints
     console.log(`left want`, keepLeft.seat.getProposal().want);
     console.log(`right want`, tryRight.seat.getProposal().want);
 
@@ -202,7 +202,7 @@ export const trade = (zcf, keepLeft, tryRight) => {
     return tryRight.seat.kickOut();
   }
 
-  zcf.reallocate(
+  return zcf.reallocate(
     keepLeft.seat.stage(leftAllocation),
     tryRight.seat.stage(rightAllocation),
   );

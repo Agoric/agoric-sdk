@@ -357,7 +357,7 @@
  * @param {ContractFacet} zcf
  * @param {SeatGainsLossesRecord} keepLeft
  * @param {SeatGainsLossesRecord} tryRight
- * @returns {undefined | Error}
+ * @returns {void}
  *
  * @typedef {Object} SeatGainsLossesRecord
  * @property {ZCFSeat} seat
