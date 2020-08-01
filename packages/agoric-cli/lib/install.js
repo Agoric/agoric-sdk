@@ -25,6 +25,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     const sdkPackagesDir = path.resolve(__dirname, '../../../packages');
     const allPackages = await fs.readdir(sdkPackagesDir);
     const packages = new Map();
+    const versions = new Map();
     log('removing', linkFolder);
     await rimraf(linkFolder);
     for (const pkg of allPackages) {
@@ -51,14 +52,33 @@ export default async function installMain(progname, rawArgs, powers, opts) {
             return 1;
           }
           packages.set(pkg, pj.name);
+          versions.set(pj.name, pj.version);
         }
       }
     }
     await Promise.all(
-      subdirs.map(subdir => {
+      subdirs.map(async subdir => {
         const nm = `${subdir}/node_modules`;
         log(chalk.bold.green(`removing ${nm} link`));
-        return fs.unlink(nm).catch(_ => {});
+        await fs.unlink(nm).catch(_ => {});
+
+        // Update all the package dependencies according to the SDK.
+        const pjson = `${subdir}/package.json`;
+        const packageJSON = await fs.readFile(pjson);
+        const pj = JSON.parse(packageJSON);
+        for (const section of ['dependencies', 'devDependencies']) {
+          const deps = pj[section];
+          if (deps) {
+            for (const pkg of Object.keys(deps)) {
+              const latest = versions.get(pkg);
+              if (latest) {
+                deps[pkg] = `^${latest}`;
+              }
+            }
+          }
+        }
+        log.info(`updating ${pjson}`);
+        await fs.writeFile(pjson, `${JSON.stringify(pj, null, 2)}\n`);
       }),
     );
     const sdkPackages = [...packages.values()].sort();
