@@ -2,7 +2,7 @@
   "name": "@agoric/notifier",
   "version": "0.1.3",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
-  "main": "src/notifier.js",
+  "main": "src/index.js",
   "engines": {
     "node": ">=11.0"
   },

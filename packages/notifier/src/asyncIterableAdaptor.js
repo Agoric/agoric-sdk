@@ -3,8 +3,6 @@
 /// <reference types="ses"/>
 
 import { E } from '@agoric/eventual-send';
-// eslint-disable-next-line import/no-cycle
-import { makeNotifierKit } from './notifier';
 
 import './types';
 
@@ -127,19 +125,6 @@ export const updateFromIterable = (updater, asyncIterable) => {
     };
     recur();
   });
-};
-
-/**
- * Adaptor from async iterable to notifier.
- *
- * @template T
- * @param {AsyncIterable<T>} asyncIterable
- * @returns {Notifier<T>}
- */
-export const makeNotifierFromAsyncIterable = asyncIterable => {
-  const { notifier, updater } = makeNotifierKit();
-  updateFromIterable(updater, asyncIterable);
-  return notifier;
 };
 
 /**

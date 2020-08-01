@@ -4,8 +4,10 @@
 
 import { producePromise } from '@agoric/produce-promise';
 import { assert } from '@agoric/assert';
-// eslint-disable-next-line import/no-cycle
-import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor';
+import {
+  makeAsyncIterableFromNotifier,
+  updateFromIterable,
+} from './asyncIterableAdaptor';
 
 import './types';
 
@@ -117,4 +119,17 @@ export const makeNotifierKit = (...args) => {
   // notifier facet is separate so it can be handed out while updater
   // is tightly held
   return harden({ notifier, updater });
+};
+
+/**
+ * Adaptor from async iterable to notifier.
+ *
+ * @template T
+ * @param {AsyncIterable<T>} asyncIterable
+ * @returns {Notifier<T>}
+ */
+export const makeNotifierFromAsyncIterable = asyncIterable => {
+  const { notifier, updater } = makeNotifierKit();
+  updateFromIterable(updater, asyncIterable);
+  return notifier;
 };

@@ -2,7 +2,7 @@
 import '@agoric/install-ses';
 
 import test from 'tape-promise/tape';
-import { makeNotifierKit } from '../src/notifier';
+import { makeNotifierKit } from '../src/index';
 
 import '../src/types';
 
