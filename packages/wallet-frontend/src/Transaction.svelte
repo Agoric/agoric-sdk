@@ -9,6 +9,14 @@
   export let id;
   export let walletP;
 
+  // Show the outcome if it is a string, otherwise a default message.
+  function showOutcome({ outcome }) {
+    if (typeof outcome !== 'string') {
+      outcome = 'Offer was accepted.';
+    }
+    alert(outcome);
+  }
+
   function formatDateNow(stamp) {
     if (!stamp) {
       return "unknown time";
@@ -94,7 +102,7 @@
   </div> 
   <div>
     <b>{statusText[status || 'proposed']}</b>
-    <button on:click={() => E(walletP).acceptOffer(id)}>Accept</button>
+    <button on:click={() => E(walletP).acceptOffer(id).then(showOutcome)}>Accept</button>
     <button on:click={() => E(walletP).declineOffer(id)}>Decline</button>
     <button on:click={() => E(walletP).cancelOffer(id)}>Cancel</button>
   </div>
