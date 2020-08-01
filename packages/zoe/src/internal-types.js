@@ -40,23 +40,6 @@
  */
 
 /**
- * @typedef {Object} PrivateInstanceRecord
- * @property {Promise<ZcfForZoe>} zcfForZoe - the inner facet for Zoe to use
- * @property {Set<OfferHandle>} offerHandles - the offer handles for this instance
- *
- * @typedef {Object} ZcfInstanceRecord
- * @property {VatAdmin} adminNode
- *
- * @typedef {Object} PrivateIssuerRecord
- * @property {Purse} purse
- *
- * @typedef {Object} PrivateOfferRecord
- * @property {Allocation} currentAllocation - the allocation corresponding to this offer
- * @property {Notifier<Allocation|undefined>|undefined} notifier - the notifier for allocation changes
- * @property {Updater<Allocation|undefined>} updater - the notifier for allocation changes
- */
-
-/**
  * @typedef {Object} ZoeSeat
  * @property {() => void} exit - exit seat
  * @property {(replacementAllocation: Allocation) => void} replaceAllocation - replace the
@@ -97,8 +80,8 @@
 /**
  * @typedef {Object} InstanceAdmin
  * @property {(invitationHandle: InvitationHandle, seatAdmin:
- * ZCFSeatAdmin, seatData: SeatData) => Promise<AddSeatResult>} addSeatAdmin
- * @property {(seatAdmin: ZCFSeatAdmin) => void} removeSeatAdmin
+ * ZoeSeat, seatData: SeatData) => Promise<AddSeatResult>} addSeatAdmin
+ * @property {(seatAdmin: ZoeSeat) => void} removeSeatAdmin
  * @property {() => Instance} getInstance
  * @property {() => PublicFacet} getPublicFacet
  */
@@ -126,8 +109,8 @@
  * @property {ExecuteContract} executeContract
  *
  * @typedef {Object} ExecuteContractResult
- * @property {Object} adminFacet
- * @property {Promise<Invitation>} adminInvitation
+ * @property {Object} creatorFacet
+ * @property {Promise<Invitation>} creatorInvitation
  * @property {Object} publicFacet
  * @property {AddSeatObj} addSeatObj
  *

@@ -47,12 +47,12 @@ const start = (zcf, _terms) => {
     want: { Price: null },
   });
 
-  const adminInvitation = zcf.makeInvitation(
+  const creatorInvitation = zcf.makeInvitation(
     assertProposalKeywords(makeMatchingInvitation, firstProposalExpected),
     'firstOffer',
   );
 
-  return { adminInvitation };
+  return { creatorInvitation };
 };
 
 harden(start);

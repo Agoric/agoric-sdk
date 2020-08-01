@@ -29,9 +29,9 @@ mint invitation payment
 end note
 Zoe --\\ Zcf : <font color=gray><size:12> invitation
 Zcf --\\ Contract : <font color=gray><size:12> invitation
-contract --\\ Zcf : <font color=gray><size:12> {adminFacet, adminInvitation, publicFacet }
-Zcf --\\ Zoe : <font color=gray><size:12> {adminFacet, adminInvitation, addSeatObj}
-Alice //-- Zoe : <font color=gray><size:12> adminFacet | adminInvitation
+contract --\\ Zcf : <font color=gray><size:12> {creatorFacet, creatorInvitation, publicFacet }
+Zcf --\\ Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation, addSeatObj}
+Alice //-- Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation}
 
 ====
 

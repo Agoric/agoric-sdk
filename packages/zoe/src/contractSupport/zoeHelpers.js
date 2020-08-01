@@ -2,15 +2,16 @@
 
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { E, HandledPromise } from '@agoric/eventual-send';
-import { satisfiesWant, isOfferSafe } from '../contractFacet/offerSafety';
+import { E } from '@agoric/eventual-send';
+import { producePromise } from '@agoric/produce-promise';
+
+import { satisfiesWant } from '../contractFacet/offerSafety';
 
 import '../../exported';
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
-const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 
@@ -110,8 +111,16 @@ export const assertIssuerKeywords = (zcf, expected) => {
     details`keywords: ${actual} were not as expected: ${expected}`,
   );
 };
-export const checkIfProposal = (offerHandle, expected) => {
-  const { proposal: actual } = zcf.getOffer(offerHandle);
+
+/**
+ * Check if the keywords match expected. Returns a boolean and does
+ * not throw.
+ * @param {ZCFSeat} seat
+ * @param {ExpectedRecord} expected
+ * @returns {boolean}
+ */
+export const checkIfProposal = (seat, expected) => {
+  const actual = seat.getProposal();
   return (
     // Check that the "give" keys match expected keys.
     checkKeys(actual.give, expected.give) &&
@@ -129,14 +138,15 @@ export const checkIfProposal = (offerHandle, expected) => {
  * checked. Allocation is merged with currentAllocation
  * (allocations' values prevailing if the keywords are the same)
  * to produce the newAllocation.
- * @param {OfferHandle} offerHandle
- * @param {allocation} amountKeywordRecord
+ * @param {ContractFacet} zcf
+ * @param {ZCFSeat} seat
+ * @param {Allocation} allocation
  * @returns {boolean}
  */
-export const satisfies = (offerHandle, allocation) => {
-  const currentAllocation = zcf.getCurrentAllocation(offerHandle);
+export const satisfies = (zcf, seat, allocation) => {
+  const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = mergeAllocations(currentAllocation, allocation);
-  const { proposal } = zcf.getOffer(offerHandle);
+  const proposal = seat.getProposal();
   return satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
 };
 
@@ -148,7 +158,6 @@ export const trade = (zcf, keepLeft, tryRight) => {
   );
   let leftAllocation = keepLeft.seat.getCurrentAllocation();
   let rightAllocation = tryRight.seat.getCurrentAllocation();
-  debugger;
   try {
     // for all the keywords and amounts in leftGains, transfer from
     // right to left
@@ -285,58 +294,64 @@ export const assertProposalKeywords = (offerHandler, expected) =>
     return offerHandler(seat);
   };
 /**
- * Return a Promise for an OfferHandle.
+ * Return a record with a promise for the userSeat and a promise for
+ * the zcfSeat
  *
  * This offer will have an empty 'give' and 'want', making it useful
  * for contracts to use for unrestricted internal asset reallocation.
  * One example is the Autoswap contract, which uses an empty offer
  * to manage internal escrowed assets.
- *
- * @returns {Promise<OfferHandle>}
+ * @param {ContractFacet} zcf
+ * @returns {{userSeat: Promise<UserSeat>, zcfSeat: Promise<ZCFSeat>}}
  */
-export const makeEmptyOffer = () =>
-  new HandledPromise(resolve => {
-    const invite = zcf.makeInvitation(
-      offerHandle => resolve(offerHandle),
-      'empty offer',
-    );
-    E(zoeService).offer(invite);
-  });
+export const makeEmptyOffer = zcf => {
+  const ZCFSeatPromiseKit = producePromise();
+  const invite = zcf.makeInvitation(
+    seat => ZCFSeatPromiseKit.resolve(seat),
+    'empty offer',
+  );
+  const zoeService = zcf.getZoeService();
+  return {
+    userSeat: E(zoeService).offer(invite),
+    zcfSeat: ZCFSeatPromiseKit.promise,
+  };
+};
 
 /**
- * Escrow a payment with Zoe and reallocate the amount of the
+ * Escrow payments with Zoe and reallocate the amount of each
  * payment to a recipient.
  *
- * @param {Object} obj
- * @param {Amount} obj.amount
- * @param {Payment} obj.payment
- * @param {String} obj.keyword
- * @param {OfferHandle} obj.recipientHandle
+ * @template {string} T
+ * @param {ContractFacet} zcf
+ * @param {ZCFSeat} recipientSeat
+ * @param {AmountKeywordRecord} giveAmountKeywordRecord - the keywords
+ * and amounts to give to recipient. Keywords must match the keywords
+ * for the payments.
+ * @param {PaymentKeywordRecord} paymentKeywordRecord
  * @returns {Promise<void>}
  */
-export const escrowAndAllocateTo = ({
-  amount,
-  payment,
-  keyword,
-  recipientHandle,
-}) => {
-  // We will create a temporary offer to be able to escrow our payment
+export const escrowAndAllocateTo = (
+  zcf,
+  recipientSeat,
+  giveAmountKeywordRecord,
+  paymentKeywordRecord,
+) => {
+  // We will create a temporary seat to be able to escrow our payment
   // with Zoe.
-  let tempHandle;
+  let tempSeat;
 
-  // We need to make an invite and store the offerHandle of that
-  // invite for future use.
+  // We need to make an invitation and store the seat associated with
+  // that invitation for future use
   const contractSelfInvite = zcf.makeInvitation(
-    offerHandle => (tempHandle = offerHandle),
+    seat => (tempSeat = seat),
     'self invite',
   );
-  // To escrow the payment, we must get the Zoe Service facet and
+  // To escrow the payments, we must get the Zoe Service facet and
   // make an offer
-  const proposal = harden({ give: { Temp: amount } });
-  const payments = harden({ Temp: payment });
+  const proposal = harden({ give: giveAmountKeywordRecord });
 
   return E(zcf.getZoeService())
-    .offer(contractSelfInvite, proposal, payments)
+    .offer(contractSelfInvite, proposal, paymentKeywordRecord)
     .then(() => {
       // At this point, the temporary offer has the amount from the
       // payment but nothing else. The recipient offer may have any
@@ -344,22 +359,23 @@ export const escrowAndAllocateTo = ({
       // keyword.
 
       trade(
+        zcf,
         {
-          offerHandle: tempHandle,
+          seat: tempSeat,
           gains: {},
-          losses: { Temp: amount },
+          losses: giveAmountKeywordRecord,
         },
         {
-          offerHandle: recipientHandle,
-          gains: { [keyword]: amount },
+          seat: recipientSeat,
+          gains: giveAmountKeywordRecord,
         },
       );
 
-      // Complete the temporary offerHandle
-      zcf.complete([tempHandle]);
+      // Exit the temporary seat
+      tempSeat.exit();
 
-      // Now, the temporary offer no longer exists, but the recipient
-      // offer is allocated the value of the payment.
+      // Now, the temporary seat no longer exists, but the recipient
+      // seat is allocated the value of the payment.
     });
 };
 /*

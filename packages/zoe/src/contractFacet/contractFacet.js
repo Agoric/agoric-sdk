@@ -170,8 +170,8 @@ export function buildRootObject() {
     /** @type {Promise<Invite>} */
     return E(contractCode)
       .start(zcf, instanceRecord.terms)
-      .then(({ adminFacet, publicFacet, adminInvitation }) => {
-        return harden({ adminFacet, publicFacet, adminInvitation, addSeatObj });
+      .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
+        return harden({ creatorFacet, publicFacet, creatorInvitation, addSeatObj });
       });
   };
 

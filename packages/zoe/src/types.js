@@ -85,7 +85,7 @@
  * @param {Invitation|Promise<Invitation>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentKeywordRecord=} paymentKeywordRecord
- * @returns {UserSeat} seat
+ * @returns {Promise<UserSeat>} seat
  *
  * To redeem an invite, the user normally provides a proposal (their
  * rules for the offer) as well as payments to be escrowed by Zoe.  If
@@ -205,8 +205,11 @@
  * any newAllocations have keywords that are not in
  * sparseKeywords.
  *
- * @param  {StagedSeat} stagedSeats - any number of seats as
- * arguments, turned into an array of seats
+ * @param  {StagedSeat} stagedSeat
+ * @param {StagedSeat} stagedSeat
+ * @param {StagedSeat=} stagedSeat
+ * @param {StagedSeat=} stagedSeat
+ * @param {StagedSeat=} stagedSeat
  * @returns {void}
  */
 
@@ -320,8 +323,8 @@
 
 /**
  * @typedef {Object} ContractStartFnResult
- * @property {Object=} adminFacet
- * @property {Promise<Invitation>=} adminInvitation
+ * @property {Object=} creatorFacet
+ * @property {Promise<Invitation>=} creatorInvitation
  * @property {Object=} publicFacet
  */
 

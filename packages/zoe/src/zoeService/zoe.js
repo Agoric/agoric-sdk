@@ -163,9 +163,9 @@ function makeZoe(vatAdminSvc) {
       const bundle = installation.getBundle();
 
       const {
-        adminFacet = {},
+        creatorFacet = {},
         publicFacet = {},
-        adminInvitation,
+        creatorInvitation,
         addSeatObj,
       } = await E(zcfRoot).executeContract(
         bundle,
@@ -175,8 +175,8 @@ function makeZoe(vatAdminSvc) {
         instanceRecord,
       );
 
-      const admin = {
-        ...adminFacet,
+      const creatorFacetWInstance = {
+        ...creatorFacet,
         getInstance: () => instance,
       };
 
@@ -194,7 +194,7 @@ function makeZoe(vatAdminSvc) {
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       // Actually returned to the user.
-      return { adminFacet: admin, adminInvitation };
+      return { creatorFacet: creatorFacetWInstance, creatorInvitation };
     },
     offer: async (
       invitation,
@@ -251,7 +251,6 @@ function makeZoe(vatAdminSvc) {
               currentAllocation = replacementAllocation;
             },
             exit: () => {
-              debugger;
               updater.finish(undefined);
               instanceAdmin.removeSeatAdmin(seatAdmin);
 
