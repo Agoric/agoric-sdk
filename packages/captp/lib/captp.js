@@ -8,13 +8,23 @@ import { isPromise } from '@agoric/produce-promise';
 
 export { E, HandledPromise };
 
+function silentReject(reason = undefined) {
+  const p = Promise.reject(reason);
+
+  // Silence the unhandled rejection warning, but don't affect
+  // the user's handlers.
+  p.catch(_ => {});
+
+  return p;
+}
+
 export function makeCapTP(ourId, rawSend, bootstrapObj = undefined) {
   let unplug = false;
   function send(...args) {
-    if (unplug !== false) {
-      throw unplug;
+    // Don't throw here if unplugged, just don't send.
+    if (unplug === false) {
+      rawSend(...args);
     }
-    return rawSend(...args);
   }
 
   // convertValToSlot and convertSlotToVal both perform side effects,
@@ -114,7 +124,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined) {
     const handler = {
       get(_o, prop) {
         if (unplug !== false) {
-          throw unplug;
+          return silentReject(unplug);
         }
         const [questionID, pr] = makeQuestion();
         send({
@@ -127,7 +137,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined) {
       },
       applyMethod(_o, prop, args) {
         if (unplug !== false) {
-          throw unplug;
+          return silentReject(unplug);
         }
         // Support: o~.[prop](...args) remote method invocation
         const [questionID, pr] = makeQuestion();
@@ -147,6 +157,11 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined) {
       pr.resPres = () => resolveWithPresence(handler);
       pr.res = res;
     }, handler);
+
+    // Silence the unhandled rejection warning, but don't affect
+    // the user's handlers.
+    pr.p.catch(_ => {});
+
     return harden(pr);
   }
 
@@ -278,7 +293,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined) {
   // Get a reference to the other side's bootstrap object.
   const getBootstrap = async () => {
     if (unplug !== false) {
-      throw unplug;
+      return silentReject(unplug);
     }
     const [questionID, pr] = makeQuestion();
     send({
