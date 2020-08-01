@@ -241,8 +241,10 @@ export async function makeWallet({
   }
 
   async function updateAllInboxState() {
-    return Array.from(inboxState.entries()).map(([id, offer]) =>
-      updateInboxState(id, offer),
+    return Promise.all(
+      Array.from(inboxState.entries()).map(([id, offer]) =>
+        updateInboxState(id, offer),
+      ),
     );
   }
 
@@ -386,7 +388,7 @@ export async function makeWallet({
 
   // === API
 
-  const addIssuer = async (petnameForBrand, issuer, makePurse = false) => {
+  const addIssuer = (petnameForBrand, issuer, makePurse = false) => {
     const issuerSavedP = brandTable.addIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
       let p;
