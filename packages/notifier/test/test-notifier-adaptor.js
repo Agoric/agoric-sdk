@@ -6,7 +6,7 @@ import {
   makeNotifierFromAsyncIterable,
   updateFromIterable,
   updateFromNotifier,
-} from '../src/asyncIterableAdaptor';
+} from '../src/index';
 
 const obj = harden({});
 const unresP = new Promise(_ => {});
