@@ -220,11 +220,12 @@ export function buildRootObject(_vatPowers) {
           },
 
           async onMessage(obj, meta) {
-            const { type, suggestedDappPetname = meta.origin } = obj;
-            const { origin: dappOrigin } = await wallet.waitForDappApproval(
-              suggestedDappPetname,
-              meta.origin,
-            );
+            const {
+              type,
+              dappOrigin = meta.origin,
+              suggestedDappPetname = obj.dappOrigin || meta.origin,
+            } = obj;
+            await wallet.waitForDappApproval(suggestedDappPetname, dappOrigin);
 
             switch (type) {
               case 'walletGetPurses':

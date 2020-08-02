@@ -517,7 +517,7 @@ export async function makeWallet({
       .filter(
         ([_id, offer]) =>
           origin === null ||
-          (offer.requestContext && offer.requestContext.origin === origin),
+          (offer.requestContext && offer.requestContext.dappOrigin === origin),
       )
       .sort(([id1], [id2]) => id1 > id2)
       .map(([_id, offer]) => harden(offer));
@@ -673,13 +673,15 @@ export async function makeWallet({
     return dappOrigins.get(origin);
   }
 
-  async function addOffer(rawOffer, requestContext = { origin: 'unknown' }) {
+  async function addOffer(rawOffer, requestContext = {}) {
+    const dappOrigin =
+      requestContext.dappOrigin || requestContext.origin || 'unknown';
     const {
       id: rawId,
       instanceHandleBoardId,
       installationHandleBoardId,
     } = rawOffer;
-    const id = `${requestContext.origin}#${rawId}`;
+    const id = `${dappOrigin}#${rawId}`;
     assert(
       typeof instanceHandleBoardId === 'string',
       details`instanceHandleBoardId must be a string`,
@@ -691,7 +693,7 @@ export async function makeWallet({
     const offer = harden({
       ...rawOffer,
       id,
-      requestContext,
+      requestContext: { ...requestContext, dappOrigin },
       status: undefined,
     });
     idToOffer.init(id, offer);

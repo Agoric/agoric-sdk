@@ -42,7 +42,7 @@
     instancePetname,
     instanceHandleBoardId,
     installationHandleBoardId,
-    requestContext: { date, origin = "unknown origin" } = {},
+    requestContext: { date, dappOrigin, origin = "unknown origin" } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
     status,
   } = txn);
@@ -84,7 +84,7 @@
   <div>
    <Petname name={instancePetname} board={instanceHandleBoardId} />
     at {formatDateNow(date)} 
-    via ({origin})
+    via ({dappOrigin || origin})
 	<Debug title="Transaction Detail" target={txn} />
   </div>
   <div>

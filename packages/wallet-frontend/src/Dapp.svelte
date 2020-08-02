@@ -5,8 +5,8 @@
   let petname = dapp.petname || dapp.suggestedPetname;
 </script>
 
-{#each [dapp] as { actions, enable, petname: origPetname, suggestedPetname, origin } (origin)}
-  <dt>{origin} suggested: {JSON.stringify(suggestedPetname)}</dt>
+{#each [dapp] as { actions, enable, petname: origPetname, suggestedPetname, dappOrigin, origin } (dappOrigin || origin)}
+  <dt>{dappOrigin || origin} suggested: {JSON.stringify(suggestedPetname)}</dt>
   <dd>
     <input
       type="text"
