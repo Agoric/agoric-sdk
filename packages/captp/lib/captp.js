@@ -290,6 +290,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     // Pull the plug!
     async CTP_ABORT(obj) {
       const { exception } = obj;
+      send(obj);
       if (unplug === false) {
         quietReject(exception, false);
         unplug = exception;
@@ -300,14 +301,13 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
       for (const pr of imports.values()) {
         pr.rej(exception);
       }
-      return send(obj);
     },
   };
 
   // Get a reference to the other side's bootstrap object.
   const getBootstrap = async () => {
     if (unplug !== false) {
-      throw quietReject(unplug);
+      return quietReject(unplug);
     }
     const [questionID, pr] = makeQuestion();
     send({
