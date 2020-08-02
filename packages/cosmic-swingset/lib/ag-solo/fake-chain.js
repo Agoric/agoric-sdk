@@ -40,7 +40,11 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const mailboxStorage = await readMap(mailboxFile);
 
   const vatsdir = path.join(basedir, 'vats');
-  const argv = [`--role=${role}`, bootAddress];
+  const argv = [
+    `--role=${role}`,
+    `--give-me-all-the-agoric-powers`,
+    bootAddress,
+  ];
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function doOutboundBridge(dstID, _obj) {
     // console.error('received', dstID, obj);

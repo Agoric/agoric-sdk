@@ -1,7 +1,8 @@
+import { basename } from 'path';
 import { finishCosmosConfig, finishCosmosGenesis } from './chain-config';
 
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, path } = powers;
+  const { anylogger, fs } = powers;
   const log = anylogger('agoric:set-defaults');
 
   const [prog, configDir] = rawArgs.slice(1);
@@ -12,10 +13,11 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   let configFile;
   let genesisFile;
-  if (path.basename(configDir) === 'config.toml') {
+  const baseName = basename(configDir);
+  if (baseName === 'config.toml') {
     configFile = configDir;
   }
-  if (path.basename(configDir) === 'genesis.json') {
+  if (baseName === 'genesis.json') {
     genesisFile = configDir;
   }
 

@@ -10,14 +10,16 @@ import (
 const EmptyMailboxValue = `"{\"outbox\":[], \"ack\":0}"`
 
 type Egress struct {
-	Nickname string         `json:"nickname"`
-	Peer     sdk.AccAddress `json:"peer"`
+	Nickname   string         `json:"nickname"`
+	Peer       sdk.AccAddress `json:"peer"`
+	PowerFlags []string       `json:"powerFlags"`
 }
 
-func NewEgress(nickname string, peer sdk.AccAddress) Egress {
+func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) Egress {
 	return Egress{
-		Nickname: nickname,
-		Peer:     peer,
+		Nickname:   nickname,
+		Peer:       peer,
+		PowerFlags: powerFlags,
 	}
 }
 

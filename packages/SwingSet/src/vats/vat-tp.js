@@ -2,6 +2,7 @@
 
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { producePromise } from '@agoric/produce-promise';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -18,6 +19,16 @@ import { E } from '@agoric/eventual-send';
 //   await E(setReceiver).setReceiver(receiver);
 //   const receiver = await E(vats.comms).addRemote(name, transmitter);
 //   await E(setReceiver).setReceiver(receiver);
+
+function makeCounter(render, initialValue = 7) {
+  let nextValue = initialValue;
+  function get() {
+    const n = nextValue;
+    nextValue += 1;
+    return render(n);
+  }
+  return harden(get);
+}
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -36,11 +47,103 @@ export function buildRootObject(vatPowers) {
     return remotes.get(name);
   }
 
+  const receivers = new WeakMap(); // connection -> receiver
+  const connectionNames = new WeakMap(); // hostHandle -> name
+
+  const makeConnectionName = makeCounter(n => `connection-${n}`);
+
+  /*
+  // A:
+  agoric.ibcport[0]~.addListener( { onAccept() => {
+    const { host, handler } = await agoric.vattp~.makeNetworkHost('ag-chain-B', comms);
+    const helloAddress = await host~.publish(hello);
+    // helloAddress = '/alleged-chain/${chainID}/egress/${clistIndex}'
+    return handler;
+   });
+
+   // B:
+   const { host, handler } = await agoric.vattp~.makeNetworkHost('ag-chain-A', comms);
+   agoric.ibcport[1]~.connect('/ibc-port/portADDR/ordered/vattp-1', handler);
+   host~.lookup(helloAddress)~.hello()
+  */
+
+  function makeNetworkHost(allegedName, comms) {
+    const makeAddress = makeCounter(
+      n => `/alleged-name/${allegedName}/egress/${n}`,
+    );
+    const exportedObjects = new Map(); // address -> object
+    const locatorUnum = harden({
+      lookup(address) {
+        return exportedObjects.get(address);
+      },
+    });
+    const {
+      promise: theirLocatorUnum,
+      resolve: gotTheirLocatorUnum,
+    } = producePromise();
+    const name = makeConnectionName();
+    let openCalled = false;
+    assert(!connectionNames.has(name), `already have host for ${name}`);
+    const host = harden({
+      publish(obj) {
+        const address = makeAddress();
+        exportedObjects.set(address, obj);
+        return address;
+      },
+      lookup(address) {
+        return E(theirLocatorUnum).lookup(address);
+      },
+    });
+
+    const handler = harden({
+      async onOpen(connection, ..._args) {
+        // make a new Remote for this new connection
+        assert(!openCalled, `host ${name} already opened`);
+        openCalled = true;
+
+        // transmitter
+        const transmitter = harden({
+          transmit(msg) {
+            // 'msg' will be a string (vats/comms/outbound.js deliverToRemote)
+            E(connection).send(msg);
+          },
+        });
+        // the comms 'addRemote' API is kind of weird because it's written to
+        // deal with cycles, where vattp has a tx/rx pair that need to be
+        // wired to comms's tx/rx pair. Somebody has to go first, so there's
+        // a cycle. TODO: maybe change comms to be easier
+        const receiverReceiver = harden({
+          setReceiver(receiver) {
+            receivers.set(connection, receiver);
+          },
+        });
+        await E(comms).addRemote(name, transmitter, receiverReceiver);
+        await E(comms).addEgress(name, 0, locatorUnum);
+        gotTheirLocatorUnum(E(comms).addIngress(name, 0));
+      },
+      onReceive(connection, msg) {
+        // setReceiver ought to be called before there's any chance of
+        // onReceive being called
+        E(receivers.get(connection)).receive(msg);
+      },
+      onClose(connection, ..._args) {
+        receivers.delete(connection);
+        console.warn(`deleting connection is not fully supported in comms`);
+      },
+    });
+
+    return harden({ host, handler });
+  }
+
   const handler = harden({
     registerMailboxDevice(mailboxDevnode) {
       mailbox = mailboxDevnode;
     },
 
+    /*
+     * 'name' is a string, and must match the name you pass to
+     * deliverInboundMessages/deliverInboundAck
+     */
     addRemote(name) {
       assert(!remotes.has(name), details`already have remote ${name}`);
       const r = getRemote(name);
@@ -87,6 +190,8 @@ export function buildRootObject(vatPowers) {
         num += 1;
       }
     },
+
+    makeNetworkHost,
   });
 
   return handler;

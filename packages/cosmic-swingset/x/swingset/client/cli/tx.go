@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -82,9 +83,9 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 // GetCmdProvision is the CLI command for sending a Provision transaction
 func GetCmdProvisionOne(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "provision-one [nickname] [address]",
+		Use:   "provision-one [nickname] [address] [power-flags]",
 		Short: "provision a single address",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.RangeArgs(2, 3),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
@@ -96,7 +97,13 @@ func GetCmdProvisionOne(cdc *codec.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			msg := types.NewMsgProvision(args[0], addr, cliCtx.GetFromAddress())
+
+			var powerFlags []string
+			if len(args) > 2 {
+				powerFlags = strings.Split(args[2], ",")
+			}
+
+			msg := types.NewMsgProvision(args[0], addr, powerFlags, cliCtx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

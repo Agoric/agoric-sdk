@@ -33,7 +33,7 @@ func GetQueryCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 func GetCmdGetEgress(queryRoute string, cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "egress [account]",
-		Short: "get egress nickname for account",
+		Short: "get egress info for account",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)

@@ -14,19 +14,13 @@ import { makeBridgeManager } from './bridge';
 
 const NUM_IBC_PORTS = 3;
 
-// The old way of provisioning used an environment variable that
-// was an account ACL.  The new way uses "provisionpass", a
-// "bearer token" that is checked in handler.go before a provision
-// transaction is even sent to the JS side.
-const FIXME_DEPRECATED_BOOT_ADDRESS = true;
-
 console.debug(`loading bootstrap.js`);
 
 function parseArgs(argv) {
   let ROLE;
   let gotRoles = false;
-  let bootAddress;
-  const additionalAddresses = [];
+  const hardcodedClientAddresses = [];
+  let giveMeAllTheAgoricPowers = false;
   argv.forEach(arg => {
     const match = arg.match(/^--role=(.*)$/);
     if (match) {
@@ -35,24 +29,22 @@ function parseArgs(argv) {
       }
       [, ROLE] = match;
       gotRoles = true;
-    } else if (!arg.match(/^-/)) {
-      if (!bootAddress) {
-        bootAddress = arg;
-      } else {
-        additionalAddresses.push(arg);
-      }
+    } else if (arg === `--give-me-all-the-agoric-powers`) {
+      console.warn(`Giving all the Agoric powers to the client!`);
+      giveMeAllTheAgoricPowers = true;
+    } else if (arg.match(/^-/)) {
+      throw Error(`Unrecognized option ${arg}`);
+    } else {
+      hardcodedClientAddresses.push(arg);
     }
   });
   if (!gotRoles) {
     ROLE = 'three_client';
   }
 
-  return [ROLE, bootAddress, additionalAddresses];
+  return { ROLE, giveMeAllTheAgoricPowers, hardcodedClientAddresses };
 }
 
-// Used in scenario 1 for coordinating on an index for registering public keys
-// while requesting provisioning.
-const KEY_REG_INDEX = 1;
 // Used for coordinating on an index in comms for the provisioning service
 const PROVISIONER_INDEX = 1;
 
@@ -112,7 +104,7 @@ export function buildRootObject(vatPowers) {
     );
 
     return harden({
-      async createUserBundle(_nickname) {
+      async createUserBundle(_nickname, powerFlags = []) {
         // Bind to some fresh ports (unspecified name) on the IBC implementation
         // and provide them for the user to have.
         const ibcport = [];
@@ -120,7 +112,20 @@ export function buildRootObject(vatPowers) {
           // eslint-disable-next-line no-await-in-loop
           ibcport.push(await E(vats.network).bind('/ibc-port/'));
         }
+
+        const additionalPowers = {};
+        const { vattp, comms } = vats;
+        if (powerFlags.includes('agoric.vattp')) {
+          // Give the authority to create a new host for vattp to share objects with.
+          additionalPowers.vattp = {
+            makeNetworkHost(allegedName) {
+              return E(vattp).makeNetworkHost(allegedName, comms);
+            },
+          };
+        }
+
         const bundle = harden({
+          ...additionalPowers,
           chainTimerService,
           sharingService,
           contractHost,
@@ -198,9 +203,9 @@ export function buildRootObject(vatPowers) {
         async fromBridge(_srcID, obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {
-              const { nickname, address } = obj;
+              const { nickname, address, powerFlags } = obj;
               return E(vats.provisioning)
-                .pleaseProvision(nickname, address, PROVISIONER_INDEX)
+                .pleaseProvision(nickname, address, powerFlags)
                 .catch(e =>
                   console.error(
                     `Error provisioning ${nickname} ${address}:`,
@@ -272,11 +277,13 @@ export function buildRootObject(vatPowers) {
 
     return allComparable(
       harden({
+        comms: vats.comms,
         uploads,
         spawner,
         wallet,
         network: vats.network,
         http: httpRegCallback,
+        vattp: vats.vattp,
       }),
     );
   }
@@ -285,7 +292,11 @@ export function buildRootObject(vatPowers) {
     async bootstrap(argv, vats, devices) {
       const bridgeManager =
         devices.bridge && makeBridgeManager(E, D, devices.bridge);
-      const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
+      const {
+        ROLE,
+        giveMeAllTheAgoricPowers,
+        hardcodedClientAddresses,
+      } = parseArgs(argv);
 
       async function addRemote(addr) {
         const { transmitter, setReceiver } = await E(vats.vattp).addRemote(
@@ -296,12 +307,6 @@ export function buildRootObject(vatPowers) {
 
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
-      if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
-        // FIXME: The old way: register egresses for the addresses.
-        await Promise.all(
-          [bootAddress, ...additionalAddresses].map(addr => addRemote(addr)),
-        );
-      }
 
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
@@ -313,6 +318,7 @@ export function buildRootObject(vatPowers) {
       // client (python) on localhost, which creates client solo node on
       // localhost, with HTML frontend. Multi-player mode.
       switch (ROLE) {
+        // REAL VALIDATORS run this.
         case 'chain':
         case 'one_chain': {
           // provisioning vat can ask the demo server for bundles, and can
@@ -325,56 +331,9 @@ export function buildRootObject(vatPowers) {
 
           // Must occur after makeChainBundler.
           await registerNetworkProtocols(vats, bridgeManager);
-
-          if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
-            // accept provisioning requests from the controller
-            const provisioner = harden({
-              pleaseProvision(nickname, pubkey) {
-                console.debug('Provisioning', nickname, pubkey);
-                return E(vats.provisioning).pleaseProvision(
-                  nickname,
-                  pubkey,
-                  PROVISIONER_INDEX,
-                );
-              },
-            });
-            // bootAddress holds the pubkey of controller
-            await E(vats.comms).addEgress(
-              bootAddress,
-              KEY_REG_INDEX,
-              provisioner,
-            );
-          }
           break;
         }
-        case 'controller':
-        case 'one_controller': {
-          if (!GCI) {
-            throw new Error(`controller must be given GCI`);
-          }
-
-          await registerNetworkProtocols(vats, bridgeManager);
-
-          // Wire up the http server.
-          await setupCommandDevice(vats.http, devices.command, {
-            controller: true,
-          });
-          // Create a presence for the on-chain provisioner.
-          await addRemote(GCI);
-          const chainProvisioner = await E(vats.comms).addIngress(
-            GCI,
-            KEY_REG_INDEX,
-          );
-          // Allow web requests from the provisioning server to call our
-          // provisioner object.
-          const provisioner = harden({
-            pleaseProvision(nickname, pubkey) {
-              return E(chainProvisioner).pleaseProvision(nickname, pubkey);
-            },
-          });
-          await E(vats.http).setProvisioner(provisioner);
-          break;
-        }
+        // ag-setup-solo runs this.
         case 'client':
         case 'one_client': {
           if (!GCI) {
@@ -429,19 +388,38 @@ export function buildRootObject(vatPowers) {
           );
 
           await registerNetworkProtocols(vats, bridgeManager);
-          if (FIXME_DEPRECATED_BOOT_ADDRESS && bootAddress) {
-            const demoProvider = harden({
-              // build a chain-side bundle for a client.
-              async getDemoBundle(nickname) {
-                return chainBundler.createUserBundle(nickname);
-              },
-            });
-            await Promise.all(
-              [bootAddress, ...additionalAddresses].map(addr =>
-                E(vats.comms).addEgress(addr, PROVISIONER_INDEX, demoProvider),
-              ),
-            );
-          }
+
+          // Allow some hardcoded client address connections into the chain.
+          // This is necessary for fake-chain, which does not have Cosmos SDK
+          // transactions to provision its client.
+          const demoProvider = harden({
+            // build a chain-side bundle for a client.
+            async getDemoBundle(nickname) {
+              if (giveMeAllTheAgoricPowers) {
+                // NOTE: This is a special exception to the security model,
+                // to give capabilities to all clients (since we are running
+                // locally with the `--give-me-all-the-agoric-powers` flag).
+                return chainBundler.createUserBundle(nickname, [
+                  'agoric.vattp',
+                ]);
+              }
+              return chainBundler.createUserBundle(nickname);
+            },
+          });
+          await Promise.all(
+            hardcodedClientAddresses.map(async addr => {
+              const { transmitter, setReceiver } = await E(
+                vats.vattp,
+              ).addRemote(addr);
+              await E(vats.comms).addRemote(addr, transmitter, setReceiver);
+              await E(vats.comms).addEgress(
+                addr,
+                PROVISIONER_INDEX,
+                demoProvider,
+              );
+            }),
+          );
+
           break;
         }
         case 'two_client': {

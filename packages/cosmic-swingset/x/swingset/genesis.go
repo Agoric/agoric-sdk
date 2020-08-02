@@ -40,8 +40,9 @@ func DefaultGenesisState() GenesisState {
 func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) []abci.ValidatorUpdate {
 	for _, egress := range data.Egresses {
 		msg := MsgProvision{
-			Address:  egress.Peer,
-			Nickname: egress.Nickname,
+			Address:    egress.Peer,
+			Nickname:   egress.Nickname,
+			PowerFlags: egress.PowerFlags,
 		}
 		action := &provisionAction{
 			MsgProvision: msg,
@@ -57,7 +58,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) []abci.Valid
 		}
 
 		// Reproduce the egress in our state.
-		egress := types.NewEgress(msg.Nickname, msg.Address)
+		egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
 		err = keeper.SetEgress(ctx, egress)
 		if err != nil {
 			panic(err)
