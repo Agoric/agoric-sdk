@@ -2,4 +2,4 @@
   export let id;
 </script>
 
-<b>agoric-pay:{id}</b>
+<b>board:{id}</b>

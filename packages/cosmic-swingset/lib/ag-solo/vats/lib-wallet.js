@@ -664,9 +664,6 @@ export async function makeWallet({
       dappRecord.actions.disable();
     }
 
-    // TODO: Actually approve the origin!
-    // dappRecord.actions.enable(suggestedPetname);
-
     await dappRecord.approvalP;
     // AWAIT
     // Refetch the origin record.
