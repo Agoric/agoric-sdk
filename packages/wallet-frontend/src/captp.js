@@ -20,7 +20,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
   function onClose(_event)  {
     // Throw away our state.
     bootPK = producePromise();
-    onReset();
+    onReset(bootPK.promise);
     abort();
   }
 
@@ -61,7 +61,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
 
   // Prepare the first reset, delayed so that our caller
   // can use makePermanentPresence.
-  setTimeout(onReset, 1);
+  setTimeout(() => onReset(Promise.resolve()), 1);
 
   return { makeStableForwarder, ...props };
 }

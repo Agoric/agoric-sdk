@@ -824,17 +824,110 @@ export async function makeWallet({
     });
   }
 
+  const payments = makeStore('payment');
+  const {
+    updater: paymentsUpdate,
+    notifier: paymentsNotifier,
+  } = makeNotifierKit();
+  const updatePaymentRecord = ({ actions, ...preDisplay }) => {
+    const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
+    const paymentRecord = { ...preDisplay, actions, displayPayment };
+    payments.set(paymentRecord.payment, harden(paymentRecord));
+    paymentsUpdate.updateState([...payments.values()]);
+  };
+
+  const addPayment = async (payment, brand, depositTo = undefined) => {
+    /**
+     * @typedef {Object} PaymentRecord
+     * @property {Issuer} issuer
+     * @property {Payment} payment
+     * @property {Brand} brand
+     * @property {'pending'|'deposited'} status
+     * @property {typeof actions} actions
+     */
+
+    /** @type {Partial<PaymentRecord>} */
+    let paymentRecord = {
+      payment,
+      brand,
+      issuer: undefined,
+      status: undefined,
+    };
+
+    const actions = {
+      async deposit(purse = undefined) {
+        if (purse === undefined) {
+          if (!brandToAutoDepositPurse.has(brand)) {
+            // No automatic purse right now.
+            return;
+          }
+          // Plop into the current autodeposit purse.
+          purse = brandToAutoDepositPurse.get(brand);
+        }
+        paymentRecord = {
+          ...paymentRecord,
+          status: 'pending',
+        };
+        updatePaymentRecord(paymentRecord);
+        // Now try depositing.
+        const depositedAmount = await E(purse).deposit(payment);
+        paymentRecord = {
+          ...paymentRecord,
+          status: 'deposited',
+          depositedAmount,
+        };
+        updatePaymentRecord(paymentRecord);
+      },
+      async refresh() {
+        if (!brandTable.has(brand)) {
+          return false;
+        }
+
+        const { issuer } = paymentRecord;
+        if (!issuer) {
+          paymentRecord = {
+            ...paymentRecord,
+            ...brandTable.get(brand),
+          };
+          updatePaymentRecord(paymentRecord);
+        }
+
+        return actions.getAmountOf();
+      },
+      async getAmountOf() {
+        const { issuer } = paymentRecord;
+
+        // Fetch the current amount of the payment.
+        const lastAmount = await E(issuer).getAmountOf(payment);
+
+        paymentRecord = {
+          ...paymentRecord,
+          lastAmount,
+        };
+        updatePaymentRecord(paymentRecord);
+        return true;
+      },
+    };
+
+    paymentRecord.actions = actions;
+    payments.init(payment, harden(paymentRecord));
+    const refreshed = await paymentRecord.actions.refresh();
+    if (!refreshed) {
+      // Only update if the refresh didn't.
+      updatePaymentRecord(paymentRecord);
+    }
+
+    // Try an automatic deposit.
+    actions.deposit();
+  };
+
+  const getPaymentsNotifier = () => paymentsNotifier;
+
   // Allow people to send us payments.
   const selfContact = await addContact('Self', {
     async receive(payment) {
       const brand = await E(payment).getAllegedBrand();
-      if (!brandToAutoDepositPurse.has(brand)) {
-        // TODO: Queue as an incoming payment.
-        throw Error(`Incoming payments not implemented`);
-      }
-      // Plop into the current purse.
-      const currentPurse = brandToAutoDepositPurse.get(brand);
-      return E(currentPurse).deposit(payment);
+      await addPayment(payment, brand);
     },
   });
 
@@ -1043,6 +1136,8 @@ export async function makeWallet({
     suggestInstallation,
     addContact,
     getContactsNotifier,
+    addPayment,
+    getPaymentsNotifier,
   });
 
   // Make Zoe invite purse

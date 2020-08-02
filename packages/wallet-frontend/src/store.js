@@ -17,6 +17,7 @@ export { connected };
 export const walletP = makeStableForwarder(bootP => E.G(bootP).wallet);
 export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
 
+const resetAlls = [];
 const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
@@ -27,7 +28,8 @@ const [issuers, setIssuers] = makeReadable([]);
 
 export { inbox, purses, dapps, payments, issuers, contacts, selfContact };
 
-function onReset(_bootP) {
+function onReset(bootP) {
+  bootP.then(() => resetAlls.forEach(fn => fn()));
   E(walletP).getSelfContact().then(setSelfContact);
   // Set up our subscriptions.
   updateFromNotifier({
@@ -44,10 +46,12 @@ function onReset(_bootP) {
   );
   updateFromNotifier({ updateState: setDapps}, E(walletP).getDappNotifier());
   updateFromNotifier({ updateState: setContacts }, E(walletP).getContactsNotifier());
+  updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
 }
 
 // like React useHook, return a store and a setter for it
 function makeReadable(value, start = undefined) {
   const store = writable(value, start);
+  resetAlls.push(() => store.set(start));
   return [{ subscribe: store.subscribe }, store.set];
 }

@@ -47,21 +47,23 @@ export function buildRootObject(_vatPowers) {
     pushOfferSubscriptions(channelHandle, inboxState);
   };
 
-  const { updater: pursesUpdater, notifier: pursesNotifier } = makeNotifierKit(
-    pursesState,
-  );
+  const {
+    updater: pursesJSONUpdater,
+    notifier: pursesJSONNotifier,
+  } = makeNotifierKit(pursesState);
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
-  const { updater: inboxUpdater, notifier: inboxNotifier } = makeNotifierKit(
-    inboxState,
-  );
+  const {
+    updater: inboxJSONUpdater,
+    notifier: inboxJSONNotifier,
+  } = makeNotifierKit(inboxState);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({
     getInboxJSONNotifier() {
-      return inboxNotifier;
+      return inboxJSONNotifier;
     },
     getPursesJSONNotifier() {
-      return pursesNotifier;
+      return pursesJSONNotifier;
     },
   });
 
@@ -151,7 +153,7 @@ export function buildRootObject(_vatPowers) {
       harden({
         notify(m) {
           pursesState = m;
-          pursesUpdater.updateState(pursesState);
+          pursesJSONUpdater.updateState(pursesState);
           if (http) {
             E(http).send(
               {
@@ -171,7 +173,7 @@ export function buildRootObject(_vatPowers) {
       harden({
         notify(m) {
           inboxState = m;
-          inboxUpdater.updateState(inboxState);
+          inboxJSONUpdater.updateState(inboxState);
           if (http) {
             E(http).send(
               {

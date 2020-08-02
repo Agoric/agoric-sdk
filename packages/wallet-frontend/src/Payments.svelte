@@ -1,5 +1,6 @@
 <script>
   import Amount from "./Amount.svelte";
+  import Payment from './Payment.svelte';
   export let payments;
 </script>
 
@@ -30,6 +31,12 @@
   {#if !Array.isArray($payments) || $payments.length === 0}
     No payments.
   {:else}
-    Some payments.
+    <ul>
+      {#each $payments as payment}
+        <li>
+          <Payment {payment} />
+        </li>
+      {/each}
+    </ul>
   {/if}
 </section>
