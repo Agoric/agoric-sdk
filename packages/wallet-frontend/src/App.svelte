@@ -49,8 +49,6 @@
     grid-template-columns: 200px 1fr 200px;
     grid-template-rows: auto 1fr auto;
     grid-gap: 10px;
-
-    height: 100vh;
   }
   header {
     grid-area: header;
@@ -88,8 +86,6 @@
       "purses issuers";
     grid-template-columns: 1fr 1fr;
     grid-gap: 10px;
-
-    height: 100vh;
   }
   .dapps {
     grid-area: dapps;
