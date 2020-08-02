@@ -33,17 +33,12 @@ function onReset(readyP) {
   E(walletP).getSelfContact().then(setSelfContact);
   // Set up our subscriptions.
   updateFromNotifier({
-    updateState(pjs) {
-      setPurses(JSON.parse(pjs));
-    },
-   }, E(walletP).getPursesJSONNotifier(),
-  );
-  updateFromNotifier({
     updateState(ijs) {
       setInbox(JSON.parse(ijs));
     },
    }, E(walletP).getInboxJSONNotifier(),
   );
+  updateFromNotifier({ updateState: setPurses}, E(walletP).getPursesNotifier());
   updateFromNotifier({ updateState: setDapps}, E(walletP).getDappNotifier());
   updateFromNotifier({ updateState: setContacts }, E(walletP).getContactsNotifier());
   updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());

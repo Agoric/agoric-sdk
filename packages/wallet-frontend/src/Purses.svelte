@@ -2,7 +2,6 @@
   import Purse from "./Purse.svelte";
   // a store of purses
   export let purses;
-  export let contacts;
   export let walletP;
 </script>
 
@@ -41,7 +40,7 @@
     <ul>
       {#each $purses as purse}
         <li>
-          <Purse {purse} {contacts} {walletP} />
+          <Purse {purse} {walletP} />
         </li>
       {/each}
     </ul>

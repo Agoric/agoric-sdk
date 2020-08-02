@@ -106,6 +106,7 @@ export async function makeWallet({
 
   // Client-side representation of the purses inbox;
   const pursesState = new Map();
+  const pursesFullState = new Map();
   const inboxState = new Map();
 
   // The default Zoe invite purse is used to make an offer.
@@ -136,6 +137,11 @@ export async function makeWallet({
   // @qclass is lost.
   const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
 
+  const {
+    notifier: pursesNotifier,
+    updater: pursesUpdater,
+  } = makeNotifierKit();
+
   async function updatePursesState(pursePetname, purse) {
     const purseKey = purseMapping.implode(pursePetname);
     for (const key of pursesState.keys()) {
@@ -158,7 +164,7 @@ export async function makeWallet({
       // We have a depositId for the purse.
       depositBoardId = brandToDepositFacetId.get(brand);
     }
-    pursesState.set(purseKey, {
+    const jstate = {
       brandBoardId,
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
@@ -166,7 +172,37 @@ export async function makeWallet({
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
-    });
+    };
+    pursesState.set(purseKey, jstate);
+    pursesFullState.set(
+      purse,
+      harden({
+        ...jstate,
+        purse,
+        brand,
+        actions: {
+          async send(receiverP, valueToSend) {
+            const { amountMath } = brandTable.get(brand);
+            const amount = amountMath.make(valueToSend);
+            const payment = await E(purse).withdraw(amount);
+            try {
+              await E(receiverP).receive(payment);
+            } catch (e) {
+              // Recover the failed payment.
+              await E(purse).deposit(payment);
+              throw e;
+            }
+          },
+          receive(payment) {
+            return E(purse).deposit(payment);
+          },
+          deposit(payment, amount = undefined) {
+            return E(purse).deposit(payment, amount);
+          },
+        },
+      }),
+    );
+    pursesUpdater.updateState([...pursesFullState.values()]);
     pursesStateChangeHandler(getPursesState());
   }
 
@@ -422,7 +458,7 @@ export async function makeWallet({
   };
 
   const {
-    updater: contactsUpdate,
+    updater: contactsUpdater,
     notifier: contactsNotifier,
   } = makeNotifierKit();
 
@@ -434,19 +470,13 @@ export async function makeWallet({
     });
     const depositBoardId = await E(board).getId(depositFacet);
     const contact = harden({
-      actions: {
-        ...actions,
-      },
+      actions,
       depositBoardId,
     });
 
     contactMapping.suggestPetname(petname, contact);
-    contactsUpdate.updateState([...contactMapping.petnameToVal.entries()]);
+    contactsUpdater.updateState([...contactMapping.petnameToVal.entries()]);
     return contact;
-  };
-
-  const getContactsNotifier = () => {
-    return contactsNotifier;
   };
 
   const addInstance = (petname, instanceHandle) => {
@@ -589,10 +619,6 @@ export async function makeWallet({
     harden(dappRecord);
     dappOrigins.set(dappRecord.origin, dappRecord);
     dappUpdater.updateState([...dappOrigins.values()]);
-  }
-
-  function getDappNotifier() {
-    return dappNotifier;
   }
 
   async function waitForDappApproval(suggestedPetname, origin) {
@@ -868,17 +894,17 @@ export async function makeWallet({
 
     const depositedPK = producePromise();
     const actions = {
-      /**
-       * @param {Purse} purse
-       */
-      async deposit(purse = undefined) {
-        if (purse === undefined) {
+      async deposit(pursePetname = undefined) {
+        let purse;
+        if (pursePetname === undefined) {
           if (!brandToAutoDepositPurse.has(brand)) {
             // No automatic purse right now.
             return depositedPK.promise;
           }
           // Plop into the current autodeposit purse.
           purse = brandToAutoDepositPurse.get(brand);
+        } else {
+          purse = purseMapping.petnameToVal.get(pursePetname);
         }
         paymentRecord = {
           ...paymentRecord,
@@ -938,8 +964,6 @@ export async function makeWallet({
     // Try an automatic deposit.
     return actions.deposit(depositTo);
   };
-
-  const getPaymentsNotifier = () => paymentsNotifier;
 
   // Allow people to send us payments.
   const selfContact = await addContact('Self', {
@@ -1121,7 +1145,12 @@ export async function makeWallet({
 
   const wallet = harden({
     waitForDappApproval,
-    getDappNotifier,
+    getDappNotifier() {
+      return dappNotifier;
+    },
+    getPursesNotifier() {
+      return pursesNotifier;
+    },
     addIssuer,
     addInstance,
     addInstallation,
@@ -1152,9 +1181,13 @@ export async function makeWallet({
     suggestInstance,
     suggestInstallation,
     addContact,
-    getContactsNotifier,
+    getContactsNotifier() {
+      return contactsNotifier;
+    },
     addPayment,
-    getPaymentsNotifier,
+    getPaymentsNotifier() {
+      return paymentsNotifier;
+    },
   });
 
   // Make Zoe invite purse
