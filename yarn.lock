@@ -9185,11 +9185,6 @@ svelte-awesome@^2.3.0:
   dependencies:
     svelte "^3.15.0"
 
-svelte-mui@^0.3.3-4:
-  version "0.3.3-4"
-  resolved "https://registry.yarnpkg.com/svelte-mui/-/svelte-mui-0.3.3-4.tgz#ca136de4e0578a614a328849cd3da1f18cc435e4"
-  integrity sha512-FytBWkvTQFLCqqkoFHkldGWcKj/vg8Qqinv/NH98VzGyAWY5xrK6alZw1HXmWXWGRKTl2AR6zeOf7ZO0aYoI4g==
-
 svelte-preprocess@^3.9.11:
   version "3.9.12"
   resolved "https://registry.yarnpkg.com/svelte-preprocess/-/svelte-preprocess-3.9.12.tgz#21e8452e45c6a4d89df37a38714af4a0186df3a1"
