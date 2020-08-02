@@ -28,8 +28,8 @@ const [issuers, setIssuers] = makeReadable([]);
 
 export { inbox, purses, dapps, payments, issuers, contacts, selfContact };
 
-function onReset(bootP) {
-  bootP.then(() => resetAlls.forEach(fn => fn()));
+function onReset(readyP) {
+  readyP.then(() => resetAlls.forEach(fn => fn()));
   E(walletP).getSelfContact().then(setSelfContact);
   // Set up our subscriptions.
   updateFromNotifier({

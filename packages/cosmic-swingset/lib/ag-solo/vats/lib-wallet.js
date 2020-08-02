@@ -388,7 +388,8 @@ export async function makeWallet({
             const purse = purseKeywordRecord[keyword];
             if (purse && payoutP) {
               const payout = await payoutP;
-              return E(purse).deposit(payout);
+              // eslint-disable-next-line no-use-before-define
+              return addPayment(payout, purse);
             }
             return undefined;
           }),
@@ -426,7 +427,11 @@ export async function makeWallet({
   } = makeNotifierKit();
 
   const addContact = async (petname, actions) => {
-    const depositFacet = harden({ receive: actions.receive });
+    const depositFacet = harden({
+      receive(payment) {
+        return E(actions).receive(payment);
+      },
+    });
     const depositBoardId = await E(board).getId(depositFacet);
     const contact = harden({
       actions: {
@@ -564,6 +569,11 @@ export async function makeWallet({
     const matchInvite = element => element.handle === inviteHandle;
     const inviteBrand = purseToBrand.get(zoeInvitePurse);
     const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
+    const matchingInvite = inviteValueElems.find(matchInvite);
+    assert(
+      matchingInvite,
+      details`Cannot find invite corresponding to ${q(inviteHandleBoardId)}`,
+    );
     const inviteAmount = inviteAmountMath.make(
       harden([inviteValueElems.find(matchInvite)]),
     );
@@ -826,17 +836,17 @@ export async function makeWallet({
 
   const payments = makeStore('payment');
   const {
-    updater: paymentsUpdate,
+    updater: paymentsUpdater,
     notifier: paymentsNotifier,
   } = makeNotifierKit();
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = { ...preDisplay, actions, displayPayment };
     payments.set(paymentRecord.payment, harden(paymentRecord));
-    paymentsUpdate.updateState([...payments.values()]);
+    paymentsUpdater.updateState([...payments.values()]);
   };
 
-  const addPayment = async (payment, brand, depositTo = undefined) => {
+  const addPayment = async (payment, depositTo = undefined) => {
     /**
      * @typedef {Object} PaymentRecord
      * @property {Issuer} issuer
@@ -846,6 +856,9 @@ export async function makeWallet({
      * @property {typeof actions} actions
      */
 
+    // We don't even create the record until we get an alleged brand.
+    const brand = await E(payment).getAllegedBrand();
+
     /** @type {Partial<PaymentRecord>} */
     let paymentRecord = {
       payment,
@@ -854,12 +867,16 @@ export async function makeWallet({
       status: undefined,
     };
 
+    const depositedPK = producePromise();
     const actions = {
+      /**
+       * @param {Purse} purse
+       */
       async deposit(purse = undefined) {
         if (purse === undefined) {
           if (!brandToAutoDepositPurse.has(brand)) {
             // No automatic purse right now.
-            return;
+            return depositedPK.promise;
           }
           // Plop into the current autodeposit purse.
           purse = brandToAutoDepositPurse.get(brand);
@@ -877,6 +894,8 @@ export async function makeWallet({
           depositedAmount,
         };
         updatePaymentRecord(paymentRecord);
+        depositedPK.resolve(depositedAmount);
+        return depositedPK.promise;
       },
       async refresh() {
         if (!brandTable.has(brand)) {
@@ -911,23 +930,22 @@ export async function makeWallet({
 
     paymentRecord.actions = actions;
     payments.init(payment, harden(paymentRecord));
-    const refreshed = await paymentRecord.actions.refresh();
+    const refreshed = await actions.refresh();
     if (!refreshed) {
       // Only update if the refresh didn't.
       updatePaymentRecord(paymentRecord);
     }
 
     // Try an automatic deposit.
-    actions.deposit();
+    return actions.deposit(depositTo);
   };
 
   const getPaymentsNotifier = () => paymentsNotifier;
 
   // Allow people to send us payments.
   const selfContact = await addContact('Self', {
-    async receive(payment) {
-      const brand = await E(payment).getAllegedBrand();
-      await addPayment(payment, brand);
+    receive(payment) {
+      return addPayment(payment);
     },
   });
 
