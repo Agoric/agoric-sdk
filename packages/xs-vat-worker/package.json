@@ -1,0 +1,57 @@
+{
+  "name": "@agoric/xs-vat-worker",
+  "version": "0.0.1",
+  "description": "???",
+  "main": "dist/vat-worker.cjs.js",
+  "module": "dist/vat-worker.esm.js",
+  "browser": "dist/vat-worker.umd.js",
+  "scripts": {
+    "xs-build": "mkdir -p build; mcconfig -o build -p x-cli-lin -m -d",
+    "xs-run": "yarn xs-build && ./build/bin/lin/debug/make-vat-transcript",
+    "xs-build-release": "mkdir -p build; mcconfig -o build -p x-cli-lin -m",
+    "xs-run-release": "yarn xs-build-release && ./build/bin/lin/release/make-vat-transcript",
+    "test": "tape -r esm 'test/**/test-*.js'",
+    "build": "exit 0",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+  },
+  "devDependencies": {
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-jessie": "0.0.3",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-prettier": "^3.1.0",
+    "prettier": "^1.18.2",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.11.0",
+    "tape-promise": "^4.0.0"
+  },
+  "dependencies": {
+    "@agoric/assert": "^0.0.8",
+    "@agoric/bundle-source": "^1.1.6",
+    "@agoric/eventual-send": "^0.9.3",
+    "@agoric/import-bundle": "^0.0.8",
+    "@agoric/install-ses": "^0.2.0",
+    "@agoric/produce-promise": "^0.1.3",
+    "@agoric/swingset-vat": "^0.6.0",
+    "anylogger": "^1.0.4",
+    "esm": "^3.2.5"
+  },
+  "keywords": [],
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://gist.github.com/f8e0b5d838079a994784d599c282cce7.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://gist.github.com/dckc/f8e0b5d838079a994784d599c282cce7"
+  },
+  "homepage": "https://gist.github.com/dckc/f8e0b5d838079a994784d599c282cce7"
+}

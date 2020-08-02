@@ -1,0 +1,48 @@
+{
+	"include": [
+        "$(MODDABLE)/examples/manifest_base.json"
+    ],
+    "$note": [
+        "horrible @agoric/E KLUDGE below",
+        "liveSlots is a bit KLUDGy too"
+    ],
+    "creation": {
+        "keys": {
+          "available": 4096
+        },
+        "stack": 4096,
+        "parser": {
+          "buffer": 32768
+        }
+    },
+    "strip": [],
+	"modules": {
+        "files": [ "$(MODULES)/files/file/*", "$(MODULES)/files/file/lin/*" ],
+        "fdchan": [ "./fdchan" ],
+        "timer": [
+            "$(MODULES)/base/timer/timer",
+            "$(MODULES)/base/timer/lin/*",
+        ],
+        "@agoric/nat": "xs_modules/@agoric/nat/nat.esm",
+        "@agoric/install-ses": "xs_modules/@agoric/install-ses/install-ses",
+        "@agoric/import-bundle": "xs_modules/@agoric/import-bundle/index",
+        "@agoric/compartment-wrapper": "xs_modules/@agoric/import-bundle/compartment-wrapper",
+        "@agoric/eventual-send": [
+            "xs_modules/@agoric/eventual-send/index"
+        ],
+        "@agoric/E": "xs_modules/@agoric/eventual-send/E",
+        "@agoric/marshal": "xs_modules/@agoric/marshal/marshal",
+        "@agoric/produce-promise": "xs_modules/@agoric/produce-promise/producePromise",
+        "@agoric/assert": "xs_modules/@agoric/assert/assert",
+        "@agoric/types": "xs_modules/@agoric/assert/types",
+        "swingset/capdata": "./swingset/capdata",
+        "swingset/parseVatSlots": "./swingset/parseVatSlots",
+        "swingset/kernel/liveSlots": "./swingset/kernel/liveSlots",
+		"*": [
+            "./main",
+            "./console",
+            "./timer-ticks",
+            "./vatWorker"
+        ]
+	}
+}
