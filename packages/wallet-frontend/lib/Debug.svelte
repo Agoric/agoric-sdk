@@ -4,7 +4,7 @@
 
   import Modal from "./Modal.svelte";
 
-  import { Button } from "svelte-mui";
+  import Button from "smelte/src/components/Button";
   import { stringify } from "../../cosmic-swingset/lib/ag-solo/vats/repl";
 
   export let title = "Debug Info";

@@ -1,7 +1,8 @@
 <script>
+  import 'smelte/src/tailwind.css';
   import { E } from "@agoric/eventual-send";
 
-  import { Button, Icon } from "svelte-mui";
+  import Button from 'smelte/src/components/Button';
   import Dapps from "./Dapps.svelte";
   import Payments from "./Payments.svelte";
   import Contacts from "./Contacts.svelte";

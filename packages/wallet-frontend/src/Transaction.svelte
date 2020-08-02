@@ -4,7 +4,8 @@
   import Amount from "./Amount.svelte";
   import Debug from "../lib/Debug.svelte";
   import { stringify } from "../lib/helpers";
-  import { Button, Icon } from "svelte-mui";
+  import Button from 'smelte/src/components/Button';
+  import Icon from 'smelte/src/components/Icon';
 
   export let txn;
   export let id;
