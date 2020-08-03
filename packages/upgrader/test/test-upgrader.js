@@ -15,12 +15,12 @@ import '../src/types';
 test('upgrader - wait until initialized', async t => {
   t.plan(3);
   /** @type {UpgraderKit<Hello>} */
-  const { upgradableP: helloObj, upgrader } = makeUpgraderKit();
+  const { upgradableP: helloP, upgrader } = makeUpgraderKit();
 
-  const msgP = E(helloObj).hello('World');
+  const msgP = E(helloP).hello('World');
   await upgrader.upgrade({
-    async upgradeFromLast(lastInstance) {
-      t.equals(lastInstance, undefined, `initial instance has no lastInstance`);
+    async upgradeFrom(priorP) {
+      t.equals(priorP, undefined, `initial instance has no priorP`);
       return harden({
         hello(name) {
           return `Hello, ${name}!`;
@@ -32,20 +32,20 @@ test('upgrader - wait until initialized', async t => {
   const msg = await msgP;
   t.equals(msg, `Hello, World!`, `delayed message is returned`);
 
-  const msg2 = await E(helloObj).hello('foo');
+  const msg2 = await E(helloP).hello('foo');
   t.equals(msg2, `Hello, foo!`, `fresh message is forwarded`);
   t.end();
 });
 
 test('upgrader - upgrade twice', async t => {
-  t.plan(5);
+  t.plan(6);
   /** @type {UpgraderKit<Hello>} */
-  const { upgradableP: helloObj, upgrader } = makeUpgraderKit();
+  const { upgradableP: helloP, upgrader } = makeUpgraderKit();
 
-  const msgP = E(helloObj).hello('World');
+  const msgP = E(helloP).hello('World');
   await upgrader.upgrade({
-    async upgradeFromLast(lastInstance) {
-      t.equals(lastInstance, undefined, `initial instance has no lastInstance`);
+    async upgradeFrom(priorP) {
+      t.equals(priorP, undefined, `initial instance has no priorP`);
       return harden({
         hello(name) {
           return `Hello, ${name}!`;
@@ -57,12 +57,14 @@ test('upgrader - upgrade twice', async t => {
   const msg = await msgP;
   t.equals(msg, `Hello, World!`, `delayed message is returned`);
 
-  const msg2 = await E(helloObj).hello('foo');
+  const msg2 = await E(helloP).hello('foo');
   t.equals(msg2, `Hello, foo!`, `fresh message is forwarded`);
 
   const upP = upgrader.upgrade({
-    async upgradeFromLast(lastInstance) {
-      t.equals(lastInstance, undefined, `initial instance has no lastInstance`);
+    async upgradeFrom(priorP) {
+      t.notEquals(priorP, undefined, `upgrade instance has a priorP`);
+      const old = await E(priorP).hello('Test');
+      t.equals(old, 'Hello, Test!', `last instance is passed`);
       return harden({
         hello(name) {
           return `Goodbye, ${name}!`;
@@ -70,7 +72,7 @@ test('upgrader - upgrade twice', async t => {
       });
     },
   });
-  const msg3P = E(helloObj).hello('cruel World');
+  const msg3P = E(helloP).hello('cruel World');
 
   await upP;
   const msg3 = await msg3P;
