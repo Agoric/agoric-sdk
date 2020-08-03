@@ -18,12 +18,14 @@
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "detective-es6": "^2.2.0",
     "eslint": "^6.1.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "0.0.3",
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.0",
+    "filing-cabinet": "^2.5.1",
     "prettier": "^1.18.2",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",

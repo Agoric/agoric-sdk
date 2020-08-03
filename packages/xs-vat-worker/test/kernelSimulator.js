@@ -31,7 +31,11 @@ function makeWorker(child) {
       throw badJSON;
     }
     if (msg.msgtype !== msgtype) {
-      throw new Error(`expected ${msgtype}; found: ${msg.msgtype}; error: ${msg.error} [${JSON.stringify(msg)}]`);
+      throw new Error(
+        `expected ${msgtype}; found: ${msg.msgtype}; error: ${
+          msg.error
+        } [${JSON.stringify(msg)}]`,
+      );
     }
     return msg;
   };

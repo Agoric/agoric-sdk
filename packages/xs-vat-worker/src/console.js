@@ -1,12 +1,11 @@
 /** console for xs platform */
-/* global trace, globalThis */
 const harden = x => Object.freeze(x, true);
 
 const text = it => (typeof it === 'object' ? JSON.stringify(it) : `${it}`);
 const combine = (...things) => `${things.map(text).join(' ')}\n`;
 
 export function makeConsole(write_) {
-  const write = write_ || trace; // note ocap exception for tracing / logging
+  const write = write_;
   return harden({
     log(...things) {
       write(combine(...things));
@@ -21,5 +20,3 @@ export function makeConsole(write_) {
     },
   });
 }
-
-globalThis.console = makeConsole();
