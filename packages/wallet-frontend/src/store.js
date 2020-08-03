@@ -39,9 +39,10 @@ function onReset(readyP) {
    }, E(walletP).getInboxJSONNotifier(),
   );
   updateFromNotifier({ updateState: setPurses}, E(walletP).getPursesNotifier());
-  updateFromNotifier({ updateState: setDapps}, E(walletP).getDappNotifier());
+  updateFromNotifier({ updateState: setDapps}, E(walletP).getDappsNotifier());
   updateFromNotifier({ updateState: setContacts }, E(walletP).getContactsNotifier());
   updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
+  updateFromNotifier({ updateState: setIssuers }, E(walletP).getIssuersNotifier());
 }
 
 // like React useHook, return a store and a setter for it

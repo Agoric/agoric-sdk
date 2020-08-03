@@ -17,7 +17,7 @@
   let showModal = false;
   let valueJSON = "0";
   let toPurse = source;
-  $: toContact = $contacts && $contacts[0] && $contacts[0][1];
+  let toContact = $contacts && $contacts[0] && $contacts[0][1];
 
   // FIXME: Make UI for this.
   const send = destination => {
@@ -43,19 +43,19 @@
       <div>Send: <input type="text" bind:value={valueJSON} /> <Petname name={source.brandPetname} /></div>
       <div>
       <ul>
-        <li>to my own purse: <select>
+        <li>to my own purse: <select bind:value={toPurse}>
           {#each $purses as p}
             {#if p.brand === source.brand}
-              <option selected={toPurse === p} on:click={() => toPurse = p}>{p.pursePetname}</option>
+              <option value={p}>{p.pursePetname}</option>
             {/if}
           {/each}
         </select>
         <button on:click={() => send(toPurse.actions)}>Transfer</button>
       </li>
       <li>
-        one-way (no Zoe exchange) to: <select>
+        one-way (no Zoe exchange) to: <select bind:value={toContact}>
           {#each $contacts as [key, contact]}
-            <option selected={toContact === contact} on:click={() => toContact = contact}>{key}</option>
+            <option value={contact}>{key}</option>
           {/each}
         </select>
         <button on:click={() => send(toContact.actions)}>Irrevocable Send</button>

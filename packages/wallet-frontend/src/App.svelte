@@ -5,13 +5,15 @@
   import Button from 'smelte/src/components/Button';
   import Dapps from "./Dapps.svelte";
   import Payments from "./Payments.svelte";
+  import Issuers from './Issuers.svelte';
   import Contacts from "./Contacts.svelte";
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import { dapps, payments, purses, inbox, connected, contacts, walletP } from "./store";
+  import { dapps, payments, purses, inbox, connected, contacts, boardP, walletP } from "./store";
 
   import { ThemeWrapper, ThemeToggle } from "svelte-themer";
   import BoardId from "./BoardId.svelte";
+  import Import from './Import.svelte';
 
   connected.connect();
 </script>
@@ -159,6 +161,8 @@
       </div>
       <div class="contacts">
         <h2>Contacts</h2>
+        <Import name="Contact" {boardP}
+          adder={(petname, obj) => E(walletP).addContact(petname, obj)} />
         <Contacts {contacts} />
       </div>
       <div class="payments">
@@ -175,7 +179,9 @@
       </div>
       <div class="issuers">
         <h2>Issuers</h2>
-        Nothing here yet
+        <Import name="Issuer" {boardP}
+          adder={(petname, obj) => E(walletP).addIssuer(petname, obj, true)} />
+        <Issuers />
       </div>
     </main>
 

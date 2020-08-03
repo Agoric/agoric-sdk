@@ -10,7 +10,7 @@
   let destination;
 
   $: deposit = () => {
-    console.log('deposit to', destination);
+    // console.log('deposit to', destination);
     return E(payment.actions).deposit(destination);
   };
 </script>
@@ -24,7 +24,7 @@
     {#if payment.status === 'deposited'}
       Deposited <Amount amount={payment.displayPayment.depositedAmount} />
     {:else if payment.issuer}
-      Allegedly
+      Payment last valued at
       {#if payment.lastAmount}
         <Amount amount={payment.displayPayment.lastAmount} />
       {/if}

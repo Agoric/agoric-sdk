@@ -38,7 +38,7 @@ export async function makeWallet({
   // Columns: key:brand | issuer | amountMath
   const makeBrandTable = () => {
     const validateSomewhat = makeValidateProperties(
-      harden(['brand', 'issuer', 'amountMath']),
+      harden(['brand', 'issuer', 'issuerBoardId', 'amountMath']),
     );
 
     const issuersInProgress = makeStore('issuer');
@@ -60,12 +60,14 @@ export async function makeWallet({
             const synchronousRecordP = Promise.all([
               brandP,
               mathHelpersNameP,
-            ]).then(([brand, mathHelpersName]) => {
+              E(board).getId(issuer),
+            ]).then(([brand, mathHelpersName, issuerBoardId]) => {
               if (!issuerToBrand.has(issuer)) {
                 const amountMath = makeAmountMath(brand, mathHelpersName);
                 const issuerRecord = {
                   issuer,
                   brand,
+                  issuerBoardId,
                   amountMath,
                 };
                 table.create(issuerRecord, brand);
@@ -137,10 +139,9 @@ export async function makeWallet({
   // @qclass is lost.
   const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
 
-  const {
-    notifier: pursesNotifier,
-    updater: pursesUpdater,
-  } = makeNotifierKit();
+  const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
+    [],
+  );
 
   async function updatePursesState(pursePetname, purse) {
     const purseKey = purseMapping.implode(pursePetname);
@@ -297,9 +298,20 @@ export async function makeWallet({
     );
   }
 
+  const {
+    updater: issuersUpdater,
+    notifier: issuersNotifier,
+  } = makeNotifierKit([]);
+
   // TODO: fix this horribly inefficient update on every potential
   // petname change.
   async function updateAllState() {
+    issuersUpdater.updateState(
+      [...brandMapping.petnameToVal.entries()].map(([petname, brand]) => [
+        petname,
+        brandTable.get(brand),
+      ]),
+    );
     return updateAllPurseState().then(updateAllInboxState);
   }
 
@@ -460,15 +472,32 @@ export async function makeWallet({
   const {
     updater: contactsUpdater,
     notifier: contactsNotifier,
-  } = makeNotifierKit();
+  } = makeNotifierKit([]);
 
   const addContact = async (petname, actions) => {
-    const depositFacet = harden({
-      receive(payment) {
-        return E(actions).receive(payment);
-      },
-    });
+    const already = await E(board).has(actions);
+    let depositFacet;
+    if (already) {
+      depositFacet = actions;
+    } else {
+      depositFacet = harden({
+        receive(payment) {
+          return E(actions).receive(payment);
+        },
+      });
+    }
     const depositBoardId = await E(board).getId(depositFacet);
+    const found = [...contactMapping.petnameToVal.entries()].find(
+      ([_pn, { depositBoardId: dbid }]) => depositBoardId === dbid,
+    );
+
+    assert(
+      !found,
+      details`${q(found && found[0])} is already the petname for board ID ${q(
+        depositBoardId,
+      )}`,
+    );
+
     const contact = harden({
       actions,
       depositBoardId,
@@ -613,12 +642,12 @@ export async function makeWallet({
   };
 
   const dappOrigins = makeStore('dappOrigin');
-  const { notifier: dappNotifier, updater: dappUpdater } = makeNotifierKit([]);
+  const { notifier: dappsNotifier, updater: dappsUpdater } = makeNotifierKit([]);
 
   function updateDapp(dappRecord) {
     harden(dappRecord);
     dappOrigins.set(dappRecord.origin, dappRecord);
-    dappUpdater.updateState([...dappOrigins.values()]);
+    dappsUpdater.updateState([...dappOrigins.values()]);
   }
 
   async function waitForDappApproval(suggestedPetname, origin) {
@@ -863,7 +892,7 @@ export async function makeWallet({
   const {
     updater: paymentsUpdater,
     notifier: paymentsNotifier,
-  } = makeNotifierKit();
+  } = makeNotifierKit([]);
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = { ...preDisplay, actions, displayPayment };
@@ -894,17 +923,19 @@ export async function makeWallet({
 
     const depositedPK = producePromise();
     const actions = {
-      async deposit(pursePetname = undefined) {
+      async deposit(purseOrPetname = undefined) {
         let purse;
-        if (pursePetname === undefined) {
+        if (purseOrPetname === undefined) {
           if (!brandToAutoDepositPurse.has(brand)) {
             // No automatic purse right now.
             return depositedPK.promise;
           }
           // Plop into the current autodeposit purse.
           purse = brandToAutoDepositPurse.get(brand);
+        } else if (typeof purseOrPetname === 'string') {
+          purse = purseMapping.petnameToVal.get(purseOrPetname);
         } else {
-          purse = purseMapping.petnameToVal.get(pursePetname);
+          purse = purseOrPetname;
         }
         paymentRecord = {
           ...paymentRecord,
@@ -1145,11 +1176,14 @@ export async function makeWallet({
 
   const wallet = harden({
     waitForDappApproval,
-    getDappNotifier() {
-      return dappNotifier;
+    getDappsNotifier() {
+      return dappsNotifier;
     },
     getPursesNotifier() {
       return pursesNotifier;
+    },
+    getIssuersNotifier() {
+      return issuersNotifier;
     },
     addIssuer,
     addInstance,
