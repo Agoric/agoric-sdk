@@ -8,8 +8,13 @@ import { HandledPromise } from '@agoric/eventual-send';
 
 /**
  * @template T
+ * @typedef {PromiseLike<T> | T} PromiseOrNot
+ */
+
+/**
+ * @template T
  * @typedef {Object} PromiseRecord A reified Promise
- * @property {(value: T) => void} resolve
+ * @property {(value: PromiseOrNot<T>) => void} resolve
  * @property {(reason: any) => void} reject
  * @property {Promise<T>} promise
  */
