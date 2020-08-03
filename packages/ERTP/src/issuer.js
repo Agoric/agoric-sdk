@@ -4,7 +4,7 @@
 
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
-import { isPromise } from '@agoric/produce-promise';
+import { isPromise } from '@agoric/promise-kit';
 
 import makeAmountMath from './amountMath';
 

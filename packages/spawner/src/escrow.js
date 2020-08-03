@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden E producePromise */
+/* global harden E makePromiseKit */
 
 import { mustBeSameStructure } from '@agoric/same-structure';
 
@@ -17,8 +17,8 @@ const escrowExchange = harden({
     // TODO: How to get issuer?
     function makeTransfer(issuer, amount, srcPaymentP) {
       const escrowP = E(issuer).claim(srcPaymentP, amount);
-      const winnings = producePromise();
-      const refund = producePromise();
+      const winnings = makePromiseKit();
+      const refund = makePromiseKit();
       return harden({
         phase1() {
           return escrowP;
@@ -42,15 +42,15 @@ const escrowExchange = harden({
 
     // Promise wiring
 
-    const moneyPayment = producePromise();
+    const moneyPayment = makePromiseKit();
     const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.promise);
 
-    const stockPayment = producePromise();
+    const stockPayment = makePromiseKit();
     const stockTransfer = makeTransfer(stockNeeded, stockPayment.promise);
 
     // TODO Use cancellation tokens instead.
-    const aliceCancel = producePromise();
-    const bobCancel = producePromise();
+    const aliceCancel = makePromiseKit();
+    const bobCancel = makePromiseKit();
 
     // Set it all in motion optimistically.
 

@@ -1,7 +1,7 @@
 /* global harden */
 
 import { E } from '@agoric/eventual-send';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
@@ -9,7 +9,7 @@ export function buildRootObject(vatPowers) {
     bootstrap(argv, vats) {
       const mode = argv[0];
       if (mode === 'harden-promise-1') {
-        const { promise: p1 } = producePromise();
+        const { promise: p1 } = makePromiseKit();
         harden(p1);
         const allP = [];
         // in bug #95, this first call returns a (correctly) frozen Promise,

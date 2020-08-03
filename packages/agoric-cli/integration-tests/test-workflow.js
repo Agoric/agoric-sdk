@@ -3,7 +3,7 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import fs from 'fs';
 import tmp from 'tmp';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { request } from 'http';
 
 import { spawn } from 'child_process';
@@ -101,7 +101,7 @@ test('workflow', async t => {
 
       // ==============
       // agoric start --reset
-      const startResult = producePromise();
+      const startResult = makePromiseKit();
 
       // TODO: Allow this to work even if the port is already used.
       const startP = myMain(['start', '--reset']);
@@ -128,7 +128,7 @@ test('workflow', async t => {
 
       // ==============
       // agoric deploy ./contract/deploy.js ./api/deploy.js
-      const deployResult = producePromise();
+      const deployResult = makePromiseKit();
       const deployP = myMain([
         'deploy',
         `--hostport=127.0.0.1:${PORT}`,
@@ -182,7 +182,7 @@ test('workflow', async t => {
         detached: true,
       });
       finalizers.push(() => pkill(uiStartP.cp, 'SIGINT'));
-      const uiListening = producePromise();
+      const uiListening = makePromiseKit();
       let retries = 0;
       const ival = setInterval(() => {
         try {

@@ -8,7 +8,7 @@ import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
 import makeIssuerKit from '@agoric/ertp';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { E, HandledPromise } from '@agoric/eventual-send';
 
 export { makeCollect } from './makeCollect';
@@ -67,7 +67,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     E,
     harden,
     Nat,
-    producePromise,
+    makePromiseKit,
     require: myRequire,
     HandledPromise,
   };

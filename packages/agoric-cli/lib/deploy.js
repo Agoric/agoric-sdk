@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { E, makeCapTP } from '@agoric/captp';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import bundleSource from '@agoric/bundle-source';
 import path from 'path';
 
@@ -39,7 +39,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   };
 
   const wsurl = `ws://${opts.hostport}/private/captp`;
-  const exit = producePromise();
+  const exit = makePromiseKit();
   let connected = false;
   let retries = 0;
   const retryWebsocket = () => {

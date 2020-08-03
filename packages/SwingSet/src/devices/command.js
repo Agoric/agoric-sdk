@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 export default function buildCommand(broadcastCallback) {
   if (!broadcastCallback) {
@@ -14,7 +14,7 @@ export default function buildCommand(broadcastCallback) {
     // deliver the JSON-serializable object to the registered handler, and
     // return a promise that fires with a JSON-serializable object in
     // response
-    const { promise, resolve, reject } = producePromise();
+    const { promise, resolve, reject } = makePromiseKit();
     const count = nextCount;
     nextCount += 1;
     responses.set(count, { resolve, reject });

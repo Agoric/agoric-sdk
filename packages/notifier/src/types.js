@@ -5,7 +5,7 @@
 
 /**
  * @template T
- * @typedef {import('@agoric/produce-promise').PromiseRecord<T>} PromiseRecord
+ * @typedef {import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord
  */
 
 /**

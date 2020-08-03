@@ -1,4 +1,4 @@
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 /**
  * Return a function that can wrap an async or sync method, but
@@ -32,7 +32,7 @@ export const makeWithQueue = () => {
       // Curry the arguments into the inner function, and
       // resolve/reject with whatever the inner function does.
       const thunk = _ => inner(...args);
-      const pr = producePromise();
+      const pr = makePromiseKit();
       queue.push([thunk, pr.resolve, pr.reject]);
 
       if (queue.length === 1) {

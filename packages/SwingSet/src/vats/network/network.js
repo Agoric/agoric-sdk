@@ -3,7 +3,7 @@
 
 import makeStore from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { toBytes } from './bytes';
 
 import './types';
@@ -77,7 +77,7 @@ export const makeConnection = (
         throw closed;
       }
       const bytes = toBytes(data);
-      const ackDeferred = producePromise();
+      const ackDeferred = makePromiseKit();
       pendingAcks.add(ackDeferred);
       E(handler)
         .onReceive(connection, bytes, handler)

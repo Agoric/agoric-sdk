@@ -7,7 +7,7 @@ import {
   base64ToBytes,
 } from '@agoric/swingset-vat/src/vats/network';
 import makeStore from '@agoric/store';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { generateSparseInts } from '@agoric/sparse-ints';
 
 import '@agoric/swingset-vat/src/vats/network/types';
@@ -29,7 +29,7 @@ const FIXME_ALLOW_NAIVE_RELAYS = true;
 
 /**
  * @template U,V
- * @typedef {import('@agoric/produce-promise').PromiseRecord<U>} PromiseRecord
+ * @typedef {import('@agoric/promise-kit').PromiseRecord<U>} PromiseRecord
  */
 
 /**
@@ -161,7 +161,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
     /**
      * @type {PromiseRecord<Bytes, any>}
      */
-    const ackDeferred = producePromise();
+    const ackDeferred = makePromiseKit();
 
     // Register the ack resolver/rejector with this sequence number.
     seqToAck.init(sequence, ackDeferred);
@@ -350,7 +350,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
 
       const channelID = generateChannelID();
 
-      const onConnectP = producePromise();
+      const onConnectP = makePromiseKit();
 
       // FIXME: The destination should be able to choose its own channelID.
       // (That would require sending it as part of channelOpenAck.)

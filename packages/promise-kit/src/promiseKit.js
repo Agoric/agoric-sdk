@@ -20,15 +20,14 @@ import { HandledPromise } from '@agoric/eventual-send';
 const NOOP_INITIALIZER = harden(_ => {});
 
 /**
- * producePromise() builds a HandledPromise object, and returns a record
+ * makePromiseKit() builds a HandledPromise object, and returns a record
  * containing the promise itself, as well as separate facets for resolving
  * and rejecting it.
  *
- * @deprecated Use promise-kit/makePromiseKit instead.
  * @template T
  * @returns {PromiseRecord<T>}
  */
-export function producePromise() {
+export function makePromiseKit() {
   /** @type {(value: T) => void} */
   let res = NOOP_INITIALIZER;
   /** @type {(reason: any) => void} */
@@ -60,12 +59,11 @@ export function producePromise() {
   }
   return harden({ promise: p, resolve: res, reject: rej });
 }
-harden(producePromise);
+harden(makePromiseKit);
 
 /**
  * Determine if the argument is a Promise.
  *
- * @deprecated Use promise-kit/isPromise instead.
  * @param {any} maybePromise The value to examine
  * @returns {maybePromise is Promise} Whether it is a promise
  */

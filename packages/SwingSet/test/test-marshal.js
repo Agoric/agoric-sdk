@@ -2,7 +2,7 @@
 
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 
@@ -108,7 +108,7 @@ test('serialize promise', async t => {
   };
 
   const { m } = makeMarshaller(syscall);
-  const { promise, resolve } = producePromise();
+  const { promise, resolve } = makePromiseKit();
   t.deepEqual(m.serialize(promise), {
     body: '{"@qclass":"slot","index":0}',
     slots: ['p+5'],
@@ -128,7 +128,7 @@ test('serialize promise', async t => {
   resolve(5);
   t.deepEqual(log, []);
 
-  const { promise: pauseP, resolve: pauseRes } = producePromise();
+  const { promise: pauseP, resolve: pauseRes } = makePromiseKit();
   setImmediate(() => pauseRes());
   await pauseP;
   t.deepEqual(log, [{ result: 'p+5', data: { body: '5', slots: [] } }]);

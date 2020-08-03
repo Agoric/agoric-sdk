@@ -1,3 +1,3 @@
 # Produce Promise
 
-A helper for making promises
+Deprecated in favor of promise-kit

@@ -5,7 +5,7 @@ import makeWeakStore from '@agoric/weak-store';
 import makeIssuerKit from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
-import { producePromise } from '@agoric/produce-promise';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
@@ -239,7 +239,7 @@ function makeZoe(vatAdminSvc) {
         installationTable.has(installationHandle),
         details`${installationHandle} was not a valid installationHandle`,
       );
-      const publicApiP = producePromise();
+      const publicApiP = makePromiseKit();
       return E(vatAdminSvc)
         .createVat(zcfContractBundle)
         .then(({ root, adminNode }) => {
@@ -268,7 +268,7 @@ function makeZoe(vatAdminSvc) {
           // facet we provide, so InstanceRecord needs to be present by then.
           // We'll store an initial version of InstanceRecord before invoking
           // ZCF and fill in the zcfForZoe when we get it.
-          const zcfForZoePromise = producePromise();
+          const zcfForZoePromise = makePromiseKit();
           /** @type {Omit<InstanceRecord & PrivateInstanceRecord,'handle'>} */
           const instanceRecord = {
             installationHandle,
@@ -417,7 +417,7 @@ function makeZoe(vatAdminSvc) {
             updater: notifierKit.updater,
           };
           const { zcfForZoe } = instanceTable.get(instanceHandle);
-          payoutMap.init(offerHandle, producePromise());
+          payoutMap.init(offerHandle, makePromiseKit());
           offerTable.create(offerRecord, offerHandle);
           instanceTable.addOffer(instanceHandle, offerHandle);
           return E(zcfForZoe).addOffer(
