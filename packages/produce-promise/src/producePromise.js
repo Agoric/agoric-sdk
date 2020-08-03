@@ -24,6 +24,7 @@ const NOOP_INITIALIZER = harden(_ => {});
  * containing the promise itself, as well as separate facets for resolving
  * and rejecting it.
  *
+ * @deprecated Use promise-kit/makePromiseKit instead.
  * @template T
  * @returns {PromiseRecord<T>}
  */
@@ -64,6 +65,7 @@ harden(producePromise);
 /**
  * Determine if the argument is a Promise.
  *
+ * @deprecated Use promise-kit/isPromise instead.
  * @param {any} maybePromise The value to examine
  * @returns {maybePromise is Promise} Whether it is a promise
  */
