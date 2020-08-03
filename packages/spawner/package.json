@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "tap --no-coverage --jobs=1 'test/**/test*.js'",
+    "test": "tap --no-coverage --jobs=1 --timeout 600 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
