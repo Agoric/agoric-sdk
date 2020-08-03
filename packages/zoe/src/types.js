@@ -72,8 +72,8 @@
 
 /**
  * @typedef {Object} UserSeat
- * @property {() => Promise<Allocation>} readAllocation
- * @property {() => Promise<ProposalRecord>} readProposal
+ * @property {() => Promise<Allocation>} getAllocation
+ * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult

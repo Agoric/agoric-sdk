@@ -270,8 +270,8 @@ function makeZoe(vatAdminSvc) {
 
           /** @type {UserSeat} */
           const userSeat = {
-            readAllocation: async () => currentAllocation,
-            readProposal: async () => proposal,
+            getAllocation: async () => currentAllocation,
+            getProposal: async () => proposal,
             getPayouts: async () => payoutPromiseKit.promise,
             getPayout: async keyword =>
               payoutPromiseKit.promise.then(payouts => payouts[keyword]),
