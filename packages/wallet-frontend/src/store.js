@@ -12,6 +12,8 @@ const { connected, makeStableForwarder } = makeCapTPConnection(
 );
 
 export { connected };
+export const darkMode = writable(false);
+export const showNav = writable(false);
 
 // Get some properties of the bootstrap object as stable identites.
 export const walletP = makeStableForwarder(bootP => E.G(bootP).wallet);

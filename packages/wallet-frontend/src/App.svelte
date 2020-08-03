@@ -2,20 +2,35 @@
   import 'smelte/src/tailwind.css';
   import { E } from "@agoric/eventual-send";
 
+  import AppBar from 'smelte/src/components/AppBar';
   import Button from 'smelte/src/components/Button';
+  import Tabs from "smelte/src/components/Tabs";
+  import { Spacer } from "smelte/src/components/Util";
+  import List, { ListItem } from "smelte/src/components/List";
+  import NavigationDrawer from "smelte/src/components/NavigationDrawer";
+  import ProgressLinear from "smelte/src/components/ProgressLinear";
+  import Tooltip from "smelte/src/components/Tooltip";
+  import { onMount } from "svelte";
+  import { fade } from "svelte/transition";
+  import { navMenu, topMenu } from "./menu.js";
+  // import { right, elevation, persistent, showNav } from "stores.js";
+
+
   import Dapps from "./Dapps.svelte";
   import Payments from "./Payments.svelte";
   import Issuers from './Issuers.svelte';
   import Contacts from "./Contacts.svelte";
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import { dapps, payments, purses, inbox, connected, contacts, boardP, walletP } from "./store";
+  import { dapps, payments, purses, inbox, connected, contacts, boardP, walletP, darkMode, showNav } from "./store";
 
   import { ThemeWrapper, ThemeToggle } from "svelte-themer";
   import BoardId from "./BoardId.svelte";
   import Import from './Import.svelte';
 
   connected.connect();
+
+  let path = "";
 </script>
 
 <style>
@@ -129,8 +144,39 @@
 </svelte:head>
 
 <div class="container">
-  <ThemeWrapper>
     <header>
+  <AppBar >
+  <a href="." class="px-2 md:px-8 flex items-center">
+    <img src="logo.png" alt="Agoric" width="200" />
+  </a>
+  <Spacer />
+  <Tabs navigation items={topMenu} bind:selected={path} />
+
+  <Tooltip>
+    <span slot="activator">
+      <Button
+        bind:value={$darkMode}
+        icon="wb_sunny"
+        small
+        flat
+        remove="p-1 h-4 w-4"
+        iconClass="text-white"
+        text />
+    </span>
+    {$darkMode ? 'Disable' : 'Enable'} dark mode
+  </Tooltip>
+  <div class="md:hidden">
+    <Button
+      icon="menu"
+      small
+      flat
+      remove="p-1 h-4 w-4"
+      iconClass="text-white"
+      text
+      on:click={() => showNav.set(!$showNav)} />
+  </div>
+</AppBar>
+
       <h1>Agoric Wallet</h1>
       <div class="controls">
         {#if $connected}
@@ -150,6 +196,7 @@
         {/if}
       </div>
     </header>
+  <ThemeWrapper>
 
     {#if !$connected}
       <div class="disconnected-background" on:click|preventDefault|stopPropagation={() => {}} />
