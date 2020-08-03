@@ -18,11 +18,13 @@
 /**
  * @template T
  * @typedef {Object} Upgrader
- * @property {(replacer: PromiseOrNot<Replacer<T>>) => Promise<T>} upgrade
+ * @property {(replacerP: PromiseOrNot<Replacer<T>>) => Promise<T>} upgrade
+ * @property {(reason?: any) => void} revoke
+ * @property {() => void} finish
  */
 
 /**
  * @template T
  * @typedef {Object} Replacer
- * @property {(lastInstance?: T) => T} upgradeFromLast
+ * @property {(lastInstance?: T) => Promise<T>} upgradeFromLast
  */
