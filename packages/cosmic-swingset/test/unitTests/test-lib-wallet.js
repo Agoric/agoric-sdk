@@ -159,7 +159,7 @@ test('lib-wallet issuer and purse methods', async t => {
       moolaBundle.amountMath.make(100),
       `deposit successful`,
     );
-    t.equals(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
+    t.equals(pursesStateChangeLog.length, 4, `pursesStateChangeLog length`);
     t.deepEquals(
       JSON.parse(pursesStateChangeLog[pursesStateChangeLog.length - 1]),
       [
@@ -443,7 +443,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `resuggesting a petname doesn't error`,
     );
 
-    wallet.renameInstallation('automaticRefund2', installationHandle);
+    await wallet.renameInstallation('automaticRefund2', installationHandle);
 
     t.equals(
       wallet.getInstallation('automaticRefund2'),

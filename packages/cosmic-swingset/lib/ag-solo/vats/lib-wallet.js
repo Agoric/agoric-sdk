@@ -55,20 +55,23 @@ export async function makeWallet({
             // remote calls which immediately return a promise
             const mathHelpersNameP = E(issuer).getMathHelpersName();
             const brandP = E(issuer).getBrand();
+            const issuerBoardIdP = E(board)
+              .has(issuer)
+              .then(hasIt => hasIt && E(board).getId(issuer));
 
             // a promise for a synchronously accessible record
             const synchronousRecordP = Promise.all([
               brandP,
               mathHelpersNameP,
-              E(board).getId(issuer),
+              issuerBoardIdP,
             ]).then(([brand, mathHelpersName, issuerBoardId]) => {
               if (!issuerToBrand.has(issuer)) {
                 const amountMath = makeAmountMath(brand, mathHelpersName);
                 const issuerRecord = {
                   issuer,
                   brand,
-                  issuerBoardId,
                   amountMath,
+                  issuerBoardId,
                 };
                 table.create(issuerRecord, brand);
                 issuerToBrand.init(issuer, brand);
@@ -303,15 +306,19 @@ export async function makeWallet({
     notifier: issuersNotifier,
   } = makeNotifierKit([]);
 
-  // TODO: fix this horribly inefficient update on every potential
-  // petname change.
-  async function updateAllState() {
+  function updateAllIssuersState() {
     issuersUpdater.updateState(
       [...brandMapping.petnameToVal.entries()].map(([petname, brand]) => [
         petname,
         brandTable.get(brand),
       ]),
     );
+  }
+
+  // TODO: fix this horribly inefficient update on every potential
+  // petname change.
+  async function updateAllState() {
+    updateAllIssuersState();
     return updateAllPurseState().then(updateAllInboxState);
   }
 
@@ -466,7 +473,15 @@ export async function makeWallet({
         _ => `issuer ${q(petnameForBrand)} successfully added to wallet`,
       );
     };
-    return issuerSavedP.then(addBrandPetname).then(updateAllState);
+    return issuerSavedP.then(addBrandPetname).then(updateAllIssuersState);
+  };
+
+  const publishIssuer = async brand => {
+    const brandRecord = brandTable.get(brand);
+    const issuerBoardId = await E(board).getId(brandRecord.issuer);
+    brandTable.update(brand, { issuerBoardId });
+    updateAllIssuersState();
+    return issuerBoardId;
   };
 
   const {
@@ -642,7 +657,9 @@ export async function makeWallet({
   };
 
   const dappOrigins = makeStore('dappOrigin');
-  const { notifier: dappsNotifier, updater: dappsUpdater } = makeNotifierKit([]);
+  const { notifier: dappsNotifier, updater: dappsUpdater } = makeNotifierKit(
+    [],
+  );
 
   function updateDapp(dappRecord) {
     harden(dappRecord);
@@ -1186,6 +1203,7 @@ export async function makeWallet({
       return issuersNotifier;
     },
     addIssuer,
+    publishIssuer,
     addInstance,
     addInstallation,
     renameIssuer,
