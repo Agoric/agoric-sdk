@@ -155,9 +155,9 @@ export function buildRootObject() {
           seat.exit();
           throw err;
         });
-        const { canExit, exitObj } = makeExitObj(seatData.proposal, zoeSeat);
+        const exitObj = makeExitObj(seatData.proposal, zoeSeat);
         /** @type AddSeatResult */
-        const addSeatResult = { offerResultP, canExit, exitObj };
+        const addSeatResult = { offerResultP, exitObj };
         return harden(addSeatResult);
       },
     };
@@ -171,7 +171,12 @@ export function buildRootObject() {
     return E(contractCode)
       .start(zcf, instanceRecord.terms)
       .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
-        return harden({ creatorFacet, publicFacet, creatorInvitation, addSeatObj });
+        return harden({
+          creatorFacet,
+          publicFacet,
+          creatorInvitation,
+          addSeatObj,
+        });
       });
   };
 

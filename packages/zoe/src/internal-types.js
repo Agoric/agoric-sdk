@@ -73,7 +73,6 @@
 /**
  * @typedef {Object} AddSeatResult
  * @property {Promise<any>} offerResultP
- * @property {boolean} canExit
  * @property {Object} exitObj
  */
 

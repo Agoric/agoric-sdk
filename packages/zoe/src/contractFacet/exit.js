@@ -13,7 +13,7 @@ export const makeExitObj = (proposal, zoeSeat) => {
     E(proposal.exit.afterDeadline.timer).setWakeup(
       proposal.exit.afterDeadline.deadline,
       harden({
-        wake: E(zoeSeat).exit(),
+        wake: () => E(zoeSeat).exit(),
       }),
     );
   } else if (exitKind === 'onDemand') {
