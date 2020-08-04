@@ -17,36 +17,69 @@ test('zoe - mint payments', async t => {
   t.plan(2);
   try {
     const zoe = makeZoe(fakeVatAdmin);
-    // Pack the contract.
-    const bundle = await bundleSource(mintPaymentsRoot);
-    const installationHandle = await E(zoe).install(bundle);
-    const inviteIssuer = await E(zoe).getInviteIssuer();
 
-    // Alice creates a contract instance
-    const {
-      instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installationHandle);
+    const makeAlice = () => {
+      return {
+        installCode: async () => {
+          // pack the contract
+          const bundle = await bundleSource(mintPaymentsRoot);
+          // install the contract
+          const installationP = E(zoe).install(bundle);
+          return installationP;
+        },
+        makeInstance: async installation => {
+          const adminP = zoe.makeInstance(installation);
+          return adminP;
+        },
+      };
+    };
 
-    // Bob wants to get 1000 tokens so he gets an invite and makes an
-    // offer
-    const invite = await E(publicAPI).makeInvite();
-    t.ok(await E(inviteIssuer).isLive(invite), `valid invite`);
-    const { payout: payoutP } = await E(zoe).offer(invite);
+    const makeBob = installation => {
+      return {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = E(zoe).getInvitationIssuer();
+          const invitation = E(invitationIssuer).claim(untrustedInvitation);
 
-    // Bob's payout promise resolves
-    const bobPayout = await payoutP;
-    const bobTokenPayout = await bobPayout.Token;
+          const {
+            value: [invitationValue],
+          } = await E(invitationIssuer).getAmountOf(invitation);
 
-    // Let's get the tokenIssuer from the contract so we can evaluate
-    // what we get as our payout
-    const tokenIssuer = await E(publicAPI).getTokenIssuer();
-    const amountMath = await E(tokenIssuer).getAmountMath();
+          t.equals(
+            invitationValue.installation,
+            installation,
+            'installation is mintPayment',
+          );
 
-    const tokens1000 = await E(amountMath).make(1000);
-    const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(bobTokenPayout);
+          const { instance } = invitationValue;
 
-    // Bob got 1000 tokens
-    t.deepEquals(tokenPayoutAmount, tokens1000);
+          const seat = await E(zoe).offer(invitation);
+
+          const paymentP = E(seat).getPayout('Token');
+
+          // Let's get the tokenIssuer from the contract so we can evaluate
+          // what we get as our payout
+          const publicFacet = await E(zoe).getPublicFacet(instance);
+          const tokenIssuer = await E(publicFacet).getTokenIssuer();
+          const amountMath = await E(tokenIssuer).getAmountMath();
+
+          const tokens1000 = await E(amountMath).make(1000);
+          const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(paymentP);
+
+          // Bob got 1000 tokens
+          t.deepEquals(tokenPayoutAmount, tokens1000);
+        },
+      };
+    };
+
+    // Setup Alice
+    const alice = await makeAlice();
+    const installation = await alice.installCode();
+    const { creatorFacet } = await E(zoe).makeInstance(installation);
+    const invitation = E(creatorFacet).makeInvitation(1000);
+
+    // Setup Bob
+    const bob = makeBob(installation);
+    await bob.offer(invitation);
   } catch (e) {
     t.assert(false, e);
     console.log(e);

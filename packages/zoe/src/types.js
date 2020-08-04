@@ -106,7 +106,7 @@
 /**
  * @callback MakeInstance 
  * @param {Installation} installation
- * @param {IssuerKeywordRecord} issuerKeywordRecord
+ * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
  * @returns {AdminFacet}
 

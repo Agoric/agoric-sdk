@@ -97,7 +97,7 @@ function makeZoe(vatAdminSvc) {
         brandToPurse.init(record.brand, E(record.issuer).makeEmptyPurse());
       });
 
-      const instanceRecord = harden({
+      const instanceRecord = {
         issuerKeywordRecord: arrayToObj(
           issuerRecords.map(record => record.issuer),
           keywords,
@@ -108,7 +108,7 @@ function makeZoe(vatAdminSvc) {
         ),
         installation,
         terms,
-      });
+      };
 
       const createVatResult = await E(vatAdminSvc).createVat(zcfContractBundle);
       const { adminNode, root } = createVatResult;
@@ -174,7 +174,7 @@ function makeZoe(vatAdminSvc) {
         zoeService,
         invitationIssuer,
         zoeInstanceAdminForZcf,
-        instanceRecord,
+        harden({ ...instanceRecord }),
       );
 
       const creatorFacetWInstance = {

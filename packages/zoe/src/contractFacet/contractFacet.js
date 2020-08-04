@@ -28,8 +28,9 @@ export function buildRootObject() {
     zoeService,
     invitationIssuer,
     zoeInstanceAdmin,
-    instanceRecord,
+    hardenedInstanceRecord,
   ) => {
+    const instanceRecord = { ...hardenedInstanceRecord };
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.get(brand).amountMath;
 
@@ -89,24 +90,33 @@ export function buildRootObject() {
           seatToSeatAdmin.get(stagedSeat.getSeat()).commit(stagedSeat),
         );
       },
-      saveIssuer: (issuerP, keyword) =>
-        issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
-          assertKeywordName(keyword);
-          assert(
-            !getKeywords(instanceRecord.issuerKeywordRecord).includes(keyword),
-            details`keyword ${keyword} must be unique`,
-          );
-          instanceRecord.issuerKeywordRecord = {
-            ...instanceRecord.issuerKeywordRecord,
-            [keyword]: issuerRecord.issuer,
-          };
-          instanceRecord.brandKeywordRecord = {
-            ...instanceRecord.brandKeywordRecord,
-            [keyword]: issuerRecord.brand,
-          };
-          E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
-          return issuerRecord;
-        }),
+      saveIssuer: (issuerP, keyword) => {
+        return E(zoeInstanceAdmin)
+          .saveIssuer(issuerP, keyword)
+          .then(() => {
+            return issuerTable
+              .getPromiseForIssuerRecord(issuerP)
+              .then(issuerRecord => {
+                assertKeywordName(keyword);
+                assert(
+                  !getKeywords(instanceRecord.issuerKeywordRecord).includes(
+                    keyword,
+                  ),
+                  details`keyword ${keyword} must be unique`,
+                );
+                instanceRecord.issuerKeywordRecord = {
+                  ...instanceRecord.issuerKeywordRecord,
+                  [keyword]: issuerRecord.issuer,
+                };
+                instanceRecord.brandKeywordRecord = {
+                  ...instanceRecord.brandKeywordRecord,
+                  [keyword]: issuerRecord.brand,
+                };
+
+                return issuerRecord;
+              });
+          });
+      },
       makeInvitation: (offerHandler, description, customProperties = {}) => {
         assert.typeof(
           description,
@@ -131,7 +141,7 @@ export function buildRootObject() {
       // The methods below are pure and have no side-effects //
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
-      getInstanceRecord: () => instanceRecord,
+      getInstanceRecord: () => harden({...instanceRecord}),
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,

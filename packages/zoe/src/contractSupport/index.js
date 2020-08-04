@@ -18,4 +18,5 @@ export {
   assertProposalKeywords,
   assertIssuerKeywords,
   satisfies,
+  escrowAndAllocateTo,
 } from './zoeHelpers';
