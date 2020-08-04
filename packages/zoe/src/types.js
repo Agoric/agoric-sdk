@@ -261,9 +261,9 @@
  * be assured of discretion, or want to know that the contract doesn't have the
  * ability to call terminate(), Zoe makes this visible.
  *
- * @property {() => Object} done
+ * @property {() => Promise<void>} done
  * provides a promise that will be fulfilled when the contract is terminated.
- * @property {() => undefined} terminate
+ * @property {() => void} terminate
  * kills the vat in which the contract is running
  * @property {() => Object} adminData
  * provides some statistics about the vat in which the contract is running.
