@@ -6,7 +6,7 @@ console.log(`=> loading bootstrap.js`);
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
   return harden({
-    bootstrap(argv, vats) {
+    bootstrap(vats) {
       console.log('=> bootstrap() called');
       E(vats.user)
         .talkToBot(vats.bot, 'encouragementBot')

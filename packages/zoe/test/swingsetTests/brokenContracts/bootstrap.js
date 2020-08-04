@@ -37,9 +37,9 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   return harden(aliceP);
 };
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatOptions) {
   const obj0 = {
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
@@ -48,7 +48,7 @@ export function buildRootObject(vatPowers) {
         crashAutoRefund: await E(zoe).install(crashingAutoRefund.bundle),
       };
 
-      const [testName, startingValues] = argv;
+      const [testName, startingValues] = vatOptions.argv;
 
       const aliceP = makeVats(
         vatPowers.testLog,

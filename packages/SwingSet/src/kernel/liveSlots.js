@@ -29,7 +29,14 @@ import { insistCapData } from '../capdata';
  *
  * @return an extended dispatcher object for the new vat
  */
-function build(syscall, _state, buildRootObject, forVatID, vatPowers) {
+function build(
+  syscall,
+  _state,
+  buildRootObject,
+  forVatID,
+  vatPowers,
+  vatOptions,
+) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -514,7 +521,10 @@ function build(syscall, _state, buildRootObject, forVatID, vatPowers) {
   // (bootstrap, bridge, vat-http), swingset
 
   // here we finally invoke the vat code, and get back the root object
-  const rootObject = buildRootObject(harden({ D, ...vatPowers }));
+  const rootObject = buildRootObject(
+    harden({ D, ...vatPowers }),
+    harden(vatOptions),
+  );
   mustPassByPresence(rootObject);
 
   const rootSlot = makeVatSlot('object', true, 0);
@@ -545,7 +555,7 @@ function build(syscall, _state, buildRootObject, forVatID, vatPowers) {
  * The caller provided buildRootObject function produces and returns the new vat's
  * root object:
  *
- *     buildRootObject(vatPowers)
+ *     buildRootObject(vatPowers, vatOptions)
  *
  *     Within the vat, `import { E } from '@agoric/eventual-send'` will
  *     provide the E wrapper. For any object x, E(x) returns a proxy object
@@ -569,17 +579,21 @@ export function makeLiveSlots(
   buildRootObject,
   forVatID = 'unknown',
   vatPowers = harden({}),
+  vatOptions = harden({}),
 ) {
   const {
     deliver,
     notifyFulfillToData,
     notifyFulfillToPresence,
     notifyReject,
-  } = build(syscall, state, buildRootObject, forVatID, {
-    ...vatPowers,
-    getInterfaceOf,
-    Remotable,
-  });
+  } = build(
+    syscall,
+    state,
+    buildRootObject,
+    forVatID,
+    { ...vatPowers, getInterfaceOf, Remotable },
+    vatOptions,
+  );
   return harden({
     deliver,
     notifyFulfillToData,

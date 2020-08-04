@@ -1,4 +1,5 @@
 /* global harden */
+// @ts-check
 
 import { E } from '@agoric/eventual-send';
 import { showPurseBalance, setupPurses } from './helpers';

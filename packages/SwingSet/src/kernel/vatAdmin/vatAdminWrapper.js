@@ -19,32 +19,39 @@ export function buildRootObject(vatPowers) {
   const pending = new Map(); // vatID -> { resolve, reject } for promise
   const running = new Map(); // vatID -> { resolve, reject } for doneP
 
+  function finishVatCreation(vatAdminNode, vatID) {
+    const [promise, pendingRR] = producePRR();
+    pending.set(vatID, pendingRR);
+
+    const [doneP, doneRR] = producePRR();
+    running.set(vatID, doneRR);
+
+    const adminNode = harden({
+      terminate() {
+        D(vatAdminNode).terminate(vatID);
+        // TODO(hibbert): cleanup admin vat data structures
+      },
+      adminData() {
+        return D(vatAdminNode).adminStats(vatID);
+      },
+      done() {
+        return doneP;
+      },
+    });
+    return promise.then(root => {
+      return { adminNode, root };
+    });
+  }
+
   function createVatAdminService(vatAdminNode) {
     return harden({
       createVat(code, options) {
         const vatID = D(vatAdminNode).create(code, options);
-
-        const [promise, pendingRR] = producePRR();
-        pending.set(vatID, pendingRR);
-
-        const [doneP, doneRR] = producePRR();
-        running.set(vatID, doneRR);
-
-        const adminNode = harden({
-          terminate() {
-            D(vatAdminNode).terminate(vatID);
-            // TODO(hibbert): cleanup admin vat data structures
-          },
-          adminData() {
-            return D(vatAdminNode).adminStats(vatID);
-          },
-          done() {
-            return doneP;
-          },
-        });
-        return promise.then(root => {
-          return { adminNode, root };
-        });
+        return finishVatCreation(vatAdminNode, vatID);
+      },
+      createVatByName(bundleName, options) {
+        const vatID = D(vatAdminNode).createByName(bundleName, options);
+        return finishVatCreation(vatAdminNode, vatID);
       },
     });
   }

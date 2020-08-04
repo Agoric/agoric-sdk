@@ -2,7 +2,6 @@
 
 import makeIssuerKit from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makePrintLog } from './printLog';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
@@ -60,16 +59,19 @@ function makeVats(vats, zoe, installations, startingValues) {
   return harden(result);
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(_vatPowers, options) {
   let alice;
   let bob;
   let round = 0;
   return harden({
-    async bootstrap(argv, vats) {
-      const zoe = await E(vats.zoe).buildZoe(fakeVatAdmin);
+    async bootstrap(vats, devices) {
+      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
 
       const installations = {
-        simpleExchange: await E(zoe).install(simpleExchangeBundle),
+        simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
       };
 
       const startingValues = [
@@ -80,7 +82,7 @@ export function buildRootObject(_vatPowers) {
       ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
       // Zoe appears to do some one-time setup the first time it's used, so this
       // is a sacrifical benchmark round to prime the pump.
-      if (argv[0] === '--prime') {
+      if (options.argv[0] === '--prime') {
         await E(alice).initiateSimpleExchange(bob);
         await E(bob).initiateSimpleExchange(alice);
       }

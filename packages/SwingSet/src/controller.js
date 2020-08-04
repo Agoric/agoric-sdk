@@ -54,24 +54,31 @@ function byName(a, b) {
 }
 
 /**
- * Scan a directory for files defining the vats to bootstrap for a swingset.
- * Looks for files with names of the pattern `vat-NAME.js` as well as a file
- * named 'bootstrap.js'.
+ * Scan a directory for files defining the vats to bootstrap for a swingset, and
+ * produce a swingset config object for what was found there.  Looks for files
+ * with names of the pattern `vat-NAME.js` as well as a file named
+ * 'bootstrap.js'.
  *
  * @param basedir  The directory to scan
  *
- * @return an object {
- *    vats, // map from NAME to the full path to the corresponding .js file
- *    bootstrapIndexJS, // path to the bootstrap.js file, or undefined if none
+ * @return a swingset config object: {
+ *   bootstrap: "bootstrap",
+ *   vats: {
+ *     NAME: {
+ *       sourcePath: PATHSTRING
+ *     }
+ *   }
  * }
  *
- * TODO: bootstrapIndexJS is a terrible name.  Rename to something like
- * bootstrapSourcePath (renaming mildly complicated because it's referenced in
- * lots of places).
+ * Where NAME is the name of the vat or 'bootstrap'; `sourcePath` contains the
+ * path to the vat with that name; and the `bootstrap` flag is present and true
+ * for the bootstrap vat found in bootstrap.js if that file existed.
+ *
+ * Swingsets defined by scanning a directory in this manner define no devices.
  */
 export function loadBasedir(basedir) {
   console.debug(`= loading config from basedir ${basedir}`);
-  const vats = new Map(); // name -> { sourcepath, options }
+  const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
   subs.forEach(dirent => {
@@ -88,33 +95,51 @@ export function loadBasedir(basedir) {
     ) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const vatSourcePath = path.resolve(basedir, dirent.name);
-      vats.set(name, { sourcepath: vatSourcePath, options: {} });
+      vats[name] = { sourcePath: vatSourcePath, options: {} };
     } else {
-      console.debug('ignoring ', dirent.name);
+      console.debug(`ignoring file ${dirent.name} in ${basedir}`);
     }
   });
-  let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
+  let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
   try {
-    fs.statSync(bootstrapIndexJS);
+    fs.statSync(bootstrapPath);
   } catch (e) {
     // TODO this will catch the case of the file not existing but doesn't check
     // that it's a plain file and not a directory or something else unreadable.
     // Consider putting in a more sophisticated check if this whole directory
     // scanning thing is something we decide we want to have long term.
-    bootstrapIndexJS = undefined;
+    bootstrapPath = undefined;
   }
-  return { vats, bootstrapIndexJS };
+  const config = { vats };
+  if (bootstrapPath) {
+    vats.bootstrap = {
+      sourcePath: bootstrapPath,
+      options: {},
+    };
+    config.bootstrap = 'bootstrap';
+  }
+  return config;
 }
 
-export async function buildVatController(config, argv = []) {
+export async function buildVatController(
+  config,
+  argv = [],
+  runtimeOptions = {},
+) {
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling buildVatController');
   }
-  // todo: move argv into the config
 
   // https://github.com/Agoric/SES-shim/issues/292
   harden(Object.getPrototypeOf(console));
   harden(console);
+
+  if (config.bootstrap && argv) {
+    if (!config.vats[config.bootstrap].options) {
+      config.vats[config.bootstrap].options = {};
+    }
+    config.vats[config.bootstrap].options.argv = argv;
+  }
 
   function kernelRequire(what) {
     if (what === 're2') {
@@ -177,7 +202,7 @@ export async function buildVatController(config, argv = []) {
     });
   }
 
-  const hostStorage = config.hostStorage || initSwingStore().storage;
+  const hostStorage = runtimeOptions.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
 
   // It is important that tameMetering() was called by application startup,
@@ -205,7 +230,7 @@ export async function buildVatController(config, argv = []) {
 
   const kernel = buildKernel(kernelEndowments);
 
-  if (config.verbose) {
+  if (runtimeOptions.verbose) {
     kernel.kdebugEnable(true);
   }
 
@@ -220,7 +245,7 @@ export async function buildVatController(config, argv = []) {
   // two vattps, must handle somehow.
   const commsVatSourcePath = require.resolve('./vats/comms');
   const commsVatBundle = await bundleSource(commsVatSourcePath);
-  kernel.addGenesisVat('comms', commsVatBundle, { enablePipelining: true }); // todo: allowSetup
+  kernel.addGenesisVat('comms', commsVatBundle, {}, { enablePipelining: true }); // todo: allowSetup
 
   // vat-tp is added automatically, but TODO: bootstraps must still connect
   // it to comms
@@ -234,39 +259,135 @@ export async function buildVatController(config, argv = []) {
   const timerWrapperBundle = await bundleSource(timerWrapperSourcePath);
   kernel.addGenesisVat('timer', timerWrapperBundle);
 
-  for (const [name, srcpath, endowments] of config.devices || []) {
-    // eslint-disable-next-line no-await-in-loop
-    const bundle = await bundleSource(srcpath);
+  async function addGenesisVat(
+    name,
+    bundleName,
+    vatOptions = {},
+    creationOptions = {},
+  ) {
+    console.debug(`= adding vat '${name}' from bundle ${bundleName}`);
+    const bundle = kernel.getBundle(bundleName);
+    kernel.addGenesisVat(name, bundle, vatOptions, creationOptions);
+  }
+
+  async function addGenesisDevice(name, sourcePath, endowments) {
+    const bundle = await bundleSource(sourcePath);
     kernel.addGenesisDevice(name, bundle, endowments);
   }
 
-  async function addGenesisVat(name, sourceIndex, options = {}) {
-    console.debug(`= adding vat '${name}' from ${sourceIndex}`);
-    const bundle = await bundleSource(sourceIndex);
-    kernel.addGenesisVat(name, bundle, options);
-  }
-
-  if (config.vats) {
-    for (const name of config.vats.keys()) {
-      const v = config.vats.get(name);
-      // eslint-disable-next-line no-await-in-loop
-      await addGenesisVat(name, v.sourcepath, v.options || {});
+  function validateBundleDescriptor(desc, groupName, descName) {
+    if (desc.bundleHash) {
+      throw Error(
+        `config ${groupName}.${descName}: "bundleHash" is not yet supported for specifying bundles`,
+      );
+    }
+    let count = 0;
+    if (desc.bundleName) {
+      if (groupName === 'bundles') {
+        throw Error(
+          `config bundles.${descName}: "bundleName" is only available in vat or device descriptors`,
+        );
+      } else if (!kernel.hasBundle(desc.bundleName)) {
+        throw Error(
+          `config ${groupName}.${descName}: bundle ${desc.bundleName} is undefined`,
+        );
+      }
+      count += 1;
+    }
+    if (desc.sourcePath) {
+      count += 1;
+    }
+    if (desc.bundlePath) {
+      count += 1;
+    }
+    if (desc.bundle) {
+      count += 1;
+    }
+    if (count > 1) {
+      throw Error(
+        `config ${groupName}.${descName}: "bundleName", "bundle", "bundlePath", and "sourcePath" are mutually exclusive`,
+      );
+    } else if (count === 0) {
+      throw Error(
+        `config ${groupName}.${descName}: you must specify one of: "bundleName", "bundle", "bundlePath", or "sourcePath"`,
+      );
+    }
+    if (kernel.hasBundle(descName) && !desc.bundleName) {
+      throw Error(`config ${groupName}: bundle ${descName} multiply defined`);
     }
   }
 
-  let bootstrapVatName;
-  if (config.bootstrapIndexJS) {
-    bootstrapVatName = '_bootstrap';
-    await addGenesisVat(bootstrapVatName, config.bootstrapIndexJS);
+  async function bundleBundles(group, groupName) {
+    if (group) {
+      const names = [];
+      const presumptiveBundles = [];
+      for (const name of Object.keys(group)) {
+        const desc = group[name];
+        validateBundleDescriptor(desc, groupName, name);
+        if (!desc.bundleName) {
+          names.push(name);
+          if (desc.sourcePath) {
+            const sourcePath = desc.sourcePath;
+            if (!(sourcePath[0] === '.' || path.isAbsolute(sourcePath))) {
+              throw Error(
+                'sourcePath must be relative (./foo) or absolute (/foo) not bare (foo)',
+              );
+            }
+            presumptiveBundles.push(bundleSource(sourcePath));
+          } else if (desc.bundlePath) {
+            const bundlePath = desc.bundlePath;
+            if (!(bundlePath[0] === '.' || path.isAbsolute(bundlePath))) {
+              throw Error(
+                'bundlePath must be relative (./foo) or absolute (/foo) not bare (foo)',
+              );
+            }
+            presumptiveBundles.push(fs.readFileSync(bundlePath));
+          } else if (desc.bundle) {
+            presumptiveBundles.push(desc.bundle);
+          } else {
+            assert.fail(`this can't happen`);
+          }
+        }
+      }
+      const actualBundles = await Promise.all(presumptiveBundles);
+      for (let i = 0; i < names.length; i += 1) {
+        kernel.addBundle(names[i], actualBundles[i]);
+      }
+    }
+  }
+
+  await bundleBundles(config.bundles, 'bundles');
+  await bundleBundles(config.vats, 'vats');
+  // await bundleBundles(config.devices, 'devices'); // TODO: refactor device config
+
+  if (config.devices) {
+    const devices = [];
+    for (const [name, srcpath, endowments] of config.devices) {
+      devices.push(addGenesisDevice(name, srcpath, endowments));
+    }
+    await Promise.all(devices);
+  }
+
+  if (config.vats) {
+    const vats = [];
+    for (const name of Object.keys(config.vats)) {
+      const v = config.vats[name];
+      vats.push(
+        addGenesisVat(
+          name,
+          v.bundleName || name,
+          v.options || {},
+          v.creationOptions || {},
+        ),
+      );
+    }
+    await Promise.all(vats);
   }
 
   // start() may queue bootstrap if state doesn't say we did it already. It
   // also replays the transcripts from a previous run, if any, which will
   // execute vat code (but all syscalls will be disabled)
-  const bootstrapResult = await kernel.start(
-    bootstrapVatName,
-    JSON.stringify(argv),
-  );
+  const bootstrapResult = await kernel.start(config.bootstrap);
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper

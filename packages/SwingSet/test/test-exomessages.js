@@ -3,7 +3,14 @@ import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 
 async function beginning(t, mode) {
-  const config = { bootstrapIndexJS: require.resolve(`./vat-exomessages.js`) };
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve(`./vat-exomessages.js`),
+      },
+    },
+  };
   const controller = await buildVatController(config, [mode]);
   t.equal(controller.bootstrapResult.status(), 'pending');
   return controller;
@@ -70,7 +77,7 @@ async function extraMessage(t, mode, status, body, slots) {
   await controller.run();
   const args = { body: `["${mode}"]`, slots: [] };
   const extraResult = controller.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'extra',
     args,

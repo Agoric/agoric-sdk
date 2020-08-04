@@ -1,10 +1,10 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatOptions) {
   const { D } = vatPowers;
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
       // setup
       const LEFT = 'left'; // for vat A
       const RIGHT = 'right'; // for vat B
@@ -51,7 +51,7 @@ export function buildRootObject(vatPowers) {
 
       // eslint-disable-next-line no-unused-vars
       const a = await E(vats.a).init(aBob, aBert);
-      const which = argv[0];
+      const which = vatOptions.argv[0];
       await E(vats.a).run(which);
     },
   });

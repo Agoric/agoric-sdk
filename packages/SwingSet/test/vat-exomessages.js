@@ -1,6 +1,6 @@
 /* global harden */
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(_vatPowers, vatOptions) {
   const other = harden({
     something(arg) {
       return arg;
@@ -19,8 +19,8 @@ export function buildRootObject(_vatPowers) {
   }
 
   return harden({
-    bootstrap(argv, _vats) {
-      return behave(argv[0]);
+    bootstrap(_vats) {
+      return behave(vatOptions.argv[0]);
     },
     extra(mode) {
       return behave(mode);

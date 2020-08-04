@@ -15,16 +15,17 @@ function capargs(args, slots = []) {
 
 tap.test('create with setup and buildRootObject', async t => {
   const config = {
-    vats: new Map(),
+    vats: {
+      setup: {
+        sourcePath: require.resolve('./vat-setup.js'),
+        options: {},
+      },
+      liveslots: {
+        sourcePath: require.resolve('./vat-liveslots.js'),
+        options: {},
+      },
+    },
   };
-  config.vats.set('setup', {
-    sourcepath: require.resolve('./vat-setup.js'),
-    options: {},
-  });
-  config.vats.set('liveslots', {
-    sourcepath: require.resolve('./vat-liveslots.js'),
-    options: {},
-  });
   const c = await buildVatController(config, []);
   let r = c.queueToVatExport('setup', 'o+0', 'increment', capargs([]), 'panic');
   await c.run();

@@ -9,7 +9,7 @@ log(`=> loading bootstrap.js`);
 export function buildRootObject(_vatPowers) {
   log(`=> setup called`);
   return harden({
-    bootstrap(argv, vats) {
+    bootstrap(vats) {
       log('=> bootstrap() called');
       E(vats.alice)
         .sayHelloTo(vats.bob)

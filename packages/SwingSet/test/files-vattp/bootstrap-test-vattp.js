@@ -1,7 +1,7 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatOptions) {
   const { D, testLog: log } = vatPowers;
   const receiver = harden({
     receive(body) {
@@ -10,7 +10,8 @@ export function buildRootObject(vatPowers) {
   });
 
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
+      const { argv } = vatOptions;
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
       const name = 'remote1';

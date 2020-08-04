@@ -21,8 +21,12 @@ tap.test('metering dynamic vats', async t => {
     require.resolve('./metered-dynamic-vat.js'),
   );
   const config = {
-    vats: new Map(),
-    bootstrapIndexJS: require.resolve('./vat-load-dynamic.js'),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./vat-load-dynamic.js'),
+      },
+    },
   };
   const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
@@ -32,7 +36,7 @@ tap.test('metering dynamic vats', async t => {
 
   // 'createVat' will import the bundle
   c.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'createVat',
     capargs([dynamicVatBundle]),
@@ -41,7 +45,7 @@ tap.test('metering dynamic vats', async t => {
   t.deepEqual(nextLog(), ['created'], 'first create');
 
   // First, send a message to the dynamic vat that runs normally
-  c.queueToVatExport('_bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -49,7 +53,7 @@ tap.test('metering dynamic vats', async t => {
   // Now send a message that makes the dynamic vat exhaust its meter. The
   // message result promise should be rejected, and the control facet should
   // report the vat's demise
-  c.queueToVatExport('_bootstrap', 'o+0', 'explode', capargs(['allocate']));
+  c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs(['allocate']));
   await c.run();
 
   t.deepEqual(
@@ -62,7 +66,7 @@ tap.test('metering dynamic vats', async t => {
   );
 
   // the dead vat should stay dead
-  c.queueToVatExport('_bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
   t.deepEqual(
     nextLog(),

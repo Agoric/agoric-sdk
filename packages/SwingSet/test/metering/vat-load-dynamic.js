@@ -8,7 +8,7 @@ export function buildRootObject(vatPowers) {
   let control;
 
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
       service = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },
 

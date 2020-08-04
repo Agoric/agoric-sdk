@@ -1071,7 +1071,7 @@ test('pipelined promise queueing', async t => {
     }
     return { deliver };
   }
-  kernel.addGenesisVatSetup('vatB', setupB, { enablePipelining: true });
+  kernel.addGenesisVatSetup('vatB', setupB, {}, { enablePipelining: true });
   await kernel.start();
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');

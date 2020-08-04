@@ -48,7 +48,7 @@ function parseArgs(argv) {
 // Used for coordinating on an index in comms for the provisioning service
 const PROVISIONER_INDEX = 1;
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatOptions) {
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
     await E(httpVat).setCommandDevice(cmdDevice, roles);
@@ -283,14 +283,14 @@ export function buildRootObject(vatPowers) {
   }
 
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
       const bridgeManager =
         devices.bridge && makeBridgeManager(E, D, devices.bridge);
       const {
         ROLE,
         giveMeAllTheAgoricPowers,
         hardcodedClientAddresses,
-      } = parseArgs(argv);
+      } = parseArgs(vatOptions.argv);
 
       async function addRemote(addr) {
         const { transmitter, setReceiver } = await E(vats.vattp).addRemote(

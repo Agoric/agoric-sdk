@@ -47,7 +47,8 @@ export async function runVatsLocally(t, name) {
   console.log(`------ testing pattern (local) -- ${name}`);
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
-  config.bootstrapIndexJS = path.join(bdir, 'bootstrap-local.js');
+  config.bootstrap = 'bootstrap';
+  config.vats.bootstrap = { sourcePath: path.join(bdir, 'bootstrap-local.js') };
   const c = await buildVatController(config, [name]);
   // await runWithTrace(c);
   await c.run();
@@ -74,13 +75,22 @@ export async function runVatsInComms(t, enablePipelining, name) {
   console.log(`------ testing pattern (comms) -- ${name}`);
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
-  config.bootstrapIndexJS = path.join(bdir, 'bootstrap-comms.js');
-  config.vats.set('leftcomms', { sourcepath: commsSourcePath });
-  config.vats.get('leftcomms').options = { enablePipelining };
-  config.vats.set('rightcomms', { sourcepath: commsSourcePath });
-  config.vats.get('rightcomms').options = { enablePipelining };
-  config.vats.set('leftvattp', { sourcepath: vatTPSourcePath });
-  config.vats.set('rightvattp', { sourcepath: vatTPSourcePath });
+  config.bootstrap = 'bootstrap';
+  config.vats.bootstrap = { sourcePath: path.join(bdir, 'bootstrap-comms.js') };
+  config.vats.leftcomms = {
+    sourcePath: commsSourcePath,
+    creationOptions: {
+      enablePipelining,
+    },
+  };
+  config.vats.rightcomms = {
+    sourcePath: commsSourcePath,
+    creationOptions: {
+      enablePipelining,
+    },
+  };
+  config.vats.leftvattp = { sourcePath: vatTPSourcePath };
+  config.vats.rightvattp = { sourcePath: vatTPSourcePath };
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
   const c = await buildVatController(config, [name]);

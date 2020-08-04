@@ -3,7 +3,14 @@ import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 
 test('vat code can use tildot', async t => {
-  const config = { bootstrapIndexJS: require.resolve('./vat-tildot.js') };
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./vat-tildot.js'),
+      },
+    },
+  };
   const c = await buildVatController(config, []);
   await c.step();
   // this also checks that vats get transformTildot, e.g. for a REPL

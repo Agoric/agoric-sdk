@@ -6,10 +6,10 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(_vatPowers, options) {
   log(`=> setup called`);
   return harden({
-    bootstrap(argv, vats) {
+    bootstrap(vats) {
       console.log('=> bootstrap() called');
       E(vats.alice).setNickname('alice');
       E(vats.bob).setNickname('bob');
@@ -19,7 +19,7 @@ export function buildRootObject(_vatPowers) {
           r => log(`=> alice.introduceYourselfTo(bob) resolved to '${r}'`),
           e => log(`=> alice.introduceYourselfTo(bob) rejected as '${e}'`),
         );
-      const count = argv[0] ? Number(argv[0]) : 10;
+      const count = options.argv[0] ? Number(options.argv[0]) : 10;
       E(vats.alice).grind('hey!', count);
     },
   });

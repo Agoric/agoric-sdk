@@ -7,9 +7,13 @@ test('vattp', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-vattp/bootstrap-test-vattp'),
+      },
+    },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
-    bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
 
   const c = await buildVatController(config, ['1']);
@@ -56,9 +60,13 @@ test('vattp 2', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-vattp/bootstrap-test-vattp'),
+      },
+    },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
-    bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
 
   const c = await buildVatController(config, ['2']);

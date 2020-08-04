@@ -1,0 +1,11 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "bob": {
+      "sourcePath": "vat-bob.js"
+    },
+    "bootstrap": {
+      "sourcePath": "bootstrap.js"
+    }
+  }
+}

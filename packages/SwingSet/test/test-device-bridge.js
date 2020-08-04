@@ -15,16 +15,21 @@ test('bridge device', async t => {
 
   const storage = initSwingStore();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./device-bridge-bootstrap.js'),
+      },
+    },
     devices: [['bridge', bd.srcPath, bd.endowments]],
-    bootstrapIndexJS: require.resolve('./device-bridge-bootstrap.js'),
-    hostStorage: storage.storage,
   };
 
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  const c = await buildVatController(config, argv);
+  const c = await buildVatController(config, argv, {
+    hostStorage: storage.storage,
+  });
   await c.run();
 
   t.deepEqual(outboundLog, argv);
@@ -57,13 +62,18 @@ test('bridge device', async t => {
   }
   const bd2 = buildBridge(outboundCallback2);
   const config2 = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./device-bridge-bootstrap.js'),
+      },
+    },
     devices: [['bridge', bd2.srcPath, bd2.endowments]],
-    bootstrapIndexJS: require.resolve('./device-bridge-bootstrap.js'),
-    hostStorage: storage.storage,
   };
 
-  const c2 = await buildVatController(config2, argv);
+  const c2 = await buildVatController(config2, argv, {
+    hostStorage: storage.storage,
+  });
   await c2.run();
   // The bootstrap is reloaded from transcript, which means it doesn't run
   // any syscalls (they are switched off during replay), so it won't re-run
@@ -110,16 +120,21 @@ test('bridge device can return undefined', async t => {
 
   const storage = initSwingStore();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./device-bridge-bootstrap.js'),
+      },
+    },
     devices: [['bridge', bd.srcPath, bd.endowments]],
-    bootstrapIndexJS: require.resolve('./device-bridge-bootstrap.js'),
-    hostStorage: storage.storage,
   };
 
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  const c = await buildVatController(config, argv);
+  const c = await buildVatController(config, argv, {
+    hostStorage: storage.storage,
+  });
   await c.run();
 
   t.deepEqual(outboundLog, argv);

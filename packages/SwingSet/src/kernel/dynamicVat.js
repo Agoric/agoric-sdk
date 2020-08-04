@@ -36,7 +36,12 @@ export function makeDynamicVatCreator(stuff) {
    */
 
   function createVatDynamically(vatSourceBundle, options = {}) {
-    const { metered = true, ...unknownOptions } = options;
+    const {
+      metered = true,
+      creationOptions = {},
+      vatOptions = {},
+      ...unknownOptions
+    } = options;
     if (Object.keys(unknownOptions).length) {
       const msg = JSON.stringify(Object.keys(unknownOptions));
       throw Error(`createVatDynamically got unknown options ${msg}`);
@@ -76,6 +81,8 @@ export function makeDynamicVatCreator(stuff) {
       metered,
       notifyTermination: metered ? notifyTermination : undefined,
       vatPowerType: 'dynamic',
+      creationOptions,
+      vatOptions,
     };
 
     async function build() {
@@ -91,7 +98,7 @@ export function makeDynamicVatCreator(stuff) {
         managerOptions,
       );
       const addOptions = {}; // enablePipelining:false
-      addVatManager(vatID, manager, addOptions);
+      addVatManager(vatID, manager, {}, addOptions);
     }
 
     function makeSuccessResponse() {
