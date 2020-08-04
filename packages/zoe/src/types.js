@@ -53,6 +53,7 @@
  * @property {Install} install
  * @property {MakeInstance} makeInstance
  * @property {Offer} offer
+ * @property {(Instance) => Object} getPublicFacet
  *
  */
 

@@ -59,6 +59,8 @@ function makeZoe(vatAdminSvc) {
   const zoeService = {
     getInvitationIssuer: () => invitationKit.issuer,
     install,
+    getPublicFacet: instance =>
+      instanceToInstanceAdmin.get(instance).getPublicFacet(),
     makeInstance: async (
       installation,
       uncleanIssuerKeywordRecord = harden({}),
