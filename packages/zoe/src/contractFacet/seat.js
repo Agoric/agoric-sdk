@@ -10,7 +10,7 @@ import '../internal-types';
 
 /** @type MakeSeatAdmin */
 export const makeSeatAdmin = (
-  allStagedSeats,
+  allSeatStagings,
   zoeSeat,
   seatData,
   getAmountMath,
@@ -24,12 +24,12 @@ export const makeSeatAdmin = (
 
   /** @type ZCFSeatAdmin */
   const seatAdmin = harden({
-    commit: stagedSeat => {
+    commit: seatStaging => {
       assert(
-        allStagedSeats.has(stagedSeat),
-        details`The stagedSeat ${stagedSeat} was not recognized`,
+        allSeatStagings.has(seatStaging),
+        details`The seatStaging ${seatStaging} was not recognized`,
       );
-      currentAllocation = stagedSeat.getStagedAllocation();
+      currentAllocation = seatStaging.getStagedAllocation();
       E(zoeSeat).replaceAllocation(currentAllocation);
     },
   });
@@ -74,12 +74,12 @@ export const makeSeatAdmin = (
         details`The reallocation was not offer safe`,
       );
 
-      const stagedSeat = {
+      const seatStaging = {
         getSeat: () => seat,
         getStagedAllocation: () => allocation,
       };
-      allStagedSeats.add(stagedSeat);
-      return stagedSeat;
+      allSeatStagings.add(seatStaging);
+      return seatStaging;
     },
   });
 

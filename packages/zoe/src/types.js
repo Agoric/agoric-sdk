@@ -36,10 +36,7 @@
  * Zoe has two different facets: the public Zoe service and the
  * contract facet (ZCF). Each contract instance has a copy of ZCF
  * within its vat. The contract and ZCF never have direct access to
- * the users' payments or the Zoe purses. The contract can only do a
- * few things through ZCF. It can propose a reallocation of amounts or
- * exit a seat. It can also speak directly to Zoe outside of its
- * vat, and create a new seat for record-keeping and other purposes.
+ * the users' payments or the Zoe purses.
  *
  * @property {() => Issuer} getInvitationIssuer
  *
@@ -179,51 +176,43 @@
 
 /**
  * @callback Reallocate
- * The contract can propose a reallocation of extents across offers
- * by providing two parallel arrays: offerHandles and newAllocations.
- * Each element of newAllocations is an AmountKeywordRecord whose
- * amount should replace the old amount for that keyword for the
- * corresponding offer.
+ *
+ * The contract can reallocate over seatStagings, which are
+ * associations of seats with reallocations.
  *
  * The reallocation will only succeed if the reallocation 1) conserves
  * rights (the amounts specified have the same total value as the
- * current total amount), and 2) is 'offer-safe' for all parties involved.
+ * current total amount), and 2) is 'offer-safe' for all parties
+ * involved. Offer safety is checked at the staging step.
  *
  * The reallocation is partial, meaning that it applies only to the
- * amount associated with the offerHandles that are passed in. By
- * induction, if rights conservation and offer safety hold before,
- * they will hold after a safe reallocation, even though we only
- * re-validate for the offers whose allocations will change. Since
- * rights are conserved for the change, overall rights will be unchanged,
- * and a reallocation can only effect offer safety for offers whose
- * allocations change.
+ * seats associated with the seatStagings. By induction, if rights
+ * conservation and offer safety hold before, they will hold after a
+ * safe reallocation, even though we only re-validate for the seats
+ * whose allocations will change. Since rights are conserved for the
+ * change, overall rights will be unchanged, and a reallocation can
+ * only effect offer safety for seats whose allocations change.
  *
- * zcf.reallocate will throw an error if any of the
- * newAllocations do not have a value for all the
- * keywords in sparseKeywords. An error will also be thrown if
- * any newAllocations have keywords that are not in
- * sparseKeywords.
- *
- * @param  {StagedSeat} stagedSeat
- * @param {StagedSeat} stagedSeat
- * @param {StagedSeat=} stagedSeat
- * @param {StagedSeat=} stagedSeat
- * @param {StagedSeat=} stagedSeat
+ * @param  {SeatStaging} seatStaging
+ * @param {SeatStaging} seatStaging
+ * @param {SeatStaging=} seatStaging
+ * @param {SeatStaging=} seatStaging
+ * @param {SeatStaging=} seatStaging
  * @returns {void}
  */
 
 /**
  * @callback MakeInvitation
  *
- * Make a credible Zoe invite for a particular smart contract
- * indicated by the unique `instanceHandle`. The other information in
- * the extent of this invite is decided by the governing contract and
- * should include whatever information is necessary for a potential
- * buyer of the invite to know what they are getting. Note: if
- * information can be derived in queries based on other information,
- * we choose to omit it. For instance, `installationHandle` can be
- * derived from `instanceHandle` and is omitted even though it is
- * useful.
+ * Make a credible Zoe invitation for a particular smart contract
+ * indicated by the `instance` in the extent of the invitation. Zoe
+ * also puts the `installation` and a unique `handle` in the extent of
+ * the invitation. The contract must provide a `description` for the
+ * invitation and should include whatever information is
+ * necessary for a potential buyer of the invitation to know what they are
+ * getting in the `customProperties`. `customProperties` will be
+ * placed in the extent of the invitation.
+ *
  * @param {OfferHandler} offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
@@ -282,8 +271,8 @@
  * @property {Issuer} issuer
  * @property {AmountMath} amountMath
  *
- * @typedef {{[Keyword:string]:Amount}} Allocation
- * @typedef {{[Keyword:string]:AmountMath}} AmountMathKeywordRecord
+ * @typedef {Record<Keyword,Amount>} Allocation
+ * @typedef {Record<Keyword,AmountMath>} AmountMathKeywordRecord
  */
 
 /**
@@ -298,11 +287,11 @@
  * is not present in the allocation
  * @property {() => Allocation} getCurrentAllocation
  * @property {(newAllocation: Allocation) => Boolean} isOfferSafe
- * @property {(newAllocation: Allocation) => StagedSeat} stage
+ * @property {(newAllocation: Allocation) => SeatStaging} stage
  */
 
 /**
- * @typedef {Object} StagedSeat
+ * @typedef {Object} SeatStaging
  * @property {() => ZCFSeat} getSeat
  * @property {() => Allocation} getStagedAllocation
  */

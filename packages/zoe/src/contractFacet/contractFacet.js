@@ -44,22 +44,22 @@ export function buildRootObject() {
 
     await getPromiseForIssuerRecords(issuers);
 
-    const allStagedSeats = new Set();
+    const allSeatStagings = new Set();
 
     /** @type ContractFacet */
     const zcf = {
-      reallocate: (/** @type StagedSeat[] */ ...stagedSeats) => {
+      reallocate: (/** @type SeatStaging[] */ ...seatStagings) => {
         // We may want to handle this with static checking instead.
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
         assert(
-          stagedSeats.length >= 2,
+          seatStagings.length >= 2,
           details`reallocating must be done over two or more seats`,
         );
 
-        stagedSeats.forEach(stagedSeat =>
+        seatStagings.forEach(seatStaging =>
           assert(
-            allStagedSeats.has(stagedSeat),
-            details`The stagedSeat ${stagedSeat} was not recognized`,
+            allSeatStagings.has(seatStaging),
+            details`The seatStaging ${seatStaging} was not recognized`,
           ),
         );
 
@@ -69,13 +69,13 @@ export function buildRootObject() {
         const flattenAllocations = allocations =>
           flattened(allocations.map(allocation => Object.values(allocation)));
 
-        const previousAllocations = stagedSeats.map(stagedSeat =>
-          stagedSeat.getSeat().getCurrentAllocation(),
+        const previousAllocations = seatStagings.map(seatStaging =>
+          seatStaging.getSeat().getCurrentAllocation(),
         );
         const previousAmounts = flattenAllocations(previousAllocations);
 
-        const newAllocations = stagedSeats.map(stagedSeat =>
-          stagedSeat.getStagedAllocation(),
+        const newAllocations = seatStagings.map(seatStaging =>
+          seatStaging.getStagedAllocation(),
         );
         const newAmounts = flattenAllocations(newAllocations);
 
@@ -86,8 +86,8 @@ export function buildRootObject() {
 
         // Commit the staged allocations and inform Zoe of the
         // newAllocation.
-        stagedSeats.forEach(stagedSeat =>
-          seatToSeatAdmin.get(stagedSeat.getSeat()).commit(stagedSeat),
+        seatStagings.forEach(seatStaging =>
+          seatToSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
         );
       },
       saveIssuer: (issuerP, keyword) => {
@@ -141,7 +141,7 @@ export function buildRootObject() {
       // The methods below are pure and have no side-effects //
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
-      getInstanceRecord: () => harden({...instanceRecord}),
+      getInstanceRecord: () => harden({ ...instanceRecord }),
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
@@ -154,7 +154,7 @@ export function buildRootObject() {
     const addSeatObj = {
       addSeat: (invitationHandle, zoeSeat, seatData) => {
         const { seatAdmin, seat } = makeSeatAdmin(
-          allStagedSeats,
+          allSeatStagings,
           zoeSeat,
           seatData,
           getAmountMath,

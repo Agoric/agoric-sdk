@@ -48,7 +48,7 @@
 
 /**
  * @typedef {Object} ZCFSeatAdmin
- * @property {(stagedSeat: StagedSeat) => void} commit
+ * @property {(seatStaging: SeatStaging) => void} commit
  */
 
 /**
@@ -61,8 +61,8 @@
 /**
  * Make the ZCF seat and seat admin
  * @callback MakeSeatAdmin
- * @param {Set<StagedSeat>} allStagedSeats - a set of valid
- * stagedSeats where allocations have been checked for offerSafety
+ * @param {Set<SeatStaging>} allSeatStagings - a set of valid
+ * seatStagings where allocations have been checked for offerSafety
  * @param {ZoeSeat} zoeSeat - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
