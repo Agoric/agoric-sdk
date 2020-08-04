@@ -303,15 +303,6 @@
 
 /**
  * @typedef {Object} StagedSeat
- * @property {() => void} exit
- * @property {(msg: string=) => never} kickOut
- * @property {() => Notifier<Allocation>} getNotifier
- * @property {() => boolean} hasExited
- * @property {() => ProposalRecord} getProposal
- * @property {(keyword: Keyword, brand: Brand) => Amount} getAmountAllocated
- * @property {() => Allocation} getCurrentAllocation
- * @property {(newAllocation: Allocation) => Boolean} isOfferSafe
- * @property {(newAllocation: Allocation) => StagedSeat} stage
  * @property {() => ZCFSeat} getSeat
  * @property {() => Allocation} getStagedAllocation
  */

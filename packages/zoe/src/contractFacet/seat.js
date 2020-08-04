@@ -75,7 +75,6 @@ export const makeSeatAdmin = (
       );
 
       const stagedSeat = {
-        ...seat,
         getSeat: () => seat,
         getStagedAllocation: () => allocation,
       };

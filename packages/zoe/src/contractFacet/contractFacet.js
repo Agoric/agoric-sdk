@@ -69,7 +69,7 @@ export function buildRootObject() {
           flattened(allocations.map(allocation => Object.values(allocation)));
 
         const previousAllocations = stagedSeats.map(stagedSeat =>
-          stagedSeat.getCurrentAllocation(),
+          stagedSeat.getSeat().getCurrentAllocation(),
         );
         const previousAmounts = flattenAllocations(previousAllocations);
 
