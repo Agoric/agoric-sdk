@@ -3,6 +3,7 @@
   "version": "0.0.8",
   "description": "Wrapper for JavaScript WeakMap",
   "main": "src/weakStore.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

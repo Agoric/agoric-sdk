@@ -3,6 +3,7 @@
   "version": "0.7.0",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "main": "src/zoe.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

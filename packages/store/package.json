@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "Wrapper for JavaScript map",
   "main": "src/store.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

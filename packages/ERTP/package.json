@@ -3,6 +3,7 @@
   "version": "0.6.0",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "main": "src/issuer.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

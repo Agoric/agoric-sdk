@@ -3,6 +3,7 @@
   "version": "0.0.8",
   "description": "Assert expression support that protects sensitive data",
   "main": "src/assert.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

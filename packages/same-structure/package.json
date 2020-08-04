@@ -3,6 +3,7 @@
   "version": "0.0.8",
   "description": "Deep equals",
   "main": "src/sameStructure.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

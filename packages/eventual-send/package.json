@@ -3,6 +3,7 @@
   "version": "0.9.3",
   "description": "Extend a Promise class to implement the eventual-send API",
   "main": "src/index.js",
+  "type": "module",
   "types": "src/index.d.ts",
   "scripts": {
     "test": "tape -r esm 'test/**/test*.js'",

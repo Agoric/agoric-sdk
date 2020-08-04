@@ -3,6 +3,7 @@
   "version": "0.0.7",
   "description": "Share code across vat boundaries",
   "main": "src/importManager.js",
+  "type": "module",
   "engines": {
     "node": ">=11.0"
   },

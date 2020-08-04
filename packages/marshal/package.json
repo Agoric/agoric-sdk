@@ -3,6 +3,7 @@
   "version": "0.2.3",
   "description": "marshal",
   "main": "marshal.js",
+  "type": "module",
   "directories": {
     "test": "test"
   },
