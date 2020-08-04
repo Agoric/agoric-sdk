@@ -17,7 +17,7 @@ import fakeVatAdmin from './fakeVatAdmin';
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
-test.only('zoe - coveredCall', async t => {
+test('zoe - coveredCall', async t => {
   t.plan(11);
   try {
     const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();

@@ -133,8 +133,6 @@
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
- *
- * @typedef {AmountKeywordRecord[]} AmountKeywordRecords
  */
 
 /**
@@ -296,6 +294,8 @@
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
  * @property {(keyword: Keyword, brand: Brand) => Amount} getAmountAllocated
+ * The brand is used for filling in an empty amount if the `keyword`
+ * is not present in the allocation
  * @property {() => Allocation} getCurrentAllocation
  * @property {(newAllocation: Allocation) => Boolean} isOfferSafe
  * @property {(newAllocation: Allocation) => StagedSeat} stage

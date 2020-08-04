@@ -42,9 +42,9 @@ test('zoe - atomicSwap', async t => {
         });
         const payments = { Asset: moolaPayment };
 
-        const seat = await zoe.offer(firstInvitation, proposal, payments);
+        const seat = await E(zoe).offer(firstInvitation, proposal, payments);
 
-        seat
+        E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
@@ -55,7 +55,7 @@ test('zoe - atomicSwap', async t => {
             ),
           );
 
-        seat
+        E(seat)
           .getPayout('Price')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
@@ -68,18 +68,17 @@ test('zoe - atomicSwap', async t => {
 
         // The result of making the first offer is an invite to swap by
         // providing the other goods.
-        const invitationP = seat.getOfferResult();
+        const invitationP = E(seat).getOfferResult();
         return invitationP;
       },
     };
   };
 
   const makeBob = (installation, simoleanPayment) => {
+    const moolaPurse = moolaKit.issuer.makeEmptyPurse();
+    const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     return harden({
       offer: async untrustedInvitation => {
-        const moolaPurse = moolaKit.issuer.makeEmptyPurse();
-        const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-
         const invitationIssuer = await E(zoe).getInvitationIssuer();
 
         // Bob is able to use the trusted invitationIssuer from Zoe to
@@ -121,7 +120,7 @@ test('zoe - atomicSwap', async t => {
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
 
-        seat
+        E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
@@ -132,7 +131,7 @@ test('zoe - atomicSwap', async t => {
             ),
           );
 
-        seat
+        E(seat)
           .getPayout('Price')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>

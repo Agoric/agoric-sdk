@@ -17,4 +17,5 @@ export {
   swap,
   assertProposalKeywords,
   assertIssuerKeywords,
+  satisfies,
 } from './zoeHelpers';
