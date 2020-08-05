@@ -1,5 +1,4 @@
 // @ts-check
-/* global harden */
 
 import { makeMarshal } from '@agoric/marshal';
 import makeStore from '@agoric/store';

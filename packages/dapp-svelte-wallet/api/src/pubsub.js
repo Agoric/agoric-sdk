@@ -1,5 +1,3 @@
-/* global harden */
-
 export default function(E) {
   let lastPublished;
   const subscribers = [];
