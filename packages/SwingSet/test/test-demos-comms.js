@@ -4,6 +4,12 @@ import { loadBasedir, buildVatController } from '../src/index';
 
 async function main(basedir, argv) {
   const config = await loadBasedir(basedir);
+  if (config.vats.botcomms) {
+    config.vats.botcomms.options.enableSetup = true;
+  }
+  if (config.vats.usercomms) {
+    config.vats.usercomms.options.enableSetup = true;
+  }
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
 

@@ -104,5 +104,5 @@ export function createSyscall(transcriptManager) {
     reject: (...args) => doSyscall(['reject', ...args]),
   });
 
-  return harden({ syscall, setVatSyscallHandler });
+  return harden({ syscall, doSyscall, setVatSyscallHandler });
 }

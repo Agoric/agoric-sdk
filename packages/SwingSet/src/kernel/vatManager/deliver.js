@@ -82,7 +82,7 @@ export function makeDeliver(tools, dispatch) {
   }
 
   async function deliverOneNotification(vpid, vp) {
-    const errmsg = `vat[${vatID}].promise[${vpid}] vp.state failed`;
+    const errmsg = `vat[${vatID}].promise[${vpid}] ${vp.state} failed`;
     switch (vp.state) {
       case 'fulfilledToPresence':
         return doProcess(['notifyFulfillToPresence', vpid, vp.slot], errmsg);

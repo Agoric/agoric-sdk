@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import re2 from 're2';
+import { Worker } from 'worker_threads';
 import { assert } from '@agoric/assert';
 
 import { isTamed, tameMetering } from '@agoric/tame-metering';
@@ -220,6 +221,13 @@ export async function buildVatController(
     }`,
   );
 
+  function makeNodeWorker() {
+    const supercode = require.resolve(
+      './kernel/vatManager/nodeWorkerSupervisor.js',
+    );
+    return new Worker(supercode);
+  }
+
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
@@ -227,6 +235,7 @@ export async function buildVatController(
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
+    makeNodeWorker,
   };
 
   const kernel = buildKernel(kernelEndowments);
@@ -246,7 +255,15 @@ export async function buildVatController(
   // two vattps, must handle somehow.
   const commsVatSourcePath = require.resolve('./vats/comms');
   const commsVatBundle = await bundleSource(commsVatSourcePath);
-  kernel.addGenesisVat('comms', commsVatBundle, {}, { enablePipelining: true }); // todo: allowSetup
+  kernel.addGenesisVat(
+    'comms',
+    commsVatBundle,
+    {},
+    {
+      enablePipelining: true,
+      enableSetup: true,
+    },
+  );
 
   // vat-tp is added automatically, but TODO: bootstraps must still connect
   // it to comms
@@ -411,6 +428,10 @@ export async function buildVatController(
 
     async step() {
       return kernel.step();
+    },
+
+    async shutdown() {
+      return kernel.shutdown();
     },
 
     getStats() {

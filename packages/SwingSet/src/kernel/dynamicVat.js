@@ -77,14 +77,6 @@ export function makeDynamicVatCreator(stuff) {
       );
     }
 
-    const managerOptions = {
-      metered,
-      notifyTermination: metered ? notifyTermination : undefined,
-      vatPowerType: 'dynamic',
-      creationOptions,
-      vatParameters,
-    };
-
     async function build() {
       if (typeof vatSourceBundle !== 'object') {
         throw Error(
@@ -92,11 +84,16 @@ export function makeDynamicVatCreator(stuff) {
         );
       }
 
-      const manager = await vatManagerFactory.createFromBundle(
-        vatSourceBundle,
-        vatID,
-        managerOptions,
-      );
+      const mOpts = {
+        bundle: vatSourceBundle,
+        metered,
+        notifyTermination: metered ? notifyTermination : undefined,
+        enableInternalMetering: false,
+        enableSetup: false,
+        creationOptions,
+        vatParameters,
+      };
+      const manager = await vatManagerFactory(vatID, mOpts);
       const addOptions = {}; // enablePipelining:false
       addVatManager(vatID, manager, addOptions);
     }

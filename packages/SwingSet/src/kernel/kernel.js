@@ -3,7 +3,7 @@
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { makeVatManagerFactory } from './vatManager/vatManager';
+import { makeVatManagerFactory } from './vatManager/factory';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
@@ -38,6 +38,7 @@ export default function buildKernel(kernelEndowments) {
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
+    makeNodeWorker,
   } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
@@ -82,16 +83,21 @@ export default function buildKernel(kernelEndowments) {
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
 
-  // The 'staticVatPowers' are given to vats as arguments of setup().
-  // Liveslots provides them, and more, as the only argument to
-  // buildRootObject(). They represent controlled authorities that come from
-  // the kernel but that do not go through the syscall mechanism (so they
-  // aren't included in the replay transcript), so they must not be
-  // particularly stateful. If any of them behave differently from one
-  // invocation to the next, the vat code which uses it will not be a
-  // deterministic function of the transcript, breaking our
-  // orthogonal-persistence model. They can have access to state, but they
-  // must not let it influence the data they return to the vat.
+  // The "Vat Powers" are given to vats as arguments of setup(). Liveslots
+  // provides them, and more, as the only argument to buildRootObject(). They
+  // represent controlled authorities that come from the kernel but that do
+  // not go through the syscall mechanism (so they aren't included in the
+  // replay transcript), so they must not be particularly stateful. If any of
+  // them behave differently from one invocation to the next, the vat code
+  // which uses it will not be a deterministic function of the transcript,
+  // breaking our orthogonal-persistence model. They can have access to
+  // state, but they must not let it influence the data they return to the
+  // vat.
+
+  // Not all vats get all powers. We're phasing out in-vat metering, so
+  // `makeGetMeter` and `transformMetering` are only available to static vats
+  // in a local worker, and will eventually go away entirely once Spawner
+  // uses dynamic vats.
 
   // These will eventually be provided by the in-worker supervisor instead.
 
@@ -101,9 +107,9 @@ export default function buildKernel(kernelEndowments) {
   // maybe transformMetering) are imported by the vat, not passed in an
   // argument. The powerful one (makeGetMeter) should only be given to the
   // root object, to share with (or withhold from) other objects as it sees
-  // fit. TODO: makeGetMeter and transformMetering will go away once #1288
-  // lands and zoe no longer needs to do metering within a vat.
-  const staticVatPowers = harden({
+  // fit. TODO: makeGetMeter and transformMetering will go away
+
+  const allVatPowers = harden({
     Remotable,
     getInterfaceOf,
     makeGetMeter: meterManager.makeGetMeter,
@@ -112,14 +118,6 @@ export default function buildKernel(kernelEndowments) {
     transformTildot: (...args) =>
       meterManager.runWithoutGlobalMeter(transformTildot, ...args),
     testLog,
-  });
-
-  // dynamic vats don't get control over their own metering, nor testLog
-  const dynamicVatPowers = harden({
-    Remotable,
-    getInterfaceOf,
-    transformTildot: (...args) =>
-      meterManager.runWithoutGlobalMeter(transformTildot, ...args),
   });
 
   function vatNameToID(name) {
@@ -411,6 +409,7 @@ export default function buildKernel(kernelEndowments) {
         throw Error(`unknown option ${k}`);
       }
     }
+    creationOptions = { enableSetup: true, ...creationOptions };
 
     if (started) {
       throw Error(`addGenesisVat() cannot be called after kernel.start`);
@@ -434,7 +433,13 @@ export default function buildKernel(kernelEndowments) {
     if (typeof bundle !== 'object') {
       throw Error(`bundle is not an object, rather ${bundle}`);
     }
-    const knownCreationOptions = new Set(['enablePipelining', 'metered']);
+    const knownCreationOptions = new Set([
+      'enablePipelining',
+      'metered',
+      'managerType',
+      'enableSetup',
+      'enableInternalMetering',
+    ]);
     for (const k of Object.getOwnPropertyNames(creationOptions)) {
       if (!knownCreationOptions.has(k)) {
         throw Error(`unknown option ${k}`);
@@ -446,7 +451,18 @@ export default function buildKernel(kernelEndowments) {
     if (genesisVats.has(name)) {
       throw Error(`vatID ${name} already added`);
     }
-    genesisVats.set(name, { bundle, vatParameters, creationOptions });
+    // TODO: We need to support within-vat metering (for the Spawner) until
+    // #1343 is fixed, after which we can remove
+    // options.enableInternalMetering . For now, it needs to be enabled for
+    // our internal unit test (which could easily add this to its config
+    // object) and for the spawner vat (not so easy). To avoid deeper
+    // changes, we enable it for *all* static vats here. Once #1343 is fixed,
+    // remove this addition and all support for internal metering.
+    genesisVats.set(name, {
+      bundle,
+      vatParameters,
+      creationOptions: { enableInternalMetering: true, ...creationOptions },
+    });
   }
 
   function addGenesisDevice(name, bundle, endowments) {
@@ -547,14 +563,14 @@ export default function buildKernel(kernelEndowments) {
   }
 
   const vatManagerFactory = makeVatManagerFactory({
-    dynamicVatPowers,
+    allVatPowers,
     kernelKeeper,
     makeVatEndowments,
     meterManager,
-    staticVatPowers,
     testLog,
     transformMetering,
     waitUntilQuiescent,
+    makeNodeWorker,
   });
 
   /*
@@ -720,16 +736,13 @@ export default function buildKernel(kernelEndowments) {
       );
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
+      const factoryOptions = { ...creationOptions, bundle, setup };
       // eslint-disable-next-line no-await-in-loop
-      const manager = await (setup
-        ? vatManagerFactory.createFromSetup(setup, vatID)
-        : vatManagerFactory.createFromBundle(bundle, vatID, {
-            metered: false,
-            vatPowerType: 'static',
-            allowSetup: true, // TODO: only needed by comms, disallow elsewhere
-            vatParameters,
-            creationOptions,
-          }));
+      const manager = await vatManagerFactory(
+        vatID,
+        factoryOptions,
+        vatParameters,
+      );
       addVatManager(vatID, manager, creationOptions);
     }
 
@@ -854,6 +867,12 @@ export default function buildKernel(kernelEndowments) {
     return count;
   }
 
+  // mostly used by tests, only needed with thread/process-based workers
+  function shutdown() {
+    const vatRecs = Array.from(ephemeral.vats.values());
+    return Promise.all(vatRecs.map(rec => rec.manager.shutdown()));
+  }
+
   const kernel = harden({
     // these are meant for the controller
     addGenesisVat,
@@ -866,6 +885,8 @@ export default function buildKernel(kernelEndowments) {
 
     step,
     run,
+
+    shutdown,
 
     // the rest are for testing and debugging
 
