@@ -42,17 +42,27 @@ export default function initBasedir(
   // Symlink the wallet.
   let agWallet;
   try {
-    agWallet = path.resolve(__dirname, '../../../wallet-frontend/build');
+    agWallet = path.resolve(__dirname, '../../../wallet-frontend');
+    let walletBuild = path.join(agWallet, 'build');
     if (!fs.existsSync(agWallet)) {
       const pjs = require.resolve('@agoric/wallet-frontend/package.json');
-      agWallet = path.join(path.dirname(pjs), 'build');
-      fs.statSync(agWallet);
+      agWallet = path.dirname(pjs);
+      walletBuild = path.join(agWallet, 'build');
+      fs.statSync(walletBuild);
     }
-    fs.symlinkSync(agWallet, `${dstHtmldir}/wallet`);
+    fs.symlinkSync(walletBuild, `${dstHtmldir}/wallet`);
   } catch (e) {
     console.warn(
       `${agWallet} does not exist; you may want to run 'yarn build' in 'wallet-frontend'`,
     );
+  }
+
+  const walletDeploy = path.join(agWallet, 'wallet-deploy.js');
+  try {
+    fs.statSync(walletDeploy);
+    fs.symlinkSync(walletDeploy, path.join(basedir, 'wallet-deploy.js'));
+  } catch (e) {
+    console.warn(`${walletDeploy} does not exist; cannot autodeploy wallet`);
   }
 
   // Save our version codes.

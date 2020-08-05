@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 // import { createHash } from 'crypto';
 
@@ -246,6 +247,7 @@ export default async function start(basedir, argv) {
     startTimer,
   } = d;
 
+  let hostport;
   await Promise.all(
     connections.map(async c => {
       switch (c.type) {
@@ -282,6 +284,7 @@ export default async function start(basedir, argv) {
           if (broadcastJSON) {
             throw new Error(`duplicate type=http in connections.json`);
           }
+          hostport = `${c.host}:${c.port}`;
           broadcastJSON = await makeHTTPListener(
             basedir,
             c.port,
@@ -301,4 +304,31 @@ export default async function start(basedir, argv) {
   log.info(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
+
+  if (hostport && fs.existsSync('./wallet-deploy.js')) {
+    // Install the wallet.
+    let agoricCli;
+    try {
+      agoricCli = require.resolve('.bin/agoric');
+    } catch (e) {
+      // do nothing
+      console.log(`Cannot find agoric CLI:`, e);
+    }
+    // Launch the agoric deploy, letting it synchronize with the chain.
+    if (agoricCli) {
+      exec(
+        `${agoricCli} deploy --hostport=${hostport} ./wallet-deploy.js`,
+        (err, stdout, stderr) => {
+          if (err) {
+            console.warn(err);
+            return;
+          }
+          if (stderr) {
+            // Report the error.
+            console.error(stderr);
+          }
+        },
+      );
+    }
+  }
 }

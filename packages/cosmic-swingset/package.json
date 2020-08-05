@@ -45,6 +45,7 @@
     "@agoric/wallet-frontend": "^0.2.7",
     "@agoric/weak-store": "^0.0.8",
     "@agoric/zoe": "^0.7.0",
+    "agoric": "^0.7.0",
     "@babel/generator": "^7.6.4",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",

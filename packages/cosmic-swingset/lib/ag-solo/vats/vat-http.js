@@ -122,6 +122,20 @@ export function buildRootObject(vatPowers) {
       provisioner = p;
     },
 
+    setWallet(wallet) {
+      // This must happen only after the local and agoric objects have been
+      // installed in setPresences.
+      // We're guaranteed that because the deployment script that installs
+      // the wallet only runs after the chain has provisioned us.
+      exportedToCapTP = {
+        ...exportedToCapTP,
+        local: { ...exportedToCapTP.local, wallet },
+        wallet,
+      };
+      replObjects.local.wallet = wallet;
+      replObjects.home.wallet = wallet;
+    },
+
     setPresences(
       privateObjects,
       decentralObjects = undefined,
@@ -132,7 +146,7 @@ export function buildRootObject(vatPowers) {
         ...privateObjects, // TODO: Remove; replaced by .local
         ...handyObjects,
         LOADING: loaded.p, // TODO: Remove; replaced by .agoric.LOADING
-        agoric: { decentralObjects, LOADING: loaded.p },
+        agoric: { ...decentralObjects, LOADING: loaded.p },
         local: privateObjects,
       };
 
