@@ -4,7 +4,7 @@ import { test } from 'tape-promise/tape';
 
 import makeStore from '@agoric/weak-store';
 import makeIssuerKit from '@agoric/ertp';
-import { areRightsConserved } from '../../src/rightsConservation';
+import { areRightsConserved } from '../../src/contractFacet/rightsConservation';
 
 const setupAmountMaths = () => {
   const moolaIssuerResults = makeIssuerKit('moola');

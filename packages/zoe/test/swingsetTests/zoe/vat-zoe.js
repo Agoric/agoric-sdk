@@ -1,5 +1,5 @@
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 
 export function buildRootObject(_vatPowers) {
   return harden({

@@ -7,7 +7,7 @@ import { makeZoeHelpers } from '../../../src/contractSupport';
 /**
  * Give a use object when a payment is escrowed
  *
- * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
+ * @typedef {import('../../../src/zoeService/zoe').ContractFacet} ContractFacet
  * @typedef {import('@agoric/ERTP').Amount} Amount
  * @param {ContractFacet} zcf
  */

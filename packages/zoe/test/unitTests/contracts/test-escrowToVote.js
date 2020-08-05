@@ -5,7 +5,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import fakeVatAdmin from './fakeVatAdmin';
 
