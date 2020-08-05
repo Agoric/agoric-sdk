@@ -15,11 +15,6 @@ export default async function deployWallet(
     local: { http, spawner, wallet: oldWallet },
   } = home;
 
-  if (oldWallet) {
-    console.log(`You already have a wallet installed.`);
-    return 0;
-  }
-
   // Bundle the wallet sources.
   const bundle = await bundleSource(pathResolve(__dirname, './lib/wallet.js'));
 
@@ -34,23 +29,77 @@ export default async function deployWallet(
     http,
   });
 
+  const walletToPaymentInfo = async wallet => {
+    if (!wallet) {
+      return [];
+    }
+    const issuers = await E(wallet).getIssuers();
+    const brandToIssuer = new Map();
+    await Promise.all([
+      issuers.map(async ([issuerPetname, issuer]) => {
+        const brand = await E(issuer).getBrand();
+        brandToIssuer.set(brand, { issuerPetname, issuer });
+      }),
+    ]);
+    const purses = await E(wallet).getPurses();
+    return Promise.all(
+      purses.map(async ([pursePetname, purse]) => {
+        const brand = await E(purse).getAllegedBrand();
+        const { issuerPetname, issuer } = brandToIssuer.get(brand);
+        return { issuerPetname, pursePetname, issuer, purse };
+      }),
+    );
+  };
+
+  const importedPaymentInfo = await walletToPaymentInfo(oldWallet);
+
   // Get the payments that were given to us by the chain.
-  const paymentInfo = await E(faucet).tapFaucet();
+  const tapPaymentInfo = await E(faucet).tapFaucet();
+  const paymentInfo = [...importedPaymentInfo, ...tapPaymentInfo];
 
   // Claim the payments.
+  const issuerToPetname = new Map();
+  const issuerToPursePetnameP = new Map();
   const wallet = await E(walletVat).getWallet();
   await Promise.all(
-    paymentInfo.map(
-      async ({ issuerPetname, pursePetname, issuer, payment }) => {
-        // Create some issuer petnames.
-        await E(wallet).addIssuer(issuerPetname, issuer);
-        // Make empty purses. Have some petnames for them.
-        await E(wallet).makeEmptyPurse(issuerPetname, pursePetname);
-        // Deposit payments.
-        const p = await payment;
-        await E(wallet).deposit(pursePetname, p);
-      },
-    ),
+    paymentInfo.map(async ({ issuerPetname, issuer }) => {
+      // Create some issuer petnames.
+      if (issuerToPetname.has(issuer)) {
+        return issuerToPetname.get(issuer);
+      }
+      console.log('setting petname of', issuer, 'to', issuerPetname);
+      issuerToPetname.set(issuer, issuerPetname);
+      await E(wallet).addIssuer(issuerPetname, issuer);
+      return issuerToPetname.get(issuer);
+    }),
+  );
+
+  await Promise.all(
+    paymentInfo.map(async ({ pursePetname, issuer, payment, purse }) => {
+      const issuerPetname = issuerToPetname.get(issuer);
+
+      if (!issuerToPursePetnameP.has(issuer)) {
+        issuerToPursePetnameP.set(
+          issuer,
+          E(wallet)
+            .makeEmptyPurse(issuerPetname, pursePetname)
+            .then(_ => pursePetname),
+        );
+      }
+      pursePetname = await issuerToPursePetnameP.get(issuer);
+
+      let paymentP = payment;
+      if (!paymentP) {
+        // Withdraw the payment from the purse.
+        paymentP = E(purse)
+          .getCurrentAmount()
+          .then(amount => E(purse).withdraw(amount));
+      }
+
+      // Deposit payment.
+      const p = await paymentP;
+      await E(wallet).deposit(pursePetname, p);
+    }),
   );
 
   // Install our handlers.
