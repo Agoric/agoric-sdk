@@ -61,7 +61,7 @@
 /**
  * Make the ZCF seat and seat admin
  * @callback MakeSeatAdmin
- * @param {Set<SeatStaging>} allSeatStagings - a set of valid
+ * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
  * @param {ZoeSeat} zoeSeat - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
@@ -100,6 +100,17 @@
  * makeInvitation
  * @property {() => void} shutdown
  * @property {(issuerP: Issuer|Promise<Issuer>, keyword: Keyword) => void} saveIssuer
+ *
+ * @property {(Keyword, MathHelperName=) => ZoeMint} makeZoeMint
+ */
+
+/**
+ * @typedef {Object} ZoeMint
+ *
+ * @property {() => IssuerRecord} getIssuerRecord
+ * @property {(ZoeSeat, Keyword, Amount) => void} mintAllocation
+ * @property {(oldAllocation: Allocation) => StatedSeat} stageGrant
+ * @property {(newAllocation: Allocation) => StagedSeat} stageBurn
  */
 
 /**

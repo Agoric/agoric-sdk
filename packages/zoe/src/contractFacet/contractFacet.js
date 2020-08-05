@@ -44,7 +44,7 @@ export function buildRootObject() {
 
     await getPromiseForIssuerRecords(issuers);
 
-    const allSeatStagings = new Set();
+    const allSeatStagings = new WeakSet();
 
     /** @type ContractFacet */
     const zcf = {
@@ -145,6 +145,35 @@ export function buildRootObject() {
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
+
+      makeZCFMint: (keyword, mathHelperName = 'nat') => {
+        const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
+          keyword,
+          mathHelperName,
+        );
+        const issuerRecordP = E(zoeMintP).getIssuerRecord();
+        const zcfMint = harden({
+          getIssuerRecord: () => {
+            return issuerRecordP;
+          },
+          mintAllocation: (zcfSeat, seatKeyword, amount) => {
+            // TODO local stuff
+            const seatAdmin = seatToSeatAdmin.get(zcfSeat);
+            E(zoeMintP).mintAllocation(seatAdmin, seatKeyword, amount);
+          },
+          stageGrant: oldAllocation => {
+            const stagedSeat = undefined; // TODO
+            E(zoeMintP).stageGrant(oldAllocation);
+            return stagedSeat;
+          },
+          stageBurn: newAllocation => {
+            const stagedSeat = undefined; // TODO
+            E(zoeMintP).stageBurn(newAllocation);
+            return stagedSeat;
+          },
+        });
+        return zcfMint;
+      },
     };
     harden(zcf);
 
@@ -161,6 +190,7 @@ export function buildRootObject() {
         );
         seatToSeatAdmin.init(seat, seatAdmin);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
+        // @ts-ignore
         const offerResultP = E(offerHandler)(seat).catch(err => {
           seat.exit();
           throw err;
