@@ -243,7 +243,6 @@ export function buildRootObject(vatPowers, vatParameters) {
     const uploads = E(vats.uploads).getUploads();
 
     // This will allow dApp developers to register in their api/deploy.js
-    let walletRegistered = false;
     const httpRegCallback = {
       doneLoading(subsystems) {
         return E(vats.http).doneLoading(subsystems);
@@ -255,10 +254,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         return E(vats.http).registerURLHandler(handler, '/api');
       },
       async registerWallet(wallet, handler, bridgeHandler) {
-        if (walletRegistered) {
-          throw Error(`Unimplemented multiple wallet registrations`);
-        }
-        walletRegistered = true;
         await Promise.all([
           E(vats.http).registerURLHandler(handler, '/private/wallet'),
           E(vats.http).registerURLHandler(
