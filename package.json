@@ -33,7 +33,7 @@
     "packages/spawner",
     "packages/sharing-service",
     "packages/zoe",
-    "packages/wallet-frontend",
+    "packages/dapp-react-wallet",
     "packages/cosmic-swingset",
     "packages/agoric-cli",
     "packages/deployment",
