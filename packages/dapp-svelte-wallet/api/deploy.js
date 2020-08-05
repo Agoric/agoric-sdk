@@ -85,7 +85,9 @@ export default async function deployWallet(
           .getCurrentAmount()
           .then(amount => E(purse).withdraw(amount));
       } else {
-        paymentP = E(issuer).isLive(payment).then(isLive => isLive && payment);
+        paymentP = E(issuer)
+          .isLive(payment)
+          .then(isLive => isLive && payment);
       }
 
       payment = await paymentP;
@@ -95,7 +97,9 @@ export default async function deployWallet(
       const amount = await E(issuer).getAmountOf(payment);
 
       // TODO: Use AmountMath.
-      const isEmpty = amount.value === 0 || (Array.isArray(amount.value) && !amount.value.length);
+      const isEmpty =
+        amount.value === 0 ||
+        (Array.isArray(amount.value) && !amount.value.length);
       if (isEmpty) {
         return;
       }
@@ -104,7 +108,10 @@ export default async function deployWallet(
           issuer,
           E(wallet)
             .makeEmptyPurse(issuerPetname, pursePetname)
-            .then(_ => pursePetname, _ => pursePetname),
+            .then(
+              _ => pursePetname,
+              _ => pursePetname,
+            ),
         );
       }
       pursePetname = await issuerToPursePetnameP.get(issuer);

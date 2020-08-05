@@ -23,7 +23,7 @@
     "prettier": "^1.18.2"
   },
   "scripts": {
-    "lint-fix": "cd api&&yarnlint-fix",
+    "lint-fix": "cd api&&yarn lint-fix",
     "lint-check": "cd api&&yarn lint-check",
     "test": "cd api&&yarn test",
     "build": "cd ui&&yarn build"

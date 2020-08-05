@@ -1,5 +1,3 @@
-/* global harden */
-
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';

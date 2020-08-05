@@ -1,5 +1,3 @@
-/* global harden */
-
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
@@ -12,8 +10,8 @@ import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeRegistrar } from '@agoric/registrar';
 
 import { E } from '@agoric/eventual-send';
-import { makeWallet } from '../src/lib-wallet';
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
+import { makeWallet } from '../src/lib-wallet';
 
 const setupTest = async () => {
   const pursesStateChangeLog = [];
