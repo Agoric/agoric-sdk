@@ -305,29 +305,34 @@ export default async function start(basedir, argv) {
   swingSetRunning = true;
   deliverOutbound();
 
-  if (hostport && fs.existsSync('./wallet-deploy.js')) {
-    // Install the wallet.
-    let agoricCli;
-    try {
-      agoricCli = require.resolve('.bin/agoric');
-    } catch (e) {
-      // do nothing
-      console.log(`Cannot find agoric CLI:`, e);
-    }
-    // Launch the agoric deploy, letting it synchronize with the chain.
-    if (agoricCli) {
+  if (hostport) {
+    const agoricCli = require.resolve('.bin/agoric');
+
+    const makeHandler = (onSuccess = undefined) => (err, _stdout, stderr) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      if (stderr) {
+        // Report the error.
+        process.stderr.write(stderr);
+      }
+      onSuccess && onSuccess();
+    };
+
+    if (fs.existsSync('./wallet-deploy.js')) {
+      // Install the wallet.
+      // Launch the agoric deploy, letting it synchronize with the chain but not wait
+      // until open for business.
       exec(
-        `${agoricCli} deploy --hostport=${hostport} ./wallet-deploy.js`,
-        (err, stdout, stderr) => {
-          if (err) {
-            console.warn(err);
-            return;
-          }
-          if (stderr) {
-            // Report the error.
-            console.error(stderr);
-          }
-        },
+        `${agoricCli} deploy --need=agoric --provide=wallet --hostport=${hostport} ./wallet-deploy.js`,
+        makeHandler(),
+      );
+    } else {
+      // No need to wait for the wallet, just open for business.
+      exec(
+        `${agoricCli} deploy --need= --provide=wallet --hostport=${hostport}`,
+        makeHandler(),
       );
     }
   }

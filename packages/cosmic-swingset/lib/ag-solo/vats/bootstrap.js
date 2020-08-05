@@ -245,6 +245,9 @@ export function buildRootObject(vatPowers) {
     // This will allow dApp developers to register in their api/deploy.js
     let walletRegistered = false;
     const httpRegCallback = {
+      doneLoading(subsystems) {
+        return E(vats.http).doneLoading(subsystems);
+      },
       send(obj, connectionHandles) {
         return E(vats.http).send(obj, connectionHandles);
       },

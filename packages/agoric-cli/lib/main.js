@@ -107,12 +107,22 @@ const main = async (progname, rawArgs, powers) => {
     });
 
   program
-    .command('deploy <script...>')
+    .command('deploy [script...]')
     .description('run a deployment script against the local Agoric VM')
     .option(
       '--hostport <HOST:PORT>',
       'host and port to connect to VM',
       '127.0.0.1:8000',
+    )
+    .option(
+      '--need <DEPENDENCIES>',
+      'comma-separated names of subsystems to wait for',
+      'agoric,wallet',
+    )
+    .option(
+      '--provide <DEPENDENCIES>',
+      'comma-separated names of subsystems this script initializes',
+      '',
     )
     .action(async (scripts, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };

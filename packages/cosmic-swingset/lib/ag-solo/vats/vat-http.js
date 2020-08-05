@@ -1,4 +1,5 @@
 /* global harden */
+import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';
@@ -7,34 +8,32 @@ import { getCapTPHandler } from './captp';
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
   let commandDevice;
-  let provisioner;
   const channelIdToHandle = new Map();
   const channelHandleToId = new WeakMap();
-  const loaded = {};
-  loaded.p = new Promise((resolve, reject) => {
-    loaded.res = resolve;
-    loaded.rej = reject;
-  });
-  harden(loaded);
+  let LOADING = harden(['agoric', 'wallet', 'local']);
+  const {
+    notifier: loadingNotifier,
+    updater: loadingUpdater,
+  } = makeNotifierKit(LOADING);
+
   const replObjects = {
-    home: { LOADING: loaded.p }, // TODO: Remove
-    agoric: { LOADING: loaded.p },
+    home: { LOADING },
+    agoric: {},
     local: {},
   };
-  let isReady = false;
-  const readyForClient = {};
+
   let exportedToCapTP = {
-    LOADING: loaded.p,
-    READY: {
-      resolve(value) {
-        isReady = true;
-        readyForClient.res(value);
-      },
-      isReady() {
-        return isReady;
-      },
-    },
+    loadingNotifier,
   };
+  function doneLoading(subsystems) {
+    LOADING = LOADING.filter(subsys => !subsystems.includes(subsys));
+    loadingUpdater.updateState(LOADING);
+    if (LOADING.length) {
+      replObjects.home.LOADING = LOADING;
+    } else {
+      delete replObjects.home.LOADING;
+    }
+  }
 
   const send = (obj, channelHandles) => {
     // TODO: Make this sane by adding support for multicast to the commandDevice.
@@ -46,12 +45,6 @@ export function buildRootObject(vatPowers) {
       }
     }
   };
-
-  readyForClient.p = new Promise((resolve, reject) => {
-    readyForClient.res = resolve;
-    readyForClient.rej = reject;
-  });
-  harden(readyForClient);
 
   const handler = {};
   const registeredURLHandlers = new Map();
@@ -68,65 +61,29 @@ export function buildRootObject(vatPowers) {
   }
 
   return harden({
-    setCommandDevice(d, ROLES) {
+    setCommandDevice(d) {
       commandDevice = d;
-      if (ROLES.client) {
-        handler.readyForClient = () => readyForClient.p;
 
-        const replHandler = getReplHandler(replObjects, send, vatPowers);
-        registerURLHandler(replHandler, '/private/repl');
+      const replHandler = getReplHandler(replObjects, send, vatPowers);
+      registerURLHandler(replHandler, '/private/repl');
 
-        // Assign the captp handler.
-        // TODO: Break this out into a separate vat.
-        const captpHandler = getCapTPHandler(
-          send,
-          // Harden only our exported objects.
-          () => harden(exportedToCapTP),
-          { E, harden, ...vatPowers },
-        );
-        registerURLHandler(captpHandler, '/private/captp');
-      }
-
-      if (ROLES.controller) {
-        handler.pleaseProvision = obj => {
-          const { nickname, pubkey } = obj;
-          // FIXME: There's a race here.  We return from the call
-          // before the outbound messages have been committed to
-          // a block.  This means the provisioning-server must
-          // retry transactions as they might have the wrong sequence
-          // number.
-          return E(provisioner).pleaseProvision(nickname, pubkey);
-        };
-        handler.pleaseProvisionMany = obj => {
-          const { applies } = obj;
-          return Promise.all(
-            applies.map(args =>
-              // Emulate allSettled.
-              E(provisioner)
-                .pleaseProvision(...args)
-                .then(
-                  value => ({ status: 'fulfilled', value }),
-                  reason => ({ status: 'rejected', reason }),
-                ),
-            ),
-          );
-        };
-      }
+      // Assign the captp handler.
+      // TODO: Break this out into a separate vat.
+      const captpHandler = getCapTPHandler(
+        send,
+        // Harden only our exported objects.
+        () => harden(exportedToCapTP),
+        { E, harden, ...vatPowers },
+      );
+      registerURLHandler(captpHandler, '/private/captp');
     },
 
     registerURLHandler,
     registerAPIHandler: h => registerURLHandler(h, '/api'),
     send,
-
-    setProvisioner(p) {
-      provisioner = p;
-    },
+    doneLoading,
 
     setWallet(wallet) {
-      // This must happen only after the local and agoric objects have been
-      // installed in setPresences.
-      // We're guaranteed that because the deployment script that installs
-      // the wallet only runs after the chain has provisioned us.
       exportedToCapTP = {
         ...exportedToCapTP,
         local: { ...exportedToCapTP.local, wallet },
@@ -142,23 +99,23 @@ export function buildRootObject(vatPowers) {
       handyObjects = undefined,
     ) {
       exportedToCapTP = {
+        ...exportedToCapTP,
         ...decentralObjects, // TODO: Remove; replaced by .agoric
         ...privateObjects, // TODO: Remove; replaced by .local
         ...handyObjects,
-        LOADING: loaded.p, // TODO: Remove; replaced by .agoric.LOADING
-        agoric: { ...decentralObjects, LOADING: loaded.p },
-        local: privateObjects,
+        agoric: { ...decentralObjects },
+        local: { ...privateObjects },
       };
 
       // We need to mutate the repl subobjects instead of replacing them.
       if (privateObjects) {
         Object.assign(replObjects.local, privateObjects);
+        doneLoading(['local']);
       }
 
       if (decentralObjects) {
-        loaded.res('chain bundle loaded');
         Object.assign(replObjects.agoric, decentralObjects);
-        delete replObjects.agoric.LOADING;
+        doneLoading(['agoric']);
       }
 
       // TODO: Remove; home object is deprecated.
@@ -169,7 +126,6 @@ export function buildRootObject(vatPowers) {
           privateObjects,
           handyObjects,
         );
-        delete replObjects.home.LOADING;
       }
     },
 
@@ -240,6 +196,11 @@ export function buildRootObject(vatPowers) {
         }
 
         if (dispatcher === 'onMessage') {
+          D(commandDevice).sendResponse(
+            count,
+            false,
+            harden({ type: 'doesNotUnderstand', obj }),
+          );
           throw Error(`No handler for ${url} ${type}`);
         }
         D(commandDevice).sendResponse(count, false, harden(true));

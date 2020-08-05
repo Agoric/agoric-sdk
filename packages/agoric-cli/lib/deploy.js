@@ -23,9 +23,18 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const console = anylogger('agoric:deploy');
 
   const args = rawArgs.slice(1);
+  const deps = opts.need
+    .split(',')
+    .map(dep => dep.trim())
+    .filter(dep => dep);
 
-  if (args.length === 0) {
-    console.error('you must specify at least one deploy.js to run');
+  const init = opts.provide
+    .split(',')
+    .map(dep => dep.trim())
+    .filter(dep => dep);
+
+  if (args.length === 0 && !init.length) {
+    console.error('you must specify at least one deploy.js (or --init=XXX)');
     return 1;
   }
 
@@ -69,8 +78,26 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
         // Wait for the chain to become ready.
         let bootP = getBootstrap();
-        const loaded = await E.G(bootP).LOADING;
-        console.debug('Chain loaded:', loaded);
+        let lastUpdateCount;
+        let stillLoading = [...deps].sort();
+        while (stillLoading.length) {
+          // Wait for the notifier to report a new state.
+          console.warn('need:', stillLoading.join(', '));
+          const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
+            lastUpdateCount,
+          );
+          lastUpdateCount = update.updateCount;
+          const nextLoading = [];
+          for (const dep of stillLoading) {
+            if (update.value.includes(dep)) {
+              // A dependency is still loading.
+              nextLoading.push(dep);
+            }
+          }
+          stillLoading = nextLoading;
+        }
+
+        console.debug(JSON.stringify(deps), 'loaded');
         // Take a new copy, since the chain objects have been added to bootstrap.
         bootP = getBootstrap();
 
@@ -78,7 +105,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           const moduleFile = path.resolve(process.cwd(), arg);
           const pathResolve = (...resArgs) =>
             path.resolve(path.dirname(moduleFile), ...resArgs);
-          console.log('running', moduleFile);
+          console.warn('running', moduleFile);
 
           // use a dynamic import to load the deploy script, it is unconfined
           // eslint-disable-next-line import/no-dynamic-require,global-require
@@ -94,6 +121,11 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
               pathResolve,
             });
           }
+        }
+
+        if (init.length) {
+          console.warn('provide:', init.join(', '));
+          await E(E.G(E.G(bootP).local).http).doneLoading(init);
         }
 
         console.debug('Done!');
