@@ -11,7 +11,7 @@ import '../internal-types';
 /** @type MakeSeatAdmin */
 export const makeSeatAdmin = (
   allSeatStagings,
-  zoeSeat,
+  zoeSeatAdmin,
   seatData,
   getAmountMath,
 ) => {
@@ -23,25 +23,25 @@ export const makeSeatAdmin = (
   let exited = false; // seat is "active"
 
   /** @type ZCFSeatAdmin */
-  const seatAdmin = harden({
+  const zcfSeatAdmin = harden({
     commit: seatStaging => {
       assert(
         allSeatStagings.has(seatStaging),
         details`The seatStaging ${seatStaging} was not recognized`,
       );
       currentAllocation = seatStaging.getStagedAllocation();
-      E(zoeSeat).replaceAllocation(currentAllocation);
+      E(zoeSeatAdmin).replaceAllocation(currentAllocation);
     },
   });
 
   /** @type {ZCFSeat} */
-  const seat = harden({
+  const zcfSeat = harden({
     exit: () => {
       exited = true;
-      E(zoeSeat).exit();
+      E(zoeSeatAdmin).exit();
     },
     kickOut: (msg = 'Kicked out of seat') => {
-      seat.exit();
+      zcfSeat.exit();
       assert.fail(msg);
     },
     getNotifier: () => notifier,
@@ -75,7 +75,7 @@ export const makeSeatAdmin = (
       );
 
       const seatStaging = {
-        getSeat: () => seat,
+        getSeat: () => zcfSeat,
         getStagedAllocation: () => allocation,
       };
       allSeatStagings.add(seatStaging);
@@ -83,5 +83,5 @@ export const makeSeatAdmin = (
     },
   });
 
-  return harden({ seat, seatAdmin });
+  return harden({ zcfSeat, zcfSeatAdmin });
 };

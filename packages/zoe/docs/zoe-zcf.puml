@@ -21,7 +21,7 @@ Zoe -> Zoe : createVat()
 Zoe -> Zcf : E(zcfRoot).executeContract
 Zcf -> Zcf : evalContractBundle()
 Zcf -> Zcf : makeZcf
-Zcf -> contract : execute(zcf)
+Zcf -> contract : start(zcf)
 contract -> Zcf : makeInvitation(...)
 Zcf -> Zoe : makeInvitation(...)
 note left
