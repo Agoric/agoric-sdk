@@ -184,7 +184,7 @@
  * @property {() => Issuer<'ZoeInvitation'>} getInvitationIssuer
  * @property {() => InstanceRecord } getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
- * @property {(brand: Brand) => AmountMath } getAmountMath
+ * @property {GetAmountMath} getAmountMath
  */
 
 /**
