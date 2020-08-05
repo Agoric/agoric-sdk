@@ -38,7 +38,7 @@
  * within its vat. The contract and ZCF never have direct access to
  * the users' payments or the Zoe purses.
  *
- * @property {() => Issuer} getInvitationIssuer
+ * @property {() => Issuer<'ZoeInvitation'>} getInvitationIssuer
  *
  * Zoe has a single `invitationIssuer` for the entirety of its
  * lifetime. By having a reference to Zoe, a user can get the
@@ -64,7 +64,7 @@
 /**
  * @callback Install
  * @param {SourceBundle} bundle
- * @returns Promise<Installation>
+ * @returns {Promise<Installation>}
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
@@ -72,7 +72,7 @@
 
 /**
  * @typedef {Object} UserSeat
- * @property {() => Promise<Allocation>} getAllocation
+ * @property {() => Promise<Allocation>} getCurrentAllocation
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
@@ -103,11 +103,22 @@
  */
 
 /**
+ * @typedef {Object} CreatorFacetWInstance
+ * @property {() => Instance} getInstance
+ */
+
+/**
+ * @typedef {Object} MakeInstanceResult
+ * @property {CreatorFacetWInstance & Record<string, Function>} creatorFacet
+ * @property {Payment<'ZoeInvitation'>} creatorInvitation
+ */
+
+/**
  * @callback MakeInstance 
  * @param {Installation} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
- * @returns {AdminFacet}
+ * @returns {MakeInstanceResult}
 
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
@@ -170,7 +181,7 @@
  * @property {MakeInvitation} makeInvitation
  * @property {Shutdown} shutdown
  * @property {() => ZoeService} getZoeService
- * @property {() => invitationIssuer} getInvitationIssuer
+ * @property {() => Issuer<'ZoeInvitation'>} getInvitationIssuer
  * @property {() => InstanceRecord } getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => AmountMath } getAmountMath

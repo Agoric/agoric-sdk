@@ -96,7 +96,7 @@
 /**
  * @typedef {Object} ZoeInstanceAdmin
  * @property {(invitationHandle: InvitationHandle, description:
- * string, customProperties?: {}) => Payment<'Invitation'>}
+ * string, customProperties?: {}) => Payment<'ZoeInvitation'>}
  * makeInvitation
  * @property {() => void} shutdown
  * @property {(issuerP: Issuer|Promise<Issuer>, keyword: Keyword) => void} saveIssuer
