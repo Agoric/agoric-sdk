@@ -14,7 +14,6 @@ import '@agoric/ertp/exported';
 import '../../exported';
 import '../internal-types';
 
-import { makeInstanceTable } from '../instanceTable';
 import { makeIssuerTable } from '../issuerTable';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
@@ -34,9 +33,6 @@ function makeZoe(vatAdminSvc) {
   const issuerTable = makeIssuerTable();
   /** @type {Set<Installation>} */
   const installations = new Set();
-
-  // Instance state accessible to anyone who has the instance
-  const instanceTable = makeInstanceTable();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
@@ -65,9 +61,9 @@ function makeZoe(vatAdminSvc) {
     install,
     getPublicFacet: instance =>
       instanceToInstanceAdmin.get(instance).getPublicFacet(),
-    getBrands: instance => instanceTable.get(instance).brandKeywordRecord,
-    getIssuers: instance => instanceTable.get(instance).issuerKeywordRecord,
-    getTerms: instance => instanceTable.get(instance).terms,
+    getBrands: instance => instanceToInstanceAdmin.get(instance).getBrands(),
+    getIssuers: instance => instanceToInstanceAdmin.get(instance).getIssuers(),
+    getTerms: instance => instanceToInstanceAdmin.get(instance).getTerms(),
     makeInstance: async (
       installation,
       uncleanIssuerKeywordRecord = harden({}),
@@ -101,7 +97,9 @@ function makeZoe(vatAdminSvc) {
       // issuer records to be available synchronously
       const issuerRecords = await getPromiseForIssuerRecords(issuerPs);
       issuerRecords.forEach(record => {
-        brandToPurse.init(record.brand, E(record.issuer).makeEmptyPurse());
+        if (!brandToPurse.has(record.brand)) {
+          brandToPurse.init(record.brand, E(record.issuer).makeEmptyPurse());
+        }
       });
 
       const instanceRecord = {
@@ -116,13 +114,6 @@ function makeZoe(vatAdminSvc) {
         installation,
         terms,
       };
-
-      const instanceTableRecord = harden({
-        issuerKeywordRecord: instanceRecord.issuerKeywordRecord,
-        brandKeywordRecord: instanceRecord.brandKeywordRecord,
-        terms,
-      });
-      instanceTable.create(instanceTableRecord, instance);
 
       const createVatResult = await E(vatAdminSvc).createVat(zcfContractBundle);
       const { adminNode, root } = createVatResult;
@@ -168,11 +159,9 @@ function makeZoe(vatAdminSvc) {
                 ...instanceRecord.brandKeywordRecord,
                 [keyword]: brand,
               };
-              brandToPurse.init(brand, E(issuer).makeEmptyPurse());
-              instanceTable.update(instance, {
-                issuerKeywordRecord: instanceRecord.issuerKeywordRecord,
-                brandKeywordRecord: instanceRecord.brandKeywordRecord,
-              });
+              if (!brandToPurse.has(brand)) {
+                brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+              }
             }),
         shutdown: () => {
           exitAllSeats();
@@ -208,6 +197,9 @@ function makeZoe(vatAdminSvc) {
         },
         removeSeatAdmin: seatAdmin => seatAdmins.delete(seatAdmin),
         getPublicFacet: () => publicFacet,
+        getTerms: () => instanceRecord.terms,
+        getIssuers: () => instanceRecord.issuerKeywordRecord,
+        getBrands: () => instanceRecord.brandKeywordRecord,
         getInstance: () => instance,
       };
 

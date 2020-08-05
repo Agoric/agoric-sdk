@@ -83,6 +83,9 @@
  * @property {(seatAdmin: ZoeSeat) => void} removeSeatAdmin
  * @property {() => Instance} getInstance
  * @property {() => PublicFacet} getPublicFacet
+ * @property {() => IssuerKeywordRecord} getIssuers
+ * @property {() => BrandKeywordRecord} getBrands
+ * @property {() => Object} getTerms
  */
 
 /**
