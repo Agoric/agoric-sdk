@@ -67,7 +67,6 @@ export default async function deployWallet(
       if (issuerToPetname.has(issuer)) {
         return issuerToPetname.get(issuer);
       }
-      console.log('setting petname of', issuer, 'to', issuerPetname);
       issuerToPetname.set(issuer, issuerPetname);
       await E(wallet).addIssuer(issuerPetname, issuer);
       return issuerToPetname.get(issuer);
@@ -78,27 +77,40 @@ export default async function deployWallet(
     paymentInfo.map(async ({ pursePetname, issuer, payment, purse }) => {
       const issuerPetname = issuerToPetname.get(issuer);
 
+      let paymentP;
+
+      if (!payment && purse) {
+        // Withdraw the payment from the purse.
+        paymentP = E(purse)
+          .getCurrentAmount()
+          .then(amount => E(purse).withdraw(amount));
+      } else {
+        paymentP = E(issuer).isLive(payment).then(isLive => isLive && payment);
+      }
+
+      payment = await paymentP;
+      if (!payment) {
+        return;
+      }
+      const amount = await E(issuer).getAmountOf(payment);
+
+      // TODO: Use AmountMath.
+      const isEmpty = amount.value === 0 || (Array.isArray(amount.value) && !amount.value.length);
+      if (isEmpty) {
+        return;
+      }
       if (!issuerToPursePetnameP.has(issuer)) {
         issuerToPursePetnameP.set(
           issuer,
           E(wallet)
             .makeEmptyPurse(issuerPetname, pursePetname)
-            .then(_ => pursePetname),
+            .then(_ => pursePetname, _ => pursePetname),
         );
       }
       pursePetname = await issuerToPursePetnameP.get(issuer);
 
-      let paymentP = payment;
-      if (!paymentP) {
-        // Withdraw the payment from the purse.
-        paymentP = E(purse)
-          .getCurrentAmount()
-          .then(amount => E(purse).withdraw(amount));
-      }
-
       // Deposit payment.
-      const p = await paymentP;
-      await E(wallet).deposit(pursePetname, p);
+      await E(wallet).deposit(pursePetname, payment);
     }),
   );
 
@@ -108,5 +120,5 @@ export default async function deployWallet(
   await E(http).registerWallet(wallet, walletURLHandler, bridgeURLHandler);
   await E(walletVat).setHTTPObject(http);
   await E(walletVat).setPresences();
-  console.log('Deployed @agoric/wallet-frontend!');
+  console.log('Deployed Wallet!');
 }
