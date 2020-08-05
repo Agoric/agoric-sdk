@@ -51,7 +51,9 @@
  * @property {MakeInstance} makeInstance
  * @property {Offer} offer
  * @property {(Instance) => Object} getPublicFacet
- *
+ * @property {IssuerKeywordRecord} getIssuers
+ * @property {BrandKeywordRecord} getBrands
+ * @property {Object=} getTerms
  */
 
 /**

@@ -2,12 +2,15 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-// noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
+import {
+  installationPFromSource,
+  assertPayout,
+  assertOfferResult,
+  getInviteFields,
+} from '../../zoeTestHelpers';
 
 const barter = `${__dirname}/../../../src/contracts/barterExchange`;
 
@@ -24,11 +27,7 @@ test('barter with valid offers', async t => {
     zoe,
   } = setup();
   const inviteIssuer = zoe.getInvitationIssuer();
-
-  // Pack the contract.
-  const bundle = await bundleSource(barter);
-
-  const installation = await zoe.install(bundle);
+  const installation = await installationPFromSource(zoe, barter);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -47,12 +46,8 @@ test('barter with valid offers', async t => {
     Price: simoleanIssuer,
   });
   const publicFacet = await E(creatorFacet).getPublicFacet();
-  const getInviteValue = iP =>
-    E(inviteIssuer)
-      .getAmountOf(iP)
-      .then(amount => amount.value[0]);
   const simonInvite = await E(publicFacet).makeInvite();
-  const { instance } = await getInviteValue(simonInvite);
+  const { instance } = await getInviteFields(simonInvite);
 
   const aliceInvite = await E(E(zoe).getPublicFacet(instance)).makeInvite();
 
@@ -72,16 +67,13 @@ test('barter with valid offers', async t => {
     alicePayments,
   );
 
-  aliceSeat.getOfferResult().then(
-    result => t.equals(result, 'Trade completed.'),
-    e => t.fail(`expecting Alice's offer to have been accepted ${e}`),
-  );
+  assertOfferResult(t, aliceSeat, 'Trade completed.');
 
   const bobInvite = await E(E(zoe).getPublicFacet(instance)).makeInvite();
   const {
     installation: bobInstallation,
     instance: bobInstance,
-  } = await getInviteValue(bobInvite);
+  } = await getInviteFields(bobInvite);
 
   // 4: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
@@ -110,10 +102,7 @@ test('barter with valid offers', async t => {
     Out: bobMoolaPayout,
   } = await bobSeat.getPayouts();
 
-  bobSeat.getOfferResult().then(
-    result => t.equals(result, 'Trade completed.'),
-    e => t.fail(`expecting Bob's offer to have been accepted ${e}`),
-  );
+  assertOfferResult(t, bobSeat, 'Trade completed.');
 
   const {
     In: aliceMoolaPayout,
@@ -134,24 +123,12 @@ test('barter with valid offers', async t => {
   t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
   // 6: Alice deposits her payout to ensure she can
-  // Alice had 3 moola and 0 simoleans.
-  aliceMoolaPayout.then(payment => {
-    aliceMoolaPurse.deposit(payment);
-    t.equals(aliceMoolaPurse.getCurrentAmount().value, 0);
-  });
-  aliceSimoleanPayout.then(payment => {
-    aliceSimoleanPurse.deposit(payment);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 4);
-  });
+  // Alice had 0 moola and 4 simoleans.
+  assertPayout(t, aliceMoolaPayout, aliceMoolaPurse, 0);
+  assertPayout(t, aliceSimoleanPayout, aliceSimoleanPurse, 4);
 
   // 7: Bob deposits his original payments to ensure he can
-  // Bob had 0 moola and 7 simoleans.
-  bobMoolaPayout.then(payment => {
-    bobMoolaPurse.deposit(payment);
-    t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
-  });
-  bobSimoleanPayout.then(payment => {
-    bobSimoleanPurse.deposit(payment);
-    t.equals(bobSimoleanPurse.getCurrentAmount().value, 3);
-  });
+  // Bob had 3 moola and 3 simoleans.
+  assertPayout(t, bobMoolaPayout, bobMoolaPurse, 3);
+  assertPayout(t, bobSimoleanPayout, bobSimoleanPurse, 3);
 });
