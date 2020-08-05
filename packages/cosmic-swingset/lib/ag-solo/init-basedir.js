@@ -6,13 +6,19 @@ import anylogger from 'anylogger';
 
 const log = anylogger('ag-solo:init');
 
+const DEFAULT_WALLET = '@agoric/wallet-frontend';
+
 export default function initBasedir(
   basedir,
   webport,
   webhost,
   subdir,
   egresses,
+  opts = {},
 ) {
+  const { wallet = DEFAULT_WALLET, ...options } = opts;
+  options.wallet = wallet;
+
   const here = __dirname;
   try {
     fs.mkdirSync(basedir);
@@ -39,31 +45,8 @@ export default function initBasedir(
       fs.copyFileSync(path.join(srcHtmldir, name), path.join(dstHtmldir, name));
     });
 
-  // Symlink the wallet.
-  let agWallet;
-  try {
-    agWallet = path.resolve(__dirname, '../../../wallet-frontend');
-    let walletBuild = path.join(agWallet, 'build');
-    if (!fs.existsSync(agWallet)) {
-      const pjs = require.resolve('@agoric/wallet-frontend/package.json');
-      agWallet = path.dirname(pjs);
-      walletBuild = path.join(agWallet, 'build');
-      fs.statSync(walletBuild);
-    }
-    fs.symlinkSync(walletBuild, `${dstHtmldir}/wallet`);
-  } catch (e) {
-    console.warn(
-      `${agWallet} does not exist; you may want to run 'yarn build' in 'wallet-frontend'`,
-    );
-  }
-
-  const walletDeploy = path.join(agWallet, 'wallet-deploy.js');
-  try {
-    fs.statSync(walletDeploy);
-    fs.symlinkSync(walletDeploy, path.join(basedir, 'wallet-deploy.js'));
-  } catch (e) {
-    console.warn(`${walletDeploy} does not exist; cannot autodeploy wallet`);
-  }
+  // Save the configuration options.
+  fs.writeFileSync(path.join(basedir, 'options.json'), JSON.stringify(options));
 
   // Save our version codes.
   const pj = 'package.json';

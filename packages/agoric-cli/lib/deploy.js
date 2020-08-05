@@ -23,15 +23,15 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const console = anylogger('agoric:deploy');
 
   const args = rawArgs.slice(1);
-  const deps = opts.need
-    .split(',')
-    .map(dep => dep.trim())
-    .filter(dep => dep);
-
   const init = opts.provide
     .split(',')
     .map(dep => dep.trim())
     .filter(dep => dep);
+
+  const deps = opts.need
+    .split(',')
+    .map(dep => dep.trim())
+    .filter(dep => dep && !init.includes(dep));
 
   if (args.length === 0 && !init.length) {
     console.error('you must specify at least one deploy.js (or --init=XXX)');

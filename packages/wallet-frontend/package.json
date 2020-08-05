@@ -5,6 +5,10 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "homepage": ".",
+  "agoric-wallet": {
+    "htmlBasedir": "./build",
+    "deploy": "./wallet-deploy.js"
+  },
   "scripts": {
     "clean": "rimraf ./build",
     "lint-check": "exit 0",

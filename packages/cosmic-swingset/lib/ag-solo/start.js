@@ -38,6 +38,7 @@ const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
 const rename = promisify(fs.rename);
 const unlink = promisify(fs.unlink);
+const symlink = promisify(fs.symlink);
 
 async function atomicReplaceFile(filename, contents) {
   const info = await new Promise((resolve, reject) => {
@@ -301,14 +302,43 @@ export default async function start(basedir, argv) {
   // Start timer here!
   startTimer(1200);
 
+  // Remove wallet traces.
+  await unlink('html/wallet').catch(_ => {});
+
   log.info(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
 
-  if (hostport) {
-    const agoricCli = require.resolve('.bin/agoric');
+  if (!hostport) {
+    return;
+  }
 
-    const makeHandler = (onSuccess = undefined) => (err, _stdout, stderr) => {
+  const { wallet } = JSON.parse(fs.readFileSync('options.json', 'utf-8'));
+
+  // Symlink the wallet.
+  const pjs = require.resolve(`${wallet}/package.json`);
+  const {
+    'agoric-wallet': {
+      htmlBasedir = 'ui/build',
+      deploy = ['contract/deploy.js', 'api/deploy.js'],
+    } = {},
+  } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
+
+  const agWallet = path.dirname(pjs);
+  const agWalletHtml = path.resolve(agWallet, htmlBasedir);
+
+  const deploys = typeof deploy === 'string' ? [deploy] : deploy;
+  // TODO: Shell-quote the deploy list.
+  const agWalletDeploy = deploys
+    .map(dep => path.resolve(agWallet, dep))
+    .join(' ');
+
+  const agoricCli = require.resolve('.bin/agoric');
+
+  // Launch the agoric wallet deploys (if any).
+  exec(
+    `${agoricCli} deploy --provide=wallet --hostport=${hostport} ${agWalletDeploy}`,
+    (err, _stdout, stderr) => {
       if (err) {
         console.error(err);
         return;
@@ -317,23 +347,10 @@ export default async function start(basedir, argv) {
         // Report the error.
         process.stderr.write(stderr);
       }
-      onSuccess && onSuccess();
-    };
-
-    if (fs.existsSync('./wallet-deploy.js')) {
-      // Install the wallet.
-      // Launch the agoric deploy, letting it synchronize with the chain but not wait
-      // until open for business.
-      exec(
-        `${agoricCli} deploy --need=agoric --provide=wallet --hostport=${hostport} ./wallet-deploy.js`,
-        makeHandler(),
-      );
-    } else {
-      // No need to wait for the wallet, just open for business.
-      exec(
-        `${agoricCli} deploy --need= --provide=wallet --hostport=${hostport}`,
-        makeHandler(),
-      );
-    }
-  }
+      // Now that the deploy is done, link the wallet!
+      symlink(agWalletHtml, 'html/wallet').catch(e => {
+        console.error('Cannot link html/wallet:', e);
+      });
+    },
+  );
 }
