@@ -53,7 +53,7 @@
  * @property {(Instance) => Object} getPublicFacet
  * @property {(Instance) => IssuerKeywordRecord} getIssuers
  * @property {(Instance) => BrandKeywordRecord} getBrands
- * @property {() => Object} getTerms
+ * @property {(Instance) => Object} getTerms
  */
 
 /**
