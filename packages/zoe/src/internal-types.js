@@ -30,7 +30,7 @@
  */
 
 /**
- * @typedef {Object} ZoeSeat
+ * @typedef {Object} ZoeSeatAdmin
  * @property {() => void} exit - exit seat
  * @property {(replacementAllocation: Allocation) => void} replaceAllocation - replace the
  * currentAllocation with this allocation
@@ -53,11 +53,11 @@
  * @callback MakeSeatAdmin
  * @param {Set<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
- * @param {ZoeSeat} zoeSeat - a presence from Zoe such that ZCF can tell Zoe
+ * @param {ZoeSeatAdmin} zoeSeatAdmin - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
  * @param {(brand: Brand) => AmountMath} getAmountMath
- * @returns {{seatAdmin: ZCFSeatAdmin, seat: ZCFSeat}}
+ * @returns {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}}
  */
 
 /**
@@ -68,9 +68,9 @@
 
 /**
  * @typedef {Object} InstanceAdmin
- * @property {(invitationHandle: InvitationHandle, seatAdmin:
- * ZoeSeat, seatData: SeatData) => Promise<AddSeatResult>} addSeatAdmin
- * @property {(seatAdmin: ZoeSeat) => void} removeSeatAdmin
+ * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin:
+ * ZoeSeatAdmin, seatData: SeatData) => Promise<AddSeatResult>} addZoeSeatAdmin
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
  * @property {() => PublicFacet} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
@@ -80,7 +80,8 @@
 
 /**
  * @typedef {Object} AddSeatObj
- * @property {(invitationHandle, zoeSeat, seatData) => AddSeatResult} addSeat
+ * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin:
+ * ZoeSeatAdmin, seatData: SeatData) => AddSeatResult} addSeat
  */
 
 /**
@@ -131,7 +132,7 @@
 /**
  * @callback MakeExitObj
  * @param {ProposalRecord} proposal
- * @param {ZoeSeat} zoeSeat
+ * @param {ZoeSeatAdmin} zoeSeatAdmin
  */
 
 /**

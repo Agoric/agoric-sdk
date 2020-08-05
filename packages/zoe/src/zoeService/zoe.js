@@ -84,7 +84,7 @@ function makeZoe(vatAdminSvc) {
         details`${installation} was not a valid installation`,
       );
 
-      const seatAdmins = new Set();
+      const zoeSeatAdmins = new Set();
       const instance = harden({});
 
       const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
@@ -121,7 +121,7 @@ function makeZoe(vatAdminSvc) {
       const zcfRoot = root;
 
       const exitAllSeats = () =>
-        seatAdmins.forEach(seatAdmin => seatAdmin.exit());
+        zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit());
 
       E(adminNode)
         .done()
@@ -191,11 +191,15 @@ function makeZoe(vatAdminSvc) {
 
       /** @type {InstanceAdmin} */
       const instanceAdmin = {
-        addSeatAdmin: async (invitationHandle, seatAdmin, seatData) => {
-          seatAdmins.add(seatAdmin);
-          return E(addSeatObj).addSeat(invitationHandle, seatAdmin, seatData);
+        addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
+          zoeSeatAdmins.add(zoeSeatAdmin);
+          return E(addSeatObj).addSeat(
+            invitationHandle,
+            zoeSeatAdmin,
+            seatData,
+          );
         },
-        removeSeatAdmin: seatAdmin => seatAdmins.delete(seatAdmin),
+        removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
         getPublicFacet: () => publicFacet,
         getTerms: () => instanceRecord.terms,
         getIssuers: () => instanceRecord.issuerKeywordRecord,
@@ -206,7 +210,10 @@ function makeZoe(vatAdminSvc) {
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       // Actually returned to the user.
-      return { creatorFacet: creatorFacetWInstance, creatorInvitation };
+      return {
+        creatorFacet: creatorFacetWInstance,
+        creatorInvitation: await creatorInvitation,
+      };
     },
     offer: async (
       invitation,
@@ -253,8 +260,8 @@ function makeZoe(vatAdminSvc) {
 
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
-          /** @type {ZoeSeat} */
-          const seatAdmin = {
+          /** @type {ZoeSeatAdmin} */
+          const zoeSeatAdmin = {
             replaceAllocation: replacementAllocation => {
               harden(replacementAllocation);
               // Merging happens in ZCF, so replacementAllocation can
@@ -264,7 +271,7 @@ function makeZoe(vatAdminSvc) {
             },
             exit: () => {
               updater.finish(undefined);
-              instanceAdmin.removeSeatAdmin(seatAdmin);
+              instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
 
               /** @type {PaymentPKeywordRecord} */
               const payout = {};
@@ -278,7 +285,7 @@ function makeZoe(vatAdminSvc) {
               payoutPromiseKit.resolve(payout);
             },
           };
-          harden(seatAdmin);
+          harden(zoeSeatAdmin);
 
           /** @type {UserSeat} */
           const userSeat = {
@@ -295,7 +302,7 @@ function makeZoe(vatAdminSvc) {
           const seatData = harden({ proposal, initialAllocation, notifier });
 
           instanceAdmin
-            .addSeatAdmin(invitationHandle, seatAdmin, seatData)
+            .addZoeSeatAdmin(invitationHandle, zoeSeatAdmin, seatData)
             .then(({ offerResultP, exitObj }) => {
               offerResultPromiseKit.resolve(offerResultP);
               exitObjPromiseKit.resolve(exitObj);

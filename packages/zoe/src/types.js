@@ -113,7 +113,7 @@
  * @param {Installation} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
- * @returns {MakeInstanceResult}
+ * @returns {Promise<MakeInstanceResult>}
 
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,

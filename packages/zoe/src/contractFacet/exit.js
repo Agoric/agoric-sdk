@@ -2,7 +2,7 @@ import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 /** @type MakeExitObj */
-export const makeExitObj = (proposal, zoeSeat) => {
+export const makeExitObj = (proposal, zoeSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
 
   /** @type {ExitObj | undefined} */
@@ -13,7 +13,7 @@ export const makeExitObj = (proposal, zoeSeat) => {
     E(proposal.exit.afterDeadline.timer).setWakeup(
       proposal.exit.afterDeadline.deadline,
       harden({
-        wake: () => E(zoeSeat).exit(),
+        wake: () => E(zoeSeatAdmin).exit(),
       }),
     );
   } else if (exitKind === 'onDemand') {
@@ -23,7 +23,7 @@ export const makeExitObj = (proposal, zoeSeat) => {
     // data) and presences (local proxies for objects that may have
     // methods).
     exitObj = {
-      exit: () => E(zoeSeat).exit(),
+      exit: () => E(zoeSeatAdmin).exit(),
     };
   } else {
     // if exitKind is 'waived' the user has no ability to exit their seat

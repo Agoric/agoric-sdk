@@ -35,7 +35,7 @@ export function buildRootObject() {
     const getAmountMath = brand => issuerTable.get(brand).amountMath;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
-    const seatToSeatAdmin = makeWeakStore('seat');
+    const seatToZCFSeatAdmin = makeWeakStore('seat');
 
     const issuers = Object.values(instanceRecord.issuerKeywordRecord);
 
@@ -87,7 +87,7 @@ export function buildRootObject() {
         // Commit the staged allocations and inform Zoe of the
         // newAllocation.
         seatStagings.forEach(seatStaging =>
-          seatToSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
+          seatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
         );
       },
       saveIssuer: (issuerP, keyword) => {
@@ -152,20 +152,20 @@ export function buildRootObject() {
     // can tell us about new seats.
     /** @type AddSeatObj */
     const addSeatObj = {
-      addSeat: (invitationHandle, zoeSeat, seatData) => {
-        const { seatAdmin, seat } = makeSeatAdmin(
+      addSeat: (invitationHandle, zoeSeatAdmin, seatData) => {
+        const { zcfSeatAdmin, zcfSeat } = makeSeatAdmin(
           allSeatStagings,
-          zoeSeat,
+          zoeSeatAdmin,
           seatData,
           getAmountMath,
         );
-        seatToSeatAdmin.init(seat, seatAdmin);
+        seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
-        const offerResultP = E(offerHandler)(seat).catch(err => {
-          seat.exit();
+        const offerResultP = E(offerHandler)(zcfSeat).catch(err => {
+          zcfSeat.exit();
           throw err;
         });
-        const exitObj = makeExitObj(seatData.proposal, zoeSeat);
+        const exitObj = makeExitObj(seatData.proposal, zoeSeatAdmin);
         /** @type AddSeatResult */
         const addSeatResult = { offerResultP, exitObj };
         return harden(addSeatResult);
