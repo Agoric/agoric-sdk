@@ -51,9 +51,9 @@
  * @property {MakeInstance} makeInstance
  * @property {Offer} offer
  * @property {(Instance) => Object} getPublicFacet
- * @property {IssuerKeywordRecord} getIssuers
- * @property {BrandKeywordRecord} getBrands
- * @property {Object=} getTerms
+ * @property {(Instance) => IssuerKeywordRecord} getIssuers
+ * @property {(Instance) => BrandKeywordRecord} getBrands
+ * @property {(Instance) => Object} getTerms
  */
 
 /**
@@ -248,7 +248,7 @@
  * is running, to get statistics, or to be notified when it terminates. The
  * VatAdmin object is only available to the contract from within the contract so
  * that clients of the contract can tell (by getting the source code from Zoe
- * using the instanceHandle) what use the contract makes of it. If they want to
+ * using the installation) what use the contract makes of it. If they want to
  * be assured of discretion, or want to know that the contract doesn't have the
  * ability to call terminate(), Zoe makes this visible.
  *
