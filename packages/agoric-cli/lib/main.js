@@ -107,12 +107,22 @@ const main = async (progname, rawArgs, powers) => {
     });
 
   program
-    .command('deploy <script...>')
+    .command('deploy [script...]')
     .description('run a deployment script against the local Agoric VM')
     .option(
-      '--hostport <HOST:PORT>',
+      '--hostport <host:port>',
       'host and port to connect to VM',
       '127.0.0.1:8000',
+    )
+    .option(
+      '--need <subsystems>',
+      'comma-separated names of subsystems to wait for',
+      'agoric,wallet',
+    )
+    .option(
+      '--provide <subsystems>',
+      'comma-separated names of subsystems this script initializes',
+      '',
     )
     .action(async (scripts, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
@@ -136,6 +146,11 @@ const main = async (progname, rawArgs, powers) => {
     .option(
       '--inspect-brk [host[:port]]',
       'activate inspector on host:port and break at start of script (default: "127.0.0.1:9229")',
+    )
+    .option(
+      '--wallet <package>',
+      'install the wallet from NPM package <package>',
+      '@agoric/wallet-frontend',
     )
     .action(async (profile, args, cmd) => {
       await isNotBasedir();

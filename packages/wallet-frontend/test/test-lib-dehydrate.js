@@ -4,7 +4,7 @@ import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { makeDehydrator } from '../../lib/ag-solo/vats/lib-dehydrate';
+import { makeDehydrator } from '../lib/lib-dehydrate';
 
 test('makeDehydrator', async t => {
   try {

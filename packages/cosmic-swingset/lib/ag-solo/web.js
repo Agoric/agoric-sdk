@@ -192,7 +192,15 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       ).finally(() => channels.delete(channelID));
     });
 
-    inboundCommand({ type: 'ws/meta' }, { ...meta, dispatcher: 'onOpen' }, id);
+    // Close and throw if the open handler gives an error.
+    inboundCommand(
+      { type: 'ws/meta' },
+      { ...meta, dispatcher: 'onOpen' },
+      id,
+    ).catch(e => {
+      log(id, 'error opening connection:', e);
+      ws.close();
+    });
 
     ws.on('message', async message => {
       let obj = {};

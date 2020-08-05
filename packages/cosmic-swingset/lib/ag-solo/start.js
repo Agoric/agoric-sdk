@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 // import { createHash } from 'crypto';
 
@@ -37,6 +38,7 @@ const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
 const rename = promisify(fs.rename);
 const unlink = promisify(fs.unlink);
+const symlink = promisify(fs.symlink);
 
 async function atomicReplaceFile(filename, contents) {
   const info = await new Promise((resolve, reject) => {
@@ -246,6 +248,7 @@ export default async function start(basedir, argv) {
     startTimer,
   } = d;
 
+  let hostport;
   await Promise.all(
     connections.map(async c => {
       switch (c.type) {
@@ -282,6 +285,7 @@ export default async function start(basedir, argv) {
           if (broadcastJSON) {
             throw new Error(`duplicate type=http in connections.json`);
           }
+          hostport = `${c.host}:${c.port}`;
           broadcastJSON = await makeHTTPListener(
             basedir,
             c.port,
@@ -298,7 +302,55 @@ export default async function start(basedir, argv) {
   // Start timer here!
   startTimer(1200);
 
+  // Remove wallet traces.
+  await unlink('html/wallet').catch(_ => {});
+
   log.info(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
+
+  if (!hostport) {
+    return;
+  }
+
+  const { wallet } = JSON.parse(fs.readFileSync('options.json', 'utf-8'));
+
+  // Symlink the wallet.
+  const pjs = require.resolve(`${wallet}/package.json`);
+  const {
+    'agoric-wallet': {
+      htmlBasedir = 'ui/build',
+      deploy = ['contract/deploy.js', 'api/deploy.js'],
+    } = {},
+  } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
+
+  const agWallet = path.dirname(pjs);
+  const agWalletHtml = path.resolve(agWallet, htmlBasedir);
+
+  const deploys = typeof deploy === 'string' ? [deploy] : deploy;
+  // TODO: Shell-quote the deploy list.
+  const agWalletDeploy = deploys
+    .map(dep => path.resolve(agWallet, dep))
+    .join(' ');
+
+  const agoricCli = require.resolve('.bin/agoric');
+
+  // Launch the agoric wallet deploys (if any).
+  exec(
+    `${agoricCli} deploy --provide=wallet --hostport=${hostport} ${agWalletDeploy}`,
+    (err, _stdout, stderr) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      if (stderr) {
+        // Report the error.
+        process.stderr.write(stderr);
+      }
+      // Now that the deploy is done, link the wallet!
+      symlink(agWalletHtml, 'html/wallet').catch(e => {
+        console.error('Cannot link html/wallet:', e);
+      });
+    },
+  );
 }

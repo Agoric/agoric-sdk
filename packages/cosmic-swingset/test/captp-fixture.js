@@ -42,8 +42,7 @@ export function makeFixture() {
       ws = new WebSocket(`ws://localhost:${PORT}/private/captp`, {
         origin: `http://localhost:${PORT}`,
       });
-      ws.on('open', () => {
-        process.stdout.write('\n');
+      ws.on('open', async () => {
         // Create a CapTP connection.
         const { abort, dispatch, getBootstrap } = makeCapTP(
           'test fixture',
@@ -53,10 +52,29 @@ export function makeFixture() {
         ws.on('message', data => {
           dispatch(JSON.parse(data));
         });
-        const homeP = getBootstrap();
+        const bootP = getBootstrap();
         // Wait until the chain bundle is loaded, then take a new copy
         // since the chain objects have been added to bootstrap.
-        E.G(homeP).LOADING.then(_ => resolve(getBootstrap()), reject);
+        let lastUpdateCount;
+        for (;;) {
+          process.stdout.write('o');
+          // eslint-disable-next-line no-await-in-loop
+          const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
+            lastUpdateCount,
+          );
+          if (
+            !update.value.find(subsys => ['agoric', 'wallet'].includes(subsys))
+          ) {
+            // We didn't find the wallet or agoric waiting.
+            break;
+          }
+
+          // Still need to wait.
+          lastUpdateCount = update.updateCount;
+        }
+
+        process.stdout.write('\n');
+        resolve(getBootstrap());
       });
       ws.on('error', () => {
         if (abortCapTP) {

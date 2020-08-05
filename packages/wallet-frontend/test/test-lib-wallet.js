@@ -12,8 +12,8 @@ import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeRegistrar } from '@agoric/registrar';
 
 import { E } from '@agoric/eventual-send';
-import { makeWallet } from '../../lib/ag-solo/vats/lib-wallet';
-import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
+import { makeWallet } from '../lib/lib-wallet';
+import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
 
 const setupTest = async () => {
   const pursesStateChangeLog = [];
