@@ -1,9 +1,11 @@
 // @ts-check
 
 import makeStore from '@agoric/store';
-import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
-
 import '../../exported';
+
+// Eventually will be importable from '@agoric/zoe-contract-support'
+import { trade } from '../contractSupport';
+import { satisfies } from '../contractSupport/zoeHelpers';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
@@ -16,15 +18,13 @@ import '../../exported';
  * successful trader gets their `want` and may trade with counter-parties who
  * specify any amount up to their specified `give`.
  *
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
+const start = (zcf, _terms) => {
   // bookOrders is a Map of Maps. The first key is the brand of the offer's
   // GIVE, and the second key is the brand of its WANT. For each offer, we
   // store its handle and the amounts for `give` and `want`.
   const bookOrders = makeStore('bookOrders');
-
-  const { satisfies, trade } = makeZoeHelpers(zcf);
 
   function lookupBookOrders(brandIn, brandOut) {
     if (!bookOrders.has(brandIn)) {
@@ -42,8 +42,8 @@ const makeContract = zcf => {
   function findMatchingTrade(newDetails, orders) {
     return orders.find(order => {
       return (
-        satisfies(newDetails.offerHandle, { Out: order.amountIn }) &&
-        satisfies(order.offerHandle, { Out: newDetails.amountIn })
+        satisfies(zcf, newDetails.offerSeat, { Out: order.amountIn }) &&
+        satisfies(zcf, order.offerSeat, { Out: newDetails.amountIn })
       );
     });
   }
@@ -65,8 +65,9 @@ const makeContract = zcf => {
     if (matchingTrade) {
       // reallocate by giving each side what it wants
       trade(
+        zcf,
         {
-          offerHandle: matchingTrade.offerHandle,
+          seat: matchingTrade.offerSeat,
           gains: {
             Out: matchingTrade.amountOut,
           },
@@ -75,7 +76,7 @@ const makeContract = zcf => {
           },
         },
         {
-          offerHandle: offerDetails.offerHandle,
+          seat: offerDetails.offerSeat,
           gains: {
             Out: offerDetails.amountOut,
           },
@@ -85,7 +86,8 @@ const makeContract = zcf => {
         },
       );
       removeFromOrders(matchingTrade);
-      zcf.complete([offerDetails.offerHandle, matchingTrade.offerHandle]);
+      offerDetails.offerSeat.exit();
+      matchingTrade.offerSeat.exit();
 
       return true;
     }
@@ -100,35 +102,41 @@ const makeContract = zcf => {
     orders.push(offerDetails);
   }
 
-  function extractOfferDetails(offerHandle) {
+  function extractOfferDetails(offerSeat) {
     const {
       give: { In: amountIn },
       want: { Out: amountOut },
-    } = zcf.getOffer(offerHandle).proposal;
+    } = offerSeat.getProposal();
 
     return {
-      offerHandle,
+      offerSeat,
       amountIn,
       amountOut,
     };
   }
-  const exchangeOfferHook = offerHandle => {
-    const offerDetails = extractOfferDetails(offerHandle);
+
+  /** @type {OfferHandler} */
+  const exchangeOfferHandler = offerSeat => {
+    const offerDetails = extractOfferDetails(offerSeat);
 
     if (!tradeWithMatchingOffer(offerDetails)) {
       addToBook(offerDetails);
     }
 
-    return defaultAcceptanceMsg;
+    return 'Trade completed.';
   };
 
   const makeExchangeInvite = () =>
-    zcf.makeInvitation(exchangeOfferHook, 'exchange');
+    zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
-  zcf.initPublicAPI(harden({ makeInvite: makeExchangeInvite }));
+  const inviteFacet = harden({ makeInvite: makeExchangeInvite });
+  const creatorFacet = harden({
+    makeInvite: makeExchangeInvite,
+    getPublicFacet: () => inviteFacet,
+  });
 
-  return makeExchangeInvite();
+  return { publicFacet: inviteFacet, creatorFacet };
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

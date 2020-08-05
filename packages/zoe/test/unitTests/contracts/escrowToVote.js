@@ -15,7 +15,7 @@ import { makeZoeHelpers } from '../../../src/contractSupport';
  * issuerKeywordRecord. The instantiator gets the only Secretary
  * invite.
  *
- * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
+ * @typedef {import('../../../src/zoeService/zoe').ContractFacet} ContractFacet
  * @typedef {import('@agoric/ERTP').Amount} Amount
  * @param {ContractFacet} zcf
  */

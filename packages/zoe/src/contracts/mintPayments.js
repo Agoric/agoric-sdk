@@ -2,7 +2,7 @@
 // @ts-check
 
 import makeIssuerKit from '@agoric/ertp';
-import { makeZoeHelpers } from '../contractSupport';
+import { escrowAndAllocateTo } from '../contractSupport';
 
 import '../../exported';
 
@@ -21,61 +21,56 @@ import '../../exported';
  *
  * @param {ContractFacet} zcf
  */
-const makeContract = zcf => {
+const start = (zcf, _terms) => {
   // Create the internal token mint for a fungible digital asset
   const { issuer, mint, amountMath } = makeIssuerKit('tokens');
 
-  const zoeHelpers = makeZoeHelpers(zcf);
-
   // We need to tell Zoe about this issuer and add a keyword for the
   // issuer. Let's call this the 'Token' issuer.
-  return zcf.addNewIssuer(issuer, 'Token').then(() => {
+  return zcf.saveIssuer(issuer, 'Token').then(() => {
     // We need to wait for the promise to resolve (meaning that Zoe
     // has done the work of adding a new issuer).
-    const offerHook = offerHandle => {
-      // We will send everyone who makes an offer 1000 tokens
-
-      const tokens1000 = amountMath.make(1000);
-      const payment = mint.mintPayment(tokens1000);
+    const mintPayment = (extent = 1000) => seat => {
+      const amount = amountMath.make(extent);
+      const payment = mint.mintPayment(amount);
 
       // Let's use a helper function which escrows the payment with
       // Zoe, and reallocates to the recipientHandle.
-      return zoeHelpers
-        .escrowAndAllocateTo({
-          amount: tokens1000,
-          payment,
-          keyword: 'Token',
-          recipientHandle: offerHandle,
-        })
-        .then(() => {
-          // Complete the user's offer so that the user gets a payout
-          zcf.complete(harden([offerHandle]));
+      return escrowAndAllocateTo(
+        zcf,
+        seat,
+        { Token: amount },
+        { Token: payment },
+      ).then(() => {
+        // Exit the seat so the user gets a payout
+        seat.exit();
 
-          // Since the user is getting the payout through Zoe, we can
-          // return anything here. Let's return some helpful instructions.
-          return 'Offer completed. You should receive a payment from Zoe';
-        });
+        // Since the user is getting the payout through Zoe, we can
+        // return anything here. Let's return some helpful instructions.
+        return 'Offer completed. You should receive a payment from Zoe';
+      });
     };
 
-    // A function for making invites to this contract
-    const makeInvite = () => zcf.makeInvitation(offerHook, 'mint a payment');
+    const creatorFacet = {
+      // The creator of the instance can send invitations to anyone
+      // they wish to.
+      makeInvitation: extent =>
+        zcf.makeInvitation(mintPayment(extent), 'mint a payment'),
+      getTokenIssuer: () => issuer,
+    };
 
-    zcf.initPublicAPI(
-      harden({
-        // provide a way for anyone who knows the instanceHandle of
-        // the contract to make their own invite.
-        makeInvite,
-        // make the token issuer public. Note that only the mint can
-        // make new digital assets. The issuer is ok to make public.
-        getTokenIssuer: () => issuer,
-      }),
-    );
+    const publicFacet = {
+      // Make the token issuer public. Note that only the mint can
+      // make new digital assets. The issuer is ok to make public.
+      getTokenIssuer: () => issuer,
+    };
 
-    // return an invite to the creator of the contract instance
-    // through Zoe
-    return makeInvite();
+    // Return the creatorFacet to the creator, so they can make
+    // invitations for others to get payments of tokens. Publish the
+    // publicFacet.
+    return harden({ creatorFacet, publicFacet });
   });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

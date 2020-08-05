@@ -7,7 +7,9 @@
  */
 
 /**
- * @typedef {Object} Amount
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} Amount<BrandName>
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -36,7 +38,9 @@
  */
 
 /**
- * @typedef {Object} AmountMath
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} AmountMath<BrandName>
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
@@ -93,7 +97,9 @@
  */
 
 /**
- * @typedef {Object} Brand
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} Brand<BrandName>
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
  * as 'BTC' or 'moola') is provided by the maker of the issuer and should
@@ -103,7 +109,8 @@
  * cannot use the brand by itself to verify that a purported amount is
  * authentic, since the brand can be reused by a misbehaving issuer.
  *
- * @property {(issuer: Issuer) => boolean} isMyIssuer
+ * @property {(allegedIssuer: any) => boolean} isMyIssuer Should be used with
+ * `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  */
 
@@ -112,7 +119,9 @@
  */
 
 /**
- * @typedef {Object} Issuer
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} Issuer<BrandName>
  * The issuer cannot mint a new amount, but it can create empty purses and
  * payments. The issuer can also transform payments (splitting payments,
  * combining payments, burning payments, and claiming payments
@@ -178,42 +187,31 @@
  */
 
 /**
- * @typedef {Object} Brand
- * The Brand indicates the kind of digital asset and is shared by
- * the mint, the issuer, and any purses and payments of this
- * particular kind. Fake digital assets and amount can use another
- * issuer's brand.
+ * @callback MakeIssuerKit
+ * @param {string} allegedName
+ * @param {string} mathHelperName
+ * @returns {IssuerKit<BrandName>}
  *
- * @property {(allegedIssuer: any) => boolean} isMyIssuer Should be used with
- * `issuer.getBrand` to ensure an issuer and brand match.
- * @property {() => string} getAllegedName
- */
-
-/**
- * @typedef {Object} IssuerMaker
- * Makes Issuers.
- *
- * @property {(allegedName: string, mathHelperName: string) => IssuerKit} makeIssuerKit
- * The allegedName becomes part of the brand in asset descriptions. The
- * allegedName doesn't have to be a string, but it will only be used for
- * its value. The allegedName is useful for debugging and double-checking
+ * The allegedName is useful for debugging and double-checking
  * assumptions, but should not be trusted.
  *
  * The mathHelpersName will be used to import a specific mathHelpers
  * from the mathHelpers library. For example, natMathHelpers, the
  * default, is used for basic fungible tokens.
  *
- * @typedef {Object} IssuerKit
+ * @typedef {Object} IssuerKit<BrandName>
  * The return value of makeIssuerKit
  *
- * @property {Mint} mint
- * @property {Issuer} issuer
- * @property {AmountMath} amountMath
- * @property {Brand} brand
+ * @property {Mint<BrandName>} mint
+ * @property {Issuer<BrandName>} issuer
+ * @property {AmountMath<BrandName>} amountMath
+ * @property {Brand<BrandName>} brand
  */
 
 /**
- * @typedef {Object} Mint
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} Mint<BrandName>
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
@@ -233,7 +231,9 @@
  */
 
 /**
- * @typedef {Object} Purse
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} Purse<BrandName>
  * Purses hold amount of digital assets of the same brand, but unlike Payments, they are
  * not meant to be sent to others. To transfer digital assets, a
  * Payment should be withdrawn from a Purse. The amount of digital
@@ -263,7 +263,9 @@
  */
 
 /**
- * @typedef {Object} Payment
+ * @template {string} BrandName - A string representing the associated
+ * brand
+ * @typedef {Object} Payment<BrandName>
  * Payments hold amount of digital assets of the same brand in transit. Payments can
  * be deposited in purses, split into multiple payments, combined, and
  * claimed (getting an exclusive payment). Payments are linear, meaning

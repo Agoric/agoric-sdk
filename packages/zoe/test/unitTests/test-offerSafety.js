@@ -3,7 +3,7 @@
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
-import { isOfferSafe } from '../../src/offerSafety';
+import { isOfferSafe } from '../../src/contractFacet/offerSafety';
 import { setup } from './setupBasicMints';
 
 function makeGetAmountMath(mapping) {
