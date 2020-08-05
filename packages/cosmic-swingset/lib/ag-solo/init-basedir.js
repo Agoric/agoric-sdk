@@ -6,7 +6,7 @@ import anylogger from 'anylogger';
 
 const log = anylogger('ag-solo:init');
 
-const DEFAULT_WALLET = '@agoric/wallet-frontend';
+const DEFAULT_WALLET = '@agoric/dapp-react-wallet';
 
 export default function initBasedir(
   basedir,
