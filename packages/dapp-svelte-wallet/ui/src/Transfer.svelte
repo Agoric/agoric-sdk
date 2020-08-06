@@ -15,6 +15,8 @@
   import { RadioButton } from "smelte/src/components/RadioButton";
   import Select from 'smelte/src/components/Select';
 
+  import { selfContact } from './store';
+
   export let source;
 
   const name = `xfer-${Math.random()}`;
@@ -23,20 +25,20 @@
   let ownPurse = true;
   let valueJSON = "0";
   let toPurse = source;
-  let toContact = $contacts && $contacts[0] && $contacts[0][1];
+  let toContact = $selfContact;
 
   const send = async destination => {
     try {
       const value = JSON.parse(valueJSON);
-      await E(source.actions).send(destination, value);
+      await E(source.actions).send(destination.actions, value);
       showModal = false;
     } catch (e) {
       alert(`Cannot send: ${e}`);
     }
   };
 
-  $: contactItems = $contacts ? $contacts.map(([text, value]) => ({ value, text })) : [];
-  $: purseItems = $purses ? $purses.filter(({ brand }) => brand === source.brand).map(p => ({ value: p, text: p.pursePetname })) : [];
+  $: contactItems = $contacts ? $contacts.map(({ value, text }) => ({ value, text })) : [];
+  $: purseItems = $purses ? $purses.filter(({ brand }) => brand === source.brand).map(p => ({ value: p, text: p.text })) : [];
 </script>
 
 <div>
@@ -76,7 +78,7 @@
   </RadioButton>
 
   <div slot="actions">
-    <DefaultButton on:click={() => send(ownPurse ? toPurse.actions : toContact.actions)}>Send</DefaultButton>
+    <DefaultButton on:click={() => send(ownPurse ? toPurse : toContact)}>Send</DefaultButton>
     <CancelButton on:click={() => showModal = false} />
   </div>
 </Dialog>

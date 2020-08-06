@@ -1,39 +1,37 @@
 <script>
   import { E } from '@agoric/eventual-send';
+  import Card from 'smelte/src/components/Card';
+  import ListCard from '../lib/ListCard.svelte';
 
-  import ListItems from "../lib/ListItems.svelte";
-  import BoardId from "./BoardId.svelte";
   import Import from "./Import.svelte";
   import Contact from "./Contact.svelte";
 
-  import { walletP } from './store';
-
-  export let contacts;
+  import { contacts, walletP } from './store';
 </script>
 
-<style>
-  div {
-    margin: 1rem;
-    /* border: 1px solid grey; */
-  }
-  .float {
-    float: right;
-    margin: 0 1rem;
-  }
-</style>
+<ListCard items={$contacts}>
+  <div slot="title">
+    <Card.Title
+      title="Contacts"
+    />
+  </div>
 
-<section>
-  <h2>Contacts
-  <div class="float"><Import
-    name="Contact"
+  <div slot="empty">
+    No contacts.
+  </div>
+
+  <div slot="item-header" let:item>
+    <Contact {item} details={false} />
+  </div>
+
+  <div slot="item-details" let:item>
+    <Contact {item} summary={false} />
+  </div>
+
+  <div slot="actions">
+    <Import name="Contact"
     adder={(petname, obj) => E(walletP).addContact(petname, obj)}>
     Import
-  </Import>
-  </div></h2>
-  <ListItems items={$contacts}>
-    <div slot="item" let:item>
-      <Contact contact={item} />
-    </div>
-    <p slot="empty">No contacts.</p>
-  </ListItems>
-</section>
+    </Import>
+  </div>
+</ListCard>
