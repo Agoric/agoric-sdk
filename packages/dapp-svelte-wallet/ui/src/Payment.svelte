@@ -10,37 +10,36 @@
   export let summary = true;
   export let details = true;
 
-  const payment = item;
   let destination;
 
   $: deposit = () => {
     // console.log('deposit to', destination);
-    return E(payment.actions).deposit(destination);
+    return E(item.actions).deposit(destination);
   };
 </script>
 
 <section>
   <div>
-    {#if payment.status === 'deposited'}
+    {#if item.status === 'deposited'}
       {#if summary}
-        Deposited <Amount amount={payment.displayPayment.depositedAmount} />
+        Deposited <Amount amount={item.displayPayment.depositedAmount} />
       {/if}
-    {:else if payment.issuer}
+    {:else if item.issuer}
       {#if summary}
         Payment amount
-        {#if payment.lastAmount}
-          <Amount amount={payment.displayPayment.lastAmount} />
+        {#if item.lastAmount}
+          <Amount amount={item.displayPayment.lastAmount} />
         {/if}
       {/if}
     
       {#if details}
-      <button on:click={() => E(payment.actions).getAmountOf()}>Refresh Amount</button>
+      <button on:click={() => E(item.actions).getAmountOf()}>Refresh Amount</button>
       <button on:click={deposit}>Deposit to</button>
       {#if $purses}
         <select bind:value={destination}>
           <option value={undefined}>Automatic</option>
           {#each $purses as p}
-            {#if p.brand === payment.brand}
+            {#if p.brand === item.brand}
               <option>{p.pursePetname}</option>
             {/if}
           {/each}
@@ -53,7 +52,7 @@
       {/if}
     {/if}
     {#if details}
-      <Debug title="Payment Detail" target={payment} />
+      <Debug title="Payment Detail" target={item} />
     {/if}
   </div>
 </section>

@@ -14,7 +14,7 @@
   let expanded = [];
 
   const toggle = item => {
-    // console.log('toggle', item,)
+    // console.log('toggle', item);
     if (expanded.includes(item)) {
       expanded = expanded.filter(it => item !== it);
     } else {

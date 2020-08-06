@@ -71,11 +71,14 @@ export default {
     production && terser(),
 
     smelte({
-      purge: false && production, // FIXME: with purging, we lose a bunch of styles
+      purge: production,
       output: 'public/wallet/build/smelte.css', // it defaults to static/global.css which is probably what you expect in Sapper
       postcss: [], // Your PostCSS plugins
       whitelist: [], // Array of classnames whitelisted from purging
-      whitelistPatterns: [], // Same as above, but list of regexes
+      whitelistPatterns: [
+        // FIXME: with purging, we lose a bunch of styles, so whitelist them all.
+        /^/,
+      ],
       tailwind: {
         theme: {
           extend: {

@@ -34,11 +34,11 @@ import { strikethrough } from "svelte-awesome/icons";
 <div>
 {#if summary}{origPetname}{/if}
 {#if details}
-  <div>Web:
+  <div>
     {#if enable}
-    <a target="_blank" href={dappOrigin || origin}>{dappOrigin || origin}</a>
+    User interface: <a target="_blank" href={dappOrigin || origin}>{dappOrigin || origin}</a>
     {:else}
-    <strikethrough>{dappOrigin || origin}</strikethrough>
+    Alleged user interface: <strikethrough>{dappOrigin || origin}</strikethrough>
     {/if}
   </div>
   <div on:keydown|capture={keydown}><TextField

@@ -1,5 +1,4 @@
 <script>
-  import "smelte/src/tailwind.css";
   import { E } from "@agoric/eventual-send";
 
   import Button from "smelte/src/components/Button";
