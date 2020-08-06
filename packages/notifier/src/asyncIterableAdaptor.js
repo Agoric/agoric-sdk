@@ -32,7 +32,7 @@ import './types';
  * https://github.com/Agoric/documentation/blob/master/main/distributed-programming.md#notifiers
  *
  * @template T
- * @param {PromiseOrNot<BaseNotifier<T>>} notifierP
+ * @param {ERef<BaseNotifier<T>>} notifierP
  * @returns {AsyncIterable<T>}
  */
 export const makeAsyncIterableFromNotifier = notifierP => {
@@ -135,7 +135,7 @@ export const updateFromIterable = (updater, asyncIterable) => {
  *
  * @template T
  * @param {Partial<Updater<T>>} updater
- * @param {PromiseOrNot<Notifier<T>>} notifierP
+ * @param {ERef<Notifier<T>>} notifierP
  * @returns {Promise<undefined>}
  */
 export const updateFromNotifier = (updater, notifierP) =>

@@ -1,4 +1,9 @@
 /**
+ * @template T
+ * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
+ */
+
+/**
  * @template K,V
  * @typedef {import('@agoric/store').Store<K, V>} Store
  */
@@ -26,7 +31,7 @@
  * @property {<OC>(inviteHandler: InviteHandler<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
  * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
  * @property {(publicAPI: PublicAPI) => void} updatePublicAPI
- * @property {(issuerP: Issuer|PromiseLike<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
+ * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
  * @property {(offerHandles: OfferHandle[]) => void} completeOffers
  */
 

@@ -256,7 +256,7 @@ const makeIssuerTable = (withPurses = true) => {
           }
         });
       },
-      /** @type {(issuerPs: (Issuer|PromiseLike<Issuer>)[]) => Promise<IssuerRecord[]>} */
+      /** @type {(issuerPs: (ERef<Issuer>)[]) => Promise<IssuerRecord[]>} */
       getPromiseForIssuerRecords: issuerPs =>
         Promise.all(issuerPs.map(customMethods.getPromiseForIssuerRecord)),
       brandFromIssuer: issuer => issuerToBrand.get(issuer),

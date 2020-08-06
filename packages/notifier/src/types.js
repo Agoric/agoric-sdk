@@ -1,6 +1,6 @@
 /**
  * @template T
- * @typedef {T | PromiseLike<T>} PromiseOrNot
+ * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
  */
 
 /**
