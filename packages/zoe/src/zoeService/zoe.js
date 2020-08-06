@@ -31,8 +31,8 @@ function makeZoe(vatAdminSvc) {
 
   // Zoe state shared among functions
   const issuerTable = makeIssuerTable();
-  /** @type {Set<Installation>} */
-  const installations = new Set();
+  /** @type {WeakSet<Installation>} */
+  const installations = new WeakSet();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
@@ -130,6 +130,20 @@ function makeZoe(vatAdminSvc) {
           () => exitAllSeats(),
         );
 
+      const registerIssuerStuff = (keyword, issuer, brand) => {
+        instanceRecord.issuerKeywordRecord = {
+          ...instanceRecord.issuerKeywordRecord,
+          [keyword]: issuer,
+        };
+        instanceRecord.brandKeywordRecord = {
+          ...instanceRecord.brandKeywordRecord,
+          [keyword]: brand,
+        };
+        if (!brandToPurse.has(brand)) {
+          brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+        }
+      };
+
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = {
         makeInvitation: (invitationHandle, description, customProperties) => {
@@ -146,26 +160,70 @@ function makeZoe(vatAdminSvc) {
           );
           return invitationMint.mintPayment(invitationAmount);
         },
-        // checks of keyword done on zcf side
+        // checks if keyword done on zcf side
         saveIssuer: (issuerP, keyword) =>
           issuerTable
             .getPromiseForIssuerRecord(issuerP)
             .then(({ issuer, brand }) => {
-              instanceRecord.issuerKeywordRecord = {
-                ...instanceRecord.issuerKeywordRecord,
-                [keyword]: issuer,
-              };
-              instanceRecord.brandKeywordRecord = {
-                ...instanceRecord.brandKeywordRecord,
-                [keyword]: brand,
-              };
-              if (!brandToPurse.has(brand)) {
-                brandToPurse.init(brand, E(issuer).makeEmptyPurse());
-              }
+              registerIssuerStuff(keyword, issuer, brand);
             }),
         shutdown: () => {
           exitAllSeats();
           adminNode.terminate();
+        },
+        makeZoeMint: (keyword, mathHelperName = 'nat') => {
+          assert(
+            !(keyword in instanceRecord.issuerKeywordRecord),
+            details`Keyword ${keyword} already registered`,
+          );
+
+          // Local indicates the one zoe itself makes from vetted code,
+          // and so can be assumed correct and fresh by zoe.
+          const {
+            mint: localMint,
+            issuer: localIssuer,
+            amountMath: localAmountMath,
+            brand: localBrand,
+          } = makeIssuerKit(keyword, mathHelperName);
+          const localIssuerRecord = harden({
+            brand: localBrand,
+            issuer: localIssuer,
+            amountMath: localAmountMath,
+          });
+          issuerTable.registerIssuerRecord(localIssuerRecord);
+          registerIssuerStuff(keyword, localIssuer, localBrand);
+          const zoeMint = harden({
+            getIssuerRecord: () => {
+              return localIssuerRecord;
+            },
+            mintAllocation: (zoeSeat, seatKeyword, amount) => {
+              // Malformed amount (or anything that might cause mintPayment
+              // to fail later) must fail now instead.
+              amount = localAmountMath.coerce(amount);
+              const pooledPurseP = brandToPurse.get(localBrand);
+              const payment = localMint.mintPayment(amount);
+              E(pooledPurseP)
+                .deposit(payment, amount)
+                .catch(reason => {
+                  // TODO panic?
+                  // If this delayed local deposit fails, that's very bad news.
+                  throw reason;
+                });
+              // Proceed assuming the deposit succeeded
+              const oldAmount = undefined; // where from?
+              const newAmount = localAmountMath.add(oldAmount, amount);
+              zoeSeat.replaceAllocation({ [seatKeyword]: newAmount });
+            },
+            stageGrant: _oldAllocation => {
+              const stagedSeat = undefined; // TODO
+              return stagedSeat;
+            },
+            stageBurn: _newAllocation => {
+              const stagedSeat = undefined; // TODO
+              return stagedSeat;
+            },
+          });
+          return zoeMint;
         },
       };
 

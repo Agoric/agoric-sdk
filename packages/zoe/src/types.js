@@ -109,7 +109,7 @@
  */
 
 /**
- * @callback MakeInstance 
+ * @callback MakeInstance
  * @param {Installation} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
@@ -180,6 +180,17 @@
  * @property {() => InstanceRecord } getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
+ *
+ * @property {(Keyword, MathHelperName=) => ZCFMint} makeZCFMint
+ */
+
+/**
+ * @typedef {Object} ZCFMint
+ *
+ * @property {() => Promise<IssuerRecord>} getIssuerRecord
+ * @property {(ZCFSeat, Keyword, Amount) => void} mintAllocation
+ * @property {(oldAllocation: Allocation) => StatedSeat} stageGrant
+ * @property {(newAllocation: Allocation) => StagedSeat} stageBurn
  */
 
 /**
