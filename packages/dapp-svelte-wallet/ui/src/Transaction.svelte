@@ -8,6 +8,7 @@
 
   export let item;
   export let summary = true;
+  export let summaryLine = 0;
   export let details = true;
 
   // Show the outcome if it is a string, otherwise a default message.
@@ -84,11 +85,15 @@
 
 <section>
   {#if summary}
-    {formatDateNow(date)} <Petname name={instancePetname} board={instanceHandleBoardId} />
+    {#if !summaryLine || summaryLine === 1}
+      {formatDateNow(date)}
+    {/if}
+    {#if !summaryLine || summaryLine === 2}
+      <Petname name={instancePetname} board={instanceHandleBoardId} /> via ({dappOrigin || origin})
+    {/if}
   {/if}
   {#if details}
   <div>
-    via ({dappOrigin || origin})
 	<Debug title="Transaction Detail" target={item} />
   </div>
   <div>

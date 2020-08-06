@@ -35,12 +35,16 @@
     <List {items}>
       <li slot="item" class="px-1" let:item>
         <div class="fullwidth px-1">
-          <ListItem dense classes="overflow-visible" selectedClasses="bg-primary-trans" {item} {...item} on:click={() => toggle(item.id)}>
+          <ListItem dense selectedClasses="bg-primary-trans" {item} {...item} on:click={() => toggle(item.id)}>
             <div class="flex items-center">
               <Icon tip={expanded.includes(item.id)}>{expandIcon}</Icon>
               <slot name="item-header" {item}><span>{item.text}</span></slot>
             </div>
           </ListItem>
+
+          <div class="ml-10">
+            <slot name="item-header-rest" {item}></slot>
+          </div>
 
           {#if expanded.includes(item.id)}
             <div in:slide class="ml-10">
