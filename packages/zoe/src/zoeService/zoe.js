@@ -170,6 +170,26 @@ function makeZoe(vatAdminSvc) {
       };
 
       const bundle = installation.getBundle();
+      const addSeatObjPromiseKit = makePromiseKit();
+      const publicFacetPromiseKit = makePromiseKit();
+
+      /** @type {InstanceAdmin} */
+      const instanceAdmin = {
+        addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
+          zoeSeatAdmins.add(zoeSeatAdmin);
+          return E(
+            /** @type Promise<addSeatObj> */ (addSeatObjPromiseKit.promise),
+          ).addSeat(invitationHandle, zoeSeatAdmin, seatData);
+        },
+        removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
+        getPublicFacet: () => publicFacetPromiseKit.promise,
+        getTerms: () => instanceRecord.terms,
+        getIssuers: () => instanceRecord.issuerKeywordRecord,
+        getBrands: () => instanceRecord.brandKeywordRecord,
+        getInstance: () => instance,
+      };
+
+      instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       const {
         creatorFacet = {},
@@ -184,30 +204,13 @@ function makeZoe(vatAdminSvc) {
         harden({ ...instanceRecord }),
       );
 
+      addSeatObjPromiseKit.resolve(addSeatObj);
+      publicFacetPromiseKit.resolve(publicFacet);
+
       const creatorFacetWInstance = {
         ...creatorFacet,
         getInstance: () => instance,
       };
-
-      /** @type {InstanceAdmin} */
-      const instanceAdmin = {
-        addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
-          zoeSeatAdmins.add(zoeSeatAdmin);
-          return E(addSeatObj).addSeat(
-            invitationHandle,
-            zoeSeatAdmin,
-            seatData,
-          );
-        },
-        removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
-        getPublicFacet: () => publicFacet,
-        getTerms: () => instanceRecord.terms,
-        getIssuers: () => instanceRecord.issuerKeywordRecord,
-        getBrands: () => instanceRecord.brandKeywordRecord,
-        getInstance: () => instance,
-      };
-
-      instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       // Actually returned to the user.
       return {
