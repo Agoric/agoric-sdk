@@ -16,7 +16,11 @@
   </div>
 
   <div slot="item-header" let:item>
-    <Purse {item} details={false}/>
+    <Purse {item} details={false} summaryLine={1} />
+  </div>
+
+  <div slot="item-header-rest" let:item>
+    <Purse {item} details={false} summaryLine={2} />
   </div>
 
   <div slot="item-details" let:item>

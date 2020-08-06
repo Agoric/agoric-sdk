@@ -11,6 +11,7 @@
   import Switch from "smelte/src/components/Switch";
 
 export let summary = true;
+export let summaryLine = 0;
 export let details = true;
 
   export let item;
@@ -28,8 +29,12 @@ export let details = true;
 <section>
   {#if summary}
   <div class="fullwidth">
-    <Petname name={item.pursePetname} />
-    <Amount amount={item.currentAmount} />
+    {#if !summaryLine || summaryLine === 1}
+      <Petname name={item.pursePetname} />
+    {/if}
+    {#if !summaryLine || summaryLine === 2}
+      <Amount amount={item.currentAmount} />
+    {/if}
   </div>
   {/if}
   {#if details}
