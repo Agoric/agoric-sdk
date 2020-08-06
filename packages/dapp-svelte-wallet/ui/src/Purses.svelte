@@ -1,25 +1,25 @@
 <script>
-  import ListItems from "../lib/ListItems.svelte";
+  import ListCard from '../lib/ListCard.svelte';
   import Purse from "./Purse.svelte";
-  
-  // a store of purses
-  export let purses;
-  export let walletP;
+  import Card from 'smelte/src/components/Card';
+
+  import { purses } from './store';
 </script>
 
-<style>
-  div {
-    margin: 1rem;
-    /* border: 1px solid grey; */
-  }
-</style>
+<ListCard items={$purses}>
+  <div slot="title">
+    <Card.Title title="Purses" />
+  </div>
 
-<section>
-  <h2>Purses</h2>
-  <ListItems items={$purses}>
-    <div slot="item" let:item>
-      <Purse purse={item} {walletP} />
-    </div>
-    <p slot="empty">No purses.</p>
-  </ListItems>
-</section>
+  <div slot="empty">
+    No purses.
+  </div>
+
+  <div slot="item-header" let:item>
+    <Purse {item} details={false}/>
+  </div>
+
+  <div slot="item-details" let:item>
+    <Purse {item} summary={false}/>
+  </div>
+</ListCard>

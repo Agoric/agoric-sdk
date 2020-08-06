@@ -7,6 +7,7 @@
 
   // The amount gets updated. Make this dynamic
   $: ({ brand, value } = amount);
+  const cardinality = v => typeof v === 'number' ? v : v.length;
 </script>
 
 <style>
@@ -16,9 +17,9 @@
 </style>
 
 <section>
-  {#if Array.isArray(value)}
+  {#if Array.isArray(value) && value.length !== 0}
     <!-- amount is non-fungible -->
-    <Tooltip disable={value.length === 0}>
+    <Tooltip>
       <div slot="activator">
         <b>
           {value.length}
@@ -35,8 +36,8 @@
     </Tooltip>
   {:else}
     <b>
-      {value}
-      <Petname name={brand.petname} plural={value.length !== 1} />
+      {cardinality(value)}
+      <Petname name={brand.petname} plural={cardinality(value) !== 1} />
     </b>
   {/if}
 
