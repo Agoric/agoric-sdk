@@ -25,13 +25,13 @@
   let ownPurse = true;
   let valueJSON = "0";
   let toPurse = source;
-  let toContact = $selfContact;
+  let toContact = undefined;
 
   const send = async destination => {
     try {
       const value = JSON.parse(valueJSON);
-      await E(source.actions).send(destination.actions, value);
       showModal = false;
+      await E(source.actions).send(destination.actions, value);
     } catch (e) {
       alert(`Cannot send: ${e}`);
     }

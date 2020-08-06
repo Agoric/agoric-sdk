@@ -32,14 +32,15 @@ function cmp(a, b) {
   return a < b ? -1 : a === b ? 0 : 1;
 }
 
-function kv(key, val) {
+function kv(keyObj, val) {
+  const key = Object.values(keyObj)[0];
   const text = Array.isArray(key) ? key.join('.') : key;
-  return { ...val, id: key, text, value: val };
+  return { ...val, ...keyObj, id: text, text, value: val };;
 }
 
 function onReset(readyP) {
   readyP.then(() => resetAlls.forEach(fn => fn()));
-  E(walletP).getSelfContact().then(setSelfContact);
+  E(walletP).getSelfContact().then(sc => setSelfContact({ contactPetname: 'Self', ...kv('Self', sc) }));
   // Set up our subscriptions.
   updateFromNotifier({
     updateState(ijs) {
@@ -50,7 +51,7 @@ function onReset(readyP) {
   }, E(walletP).getInboxJSONNotifier());
   updateFromNotifier({
     updateState(state) {
-      setPurses(state.map(purse => ({ ...kv(purse.pursePetname, purse) }))
+      setPurses(state.map(purse => kv({ pursePetname: purse.pursePetname }, purse))
         .sort((a, b) => cmp(a.brandPetname, b.brandPetname) || cmp(a.pursePetname, b.pursePetname)));
     },
   }, E(walletP).getPursesNotifier());
@@ -62,14 +63,14 @@ function onReset(readyP) {
   }, E(walletP).getDappsNotifier());
   updateFromNotifier({
     updateState(state) {
-      setContacts(state.map(([contactPetname, contact]) => ({ contactPetname, ...kv(contactPetname, contact) }))
+      setContacts(state.map(([contactPetname, contact]) => kv({ contactPetname }, contact))
         .sort((a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id)));
     },
   }, E(walletP).getContactsNotifier());
   updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
   updateFromNotifier({
     updateState(state) {
-      setIssuers(state.map(([issuerPetname, issuer]) => ({ issuerPetname, ...kv(issuerPetname, issuer) }))
+      setIssuers(state.map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
         .sort((a, b) => cmp(a.id, b.id)));
     },
   }, E(walletP).getIssuersNotifier());
