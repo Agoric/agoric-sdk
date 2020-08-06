@@ -4,9 +4,13 @@
   import Debug from "../lib/Debug.svelte";
   import { E } from "@agoric/eventual-send";
   import BoardId from "./BoardId.svelte";
-  import { selfContact, payments, purses } from './store';
+  import { purses } from './store';
 
-  export let payment;
+  export let item;
+  export let summary = true;
+  export let details = true;
+
+  const payment = item;
   let destination;
 
   $: deposit = () => {
@@ -15,22 +19,21 @@
   };
 </script>
 
-<style>
-  section {
-    padding: 10px;
-    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
-  }
-</style>
-
 <section>
   <div>
     {#if payment.status === 'deposited'}
-      Deposited <Amount amount={payment.displayPayment.depositedAmount} />
-    {:else if payment.issuer}
-      Payment last valued at
-      {#if payment.lastAmount}
-        <Amount amount={payment.displayPayment.lastAmount} />
+      {#if summary}
+        Deposited <Amount amount={payment.displayPayment.depositedAmount} />
       {/if}
+    {:else if payment.issuer}
+      {#if summary}
+        Payment amount
+        {#if payment.lastAmount}
+          <Amount amount={payment.displayPayment.lastAmount} />
+        {/if}
+      {/if}
+    
+      {#if details}
       <button on:click={() => E(payment.actions).getAmountOf()}>Refresh Amount</button>
       <button on:click={deposit}>Deposit to</button>
       {#if $purses}
@@ -43,9 +46,14 @@
           {/each}
         </select>
       {/if}
+      {/if}
     {:else}
+      {#if summary}
       Unknown brand.  This payment cannot be verified.
+      {/if}
     {/if}
-    <Debug title="Payment Detail" target={payment} />
+    {#if details}
+      <Debug title="Payment Detail" target={payment} />
+    {/if}
   </div>
 </section>

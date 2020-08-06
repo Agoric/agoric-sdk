@@ -7,31 +7,25 @@
 
   import { issuers, walletP } from './store';
   import ListCard from '../lib/ListCard.svelte';
-
-  function cmp(a, b) {
-    return a < b ? -1 : a === b ? 0 : 1;
-  }
-
-  $: issuerItems = $issuers ? [...$issuers].sort((a, b) => cmp(a[0], b[0])) : [];
 </script>
 
-<ListCard items={issuerItems}>
+<ListCard items={$issuers}>
   <div slot="title">
     <Card.Title
       title="Issuers"
     />
   </div>
 
-  <div slot="none">
+  <div slot="empty">
     No issuers.
   </div>
 
   <div slot="item-header" let:item>
-    <Issuer {item} summary={true} />
+    <Issuer {item} details={false} />
   </div>
 
   <div slot="item-details" let:item>
-    <Issuer {item} details={true} />
+    <Issuer {item} summary={false} />
   </div>
 
   <div slot="actions">

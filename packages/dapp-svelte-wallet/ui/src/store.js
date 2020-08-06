@@ -28,21 +28,45 @@ const [issuers, setIssuers] = makeReadable([]);
 
 export { inbox, purses, dapps, payments, issuers, contacts, selfContact };
 
+function cmp(a, b) {
+  return a < b ? -1 : a === b ? 0 : 1;
+}
+
+function comparable(x) {
+  return JSON.stringify(x);
+}
+
 function onReset(readyP) {
   readyP.then(() => resetAlls.forEach(fn => fn()));
   E(walletP).getSelfContact().then(setSelfContact);
   // Set up our subscriptions.
   updateFromNotifier({
     updateState(ijs) {
-      setInbox(JSON.parse(ijs));
+      const state = JSON.parse(ijs);
+      setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}`}))
+        .sort((a, b) => cmp(b.id, a.id)));
     },
-   }, E(walletP).getInboxJSONNotifier(),
-  );
-  updateFromNotifier({ updateState: setPurses}, E(walletP).getPursesNotifier());
-  updateFromNotifier({ updateState: setDapps}, E(walletP).getDappsNotifier());
+  }, E(walletP).getInboxJSONNotifier());
+  updateFromNotifier({
+    updateState(state) {
+      setPurses(state.map(purse => ({ ...purse, id: comparable(purse.pursePetname) }))
+        .sort((a, b) => cmp(a.brandPetname, b.brandPetname) || cmp(a.pursePetname, b.pursePetname)));
+    },
+  }, E(walletP).getPursesNotifier());
+  updateFromNotifier({
+    updateState(state) {
+      setDapps(state.map(dapp => ({ ...dapp, id: dapp.origin }))
+        .sort((a, b) => cmp(a.dappPetname, b.dappPetname) || cmp(a.id, b.id)));
+    },
+  }, E(walletP).getDappsNotifier());
   updateFromNotifier({ updateState: setContacts }, E(walletP).getContactsNotifier());
   updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
-  updateFromNotifier({ updateState: setIssuers }, E(walletP).getIssuersNotifier());
+  updateFromNotifier({
+    updateState(state) {
+      setIssuers(state.map(([issuerPetname, issuer]) => ({ ...issuer, issuerPetname, id: comparable(issuerPetname), text: issuerPetname }))
+        .sort((a, b) => cmp(a.id, b.id)));
+    },
+  }, E(walletP).getIssuersNotifier());
 }
 
 // like React useHook, return a store and a setter for it

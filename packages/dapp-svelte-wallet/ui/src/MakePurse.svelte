@@ -20,15 +20,13 @@
   let showModal = false;
 
   const name = 'Purse';
-
-  $: issuerPetnames = $issuers ? [...$issuers].map(([petname]) => petname).sort().map(petname => ({ value: petname, text: petname })) : [];
 </script>
 
 <Button on:click={() => (showModal = true)}><slot /></Button>
 <Dialog bind:value={showModal}>
   <h5 slot="title">Create New Purse</h5>
   {#if !issuerPetname}
-  <Select label="Issuer" items={issuerPetnames} bind:value={issuer} />
+  <Select label="Issuer" items={$issuers} bind:value={issuer} />
   {/if}
 
   <TextField label="Purse petname" bind:value={petname} hint={`My ${issuer} Purse`} />

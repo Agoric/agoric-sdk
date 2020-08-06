@@ -3,15 +3,19 @@
   import Petname from "./Petname.svelte";
   import Amount from "./Amount.svelte";
   import Debug from "../lib/Debug.svelte";
-  import { stringify } from "../lib/helpers";
-  import Button from 'smelte/src/components/Button';
 
-  export let txn;
-  export let id;
-  export let walletP;
+  import { walletP } from './store';
+
+  export let item;
+  export let summary = true;
+  export let details = true;
 
   // Show the outcome if it is a string, otherwise a default message.
-  function showOutcome({ outcome }) {
+  function showOutcome(obj) {
+    if (!obj) {
+      return;
+    }
+    const { outcome } = obj;
     if (typeof outcome !== 'string') {
       outcome = 'Offer was accepted.';
     }
@@ -42,19 +46,17 @@
     instancePetname,
     instanceHandleBoardId,
     installationHandleBoardId,
+    offerId,
     requestContext: { date, dappOrigin, origin = "unknown origin" } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
     status,
-  } = txn);
+  } = item);
 </script>
 
 <style>
   section {
     /* text-align: center; */
-    padding: 1em;
     max-width: 240px;
-    margin: 10px auto;
-    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
   }
 
   h6 {
@@ -81,11 +83,13 @@
 </style>
 
 <section>
+  {#if summary}
+    {formatDateNow(date)} <Petname name={instancePetname} board={instanceHandleBoardId} />
+  {/if}
+  {#if details}
   <div>
-   <Petname name={instancePetname} board={instanceHandleBoardId} />
-    at {formatDateNow(date)} 
     via ({dappOrigin || origin})
-	<Debug title="Transaction Detail" target={txn} />
+	<Debug title="Transaction Detail" target={item} />
   </div>
   <div>
     {#each Object.entries(give) as [role, { amount, pursePetname }], i}
@@ -103,8 +107,9 @@
   </div> 
   <div class="actions">
     <b>{statusText[status || 'proposed']}</b>
-    <button on:click={() => E(walletP).acceptOffer(id).then(showOutcome)}>Accept</button>
-    <button on:click={() => E(walletP).declineOffer(id)}>Decline</button>
-    <button on:click={() => E(walletP).cancelOffer(id)}>Cancel</button>
+    <button on:click={() => E(walletP).acceptOffer(offerId).then(showOutcome)}>Accept</button>
+    <button on:click={() => E(walletP).declineOffer(offerId)}>Decline</button>
+    <button on:click={() => E(walletP).cancelOffer(offerId)}>Cancel</button>
   </div>
+  {/if}
 </section>

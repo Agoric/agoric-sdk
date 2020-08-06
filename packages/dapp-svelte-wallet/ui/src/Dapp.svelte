@@ -1,43 +1,46 @@
 <script>
   import { E } from "@agoric/eventual-send";
-  import Card from 'smelte/src/components/Card';
+  import TextField from 'smelte/src/components/TextField';
+  import Switch from 'smelte/src/components/Switch';
 
-  export let dapp;
-  let petname = dapp.petname || dapp.suggestedPetname;
+  export let item;
+  export let details = true;
+  export let summary = true;
 
-  const onKeydown = e => {
-        if (e.key === 'Escape') {
-          petname = origPetname;
-        } else if (e.key === 'Enter') {
-          E(actions).setPetname(petname);
-        }
-      };
+  $: ({ enable, actions, suggestedPetname,
+    petname: origPetname, dappOrigin, origin } = item);
+  let petname = item.petname || item.suggestedPetname;
+
+  const toggleDappEnabled = () => {
+    if (enable) {
+      E(E(actions).setPetname(petname)).disable();
+    } else {
+      E(E(actions).setPetname(petname)).enable();
+    }
+  };
+
+  const keydown = e => {
+    // console.log('have', e.key);
+    if (e.key === 'Escape') {
+      petname = origPetname;
+      ev.stopPropagation();
+    } else if (e.key === 'Enter') {
+      E(actions).setPetname(petname);
+      ev.stopPropagation();
+    }
+  };
 </script>
 
-<style>
-  div {
-    padding: 10px;
-    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
-  }
-</style>
-
 <div>
-{#each [dapp] as { actions, enable, petname: origPetname, suggestedPetname, dappOrigin, origin } (dappOrigin || origin)}
-  <p>{dappOrigin || origin} suggested: {JSON.stringify(suggestedPetname)}</p>
-  <dd>
-    <input
-      type="text"
-      on:keydown={onKeydown}
-      bind:value={petname} />
-    {#if enable}
-      <button on:click={() => E(E(actions).setPetname(petname)).disable()}>
-        Disable
-      </button>
-    {:else}
-      <button on:click={() => E(E(actions).setPetname(petname)).enable()}>
-        Enable
-      </button>
-    {/if}
-  </dd>
-{/each}
+{#if summary}{dappOrigin || origin}{/if}
+{#if details}
+  <div on:keydown|capture><TextField
+    hint="Alleged name: {JSON.stringify(suggestedPetname)}"
+    label="Dapp petname"
+    bind:value={petname}
+  /></div>
+  <div on:click|capture|stopPropagation={toggleDappEnabled}>
+    <Switch value={enable} label="Enabled" />
+  </div>
+{/if}
 </div>

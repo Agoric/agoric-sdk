@@ -11,13 +11,8 @@
   import Transactions from "./Transactions.svelte";
   import {
     dapps,
-    payments,
-    purses,
-    inbox,
     connected,
     contacts,
-    boardP,
-    walletP
   } from "./store";
 
   import { ThemeWrapper, ThemeToggle } from "svelte-themer";
@@ -177,16 +172,16 @@
 
     <main>
       <div class="dapps">
-        <Dapps {dapps} />
+        <Dapps />
       </div>
       <div class="payments">
-        <Payments {payments} />
+        <Payments />
       </div>
       <div class="txns">
-        <Transactions {inbox} {walletP} />
+        <Transactions />
       </div>
       <div class="purses">
-        <Purses {purses} {walletP} />
+        <Purses />
       </div>
       <div class="issuers">
         <Issuers />

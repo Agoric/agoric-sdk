@@ -8,25 +8,22 @@
 
   export let item;
 
-  export let summary = false;
-  export let details = false;
-  if (!summary && !details) {
-    summary = true;
-  }
+  export let summary = true;
+  export let details = true;
 </script>
 
-<div>
+<section>
   {#if summary}
-    <Petname name={item[0]} />
+    <Petname name={item.issuerPetname} />
   {/if}
   {#if details}
     <div>
       Board ID:
       <BoardId
-        onPublish={() => E(walletP).publishIssuer(item[1].brand)}
-        id={item[1].issuerBoardId} />
+        onPublish={() => E(walletP).publishIssuer(item.brand)}
+        id={item.issuerBoardId} />
     </div>
 
-    <MakePurse issuerPetname={item[0]}>Make Purse</MakePurse>
+    <MakePurse issuerPetname={item.issuerPetname}>Make Purse</MakePurse>
   {/if}
-</div>
+</section>

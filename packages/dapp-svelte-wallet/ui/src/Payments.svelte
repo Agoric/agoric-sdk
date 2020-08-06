@@ -2,22 +2,26 @@
   import ListItems from "../lib/ListItems.svelte";
   import Amount from "./Amount.svelte";
   import Payment from './Payment.svelte';
-  export let payments;
+  
+  import { payments } from './store';
+import ListCard from "../lib/ListCard.svelte";
+import Card from "smelte/src/components/Card";
+
+$: paymentItems = $payments && $payments.filter(pmt => pmt.status !== 'deposited');
 </script>
 
-<style>
-  div {
-    margin: 1rem;
-    /* border: 1px solid grey; */
-  }
-</style>
+<ListCard items={paymentItems}>
+  <div slot="title">
+    <Card.Title title="Incoming Payments" />
+  </div>
 
-<section>
-  <h2>Incoming Payments</h2>
-  <ListItems items={$payments}>
-    <div slot="item" let:item>
-      <Payment payment={item} />
-    </div>
-    <p slot="empty">No payments.</p>
-  </ListItems>
-</section>
+  <div slot="empty">No incoming payments.</div>
+
+  <div slot="item-header" let:item>
+    <Payment {item} details={false} />
+  </div>
+
+  <div slot="item-details" let:item>
+    <Payment {item} summary={false} />
+  </div>
+</ListCard>

@@ -1,24 +1,25 @@
 <script>
-  import { E } from "@agoric/eventual-send";
-  import ListItems from "../lib/ListItems.svelte";
+  import ListCard from "../lib/ListCard.svelte";
+  import Card from 'smelte/src/components/Card';
   import Dapp from "./Dapp.svelte";
 
-  export let dapps;
+  import { dapps } from './store';
 </script>
 
-<style>
-  div {
-    margin: 1rem;
-    /* border: 1px solid grey; */
-  }
-</style>
+<ListCard items={$dapps}>
+  <div slot="title">
+    <Card.Title title="Dapps" />
+  </div>
 
-<section>
-  <h2>Dapps</h2>
-  <ListItems items={$dapps} idFn={item => item.origin}>
-    <div slot="item" let:item>
-      <Dapp dapp={item} />
-    </div>
-    <p slot="empty">No dapps.</p>
-  </ListItems>
-</section>
+  <div slot="empty">
+    No Dapps.
+  </div>
+
+  <div slot="item-header" let:item>
+    <Dapp {item} details={false}/>
+  </div>
+
+  <div slot="item-details" let:item>
+    <Dapp {item} summary={false}/>
+  </div>
+</ListCard>

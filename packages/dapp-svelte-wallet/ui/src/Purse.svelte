@@ -5,48 +5,51 @@
   import Transfer from "./Transfer.svelte";
   import { E } from "@agoric/eventual-send";
   import BoardId from "./BoardId.svelte";
-  import { selfContact } from "./store";
+
+  import { selfContact, walletP } from "./store";
 
   import Switch from "smelte/src/components/Switch";
 
-  export let purse;
-  export let walletP;
+export let summary = true;
+export let details = true;
+
+  export let item;
 
   function toggleAutoDeposit(ev) {
-    if (!purse.depositBoardId) {
-      E(walletP).enableAutoDeposit(purse.pursePetname);
+    if (!item.depositBoardId) {
+      E(walletP).enableAutoDeposit(item.pursePetname);
     } else {
-      E(walletP).disableAutoDeposit(purse.pursePetname);
+      E(walletP).disableAutoDeposit(item.pursePetname);
     }
+    return false;
   }
 </script>
 
-<style>
-  section {
-    padding: 10px;
-    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
-  }
-</style>
-
 <section>
-  <div>
-    <Petname name={purse.pursePetname} />
-    <Debug title="Amount Detail" target={purse.currentAmount} />
+  {#if summary}
+  <div class="fullwidth">
+    <Petname name={item.pursePetname} />
+    <Amount amount={item.currentAmount} />
   </div>
-  <Amount amount={purse.currentAmount} />
-  <Transfer source={purse} />
-  <div>
+  {/if}
+  {#if details}
+  <div class="py-2">
     <!--
       This wrapper div is needed to prevent the switch from toggling too soon.
       It would be nice to have something like <Switch ... on:click={toggleAutoDeposit} />
     -->
     <div on:click|capture|stopPropagation={toggleAutoDeposit}>
-      <Switch value={!!purse.depositBoardId} label="AutoDeposit" />
+      <Switch value={!!item.depositBoardId} label="AutoDeposit" />
     </div>
-    {#if purse.depositBoardId && (!$selfContact || purse.depositBoardId !== $selfContact.depositBoardId)}
+    <Debug title="Amount Detail" target={item.currentAmount} />
+  </div>
+  <div class="mb-3">
+    {#if item.depositBoardId && (!$selfContact || item.depositBoardId !== $selfContact.depositBoardId)}
       (
-      <BoardId id={purse.depositBoardId} />
+      <BoardId id={item.depositBoardId} />
       )
     {/if}
+    <Transfer source={item} />
   </div>
+  {/if}
 </section>

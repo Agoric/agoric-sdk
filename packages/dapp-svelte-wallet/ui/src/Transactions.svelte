@@ -1,24 +1,25 @@
 <script>
-  import ListItems from "../lib/ListItems.svelte";
+  import ListCard from '../lib/ListCard.svelte';
   import Transaction from "./Transaction.svelte";
+  import Card from 'smelte/src/components/Card';
 
-  export let inbox;
-  export let walletP;
+  import { inbox } from './store';
 </script>
 
-<style>
-  div {
-    margin: 1rem;
-    /* border: 1px solid grey; */
-  }
-</style>
+<ListCard items={$inbox}>
+  <div slot="title">
+    <Card.Title title="Transactions" />
+  </div>
 
-<section>
-  <h2>Transactions</h2>
-  <ListItems items={$inbox}>
-    <div slot="item" let:item>
-      <Transaction txn={item} id={item.id} {walletP} />
-    </div>
-    <p slot="empty">No transactions.</p>
-  </ListItems>
-</section>
+  <div slot="empty">
+    No transactions.
+  </div>
+
+  <div slot="item-header" let:item>
+    <Transaction {item} details={false}/>
+  </div>
+
+  <div slot="item-details" let:item>
+    <Transaction {item} summary={false}/>
+  </div>
+</ListCard>
