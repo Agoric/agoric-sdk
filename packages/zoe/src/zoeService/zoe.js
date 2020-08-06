@@ -196,7 +196,7 @@ function makeZoe(vatAdminSvc) {
             getIssuerRecord: () => {
               return localIssuerRecord;
             },
-            mintAllocation: (zoeSeat, seatKeyword, amount) => {
+            mintAllocation: (allocation, zoeSeat = undefined) => {
               // Malformed amount (or anything that might cause mintPayment
               // to fail later) must fail now instead.
               amount = localAmountMath.coerce(amount);
@@ -214,13 +214,8 @@ function makeZoe(vatAdminSvc) {
               const newAmount = localAmountMath.add(oldAmount, amount);
               zoeSeat.replaceAllocation({ [seatKeyword]: newAmount });
             },
-            stageGrant: _oldAllocation => {
-              const stagedSeat = undefined; // TODO
-              return stagedSeat;
-            },
-            stageBurn: _newAllocation => {
-              const stagedSeat = undefined; // TODO
-              return stagedSeat;
+            burnAllocation: (_allocation, _zoeSeat) => {
+              // TODO
             },
           });
           return zoeMint;

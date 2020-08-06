@@ -181,16 +181,22 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
  *
- * @property {(Keyword, MathHelperName=) => ZCFMint} makeZCFMint
+ * @property {(Keyword, MathHelperName=) => Promise<ZCFMint>} makeZCFMint
  */
 
 /**
  * @typedef {Object} ZCFMint
  *
- * @property {() => Promise<IssuerRecord>} getIssuerRecord
- * @property {(ZCFSeat, Keyword, Amount) => void} mintAllocation
- * @property {(oldAllocation: Allocation) => StatedSeat} stageGrant
- * @property {(newAllocation: Allocation) => StagedSeat} stageBurn
+ * @property {() => IssuerRecord} getIssuerRecord
+ * @property {(Allocation, ZCFSeat=) => ZCFSeat} mintAllocation
+ * Add the allocation to that seat's allocation.
+ * All the amounts in that allocation must be of this ZCFMint's brand.
+ * The allocation's keywords are in the namespace of that seat.
+ * If a seat is provided, it is returned. Otherwise a new seat is
+ * returned.
+ * @property {(Allocation, ZCFSeat)} burnAllocation
+ * If offer-safe, subtract allocation from that seat's allocation.
+ * All the amounts in that allocation must be of this ZCFMint's brand.
  */
 
 /**

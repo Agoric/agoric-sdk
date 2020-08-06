@@ -80,15 +80,12 @@
 
 /**
  * @typedef {Object} AddSeatObj
- * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin:
- * ZoeSeatAdmin, seatData: SeatData) => AddSeatResult} addSeat
+ * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin: ZoeSeatAdmin, seatData: SeatData) => AddSeatResult} addSeat
  */
 
 /**
  * @typedef {Object} ZoeInstanceAdmin
- * @property {(invitationHandle: InvitationHandle, description:
- * string, customProperties?: {}) => Payment<'ZoeInvitation'>}
- * makeInvitation
+ * @property {(invitationHandle: InvitationHandle, description: string, customProperties?: {}) => Payment<'ZoeInvitation'>} makeInvitation
  * @property {() => void} shutdown
  * @property {(issuerP: Issuer|Promise<Issuer>, keyword: Keyword) => void} saveIssuer
  *
@@ -99,9 +96,15 @@
  * @typedef {Object} ZoeMint
  *
  * @property {() => IssuerRecord} getIssuerRecord
- * @property {(ZoeSeat, Keyword, Amount) => void} mintAllocation
- * @property {(oldAllocation: Allocation) => StatedSeat} stageGrant
- * @property {(newAllocation: Allocation) => StagedSeat} stageBurn
+ * @property {(Allocation, ZoeSeat=) => ZoeSeat} mintAllocation
+ * Add the allocation to that seat's allocation.
+ * All the amounts in that allocation must be of this ZoeMint's brand.
+ * The allocation's keywords are in the namespace of that seat.
+ * If a seat is provided, it is returned. Otherwise a new seat is
+ * returned.
+ * @property {(Allocation, ZCFSeat)} burnAllocation
+ * If offer-safe, subtract allocation from that seat's allocation.
+ * All the amounts in that allocation must be of this ZoeMint's brand.
  */
 
 /**

@@ -146,30 +146,27 @@ export function buildRootObject() {
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
 
-      makeZCFMint: (keyword, mathHelperName = 'nat') => {
+      makeZCFMint: async (keyword, mathHelperName = 'nat') => {
         const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
           keyword,
           mathHelperName,
         );
-        const issuerRecordP = E(zoeMintP).getIssuerRecord();
+        const issuerRecord = await E(zoeMintP).getIssuerRecord();
+        // AWAIT
         const zcfMint = harden({
           getIssuerRecord: () => {
-            return issuerRecordP;
+            return issuerRecord;
           },
-          mintAllocation: (zcfSeat, seatKeyword, amount) => {
+          mintAllocation: (allocation, zcfSeat = undefined) => {
             // TODO local stuff
-            const seatAdmin = seatToSeatAdmin.get(zcfSeat);
-            E(zoeMintP).mintAllocation(seatAdmin, seatKeyword, amount);
+            let zoeSeat = zcfSeat && zcfSeatToZoeSeat.get(zcfSeat);
+            zoeSeat = E(zoeMintP).mintAllocation(allocation, zoeSeat);
+            return zcfSeat;
           },
-          stageGrant: oldAllocation => {
-            const stagedSeat = undefined; // TODO
-            E(zoeMintP).stageGrant(oldAllocation);
-            return stagedSeat;
-          },
-          stageBurn: newAllocation => {
-            const stagedSeat = undefined; // TODO
-            E(zoeMintP).stageBurn(newAllocation);
-            return stagedSeat;
+          burnAllocation: (allocation, zcfSeat) => {
+            // TODO local stuff
+            const zoeSeat = zcfSeatToZoeSeat.get(zcfSeat);
+            E(zoeMintP).burnAllocation(allocation, zoeSeat);
           },
         });
         return zcfMint;
