@@ -21,10 +21,7 @@ function removeTriple(arr, a, b, c) {
 }
 
 test('load empty', async t => {
-  const config = {
-    vats: new Map(),
-    bootstrapIndexJS: undefined,
-  };
+  const config = {};
   const controller = await buildVatController(config);
   await controller.run();
   t.ok(true);
@@ -33,9 +30,11 @@ test('load empty', async t => {
 
 async function simpleCall(t) {
   const config = {
-    vats: new Map([
-      ['vat1', { sourcepath: require.resolve('./vat-controller-1') }],
-    ]),
+    vats: {
+      vat1: {
+        sourcePath: require.resolve('./vat-controller-1'),
+      },
+    },
   };
   const controller = await buildVatController(config);
   const data = controller.dump();
@@ -108,7 +107,7 @@ test('bootstrap export', async t => {
   const commsVatID = c.vatNameToID('comms');
   const vatTPVatID = c.vatNameToID('vattp');
   const timerVatID = c.vatNameToID('timer');
-  const bootstrapVatID = c.vatNameToID('_bootstrap');
+  const bootstrapVatID = c.vatNameToID('bootstrap');
   const leftVatID = c.vatNameToID('left');
   const rightVatID = c.vatNameToID('right');
   // console.log(c.dump());
@@ -147,7 +146,7 @@ test('bootstrap export', async t => {
         method: 'bootstrap',
         args: {
           body:
-            '[[],{"_bootstrap":{"@qclass":"slot","index":0},"comms":{"@qclass":"slot","index":1},"left":{"@qclass":"slot","index":2},"right":{"@qclass":"slot","index":3},"timer":{"@qclass":"slot","index":4},"vatAdmin":{"@qclass":"slot","index":5},"vattp":{"@qclass":"slot","index":6}},{"_dummy":"dummy","vatAdmin":{"@qclass":"slot","index":7}}]',
+            '[{"bootstrap":{"@qclass":"slot","index":0},"comms":{"@qclass":"slot","index":1},"left":{"@qclass":"slot","index":2},"right":{"@qclass":"slot","index":3},"timer":{"@qclass":"slot","index":4},"vatAdmin":{"@qclass":"slot","index":5},"vattp":{"@qclass":"slot","index":6}},{"_dummy":"dummy","vatAdmin":{"@qclass":"slot","index":7}}]',
           slots: [
             boot0,
             comms0,

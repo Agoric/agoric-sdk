@@ -23,7 +23,7 @@ export function buildRootObject(_vatPowers) {
   }
 
   return harden({
-    bootstrap(argv, vats) {
+    bootstrap(vats) {
       bob = vats.bob;
       p = E(bob).init();
       E(bob).gen();

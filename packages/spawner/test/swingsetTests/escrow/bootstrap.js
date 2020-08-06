@@ -8,7 +8,7 @@ import { assert, details } from '@agoric/assert';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
 
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
@@ -175,12 +175,12 @@ export function buildRootObject(vatPowers) {
   }
 
   const obj0 = {
-    async bootstrap(argv, vats) {
+    async bootstrap(vats) {
       const host = await E(vats.host).makeHost();
       const { mint: randMintP } = E(vats.mint).makeIssuerKit('rand');
 
       const { mint: artMintP } = makeIssuerKit('art', 'set');
-      switch (argv[0]) {
+      switch (vatParameters.argv[0]) {
         case 'escrow misMatches': {
           return testEscrowServiceMismatches(host, randMintP, artMintP);
         }
@@ -197,7 +197,7 @@ export function buildRootObject(vatPowers) {
           return testEscrowCheckPartialWrongStock(host, randMintP, artMintP);
         }
         default: {
-          throw new Error(`unrecognized argument value ${argv[0]}`);
+          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

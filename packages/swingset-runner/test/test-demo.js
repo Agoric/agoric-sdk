@@ -47,3 +47,7 @@ test('run encouragmentBot demo with lmdb', async t => {
 test('run encouragmentBot demo with default', async t => {
   innerTest(t, '');
 });
+
+test('run encouragmentBot demo with indirectly loaded vats', async t => {
+  innerTest(t, '--indirect');
+});

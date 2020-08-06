@@ -7,6 +7,6 @@
  * as yet not-entirely-ESM-supporting version of NodeJS.
  */
 import lmdb from 'node-lmdb';
-import '@agoric/install-ses';
+import '../src/install-optional-metering-and-ses';
 import { main } from '../src/main.js';
 main();

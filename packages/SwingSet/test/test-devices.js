@@ -18,17 +18,20 @@ function capargs(args, slots = []) {
 
 test('d0', async t => {
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-0'),
+      },
+    },
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-0'),
   };
   const c = await buildVatController(config);
   await c.step();
   // console.log(util.inspect(c.dump(), { depth: null }));
   t.deepEqual(JSON.parse(c.dump().log[0]), [
-    [],
     {
-      _bootstrap: { '@qclass': 'slot', index: 0 },
+      bootstrap: { '@qclass': 'slot', index: 0 },
       comms: { '@qclass': 'slot', index: 1 },
       timer: { '@qclass': 'slot', index: 2 },
       vatAdmin: { '@qclass': 'slot', index: 3 },
@@ -55,7 +58,12 @@ test('d0', async t => {
 test('d1', async t => {
   const sharedArray = [];
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-1'),
+      },
+    },
     devices: [
       [
         'd1',
@@ -65,11 +73,10 @@ test('d1', async t => {
         },
       ],
     ],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-1'),
   };
   const c = await buildVatController(config);
   await c.step();
-  c.queueToVatExport('_bootstrap', 'o+0', 'step1', capargs([]));
+  c.queueToVatExport('bootstrap', 'o+0', 'step1', capargs([]));
   await c.step();
   t.deepEqual(c.dump().log, [
     'callNow',
@@ -82,13 +89,17 @@ test('d1', async t => {
 
 async function test2(t, mode) {
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+      },
+      left: {
+        sourcePath: require.resolve('./files-devices/vat-left.js'),
+      },
+    },
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
-  config.vats.set('left', {
-    sourcepath: require.resolve('./files-devices/vat-left.js'),
-  });
   const c = await buildVatController(config, [mode]);
   await c.step();
   if (mode === '1') {
@@ -163,15 +174,20 @@ test('d2.5', async t => {
 test('device state', async t => {
   const { storage } = initSwingStore();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-3'),
+      },
+    },
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-3'),
-    hostStorage: storage,
   };
 
   // The initial state should be missing (null). Then we set it with the call
   // from bootstrap, and read it back.
-  const c1 = await buildVatController(config, ['write+read']);
+  const c1 = await buildVatController(config, ['write+read'], {
+    hostStorage: storage,
+  });
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
@@ -186,9 +202,13 @@ test('mailbox outbound', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+      },
+    },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
   const c = await buildVatController(config, ['mailbox1']);
@@ -222,9 +242,13 @@ test('mailbox inbound', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+      },
+    },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
   let rc;
@@ -335,9 +359,13 @@ test('command broadcast', async t => {
   const broadcasts = [];
   const cm = buildCommand(body => broadcasts.push(body));
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+      },
+    },
     devices: [['command', cm.srcPath, cm.endowments]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
   const c = await buildVatController(config, ['command1']);
@@ -350,9 +378,13 @@ test('command broadcast', async t => {
 test('command deliver', async t => {
   const cm = buildCommand(() => {});
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+      },
+    },
     devices: [['command', cm.srcPath, cm.endowments]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
   const c = await buildVatController(config, ['command2']);

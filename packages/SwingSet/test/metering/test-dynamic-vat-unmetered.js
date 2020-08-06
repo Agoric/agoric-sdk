@@ -18,8 +18,12 @@ function capargs(args, slots = []) {
 
 tap.test('unmetered dynamic vat', async t => {
   const config = {
-    vats: new Map(),
-    bootstrapIndexJS: require.resolve('./vat-load-dynamic.js'),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./vat-load-dynamic.js'),
+      },
+    },
   };
   const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
@@ -35,7 +39,7 @@ tap.test('unmetered dynamic vat', async t => {
 
   // 'createVat' will import the bundle
   c.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'createVat',
     capargs([dynamicVatBundle, { metered: false }]),
@@ -45,7 +49,7 @@ tap.test('unmetered dynamic vat', async t => {
   t.deepEqual(nextLog(), ['created'], 'first create');
 
   // First, send a message to the dynamic vat that runs normally
-  c.queueToVatExport('_bootstrap', 'o+0', 'run', capargs([]), 'panic');
+  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]), 'panic');
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -54,7 +58,7 @@ tap.test('unmetered dynamic vat', async t => {
   // this would be rejected. Without metering, it's harmless (Arrays are
   // lazy).
   c.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'explode',
     capargs(['allocate']),

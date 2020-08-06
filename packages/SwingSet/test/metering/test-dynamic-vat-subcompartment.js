@@ -20,8 +20,12 @@ function capargs(args, slots = []) {
 tap.test('metering dynamic vat which imports bundle', async t => {
   // We first create a static vat with vat-load-dynamic.js
   const config = {
-    vats: new Map(),
-    bootstrapIndexJS: require.resolve('./vat-load-dynamic.js'),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./vat-load-dynamic.js'),
+      },
+    },
   };
   const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
@@ -37,7 +41,7 @@ tap.test('metering dynamic vat which imports bundle', async t => {
 
   // 'createVat' will import the bundle
   c.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'createVat',
     capargs([dynamicVatBundle]),
@@ -50,7 +54,7 @@ tap.test('metering dynamic vat which imports bundle', async t => {
     require.resolve('./grandchild.js'),
   );
   const r = c.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'load',
     capargs([grandchildBundle]),
@@ -59,7 +63,7 @@ tap.test('metering dynamic vat which imports bundle', async t => {
   t.deepEqual(r.resolution(), capargs('ok'));
 
   // First, send a message to the grandchild that runs normally
-  c.queueToVatExport('_bootstrap', 'o+0', 'bundleRun', capargs([]));
+  c.queueToVatExport('bootstrap', 'o+0', 'bundleRun', capargs([]));
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -68,7 +72,7 @@ tap.test('metering dynamic vat which imports bundle', async t => {
   // result promise should be rejected, and the control facet should report
   // the vat's demise
   c.queueToVatExport(
-    '_bootstrap',
+    'bootstrap',
     'o+0',
     'bundleExplode',
     capargs(['allocate']),
@@ -85,7 +89,7 @@ tap.test('metering dynamic vat which imports bundle', async t => {
   );
 
   // the whole vat should be dead (we use 'run' instead of 'bundleRun')
-  c.queueToVatExport('_bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
   t.deepEqual(
     nextLog(),

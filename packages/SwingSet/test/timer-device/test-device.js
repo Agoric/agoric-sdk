@@ -8,9 +8,13 @@ const TimerSrc = '../../src/devices/timer-src';
 test('wake', async t => {
   const timer = buildTimer();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./bootstrap'),
+      },
+    },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
-    bootstrapIndexJS: require.resolve('./bootstrap'),
   };
   const c = await buildVatController(config, ['timer']);
   timer.poll(1);
@@ -24,9 +28,13 @@ test('wake', async t => {
 test('repeater', async t => {
   const timer = buildTimer();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./bootstrap'),
+      },
+    },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
-    bootstrapIndexJS: require.resolve('./bootstrap'),
   };
   const c = await buildVatController(config, ['repeater', 3, 2]);
   timer.poll(1);
@@ -43,9 +51,13 @@ test('repeater', async t => {
 test('repeater2', async t => {
   const timer = buildTimer();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./bootstrap'),
+      },
+    },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
-    bootstrapIndexJS: require.resolve('./bootstrap'),
   };
   const c = await buildVatController(config, ['repeater', 3, 2]);
   timer.poll(1);
@@ -65,9 +77,13 @@ test('repeater2', async t => {
 test('repeaterZero', async t => {
   const timer = buildTimer();
   const config = {
-    vats: new Map(),
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourcePath: require.resolve('./bootstrap'),
+      },
+    },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
-    bootstrapIndexJS: require.resolve('./bootstrap'),
   };
   const c = await buildVatController(config, ['repeater', 0, 3]);
   timer.poll(1);

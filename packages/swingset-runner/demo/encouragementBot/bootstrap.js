@@ -9,7 +9,7 @@ log(`=> loading bootstrap.js`);
 export function buildRootObject(_vatPowers) {
   log(`=> setup called`);
   return harden({
-    bootstrap(argv, vats) {
+    bootstrap(vats) {
       log('=> bootstrap() called');
       E(vats.user)
         .talkToBot(vats.bot, 'encouragementBot')

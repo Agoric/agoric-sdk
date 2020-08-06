@@ -6,10 +6,10 @@ const CONTRACT_FILES = ['simpleExchange'];
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const { source, moduleFormat } = await bundleSource(
+    const bundle = await bundleSource(
       `${__dirname}/../../../zoe/src/contracts/${contract}`,
     );
-    const obj = { source, moduleFormat, contract };
+    const obj = { bundle, contract };
     fs.writeFileSync(
       `${__dirname}/bundle-${contract}.js`,
       `export default ${JSON.stringify(obj)};`,

@@ -9,10 +9,7 @@ import { makeMarshaller } from '../src/kernel/liveSlots';
 import { buildVatController } from '../src/index';
 
 async function prep() {
-  const config = {
-    vats: new Map(),
-    bootstrapIndexJS: undefined,
-  };
+  const config = {};
   const controller = await buildVatController(config);
   await controller.run();
 }

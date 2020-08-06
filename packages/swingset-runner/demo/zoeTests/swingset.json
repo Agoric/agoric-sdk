@@ -1,0 +1,67 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "alice": {
+      "sourcePath": "vat-alice.js"
+    },
+    "bob": {
+      "sourcePath": "vat-bob.js"
+    },
+    "carol": {
+      "sourcePath": "vat-carol.js"
+    },
+    "dave": {
+      "sourcePath": "vat-dave.js"
+    },
+    "zoe": {
+      "sourcePath": "vat-zoe.js"
+    },
+    "bootstrap": {
+      "sourcePath": "bootstrap.js",
+      "options": {
+        "startingValues": {
+          "automaticRefundOk": [
+            [  3,  0,  0 ],
+            [  0, 17,  0 ]
+          ],
+          "coveredCallOk": [
+            [  3,  0,  0 ],
+            [  0,  7,  0 ]
+          ],
+          "swapForOptionOk": [
+            [  3,  0,  0 ],
+            [  0,  0,  0 ],
+            [  0,  0,  0 ],
+            [  0,  7,  1 ]
+          ],
+          "publicAuctionOk": [
+            [  1,  0,  0 ],
+            [  0, 11,  0 ],
+            [  0,  7,  0 ],
+            [  0,  5,  0 ]
+          ],
+          "atomicSwapOk": [
+            [  3,  0,  0 ],
+            [  0,  7,  0 ]
+          ],
+          "simpleExchangeOk": [
+            [  3,  0,  0 ],
+            [  0,  7,  0 ]
+          ],
+          "simpleExchangeNotifier": [
+            [  3,  0,  0 ],
+            [  0, 24,  0 ]
+          ],
+          "autoswapOk": [
+            [ 10,  5,  0 ],
+            [  3,  7,  0 ]
+          ],
+          "sellTicketsOk": [
+            [  0,  0,  0 ],
+            [ 22,  0,  0 ]
+          ]
+        }
+      }
+    }
+  }
+}

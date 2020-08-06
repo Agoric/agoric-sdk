@@ -97,9 +97,10 @@ async function buildSwingset(
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
-  config.hostStorage = storage;
 
-  const controller = await buildVatController(config, argv);
+  const controller = await buildVatController(config, argv, {
+    hostStorage: storage,
+  });
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());

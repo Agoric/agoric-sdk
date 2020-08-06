@@ -3,11 +3,11 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
   return harden({
-    bootstrap(argv, vats) {
-      const mode = argv[0];
+    bootstrap(vats) {
+      const mode = vatParameters.argv[0];
       if (mode === 'flush') {
         Promise.resolve().then(log('then1'));
         Promise.resolve().then(log('then2'));

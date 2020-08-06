@@ -12,7 +12,7 @@ export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
   console.log(`=> setup called`);
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
       console.log('=> bootstrap() called');
 
       const BOT = 'bot';

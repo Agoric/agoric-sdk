@@ -34,19 +34,23 @@ async function buildSwingset(
     ['mailbox', mb.srcPath, mb.endowments],
     ['timer', timer.srcPath, timer.endowments],
   ];
-  config.vats = new Map();
+  config.vats = {};
   for (const fname of fs.readdirSync(vatsDir)) {
     const match = fname.match(/^vat-(.*)\.js$/);
     if (match) {
-      config.vats.set(match[1], {
-        sourcepath: require.resolve(`${vatsDir}/${fname}`),
-      });
+      config.vats[match[1]] = {
+        sourcePath: require.resolve(`${vatsDir}/${fname}`),
+      };
     }
   }
-  config.bootstrapIndexJS = require.resolve(`${vatsDir}/bootstrap.js`);
-  config.hostStorage = storage;
+  config.vats.bootstrap = {
+    sourcePath: require.resolve(`${vatsDir}/bootstrap.js`),
+  };
+  config.bootstrap = 'bootstrap';
 
-  const controller = await buildVatController(config, argv);
+  const controller = await buildVatController(config, argv, {
+    hostStorage: storage,
+  });
   await controller.run();
 
   const bridgeInbound = bd.deliverInbound;

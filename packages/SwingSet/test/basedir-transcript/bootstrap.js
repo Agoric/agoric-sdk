@@ -1,10 +1,10 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   return harden({
-    bootstrap(argv, vats) {
-      const mode = argv[0];
+    bootstrap(vats) {
+      const mode = vatParameters.argv[0];
       if (mode === 'one') {
         E(vats.left)
           .callRight(1, vats.right)

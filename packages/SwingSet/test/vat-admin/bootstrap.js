@@ -1,10 +1,11 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
+      const { argv } = vatParameters;
       const bundles = argv[1];
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,

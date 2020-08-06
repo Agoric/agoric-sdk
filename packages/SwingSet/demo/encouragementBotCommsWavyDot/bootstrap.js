@@ -11,7 +11,7 @@ console.log(`=> loading bootstrap.js`);
 export function buildRootObject(vatPowers) {
   const { D, testLog: log } = vatPowers;
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
       console.log('=> bootstrap() called');
 
       const BOT = 'bot';

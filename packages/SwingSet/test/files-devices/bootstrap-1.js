@@ -7,7 +7,7 @@ export default function setup(syscall, state, _helpers, vatPowers) {
     deliver(facetid, method, args, _result) {
       if (method === 'bootstrap') {
         const argb = JSON.parse(args.body);
-        const deviceIndex = argb[2].d1.index;
+        const deviceIndex = argb[1].d1.index;
         deviceRef = args.slots[deviceIndex];
         if (deviceRef !== 'd-70') {
           throw new Error(`bad deviceRef ${deviceRef}`);

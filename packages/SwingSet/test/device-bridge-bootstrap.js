@@ -1,6 +1,6 @@
 /* global harden */
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog } = vatPowers;
   const handler = harden({
     inbound(...args) {
@@ -10,7 +10,8 @@ export function buildRootObject(vatPowers) {
   });
 
   return harden({
-    async bootstrap(argv, vats, devices) {
+    async bootstrap(vats, devices) {
+      const { argv } = vatParameters;
       harden(argv);
       D(devices.bridge).registerInboundHandler(handler);
       const retval = D(devices.bridge).callOutbound(argv[0], argv[1]);

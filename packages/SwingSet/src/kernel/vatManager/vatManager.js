@@ -23,6 +23,8 @@ export function makeVatManagerFactory(tools) {
     setup,
     vatID,
     vatPowers = staticVatPowers,
+    _vatParameters = {},
+    _creationOptions = {},
     meterRecord = null,
     notifyTermination = undefined,
   ) {
@@ -78,6 +80,8 @@ export function makeVatManagerFactory(tools) {
       metered = false,
       notifyTermination = undefined,
       vatPowerType, // 'static' or 'dynamic'
+      creationOptions,
+      vatParameters,
       ...unknownOptions
     } = options;
     if (Object.keys(unknownOptions).length) {
@@ -122,7 +126,14 @@ export function makeVatManagerFactory(tools) {
     let setup;
     if (typeof vatNS.buildRootObject === 'function') {
       setup = (syscall, state, helpers, vP) =>
-        makeLiveSlots(syscall, state, vatNS.buildRootObject, vatID, vP);
+        makeLiveSlots(
+          syscall,
+          state,
+          vatNS.buildRootObject,
+          vatID,
+          vP,
+          vatParameters,
+        );
     } else {
       if (!allowSetup) {
         throw Error(
@@ -142,6 +153,8 @@ export function makeVatManagerFactory(tools) {
       setup,
       vatID,
       vatPowers,
+      vatParameters,
+      creationOptions,
       meterRecord,
       notifyTermination,
     );
