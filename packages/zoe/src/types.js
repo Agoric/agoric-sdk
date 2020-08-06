@@ -2,6 +2,11 @@
 /// <reference types="ses"/>
 
 /**
+ * @template T
+ * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
+ */
+
+/**
  * @template {string} H - the name of the handle
  * @typedef {H & {}} Handle A type constructor for an opaque type identified by the H string.
  * This uses an intersection type ('MyHandle' & {}) to tag the handle's type even though the
@@ -146,7 +151,7 @@
  * @property {() => void} wake
  *
  * @typedef {Object} Timer
- * @property {(deadline: Deadline, wakerP: Waker|PromiseLike<Waker>) => void} setWakeup
+ * @property {(deadline: Deadline, wakerP: ERef<Waker>) => void} setWakeup
  *
  * @typedef {number} Deadline
  *
@@ -290,7 +295,7 @@
  * @callback AddNewIssuer
  * Informs Zoe about an issuer and returns a promise for acknowledging
  * when the issuer is added and ready.
- * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
+ * @param {ERef<Issuer>} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
  * @returns {Promise<IssuerRecord>} Issuer is added and ready
  *

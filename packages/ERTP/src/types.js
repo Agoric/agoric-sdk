@@ -2,6 +2,11 @@
 /// <reference types="ses"/>
 
 /**
+ * @template T
+ * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
+ */
+
+/**
  * @typedef {Object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
@@ -103,7 +108,7 @@
  */
 
 /**
- * @typedef {Payment|PromiseLike<Payment>} PaymentP
+ * @typedef {ERef<Payment>} PaymentP
  */
 
 /**
