@@ -1,0 +1,3 @@
+@import 'smelte/src/tailwind';
+@import './global.css';
+@import './override.css';
