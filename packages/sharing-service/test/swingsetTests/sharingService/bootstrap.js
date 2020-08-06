@@ -5,7 +5,7 @@ import { E } from '@agoric/eventual-send';
 import { makeSharedMap } from '../../../src/sharedMap';
 import { makeSharingService } from '../../../src/sharing';
 
-export function buildRootObject(vatPowers, vatOptions) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
   function testSharedMapStorage() {
     log('starting testSharedMapStorage');
@@ -82,7 +82,7 @@ export function buildRootObject(vatPowers, vatOptions) {
 
   const obj0 = {
     async bootstrap(vats) {
-      switch (vatOptions.argv[0]) {
+      switch (vatParameters.argv[0]) {
         case 'sharedMap': {
           return testSharedMapStorage();
         }
@@ -96,7 +96,7 @@ export function buildRootObject(vatPowers, vatOptions) {
           return testTwoVatSharing(aliceMaker, bobMaker, sharingService);
         }
         default: {
-          throw new Error(`unrecognized argument value ${vatOptions.argv[0]}`);
+          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

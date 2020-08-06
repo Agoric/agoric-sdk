@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import makeIssuerKit from '../../../src/issuer';
 
-export function buildRootObject(vatPowers, vatOptions) {
+export function buildRootObject(vatPowers, vatParameters) {
   function testSplitPayments(aliceMaker) {
     vatPowers.testLog('start test splitPayments');
     const { mint: moolaMint, issuer, amountMath } = makeIssuerKit('moola');
@@ -13,13 +13,13 @@ export function buildRootObject(vatPowers, vatOptions) {
 
   const obj0 = {
     async bootstrap(vats) {
-      switch (vatOptions.argv[0]) {
+      switch (vatParameters.argv[0]) {
         case 'splitPayments': {
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           return testSplitPayments(aliceMaker);
         }
         default: {
-          throw new Error(`unrecognized argument value ${vatOptions.argv[0]}`);
+          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

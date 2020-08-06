@@ -22,30 +22,32 @@ import { E } from '@agoric/eventual-send';
  * co-resident swingsets as you care to ask for).  That's a fairly simple
  * extension of this, but this is not that.
  */
-export function buildRootObject(_vatPowers, options) {
+export function buildRootObject(_vatPowers, vatParameters) {
   let bootstrapRoot;
 
   return harden({
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       const vatRoots = {};
-      for (const vatName of Object.keys(options.config.vats)) {
-        const vatDesc = options.config.vats[vatName];
+      for (const vatName of Object.keys(vatParameters.config.vats)) {
+        const vatDesc = vatParameters.config.vats[vatName];
         const bundleName = vatDesc.bundleName;
-        const vatOptions = vatDesc.options ? { ...vatDesc.options } : {};
-        if (options.config.bootstrap === vatName) {
-          vatOptions.argv = options.argv;
+        const subvatParameters = vatDesc.parameters
+          ? { ...vatDesc.parameters }
+          : {};
+        if (vatParameters.config.bootstrap === vatName) {
+          subvatParameters.argv = vatParameters.argv;
         }
         // prettier-ignore
         // eslint-disable-next-line no-await-in-loop
         const vat = await E(vatMaker).createVatByName(
           bundleName,
-          { metered: options.metered, vatOptions },
+          { metered: vatParameters.metered, vatParameters: subvatParameters },
         );
         vatRoots[vatName] = vat.root;
       }
       vatRoots.vatAdmin = vats.vatAdmin;
-      bootstrapRoot = vatRoots[options.config.bootstrap];
+      bootstrapRoot = vatRoots[vatParameters.config.bootstrap];
       // prettier-ignore
       return E(bootstrapRoot).bootstrap(vatRoots, devices);
     },

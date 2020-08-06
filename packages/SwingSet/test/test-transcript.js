@@ -67,7 +67,6 @@ test('transcript-one load', async t => {
     );
     const s = initSwingStore().storage;
     setAllState(s, states[i]);
-    cfg.hostStorage = s;
     // eslint-disable-next-line no-await-in-loop
     const c = await buildVatController(cfg, ['one'], { hostStorage: s });
     // eslint-disable-next-line no-await-in-loop

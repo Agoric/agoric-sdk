@@ -1,11 +1,11 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(vatPowers, vatOptions) {
+export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;
   return harden({
     async bootstrap(vats, devices) {
-      const { argv } = vatOptions;
+      const { argv } = vatParameters;
       if (argv[0] === '1') {
         log(`calling d2.method1`);
         const ret = D(devices.d2).method1('hello');

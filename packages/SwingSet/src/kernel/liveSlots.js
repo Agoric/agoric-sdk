@@ -35,7 +35,7 @@ function build(
   buildRootObject,
   forVatID,
   vatPowers,
-  vatOptions,
+  vatParameters,
 ) {
   const enableLSDebug = false;
   function lsdebug(...args) {
@@ -523,7 +523,7 @@ function build(
   // here we finally invoke the vat code, and get back the root object
   const rootObject = buildRootObject(
     harden({ D, ...vatPowers }),
-    harden(vatOptions),
+    harden(vatParameters),
   );
   mustPassByPresence(rootObject);
 
@@ -555,7 +555,7 @@ function build(
  * The caller provided buildRootObject function produces and returns the new vat's
  * root object:
  *
- *     buildRootObject(vatPowers, vatOptions)
+ *     buildRootObject(vatPowers, vatParameters)
  *
  *     Within the vat, `import { E } from '@agoric/eventual-send'` will
  *     provide the E wrapper. For any object x, E(x) returns a proxy object
@@ -579,7 +579,7 @@ export function makeLiveSlots(
   buildRootObject,
   forVatID = 'unknown',
   vatPowers = harden({}),
-  vatOptions = harden({}),
+  vatParameters = harden({}),
 ) {
   const {
     deliver,
@@ -592,7 +592,7 @@ export function makeLiveSlots(
     buildRootObject,
     forVatID,
     { ...vatPowers, getInterfaceOf, Remotable },
-    vatOptions,
+    vatParameters,
   );
   return harden({
     deliver,

@@ -91,7 +91,7 @@ const makeVats = (vats, zoe, installations, startingValues) => {
   return harden(result);
 };
 
-export function buildRootObject(_vatPowers, vatOptions) {
+export function buildRootObject(_vatPowers, vatParameters) {
   const obj0 = {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
@@ -120,8 +120,22 @@ export function buildRootObject(_vatPowers, vatOptions) {
       // autoswapOk '[[10,5,0],[3,7,0]]'
       // sellTicketsOk '[[0,0,0],[22,0,0]]'
 
-      const [testName, startingValuesStr] = vatOptions.argv;
-      const startingValues = JSON.parse(startingValuesStr);
+      const testName = vatParameters.argv[0] || 'simpleExchangeOk';
+      const startingValuesStr = vatParameters.argv[1];
+      let startingValues;
+      if (
+        !startingValuesStr &&
+        vatParameters.startingValues &&
+        vatParameters.startingValues[testName]
+      ) {
+        startingValues = vatParameters.startingValues[testName];
+      } else {
+        startingValues = JSON.parse(startingValuesStr);
+      }
+
+      log(
+        `test: ${testName}, startingValues: ${JSON.stringify(startingValues)}`,
+      );
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         vats,

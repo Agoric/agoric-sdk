@@ -3,11 +3,11 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-export function buildRootObject(vatPowers, vatOptions) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
   return harden({
     bootstrap(vats) {
-      const { argv } = vatOptions;
+      const { argv } = vatParameters;
       const mode = argv[0];
       if (mode === 'harden-promise-1') {
         const { promise: p1 } = makePromiseKit();

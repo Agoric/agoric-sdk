@@ -8,7 +8,7 @@ import { bundleFunction } from '../../make-function-bundle';
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
 
-export function buildRootObject(vatPowers, vatOptions) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
 
   // TODO BUG: All callers should wait until settled before doing
@@ -366,7 +366,7 @@ export function buildRootObject(vatPowers, vatOptions) {
 
   const obj0 = {
     async bootstrap(vats) {
-      switch (vatOptions.argv[0]) {
+      switch (vatParameters.argv[0]) {
         case 'trivial-oldformat': {
           const host = await E(vats.host).makeHost();
           return trivialContractTest(host, 'oldformat');
@@ -421,7 +421,7 @@ export function buildRootObject(vatPowers, vatOptions) {
           );
         }
         default: {
-          throw new Error(`unrecognized argument value ${vatOptions.argv[0]}`);
+          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

@@ -50,20 +50,20 @@ form config object.
 When you define a vat, you write module that exports a `buildRootObject` function.  The
 signature of this function has changed.  It is now:
 
-`buildRootObject(vatPowers, vatOptions)`
+`buildRootObject(vatPowers, vatParameters)`
 
-The `vatPowers` parameter is the same as it was before, while the `vatOptions` parameter
-is new.  The latter contains a copy of the contents of the `options` property (if there
+The `vatPowers` parameter is the same as it was before, while the `vatParameters` parameter
+is new.  The latter contains a copy of the contents of the `parameters` property (if there
 was one) from the associated vat definition in the config object used to create the
 swingset; this allows you to use the config object to configure individual vats however
 you like, as long as this configuration can be described by a JSON-serializable pure data
 object.  Some demos and tests use multiple instances of the same vat code and had to
 resort to weird wrapper modules to allow them to be multiply instantiated; with
-`vatOptions` such hackery is no longer required.
+`vatParameters` such hackery is no longer required.
 
 In addition, command line parameters from the host invocation of the swingset (which the
 host provides in the second parameter to `buildVatController`) are now passed as the
-`argv` property of the `vatOptions` rather than as an argument to the bootstrap vat's
+`argv` property of the `vatParameters` rather than as an argument to the bootstrap vat's
 `bootstrap` message.  The signature of the `bootstrap` method of the bootstrap vat is
 thus now:
 

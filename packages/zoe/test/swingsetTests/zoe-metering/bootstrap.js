@@ -6,7 +6,7 @@ import infiniteTestLoopBundle from './bundle-infiniteTestLoop';
 import testBuiltinsBundle from './bundle-testBuiltins';
 /* eslint-enable import/extensions, import/no-unresolved */
 
-export function buildRootObject(vatPowers, vatOptions) {
+export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
   const obj0 = {
     async bootstrap(vats, devices) {
@@ -23,7 +23,7 @@ export function buildRootObject(vatPowers, vatOptions) {
         testBuiltins: () => E(zoe).install(testBuiltinsBundle.bundle),
       };
 
-      const [testName] = vatOptions.argv;
+      const [testName] = vatParameters.argv;
       // depending upon the mode we're using ('testName'), one of these calls
       // will go into an infinite loop and get killed by the meter
 

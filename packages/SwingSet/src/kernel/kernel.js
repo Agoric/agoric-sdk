@@ -48,7 +48,7 @@ export default function buildKernel(kernelEndowments) {
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
   // vats that are added later from within the kernel
-  const genesisVats = new Map(); // name -> { setup, vatOptions, creationOptions }
+  const genesisVats = new Map(); // name -> { setup, vatParameters, creationOptions }
   // we name this 'genesisDevices' for parallelism, but actually all devices
   // must be present at genesis
   const genesisDevices = new Map(); // name -> { setup, options }
@@ -399,7 +399,7 @@ export default function buildKernel(kernelEndowments) {
   function addGenesisVatSetup(
     name,
     setup,
-    vatOptions = {},
+    vatParameters = {},
     creationOptions = {},
   ) {
     if (typeof setup !== 'function') {
@@ -408,7 +408,7 @@ export default function buildKernel(kernelEndowments) {
     const knownCreationOptions = new Set(['enablePipelining', 'metered']);
     for (const k of Object.keys(creationOptions)) {
       if (!knownCreationOptions.has(k)) {
-        throw new Error(`unknown option ${k}`);
+        throw Error(`unknown option ${k}`);
       }
     }
 
@@ -419,10 +419,15 @@ export default function buildKernel(kernelEndowments) {
       throw Error(`vatID ${name} already added`);
     }
 
-    genesisVats.set(name, { setup, vatOptions, creationOptions });
+    genesisVats.set(name, { setup, vatParameters, creationOptions });
   }
 
-  function addGenesisVat(name, bundle, vatOptions = {}, creationOptions = {}) {
+  function addGenesisVat(
+    name,
+    bundle,
+    vatParameters = {},
+    creationOptions = {},
+  ) {
     // todo: consider having vats indicate 'enablePipelining' by exporting a
     // boolean, rather than options= . We'd have to retrieve the flag from
     // the VatManager, since it isn't available until the bundle is evaluated
@@ -441,7 +446,7 @@ export default function buildKernel(kernelEndowments) {
     if (genesisVats.has(name)) {
       throw Error(`vatID ${name} already added`);
     }
-    genesisVats.set(name, { bundle, vatOptions, creationOptions });
+    genesisVats.set(name, { bundle, vatParameters, creationOptions });
   }
 
   function addGenesisDevice(name, bundle, endowments) {
@@ -560,7 +565,7 @@ export default function buildKernel(kernelEndowments) {
    * might tell the manager to replay the transcript later, if it notices
    * we're reloading a saved state vector.
    */
-  function addVatManager(vatID, manager, vatOptions, creationOptions) {
+  function addVatManager(vatID, manager, creationOptions) {
     // addVatManager takes a manager, not a promise for one
     assert(
       manager.deliver && manager.setVatSyscallHandler,
@@ -710,7 +715,7 @@ export default function buildKernel(kernelEndowments) {
 
     // instantiate all vats
     for (const name of genesisVats.keys()) {
-      const { setup, bundle, vatOptions, creationOptions } = genesisVats.get(
+      const { setup, bundle, vatParameters, creationOptions } = genesisVats.get(
         name,
       );
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
@@ -722,14 +727,19 @@ export default function buildKernel(kernelEndowments) {
             metered: false,
             vatPowerType: 'static',
             allowSetup: true, // TODO: only needed by comms, disallow elsewhere
-            vatOptions,
+            vatParameters,
             creationOptions,
           }));
-      addVatManager(vatID, manager, vatOptions, creationOptions);
+      addVatManager(vatID, manager, creationOptions);
     }
 
     function createVatDynamicallyByName(bundleName, options) {
-      return createVatDynamically(getBundle(bundleName), options);
+      const bundle = getBundle(bundleName);
+      if (bundle) {
+        return createVatDynamically(bundle, options);
+      } else {
+        throw Error(`Bundle ${bundleName} not found`);
+      }
     }
 
     if (vatAdminDeviceBundle) {

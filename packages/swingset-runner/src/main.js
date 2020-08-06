@@ -85,7 +85,7 @@ function fail(message, printUsage) {
   process.exit(1);
 }
 
-function normalizeConfigDescriptor(desc, dirname, expectOptions) {
+function normalizeConfigDescriptor(desc, dirname, expectParameters) {
   if (desc) {
     for (const name of Object.keys(desc)) {
       const entry = desc[name];
@@ -95,8 +95,8 @@ function normalizeConfigDescriptor(desc, dirname, expectOptions) {
       if (entry.bundlePath) {
         entry.bundlePath = path.resolve(dirname, entry.bundlePath);
       }
-      if (expectOptions && !entry.options) {
-        entry.options = {};
+      if (expectParameters && !entry.parameters) {
+        entry.parameters = {};
       }
     }
   }
@@ -128,7 +128,7 @@ function generateIndirectConfig(baseConfig) {
     vats: {
       launcher: {
         sourcePath: path.resolve(__dirname, 'vat-launcher.js'),
-        options: {
+        parameters: {
           config: {
             bootstrap: baseConfig.bootstrap,
             vats: {},
@@ -157,7 +157,7 @@ function generateIndirectConfig(baseConfig) {
         fail(`this can't happen`);
       }
       baseVat.bundleName = newBundleName;
-      config.vats.launcher.options.config.vats[vatName] = baseVat;
+      config.vats.launcher.parameters.config.vats[vatName] = baseVat;
     }
   }
   if (baseConfig.bundles) {
@@ -361,7 +361,7 @@ export async function main() {
       fail(`invalid database mode ${dbMode}`, true);
   }
   if (config.bootstrap) {
-    config.vats[config.bootstrap].options.metered = meterVats;
+    config.vats[config.bootstrap].parameters.metered = meterVats;
   }
   const runtimeOptions = {};
   if (store) {

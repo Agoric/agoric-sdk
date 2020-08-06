@@ -39,7 +39,7 @@ export function makeDynamicVatCreator(stuff) {
     const {
       metered = true,
       creationOptions = {},
-      vatOptions = {},
+      vatParameters = {},
       ...unknownOptions
     } = options;
     if (Object.keys(unknownOptions).length) {
@@ -82,7 +82,7 @@ export function makeDynamicVatCreator(stuff) {
       notifyTermination: metered ? notifyTermination : undefined,
       vatPowerType: 'dynamic',
       creationOptions,
-      vatOptions,
+      vatParameters,
     };
 
     async function build() {
@@ -98,7 +98,7 @@ export function makeDynamicVatCreator(stuff) {
         managerOptions,
       );
       const addOptions = {}; // enablePipelining:false
-      addVatManager(vatID, manager, {}, addOptions);
+      addVatManager(vatID, manager, addOptions);
     }
 
     function makeSuccessResponse() {

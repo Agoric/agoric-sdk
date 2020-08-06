@@ -70,9 +70,10 @@ function byName(a, b) {
  *   }
  * }
  *
- * Where NAME is the name of the vat or 'bootstrap'; `sourcePath` contains the
- * path to the vat with that name; and the `bootstrap` flag is present and true
- * for the bootstrap vat found in bootstrap.js if that file existed.
+ * Where NAME is the name of the vat; `sourcePath` contains the path to the vat with that name.  Note that
+ * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
+ * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
+ * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
  *
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
@@ -95,7 +96,7 @@ export function loadBasedir(basedir) {
     ) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const vatSourcePath = path.resolve(basedir, dirent.name);
-      vats[name] = { sourcePath: vatSourcePath, options: {} };
+      vats[name] = { sourcePath: vatSourcePath, parameters: {} };
     } else {
       console.debug(`ignoring file ${dirent.name} in ${basedir}`);
     }
@@ -114,7 +115,7 @@ export function loadBasedir(basedir) {
   if (bootstrapPath) {
     vats.bootstrap = {
       sourcePath: bootstrapPath,
-      options: {},
+      parameters: {},
     };
     config.bootstrap = 'bootstrap';
   }
@@ -135,10 +136,10 @@ export async function buildVatController(
   harden(console);
 
   if (config.bootstrap && argv) {
-    if (!config.vats[config.bootstrap].options) {
-      config.vats[config.bootstrap].options = {};
+    if (!config.vats[config.bootstrap].parameters) {
+      config.vats[config.bootstrap].parameters = {};
     }
-    config.vats[config.bootstrap].options.argv = argv;
+    config.vats[config.bootstrap].parameters.argv = argv;
   }
 
   function kernelRequire(what) {
@@ -262,12 +263,12 @@ export async function buildVatController(
   async function addGenesisVat(
     name,
     bundleName,
-    vatOptions = {},
+    vatParameters = {},
     creationOptions = {},
   ) {
     console.debug(`= adding vat '${name}' from bundle ${bundleName}`);
     const bundle = kernel.getBundle(bundleName);
-    kernel.addGenesisVat(name, bundle, vatOptions, creationOptions);
+    kernel.addGenesisVat(name, bundle, vatParameters, creationOptions);
   }
 
   async function addGenesisDevice(name, sourcePath, endowments) {
@@ -376,7 +377,7 @@ export async function buildVatController(
         addGenesisVat(
           name,
           v.bundleName || name,
-          v.options || {},
+          v.parameters || {},
           v.creationOptions || {},
         ),
       );

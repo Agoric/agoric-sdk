@@ -6,7 +6,7 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers, options) {
+export function buildRootObject(_vatPowers, vatParameters) {
   log(`=> setup called`);
   return harden({
     bootstrap(vats) {
@@ -19,7 +19,7 @@ export function buildRootObject(_vatPowers, options) {
           r => log(`=> alice.introduceYourselfTo(bob) resolved to '${r}'`),
           e => log(`=> alice.introduceYourselfTo(bob) rejected as '${e}'`),
         );
-      const count = options.argv[0] ? Number(options.argv[0]) : 10;
+      const count = vatParameters.argv[0] ? Number(vatParameters.argv[0]) : 10;
       E(vats.alice).grind('hey!', count);
     },
   });

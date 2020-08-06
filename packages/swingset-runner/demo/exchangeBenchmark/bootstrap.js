@@ -59,7 +59,7 @@ function makeVats(vats, zoe, installations, startingValues) {
   return harden(result);
 }
 
-export function buildRootObject(_vatPowers, options) {
+export function buildRootObject(_vatPowers, vatParameters) {
   let alice;
   let bob;
   let round = 0;
@@ -82,7 +82,7 @@ export function buildRootObject(_vatPowers, options) {
       ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
       // Zoe appears to do some one-time setup the first time it's used, so this
       // is a sacrifical benchmark round to prime the pump.
-      if (options.argv[0] === '--prime') {
+      if (vatParameters.argv[0] === '--prime') {
         await E(alice).initiateSimpleExchange(bob);
         await E(bob).initiateSimpleExchange(alice);
       }
