@@ -2,6 +2,7 @@
   import { E } from "@agoric/eventual-send";
   import TextField from 'smelte/src/components/TextField';
   import Switch from 'smelte/src/components/Switch';
+import { strikethrough } from "svelte-awesome/icons";
 
   export let item;
   export let details = true;
@@ -19,12 +20,11 @@
     }
   };
 
-  const keydown = e => {
-    // console.log('have', e.key);
-    if (e.key === 'Escape') {
+  const keydown = ev => {
+    if (ev.key === 'Escape') {
       petname = origPetname;
       ev.stopPropagation();
-    } else if (e.key === 'Enter') {
+    } else if (ev.key === 'Enter') {
       E(actions).setPetname(petname);
       ev.stopPropagation();
     }
@@ -32,9 +32,16 @@
 </script>
 
 <div>
-{#if summary}{dappOrigin || origin}{/if}
+{#if summary}{origPetname}{/if}
 {#if details}
-  <div on:keydown|capture><TextField
+  <div>Web:
+    {#if enable}
+    <a target="_blank" href={dappOrigin || origin}>{dappOrigin || origin}</a>
+    {:else}
+    <strikethrough>{dappOrigin || origin}</strikethrough>
+    {/if}
+  </div>
+  <div on:keydown|capture={keydown}><TextField
     hint="Alleged name: {JSON.stringify(suggestedPetname)}"
     label="Dapp petname"
     bind:value={petname}

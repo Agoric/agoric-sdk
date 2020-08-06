@@ -9,11 +9,7 @@
   import Contacts from "./Contacts.svelte";
   import Purses from "./Purses.svelte";
   import Transactions from "./Transactions.svelte";
-  import {
-    dapps,
-    connected,
-    contacts,
-  } from "./store";
+  import { connected } from "./store";
 
   import { ThemeWrapper, ThemeToggle } from "svelte-themer";
 
@@ -187,7 +183,7 @@
         <Issuers />
       </div>
       <div class="contacts">
-        <Contacts {contacts} />
+        <Contacts />
       </div>
       <!-- <div class="history">
         <History />

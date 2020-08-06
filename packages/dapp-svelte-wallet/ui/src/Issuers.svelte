@@ -1,12 +1,12 @@
 <script>
   import { E } from '@agoric/eventual-send';
   import Card from 'smelte/src/components/Card';
+  import ListCard from '../lib/ListCard.svelte';
   
   import Issuer from './Issuer.svelte';
   import Import from './Import.svelte';
 
   import { issuers, walletP } from './store';
-  import ListCard from '../lib/ListCard.svelte';
 </script>
 
 <ListCard items={$issuers}>

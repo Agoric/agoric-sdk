@@ -32,8 +32,9 @@ function cmp(a, b) {
   return a < b ? -1 : a === b ? 0 : 1;
 }
 
-function comparable(x) {
-  return JSON.stringify(x);
+function kv(key, val) {
+  const text = Array.isArray(key) ? key.join('.') : key;
+  return { ...val, id: key, text, value: val };
 }
 
 function onReset(readyP) {
@@ -49,7 +50,7 @@ function onReset(readyP) {
   }, E(walletP).getInboxJSONNotifier());
   updateFromNotifier({
     updateState(state) {
-      setPurses(state.map(purse => ({ ...purse, id: comparable(purse.pursePetname) }))
+      setPurses(state.map(purse => ({ ...kv(purse.pursePetname, purse) }))
         .sort((a, b) => cmp(a.brandPetname, b.brandPetname) || cmp(a.pursePetname, b.pursePetname)));
     },
   }, E(walletP).getPursesNotifier());
@@ -59,11 +60,16 @@ function onReset(readyP) {
         .sort((a, b) => cmp(a.dappPetname, b.dappPetname) || cmp(a.id, b.id)));
     },
   }, E(walletP).getDappsNotifier());
-  updateFromNotifier({ updateState: setContacts }, E(walletP).getContactsNotifier());
+  updateFromNotifier({
+    updateState(state) {
+      setContacts(state.map(([contactPetname, contact]) => ({ contactPetname, ...kv(contactPetname, contact) }))
+        .sort((a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id)));
+    },
+  }, E(walletP).getContactsNotifier());
   updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
   updateFromNotifier({
     updateState(state) {
-      setIssuers(state.map(([issuerPetname, issuer]) => ({ ...issuer, issuerPetname, id: comparable(issuerPetname), text: issuerPetname }))
+      setIssuers(state.map(([issuerPetname, issuer]) => ({ issuerPetname, ...kv(issuerPetname, issuer) }))
         .sort((a, b) => cmp(a.id, b.id)));
     },
   }, E(walletP).getIssuersNotifier());

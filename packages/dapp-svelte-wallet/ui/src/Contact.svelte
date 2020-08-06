@@ -2,16 +2,18 @@
   import BoardId from "./BoardId.svelte";
   import Petname from './Petname.svelte';
 
-  export let contact;
+  export let item;
+
+  export let summary = true;
+  export let details = true;
+
 </script>
 
-<style>
-  section {
-    padding: 10px;
-    box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, 0.5);
-  }
-</style>
-
 <section>
-  <Petname name={contact[0]} /> <BoardId id={contact[1].depositBoardId} />
+  {#if summary}
+  <Petname name={item.contactPetname} />
+  {/if}
+  {#if details}
+  <BoardId id={item.depositBoardId} />
+  {/if}
 </section>
