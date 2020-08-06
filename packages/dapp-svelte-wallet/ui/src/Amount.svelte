@@ -1,7 +1,7 @@
 <script>
   import Petname from "./Petname.svelte";
   import Debug from "../lib/Debug.svelte";
-  import Tooltip from "../lib/Tooltip.svelte";
+  import Tooltip from "smelte/src/components/Tooltip";
 
   export let amount;
 
@@ -11,17 +11,17 @@
 </script>
 
 <style>
-  section, div {
-    display: inline;
+  .dotted-underline {
+    border-bottom: 1px dotted black;
   }
 </style>
 
-<section>
+<div>
   {#if Array.isArray(value) && value.length !== 0}
     <!-- amount is non-fungible -->
     <Tooltip>
       <div slot="activator">
-        <b>
+        <b class="dotted-underline">
           {value.length}
           <Petname name={brand.petname} plural={value.length !== 1} />
         </b>
@@ -31,7 +31,7 @@
           instance: {petname}, inviteDesc: {inviteDesc}
         {/each}
       {:else}
-        {#each value as elem (elem)}{JSON.stringify(elem)}{/each}
+        {value.map(v => JSON.stringify(v)).join(', ')}
       {/if}
     </Tooltip>
   {:else}
@@ -41,4 +41,4 @@
     </b>
   {/if}
 
-</section>
+  </div>

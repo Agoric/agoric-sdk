@@ -35,7 +35,7 @@
     <List {items}>
       <li slot="item" class="px-1" let:item>
         <div class="fullwidth px-1">
-          <ListItem dense selectedClasses="bg-primary-trans" {item} {...item} on:click={() => toggle(item.id)}>
+          <ListItem dense classes="overflow-visible" selectedClasses="bg-primary-trans" {item} {...item} on:click={() => toggle(item.id)}>
             <div class="flex items-center">
               <Icon tip={expanded.includes(item.id)}>{expandIcon}</Icon>
               <slot name="item-header" {item}><span>{item.text}</span></slot>
