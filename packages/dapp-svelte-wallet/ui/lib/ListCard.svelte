@@ -23,7 +23,7 @@
   };
 </script>
 
-<Card.Card class="fullwidth px-2 py-2">
+<section class="fullwidth px-2 py-2">
   <slot name="title"></slot>
 
   <slot></slot>
@@ -57,4 +57,4 @@
   {/if}
 
   <slot name="actions"></slot>
-</Card.Card>
+</section>
