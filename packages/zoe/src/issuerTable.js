@@ -1,5 +1,6 @@
 // @ts-check
 
+import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import makeWeakStore from '@agoric/weak-store';
@@ -8,7 +9,6 @@ import { makeTable, makeValidateProperties } from './table';
 
 import '../exported';
 import './internal-types';
-import { assert } from '@agoric/assert';
 
 /**
  * @template K,V
@@ -40,6 +40,12 @@ const makeIssuerTable = () => {
 
     /** @type {WeakStore<Issuer<any>,Brand<any>>} */
     const issuerToBrand = makeWeakStore('issuer');
+
+    const registerIssuerRecord = issuerRecord => {
+      const { brand, issuer } = issuerRecord;
+      table.create(issuerRecord, brand);
+      issuerToBrand.init(issuer, brand);
+    };
 
     // We can't be sure we can build the table entry soon enough that the first
     // caller will get the actual data, so we start by saving a promise in the
@@ -75,8 +81,7 @@ const makeIssuerTable = () => {
             issuer,
             amountMath,
           };
-          table.create(issuerRecord, brand);
-          issuerToBrand.init(issuer, brand);
+          registerIssuerRecord(issuerRecord);
           issuersInProgress.delete(issuer);
           return table.get(brand);
         },
@@ -105,6 +110,7 @@ const makeIssuerTable = () => {
           }
         });
       },
+      registerIssuerRecord,
       // Synchronous, but throws if not present.
       getIssuerRecordByIssuer: issuer => table.get(issuerToBrand.get(issuer)),
     });

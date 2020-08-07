@@ -31,8 +31,8 @@ function makeZoe(vatAdminSvc) {
 
   // Zoe state shared among functions
   const issuerTable = makeIssuerTable();
-  /** @type {Set<Installation>} */
-  const installations = new Set();
+  /** @type {WeakSet<Installation>} */
+  const installations = new WeakSet();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
@@ -130,6 +130,59 @@ function makeZoe(vatAdminSvc) {
           () => exitAllSeats(),
         );
 
+      const registerIssuerByKeyword = (keyword, issuer, brand) => {
+        instanceRecord.issuerKeywordRecord = {
+          ...instanceRecord.issuerKeywordRecord,
+          [keyword]: issuer,
+        };
+        instanceRecord.brandKeywordRecord = {
+          ...instanceRecord.brandKeywordRecord,
+          [keyword]: brand,
+        };
+      };
+
+      /** @type MakeZoeMint */
+      const makeZoeMint = (keyword, mathHelperName = 'nat') => {
+        assert(
+          !(keyword in instanceRecord.issuerKeywordRecord),
+          details`Keyword ${keyword} already registered`,
+        );
+
+        // Local indicates one that zoe itself makes from vetted code,
+        // and so can be assumed correct and fresh by zoe.
+        const {
+          mint: localMint,
+          issuer: localIssuer,
+          amountMath: localAmountMath,
+          brand: localBrand,
+        } = makeIssuerKit(keyword, mathHelperName);
+        const localIssuerRecord = harden({
+          brand: localBrand,
+          issuer: localIssuer,
+          amountMath: localAmountMath,
+        });
+        issuerTable.registerIssuerRecord(localIssuerRecord);
+        registerIssuerByKeyword(keyword, localIssuer, localBrand);
+        const localPooledPurse = localIssuer.makeEmptyPurse();
+        brandToPurse.init(localBrand, localPooledPurse);
+
+        /** @type ZoeMint */
+        const zoeMint = harden({
+          getIssuerRecord: () => {
+            return localIssuerRecord;
+          },
+          mintGains: totalToMint => {
+            const payment = localMint.mintPayment(totalToMint);
+            localPooledPurse.deposit(payment, totalToMint);
+          },
+          burnLosses: totalToBurn => {
+            const payment = localPooledPurse.withdraw(totalToBurn);
+            localIssuer.burn(payment, totalToBurn);
+          },
+        });
+        return zoeMint;
+      };
+
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = {
         makeInvitation: (invitationHandle, description, customProperties) => {
@@ -146,19 +199,12 @@ function makeZoe(vatAdminSvc) {
           );
           return invitationMint.mintPayment(invitationAmount);
         },
-        // checks of keyword done on zcf side
+        // checks if keyword done on zcf side
         saveIssuer: (issuerP, keyword) =>
           issuerTable
             .getPromiseForIssuerRecord(issuerP)
             .then(({ issuer, brand }) => {
-              instanceRecord.issuerKeywordRecord = {
-                ...instanceRecord.issuerKeywordRecord,
-                [keyword]: issuer,
-              };
-              instanceRecord.brandKeywordRecord = {
-                ...instanceRecord.brandKeywordRecord,
-                [keyword]: brand,
-              };
+              registerIssuerByKeyword(keyword, issuer, brand);
               if (!brandToPurse.has(brand)) {
                 brandToPurse.init(brand, E(issuer).makeEmptyPurse());
               }
@@ -167,6 +213,7 @@ function makeZoe(vatAdminSvc) {
           exitAllSeats();
           adminNode.terminate();
         },
+        makeZoeMint,
       };
 
       const bundle = installation.getBundle();

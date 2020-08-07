@@ -189,7 +189,7 @@
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
- * @param {string} mathHelperName
+ * @param {MathHelpersName} mathHelperName
  * @returns {IssuerKit<BrandName>}
  *
  * The allegedName is useful for debugging and double-checking

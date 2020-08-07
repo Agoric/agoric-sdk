@@ -8,8 +8,10 @@
 
 /**
  * @template {string} H - the name of the handle
- * @typedef {H & {}} Handle A type constructor for an opaque type identified by the H string.
- * This uses an intersection type ('MyHandle' & {}) to tag the handle's type even though the
+ * @typedef {H & {}} Handle A type constructor for an opaque type identified by
+ * the H string.
+ * This uses an intersection type ('MyHandle' & {}) to tag the handle's type even
+ * though the
  * actual value is just an empty object.
  */
 
@@ -114,12 +116,12 @@
  */
 
 /**
- * @callback MakeInstance 
+ * @callback MakeInstance
  * @param {Installation} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
  * @returns {Promise<MakeInstanceResult>}
-
+ *
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
  * as well as the `issuerKeywordRecord` and `terms` of the contract.
@@ -137,7 +139,10 @@
 
 /**
  * @typedef {Partial<ProposalRecord>} Proposal
- * @typedef {{give:AmountKeywordRecord,want:AmountKeywordRecord,exit:ExitRule}} ProposalRecord
+ * @typedef {{give: AmountKeywordRecord,
+ *            want: AmountKeywordRecord,
+ *            exit: ExitRule
+ *           }} ProposalRecord
  *
  * @typedef {Record<Keyword,Amount>} AmountKeywordRecord
  *
@@ -185,6 +190,43 @@
  * @property {() => InstanceRecord } getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
+ *
+ * @property {MakeZCFMint} makeZCFMint
+ */
+
+/**
+ * @callback MakeZCFMint
+ * @param {Keyword} keyword
+ * @param {MathHelpersName=} mathHelperName
+ * @returns {ZCFMint}
+ */
+
+/**
+ * @typedef {Object} ZCFMint
+ *
+ * @property {() => IssuerRecord} getIssuerRecord
+ * @property {(gains: AmountKeywordRecord,
+ *             zcfSeat: ZCFSeat=,
+ *            ) => ZCFSeat} mintGains
+ * All the amounts in gains must be of this ZCFMint's brand.
+ * The gains' keywords are in the namespace of that seat.
+ * Add the gains to that seat's allocation.
+ * The resulting state must be offer safe. (Currently, increasing assets can
+ * never violate offer safety anyway.)
+ *
+ * Mint that amount of assets into the pooled purse.
+ * If a seat is provided, it is returned. Otherwise a new seat is
+ * returned. TODO This creation-on-demand is not yet implemented.
+ *
+ * @property {(losses: AmountKeywordRecord,
+ *             zcfSeat: ZCFSeat,
+ *            ) => void} burnLosses
+ * All the amounts in losses must be of this ZCFMint's brand.
+ * The losses' keywords are in the namespace of that seat.
+ * Subtract losses from that seat's allocation.
+ * The resulting state must be offer safe.
+ *
+ * Burn that amount of assets from the pooled purse.
  */
 
 /**

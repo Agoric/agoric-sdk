@@ -46,8 +46,8 @@
 /**
  * @typedef {Object} ZoeSeatAdmin
  * @property {() => void} exit - exit seat
- * @property {(replacementAllocation: Allocation) => void} replaceAllocation - replace the
- * currentAllocation with this allocation
+ * @property {(replacementAllocation: Allocation) => void} replaceAllocation
+ * - replace the currentAllocation with this allocation
  */
 
 /**
@@ -65,9 +65,10 @@
 /**
  * Make the ZCF seat and seat admin
  * @callback MakeSeatAdmin
- * @param {Set<SeatStaging>} allSeatStagings - a set of valid
+ * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
- * @param {ZoeSeatAdmin} zoeSeatAdmin - a presence from Zoe such that ZCF can tell Zoe
+ * @param {ZoeSeatAdmin} zoeSeatAdmin
+ * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
  * @param {(brand: Brand) => AmountMath} getAmountMath
@@ -82,8 +83,10 @@
 
 /**
  * @typedef {Object} InstanceAdmin
- * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin:
- * ZoeSeatAdmin, seatData: SeatData) => Promise<AddSeatResult>} addZoeSeatAdmin
+ * @property {(invitationHandle: InvitationHandle,
+ *             zoeSeatAdmin: ZoeSeatAdmin,
+ *             seatData: SeatData,
+ *            ) => Promise<AddSeatResult>} addZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
  * @property {() => PublicFacet} getPublicFacet
@@ -94,17 +97,36 @@
 
 /**
  * @typedef {Object} AddSeatObj
- * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin:
- * ZoeSeatAdmin, seatData: SeatData) => AddSeatResult} addSeat
+ * @property {(invitationHandle: InvitationHandle,
+ *             zoeSeatAdmin: ZoeSeatAdmin,
+ *             seatData: SeatData,
+ *            ) => AddSeatResult} addSeat
  */
 
 /**
  * @typedef {Object} ZoeInstanceAdmin
- * @property {(invitationHandle: InvitationHandle, description:
- * string, customProperties?: {}) => Payment<'ZoeInvitation'>}
- * makeInvitation
+ * @property {(invitationHandle: InvitationHandle,
+ *             description: string,
+ *             customProperties?: {},
+ *            ) => Payment<'ZoeInvitation'>} makeInvitation
  * @property {() => void} shutdown
- * @property {(issuerP: Issuer|Promise<Issuer>, keyword: Keyword) => void} saveIssuer
+ * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
+ *
+ * @property {MakeZoeMint} makeZoeMint
+ */
+
+/**
+ * @callback MakeZoeMint
+ * @param {Keyword} keyword
+ * @param {MathHelpersName=} mathHelperName
+ * @returns {ZoeMint}
+ */
+
+/**
+ * @typedef {Object} ZoeMint
+ * @property {() => IssuerRecord} getIssuerRecord
+ * @property {(totalToMint: Amount) => void} mintGains
+ * @property {(totalToBurn: Amount) => void} burnLosses
  */
 
 /**

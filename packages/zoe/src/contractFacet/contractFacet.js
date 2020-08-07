@@ -11,12 +11,14 @@ import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { areRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
 import { assertKeywordName, getKeywords } from '../zoeService/cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeSeatAdmin } from './seat';
 import { makeExitObj } from './exit';
+import { objectMap } from '../objArrayConversion';
 
 import '../../exported';
 import '../internal-types';
@@ -35,6 +37,8 @@ export function buildRootObject() {
     const getAmountMath = brand => issuerTable.get(brand).amountMath;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
+
+    /** @type WeakStore<ZCFSeat,ZCFSeatAdmin> */
     const seatToZCFSeatAdmin = makeWeakStore('seat');
 
     const issuers = Object.values(instanceRecord.issuerKeywordRecord);
@@ -44,7 +48,83 @@ export function buildRootObject() {
 
     await getPromiseForIssuerRecords(issuers);
 
-    const allSeatStagings = new Set();
+    const allSeatStagings = new WeakSet();
+
+    /** @type MakeZCFMint */
+    const makeZCFMint = async (keyword, mathHelperName = 'nat') => {
+      const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, mathHelperName);
+      const mintyIssuerRecord = await E(zoeMintP).getIssuerRecord();
+      // AWAIT
+      const { brand: mintyBrand } = mintyIssuerRecord;
+      const mintyAmountMath = makeAmountMath(mintyBrand, mathHelperName);
+      // TODO some zcf-side registration of the new issuer
+
+      /** @type ZCFMint */
+      const zcfMint = harden({
+        getIssuerRecord: () => {
+          return mintyIssuerRecord;
+        },
+        mintGains: (gains, zcfSeat = undefined) => {
+          assert(
+            zcfSeat !== undefined,
+            details`On demand seat creation not yet implemented`,
+          );
+          let totalToMint = mintyAmountMath.getEmpty();
+          const oldAllocation = zcfSeat.getCurrentAllocation();
+          const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
+            totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
+            const oldAmount = oldAllocation[seatKeyword];
+            // oldAmount being absent is equivalent to empty.
+            const newAmount = oldAmount
+              ? mintyAmountMath.add(oldAmount, amountToAdd)
+              : amountToAdd;
+            return [seatKeyword, newAmount];
+          });
+          const newAllocation = harden({
+            ...oldAllocation,
+            ...updates,
+          });
+          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
+          // verifies offer safety
+          const seatStaging = zcfSeat.stage(newAllocation);
+          // No effects above. Commit point. Must mint and commit atomically.
+          // (Not really. If we minted only, no one would ever get those
+          // invisibly-minted assets.)
+          E(zoeMintP).mintGains(totalToMint);
+          zcfSeatAdmin.commit(seatStaging);
+          return zcfSeat;
+        },
+        burnLosses: (losses, zcfSeat) => {
+          let totalToBurn = mintyAmountMath.getEmpty();
+          const oldAllocation = zcfSeat.getCurrentAllocation();
+          const updates = objectMap(
+            losses,
+            ([seatKeyword, amountToSubtract]) => {
+              totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
+              const oldAmount = oldAllocation[seatKeyword];
+              const newAmount = mintyAmountMath.subtract(
+                oldAmount,
+                amountToSubtract,
+              );
+              return [seatKeyword, newAmount];
+            },
+          );
+          const newAllocation = harden({
+            ...oldAllocation,
+            ...updates,
+          });
+          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
+          // verifies offer safety
+          const seatStaging = zcfSeat.stage(newAllocation);
+          // No effects above. Commit point. Must commit and burn atomically.
+          // (Not really. If we committed only, no one would ever get the
+          // unburned assets.)
+          zcfSeatAdmin.commit(seatStaging);
+          E(zoeMintP).burnLosses(totalToBurn);
+        },
+      });
+      return zcfMint;
+    };
 
     /** @type ContractFacet */
     const zcf = {
@@ -123,9 +203,8 @@ export function buildRootObject() {
           'string',
           details`invitations must have a description string: ${description}`,
         );
-        /** @type {InvitationHandle} */
-        const invitationHandle = {};
-        harden(invitationHandle);
+
+        const invitationHandle = /** @type {InvitationHandle} */ (harden({}));
         invitationHandleToHandler.init(invitationHandle, offerHandler);
         /** @type {Promise<Payment<'ZoeInvitation'>>} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(
@@ -145,6 +224,7 @@ export function buildRootObject() {
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
+      makeZCFMint,
     };
     harden(zcf);
 
@@ -161,6 +241,7 @@ export function buildRootObject() {
         );
         seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
+        // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(err => {
           zcfSeat.exit();
           throw err;
