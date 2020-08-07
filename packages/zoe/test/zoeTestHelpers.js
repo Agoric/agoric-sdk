@@ -1,5 +1,5 @@
 import bundleSource from '@agoric/bundle-source';
-import {E} from "@agoric/eventual-send";
+import { E } from '@agoric/eventual-send';
 
 export const assertPayout = (t, payout, purse, amount) => {
   payout.then(payment => {
