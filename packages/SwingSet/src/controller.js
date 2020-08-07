@@ -18,6 +18,7 @@ import { HandledPromise } from '@agoric/eventual-send';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
 
+import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { assertKnownOptions } from './assertOptions';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
@@ -242,6 +243,7 @@ export async function buildVatController(
     transformMetering,
     transformTildot,
     makeNodeWorker,
+    startSubprocessWorker,
   };
 
   const kernel = buildKernel(kernelEndowments);

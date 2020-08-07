@@ -10650,6 +10650,13 @@ nested-error-stacks@^2.0.0:
   resolved "https://registry.yarnpkg.com/nested-error-stacks/-/nested-error-stacks-2.1.0.tgz#0fbdcf3e13fe4994781280524f8b96b0cdff9c61"
   integrity sha512-AO81vsIO1k1sM4Zrd6Hu7regmJN1NSiAja10gc4bX3F0wd+9rQmcuHQaHVQCYIEC8iFXnE+mavh23GOt7wBgug==
 
+netstring-stream@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/netstring-stream/-/netstring-stream-1.0.1.tgz#d1babecbc4715428154d2956201bc8be3a526729"
+  integrity sha512-/lXoL4KEi8Cty/AsjPkDF7S/cPaHSDMU8PU4NbJNDbW7EhMIb8o6JJA9BD4LJPqPBchpEEoKAluI+BxuqJkR9g==
+  dependencies:
+    through2 "^2.0.3"
+
 next-tick@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/next-tick/-/next-tick-1.0.0.tgz#ca86d1fe8828169b0120208e3dc8424b9db8342c"

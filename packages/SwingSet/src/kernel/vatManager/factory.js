@@ -3,6 +3,7 @@ import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './localVatManager';
 import { makeNodeWorkerVatManagerFactory } from './nodeWorker';
+import { makeNodeSubprocessFactory } from './worker-subprocess-node';
 
 export function makeVatManagerFactory({
   allVatPowers,
@@ -12,6 +13,7 @@ export function makeVatManagerFactory({
   transformMetering,
   waitUntilQuiescent,
   makeNodeWorker,
+  startSubprocessWorker,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -24,6 +26,11 @@ export function makeVatManagerFactory({
 
   const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({
     makeNodeWorker,
+    kernelKeeper,
+  });
+
+  const nodeSubprocessFactory = makeNodeSubprocessFactory({
+    startSubprocessWorker,
     kernelKeeper,
   });
 
@@ -69,16 +76,24 @@ export function makeVatManagerFactory({
       }
       return localFactory.createFromBundle(vatID, bundle, managerOptions);
     }
+    // 'setup' based vats must be local. TODO: stop using 'setup' in vats,
+    // but tests and comms-vat still need it
+    assert(!setup, `setup()-based vats must use a local Manager`);
 
     if (managerType === 'nodeWorker') {
-      // 'setup' based vats must be local. TODO: stop using 'setup' in vats,
-      // but tests and comms-vat still need it
-      assert(!setup, `setup()-based vats must use a local Manager`);
       return nodeWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
     }
 
+    if (managerType === 'node-subprocess') {
+      return nodeSubprocessFactory.createFromBundle(
+        vatID,
+        bundle,
+        managerOptions,
+      );
+    }
+
     throw Error(
-      `unknown manager type ${managerType}, not 'local' or 'nodeWorker'`,
+      `unknown type ${managerType}, not local/nodeWorker/node-subprocess`,
     );
   }
 

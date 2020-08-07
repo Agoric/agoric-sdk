@@ -46,6 +46,7 @@
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",
     "anylogger": "^0.21.0",
+    "netstring-stream": "^1.0.1",
     "re2": "^1.10.5",
     "rollup": "^1.23.1",
     "rollup-plugin-node-resolve": "^5.2.0",

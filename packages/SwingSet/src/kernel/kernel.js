@@ -40,6 +40,7 @@ export default function buildKernel(kernelEndowments) {
     transformMetering,
     transformTildot,
     makeNodeWorker,
+    startSubprocessWorker,
   } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
@@ -567,6 +568,7 @@ export default function buildKernel(kernelEndowments) {
     transformMetering,
     waitUntilQuiescent,
     makeNodeWorker,
+    startSubprocessWorker,
   });
 
   /*
