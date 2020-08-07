@@ -83,6 +83,7 @@ export function buildRootObject() {
       const { brand: mintyBrand } = mintyIssuerRecord;
       const mintyAmountMath = makeAmountMath(mintyBrand, mathHelperName);
       registerIssuerRecord(keyword, mintyIssuerRecord);
+      issuerTable.registerIssuerRecord(mintyIssuerRecord);
 
       /** @type ZCFMint */
       const zcfMint = harden({
