@@ -9,11 +9,11 @@
 <!-- filter out the history -->
 <ListCard items={($inbox || []).filter(({ status }) => status === undefined || status === 'pending')}>
   <div slot="title">
-    <Card.Title title="Transactions" />
+    <Card.Title title="Offers" />
   </div>
 
   <div slot="empty">
-    No transactions.
+    No offers.
   </div>
 
   <div slot="item-header" let:item>

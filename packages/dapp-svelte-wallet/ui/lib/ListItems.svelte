@@ -1,6 +1,7 @@
 <script>
   export let items;
   export let idFn = item => item.id || item;
+  export let horizontal = false;
 </script>
 
 <style>
@@ -8,6 +9,9 @@
     list-style: none;
     margin: 0;
     padding: 0 0;
+  }
+  .horizontal {
+    display: inline-block;
   }
 </style>
 
@@ -18,7 +22,7 @@
 {:else}
   <ul>
     {#each items as item (idFn(item))}
-      <li class="list">
+      <li class={horizontal ? "horizontal" : ""}>
         <slot name="item" {item} />
       </li>
     {/each}
