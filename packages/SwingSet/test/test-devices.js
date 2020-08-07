@@ -22,6 +22,7 @@ test('d0', async t => {
     vats: {
       bootstrap: {
         sourcePath: require.resolve('./files-devices/bootstrap-0'),
+        creationOptions: { enableSetup: true },
       },
     },
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
@@ -62,6 +63,7 @@ test('d1', async t => {
     vats: {
       bootstrap: {
         sourcePath: require.resolve('./files-devices/bootstrap-1'),
+        creationOptions: { enableSetup: true },
       },
     },
     devices: [

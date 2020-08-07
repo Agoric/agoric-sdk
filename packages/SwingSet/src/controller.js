@@ -3,22 +3,21 @@
 import fs from 'fs';
 import path from 'path';
 import re2 from 're2';
-import { assert } from '@agoric/assert';
+import * as babelCore from '@babel/core';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
+import anylogger from 'anylogger';
 
+import { assert } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { HandledPromise } from '@agoric/eventual-send';
-
 import { makeMeteringTransformer } from '@agoric/transform-metering';
-import * as babelCore from '@babel/core';
 import { makeTransform } from '@agoric/transform-eventual-send';
-import * as babelParser from '@agoric/babel-parser';
-import babelGenerate from '@babel/generator';
 
-import anylogger from 'anylogger';
-
+import { assertKnownOptions } from './assertOptions';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
@@ -52,6 +51,13 @@ function byName(a, b) {
   }
   return 0;
 }
+
+const KNOWN_CREATION_OPTIONS = harden([
+  'enablePipelining',
+  'metered',
+  'enableSetup',
+  'managerType',
+]);
 
 /**
  * Scan a directory for files defining the vats to bootstrap for a swingset, and
@@ -246,7 +252,15 @@ export async function buildVatController(
   // two vattps, must handle somehow.
   const commsVatSourcePath = require.resolve('./vats/comms');
   const commsVatBundle = await bundleSource(commsVatSourcePath);
-  kernel.addGenesisVat('comms', commsVatBundle, {}, { enablePipelining: true }); // todo: allowSetup
+  kernel.addGenesisVat(
+    'comms',
+    commsVatBundle,
+    {},
+    {
+      enablePipelining: true,
+      enableSetup: true,
+    },
+  );
 
   // vat-tp is added automatically, but TODO: bootstraps must still connect
   // it to comms
@@ -260,7 +274,7 @@ export async function buildVatController(
   const timerWrapperBundle = await bundleSource(timerWrapperSourcePath);
   kernel.addGenesisVat('timer', timerWrapperBundle);
 
-  async function addGenesisVat(
+  function addGenesisVat(
     name,
     bundleName,
     vatParameters = {},
@@ -370,19 +384,13 @@ export async function buildVatController(
   }
 
   if (config.vats) {
-    const vats = [];
     for (const name of Object.keys(config.vats)) {
-      const v = config.vats[name];
-      vats.push(
-        addGenesisVat(
-          name,
-          v.bundleName || name,
-          v.parameters || {},
-          v.creationOptions || {},
-        ),
-      );
+      const { bundleName, parameters, creationOptions = {} } = config.vats[
+        name
+      ];
+      assertKnownOptions(creationOptions, KNOWN_CREATION_OPTIONS);
+      addGenesisVat(name, bundleName || name, parameters, creationOptions);
     }
-    await Promise.all(vats);
   }
 
   // start() may queue bootstrap if state doesn't say we did it already. It
@@ -411,6 +419,10 @@ export async function buildVatController(
 
     async step() {
       return kernel.step();
+    },
+
+    async shutdown() {
+      return kernel.shutdown();
     },
 
     getStats() {

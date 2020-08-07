@@ -73,6 +73,7 @@ const vatTPSourcePath = require.resolve('../src/vats/vat-tp');
 
 export async function runVatsInComms(t, enablePipelining, name) {
   console.log(`------ testing pattern (comms) -- ${name}`);
+  const enableSetup = true;
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
   config.bootstrap = 'bootstrap';
@@ -81,12 +82,14 @@ export async function runVatsInComms(t, enablePipelining, name) {
     sourcePath: commsSourcePath,
     creationOptions: {
       enablePipelining,
+      enableSetup,
     },
   };
   config.vats.rightcomms = {
     sourcePath: commsSourcePath,
     creationOptions: {
       enablePipelining,
+      enableSetup,
     },
   };
   config.vats.leftvattp = { sourcePath: vatTPSourcePath };

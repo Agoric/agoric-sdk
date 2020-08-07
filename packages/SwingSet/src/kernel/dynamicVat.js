@@ -1,3 +1,4 @@
+import { assertKnownOptions } from '../assertOptions';
 import { makeVatSlot } from '../parseVatSlots';
 
 export function makeVatRootObjectSlot() {
@@ -35,17 +36,9 @@ export function makeDynamicVatCreator(stuff) {
    * citing this vatID
    */
 
-  function createVatDynamically(vatSourceBundle, options = {}) {
-    const {
-      metered = true,
-      creationOptions = {},
-      vatParameters = {},
-      ...unknownOptions
-    } = options;
-    if (Object.keys(unknownOptions).length) {
-      const msg = JSON.stringify(Object.keys(unknownOptions));
-      throw Error(`createVatDynamically got unknown options ${msg}`);
-    }
+  function createVatDynamically(vatSourceBundle, dynamicOptions = {}) {
+    assertKnownOptions(dynamicOptions, ['metered', 'vatParameters']);
+    const { metered = true, vatParameters = {} } = dynamicOptions;
 
     const vatID = allocateUnusedVatID();
     let terminated = false;
@@ -77,14 +70,6 @@ export function makeDynamicVatCreator(stuff) {
       );
     }
 
-    const managerOptions = {
-      metered,
-      notifyTermination: metered ? notifyTermination : undefined,
-      vatPowerType: 'dynamic',
-      creationOptions,
-      vatParameters,
-    };
-
     async function build() {
       if (typeof vatSourceBundle !== 'object') {
         throw Error(
@@ -92,13 +77,16 @@ export function makeDynamicVatCreator(stuff) {
         );
       }
 
-      const manager = await vatManagerFactory.createFromBundle(
-        vatSourceBundle,
-        vatID,
-        managerOptions,
-      );
-      const addOptions = {}; // enablePipelining:false
-      addVatManager(vatID, manager, addOptions);
+      const managerOptions = {
+        bundle: vatSourceBundle,
+        metered,
+        enableSetup: false,
+        enableInternalMetering: false,
+        notifyTermination: metered ? notifyTermination : undefined,
+        vatParameters,
+      };
+      const manager = await vatManagerFactory(vatID, managerOptions);
+      addVatManager(vatID, manager, managerOptions);
     }
 
     function makeSuccessResponse() {
