@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import re2 from 're2';
+import { Worker } from 'worker_threads';
 import * as babelCore from '@babel/core';
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
@@ -226,6 +227,13 @@ export async function buildVatController(
     }`,
   );
 
+  function makeNodeWorker() {
+    const supercode = require.resolve(
+      './kernel/vatManager/nodeWorkerSupervisor.js',
+    );
+    return new Worker(supercode);
+  }
+
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
@@ -233,6 +241,7 @@ export async function buildVatController(
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
+    makeNodeWorker,
   };
 
   const kernel = buildKernel(kernelEndowments);

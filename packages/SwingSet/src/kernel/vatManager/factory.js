@@ -2,6 +2,7 @@
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './localVatManager';
+import { makeNodeWorkerVatManagerFactory } from './nodeWorker';
 
 export function makeVatManagerFactory({
   allVatPowers,
@@ -10,6 +11,7 @@ export function makeVatManagerFactory({
   meterManager,
   transformMetering,
   waitUntilQuiescent,
+  makeNodeWorker,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -18,6 +20,11 @@ export function makeVatManagerFactory({
     meterManager,
     transformMetering,
     waitUntilQuiescent,
+  });
+
+  const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({
+    makeNodeWorker,
+    kernelKeeper,
   });
 
   function validateManagerOptions(managerOptions) {
@@ -63,7 +70,16 @@ export function makeVatManagerFactory({
       return localFactory.createFromBundle(vatID, bundle, managerOptions);
     }
 
-    throw Error(`unknown manager type ${managerType}, not 'local'`);
+    if (managerType === 'nodeWorker') {
+      // 'setup' based vats must be local. TODO: stop using 'setup' in vats,
+      // but tests and comms-vat still need it
+      assert(!setup, `setup()-based vats must use a local Manager`);
+      return nodeWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
+    }
+
+    throw Error(
+      `unknown manager type ${managerType}, not 'local' or 'nodeWorker'`,
+    );
   }
 
   return harden(vatManagerFactory);
