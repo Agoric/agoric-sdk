@@ -37,6 +37,8 @@ export function buildRootObject() {
     const getAmountMath = brand => issuerTable.get(brand).amountMath;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
+
+    /** @type WeakStore<ZCFSeat,ZCFSeatAdmin> */
     const seatToZCFSeatAdmin = makeWeakStore('seat');
 
     const issuers = Object.values(instanceRecord.issuerKeywordRecord);
@@ -82,12 +84,14 @@ export function buildRootObject() {
             ...oldAllocation,
             ...updates,
           });
+          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
-          // No effects above. Commit point.
-          // TODO WAT
-          zoeSeatAdmin.commit(seatStaging);
-          E(zoeMintP).mintGains(newAllocation, totalToMint, zoeSeatAdmin);
+          // No effects above. Commit point. Must mint and commit atomically.
+          // (Not really. If we minted only, no one would ever get those
+          // invisibly-minted assets.)
+          E(zoeMintP).mintGains(totalToMint);
+          zcfSeatAdmin.commit(seatStaging);
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
@@ -109,12 +113,14 @@ export function buildRootObject() {
             ...oldAllocation,
             ...updates,
           });
+          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
-          // No effects above. Commit point
-          // TODO WAT
-          zoeSeatAdmin.commit(seatStaging);
-          E(zoeMintP).burnLosses(newAllocation, totalToBurn, zoeSeatAdmin);
+          // No effects above. Commit point. Must commit and burn atomically.
+          // (Not really. If we committed only, no one would ever get the
+          // unburned assets.)
+          zcfSeatAdmin.commit(seatStaging);
+          E(zoeMintP).burnLosses(totalToBurn);
         },
       });
       return zcfMint;

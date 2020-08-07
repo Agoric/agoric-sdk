@@ -171,16 +171,13 @@ function makeZoe(vatAdminSvc) {
           getIssuerRecord: () => {
             return localIssuerRecord;
           },
-          mintGains: (newAllocation, totalToMint, zoeSeat) => {
+          mintGains: totalToMint => {
             const payment = localMint.mintPayment(totalToMint);
             localPooledPurse.deposit(payment, totalToMint);
-            zoeSeat.replaceAllocation(newAllocation);
-            return zoeSeat;
           },
-          burnLosses: (newAllocation, totalToBurn, zoeSeat) => {
+          burnLosses: totalToBurn => {
             const payment = localPooledPurse.withdraw(totalToBurn);
             localIssuer.burn(payment, totalToBurn);
-            zoeSeat.replaceAllocation(newAllocation);
           },
         });
         return zoeMint;

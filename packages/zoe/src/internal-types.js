@@ -121,14 +121,8 @@
 /**
  * @typedef {Object} ZoeMint
  * @property {() => IssuerRecord} getIssuerRecord
- * @property {(newAllocation: Allocation,
- *             totalToMint: Amount,
- *             zoeSeat: ZoeSeatAdmin,
- *            ) => ZoeSeatAdmin} mintGains
- * @property {(newAllocation: Allocation,
- *             totalToBurn: Amount,
- *             zoeSeat: ZoeSeatAdmin,
- *            ) => void} burnLosses
+ * @property {(totalToMint: Amount) => void} mintGains
+ * @property {(totalToBurn: Amount) => void} burnLosses
  */
 
 /**
