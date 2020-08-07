@@ -191,7 +191,6 @@
  * @property {() => InstanceRecord } getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
- *
  * @property {MakeZCFMint} makeZCFMint
  */
 
