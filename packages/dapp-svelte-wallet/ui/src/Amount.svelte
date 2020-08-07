@@ -28,7 +28,8 @@
       </div>
       {#if brand.petname === 'zoe invite'}
         {#each value as { instanceHandle: { petname }, inviteDesc }}
-          instance: {petname}, inviteDesc: {inviteDesc}
+          <div>instance: <Petname color={false} name={petname} /></div>
+          <div>inviteDesc: {inviteDesc}</div>
         {/each}
       {:else}
         {value.map(v => JSON.stringify(v)).join(', ')}
