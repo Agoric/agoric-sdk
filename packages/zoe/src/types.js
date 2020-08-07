@@ -11,14 +11,14 @@
  * @template {string} H - the name of the handle
  * @typedef {H & {}} Handle A type constructor for an opaque type identified by
  * the H string.
- * This uses an intersection type ('MyHandle' & {}) to tag the handle's type even
- * though the
- * actual value is just an empty object.
+ * This uses an intersection type ('MyHandle' & {}) to tag the handle's type
+ * even though the actual value is just an empty object.
  */
 
 /**
  * @typedef {string} Keyword
- * @typedef {Handle<'InvitationHandle'>} InvitationHandle - an opaque handle for an invite
+ * @typedef {Handle<'InvitationHandle'>} InvitationHandle
+ * - an opaque handle for an invite
  * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
  * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
  * @typedef {Record<Keyword,Payment>} PaymentKeywordRecord
@@ -318,7 +318,8 @@
  *
  * @typedef {object} InstanceRecord
  * @property {Object} terms - contract parameters
- * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
+ * @property {IssuerKeywordRecord} issuerKeywordRecord
+ * - record with keywords keys, issuer values
  * @property {BrandKeywordRecord} brandKeywordRecord - record with
  * keywords keys, brand values
  *

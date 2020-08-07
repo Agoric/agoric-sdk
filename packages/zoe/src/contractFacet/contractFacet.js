@@ -30,9 +30,8 @@ export function buildRootObject() {
     zoeService,
     invitationIssuer,
     zoeInstanceAdmin,
-    hardenedInstanceRecord,
+    instanceRecord,
   ) => {
-    const instanceRecord = { ...hardenedInstanceRecord };
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.get(brand).amountMath;
 
@@ -50,14 +49,40 @@ export function buildRootObject() {
 
     const allSeatStagings = new WeakSet();
 
+    const registerIssuerRecord = (keyword, issuerRecord) => {
+      assertKeywordName(keyword);
+      assert(
+        !getKeywords(instanceRecord.issuerKeywordRecord).includes(keyword),
+        details`keyword ${keyword} must be unique`,
+      );
+      instanceRecord = {
+        ...instanceRecord,
+        issuerKeywordRecord: {
+          ...instanceRecord.issuerKeywordRecord,
+          [keyword]: issuerRecord.issuer,
+        },
+        brandKeywordRecord: {
+          ...instanceRecord.brandKeywordRecord,
+          [keyword]: issuerRecord.brand,
+        },
+      };
+
+      return issuerRecord;
+    };
+
     /** @type MakeZCFMint */
     const makeZCFMint = async (keyword, mathHelperName = 'nat') => {
+      assert(
+        !(keyword in instanceRecord.issuerKeywordRecord),
+        details`Keyword ${keyword} already registered`,
+      );
+
       const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, mathHelperName);
       const mintyIssuerRecord = await E(zoeMintP).getIssuerRecord();
       // AWAIT
       const { brand: mintyBrand } = mintyIssuerRecord;
       const mintyAmountMath = makeAmountMath(mintyBrand, mathHelperName);
-      // TODO some zcf-side registration of the new issuer
+      registerIssuerRecord(keyword, mintyIssuerRecord);
 
       /** @type ZCFMint */
       const zcfMint = harden({
@@ -87,10 +112,13 @@ export function buildRootObject() {
           const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
-          // No effects above. Commit point. Must mint and commit atomically.
-          // (Not really. If we minted only, no one would ever get those
-          // invisibly-minted assets.)
-          E(zoeMintP).mintGains(totalToMint);
+          // No effects above. Commit point. The following two steps
+          // *should* be committed atomically.
+          // But unlike https://github.com/Agoric/agoric-sdk/issues/1391
+          // it is not a disater if they are not.
+          // If we minted only, no one would ever get those
+          // invisibly-minted assets.
+          E(zoeMintP).mintAndEscrow(totalToMint);
           zcfSeatAdmin.commit(seatStaging);
           return zcfSeat;
         },
@@ -116,11 +144,14 @@ export function buildRootObject() {
           const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
-          // No effects above. Commit point. Must commit and burn atomically.
-          // (Not really. If we committed only, no one would ever get the
-          // unburned assets.)
+          // No effects above. Commit point. The following two steps
+          // *should* be committed atomically.
+          // But unlike https://github.com/Agoric/agoric-sdk/issues/1391
+          // it is not a disater if they are not.
+          // If we only commit the staging, no one would ever get the
+          // unburned assets.
           zcfSeatAdmin.commit(seatStaging);
-          E(zoeMintP).burnLosses(totalToBurn);
+          E(zoeMintP).withdrawAndBurn(totalToBurn);
         },
       });
       return zcfMint;
@@ -176,25 +207,7 @@ export function buildRootObject() {
           .then(() => {
             return issuerTable
               .getPromiseForIssuerRecord(issuerP)
-              .then(issuerRecord => {
-                assertKeywordName(keyword);
-                assert(
-                  !getKeywords(instanceRecord.issuerKeywordRecord).includes(
-                    keyword,
-                  ),
-                  details`keyword ${keyword} must be unique`,
-                );
-                instanceRecord.issuerKeywordRecord = {
-                  ...instanceRecord.issuerKeywordRecord,
-                  [keyword]: issuerRecord.issuer,
-                };
-                instanceRecord.brandKeywordRecord = {
-                  ...instanceRecord.brandKeywordRecord,
-                  [keyword]: issuerRecord.brand,
-                };
-
-                return issuerRecord;
-              });
+              .then(registerIssuerRecord);
           });
       },
       makeInvitation: (offerHandler, description, customProperties = {}) => {
@@ -220,7 +233,7 @@ export function buildRootObject() {
       // The methods below are pure and have no side-effects //
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
-      getInstanceRecord: () => harden({ ...instanceRecord }),
+      getInstanceRecord: () => instanceRecord,
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,

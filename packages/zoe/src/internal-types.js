@@ -121,8 +121,12 @@
 /**
  * @typedef {Object} ZoeMint
  * @property {() => IssuerRecord} getIssuerRecord
- * @property {(totalToMint: Amount) => void} mintGains
- * @property {(totalToBurn: Amount) => void} burnLosses
+ * @property {(totalToMint: Amount) => void} mintAndEscrow
+ * @property {(totalToBurn: Amount) => void} withdrawAndBurn
+ * Not that the burning is asynchronous, and so may not have happened by
+ * the time withdrawAndBurn returns. We rely on our other bookkeeping so that
+ * these assets are assumed burned elsewhere, so no one will try to access
+ * them even before they are actually burned.
  */
 
 /**
