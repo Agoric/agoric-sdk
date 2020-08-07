@@ -34,27 +34,42 @@ export const makeSeatAdmin = (
     },
   });
 
+  const assertExitedFalse = () => assert(!exited, `seat has been exited`);
+
   /** @type {ZCFSeat} */
   const zcfSeat = harden({
     exit: () => {
+      assertExitedFalse();
       exited = true;
       E(zoeSeatAdmin).exit();
     },
     kickOut: (msg = 'Kicked out of seat') => {
+      assertExitedFalse();
       zcfSeat.exit();
       assert.fail(msg);
     },
-    getNotifier: () => notifier,
+    getNotifier: () => {
+      assertExitedFalse();
+      return notifier;
+    },
     hasExited: () => exited,
-    getProposal: () => proposal,
+    getProposal: () => {
+      assertExitedFalse();
+      return proposal;
+    },
     getAmountAllocated: (keyword, brand) => {
+      assertExitedFalse();
       if (currentAllocation[keyword] !== undefined) {
         return currentAllocation[keyword];
       }
       return getAmountMath(brand).getEmpty();
     },
-    getCurrentAllocation: () => currentAllocation,
+    getCurrentAllocation: () => {
+      assertExitedFalse();
+      return currentAllocation;
+    },
     isOfferSafe: newAllocation => {
+      assertExitedFalse();
       const reallocation = harden({
         ...currentAllocation,
         ...newAllocation,
@@ -63,6 +78,7 @@ export const makeSeatAdmin = (
       return isOfferSafe(getAmountMath, proposal, reallocation);
     },
     stage: newAllocation => {
+      assertExitedFalse();
       // Check offer safety.
       const allocation = harden({
         ...currentAllocation,

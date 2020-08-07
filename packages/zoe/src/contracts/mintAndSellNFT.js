@@ -23,12 +23,9 @@ import '../../exported';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const { terms } = zcf.getInstanceRecord();
-  const { tokenName = 'token' } = terms;
-
+const start = (zcf, { tokenName = 'token' }) => {
   // Create the internal token mint
   const { issuer, mint, amountMath: tokenAmountMath } = makeIssuerKit(
     tokenName,
@@ -41,7 +38,7 @@ const makeContract = zcf => {
     customValueProperties,
     count,
     moneyIssuer,
-    sellItemsInstallationHandle,
+    sellItemsInstallation,
     pricePerItem,
   }) => {
     const tokenAmount = tokenAmountMath.make(
@@ -80,36 +77,23 @@ const makeContract = zcf => {
       pricePerItem,
     });
     return E(zoeService)
-      .makeInstance(
-        sellItemsInstallationHandle,
-        issuerKeywordRecord,
-        sellItemsTerms,
-      )
-      .then(({ invite, instanceRecord: { handle: instanceHandle } }) => {
+      .makeInstance(sellItemsInstallation, issuerKeywordRecord, sellItemsTerms)
+      .then(({ creatorInvitation, creatorFacet }) => {
         return E(zoeService)
-          .offer(invite, proposal, paymentKeywordRecord)
-          .then(offerResult => {
+          .offer(creatorInvitation, proposal, paymentKeywordRecord)
+          .then(sellItemsCreatorSeat => {
             return harden({
-              ...offerResult,
-              sellItemsInstanceHandle: instanceHandle,
+              sellItemsCreatorSeat,
+              sellItemsCreatorFacet: creatorFacet,
             });
           });
       });
   };
 
-  const mintTokensHook = _offerHandle => {
-    // outcome is an object with a sellTokens method
-    return harden({ sellTokens });
-  };
+  const creatorFacet = harden({ sellTokens, getIssuer: () => issuer });
 
-  zcf.initPublicAPI(
-    harden({
-      getTokenIssuer: () => issuer,
-    }),
-  );
-
-  return zcf.makeInvitation(mintTokensHook, 'mint tokens');
+  return harden({ creatorFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

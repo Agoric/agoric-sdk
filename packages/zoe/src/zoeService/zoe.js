@@ -228,6 +228,7 @@ function makeZoe(vatAdminSvc) {
             /** @type Promise<addSeatObj> */ (addSeatObjPromiseKit.promise),
           ).addSeat(invitationHandle, zoeSeatAdmin, seatData);
         },
+        hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
         removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
         getPublicFacet: () => publicFacetPromiseKit.promise,
         getTerms: () => instanceRecord.terms,
@@ -313,6 +314,10 @@ function makeZoe(vatAdminSvc) {
           /** @type {ZoeSeatAdmin} */
           const zoeSeatAdmin = {
             replaceAllocation: replacementAllocation => {
+              assert(
+                instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+                `Cannot replace allocation. Seat has already exited`,
+              );
               harden(replacementAllocation);
               // Merging happens in ZCF, so replacementAllocation can
               // replace the old allocation entirely.
@@ -320,6 +325,10 @@ function makeZoe(vatAdminSvc) {
               currentAllocation = replacementAllocation;
             },
             exit: () => {
+              assert(
+                instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+                `Cannot exit seat. Seat has already exited`,
+              );
               updater.finish(undefined);
               instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
 
