@@ -23,6 +23,12 @@
   };
 </script>
 
+<style>
+  .actions {
+    margin: 1em 0 0 2em;
+  }
+</style>
+
 <section class="fullwidth px-2 py-2">
   <slot name="title"></slot>
 
@@ -56,5 +62,7 @@
     </List>
   {/if}
 
-  <slot name="actions"></slot>
+  <div class="actions">
+    <slot name="actions"></slot>
+  </div>
 </section>

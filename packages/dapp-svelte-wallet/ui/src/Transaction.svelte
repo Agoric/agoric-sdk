@@ -102,7 +102,7 @@
   {/if}
   {#if details}
   <div>
-	<Debug title="Transaction Detail" target={item} />
+	<Debug title="Offer Detail" target={item} />
   </div>
   <div>
     {#each Object.entries(give) as [role, { amount, pursePetname }], i}
