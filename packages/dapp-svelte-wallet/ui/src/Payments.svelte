@@ -18,7 +18,11 @@ $: paymentItems = $payments && $payments.filter(pmt => pmt.status !== 'deposited
   <div slot="empty">No incoming payments.</div>
 
   <div slot="item-header" let:item>
-    <Payment {item} details={false} />
+    <Payment {item} details={false} summaryLine={1} />
+  </div>
+
+  <div slot="item-header-rest" let:item>
+    <Payment {item} details={false} summaryLine={2} />
   </div>
 
   <div slot="item-details" let:item>

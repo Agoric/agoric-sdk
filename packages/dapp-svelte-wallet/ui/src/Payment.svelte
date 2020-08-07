@@ -5,17 +5,25 @@
   import { E } from "@agoric/eventual-send";
   import BoardId from "./BoardId.svelte";
   import { purses } from './store';
+import Button from "smelte/src/components/Button/Button.svelte";
+import Select from "smelte/src/components/Select/Select.svelte";
 
   export let item;
   export let summary = true;
+  export let summaryLine = 0;
   export let details = true;
 
-  let destination;
+  let destination = null;
 
   $: deposit = () => {
     // console.log('deposit to', destination);
-    return E(item.actions).deposit(destination);
+    return E(item.actions).deposit(destination ? destination.purse : undefined);
   };
+
+  $: purseItems = [{ value: null, text: 'Automatic' }, ...(
+    $purses ? $purses.filter(({ brand }) => brand === item.brand).map(p => ({ value: p, text: p.text })) : []
+  )];
+  // $: console.log('purseItems', purseItems);
 </script>
 
 <section>
@@ -26,28 +34,25 @@
       {/if}
     {:else if item.issuer}
       {#if summary}
+        {#if !summaryLine || summaryLine === 1}
         Payment amount
-        {#if item.lastAmount}
+        {/if}
+        {#if item.lastAmount && (!summaryLine || summaryLine === 2)}
           <Amount amount={item.displayPayment.lastAmount} />
         {/if}
       {/if}
     
       {#if details}
-      <button on:click={() => E(item.actions).getAmountOf()}>Refresh Amount</button>
-      <button on:click={deposit}>Deposit to</button>
       {#if $purses}
-        <select bind:value={destination}>
-          <option value={undefined}>Automatic</option>
-          {#each $purses as p}
-            {#if p.brand === item.brand}
-              <option>{p.pursePetname}</option>
-            {/if}
-          {/each}
-        </select>
+        <Select bind:value={destination} items={purseItems} label="Deposit to" />
       {/if}
+      <div>
+        <Button on:click={() => E(item.actions).getAmountOf()}>Refresh</Button>
+        <Button on:click={deposit}>Deposit</Button>
+      </div>
       {/if}
     {:else}
-      {#if summary}
+      {#if summary && (!summaryLine || summaryLine === 1)}
       Unknown brand.  This payment cannot be verified.
       {/if}
     {/if}
