@@ -45,7 +45,7 @@ function onReset(readyP) {
   updateFromNotifier({
     updateState(ijs) {
       const state = JSON.parse(ijs);
-      setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}`}))
+      setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`}))
         .sort((a, b) => cmp(b.id, a.id)));
     },
   }, E(walletP).getInboxJSONNotifier());

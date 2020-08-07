@@ -3,8 +3,9 @@
   import Petname from "./Petname.svelte";
   import Amount from "./Amount.svelte";
   import Debug from "../lib/Debug.svelte";
-
+  
   import { walletP } from './store';
+  import Chip from "../lib/Chip.svelte";
 
   export let item;
   export let summary = true;
@@ -43,6 +44,14 @@
     proposed: "Proposed",
   };
 
+  const statusColors = {
+    accept: "success",
+    rejected: "error",
+    decline: "error",
+    pending: "alert",
+    proposed: "grey",
+  };
+
   $: ({
     instancePetname,
     instanceHandleBoardId,
@@ -50,8 +59,9 @@
     offerId,
     requestContext: { date, dappOrigin, origin = "unknown origin" } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
-    status,
   } = item);
+
+  $: status = item.status || 'proposed';
 </script>
 
 <style>
@@ -74,10 +84,6 @@
     }
   }
 
-  button:hover {
-    background-color: red;
-  }
-
   .actions {
     margin-top: 1em;
   }
@@ -86,7 +92,9 @@
 <section>
   {#if summary}
     {#if !summaryLine || summaryLine === 1}
-      {formatDateNow(date)}
+      {formatDateNow(date)} <Chip outline selected
+      color={statusColors[status]}
+    >{statusText[status]}</Chip>
     {/if}
     {#if !summaryLine || summaryLine === 2}
       <Petname name={instancePetname} board={instanceHandleBoardId} /> via ({dappOrigin || origin})
@@ -111,10 +119,20 @@
     {/each}
   </div> 
   <div class="actions">
-    <b>{statusText[status || 'proposed']}</b>
-    <button on:click={() => E(walletP).acceptOffer(offerId).then(showOutcome)}>Accept</button>
-    <button on:click={() => E(walletP).declineOffer(offerId)}>Decline</button>
-    <button on:click={() => E(walletP).cancelOffer(offerId)}>Cancel</button>
+    {#if status === 'pending'}
+    <Chip on:click={() => E(walletP).cancelOffer(offerId)}
+      selected icon="clear" color="alert"
+    >Cancel</Chip>
+    {/if}
+    {#if status === 'proposed'}
+    <div class="flex flex-row">
+    <Chip on:click={() => E(walletP).acceptOffer(offerId).then(showOutcome)}
+      selected icon="check" color="success"
+    >Accept</Chip> <Chip on:click={() => E(walletP).declineOffer(offerId)}
+      selected icon="clear" color="error"
+    >Decline</Chip>
+    </div>
+    {/if}
   </div>
   {/if}
 </section>
