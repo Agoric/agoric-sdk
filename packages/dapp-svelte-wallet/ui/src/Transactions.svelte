@@ -6,7 +6,8 @@
   import { inbox } from './store';
 </script>
 
-<ListCard items={$inbox}>
+<!-- filter out the history -->
+<ListCard items={($inbox || []).filter(({ status }) => status === undefined || status === 'pending')}>
   <div slot="title">
     <Card.Title title="Transactions" />
   </div>
