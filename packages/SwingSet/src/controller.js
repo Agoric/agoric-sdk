@@ -4,22 +4,21 @@ import fs from 'fs';
 import path from 'path';
 import re2 from 're2';
 import { Worker } from 'worker_threads';
-import { assert } from '@agoric/assert';
+import * as babelCore from '@babel/core';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
+import anylogger from 'anylogger';
 
+import { assert } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { HandledPromise } from '@agoric/eventual-send';
-
 import { makeMeteringTransformer } from '@agoric/transform-metering';
-import * as babelCore from '@babel/core';
 import { makeTransform } from '@agoric/transform-eventual-send';
-import * as babelParser from '@agoric/babel-parser';
-import babelGenerate from '@babel/generator';
 
-import anylogger from 'anylogger';
-
+import { assertKnownOptions } from './assertOptions';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
@@ -53,6 +52,13 @@ function byName(a, b) {
   }
   return 0;
 }
+
+const KNOWN_CREATION_OPTIONS = harden([
+  'enablePipelining',
+  'metered',
+  'enableSetup',
+  'managerType',
+]);
 
 /**
  * Scan a directory for files defining the vats to bootstrap for a swingset, and
@@ -388,7 +394,10 @@ export async function buildVatController(
 
   if (config.vats) {
     for (const name of Object.keys(config.vats)) {
-      const { bundleName, parameters, creationOptions } = config.vats[name];
+      const { bundleName, parameters, creationOptions = {} } = config.vats[
+        name
+      ];
+      assertKnownOptions(creationOptions, KNOWN_CREATION_OPTIONS);
       addGenesisVat(name, bundleName || name, parameters, creationOptions);
     }
   }

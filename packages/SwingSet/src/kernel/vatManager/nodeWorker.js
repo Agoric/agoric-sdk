@@ -32,7 +32,12 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.notifyTermination, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
-    assert(!managerOptions.enableInternalMetering, 'eww ick');
+    if (managerOptions.enableInternalMetering) {
+      // TODO: warn+ignore, rather than throw, because the kernel enables it
+      // for all vats, because the Spawner still needs it. When the kernel
+      // stops doing that, turn this into a regular assert
+      console.log(`node-worker does not support enableInternalMetering`);
+    }
     const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
     const transcriptManager = makeTranscriptManager(
       kernelKeeper,

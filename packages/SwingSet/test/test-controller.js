@@ -33,7 +33,7 @@ async function simpleCall(t) {
     vats: {
       vat1: {
         sourcePath: require.resolve('./vat-controller-1'),
-        options: { enableSetup: true },
+        creationOptions: { enableSetup: true },
       },
     },
   };

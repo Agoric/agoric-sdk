@@ -14,7 +14,7 @@ export function buildRootObject() {
   const precE = makePromiseKit();
 
   return harden({
-    bootstrap(_argv, vats) {
+    bootstrap(vats) {
       const pA = E(vats.target).zero(callbackObj, precD.promise, precE.promise);
       const rp3 = E(vats.target).one();
       precD.resolve(callbackObj); // two
