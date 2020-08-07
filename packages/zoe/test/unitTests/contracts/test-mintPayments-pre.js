@@ -11,7 +11,7 @@ import fakeVatAdmin from './fakeVatAdmin';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 
-const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
+const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments-pre`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
