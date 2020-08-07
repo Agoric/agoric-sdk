@@ -1,7 +1,7 @@
 {
-  "name": "@agoric/wallet-frontend",
+  "name": "@agoric/dapp-react-wallet",
   "version": "0.2.7",
-  "description": "Agoric Wallet Frontend",
+  "description": "Simple Agoric wallet",
   "author": "Agoric",
   "license": "Apache-2.0",
   "homepage": ".",

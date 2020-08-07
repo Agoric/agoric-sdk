@@ -118,6 +118,10 @@ jobs:
       run: cd packages/bundle-source && yarn test
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
+    - name: yarn test (dapp-react-wallet)
+      run: cd packages/dapp-react-wallet && yarn test
+    - name: yarn test (dapp-svelte-wallet)
+      run: cd packages/dapp-svelte-wallet && yarn test
     - name: yarn test (deployment)
       run: cd packages/deployment && yarn test
     - name: yarn test (ERTP)
@@ -166,8 +170,6 @@ jobs:
       run: cd packages/transform-eventual-send && yarn test
     - name: yarn test (transform-metering)
       run: cd packages/transform-metering && yarn test
-    - name: yarn test (wallet-frontend)
-      run: cd packages/wallet-frontend && yarn test
     - name: yarn test (weak-store)
       run: cd packages/weak-store && yarn test
 

@@ -1,0 +1,80 @@
+{
+  "name": "@agoric/dapp-encouragement-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "dapp-encouragement Agoric Dapp web server handler",
+  "scripts": {
+    "build": "exit 0",
+    "test": "tape -r esm 'test/**/*.js'",
+    "lint": "eslint '**/*.{js,jsx}'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+  },
+  "devDependencies": {
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-jessie": "0.0.3",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-prettier": "^3.1.0",
+    "prettier": "^1.18.2",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.11.0",
+    "tape-promise": "^4.0.0"
+  },
+  "dependencies": {
+    "@agoric/eventual-send": "^0.9.3",
+    "@agoric/harden": "^0.0.8",
+    "esm": "^3.2.5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended"
+    ],
+    "env": {
+      "es6": true
+    },
+    "globals": {
+      "harden": "readonly"
+    },
+    "rules": {
+      "implicit-arrow-linebreak": "off",
+      "function-paren-newline": "off",
+      "arrow-parens": "off",
+      "strict": "off",
+      "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "no-return-assign": "off",
+      "no-param-reassign": "off",
+      "no-restricted-syntax": [
+        "off",
+        "ForOfStatement"
+      ],
+      "no-unused-expressions": "off",
+      "no-loop-func": "off",
+      "no-inner-declarations": "off",
+      "import/prefer-default-export": "off",
+      "import/no-extraneous-dependencies": "off"
+    }
+  },
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric#readme"
+}

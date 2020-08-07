@@ -41,6 +41,9 @@
         }
       });
 
+      // Get the dapp's suggested petname, if there is one.
+      const sp = new URLSearchParams(location.search);
+      let suggestedDappPetname = sp.get('suggestedDappPetname');
 
       window.addEventListener('message', ev => {
         // console.log('inbound', ev.data);
@@ -50,6 +53,8 @@
         if (origin === undefined) {
           // First-come, first-serve.
           origin = ev.origin;
+          // Default the petname, if there isn't a better one.
+          suggestedDappPetname = suggestedDappPetname || origin;
           while (dappQueue.length) {
             const dappObj = dappQueue.shift();
             if (window.parent !== window) {
@@ -58,7 +63,11 @@
           }
         }
         // console.debug('from dapp', origin, ev.data);
-        const obj = { ...ev.data, dappOrigin: origin };
+        const obj = {
+          ...ev.data,
+          dappOrigin: origin,
+          suggestedDappPetname,
+        };
         if (ws.readyState !== ws.OPEN) {
           // console.log('queuing', obj);
           wsQueue.push(obj);
