@@ -20,9 +20,10 @@ import Select from "smelte/src/components/Select/Select.svelte";
     return E(item.actions).deposit(destination ? destination.purse : undefined);
   };
 
-  $: purseItems = [{ value: null, text: 'Automatic' }, ...(
-    $purses ? $purses.filter(({ brand }) => brand === item.brand).map(p => ({ value: p, text: p.text })) : []
-  )];
+  $: purseItems = [
+    { value: null, text: 'Automatic' },
+    ...$purses.filter(({ brand }) => brand === item.brand).map(p => ({ value: p, text: p.text }))
+  ];
   // $: console.log('purseItems', purseItems);
 </script>
 

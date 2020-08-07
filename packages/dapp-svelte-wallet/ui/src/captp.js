@@ -35,10 +35,8 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
     await E.G(getBootstrap()).LOADING;
 
     // Begin the flow of messages to our wallet, which
-    // we refetch from the new, loaded, bootstrap object.
-    const bootPresence = getBootstrap();
-    
-    bootPK.resolve(bootPresence);
+    // we refetch from the new, loaded, bootstrap promise.
+    bootPK.resolve(getBootstrap());
   }
 
   // This is the public state, a promise that never resolves,
@@ -61,7 +59,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
 
   // Prepare the first reset, delayed so that our caller
   // can use makePermanentPresence.
-  setTimeout(() => onReset(Promise.resolve(true)), 1);
+  setTimeout(() => onReset(bootPK.promise), 1);
 
   return { makeStableForwarder, ...props };
 }

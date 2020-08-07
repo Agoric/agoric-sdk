@@ -37,8 +37,8 @@
     }
   };
 
-  $: contactItems = $contacts ? $contacts.map(({ value, text }) => ({ value, text })) : [];
-  $: purseItems = $purses ? $purses.filter(({ brand }) => brand === source.brand).map(p => ({ value: p, text: p.text })) : [];
+  $: contactItems = $contacts.map(({ value, text }) => ({ value, text }));
+  $: purseItems = $purses.filter(({ brand }) => brand === source.brand).map(p => ({ value: p, text: p.text }));
 </script>
 
 <div>

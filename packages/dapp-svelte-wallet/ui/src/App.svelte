@@ -10,7 +10,7 @@
   import Purses from './Purses.svelte';
   import Config from './Config.svelte';
   import Transactions from './Transactions.svelte';
-  import { connected } from './store';
+  import { connected, ready } from './store';
 
   import ListItems from '../lib/ListItems.svelte';
   import MenuButton from '../lib/MenuButton.svelte';
@@ -195,7 +195,7 @@
       </nav>
     </header>
   </div>
-  {#if !$connected}
+  {#if !$ready}
     <div
       class="disconnected-background"
       on:click|preventDefault|stopPropagation={() => {}} />

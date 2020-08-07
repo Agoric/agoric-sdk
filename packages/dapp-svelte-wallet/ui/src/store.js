@@ -18,6 +18,9 @@ export const walletP = makeStableForwarder(bootP => E.G(bootP).wallet);
 export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
 
 const resetAlls = [];
+
+// We initialize as false, but reset to true on disconnects.
+const [ready, setReady] = makeReadable(false, true);
 const [inbox, setInbox] = makeReadable([]);
 const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
@@ -26,7 +29,7 @@ const [contacts, setContacts] = makeReadable([]);
 const [selfContact, setSelfContact] = makeReadable();
 const [issuers, setIssuers] = makeReadable([]);
 
-export { inbox, purses, dapps, payments, issuers, contacts, selfContact };
+export { ready, inbox, purses, dapps, payments, issuers, contacts, selfContact };
 
 function cmp(a, b) {
   return a < b ? -1 : a === b ? 0 : 1;
@@ -39,6 +42,10 @@ function kv(keyObj, val) {
 }
 
 function onReset(readyP) {
+  // Reset is beginning, set unready.
+  setReady(false);
+
+  // When the ready promise fires, reset to ready.
   readyP.then(() => resetAlls.forEach(fn => fn()));
   E(walletP).getSelfContact().then(sc => setSelfContact({ contactPetname: 'Self', ...kv('Self', sc) }));
   // Set up our subscriptions.
@@ -77,8 +84,8 @@ function onReset(readyP) {
 }
 
 // like React useHook, return a store and a setter for it
-function makeReadable(value, start = undefined) {
-  const store = writable(value, start);
-  resetAlls.push(() => store.set(start));
+function makeReadable(value, reset = value) {
+  const store = writable(value);
+  resetAlls.push(() => store.set(reset));
   return [{ subscribe: store.subscribe }, store.set];
 }

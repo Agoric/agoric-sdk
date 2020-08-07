@@ -7,7 +7,7 @@
 import ListCard from "../lib/ListCard.svelte";
 import Card from "smelte/src/components/Card";
 
-$: paymentItems = $payments && $payments.filter(pmt => pmt.status !== 'deposited');
+$: paymentItems = $payments.filter(pmt => pmt.status !== 'deposited');
 </script>
 
 <ListCard items={paymentItems}>
