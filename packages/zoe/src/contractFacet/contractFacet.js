@@ -243,7 +243,9 @@ export function buildRootObject() {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(err => {
-          zcfSeat.exit();
+          if (!zcfSeat.hasExited()) {
+            zcfSeat.exit();
+          }
           throw err;
         });
         const exitObj = makeExitObj(seatData.proposal, zoeSeatAdmin);

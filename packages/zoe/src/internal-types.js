@@ -83,6 +83,7 @@
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
  *            ) => Promise<AddSeatResult>} addZoeSeatAdmin
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
  * @property {() => PublicFacet} getPublicFacet
