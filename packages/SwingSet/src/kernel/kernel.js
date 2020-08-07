@@ -484,7 +484,7 @@ export default function buildKernel(kernelEndowments) {
     const vatSlot = makeVatRootObjectSlot();
     kernelKeeper.getAllVatNames().forEach(name => {
       const vatID = kernelKeeper.getVatIDForName(name);
-      // we happen to give _bootstrap to itself, because unit tests that
+      // we happen to give bootstrap to itself, because unit tests that
       // don't have any other vats (bootstrap-only configs) then get a
       // non-empty object as vatObj0s, since an empty object would be
       // serialized as pass-by-presence. It wouldn't make much sense for the

@@ -502,14 +502,14 @@ export async function main() {
     let totalDeltaT = BigInt(0);
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatExport(
-        '_bootstrap',
+        launchIndirectly ? 'launcher' : 'bootstrap',
         'o+0',
         'runBenchmarkRound',
         args,
         'ignore',
       );
       // eslint-disable-next-line no-await-in-loop
-      const [steps, deltaT] = await runBatch(0, false);
+      const [steps, deltaT] = await runBatch(0, true);
       const status = roundResult.status();
       if (status === 'pending') {
         log(`benchmark round ${i + 1} did not finish`);
