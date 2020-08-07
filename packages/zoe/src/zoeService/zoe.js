@@ -143,11 +143,6 @@ function makeZoe(vatAdminSvc) {
 
       /** @type MakeZoeMint */
       const makeZoeMint = (keyword, mathHelperName = 'nat') => {
-        assert(
-          !(keyword in instanceRecord.issuerKeywordRecord),
-          details`Keyword ${keyword} already registered`,
-        );
-
         // Local indicates one that zoe itself makes from vetted code,
         // and so can be assumed correct and fresh by zoe.
         const {
@@ -171,11 +166,11 @@ function makeZoe(vatAdminSvc) {
           getIssuerRecord: () => {
             return localIssuerRecord;
           },
-          mintGains: totalToMint => {
+          mintAndEscrow: totalToMint => {
             const payment = localMint.mintPayment(totalToMint);
             localPooledPurse.deposit(payment, totalToMint);
           },
-          burnLosses: totalToBurn => {
+          withdrawAndBurn: totalToBurn => {
             const payment = localPooledPurse.withdraw(totalToBurn);
             localIssuer.burn(payment, totalToBurn);
           },
@@ -199,7 +194,7 @@ function makeZoe(vatAdminSvc) {
           );
           return invitationMint.mintPayment(invitationAmount);
         },
-        // checks if keyword done on zcf side
+        // checks of keyword done on zcf side
         saveIssuer: (issuerP, keyword) =>
           issuerTable
             .getPromiseForIssuerRecord(issuerP)
