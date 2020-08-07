@@ -27,7 +27,12 @@ function parentLog(first, ...args) {
 export function makeNodeWorkerVatManagerFactory(tools) {
   const { makeNodeWorker, kernelKeeper } = tools;
 
-  function createFromBundle(vatID, bundle, _options) {
+  function createFromBundle(vatID, bundle, managerOptions) {
+    const { vatParameters } = managerOptions;
+    assert(!managerOptions.metered, 'not supported yet');
+    assert(!managerOptions.notifyTermination, 'not supported yet');
+    assert(!managerOptions.enableSetup, 'not supported at all');
+    assert(!managerOptions.enableInternalMetering, 'eww ick');
     const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
     const transcriptManager = makeTranscriptManager(
       kernelKeeper,
@@ -101,7 +106,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     gotWorker(worker);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker(['setBundle', bundle]);
+    sendToWorker(['setBundle', bundle, vatParameters]);
 
     function deliver(delivery) {
       parentLog(`sending delivery`, delivery);

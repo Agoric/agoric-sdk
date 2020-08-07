@@ -1,5 +1,6 @@
 /* global harden */
 import { assert } from '@agoric/assert';
+import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './localVatManager';
 import { makeNodeWorkerVatManagerFactory } from './nodeWorker';
 
@@ -26,19 +27,25 @@ export function makeVatManagerFactory({
     kernelKeeper,
   });
 
-  // returns promise for new vatManager
-  function vatManagerFactory(vatID, options) {
-    // options: setup|bundle, managerType, metered, notifyTermination,
-    // internalMetering
+  function validateManagerOptions(managerOptions) {
+    assertKnownOptions(managerOptions, [
+      'enablePipelining',
+      'managerType',
+      'setup',
+      'bundle',
+      'metered',
+      'enableSetup',
+      'enableInternalMetering',
+      'notifyTermination',
+      'vatParameters',
+    ]);
     const {
-      managerType = 'local',
       setup,
       bundle,
-      metered = false,
       enableSetup = false,
-      enableInternalMetering = false,
-      notifyTermination = undefined,
-    } = options || {};
+      metered = false,
+      notifyTermination,
+    } = managerOptions;
     assert(setup || bundle);
     assert(
       !bundle || typeof bundle === 'object',
@@ -47,27 +54,27 @@ export function makeVatManagerFactory({
     assert(!(setup && !enableSetup), `setup() provided, but not enabled`); // todo maybe useless
     assert(
       !(notifyTermination && !metered),
-      `notifyTermination is useless without metered:true`,
-    );
-    const fOpts = {
-      metered,
-      enableSetup,
-      enableInternalMetering,
-      notifyTermination,
-    };
+      `notifyTermination is currently useless without metered:true`,
+    ); // explicit termination will change that
+  }
+
+  // returns promise for new vatManager
+  function vatManagerFactory(vatID, managerOptions) {
+    validateManagerOptions(managerOptions);
+    const { managerType = 'local', setup, bundle } = managerOptions;
 
     if (managerType === 'local') {
       if (setup) {
-        return localFactory.createFromSetup(vatID, setup, fOpts);
+        return localFactory.createFromSetup(vatID, setup, managerOptions);
       }
-      return localFactory.createFromBundle(vatID, bundle, fOpts);
+      return localFactory.createFromBundle(vatID, bundle, managerOptions);
     }
 
     if (managerType === 'nodeWorker') {
       // 'setup' based vats must be local. TODO: stop using 'setup' in vats,
       // but tests and comms-vat still need it
       assert(!setup, `setup()-based vats must use a local Manager`);
-      return nodeWorkerFactory.createFromBundle(vatID, bundle, fOpts);
+      return nodeWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
     }
 
     throw Error(

@@ -277,7 +277,7 @@ export async function buildVatController(
   const timerWrapperBundle = await bundleSource(timerWrapperSourcePath);
   kernel.addGenesisVat('timer', timerWrapperBundle);
 
-  async function addGenesisVat(
+  function addGenesisVat(
     name,
     bundleName,
     vatParameters = {},
@@ -387,19 +387,10 @@ export async function buildVatController(
   }
 
   if (config.vats) {
-    const vats = [];
     for (const name of Object.keys(config.vats)) {
-      const v = config.vats[name];
-      vats.push(
-        addGenesisVat(
-          name,
-          v.bundleName || name,
-          v.parameters || {},
-          v.creationOptions || {},
-        ),
-      );
+      const { bundleName, parameters, creationOptions } = config.vats[name];
+      addGenesisVat(name, bundleName || name, parameters, creationOptions);
     }
-    await Promise.all(vats);
   }
 
   // start() may queue bootstrap if state doesn't say we did it already. It

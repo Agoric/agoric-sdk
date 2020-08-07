@@ -28,8 +28,8 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, options = {}) {
-    const { notifyTermination = undefined } = options;
+  function prepare(vatID, managerOptions = {}) {
+    const { notifyTermination = undefined } = managerOptions;
     const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
     const transcriptManager = makeTranscriptManager(
       kernelKeeper,
@@ -71,12 +71,12 @@ export function makeLocalVatManagerFactory(tools) {
     return { syscall, finish };
   }
 
-  function createFromSetup(vatID, setup, options) {
-    assert(!options.metered, `unsupported`);
-    assert(!options.enableInternalMetering, `unsupported`);
-    assert(!options.notifyTermination, `unsupported`);
+  function createFromSetup(vatID, setup, managerOptions) {
+    assert(!managerOptions.metered, `unsupported`);
+    assert(!managerOptions.enableInternalMetering, `unsupported`);
+    assert(!managerOptions.notifyTermination, `unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
-    const { syscall, finish } = prepare(vatID, options);
+    const { syscall, finish } = prepare(vatID, managerOptions);
 
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
@@ -86,13 +86,14 @@ export function makeLocalVatManagerFactory(tools) {
     return finish(dispatch, meterRecord);
   }
 
-  async function createFromBundle(vatID, bundle, options) {
+  async function createFromBundle(vatID, bundle, managerOptions) {
     const {
-      metered,
+      metered = false,
       notifyTermination,
-      enableSetup,
-      enableInternalMetering,
-    } = options;
+      enableSetup = false,
+      enableInternalMetering = false,
+      vatParameters = {},
+    } = managerOptions;
 
     let meterRecord = null;
     if (metered) {
@@ -140,6 +141,7 @@ export function makeLocalVatManagerFactory(tools) {
         buildRootObject,
         vatID,
         vatPowers,
+        vatParameters,
       );
     } else {
       const setup = vatNS.default;

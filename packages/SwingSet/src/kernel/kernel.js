@@ -3,6 +3,7 @@
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
+import { assertKnownOptions } from '../assertOptions';
 import { makeVatManagerFactory } from './vatManager/factory';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
@@ -403,22 +404,20 @@ export default function buildKernel(kernelEndowments) {
     if (typeof setup !== 'function') {
       throw Error(`setup is not a function, rather ${setup}`);
     }
-    const knownCreationOptions = new Set(['enablePipelining', 'metered']);
-    for (const k of Object.keys(creationOptions)) {
-      if (!knownCreationOptions.has(k)) {
-        throw Error(`unknown option ${k}`);
-      }
-    }
-    creationOptions = { enableSetup: true, ...creationOptions };
-
+    assertKnownOptions(creationOptions, ['enablePipelining', 'metered']);
     if (started) {
       throw Error(`addGenesisVat() cannot be called after kernel.start`);
     }
     if (genesisVats.has(name)) {
       throw Error(`vatID ${name} already added`);
     }
-
-    genesisVats.set(name, { setup, vatParameters, creationOptions });
+    const managerOptions = {
+      ...creationOptions,
+      setup,
+      enableSetup: true,
+      vatParameters,
+    };
+    genesisVats.set(name, managerOptions);
   }
 
   function addGenesisVat(
@@ -433,18 +432,13 @@ export default function buildKernel(kernelEndowments) {
     if (typeof bundle !== 'object') {
       throw Error(`bundle is not an object, rather ${bundle}`);
     }
-    const knownCreationOptions = new Set([
+    assertKnownOptions(creationOptions, [
       'enablePipelining',
       'metered',
       'managerType',
       'enableSetup',
       'enableInternalMetering',
     ]);
-    for (const k of Object.getOwnPropertyNames(creationOptions)) {
-      if (!knownCreationOptions.has(k)) {
-        throw Error(`unknown option ${k}`);
-      }
-    }
     if (started) {
       throw Error(`addGenesisVat() cannot be called after kernel.start`);
     }
@@ -453,16 +447,18 @@ export default function buildKernel(kernelEndowments) {
     }
     // TODO: We need to support within-vat metering (for the Spawner) until
     // #1343 is fixed, after which we can remove
-    // options.enableInternalMetering . For now, it needs to be enabled for
-    // our internal unit test (which could easily add this to its config
-    // object) and for the spawner vat (not so easy). To avoid deeper
+    // managerOptions.enableInternalMetering . For now, it needs to be
+    // enabled for our internal unit test (which could easily add this to its
+    // config object) and for the spawner vat (not so easy). To avoid deeper
     // changes, we enable it for *all* static vats here. Once #1343 is fixed,
     // remove this addition and all support for internal metering.
-    genesisVats.set(name, {
+    const managerOptions = {
+      ...creationOptions,
       bundle,
+      enableInternalMetering: true,
       vatParameters,
-      creationOptions: { enableInternalMetering: true, ...creationOptions },
-    });
+    };
+    genesisVats.set(name, managerOptions);
   }
 
   function addGenesisDevice(name, bundle, endowments) {
@@ -581,13 +577,13 @@ export default function buildKernel(kernelEndowments) {
    * might tell the manager to replay the transcript later, if it notices
    * we're reloading a saved state vector.
    */
-  function addVatManager(vatID, manager, creationOptions) {
+  function addVatManager(vatID, manager, managerOptions) {
     // addVatManager takes a manager, not a promise for one
     assert(
       manager.deliver && manager.setVatSyscallHandler,
       `manager lacks .deliver, isPromise=${manager instanceof Promise}`,
     );
-    const { enablePipelining = false } = creationOptions;
+    const { enablePipelining = false } = managerOptions;
     // This should create the vatKeeper. Other users get it from the
     // kernelKeeper, so we don't need a reference ourselves.
     kernelKeeper.allocateVatKeeperIfNeeded(vatID);
@@ -731,19 +727,12 @@ export default function buildKernel(kernelEndowments) {
 
     // instantiate all vats
     for (const name of genesisVats.keys()) {
-      const { setup, bundle, vatParameters, creationOptions } = genesisVats.get(
-        name,
-      );
+      const managerOptions = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
-      const factoryOptions = { ...creationOptions, bundle, setup };
       // eslint-disable-next-line no-await-in-loop
-      const manager = await vatManagerFactory(
-        vatID,
-        factoryOptions,
-        vatParameters,
-      );
-      addVatManager(vatID, manager, creationOptions);
+      const manager = await vatManagerFactory(vatID, managerOptions);
+      addVatManager(vatID, manager, managerOptions);
     }
 
     function createVatDynamicallyByName(bundleName, options) {

@@ -70,10 +70,11 @@ let syscallLog;
 parentPort.on('message', ([type, ...margs]) => {
   workerLog(`received`, type);
   if (type === 'start') {
+    // TODO: parent should send ['start', vatID]
     workerLog(`got start`);
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
-    const [bundle] = margs;
+    const [bundle, vatParameters] = margs;
     const endowments = {
       console: makeConsole(`SwingSet:vatWorker`),
       HandledPromise,
@@ -110,6 +111,7 @@ parentPort.on('message', ([type, ...margs]) => {
         vatNS.buildRootObject,
         vatID,
         vatPowers,
+        vatParameters,
       );
       workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
       sendUplink(['dispatchReady']);
