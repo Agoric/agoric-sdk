@@ -73,7 +73,7 @@
     top: var(--banner-height);
     left: 0;
     width: 100%;
-    height: calc(100vh - var(--banner-height));
+    height: calc(max(100%, 100vh) - var(--banner-height));
     border: none;
     background: rgba(0, 0, 0, 0.4);
     z-index: 1000;

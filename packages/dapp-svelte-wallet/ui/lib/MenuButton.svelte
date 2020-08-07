@@ -5,11 +5,18 @@
   export let id;
   export let value = undefined;
   export let color = undefined;
+  $: highlighted = value === id;
 </script>
 
-<div class={id === value ? "bg-secondary-transLighter" : ""}>
-  <Button outlined={id === value} text fab flat on:click={() => (value = id)} {color}>
-    {text}
-    <slot />
-  </Button>
+<style>
+  .highlighted {
+    background-color: var(--color-secondary-500);
+  }
+</style>
+
+<div class:highlighted>
+  <Button outlined={id === value}
+    text fab flat
+    on:click={() => (value = id)} {color}
+  ><slot>{text}</slot></Button>
 </div>
