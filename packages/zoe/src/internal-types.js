@@ -1,4 +1,10 @@
 /**
+ * @template T
+ * @typedef {T | PromiseLike<T>} ERef
+ * TODO Replace with the import from the proper place, once it is merged in
+ */
+
+/**
  * @template K,V
  * @typedef {import('@agoric/store').Store<K, V>} Store
  */
@@ -19,6 +25,10 @@
  */
 
 /**
+ * @typedef {import('@agoric/ertp').MathHelpersName} MathHelpersName
+ */
+
+/**
  * @template T
  * @typedef {Object} Table
  * @property {(record: any) => record is T} validate
@@ -32,8 +42,8 @@
 /**
  * @typedef {Object} ZoeSeatAdmin
  * @property {() => void} exit - exit seat
- * @property {(replacementAllocation: Allocation) => void} replaceAllocation - replace the
- * currentAllocation with this allocation
+ * @property {(replacementAllocation: Allocation) => void} replaceAllocation
+ * - replace the currentAllocation with this allocation
  */
 
 /**
@@ -53,7 +63,8 @@
  * @callback MakeSeatAdmin
  * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
- * @param {ZoeSeatAdmin} zoeSeatAdmin - a presence from Zoe such that ZCF can tell Zoe
+ * @param {ZoeSeatAdmin} zoeSeatAdmin
+ * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
  * @param {(brand: Brand) => AmountMath} getAmountMath
@@ -68,8 +79,10 @@
 
 /**
  * @typedef {Object} InstanceAdmin
- * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin:
- * ZoeSeatAdmin, seatData: SeatData) => Promise<AddSeatResult>} addZoeSeatAdmin
+ * @property {(invitationHandle: InvitationHandle,
+ *             zoeSeatAdmin: ZoeSeatAdmin,
+ *             seatData: SeatData,
+ *            ) => Promise<AddSeatResult>} addZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
  * @property {() => PublicFacet} getPublicFacet
@@ -80,31 +93,42 @@
 
 /**
  * @typedef {Object} AddSeatObj
- * @property {(invitationHandle: InvitationHandle, zoeSeatAdmin: ZoeSeatAdmin, seatData: SeatData) => AddSeatResult} addSeat
+ * @property {(invitationHandle: InvitationHandle,
+ *             zoeSeatAdmin: ZoeSeatAdmin,
+ *             seatData: SeatData,
+ *            ) => AddSeatResult} addSeat
  */
 
 /**
  * @typedef {Object} ZoeInstanceAdmin
- * @property {(invitationHandle: InvitationHandle, description: string, customProperties?: {}) => Payment<'ZoeInvitation'>} makeInvitation
+ * @property {(invitationHandle: InvitationHandle,
+ *             description: string,
+ *             customProperties?: {},
+ *            ) => Payment<'ZoeInvitation'>} makeInvitation
  * @property {() => void} shutdown
- * @property {(issuerP: Issuer|Promise<Issuer>, keyword: Keyword) => void} saveIssuer
+ * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
  *
- * @property {(Keyword, MathHelperName=) => ZoeMint} makeZoeMint
+ * @property {MakeZoeMint} makeZoeMint
+ */
+
+/**
+ * @callback MakeZoeMint
+ * @param {Keyword} keyword
+ * @param {MathHelpersName=} mathHelperName
+ * @returns {ZoeMint}
  */
 
 /**
  * @typedef {Object} ZoeMint
- *
  * @property {() => IssuerRecord} getIssuerRecord
- * @property {(Allocation, ZoeSeat=) => ZoeSeat} mintAllocation
- * Add the allocation to that seat's allocation.
- * All the amounts in that allocation must be of this ZoeMint's brand.
- * The allocation's keywords are in the namespace of that seat.
- * If a seat is provided, it is returned. Otherwise a new seat is
- * returned.
- * @property {(Allocation, ZCFSeat)} burnAllocation
- * If offer-safe, subtract allocation from that seat's allocation.
- * All the amounts in that allocation must be of this ZoeMint's brand.
+ * @property {(newAllocation: Allocation,
+ *             totalToMint: Amount,
+ *             zoeSeat: ZoeSeatAdmin,
+ *            ) => ZoeSeatAdmin} mintGains
+ * @property {(newAllocation: Allocation,
+ *             totalToBurn: Amount,
+ *             zoeSeat: ZoeSeatAdmin,
+ *            ) => void} burnLosses
  */
 
 /**

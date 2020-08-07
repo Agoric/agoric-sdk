@@ -130,7 +130,7 @@ function makeZoe(vatAdminSvc) {
           () => exitAllSeats(),
         );
 
-      const registerIssuerStuff = (keyword, issuer, brand) => {
+      const registerIssuerByKeyword = (keyword, issuer, brand) => {
         instanceRecord.issuerKeywordRecord = {
           ...instanceRecord.issuerKeywordRecord,
           [keyword]: issuer,
@@ -139,9 +139,51 @@ function makeZoe(vatAdminSvc) {
           ...instanceRecord.brandKeywordRecord,
           [keyword]: brand,
         };
-        if (!brandToPurse.has(brand)) {
-          brandToPurse.init(brand, E(issuer).makeEmptyPurse());
-        }
+      };
+
+      /** @type MakeZoeMint */
+      const makeZoeMint = (keyword, mathHelperName = 'nat') => {
+        assert(
+          !(keyword in instanceRecord.issuerKeywordRecord),
+          details`Keyword ${keyword} already registered`,
+        );
+
+        // Local indicates one that zoe itself makes from vetted code,
+        // and so can be assumed correct and fresh by zoe.
+        const {
+          mint: localMint,
+          issuer: localIssuer,
+          amountMath: localAmountMath,
+          brand: localBrand,
+        } = makeIssuerKit(keyword, mathHelperName);
+        const localIssuerRecord = harden({
+          brand: localBrand,
+          issuer: localIssuer,
+          amountMath: localAmountMath,
+        });
+        issuerTable.registerIssuerRecord(localIssuerRecord);
+        registerIssuerByKeyword(keyword, localIssuer, localBrand);
+        const localPooledPurse = localIssuer.makeEmptyPurse();
+        brandToPurse.init(localBrand, localPooledPurse);
+
+        /** @type ZoeMint */
+        const zoeMint = harden({
+          getIssuerRecord: () => {
+            return localIssuerRecord;
+          },
+          mintGains: (newAllocation, totalToMint, zoeSeat) => {
+            const payment = localMint.mintPayment(totalToMint);
+            localPooledPurse.deposit(payment, totalToMint);
+            zoeSeat.replaceAllocation(newAllocation);
+            return zoeSeat;
+          },
+          burnLosses: (newAllocation, totalToBurn, zoeSeat) => {
+            const payment = localPooledPurse.withdraw(totalToBurn);
+            localIssuer.burn(payment, totalToBurn);
+            zoeSeat.replaceAllocation(newAllocation);
+          },
+        });
+        return zoeMint;
       };
 
       /** @type {ZoeInstanceAdmin} */
@@ -165,61 +207,16 @@ function makeZoe(vatAdminSvc) {
           issuerTable
             .getPromiseForIssuerRecord(issuerP)
             .then(({ issuer, brand }) => {
-              registerIssuerStuff(keyword, issuer, brand);
+              registerIssuerByKeyword(keyword, issuer, brand);
+              if (!brandToPurse.has(brand)) {
+                brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+              }
             }),
         shutdown: () => {
           exitAllSeats();
           adminNode.terminate();
         },
-        makeZoeMint: (keyword, mathHelperName = 'nat') => {
-          assert(
-            !(keyword in instanceRecord.issuerKeywordRecord),
-            details`Keyword ${keyword} already registered`,
-          );
-
-          // Local indicates the one zoe itself makes from vetted code,
-          // and so can be assumed correct and fresh by zoe.
-          const {
-            mint: localMint,
-            issuer: localIssuer,
-            amountMath: localAmountMath,
-            brand: localBrand,
-          } = makeIssuerKit(keyword, mathHelperName);
-          const localIssuerRecord = harden({
-            brand: localBrand,
-            issuer: localIssuer,
-            amountMath: localAmountMath,
-          });
-          issuerTable.registerIssuerRecord(localIssuerRecord);
-          registerIssuerStuff(keyword, localIssuer, localBrand);
-          const zoeMint = harden({
-            getIssuerRecord: () => {
-              return localIssuerRecord;
-            },
-            mintAllocation: (allocation, zoeSeat = undefined) => {
-              // Malformed amount (or anything that might cause mintPayment
-              // to fail later) must fail now instead.
-              amount = localAmountMath.coerce(amount);
-              const pooledPurseP = brandToPurse.get(localBrand);
-              const payment = localMint.mintPayment(amount);
-              E(pooledPurseP)
-                .deposit(payment, amount)
-                .catch(reason => {
-                  // TODO panic?
-                  // If this delayed local deposit fails, that's very bad news.
-                  throw reason;
-                });
-              // Proceed assuming the deposit succeeded
-              const oldAmount = undefined; // where from?
-              const newAmount = localAmountMath.add(oldAmount, amount);
-              zoeSeat.replaceAllocation({ [seatKeyword]: newAmount });
-            },
-            burnAllocation: (_allocation, _zoeSeat) => {
-              // TODO
-            },
-          });
-          return zoeMint;
-        },
+        makeZoeMint,
       };
 
       const bundle = installation.getBundle();

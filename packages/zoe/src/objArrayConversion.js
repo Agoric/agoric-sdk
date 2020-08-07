@@ -81,3 +81,12 @@ export const filterFillAmounts = (allocation, amountMathKeywordRecord) => {
   });
   return filledAllocation;
 };
+
+/**
+ * @template P, T, U
+ * @param {{[P]: T}} original
+ * @param {(pair: [P, T]) => [P, U]} mapPairFn
+ * @returns {{[P]: U}}
+ */
+export const objectMap = (original, mapPairFn) =>
+  Object.fromEntries(Object.entries(original).map(mapPairFn));

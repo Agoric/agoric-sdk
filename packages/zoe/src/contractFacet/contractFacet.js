@@ -11,12 +11,14 @@ import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { areRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
 import { assertKeywordName, getKeywords } from '../zoeService/cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeSeatAdmin } from './seat';
 import { makeExitObj } from './exit';
+import { objectMap } from '../objArrayConversion';
 
 import '../../exported';
 import '../internal-types';
@@ -45,6 +47,78 @@ export function buildRootObject() {
     await getPromiseForIssuerRecords(issuers);
 
     const allSeatStagings = new WeakSet();
+
+    /** @type MakeZCFMint */
+    const makeZCFMint = async (keyword, mathHelperName = 'nat') => {
+      const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, mathHelperName);
+      const mintyIssuerRecord = await E(zoeMintP).getIssuerRecord();
+      // AWAIT
+      const { brand: mintyBrand } = mintyIssuerRecord;
+      const mintyAmountMath = makeAmountMath(mintyBrand, mathHelperName);
+      // TODO some zcf-side registration of the new issuer
+
+      /** @type ZCFMint */
+      const zcfMint = harden({
+        getIssuerRecord: () => {
+          return mintyIssuerRecord;
+        },
+        mintGains: (gains, zcfSeat = undefined) => {
+          assert(
+            zcfSeat !== undefined,
+            details`On demand seat creation not yet implemented`,
+          );
+          let totalToMint = mintyAmountMath.getEmpty();
+          const oldAllocation = zcfSeat.getCurrentAllocation();
+          const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
+            totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
+            const oldAmount = oldAllocation[seatKeyword];
+            // oldAmount being absent is equivalent to empty.
+            const newAmount = oldAmount
+              ? mintyAmountMath.add(oldAmount, amountToAdd)
+              : amountToAdd;
+            return [seatKeyword, newAmount];
+          });
+          const newAllocation = harden({
+            ...oldAllocation,
+            ...updates,
+          });
+          // verifies offer safety
+          const seatStaging = zcfSeat.stage(newAllocation);
+          // No effects above. Commit point.
+          // TODO WAT
+          zoeSeatAdmin.commit(seatStaging);
+          E(zoeMintP).mintGains(newAllocation, totalToMint, zoeSeatAdmin);
+          return zcfSeat;
+        },
+        burnLosses: (losses, zcfSeat) => {
+          let totalToBurn = mintyAmountMath.getEmpty();
+          const oldAllocation = zcfSeat.getCurrentAllocation();
+          const updates = objectMap(
+            losses,
+            ([seatKeyword, amountToSubtract]) => {
+              totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
+              const oldAmount = oldAllocation[seatKeyword];
+              const newAmount = mintyAmountMath.subtract(
+                oldAmount,
+                amountToSubtract,
+              );
+              return [seatKeyword, newAmount];
+            },
+          );
+          const newAllocation = harden({
+            ...oldAllocation,
+            ...updates,
+          });
+          // verifies offer safety
+          const seatStaging = zcfSeat.stage(newAllocation);
+          // No effects above. Commit point
+          // TODO WAT
+          zoeSeatAdmin.commit(seatStaging);
+          E(zoeMintP).burnLosses(newAllocation, totalToBurn, zoeSeatAdmin);
+        },
+      });
+      return zcfMint;
+    };
 
     /** @type ContractFacet */
     const zcf = {
@@ -123,9 +197,8 @@ export function buildRootObject() {
           'string',
           details`invitations must have a description string: ${description}`,
         );
-        /** @type {InvitationHandle} */
-        const invitationHandle = {};
-        harden(invitationHandle);
+
+        const invitationHandle = /** @type {InvitationHandle} */ (harden({}));
         invitationHandleToHandler.init(invitationHandle, offerHandler);
         /** @type {Promise<Payment<'ZoeInvitation'>>} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(
@@ -145,32 +218,7 @@ export function buildRootObject() {
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
-
-      makeZCFMint: async (keyword, mathHelperName = 'nat') => {
-        const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
-          keyword,
-          mathHelperName,
-        );
-        const issuerRecord = await E(zoeMintP).getIssuerRecord();
-        // AWAIT
-        const zcfMint = harden({
-          getIssuerRecord: () => {
-            return issuerRecord;
-          },
-          mintAllocation: (allocation, zcfSeat = undefined) => {
-            // TODO local stuff
-            let zoeSeat = zcfSeat && zcfSeatToZoeSeat.get(zcfSeat);
-            zoeSeat = E(zoeMintP).mintAllocation(allocation, zoeSeat);
-            return zcfSeat;
-          },
-          burnAllocation: (allocation, zcfSeat) => {
-            // TODO local stuff
-            const zoeSeat = zcfSeatToZoeSeat.get(zcfSeat);
-            E(zoeMintP).burnAllocation(allocation, zoeSeat);
-          },
-        });
-        return zcfMint;
-      },
+      makeZCFMint,
     };
     harden(zcf);
 

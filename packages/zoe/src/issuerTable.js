@@ -1,5 +1,6 @@
 // @ts-check
 
+import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import makeWeakStore from '@agoric/weak-store';
@@ -8,7 +9,6 @@ import { makeTable, makeValidateProperties } from './table';
 
 import '../exported';
 import './internal-types';
-import { assert } from '@agoric/assert';
 
 /**
  * @template K,V
