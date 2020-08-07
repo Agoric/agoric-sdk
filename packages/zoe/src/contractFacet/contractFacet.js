@@ -12,6 +12,8 @@ import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeNotifierKit } from '@agoric/notifier';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { areRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
 import { assertKeywordName, getKeywords } from '../zoeService/cleanProposal';
@@ -164,6 +166,20 @@ export function buildRootObject() {
       return zcfMint;
     };
 
+    function updateNotiferFrom(updater, notifier, nextCount = undefined) {
+      notifier.getUpdateSince(nextCount).then(
+        ({ value, updateCount }) => {
+          if (updateCount) {
+            updater.updateState(value);
+            updateNotiferFrom(updater, notifier, updateCount);
+          } else {
+            updater.finish(value);
+          }
+        },
+        e => updater.fail(e),
+      );
+    }
+
     /** @type ContractFacet */
     const zcf = {
       reallocate: (/** @type SeatStaging[] */ ...seatStagings) => {
@@ -256,6 +272,33 @@ export function buildRootObject() {
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
       makeZCFMint,
+      addEmptySeat: keyword => {
+        const initialAllocation = harden({});
+        const proposal = harden({ want: {} });
+        const { notifier, updater } = makeNotifierKit();
+        const zoeSeatAdminPromiseKit = makePromiseKit();
+
+        E(zoeInstanceAdmin)
+          .makeEmptySeat(keyword, initialAllocation, proposal)
+          .then(({ seatAdmin: zoeSeatAdmin, notifier: zoeNotifier }) => {
+            updateNotiferFrom(updater, zoeNotifier);
+            zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
+          });
+
+        const seatData = harden({
+          proposal,
+          initialAllocation,
+          notifier,
+        });
+        const { zcfSeat, zcfSeatAdmin } = makeSeatAdmin(
+          allSeatStagings,
+          zoeSeatAdminPromiseKit.promise,
+          seatData,
+          getAmountMath,
+        );
+        seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
+        return { zcfSeat, zcfSeatAdmin };
+      },
     };
     harden(zcf);
 

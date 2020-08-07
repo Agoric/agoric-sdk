@@ -207,6 +207,34 @@ function makeZoe(vatAdminSvc) {
                 brandToPurse.init(brand, E(issuer).makeEmptyPurse());
               }
             }),
+        makeEmptySeat: (keyword, initialAllocation) => {
+          let currentAllocation = initialAllocation;
+
+          const { notifier, updater } = makeNotifierKit();
+
+          const seatAdmin = {
+            replaceAllocation: replacementAllocation => {
+              harden(replacementAllocation);
+              updater.updateState(replacementAllocation);
+              currentAllocation = replacementAllocation;
+            },
+            exit: () => {
+              updater.finish(undefined);
+              const instanceAdmin = instanceToInstanceAdmin.get(instance);
+              instanceAdmin.removeZoeSeatAdmin(seatAdmin);
+
+              // burn the holdings to keep Zoe's book straight
+              Object.entries(currentAllocation).forEach(([_, payoutAmount]) => {
+                const purse = brandToPurse.get(payoutAmount.brand);
+                const { issuer } = issuerTable.get(payoutAmount.brand);
+                E(issuer).burn(E(purse).withdraw(payoutAmount));
+              });
+            },
+          };
+
+          harden(seatAdmin);
+          return { seatAdmin, notifier };
+        },
         shutdown: () => {
           exitAllSeats();
           adminNode.terminate();
@@ -236,6 +264,8 @@ function makeZoe(vatAdminSvc) {
       };
 
       instanceToInstanceAdmin.init(instance, instanceAdmin);
+
+      // At this point, the contract will start executing. All must be ready
 
       const {
         creatorFacet = {},
