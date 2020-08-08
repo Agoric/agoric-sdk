@@ -20,7 +20,7 @@ test('multipoolAutoSwap with valid offers', async t => {
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe(fakeVatAdmin);
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
 
     // Set up central token
     const centralR = makeIssuerKit('central');
@@ -62,7 +62,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       inviteAmountMath.make(
         harden([
           {
-            inviteDesc: 'multipool autoswap add liquidity',
+            description: 'multipool autoswap add liquidity',
             instanceHandle: aliceInviteAmount.value[0].instanceHandle,
             installationHandle,
             handle: aliceInviteAmount.value[0].handle,

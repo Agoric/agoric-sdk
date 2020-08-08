@@ -112,7 +112,7 @@ test('zoe with automaticRefund', async t => {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe(fakeVatAdmin);
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -279,7 +279,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       ContributionA: moolaR.issuer,
       ContributionB: simoleanR.issuer,
     });
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
     const { invite: aliceInvite1 } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,

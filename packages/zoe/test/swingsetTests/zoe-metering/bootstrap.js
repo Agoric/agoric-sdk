@@ -31,7 +31,7 @@ export function buildRootObject(vatPowers) {
       try {
         const installId = await installations[testName]();
         log(`instantiating ${testName}`);
-        const inviteIssuer = E(zoe).getInviteIssuer();
+        const inviteIssuer = E(zoe).getInvitationIssuer();
         const issuerKeywordRecord = harden({ Keyword1: inviteIssuer });
         const {
           instanceRecord: { publicAPI },

@@ -31,7 +31,7 @@ function makeFredMaker(host, log) {
       myStockPaymentP,
       myFinPaymentP,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
+      const inviteIssuerP = E(host).getInvitationIssuer();
       const myMoneyPurseP = E(moneyIssuerP).makeEmptyPurse();
       const myStockPurseP = E(stockIssuerP).makeEmptyPurse();
       const myFinPurseP = E(finIssuerP).makeEmptyPurse();

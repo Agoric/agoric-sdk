@@ -32,7 +32,7 @@ interface ContractHost {
    * The issuer allows holders of seat invitations to get exclusive access to a
    * Seat.
    */
-  getInviteIssuer() -> (Issuer);
+  getInvitationIssuer() -> (Issuer);
 }
 
 /**

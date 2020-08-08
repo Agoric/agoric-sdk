@@ -17,7 +17,7 @@ const displayNonfungible = amount => {
     const elems = value.map(elem => {
       return {
         instance: elem.instanceHandle.petname,
-        inviteDesc: elem.inviteDesc,
+        description: elem.description,
       };
     });
     return (
@@ -26,11 +26,11 @@ const displayNonfungible = amount => {
 {' '}
 {brand.petname} (Non-fungible)</b>
         <List>
-          {elems.map(({ instance, inviteDesc }) => (
-            <ListItem key={inviteDesc} value={inviteDesc} divider>
+          {elems.map(({ instance, description }) => (
+            <ListItem key={description} value={description} divider>
               <ListItemText
                 primary={`instance: ${instance}`}
-                secondary={`inviteDesc: ${inviteDesc}`}
+                secondary={`description: ${description}`}
               />
             </ListItem>
           ))}

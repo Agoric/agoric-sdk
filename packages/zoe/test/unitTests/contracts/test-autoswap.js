@@ -24,7 +24,7 @@ test('autoSwap with valid offers', async t => {
       simoleans,
     } = setup();
     const zoe = makeZoe(fakeVatAdmin);
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
 
     // Setup Alice
     const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
@@ -255,7 +255,7 @@ test('autoSwap - test fee', async t => {
       simoleans,
     } = setup();
     const zoe = makeZoe(fakeVatAdmin);
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
 
     // Setup Alice
     const aliceMoolaPayment = moolaMint.mintPayment(moola(10000));

@@ -84,7 +84,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
 
   /** The contract host is designed to have a long-lived credible identity. */
   const contractHost = harden({
-    getInviteIssuer() {
+    getInvitationIssuer() {
       return inviteIssuer;
     },
     // contractBundle is a record containing source code for the functions

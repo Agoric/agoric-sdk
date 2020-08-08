@@ -20,7 +20,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
-  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const inviteIssuer = await E(zoe).getInvitationIssuer();
 
   return harden({
     doPublicAuction: async inviteP => {
@@ -129,7 +129,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
       );
       const optionValue = optionAmounts.value;
       assert(
-        optionValue[0].inviteDesc === 'exerciseOption',
+        optionValue[0].description === 'exerciseOption',
         details`wrong invite`,
       );
       assert(
