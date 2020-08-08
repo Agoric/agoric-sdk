@@ -245,7 +245,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const {
       value: [optionValue],
@@ -254,7 +254,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       optionValue.instanceHandle,
     );
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionValue.inviteDesc, 'exerciseOption');
+    t.equal(optionValue.description, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
     t.ok(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
     t.equal(optionValue.expirationDate, 1);
@@ -399,7 +399,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     // party in the covered call: Did the covered call use the
     // expected covered call installation (code)? Does it use the issuers
     // that he expects (moola and simoleans)?
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
     const inviteAmountMath = inviteIssuer.getAmountMath();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const optionAmount = await inviteIssuer.getAmountOf(bobExclOption);
@@ -408,7 +408,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       optionDesc.instanceHandle,
     );
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionDesc.inviteDesc, 'exerciseOption');
+    t.equal(optionDesc.description, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionDesc.underlyingAsset, moola(3)));
     t.ok(simoleanR.amountMath.isEqual(optionDesc.strikePrice, simoleans(7)));
     t.equal(optionDesc.expirationDate, 100);
@@ -661,7 +661,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // party in the covered call: Did the covered call use the
     // expected covered call installation (code)? Does it use the issuers
     // that he expects (moola and simoleans)?
-    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteIssuer = zoe.getInvitationIssuer();
     const inviteAmountMath = inviteIssuer.getAmountMath();
     const bobExclOption = await inviteIssuer.claim(optionP);
     const {
@@ -671,7 +671,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       optionValue.instanceHandle,
     );
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionValue.inviteDesc, 'exerciseOption');
+    t.equal(optionValue.description, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
     t.ok(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
     t.equal(optionValue.expirationDate, 100);
@@ -725,14 +725,14 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       installationHandle: daveOptionInstallationHandle,
     } = zoe.getInstanceRecord(daveOptionValue.instanceHandle);
     t.equal(daveOptionInstallationHandle, coveredCallInstallationHandle);
-    t.equal(daveOptionValue.inviteDesc, 'exerciseOption');
+    t.equal(daveOptionValue.description, 'exerciseOption');
     t.ok(bucksR.amountMath.isEqual(daveOptionValue.strikePrice, bucks(1)));
     t.equal(daveOptionValue.expirationDate, 100);
     t.deepEqual(daveOptionValue.timerAuthority, timer);
 
     // What about the underlying asset (the other option)?
     t.equal(
-      daveOptionValue.underlyingAsset.value[0].inviteDesc,
+      daveOptionValue.underlyingAsset.value[0].description,
       'exerciseOption',
     );
     t.equal(daveOptionValue.underlyingAsset.value[0].expirationDate, 100);
@@ -928,7 +928,7 @@ test('zoe - coveredCall non-fungible', async t => {
   // contract instance that he expects as well as that Alice has
   // already escrowed.
 
-  const inviteIssuer = zoe.getInviteIssuer();
+  const inviteIssuer = zoe.getInvitationIssuer();
   const bobExclOption = await inviteIssuer.claim(optionP);
   const {
     value: [optionValue],
@@ -937,7 +937,7 @@ test('zoe - coveredCall non-fungible', async t => {
     optionValue.instanceHandle,
   );
   t.equal(installationHandle, coveredCallInstallationHandle);
-  t.equal(optionValue.inviteDesc, 'exerciseOption');
+  t.equal(optionValue.description, 'exerciseOption');
   t.ok(
     amountMaths
       .get('cc')

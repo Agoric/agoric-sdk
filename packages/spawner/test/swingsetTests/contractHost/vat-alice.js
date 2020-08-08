@@ -42,7 +42,7 @@ function makeAliceMaker(host, log) {
       myOptFinPurseP = undefined,
       optFredP = undefined,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
+      const inviteIssuerP = E(host).getInvitationIssuer();
 
       const moneyMath = await getLocalAmountMath(moneyIssuerP);
       const stockMath = await getLocalAmountMath(stockIssuerP);

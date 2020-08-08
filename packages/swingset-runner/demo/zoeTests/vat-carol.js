@@ -13,7 +13,7 @@ const build = async (zoe, issuers, payments, installations) => {
   const [moolaPurseP, simoleanPurseP] = purses;
   const [_moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
-  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const inviteIssuer = await E(zoe).getInvitationIssuer();
 
   return harden({
     doPublicAuction: async inviteP => {

@@ -271,7 +271,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       aliceSwapPayments,
     );
 
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const inviteIssuer = await E(zoe).getInvitationIssuer();
     let swapInviteTwo;
     swapOutcome.then(
       o => {

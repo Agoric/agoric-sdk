@@ -96,7 +96,7 @@ test('lib-wallet issuer and purse methods', async t => {
       inboxStateChangeLog,
       pursesStateChangeLog,
     } = await setupTest();
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const inviteIssuer = await E(zoe).getInvitationIssuer();
     t.deepEquals(
       wallet.getIssuers(),
       [['zoe invite', inviteIssuer]],
@@ -230,7 +230,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     // that we withdraw an invite for the offer during the
     // `addOffer` call, so any invites associated with an offer are no
     // longer in the purse.
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const inviteIssuer = await E(zoe).getInvitationIssuer();
     const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
     const {
       value: [{ handle: inviteHandle, installationHandle }],
@@ -274,7 +274,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       currentAmount.value,
       [
         {
-          inviteDesc: 'getRefund',
+          description: 'getRefund',
           handle: inviteHandle2,
           instanceHandle,
           installationHandle,
@@ -295,7 +295,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         pursePetname: 'Default Zoe invite purse',
         value: [
           {
-            inviteDesc: 'getRefund',
+            description: 'getRefund',
             handle: {},
             instanceHandle: {},
             installationHandle: {},
@@ -303,7 +303,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         ],
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","index":0},"value":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-1' },
@@ -315,7 +315,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           brand: { kind: 'brand', petname: 'zoe invite' },
           value: [
             {
-              inviteDesc: 'getRefund',
+              description: 'getRefund',
               handle: { kind: 'unnamed', petname: 'unnamed-1' },
               instanceHandle: { kind: 'unnamed', petname: 'unnamed-2' },
               installationHandle: { kind: 'unnamed', petname: 'unnamed-3' },
@@ -376,7 +376,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         pursePetname: 'Default Zoe invite purse',
         value: [
           {
-            inviteDesc: 'getRefund',
+            description: 'getRefund',
             handle: {},
             instanceHandle: {},
             installationHandle: {},
@@ -384,7 +384,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         ],
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","index":0},"value":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-4' },
@@ -396,7 +396,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           brand: { kind: 'brand', petname: 'zoe invite' },
           value: [
             {
-              inviteDesc: 'getRefund',
+              description: 'getRefund',
               handle: { kind: 'unnamed', petname: 'unnamed-4' },
               instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
               installationHandle: {
@@ -457,7 +457,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       currentAmount2.value,
       [
         {
-          inviteDesc: 'getRefund',
+          description: 'getRefund',
           handle: inviteHandle2,
           instanceHandle,
           installationHandle,
@@ -479,7 +479,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         pursePetname: 'Default Zoe invite purse',
         value: [
           {
-            inviteDesc: 'getRefund',
+            description: 'getRefund',
             handle: inviteHandle2,
             instanceHandle,
             installationHandle,
@@ -487,7 +487,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         ],
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","index":0},"value":[{"inviteDesc":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-4' },
@@ -499,7 +499,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           brand: { kind: 'brand', petname: 'zoe invite' },
           value: [
             {
-              inviteDesc: 'getRefund',
+              description: 'getRefund',
               handle: { kind: 'unnamed', petname: 'unnamed-4' },
               instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
               installationHandle: {
@@ -556,7 +556,7 @@ test('lib-wallet offer methods', async t => {
       moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
     );
 
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const inviteIssuer = await E(zoe).getInvitationIssuer();
     const {
       value: [{ handle: inviteHandle, installationHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
@@ -833,7 +833,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     await addLiqOutcome;
 
     const invite = await E(publicAPI).makeSwapInvite();
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    const inviteIssuer = await E(zoe).getInvitationIssuer();
     const {
       value: [{ handle: inviteHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);

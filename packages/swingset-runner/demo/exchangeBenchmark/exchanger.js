@@ -19,7 +19,7 @@ async function build(name, zoe, issuers, payments, installations) {
     Price: simoleanIssuer,
     Asset: moolaIssuer,
   });
-  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const inviteIssuer = await E(zoe).getInvitationIssuer();
   const { simpleExchange } = installations;
 
   async function preReport() {

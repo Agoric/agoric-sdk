@@ -372,7 +372,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     moola,
   } = setupMixed();
   const zoe = makeZoe(fakeVatAdmin);
-  const inviteIssuer = zoe.getInviteIssuer();
+  const inviteIssuer = zoe.getInvitationIssuer();
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['Felix'])));

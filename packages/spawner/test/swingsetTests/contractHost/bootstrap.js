@@ -78,7 +78,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         const fooInviteP = E(installationP).spawn('foo terms');
 
-        const inviteIssuerP = E(host).getInviteIssuer();
+        const inviteIssuerP = E(host).getInvitationIssuer();
         return Promise.resolve(
           showPaymentBalance('foo', inviteIssuerP, fooInviteP),
         ).then(_ => {

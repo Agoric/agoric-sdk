@@ -79,7 +79,7 @@ test('home.wallet - receive zoe invite', async t => {
 
     // Check that the wallet knows about the Zoe invite issuer and starts out
     // with a default Zoe invite issuer purse.
-    const zoeInviteIssuer = await E(zoe).getInviteIssuer();
+    const zoeInviteIssuer = await E(zoe).getInvitationIssuer();
     const issuers = await E(wallet).getIssuers();
     const issuersMap = new Map(issuers);
     t.deepEquals(
@@ -108,7 +108,7 @@ test('home.wallet - receive zoe invite', async t => {
     // The invite was successfully received in the user's wallet.
     const invitePurseBalance = await E(invitePurse).getCurrentAmount();
     t.equals(
-      invitePurseBalance.value[0].inviteDesc,
+      invitePurseBalance.value[0].description,
       'getRefund',
       `invite successfully deposited`,
     );

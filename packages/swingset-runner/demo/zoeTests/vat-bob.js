@@ -20,7 +20,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
   const [moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
-  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const inviteIssuer = await E(zoe).getInvitationIssuer();
 
   return harden({
     doAutomaticRefund: async inviteP => {
@@ -101,7 +101,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        optionValue[0].inviteDesc === 'exerciseOption',
+        optionValue[0].description === 'exerciseOption',
         details`wrong invite`,
       );
       assert(moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)));
@@ -162,7 +162,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        optionValue[0].inviteDesc === 'exerciseOption',
+        optionValue[0].description === 'exerciseOption',
         details`wrong invite`,
       );
       assert(

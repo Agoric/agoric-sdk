@@ -18,7 +18,7 @@ export const getLocalAmountMath = issuer =>
 
 export const setupIssuers = async (zoe, issuers) => {
   const purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
-  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const inviteIssuer = await E(zoe).getInvitationIssuer();
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
 
   const moolaAmountMath = await getLocalAmountMath(moolaIssuer);
