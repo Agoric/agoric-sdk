@@ -89,7 +89,7 @@ descriptions found in the `vats` property.  This means that you can have multipl
 that reference the same bundle and only load the bundle into memory once.  Moreover, you
 can define named bundles that are not initially defined in any vat but which can be
 referenced later when creating dynamic vats.  The vat admin service has been augmented
-with an additional method `createByName` which works like the existing `create` method
+with an additional method `createVatByName` which works like the existing `createVat` method
 but indicates the vat by naming it rather than by passing its bundle source directly.
 This will decrease both the volume of message traffic and the volume of crud found in vat
 transcripts and log files (eventually we may add a feature to allow you to make use of
