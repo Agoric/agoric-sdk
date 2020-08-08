@@ -18,7 +18,7 @@
     },
     "bootstrap": {
       "sourcePath": "bootstrap.js",
-      "options": {
+      "parameters": {
         "startingValues": {
           "automaticRefundOk": [
             [  3,  0,  0 ],
