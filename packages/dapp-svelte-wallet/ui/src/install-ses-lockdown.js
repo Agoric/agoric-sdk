@@ -1,3 +1,3 @@
-import 'ses/src/lockdown-main';
+import 'ses/lockdown';
 
 lockdown({ errorTaming: 'unsafe' });
