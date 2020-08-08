@@ -30,9 +30,9 @@
     esm "^3.2.5"
 
 "@agoric/make-hardener@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.0.tgz#59539b611228ad8e9652cf6cc80925fdcd97ee9a"
-  integrity sha512-2nyT18UcAzwxw/C0Kf2fp5oI9BLf8YD9MmTvbHD0/FvjsK4FwnfGAk7P8f+eE9KgRoyfH8lqcnVO5ltwJrtmbw==
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.1.tgz#9b887da47aeec6637d9db4f0a92a4e740b8262bb"
+  integrity sha512-3emNc+yWJoFK5JMLoEFPs6rCzkntWQKxpR4gt3jaZYLKoUG4LrTmID3XNe8y40B6SJ3k/wLPodKa0ToQGlhrwQ==
 
 "@agoric/nat@2.0.1", "@agoric/nat@^2.0.1":
   version "2.0.1"
@@ -5707,11 +5707,7 @@ levn@^0.3.0, levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-livereload-js@^3.1.0:
-  version "3.3.1"
-  resolved "file:packages/dapp-svelte-wallet/ui/livereload-js-v3.3.1.tgz#3d2d972d878dd4fd48f2349b8bd80970f7cf44ab"
-
-"livereload-js@https://github.com/agoric-labs/livereload-js":
+livereload-js@^3.1.0, "livereload-js@https://github.com/agoric-labs/livereload-js":
   version "3.3.1"
   resolved "https://github.com/agoric-labs/livereload-js#2c00632164680c8214a9ef95f763e27952f392a9"
 
