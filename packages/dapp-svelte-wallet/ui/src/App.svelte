@@ -102,7 +102,6 @@
   nav :global(button) {
     /* remove the padding at the bottom */
     margin: auto;
-    color: var(--color-secondary);
   }
   nav h6 {
     text-transform: uppercase;
@@ -176,7 +175,7 @@
       <nav>
         <ListItems horizontal items={menu} on:change>
           <div slot="item" let:item>
-            <MenuButton id={item.id} text={item.text} bind:value={navPanel} color="secondary"/>
+            <MenuButton id={item.id} text={item.text} bind:value={navPanel} color="primary"/>
           </div>
         </ListItems>
 

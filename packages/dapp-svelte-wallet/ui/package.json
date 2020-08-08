@@ -12,13 +12,14 @@
   },
   "devDependencies": {
     "@agoric/captp": "^1.3.3",
-    "@agoric/harden": "^0.0.6",
     "@rollup/plugin-commonjs": "^12.0.0",
     "@rollup/plugin-node-resolve": "^8.0.0",
+    "livereload-js": "file:livereload-js-v3.3.1.tgz",
     "rollup": "^2.3.4",
     "rollup-plugin-livereload": "^1.0.0",
     "rollup-plugin-svelte": "^5.0.3",
     "rollup-plugin-terser": "^6.1.0",
+    "ses": "^0.10.0",
     "sirv-cli": "^1.0.0",
     "smelte": "^1.0.15",
     "svelte": "^3.0.0",
@@ -27,5 +28,8 @@
   },
   "files": [
     "public"
-  ]
+  ],
+  "dependencies": {
+    "livereload-js": "https://github.com/agoric-labs/livereload-js"
+  }
 }

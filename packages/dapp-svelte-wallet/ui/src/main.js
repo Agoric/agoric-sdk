@@ -1,4 +1,4 @@
-import './install-ersatz-harden';
+import './install-ses-lockdown';
 import './tailwind.css';
 import App from './App.svelte';
 

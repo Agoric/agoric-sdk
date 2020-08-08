@@ -1,5 +1,4 @@
 // @ts-check
-import harden from '@agoric/harden';
 import makeIssuerKit from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport/zoeHelpers';
