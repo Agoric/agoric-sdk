@@ -120,11 +120,11 @@ const makeContract = zcf => {
           }),
         );
         const liquidityAmountOut = liquidityAmountMath.make(liquidityValueOut);
-        const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
+        const liquidityPaymentE = liquidityMint.mintPayment(liquidityAmountOut);
 
         return escrowAndAllocateTo({
           amount: liquidityAmountOut,
-          payment: liquidityPaymentP,
+          payment: liquidityPaymentE,
           keyword: 'Liquidity',
           recipientHandle: offerHandle,
         }).then(() => {

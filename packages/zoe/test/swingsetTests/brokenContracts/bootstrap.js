@@ -31,10 +31,10 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   // Setup Alice
   const alicePayment = makePayments(startingValues);
   // const alicePayment = mints[0].mintPayment(amountMaths[0].make(3));
-  const aliceP = E(vats.alice).build(zoe, issuers, alicePayment, installations);
+  const aliceE = E(vats.alice).build(zoe, issuers, alicePayment, installations);
 
   log(`=> alice is set up`);
-  return harden(aliceP);
+  return harden(aliceE);
 };
 
 export function buildRootObject(vatPowers, vatParameters) {
@@ -50,14 +50,14 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       const [testName, startingValues] = vatParameters.argv;
 
-      const aliceP = makeVats(
+      const aliceE = makeVats(
         vatPowers.testLog,
         vats,
         zoe,
         installations,
         startingValues,
       );
-      await E(aliceP).startTest(testName);
+      await E(aliceE).startTest(testName);
     },
   };
   return harden(obj0);

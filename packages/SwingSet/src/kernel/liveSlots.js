@@ -69,11 +69,11 @@ function build(
 
     lsdebug(`makeImportedPresence(${slot})`);
     const fulfilledHandler = {
-      applyMethod(_o, prop, args, returnedP) {
+      applyMethod(_o, prop, args, returnedE) {
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         // eslint-disable-next-line no-use-before-define
-        return queueMessage(slot, prop, args, returnedP);
+        return queueMessage(slot, prop, args, returnedE);
       },
     };
 
@@ -129,7 +129,7 @@ function build(
     // this handler being used after it was supposed to be resolved
     let handlerActive = true;
     const unfulfilledHandler = {
-      applyMethod(_o, prop, args, returnedP) {
+      applyMethod(_o, prop, args, returnedE) {
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
@@ -137,7 +137,7 @@ function build(
           throw Error(`mIPromise handler called after resolution`);
         }
         // eslint-disable-next-line no-use-before-define
-        return queueMessage(vpid, prop, args, returnedP);
+        return queueMessage(vpid, prop, args, returnedE);
       },
     };
 
@@ -265,7 +265,7 @@ function build(
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal);
 
-  function queueMessage(targetSlot, prop, args, returnedP) {
+  function queueMessage(targetSlot, prop, args, returnedE) {
     const serArgs = m.serialize(harden(args));
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
@@ -293,8 +293,8 @@ function build(
     // it to serialize as resultVPID. And if someone passes resultVPID to
     // them, we want the user-level code to get back that Promise, not 'p'.
 
-    valToSlot.set(returnedP, resultVPID);
-    slotToVal.set(resultVPID, returnedP);
+    valToSlot.set(returnedE, resultVPID);
+    slotToVal.set(resultVPID, returnedE);
 
     return p;
   }

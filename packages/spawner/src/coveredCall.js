@@ -17,21 +17,21 @@ import { mustBeSameStructure, sameStructure } from '@agoric/same-structure';
 const coveredCall = harden({
   start: (terms, inviteMaker) => {
     const {
-      escrowExchangeInstallation: escrowExchangeInstallationP,
+      escrowExchangeInstallation: escrowExchangeInstallationE,
       money: moneyNeeded,
       stock: stockNeeded,
-      timer: timerP,
+      timer: timerE,
       deadline,
     } = terms;
 
-    const pairP = E(escrowExchangeInstallationP).spawn(
+    const pairE = E(escrowExchangeInstallationE).spawn(
       harden({ left: moneyNeeded, right: stockNeeded }),
     );
 
-    const aliceEscrowSeatP = Promise.resolve(pairP).then(pair =>
+    const aliceEscrowSeatE = Promise.resolve(pairE).then(pair =>
       inviteMaker.redeem(pair.left),
     );
-    const bobEscrowSeatP = Promise.resolve(pairP).then(pair =>
+    const bobEscrowSeatE = Promise.resolve(pairE).then(pair =>
       inviteMaker.redeem(pair.right),
     );
 
@@ -39,11 +39,11 @@ const coveredCall = harden({
 
     const canceller = {
       wake: () => {
-        E(bobEscrowSeatP).cancel('expired');
+        E(bobEscrowSeatE).cancel('expired');
       },
     };
 
-    E(timerP).setWakeup(deadline, canceller);
+    E(timerE).setWakeup(deadline, canceller);
 
     const bobSeat = harden({
       offer(stockPayment) {
@@ -51,15 +51,15 @@ const coveredCall = harden({
         return E(sIssuer)
           .claimExactly(stockNeeded, stockPayment, 'prePay')
           .then(prePayment => {
-            E(bobEscrowSeatP).offer(prePayment);
-            return inviteMaker.make('holder', aliceEscrowSeatP);
+            E(bobEscrowSeatE).offer(prePayment);
+            return inviteMaker.make('holder', aliceEscrowSeatE);
           });
       },
       getWinnings() {
-        return E(bobEscrowSeatP).getWinnings();
+        return E(bobEscrowSeatE).getWinnings();
       },
       getRefund() {
-        return E(bobEscrowSeatP).getRefund();
+        return E(bobEscrowSeatE).getRefund();
       },
     });
 

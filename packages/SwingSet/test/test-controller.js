@@ -169,7 +169,7 @@ test('bootstrap export', async t => {
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
   await c.step();
   // kernel promise for result of the foo() that bootstrap sends to vat-left
-  const fooP = 'kp41';
+  const fooE = 'kp41';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()']);
   kt.push([comms0, bootstrapVatID, 'o-50']);
   kt.push([left0, bootstrapVatID, 'o-51']);
@@ -177,7 +177,7 @@ test('bootstrap export', async t => {
   kt.push([timer0, bootstrapVatID, 'o-53']);
   kt.push([vatAdminSvc, bootstrapVatID, 'o-54']);
   kt.push([vattp0, bootstrapVatID, 'o-55']);
-  kt.push([fooP, bootstrapVatID, 'p+5']);
+  kt.push([fooE, bootstrapVatID, 'p+5']);
   kt.push([adminDev, bootstrapVatID, 'd-70']);
   checkKT(t, c, kt);
 
@@ -191,16 +191,16 @@ test('bootstrap export', async t => {
           body: '[1,{"@qclass":"slot","index":0}]',
           slots: [right0],
         },
-        result: fooP,
+        result: fooE,
       },
     },
   ]);
 
   await c.step();
-  const barP = 'kp42';
+  const barE = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
   kt.push([right0, leftVatID, 'o-50']);
-  kt.push([barP, leftVatID, 'p+5']);
+  kt.push([barE, leftVatID, 'p+5']);
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
@@ -213,10 +213,10 @@ test('bootstrap export', async t => {
           body: '[2,{"@qclass":"slot","index":0}]',
           slots: [right0],
         },
-        result: barP,
+        result: barE,
       },
     },
-    { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
+    { type: 'notify', vatID: bootstrapVatID, kpid: fooE },
   ]);
 
   await c.step();
@@ -230,8 +230,8 @@ test('bootstrap export', async t => {
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
-    { type: 'notify', vatID: leftVatID, kpid: barP },
+    { type: 'notify', vatID: bootstrapVatID, kpid: fooE },
+    { type: 'notify', vatID: leftVatID, kpid: barE },
   ]);
 
   await c.step();
@@ -241,11 +241,11 @@ test('bootstrap export', async t => {
     'left.foo 1',
     'right.obj0.bar 2 true',
   ]);
-  removeTriple(kt, fooP, bootstrapVatID, 'p+5'); // pruned promise
+  removeTriple(kt, fooE, bootstrapVatID, 'p+5'); // pruned promise
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notify', vatID: leftVatID, kpid: barP },
+    { type: 'notify', vatID: leftVatID, kpid: barE },
   ]);
 
   await c.step();
@@ -256,7 +256,7 @@ test('bootstrap export', async t => {
     'right.obj0.bar 2 true',
   ]);
 
-  removeTriple(kt, barP, leftVatID, 'p+5'); // pruned promise
+  removeTriple(kt, barE, leftVatID, 'p+5'); // pruned promise
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, []);
 

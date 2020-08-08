@@ -10,14 +10,14 @@ const log = makePrintLog();
 
 const build = async (zoe, issuers, payments, installations) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
-  const [moolaPurseP, simoleanPurseP] = purses;
+  const [moolaPurseE, simoleanPurseE] = purses;
   const [_moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
 
   return harden({
-    doPublicAuction: async inviteP => {
-      const invite = await E(inviteIssuer).claim(inviteP);
+    doPublicAuction: async inviteE => {
+      const invite = await E(inviteIssuer).claim(inviteE);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(invite);
 
       const { installationHandle, terms, issuerKeywordRecord } = await E(
@@ -45,23 +45,23 @@ const build = async (zoe, issuers, payments, installations) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
+      const { payout: payoutE, outcome: outcomeE } = await E(zoe).offer(
         invite,
         proposal,
         paymentKeywordRecord,
       );
 
-      log(await outcomeP);
+      log(await outcomeE);
 
-      const carolResult = await payoutP;
+      const carolResult = await payoutE;
       const moolaPayout = await carolResult.Asset;
       const simoleanPayout = await carolResult.Bid;
 
-      await E(moolaPurseP).deposit(moolaPayout);
-      await E(simoleanPurseP).deposit(simoleanPayout);
+      await E(moolaPurseE).deposit(moolaPayout);
+      await E(simoleanPurseE).deposit(simoleanPayout);
 
-      await showPurseBalance(moolaPurseP, 'carolMoolaPurse', log);
-      await showPurseBalance(simoleanPurseP, 'carolSimoleanPurse', log);
+      await showPurseBalance(moolaPurseE, 'carolMoolaPurse', log);
+      await showPurseBalance(simoleanPurseE, 'carolSimoleanPurse', log);
     },
   });
 };

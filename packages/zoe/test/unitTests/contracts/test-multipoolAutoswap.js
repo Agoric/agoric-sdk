@@ -154,17 +154,17 @@ test('multipoolAutoSwap with valid offers', async t => {
     };
 
     const {
-      outcome: liquidityOkP,
-      payout: aliceAddLiquidityPayoutP,
+      outcome: liquidityOkE,
+      payout: aliceAddLiquidityPayoutE,
     } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
     t.equals(
-      await liquidityOkP,
+      await liquidityOkE,
       'Added liquidity.',
       `Alice added moola and central liquidity`,
     );
 
-    const liquidityPayments = await aliceAddLiquidityPayoutP;
+    const liquidityPayments = await aliceAddLiquidityPayoutE;
     const liquidityPayout = await liquidityPayments.Liquidity;
 
     t.deepEquals(
@@ -215,15 +215,15 @@ test('multipoolAutoSwap with valid offers', async t => {
     const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
     // Bob swaps
-    const { outcome: offerOkP, payout: bobPayoutP } = await zoe.offer(
+    const { outcome: offerOkE, payout: bobPayoutE } = await zoe.offer(
       bobSwapInvite1,
       bobMoolaForCentralProposal,
       bobMoolaForCentralPayments,
     );
 
-    t.equal(await offerOkP, 'Swap successfully completed.');
+    t.equal(await offerOkE, 'Swap successfully completed.');
 
-    const bobPayout = await bobPayoutP;
+    const bobPayout = await bobPayoutE;
 
     const bobMoolaPayout1 = await bobPayout.In;
     const bobCentralTokenPayout1 = await bobPayout.Out;
@@ -273,8 +273,8 @@ test('multipoolAutoSwap with valid offers', async t => {
     });
 
     const {
-      outcome: centralForMoolaOkP,
-      payout: bobCentralForMoolaPayoutP,
+      outcome: centralForMoolaOkE,
+      payout: bobCentralForMoolaPayoutE,
     } = await zoe.offer(
       bobSwapInvite2,
       bobCentralForMoolaProposal,
@@ -282,12 +282,12 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
 
     t.equal(
-      await centralForMoolaOkP,
+      await centralForMoolaOkE,
       'Swap successfully completed.',
       `second swap successful`,
     );
 
-    const bobCentralForMoolaPayout = await bobCentralForMoolaPayoutP;
+    const bobCentralForMoolaPayout = await bobCentralForMoolaPayoutE;
     const bobMoolaPayout2 = await bobCentralForMoolaPayout.Out;
     const bobCentralPayout2 = await bobCentralForMoolaPayout.In;
 
@@ -331,8 +331,8 @@ test('multipoolAutoSwap with valid offers', async t => {
     };
 
     const {
-      outcome: simCentralLiquidityOkP,
-      payout: aliceSimCentralPayoutP,
+      outcome: simCentralLiquidityOkE,
+      payout: aliceSimCentralPayoutE,
     } = await zoe.offer(
       aliceSimCentralLiquidityInvite,
       aliceSimCentralProposal,
@@ -340,12 +340,12 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
 
     t.equals(
-      await simCentralLiquidityOkP,
+      await simCentralLiquidityOkE,
       'Added liquidity.',
       `Alice added simoleans and central liquidity`,
     );
 
-    const simCentralPayments = await aliceSimCentralPayoutP;
+    const simCentralPayments = await aliceSimCentralPayoutE;
     const simoleanLiquidityPayout = await simCentralPayments.Liquidity;
 
     t.deepEquals(
@@ -410,13 +410,13 @@ test('multipoolAutoSwap with valid offers', async t => {
       In: bobSimoleanPayment,
     });
 
-    const { payout: bobSimsForMoolaPayoutP } = await zoe.offer(
+    const { payout: bobSimsForMoolaPayoutE } = await zoe.offer(
       bobThirdInvite,
       bobSimsForMoolaProposal,
       simsForMoolaPayments,
     );
 
-    const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutP;
+    const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutE;
     const bobSimsPayout3 = await bobSimsForMoolaPayout.In;
     const bobMoolaPayout3 = await bobSimsForMoolaPayout.Out;
 
@@ -465,17 +465,17 @@ test('multipoolAutoSwap with valid offers', async t => {
     });
 
     const {
-      outcome: removeLiquidityResultP,
-      payout: aliceRemoveLiquidityPayoutP,
+      outcome: removeLiquidityResultE,
+      payout: aliceRemoveLiquidityPayoutE,
     } = await zoe.offer(
       aliceRemoveLiquidityInvite,
       aliceRemoveLiquidityProposal,
       harden({ Liquidity: liquidityPayout }),
     );
 
-    t.equals(await removeLiquidityResultP, 'Liquidity successfully removed.');
+    t.equals(await removeLiquidityResultE, 'Liquidity successfully removed.');
 
-    const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutP;
+    const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutE;
     const aliceMoolaPayout = await aliceRemoveLiquidityPayout.SecondaryToken;
     const aliceCentralTokenPayout = await aliceRemoveLiquidityPayout.CentralToken;
     const aliceMoolaLiquidityPayout = await aliceRemoveLiquidityPayout.Liquidity;

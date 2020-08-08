@@ -76,8 +76,8 @@ test('simpleExchange with valid offers', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
   // 4: Alice adds her sell order to the exchange
   const {
-    payout: alicePayoutP,
-    outcome: aliceOutcomeP,
+    payout: alicePayoutE,
+    outcome: aliceOutcomeE,
     offerHandle: aliceOfferHandle,
   } = await zoe.offer(aliceInvite, aliceSellOrderProposal, alicePayments);
 
@@ -107,8 +107,8 @@ test('simpleExchange with valid offers', async t => {
       'notifier start state is not done',
     );
     t.ok(firstUpdate.updateCount, 'notifier start state has handle');
-    const nextUpdateP = aliceNotifier.getUpdateSince(firstUpdate.updateCount);
-    Promise.all([nextUpdateP]).then(([nextRecord]) => {
+    const nextUpdateE = aliceNotifier.getUpdateSince(firstUpdate.updateCount);
+    Promise.all([nextUpdateE]).then(([nextRecord]) => {
       t.ok(nextRecord.value.Asset, 'following state has update');
       t.ok(nextRecord.value.Price, 'following state has Price');
     });
@@ -148,7 +148,7 @@ test('simpleExchange with valid offers', async t => {
 
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobBuyOrderProposal,
     bobPayments,
@@ -164,15 +164,15 @@ test('simpleExchange with valid offers', async t => {
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
   t.equals(
-    await aliceOutcomeP,
+    await aliceOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
+  const bobPayout = await bobPayoutE;
+  const alicePayout = await alicePayoutE;
 
   const bobMoolaPayout = await bobPayout.Asset;
   const bobSimoleanPayout = await bobPayout.Price;
@@ -352,7 +352,7 @@ test('simpleExchange showPayoutRules', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
 
   // 4: Alice adds her sell order to the exchange
-  const { offerHandle: aliceOfferHandleP } = await zoe.offer(
+  const { offerHandle: aliceOfferHandleE } = await zoe.offer(
     aliceInvite,
     aliceSale1OrderProposal,
     alicePayments,
@@ -360,7 +360,7 @@ test('simpleExchange showPayoutRules', async t => {
 
   const expected = { want: { Price: simoleans(4) }, give: { Asset: moola(3) } };
 
-  t.deepEquals(await E(publicAPI).getOffer(await aliceOfferHandleP), expected);
+  t.deepEquals(await E(publicAPI).getOffer(await aliceOfferHandleE), expected);
 });
 
 test('simpleExchange with non-fungible assets', async t => {
@@ -415,7 +415,7 @@ test('simpleExchange with non-fungible assets', async t => {
   });
   const alicePayments = { Asset: aliceRpgPayment };
   // 4: Alice adds her sell order to the exchange
-  const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
+  const { payout: alicePayoutE, outcome: aliceOutcomeE } = await zoe.offer(
     aliceInvite,
     aliceSellOrderProposal,
     alicePayments,
@@ -455,22 +455,22 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobBuyOrderProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
   t.equals(
-    await aliceOutcomeP,
+    await aliceOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
+  const bobPayout = await bobPayoutE;
+  const alicePayout = await alicePayoutE;
 
   const bobRpgPayout = await bobPayout.Asset;
   const bobCcPayout = await bobPayout.Price;

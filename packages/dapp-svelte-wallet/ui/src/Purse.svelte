@@ -6,7 +6,7 @@
   import { E } from "@agoric/eventual-send";
   import BoardId from "./BoardId.svelte";
 
-  import { selfContact, walletP } from "./store";
+  import { selfContact, walletE } from "./store";
 
   import Switch from "smelte/src/components/Switch";
 
@@ -18,9 +18,9 @@ export let details = true;
 
   function toggleAutoDeposit(ev) {
     if (!item.depositBoardId) {
-      E(walletP).enableAutoDeposit(item.pursePetname);
+      E(walletE).enableAutoDeposit(item.pursePetname);
     } else {
-      E(walletP).disableAutoDeposit(item.pursePetname);
+      E(walletE).disableAutoDeposit(item.pursePetname);
     }
     return false;
   }

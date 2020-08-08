@@ -3,23 +3,23 @@
 import { allSettled } from './allSettled';
 
 function makeCollect(E, log) {
-  function collect(seatP, winPurseP, refundPurseP, name = 'collecting') {
+  function collect(seatE, winPurseE, refundPurseE, name = 'collecting') {
     const results = harden([
-      E(seatP)
+      E(seatE)
         .getWinnings()
-        .then(winnings => E(winPurseP).depositAll(winnings)),
+        .then(winnings => E(winPurseE).depositAll(winnings)),
       // TODO Bug if we replace the comma above with the uncommented
       // out ".then(_ => undefined)," below, somehow we end up trying
       // to marshal an array with holes, rather than an array with
       // undefined elements. This remains true whether we use
       // Promise.all or allSettled
       /* .then(_ => undefined), */
-      E(seatP)
+      E(seatE)
         .getRefund()
-        .then(refund => refund && E(refundPurseP).depositAll(refund)),
+        .then(refund => refund && E(refundPurseE).depositAll(refund)),
     ]);
-    const doneP = allSettled(results);
-    Promise.resolve(doneP).then(([wins, refs]) => {
+    const doneE = allSettled(results);
+    Promise.resolve(doneE).then(([wins, refs]) => {
       log(`${name} wins: `, wins, ` refs: `, refs);
     });
     // Use Promise.all here rather than allSettled in order to

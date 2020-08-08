@@ -31,7 +31,7 @@
  * @property {<OC>(inviteHandler: InviteHandler<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
  * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
  * @property {(publicAPI: PublicAPI) => void} updatePublicAPI
- * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
+ * @property {(issuerE: ERef<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
  * @property {(offerHandles: OfferHandle[]) => void} completeOffers
  */
 
@@ -54,7 +54,7 @@
  * unique handle for the instance that can be shared, as well as
  * other information, such as the terms used in the instance.
  * @param {StartContractParams} params
- * @returns {Promise<{ inviteP: Promise<Invite>, zcfForZoe: ZcfForZoe }>}
+ * @returns {Promise<{ inviteE: Promise<Invite>, zcfForZoe: ZcfForZoe }>}
  */
 
 /**

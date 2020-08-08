@@ -31,10 +31,10 @@ test('zoe - mint payments', async t => {
     // offer
     const invite = await E(publicAPI).makeInvite();
     t.ok(await E(inviteIssuer).isLive(invite), `valid invite`);
-    const { payout: payoutP } = await E(zoe).offer(invite);
+    const { payout: payoutE } = await E(zoe).offer(invite);
 
     // Bob's payout promise resolves
-    const bobPayout = await payoutP;
+    const bobPayout = await payoutE;
     const bobTokenPayout = await bobPayout.Token;
 
     // Let's get the tokenIssuer from the contract so we can evaluate
@@ -85,14 +85,14 @@ test('zoe - mint payments with unrelated give and want', async t => {
     const paymentKeywordRecord = harden({
       Asset: moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(10)),
     });
-    const { payout: payoutP } = await E(zoe).offer(
+    const { payout: payoutE } = await E(zoe).offer(
       invite,
       proposal,
       paymentKeywordRecord,
     );
 
     // Bob's payout promise resolves
-    const bobPayout = await payoutP;
+    const bobPayout = await payoutE;
     const bobTokenPayout = await bobPayout.Token;
     const bobMoolaPayout = await bobPayout.Asset;
 

@@ -14,8 +14,8 @@ export function buildRootObject(vatPowers, vatParameters) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
-  function showPaymentBalance(name, issuer, paymentP) {
-    return paymentP.then(payment => {
+  function showPaymentBalance(name, issuer, paymentE) {
+    return paymentE.then(payment => {
       return E(issuer)
         .getAmountOf(payment)
         .then(amount => log(name, ' balance ', amount))
@@ -25,9 +25,9 @@ export function buildRootObject(vatPowers, vatParameters) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
-  function showPurseBalances(name, purseP) {
+  function showPurseBalances(name, purseE) {
     return Promise.all([
-      E(purseP)
+      E(purseE)
         .getCurrentAmount()
         .then(amount => log(name, ' balance ', amount))
         .catch(err => console.log(err)),
@@ -56,18 +56,18 @@ export function buildRootObject(vatPowers, vatParameters) {
       return inviteMaker.make('foo', 8);
     }
     const contractBundle = bundleFunction(trivContractStart);
-    let installationP;
+    let installationE;
     if (oldformat) {
-      installationP = E(host).install(
+      installationE = E(host).install(
         contractBundle.source,
         contractBundle.moduleFormat,
       );
     } else {
-      installationP = E(host).install(contractBundle);
+      installationE = E(host).install(contractBundle);
     }
 
     return E(host)
-      .getInstallationSourceBundle(installationP)
+      .getInstallationSourceBundle(installationE)
       .then(bundle => {
         // the contents of a bundle are generally opaque to us: that's
         // between bundle-source and import-bundle . But we happen to know
@@ -76,22 +76,22 @@ export function buildRootObject(vatPowers, vatParameters) {
         // compare.
         log('Does source match? ', bundle.source === contractBundle.source);
 
-        const fooInviteP = E(installationP).spawn('foo terms');
+        const fooInviteE = E(installationE).spawn('foo terms');
 
-        const inviteIssuerP = E(host).getInviteIssuer();
+        const inviteIssuerE = E(host).getInviteIssuer();
         return Promise.resolve(
-          showPaymentBalance('foo', inviteIssuerP, fooInviteP),
+          showPaymentBalance('foo', inviteIssuerE, fooInviteE),
         ).then(_ => {
-          const eightP = E(host).redeem(fooInviteP);
+          const eightE = E(host).redeem(fooInviteE);
 
-          eightP.then(res => {
-            log('++ eightP resolved to ', res, ' (should be 8)');
+          eightE.then(res => {
+            log('++ eightE resolved to ', res, ' (should be 8)');
             if (res !== 8) {
-              throw new Error(`eightP resolved to ${res}, not 8`);
+              throw new Error(`eightE resolved to ${res}, not 8`);
             }
             log('++ DONE');
           });
-          return eightP;
+          return eightE;
         });
       });
   }
@@ -110,18 +110,18 @@ export function buildRootObject(vatPowers, vatParameters) {
     }
     const contractBundle = bundleFunction(exhContractStart);
 
-    const installationP = E(host).install(contractBundle);
+    const installationE = E(host).install(contractBundle);
 
     return E(host)
-      .getInstallationSourceBundle(installationP)
+      .getInstallationSourceBundle(installationE)
       .then(bundle => {
         log('Does source match? ', bundle.source === contractBundle.source);
 
-        return E(installationP)
+        return E(installationE)
           .spawn('loop forever')
           .catch(e => log('spawn rejected: ', e.message));
       })
-      .then(_ => E(installationP).spawn('just return'))
+      .then(_ => E(installationE).spawn('just return'))
       .then(
         ret => log('got return: ', ret),
         err => log('error! ', err.message),
@@ -134,59 +134,59 @@ export function buildRootObject(vatPowers, vatParameters) {
     aliceMaker,
     bobMaker,
   ) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationE = E(host).install(escrowExchangeSrcs);
+    const coveredCallInstallationE = E(host).install(coveredCallSrcs);
 
     const { mint: moneyMint, issuer: moneyIssuer } = await E(
       mint,
     ).makeIssuerKit('moola');
     const moolaAmountMath = await getLocalAmountMath(moneyIssuer);
     const moola = moolaAmountMath.make;
-    const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
-    const bobMoneyPaymentP = E(moneyMint).mintPayment(moola(1001));
+    const aliceMoneyPaymentE = E(moneyMint).mintPayment(moola(1000));
+    const bobMoneyPaymentE = E(moneyMint).mintPayment(moola(1001));
 
     const { mint: stockMint, issuer: stockIssuer } = await E(
       mint,
     ).makeIssuerKit('Tyrell');
     const stockAmountMath = await getLocalAmountMath(stockIssuer);
     const stocks = stockAmountMath.make;
-    const aliceStockPaymentP = E(stockMint).mintPayment(stocks(2002));
-    const bobStockPaymentP = E(stockMint).mintPayment(stocks(2003));
+    const aliceStockPaymentE = E(stockMint).mintPayment(stocks(2002));
+    const bobStockPaymentE = E(stockMint).mintPayment(stocks(2003));
 
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const aliceE = E(aliceMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
       moneyIssuer,
       stockIssuer,
-      aliceMoneyPaymentP,
-      aliceStockPaymentP,
+      aliceMoneyPaymentE,
+      aliceStockPaymentE,
     );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const bobE = E(bobMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
       moneyIssuer,
       stockIssuer,
-      bobMoneyPaymentP,
-      bobStockPaymentP,
+      bobMoneyPaymentE,
+      bobStockPaymentE,
     );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      const ifItFitsP = E(aliceP).payBobWell(bobP);
-      ifItFitsP.then(
+    return Promise.all([aliceE, bobE]).then(_ => {
+      const ifItFitsE = E(aliceE).payBobWell(bobE);
+      ifItFitsE.then(
         res => {
-          log('++ ifItFitsP done:', res);
+          log('++ ifItFitsE done:', res);
           log('++ DONE');
         },
-        rej => log('++ ifItFitsP failed', rej),
+        rej => log('++ ifItFitsE failed', rej),
       );
-      return ifItFitsP;
+      return ifItFitsE;
     });
   }
 
   async function betterContractTestBobFirst(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationE = E(host).install(escrowExchangeSrcs);
+    const coveredCallInstallationE = E(host).install(coveredCallSrcs);
 
     const { mint: moneyMint, issuer: moneyIssuer } = await E(
       mint,
@@ -204,161 +204,161 @@ export function buildRootObject(vatPowers, vatParameters) {
     const aliceStockPayment = await E(stockMint).mintPayment(stocks(2002));
     const bobStockPayment = await E(stockMint).mintPayment(stocks(2003));
 
-    const aliceMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
-    const bobMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
-    const aliceStockPurseP = E(stockIssuer).makeEmptyPurse();
-    const bobStockPurseP = E(stockIssuer).makeEmptyPurse();
+    const aliceMoneyPurseE = E(moneyIssuer).makeEmptyPurse();
+    const bobMoneyPurseE = E(moneyIssuer).makeEmptyPurse();
+    const aliceStockPurseE = E(stockIssuer).makeEmptyPurse();
+    const bobStockPurseE = E(stockIssuer).makeEmptyPurse();
 
-    await E(aliceMoneyPurseP).deposit(aliceMoneyPayment);
-    await E(aliceStockPurseP).deposit(aliceStockPayment);
-    await E(bobMoneyPurseP).deposit(bobMoneyPayment);
-    await E(bobStockPurseP).deposit(bobStockPayment);
+    await E(aliceMoneyPurseE).deposit(aliceMoneyPayment);
+    await E(aliceStockPurseE).deposit(aliceStockPayment);
+    await E(bobMoneyPurseE).deposit(bobMoneyPayment);
+    await E(bobStockPurseE).deposit(bobStockPayment);
 
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const aliceE = E(aliceMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
       moneyIssuer,
       stockIssuer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
+      aliceMoneyPurseE,
+      aliceStockPurseE,
     );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const bobE = E(bobMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
       moneyIssuer,
       stockIssuer,
-      bobMoneyPurseP,
-      bobStockPurseP,
+      bobMoneyPurseE,
+      bobStockPurseE,
     );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      E(bobP)
-        .tradeWell(aliceP, false)
+    return Promise.all([aliceE, bobE]).then(_ => {
+      E(bobE)
+        .tradeWell(aliceE, false)
         .then(
           res => {
-            showPurseBalances('alice money', aliceMoneyPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('bob money', bobMoneyPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-            log('++ bobP.tradeWell done:', res);
+            showPurseBalances('alice money', aliceMoneyPurseE);
+            showPurseBalances('alice stock', aliceStockPurseE);
+            showPurseBalances('bob money', bobMoneyPurseE);
+            showPurseBalances('bob stock', bobStockPurseE);
+            log('++ bobE.tradeWell done:', res);
             log('++ DONE');
           },
           rej => {
-            log('++ bobP.tradeWell error:', rej);
+            log('++ bobE.tradeWell error:', rej);
           },
         );
     });
   }
 
   function coveredCallTest(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationE = E(host).install(escrowExchangeSrcs);
+    const coveredCallInstallationE = E(host).install(coveredCallSrcs);
 
-    const moneyMintP = E(mint).makeMint('smackers');
-    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
-    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
+    const moneyMintE = E(mint).makeMint('smackers');
+    const aliceMoneyPurseE = E(moneyMintE).mint(1000, 'aliceMainMoney');
+    const bobMoneyPurseE = E(moneyMintE).mint(1001, 'bobMainMoney');
 
-    const stockMintP = E(mint).makeMint('yoyodyne');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const stockMintE = E(mint).makeMint('yoyodyne');
+    const aliceStockPurseE = E(stockMintE).mint(2002, 'aliceMainStock');
+    const bobStockPurseE = E(stockMintE).mint(2003, 'bobMainStock');
 
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const aliceE = E(aliceMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
+      aliceMoneyPurseE,
+      aliceStockPurseE,
     );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const bobE = E(bobMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
-      bobMoneyPurseP,
-      bobStockPurseP,
+      bobMoneyPurseE,
+      bobStockPurseE,
     );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      E(bobP)
-        .offerAliceOption(aliceP, false)
+    return Promise.all([aliceE, bobE]).then(_ => {
+      E(bobE)
+        .offerAliceOption(aliceE, false)
         .then(
           res => {
-            showPurseBalances('alice money', aliceMoneyPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('bob money', bobMoneyPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-            log('++ bobP.offerAliceOption done:', res);
+            showPurseBalances('alice money', aliceMoneyPurseE);
+            showPurseBalances('alice stock', aliceStockPurseE);
+            showPurseBalances('bob money', bobMoneyPurseE);
+            showPurseBalances('bob stock', bobStockPurseE);
+            log('++ bobE.offerAliceOption done:', res);
             log('++ DONE');
           },
           rej => {
-            log('++ bobP.offerAliceOption error:', rej);
+            log('++ bobE.offerAliceOption error:', rej);
           },
         );
     });
   }
 
   function coveredCallSaleTest(host, mint, aliceMaker, bobMaker, fredMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationE = E(host).install(escrowExchangeSrcs);
+    const coveredCallInstallationE = E(host).install(coveredCallSrcs);
 
-    const doughMintP = E(mint).makeMint('dough');
-    const aliceDoughPurseP = E(doughMintP).mint(1000, 'aliceDough');
-    const bobDoughPurseP = E(doughMintP).mint(1001, 'bobDough');
-    const fredDoughPurseP = E(doughMintP).mint(1002, 'fredDough');
+    const doughMintE = E(mint).makeMint('dough');
+    const aliceDoughPurseE = E(doughMintE).mint(1000, 'aliceDough');
+    const bobDoughPurseE = E(doughMintE).mint(1001, 'bobDough');
+    const fredDoughPurseE = E(doughMintE).mint(1002, 'fredDough');
 
-    const stockMintP = E(mint).makeMint('wonka');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
-    const fredStockPurseP = E(stockMintP).mint(2004, 'fredMainStock');
+    const stockMintE = E(mint).makeMint('wonka');
+    const aliceStockPurseE = E(stockMintE).mint(2002, 'aliceMainStock');
+    const bobStockPurseE = E(stockMintE).mint(2003, 'bobMainStock');
+    const fredStockPurseE = E(stockMintE).mint(2004, 'fredMainStock');
 
-    const finMintP = E(mint).makeMint('fins');
-    const aliceFinPurseP = E(finMintP).mint(3000, 'aliceFins');
-    const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
+    const finMintE = E(mint).makeMint('fins');
+    const aliceFinPurseE = E(finMintE).mint(3000, 'aliceFins');
+    const fredFinPurseE = E(finMintE).mint(3001, 'fredFins');
 
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const bobE = E(bobMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
-      bobDoughPurseP,
-      bobStockPurseP,
+      bobDoughPurseE,
+      bobStockPurseE,
     );
-    const fredP = E(fredMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const fredE = E(fredMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
-      fredDoughPurseP,
-      fredStockPurseP,
-      fredFinPurseP,
+      fredDoughPurseE,
+      fredStockPurseE,
+      fredFinPurseE,
     );
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
+    const aliceE = E(aliceMaker).make(
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
       fakeNeverTimer,
-      aliceDoughPurseP,
-      aliceStockPurseP,
-      aliceFinPurseP,
-      fredP,
+      aliceDoughPurseE,
+      aliceStockPurseE,
+      aliceFinPurseE,
+      fredE,
     );
-    return Promise.all([aliceP, bobP, fredP]).then(_ => {
-      E(bobP)
-        .offerAliceOption(aliceP)
+    return Promise.all([aliceE, bobE, fredE]).then(_ => {
+      E(bobE)
+        .offerAliceOption(aliceE)
         .then(
           res => {
-            showPurseBalances('alice dough', aliceDoughPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('alice fins', aliceFinPurseP);
+            showPurseBalances('alice dough', aliceDoughPurseE);
+            showPurseBalances('alice stock', aliceStockPurseE);
+            showPurseBalances('alice fins', aliceFinPurseE);
 
-            showPurseBalances('bob dough', bobDoughPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
+            showPurseBalances('bob dough', bobDoughPurseE);
+            showPurseBalances('bob stock', bobStockPurseE);
 
-            showPurseBalances('fred dough', fredDoughPurseP);
-            showPurseBalances('fred stock', fredStockPurseP);
-            showPurseBalances('fred fins', fredFinPurseP);
+            showPurseBalances('fred dough', fredDoughPurseE);
+            showPurseBalances('fred stock', fredStockPurseE);
+            showPurseBalances('fred fins', fredFinPurseE);
 
-            log('++ bobP.offerAliceOption done:', res);
+            log('++ bobE.offerAliceOption done:', res);
             log('++ DONE');
           },
           rej => {
-            log('++ bobP.offerAliceOption error:', rej);
+            log('++ bobE.offerAliceOption error:', rej);
           },
         );
     });

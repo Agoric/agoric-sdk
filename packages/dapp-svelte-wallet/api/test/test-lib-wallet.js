@@ -610,9 +610,9 @@ test('lib-wallet offer methods', async t => {
       ],
       `offer structure`,
     );
-    const { outcome, depositedP } = await wallet.acceptOffer(id);
+    const { outcome, depositedE } = await wallet.acceptOffer(id);
     t.equals(await outcome, 'The offer was accepted', `offer was accepted`);
-    await depositedP;
+    await depositedE;
     const offerHandles = wallet.getOfferHandles(harden([id]));
     const offerHandle = wallet.getOfferHandle(id);
     t.equals(
@@ -876,13 +876,13 @@ test('lib-wallet addOffer for autoswap swap', async t => {
 
     await wallet.addOffer(offer);
 
-    const { outcome, depositedP } = await wallet.acceptOffer(id);
+    const { outcome, depositedE } = await wallet.acceptOffer(id);
     t.equals(
       await outcome,
       'Swap successfully completed.',
       `offer was accepted`,
     );
-    await depositedP;
+    await depositedE;
     const offerHandles = wallet.getOfferHandles(harden([id]));
     const offerHandle = wallet.getOfferHandle(id);
     t.equals(

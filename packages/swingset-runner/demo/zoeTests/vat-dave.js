@@ -18,15 +18,15 @@ const build = async (zoe, issuers, payments, installations, timer) => {
     moolaAmountMath,
     simoleanAmountMath,
   } = await setupIssuers(zoe, issuers);
-  const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
+  const [moolaPurseE, simoleanPurseE, bucksPurseE] = purses;
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   return harden({
-    doPublicAuction: async inviteP => {
-      const invite = await inviteP;
+    doPublicAuction: async inviteE => {
+      const invite = await inviteE;
       const exclInvite = await E(inviteIssuer).claim(invite);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
@@ -57,28 +57,28 @@ const build = async (zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
+      const { payout: payoutE, outcome: outcomeE } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      log(await outcomeP);
+      log(await outcomeE);
 
-      const daveResult = await payoutP;
+      const daveResult = await payoutE;
       const moolaPayout = await daveResult.Asset;
       const simoleanPayout = await daveResult.Bid;
 
-      await E(moolaPurseP).deposit(moolaPayout);
-      await E(simoleanPurseP).deposit(simoleanPayout);
+      await E(moolaPurseE).deposit(moolaPayout);
+      await E(simoleanPurseE).deposit(simoleanPayout);
 
-      await showPurseBalance(moolaPurseP, 'daveMoolaPurse', log);
-      await showPurseBalance(simoleanPurseP, 'daveSimoleanPurse', log);
+      await showPurseBalance(moolaPurseE, 'daveMoolaPurse', log);
+      await showPurseBalance(simoleanPurseE, 'daveSimoleanPurse', log);
     },
-    doSwapForOption: async (inviteP, optionAmounts) => {
+    doSwapForOption: async (inviteE, optionAmounts) => {
       // Dave is looking to buy the option to trade his 7 simoleans for
       // 3 moola, and is willing to pay 1 buck for the option.
-      const invite = await inviteP;
+      const invite = await inviteE;
       const exclInvite = await E(inviteIssuer).claim(invite);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
         exclInvite,
@@ -150,13 +150,13 @@ const build = async (zoe, issuers, payments, installations, timer) => {
         give: { Price: bucks(1) },
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
-      const { payout: daveSwapPayoutP, outcome: daveSwapOutcomeP } = await E(
+      const { payout: daveSwapPayoutE, outcome: daveSwapOutcomeE } = await E(
         zoe,
       ).offer(exclInvite, daveSwapProposal, daveSwapPayments);
 
-      log(await daveSwapOutcomeP);
+      log(await daveSwapOutcomeE);
 
-      const daveSwapPayout = await daveSwapPayoutP;
+      const daveSwapPayout = await daveSwapPayoutE;
       const daveOption = await daveSwapPayout.Asset;
       const daveBucksPayout = await daveSwapPayout.Price;
 
@@ -169,27 +169,27 @@ const build = async (zoe, issuers, payments, installations, timer) => {
       });
       const daveCoveredCallPayments = harden({ StrikePrice: simoleanPayment });
       const {
-        payout: daveCoveredCallPayoutP,
-        outcome: daveCoveredCallOutcomeP,
+        payout: daveCoveredCallPayoutE,
+        outcome: daveCoveredCallOutcomeE,
       } = await E(zoe).offer(
         daveOption,
         daveCoveredCallProposal,
         daveCoveredCallPayments,
       );
 
-      log(await daveCoveredCallOutcomeP);
+      log(await daveCoveredCallOutcomeE);
 
-      const daveCoveredCallResult = await daveCoveredCallPayoutP;
+      const daveCoveredCallResult = await daveCoveredCallPayoutE;
       const moolaPayout = await daveCoveredCallResult.UnderlyingAsset;
       const simoleanPayout = await daveCoveredCallResult.StrikePrice;
 
-      await E(bucksPurseP).deposit(daveBucksPayout);
-      await E(moolaPurseP).deposit(moolaPayout);
-      await E(simoleanPurseP).deposit(simoleanPayout);
+      await E(bucksPurseE).deposit(daveBucksPayout);
+      await E(moolaPurseE).deposit(moolaPayout);
+      await E(simoleanPurseE).deposit(simoleanPayout);
 
-      await showPurseBalance(moolaPurseP, 'daveMoolaPurse', log);
-      await showPurseBalance(simoleanPurseP, 'daveSimoleanPurse', log);
-      await showPurseBalance(bucksPurseP, 'daveBucksPurse', log);
+      await showPurseBalance(moolaPurseE, 'daveMoolaPurse', log);
+      await showPurseBalance(simoleanPurseE, 'daveSimoleanPurse', log);
+      await showPurseBalance(bucksPurseE, 'daveBucksPurse', log);
     },
   });
 };

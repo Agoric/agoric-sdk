@@ -144,10 +144,10 @@ test('purse.deposit promise', t => {
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  const exclusivePaymentE = E(issuer).claim(payment);
 
   t.rejects(
-    () => E(purse).deposit(exclusivePaymentP, fungible25),
+    () => E(purse).deposit(exclusivePaymentE, fungible25),
     /deposit does not accept promises/,
     'failed to reject a promise for a payment',
   );
@@ -340,21 +340,21 @@ test('issuer.combine good payments', t => {
 test('issuer.combine array of promises', t => {
   t.plan(1);
   const { mint, issuer, amountMath } = makeIssuerKit('fungible');
-  const paymentsP = [];
+  const paymentsE = [];
   for (let i = 0; i < 100; i += 1) {
     const freshPayment = mint.mintPayment(amountMath.make(1));
-    const paymentP = issuer.claim(freshPayment);
-    paymentsP.push(paymentP);
+    const paymentE = issuer.claim(freshPayment);
+    paymentsE.push(paymentE);
   }
 
-  const checkCombinedResult = paymentP => {
-    issuer.getAmountOf(paymentP).then(pAmount => {
+  const checkCombinedResult = paymentE => {
+    issuer.getAmountOf(paymentE).then(pAmount => {
       t.equals(pAmount.value, 100);
     });
   };
 
   E(issuer)
-    .combine(paymentsP)
+    .combine(paymentsE)
     .then(checkCombinedResult)
     .catch(e => t.assert(false, e));
 });

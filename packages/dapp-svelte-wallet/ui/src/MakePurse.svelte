@@ -5,10 +5,10 @@
   import Button from "smelte/src/components/Button";
   import TextField from "smelte/src/components/TextField";
   import Select from "smelte/src/components/Select";
-  
+
   import CancelButton from '../lib/CancelButton.svelte';
   import DefaultButton from '../lib/DefaultButton.svelte';
-  import { walletP } from './store';
+  import { walletE } from './store';
   import { q } from '@agoric/assert';
 
   import { issuers } from './store';
@@ -41,7 +41,7 @@
         if (!petname) {
           throw TypeError(`Need to specify a ${name} petname`);
         }
-        await E(walletP).makeEmptyPurse(issuerPetname, petname);
+        await E(walletE).makeEmptyPurse(issuerPetname, petname);
         showModal = false;
       } catch (e) {
         alert(`Cannot create purse: ${e}`);

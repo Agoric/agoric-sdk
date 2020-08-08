@@ -606,7 +606,7 @@ async function doVatResolveCase4(t, mode) {
   const target1 = 'o-1';
   const p1 = 'p-8';
   let nextPnum = 5;
-  function nextP() {
+  function nextE() {
     const p = `p+${nextPnum}`;
     nextPnum += 1;
     return p;
@@ -621,7 +621,7 @@ async function doVatResolveCase4(t, mode) {
   dispatch.deliver(rootA, 'first', capargs([slot0arg], [target1]));
   await endOfCrank();
 
-  const expectedP2 = nextP();
+  const expectedP2 = nextE();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
@@ -631,7 +631,7 @@ async function doVatResolveCase4(t, mode) {
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
 
-  const expectedP3 = nextP();
+  const expectedP3 = nextE();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
@@ -666,8 +666,8 @@ async function doVatResolveCase4(t, mode) {
   dispatch.deliver(rootA, 'second', capargs([slot0arg], [target1]));
   await endOfCrank();
 
-  const expectedP4 = nextP();
-  const expectedP5 = nextP();
+  const expectedP4 = nextE();
+  const expectedP5 = nextE();
   let expectedThreeArg = p1;
   let expectedResultOfThree = expectedP4;
   if (expectRetirement) {
@@ -687,7 +687,7 @@ async function doVatResolveCase4(t, mode) {
   });
 
   if (mode === 'presence') {
-    const expectedP6 = nextP();
+    const expectedP6 = nextE();
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2, // this depends on #823 being fixed

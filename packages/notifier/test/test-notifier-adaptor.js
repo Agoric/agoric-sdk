@@ -9,10 +9,10 @@ import {
 } from '../src/index';
 
 const obj = harden({});
-const unresP = new Promise(_ => {});
-const rejP = Promise.reject(new Error('foo'));
-rejP.catch(_ => {}); // Suppress Node UnhandledPromiseRejectionWarning
-const payloads = harden([1, -0, undefined, NaN, obj, unresP, rejP, null]);
+const unresE = new Promise(_ => {});
+const rejE = Promise.reject(new Error('foo'));
+rejE.catch(_ => {}); // Suppress Node UnhandledPromiseRejectionWarning
+const payloads = harden([1, -0, undefined, NaN, obj, unresE, rejE, null]);
 
 const refReason = new Error('bar');
 const refResult = harden({});

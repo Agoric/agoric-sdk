@@ -204,18 +204,18 @@ const makeIssuerTable = (withPurses = true) => {
      */
     function buildTableEntryAndPlaceHolder(issuer) {
       // remote calls which immediately return a promise
-      const mathHelpersNameP = E(issuer).getMathHelpersName();
-      const brandP = E(issuer).getBrand();
+      const mathHelpersNameE = E(issuer).getMathHelpersName();
+      const brandE = E(issuer).getBrand();
 
       /**
        * a promise for a synchronously accessible record
        * @type {[PromiseLike<Brand>, PromiseLike<MathHelpersName>, PromiseLike<Purse> | undefined]}
        */
-      const promiseRecord = [brandP, mathHelpersNameP, undefined];
+      const promiseRecord = [brandE, mathHelpersNameE, undefined];
       if (withPurses) {
         promiseRecord[2] = E(issuer).makeEmptyPurse();
       }
-      const synchronousRecordP = Promise.all(promiseRecord).then(
+      const synchronousRecordE = Promise.all(promiseRecord).then(
         ([brand, mathHelpersName, purse]) => {
           const amountMath = makeAmountMath(brand, mathHelpersName);
           const issuerRecord = {
@@ -232,17 +232,17 @@ const makeIssuerTable = (withPurses = true) => {
           return table.get(brand);
         },
       );
-      issuersInProgress.init(issuer, synchronousRecordP);
-      return synchronousRecordP;
+      issuersInProgress.init(issuer, synchronousRecordE);
+      return synchronousRecordE;
     }
 
     const customMethods = harden({
-      // `issuerP` may be a promise, presence, or local object. If there's
+      // `issuerE` may be a promise, presence, or local object. If there's
       // already a record, or already a promise for a record, return it.
       // Otherwise wrap a promise around building the record so we can return
       // the promise until we build the record.
-      getPromiseForIssuerRecord: issuerP => {
-        return Promise.resolve(issuerP).then(issuer => {
+      getPromiseForIssuerRecord: issuerE => {
+        return Promise.resolve(issuerE).then(issuer => {
           if (issuerToBrand.has(issuer)) {
             // we always initialize table and issuerToBrand together
             return table.get(issuerToBrand.get(issuer));

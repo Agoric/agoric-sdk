@@ -135,8 +135,8 @@ interface InviteMaker {
 }
 
 /**
-  * collect() calls getWinnings() and 'getRefund()' on seatP and deposits the
-  * proceeds respectively into winPurseP and refundPurseP. 'name' (which
+  * collect() calls getWinnings() and 'getRefund()' on seatE and deposits the
+  * proceeds respectively into winPurseE and refundPurseE. 'name' (which
   * defaults to 'collecting') is converted to a String, and used for logging the
   * results.
   *
@@ -156,7 +156,7 @@ interface InviteMaker {
   *
   */
 interface Collector {
-  collect(seatP :Object, winPurseP :Purse, refundPurseP :Purse, name :String)
+  collect(seatE :Object, winPurseE :Purse, refundPurseE :Purse, name :String)
     -> (winsAndRefunds :Object);
 }
 

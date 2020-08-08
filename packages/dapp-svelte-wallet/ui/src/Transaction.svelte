@@ -3,8 +3,8 @@
   import Petname from "./Petname.svelte";
   import Amount from "./Amount.svelte";
   import Debug from "../lib/Debug.svelte";
-  
-  import { walletP } from './store';
+
+  import { walletE } from './store';
   import Chip from "../lib/Chip.svelte";
 
   export let item;
@@ -117,18 +117,18 @@
         <Amount {amount} /> into <Petname name={pursePetname} />
       </div>
     {/each}
-  </div> 
+  </div>
   <div class="actions">
     {#if status === 'pending'}
-    <Chip on:click={() => E(walletP).cancelOffer(offerId)}
+    <Chip on:click={() => E(walletE).cancelOffer(offerId)}
       selected icon="clear" color="alert"
     >Cancel</Chip>
     {/if}
     {#if status === 'proposed'}
     <div class="flex flex-row">
-    <Chip on:click={() => E(walletP).acceptOffer(offerId).then(showOutcome)}
+    <Chip on:click={() => E(walletE).acceptOffer(offerId).then(showOutcome)}
       selected icon="check" color="success"
-    >Accept</Chip> <Chip on:click={() => E(walletP).declineOffer(offerId)}
+    >Accept</Chip> <Chip on:click={() => E(walletE).declineOffer(offerId)}
       selected icon="clear" color="error"
     >Decline</Chip>
     </div>

@@ -2,12 +2,12 @@ import { E } from '@agoric/eventual-send';
 
 function makeAliceMaker(log) {
   return harden({
-    make(issuer, unitOps, oldPaymentP) {
+    make(issuer, unitOps, oldPaymentE) {
       const alice = harden({
         async testSplitPayments() {
-          log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
+          log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentE));
           const splitPayments = await E(issuer).split(
-            oldPaymentP,
+            oldPaymentE,
             await E(unitOps).make(10),
           );
           log(

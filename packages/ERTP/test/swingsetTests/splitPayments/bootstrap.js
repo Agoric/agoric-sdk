@@ -7,8 +7,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     const { mint: moolaMint, issuer, amountMath } = makeIssuerKit('moola');
     const moolaPayment = moolaMint.mintPayment(amountMath.make(1000));
 
-    const aliceP = E(aliceMaker).make(issuer, amountMath, moolaPayment);
-    return E(aliceP).testSplitPayments();
+    const aliceE = E(aliceMaker).make(issuer, amountMath, moolaPayment);
+    return E(aliceE).testSplitPayments();
   }
 
   const obj0 = {

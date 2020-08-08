@@ -83,13 +83,13 @@ test('contract with valid offers', async t => {
     // Let's use the adminInvite to make an offer. This will allow us
     // to remove our tips at the end
     const {
-      payout: adminPayoutP,
-      outcome: adminOutcomeP,
+      payout: adminPayoutE,
+      outcome: adminOutcomeE,
       completeObj: { complete: completeAdmin },
     } = await E(zoe).offer(adminInvite);
 
     t.equals(
-      await adminOutcomeP,
+      await adminOutcomeE,
       `admin invite redeemed`,
       `admin outcome is correct`,
     );
@@ -104,7 +104,7 @@ test('contract with valid offers', async t => {
     // contract.
     const notifier = E(publicAPI).getNotifier();
     const { value, updateCount } = await E(notifier).getUpdateSince();
-    const nextUpdateP = E(notifier).getUpdateSince(updateCount);
+    const nextUpdateE = E(notifier).getUpdateSince(updateCount);
 
     // Count starts at 0
     t.equals(value.count, 0, `count starts at 0`);
@@ -121,16 +121,16 @@ test('contract with valid offers', async t => {
     // Let's use the contract like a client and get some encouragement!
     const encouragementInvite = await E(publicAPI).makeInvite();
 
-    const { outcome: encouragementP } = await E(zoe).offer(encouragementInvite);
+    const { outcome: encouragementE } = await E(zoe).offer(encouragementInvite);
 
     t.equals(
-      await encouragementP,
+      await encouragementE,
       `You're doing great!`,
       `encouragement matches expected`,
     );
 
-    // Getting encouragement resolves the 'nextUpdateP' promise
-    nextUpdateP.then(async result => {
+    // Getting encouragement resolves the 'nextUpdateE' promise
+    nextUpdateE.then(async result => {
       t.equals(result.value.count, 1, 'count increments by 1');
 
       // Now, let's get a premium encouragement message
@@ -139,14 +139,14 @@ test('contract with valid offers', async t => {
       const paymentKeywordRecord = harden({
         Tip: bucksPayment,
       });
-      const { outcome: secondEncouragementP } = await E(zoe).offer(
+      const { outcome: secondEncouragementE } = await E(zoe).offer(
         encouragementInvite2,
         proposal,
         paymentKeywordRecord,
       );
 
       t.equals(
-        await secondEncouragementP,
+        await secondEncouragementE,
         `Wow, just wow. I have never seen such talent!`,
         `premium message is as expected`,
       );
@@ -156,7 +156,7 @@ test('contract with valid offers', async t => {
 
       // Let's get our Tips
       completeAdmin();
-      Promise.resolve(E.G(adminPayoutP).Tip).then(tip => {
+      Promise.resolve(E.G(adminPayoutE).Tip).then(tip => {
         bucksIssuer.getAmountOf(tip).then(tipAmount => {
           t.deepEquals(tipAmount, bucks5, `payout is 5 bucks, all the tips`);
         });

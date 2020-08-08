@@ -11,27 +11,27 @@ import { escrowExchangeSrcs } from '../../../src/escrow';
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
 
-  function testEscrowServiceMismatches(host, randMintP, artMintP) {
+  function testEscrowServiceMismatches(host, randMintE, artMintE) {
     log('starting testEscrowServiceCheckMismatches');
-    const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
-    const blueGirlUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Girl');
-    const actualTermsP = harden({
-      left: randUnitsP,
+    const installationE = E(host).install(escrowExchangeSrcs);
+    const randUnitsE = E(E(randMintE).getIssuer()).makeUnits(3);
+    const blueBoyUnits = E(E(artMintE).getIssuer()).makeUnits('Blue Boy');
+    const blueGirlUnits = E(E(artMintE).getIssuer()).makeUnits('Blue Girl');
+    const actualTermsE = harden({
+      left: randUnitsE,
       right: blueBoyUnits,
     });
-    const allegedTermsP = harden({
-      left: randUnitsP,
+    const allegedTermsE = harden({
+      left: randUnitsE,
       right: blueGirlUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
+    const invitesE = E(installationE).spawn(actualTermsE);
+    const result = invitesE.then(invites => {
       return E(invites.left)
         .getBalance()
         .then(allegedLeftInviteUnits => {
-          return allComparable(allegedTermsP).then(terms => {
-            return E(installationP).checkUnits(
+          return allComparable(allegedTermsE).then(terms => {
+            return E(installationE).checkUnits(
               allegedLeftInviteUnits,
               terms,
               'left',
@@ -49,19 +49,19 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
   }
 
-  function testEscrowServiceSuccess(host, randMintP, artMintP) {
+  function testEscrowServiceSuccess(host, randMintE, artMintE) {
     log('starting testEscrowServiceSuccess');
-    const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
-    const screamUnitsP = E(E(artMintP).getIssuer()).makeUnits('The Scream');
-    const termsP = harden({ left: randUnitsP, right: screamUnitsP });
-    const invitesP = E(installationP).spawn(termsP);
-    const result = invitesP.then(invites => {
+    const installationE = E(host).install(escrowExchangeSrcs);
+    const randUnitsE = E(E(randMintE).getIssuer()).makeUnits(3);
+    const screamUnitsE = E(E(artMintE).getIssuer()).makeUnits('The Scream');
+    const termsE = harden({ left: randUnitsE, right: screamUnitsE });
+    const invitesE = E(installationE).spawn(termsE);
+    const result = invitesE.then(invites => {
       return E(invites.left)
         .getBalance()
         .then(allegedLeftInviteUnits => {
-          return allComparable(termsP).then(terms => {
-            return E(installationP).checkUnits(allegedLeftInviteUnits, terms);
+          return allComparable(termsE).then(terms => {
+            return E(installationE).checkUnits(allegedLeftInviteUnits, terms);
           });
         });
     });
@@ -70,23 +70,23 @@ export function buildRootObject(vatPowers, vatParameters) {
     });
   }
 
-  function testEscrowCheckPartialWrongPrice(host, randMintP, artMintP) {
+  function testEscrowCheckPartialWrongPrice(host, randMintE, artMintE) {
     log('starting testEscrowServiceCheckPartial wrong price');
-    const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
-    const otherRandUnitsP = E(E(randMintP).getIssuer()).makeUnits(5);
-    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
-    const actualTermsP = harden({
-      left: randUnitsP,
+    const installationE = E(host).install(escrowExchangeSrcs);
+    const randUnitsE = E(E(randMintE).getIssuer()).makeUnits(3);
+    const otherRandUnitsE = E(E(randMintE).getIssuer()).makeUnits(5);
+    const blueBoyUnits = E(E(artMintE).getIssuer()).makeUnits('Blue Boy');
+    const actualTermsE = harden({
+      left: randUnitsE,
       right: blueBoyUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
+    const invitesE = E(installationE).spawn(actualTermsE);
+    const result = invitesE.then(invites => {
       return E(invites.left)
         .getBalance()
         .then(allegedLeftInviteUnits => {
-          return allComparable(otherRandUnitsP).then(otherLeftTerms => {
-            return E(installationP).checkPartialUnits(
+          return allComparable(otherRandUnitsE).then(otherLeftTerms => {
+            return E(installationE).checkPartialUnits(
               allegedLeftInviteUnits,
               otherLeftTerms,
               'left',
@@ -105,23 +105,23 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
   }
 
-  function testEscrowCheckPartialWrongStock(host, randMintP, artMintP) {
+  function testEscrowCheckPartialWrongStock(host, randMintE, artMintE) {
     log('starting testEscrowServiceCheckPartial wrong stock');
-    const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
-    const blueGirlUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Girl');
-    const actualTermsP = harden({
-      left: randUnitsP,
+    const installationE = E(host).install(escrowExchangeSrcs);
+    const randUnitsE = E(E(randMintE).getIssuer()).makeUnits(3);
+    const blueBoyUnits = E(E(artMintE).getIssuer()).makeUnits('Blue Boy');
+    const blueGirlUnits = E(E(artMintE).getIssuer()).makeUnits('Blue Girl');
+    const actualTermsE = harden({
+      left: randUnitsE,
       right: blueBoyUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
+    const invitesE = E(installationE).spawn(actualTermsE);
+    const result = invitesE.then(invites => {
       return E(invites.left)
         .getBalance()
         .then(allegedLeftInviteUnits => {
           return allComparable(blueGirlUnits).then(otherRightTerms => {
-            return E(installationP).checkPartialUnits(
+            return E(installationE).checkPartialUnits(
               allegedLeftInviteUnits,
               otherRightTerms,
               'right',
@@ -140,22 +140,22 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
   }
 
-  function testEscrowCheckPartialWrongSeat(host, randMintP, artMintP) {
+  function testEscrowCheckPartialWrongSeat(host, randMintE, artMintE) {
     log('starting testEscrowServiceCheckPartial wrong seat');
-    const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
-    const actualTermsP = harden({
-      left: randUnitsP,
+    const installationE = E(host).install(escrowExchangeSrcs);
+    const randUnitsE = E(E(randMintE).getIssuer()).makeUnits(3);
+    const blueBoyUnits = E(E(artMintE).getIssuer()).makeUnits('Blue Boy');
+    const actualTermsE = harden({
+      left: randUnitsE,
       right: blueBoyUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
+    const invitesE = E(installationE).spawn(actualTermsE);
+    const result = invitesE.then(invites => {
       return E(invites.left)
         .getBalance()
         .then(allegedLeftInviteUnits => {
-          return allComparable(actualTermsP).then(terms => {
-            return E(installationP).checkPartialUnits(
+          return allComparable(actualTermsE).then(terms => {
+            return E(installationE).checkPartialUnits(
               allegedLeftInviteUnits,
               terms,
               'right',
@@ -177,24 +177,24 @@ export function buildRootObject(vatPowers, vatParameters) {
   const obj0 = {
     async bootstrap(vats) {
       const host = await E(vats.host).makeHost();
-      const { mint: randMintP } = E(vats.mint).makeIssuerKit('rand');
+      const { mint: randMintE } = E(vats.mint).makeIssuerKit('rand');
 
-      const { mint: artMintP } = makeIssuerKit('art', 'set');
+      const { mint: artMintE } = makeIssuerKit('art', 'set');
       switch (vatParameters.argv[0]) {
         case 'escrow misMatches': {
-          return testEscrowServiceMismatches(host, randMintP, artMintP);
+          return testEscrowServiceMismatches(host, randMintE, artMintE);
         }
         case 'escrow matches': {
-          return testEscrowServiceSuccess(host, randMintP, artMintP);
+          return testEscrowServiceSuccess(host, randMintE, artMintE);
         }
         case 'escrow partial seat': {
-          return testEscrowCheckPartialWrongSeat(host, randMintP, artMintP);
+          return testEscrowCheckPartialWrongSeat(host, randMintE, artMintE);
         }
         case 'escrow partial price': {
-          return testEscrowCheckPartialWrongPrice(host, randMintP, artMintP);
+          return testEscrowCheckPartialWrongPrice(host, randMintE, artMintE);
         }
         case 'escrow partial stock': {
-          return testEscrowCheckPartialWrongStock(host, randMintP, artMintP);
+          return testEscrowCheckPartialWrongStock(host, randMintE, artMintE);
         }
         default: {
           throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);

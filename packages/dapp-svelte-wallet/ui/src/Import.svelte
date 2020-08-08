@@ -8,7 +8,7 @@
   import DefaultButton from "../lib/DefaultButton.svelte";
   import CancelButton from "../lib/CancelButton.svelte";
 
-  import { boardP } from './store';
+  import { boardE } from './store';
 
   let showModal = false;
 
@@ -38,7 +38,7 @@
           throw TypeError(`Need to specify a ${name} "board:..."" ID`);
         }
         const trimmed = boardId.startsWith(prefix) ? boardId.slice(prefix.length) : boardId;
-        const obj = await E(boardP).getValue(trimmed);
+        const obj = await E(boardE).getValue(trimmed);
         await adder(petname, obj);
         showModal = false;
       } catch (e) {

@@ -65,7 +65,7 @@ test('barter with valid offers', async t => {
   });
   const alicePayments = { In: aliceMoolaPayment };
   // 4: Alice adds her sell order to the exchange
-  const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
+  const { payout: alicePayoutE, outcome: aliceOutcomeE } = await zoe.offer(
     aliceInvite,
     aliceSellOrderProposal,
     alicePayments,
@@ -93,22 +93,22 @@ test('barter with valid offers', async t => {
 
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobBuyOrderProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
   t.equals(
-    await aliceOutcomeP,
+    await aliceOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
+  const bobPayout = await bobPayoutE;
+  const alicePayout = await alicePayoutE;
 
   const bobMoolaPayout = await bobPayout.Out;
   const bobSimoleanPayout = await bobPayout.In;

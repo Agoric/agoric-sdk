@@ -6,7 +6,7 @@
   import Import from "./Import.svelte";
   import Contact from "./Contact.svelte";
 
-  import { contacts, walletP } from './store';
+  import { contacts, walletE } from './store';
 </script>
 
 <ListCard items={$contacts}>
@@ -30,7 +30,7 @@
 
   <div slot="actions">
     <Import name="Contact"
-    adder={(petname, obj) => E(walletP).addContact(petname, obj)}>
+    adder={(petname, obj) => E(walletE).addContact(petname, obj)}>
     Import
     </Import>
   </div>

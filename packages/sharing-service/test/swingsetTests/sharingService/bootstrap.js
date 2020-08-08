@@ -59,16 +59,16 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   function testTwoVatSharing(aliceMaker, bobMaker, sharingService) {
-    const aliceP = E(aliceMaker).make(sharingService);
-    const bobP = E(bobMaker).make(sharingService);
+    const aliceE = E(aliceMaker).make(sharingService);
+    const bobE = E(bobMaker).make(sharingService);
     log('starting testSharingStorage');
-    E(aliceP)
+    E(aliceE)
       .shareSomething('schelling')
       .then(count => {
         if (count !== 1) {
           log(`expecting count of 1, got ${count}`);
         }
-        E(bobP)
+        E(bobE)
           .findSomething('schelling')
           .then(actual => {
             if (actual === 42) {

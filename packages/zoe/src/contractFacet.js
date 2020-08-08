@@ -140,9 +140,9 @@ export function buildRootObject(_vatPowers) {
     E(zoeForZcf).updateAmounts(offerHandles, reallocations);
   };
 
-  const addNewIssuer = (issuerP, keyword, instanceRecord, zoeForZcf) =>
-    issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
-      E(zoeForZcf).addNewIssuer(issuerP, keyword);
+  const addNewIssuer = (issuerE, keyword, instanceRecord, zoeForZcf) =>
+    issuerTable.getPromiseForIssuerRecord(issuerE).then(issuerRecord => {
+      E(zoeForZcf).addNewIssuer(issuerE, keyword);
       assertKeywordName(keyword);
       assert(
         !getKeywords(instanceRecord.issuerKeywordRecord).includes(keyword),
@@ -189,8 +189,8 @@ export function buildRootObject(_vatPowers) {
     const contractFacet = {
       reallocate: (offerHandles, newAllocations) =>
         reallocate(offerHandles, newAllocations, zoeForZcf),
-      addNewIssuer: (issuerP, keyword) =>
-        addNewIssuer(issuerP, keyword, instanceRecord, zoeForZcf),
+      addNewIssuer: (issuerE, keyword) =>
+        addNewIssuer(issuerE, keyword, instanceRecord, zoeForZcf),
       complete: offerHandlesToDrop =>
         completeOffers(offerHandlesToDrop, zoeForZcf),
       makeInvitation: (offerHandler, inviteDesc, options = harden({})) => {
@@ -325,7 +325,7 @@ export function buildRootObject(_vatPowers) {
     const contractCode = evalContractBundle(params.bundle);
 
     const { issuerKeywordRecord } = params.instanceData;
-    const issuersP = Object.getOwnPropertyNames(issuerKeywordRecord).map(
+    const issuersE = Object.getOwnPropertyNames(issuerKeywordRecord).map(
       keyword => issuerKeywordRecord[keyword],
     );
 
@@ -339,9 +339,9 @@ export function buildRootObject(_vatPowers) {
         params.zoeForZcf,
       );
       /** @type {Promise<Invite<any>>} */
-      const inviteP = E(contractCode).makeContract(contractFacet);
+      const inviteE = E(contractCode).makeContract(contractFacet);
       return {
-        inviteP,
+        inviteE,
         zcfForZoe: makeZcfForZoe(params.instanceData.handle, params.zoeForZcf),
       };
     };
@@ -349,7 +349,7 @@ export function buildRootObject(_vatPowers) {
     // The issuers may not have been seen before, so we must wait for
     // the issuer records to be available synchronously
     return issuerTable
-      .getPromiseForIssuerRecords(issuersP)
+      .getPromiseForIssuerRecords(issuersE)
       .then(invokeContract);
   };
 

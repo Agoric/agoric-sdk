@@ -5,10 +5,10 @@ import { E } from '@agoric/eventual-send';
 
 function makeAliceMaker() {
   return harden({
-    make(sharingServiceP) {
+    make(sharingServiceE) {
       const alice = harden({
         shareSomething(someKey) {
-          return E(sharingServiceP)
+          return E(sharingServiceE)
             .createSharedMap(someKey)
             .then(sharedMap => E(sharedMap).addEntry(someKey, 42));
         },

@@ -108,7 +108,7 @@
  */
 
 /**
- * @typedef {ERef<Payment>} PaymentP
+ * @typedef {ERef<Payment>} PaymentE
  */
 
 /**
@@ -129,19 +129,19 @@
  * @property {() => AmountMath} getAmountMath Get the AmountMath for this Issuer.
  * @property {() => MathHelpersName} getMathHelpersName Get the name of the MathHelpers for this Issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
- * @property {(payment: PaymentP) => Promise<boolean>} isLive
+ * @property {(payment: PaymentE) => Promise<boolean>} isLive
  * Return true if the payment continues to exist.
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: PaymentP) => Promise<Amount>} getAmountOf
+ * @property {(payment: PaymentE) => Promise<Amount>} getAmountOf
  * Get the amount of digital assets in the payment. Because the
  * payment is not trusted, we cannot call a method on it directly,
  * and must use the issuer instead.
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: PaymentP, optAmount?: Amount) => Promise<Amount>} burn
+ * @property {(payment: PaymentE, optAmount?: Amount) => Promise<Amount>} burn
  * Burn all of the digital assets in the payment. `optAmount` is optional.
  * If `optAmount` is present, the code will insist that the amount of
  * the digital assets in the payment is equal to `optAmount`, to
@@ -149,7 +149,7 @@
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: PaymentP, optAmount?: Amount) => Promise<Payment>} claim
+ * @property {(payment: PaymentE, optAmount?: Amount) => Promise<Payment>} claim
  * Transfer all digital assets from the payment to a new payment and
  * delete the original. `optAmount` is optional.
  * If `optAmount` is present, the code will insist that the amount of
@@ -158,19 +158,19 @@
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(paymentsArray: PaymentP[]) => Promise<Payment>} combine
+ * @property {(paymentsArray: PaymentE[]) => Promise<Payment>} combine
  * Combine multiple payments into one payment.
  *
  * If any of the payments is a promise, the operation will proceed upon
  * resolution.
  *
- * @property {(payment: PaymentP, paymentAmountA: Amount) => Promise<Payment[]>} split
+ * @property {(payment: PaymentE, paymentAmountA: Amount) => Promise<Payment[]>} split
  * Split a single payment into two payments, A and B, according to the
  * paymentAmountA passed in.
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: PaymentP, amounts: Amount[]) => Promise<Payment[]>} splitMany
+ * @property {(payment: PaymentE, amounts: Amount[]) => Promise<Payment[]>} splitMany
  * Split a single payment into many payments, according to the
  * amounts passed in.
  *

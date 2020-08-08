@@ -15,21 +15,21 @@ const escrowExchange = harden({
     const { left: moneyNeeded, right: stockNeeded } = terms;
 
     // TODO: How to get issuer?
-    function makeTransfer(issuer, amount, srcPaymentP) {
-      const escrowP = E(issuer).claim(srcPaymentP, amount);
+    function makeTransfer(issuer, amount, srcPaymentE) {
+      const escrowE = E(issuer).claim(srcPaymentE, amount);
       const winnings = makePromiseKit();
       const refund = makePromiseKit();
       return harden({
         phase1() {
-          return escrowP;
+          return escrowE;
         },
         phase2() {
-          winnings.res(escrowP);
+          winnings.res(escrowE);
           refund.res(null);
         },
         abort(reason) {
           winnings.reject(reason);
-          refund.res(escrowP);
+          refund.res(escrowE);
         },
         getWinnings() {
           return winnings.p;
@@ -54,12 +54,12 @@ const escrowExchange = harden({
 
     // Set it all in motion optimistically.
 
-    const decisionP = Promise.race([
+    const decisionE = Promise.race([
       Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
       aliceCancel.promise,
       bobCancel.promise,
     ]);
-    decisionP.then(
+    decisionE.then(
       _ => {
         moneyTransfer.phase2();
         stockTransfer.phase2();

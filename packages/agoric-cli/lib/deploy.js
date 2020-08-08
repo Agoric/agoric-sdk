@@ -77,13 +77,13 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         });
 
         // Wait for the chain to become ready.
-        let bootP = getBootstrap();
+        let bootE = getBootstrap();
         let lastUpdateCount;
         let stillLoading = [...deps].sort();
         while (stillLoading.length) {
           // Wait for the notifier to report a new state.
           console.warn('need:', stillLoading.join(', '));
-          const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
+          const update = await E(E.G(bootE).loadingNotifier).getUpdateSince(
             lastUpdateCount,
           );
           lastUpdateCount = update.updateCount;
@@ -99,7 +99,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
         console.debug(JSON.stringify(deps), 'loaded');
         // Take a new copy, since the chain objects have been added to bootstrap.
-        bootP = getBootstrap();
+        bootE = getBootstrap();
 
         for (const arg of args) {
           const moduleFile = path.resolve(process.cwd(), arg);
@@ -116,7 +116,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
               `${moduleFile} does not have an export default function main`,
             );
           } else {
-            await main(bootP, {
+            await main(bootE, {
               bundleSource: file => bundleSource(pathResolve(file)),
               pathResolve,
             });
@@ -125,7 +125,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
         if (init.length) {
           console.warn('provide:', init.join(', '));
-          await E(E.G(E.G(bootP).local).http).doneLoading(init);
+          await E(E.G(E.G(bootE).local).http).doneLoading(init);
         }
 
         console.debug('Done!');

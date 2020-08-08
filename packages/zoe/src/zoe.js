@@ -181,18 +181,18 @@ function makeZoe(vatAdminSvc) {
 
   /**
    * @param {InstanceHandle} instanceHandle
-   * @param {PromiseRecord<PublicAPI>} publicApiP
+   * @param {PromiseRecord<PublicAPI>} publicApiE
    * @returns {ZoeForZcf}
    */
-  const makeZoeForZcf = (instanceHandle, publicApiP) => {
+  const makeZoeForZcf = (instanceHandle, publicApiE) => {
     return harden({
       makeInvitation: (inviteHandler, inviteDesc, options = undefined) =>
         makeInvitation(instanceHandle, inviteHandler, inviteDesc, options),
       updateAmounts: (offerHandles, reallocations) =>
         offerTable.updateAmounts(offerHandles, reallocations),
-      updatePublicAPI: publicAPI => publicApiP.resolve(publicAPI),
-      addNewIssuer: (issuerP, keyword) =>
-        issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
+      updatePublicAPI: publicAPI => publicApiE.resolve(publicAPI),
+      addNewIssuer: (issuerE, keyword) =>
+        issuerTable.getPromiseForIssuerRecord(issuerE).then(issuerRecord => {
           const { issuerKeywordRecord, brandKeywordRecord } = instanceTable.get(
             instanceHandle,
           );
@@ -239,17 +239,17 @@ function makeZoe(vatAdminSvc) {
         installationTable.has(installationHandle),
         details`${installationHandle} was not a valid installationHandle`,
       );
-      const publicApiP = makePromiseKit();
+      const publicApiE = makePromiseKit();
       return E(vatAdminSvc)
         .createVat(zcfContractBundle)
         .then(({ root, adminNode }) => {
           /** @type {{ startContract: StartContract }} */
           const zcfRoot = root;
           const instanceHandle = makeHandle('InstanceHandle');
-          const zoeForZcf = makeZoeForZcf(instanceHandle, publicApiP);
+          const zoeForZcf = makeZoeForZcf(instanceHandle, publicApiE);
 
           const cleanedKeywords = cleanKeywords(issuerKeywordRecord);
-          const issuersP = cleanedKeywords.map(
+          const issuersE = cleanedKeywords.map(
             keyword => issuerKeywordRecord[keyword],
           );
           const makeCleanup = _marker => {
@@ -272,7 +272,7 @@ function makeZoe(vatAdminSvc) {
           /** @type {Omit<InstanceRecord & PrivateInstanceRecord,'handle'>} */
           const instanceRecord = {
             installationHandle,
-            publicAPI: publicApiP.promise,
+            publicAPI: publicApiE.promise,
             terms,
             issuerKeywordRecord: {},
             brandKeywordRecord: {},
@@ -316,9 +316,9 @@ function makeZoe(vatAdminSvc) {
             return E(zcfRoot).startContract(contractParams);
           };
 
-          const finishContractInstall = ({ inviteP, zcfForZoe }) => {
+          const finishContractInstall = ({ inviteE, zcfForZoe }) => {
             zcfForZoePromise.resolve(zcfForZoe);
-            return inviteIssuer.isLive(inviteP).then(success => {
+            return inviteIssuer.isLive(inviteE).then(success => {
               assert(
                 success,
                 details`invites must be issued by the inviteIssuer.`,
@@ -333,14 +333,14 @@ function makeZoe(vatAdminSvc) {
                 };
               }
 
-              return inviteP.then(buildRecord, makeCleanup('invite failure'));
+              return inviteE.then(buildRecord, makeCleanup('invite failure'));
             });
           };
 
           // The issuers may not have been seen before, so we must wait for the
           // issuer records to be available synchronously
           return issuerTable
-            .getPromiseForIssuerRecords(issuersP)
+            .getPromiseForIssuerRecords(issuersE)
             .then(addIssuersToInstanceRecord)
             .then(callStartContract)
             .then(finishContractInstall);

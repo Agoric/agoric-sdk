@@ -9,7 +9,7 @@ import bundleSource from '@agoric/bundle-source';
 import fs from 'fs';
 
 const CONTRACT_FILES = ['crashingAutoRefund'];
-const generateBundlesP = Promise.all(
+const generateBundlesE = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const bundle = await bundleSource(`${__dirname}/${contract}`);
     const obj = { bundle, contract };
@@ -22,7 +22,7 @@ const generateBundlesP = Promise.all(
 
 async function main(argv) {
   const config = await loadBasedir(__dirname);
-  await generateBundlesP;
+  await generateBundlesE;
   const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();

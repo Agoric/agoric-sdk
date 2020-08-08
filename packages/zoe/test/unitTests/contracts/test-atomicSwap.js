@@ -59,7 +59,7 @@ test('zoe - atomicSwap', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
 
   // 3: Alice makes the first offer in the swap.
-  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
+  const { payout: alicePayoutE, outcome: bobInviteE } = await zoe.offer(
     aliceInvite,
     aliceProposal,
     alicePayments,
@@ -69,7 +69,7 @@ test('zoe - atomicSwap', async t => {
   // on how to use it and Bob decides he wants to be the
   // counter-party.
 
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteE);
   const {
     value: [bobInviteValue],
   } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
@@ -92,18 +92,18 @@ test('zoe - atomicSwap', async t => {
   const bobPayments = { Price: bobSimoleanPayment };
 
   // 5: Bob makes an offer
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
+  const bobPayout = await bobPayoutE;
+  const alicePayout = await alicePayoutE;
 
   const bobMoolaPayout = await bobPayout.Asset;
   const bobSimoleanPayout = await bobPayout.Price;
@@ -189,7 +189,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   const alicePayments = { Asset: aliceCcPayment };
 
   // 3: Alice makes the first offer in the swap.
-  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
+  const { payout: alicePayoutE, outcome: bobInviteE } = await zoe.offer(
     aliceInvite,
     aliceProposal,
     alicePayments,
@@ -199,7 +199,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   // on how to use it and Bob decides he wants to be the
   // counter-party.
 
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteE);
   const {
     value: [bobInviteValue],
   } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
@@ -222,18 +222,18 @@ test('zoe - non-fungible atomicSwap', async t => {
   const bobPayments = { Price: bobRpgPayment };
 
   // 5: Bob makes an offer
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
+  const bobPayout = await bobPayoutE;
+  const alicePayout = await alicePayoutE;
 
   const bobCcPayout = await bobPayout.Asset;
   const bobRpgPayout = await bobPayout.Price;
@@ -309,7 +309,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
 
   // 3: Alice makes the first offer in the swap.
-  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
+  const { payout: alicePayoutE, outcome: bobInviteE } = await zoe.offer(
     aliceInvite,
     aliceProposal,
     alicePayments,
@@ -319,7 +319,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   // on how to use it and Bob decides he wants to be the
   // counter-party.
 
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteE);
   const {
     value: [bobInviteValue],
   } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
@@ -342,18 +342,18 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobPayments = { Price: bobMoolaPayment };
 
   // 5: Bob makes an offer
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
+  const bobPayout = await bobPayoutE;
+  const alicePayout = await alicePayoutE;
 
   const bobAssetPayout = await bobPayout.Asset;
   const bobPricePayout = await bobPayout.Price;

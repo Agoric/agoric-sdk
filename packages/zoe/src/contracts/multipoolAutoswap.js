@@ -278,7 +278,7 @@ const makeContract = zcf => {
       .getAmountMath(liquidityBrand)
       .make(liquidityValueOut);
 
-    const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
+    const liquidityPaymentE = liquidityMint.mintPayment(liquidityAmountOut);
 
     // We update the liquidityTokenSupply before the next turn
     liquidityTable.update(secondaryTokenBrand, {
@@ -289,7 +289,7 @@ const makeContract = zcf => {
     // to eventually payout to the user
     return escrowAndAllocateTo({
       amount: liquidityAmountOut,
-      payment: liquidityPaymentP,
+      payment: liquidityPaymentE,
       keyword: 'Liquidity',
       recipientHandle: offerHandle,
     }).then(() => {

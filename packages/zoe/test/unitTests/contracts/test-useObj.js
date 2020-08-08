@@ -41,12 +41,12 @@ test('zoe - useObj', async t => {
 
   // Alice makes an offer
   const {
-    payout: alicePayoutP,
-    outcome: useObjP,
+    payout: alicePayoutE,
+    outcome: useObjE,
     completeObj,
   } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-  const useObj = await useObjP;
+  const useObj = await useObjE;
 
   t.equals(
     useObj.colorPixels('purple'),
@@ -56,7 +56,7 @@ test('zoe - useObj', async t => {
 
   completeObj.complete();
 
-  const alicePayout = await alicePayoutP;
+  const alicePayout = await alicePayoutE;
 
   const aliceMoolaPayoutPayment = await alicePayout.Pixels;
 

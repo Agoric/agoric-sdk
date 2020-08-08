@@ -64,7 +64,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     });
     const alicePayments = { Asset: aliceMoolaPayment };
     // Alice initializes the auction
-    const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
+    const { payout: alicePayoutE, outcome: aliceOutcomeE } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
@@ -75,7 +75,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     t.equals(
-      await aliceOutcomeP,
+      await aliceOutcomeE,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'aliceOutcome',
     );
@@ -111,14 +111,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Bob escrows with zoe
     // Bob bids
-    const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+    const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
       bobExclusiveInvite,
       bobProposal,
       bobPayments,
     );
 
     t.equals(
-      await bobOutcomeP,
+      await bobOutcomeE,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'bobOutcome',
     );
@@ -158,14 +158,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Carol escrows with zoe
     // Carol bids
-    const { payout: carolPayoutP, outcome: carolOutcomeP } = await zoe.offer(
+    const { payout: carolPayoutE, outcome: carolOutcomeE } = await zoe.offer(
       carolExclusiveInvite,
       carolProposal,
       carolPayments,
     );
 
     t.equals(
-      await carolOutcomeP,
+      await carolOutcomeE,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'carolOutcome',
     );
@@ -200,22 +200,22 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Dave escrows with zoe
     // Dave bids
-    const { payout: davePayoutP, outcome: daveOutcomeP } = await zoe.offer(
+    const { payout: davePayoutE, outcome: daveOutcomeE } = await zoe.offer(
       daveExclusiveInvite,
       daveProposal,
       davePayments,
     );
 
     t.equals(
-      await daveOutcomeP,
+      await daveOutcomeE,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'daveOutcome',
     );
 
-    const aliceResult = await alicePayoutP;
-    const bobResult = await bobPayoutP;
-    const carolResult = await carolPayoutP;
-    const daveResult = await davePayoutP;
+    const aliceResult = await alicePayoutE;
+    const bobResult = await bobPayoutE;
+    const carolResult = await carolPayoutE;
+    const daveResult = await davePayoutE;
 
     const aliceMoolaPayout = await aliceResult.Asset;
     const aliceSimoleanPayout = await aliceResult.Ask;
@@ -357,15 +357,15 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const alicePayments = harden({ Asset: aliceMoolaPayment });
     // Alice initializes the auction
     const {
-      payout: alicePayoutP,
+      payout: alicePayoutE,
       completeObj,
-      outcome: aliceOutcomeP,
+      outcome: aliceOutcomeE,
     } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
     const [bobInvite] = await E(publicAPI).makeInvites(1);
 
     t.equals(
-      await aliceOutcomeP,
+      await aliceOutcomeE,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
@@ -383,22 +383,22 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Bob escrows with zoe
     // Bob bids
-    const { payout: bobPayoutP, outcome: brokenOutcomeP } = await zoe.offer(
+    const { payout: bobPayoutE, outcome: brokenOutcomeE } = await zoe.offer(
       bobInvite,
       bobProposal,
       bobPayments,
     );
 
     t.rejects(
-      () => brokenOutcomeP,
+      () => brokenOutcomeE,
       new Error(
         'The item up for auction has been withdrawn or the auction has completed',
       ),
       'The bid should have failed.',
     );
 
-    const aliceResult = await alicePayoutP;
-    const bobResult = await bobPayoutP;
+    const aliceResult = await alicePayoutE;
+    const bobResult = await bobPayoutE;
 
     const aliceMoolaPayout = await aliceResult.Asset;
     const aliceSimoleanPayout = await aliceResult.Ask;
@@ -505,7 +505,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   });
   const alicePayments = { Asset: aliceCcPayment };
   // Alice initializes the auction
-  const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
+  const { payout: alicePayoutE, outcome: aliceOutcomeE } = await zoe.offer(
     aliceInvite,
     aliceProposal,
     alicePayments,
@@ -516,7 +516,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   t.equals(
-    await aliceOutcomeP,
+    await aliceOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'aliceOutcome',
   );
@@ -552,14 +552,14 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Bob escrows with zoe
   // Bob bids
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+  const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
     bobExclusiveInvite,
     bobProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await bobOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'bobOutcome',
   );
@@ -599,14 +599,14 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Carol escrows with zoe
   // Carol bids
-  const { payout: carolPayoutP, outcome: carolOutcomeP } = await zoe.offer(
+  const { payout: carolPayoutE, outcome: carolOutcomeE } = await zoe.offer(
     carolExclusiveInvite,
     carolProposal,
     carolPayments,
   );
 
   t.equals(
-    await carolOutcomeP,
+    await carolOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'carolOutcome',
   );
@@ -645,22 +645,22 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Dave escrows with zoe
   // Dave bids
-  const { payout: davePayoutP, outcome: daveOutcomeP } = await zoe.offer(
+  const { payout: davePayoutE, outcome: daveOutcomeE } = await zoe.offer(
     daveExclusiveInvite,
     daveProposal,
     davePayments,
   );
 
   t.equals(
-    await daveOutcomeP,
+    await daveOutcomeE,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'daveOutcome',
   );
 
-  const aliceResult = await alicePayoutP;
-  const bobResult = await bobPayoutP;
-  const carolResult = await carolPayoutP;
-  const daveResult = await davePayoutP;
+  const aliceResult = await alicePayoutE;
+  const bobResult = await bobPayoutE;
+  const carolResult = await carolPayoutE;
+  const daveResult = await davePayoutE;
 
   const aliceCcPayout = await aliceResult.Asset;
   const aliceMoolaPayout = await aliceResult.Ask;

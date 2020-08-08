@@ -21,50 +21,50 @@ function makeFredMaker(host, log) {
 
   return harden({
     async make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      timerP,
-      moneyIssuerP,
-      stockIssuerP,
-      finIssuerP,
-      myMoneyPaymentP,
-      myStockPaymentP,
-      myFinPaymentP,
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
+      timerE,
+      moneyIssuerE,
+      stockIssuerE,
+      finIssuerE,
+      myMoneyPaymentE,
+      myStockPaymentE,
+      myFinPaymentE,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
-      const myMoneyPurseP = E(moneyIssuerP).makeEmptyPurse();
-      const myStockPurseP = E(stockIssuerP).makeEmptyPurse();
-      const myFinPurseP = E(finIssuerP).makeEmptyPurse();
-      await E(myMoneyPurseP).deposit(myMoneyPaymentP);
-      await E(myStockPurseP).deposit(myStockPaymentP);
-      await E(myFinPaymentP).deposit(myFinPaymentP);
+      const inviteIssuerE = E(host).getInviteIssuer();
+      const myMoneyPurseE = E(moneyIssuerE).makeEmptyPurse();
+      const myStockPurseE = E(stockIssuerE).makeEmptyPurse();
+      const myFinPurseE = E(finIssuerE).makeEmptyPurse();
+      await E(myMoneyPurseE).deposit(myMoneyPaymentE);
+      await E(myStockPurseE).deposit(myStockPaymentE);
+      await E(myFinPaymentE).deposit(myFinPaymentE);
 
-      const moneyMath = await getLocalAmountMath(moneyIssuerP);
-      const stockMath = await getLocalAmountMath(stockIssuerP);
-      const finMath = await getLocalAmountMath(finIssuerP);
+      const moneyMath = await getLocalAmountMath(moneyIssuerE);
+      const stockMath = await getLocalAmountMath(stockIssuerE);
+      const finMath = await getLocalAmountMath(finIssuerE);
       const dough10 = moneyMath.make(10);
       const wonka7 = stockMath.make(7);
       const fin55 = finMath.make(55);
 
       const fred = harden({
-        acceptOptionOffer(allegedSaleInvitePaymentP) {
+        acceptOptionOffer(allegedSaleInvitePaymentE) {
           log('++ fred.acceptOptionOffer starting');
 
-          const coveredCallTermsP = [dough10, wonka7, timerP, 'singularity'];
-          const verifiedSaleInvitePaymentP = E(inviteIssuerP)
-            .getAmountOf(allegedSaleInvitePaymentP)
+          const coveredCallTermsE = [dough10, wonka7, timerE, 'singularity'];
+          const verifiedSaleInvitePaymentE = E(inviteIssuerE)
+            .getAmountOf(allegedSaleInvitePaymentE)
             .then(allegedInviteUnits => {
               return Promise.resolve(allComparable(fin55)).then(f55 => {
-                return E(escrowExchangeInstallationP)
+                return E(escrowExchangeInstallationE)
                   .checkPartialUnits(allegedInviteUnits, f55, 'left')
                   .then(coveredCallUnits =>
-                    Promise.all(coveredCallTermsP).then(terms => {
-                      return E(coveredCallInstallationP)
+                    Promise.all(coveredCallTermsE).then(terms => {
+                      return E(coveredCallInstallationE)
                         .checkUnits(coveredCallUnits, terms)
                         .then(() => {
-                          return E(inviteIssuerP).claimExactly(
+                          return E(inviteIssuerE).claimExactly(
                             allegedInviteUnits,
-                            allegedSaleInvitePaymentP,
+                            allegedSaleInvitePaymentE,
                             'verified sale invite',
                           );
                         });
@@ -73,27 +73,27 @@ function makeFredMaker(host, log) {
               });
             });
 
-          const saleSeatP = E(host).redeem(verifiedSaleInvitePaymentP);
-          const finPaymentP = E(myFinPurseP).withdraw(55);
-          E(saleSeatP).offer(finPaymentP);
-          const optionInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
-          const gotOptionP = collect(
-            saleSeatP,
-            optionInvitePurseP,
-            myFinPurseP,
+          const saleSeatE = E(host).redeem(verifiedSaleInvitePaymentE);
+          const finPaymentE = E(myFinPurseE).withdraw(55);
+          E(saleSeatE).offer(finPaymentE);
+          const optionInvitePurseE = E(inviteIssuerE).makeEmptyPurse();
+          const gotOptionE = collect(
+            saleSeatE,
+            optionInvitePurseE,
+            myFinPurseE,
             'fred buys escrowed option',
           );
-          return Promise.resolve(gotOptionP).then(_ => {
+          return Promise.resolve(gotOptionE).then(_ => {
             // Fred bought the option. Now fred tries to exercise the option.
-            const optionInvitePaymentP = E(optionInvitePurseP).withdrawAll();
-            const optionSeatP = E(host).redeem(optionInvitePaymentP);
+            const optionInvitePaymentE = E(optionInvitePurseE).withdrawAll();
+            const optionSeatE = E(host).redeem(optionInvitePaymentE);
             return Promise.resolve(allComparable(dough10)).then(d10 => {
-              const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
-              E(optionSeatP).offer(doughPaymentP);
+              const doughPaymentE = E(myMoneyPurseE).withdraw(d10);
+              E(optionSeatE).offer(doughPaymentE);
               return collect(
-                optionSeatP,
-                myStockPurseP,
-                myMoneyPurseP,
+                optionSeatE,
+                myStockPurseE,
+                myMoneyPurseE,
                 'fred exercises option, buying stock',
               );
             });

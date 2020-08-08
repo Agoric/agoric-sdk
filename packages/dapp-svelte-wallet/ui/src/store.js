@@ -14,8 +14,8 @@ const { connected, makeStableForwarder } = makeCapTPConnection(
 export { connected };
 
 // Get some properties of the bootstrap object as stable identites.
-export const walletP = makeStableForwarder(bootP => E.G(bootP).wallet);
-export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
+export const walletE = makeStableForwarder(bootE => E.G(bootE).wallet);
+export const boardE = makeStableForwarder(bootE => E.G(bootE).board);
 
 const resetAlls = [];
 
@@ -41,13 +41,13 @@ function kv(keyObj, val) {
   return { ...val, ...keyObj, id: text, text, value: val };;
 }
 
-function onReset(readyP) {
+function onReset(readyE) {
   // Reset is beginning, set unready.
   setReady(false);
 
   // When the ready promise fires, reset to ready.
-  readyP.then(() => resetAlls.forEach(fn => fn()));
-  E(walletP).getSelfContact().then(sc => setSelfContact({ contactPetname: 'Self', ...kv('Self', sc) }));
+  readyE.then(() => resetAlls.forEach(fn => fn()));
+  E(walletE).getSelfContact().then(sc => setSelfContact({ contactPetname: 'Self', ...kv('Self', sc) }));
   // Set up our subscriptions.
   updateFromNotifier({
     updateState(ijs) {
@@ -55,32 +55,32 @@ function onReset(readyP) {
       setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`}))
         .sort((a, b) => cmp(b.id, a.id)));
     },
-  }, E(walletP).getInboxJSONNotifier());
+  }, E(walletE).getInboxJSONNotifier());
   updateFromNotifier({
     updateState(state) {
       setPurses(state.map(purse => kv({ pursePetname: purse.pursePetname }, purse))
         .sort((a, b) => cmp(a.brandPetname, b.brandPetname) || cmp(a.pursePetname, b.pursePetname)));
     },
-  }, E(walletP).getPursesNotifier());
+  }, E(walletE).getPursesNotifier());
   updateFromNotifier({
     updateState(state) {
       setDapps(state.map(dapp => ({ ...dapp, id: dapp.origin }))
         .sort((a, b) => cmp(a.dappPetname, b.dappPetname) || cmp(a.id, b.id)));
     },
-  }, E(walletP).getDappsNotifier());
+  }, E(walletE).getDappsNotifier());
   updateFromNotifier({
     updateState(state) {
       setContacts(state.map(([contactPetname, contact]) => kv({ contactPetname }, contact))
         .sort((a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id)));
     },
-  }, E(walletP).getContactsNotifier());
-  updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
+  }, E(walletE).getContactsNotifier());
+  updateFromNotifier({ updateState: setPayments }, E(walletE).getPaymentsNotifier());
   updateFromNotifier({
     updateState(state) {
       setIssuers(state.map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
         .sort((a, b) => cmp(a.id, b.id)));
     },
-  }, E(walletP).getIssuersNotifier());
+  }, E(walletE).getIssuersNotifier());
 }
 
 // like React useHook, return a store and a setter for it

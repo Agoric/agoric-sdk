@@ -3,9 +3,9 @@
 import { E } from '@agoric/eventual-send';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
-export async function showPurseBalance(purseP, name, log) {
+export async function showPurseBalance(purseE, name, log) {
   try {
-    const amount = await E(purseP).getCurrentAmount();
+    const amount = await E(purseE).getCurrentAmount();
     log(name, ': balance ', amount);
   } catch (err) {
     console.error(err);
@@ -24,9 +24,9 @@ export async function setupPurses(zoe, issuers, payments) {
   const [moolaIssuer, simoleanIssuer] = issuers;
 
   const [moolaPayment, simoleanPayment] = payments;
-  const [moolaPurseP, simoleanPurseP] = purses;
-  await E(moolaPurseP).deposit(moolaPayment);
-  await E(simoleanPurseP).deposit(simoleanPayment);
+  const [moolaPurseE, simoleanPurseE] = purses;
+  await E(moolaPurseE).deposit(moolaPayment);
+  await E(simoleanPurseE).deposit(simoleanPayment);
 
   const moolaAmountMath = await getLocalAmountMath(moolaIssuer);
   const simoleanAmountMath = await getLocalAmountMath(simoleanIssuer);

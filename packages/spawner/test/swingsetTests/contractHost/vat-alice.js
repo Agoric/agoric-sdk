@@ -13,8 +13,8 @@ function makeAliceMaker(host, log) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
-  function showPaymentBalance(name, issuer, paymentP) {
-    return paymentP.then(payment => {
+  function showPaymentBalance(name, issuer, paymentE) {
+    return paymentE.then(payment => {
       return E(issuer)
         .getAmountOf(payment)
         .then(amount => log(name, ' balance ', amount))
@@ -32,45 +32,45 @@ function makeAliceMaker(host, log) {
 
   return harden({
     async make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      timerP,
-      moneyIssuerP,
-      stockIssuerP,
-      myMoneyPurseP,
-      myStockPurseP,
-      myOptFinPurseP = undefined,
-      optFredP = undefined,
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
+      timerE,
+      moneyIssuerE,
+      stockIssuerE,
+      myMoneyPurseE,
+      myStockPurseE,
+      myOptFinPurseE = undefined,
+      optFredE = undefined,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
+      const inviteIssuerE = E(host).getInviteIssuer();
 
-      const moneyMath = await getLocalAmountMath(moneyIssuerP);
-      const stockMath = await getLocalAmountMath(stockIssuerP);
+      const moneyMath = await getLocalAmountMath(moneyIssuerE);
+      const stockMath = await getLocalAmountMath(stockIssuerE);
 
       const alice = harden({
         payBobWell(bob) {
           log('++ alice.payBobWell starting');
-          const paymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
-          return E(bob).buy('shoe', paymentP);
+          const paymentE = E(myMoneyPurseE).withdraw(moneyMath.make(10));
+          return E(bob).buy('shoe', paymentE);
         },
 
-        acceptInvite(allegedInvitePaymentP) {
+        acceptInvite(allegedInvitePaymentE) {
           log('++ alice.acceptInvite starting');
-          showPaymentBalance('alice invite', allegedInvitePaymentP);
+          showPaymentBalance('alice invite', allegedInvitePaymentE);
           const clams10 = moneyMath.make(10);
           const fudco7 = stockMath.make(7);
-          const verifiedInvitePaymentP = E(inviteIssuerP)
-            .getAmountOf(allegedInvitePaymentP)
+          const verifiedInvitePaymentE = E(inviteIssuerE)
+            .getAmountOf(allegedInvitePaymentE)
             .then(inviteAmount => {
-              return E(escrowExchangeInstallationP)
+              return E(escrowExchangeInstallationE)
                 .checkUnits(
                   inviteAmount,
                   { left: clams10, right: fudco7 },
                   'left',
                 )
                 .then(() => {
-                  return E(inviteIssuerP).claim(
-                    allegedInvitePaymentP,
+                  return E(inviteIssuerE).claim(
+                    allegedInvitePaymentE,
                     inviteAmount,
                   );
                 });
@@ -79,54 +79,54 @@ function makeAliceMaker(host, log) {
           return Promise.resolve(
             showPaymentBalance(
               'verified invite',
-              inviteIssuerP,
-              verifiedInvitePaymentP,
+              inviteIssuerE,
+              verifiedInvitePaymentE,
             ),
           ).then(_ => {
-            const seatP = E(host).redeem(verifiedInvitePaymentP);
-            const moneyPaymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
-            E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+            const seatE = E(host).redeem(verifiedInvitePaymentE);
+            const moneyPaymentE = E(myMoneyPurseE).withdraw(moneyMath.make(10));
+            E(seatE).offer(moneyPaymentE);
+            return collect(seatE, myStockPurseE, myMoneyPurseE, 'alice escrow');
           });
         },
 
-        acceptOption(allegedInvitePaymentP) {
-          if (optFredP) {
-            return alice.acceptOptionForFred(allegedInvitePaymentP);
+        acceptOption(allegedInvitePaymentE) {
+          if (optFredE) {
+            return alice.acceptOptionForFred(allegedInvitePaymentE);
           }
-          return alice.acceptOptionDirectly(allegedInvitePaymentP);
+          return alice.acceptOptionDirectly(allegedInvitePaymentE);
         },
 
-        acceptOptionDirectly(allegedInvitePaymentP) {
+        acceptOptionDirectly(allegedInvitePaymentE) {
           log('++ alice.acceptOptionDirectly starting');
           showPaymentBalance(
             'alice invite',
-            inviteIssuerP,
-            allegedInvitePaymentP,
+            inviteIssuerE,
+            allegedInvitePaymentE,
           );
 
-          const inviteAmountP = E(inviteIssuerP).getAmountOf(
-            allegedInvitePaymentP,
+          const inviteAmountE = E(inviteIssuerE).getAmountOf(
+            allegedInvitePaymentE,
           );
 
-          const verifiedInvitePaymentP = Promise.resolve(inviteAmountP).then(
+          const verifiedInvitePaymentE = Promise.resolve(inviteAmountE).then(
             inviteAmount => {
               const smackers10 = moneyMath.make(10);
               const yoyodyne7 = stockMath.make(7);
-              const coveredCallTermsP = harden([
+              const coveredCallTermsE = harden([
                 smackers10,
                 yoyodyne7,
-                timerP,
+                timerE,
                 'singularity',
               ]);
-              return Promise.resolve(allComparable(coveredCallTermsP)).then(
+              return Promise.resolve(allComparable(coveredCallTermsE)).then(
                 terms => {
-                  return E(coveredCallInstallationP)
+                  return E(coveredCallInstallationE)
                     .checkUnits(inviteAmount, terms)
                     .then(_ => {
-                      return E(inviteIssuerP).claim(
+                      return E(inviteIssuerE).claim(
                         inviteAmount,
-                        allegedInvitePaymentP,
+                        allegedInvitePaymentE,
                       );
                     });
                 },
@@ -137,56 +137,56 @@ function makeAliceMaker(host, log) {
           return Promise.resolve(
             showPaymentBalance(
               'verified invite',
-              inviteIssuerP,
-              verifiedInvitePaymentP,
+              inviteIssuerE,
+              verifiedInvitePaymentE,
             ),
           ).then(_ => {
-            const seatP = E(host).redeem(verifiedInvitePaymentP);
-            const moneyPaymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
-            E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
+            const seatE = E(host).redeem(verifiedInvitePaymentE);
+            const moneyPaymentE = E(myMoneyPurseE).withdraw(moneyMath.make(10));
+            E(seatE).offer(moneyPaymentE);
+            return collect(seatE, myStockPurseE, myMoneyPurseE, 'alice option');
           });
         },
 
-        acceptOptionForFred(allegedInvitePaymentP) {
+        acceptOptionForFred(allegedInvitePaymentE) {
           log('++ alice.acceptOptionForFred starting');
           const finNeeded = moneyMath.make(55);
-          const inviteNeededP = E(inviteIssuerP).getAmountOf(
-            allegedInvitePaymentP,
+          const inviteNeededE = E(inviteIssuerE).getAmountOf(
+            allegedInvitePaymentE,
           );
 
-          const terms = harden({ left: finNeeded, right: inviteNeededP });
-          const invitePaymentsP = E(escrowExchangeInstallationP).spawn(terms);
-          const fredInvitePaymentP = invitePaymentsP.then(
+          const terms = harden({ left: finNeeded, right: inviteNeededE });
+          const invitePaymentsE = E(escrowExchangeInstallationE).spawn(terms);
+          const fredInvitePaymentE = invitePaymentsE.then(
             invitePayments => invitePayments.left,
           );
-          const aliceForFredInvitePaymentP = invitePaymentsP.then(
+          const aliceForFredInvitePaymentE = invitePaymentsE.then(
             invitePayments => invitePayments.right,
           );
-          const doneP = Promise.all([
-            E(optFredP).acceptOptionOffer(fredInvitePaymentP),
+          const doneE = Promise.all([
+            E(optFredE).acceptOptionOffer(fredInvitePaymentE),
             E(alice).completeOptionsSale(
-              aliceForFredInvitePaymentP,
-              allegedInvitePaymentP,
+              aliceForFredInvitePaymentE,
+              allegedInvitePaymentE,
             ),
           ]);
-          doneP.then(
+          doneE.then(
             _res => log('++ alice.acceptOptionForFred done'),
             rej => log('++ alice.acceptOptionForFred reject: ', rej),
           );
-          return doneP;
+          return doneE;
         },
 
-        completeOptionsSale(aliceForFredInvitePaymentP, allegedInvitePaymentP) {
+        completeOptionsSale(aliceForFredInvitePaymentE, allegedInvitePaymentE) {
           log('++ alice.completeOptionsSale starting');
-          const aliceForFredSeatP = E(host).redeem(aliceForFredInvitePaymentP);
+          const aliceForFredSeatE = E(host).redeem(aliceForFredInvitePaymentE);
 
-          E(aliceForFredSeatP).offer(allegedInvitePaymentP);
-          const myInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
+          E(aliceForFredSeatE).offer(allegedInvitePaymentE);
+          const myInvitePurseE = E(inviteIssuerE).makeEmptyPurse();
           return collect(
-            aliceForFredSeatP,
-            myOptFinPurseP,
-            myInvitePurseP,
+            aliceForFredSeatE,
+            myOptFinPurseE,
+            myInvitePurseE,
             'alice options sale',
           );
         },

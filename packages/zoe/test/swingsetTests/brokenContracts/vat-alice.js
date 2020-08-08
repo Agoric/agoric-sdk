@@ -10,7 +10,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
   const [moolaPayment, simoleansPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
-  const [moolaPurseP, simoleanPurseP] = purses;
+  const [moolaPurseE, simoleanPurseE] = purses;
 
   // A metering exception is thrown while processing the offer
   const doMeterExceptionInHook = async () => {
@@ -33,7 +33,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     const alicePayments = { Asset: moolaPayment };
 
     const invite = await E(publicAPI).makeExcessiveInvite();
-    const { payout: payoutP, outcome } = await E(zoe).offer(
+    const { payout: payoutE, outcome } = await E(zoe).offer(
       invite,
       proposal,
       alicePayments,
@@ -44,15 +44,15 @@ const build = async (log, zoe, issuers, payments, installations) => {
       e => log(`outcome correctly resolves to broken: ${e}`),
     );
 
-    const payout = await payoutP;
+    const payout = await payoutE;
     const moolaPayout = await payout.Asset;
     const simoleanPayout = await payout.Price;
 
-    await E(moolaPurseP).deposit(moolaPayout);
-    await E(simoleanPurseP).deposit(simoleanPayout);
+    await E(moolaPurseE).deposit(moolaPayout);
+    await E(simoleanPurseE).deposit(simoleanPayout);
 
-    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    await showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
 
     E(publicAPI)
       .getOffersCount()
@@ -94,7 +94,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     });
     const aliceSwapPayments = { Asset: swapPayment };
     const swapInvite = await E(publicAPI).makeSwapInvite();
-    const { payout: swapPayoutP, outcome: swapOutcome } = await E(zoe).offer(
+    const { payout: swapPayoutE, outcome: swapOutcome } = await E(zoe).offer(
       swapInvite,
       swapProposal,
       aliceSwapPayments,
@@ -104,16 +104,16 @@ const build = async (log, zoe, issuers, payments, installations) => {
       e => assert(false, `Expected swap outcome to succeed ${e}`),
     );
     // the refunds for swap won't happen till later
-    swapPayoutP.then(async swapPayout => {
+    swapPayoutE.then(async swapPayout => {
       const { Asset: swapMoolaPayout, Price: swapSimoleanPayout } = E.G(
         swapPayout,
       );
-      E(moolaPurseP).deposit(await swapMoolaPayout);
-      E(simoleanPurseP).deposit(await swapSimoleanPayout);
+      E(moolaPurseE).deposit(await swapMoolaPayout);
+      E(simoleanPurseE).deposit(await swapSimoleanPayout);
 
-      showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-      showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
-      E(moolaPurseP)
+      showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+      showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
+      E(moolaPurseE)
         .getCurrentAmount()
         .then(amount => log(`swap value, ${amount.value}`));
     });
@@ -127,31 +127,31 @@ const build = async (log, zoe, issuers, payments, installations) => {
     });
     const refundPayments = { Asset: refundPayment };
 
-    const { payout: payoutP, outcome: refundOutcome } = await E(zoe).offer(
+    const { payout: payoutE, outcome: refundOutcome } = await E(zoe).offer(
       refundInvite,
       refundProposal,
       refundPayments,
     );
 
     // The swap deposit should be refunded
-    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    await showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
 
     refundOutcome.then(
       () => assert(false, ' expected outcome to fail'),
       e => log(`outcome correctly resolves to broken: ${e}`),
     );
 
-    payoutP.then(async refundPayout => {
+    payoutE.then(async refundPayout => {
       const { Asset: swapMoolaPayout, Price: swapSimoleanPayout } = E.G(
         refundPayout,
       );
-      E(moolaPurseP).deposit(await swapMoolaPayout);
-      E(simoleanPurseP).deposit(await swapSimoleanPayout);
+      E(moolaPurseE).deposit(await swapMoolaPayout);
+      E(simoleanPurseE).deposit(await swapSimoleanPayout);
 
-      showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-      showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
-      E(moolaPurseP)
+      showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+      showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
+      E(moolaPurseE)
         .getCurrentAmount()
         .then(amount => log(`refund value, ${amount.value}`));
     });
@@ -192,7 +192,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
     logCounter(log, instanceRecord.publicAPI);
     const invite = await E(instanceRecord.publicAPI).makeThrowingInvite();
-    const { payout: payoutP, outcome } = await E(zoe).offer(
+    const { payout: payoutE, outcome } = await E(zoe).offer(
       invite,
       proposal,
       alicePayments,
@@ -203,14 +203,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
       e => log(`outcome correctly resolves to broken: ${e}`),
     );
     logCounter(log, instanceRecord.publicAPI);
-    const payout = await payoutP;
+    const payout = await payoutE;
     const moolaPayout = await payout.Asset;
     const simoleanPayout = await payout.Price;
 
-    await E(moolaPurseP).deposit(moolaPayout);
-    await E(simoleanPurseP).deposit(simoleanPayout);
-    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    await E(moolaPurseE).deposit(moolaPayout);
+    await E(simoleanPurseE).deposit(simoleanPayout);
+    await showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
     logCounter(log, instanceRecord.publicAPI);
 
     // zoe should still be able to make new vats.
@@ -221,10 +221,10 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(newInstanceRecord.publicAPI).getOffersCount()}`);
 
     const newInvite = await E(instanceRecord.publicAPI).makeSafeInvite();
-    const newMoolaPayment = await E(moolaPurseP).withdraw(moola(3));
+    const newMoolaPayment = await E(moolaPurseE).withdraw(moola(3));
     const newPayments = { Asset: newMoolaPayment };
 
-    const { payout: secondPayoutP, outcome: secondOutcome } = await E(
+    const { payout: secondPayoutE, outcome: secondOutcome } = await E(
       zoe,
     ).offer(newInvite, proposal, newPayments);
 
@@ -234,14 +234,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
     );
     const newPurse = await E(moolaIssuer).makeEmptyPurse();
     const {
-      Asset: swapMoolaPayoutP,
-      Price: swapSimoleanPayoutP,
-    } = await secondPayoutP;
-    E(newPurse).deposit(await swapMoolaPayoutP);
-    E(simoleanPurseP).deposit(await swapSimoleanPayoutP);
+      Asset: swapMoolaPayoutE,
+      Price: swapSimoleanPayoutE,
+    } = await secondPayoutE;
+    E(newPurse).deposit(await swapMoolaPayoutE);
+    E(simoleanPurseE).deposit(await swapSimoleanPayoutE);
 
     showPurseBalance(newPurse, 'new Purse', log);
-    showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
     logCounter(log, instanceRecord.publicAPI);
   };
 
@@ -265,7 +265,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     });
     const aliceSwapPayments = { Asset: moolaPayment };
     const swapInvite = await E(instanceRecord.publicAPI).makeSwapInvite();
-    const { payout: swapPayoutP, outcome: swapOutcome } = await E(zoe).offer(
+    const { payout: swapPayoutE, outcome: swapOutcome } = await E(zoe).offer(
       swapInvite,
       swapProposal,
       aliceSwapPayments,
@@ -295,14 +295,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
     logCounter(log, instanceRecord.publicAPI);
 
     // These should not resolve at this point, the funds are still escrowed
-    swapPayoutP.then(async swapPayout => {
+    swapPayoutE.then(async swapPayout => {
       const moolaSwapPayout = await swapPayout.Asset;
       const simoleanSwapPayout = await swapPayout.Price;
 
-      await E(moolaPurseP).deposit(moolaSwapPayout);
-      await E(simoleanPurseP).deposit(simoleanSwapPayout);
-      await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-      await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+      await E(moolaPurseE).deposit(moolaSwapPayout);
+      await E(simoleanPurseE).deposit(simoleanSwapPayout);
+      await showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+      await showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
     });
 
     // show that the contract is still responsive.
@@ -321,7 +321,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       exit: { onDemand: null },
     });
     const aliceSwapTwoPayments = { Price: simoleansPayment };
-    const { payout: swapTwoPayoutP, outcome: swapTwoOutcome } = await E(
+    const { payout: swapTwoPayoutE, outcome: swapTwoOutcome } = await E(
       zoe,
     ).offer(swapInviteTwo, swapTwoProposal, aliceSwapTwoPayments);
     logCounter(log, instanceRecord.publicAPI);
@@ -330,7 +330,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       o => log(`outcome correctly resolves: "${o}"`),
       e => assert(false, `expected outcome to succeed ${e}`),
     );
-    const swapTwoPayout = await swapTwoPayoutP;
+    const swapTwoPayout = await swapTwoPayoutE;
     const moolaSwapTwoPayout = await swapTwoPayout.Asset;
     const simoleanSwapTwoPayout = await swapTwoPayout.Price;
 
@@ -364,7 +364,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     const invite = await E(instanceRecord.publicAPI).makeSafeInvite();
     logCounter(log, instanceRecord.publicAPI);
 
-    const { payout: payoutP, outcome } = await E(zoe).offer(
+    const { payout: payoutE, outcome } = await E(zoe).offer(
       invite,
       proposal,
       alicePayments,
@@ -382,14 +382,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
       e => assert(false, `expected outcome to succeed: ${e}`),
     );
 
-    const payout = await payoutP;
+    const payout = await payoutE;
     const moolaPayout = await payout.Asset;
     const simoleanPayout = await payout.Price;
 
-    await E(moolaPurseP).deposit(moolaPayout);
-    await E(simoleanPurseP).deposit(simoleanPayout);
-    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    await E(moolaPurseE).deposit(moolaPayout);
+    await E(simoleanPurseE).deposit(simoleanPayout);
+    await showPurseBalance(moolaPurseE, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseE, 'aliceSimoleanPurse', log);
 
     E(instanceRecord.publicAPI)
       .getOffersCount()

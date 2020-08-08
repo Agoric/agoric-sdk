@@ -41,9 +41,9 @@ test('zoe - escrowToVote', async t => {
 
   // Alice makes an offer to use the secretary invite and gets a
   // secretary use object back.
-  const { outcome: secretaryUseObjP } = await E(zoe).offer(secretaryInvite);
+  const { outcome: secretaryUseObjE } = await E(zoe).offer(secretaryInvite);
 
-  const secretary = await secretaryUseObjP;
+  const secretary = await secretaryUseObjE;
 
   // The secretary has the unique power to make voter invites.
   const voterInvite1 = E(secretary).makeVoterInvite();
@@ -62,18 +62,18 @@ test('zoe - escrowToVote', async t => {
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(3)),
     });
-    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
+    const { payout: payoutE, outcome: voterE } = await E(zoe).offer(
       invite,
       proposal,
       payments,
     );
 
-    const voter = await voterP;
+    const voter = await voterE;
     const result = await E(voter).vote('YES');
 
     t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
-    payoutP.then(async payout => {
+    payoutE.then(async payout => {
       const moolaPayment = await payout.Assets;
 
       t.deepEquals(
@@ -102,13 +102,13 @@ test('zoe - escrowToVote', async t => {
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(5)),
     });
-    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
+    const { payout: payoutE, outcome: voterE } = await E(zoe).offer(
       invite,
       proposal,
       payments,
     );
 
-    const voter = await voterP;
+    const voter = await voterE;
     console.log('EXPECTED ERROR ->>>');
     t.rejects(
       () => E(voter).vote('NOT A VALID ANSWER'),
@@ -123,7 +123,7 @@ test('zoe - escrowToVote', async t => {
     const result2 = await E(voter).vote('NO');
     t.equals(result2, `Successfully voted 'NO'`, `voter 2 recast vote for NO`);
 
-    payoutP.then(async payout => {
+    payoutE.then(async payout => {
       const moolaPayment = await payout.Assets;
 
       t.deepEquals(
@@ -153,11 +153,11 @@ test('zoe - escrowToVote', async t => {
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(1)),
     });
-    const { payout: payoutP, outcome: voterP, completeObj } = await E(
+    const { payout: payoutE, outcome: voterE, completeObj } = await E(
       zoe,
     ).offer(invite, proposal, payments);
 
-    const voter = await voterP;
+    const voter = await voterE;
     const result = await E(voter).vote('NO');
     t.equals(result, `Successfully voted 'NO'`, `voter3 votes NOT`);
 
@@ -165,7 +165,7 @@ test('zoe - escrowToVote', async t => {
     // closed. Voter3's vote will not be counted.
     completeObj.complete();
 
-    const payout = await payoutP;
+    const payout = await payoutE;
 
     const moolaPayment = await payout.Assets;
 
@@ -193,18 +193,18 @@ test('zoe - escrowToVote', async t => {
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(4)),
     });
-    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
+    const { payout: payoutE, outcome: voterE } = await E(zoe).offer(
       invite,
       proposal,
       payments,
     );
 
-    const voter = await voterP;
+    const voter = await voterE;
     const result = await E(voter).vote('YES');
 
     t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
-    payoutP.then(async payout => {
+    payoutE.then(async payout => {
       const moolaPayment = await payout.Assets;
 
       t.deepEquals(

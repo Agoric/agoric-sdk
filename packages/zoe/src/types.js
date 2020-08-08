@@ -151,7 +151,7 @@
  * @property {() => void} wake
  *
  * @typedef {Object} Timer
- * @property {(deadline: Deadline, wakerP: ERef<Waker>) => void} setWakeup
+ * @property {(deadline: Deadline, wakerE: ERef<Waker>) => void} setWakeup
  *
  * @typedef {number} Deadline
  *
@@ -295,7 +295,7 @@
  * @callback AddNewIssuer
  * Informs Zoe about an issuer and returns a promise for acknowledging
  * when the issuer is added and ready.
- * @param {ERef<Issuer>} issuerP Promise for issuer
+ * @param {ERef<Issuer>} issuerE Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
  * @returns {Promise<IssuerRecord>} Issuer is added and ready
  *

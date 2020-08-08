@@ -242,7 +242,7 @@ test('new HandledPromise expected errors', async t => {
 
 test('new HandledPromise(executor, undefined)', async t => {
   try {
-    const handledP = new HandledPromise((_, _2, resolveWithPresence) => {
+    const handledE = new HandledPromise((_, _2, resolveWithPresence) => {
       setTimeout(() => {
         const o = {
           num: 123,
@@ -265,18 +265,18 @@ test('new HandledPromise(executor, undefined)', async t => {
     });
 
     t.equal(
-      await HandledPromise.applyMethod(handledP, 'hello', ['World', '!']),
+      await HandledPromise.applyMethod(handledE, 'hello', ['World', '!']),
       'Hello, World!',
       `.applyMethod works`,
     );
     t.equal(
-      await HandledPromise.get(handledP, 'str'),
+      await HandledPromise.get(handledE, 'str'),
       'my string',
       `.get works`,
     );
-    t.equal(await HandledPromise.get(handledP, 'num'), 123, `.get num works`);
+    t.equal(await HandledPromise.get(handledE, 'num'), 123, `.get num works`);
     t.equal(
-      await HandledPromise.applyMethod(handledP, 'hello', ['World']),
+      await HandledPromise.applyMethod(handledE, 'hello', ['World']),
       'Hello, World',
       `.applyMethod works`,
     );

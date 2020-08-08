@@ -19,7 +19,7 @@ export default async function uploadContracts({ home, bundle }) {
   );
 }
 
-export async function upload(homeP, bundle, keys, verbose = false) {
+export async function upload(homeE, bundle, keys, verbose = false) {
   const names = [];
   const contractsAP = [];
   for (const key of keys) {
@@ -33,7 +33,7 @@ export async function upload(homeP, bundle, keys, verbose = false) {
     // console.error(`Uploading ${source}`);
 
     // eslint-disable-next-line no-await-in-loop
-    const targetObj = await E(homeP)[target];
+    const targetObj = await E(homeE)[target];
     if (!targetObj) {
       console.error(
         `Contract installation target object ${target} is not available for ${name}; skipping...`,
@@ -48,11 +48,11 @@ export async function upload(homeP, bundle, keys, verbose = false) {
     }
   }
 
-  const uploadsP = E(homeP).uploads;
+  const uploadsE = E(homeE).uploads;
   const contracts = await Promise.all(contractsAP);
   for (let i = 0; i < contracts.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await E(uploadsP).set(names[i], contracts[i]);
+    await E(uploadsE).set(names[i], contracts[i]);
   }
 
   console.error('See home.uploads~.list()');

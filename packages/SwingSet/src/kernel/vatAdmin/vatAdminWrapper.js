@@ -17,13 +17,13 @@ function producePRR() {
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
   const pending = new Map(); // vatID -> { resolve, reject } for promise
-  const running = new Map(); // vatID -> { resolve, reject } for doneP
+  const running = new Map(); // vatID -> { resolve, reject } for doneE
 
   function finishVatCreation(vatAdminNode, vatID) {
     const [promise, pendingRR] = producePRR();
     pending.set(vatID, pendingRR);
 
-    const [doneP, doneRR] = producePRR();
+    const [doneE, doneRR] = producePRR();
     running.set(vatID, doneRR);
 
     const adminNode = harden({
@@ -35,7 +35,7 @@ export function buildRootObject(vatPowers) {
         return D(vatAdminNode).adminStats(vatID);
       },
       done() {
-        return doneP;
+        return doneE;
       },
     });
     return promise.then(root => {

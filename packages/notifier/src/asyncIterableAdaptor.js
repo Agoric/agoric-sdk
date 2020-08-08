@@ -7,8 +7,8 @@ import { E } from '@agoric/eventual-send';
 import './types';
 
 /**
- * Adaptor from a notifierP to an async iterable.
- * The notifierP can be any object that has an eventually invokable
+ * Adaptor from a notifierE to an async iterable.
+ * The notifierE can be any object that has an eventually invokable
  * `getUpdateSince` method that behaves according to the notifier
  * spec. This can be a notifier, a promise for a local or remote
  * notfier, or a presence of a remote notifier.
@@ -32,24 +32,24 @@ import './types';
  * https://github.com/Agoric/documentation/blob/master/main/distributed-programming.md#notifiers
  *
  * @template T
- * @param {ERef<BaseNotifier<T>>} notifierP
+ * @param {ERef<BaseNotifier<T>>} notifierE
  * @returns {AsyncIterable<T>}
  */
-export const makeAsyncIterableFromNotifier = notifierP => {
+export const makeAsyncIterableFromNotifier = notifierE => {
   return harden({
     [Symbol.asyncIterator]: () => {
       /** @type {UpdateCount} */
       let localUpdateCount;
       /** @type {Promise<{value: T, done: boolean}> | undefined} */
-      let myIterationResultP;
+      let myIterationResultE;
       return harden({
         next: () => {
-          if (!myIterationResultP) {
+          if (!myIterationResultE) {
             // In this adaptor, once `next()` is called and returns an
-            // unresolved promise, `myIterationResultP`, and until
-            // `myIterationResultP` is fulfilled with an
+            // unresolved promise, `myIterationResultE`, and until
+            // `myIterationResultE` is fulfilled with an
             // iteration result, further `next()` calls will return the same
-            // `myIterationResultP` promise again without asking the notifier
+            // `myIterationResultE` promise again without asking the notifier
             // for more updates. If there's already an unanswered ask in the
             // air, all further asks should just reuse the result of that one.
             //
@@ -63,7 +63,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
             // See
             // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
             // for an explicit use that sends `next()` without waiting.
-            myIterationResultP = E(notifierP)
+            myIterationResultE = E(notifierE)
               .getUpdateSince(localUpdateCount)
               .then(({ value, updateCount }) => {
                 localUpdateCount = updateCount;
@@ -75,12 +75,12 @@ export const makeAsyncIterableFromNotifier = notifierP => {
                   //
                   // But only if more answers are expected. Once the notifier
                   // is `done`, that was the last answer so reuse it forever.
-                  myIterationResultP = undefined;
+                  myIterationResultE = undefined;
                 }
                 return harden({ value, done });
               });
           }
-          return myIterationResultP;
+          return myIterationResultE;
         },
       });
     },
@@ -102,7 +102,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
  */
 // See https://github.com/Agoric/agoric-sdk/issues/1345 for why
 // `updateFromIterable` currently needs a local `asyncIterable` rather than
-// a possibly remote `asyncIterableP`.
+// a possibly remote `asyncIterableE`.
 export const updateFromIterable = (updater, asyncIterable) => {
   const iterator = asyncIterable[Symbol.asyncIterator]();
   return new Promise(ack => {
@@ -128,15 +128,15 @@ export const updateFromIterable = (updater, asyncIterable) => {
 };
 
 /**
- * As updates come in from the possibly remote `notifierP`, update
+ * As updates come in from the possibly remote `notifierE`, update
  * the local `updater`. Since the updates come from a notifier, they
  * are lossy, i.e., once a more recent state can be reported, less recent
  * states are assumed irrelevant and dropped.
  *
  * @template T
  * @param {Partial<Updater<T>>} updater
- * @param {ERef<Notifier<T>>} notifierP
+ * @param {ERef<Notifier<T>>} notifierE
  * @returns {Promise<undefined>}
  */
-export const updateFromNotifier = (updater, notifierP) =>
-  updateFromIterable(updater, makeAsyncIterableFromNotifier(notifierP));
+export const updateFromNotifier = (updater, notifierE) =>
+  updateFromIterable(updater, makeAsyncIterableFromNotifier(notifierE));

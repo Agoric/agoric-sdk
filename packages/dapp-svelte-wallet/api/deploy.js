@@ -59,7 +59,7 @@ export default async function deployWallet(
 
   // Claim the payments.
   const issuerToPetname = new Map();
-  const issuerToPursePetnameP = new Map();
+  const issuerToPursePetnameE = new Map();
   const wallet = await E(walletVat).getWallet();
   await Promise.all(
     paymentInfo.map(async ({ issuerPetname, issuer }) => {
@@ -77,20 +77,20 @@ export default async function deployWallet(
     paymentInfo.map(async ({ pursePetname, issuer, payment, purse }) => {
       const issuerPetname = issuerToPetname.get(issuer);
 
-      let paymentP;
+      let paymentE;
 
       if (!payment && purse) {
         // Withdraw the payment from the purse.
-        paymentP = E(purse)
+        paymentE = E(purse)
           .getCurrentAmount()
           .then(amount => E(purse).withdraw(amount));
       } else {
-        paymentP = E(issuer)
+        paymentE = E(issuer)
           .isLive(payment)
           .then(isLive => isLive && payment);
       }
 
-      payment = await paymentP;
+      payment = await paymentE;
       if (!payment) {
         return;
       }
@@ -103,8 +103,8 @@ export default async function deployWallet(
       if (isEmpty) {
         return;
       }
-      if (!issuerToPursePetnameP.has(issuer)) {
-        issuerToPursePetnameP.set(
+      if (!issuerToPursePetnameE.has(issuer)) {
+        issuerToPursePetnameE.set(
           issuer,
           E(wallet)
             .makeEmptyPurse(issuerPetname, pursePetname)
@@ -114,7 +114,7 @@ export default async function deployWallet(
             ),
         );
       }
-      pursePetname = await issuerToPursePetnameP.get(issuer);
+      pursePetname = await issuerToPursePetnameE.get(issuer);
 
       // Deposit payment.
       await E(wallet).deposit(pursePetname, payment);

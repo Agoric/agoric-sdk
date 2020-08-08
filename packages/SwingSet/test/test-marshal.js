@@ -125,9 +125,9 @@ test('serialize promise', async t => {
   resolve(5);
   t.deepEqual(log, []);
 
-  const { promise: pauseP, resolve: pauseRes } = makePromiseKit();
+  const { promise: pauseE, resolve: pauseRes } = makePromiseKit();
   setImmediate(() => pauseRes());
-  await pauseP;
+  await pauseE;
   t.deepEqual(log, [{ result: 'p+5', data: { body: '5', slots: [] } }]);
 
   t.end();

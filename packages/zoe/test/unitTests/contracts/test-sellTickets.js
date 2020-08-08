@@ -56,8 +56,8 @@ test(`mint and sell tickets for multiple shows`, async t => {
     `escrowTicketsOutcome is default acceptance message`,
   );
 
-  const ticketIssuerP = E(publicAPI).getTokenIssuer();
-  const ticketBrand = await E(ticketIssuerP).getBrand();
+  const ticketIssuerE = E(publicAPI).getTokenIssuer();
+  const ticketBrand = await E(ticketIssuerE).getBrand();
   const { publicAPI: ticketSalesPublicAPI } = await E(zoe).getInstanceRecord(
     sellItemsInstanceHandle,
   );
@@ -203,7 +203,7 @@ test(`mint and sell opera tickets`, async t => {
       ticketIssuer,
       ticketSalesInstanceHandle,
       ticketSalesPublicAPI,
-      payoutP: payout,
+      payoutE: payout,
       completeObj,
     });
   };
@@ -265,12 +265,12 @@ test(`mint and sell opera tickets`, async t => {
 
     const alicePaymentKeywordRecord = harden({ Money: alicePaymentForTicket });
 
-    const { payout: payoutP } = await E(zoe).offer(
+    const { payout: payoutE } = await E(zoe).offer(
       aliceInvite,
       aliceProposal,
       alicePaymentKeywordRecord,
     );
-    const alicePayout = await payoutP;
+    const alicePayout = await payoutE;
     const aliceBoughtTicketAmount = await E(ticketIssuer).getAmountOf(
       alicePayout.Items,
     );
@@ -328,7 +328,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const jokerPaymentForTicket = jokerPurse.withdraw(pricePerItem);
 
-    const { outcome, payout: payoutP } = await zoe.offer(
+    const { outcome, payout: payoutE } = await zoe.offer(
       jokerInvite,
       jokerProposal,
       harden({
@@ -342,7 +342,7 @@ test(`mint and sell opera tickets`, async t => {
       'ticket 1 is no longer available',
     );
 
-    const payout = await payoutP;
+    const payout = await payoutE;
     const jokerTicketPayoutAmount = await ticketIssuer.getAmountOf(
       payout.Items,
     );
@@ -395,7 +395,7 @@ test(`mint and sell opera tickets`, async t => {
       insufficientAmount,
     );
 
-    const { outcome, payout: payoutP } = await zoe.offer(
+    const { outcome, payout: payoutE } = await zoe.offer(
       jokerInvite,
       jokerProposal,
       harden({
@@ -408,7 +408,7 @@ test(`mint and sell opera tickets`, async t => {
       /More money.*is required to buy these items/,
       'outcome from Joker should throw when trying to buy a ticket for 1 moola',
     );
-    const payout = await payoutP;
+    const payout = await payoutE;
     const jokerTicketPayoutAmount = await ticketIssuer.getAmountOf(
       payout.Items,
     );
@@ -480,12 +480,12 @@ test(`mint and sell opera tickets`, async t => {
       Money: bobPaymentForTicket,
     });
 
-    const { payout: payoutP } = await E(zoe).offer(
+    const { payout: payoutE } = await E(zoe).offer(
       bobInvite,
       bobProposal,
       paymentKeywordRecord,
     );
-    const payout = await payoutP;
+    const payout = await payoutE;
     const bobTicketAmount = await E(ticketIssuer).getAmountOf(payout.Items);
     t.equal(
       bobTicketAmount.value.length,
@@ -506,7 +506,7 @@ test(`mint and sell opera tickets`, async t => {
   const ticketSellerClosesContract = async ({
     ticketIssuer,
     ticketSalesPublicAPI,
-    payoutP,
+    payoutE,
     completeObj,
   }) => {
     const availableTickets = await E(ticketSalesPublicAPI).getAvailableItems();
@@ -520,7 +520,7 @@ test(`mint and sell opera tickets`, async t => {
 
     await E(completeObj).complete();
 
-    const payout = await payoutP;
+    const payout = await payoutE;
     const moneyPayment = await payout.Money;
     await E(operaPurse).deposit(moneyPayment);
     const currentPurseBalance = await E(operaPurse).getCurrentAmount();
@@ -536,7 +536,7 @@ test(`mint and sell opera tickets`, async t => {
     ticketIssuer,
     ticketSalesInstanceHandle,
     ticketSalesPublicAPI,
-    payoutP,
+    payoutE,
     completeObj,
   } = await mintTickets();
   await aliceBuysTicket1(
@@ -558,7 +558,7 @@ test(`mint and sell opera tickets`, async t => {
   await ticketSellerClosesContract({
     ticketIssuer,
     ticketSalesPublicAPI,
-    payoutP,
+    payoutE,
     completeObj,
   });
   t.end();

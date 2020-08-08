@@ -67,13 +67,13 @@ test('autoSwap with valid offers', async t => {
     };
 
     const {
-      payout: aliceAddLiquidityPayoutP,
-      outcome: liquidityOkP,
+      payout: aliceAddLiquidityPayoutE,
+      outcome: liquidityOkE,
     } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-    t.equals(await liquidityOkP, 'Added liquidity.', `added liquidity message`);
+    t.equals(await liquidityOkE, 'Added liquidity.', `added liquidity message`);
 
-    const liquidityPayments = await aliceAddLiquidityPayoutP;
+    const liquidityPayments = await aliceAddLiquidityPayoutE;
     const liquidityPayout = await liquidityPayments.Liquidity;
 
     t.deepEquals(
@@ -118,16 +118,16 @@ test('autoSwap with valid offers', async t => {
     });
     const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
-    const { payout: bobPayoutP, outcome: offerOkP } = await zoe.offer(
+    const { payout: bobPayoutE, outcome: offerOkE } = await zoe.offer(
       bobExclInvite,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );
 
     // Bob swaps
-    t.equal(await offerOkP, 'Swap successfully completed.', `swap message 1`);
+    t.equal(await offerOkE, 'Swap successfully completed.', `swap message 1`);
 
-    const bobPayout = await bobPayoutP;
+    const bobPayout = await bobPayoutE;
 
     const bobMoolaPayout1 = await bobPayout.In;
     const bobSimoleanPayout1 = await bobPayout.Out;
@@ -168,8 +168,8 @@ test('autoSwap with valid offers', async t => {
     const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
 
     const {
-      payout: bobSimsForMoolaPayoutP,
-      outcome: simsForMoolaOkP,
+      payout: bobSimsForMoolaPayoutE,
+      outcome: simsForMoolaOkE,
     } = await zoe.offer(
       bobSecondInvite,
       bobSimsForMoolaProposal,
@@ -177,12 +177,12 @@ test('autoSwap with valid offers', async t => {
     );
 
     t.equal(
-      await simsForMoolaOkP,
+      await simsForMoolaOkE,
       'Swap successfully completed.',
       `swap message 2`,
     );
 
-    const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutP;
+    const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutE;
     const bobMoolaPayout2 = await bobSimsForMoolaPayout.Out;
     const bobSimoleanPayout2 = await bobSimsForMoolaPayout.In;
 
@@ -206,17 +206,17 @@ test('autoSwap with valid offers', async t => {
     });
 
     const {
-      payout: aliceRemoveLiquidityPayoutP,
-      outcome: removeLiquidityResultP,
+      payout: aliceRemoveLiquidityPayoutE,
+      outcome: removeLiquidityResultE,
     } = await zoe.offer(
       aliceSecondInvite,
       aliceRemoveLiquidityProposal,
       harden({ Liquidity: liquidityPayout }),
     );
 
-    t.equals(await removeLiquidityResultP, 'Liquidity successfully removed.');
+    t.equals(await removeLiquidityResultE, 'Liquidity successfully removed.');
 
-    const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutP;
+    const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutE;
     const aliceMoolaPayout = await aliceRemoveLiquidityPayout.TokenA;
     const aliceSimoleanPayout = await aliceRemoveLiquidityPayout.TokenB;
     const aliceLiquidityPayout = await aliceRemoveLiquidityPayout.Liquidity;
@@ -294,13 +294,13 @@ test('autoSwap - test fee', async t => {
     });
 
     const {
-      payout: aliceAddLiquidityPayoutP,
-      outcome: liquidityOkP,
+      payout: aliceAddLiquidityPayoutE,
+      outcome: liquidityOkE,
     } = await zoe.offer(aliceAddLiquidityInvite, aliceProposal, alicePayments);
 
-    t.equals(await liquidityOkP, 'Added liquidity.');
+    t.equals(await liquidityOkE, 'Added liquidity.');
 
-    const liquidityPayments = await aliceAddLiquidityPayoutP;
+    const liquidityPayments = await aliceAddLiquidityPayoutE;
     const liquidityPayout = await liquidityPayments.Liquidity;
 
     t.deepEquals(
@@ -340,15 +340,15 @@ test('autoSwap - test fee', async t => {
     const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
     // Bob swaps
-    const { payout: bobPayoutP, outcome: offerOkP } = await zoe.offer(
+    const { payout: bobPayoutE, outcome: offerOkE } = await zoe.offer(
       bobExclInvite,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );
 
-    t.equal(await offerOkP, 'Swap successfully completed.');
+    t.equal(await offerOkE, 'Swap successfully completed.');
 
-    const bobPayout = await bobPayoutP;
+    const bobPayout = await bobPayoutE;
     const bobMoolaPayout = await bobPayout.In;
     const bobSimoleanPayout = await bobPayout.Out;
 

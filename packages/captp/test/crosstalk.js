@@ -26,8 +26,8 @@ test('prevent crosstalk', async t => {
         leftDispatch(obj);
       },
       harden({
-        isSide(objP, side) {
-          return E(objP)
+        isSide(objE, side) {
+          return E(objE)
             .side()
             .then(s => t.equal(s, side, `obj.side() is ${side}`));
         },

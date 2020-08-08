@@ -43,7 +43,7 @@ const makeVats = (vats, zoe, installations, startingValues) => {
   const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 
   // Setup Alice
-  const aliceP = E(vats.alice).build(
+  const aliceE = E(vats.alice).build(
     zoe,
     issuers,
     makePayments(aliceValues),
@@ -52,7 +52,7 @@ const makeVats = (vats, zoe, installations, startingValues) => {
   );
 
   // Setup Bob
-  const bobP = E(vats.bob).build(
+  const bobE = E(vats.bob).build(
     zoe,
     issuers,
     makePayments(bobValues),
@@ -61,30 +61,30 @@ const makeVats = (vats, zoe, installations, startingValues) => {
   );
 
   const result = {
-    aliceP,
-    bobP,
+    aliceE,
+    bobE,
   };
 
   if (carolValues) {
-    const carolP = E(vats.carol).build(
+    const carolE = E(vats.carol).build(
       zoe,
       issuers,
       makePayments(carolValues),
       installations,
       timer,
     );
-    result.carolP = carolP;
+    result.carolE = carolE;
   }
 
   if (daveValues) {
-    const daveP = E(vats.dave).build(
+    const daveE = E(vats.dave).build(
       zoe,
       issuers,
       makePayments(daveValues),
       installations,
       timer,
     );
-    result.daveP = daveP;
+    result.daveE = daveE;
   }
 
   log(`=> alice, bob, carol and dave are set up`);
@@ -137,13 +137,13 @@ export function buildRootObject(_vatPowers, vatParameters) {
         `test: ${testName}, startingValues: ${JSON.stringify(startingValues)}`,
       );
 
-      const { aliceP, bobP, carolP, daveP } = makeVats(
+      const { aliceE, bobE, carolE, daveE } = makeVats(
         vats,
         zoe,
         installations,
         startingValues,
       );
-      await E(aliceP).startTest(testName, bobP, carolP, daveP);
+      await E(aliceE).startTest(testName, bobE, carolE, daveE);
     },
   };
   return harden(obj0);

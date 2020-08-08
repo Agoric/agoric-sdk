@@ -84,13 +84,13 @@ export function makeMeteredEvaluator({
   if (quiesceCallback) {
     const quiescingEval = (meter, srcOrThunk, endowments = {}) => {
       let whenQuiesced;
-      const whenQuiescedP = new Promise(res => (whenQuiesced = res));
+      const whenQuiescedE = new Promise(res => (whenQuiesced = res));
 
       // Defer the evaluation for another turn.
       Promise.resolve().then(_ =>
         syncEval(meter, srcOrThunk, endowments, whenQuiesced),
       );
-      return whenQuiescedP;
+      return whenQuiescedE;
     };
     return quiescingEval;
   }

@@ -5,13 +5,13 @@ import { E } from '@agoric/eventual-send';
 
 function makeBobMaker() {
   return harden({
-    make(sharingServiceP) {
+    make(sharingServiceE) {
       const bob = harden({
         findSomething(key) {
-          return E(sharingServiceP)
+          return E(sharingServiceE)
             .grabSharedMap(key)
             .then(sharedMap => {
-              return E(E(sharingServiceP).validate(sharedMap)).lookup(key);
+              return E(E(sharingServiceE).validate(sharedMap)).lookup(key);
             });
         },
       });

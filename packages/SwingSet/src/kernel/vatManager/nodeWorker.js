@@ -13,9 +13,9 @@ import { createSyscall } from './syscall';
 /*
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 function wait10ms() {
-  const { promise: queueEmptyP, resolve } = makePromiseKit();
+  const { promise: queueEmptyE, resolve } = makePromiseKit();
   setTimeout(() => resolve(), 10);
-  return queueEmptyP;
+  return queueEmptyE;
 }
 */
 
@@ -67,15 +67,15 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
     // start the worker and establish a connection
 
-    const { promise: workerP, resolve: gotWorker } = makePromiseKit();
+    const { promise: workerE, resolve: gotWorker } = makePromiseKit();
 
     function sendToWorker(msg) {
       assert(msg instanceof Array);
-      workerP.then(worker => worker.postMessage(msg));
+      workerE.then(worker => worker.postMessage(msg));
     }
 
     const {
-      promise: dispatchReadyP,
+      promise: dispatchReadyE,
       resolve: dispatchIsReady,
     } = makePromiseKit();
     let waiting;
@@ -140,7 +140,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       shutdown,
     });
 
-    return dispatchReadyP.then(() => manager);
+    return dispatchReadyE.then(() => manager);
   }
 
   return harden({ createFromBundle });

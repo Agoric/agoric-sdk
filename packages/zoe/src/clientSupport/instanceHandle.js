@@ -1,8 +1,8 @@
 import { E } from '@agoric/eventual-send';
 
-export const makeGetInstanceHandle = inviteIssuerP => inviteP =>
-  E(inviteIssuerP)
-    .getAmountOf(inviteP)
+export const makeGetInstanceHandle = inviteIssuerE => inviteE =>
+  E(inviteIssuerE)
+    .getAmountOf(inviteE)
     .then(amount => {
       return amount.value[0].instanceHandle;
     });

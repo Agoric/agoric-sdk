@@ -182,20 +182,20 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
       return purse;
     },
 
-    isLive: paymentP => {
-      return Promise.resolve(paymentP).then(payment => {
+    isLive: paymentE => {
+      return Promise.resolve(paymentE).then(payment => {
         return paymentLedger.has(payment);
       });
     },
-    getAmountOf: paymentP => {
-      return Promise.resolve(paymentP).then(payment => {
+    getAmountOf: paymentE => {
+      return Promise.resolve(paymentE).then(payment => {
         assertKnownPayment(payment);
         return paymentLedger.get(payment);
       });
     },
 
-    burn: (paymentP, optAmount = undefined) => {
-      return Promise.resolve(paymentP).then(payment => {
+    burn: (paymentE, optAmount = undefined) => {
+      return Promise.resolve(paymentE).then(payment => {
         assertKnownPayment(payment);
         const paymentBalance = paymentLedger.get(payment);
         assertAmountEqual(paymentBalance, optAmount);
@@ -204,8 +204,8 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
         return paymentBalance;
       });
     },
-    claim: (paymentP, optAmount = undefined) => {
-      return Promise.resolve(paymentP).then(srcPayment => {
+    claim: (paymentE, optAmount = undefined) => {
+      return Promise.resolve(paymentE).then(srcPayment => {
         assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
         assertAmountEqual(srcPaymentBalance, optAmount);
@@ -239,8 +239,8 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
       });
     },
     // payment to two payments, A and B
-    split: (paymentP, paymentAmountA) => {
-      return Promise.resolve(paymentP).then(srcPayment => {
+    split: (paymentE, paymentAmountA) => {
+      return Promise.resolve(paymentE).then(srcPayment => {
         paymentAmountA = amountMath.coerce(paymentAmountA);
         assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
@@ -258,8 +258,8 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
         return newPayments;
       });
     },
-    splitMany: (paymentP, amounts) => {
-      return Promise.resolve(paymentP).then(srcPayment => {
+    splitMany: (paymentE, amounts) => {
+      return Promise.resolve(paymentE).then(srcPayment => {
         assertKnownPayment(srcPayment);
         amounts = amounts.map(amountMath.coerce);
         // Commit point

@@ -18,7 +18,7 @@ const CONTRACT_FILES = [
   'sellItems',
   'mintAndSellNFT',
 ];
-const generateBundlesP = Promise.all(
+const generateBundlesE = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const bundle = await bundleSource(
       `${__dirname}/../../../src/contracts/${contract}`,
@@ -33,7 +33,7 @@ const generateBundlesP = Promise.all(
 
 async function main(argv) {
   const config = await loadBasedir(__dirname);
-  await generateBundlesP;
+  await generateBundlesE;
   const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();

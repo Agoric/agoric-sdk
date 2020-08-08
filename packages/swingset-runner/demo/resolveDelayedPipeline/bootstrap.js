@@ -11,14 +11,14 @@ export function buildRootObject(_vatPowers) {
   return harden({
     bootstrap(vats) {
       log('=> Alice: bootstrap() called');
-      const thingP = E(vats.bob).getThing();
+      const thingE = E(vats.bob).getThing();
       log('=> Alice: called bob.getThing()');
-      E(thingP)
+      E(thingE)
         .answer()
         .then(
           r => {
             log(`=> Alice: thing.answer #1 resolved to '${r}'`);
-            E(thingP)
+            E(thingE)
               .answer()
               .then(
                 r2 => log(`=> Alice: thing.answer #2 resolved to '${r2}'`),

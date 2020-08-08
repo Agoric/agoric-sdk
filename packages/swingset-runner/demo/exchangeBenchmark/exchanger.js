@@ -13,7 +13,7 @@ async function build(name, zoe, issuers, payments, installations) {
     issuers,
     payments,
   );
-  const [moolaPurseP, simoleanPurseP] = purses;
+  const [moolaPurseE, simoleanPurseE] = purses;
   const [moolaIssuer, simoleanIssuer] = issuers;
   const issuerKeywordRecord = harden({
     Price: simoleanIssuer,
@@ -23,25 +23,25 @@ async function build(name, zoe, issuers, payments, installations) {
   const { simpleExchange } = installations;
 
   async function preReport() {
-    await showPurseBalance(moolaPurseP, `${name} moola before`, log);
-    await showPurseBalance(simoleanPurseP, `${name} simoleans before`, log);
+    await showPurseBalance(moolaPurseE, `${name} moola before`, log);
+    await showPurseBalance(simoleanPurseE, `${name} simoleans before`, log);
   }
 
   async function postReport() {
-    await showPurseBalance(moolaPurseP, `${name} moola after`, log);
-    await showPurseBalance(simoleanPurseP, `${name} simoleans after`, log);
+    await showPurseBalance(moolaPurseE, `${name} moola after`, log);
+    await showPurseBalance(simoleanPurseE, `${name} simoleans after`, log);
   }
 
-  async function receivePayout(payoutP) {
-    const payout = await payoutP;
+  async function receivePayout(payoutE) {
+    const payout = await payoutE;
     const moolaPayout = await payout.Asset;
     const simoleanPayout = await payout.Price;
 
-    await E(moolaPurseP).deposit(moolaPayout);
-    await E(simoleanPurseP).deposit(simoleanPayout);
+    await E(moolaPurseE).deposit(moolaPayout);
+    await E(simoleanPurseE).deposit(simoleanPayout);
   }
 
-  async function initiateSimpleExchange(otherP) {
+  async function initiateSimpleExchange(otherE) {
     await preReport();
 
     const {
@@ -55,25 +55,25 @@ async function build(name, zoe, issuers, payments, installations) {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = {
-      Asset: await E(moolaPurseP).withdraw(moola(1)),
+      Asset: await E(moolaPurseE).withdraw(moola(1)),
     };
-    const { payout: payoutP } = await E(zoe).offer(
+    const { payout: payoutE } = await E(zoe).offer(
       addOrderInvite,
       mySellOrderProposal,
       paymentKeywordRecord,
     );
 
-    const inviteP = E(publicAPI).makeInvite();
-    await E(otherP).respondToSimpleExchange(inviteP);
+    const inviteE = E(publicAPI).makeInvite();
+    await E(otherE).respondToSimpleExchange(inviteE);
 
-    await receivePayout(payoutP);
+    await receivePayout(payoutE);
     await postReport();
   }
 
-  async function respondToSimpleExchange(inviteP) {
+  async function respondToSimpleExchange(inviteE) {
     await preReport();
 
-    const invite = await inviteP;
+    const invite = await inviteE;
     const exclInvite = await E(inviteIssuer).claim(invite);
 
     const myBuyOrderProposal = harden({
@@ -82,16 +82,16 @@ async function build(name, zoe, issuers, payments, installations) {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = {
-      Price: await E(simoleanPurseP).withdraw(simoleans(1)),
+      Price: await E(simoleanPurseE).withdraw(simoleans(1)),
     };
 
-    const { payout: payoutP } = await E(zoe).offer(
+    const { payout: payoutE } = await E(zoe).offer(
       exclInvite,
       myBuyOrderProposal,
       paymentKeywordRecord,
     );
 
-    await receivePayout(payoutP);
+    await receivePayout(payoutE);
     await postReport();
   }
 

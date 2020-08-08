@@ -120,7 +120,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
       // source code itself. The check... methods must be evaluated on install,
       // since they become properties of the installation.
 
-      async function spawn(termsP) {
+      async function spawn(termsE) {
         // we create new meteringEndowments here, so each spawn gets a
         // separate meter
 
@@ -151,7 +151,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
         });
         const startFn = ns.default;
 
-        return Promise.resolve(allComparable(termsP)).then(terms => {
+        return Promise.resolve(allComparable(termsE)).then(terms => {
           const inviteMaker = harden({
             // Used by the contract to make invites for credibly
             // participating in the contract. The returned invite
@@ -194,8 +194,8 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     // Verify that this is a genuine installation and show its source code
     // bundle. Thus, all genuine installations are transparent if one has
     // their contractHost.
-    getInstallationSourceBundle(installationP) {
-      return Promise.resolve(installationP).then(installation =>
+    getInstallationSourceBundle(installationE) {
+      return Promise.resolve(installationE).then(installation =>
         installationSourceBundles.get(installation),
       );
     },
@@ -203,8 +203,8 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     // If this is an invite payment made by an inviteMaker of this contract
     // host, redeem it for the associated seat. Else error. Redeeming
     // consumes the invite payment and also transfers the use rights.
-    redeem(allegedInvitePaymentP) {
-      return Promise.resolve(allegedInvitePaymentP).then(
+    redeem(allegedInvitePaymentE) {
+      return Promise.resolve(allegedInvitePaymentE).then(
         allegedInvitePayment => {
           return redeem(allegedInvitePayment);
         },

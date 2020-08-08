@@ -1,9 +1,9 @@
 import { E } from '@agoric/eventual-send';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
-export const showPurseBalance = async (purseP, name, log) => {
+export const showPurseBalance = async (purseE, name, log) => {
   try {
-    const amount = await E(purseP).getCurrentAmount();
+    const amount = await E(purseE).getCurrentAmount();
     log(name, ': balance ', amount);
   } catch (err) {
     console.error(err);

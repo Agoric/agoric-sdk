@@ -13,7 +13,7 @@ const CONTRACT_FILES = [
   'mintAndSellNFT',
 ];
 
-const generateBundlesP = Promise.all(
+const generateBundlesE = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const bundle = await bundleSource(
       `${__dirname}/../../../zoe/src/contracts/${contract}`,
@@ -26,4 +26,4 @@ const generateBundlesP = Promise.all(
   }),
 );
 
-generateBundlesP.then(() => console.log('contracts prepared'));
+generateBundlesE.then(() => console.log('contracts prepared'));

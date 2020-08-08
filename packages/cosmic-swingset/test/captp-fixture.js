@@ -52,14 +52,14 @@ export function makeFixture() {
         ws.on('message', data => {
           dispatch(JSON.parse(data));
         });
-        const bootP = getBootstrap();
+        const bootE = getBootstrap();
         // Wait until the chain bundle is loaded, then take a new copy
         // since the chain objects have been added to bootstrap.
         let lastUpdateCount;
         for (;;) {
           process.stdout.write('o');
           // eslint-disable-next-line no-await-in-loop
-          const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
+          const update = await E(E.G(bootE).loadingNotifier).getUpdateSince(
             lastUpdateCount,
           );
           if (
@@ -120,5 +120,5 @@ export function makeFixture() {
 
   process.on('exit', kill);
   process.on('SIGINT', kill);
-  return { homeP: connect(), kill };
+  return { homeE: connect(), kill };
 }

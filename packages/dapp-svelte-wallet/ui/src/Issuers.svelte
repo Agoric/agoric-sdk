@@ -2,11 +2,11 @@
   import { E } from '@agoric/eventual-send';
   import Card from 'smelte/src/components/Card';
   import ListCard from '../lib/ListCard.svelte';
-  
+
   import Issuer from './Issuer.svelte';
   import Import from './Import.svelte';
 
-  import { issuers, walletP } from './store';
+  import { issuers, walletE } from './store';
 </script>
 
 <ListCard items={$issuers}>
@@ -30,6 +30,6 @@
 
   <div slot="actions">
     <Import name="Issuer"
-      adder={(petname, obj) => E(walletP).addIssuer(petname, obj, true)}>Import</Import>
+      adder={(petname, obj) => E(walletE).addIssuer(petname, obj, true)}>Import</Import>
   </div>
 </ListCard>

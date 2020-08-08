@@ -80,7 +80,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
   /**
    * @type {Store<string, Promise<Connection>>}
    */
-  const channelKeyToConnP = makeStore('CHANNEL:PORT');
+  const channelKeyToConnE = makeStore('CHANNEL:PORT');
 
   /**
    * @typedef {Object} Counterparty
@@ -104,12 +104,12 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
   /**
    * @type {Store<string, PromiseRecord<[Endpoint, ConnectionHandler], any>>}
    */
-  const channelKeyToOnConnectP = makeStore('CHANNEL:PORT');
+  const channelKeyToOnConnectE = makeStore('CHANNEL:PORT');
 
   /**
    * @type {Store<string, Promise<InboundAttempt>>}
    */
-  const channelKeyToAttemptP = makeStore('CHANNEL:PORT');
+  const channelKeyToAttemptE = makeStore('CHANNEL:PORT');
 
   /**
    * @type {Set<string>}
@@ -220,8 +220,8 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           localAddr,
           remoteAddr,
         );
-        const connP = E.when(conn);
-        channelKeyToConnP.init(channelKey, connP);
+        const connE = E.when(conn);
+        channelKeyToConnE.init(channelKey, connE);
       },
       onReceive,
       async onClose(_conn, _reason, _handler) {
@@ -350,15 +350,15 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
 
       const channelID = generateChannelID();
 
-      const onConnectP = makePromiseKit();
+      const onConnectE = makePromiseKit();
 
       // FIXME: The destination should be able to choose its own channelID.
       // (That would require sending it as part of channelOpenAck.)
       const rChannelID = generateChannelID();
 
       const channelKey = `${channelID}:${portID}`;
-      pendingConns.add(onConnectP);
-      channelKeyToOnConnectP.init(channelKey, onConnectP);
+      pendingConns.add(onConnectE);
+      channelKeyToOnConnectE.init(channelKey, onConnectE);
       channelKeyToInfo.init(channelKey, {
         channelID,
         portID,
@@ -385,7 +385,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
 
       if (!FIXME_ALLOW_NAIVE_RELAYS || !chandler) {
         // Just wait until the connection handler resolves.
-        return onConnectP.promise;
+        return onConnectE.promise;
       }
 
       // We explain to the user how to configure a naive relayer.
@@ -417,7 +417,7 @@ EOF
 `,
         )
         .catch(rethrowUnlessMissing);
-      return onConnectP.promise;
+      return onConnectE.promise;
     },
     async onListen(_port, localAddr, _listenHandler) {
       console.debug('IBC onListen', localAddr);
@@ -431,8 +431,8 @@ EOF
       portToPendingConns.delete(port);
       portToCircuits.delete(port);
       const revoked = Error(`Port ${localAddr} revoked`);
-      for (const onConnectP of pendingConns.values()) {
-        onConnectP.reject(revoked);
+      for (const onConnectE of pendingConns.values()) {
+        onConnectE.reject(revoked);
       }
     },
   });
@@ -455,7 +455,7 @@ EOF
 
           const channelKey = `${channelID}:${portID}`;
 
-          if (!channelKeyToOnConnectP.has(channelKey)) {
+          if (!channelKeyToOnConnectE.has(channelKey)) {
             // We're not waiting for an init, so throw.
             throw Error(`${channelKey}: did not expect channelOpenInit`);
           }
@@ -500,7 +500,7 @@ EOF
           } = obj;
 
           const channelKey = `${channelID}:${portID}`;
-          if (channelKeyToAttemptP.has(channelKey)) {
+          if (channelKeyToAttemptE.has(channelKey)) {
             // We have a pending attempt, so continue the handshake.
             break;
           }
@@ -511,10 +511,10 @@ EOF
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
 
           // See if we allow an inbound attempt for this address pair (without rejecting).
-          const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);
+          const attemptE = E(protocolImpl).inbound(localAddr, remoteAddr);
 
           // Tell what version string we negotiated.
-          const attemptedLocal = await E(attemptP).getLocalAddress();
+          const attemptedLocal = await E(attemptE).getLocalAddress();
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
             new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
@@ -526,7 +526,7 @@ EOF
           }
           const negotiatedVersion = match[3];
 
-          channelKeyToAttemptP.init(channelKey, attemptP);
+          channelKeyToAttemptE.init(channelKey, attemptE);
           channelKeyToInfo.init(channelKey, obj);
 
           try {
@@ -554,9 +554,9 @@ EOF
             }
           } catch (e) {
             // Clean up after our failed attempt.
-            channelKeyToAttemptP.delete(channelKey);
+            channelKeyToAttemptE.delete(channelKey);
             channelKeyToInfo.delete(channelKey);
-            E(attemptP).close();
+            E(attemptE).close();
             throw e;
           }
           break;
@@ -566,11 +566,11 @@ EOF
           // Complete the pending outbound connection.
           const { portID, channelID, counterpartyVersion: rVersion } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (!channelKeyToOnConnectP.has(channelKey)) {
+          if (!channelKeyToOnConnectE.has(channelKey)) {
             throw Error(`${channelKey}: did not expect channelOpenAck`);
           }
-          const onConnectP = channelKeyToOnConnectP.get(channelKey);
-          channelKeyToOnConnectP.delete(channelKey);
+          const onConnectE = channelKeyToOnConnectE.get(channelKey);
+          channelKeyToOnConnectE.delete(channelKey);
 
           const {
             order,
@@ -589,18 +589,18 @@ EOF
             rPortID,
             order,
           );
-          onConnectP.resolve([remoteAddr, rchandler]);
+          onConnectE.resolve([remoteAddr, rchandler]);
           break;
         }
 
         case 'channelOpenConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (!channelKeyToAttemptP.has(channelKey)) {
+          if (!channelKeyToAttemptE.has(channelKey)) {
             throw Error(`${channelKey}: did not expect channelOpenConfirm`);
           }
-          const attemptP = channelKeyToAttemptP.get(channelKey);
-          channelKeyToAttemptP.delete(channelKey);
+          const attemptE = channelKeyToAttemptE.get(channelKey);
+          channelKeyToAttemptE.delete(channelKey);
 
           // We have the information from our inbound connection, so complete it.
           const {
@@ -617,7 +617,7 @@ EOF
             rPortID,
             order,
           );
-          E(attemptP).accept(rchandler);
+          E(attemptE).accept(rchandler);
           break;
         }
 
@@ -629,10 +629,10 @@ EOF
             destination_channel: channelID,
           } = packet;
           const channelKey = `${channelID}:${portID}`;
-          const connP = channelKeyToConnP.get(channelKey);
+          const connE = channelKeyToConnE.get(channelKey);
           const data = base64ToBytes(data64);
 
-          E(connP)
+          E(connE)
             .send(data)
             .then(ack => {
               const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
@@ -677,10 +677,10 @@ EOF
         case 'channelCloseConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (channelKeyToConnP.has(channelKey)) {
-            const connP = channelKeyToConnP.get(channelKey);
-            channelKeyToConnP.delete(channelKey);
-            E(connP).close();
+          if (channelKeyToConnE.has(channelKey)) {
+            const connE = channelKeyToConnE.get(channelKey);
+            channelKeyToConnE.delete(channelKey);
+            E(connE).close();
           }
           break;
         }

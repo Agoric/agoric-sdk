@@ -34,7 +34,7 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
   const malloryProposal = harden({
     want: { Price: moola(37) },
   });
-  const { outcome: vicInviteP } = await zoe.offer(
+  const { outcome: vicInviteE } = await zoe.offer(
     malloryInvite,
     malloryProposal,
     harden({}),
@@ -47,14 +47,14 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
     exit: { onDemand: null },
   });
   const vicPayments = { Price: vicMoolaPayment };
-  const { outcome: vicOutcomeP } = await zoe.offer(
-    vicInviteP,
+  const { outcome: vicOutcomeE } = await zoe.offer(
+    vicInviteE,
     vicProposal,
     vicPayments,
   );
 
   t.rejects(
-    vicOutcomeP,
+    vicOutcomeE,
     /The reallocation was not offer safe/,
     `vicOffer is rejected`,
   );

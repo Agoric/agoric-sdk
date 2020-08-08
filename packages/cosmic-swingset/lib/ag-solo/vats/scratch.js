@@ -2,12 +2,12 @@
 
 export default function makeScratchPad() {
   const map = new Map();
-  async function get(idP) {
-    const id = await idP;
+  async function get(idE) {
+    const id = await idE;
     return map.get(id);
   }
-  async function set(idP, objP) {
-    const [id, obj] = await Promise.all([idP, objP]);
+  async function set(idE, objE) {
+    const [id, obj] = await Promise.all([idE, objE]);
     map.set(id, obj);
     return id;
   }

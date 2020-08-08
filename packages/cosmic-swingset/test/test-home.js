@@ -9,9 +9,9 @@ let home;
 let teardown;
 test('setup', async t => {
   try {
-    const { homeP, kill } = makeFixture();
+    const { homeE, kill } = makeFixture();
     teardown = kill;
-    home = await homeP;
+    home = await homeE;
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {

@@ -43,25 +43,25 @@ export async function makeWallet({
     const issuerToBrand = makeWeakStore('issuer');
     const makeCustomProperties = table =>
       harden({
-        addIssuer: issuerP => {
-          return Promise.resolve(issuerP).then(issuer => {
+        addIssuer: issuerE => {
+          return Promise.resolve(issuerE).then(issuer => {
             if (issuersInProgress.has(issuer)) {
               // a promise which resolves to the issuer record
               return issuersInProgress.get(issuer);
             }
 
             // remote calls which immediately return a promise
-            const mathHelpersNameP = E(issuer).getMathHelpersName();
-            const brandP = E(issuer).getBrand();
-            const issuerBoardIdP = E(board)
+            const mathHelpersNameE = E(issuer).getMathHelpersName();
+            const brandE = E(issuer).getBrand();
+            const issuerBoardIdE = E(board)
               .has(issuer)
               .then(hasIt => hasIt && E(board).getId(issuer));
 
             // a promise for a synchronously accessible record
-            const synchronousRecordP = Promise.all([
-              brandP,
-              mathHelpersNameP,
-              issuerBoardIdP,
+            const synchronousRecordE = Promise.all([
+              brandE,
+              mathHelpersNameE,
+              issuerBoardIdE,
             ]).then(([brand, mathHelpersName, issuerBoardId]) => {
               if (!issuerToBrand.has(issuer)) {
                 const amountMath = makeAmountMath(brand, mathHelpersName);
@@ -77,8 +77,8 @@ export async function makeWallet({
               issuersInProgress.delete(issuer);
               return table.get(brand);
             });
-            issuersInProgress.init(issuer, synchronousRecordP);
-            return synchronousRecordP;
+            issuersInProgress.init(issuer, synchronousRecordE);
+            return synchronousRecordE;
           });
         },
         getBrandForIssuer: issuerToBrand.get,
@@ -99,10 +99,10 @@ export async function makeWallet({
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore('offerId');
-  const idToNotifierP = makeStore('offerId');
+  const idToNotifierE = makeStore('offerId');
 
   // Compiled offers (all ready to execute).
-  const idToCompiledOfferP = new Map();
+  const idToCompiledOfferE = new Map();
   const idToComplete = new Map();
   const idToOfferHandle = new Map();
   const idToOutcome = new Map();
@@ -183,12 +183,12 @@ export async function makeWallet({
         purse,
         brand,
         actions: {
-          async send(receiverP, valueToSend) {
+          async send(receiverE, valueToSend) {
             const { amountMath } = brandTable.get(brand);
             const amount = amountMath.make(valueToSend);
             const payment = await E(purse).withdraw(amount);
             try {
-              await E(receiverP).receive(payment);
+              await E(receiverE).receive(payment);
             } catch (e) {
               // Recover the failed payment.
               await E(purse).deposit(payment);
@@ -335,9 +335,9 @@ export async function makeWallet({
       };
       idToOffer.set(id, completedOffer);
       updateInboxState(id, completedOffer);
-      idToNotifierP.delete(id);
+      idToNotifierE.delete(id);
     } else {
-      E(idToNotifierP.get(id))
+      E(idToNotifierE.get(id))
         .getUpdateSince(updateCount)
         .then(nextUpdate => updateOrResubscribe(id, offerHandle, nextUpdate));
     }
@@ -347,28 +347,28 @@ export async function makeWallet({
   async function subscribeToNotifier(id, offerHandle) {
     E(zoe)
       .getOfferNotifier(offerHandle)
-      .then(offerNotifierP => {
-        if (!idToNotifierP.has(id)) {
-          idToNotifierP.init(id, offerNotifierP);
+      .then(offerNotifierE => {
+        if (!idToNotifierE.has(id)) {
+          idToNotifierE.init(id, offerNotifierE);
         }
-        E(offerNotifierP)
+        E(offerNotifierE)
           .getUpdateSince()
           .then(update => updateOrResubscribe(id, offerHandle, update));
       });
   }
 
-  async function executeOffer(compiledOfferP) {
+  async function executeOffer(compiledOfferE) {
     // =====================
     // === AWAITING TURN ===
     // =====================
 
-    const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
+    const { inviteE, purseKeywordRecord, proposal } = await compiledOfferE;
 
     // =====================
     // === AWAITING TURN ===
     // =====================
 
-    const invite = await inviteP;
+    const invite = await inviteE;
 
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
     // Payments are made for the keywords in proposal.give.
@@ -401,10 +401,10 @@ export async function makeWallet({
     // =====================
 
     const {
-      payout: payoutObjP,
+      payout: payoutObjE,
       completeObj,
-      outcome: outcomeP,
-      offerHandle: offerHandleP,
+      outcome: outcomeE,
+      offerHandle: offerHandleE,
     } = await E(zoe).offer(
       invite,
       harden(proposal),
@@ -415,32 +415,32 @@ export async function makeWallet({
     // === AWAITING TURN ===
     // =====================
     // This settles when the payments are escrowed in Zoe
-    const offerHandle = await offerHandleP;
+    const offerHandle = await offerHandleE;
 
     // =====================
     // === AWAITING TURN ===
     // =====================
     // This settles when the offer hook completes.
-    const outcome = await outcomeP;
+    const outcome = await outcomeE;
 
     // We'll resolve when deposited.
-    const depositedP = payoutObjP.then(payoutObj => {
+    const depositedE = payoutObjE.then(payoutObj => {
       const payoutIndexToKeyword = [];
       return Promise.all(
-        Object.entries(payoutObj).map(([keyword, payoutP], i) => {
+        Object.entries(payoutObj).map(([keyword, payoutE], i) => {
           // keyword may be an index for zoeKind === 'indexed', but we can still treat it
           // as the keyword name for looking up purses and payouts (just happens to
           // be an integer).
           payoutIndexToKeyword[i] = keyword;
-          return payoutP;
+          return payoutE;
         }),
       ).then(payoutArray =>
         Promise.all(
-          payoutArray.map(async (payoutP, payoutIndex) => {
+          payoutArray.map(async (payoutE, payoutIndex) => {
             const keyword = payoutIndexToKeyword[payoutIndex];
             const purse = purseKeywordRecord[keyword];
-            if (purse && payoutP) {
-              const payout = await payoutP;
+            if (purse && payoutE) {
+              const payout = await payoutE;
               // eslint-disable-next-line no-use-before-define
               return addPayment(payout, purse);
             }
@@ -450,13 +450,13 @@ export async function makeWallet({
       );
     });
 
-    return { depositedP, completeObj, outcome, offerHandle };
+    return { depositedE, completeObj, outcome, offerHandle };
   }
 
   // === API
 
   const addIssuer = (petnameForBrand, issuer, makePurse = false) => {
-    const issuerSavedP = brandTable.addIssuer(issuer);
+    const issuerSavedE = brandTable.addIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -471,7 +471,7 @@ export async function makeWallet({
         _ => `issuer ${q(petnameForBrand)} successfully added to wallet`,
       );
     };
-    return issuerSavedP.then(addBrandPetname).then(updateAllIssuersState);
+    return issuerSavedE.then(addBrandPetname).then(updateAllIssuersState);
   };
 
   const publishIssuer = async brand => {
@@ -649,9 +649,9 @@ export async function makeWallet({
     const inviteAmount = inviteAmountMath.make(
       harden([inviteValueElems.find(matchInvite)]),
     );
-    const inviteP = E(zoeInvitePurse).withdraw(inviteAmount);
+    const inviteE = E(zoeInvitePurse).withdraw(inviteAmount);
 
-    return { proposal, inviteP, purseKeywordRecord };
+    return { proposal, inviteE, purseKeywordRecord };
   };
 
   const dappOrigins = makeStore('dappOrigin');
@@ -672,7 +672,7 @@ export async function makeWallet({
     } else {
       let resolve;
       let reject;
-      let approvalP;
+      let approvalE;
       dappRecord = {
         suggestedPetname,
         petname: suggestedPetname,
@@ -716,11 +716,11 @@ export async function makeWallet({
             reject(reason);
           }
           // Create a new, suspended-approval record.
-          ({ resolve, reject, promise: approvalP } = makePromiseKit());
+          ({ resolve, reject, promise: approvalE } = makePromiseKit());
           dappRecord = {
             ...dappRecord,
             enable: false,
-            approvalP,
+            approvalE,
           };
           updateDapp(dappRecord);
           return dappRecord.actions;
@@ -734,7 +734,7 @@ export async function makeWallet({
       dappRecord.actions.disable();
     }
 
-    await dappRecord.approvalP;
+    await dappRecord.approvalE;
     // AWAIT
     // Refetch the origin record.
     return dappOrigins.get(origin);
@@ -767,7 +767,7 @@ export async function makeWallet({
     updateInboxState(id, offer);
 
     // Compile the offer
-    idToCompiledOfferP.set(id, await compileOffer(offer));
+    idToCompiledOfferE.set(id, await compileOffer(offer));
 
     // Our inbox state may have an enriched offer.
     updateInboxState(id, idToOffer.get(id));
@@ -842,10 +842,10 @@ export async function makeWallet({
       };
       idToOffer.set(id, pendingOffer);
       updateInboxState(id, pendingOffer);
-      const compiledOffer = await idToCompiledOfferP.get(id);
+      const compiledOffer = await idToCompiledOfferE.get(id);
 
       const {
-        depositedP,
+        depositedE,
         completeObj,
         outcome,
         offerHandle,
@@ -871,10 +871,10 @@ export async function makeWallet({
       // is an object, but we will store it here for future use.
       idToOutcome.set(id, outcome);
 
-      ret = { outcome, depositedP };
+      ret = { outcome, depositedE };
 
       // Update status, drop the proposal
-      depositedP
+      depositedE
         .then(_ => {
           // We got something back, so no longer pending or rejected.
           if (!alreadyResolved) {
@@ -1052,11 +1052,11 @@ export async function makeWallet({
     }
     await updateAllPurseState();
 
-    const pendingP =
+    const pendingE =
       pendingEnableAutoDeposits.has(brand) &&
       pendingEnableAutoDeposits.get(brand);
-    if (pendingP) {
-      return pendingP;
+    if (pendingE) {
+      return pendingE;
     }
 
     const pr = makePromiseKit();
@@ -1243,15 +1243,15 @@ export async function makeWallet({
   // Make Zoe invite purse
   const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
   const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
-  const inviteIssuerP = E(zoe).getInviteIssuer();
-  const addZoeIssuer = issuerP =>
-    wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerP);
+  const inviteIssuerE = E(zoe).getInviteIssuer();
+  const addZoeIssuer = issuerE =>
+    wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerE);
   const makeInvitePurse = () =>
     wallet.makeEmptyPurse(ZOE_INVITE_BRAND_PETNAME, ZOE_INVITE_PURSE_PETNAME);
   const addInviteDepositFacet = () =>
     E(wallet).enableAutoDeposit(ZOE_INVITE_PURSE_PETNAME);
 
-  await addZoeIssuer(inviteIssuerP)
+  await addZoeIssuer(inviteIssuerE)
     .then(makeInvitePurse)
     .then(addInviteDepositFacet);
   zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);

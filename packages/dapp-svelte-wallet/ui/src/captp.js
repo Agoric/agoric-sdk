@@ -41,14 +41,14 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
 
   // This is the public state, a promise that never resolves,
   // but pipelines messages to the bootPK.promise.
-  function makeStableForwarder(fromBootP = x => x) {
+  function makeStableForwarder(fromBootE = x => x) {
     return new HandledPromise((_resolve, _reject, resolveWithPresence) => {
       resolveWithPresence({
         applyMethod(_p, name, args) {
-          return E(fromBootP(bootPK.promise))[name](...args);
+          return E(fromBootE(bootPK.promise))[name](...args);
         },
         get(_p, name) {
-          return E(fromBootP(bootPK.promise))[name];
+          return E(fromBootE(bootPK.promise))[name];
         },
       });
     });

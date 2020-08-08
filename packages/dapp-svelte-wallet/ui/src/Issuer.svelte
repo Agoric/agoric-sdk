@@ -2,7 +2,7 @@
   import Petname from "./Petname.svelte";
   import BoardId from "./BoardId.svelte";
   import MakePurse from "./MakePurse.svelte";
-  import { walletP } from "./store";
+  import { walletE } from "./store";
 
   import { E } from "@agoric/captp";
 
@@ -20,7 +20,7 @@
     <div>
       Board ID:
       <BoardId
-        onPublish={() => E(walletP).publishIssuer(item.brand)}
+        onPublish={() => E(walletE).publishIssuer(item.brand)}
         id={item.issuerBoardId} />
     </div>
 

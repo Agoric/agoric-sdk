@@ -421,8 +421,8 @@ test('three-party', async t => {
   carolForA = kernel.addImport(vatA, carol);
 
   // do an extra allocation to make sure we aren't confusing the indices
-  const extraP = 'p+99';
-  const ap = kernel.addExport(vatA, extraP);
+  const extraE = 'p+99';
+  const ap = kernel.addExport(vatA, extraE);
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
@@ -436,7 +436,7 @@ test('three-party', async t => {
     [bob, vatB, 'o+5'],
     [carol, vatA, carolForA],
     [carol, vatC, 'o+6'],
-    [ap, vatA, extraP],
+    [ap, vatA, extraE],
   ];
   checkKT(t, kernel, kt);
   t.deepEqual(log, []);

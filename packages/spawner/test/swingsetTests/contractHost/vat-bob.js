@@ -20,16 +20,16 @@ function makeBobMaker(host, log) {
 
   return harden({
     async make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      timerP,
-      moneyIssuerP,
-      stockIssuerP,
-      myMoneyPurseP,
-      myStockPurseP,
+      escrowExchangeInstallationE,
+      coveredCallInstallationE,
+      timerE,
+      moneyIssuerE,
+      stockIssuerE,
+      myMoneyPurseE,
+      myStockPurseE,
     ) {
-      const moneyMath = await getLocalAmountMath(moneyIssuerP);
-      const stockMath = await getLocalAmountMath(stockIssuerP);
+      const moneyMath = await getLocalAmountMath(moneyIssuerE);
+      const stockMath = await getLocalAmountMath(stockIssuerE);
 
       const moneyNeeded = moneyMath.make(10);
       const stockNeeded = stockMath.make(7);
@@ -41,7 +41,7 @@ function makeBobMaker(host, log) {
          * Bob, and therefore a request that Bob sell something. OO naming
          * is a bit confusing here.
          */
-        buy(desc, paymentP) {
+        buy(desc, paymentE) {
           let amount;
           let good;
           desc = `${desc}`;
@@ -56,8 +56,8 @@ function makeBobMaker(host, log) {
             }
           }
 
-          return paymentP.then(payment =>
-            E(myMoneyPurseP)
+          return paymentE.then(payment =>
+            E(myMoneyPurseE)
               .deposit(payment, amount)
               .then(_ => good),
           );
@@ -66,49 +66,49 @@ function makeBobMaker(host, log) {
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
           const terms = harden({ left: moneyNeeded, right: stockNeeded });
-          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const aliceInvitePaymentP = invitesP.then(invites => invites.left);
-          const bobInvitePaymentP = invitesP.then(invites => invites.right);
-          const doneP = Promise.all([
-            E(alice).acceptInvite(aliceInvitePaymentP),
-            E(bob).acceptInvite(bobInvitePaymentP),
+          const invitesE = E(escrowExchangeInstallationE).spawn(terms);
+          const aliceInvitePaymentE = invitesE.then(invites => invites.left);
+          const bobInvitePaymentE = invitesE.then(invites => invites.right);
+          const doneE = Promise.all([
+            E(alice).acceptInvite(aliceInvitePaymentE),
+            E(bob).acceptInvite(bobInvitePaymentE),
           ]);
-          doneP.then(
+          doneE.then(
             _res => log('++ bob.tradeWell done'),
             rej => log('++ bob.tradeWell reject: ', rej),
           );
-          return doneP;
+          return doneE;
         },
 
-        acceptInvite(inviteP) {
-          const seatP = E(host).redeem(inviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(stockMath.make(7));
-          E(seatP).offer(stockPaymentP);
-          return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
+        acceptInvite(inviteE) {
+          const seatE = E(host).redeem(inviteE);
+          const stockPaymentE = E(myStockPurseE).withdraw(stockMath.make(7));
+          E(seatE).offer(stockPaymentE);
+          return collect(seatE, myMoneyPurseE, myStockPurseE, 'bob escrow');
         },
 
         offerAliceOption(alice) {
           log('++ bob.offerAliceOption starting');
           const terms = harden({
-            escrowExchangeInstallation: escrowExchangeInstallationP,
+            escrowExchangeInstallation: escrowExchangeInstallationE,
             money: moneyNeeded,
             stock: stockNeeded,
-            timer: timerP,
+            timer: timerE,
             deadline: 'singularity',
           });
-          const bobInviteP = E(coveredCallInstallationP).spawn(terms);
-          const bobSeatP = E(host).redeem(bobInviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(stockMath.make(7));
-          const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
-          const doneP = Promise.all([
-            E(alice).acceptOption(aliceInviteP),
-            collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
+          const bobInviteE = E(coveredCallInstallationE).spawn(terms);
+          const bobSeatE = E(host).redeem(bobInviteE);
+          const stockPaymentE = E(myStockPurseE).withdraw(stockMath.make(7));
+          const aliceInviteE = E(bobSeatE).offer(stockPaymentE);
+          const doneE = Promise.all([
+            E(alice).acceptOption(aliceInviteE),
+            collect(bobSeatE, myMoneyPurseE, myStockPurseE, 'bob option'),
           ]);
-          doneP.then(
+          doneE.then(
             _res => log('++ bob.offerAliceOption done'),
             rej => log('++ bob.offerAliceOption reject: ', rej),
           );
-          return doneP;
+          return doneE;
         },
       });
       return bob;

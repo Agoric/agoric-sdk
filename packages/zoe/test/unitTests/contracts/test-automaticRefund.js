@@ -40,13 +40,13 @@ test('zoe - simplest automaticRefund', async t => {
     });
     const alicePayments = { Contribution: aliceMoolaPayment };
 
-    const { payout: payoutP } = await zoe.offer(
+    const { payout: payoutE } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
     );
 
-    const alicePayout = await payoutP;
+    const alicePayout = await payoutE;
     const aliceMoolaPayout = await alicePayout.Contribution;
 
     // Alice got back what she put in
@@ -89,13 +89,13 @@ test('zoe - automaticRefund same issuer', async t => {
     });
     const alicePayments = harden({ Contribution2: aliceMoolaPayment });
 
-    const { payout: payoutP } = await zoe.offer(
+    const { payout: payoutE } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
     );
 
-    const alicePayout = await payoutP;
+    const alicePayout = await payoutE;
     const aliceMoolaPayout = await alicePayout.Contribution2;
 
     // Alice got back what she put in
@@ -158,7 +158,7 @@ test('zoe with automaticRefund', async t => {
     // In the 'automaticRefund' trivial contract, you just get your
     // payments back when you make an offer. The outcome is simply
     // the string 'The offer was accepted'
-    const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
+    const { payout: alicePayoutE, outcome: aliceOutcomeE } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
@@ -199,14 +199,14 @@ test('zoe with automaticRefund', async t => {
 
     // Bob also gets two things back: a payout promise and an
     // outcome promise.
-    const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+    const { payout: bobPayoutE, outcome: bobOutcomeE } = await zoe.offer(
       exclusBobInvite,
       bobProposal,
       bobPayments,
     );
 
-    t.equals(await aliceOutcomeP, 'The offer was accepted');
-    t.equals(await bobOutcomeP, 'The offer was accepted');
+    t.equals(await aliceOutcomeE, 'The offer was accepted');
+    t.equals(await bobOutcomeE, 'The offer was accepted');
 
     // These promise resolve when the offer completes, but it may
     // still take longer for a remote issuer to actually make the
@@ -214,8 +214,8 @@ test('zoe with automaticRefund', async t => {
     // separately.
 
     // offer completes
-    const alicePayout = await alicePayoutP;
-    const bobPayout = await bobPayoutP;
+    const alicePayout = await alicePayoutE;
+    const bobPayout = await bobPayoutE;
     const aliceMoolaPayout = await alicePayout.Contribution1;
     const aliceSimoleanPayout = await alicePayout.Contribution2;
 
@@ -395,17 +395,17 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
     });
     const alicePayments = { ContributionA: aliceMoolaPayment };
 
-    const { completeObj, payout: payoutP, outcome: outcomeP } = await zoe.offer(
+    const { completeObj, payout: payoutE, outcome: outcomeE } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
     );
 
-    await outcomeP;
+    await outcomeE;
 
     t.throws(() => completeObj.complete(), /Error: Offer is not active/);
 
-    const payout = await payoutP;
+    const payout = await payoutE;
     const moolaPayout = await payout.ContributionA;
     const simoleanPayout = await payout.ContributionB;
 
@@ -461,13 +461,13 @@ test('zoe - automaticRefund non-fungible', async t => {
   });
   const alicePayments = { Contribution: aliceCcPayment };
 
-  const { payout: payoutP } = await zoe.offer(
+  const { payout: payoutE } = await zoe.offer(
     invite,
     aliceProposal,
     alicePayments,
   );
 
-  const alicePayout = await payoutP;
+  const alicePayout = await payoutE;
   const aliceCcPayout = await alicePayout.Contribution;
 
   // Alice got back what she put in

@@ -104,12 +104,12 @@ test('workflow', async t => {
       const startResult = makePromiseKit();
 
       // TODO: Allow this to work even if the port is already used.
-      const startP = myMain(['start', '--reset']);
-      finalizers.push(() => pkill(startP.cp, 'SIGINT'));
+      const startE = myMain(['start', '--reset']);
+      finalizers.push(() => pkill(startE.cp, 'SIGINT'));
 
       let stdoutStr = '';
-      if (startP.cp.stdout) {
-        startP.cp.stdout.on('data', chunk => {
+      if (startE.cp.stdout) {
+        startE.cp.stdout.on('data', chunk => {
           // console.log('stdout:', chunk.toString());
           stdoutStr += chunk.toString();
           if (stdoutStr.match(/(^|:\s+)swingset running$/m)) {
@@ -129,16 +129,16 @@ test('workflow', async t => {
       // ==============
       // agoric deploy ./contract/deploy.js ./api/deploy.js
       const deployResult = makePromiseKit();
-      const deployP = myMain([
+      const deployE = myMain([
         'deploy',
         `--hostport=127.0.0.1:${PORT}`,
         './contract/deploy.js',
         './api/deploy.js',
       ]);
-      finalizers.push(() => pkill(deployP.cp, 'SIGINT'));
+      finalizers.push(() => pkill(deployE.cp, 'SIGINT'));
 
       timeout = setTimeout(deployResult.resolve, 60000, 'timeout');
-      const done = await Promise.race([deployResult.promise, deployP]);
+      const done = await Promise.race([deployResult.promise, deployE]);
       t.equals(done, 0, `deploy successful before timeout`);
       clearTimeout(timeout);
 
@@ -150,7 +150,7 @@ test('workflow', async t => {
       ]) {
         let urlResolve;
         const url = `http://127.0.0.1:${PORT}${suffix}`;
-        const urlP = new Promise(resolve => (urlResolve = resolve));
+        const urlE = new Promise(resolve => (urlResolve = resolve));
         const urlReq = request(url, res => urlResolve(res.statusCode));
         urlReq.setTimeout(2000);
         urlReq.on('error', err =>
@@ -159,7 +159,7 @@ test('workflow', async t => {
         urlReq.end();
         const urlTimeout = setTimeout(urlResolve, 3000, 'timeout');
         // eslint-disable-next-line no-await-in-loop
-        const urlDone = await urlP;
+        const urlDone = await urlE;
         clearTimeout(urlTimeout);
         t.equals(urlDone, code, `${url} gave status ${code}`);
       }
@@ -175,13 +175,13 @@ test('workflow', async t => {
 
       // ==============
       // cd ui && yarn start
-      const uiStartP = pspawn(`yarn`, ['start'], {
+      const uiStartE = pspawn(`yarn`, ['start'], {
         stdio: ['ignore', 'inherit', 'inherit'],
         cwd: 'ui',
         env: { ...process.env, PORT: '3000' },
         detached: true,
       });
-      finalizers.push(() => pkill(uiStartP.cp, 'SIGINT'));
+      finalizers.push(() => pkill(uiStartE.cp, 'SIGINT'));
       const uiListening = makePromiseKit();
       let retries = 0;
       const ival = setInterval(() => {
@@ -212,7 +212,7 @@ test('workflow', async t => {
         }
       }, 3000);
       t.equals(
-        await Promise.race([uiStartP, uiListening.promise]),
+        await Promise.race([uiStartE, uiListening.promise]),
         'listening',
         `cd ui && yarn start succeeded`,
       );
