@@ -116,11 +116,6 @@ in which each value is a 3-item list.
  * an object containing endowments that will be passed into the setup
    function.
 
-Like vats, the file will be evaluated with a `require` endowment that
-provides access to `@agoric/harden`, `@agoric/nat`, and `@agoric/evaluate`
-(unlike `SES.makeRequire()`, which doesn't provide a `require` to the
-evaluated string).
-
 "Kernel devices" do not need to be configured by the host. The only kernel
 device currently envisioned is one which provides the `addVat` call, which
 allows new Vats to be created at runtime.
@@ -166,7 +161,6 @@ methods that can be called from the kernel.
 
 ```js
 // exampledevice-src.js
-import harden from '@agoric/harden';
 export default function setup(syscall, state, helpers, endowments) {
   const { stuff } = endowments;
   // use stuff

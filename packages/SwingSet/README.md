@@ -74,8 +74,7 @@ anything else.
 Each Vat source file (like `vat-foo.js` or `vat-bar.js`) is treated as a
 starting point for the `rollup` tool, which converts the Vat's source tree
 into a single string (so it can be evaluated in a SES realm). This starting
-point can use `import` to reference shared local files. It can also import a
-few special non-local modules: `@agoric/nat` and `@agoric/harden`. No other
+point can use `import` to reference shared local files. No
 non-local imports are allowed yet.
 
 The source file is expected to contain a single default export function named
@@ -87,8 +86,6 @@ The "Live Slots" layer provides a function to build `dispatch` out of
 lines of boilerplate in the `setup()` function.
 
 ```js
-import harden from '@agoric/harden';
-
 function buildRootObject(E) {
   return harden({
     callRight(arg1, right) {

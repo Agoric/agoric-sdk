@@ -1,5 +1,6 @@
 /* global globalThis */
 import { test } from 'tape-promise/tape';
+import '@agoric/install-ses';
 import fs from 'fs';
 import anylogger from 'anylogger';
 

@@ -13,13 +13,6 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
     ...console,
     log: console.info,
   };
-  function myRequire(what) {
-    if (what === '@agoric/harden') {
-      return harden;
-    }
-    throw Error(`require(${what}) not implemented`);
-  }
-  harden(myRequire);
 
   // TODO: this should really only be console and HandledPromise
   const defaultEndowments = {
@@ -36,7 +29,6 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
     ...Object.getOwnPropertyDescriptors(additionalEndowments),
-    ...Object.getOwnPropertyDescriptors({ require: myRequire }),
   });
 
   // Evaluate the export function, and use the resulting

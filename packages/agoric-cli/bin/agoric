@@ -1,15 +1,8 @@
 #!/usr/bin/env node
 
-/* global globalThis */
-
 const esmRequire = require('esm')(module);
 
-// Do a dance to suppress the "'@agoric/harden' is ineffective without SES" warning.
-// This only affects uses inside the 'agoric' tool, not child processes. See #971
-// for details.
-globalThis.harden = null;
-// Now redefine to cache the instance.
-globalThis.harden = esmRequire('@agoric/harden');
+esmRequire('@agoric/install-ses');
 
 const path = require('path');
 const WebSocket = require('ws');
