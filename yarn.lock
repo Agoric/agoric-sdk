@@ -29,13 +29,6 @@
     "@agoric/default-evaluate-options" "^0.3.6"
     esm "^3.2.5"
 
-"@agoric/harden@^0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.4.tgz#b0d0b2fdfc1a8c7e60454374824442f5b37ea8bd"
-  integrity sha512-WvTw2otvchy3mScAvqQcX0l6049xp6cF17/Pw0PNNqUTJtOo/84tE9OyBSjEp8wn/XBNArPaJuRjMhQpIQ775Q==
-  dependencies:
-    "@agoric/make-hardener" "0.0.4"
-
 "@agoric/harden@^0.0.6":
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.6.tgz#81f25d008c1bddf7f85fc6878be60490c445bf2b"
@@ -49,19 +42,6 @@
   integrity sha512-psxe8nC9wphyeaIhdSFs45CcZnncb4JdoeqBldPNcmcStao8Keuzda9n6t3lqW3WuGm/DNikUyMJ5pE/LeLutQ==
   dependencies:
     "@agoric/make-hardener" "0.0.8"
-
-"@agoric/layer-cake@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/layer-cake/-/layer-cake-0.0.1.tgz#fb131324b35d0b6e2f9e5ef7a72d8729993c3605"
-  integrity sha512-IhaLWRn1aX42WdAZF3B5aTL+d4QaB++6SaDg8kDPj92cgmZcY8XVrWH7lKFOxks2Kz2yocgoBxdJTEq6pyN5XA==
-  dependencies:
-    "@agoric/harden" "^0.0.4"
-    esm "^3.2.5"
-
-"@agoric/make-hardener@0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.4.tgz#9b5d6692bc2fbbac2fff0a6682959ac5e69c582d"
-  integrity sha512-0k/wGkIVQO3IY7p/H/5OS3BIXsRK9Qb7nHnqyvj6hzvSyumwgPp8e4rz5QaVWSen43TGJl+zQn4mW9ZZShT1aw==
 
 "@agoric/make-hardener@0.0.8":
   version "0.0.8"

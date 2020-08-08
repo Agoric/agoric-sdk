@@ -36,14 +36,6 @@ async function runUnderMeter(meter, thunk) {
   return true;
 }
 
-function vatRequire(what) {
-  if (what === '@agoric/harden') {
-    return harden;
-  } else {
-    throw Error(`vatRequire unprepared to satisfy require(${what})`);
-  }
-}
-
 async function meteredImportBundle(bundle, endowments) {
   const { meter, refillFacet } = makeMeter();
   function getMeter() {
@@ -75,7 +67,7 @@ async function meteredImportBundle(bundle, endowments) {
   // importBundle requires a 'require', even if nothing uses it
   function doImport() {
     const p = importBundle(bundle, {
-      endowments: { ...endowments, require: vatRequire, getMeter, RegExp: re2 },
+      endowments: { ...endowments, getMeter, RegExp: re2 },
       transforms: [transform],
     });
     p.then(n => (ns = n));
