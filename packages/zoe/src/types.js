@@ -181,6 +181,8 @@
  * synchronously from within the contract, and usually is referred to in code as
  * zcf.
  * @property {Reallocate} reallocate - reallocate amounts among seats
+ * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
+ * whether a keyword is valid and unique and could be added in `saveIssuer`
  * @property {SaveIssuer} saveIssuer - save an issuer to ZCF and Zoe
  * and get the amountMath and brand synchronously accessible after saving
  * @property {MakeInvitation} makeInvitation

@@ -208,13 +208,24 @@ export function buildRootObject() {
           seatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
         );
       },
+      assertUniqueKeyword: keyword => {
+        assertKeywordName(keyword);
+        assert(
+          !getKeywords(instanceRecord.issuerKeywordRecord).includes(keyword),
+          details`keyword ${keyword} must be unique`,
+        );
+      },
       saveIssuer: (issuerP, keyword) => {
+        // TODO: The checks of the keyword for uniqueness are
+        // duplicated. Assess how waiting on promises to resolve might
+        // affect those checks and see if one can be removed.
+        zcf.assertUniqueKeyword(keyword);
         return E(zoeInstanceAdmin)
           .saveIssuer(issuerP, keyword)
           .then(() => {
             return issuerTable
               .getPromiseForIssuerRecord(issuerP)
-              .then(registerIssuerRecord);
+              .then(record => registerIssuerRecord(keyword, record));
           });
       },
       makeInvitation: (offerHandler, description, customProperties = {}) => {
