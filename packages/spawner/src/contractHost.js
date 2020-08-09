@@ -48,14 +48,6 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     });
   }
 
-  function myRequire(what) {
-    if (what === '@agoric/harden') {
-      return harden;
-    }
-    throw Error(`require(${what}) not implemented`);
-  }
-  harden(myRequire);
-
   // TODO: this should really have console and HandledPromise. We need
   // 'require' until we change the environment definition (and
   // bundle-source's "externals" list) to get 'harden' from a global, not an
@@ -68,7 +60,6 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     harden,
     Nat,
     makePromiseKit,
-    require: myRequire,
     HandledPromise,
   };
 

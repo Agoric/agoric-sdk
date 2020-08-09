@@ -39,7 +39,6 @@
     "@agoric/assert": "^0.0.8",
     "@agoric/eventual-send": "^0.9.3",
     "@agoric/import-manager": "^0.0.7",
-    "@agoric/layer-cake": "^0.0.1",
     "@agoric/marshal": "^0.2.3",
     "@agoric/nat": "^2.0.1",
     "@agoric/promise-kit": "^0.1.3",

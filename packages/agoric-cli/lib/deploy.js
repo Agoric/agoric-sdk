@@ -23,18 +23,18 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const console = anylogger('agoric:deploy');
 
   const args = rawArgs.slice(1);
-  const init = opts.provide
+  const provide = opts.provide
     .split(',')
     .map(dep => dep.trim())
     .filter(dep => dep);
 
-  const deps = opts.need
+  const need = opts.need
     .split(',')
     .map(dep => dep.trim())
-    .filter(dep => dep && !init.includes(dep));
+    .filter(dep => dep && !provide.includes(dep));
 
-  if (args.length === 0 && !init.length) {
-    console.error('you must specify at least one deploy.js (or --init=XXX)');
+  if (args.length === 0 && !provide.length) {
+    console.error('you must specify at least one deploy.js (or --provide=XXX)');
     return 1;
   }
 
@@ -79,7 +79,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         // Wait for the chain to become ready.
         let bootP = getBootstrap();
         let lastUpdateCount;
-        let stillLoading = [...deps].sort();
+        let stillLoading = [...need].sort();
         while (stillLoading.length) {
           // Wait for the notifier to report a new state.
           console.warn('need:', stillLoading.join(', '));
@@ -97,7 +97,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           stillLoading = nextLoading;
         }
 
-        console.debug(JSON.stringify(deps), 'loaded');
+        console.debug(JSON.stringify(need), 'loaded');
         // Take a new copy, since the chain objects have been added to bootstrap.
         bootP = getBootstrap();
 
@@ -123,9 +123,9 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           }
         }
 
-        if (init.length) {
-          console.warn('provide:', init.join(', '));
-          await E(E.G(E.G(bootP).local).http).doneLoading(init);
+        if (provide.length) {
+          console.warn('provide:', provide.join(', '));
+          await E(E.G(E.G(bootP).local).http).doneLoading(provide);
         }
 
         console.debug('Done!');

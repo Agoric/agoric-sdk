@@ -33,7 +33,6 @@
     "packages/spawner",
     "packages/sharing-service",
     "packages/zoe",
-    "packages/dapp-react-wallet",
     "packages/dapp-svelte-wallet/ui",
     "packages/dapp-svelte-wallet/api",
     "packages/dapp-svelte-wallet",

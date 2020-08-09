@@ -5,7 +5,6 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import harden from '@agoric/harden';
 import { evalContractBundle } from '@agoric/zoe/src/evalContractCode';
 
 import { makeZoe } from '@agoric/zoe';

@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.9.3",
-    "@agoric/harden": "^0.0.8",
     "esm": "^3.2.5"
   },
   "eslintConfig": {
