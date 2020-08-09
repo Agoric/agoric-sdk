@@ -31,6 +31,7 @@ interface HandledPromiseConstructor {
   get(target: unknown, prop: Property): Promise<unknown>;
   getSendOnly(target: unknown, prop: Property): void;
   resolve(target: unknown): Promise<any>;
+  reject<T = never>(reason?: any): Promise<T>;
 }
 
 export const HandledPromise: HandledPromiseConstructor;
