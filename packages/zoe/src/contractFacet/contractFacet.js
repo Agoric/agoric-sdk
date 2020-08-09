@@ -78,10 +78,16 @@ export function buildRootObject() {
       );
 
       const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, mathHelperName);
-      const mintyIssuerRecord = await E(zoeMintP).getIssuerRecord();
+      const { brand: mintyBrand, issuer: mintyIssuer } = await E(
+        zoeMintP,
+      ).getIssuerRecord();
       // AWAIT
-      const { brand: mintyBrand } = mintyIssuerRecord;
       const mintyAmountMath = makeAmountMath(mintyBrand, mathHelperName);
+      const mintyIssuerRecord = harden({
+        brand: mintyBrand,
+        issuer: mintyIssuer,
+        amountMath: mintyAmountMath,
+      });
       registerIssuerRecord(keyword, mintyIssuerRecord);
       issuerTable.registerIssuerRecord(mintyIssuerRecord);
 
