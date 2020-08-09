@@ -30,9 +30,11 @@ const makeIssuerTable = () => {
    * misshapen objects rather than just a general check.
    * @type {Validator<IssuerRecord>}
    */
-  const validateSomewhat = makeValidateProperties(
-    harden(['brand', 'issuer', 'amountMath']),
-  );
+  const validateSomewhat = makeValidateProperties([
+    'brand',
+    'issuer',
+    'amountMath',
+  ]);
 
   const makeCustomMethods = table => {
     /** @type {WeakStore<Issuer<any>,any>} */
