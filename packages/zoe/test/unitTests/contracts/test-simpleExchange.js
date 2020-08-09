@@ -3,18 +3,15 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import { assert, details } from '@agoric/assert';
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
-import fakeVatAdmin from './fakeVatAdmin';
 import {
   installationPFromSource,
-  assertPayout,
+  assertPayoutDeposit,
   assertOfferResult,
   getInviteFields,
 } from '../../zoeTestHelpers';
@@ -71,7 +68,7 @@ test('simpleExchange with valid offers', async t => {
         },
         `Order book is empty`,
       );
-      t.equals(beforeAliceCount, 2);
+      t.equals(beforeAliceCount, 3);
     });
 
   const {
@@ -115,11 +112,11 @@ test('simpleExchange with valid offers', async t => {
         },
         `order notifier is updated with Alice's sell order`,
       );
-      t.equals(afterAliceCount, 3);
+      t.equals(afterAliceCount, 4);
 
       aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
         t.notOk(update.value.sells[0], 'accepted offer from Bob');
-        t.equals(update.updateCount, 4);
+        t.equals(update.updateCount, 5);
       });
     });
 
@@ -200,13 +197,13 @@ test('simpleExchange with valid offers', async t => {
 
   // 6: Alice deposits her payout to ensure she can
   // Alice had 0 moola and 4 simoleans.
-  assertPayout(t, aliceMoolaPayout, aliceMoolaPurse, 0);
-  assertPayout(t, aliceSimoleanPayout, aliceSimoleanPurse, 4);
+  assertPayoutDeposit(t, aliceMoolaPayout, aliceMoolaPurse, moola(0));
+  assertPayoutDeposit(t, aliceSimoleanPayout, aliceSimoleanPurse, simoleans(4));
 
   // 7: Bob deposits his original payments to ensure he can
   // Bob had 3 moola and 3 simoleans.
-  assertPayout(t, bobMoolaPayout, bobMoolaPurse, 3);
-  assertPayout(t, bobSimoleanPayout, bobSimoleanPurse, 3);
+  assertPayoutDeposit(t, bobMoolaPayout, bobMoolaPurse, moola(3));
+  assertPayoutDeposit(t, bobSimoleanPayout, bobSimoleanPurse, simoleans(3));
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -441,8 +438,11 @@ test('simpleExchange with non-fungible assets', async t => {
   // Assert that the correct payout were received.
   // Alice has an empty RPG purse, and the Cheshire Cat.
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
-  assertPayout(t, aliceRpgPayout, aliceRpgPurse, []);
-  assertPayout(t, aliceCcPayout, aliceCcPurse, ['Cheshire Cat']);
-  assertPayout(t, bobRpgPayout, bobRpgPurse, spell);
-  assertPayout(t, bobCcPayout, bobCcPurse, []);
+  const noCats = amountMaths.get('cc').getEmpty();
+  const noRpgItems = amountMaths.get('rpg').getEmpty();
+  assertPayoutDeposit(t, aliceRpgPayout, aliceRpgPurse, noRpgItems);
+  const cheshireCatAmount = cryptoCats(harden(['Cheshire Cat']));
+  assertPayoutDeposit(t, aliceCcPayout, aliceCcPurse, cheshireCatAmount);
+  assertPayoutDeposit(t, bobRpgPayout, bobRpgPurse, rpgItems(spell));
+  assertPayoutDeposit(t, bobCcPayout, bobCcPurse, noCats);
 });
