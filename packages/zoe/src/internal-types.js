@@ -51,11 +51,6 @@
  */
 
 /**
- * @typedef {Object} ZCFSeatAdmin
- * @property {(seatStaging: SeatStaging) => void} commit
- */
-
-/**
  * @typedef {Object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
@@ -63,16 +58,40 @@
  */
 
 /**
+ * @typedef {{UserSeat, ZoeSeatAdmin, Notifier}} ZoeSeatAdminKit
+ *
+ * @typedef MakeZoeSeatAdminKit
+ * Make the Zoe seat admin, user seat and a notifier
+ * @param {InstanceAdmin} instanceAdmin - pass-by-copy data to use to make the seat
+ * @param {Allocation} initialAllocation
+ * @param {Proposal} proposal
+ * @param {Proposal} brandToPurse
+ * @param {{ offerResult: Promise<OfferResult>=, exitObj: Promise<ExitObj>=}=} promises
+ * @returns {ZoeSeatAdminKit}
+ *
+ * @typedef ZoeSeatAdmin
+ * @property {Allocation => void} replaceAllocation
+ * @property {() => void} exit
+ * @property {() => Allocation} getCurrentAllocation
+ */
+
+/**
+ * @typedef MakeZcfSeatAdminKit
  * Make the ZCF seat and seat admin
- * @callback MakeZcfSeatAdmin
  * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
  * @param {ZoeSeatAdmin} zoeSeatAdmin
  * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
- * @param {(brand: Brand) => AmountMath} getAmountMath
- * @returns {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}}
+ * @param {GetAmountMath} getAmountMath
+ * @returns {ZcfSeatAdminKit}
+ */
+
+/**
+ * @typedef {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}} ZcfSeatAdminKit
+ * @typedef {Object} ZCFSeatAdmin
+ * @property {(seatStaging: SeatStaging) => void} commit
  */
 
 /**
@@ -112,8 +131,8 @@
  *            ) => Payment} makeInvitation
  * @property {() => void} shutdown
  * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
- *
  * @property {MakeZoeMint} makeZoeMint
+ * @property {MakeOfferlessSeat} makeOfferlessSeat
  */
 
 /**
@@ -121,6 +140,13 @@
  * @param {Keyword} keyword
  * @param {MathHelpersName=} mathHelperName
  * @returns {ZoeMint}
+ */
+
+/**
+ * @callback MakeOfferlessSeat
+ * @param {Allocation} initialAllocation
+ * @param {Proposal} proposal
+ * @returns {ZoeSeatAdminKit}
  */
 
 /**

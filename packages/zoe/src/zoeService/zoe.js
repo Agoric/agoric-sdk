@@ -230,7 +230,8 @@ function makeZoe(vatAdminSvc) {
                 brandToPurse.init(brand, E(issuer).makeEmptyPurse());
               }
             }),
-        makeEmptySeat: (initialAllocation, proposal) => {
+        // A Seat requested by the contract without an offer
+        makeOfferlessSeat: (initialAllocation, proposal) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,
@@ -317,7 +318,7 @@ function makeZoe(vatAdminSvc) {
           const exitObjPromiseKit = makePromiseKit();
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
-          /** @type {ZoeSeatAdmin} */
+          /** @type {ZoeSeatAdminKit} */
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,

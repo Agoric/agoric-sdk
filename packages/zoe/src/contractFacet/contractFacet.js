@@ -258,7 +258,7 @@ export function buildRootObject() {
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
       makeZCFMint,
-      addEmptySeat: () => {
+      makeEmptySeatKit: () => {
         const initialAllocation = harden({});
         const proposal = harden({ want: {} });
         const { notifier, updater } = makeNotifierKit();
@@ -266,7 +266,7 @@ export function buildRootObject() {
         const userSeatPromiseKit = makePromiseKit();
 
         E(zoeInstanceAdmin)
-          .makeEmptySeat(initialAllocation, proposal)
+          .makeOfferlessSeat(initialAllocation, proposal)
           .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
             updateFromNotifier(updater, zoeNotifier);
             zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
@@ -285,7 +285,7 @@ export function buildRootObject() {
           getAmountMath,
         );
         seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
-        return { zcfSeat, zcfSeatAdmin, userSeat: userSeatPromiseKit.promise };
+        return { zcfSeat, userSeat: userSeatPromiseKit.promise };
       },
     };
     harden(zcf);

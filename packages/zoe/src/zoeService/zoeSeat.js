@@ -10,12 +10,14 @@ export const makeZoeSeatAdminKit = (
   brandToPurse,
   promises = {},
 ) => {
-  const payoutPromiseKit = promises.payout || makePromiseKit();
+  const payoutPromiseKit = makePromiseKit();
   const offerResultPromiseKit = promises.offerResult || makePromiseKit();
   const exitObjPromiseKit = promises.exitObj || makePromiseKit();
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
+
+  /** @type ZoeSeatAdmin */
   const zoeSeatAdmin = harden({
     replaceAllocation: replacementAllocation => {
       assert(
@@ -48,6 +50,7 @@ export const makeZoeSeatAdminKit = (
     getCurrentAllocation: () => currentAllocation,
   });
 
+  /** @type UserSeat */
   const userSeat = harden({
     getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
     getProposal: async () => proposal,
