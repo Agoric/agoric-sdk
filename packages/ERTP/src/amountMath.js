@@ -54,10 +54,9 @@ import './types';
  * amounts, we can get the brand and find the issuer which matches the
  * brand. The issuer and the brand mutually validate each other.
  *
- * @template {string} T
- * @param {Brand<T>} brand
+ * @param {Brand} brand
  * @param {MathHelpersName} mathHelpersName
- * @returns {AmountMath<T>}
+ * @returns {AmountMath}
  */
 function makeAmountMath(brand, mathHelpersName) {
   mustBeComparable(brand);
@@ -79,7 +78,7 @@ function makeAmountMath(brand, mathHelpersName) {
     /**
      * Make an amount from a value by adding the brand.
      * @param {Value} allegedValue
-     * @returns {Amount<T>}
+     * @returns {Amount}
      */
     make: allegedValue => {
       const value = helpers.doCoerce(allegedValue);
@@ -90,8 +89,8 @@ function makeAmountMath(brand, mathHelpersName) {
 
     /**
      * Make sure this amount is valid and return it if so, throwing if invalid.
-     * @param {Amount<T>} allegedAmount
-     * @returns {Amount<T>} or throws if invalid
+     * @param {Amount} allegedAmount
+     * @returns {Amount} or throws if invalid
      */
     coerce: allegedAmount => {
       // If the cache already has the allegedAmount, that

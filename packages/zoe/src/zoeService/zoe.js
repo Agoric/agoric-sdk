@@ -18,6 +18,7 @@ import { makeIssuerTable } from '../issuerTable';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from './cleanProposal';
+import { makeHandle } from '../table';
 
 /**
  * Create an instance of Zoe.
@@ -40,6 +41,7 @@ function makeZoe(vatAdminSvc) {
   /** @type {GetAmountMath<any>} */
   const getAmountMath = brand => issuerTable.get(brand).amountMath;
 
+  /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeWeakStore('brand');
 
   /**
@@ -77,6 +79,7 @@ function makeZoe(vatAdminSvc) {
         amountMath: invitationAmountMath,
       } = invitationKit;
 
+      /** @param {Issuer[]} issuers */
       const getPromiseForIssuerRecords = issuers =>
         Promise.all(issuers.map(issuerTable.getPromiseForIssuerRecord));
       assert(
@@ -85,7 +88,7 @@ function makeZoe(vatAdminSvc) {
       );
 
       const zoeSeatAdmins = new Set();
-      const instance = harden({});
+      const instance = makeHandle('InstanceHandle');
 
       const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
 

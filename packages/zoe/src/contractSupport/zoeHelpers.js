@@ -321,7 +321,6 @@ export const makeEmptyOffer = zcf => {
  * Escrow payments with Zoe and reallocate the amount of each
  * payment to a recipient.
  *
- * @template {string} T
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} giveAmountKeywordRecord - the keywords

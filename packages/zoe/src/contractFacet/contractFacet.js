@@ -237,7 +237,7 @@ export function buildRootObject() {
 
         const invitationHandle = /** @type {InvitationHandle} */ (harden({}));
         invitationHandleToHandler.init(invitationHandle, offerHandler);
-        /** @type {Promise<Payment<'ZoeInvitation'>>} */
+        /** @type {Promise<Payment>} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(
           invitationHandle,
           description,

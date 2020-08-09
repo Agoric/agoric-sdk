@@ -40,7 +40,7 @@
  * within its vat. The contract and ZCF never have direct access to
  * the users' payments or the Zoe purses.
  *
- * @property {() => Issuer<'ZoeInvitation'>} getInvitationIssuer
+ * @property {() => Issuer} getInvitationIssuer
  *
  * Zoe has a single `invitationIssuer` for the entirety of its
  * lifetime. By having a reference to Zoe, a user can get the
@@ -52,10 +52,10 @@
  * @property {Install} install
  * @property {MakeInstance} makeInstance
  * @property {Offer} offer
- * @property {(Instance) => Object} getPublicFacet
- * @property {(Instance) => IssuerKeywordRecord} getIssuers
- * @property {(Instance) => BrandKeywordRecord} getBrands
- * @property {(Instance) => Object} getTerms
+ * @property {(instance: Instance) => Object} getPublicFacet
+ * @property {(instance: Instance) => IssuerKeywordRecord} getIssuers
+ * @property {(instance: Instance) => BrandKeywordRecord} getBrands
+ * @property {(instance: Instance) => Object} getTerms
  */
 
 /**
@@ -112,7 +112,7 @@
 /**
  * @typedef {Object} MakeInstanceResult
  * @property {CreatorFacetWInstance & Record<string, Function>} creatorFacet
- * @property {Payment<'ZoeInvitation'>} creatorInvitation
+ * @property {Payment} creatorInvitation
  */
 
 /**
@@ -188,7 +188,7 @@
  * @property {MakeInvitation} makeInvitation
  * @property {Shutdown} shutdown
  * @property {() => ZoeService} getZoeService
- * @property {() => Issuer<'ZoeInvitation'>} getInvitationIssuer
+ * @property {() => Issuer} getInvitationIssuer
  * @property {() => InstanceRecord } getInstanceRecord
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
@@ -391,18 +391,18 @@
  */
 
 /**
- * @typedef {Payment<'ZoeInvitation'>} Invitation
+ * @typedef {Payment} Invitation
  */
 
 /**
- * @typedef {{}} Instance
+ * @typedef {Handle<'InstanceHandle'>} Instance
  */
 
 /**
  * @template T
  * @callback GetAmountMath
- * @param {Brand<T>} brand
- * @returns {AmountMath<T>}
+ * @param {Brand} brand
+ * @returns {AmountMath}
  */
 
 /**

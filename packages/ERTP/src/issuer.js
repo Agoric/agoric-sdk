@@ -11,7 +11,6 @@ import makeAmountMath from './amountMath';
 import './types';
 
 /**
- * @template {string} T
  * @param {string} allegedName
  * @param {MathHelpersName} [mathHelpersName='nat']
  * @returns {IssuerKit}
@@ -55,10 +54,10 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
   };
 
   /**
-   * @returns {Purse<T>}
+   * @returns {Purse}
    */
   const makePurse = () => {
-    /** @type {Purse<T>} */
+    /** @type {Purse} */
     const purse = harden({
       deposit: (srcPayment, optAmount = undefined) => {
         if (isPromise(srcPayment)) {
@@ -170,7 +169,7 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     return harden(newPayments);
   };
 
-  /** @type {Issuer<T>} */
+  /** @type {Issuer} */
   const issuer = harden({
     getBrand: () => brand,
     getAllegedName: () => allegedName,
@@ -274,7 +273,7 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     },
   });
 
-  /** @type {Mint<T>} */
+  /** @type {Mint} */
   const mint = harden({
     getIssuer: () => issuer,
     mintPayment: newAmount => {

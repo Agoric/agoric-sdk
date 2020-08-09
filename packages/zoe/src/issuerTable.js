@@ -36,11 +36,12 @@ const makeIssuerTable = () => {
     'amountMath',
   ]);
 
+  /** @param {Table<IssuerRecord>} table */
   const makeCustomMethods = table => {
-    /** @type {WeakStore<Issuer<any>,any>} */
+    /** @type {WeakStore<Issuer, Promise<IssuerRecord & {handle: {}}>>} */
     const issuersInProgress = makeWeakStore('issuer');
 
-    /** @type {WeakStore<Issuer<any>,Brand<any>>} */
+    /** @type {WeakStore<Issuer,Brand>} */
     const issuerToBrand = makeWeakStore('issuer');
 
     const registerIssuerRecord = issuerRecord => {
@@ -54,7 +55,7 @@ const makeIssuerTable = () => {
     // inProgress table, and once we have the Issuer, build the record, fill in
     // the table, and resolve the promise.
     /**
-     * @param {Issuer<any>} issuer
+     * @param {Issuer} issuer
      */
     function buildTableEntryAndPlaceHolder(issuer) {
       // remote calls which immediately return a promise
@@ -64,7 +65,7 @@ const makeIssuerTable = () => {
 
       /**
        * @type {[
-       *  PromiseLike<Brand<any>>,
+       *  PromiseLike<Brand>,
        *  PromiseLike<'nat' | 'set' | 'strSet'>,
        *  PromiseLike<boolean>
        * ]}

@@ -7,9 +7,7 @@
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} Amount<BrandName>
+ * @typedef {Object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -38,9 +36,7 @@
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} AmountMath<BrandName>
+ * @typedef {Object} AmountMath
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
@@ -97,9 +93,7 @@
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} Brand<BrandName>
+ * @typedef {Object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
  * as 'BTC' or 'moola') is provided by the maker of the issuer and should
@@ -119,9 +113,7 @@
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} Issuer<BrandName>
+ * @typedef {Object} Issuer
  * The issuer cannot mint a new amount, but it can create empty purses and
  * payments. The issuer can also transform payments (splitting payments,
  * combining payments, burning payments, and claiming payments
@@ -190,7 +182,7 @@
  * @callback MakeIssuerKit
  * @param {string} allegedName
  * @param {MathHelpersName} mathHelperName
- * @returns {IssuerKit<BrandName>}
+ * @returns {IssuerKit}
  *
  * The allegedName is useful for debugging and double-checking
  * assumptions, but should not be trusted.
@@ -199,19 +191,17 @@
  * from the mathHelpers library. For example, natMathHelpers, the
  * default, is used for basic fungible tokens.
  *
- * @typedef {Object} IssuerKit<BrandName>
+ * @typedef {Object} IssuerKit
  * The return value of makeIssuerKit
  *
- * @property {Mint<BrandName>} mint
- * @property {Issuer<BrandName>} issuer
- * @property {AmountMath<BrandName>} amountMath
- * @property {Brand<BrandName>} brand
+ * @property {Mint} mint
+ * @property {Issuer} issuer
+ * @property {AmountMath} amountMath
+ * @property {Brand} brand
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} Mint<BrandName>
+ * @typedef {Object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
@@ -231,9 +221,7 @@
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} Purse<BrandName>
+ * @typedef {Object} Purse
  * Purses hold amount of digital assets of the same brand, but unlike Payments, they are
  * not meant to be sent to others. To transfer digital assets, a
  * Payment should be withdrawn from a Purse. The amount of digital
@@ -263,9 +251,7 @@
  */
 
 /**
- * @template {string} BrandName - A string representing the associated
- * brand
- * @typedef {Object} Payment<BrandName>
+ * @typedef {Object} Payment
  * Payments hold amount of digital assets of the same brand in transit. Payments can
  * be deposited in purses, split into multiple payments, combined, and
  * claimed (getting an exclusive payment). Payments are linear, meaning

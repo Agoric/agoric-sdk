@@ -109,7 +109,7 @@
  * @property {(invitationHandle: InvitationHandle,
  *             description: string,
  *             customProperties?: {},
- *            ) => Payment<'ZoeInvitation'>} makeInvitation
+ *            ) => Payment} makeInvitation
  * @property {() => void} shutdown
  * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
  *
@@ -152,7 +152,7 @@
  * @callback ExecuteContract
  * @param {SourceBundle} bundle
  * @param {ZoeService} zoeService
- * @param {Issuer<'ZoeInvitation'>} invitationIssuer
+ * @param {Issuer} invitationIssuer
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord
  * @returns {ExecuteContractResult}
@@ -163,7 +163,7 @@
  * @callback MakeMakeInstanceFn
  * @param {VatAdminSvc} vatAdminSvc,
  * @param {GetPromiseForIssuerRecord} getPromiseForIssuerRecord,
- * @param {IssuerKit<'ZoeInvitation'>} invitationKit,
+ * @param {IssuerKit} invitationKit,
  * @param {HasInstallation} hasInstallation,
  * @param {ZoeService} zoeService,
  * @param {AddInstance} addInstance,

@@ -1,11 +1,10 @@
 // @ts-check
 
 /**
- * @template {string} T
  * Helper to perform satisfiesWant and satisfiesGive. Is
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?
- * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath
+ * @param {(brand: Brand) => AmountMath} getAmountMath
  * @param {ProposalRecord["give"] | ProposalRecord["want"]} giveOrWant
  * @param {AmountKeywordRecord} allocation
  */
@@ -26,8 +25,7 @@ const satisfiesInternal = (getAmountMath, giveOrWant = {}, allocation) => {
 /**
  * For this allocation to satisfy what the user wanted, their
  * allocated amounts must be greater than or equal to proposal.want.
- * @template {string} T
- * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath - a
+ * @param {(brand: Brand) => AmountMath} getAmountMath - a
  * function that takes a brand and returns the appropriate amountMath.
  * The function must have an amountMath for every brand in
  * proposal.want.
@@ -48,8 +46,7 @@ const satisfiesWant = (getAmountMath, proposal, allocation) =>
  * For this allocation to count as a full refund, the allocated
  * amounts must be greater than or equal to what was originally
  * offered (proposal.give).
- * @template {string} T
- * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath - a
+ * @param {(brand: Brand) => AmountMath} getAmountMath - a
  * function that takes a brand and returns the appropriate amountMath.
  * The function must have an amountMath for every brand in
  * proposal.give.
@@ -73,8 +70,7 @@ const satisfiesGive = (getAmountMath, proposal, allocation) =>
  * `proposal.give` (giving a refund) or whether we fully satisfy
  * `proposal.want`. Both can be fully satisfied.
  *
- * @template {string} T
- * @param {(brand: Brand<T>) => AmountMath<T>} getAmountMath - a
+ * @param {(brand: Brand) => AmountMath} getAmountMath - a
  * function that takes a brand and returns the appropriate amountMath.
  * The function must have an amountMath for every brand in
  * proposal.want and proposal.give.
