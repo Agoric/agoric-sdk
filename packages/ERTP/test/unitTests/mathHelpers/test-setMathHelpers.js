@@ -23,7 +23,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   const {
     getBrand,
-    getMathHelpersName,
+    getMathHelperName,
     make,
     coerce,
     getValue,
@@ -38,8 +38,8 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   // getBrand
   t.deepEquals(getBrand(), mockBrand, 'brand is brand');
 
-  // getMathHelpersName
-  t.deepEquals(getMathHelpersName(), 'set', 'mathHelpersName is set');
+  // getMathHelperName
+  t.deepEquals(getMathHelperName(), 'set', 'mathHelpersName is set');
 
   // make
   t.deepEquals(

@@ -13,7 +13,7 @@ export const showPurseBalance = async (purseP, name, log) => {
 export const getLocalAmountMath = issuer =>
   Promise.all([
     E(issuer).getBrand(),
-    E(issuer).getMathHelpersName(),
+    E(issuer).getMathHelperName(),
   ]).then(([brand, mathHelpersName]) => makeAmountMath(brand, mathHelpersName));
 
 export const setupIssuers = async (zoe, issuers) => {

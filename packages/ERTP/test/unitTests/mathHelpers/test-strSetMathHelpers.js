@@ -20,7 +20,7 @@ test('strSetMathHelpers', t => {
   try {
     const {
       getBrand,
-      getMathHelpersName,
+      getMathHelperName,
       make,
       coerce,
       getValue,
@@ -35,8 +35,8 @@ test('strSetMathHelpers', t => {
     // getBrand
     t.deepEquals(getBrand(), mockBrand, 'brand is brand');
 
-    // getMathHelpersName
-    t.deepEquals(getMathHelpersName(), 'strSet', 'mathHelpersName is strSet');
+    // getMathHelperName
+    t.deepEquals(getMathHelperName(), 'strSet', 'mathHelpersName is strSet');
 
     // make
     t.doesNotThrow(

@@ -20,7 +20,7 @@ test('natMathHelpers', t => {
   try {
     const {
       getBrand,
-      getMathHelpersName,
+      getMathHelperName,
       make,
       coerce,
       getValue,
@@ -35,8 +35,8 @@ test('natMathHelpers', t => {
     // getBrand
     t.deepEquals(getBrand(), mockBrand, 'brand is brand');
 
-    // getMathHelpersName
-    t.deepEquals(getMathHelpersName(), 'nat', 'mathHelpersName is nat');
+    // getMathHelperName
+    t.deepEquals(getMathHelperName(), 'nat', 'mathHelpersName is nat');
 
     // make
     t.deepEquals(make(4), { brand: mockBrand, value: 4 });

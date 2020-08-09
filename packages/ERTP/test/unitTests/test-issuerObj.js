@@ -44,10 +44,10 @@ test('issuer.getAmountMath', t => {
   }
 });
 
-test('issuer.getMathHelpersName', t => {
+test('issuer.getMathHelperName', t => {
   try {
     const { issuer } = makeIssuerKit('fungible');
-    t.equals(issuer.getMathHelpersName(), 'nat');
+    t.equals(issuer.getMathHelperName(), 'nat');
   } catch (e) {
     t.assert(false, e);
   } finally {

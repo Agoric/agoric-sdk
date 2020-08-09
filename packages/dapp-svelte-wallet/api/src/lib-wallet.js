@@ -51,7 +51,7 @@ export async function makeWallet({
             }
 
             // remote calls which immediately return a promise
-            const mathHelpersNameP = E(issuer).getMathHelpersName();
+            const mathHelpersNameP = E(issuer).getMathHelperName();
             const brandP = E(issuer).getBrand();
             const issuerBoardIdP = E(board)
               .has(issuer)

@@ -204,7 +204,7 @@ const makeIssuerTable = (withPurses = true) => {
      */
     function buildTableEntryAndPlaceHolder(issuer) {
       // remote calls which immediately return a promise
-      const mathHelpersNameP = E(issuer).getMathHelpersName();
+      const mathHelpersNameP = E(issuer).getMathHelperName();
       const brandP = E(issuer).getBrand();
 
       /**
