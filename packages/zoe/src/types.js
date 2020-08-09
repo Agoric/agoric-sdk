@@ -74,12 +74,14 @@
 
 /**
  * @typedef {Object} UserSeat
- * @property {() => Promise<Allocation>} getCurrentAllocation
+ * @property {() => Allocation} getCurrentAllocation
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult
  * @property {() => void=} exit
+ *
+ * @typedef {any} OfferResult
  */
 
 /**
@@ -193,6 +195,7 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
+ * @property {ZcfSeatKit} makeEmptySeatKit
  */
 
 /**
@@ -368,6 +371,10 @@
  * @typedef {Object} SeatStaging
  * @property {() => ZCFSeat} getSeat
  * @property {() => Allocation} getStagedAllocation
+ */
+
+/**
+ * @typedef {{ zcfSeat: ZCFSeat, userSeat: UserSeat}} ZcfSeatKit
  */
 
 /**

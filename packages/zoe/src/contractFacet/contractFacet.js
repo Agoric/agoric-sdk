@@ -12,11 +12,13 @@ import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { areRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
 import { assertKeywordName, getKeywords } from '../zoeService/cleanProposal';
 import { evalContractBundle } from './evalContractCode';
-import { makeSeatAdmin } from './seat';
+import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
 
@@ -256,15 +258,44 @@ export function buildRootObject() {
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
       makeZCFMint,
+      makeEmptySeatKit: () => {
+        const initialAllocation = harden({});
+        const proposal = harden({ want: {} });
+        const { notifier, updater } = makeNotifierKit();
+        const zoeSeatAdminPromiseKit = makePromiseKit();
+        const userSeatPromiseKit = makePromiseKit();
+
+        E(zoeInstanceAdmin)
+          .makeOfferlessSeat(initialAllocation, proposal)
+          .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
+            updateFromNotifier(updater, zoeNotifier);
+            zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
+            userSeatPromiseKit.resolve(userSeat);
+          });
+
+        const seatData = harden({
+          proposal,
+          initialAllocation,
+          notifier,
+        });
+        const { zcfSeat, zcfSeatAdmin } = makeZcfSeatAdminKit(
+          allSeatStagings,
+          zoeSeatAdminPromiseKit.promise,
+          seatData,
+          getAmountMath,
+        );
+        seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
+        return { zcfSeat, userSeat: userSeatPromiseKit.promise };
+      },
     };
     harden(zcf);
 
-    // To Zoe, we will return the invite and an object such that Zoe
-    // can tell us about new seats.
+    // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
+    // added in offer(). ZCF responds with the exitObj and offerResult.
     /** @type AddSeatObj */
     const addSeatObj = {
       addSeat: (invitationHandle, zoeSeatAdmin, seatData) => {
-        const { zcfSeatAdmin, zcfSeat } = makeSeatAdmin(
+        const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
           allSeatStagings,
           zoeSeatAdmin,
           seatData,
@@ -281,8 +312,7 @@ export function buildRootObject() {
         });
         const exitObj = makeExitObj(seatData.proposal, zoeSeatAdmin);
         /** @type AddSeatResult */
-        const addSeatResult = { offerResultP, exitObj };
-        return harden(addSeatResult);
+        return harden({ offerResultP, exitObj });
       },
     };
     harden(addSeatObj);
