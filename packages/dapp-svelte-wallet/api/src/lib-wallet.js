@@ -1,3 +1,5 @@
+// @ts-check
+
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
@@ -14,9 +16,30 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
+import '@agoric/zoe/exported';
+import './types';
+
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
+const cmp = (a, b) => {
+  if (a > b) {
+    return 1;
+  }
+  if (a === b) {
+    return 0;
+  }
+  return -1;
+};
+
+/**
+ * @typedef {Object} MakeWalletParams
+ * @property {ZoeService} zoe
+ * @property {Board} board
+ * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
+ * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
+ * @param {MakeWalletParams} param0
+ */
 export async function makeWallet({
   zoe,
   board,
@@ -26,18 +49,28 @@ export async function makeWallet({
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
+  /** @type {Mapping<Purse>} */
   const purseMapping = makeMapping('purse');
+  /** @type {Mapping<Brand>} */
   const brandMapping = makeMapping('brand');
+  /** @type {Mapping<Contact>} */
   const contactMapping = makeMapping('contact');
+  /** @type {Mapping<Instance>} */
   const instanceMapping = makeMapping('instance');
+  /** @type {Mapping<Installation>} */
   const installationMapping = makeMapping('installation');
 
-  // Brand Table
-  // Columns: key:brand | issuer | amountMath
+  /**
+   * Brand Table
+   */
   const makeBrandTable = () => {
-    const validateSomewhat = makeValidateProperties(
-      harden(['brand', 'issuer', 'issuerBoardId', 'amountMath']),
-    );
+    /** @type {(record: any) => record is BrandRecord} */
+    const validateSomewhat = makeValidateProperties([
+      'brand',
+      'issuer',
+      'issuerBoardId',
+      'amountMath',
+    ]);
 
     const issuersInProgress = makeStore('issuer');
     const issuerToBrand = makeWeakStore('issuer');
@@ -93,8 +126,11 @@ export async function makeWallet({
   };
 
   const brandTable = makeBrandTable();
+  /** @type {WeakStore<Purse, Brand>} */
   const purseToBrand = makeWeakStore('purse');
+  /** @type {Store<Brand, string>} */
   const brandToDepositFacetId = makeStore('brand');
+  /** @type {Store<Brand, Purse>} */
   const brandToAutoDepositPurse = makeStore('brand');
 
   // Offers that the wallet knows about (the inbox).
@@ -108,18 +144,24 @@ export async function makeWallet({
   const idToOutcome = new Map();
 
   // Client-side representation of the purses inbox;
+  /** @type {Map<string, PursesJSONState>} */
   const pursesState = new Map();
+
+  /** @type {Map<Purse, PursesFullState>} */
   const pursesFullState = new Map();
   const inboxState = new Map();
 
-  // The default Zoe invite purse is used to make an offer.
+  /**
+   * The default Zoe invite purse is used to make an offer.
+   * @type {Purse}
+   */
   let zoeInvitePurse;
 
   function getSortedValues(map) {
     const entries = [...map.entries()];
     // Sort for determinism.
     const values = entries
-      .sort(([id1], [id2]) => id1 > id2)
+      .sort(([id1], [id2]) => cmp(id1, id2))
       .map(([_id, value]) => value);
 
     return JSON.stringify(values);
@@ -140,10 +182,15 @@ export async function makeWallet({
   // @qclass is lost.
   const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
 
-  const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
-    [],
-  );
+  const {
+    notifier: pursesNotifier,
+    updater: pursesUpdater,
+  } = /** @type {NotifierRecord<PursesFullState[]>} */ (makeNotifierKit([]));
 
+  /**
+   * @param {Petname} pursePetname
+   * @param {Purse} purse
+   */
   async function updatePursesState(pursePetname, purse) {
     const purseKey = purseMapping.implode(pursePetname);
     for (const key of pursesState.keys()) {
@@ -166,6 +213,9 @@ export async function makeWallet({
       // We have a depositId for the purse.
       depositBoardId = brandToDepositFacetId.get(brand);
     }
+    /**
+     * @type {PursesJSONState}
+     */
     const jstate = {
       brandBoardId,
       ...(depositBoardId && { depositBoardId }),
@@ -302,7 +352,9 @@ export async function makeWallet({
   const {
     updater: issuersUpdater,
     notifier: issuersNotifier,
-  } = makeNotifierKit([]);
+  } = /** @type {NotifierRecord<[Petname, BrandRecord][]>} */ (makeNotifierKit(
+    [],
+  ));
 
   function updateAllIssuersState() {
     issuersUpdater.updateState(
@@ -485,7 +537,7 @@ export async function makeWallet({
   const {
     updater: contactsUpdater,
     notifier: contactsNotifier,
-  } = makeNotifierKit([]);
+  } = /** @type {NotifierRecord<[Petname, Contact][]>} */ (makeNotifierKit([]));
 
   const addContact = async (petname, actions) => {
     const already = await E(board).has(actions);
@@ -591,7 +643,7 @@ export async function makeWallet({
           origin === null ||
           (offer.requestContext && offer.requestContext.dappOrigin === origin),
       )
-      .sort(([id1], [id2]) => id1 > id2)
+      .sort(([id1], [id2]) => cmp(id1, id2))
       .map(([_id, offer]) => harden(offer));
   }
 
@@ -654,10 +706,12 @@ export async function makeWallet({
     return { proposal, inviteP, purseKeywordRecord };
   };
 
+  /** @type {Store<string, DappRecord>} */
   const dappOrigins = makeStore('dappOrigin');
-  const { notifier: dappsNotifier, updater: dappsUpdater } = makeNotifierKit(
-    [],
-  );
+  const {
+    notifier: dappsNotifier,
+    updater: dappsUpdater,
+  } = /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
   function updateDapp(dappRecord) {
     harden(dappRecord);
@@ -673,62 +727,63 @@ export async function makeWallet({
       let resolve;
       let reject;
       let approvalP;
+
       dappRecord = {
         suggestedPetname,
         petname: suggestedPetname,
         origin,
-      };
-
-      dappRecord.actions = {
-        setPetname(petname) {
-          if (dappRecord.petname === petname) {
+        approvalP,
+        actions: {
+          setPetname(petname) {
+            if (dappRecord.petname === petname) {
+              return dappRecord.actions;
+            }
+            if (edgeMapping.valToPetname.has(origin)) {
+              edgeMapping.renamePetname(petname, origin);
+            } else {
+              edgeMapping.suggestPetname(petname, origin);
+            }
+            dappRecord = {
+              ...dappRecord,
+              petname,
+            };
+            updateDapp(dappRecord);
+            updateAllState();
             return dappRecord.actions;
-          }
-          if (edgeMapping.valToPetname.has(origin)) {
-            edgeMapping.renamePetname(petname, origin);
-          } else {
-            edgeMapping.suggestPetname(petname, origin);
-          }
-          dappRecord = {
-            ...dappRecord,
-            petname,
-          };
-          updateDapp(dappRecord);
-          updateAllState();
-          return dappRecord.actions;
-        },
-        enable() {
-          // Enable the dapp with the attached petname.
-          dappRecord = {
-            ...dappRecord,
-            enable: true,
-          };
-          edgeMapping.suggestPetname(dappRecord.petname, origin);
-          updateDapp(dappRecord);
+          },
+          enable() {
+            // Enable the dapp with the attached petname.
+            dappRecord = {
+              ...dappRecord,
+              enable: true,
+            };
+            edgeMapping.suggestPetname(dappRecord.petname, origin);
+            updateDapp(dappRecord);
 
-          // Allow the pending requests to pass.
-          resolve();
-          return dappRecord.actions;
-        },
-        disable(reason = undefined) {
-          // Reject the pending dapp requests.
-          if (reject) {
-            reject(reason);
-          }
-          // Create a new, suspended-approval record.
-          ({ resolve, reject, promise: approvalP } = makePromiseKit());
-          dappRecord = {
-            ...dappRecord,
-            enable: false,
-            approvalP,
-          };
-          updateDapp(dappRecord);
-          return dappRecord.actions;
+            // Allow the pending requests to pass.
+            resolve();
+            return dappRecord.actions;
+          },
+          disable(reason = undefined) {
+            // Reject the pending dapp requests.
+            if (reject) {
+              reject(reason);
+            }
+            // Create a new, suspended-approval record.
+            ({ resolve, reject, promise: approvalP } = makePromiseKit());
+            dappRecord = {
+              ...dappRecord,
+              enable: false,
+              approvalP,
+            };
+            updateDapp(dappRecord);
+            return dappRecord.actions;
+          },
         },
       };
 
       // Prepare the table entry to be updated.
-      dappOrigins.init(origin, {});
+      dappOrigins.init(origin, dappRecord);
 
       // Initially disable it.
       dappRecord.actions.disable();
@@ -903,11 +958,15 @@ export async function makeWallet({
     });
   }
 
+  /** @type {Store<Payment, PaymentRecord>} */
   const payments = makeStore('payment');
   const {
     updater: paymentsUpdater,
     notifier: paymentsNotifier,
-  } = makeNotifierKit([]);
+  } = /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
+  /**
+   * @param {PaymentRecord} param0
+   */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = { ...preDisplay, actions, displayPayment };
@@ -915,100 +974,100 @@ export async function makeWallet({
     paymentsUpdater.updateState([...payments.values()]);
   };
 
+  /**
+   * @param {Payment} payment
+   * @param {Purse | Petname=} depositTo
+   */
   const addPayment = async (payment, depositTo = undefined) => {
-    /**
-     * @typedef {Object} PaymentRecord
-     * @property {Issuer} issuer
-     * @property {Payment} payment
-     * @property {Brand} brand
-     * @property {'pending'|'deposited'} status
-     * @property {typeof actions} actions
-     */
-
     // We don't even create the record until we get an alleged brand.
     const brand = await E(payment).getAllegedBrand();
 
-    /** @type {Partial<PaymentRecord>} */
-    let paymentRecord = {
+    /** @type {PaymentRecord} */
+    let paymentRecord;
+
+    const depositedPK = makePromiseKit();
+    paymentRecord = {
       payment,
       brand,
       issuer: undefined,
       status: undefined,
-    };
-
-    const depositedPK = makePromiseKit();
-    const actions = {
-      async deposit(purseOrPetname = undefined) {
-        let purse;
-        if (purseOrPetname === undefined) {
-          if (!brandToAutoDepositPurse.has(brand)) {
-            // No automatic purse right now.
-            return depositedPK.promise;
+      actions: {
+        async deposit(purseOrPetname = undefined) {
+          /** @type {Purse} */
+          let purse;
+          if (purseOrPetname === undefined) {
+            if (!brandToAutoDepositPurse.has(brand)) {
+              // No automatic purse right now.
+              return depositedPK.promise;
+            }
+            // Plop into the current autodeposit purse.
+            purse = brandToAutoDepositPurse.get(brand);
+          } else if (
+            Array.isArray(purseOrPetname) ||
+            typeof purseOrPetname === 'string'
+          ) {
+            purse = purseMapping.petnameToVal.get(purseOrPetname);
+          } else {
+            purse = purseOrPetname;
           }
-          // Plop into the current autodeposit purse.
-          purse = brandToAutoDepositPurse.get(brand);
-        } else if (typeof purseOrPetname === 'string') {
-          purse = purseMapping.petnameToVal.get(purseOrPetname);
-        } else {
-          purse = purseOrPetname;
-        }
-        paymentRecord = {
-          ...paymentRecord,
-          status: 'pending',
-        };
-        updatePaymentRecord(paymentRecord);
-        // Now try depositing.
-        const depositedAmount = await E(purse).deposit(payment);
-        paymentRecord = {
-          ...paymentRecord,
-          status: 'deposited',
-          depositedAmount,
-        };
-        updatePaymentRecord(paymentRecord);
-        depositedPK.resolve(depositedAmount);
-        return depositedPK.promise;
-      },
-      async refresh() {
-        if (!brandTable.has(brand)) {
-          return false;
-        }
-
-        const { issuer } = paymentRecord;
-        if (!issuer) {
           paymentRecord = {
             ...paymentRecord,
-            ...brandTable.get(brand),
+            status: 'pending',
           };
           updatePaymentRecord(paymentRecord);
-        }
+          // Now try depositing.
+          const depositedAmount = await E(purse).deposit(payment);
+          paymentRecord = {
+            ...paymentRecord,
+            status: 'deposited',
+            depositedAmount,
+          };
+          updatePaymentRecord(paymentRecord);
+          depositedPK.resolve(depositedAmount);
+          return depositedPK.promise;
+        },
+        async refresh() {
+          if (!brandTable.has(brand)) {
+            return false;
+          }
 
-        return actions.getAmountOf();
-      },
-      async getAmountOf() {
-        const { issuer } = paymentRecord;
+          const { issuer } = paymentRecord;
+          if (!issuer) {
+            paymentRecord = {
+              ...paymentRecord,
+              ...brandTable.get(brand),
+            };
+            updatePaymentRecord(paymentRecord);
+          }
 
-        // Fetch the current amount of the payment.
-        const lastAmount = await E(issuer).getAmountOf(payment);
+          return paymentRecord.actions.getAmountOf();
+        },
+        async getAmountOf() {
+          const { issuer } = paymentRecord;
+          assert(issuer);
 
-        paymentRecord = {
-          ...paymentRecord,
-          lastAmount,
-        };
-        updatePaymentRecord(paymentRecord);
-        return true;
+          // Fetch the current amount of the payment.
+          const lastAmount = await E(issuer).getAmountOf(payment);
+
+          paymentRecord = {
+            ...paymentRecord,
+            lastAmount,
+          };
+          updatePaymentRecord(paymentRecord);
+          return true;
+        },
       },
     };
 
-    paymentRecord.actions = actions;
     payments.init(payment, harden(paymentRecord));
-    const refreshed = await actions.refresh();
+    const refreshed = await paymentRecord.actions.refresh();
     if (!refreshed) {
       // Only update if the refresh didn't.
       updatePaymentRecord(paymentRecord);
     }
 
     // Try an automatic deposit.
-    return actions.deposit(depositTo);
+    return paymentRecord.actions.deposit(depositTo);
   };
 
   // Allow people to send us payments.
