@@ -1,3 +1,4 @@
+// @ts-check
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
@@ -12,6 +13,8 @@ import { makeRegistrar } from '@agoric/registrar';
 import { E } from '@agoric/eventual-send';
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
 import { makeWallet } from '../src/lib-wallet';
+
+import '../src/types';
 
 const setupTest = async () => {
   const pursesStateChangeLog = [];
@@ -787,8 +790,10 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       autoswapInstanceHandle,
     );
 
+    /** @type {Issuer} */
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
 
+    /** @param {Issuer} issuer */
     const getLocalAmountMath = issuer =>
       Promise.all([
         E(issuer).getBrand(),

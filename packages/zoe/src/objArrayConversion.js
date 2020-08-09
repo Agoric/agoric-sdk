@@ -1,6 +1,12 @@
 import { assert, details, q } from '@agoric/assert';
 
-/** @type {<T extends string[]>(...args: T) => T} */
+/**
+ * @typedef {bigint|boolean|null|number|string|symbol|undefined} Primitive
+ */
+
+/**
+ * @type {<T extends (Primitive|Function|{})[]>(...args: T) => T}
+ */
 export const tuple = (...args) => args;
 
 /**
