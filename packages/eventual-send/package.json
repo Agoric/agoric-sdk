@@ -8,8 +8,7 @@
     "test": "tape -r esm 'test/**/test*.js'",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint-check": "eslint '**/*.js'"
   },
   "repository": {
     "type": "git",
