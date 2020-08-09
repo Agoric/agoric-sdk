@@ -12,7 +12,7 @@ import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
 import makeAmountMath from '@agoric/ertp/src/amountMath';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { areRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
@@ -166,20 +166,6 @@ export function buildRootObject() {
       return zcfMint;
     };
 
-    function updateNotiferFrom(updater, notifier, nextCount = undefined) {
-      notifier.getUpdateSince(nextCount).then(
-        ({ value, updateCount }) => {
-          if (updateCount) {
-            updater.updateState(value);
-            updateNotiferFrom(updater, notifier, updateCount);
-          } else {
-            updater.finish(value);
-          }
-        },
-        e => updater.fail(e),
-      );
-    }
-
     /** @type ContractFacet */
     const zcf = {
       reallocate: (/** @type SeatStaging[] */ ...seatStagings) => {
@@ -282,7 +268,7 @@ export function buildRootObject() {
         E(zoeInstanceAdmin)
           .makeEmptySeat(initialAllocation, proposal)
           .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
-            updateNotiferFrom(updater, zoeNotifier);
+            updateFromNotifier(updater, zoeNotifier);
             zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
             userSeatPromiseKit.resolve(userSeat);
           });
