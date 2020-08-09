@@ -64,7 +64,7 @@
 
 /**
  * Make the ZCF seat and seat admin
- * @callback MakeSeatAdmin
+ * @callback MakeZcfSeatAdmin
  * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
  * @param {ZoeSeatAdmin} zoeSeatAdmin

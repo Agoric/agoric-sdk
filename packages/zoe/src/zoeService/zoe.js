@@ -3,7 +3,6 @@ import makeIssuerKit from '@agoric/ertp';
 import makeWeakStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 /**
@@ -15,6 +14,7 @@ import '../../exported';
 import '../internal-types';
 
 import { makeIssuerTable } from '../issuerTable';
+import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from './cleanProposal';
@@ -181,6 +181,29 @@ function makeZoe(vatAdminSvc) {
         return zoeMint;
       };
 
+      const bundle = installation.getBundle();
+      const addSeatObjPromiseKit = makePromiseKit();
+      const publicFacetPromiseKit = makePromiseKit();
+
+      /** @type {InstanceAdmin} */
+      const instanceAdmin = {
+        addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
+          zoeSeatAdmins.add(zoeSeatAdmin);
+          return E(
+            /** @type Promise<addSeatObj> */ (addSeatObjPromiseKit.promise),
+          ).addSeat(invitationHandle, zoeSeatAdmin, seatData);
+        },
+        hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
+        removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
+        getPublicFacet: () => publicFacetPromiseKit.promise,
+        getTerms: () => instanceRecord.terms,
+        getIssuers: () => instanceRecord.issuerKeywordRecord,
+        getBrands: () => instanceRecord.brandKeywordRecord,
+        getInstance: () => instance,
+      };
+
+      instanceToInstanceAdmin.init(instance, instanceAdmin);
+
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = {
         makeInvitation: (invitationHandle, description, customProperties) => {
@@ -207,33 +230,15 @@ function makeZoe(vatAdminSvc) {
                 brandToPurse.init(brand, E(issuer).makeEmptyPurse());
               }
             }),
-        makeEmptySeat: (keyword, initialAllocation) => {
-          let currentAllocation = initialAllocation;
-
-          const { notifier, updater } = makeNotifierKit();
-
-          const seatAdmin = {
-            replaceAllocation: replacementAllocation => {
-              harden(replacementAllocation);
-              updater.updateState(replacementAllocation);
-              currentAllocation = replacementAllocation;
-            },
-            exit: () => {
-              updater.finish(undefined);
-              const instanceAdmin = instanceToInstanceAdmin.get(instance);
-              instanceAdmin.removeZoeSeatAdmin(seatAdmin);
-
-              // burn the holdings to keep Zoe's book straight
-              Object.entries(currentAllocation).forEach(([_, payoutAmount]) => {
-                const purse = brandToPurse.get(payoutAmount.brand);
-                const { issuer } = issuerTable.get(payoutAmount.brand);
-                E(issuer).burn(E(purse).withdraw(payoutAmount));
-              });
-            },
-          };
-
-          harden(seatAdmin);
-          return { seatAdmin, notifier };
+        makeEmptySeat: (initialAllocation, proposal) => {
+          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            initialAllocation,
+            instanceAdmin,
+            proposal,
+            brandToPurse,
+          );
+          zoeSeatAdmins.add(zoeSeatAdmin);
+          return { userSeat, notifier, zoeSeatAdmin };
         },
         shutdown: () => {
           exitAllSeats();
@@ -241,29 +246,6 @@ function makeZoe(vatAdminSvc) {
         },
         makeZoeMint,
       };
-
-      const bundle = installation.getBundle();
-      const addSeatObjPromiseKit = makePromiseKit();
-      const publicFacetPromiseKit = makePromiseKit();
-
-      /** @type {InstanceAdmin} */
-      const instanceAdmin = {
-        addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
-          zoeSeatAdmins.add(zoeSeatAdmin);
-          return E(
-            /** @type Promise<addSeatObj> */ (addSeatObjPromiseKit.promise),
-          ).addSeat(invitationHandle, zoeSeatAdmin, seatData);
-        },
-        hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
-        removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
-        getPublicFacet: () => publicFacetPromiseKit.promise,
-        getTerms: () => instanceRecord.terms,
-        getIssuers: () => instanceRecord.issuerKeywordRecord,
-        getBrands: () => instanceRecord.brandKeywordRecord,
-        getInstance: () => instance,
-      };
-
-      instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       // At this point, the contract will start executing. All must be ready
 
@@ -331,60 +313,21 @@ function makeZoe(vatAdminSvc) {
         return Promise.all(paymentDepositedPs).then(amountsArray => {
           const initialAllocation = arrayToObj(amountsArray, proposalKeywords);
 
-          const payoutPromiseKit = makePromiseKit();
           const offerResultPromiseKit = makePromiseKit();
           const exitObjPromiseKit = makePromiseKit();
-          const { notifier, updater } = makeNotifierKit();
-          let currentAllocation = initialAllocation;
-
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
           /** @type {ZoeSeatAdmin} */
-          const zoeSeatAdmin = {
-            replaceAllocation: replacementAllocation => {
-              assert(
-                instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-                `Cannot replace allocation. Seat has already exited`,
-              );
-              harden(replacementAllocation);
-              // Merging happens in ZCF, so replacementAllocation can
-              // replace the old allocation entirely.
-              updater.updateState(replacementAllocation);
-              currentAllocation = replacementAllocation;
+          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            initialAllocation,
+            instanceAdmin,
+            proposal,
+            brandToPurse,
+            {
+              offerResult: offerResultPromiseKit,
+              exitObj: exitObjPromiseKit,
             },
-            exit: () => {
-              assert(
-                instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-                `Cannot exit seat. Seat has already exited`,
-              );
-              updater.finish(undefined);
-              instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
-
-              /** @type {PaymentPKeywordRecord} */
-              const payout = {};
-              Object.entries(currentAllocation).forEach(
-                ([keyword, payoutAmount]) => {
-                  const purse = brandToPurse.get(payoutAmount.brand);
-                  payout[keyword] = E(purse).withdraw(payoutAmount);
-                },
-              );
-              harden(payout);
-              payoutPromiseKit.resolve(payout);
-            },
-          };
-          harden(zoeSeatAdmin);
-
-          /** @type {UserSeat} */
-          const userSeat = {
-            getCurrentAllocation: async () => currentAllocation,
-            getProposal: async () => proposal,
-            getPayouts: async () => payoutPromiseKit.promise,
-            getPayout: async keyword =>
-              payoutPromiseKit.promise.then(payouts => payouts[keyword]),
-            getOfferResult: async () => offerResultPromiseKit.promise,
-            exit: async () =>
-              exitObjPromiseKit.promise.then(exitObj => E(exitObj).exit()),
-          };
+          );
 
           const seatData = harden({ proposal, initialAllocation, notifier });
 

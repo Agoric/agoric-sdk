@@ -1,6 +1,11 @@
 import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
+/**
+ * Makes the appropriate exitObj, which runs in ZCF and allows the seat's owner
+ * to request the position be exited.
+ */
+
 /** @type MakeExitObj */
 export const makeExitObj = (proposal, zoeSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
