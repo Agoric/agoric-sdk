@@ -21,7 +21,7 @@ type HandledExecutor<R> = (
   resolveWithPresence: (presenceHandler: EHandler<{}>) => object,
 ) => void;
 
-interface HandledPromiseConstructor {
+interface HandledPromiseConstructor extends PromiseConstructor {
   new<R> (executor: HandledExecutor<R>, unfulfilledHandler?: EHandler<Promise<unknown>>);
   prototype: Promise<unknown>;
   applyFunction(target: unknown, args: unknown[]): Promise<unknown>;
@@ -31,7 +31,6 @@ interface HandledPromiseConstructor {
   get(target: unknown, prop: Property): Promise<unknown>;
   getSendOnly(target: unknown, prop: Property): void;
   resolve(target: unknown): Promise<any>;
-  reject<T = never>(reason?: any): Promise<T>;
 }
 
 export const HandledPromise: HandledPromiseConstructor;
