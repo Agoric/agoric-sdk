@@ -331,7 +331,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   }
 });
 
-test.only('zoe - alice tries to complete after completion has already occurred', async t => {
+test('zoe - alice tries to complete after completion has already occurred', async t => {
   t.plan(5);
   try {
     // Setup zoe and mints
@@ -368,11 +368,16 @@ test.only('zoe - alice tries to complete after completion has already occurred',
 
     await E(aliceSeat).getOfferResult();
 
-    t.throws(() => completeObj.complete(), /Error: Offer is not active/);
+    console.log(
+      'EXPECTED ERROR: Cannot exit seat. Seat has already exited >>>',
+    );
+    t.rejects(
+      () => E(aliceSeat).exit(),
+      /Error: Cannot exit seat. Seat has already exited/,
+    );
 
-    const payout = await payoutP;
-    const moolaPayout = await payout.ContributionA;
-    const simoleanPayout = await payout.ContributionB;
+    const moolaPayout = await aliceSeat.getPayout('ContributionA');
+    const simoleanPayout = await aliceSeat.getPayout('ContributionB');
 
     // Alice got back what she put in
     t.deepEquals(
@@ -403,9 +408,8 @@ test.only('zoe - alice tries to complete after completion has already occurred',
 test('zoe - automaticRefund non-fungible', async t => {
   t.plan(1);
   // Setup zoe and mints
-  const { ccIssuer, ccMint, cryptoCats } = setupNonFungible();
+  const { ccIssuer, ccMint, cryptoCats, zoe } = setupNonFungible();
 
-  const zoe = makeZoe(fakeVatAdmin);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   const installation = await zoe.install(bundle);
@@ -415,7 +419,7 @@ test('zoe - automaticRefund non-fungible', async t => {
 
   // 1: Alice creates an automatic refund instance
   const issuerKeywordRecord = harden({ Contribution: ccIssuer });
-  const { invitation } = await zoe.makeInstance(
+  const { creatorInvitation } = await zoe.makeInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -426,14 +430,9 @@ test('zoe - automaticRefund non-fungible', async t => {
   });
   const alicePayments = { Contribution: aliceCcPayment };
 
-  const { payout: payoutP } = await zoe.offer(
-    invitation,
-    aliceProposal,
-    alicePayments,
-  );
+  const seat = await zoe.offer(creatorInvitation, aliceProposal, alicePayments);
 
-  const alicePayout = await payoutP;
-  const aliceCcPayout = await alicePayout.Contribution;
+  const aliceCcPayout = await seat.getPayout('Contribution');
 
   // Alice got back what she put in
   t.deepEquals(
