@@ -6,11 +6,6 @@ import path from 'path';
 async function main(basedir, argv) {
   const dir = path.resolve(`${__dirname}/..`, basedir);
   const config = await loadBasedir(dir);
-  const ldSrcPath = require.resolve(
-    '@agoric/swingset-vat/src/devices/loopbox-src',
-  );
-  config.devices = [['loopbox', ldSrcPath, {}]];
-
   const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
