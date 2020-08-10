@@ -36,6 +36,9 @@ function getInboundFor(state, remoteID, remoteTarget) {
 }
 
 export function deliverFromRemote(syscall, state, remoteID, message) {
+  if (state.debug) {
+    console.log(`-- msg ${message.slice(0, 80)}`);
+  }
   const command = message.split(':', 1)[0];
 
   if (command === 'deliver') {
@@ -56,6 +59,9 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     let r; // send() if result promise is provided, else sendOnly()
     if (result.length) {
       r = mapInboundResult(state, remoteID, result);
+    }
+    if (state.debug) {
+      console.log(`-- syscall.send(${target}).${method}, r=${r}`);
     }
     syscall.send(target, method, args, r);
     if (r) {
@@ -93,6 +99,11 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     insistPromiseIsUnresolved(state, target);
     insistPromiseDeciderIs(state, target, remoteID);
 
+    if (state.debug) {
+      console.log(
+        `-- syscall.resolve(${target}) ${type}}, ${slots[0]} ${data}`,
+      );
+    }
     if (type === 'object') {
       const slot = slots[0];
       const resolution = harden({ type: 'object', slot });

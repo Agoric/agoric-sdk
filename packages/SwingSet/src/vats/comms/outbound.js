@@ -52,6 +52,9 @@ export function deliverToRemote(
 ) {
   // this object lives on 'remoteID', so we send messages at them
   const remoteID = getRemoteFor(state, target);
+  if (state.debug) {
+    console.log(`-- remoteID ${remoteID}`);
+  }
   assert(remoteID, details`oops ${target}`);
   insistCapData(args);
 
@@ -74,8 +77,12 @@ export function deliverToRemote(
   // now render the transmission. todo: 'method' lives in the transmission
   // for now, but will be moved to 'data'
   const msg = `deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}${rmss};${args.body}`;
-  // console.debug(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
+  // console.log(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
   // dumpState(state);
+  if (state.debug) {
+    console.log(`-- transmit ${msg.slice(0, 80)}`);
+  }
+
   transmit(syscall, state, remoteID, msg);
 }
 
@@ -86,7 +93,7 @@ export function resolvePromiseToRemote(
   resolution,
   transmit,
 ) {
-  // console.debug(`resolvePromiseToRemote ${promiseID}`, resolution);
+  // console.log(`resolvePromiseToRemote ${promiseID}`, resolution);
   insistVatType('promise', promiseID);
   insistPromiseIsUnresolved(state, promiseID);
   insistPromiseDeciderIsMe(state, promiseID);
@@ -129,5 +136,8 @@ export function resolvePromiseToRemote(
     throw new Error(`unknown resolution type ${resolution.type}`);
   }
 
+  if (state.debug) {
+    console.log(`-- transmit ${msg.slice(0, 80)}`);
+  }
   transmit(syscall, state, remoteID, msg);
 }

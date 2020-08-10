@@ -19,26 +19,42 @@ function transmit(syscall, state, remoteID, msg) {
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(syscall) {
+export function buildCommsDispatch(syscall, _state, _helpers, vatPowers) {
   // TODO: state.activate(), put this data on state.stuff instead of closing
   // over a local object
   const state = makeState();
+
+  const { vatParameters } = vatPowers;
+  if (vatParameters.debugComms) {
+    state.debug = vatParameters.debugComms;
+    console.log(`-- comms[${state.debug}] enableDebug`);
+  }
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
   function deliver(target, method, args, result) {
     insistCapData(args);
+    if (state.debug) {
+      console.log(
+        `--comms[${state.debug}].deliver ${target} ${method} r=${result}`,
+      );
+    }
     if (target === controller) {
+      if (state.debug) {
+        console.log(`-- deliverToController`);
+      }
       return deliverToController(state, method, args, result, syscall);
     }
-    // console.debug(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
     if (state.objectTable.has(target) || state.promiseTable.has(target)) {
       assert(
         method.indexOf(':') === -1 && method.indexOf(';') === -1,
         details`illegal method name ${method}`,
       );
+      if (state.debug) {
+        console.log(`-- deliverToRemote`);
+      }
       return deliverToRemote(
         syscall,
         state,
@@ -50,6 +66,9 @@ export function buildCommsDispatch(syscall) {
       );
     }
     if (state.remoteReceivers.has(target)) {
+      if (state.debug) {
+        console.log(`-- deliverFromRemote`);
+      }
       assert(method === 'receive', details`unexpected method ${method}`);
       // the vat-tp integrity layer is a regular vat, so when they send the
       // received message to us, it will be embedded in a JSON array
@@ -68,8 +87,10 @@ export function buildCommsDispatch(syscall) {
   }
 
   function notifyFulfillToData(promiseID, data) {
+    if (state.debug) {
+      console.log(`--comms[${state.debug}].notifyFulfillToData ${promiseID}`);
+    }
     insistCapData(data);
-    // console.debug(`comms.notifyFulfillToData(${promiseID})`);
     // dumpState(state);
 
     // I *think* we should never get here for local promises, since the
@@ -92,14 +113,20 @@ export function buildCommsDispatch(syscall) {
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
-    // console.debug(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
+    if (state.debug) {
+      console.log(
+        `--comms[${state.debug}].notifyFulfillToPresence ${promiseID} -> ${slot}`,
+      );
+    }
     const resolution = harden({ type: 'object', slot });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
   function notifyReject(promiseID, data) {
+    if (state.debug) {
+      console.log(`--comms[${state.debug}].notifyReject ${promiseID}`);
+    }
     insistCapData(data);
-    // console.debug(`comms.notifyReject(${promiseID})`);
     const resolution = harden({ type: 'reject', data });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }

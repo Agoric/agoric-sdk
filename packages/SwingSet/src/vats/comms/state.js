@@ -20,6 +20,8 @@ export function makeState() {
     // * {type: 'data', data}
     // * {type: 'reject', data}
     nextPromiseIndex: 20,
+
+    debug: undefined, // or name (string)
   };
 
   return state; // mutable
