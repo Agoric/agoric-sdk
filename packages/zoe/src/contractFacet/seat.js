@@ -8,7 +8,7 @@ import { isOfferSafe } from './offerSafety';
 import '../../exported';
 import '../internal-types';
 
-/** @type MakeZcfSeatAdminKit */
+/** @type {MakeZcfSeatAdminKit} */
 export const makeZcfSeatAdminKit = (
   allSeatStagings,
   zoeSeatAdmin,
@@ -22,7 +22,7 @@ export const makeZcfSeatAdminKit = (
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
 
-  /** @type ZCFSeatAdmin */
+  /** @type {ZCFSeatAdmin} */
   const zcfSeatAdmin = harden({
     commit: seatStaging => {
       assert(

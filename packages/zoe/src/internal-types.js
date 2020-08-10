@@ -36,18 +36,11 @@
  * @template T
  * @typedef {Object} Table
  * @property {(record: any) => record is T} validate
- * @property {<H>(record: Omit<T, 'handle'>, handle: H = harden({})) => H} create
- * @property {(handle: any) => T & {handle: {}}} get
+ * @property {<H>(record: Omit<T, 'handle'>, handle: H) => H} create
+ * @property {(handle: any) => T} get
  * @property {(handle: any) => boolean} has
  * @property {(handle: any) => void} delete
  * @property {<H>(handle: H, partialRecord: Partial<T>) => H} update
- */
-
-/**
- * @typedef {Object} ZoeSeatAdmin
- * @property {() => void} exit - exit seat
- * @property {(replacementAllocation: Allocation) => void} replaceAllocation
- * - replace the currentAllocation with this allocation
  */
 
 /**
@@ -58,29 +51,32 @@
  */
 
 /**
- * @typedef {{UserSeat, ZoeSeatAdmin, Notifier}} ZoeSeatAdminKit
+ * @typedef {Object} ZoeSeatAdminKit
+ * @property {UserSeat} userSeat
+ * @property {ZoeSeatAdmin} zoeSeatAdmin
+ * @property {Notifier} notifier
  *
- * @typedef MakeZoeSeatAdminKit
+ * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
- * @param {InstanceAdmin} instanceAdmin - pass-by-copy data to use to make the seat
  * @param {Allocation} initialAllocation
- * @param {Proposal} proposal
- * @param {Proposal} brandToPurse
- * @param {{ offerResult: Promise<OfferResult>=, exitObj: Promise<ExitObj>=}=} promises
+ * @param {InstanceAdmin} instanceAdmin - pass-by-copy data to use to make the seat
+ * @param {ProposalRecord} proposal
+ * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
+ * @param {{ offerResult?: PromiseRecord<OfferResult>, exitObj?: PromiseRecord<ExitObj>}} [promises={}]
  * @returns {ZoeSeatAdminKit}
  *
- * @typedef ZoeSeatAdmin
- * @property {Allocation => void} replaceAllocation
+ * @typedef {Object} ZoeSeatAdmin
+ * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {() => void} exit
  * @property {() => Allocation} getCurrentAllocation
  */
 
 /**
- * @typedef MakeZcfSeatAdminKit
+ * @callback MakeZcfSeatAdminKit
  * Make the ZCF seat and seat admin
  * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
  * seatStagings where allocations have been checked for offerSafety
- * @param {ZoeSeatAdmin} zoeSeatAdmin
+ * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
  * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat

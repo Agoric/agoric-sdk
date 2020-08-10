@@ -195,7 +195,7 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
- * @property {ZcfSeatKit} makeEmptySeatKit
+ * @property {() => ZcfSeatKit} makeEmptySeatKit
  */
 
 /**
@@ -374,7 +374,7 @@
  */
 
 /**
- * @typedef {{ zcfSeat: ZCFSeat, userSeat: UserSeat}} ZcfSeatKit
+ * @typedef {{ zcfSeat: ZCFSeat, userSeat: ERef<UserSeat>}} ZcfSeatKit
  */
 
 /**

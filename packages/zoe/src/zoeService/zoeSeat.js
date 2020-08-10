@@ -1,8 +1,14 @@
+// @ts-check
+
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
+import '../types';
+import '../internal-types';
+
+/** @type {MakeZoeSeatAdminKit} */
 export const makeZoeSeatAdminKit = (
   initialAllocation,
   instanceAdmin,
@@ -17,7 +23,7 @@ export const makeZoeSeatAdminKit = (
 
   let currentAllocation = initialAllocation;
 
-  /** @type ZoeSeatAdmin */
+  /** @type {ZoeSeatAdmin} */
   const zoeSeatAdmin = harden({
     replaceAllocation: replacementAllocation => {
       assert(
@@ -50,9 +56,9 @@ export const makeZoeSeatAdminKit = (
     getCurrentAllocation: () => currentAllocation,
   });
 
-  /** @type UserSeat */
+  /** @type {UserSeat} */
   const userSeat = harden({
-    getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
+    getCurrentAllocation: () => zoeSeatAdmin.getCurrentAllocation(),
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword =>
