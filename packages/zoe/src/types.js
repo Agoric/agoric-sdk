@@ -111,8 +111,8 @@
 /**
  * @typedef {Object} MakeInstanceResult
  * @property {Record<string, Function>} creatorFacet
- * @property {Instance} instance
  * @property {Record<string, Function>} publicFacet
+ * @property {Instance} instance
  * @property {Payment} creatorInvitation
  */
 
@@ -209,7 +209,7 @@
  *
  * @property {() => IssuerRecord} getIssuerRecord
  * @property {(gains: AmountKeywordRecord,
- *             zcfSeat: ZCFSeat=,
+ *             zcfSeat?: ZCFSeat,
  *            ) => ZCFSeat} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
@@ -354,7 +354,7 @@
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(msg: string=) => never} kickOut
+ * @property {(msg?: string) => void} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
