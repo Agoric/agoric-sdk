@@ -379,6 +379,12 @@ export function buildPatterns(log) {
   out.a63 = ['a63 done, match true'];
   test('a63');
 
+  // TODO #1404: test case to add: A allocates promise, sends to B, B sends back
+  // a: bob~.one(P(amy))
+  // b.x(p): alice~.two(p)
+  // a.two(p): compart p and P(amy) (should resolve to the same thing)
+  // exercises comms.clist.mapInbound non-flip bug in promise addition
+
   // bob!pipe1()!pipe2()!pipe3() // pipelining
   {
     objA.a70 = async () => {
