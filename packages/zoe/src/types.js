@@ -79,6 +79,7 @@
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult
+ * @property {() => Notifier} getNotifier
  * @property {() => void=} exit
  *
  * @typedef {any} OfferResult

@@ -57,6 +57,43 @@ function makeZoe(vatAdminSvc) {
     return installation;
   };
 
+  const innerOffer = (invitationAmount, proposal, initialAllocation) => {
+    assert(
+      invitationAmount.value.length === 1,
+      'Only one invitation can be redeemed at a time',
+    );
+    const {
+      value: [{ instance, handle: invitationHandle }],
+    } = invitationAmount;
+
+    const offerResultPromiseKit = makePromiseKit();
+    const exitObjPromiseKit = makePromiseKit();
+    const instanceAdmin = instanceToInstanceAdmin.get(instance);
+
+    /** @type {ZoeSeatAdminKit} */
+    const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+      initialAllocation,
+      instanceAdmin,
+      proposal,
+      brandToPurse,
+      {
+        offerResult: offerResultPromiseKit,
+        exitObj: exitObjPromiseKit,
+      },
+    );
+
+    const seatData = harden({ proposal, initialAllocation, notifier });
+
+    instanceAdmin
+      .addZoeSeatAdmin(invitationHandle, zoeSeatAdmin, seatData)
+      .then(({ offerResultP, exitObj }) => {
+        offerResultPromiseKit.resolve(offerResultP);
+        exitObjPromiseKit.resolve(exitObj);
+      });
+
+    return userSeat;
+  };
+
   /** @type {ZoeService} */
   const zoeService = {
     getInvitationIssuer: () => invitationKit.issuer,
@@ -246,6 +283,37 @@ function makeZoe(vatAdminSvc) {
           adminNode.terminate();
         },
         makeZoeMint,
+
+        offerTo: (targetInvitation, zoeSeatAdmin) => {
+          // Now we see some of the compositional magic of offer safety.
+          const targetSeatPromiseKit = makePromiseKit();
+          // throws with no effect if already exited
+          zoeSeatAdmin.redirectUserSeat(targetSeatPromiseKit.promise);
+          // We're now committed to try to redirect, but to maintain
+          // offer safety whether we succeed of fail.
+          // Since zoe.offer maintains offer safety, we just reuse its
+          // core mechanism. However, since zoe trusts itself, we only
+          // transfer the allocation. No need to withdraw and deposit
+          // from the pooled purses, as assets are conserved by the
+          // transfer of allocation.
+          //
+          // TODO Once we have the three-way split, we will need to
+          // transfer between purses using withdraw and deposit. However,
+          // because multi-vat zoe will still trust multi-vat zoe, the
+          // remaining logic still applies.
+          //
+          // The trasfer uses up this seatAdmin, and causes its userSeat
+          // to become a forwarder to the target userSeat from the target
+          // invitation.
+          invitationKit.issuer.burn(targetInvitation).then(invitationAmount => {
+            const targetSeat = innerOffer(
+              invitationAmount,
+              zoeSeatAdmin.getProposal(),
+              zoeSeatAdmin.getCurrentAllocation(),
+            );
+            targetSeatPromiseKit.resolve(targetSeat);
+          });
+        },
       };
 
       // At this point, the contract will start executing. All must be ready
@@ -307,39 +375,11 @@ function makeZoe(vatAdminSvc) {
             return getAmountMath(proposal.want[keyword].brand).getEmpty();
           }
         });
-        const {
-          value: [{ instance, handle: invitationHandle }],
-        } = invitationAmount;
 
         return Promise.all(paymentDepositedPs).then(amountsArray => {
           const initialAllocation = arrayToObj(amountsArray, proposalKeywords);
 
-          const offerResultPromiseKit = makePromiseKit();
-          const exitObjPromiseKit = makePromiseKit();
-          const instanceAdmin = instanceToInstanceAdmin.get(instance);
-
-          /** @type {ZoeSeatAdminKit} */
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            instanceAdmin,
-            proposal,
-            brandToPurse,
-            {
-              offerResult: offerResultPromiseKit,
-              exitObj: exitObjPromiseKit,
-            },
-          );
-
-          const seatData = harden({ proposal, initialAllocation, notifier });
-
-          instanceAdmin
-            .addZoeSeatAdmin(invitationHandle, zoeSeatAdmin, seatData)
-            .then(({ offerResultP, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultP);
-              exitObjPromiseKit.resolve(exitObj);
-            });
-
-          return userSeat;
+          return innerOffer(invitationAmount, proposal, initialAllocation);
         });
       });
     },

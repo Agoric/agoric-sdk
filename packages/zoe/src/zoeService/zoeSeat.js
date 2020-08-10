@@ -1,7 +1,8 @@
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { objectMap } from '../objArrayConversion';
 
 export const makeZoeSeatAdminKit = (
   initialAllocation,
@@ -17,6 +18,32 @@ export const makeZoeSeatAdminKit = (
 
   let currentAllocation = initialAllocation;
 
+  let howExited = 'internal error: not exited yet';
+
+  const atomicallyClosePosition = (exitedKind = 'exited') => {
+    assert(
+      // eslint-disable-next-line no-use-before-define
+      instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+      `Seat cannot be ${howExited}. Seat has already ${exitedKind}`,
+    );
+    // At this point, we know that the local position has not yet been closed.
+    // We know that payoutPromiseKit.resolve is not yet used up.
+    //
+    // We leave the remaining local zoeSeatAdmin state
+    //    * payoutPromiseKit.resolve
+    //    * offerResultPromiseKit.resolve
+    //    * updater
+    //    * exitObjPromiseKit.resolve
+    //    * innerUserSeatP
+    // to our caller since different callers will want to do different things.
+    //
+    // Removes this zoeSeatAdmin, since it is the interlock we check
+    // above. Thus we ensure that we will proceed past that test at most once.
+    // eslint-disable-next-line no-use-before-define
+    instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
+    howExited = exitedKind;
+  };
+
   /** @type ZoeSeatAdmin */
   const zoeSeatAdmin = harden({
     replaceAllocation: replacementAllocation => {
@@ -31,31 +58,30 @@ export const makeZoeSeatAdminKit = (
       currentAllocation = replacementAllocation;
     },
     exit: () => {
-      assert(
-        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-        `Cannot exit seat. Seat has already exited`,
-      );
-      updater.finish(undefined);
-      instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
+      // will throw if already closed.
+      atomicallyClosePosition('exited');
 
-      /** @type {PaymentPKeywordRecord} */
-      const payout = {};
-      Object.entries(currentAllocation).forEach(([keyword, payoutAmount]) => {
+      const payout = objectMap(currentAllocation, ([keyword, payoutAmount]) => {
         const purse = brandToPurse.get(payoutAmount.brand);
-        payout[keyword] = E(purse).withdraw(payoutAmount);
+        return [keyword, E(purse).withdraw(payoutAmount)];
       });
       harden(payout);
+
       payoutPromiseKit.resolve(payout);
+      // ignore offerResultPromiseKit.resolve
+      updater.finish(undefined);
+      // ignore exitObjPromiseKit.resolve (TODO really?)
+      // ignore innerUserSeatP
     },
     getCurrentAllocation: () => currentAllocation,
+    getProposal: async () => proposal,
 
-    redirectUserSeat: newInnerUserSeatP => {
-      assert(
-        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-        `Cannot redirect seat. Seat has already exited`,
-      );
-      instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
-      payoutPromiseKit.resolve(E(newInnerUserSeatP).getPayouts());
+    redirectUserSeat: targetUserSeat => {
+      // will throw if already closed.
+      atomicallyClosePosition('forwarded');
+
+      payoutPromiseKit.resolve(E(targetUserSeat).getPayouts());
+
       // For a normal user seat, created from an invitation, this
       // `resolve` will likely have no effect since that promise is
       // already resolved, and the caller has likely already picked it
@@ -66,10 +92,14 @@ export const makeZoeSeatAdminKit = (
       //
       // In addition, if the user asks after the seat is forwarded, they'll
       // get the new offerResult because of the forwarding behavior.
-      offerResultPromiseKit.resolve(E(newInnerUserSeatP).getOfferResult());
-      // TODO exit handling will be tricky!
+      offerResultPromiseKit.resolve(E(targetUserSeat).getOfferResult());
+
+      updateFromNotifier(updater, E(targetUserSeat).getNotifier());
+
+      // TODO what about exit?
+
       // eslint-disable-next-line no-use-before-define
-      innerUserSeatP = newInnerUserSeatP;
+      innerUserSeatP = targetUserSeat;
     },
   });
 
@@ -81,8 +111,8 @@ export const makeZoeSeatAdminKit = (
     getPayout: async keyword =>
       payoutPromiseKit.promise.then(payouts => payouts[keyword]),
     getOfferResult: async () => offerResultPromiseKit.promise,
-    exit: async () =>
-      exitObjPromiseKit.promise.then(exitObj => E(exitObj).exit()),
+    getNotifier: async () => notifier,
+    exit: async () => E(exitObjPromiseKit.promise).exit(),
   });
 
   /** @type UserSeat */
@@ -96,6 +126,10 @@ export const makeZoeSeatAdminKit = (
     // This will be the offer result according to the current innerUserSeatP
     // even if an offerResult has already been reported.
     getOfferResult: async () => E(innerUserSeatP).getOfferResult(),
+    // If the notifier were a lossless stream of updates, blithely forwarding
+    // it here would be dangerous. Updates could get lost. But for a notifier,
+    // that's what we want.
+    getNotifier: async () => E(innerUserSeatP).getNotifier(),
     exit: E(innerUserSeatP).exit(),
   });
 

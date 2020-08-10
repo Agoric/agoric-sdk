@@ -44,13 +44,6 @@
  */
 
 /**
- * @typedef {Object} ZoeSeatAdmin
- * @property {() => void} exit - exit seat
- * @property {(replacementAllocation: Allocation) => void} replaceAllocation
- * - replace the currentAllocation with this allocation
- */
-
-/**
  * @typedef {Object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
@@ -68,11 +61,16 @@
  * @param {Proposal} brandToPurse
  * @param {{ offerResult: Promise<OfferResult>=, exitObj: Promise<ExitObj>=}=} promises
  * @returns {ZoeSeatAdminKit}
- *
- * @typedef ZoeSeatAdmin
- * @property {Allocation => void} replaceAllocation
- * @property {() => void} exit
+ */
+
+/**
+ * @typedef {Object} ZoeSeatAdmin
+ * @property {(replacementAllocation: Allocation) => void} replaceAllocation
+ * - replace the currentAllocation with this allocation
+ * @property {() => void} exit - exit seat
  * @property {() => Allocation} getCurrentAllocation
+ * @property {() => ProposalRecord} getProposal
+ * @property {(targetUserSeat: ERef<UserSeat>) => void} redirectUserSeat
  */
 
 /**
@@ -133,6 +131,10 @@
  * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeOfferlessSeat} makeOfferlessSeat
+ * @property {(
+ *   targetInvitation: Invitation,
+ *   zoeSeatAdmin: ZoeSeatAdmin
+ * ) => void} offerTo
  */
 
 /**
