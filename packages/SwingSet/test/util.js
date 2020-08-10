@@ -69,3 +69,10 @@ export function buildDispatch(onDispatchCallback = undefined) {
 
   return { log, dispatch };
 }
+
+export function ignore(p) {
+  p.then(
+    () => 0,
+    () => 0,
+  );
+}
