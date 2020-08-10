@@ -266,15 +266,12 @@ function makeZoe(vatAdminSvc) {
       addSeatObjPromiseKit.resolve(addSeatObj);
       publicFacetPromiseKit.resolve(publicFacet);
 
-      const creatorFacetWInstance = {
-        ...creatorFacet,
-        getInstance: () => instance,
-      };
-
       // Actually returned to the user.
       return {
-        creatorFacet: creatorFacetWInstance,
+        creatorFacet,
         creatorInvitation: await creatorInvitation,
+        instance,
+        publicFacet,
       };
     },
     offer: async (
