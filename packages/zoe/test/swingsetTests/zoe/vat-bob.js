@@ -2,6 +2,7 @@ import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
+import { getInviteFields } from '../../zoeTestHelpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const {
@@ -421,15 +422,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
-    doAutoswap: async instanceHandle => {
-      const { installationHandle, issuerKeywordRecord, publicAPI } = await E(
-        zoe,
-      ).getInstanceRecord(instanceHandle);
+
+    doAutoswap: async instance => {
+      const publicFacet = await E(zoe).getPublicFacet(instance);
+      const swapInvite1 = await E(publicFacet).makeSwapInvite();
+      const { installation } = await getInviteFields(inviteIssuer, swapInvite1);
+      const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       assert(
-        installationHandle === installations.autoswap,
+        installation === installations.autoswap,
         details`wrong installation`,
       );
-      const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+      const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
       assert(
         sameStructure(
           harden({
@@ -443,13 +446,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       // bob checks the price of 3 moola. The price is 1 simolean
-      const simoleanAmounts = await E(publicAPI).getCurrentPrice(
+      const simoleanAmounts = await E(publicFacet).getCurrentPrice(
         moola(3),
         simoleans(0).brand,
       );
       log(`simoleanAmounts `, simoleanAmounts);
-
-      const buyBInvite = E(publicAPI).makeSwapInvite();
 
       const moolaForSimProposal = harden({
         give: { In: moola(3) },
@@ -457,20 +458,23 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
 
       const moolaForSimPayments = harden({ In: moolaPayment });
-      const { payout: moolaForSimPayoutP, outcome: outcomeP } = await E(
-        zoe,
-      ).offer(buyBInvite, moolaForSimProposal, moolaForSimPayments);
+      const buySeatP = await E(zoe).offer(
+        swapInvite1,
+        moolaForSimProposal,
+        moolaForSimPayments,
+      );
 
-      log(await outcomeP);
-      const moolaForSimPayout = await moolaForSimPayoutP;
-      const moolaPayout1 = await moolaForSimPayout.In;
-      const simoleanPayout1 = await moolaForSimPayout.Out;
+      log(await E(buySeatP).getOfferResult());
 
-      await E(moolaPurseP).deposit(moolaPayout1);
-      await E(simoleanPurseP).deposit(simoleanPayout1);
+      const { In: moolaPayout1, Out: simoleanPayout1 } = await E(
+        buySeatP,
+      ).getPayouts();
+
+      await E(moolaPurseP).deposit(await moolaPayout1);
+      await E(simoleanPurseP).deposit(await simoleanPayout1);
 
       // Bob looks up the price of 3 simoleans. It's 5 moola
-      const moolaAmounts = await E(publicAPI).getCurrentPrice(
+      const moolaAmounts = await E(publicFacet).getCurrentPrice(
         simoleans(3),
         moola(0).brand,
       );
@@ -484,29 +488,27 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(simoleanPurseP).deposit(simoleanPayment);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
       const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
-      const invite2 = E(publicAPI).makeSwapInvite();
+      const invite2 = E(publicFacet).makeSwapInvite();
 
-      const {
-        payout: bobSimsForMoolaPayoutP,
-        outcome: simsForMoolaOutcomeP,
-      } = await E(zoe).offer(
+      const swapSeat2 = await E(zoe).offer(
         invite2,
         bobSimsForMoolaProposal,
         simsForMoolaPayments,
       );
 
-      log(await simsForMoolaOutcomeP);
+      log(await E(swapSeat2).getOfferResult());
 
-      const simsForMoolaPayout = await bobSimsForMoolaPayoutP;
-      const moolaPayout2 = await simsForMoolaPayout.Out;
-      const simoleanPayout2 = await simsForMoolaPayout.In;
+      const { Out: moolaPayout2, In: simoleanPayout2 } = await E(
+        swapSeat2,
+      ).getPayouts();
 
-      await E(moolaPurseP).deposit(moolaPayout2);
-      await E(simoleanPurseP).deposit(simoleanPayout2);
+      await E(moolaPurseP).deposit(await moolaPayout2);
+      await E(simoleanPurseP).deposit(await simoleanPayout2);
 
       await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
+
     doBuyTickets: async ticketSalesInstanceHandle => {
       const { publicAPI: ticketSalesPublicAPI, terms } = await E(
         zoe,

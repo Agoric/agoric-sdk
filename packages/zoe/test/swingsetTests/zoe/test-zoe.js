@@ -245,12 +245,12 @@ const expectedAutoswapOkLog = [
   'bobMoolaPurse: balance {"brand":{},"value":5}',
   'bobSimoleanPurse: balance {"brand":{},"value":5}',
   'Liquidity successfully removed.',
-  'poolAmounts{"TokenA":{"brand":{},"value":0},"TokenB":{"brand":{},"value":0},"Liquidity":{"brand":{},"value":10}}',
+  'poolAmounts{"Liquidity":{"brand":{},"value":10},"TokenA":{"brand":{},"value":0},"TokenB":{"brand":{},"value":0}}',
   'aliceMoolaPurse: balance {"brand":{},"value":8}',
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
   'aliceLiquidityTokenPurse: balance {"brand":{},"value":0}',
 ];
-test('zoe - autoswap - valid inputs', async t => {
+test.only('zoe - autoswap - valid inputs', async t => {
   t.plan(1);
   const startingValues = [
     [10, 5, 0],

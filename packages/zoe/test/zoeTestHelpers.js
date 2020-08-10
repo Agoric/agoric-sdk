@@ -1,9 +1,19 @@
-import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 export const assertPayoutAmount = (t, issuer, payout, expectedAmount) => {
   issuer.getAmountOf(payout).then(amount => {
     t.deepEquals(amount, expectedAmount, `payout was ${amount.value}`);
+  });
+};
+
+export const assertPayoutDeposit = (t, payout, purse, amount) => {
+  payout.then(payment => {
+    purse.deposit(payment);
+    t.deepEquals(
+      purse.getCurrentAmount(),
+      amount,
+      `payout was ${purse.getCurrentAmount().value}, expected ${amount}.value`,
+    );
   });
 };
 
@@ -20,9 +30,6 @@ export const assertRejectedOfferResult = (t, seat, expected) => {
     e => t.equals(e, expected, 'Expected offer to be rejected'),
   );
 };
-
-export const installationPFromSource = (zoe, source) =>
-  bundleSource(source).then(b => zoe.install(b));
 
 export const getInviteFields = (inviteIssuer, inviteP) =>
   E(inviteIssuer)

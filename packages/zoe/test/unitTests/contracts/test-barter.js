@@ -5,8 +5,8 @@ import { test } from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
 
 import { setup } from '../setupBasicMints';
+import { installationPFromSource } from '../installFromSource';
 import {
-  installationPFromSource,
   assertPayoutDeposit,
   assertOfferResult,
   getInviteFields,

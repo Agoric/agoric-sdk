@@ -42,11 +42,10 @@ test('multipoolAutoSwap with valid offers', async t => {
     const bundle = await bundleSource(multipoolAutoswapRoot);
 
     const installation = await zoe.install(bundle);
-    const { creatorFacet } = await zoe.makeInstance(
+    const { instance } = await zoe.makeInstance(
       installation,
       harden({ Central: centralR.issuer }),
     );
-    const instance = await E(creatorFacet).getInstance();
     const publicFacet = await E(zoe).getPublicFacet(instance);
     const aliceAddLiquidityInvitation = E(
       publicFacet,

@@ -9,8 +9,8 @@ import { assert, details } from '@agoric/assert';
 // noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
+import { installationPFromSource } from '../installFromSource';
 import {
-  installationPFromSource,
   assertPayoutDeposit,
   assertOfferResult,
   getInviteFields,
@@ -48,13 +48,13 @@ test('simpleExchange with valid offers', async t => {
   const {
     creatorInvitation: aliceInvite,
     creatorFacet,
+    instance,
   } = await zoe.makeInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
 
   const publicFacet = await creatorFacet.getPublicFacet();
-  const instance = creatorFacet.getInstance();
 
   const aliceNotifier = publicFacet.getNotifier();
   E(aliceNotifier)

@@ -311,11 +311,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const {
-      invite: addLiquidityInvite,
-      instanceRecord: { publicAPI, handle: instanceHandle },
-    } = await E(zoe).makeInstance(installations.autoswap, issuerKeywordRecord);
-    const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+    const { creatorFacet: publicFacet, instance } = await E(zoe).makeInstance(
+      installations.autoswap,
+      issuerKeywordRecord,
+    );
+    const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
     const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
     const liquidity = liquidityAmountMath.make;
 
@@ -330,19 +330,21 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       TokenA: moolaPayment,
       TokenB: simoleanPayment,
     });
-    const { payout: payoutP, outcome: addLiquidityOutcomeP } = await E(
-      zoe,
-    ).offer(addLiquidityInvite, addLiquidityProposal, paymentKeywordRecord);
+    const addLiquidityInvite = E(publicFacet).makeAddLiquidityInvite();
+    const addLiqSeatP = await E(zoe).offer(
+      addLiquidityInvite,
+      addLiquidityProposal,
+      paymentKeywordRecord,
+    );
 
-    log(await addLiquidityOutcomeP);
+    log(await E(addLiqSeatP).getOfferResult());
 
-    const addLiquidityPayments = await payoutP;
-    const liquidityPayout = await addLiquidityPayments.Liquidity;
+    const liquidityPayout = await E(addLiqSeatP).getPayout('Liquidity');
 
     const liquidityTokenPurseP = E(liquidityIssuer).makeEmptyPurse();
-    await E(liquidityTokenPurseP).deposit(liquidityPayout);
+    await E(liquidityTokenPurseP).deposit(await liquidityPayout);
 
-    await E(bobP).doAutoswap(instanceHandle);
+    await E(bobP).doAutoswap(instance);
 
     // remove the liquidity
     const aliceRemoveLiquidityProposal = harden({
@@ -353,27 +355,24 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
       liquidity(10),
     );
-    const removeLiquidityInvite = E(publicAPI).makeRemoveLiquidityInvite();
+    const removeLiquidityInvite = E(publicFacet).makeRemoveLiquidityInvite();
 
-    const {
-      payout: aliceRemoveLiquidityPayoutP,
-      outcome: removeLiquidityOutcomeP,
-    } = await E(zoe).offer(
+    const removeLiquiditySeat = await E(zoe).offer(
       removeLiquidityInvite,
       aliceRemoveLiquidityProposal,
       harden({ Liquidity: liquidityTokenPayment }),
     );
 
-    log(await removeLiquidityOutcomeP);
+    log(await E(removeLiquiditySeat).getOfferResult());
 
-    const payout = await aliceRemoveLiquidityPayoutP;
-    const moolaPayout = await payout.TokenA;
-    const simoleanPayout = await payout.TokenB;
+    const { TokenA: moolaPayout, TokenB: simoleanPayout } = await E(
+      removeLiquiditySeat,
+    ).getPayouts();
 
-    await E(moolaPurseP).deposit(moolaPayout);
-    await E(simoleanPurseP).deposit(simoleanPayout);
+    await E(moolaPurseP).deposit(await moolaPayout);
+    await E(simoleanPurseP).deposit(await simoleanPayout);
 
-    const poolAmounts = await E(publicAPI).getPoolAllocation();
+    const poolAmounts = await E(publicFacet).getPoolAllocation();
 
     log(`poolAmounts`, poolAmounts);
 
