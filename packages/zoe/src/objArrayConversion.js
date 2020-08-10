@@ -1,3 +1,5 @@
+// @ts-check
+
 import { assert, details, q } from '@agoric/assert';
 
 /**
@@ -11,7 +13,7 @@ export const tuple = (...args) => args;
 
 /**
  * @template T
- * @template U
+ * @template {string | number} U
  * @param {T[]} array
  * @param {U[]} keys
  */
@@ -20,8 +22,9 @@ export const arrayToObj = (array, keys) => {
     array.length === keys.length,
     details`array and keys must be of equal length`,
   );
-  /** @type {{[Keyword: U]: T}} */
-  const obj = {};
+  const obj =
+    /** @type {Record<U, T>} */
+    ({});
   keys.forEach((key, i) => (obj[key] = array[i]));
   return obj;
 };
@@ -57,6 +60,7 @@ export const assertSubset = (whole, part) => {
  * @returns {Pick<T,U[number]>}
  */
 export const filterObj = (obj, subsetKeys) => {
+  /** @type {Partial<Pick<T,U[number]>>} */
   const newObj = {};
   subsetKeys.forEach(key => {
     assert(
@@ -65,7 +69,9 @@ export const filterObj = (obj, subsetKeys) => {
     );
     newObj[key] = obj[key];
   });
-  return newObj;
+
+  const picked = /** @type {Pick<T,U[number]>} */ (newObj);
+  return picked;
 };
 
 /**
@@ -76,6 +82,7 @@ export const filterObj = (obj, subsetKeys) => {
  * @returns {Allocation}
  * */
 export const filterFillAmounts = (allocation, amountMathKeywordRecord) => {
+  /** @type {Allocation} */
   const filledAllocation = {};
   const subsetKeywords = Object.getOwnPropertyNames(amountMathKeywordRecord);
   subsetKeywords.forEach(keyword => {
@@ -89,10 +96,14 @@ export const filterFillAmounts = (allocation, amountMathKeywordRecord) => {
 };
 
 /**
- * @template P, T, U
- * @param {{[P]: T}} original
- * @param {(pair: [P, T]) => [P, U]} mapPairFn
- * @returns {{[P]: U}}
+ * @template T, U
+ * @template {keyof T} K
+ * @param {Record<K, T>} original
+ * @param {(pair: [K, T]) => [K, U]} mapPairFn
+ * @returns {Record<K, U>}
  */
-export const objectMap = (original, mapPairFn) =>
-  Object.fromEntries(Object.entries(original).map(mapPairFn));
+export const objectMap = (original, mapPairFn) => {
+  const ents = /** @type {[K, T][]} */ (Object.entries(original));
+  const mapEnts = ents.map(ent => mapPairFn(ent));
+  return /** @type {Record<K, U>} */ (Object.fromEntries(mapEnts));
+};

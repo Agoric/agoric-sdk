@@ -235,7 +235,7 @@ function makeZoe(vatAdminSvc) {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,
-            proposal,
+            cleanProposal(getAmountMath, proposal),
             brandToPurse,
           );
           zoeSeatAdmins.add(zoeSeatAdmin);
@@ -318,7 +318,6 @@ function makeZoe(vatAdminSvc) {
           const exitObjPromiseKit = makePromiseKit();
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
-          /** @type {ZoeSeatAdminKit} */
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,

@@ -38,7 +38,7 @@ const makeIssuerTable = () => {
 
   /** @param {Table<IssuerRecord>} table */
   const makeCustomMethods = table => {
-    /** @type {WeakStore<Issuer, Promise<IssuerRecord & {handle: {}}>>} */
+    /** @type {WeakStore<Issuer, Promise<IssuerRecord>>} */
     const issuersInProgress = makeWeakStore('issuer');
 
     /** @type {WeakStore<Issuer,Brand>} */

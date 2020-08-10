@@ -16,7 +16,11 @@ import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { areRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
-import { assertKeywordName, getKeywords } from '../zoeService/cleanProposal';
+import {
+  assertKeywordName,
+  getKeywords,
+  cleanProposal,
+} from '../zoeService/cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
@@ -260,7 +264,7 @@ export function buildRootObject() {
       makeZCFMint,
       makeEmptySeatKit: () => {
         const initialAllocation = harden({});
-        const proposal = harden({ want: {} });
+        const proposal = cleanProposal(getAmountMath, harden({}));
         const { notifier, updater } = makeNotifierKit();
         const zoeSeatAdminPromiseKit = makePromiseKit();
         const userSeatPromiseKit = makePromiseKit();
