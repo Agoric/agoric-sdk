@@ -85,6 +85,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
       enablePipelining,
       enableSetup,
     },
+    parameters: { debugComms: 'left' },
   };
   config.vats.rightcomms = {
     sourceSpec: commsSourcePath,
@@ -92,6 +93,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
       enablePipelining,
       enableSetup,
     },
+    parameters: { debugComms: 'right' },
   };
   config.vats.leftvattp = { sourceSpec: vatTPSourcePath };
   config.vats.rightvattp = { sourceSpec: vatTPSourcePath };
