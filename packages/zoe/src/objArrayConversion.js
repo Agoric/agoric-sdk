@@ -13,7 +13,7 @@ export const tuple = (...args) => args;
 
 /**
  * @template T
- * @template {string | number} U
+ * @template {string | number | symbol} U
  * @param {T[]} array
  * @param {U[]} keys
  */

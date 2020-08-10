@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
@@ -10,13 +10,14 @@ import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeRegistrar } from '@agoric/registrar';
 
+import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
 import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
 
-const setupTest = async () => {
+async function setupTest() {
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
   const pursesStateChangeHandler = data => {
@@ -38,12 +39,12 @@ const setupTest = async () => {
     '@agoric/zoe/src/contracts/automaticRefund',
   );
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
-  const installationHandle = await zoe.install(automaticRefundBundle);
+  const installation = await zoe.install(automaticRefundBundle);
   const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
-  const {
-    invite,
-    instanceRecord: { handle: instanceHandle },
-  } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
+  const { creatorInvitation: invite, instance } = await zoe.makeInstance(
+    installation,
+    issuerKeywordRecord,
+  );
 
   // Create Autoswap instance
   const autoswapContractRoot = require.resolve(
@@ -56,12 +57,14 @@ const setupTest = async () => {
     TokenB: simoleanBundle.issuer,
   });
   const {
-    invite: addLiquidityInvite,
-    instanceRecord: { handle: autoswapInstanceHandle },
+    publicFacet: autoswapPublicFacet,
+    instance: autoswapInstanceHandle,
   } = await zoe.makeInstance(
     autoswapInstallationHandle,
     autoswapIssuerKeywordRecord,
   );
+
+  const addLiquidityInvite = await autoswapPublicFacet.makeAddLiquidityInvite();
 
   const wallet = await makeWallet({
     zoe,
@@ -79,14 +82,14 @@ const setupTest = async () => {
     wallet,
     invite,
     addLiquidityInvite,
-    installationHandle,
-    instanceHandle,
+    installation,
+    instance,
     autoswapInstanceHandle,
     autoswapInstallationHandle,
     pursesStateChangeLog,
     inboxStateChangeLog,
   };
-};
+}
 
 test('lib-wallet issuer and purse methods', async t => {
   t.plan(11);
@@ -210,7 +213,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       zoe,
       invite,
       autoswapInstallationHandle,
-      instanceHandle,
+      instance,
       wallet,
       pursesStateChangeLog,
       inboxStateChangeLog,
@@ -236,13 +239,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     const inviteIssuer = await E(zoe).getInvitationIssuer();
     const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
     const {
-      value: [{ handle: inviteHandle, installationHandle }],
+      value: [{ handle: inviteHandle, installation }],
     } = await E(inviteIssuer).getAmountOf(invite);
     const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
     await wallet.deposit('Default Zoe invite purse', invite);
 
-    const instanceHandleBoardId = await E(board).getId(instanceHandle);
-    const installationHandleBoardId = await E(board).getId(installationHandle);
+    const instanceHandleBoardId = await E(board).getId(instance);
+    const installationHandleBoardId = await E(board).getId(installation);
 
     const formulateBasicOffer = (id, inviteHandleBoardId) =>
       harden({
@@ -265,12 +268,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     // invite purse balance is rendered with petnames. We should see
     // unnamed first, then the petnames after those are suggested by
     // the dapp.
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
-    const invite2 = await E(publicAPI).makeInvite();
+    /** @type {{ makeInvitation(): Invitation }} */
+    const publicAPI = await E(zoe).getPublicFacet(instance);
+    const invite2 = await E(publicAPI).makeInvitation();
     const {
       value: [{ handle: inviteHandle2 }],
     } = await E(inviteIssuer).getAmountOf(invite2);
-    await wallet.deposit('Default Zoe invite purse', invite2);
+    wallet.deposit('Default Zoe invite purse', invite2);
 
     const currentAmount = await E(zoeInvitePurse).getCurrentAmount();
     t.deepEquals(
@@ -279,8 +283,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         {
           description: 'getRefund',
           handle: inviteHandle2,
-          instanceHandle,
-          installationHandle,
+          instance,
+          installation,
         },
       ],
       `a single invite in zoe purse`,
@@ -300,13 +304,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           {
             description: 'getRefund',
             handle: {},
-            instanceHandle: {},
-            installationHandle: {},
+            instance: {},
+            installation: {},
           },
         ],
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-1' },
@@ -320,8 +324,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             {
               description: 'getRefund',
               handle: { kind: 'unnamed', petname: 'unnamed-1' },
-              instanceHandle: { kind: 'unnamed', petname: 'unnamed-2' },
-              installationHandle: { kind: 'unnamed', petname: 'unnamed-3' },
+              instance: { kind: 'unnamed', petname: 'unnamed-2' },
+              installation: { kind: 'unnamed', petname: 'unnamed-3' },
             },
           ],
         },
@@ -329,7 +333,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `zoeInvitePurseState with no names and invite2`,
     );
 
-    const automaticRefundInstanceBoardId = await E(board).getId(instanceHandle);
+    const automaticRefundInstanceBoardId = await E(board).getId(instance);
     await wallet.suggestInstance(
       'automaticRefund',
       automaticRefundInstanceBoardId,
@@ -337,12 +341,12 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
     t.equals(
       wallet.getInstance('automaticRefund'),
-      instanceHandle,
-      `automaticRefund instanceHandle stored in wallet`,
+      instance,
+      `automaticRefund instance stored in wallet`,
     );
 
     const automaticRefundInstallationBoardId = await E(board).getId(
-      installationHandle,
+      installation,
     );
     await wallet.suggestInstallation(
       'automaticRefund',
@@ -351,8 +355,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
     t.equals(
       wallet.getInstallation('automaticRefund'),
-      installationHandle,
-      `automaticRefund installationHandle stored in wallet`,
+      installation,
+      `automaticRefund installation stored in wallet`,
     );
 
     const autoswapInstallationBoardId = await E(board).getId(
@@ -363,7 +367,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.equals(
       wallet.getInstallation('autoswap'),
       autoswapInstallationHandle,
-      `autoswap installationHandle stored in wallet`,
+      `autoswap installation stored in wallet`,
     );
 
     const zoeInvitePurseState2 = JSON.parse(
@@ -381,13 +385,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           {
             description: 'getRefund',
             handle: {},
-            instanceHandle: {},
-            installationHandle: {},
+            instance: {},
+            installation: {},
           },
         ],
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-4' },
@@ -401,8 +405,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             {
               description: 'getRefund',
               handle: { kind: 'unnamed', petname: 'unnamed-4' },
-              instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
-              installationHandle: {
+              instance: { kind: 'instance', petname: 'automaticRefund' },
+              installation: {
                 kind: 'installation',
                 petname: 'automaticRefund',
               },
@@ -444,12 +448,12 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `resuggesting a petname doesn't error`,
     );
 
-    await wallet.renameInstallation('automaticRefund2', installationHandle);
+    await wallet.renameInstallation('automaticRefund2', installation);
 
     t.equals(
       wallet.getInstallation('automaticRefund2'),
-      installationHandle,
-      `automaticRefund installationHandle renamed in wallet`,
+      installation,
+      `automaticRefund installation renamed in wallet`,
     );
 
     // We need this await for the pursesStateChangeLog to be updated
@@ -462,8 +466,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         {
           description: 'getRefund',
           handle: inviteHandle2,
-          instanceHandle,
-          installationHandle,
+          instance,
+          installation,
         },
       ],
       `a single invite in zoe purse`,
@@ -484,13 +488,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           {
             description: 'getRefund',
             handle: inviteHandle2,
-            instanceHandle,
-            installationHandle,
+            instance,
+            installation: {},
           },
         ],
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instanceHandle":{"@qclass":"slot","index":2},"installationHandle":{"@qclass":"slot","index":3}}]}',
+            '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
             { kind: 'unnamed', petname: 'unnamed-4' },
@@ -504,8 +508,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             {
               description: 'getRefund',
               handle: { kind: 'unnamed', petname: 'unnamed-4' },
-              instanceHandle: { kind: 'instance', petname: 'automaticRefund' },
-              installationHandle: {
+              instance: { kind: 'instance', petname: 'automaticRefund' },
+              installation: {
                 kind: 'installation',
                 petname: 'automaticRefund',
               },
@@ -547,7 +551,7 @@ test('lib-wallet offer methods', async t => {
       invite,
       zoe,
       board,
-      instanceHandle,
+      instance,
       pursesStateChangeLog,
       inboxStateChangeLog,
     } = await setupTest();
@@ -561,12 +565,12 @@ test('lib-wallet offer methods', async t => {
 
     const inviteIssuer = await E(zoe).getInvitationIssuer();
     const {
-      value: [{ handle: inviteHandle, installationHandle }],
+      value: [{ handle: inviteHandle, installation }],
     } = await E(inviteIssuer).getAmountOf(invite);
     const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
     await wallet.deposit('Default Zoe invite purse', invite);
-    const instanceHandleBoardId = await E(board).getId(instanceHandle);
-    const installationHandleBoardId = await E(board).getId(installationHandle);
+    const instanceHandleBoardId = await E(board).getId(instance);
+    const installationHandleBoardId = await E(board).getId(installation);
 
     const formulateBasicOffer = (id, inviteHandleBoardId) =>
       harden({
@@ -613,16 +617,14 @@ test('lib-wallet offer methods', async t => {
       ],
       `offer structure`,
     );
-    const { outcome, depositedP } = await wallet.acceptOffer(id);
+    const accepted = await wallet.acceptOffer(id);
+    assert(accepted);
+    const { outcome, depositedP } = accepted;
     t.equals(await outcome, 'The offer was accepted', `offer was accepted`);
     await depositedP;
-    const offerHandles = wallet.getOfferHandles(harden([id]));
-    const offerHandle = wallet.getOfferHandle(id);
-    t.equals(
-      offerHandle,
-      offerHandles[0],
-      `both getOfferHandle(s) methods work`,
-    );
+    const seats = wallet.getSeats(harden([id]));
+    const seat = wallet.getSeat(id);
+    t.equals(seat, seats[0], `both getSeat(s) methods work`);
     const moolaPurse = wallet.getPurse('Fun budget');
     t.deepEquals(
       await moolaPurse.getCurrentAmount(),
@@ -631,8 +633,9 @@ test('lib-wallet offer methods', async t => {
     );
     const rawId2 = '1588645230204';
     const id2 = `unknown#${rawId2}`;
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
-    const invite2 = await E(publicAPI).makeInvite();
+    /** @type {{ makeInvitation(): Invitation}} */
+    const publicAPI = await E(zoe).getPublicFacet(instance);
+    const invite2 = await E(publicAPI).makeInvitation();
     const {
       value: [{ handle: inviteHandle2 }],
     } = await E(inviteIssuer).getAmountOf(invite2);
@@ -786,11 +789,8 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
     );
 
-    const { publicAPI } = await E(zoe).getInstanceRecord(
-      autoswapInstanceHandle,
-    );
-
-    /** @type {Issuer} */
+    /** @type {{ getLiquidityIssuer(): Issuer, makeSwapInvite(): Invitation }} */
+    const publicAPI = await E(zoe).getPublicFacet(autoswapInstanceHandle);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
 
     /** @param {Issuer} issuer */
@@ -820,6 +820,8 @@ test('lib-wallet addOffer for autoswap swap', async t => {
 
     const moolaPurse = purses.get('Fun budget');
     const simoleanPurse = purses.get('Nest egg');
+    assert(moolaPurse);
+    assert(simoleanPurse);
 
     const moolaPayment = await E(moolaPurse).withdraw(proposal.give.TokenA);
     const simoleanPayment = await E(simoleanPurse).withdraw(
@@ -830,12 +832,8 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       TokenA: moolaPayment,
       TokenB: simoleanPayment,
     });
-    const { outcome: addLiqOutcome } = await E(zoe).offer(
-      addLiquidityInvite,
-      proposal,
-      payments,
-    );
-    await addLiqOutcome;
+    const liqSeat = await E(zoe).offer(addLiquidityInvite, proposal, payments);
+    await E(liqSeat).getOfferResult();
 
     const invite = await E(publicAPI).makeSwapInvite();
     const inviteIssuer = await E(zoe).getInvitationIssuer();
@@ -881,20 +879,18 @@ test('lib-wallet addOffer for autoswap swap', async t => {
 
     await wallet.addOffer(offer);
 
-    const { outcome, depositedP } = await wallet.acceptOffer(id);
+    const accepted = await wallet.acceptOffer(id);
+    assert(accepted);
+    const { outcome, depositedP } = accepted;
     t.equals(
       await outcome,
       'Swap successfully completed.',
       `offer was accepted`,
     );
     await depositedP;
-    const offerHandles = wallet.getOfferHandles(harden([id]));
-    const offerHandle = wallet.getOfferHandle(id);
-    t.equals(
-      offerHandle,
-      offerHandles[0],
-      `both getOfferHandle(s) methods work`,
-    );
+    const seats = wallet.getSeats(harden([id]));
+    const seat = wallet.getSeat(id);
+    t.equals(seat, seats[0], `both getSeat(s) methods work`);
     t.deepEquals(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(70),
