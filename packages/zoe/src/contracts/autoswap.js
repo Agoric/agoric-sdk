@@ -49,7 +49,7 @@ const start = async (zcf, _terms) => {
     throw new Error('getPoolKeyword: brand not found');
   };
 
-  const { zcfSeat: poolSeat } = zcf.addEmptySeat();
+  const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
   const getPoolAmount = brand => {
     const keyword = getPoolKeyword(brand);
     return poolSeat.getCurrentAllocation()[keyword];
