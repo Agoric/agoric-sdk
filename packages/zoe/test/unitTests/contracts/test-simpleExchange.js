@@ -9,8 +9,8 @@ import { assert, details } from '@agoric/assert';
 // noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
+import { installationPFromSource } from '../installFromSource';
 import {
-  installationPFromSource,
   assertPayoutAmount,
   assertOfferResult,
   getInvitationFields,
