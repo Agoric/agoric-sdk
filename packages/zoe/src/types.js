@@ -109,7 +109,7 @@
 /**
  * @typedef {Object} MakeInstanceResult
  * @property {Record<string, Function>} creatorFacet
- * @property {{}} Instance
+ * @property {Instance} Instance
  * @property {Record<string, Function>} publicFacet
  * @property {Payment} creatorInvitation
  */
