@@ -46,6 +46,8 @@
  *
  * @property {() => Brand} getBrand Return the brand.
  * @property {() => MathHelpersName} getMathHelpersName
+ * Deprecated. Use getMathHelperName
+ * @property {() => MathHelpersName} getMathHelperName
  * Get the name of the mathHelpers used. This can be used as an
  * argument to `makeAmountMath` to create local amountMath.
  *
@@ -127,7 +129,10 @@
  *
  * @property {() => string} getAllegedName Get the allegedName for this mint/issuer
  * @property {() => AmountMath} getAmountMath Get the AmountMath for this Issuer.
- * @property {() => MathHelpersName} getMathHelpersName Get the name of the MathHelpers for this Issuer.
+ * @property {() => MathHelpersName} getMathHelpersName
+ * Deprecated. Use getMathHelperName
+ * @property {() => MathHelpersName} getMathHelperName Get the name of the
+ * MathHelpers for this Issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
  * @property {(payment: PaymentP) => Promise<boolean>} isLive
  * Return true if the payment continues to exist.
