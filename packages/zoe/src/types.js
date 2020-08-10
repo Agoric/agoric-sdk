@@ -74,12 +74,14 @@
 
 /**
  * @typedef {Object} UserSeat
- * @property {() => Allocation} getCurrentAllocation
+ * @property {() => Promise<Allocation>} getCurrentAllocation
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult
  * @property {() => void=} exit
+ * @property {() => Promise<boolean>} hasExited
+ * @property {() => Promise<Notifier>} getNotifier
  *
  * @typedef {any} OfferResult
  */

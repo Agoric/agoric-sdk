@@ -58,14 +58,16 @@ export const makeZoeSeatAdminKit = (
 
   /** @type {UserSeat} */
   const userSeat = harden({
-    getCurrentAllocation: () => zoeSeatAdmin.getCurrentAllocation(),
+    getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword =>
       payoutPromiseKit.promise.then(payouts => payouts[keyword]),
     getOfferResult: async () => offerResultPromiseKit.promise,
+    hasExited: async () => instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
     exit: async () =>
       exitObjPromiseKit.promise.then(exitObj => E(exitObj).exit()),
+    getNotifier: async () => notifier,
   });
 
   return { userSeat, zoeSeatAdmin, notifier };
