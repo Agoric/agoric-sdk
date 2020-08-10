@@ -7,7 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { setup } from '../setupBasicMints';
 import {
   installationPFromSource,
-  assertPayout,
+  assertPayoutDeposit,
   assertOfferResult,
   getInviteFields,
 } from '../../zoeTestHelpers';
@@ -124,11 +124,11 @@ test('barter with valid offers', async t => {
 
   // 6: Alice deposits her payout to ensure she can
   // Alice had 0 moola and 4 simoleans.
-  assertPayout(t, aliceMoolaPayout, aliceMoolaPurse, 0);
-  assertPayout(t, aliceSimoleanPayout, aliceSimoleanPurse, 4);
+  assertPayoutDeposit(t, aliceMoolaPayout, aliceMoolaPurse, moola(0));
+  assertPayoutDeposit(t, aliceSimoleanPayout, aliceSimoleanPurse, simoleans(4));
 
   // 7: Bob deposits his original payments to ensure he can
   // Bob had 3 moola and 3 simoleans.
-  assertPayout(t, bobMoolaPayout, bobMoolaPurse, 3);
-  assertPayout(t, bobSimoleanPayout, bobSimoleanPurse, 3);
+  assertPayoutDeposit(t, bobMoolaPayout, bobMoolaPurse, moola(3));
+  assertPayoutDeposit(t, bobSimoleanPayout, bobSimoleanPurse, simoleans(3));
 });

@@ -1,14 +1,9 @@
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-export const assertPayout = (t, payout, purse, amount) => {
-  payout.then(payment => {
-    purse.deposit(payment);
-    t.deepEquals(
-      purse.getCurrentAmount().value,
-      amount,
-      `payout was ${amount}`,
-    );
+export const assertPayoutAmount = (t, issuer, payout, expectedAmount) => {
+  issuer.getAmountOf(payout).then(amount => {
+    t.deepEquals(amount, expectedAmount, `payout was ${amount.value}`);
   });
 };
 
