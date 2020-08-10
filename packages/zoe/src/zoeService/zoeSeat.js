@@ -48,11 +48,34 @@ export const makeZoeSeatAdminKit = (
       payoutPromiseKit.resolve(payout);
     },
     getCurrentAllocation: () => currentAllocation,
+
+    redirectUserSeat: newInnerUserSeatP => {
+      assert(
+        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+        `Cannot redirect seat. Seat has already exited`,
+      );
+      instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
+      payoutPromiseKit.resolve(E(newInnerUserSeatP).getPayouts());
+      // For a normal user seat, created from an invitation, this
+      // `resolve` will likely have no effect since that promise is
+      // already resolved, and the caller has likely already picked it
+      // up. However, if this seat is made internally (by `makeEmptyOffer`
+      // or omitting the seat argument from `mintGains`), then the
+      // offerResult according to the new userSeat will be the first one
+      // for this seat.
+      //
+      // In addition, if the user asks after the seat is forwarded, they'll
+      // get the new offerResult because of the forwarding behavior.
+      offerResultPromiseKit.resolve(E(newInnerUserSeatP).getOfferResult());
+      // TODO exit handling will be tricky!
+      // eslint-disable-next-line no-use-before-define
+      innerUserSeatP = newInnerUserSeatP;
+    },
   });
 
-  /** @type UserSeat */
-  const userSeat = harden({
-    getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
+  /** @type ERef<UserSeat> */
+  let innerUserSeatP = harden({
+    getCurrentAllocation: async () => currentAllocation,
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword =>
@@ -60,6 +83,20 @@ export const makeZoeSeatAdminKit = (
     getOfferResult: async () => offerResultPromiseKit.promise,
     exit: async () =>
       exitObjPromiseKit.promise.then(exitObj => E(exitObj).exit()),
+  });
+
+  /** @type UserSeat */
+  const userSeat = harden({
+    getCurrentAllocation: async () => E(innerUserSeatP).getCurrentAllocation(),
+    // proposal is stable
+    getProposal: async () => proposal,
+    // could return the same one, but prefer shorter path
+    getPayouts: async () => E(innerUserSeatP).getPayouts(),
+    getPayout: async keyword => E(innerUserSeatP).getPayout(keyword),
+    // This will be the offer result according to the current innerUserSeatP
+    // even if an offerResult has already been reported.
+    getOfferResult: async () => E(innerUserSeatP).getOfferResult(),
+    exit: E(innerUserSeatP).exit(),
   });
 
   return { userSeat, zoeSeatAdmin, notifier };
