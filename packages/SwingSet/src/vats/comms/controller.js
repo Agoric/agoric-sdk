@@ -3,7 +3,6 @@
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 import { addRemote } from './remote';
-import { addEgress, addIngress } from './clist';
 
 const UNDEFINED = harden({
   body: JSON.stringify({ '@qclass': 'undefined' }),
@@ -12,7 +11,7 @@ const UNDEFINED = harden({
 
 // deliverToController() is used for local vats which want to talk to us as a
 // vat, rather than as a conduit to talk to remote vats. The bootstrap
-// function can use this to invoid our addRemote() and connect us with a
+// function can use this to invoke our addRemote() and connect us with a
 // transport layer (the 'vattp' vat). This is a little awkward, because we
 // need the demarshalling and promise-resolution tooling that liveSlots.js
 // usually provides, but we avoid liveSlots here because the dominant use
@@ -21,11 +20,14 @@ const UNDEFINED = harden({
 
 export function deliverToController(
   state,
+  clistKit,
   method,
   controllerArgs,
   result,
   syscall,
 ) {
+  const { addEgress, addIngress } = clistKit;
+
   // We use a degenerate form of deserialization, just enough to handle the
   // handful of methods implemented by the commsController. 'args.body' can
   // normally have arbitrary {'@qclass': whatever} objects, but we only
@@ -79,7 +81,7 @@ export function deliverToController(
       throw new Error(`unexpected args for addEgress(): ${controllerArgs}`);
     }
     const localRef = slots[args[2].index];
-    addEgress(state, remoteID, remoteRefID, localRef);
+    addEgress(remoteID, remoteRefID, localRef);
     syscall.fulfillToData(result, UNDEFINED);
   }
 
@@ -94,7 +96,7 @@ export function deliverToController(
     );
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
-    const localRef = addIngress(state, remoteID, remoteRefID);
+    const localRef = addIngress(remoteID, remoteRefID);
     syscall.fulfillToPresence(result, localRef);
   }
 

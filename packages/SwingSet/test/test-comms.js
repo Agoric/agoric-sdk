@@ -4,23 +4,23 @@ import '@agoric/install-ses';
 import test from 'ava';
 import buildCommsDispatch from '../src/vats/comms';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
-import { makeState } from '../src/vats/comms/state';
+import { makeState, makeStateKit } from '../src/vats/comms/state';
+import { makeCListKit } from '../src/vats/comms/clist';
 import { addRemote } from '../src/vats/comms/remote';
-import {
-  getInbound,
-  getOutbound,
-  mapInbound,
-  mapOutbound,
-} from '../src/vats/comms/clist';
 import { debugState } from '../src/vats/comms/dispatch';
 
-test('mapOutbound', t => {
+test('provideRemoteForLocal', t => {
   const s = makeState();
+  const stateKit = makeStateKit(s);
+  const fakeSyscall = {};
+  const clistKit = makeCListKit(s, fakeSyscall, stateKit);
+  const { provideRemoteForLocal } = clistKit;
   const { remoteID } = addRemote(s, 'remote1', 'o-1');
-  t.is(mapOutbound(s, remoteID, 'o-4'), 'ro-20');
-  t.is(mapOutbound(s, remoteID, 'o-4'), 'ro-20');
-  t.is(mapOutbound(s, remoteID, 'o-5'), 'ro-21');
-  t.throws(() => mapOutbound(s, remoteID, 'o+5'), {
+
+  t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, 'o-5'), 'ro-21');
+  t.throws(() => provideRemoteForLocal(remoteID, 'o+5'), {
     message: /sending non-remote object o\+5 to remote machine/,
   });
 });
@@ -50,12 +50,13 @@ test('transmit', t => {
   // remote 'bob' on machine B
   const { syscall, sends } = mockSyscall();
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  const state = debugState.get(d);
+  const { state, clistKit } = debugState.get(d);
+  const { provideLocalForRemote, getLocalForRemote } = clistKit;
   // add the remote, and an object to send at
   const transmitterID = 'o-1';
   const alice = 'o-10';
   const { remoteID } = addRemote(state, 'remote1', transmitterID);
-  const bob = mapInbound(state, remoteID, 'ro-23');
+  const bob = provideLocalForRemote(remoteID, 'ro-23');
 
   // now tell the comms vat to send a message to a remote machine, the
   // equivalent of bob!foo()
@@ -74,7 +75,7 @@ test('transmit', t => {
     encodeArgs('deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
   // the outbound ro-20 should match an inbound ro+20, both represent 'alice'
-  t.is(getInbound(state, remoteID, 'ro+20'), alice);
+  t.is(getLocalForRemote(remoteID, 'ro+20'), alice);
   // do it again, should use same values
   d.deliver(bob, 'bar', capdata('argsbytes', [alice, bob]), null);
   t.deepEqual(sends.shift(), [
@@ -98,12 +99,13 @@ test('receive', t => {
   // vat's object 'bob'
   const { syscall, sends } = mockSyscall();
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  const state = debugState.get(d);
+  const { state, clistKit } = debugState.get(d);
+  const { provideRemoteForLocal, getRemoteForLocal } = clistKit;
   // add the remote, and an object to send at
   const transmitterID = 'o-1';
   const bob = 'o-10';
   const { remoteID, receiverID } = addRemote(state, 'remote1', transmitterID);
-  const remoteBob = flipRemoteSlot(mapOutbound(state, remoteID, bob));
+  const remoteBob = flipRemoteSlot(provideRemoteForLocal(remoteID, bob));
   t.is(remoteBob, 'ro+20');
 
   // now pretend the transport layer received a message from remote1, as if
@@ -125,7 +127,7 @@ test('receive', t => {
   );
   t.deepEqual(sends.shift(), [bob, 'bar', capdata('argsbytes', ['o+11', bob])]);
   // if we were to send o+11, the other side should get ro+20, which is alice
-  t.is(getOutbound(state, remoteID, 'o+11'), 'ro+20');
+  t.is(getRemoteForLocal(remoteID, 'o+11'), 'ro+20');
 
   // bob!bar(alice, bob)
   d.deliver(

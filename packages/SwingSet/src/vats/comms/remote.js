@@ -13,7 +13,7 @@ export function insistRemoteID(remoteID) {
 export function getRemote(state, remoteID) {
   insistRemoteID(remoteID);
   const remote = state.remotes.get(remoteID);
-  assert(remote !== undefined, details`oops ${remoteID}`);
+  assert(remote, `missing ${remoteID}`);
   return remote;
 }
 
