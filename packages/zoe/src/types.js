@@ -107,13 +107,10 @@
  */
 
 /**
- * @typedef {Object} CreatorFacetWInstance
- * @property {() => Instance} getInstance
- */
-
-/**
  * @typedef {Object} MakeInstanceResult
- * @property {CreatorFacetWInstance & Record<string, Function>} creatorFacet
+ * @property {Record<string, Function>} creatorFacet
+ * @property {{}} Instance
+ * @property {Record<string, Function>} publicFacet
  * @property {Payment} creatorInvitation
  */
 
