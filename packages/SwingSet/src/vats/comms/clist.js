@@ -193,7 +193,9 @@ export function mapInbound(state, remoteID, s) {
       } else {
         const promiseID = allocateUnresolvedPromise(state, remoteID);
         remote.fromRemote.set(s, promiseID);
-        remote.toRemote.set(promiseID, s);
+        remote.toRemote.set(promiseID, s); // TODO: wrong? undone in mapInboundResult #1404
+        // remote.toRemote.set(promiseID, flipRemoteSlot(s));
+        // TODO: *not* undone for non-result promises??
         // console.debug(`inbound promise ${s} mapped to ${promiseID}`);
       }
     } else {

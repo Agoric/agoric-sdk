@@ -60,6 +60,7 @@ for (const name of Array.from(bp.patterns.keys()).sort()) {
   test('local patterns', testLocalPattern, name);
 }
 
+// fails: 87 85 84 83 82 81 80, all but 86 (which I fixed earlier)
 const commsSourcePath = require.resolve('../src/vats/comms');
 const vatTPSourcePath = require.resolve('../src/vats/vat-tp');
 
@@ -96,6 +97,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
   while (passOneMessage()) {
     await c.run();
   }
+  console.log(`bootstrapResult`, c.bootstrapResult.status());
   return c.dump().log;
 }
 
