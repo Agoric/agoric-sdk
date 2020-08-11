@@ -1070,13 +1070,9 @@ export async function makeWallet({
     },
   });
 
-  function getDepositFacetId(brandBoardId) {
-    return E(board)
-      .getValue(brandBoardId)
-      .then(brand => {
-        const depositFacetBoardId = brandToDepositFacetId.get(brand);
-        return depositFacetBoardId;
-      });
+  async function getDepositFacetId(_brandBoardId) {
+    // Always return the generic deposit facet.
+    return selfContact.depositBoardId;
   }
 
   async function disableAutoDeposit(pursePetname) {
