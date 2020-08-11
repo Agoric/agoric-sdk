@@ -78,13 +78,15 @@ const start = (zcf, { tokenName = 'token' }) => {
     });
     return E(zoeService)
       .makeInstance(sellItemsInstallation, issuerKeywordRecord, sellItemsTerms)
-      .then(({ creatorInvitation, creatorFacet }) => {
+      .then(({ creatorInvitation, creatorFacet, instance, publicFacet }) => {
         return E(zoeService)
           .offer(creatorInvitation, proposal, paymentKeywordRecord)
           .then(sellItemsCreatorSeat => {
             return harden({
               sellItemsCreatorSeat,
               sellItemsCreatorFacet: creatorFacet,
+              sellItemsInstance: instance,
+              sellItemsPublicFacet: publicFacet,
             });
           });
       });

@@ -8,7 +8,7 @@ import {
   installationPFromSource,
   assertOfferResult,
   assertPayoutAmount,
-  getInviteFields,
+  getInvitationFields,
 } from '../../zoeTestHelpers';
 
 const autoswap = `${__dirname}/../../../src/contracts/autoswap`;
@@ -88,7 +88,7 @@ test('autoSwap with valid offers', async t => {
     const {
       installation: bobInstallation,
       instance: bobInstance,
-    } = await getInviteFields(inviteIssuer, bobExclInvite);
+    } = await getInvitationFields(inviteIssuer, bobExclInvite);
     t.equals(bobInstallation, installation, `installation`);
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
@@ -284,7 +284,7 @@ test('autoSwap - test fee', async t => {
     const {
       installation: bobInstallation,
       instance: bobInstance,
-    } = await getInviteFields(inviteIssuer, bobExclInvite);
+    } = await getInvitationFields(inviteIssuer, bobExclInvite);
     t.equals(bobInstallation, bobInstallation);
 
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
