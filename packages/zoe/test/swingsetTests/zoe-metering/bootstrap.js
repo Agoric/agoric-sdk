@@ -33,11 +33,12 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`instantiating ${testName}`);
         const inviteIssuer = E(zoe).getInvitationIssuer();
         const issuerKeywordRecord = harden({ Keyword1: inviteIssuer });
-        const {
-          instanceRecord: { publicAPI },
-        } = await E(zoe).startInstance(installId, issuerKeywordRecord);
+        const { publicFacet } = await E(zoe).startInstance(
+          installId,
+          issuerKeywordRecord,
+        );
         log(`invoking ${testName}.doTest()`);
-        await E(publicAPI).doTest();
+        await E(publicFacet).doTest();
         log(`complete`);
       } catch (e) {
         log(`error: ${e}`);

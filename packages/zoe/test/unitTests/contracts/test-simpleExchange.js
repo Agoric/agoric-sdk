@@ -40,7 +40,7 @@ test('simpleExchange with valid offers', async t => {
   const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
 
   // 1: Alice creates a simpleExchange instance and spreads the publicFacet far
-  // and wide with instructions on how to call makeInvite().
+  // and wide with instructions on how to call makeInvitation().
   const {
     creatorInvitation: aliceInvite,
     publicFacet,
@@ -114,7 +114,7 @@ test('simpleExchange with valid offers', async t => {
       });
     });
 
-  const bobInvite = await E(publicFacet).makeInvite();
+  const bobInvite = await E(publicFacet).makeInvitation();
   const { installation: bobInstallation } = await getInvitationFields(
     inviteIssuer,
     bobInvite,
@@ -254,7 +254,7 @@ test('simpleExchange with multiple sell offers', async t => {
 
     // 5: Alice adds another sell order to the exchange
     const aliceInvite2 = await inviteIssuer.claim(
-      await E(publicFacet).makeInvite(),
+      await E(publicFacet).makeInvitation(),
     );
     const aliceSale2OrderProposal = harden({
       give: { Asset: moola(5) },
@@ -272,7 +272,7 @@ test('simpleExchange with multiple sell offers', async t => {
 
     // 5: Alice adds a buy order to the exchange
     const aliceInvite3 = await inviteIssuer.claim(
-      await E(publicFacet).makeInvite(),
+      await E(publicFacet).makeInvitation(),
     );
     const aliceBuyOrderProposal = harden({
       give: { Price: simoleans(18) },
@@ -358,7 +358,7 @@ test('simpleExchange with non-fungible assets', async t => {
     alicePayments,
   );
 
-  const bobInvite = await E(publicFacet).makeInvite();
+  const bobInvite = await E(publicFacet).makeInvitation();
 
   // 5: Bob decides to join.
   const {
