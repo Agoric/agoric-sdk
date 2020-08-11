@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { producePromise } from '@agoric/produce-promise';
+import { producePromise } from '@agoric/promise-kit';
 
 function ignore(p) {
   p.then(
