@@ -17,7 +17,7 @@
     if (!obj) {
       return;
     }
-    const { outcome } = obj;
+    let { outcome } = obj;
     if (typeof outcome !== 'string') {
       outcome = 'Offer was accepted.';
     }

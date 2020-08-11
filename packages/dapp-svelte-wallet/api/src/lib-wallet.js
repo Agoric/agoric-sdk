@@ -140,7 +140,7 @@ export async function makeWallet({
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
   const idToComplete = new Map();
-  const idToOfferHandle = new Map();
+  const idToSeat = new Map();
   const idToOutcome = new Map();
 
   // Client-side representation of the purses inbox;
@@ -374,11 +374,11 @@ export async function makeWallet({
 
   // handle the update, which has already resolved to a record. If the offer is
   // 'done', mark the offer 'complete', otherwise resubscribe to the notifier.
-  function updateOrResubscribe(id, offerHandle, update) {
+  function updateOrResubscribe(id, seat, update) {
     const { updateCount } = update;
     if (updateCount === undefined) {
       // TODO do we still need these?
-      idToOfferHandle.delete(id);
+      idToSeat.delete(id);
 
       const offer = idToOffer.get(id);
       const completedOffer = {
@@ -391,21 +391,26 @@ export async function makeWallet({
     } else {
       E(idToNotifierP.get(id))
         .getUpdateSince(updateCount)
-        .then(nextUpdate => updateOrResubscribe(id, offerHandle, nextUpdate));
+        .then(nextUpdate => updateOrResubscribe(id, seat, nextUpdate));
     }
   }
 
-  // There's a new offer. Ask Zoe to notify us when the offer is complete.
-  async function subscribeToNotifier(id, offerHandle) {
-    E(zoe)
-      .getOfferNotifier(offerHandle)
+  /**
+   * There's a new offer. Ask Zoe to notify us when the offer is complete.
+   *
+   * @param {string} id
+   * @param {UserSeat} seat
+   */
+  async function subscribeToNotifier(id, seat) {
+    E(seat)
+      .getNotifier()
       .then(offerNotifierP => {
         if (!idToNotifierP.has(id)) {
           idToNotifierP.init(id, offerNotifierP);
         }
         E(offerNotifierP)
           .getUpdateSince()
-          .then(update => updateOrResubscribe(id, offerHandle, update));
+          .then(update => updateOrResubscribe(id, seat, update));
       });
   }
 
@@ -452,57 +457,42 @@ export async function makeWallet({
     // === AWAITING TURN ===
     // =====================
 
-    const {
-      payout: payoutObjP,
-      completeObj,
-      outcome: outcomeP,
-      offerHandle: offerHandleP,
-    } = await E(zoe).offer(
+    const seat = await E(zoe).offer(
       invite,
       harden(proposal),
       harden(paymentKeywordRecord),
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-    // This settles when the payments are escrowed in Zoe
-    const offerHandle = await offerHandleP;
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-    // This settles when the offer hook completes.
-    const outcome = await outcomeP;
-
     // We'll resolve when deposited.
-    const depositedP = payoutObjP.then(payoutObj => {
-      const payoutIndexToKeyword = [];
-      return Promise.all(
-        Object.entries(payoutObj).map(([keyword, payoutP], i) => {
-          // keyword may be an index for zoeKind === 'indexed', but we can still treat it
-          // as the keyword name for looking up purses and payouts (just happens to
-          // be an integer).
-          payoutIndexToKeyword[i] = keyword;
-          return payoutP;
-        }),
-      ).then(payoutArray =>
-        Promise.all(
-          payoutArray.map(async (payoutP, payoutIndex) => {
-            const keyword = payoutIndexToKeyword[payoutIndex];
-            const purse = purseKeywordRecord[keyword];
-            if (purse && payoutP) {
-              const payout = await payoutP;
-              // eslint-disable-next-line no-use-before-define
-              return addPayment(payout, purse);
-            }
-            return undefined;
+    const depositedP = E(seat)
+      .getPayouts()
+      .then(payoutObj => {
+        const payoutIndexToKeyword = [];
+        return Promise.all(
+          Object.entries(payoutObj).map(([keyword, payoutP], i) => {
+            // keyword may be an index for zoeKind === 'indexed', but we can still treat it
+            // as the keyword name for looking up purses and payouts (just happens to
+            // be an integer).
+            payoutIndexToKeyword[i] = keyword;
+            return payoutP;
           }),
-        ),
-      );
-    });
+        ).then(payoutArray =>
+          Promise.all(
+            payoutArray.map(async (payoutP, payoutIndex) => {
+              const keyword = payoutIndexToKeyword[payoutIndex];
+              const purse = purseKeywordRecord[keyword];
+              if (purse && payoutP) {
+                const payout = await payoutP;
+                // eslint-disable-next-line no-use-before-define
+                return addPayment(payout, purse);
+              }
+              return undefined;
+            }),
+          ),
+        );
+      });
 
-    return { depositedP, completeObj, outcome, offerHandle };
+    return { depositedP, seat };
   }
 
   // === API
@@ -680,7 +670,10 @@ export async function makeWallet({
   };
 
   const compileOffer = async offer => {
-    const { inviteHandleBoardId } = offer;
+    const {
+      inviteHandleBoardId, // Keep for backward-compatibility.
+      invitationHandleBoardId = inviteHandleBoardId,
+    } = offer;
     const { proposal, purseKeywordRecord } = compileProposal(
       offer.proposalTemplate,
     );
@@ -689,14 +682,16 @@ export async function makeWallet({
     const { value: inviteValueElems } = await E(
       zoeInvitePurse,
     ).getCurrentAmount();
-    const inviteHandle = await E(board).getValue(inviteHandleBoardId);
+    const inviteHandle = await E(board).getValue(invitationHandleBoardId);
     const matchInvite = element => element.handle === inviteHandle;
     const inviteBrand = purseToBrand.get(zoeInvitePurse);
     const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
     const matchingInvite = inviteValueElems.find(matchInvite);
     assert(
       matchingInvite,
-      details`Cannot find invite corresponding to ${q(inviteHandleBoardId)}`,
+      details`Cannot find invite corresponding to ${q(
+        invitationHandleBoardId,
+      )}`,
     );
     const inviteAmount = inviteAmountMath.make(
       harden([inviteValueElems.find(matchInvite)]),
@@ -875,6 +870,7 @@ export async function makeWallet({
       return undefined;
     }
 
+    /** @type {{ outcome?: any, depositedP?: Promise<any[]> }} */
     let ret = {};
     let alreadyResolved = false;
     const rejected = e => {
@@ -899,31 +895,27 @@ export async function makeWallet({
       updateInboxState(id, pendingOffer);
       const compiledOffer = await idToCompiledOfferP.get(id);
 
-      const {
-        depositedP,
-        completeObj,
-        outcome,
-        offerHandle,
-      } = await executeOffer(compiledOffer);
+      const { depositedP, seat } = await executeOffer(compiledOffer);
 
       idToComplete.set(id, () => {
         alreadyResolved = true;
-        return E(completeObj).complete();
+        return E(seat).exit();
       });
-      idToOfferHandle.set(id, offerHandle);
+      idToSeat.set(id, seat);
       // The offer might have been postponed, or it might have been immediately
       // consummated. Only subscribe if it was postponed.
-      E(zoe)
-        .isOfferActive(offerHandle)
-        .then(active => {
-          if (active) {
-            subscribeToNotifier(id, offerHandle);
+      E(seat)
+        .hasExited()
+        .then(exited => {
+          if (!exited) {
+            subscribeToNotifier(id, seat);
           }
         });
 
       // The outcome is most often a string that can be returned, but
       // it could be an object. We don't do anything currently if it
       // is an object, but we will store it here for future use.
+      const outcome = await E(seat).getOfferResult();
       idToOutcome.set(id, outcome);
 
       ret = { outcome, depositedP };
@@ -951,6 +943,7 @@ export async function makeWallet({
     return ret;
   }
 
+  /** @returns {[Petname, Issuer][]} */
   function getIssuers() {
     return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
       const { issuer } = brandTable.get(brand);
@@ -1281,8 +1274,8 @@ export async function makeWallet({
     cancelOffer,
     acceptOffer,
     getOffers,
-    getOfferHandle: id => idToOfferHandle.get(id),
-    getOfferHandles: ids => ids.map(wallet.getOfferHandle),
+    getSeat: id => idToSeat.get(id),
+    getSeats: ids => ids.map(wallet.getSeat),
     enableAutoDeposit,
     disableAutoDeposit,
     getDepositFacetId,
