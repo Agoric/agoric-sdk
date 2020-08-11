@@ -35,7 +35,7 @@ import zcfContractBundle from '../bundles/bundle-contractFacet';
  * to create a new vat.
  * @returns {ZoeService} The created Zoe service.
  */
-function makeZoe(vatAdminSvc) {
+function makeZoe(vatAdminSvc, zcfBundleName) {
   /**
    * A weakMap from the inviteHandles to contract offerHook upcalls
    * @type {WeakStore<InviteHandle,OfferHook<any>>}
@@ -240,111 +240,113 @@ function makeZoe(vatAdminSvc) {
         details`${installationHandle} was not a valid installationHandle`,
       );
       const publicApiP = makePromiseKit();
-      return E(vatAdminSvc)
-        .createVat(zcfContractBundle)
-        .then(({ root, adminNode }) => {
-          /** @type {{ startContract: StartContract }} */
-          const zcfRoot = root;
-          const instanceHandle = makeHandle('InstanceHandle');
-          const zoeForZcf = makeZoeForZcf(instanceHandle, publicApiP);
 
-          const cleanedKeywords = cleanKeywords(issuerKeywordRecord);
-          const issuersP = cleanedKeywords.map(
-            keyword => issuerKeywordRecord[keyword],
+      const vatP = zcfBundleName
+        ? E(vatAdminSvc).createVatByName(zcfBundleName)
+        : E(vatAdminSvc).createVat(zcfContractBundle);
+      return vatP.then(({ root, adminNode }) => {
+        /** @type {{ startContract: StartContract }} */
+        const zcfRoot = root;
+        const instanceHandle = makeHandle('InstanceHandle');
+        const zoeForZcf = makeZoeForZcf(instanceHandle, publicApiP);
+
+        const cleanedKeywords = cleanKeywords(issuerKeywordRecord);
+        const issuersP = cleanedKeywords.map(
+          keyword => issuerKeywordRecord[keyword],
+        );
+        const makeCleanup = _marker => {
+          return () => {
+            // console.log(`ZOE makeInstance  enter CLEANUP: ${marker} `);
+            const { offerHandles } = instanceTable.get(instanceHandle);
+            // This cleanup can't rely on ZCF to complete the offers since
+            // it's invoked when ZCF is no longer accessible.
+            completeOffers(instanceHandle, Array.from(offerHandles));
+          };
+        };
+
+        // Build an entry for the instanceTable. It will contain zcfForZoe
+        // which isn't available until ZCF starts. When ZCF starts up, it
+        // will invoke the contract, which might make calls back to the Zoe
+        // facet we provide, so InstanceRecord needs to be present by then.
+        // We'll store an initial version of InstanceRecord before invoking
+        // ZCF and fill in the zcfForZoe when we get it.
+        const zcfForZoePromise = makePromiseKit();
+        /** @type {Omit<InstanceRecord & PrivateInstanceRecord,'handle'>} */
+        const instanceRecord = {
+          installationHandle,
+          publicAPI: publicApiP.promise,
+          terms,
+          issuerKeywordRecord: {},
+          brandKeywordRecord: {},
+          zcfForZoe: zcfForZoePromise.promise,
+          offerHandles: new Set(),
+        };
+        const addIssuersToInstanceRecord = issuerRecords => {
+          const issuers = issuerRecords.map(record => record.issuer);
+          const cleanedIssuerKeywordRecord = arrayToObj(
+            issuers,
+            cleanedKeywords,
           );
-          const makeCleanup = _marker => {
-            return () => {
-              // console.log(`ZOE makeInstance  enter CLEANUP: ${marker} `);
-              const { offerHandles } = instanceTable.get(instanceHandle);
-              // This cleanup can't rely on ZCF to complete the offers since
-              // it's invoked when ZCF is no longer accessible.
-              completeOffers(instanceHandle, Array.from(offerHandles));
-            };
-          };
+          instanceRecord.issuerKeywordRecord = cleanedIssuerKeywordRecord;
+          const brands = issuerRecords.map(record => record.brand);
+          const brandKeywordRecord = arrayToObj(brands, cleanedKeywords);
+          instanceRecord.brandKeywordRecord = brandKeywordRecord;
+          instanceTable.create(instanceRecord, instanceHandle);
+          E(adminNode)
+            .done()
+            .then(makeCleanup('done success'), makeCleanup('done reject'));
+        };
 
-          // Build an entry for the instanceTable. It will contain zcfForZoe
-          // which isn't available until ZCF starts. When ZCF starts up, it
-          // will invoke the contract, which might make calls back to the Zoe
-          // facet we provide, so InstanceRecord needs to be present by then.
-          // We'll store an initial version of InstanceRecord before invoking
-          // ZCF and fill in the zcfForZoe when we get it.
-          const zcfForZoePromise = makePromiseKit();
-          /** @type {Omit<InstanceRecord & PrivateInstanceRecord,'handle'>} */
-          const instanceRecord = {
+        const callStartContract = () => {
+          /** @type {InstanceRecord} */
+          const instanceData = harden({
+            handle: instanceHandle,
             installationHandle,
-            publicAPI: publicApiP.promise,
+            publicAPI: instanceRecord.publicAPI,
             terms,
-            issuerKeywordRecord: {},
-            brandKeywordRecord: {},
-            zcfForZoe: zcfForZoePromise.promise,
-            offerHandles: new Set(),
-          };
-          const addIssuersToInstanceRecord = issuerRecords => {
-            const issuers = issuerRecords.map(record => record.issuer);
-            const cleanedIssuerKeywordRecord = arrayToObj(
-              issuers,
-              cleanedKeywords,
+            adminNode,
+            issuerKeywordRecord: instanceRecord.issuerKeywordRecord,
+            brandKeywordRecord: instanceRecord.brandKeywordRecord,
+          });
+          const contractParams = harden({
+            zoeService,
+            bundle: installationTable.get(installationHandle).bundle,
+            instanceData,
+            zoeForZcf,
+            inviteIssuer,
+          });
+          return E(zcfRoot).startContract(contractParams);
+        };
+
+        const finishContractInstall = ({ inviteP, zcfForZoe }) => {
+          zcfForZoePromise.resolve(zcfForZoe);
+          return inviteIssuer.isLive(inviteP).then(success => {
+            assert(
+              success,
+              details`invites must be issued by the inviteIssuer.`,
             );
-            instanceRecord.issuerKeywordRecord = cleanedIssuerKeywordRecord;
-            const brands = issuerRecords.map(record => record.brand);
-            const brandKeywordRecord = arrayToObj(brands, cleanedKeywords);
-            instanceRecord.brandKeywordRecord = brandKeywordRecord;
-            instanceTable.create(instanceRecord, instanceHandle);
-            E(adminNode)
-              .done()
-              .then(makeCleanup('done success'), makeCleanup('done reject'));
-          };
 
-          const callStartContract = () => {
-            /** @type {InstanceRecord} */
-            const instanceData = harden({
-              handle: instanceHandle,
-              installationHandle,
-              publicAPI: instanceRecord.publicAPI,
-              terms,
-              adminNode,
-              issuerKeywordRecord: instanceRecord.issuerKeywordRecord,
-              brandKeywordRecord: instanceRecord.brandKeywordRecord,
-            });
-            const contractParams = harden({
-              zoeService,
-              bundle: installationTable.get(installationHandle).bundle,
-              instanceData,
-              zoeForZcf,
-              inviteIssuer,
-            });
-            return E(zcfRoot).startContract(contractParams);
-          };
+            function buildRecord(invite) {
+              return {
+                invite,
+                instanceRecord: filterInstanceRecord(
+                  instanceTable.get(instanceHandle),
+                ),
+              };
+            }
 
-          const finishContractInstall = ({ inviteP, zcfForZoe }) => {
-            zcfForZoePromise.resolve(zcfForZoe);
-            return inviteIssuer.isLive(inviteP).then(success => {
-              assert(
-                success,
-                details`invites must be issued by the inviteIssuer.`,
-              );
+            return inviteP.then(buildRecord, makeCleanup('invite failure'));
+          });
+        };
 
-              function buildRecord(invite) {
-                return {
-                  invite,
-                  instanceRecord: filterInstanceRecord(
-                    instanceTable.get(instanceHandle),
-                  ),
-                };
-              }
-
-              return inviteP.then(buildRecord, makeCleanup('invite failure'));
-            });
-          };
-
-          // The issuers may not have been seen before, so we must wait for the
-          // issuer records to be available synchronously
-          return issuerTable
-            .getPromiseForIssuerRecords(issuersP)
-            .then(addIssuersToInstanceRecord)
-            .then(callStartContract)
-            .then(finishContractInstall);
-        });
+        // The issuers may not have been seen before, so we must wait for the
+        // issuer records to be available synchronously
+        return issuerTable
+          .getPromiseForIssuerRecords(issuersP)
+          .then(addIssuersToInstanceRecord)
+          .then(callStartContract)
+          .then(finishContractInstall);
+      });
     },
 
     getInstanceRecord: instanceHandle =>
