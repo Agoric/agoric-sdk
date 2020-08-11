@@ -9,6 +9,32 @@ import {
   markPromiseAsResolved,
 } from './state';
 
+function getInboundFor(state, remoteID, remoteTarget) {
+  const target = getInbound(state, remoteID, remoteTarget);
+  // That might point to o-NN or a promise. Check if the promise was resolved
+  // already.
+  if (state.promiseTable.has(target)) {
+    const p = state.promiseTable.get(target);
+    if (p.state === 'unresolved') {
+      return target;
+    }
+    if (p.state === 'resolved') {
+      if (p.resolution.type === 'object') {
+        return p.resolution.slot;
+      }
+      if (p.resolution.type === 'data') {
+        throw Error(`todo: error for fulfilledToData`);
+      }
+      if (p.resolution.type === 'reject') {
+        throw Error(`todo: error for rejected`);
+      }
+      throw Error(`unknown res type ${p.resolution.type}`);
+    }
+    throw Error(`unknown p.state ${p.state}`);
+  }
+  return target;
+}
+
 export function deliverFromRemote(syscall, state, remoteID, message) {
   const command = message.split(':', 1)[0];
 
@@ -21,7 +47,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
       .split(':')
       .slice(1);
     // slots: [$target, $method, $result, $slots..]
-    const target = getInbound(state, remoteID, slots[0]);
+    const target = getInboundFor(state, remoteID, slots[0]);
     const method = slots[1];
     const result = slots[2]; // 'rp-NN' or empty string
     const msgSlots = slots.slice(3).map(s => mapInbound(state, remoteID, s));

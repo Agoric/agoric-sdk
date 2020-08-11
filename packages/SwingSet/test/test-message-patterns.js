@@ -96,7 +96,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
   config.vats.leftvattp = { sourcePath: vatTPSourcePath };
   config.vats.rightvattp = { sourcePath: vatTPSourcePath };
   const { passOneMessage, loopboxSrcPath, loopboxEndowments } = buildLoopbox(
-    'immediate',
+    'queued',
   );
   config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
   const c = await buildVatController(config, [name]);
