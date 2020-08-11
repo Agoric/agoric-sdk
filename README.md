@@ -12,13 +12,6 @@ But if you are improving the platform itself, this is the repository to use.
 * Node.js (version 12.16.1 or higher)
 * Yarn (`npm install -g yarn`)
 
-You don't need Golang if you just want to test contracts and run the
-"scenario3" simulator.  Golang (1.13 or higher) is needed only if you
-want to build/debug Cosmos SDK support.  (The `1.12` release will work, but
-it will modify `packages/cosmic-swingset/go.mod` upon each build (by adding
-a dependency upon `appengine`). The `1.13` release will leave the `go.mod`
-file correctly unmodified.
-
 Any version of Yarn will do: the `.yarnrc` file should ensure that all
 commands use the specific checked-in version of Yarn (stored in
 `.yarn/releases/`), which we can update later with PRs in conjunction with
@@ -62,23 +55,28 @@ To run the unit tests of just a single package (e.g. `eventual-send`):
 
 ## Run the larger demo
 
-* `cd packages/cosmic-swingset`
-* `make scenario2-setup`
-* `make scenario2-run-chain` (in one shell)
-* `make scenario2-run-client` (in a second shell)
+Visit https://agoric.com/documentation/ for getting started instructions.
+
+TL;DR:
+
+* `yarn link-cli ~/bin/agoric`
+* `cd ~`
+* `agoric init foo`
+* `cd foo`
+* `agoric install`
+* `agoric start`
+
+Then browse to http://localhost:8000
 
 ## Edit Loop
 
-* modify something in e.g. `SwingSet/`
-* run `yarn build` (at the top level or in `SwingSet/`)
-* re-run tests or setup/run-chain/run-client
+* modify something in e.g. `zoe/`
+* run `yarn build` (at the top level or in `zoe/`)
+* re-run tests or `agoric start --reset`
 * repeat
 
-Doing a `yarn build` in `SwingSet` creates the "kernel bundle", a single file
-that rolls up all the kernel sources. This bundle file is needed by callers
-(like `cosmic-swingset`) before they can invoke `buildVatController`. If you
-don't run `yarn build`, then changes to the SwingSet kernel code will be
-ignored.
+Doing a `yarn build` in `zoe` creates the "contract facet bundle", a single file
+that rolls up all the Zoe contract vat sources. This bundle file is needed by all zoe contracts before they can invoke `zoe~.install(...)`. If you don't run `yarn build`, then changes to the Zoe contract facet will be ignored.
 
 ## Development Standards
 
@@ -96,12 +94,7 @@ ignored.
   instructions.
 * Unless the issue spans multiple packages, each branch should only modify
   a single package.
-* Releases should be made from the package subdirectories, with a tag like
-  `SwingSet-v0.3.0` or `eventual-send-v0.4.5`. Retain mutual compatibility
-  between all packages in the monorepo (run `yarn workspaces info` and make
-  sure there are no `mismatchedWorkspaceDependencies`). Do not use
-  post-release `-dev.0` suffixes. Merge all the `changelogs/*` fragment files
-  together and add to the `NEWS.md` file, then delete the fragments.
+* Releases should be made as according to [MAINTAINERS.md](MAINTAINERS.md).
 
 ## Adding a new package
 
