@@ -107,8 +107,8 @@ export function buildRootObject(vatPowers, vatParameters) {
         if (powerFlags.includes('agoric.vattp')) {
           // Give the authority to create a new host for vattp to share objects with.
           additionalPowers.vattp = {
-            makeNetworkHost(allegedName) {
-              return E(vattp).makeNetworkHost(allegedName, comms);
+            makeNetworkHost(allegedName, console = undefined) {
+              return E(vattp).makeNetworkHost(allegedName, comms, console);
             },
           };
         }

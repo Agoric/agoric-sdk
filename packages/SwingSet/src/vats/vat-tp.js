@@ -62,12 +62,12 @@ export function buildRootObject(vatPowers) {
    });
 
    // B:
-   const { host, handler } = await agoric.vattp~.makeNetworkHost('ag-chain-A', comms);
+   const { host, handler } = await agoric.vattp~.makeNetworkHost('ag-chain-A', comms, console);
    agoric.ibcport[1]~.connect('/ibc-port/portADDR/ordered/vattp-1', handler);
    host~.lookup(helloAddress)~.hello()
   */
 
-  function makeNetworkHost(allegedName, comms) {
+  function makeNetworkHost(allegedName, comms, cons = console) {
     const makeAddress = makeCounter(
       n => `/alleged-name/${allegedName}/egress/${n}`,
     );
@@ -129,6 +129,9 @@ export function buildRootObject(vatPowers) {
       onClose(connection, ..._args) {
         receivers.delete(connection);
         console.warn(`deleting connection is not fully supported in comms`);
+      },
+      infoMessage(...args) {
+        E(cons).log('VatTP connection info:', ...args);
       },
     });
 
