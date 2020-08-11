@@ -314,7 +314,7 @@ export function buildRootObject() {
           }
           throw err;
         });
-        const exitObj = makeExitObj(seatData.proposal, zoeSeatAdmin);
+        const exitObj = makeExitObj(seatData.proposal, zoeSeatAdmin, zcfSeatAdmin);
         /** @type AddSeatResult */
         return harden({ offerResultP, exitObj });
       },
