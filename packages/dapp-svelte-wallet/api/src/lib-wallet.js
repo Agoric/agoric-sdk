@@ -463,12 +463,6 @@ export async function makeWallet({
       harden(paymentKeywordRecord),
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-    // This settles when the offer hook completes.
-    const outcome = await E(seat).getOfferResult();
-
     // We'll resolve when deposited.
     const depositedP = E(seat)
       .getPayouts()
@@ -676,7 +670,10 @@ export async function makeWallet({
   };
 
   const compileOffer = async offer => {
-    const { inviteHandleBoardId } = offer;
+    const {
+      inviteHandleBoardId, // Keep for backward-compatibility.
+      invitationHandleBoardId = inviteHandleBoardId,
+    } = offer;
     const { proposal, purseKeywordRecord } = compileProposal(
       offer.proposalTemplate,
     );
@@ -685,14 +682,16 @@ export async function makeWallet({
     const { value: inviteValueElems } = await E(
       zoeInvitePurse,
     ).getCurrentAmount();
-    const inviteHandle = await E(board).getValue(inviteHandleBoardId);
+    const inviteHandle = await E(board).getValue(invitationHandleBoardId);
     const matchInvite = element => element.handle === inviteHandle;
     const inviteBrand = purseToBrand.get(zoeInvitePurse);
     const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
     const matchingInvite = inviteValueElems.find(matchInvite);
     assert(
       matchingInvite,
-      details`Cannot find invite corresponding to ${q(inviteHandleBoardId)}`,
+      details`Cannot find invite corresponding to ${q(
+        invitationHandleBoardId,
+      )}`,
     );
     const inviteAmount = inviteAmountMath.make(
       harden([inviteValueElems.find(matchInvite)]),
@@ -916,7 +915,7 @@ export async function makeWallet({
       // The outcome is most often a string that can be returned, but
       // it could be an object. We don't do anything currently if it
       // is an object, but we will store it here for future use.
-      const outcome = E(seat).getOfferResult();
+      const outcome = await E(seat).getOfferResult();
       idToOutcome.set(id, outcome);
 
       ret = { outcome, depositedP };
