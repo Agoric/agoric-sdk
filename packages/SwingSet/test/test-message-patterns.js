@@ -6,6 +6,7 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
+import { buildLoopbox } from '../src/devices/loopbox';
 import { buildPatterns } from './message-patterns';
 
 // This exercises all the patterns in 'message-patterns.js' twice (once with
@@ -94,11 +95,16 @@ export async function runVatsInComms(t, enablePipelining, name) {
   };
   config.vats.leftvattp = { sourcePath: vatTPSourcePath };
   config.vats.rightvattp = { sourcePath: vatTPSourcePath };
-  const ldSrcPath = require.resolve('../src/devices/loopbox-src');
-  config.devices = [['loopbox', ldSrcPath, {}]];
+  const { passOneMessage, loopboxSrcPath, loopboxEndowments } = buildLoopbox(
+    'immediate',
+  );
+  config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
   const c = await buildVatController(config, [name]);
   // await runWithTrace(c);
   await c.run();
+  while (passOneMessage()) {
+    await c.run();
+  }
   return c.dump().log;
 }
 
