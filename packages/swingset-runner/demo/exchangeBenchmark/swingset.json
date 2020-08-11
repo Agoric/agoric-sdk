@@ -1,0 +1,25 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "zcf": {
+      "sourcePath": "../../../zoe/src/contractFacet.js"
+    }
+  },
+  "vats": {
+    "alice": {
+      "sourcePath": "vat-alice.js"
+    },
+    "bob": {
+      "sourcePath": "vat-bob.js"
+    },
+    "zoe": {
+      "sourcePath": "vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
+    },
+    "bootstrap": {
+      "sourcePath": "bootstrap.js"
+    }
+  }
+}

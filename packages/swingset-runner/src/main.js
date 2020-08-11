@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';

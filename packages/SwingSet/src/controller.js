@@ -152,7 +152,9 @@ export function loadSwingsetConfigFile(configPath) {
     if (!config.bootstrap) {
       throw Error(`no designated bootstrap vat in ${configPath}`);
     } else if (!config.vats[config.bootstrap]) {
-      throw Error(`bootstrap vat ${config.bootstrap} not found in ${configPath}`);
+      throw Error(
+        `bootstrap vat ${config.bootstrap} not found in ${configPath}`,
+      );
     }
     return config;
   } catch (e) {
