@@ -21,10 +21,12 @@ export const makeZcfSeatAdminKit = (
   // The currentAllocation, exited, and stagedAllocation may be reassigned.
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
+  const assertExitedFalse = () => assert(!exited, `seat has been exited`);
 
   /** @type {ZCFSeatAdmin} */
   const zcfSeatAdmin = harden({
     commit: seatStaging => {
+      assertExitedFalse();
       assert(
         allSeatStagings.has(seatStaging),
         details`The seatStaging ${seatStaging} was not recognized`,
@@ -32,15 +34,17 @@ export const makeZcfSeatAdminKit = (
       currentAllocation = seatStaging.getStagedAllocation();
       E(zoeSeatAdmin).replaceAllocation(currentAllocation);
     },
+    updateHasExited: () => {
+      assertExitedFalse();
+      exited = true;
+    },
   });
-
-  const assertExitedFalse = () => assert(!exited, `seat has been exited`);
 
   /** @type {ZCFSeat} */
   const zcfSeat = harden({
     exit: () => {
       assertExitedFalse();
-      exited = true;
+      zcfSeatAdmin.updateHasExited();
       E(zoeSeatAdmin).exit();
     },
     kickOut: (msg = 'Kicked out of seat') => {

@@ -88,6 +88,7 @@
  * @typedef {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}} ZcfSeatAdminKit
  * @typedef {Object} ZCFSeatAdmin
  * @property {(seatStaging: SeatStaging) => void} commit
+ * @property {() => void} updateHasExited - updates `exited` state to true
  */
 
 /**
@@ -196,6 +197,7 @@
  * @callback MakeExitObj
  * @param {ProposalRecord} proposal
  * @param {ZoeSeatAdmin} zoeSeatAdmin
+ * @param {ZCFSeatAdmin} zcfSeatAdmin
  */
 
 /**

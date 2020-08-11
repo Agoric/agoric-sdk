@@ -7,18 +7,23 @@ import { E } from '@agoric/eventual-send';
  */
 
 /** @type MakeExitObj */
-export const makeExitObj = (proposal, zoeSeatAdmin) => {
+export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
 
   /** @type {ExitObj | undefined} */
   let exitObj;
+
+  const exitFn = () => {
+    zcfSeatAdmin.updateHasExited();
+    return E(zoeSeatAdmin).exit();
+  };
 
   if (exitKind === 'afterDeadline') {
     // Automatically exit the seat after deadline.
     E(proposal.exit.afterDeadline.timer).setWakeup(
       proposal.exit.afterDeadline.deadline,
       harden({
-        wake: () => E(zoeSeatAdmin).exit(),
+        wake: exitFn,
       }),
     );
   } else if (exitKind === 'onDemand') {
@@ -28,7 +33,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin) => {
     // data) and presences (local proxies for objects that may have
     // methods).
     exitObj = {
-      exit: () => E(zoeSeatAdmin).exit(),
+      exit: exitFn,
     };
   } else {
     // if exitKind is 'waived' the user has no ability to exit their seat
