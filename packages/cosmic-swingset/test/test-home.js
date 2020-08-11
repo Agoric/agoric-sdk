@@ -75,7 +75,9 @@ test('home.wallet - receive zoe invite', async t => {
     );
     const bundle = await bundleSource(contractRoot);
     const installationHandle = await E(zoe).install(bundle);
-    const { invite } = await E(zoe).makeInstance(installationHandle);
+    const { creatorInvitation: invite } = await E(zoe).makeInstance(
+      installationHandle,
+    );
 
     // Check that the wallet knows about the Zoe invite issuer and starts out
     // with a default Zoe invite issuer purse.
