@@ -509,7 +509,7 @@ export async function makeWallet({
     const addBrandPetname = ({ brand }) => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
-      brandMapping.suggestPetname(petnameForBrand, brand);
+      petnameForBrand = brandMapping.suggestPetname(petnameForBrand, brand);
       if (!already && makePurse) {
         // eslint-disable-next-line no-use-before-define
         p = makeEmptyPurse(petnameForBrand, petnameForBrand);
@@ -574,7 +574,7 @@ export async function makeWallet({
     // We currently just add the petname mapped to the instanceHandle
     // value, but we could have a list of known instances for
     // possible display in the wallet.
-    instanceMapping.suggestPetname(petname, instanceHandle);
+    petname = instanceMapping.suggestPetname(petname, instanceHandle);
     // We don't wait for the update before returning.
     updateAllState();
     return `instance ${q(petname)} successfully added to wallet`;
@@ -584,17 +584,13 @@ export async function makeWallet({
     // We currently just add the petname mapped to the installationHandle
     // value, but we could have a list of known installations for
     // possible display in the wallet.
-    installationMapping.suggestPetname(petname, installationHandle);
+    petname = installationMapping.suggestPetname(petname, installationHandle);
     // We don't wait for the update before returning.
     updateAllState();
     return `installation ${q(petname)} successfully added to wallet`;
   };
 
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
-    assert(
-      !purseMapping.petnameToVal.has(petnameForPurse),
-      details`Purse petname ${q(petnameForPurse)} already used in wallet.`,
-    );
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.get(brand);
 
@@ -607,8 +603,8 @@ export async function makeWallet({
     );
 
     purseToBrand.init(purse, brand);
-    purseMapping.suggestPetname(petnameForPurse, purse);
-    updatePursesState(purseMapping.valToPetname.get(purse), purse);
+    petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
+    updatePursesState(petnameForPurse, purse);
   };
 
   async function deposit(pursePetname, payment) {
@@ -743,7 +739,7 @@ export async function makeWallet({
             if (edgeMapping.valToPetname.has(origin)) {
               edgeMapping.renamePetname(petname, origin);
             } else {
-              edgeMapping.suggestPetname(petname, origin);
+              petname = edgeMapping.suggestPetname(petname, origin);
             }
             dappRecord = {
               ...dappRecord,

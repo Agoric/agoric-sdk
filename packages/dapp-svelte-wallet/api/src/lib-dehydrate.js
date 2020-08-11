@@ -233,14 +233,27 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     };
 
     const suggestPetname = (petname, val) => {
-      if (petnameToVal.has(petname)) {
-        return;
-      }
       if (valToPetname.has(val)) {
-        return;
+        return valToPetname.get(val);
       }
 
-      addPetname(petname, val);
+      // Find a unique petname since we didn't already have the value,
+      // and anything is better than the `unknown-*` defaults.
+      let nextId = 2;
+      let uniquePetname = petname;
+      while (petnameToVal.has(uniquePetname)) {
+        if (Array.isArray(petname)) {
+          // Add to the path.
+          uniquePetname = [...petname, `${nextId}`];
+        } else {
+          // Just add a suffix.
+          uniquePetname = `${petname}${nextId}`;
+        }
+        nextId += 1;
+      }
+
+      addPetname(uniquePetname, val);
+      return uniquePetname;
     };
 
     const deletePetname = petname => {
