@@ -7,9 +7,9 @@ import { E } from '@agoric/eventual-send';
 import { setup } from '../setupBasicMints';
 import {
   installationPFromSource,
-  assertPayoutDeposit,
+  assertPayoutAmount,
   assertOfferResult,
-  getInviteFields,
+  getInvitationFields,
 } from '../../zoeTestHelpers';
 
 const barter = `${__dirname}/../../../src/contracts/barterExchange`;
@@ -26,30 +26,25 @@ test('barter with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const inviteIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = zoe.getInvitationIssuer();
   const installation = await installationPFromSource(zoe, barter);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
-  const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
   // Setup Bob
   const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
-  const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
   // 1: Simon creates a barter instance and spreads the instance far and
   // wide with instructions on how to use it.
-  const { creatorFacet } = await zoe.makeInstance(installation, {
+  const { instance } = await zoe.makeInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
-  const publicFacet = await E(creatorFacet).getPublicFacet();
-  const simonInvite = await E(publicFacet).makeInvite();
-  const { instance } = await getInviteFields(simonInvite);
 
-  const aliceInvite = await E(E(zoe).getPublicFacet(instance)).makeInvite();
+  const aliceInvitation = await E(
+    E(zoe).getPublicFacet(instance),
+  ).makeInvitation(); 
 
   // 2: Alice escrows with zoe to create a sell order. She wants to
   // sell 3 moola and wants to receive at least 4 simoleans in
@@ -62,21 +57,23 @@ test('barter with valid offers', async t => {
   const alicePayments = { In: aliceMoolaPayment };
   // 3: Alice adds her sell order to the exchange
   const aliceSeat = await zoe.offer(
-    aliceInvite,
+    aliceInvitation,
     aliceSellOrderProposal,
     alicePayments,
   );
 
   assertOfferResult(t, aliceSeat, 'Trade completed.');
 
-  const bobInvite = await E(E(zoe).getPublicFacet(instance)).makeInvite();
+  const bobInvitation = await E(
+    E(zoe).getPublicFacet(instance),
+  ).makeInvitation();
   const {
     installation: bobInstallation,
     instance: bobInstance,
-  } = await getInviteFields(bobInvite);
+  } = await getInvitationFields(invitationIssuer, bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
 
   t.equals(bobInstallation, installation);
   t.equals(bobInstance, instance);
@@ -92,7 +89,7 @@ test('barter with valid offers', async t => {
 
   // 5: Bob escrows with zoe
   const bobSeat = await zoe.offer(
-    bobExclusiveInvite,
+    bobExclusiveInvitation,
     bobBuyOrderProposal,
     bobPayments,
   );
@@ -122,13 +119,11 @@ test('barter with valid offers', async t => {
   // Alice sold all of her moola
   t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
-  // 6: Alice deposits her payout to ensure she can
   // Alice had 0 moola and 4 simoleans.
-  assertPayoutDeposit(t, aliceMoolaPayout, aliceMoolaPurse, moola(0));
-  assertPayoutDeposit(t, aliceSimoleanPayout, aliceSimoleanPurse, simoleans(4));
+  assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0));
+  assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4));
 
-  // 7: Bob deposits his original payments to ensure he can
   // Bob had 3 moola and 3 simoleans.
-  assertPayoutDeposit(t, bobMoolaPayout, bobMoolaPurse, moola(3));
-  assertPayoutDeposit(t, bobSimoleanPayout, bobSimoleanPurse, simoleans(3));
+  assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3));
+  assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3));
 });

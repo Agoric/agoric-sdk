@@ -336,14 +336,13 @@ test('zoe - non-fungible atomicSwap', async t => {
 // Checking handling of duplicate issuers. I'd have preferred a raffle contract
 test('zoe - atomicSwap like-for-like', async t => {
   t.plan(13);
-  const { moolaIssuer, moolaMint, moola } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { moolaIssuer, moolaMint, moola, zoe } = setup();
   const invitationIssuer = zoe.getInvitationIssuer();
 
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -358,8 +357,8 @@ test('zoe - atomicSwap like-for-like', async t => {
     Asset: moolaIssuer,
     Price: moolaIssuer,
   });
-  const { invite: aliceInvite } = await zoe.makeInstance(
-    installationHandle,
+  const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+    installation,
     issuerKeywordRecord,
   );
 
@@ -372,8 +371,8 @@ test('zoe - atomicSwap like-for-like', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
 
   // 3: Alice makes the first offer in the swap.
-  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
-    aliceInvite,
+  const aliceSeat = await zoe.offer(
+    aliceInvitation,
     aliceProposal,
     alicePayments,
   );
@@ -382,17 +381,15 @@ test('zoe - atomicSwap like-for-like', async t => {
   // on how to use it and Bob decides he wants to be the
   // counter-party.
 
+  const bobInviteP = E(aliceSeat).getOfferResult();
   const bobExclusiveInvite = await invitationIssuer.claim(bobInviteP);
   const {
     value: [bobInviteValue],
   } = await invitationIssuer.getAmountOf(bobExclusiveInvite);
 
-  const {
-    installationHandle: bobInstallationId,
-    issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
+  const bobIssuers = zoe.getIssuers(bobInviteValue.instance);
 
-  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+  t.equals(bobInviteValue.installation, installation, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
   t.deepEquals(bobInviteValue.asset, moola(3));
   t.deepEquals(bobInviteValue.price, moola(7));
@@ -405,24 +402,18 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobPayments = { Price: bobMoolaPayment };
 
   // 5: Bob makes an offer
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
-    bobExclusiveInvite,
-    bobProposal,
-    bobPayments,
-  );
+  const bobSeat = await zoe.offer(bobExclusiveInvite, bobProposal, bobPayments);
 
   t.equals(
-    await bobOutcomeP,
+    await E(bobSeat).getOfferResult(),
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
 
-  const bobAssetPayout = await bobPayout.Asset;
-  const bobPricePayout = await bobPayout.Price;
+  const bobAssetPayout = await bobSeat.getPayout('Asset');
+  const bobPricePayout = await bobSeat.getPayout('Price');
 
-  const aliceAssetPayout = await alicePayout.Asset;
-  const alicePricePayout = await alicePayout.Price;
+  const aliceAssetPayout = await aliceSeat.getPayout('Asset');
+  const alicePricePayout = await aliceSeat.getPayout('Price');
 
   // Alice gets what Alice wanted
   t.deepEquals(
