@@ -384,6 +384,15 @@ export function buildPatterns(log) {
   // b.x(p): alice~.two(p)
   // a.two(p): compart p and P(amy) (should resolve to the same thing)
   // exercises comms.clist.mapInbound non-flip bug in promise addition
+  {
+    objA.a64 = async () => {
+    };
+    objB.a64 = async() => {
+    };
+  }
+  out.a64 = [];
+  test.onlyComms('a64');
+
 
   // bob!pipe1()!pipe2()!pipe3() // pipelining
   {
