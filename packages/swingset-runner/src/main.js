@@ -5,7 +5,11 @@ import repl from 'repl';
 import util from 'util';
 
 import { makeStatLogger } from '@agoric/stat-logger';
-import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
+import {
+  buildVatController,
+  loadSwingsetConfigFile,
+  loadBasedir,
+} from '@agoric/swingset-vat';
 import {
   initSwingStore as initSimpleSwingStore,
   openSwingStore as openSimpleSwingStore,
@@ -83,42 +87,6 @@ function fail(message, printUsage) {
     usage();
   }
   process.exit(1);
-}
-
-function normalizeConfigDescriptor(desc, dirname, expectParameters) {
-  if (desc) {
-    for (const name of Object.keys(desc)) {
-      const entry = desc[name];
-      if (entry.sourcePath) {
-        entry.sourcePath = path.resolve(dirname, entry.sourcePath);
-      }
-      if (entry.bundlePath) {
-        entry.bundlePath = path.resolve(dirname, entry.bundlePath);
-      }
-      if (expectParameters && !entry.parameters) {
-        entry.parameters = {};
-      }
-    }
-  }
-}
-
-function readConfig(configPath) {
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath));
-    const dirname = path.dirname(configPath);
-    normalizeConfigDescriptor(config.vats, dirname, true);
-    normalizeConfigDescriptor(config.bundles, dirname, false);
-    // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
-    if (!config.bootstrap) {
-      fail(`no designated bootstrap vat in ${configPath}`);
-    } else if (!config.vats[config.bootstrap]) {
-      fail(`bootstrap vat ${config.bootstrap} not found in ${configPath}`);
-    }
-    return config;
-  } catch (e) {
-    fail(`bad config file: ${e}`);
-    return null; // just to make eslint shut up
-  }
 }
 
 function generateIndirectConfig(baseConfig) {
@@ -328,10 +296,13 @@ export async function main() {
 
   let config;
   if (configPath) {
-    config = readConfig(configPath);
+    config = loadSwingsetConfigFile(configPath);
+    if (config === null) {
+      fail(`config file ${configPath} not found`);
+    }
     basedir = path.dirname(configPath);
   } else {
-    config = await loadBasedir(basedir);
+    config = loadBasedir(basedir);
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);

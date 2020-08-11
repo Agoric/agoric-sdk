@@ -125,6 +125,45 @@ export function loadBasedir(basedir) {
   return config;
 }
 
+function normalizeConfigDescriptor(desc, dirname, expectParameters) {
+  if (desc) {
+    for (const name of Object.keys(desc)) {
+      const entry = desc[name];
+      if (entry.sourcePath) {
+        entry.sourcePath = path.resolve(dirname, entry.sourcePath);
+      }
+      if (entry.bundlePath) {
+        entry.bundlePath = path.resolve(dirname, entry.bundlePath);
+      }
+      if (expectParameters && !entry.parameters) {
+        entry.parameters = {};
+      }
+    }
+  }
+}
+
+export function loadSwingsetConfigFile(configPath) {
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath));
+    const dirname = path.dirname(configPath);
+    normalizeConfigDescriptor(config.vats, dirname, true);
+    normalizeConfigDescriptor(config.bundles, dirname, false);
+    // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
+    if (!config.bootstrap) {
+      throw Error(`no designated bootstrap vat in ${configPath}`);
+    } else if (!config.vats[config.bootstrap]) {
+      throw Error(`bootstrap vat ${config.bootstrap} not found in ${configPath}`);
+    }
+    return config;
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      return null;
+    } else {
+      throw e;
+    }
+  }
+}
+
 export async function buildVatController(
   config,
   argv = [],
