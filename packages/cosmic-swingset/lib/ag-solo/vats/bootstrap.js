@@ -48,6 +48,15 @@ function parseArgs(argv) {
 // Used for coordinating on an index in comms for the provisioning service
 const PROVISIONER_INDEX = 1;
 
+function makeVattpFrom(vats) {
+  const { vattp, comms } = vats;
+  return harden({
+    makeNetworkHost(allegedName, console = undefined) {
+      return E(vattp).makeNetworkHost(allegedName, comms, console);
+    },
+  });
+}
+
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
@@ -103,14 +112,9 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
 
         const additionalPowers = {};
-        const { vattp, comms } = vats;
         if (powerFlags.includes('agoric.vattp')) {
           // Give the authority to create a new host for vattp to share objects with.
-          additionalPowers.vattp = {
-            makeNetworkHost(allegedName, console = undefined) {
-              return E(vattp).makeNetworkHost(allegedName, comms, console);
-            },
-          };
+          additionalPowers.vattp = makeVattpFrom(vats);
         }
 
         const pursePetnames = {
@@ -267,12 +271,11 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     return allComparable(
       harden({
-        comms: vats.comms,
         uploads,
         spawner,
         network: vats.network,
         http: httpRegCallback,
-        vattp: vats.vattp,
+        vattp: makeVattpFrom(vats),
       }),
     );
   }
