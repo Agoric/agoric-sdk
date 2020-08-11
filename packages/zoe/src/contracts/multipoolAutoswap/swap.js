@@ -21,7 +21,6 @@ export const makeMakeSwapInvitation = (
   });
 
   const swap = seat => {
-    debugger;
     const {
       give: { In: amountIn },
       want: { Out: wantedAmountOut },

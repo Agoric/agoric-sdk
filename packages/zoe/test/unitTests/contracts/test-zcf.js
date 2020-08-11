@@ -19,14 +19,12 @@ test('zoe - test zcf', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
     Pixels: moolaIssuer,
     Money: simoleanIssuer,
   });
-  t.doesNotReject(() =>
-    zoe.makeInstance(installationHandle, issuerKeywordRecord),
-  );
+  t.doesNotReject(() => zoe.makeInstance(installation, issuerKeywordRecord));
 });

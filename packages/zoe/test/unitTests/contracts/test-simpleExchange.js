@@ -11,7 +11,7 @@ import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
 import {
   installationPFromSource,
-  assertPayoutDeposit,
+  assertPayoutAmount,
   assertOfferResult,
   getInvitationFields,
 } from '../../zoeTestHelpers';
@@ -35,13 +35,9 @@ test('simpleExchange with valid offers', async t => {
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
-  const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
   // Setup Bob
   const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
-  const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
   // 1: Alice creates a simpleExchange instance and spreads the publicFacet far
   // and wide with instructions on how to call makeInvite().
@@ -195,13 +191,13 @@ test('simpleExchange with valid offers', async t => {
 
   // 6: Alice deposits her payout to ensure she can
   // Alice had 0 moola and 4 simoleans.
-  assertPayoutDeposit(t, aliceMoolaPayout, aliceMoolaPurse, moola(0));
-  assertPayoutDeposit(t, aliceSimoleanPayout, aliceSimoleanPurse, simoleans(4));
+  assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0));
+  assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4));
 
   // 7: Bob deposits his original payments to ensure he can
   // Bob had 3 moola and 3 simoleans.
-  assertPayoutDeposit(t, bobMoolaPayout, bobMoolaPurse, moola(3));
-  assertPayoutDeposit(t, bobSimoleanPayout, bobSimoleanPurse, simoleans(3));
+  assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3));
+  assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3));
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -332,13 +328,9 @@ test('simpleExchange with non-fungible assets', async t => {
   // Setup Alice
   const spell = createRpgItem('Spell of Binding', 'binding');
   const aliceRpgPayment = rpgMint.mintPayment(rpgItems(spell));
-  const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
-  const aliceCcPurse = ccIssuer.makeEmptyPurse();
 
   // Setup Bob
   const bobCcPayment = ccMint.mintPayment(cryptoCats(harden(['Cheshire Cat'])));
-  const bobRpgPurse = rpgIssuer.makeEmptyPurse();
-  const bobCcPurse = ccIssuer.makeEmptyPurse();
 
   // 1: Simon creates a simpleExchange instance and spreads the invite far and
   // wide with instructions on how to use it.
@@ -438,9 +430,9 @@ test('simpleExchange with non-fungible assets', async t => {
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
   const noCats = amountMaths.get('cc').getEmpty();
   const noRpgItems = amountMaths.get('rpg').getEmpty();
-  assertPayoutDeposit(t, aliceRpgPayout, aliceRpgPurse, noRpgItems);
+  assertPayoutAmount(t, rpgIssuer, aliceRpgPayout, noRpgItems);
   const cheshireCatAmount = cryptoCats(harden(['Cheshire Cat']));
-  assertPayoutDeposit(t, aliceCcPayout, aliceCcPurse, cheshireCatAmount);
-  assertPayoutDeposit(t, bobRpgPayout, bobRpgPurse, rpgItems(spell));
-  assertPayoutDeposit(t, bobCcPayout, bobCcPurse, noCats);
+  assertPayoutAmount(t, ccIssuer, aliceCcPayout, cheshireCatAmount);
+  assertPayoutAmount(t, rpgIssuer, bobRpgPayout, rpgItems(spell));
+  assertPayoutAmount(t, ccIssuer, bobCcPayout, noCats);
 });

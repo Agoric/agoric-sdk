@@ -2,22 +2,21 @@
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { assert, details } from '@agoric/assert';
-import { makeZoeHelpers } from '../../../src/contractSupport';
+import {
+  assertIssuerKeywords,
+  assertProposalKeywords,
+} from '../../../src/contractSupport';
 
 /**
  * Give a use object when a payment is escrowed
- *
- * @typedef {import('../../../src/zoeService/zoe').ContractFacet} ContractFacet
- * @typedef {import('@agoric/ERTP').Amount} Amount
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const { assertKeywords, checkHook } = makeZoeHelpers(zcf);
-  assertKeywords(harden(['Pixels']));
+const start = (zcf, _terms) => {
+  assertIssuerKeywords(zcf, harden(['Pixels']));
   const { brandKeywordRecord } = zcf.getInstanceRecord();
   const amountMath = zcf.getAmountMath(brandKeywordRecord.Pixels);
 
-  const makeUseObjHook = offerHandle => {
+  const makeUseObj = seat => {
     const useObj = harden({
       /**
        * (Pretend to) color some pixels.
@@ -27,13 +26,10 @@ const makeContract = zcf => {
       colorPixels: (color, amountToColor = undefined) => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(
-          zcf.isOfferActive(offerHandle),
-          `the escrowing offer is no longer active`,
-        );
-        const { Pixels: escrowedAmount } = zcf.getCurrentAllocation(
-          offerHandle,
-          brandKeywordRecord,
+        assert(!seat.hasExited(), `the escrowing offer is no longer active`);
+        const escrowedAmount = seat.getAmountAllocated(
+          'Pixels',
+          brandKeywordRecord.Pixels,
         );
         // If no amountToColor is provided, color all the pixels
         // escrowed for this offer.
@@ -58,17 +54,17 @@ const makeContract = zcf => {
     give: { Pixels: null },
   });
 
-  const makeUseObjInvite = () =>
-    zcf.makeInvitation(checkHook(makeUseObjHook, expected), 'use object');
+  const publicFacet = {
+    // The only publicFacet method is to make an invite.
+    makeInvitation: () =>
+      zcf.makeInvitation(
+        assertProposalKeywords(makeUseObj, expected),
+        'use object',
+      ),
+  };
 
-  zcf.initPublicAPI({
-    // The only publicAPI method is to make an invite.
-    makeInvite: makeUseObjInvite,
-  });
-
-  // Return an invite.
-  return makeUseObjInvite();
+  return harden({ publicFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

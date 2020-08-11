@@ -5,6 +5,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
+import { E } from '@agoric/eventual-send';
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import fakeVatAdmin from './fakeVatAdmin';
@@ -19,7 +20,7 @@ test('zoe - useObj', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -28,10 +29,12 @@ test('zoe - useObj', async t => {
   const issuerKeywordRecord = harden({
     Pixels: moolaIssuer,
   });
-  const { invite: aliceInvite } = await zoe.makeInstance(
-    installationHandle,
+  const { publicFacet } = await zoe.makeInstance(
+    installation,
     issuerKeywordRecord,
   );
+
+  const invitation = E(publicFacet).makeInvitation();
 
   // Alice escrows with zoe
   const aliceProposal = harden({
@@ -40,13 +43,9 @@ test('zoe - useObj', async t => {
   const alicePayments = { Pixels: aliceMoolaPayment };
 
   // Alice makes an offer
-  const {
-    payout: alicePayoutP,
-    outcome: useObjP,
-    completeObj,
-  } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
+  const aliceSeat = await zoe.offer(invitation, aliceProposal, alicePayments);
 
-  const useObj = await useObjP;
+  const useObj = await E(aliceSeat).getOfferResult();
 
   t.equals(
     useObj.colorPixels('purple'),
@@ -54,11 +53,9 @@ test('zoe - useObj', async t => {
     `use of use object works`,
   );
 
-  completeObj.complete();
+  aliceSeat.exit();
 
-  const alicePayout = await alicePayoutP;
-
-  const aliceMoolaPayoutPayment = await alicePayout.Pixels;
+  const aliceMoolaPayoutPayment = await E(aliceSeat).getPayout('Pixels');
 
   t.deepEquals(
     await moolaIssuer.getAmountOf(aliceMoolaPayoutPayment),

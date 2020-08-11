@@ -44,7 +44,7 @@ test('barter with valid offers', async t => {
 
   const aliceInvitation = await E(
     E(zoe).getPublicFacet(instance),
-  ).makeInvitation(); 
+  ).makeInvitation();
 
   // 2: Alice escrows with zoe to create a sell order. She wants to
   // sell 3 moola and wants to receive at least 4 simoleans in
