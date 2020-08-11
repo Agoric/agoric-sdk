@@ -123,7 +123,7 @@ const start = (zcf, _terms) => {
       );
     } else {
       // Eject because the offer must be invalid
-      return offerSeat.reject();
+      throw offerSeat.kickOut();
     }
     bookOrdersChanged();
     return 'Trade Successful';

@@ -1,7 +1,5 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
-
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   swap,
@@ -50,7 +48,6 @@ const start = (zcf, _terms) => {
     const rejectMsg = `The covered call option is expired.`;
 
     const exerciseOption = exerciserSeat => {
-      debugger;
       return swap(zcf, sellerSeat, exerciserSeat, rejectMsg);
     };
 

@@ -9,7 +9,6 @@ import { E } from '@agoric/eventual-send';
 
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
-import fakeVatAdmin from './fakeVatAdmin';
 
 const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 

@@ -53,7 +53,6 @@ const start = (zcf, _terms) => {
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
   const addPool = makeAddPool(zcf, isSecondary, initPool, centralBrand);
   const getPoolAllocation = brand => {
-    debugger;
     return getPool(brand)
       .getPoolSeat()
       .getCurrentAllocation();
