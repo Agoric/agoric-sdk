@@ -18,14 +18,18 @@ test('zoe - brokenAutomaticRefund', async t => {
   const zoe = makeZoe(fakeVatAdmin);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   const issuerKeywordRecord = harden({ Contribution: moolaR.issuer });
 
-  // 1: Alice tries to create an instance, but the contract is badly written.
+  // Alice tries to create an instance, but the contract is badly
+  // written.
+  console.log(
+    'EXPECTED ERROR: The contract did not correctly return a creatorInvitation',
+  );
   t.rejects(
-    () => zoe.makeInstance(installationHandle, issuerKeywordRecord),
-    new Error('invites must be issued by InviteIssuer'),
+    () => zoe.makeInstance(installation, issuerKeywordRecord),
+    new Error('The contract did not correctly return a creatorInvitation'),
     'makeInstance should have thrown',
   );
 });
