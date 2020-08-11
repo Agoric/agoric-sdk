@@ -4,8 +4,7 @@ import makeStore from '@agoric/store';
 import '../../exported';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { trade } from '../contractSupport';
-import { satisfies } from '../contractSupport/zoeHelpers';
+import { trade, satisfies } from '../contractSupport';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
@@ -126,16 +125,15 @@ const start = (zcf, _terms) => {
     return 'Trade completed.';
   };
 
-  const makeExchangeInvite = () =>
+  const makeExchangeInvitation = () =>
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
-  const inviteFacet = harden({ makeInvite: makeExchangeInvite });
+  const publicFacet = harden({ makeInvitation: makeExchangeInvitation });
   const creatorFacet = harden({
-    makeInvite: makeExchangeInvite,
-    getPublicFacet: () => inviteFacet,
+    makeInvitation: makeExchangeInvitation,
   });
 
-  return { publicFacet: inviteFacet, creatorFacet };
+  return { publicFacet, creatorFacet };
 };
 
 harden(start);

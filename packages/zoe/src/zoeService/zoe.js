@@ -266,6 +266,15 @@ function makeZoe(vatAdminSvc) {
       addSeatObjPromiseKit.resolve(addSeatObj);
       publicFacetPromiseKit.resolve(publicFacet);
 
+      // creatorInvitation can be undefined, but if it is defined,
+      // let's make sure it is an invitation.
+      if (creatorInvitation !== undefined) {
+        assert(
+          await invitationIssuer.isLive(creatorInvitation),
+          details`The contract did not correctly return a creatorInvitation`,
+        );
+      }
+
       // Actually returned to the user.
       return {
         creatorFacet,

@@ -24,7 +24,7 @@ export const assertRejectedOfferResult = (t, seat, expected) => {
 export const installationPFromSource = (zoe, source) =>
   bundleSource(source).then(b => zoe.install(b));
 
-export const getInviteFields = (inviteIssuer, inviteP) =>
-  E(inviteIssuer)
-    .getAmountOf(inviteP)
+export const getInvitationFields = (invitationIssuer, invitationP) =>
+  E(invitationIssuer)
+    .getAmountOf(invitationP)
     .then(amount => amount.value[0]);
