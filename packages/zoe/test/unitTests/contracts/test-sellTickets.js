@@ -33,7 +33,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const { creatorFacet: ticketMaker } = await E(zoe).makeInstance(
     mintAndSellNFTInstallation,
   );
-  const { sellItemsCreatorSeat, sellItemsCreatorFacet } = await E(
+  const { sellItemsCreatorSeat, sellItemsInstance } = await E(
     ticketMaker,
   ).sellTokens({
     customValueProperties: {
@@ -53,7 +53,6 @@ test(`mint and sell tickets for multiple shows`, async t => {
 
   const ticketIssuerP = E(ticketMaker).getIssuer();
   const ticketBrand = await E(ticketIssuerP).getBrand();
-  const sellItemsInstance = await E(sellItemsCreatorFacet).getInstance();
   const ticketSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
   const ticketsForSale = await E(ticketSalesPublicFacet).getAvailableItems();
   t.deepEquals(
@@ -81,7 +80,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     `the tickets are up for sale`,
   );
 
-  const { sellItemsCreatorFacet: sellItemsCreatorFacet2 } = await E(
+  const { sellItemsInstance: sellItemsInstance2 } = await E(
     ticketMaker,
   ).sellTokens({
     customValueProperties: {
@@ -93,7 +92,6 @@ test(`mint and sell tickets for multiple shows`, async t => {
     sellItemsInstallation,
     pricePerItem: moolaAmountMath.make(20),
   });
-  const sellItemsInstance2 = sellItemsCreatorFacet2.getInstance();
   const sellItemsPublicFacet2 = await E(zoe).getPublicFacet(sellItemsInstance2);
   const ticketsForSale2 = await E(sellItemsPublicFacet2).getAvailableItems();
   t.deepEquals(
@@ -161,9 +159,11 @@ test(`mint and sell opera tickets`, async t => {
       mintAndSellNFTInstallation,
     );
 
-    const { sellItemsCreatorSeat, sellItemsCreatorFacet } = await E(
-      ticketSeller,
-    ).sellTokens({
+    const {
+      sellItemsCreatorSeat,
+      sellItemsCreatorFacet,
+      sellItemsPublicFacet,
+    } = await E(ticketSeller).sellTokens({
       customValueProperties: {
         show: 'Steven Universe, the Opera',
         start: 'Wed, March 25th 2020 at 8pm',
@@ -174,12 +174,7 @@ test(`mint and sell opera tickets`, async t => {
       pricePerItem: moola(22),
     });
 
-    const ticketSalesInstance = await E(sellItemsCreatorFacet).getInstance();
-    const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
-      ticketSalesInstance,
-    );
-
-    const ticketsForSale = await E(ticketSalesPublicFacet).getAvailableItems();
+    const ticketsForSale = await E(sellItemsPublicFacet).getAvailableItems();
 
     t.equal(ticketsForSale.value.length, 3, `3 tickets for sale`);
 

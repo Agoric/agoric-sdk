@@ -230,7 +230,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 });
 
 test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
-  t.plan(10);
+  t.plan(9);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe(fakeVatAdmin);
@@ -250,17 +250,18 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Pack the contract.
     const bundle = await bundleSource(publicAuctionRoot);
 
-    const installationHandle = await zoe.install(bundle);
+    const installation = await zoe.install(bundle);
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaR.issuer,
       Ask: simoleanR.issuer,
     });
     const terms = harden({ numBidsAllowed });
-    const {
-      invite: aliceInvite,
-      instanceRecord: { publicAPI },
-    } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
+    const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+      installation,
+      issuerKeywordRecord,
+      terms,
+    );
 
     // Alice escrows with zoe
     const aliceProposal = harden({
@@ -269,24 +270,20 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     });
     const alicePayments = harden({ Asset: aliceMoolaPayment });
     // Alice initializes the auction
-    const {
-      payout: alicePayoutP,
-      completeObj,
-      outcome: aliceOutcomeP,
-    } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
-
-    const [bobInvite] = await E(publicAPI).makeInvites(1);
-
-    t.equals(
-      await aliceOutcomeP,
-      'The offer has been accepted. Once the contract has been completed, please check your payout',
+    const aliceSeat = await zoe.offer(
+      aliceInvitation,
+      aliceProposal,
+      alicePayments,
     );
+    const makeInvitationObj = await E(aliceSeat).getOfferResult();
+
+    const bobInvitation = await E(makeInvitationObj).makeBidInvitation();
 
     // Alice completes her offer, making the auction stop accepting
     // offers
-    completeObj.complete();
+    aliceSeat.exit();
 
-    // Alice gives Bob the invite
+    // Alice gives Bob the invitation
 
     const bobProposal = harden({
       want: { Asset: moola(1) },
@@ -296,27 +293,20 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Bob escrows with zoe
     // Bob bids
-    const { payout: bobPayoutP, outcome: brokenOutcomeP } = await zoe.offer(
-      bobInvite,
-      bobProposal,
-      bobPayments,
-    );
+    const bobSeat = await zoe.offer(bobInvitation, bobProposal, bobPayments);
 
     t.rejects(
-      () => brokenOutcomeP,
+      () => E(bobSeat).getOfferResult(),
       new Error(
         'The item up for auction has been withdrawn or the auction has completed',
       ),
       'The bid should have failed.',
     );
 
-    const aliceResult = await alicePayoutP;
-    const bobResult = await bobPayoutP;
-
-    const aliceMoolaPayout = await aliceResult.Asset;
-    const aliceSimoleanPayout = await aliceResult.Ask;
-    const bobMoolaPayout = await bobResult.Asset;
-    const bobSimoleanPayout = await bobResult.Bid;
+    const aliceMoolaPayout = await aliceSeat.getPayout('Asset');
+    const aliceSimoleanPayout = await aliceSeat.getPayout('Ask');
+    const bobMoolaPayout = await bobSeat.getPayout('Asset');
+    const bobSimoleanPayout = await bobSeat.getPayout('Bid');
 
     // Alice (the creator of the auction) gets back what she put in
     t.deepEquals(
@@ -362,7 +352,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
 // Three bidders with (fungible) moola bid for a CryptoCat
 test('zoe - secondPriceAuction non-fungible asset', async t => {
-  t.plan(34);
+  t.plan(33);
   const {
     ccIssuer,
     moolaIssuer,
@@ -370,9 +360,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     moolaMint,
     cryptoCats,
     moola,
+    zoe,
   } = setupMixed();
-  const zoe = makeZoe(fakeVatAdmin);
-  const inviteIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = zoe.getInvitationIssuer();
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['Felix'])));
@@ -399,17 +389,18 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Pack the contract.
   const bundle = await bundleSource(publicAuctionRoot);
 
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
   const numBidsAllowed = 3;
   const issuerKeywordRecord = harden({
     Asset: ccIssuer,
     Ask: moolaIssuer,
   });
   const terms = harden({ numBidsAllowed });
-  const {
-    invite: aliceInvite,
-    instanceRecord: { publicAPI },
-  } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
+  const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+    installation,
+    issuerKeywordRecord,
+    terms,
+  );
 
   // Alice escrows with zoe
   const aliceProposal = harden({
@@ -418,41 +409,32 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   });
   const alicePayments = { Asset: aliceCcPayment };
   // Alice initializes the auction
-  const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
-    aliceInvite,
+  const aliceSeat = await zoe.offer(
+    aliceInvitation,
     aliceProposal,
     alicePayments,
   );
+  const makeBidInvitationObj = await E(aliceSeat).getOfferResult();
+  const bobInvitation = E(makeBidInvitationObj).makeBidInvitation();
+  const carolInvitation = E(makeBidInvitationObj).makeBidInvitation();
+  const daveInvitation = E(makeBidInvitationObj).makeBidInvitation();
 
-  const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
-    3,
-  );
-
-  t.equals(
-    await aliceOutcomeP,
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
-    'aliceOutcome',
-  );
-
-  // Alice spreads the invites far and wide and Bob decides he
+  // Alice spreads the invitations far and wide and Bob decides he
   // wants to participate in the auction.
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
   const {
-    value: [bobInviteValue],
-  } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
+    value: [bobInvitationValue],
+  } = await invitationIssuer.getAmountOf(bobExclusiveInvitation);
 
-  const {
-    installationHandle: bobInstallationId,
-    terms: bobTerms,
-    issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
+  const bobTerms = zoe.getTerms(bobInvitationValue.instance);
+  const bobIssuers = zoe.getIssuers(bobInvitationValue.instance);
 
-  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+  t.equals(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: ccIssuer, Ask: moolaIssuer }, 'bobIssuers');
   t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
-  t.deepEquals(bobInviteValue.minimumBid, moola(3), 'minimumBid');
+  t.deepEquals(bobInvitationValue.minimumBid, moola(3), 'minimumBid');
   t.deepEquals(
-    bobInviteValue.auctionedAssets,
+    bobInvitationValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'assets',
   );
@@ -465,41 +447,44 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Bob escrows with zoe
   // Bob bids
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
-    bobExclusiveInvite,
+  const bobSeat = await zoe.offer(
+    bobExclusiveInvitation,
     bobProposal,
     bobPayments,
   );
 
   t.equals(
-    await bobOutcomeP,
+    await E(bobSeat).getOfferResult(),
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'bobOutcome',
   );
 
   // Carol decides to bid for the one cc
 
-  const carolExclusiveInvite = await inviteIssuer.claim(carolInvite);
+  const carolExclusiveInvitation = await invitationIssuer.claim(
+    carolInvitation,
+  );
   const {
-    value: [carolInviteValue],
-  } = await inviteIssuer.getAmountOf(carolExclusiveInvite);
+    value: [carolInvitationValue],
+  } = await invitationIssuer.getAmountOf(carolExclusiveInvitation);
 
-  const {
-    installationHandle: carolInstallationId,
-    terms: carolTerms,
-    issuerKeywordRecord: carolIssuers,
-  } = zoe.getInstanceRecord(carolInviteValue.instanceHandle);
+  const carolTerms = zoe.getTerms(carolInvitationValue.instance);
+  const carolIssuers = zoe.getIssuers(carolInvitationValue.instance);
 
-  t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
+  t.equals(
+    carolInvitationValue.installation,
+    installation,
+    'carolInstallationId',
+  );
   t.deepEquals(
     carolIssuers,
     { Asset: ccIssuer, Ask: moolaIssuer },
     'carolIssuers',
   );
   t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
-  t.deepEquals(carolInviteValue.minimumBid, moola(3), 'carolMinimumBid');
+  t.deepEquals(carolInvitationValue.minimumBid, moola(3), 'carolMinimumBid');
   t.deepEquals(
-    carolInviteValue.auctionedAssets,
+    carolInvitationValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'carolAuctionedAssets',
   );
@@ -512,40 +497,37 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Carol escrows with zoe
   // Carol bids
-  const { payout: carolPayoutP, outcome: carolOutcomeP } = await zoe.offer(
-    carolExclusiveInvite,
+  const carolSeat = await zoe.offer(
+    carolExclusiveInvitation,
     carolProposal,
     carolPayments,
   );
 
   t.equals(
-    await carolOutcomeP,
+    await E(carolSeat).getOfferResult(),
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'carolOutcome',
   );
 
   // Dave decides to bid for the one moola
-  const daveExclusiveInvite = await inviteIssuer.claim(daveInvite);
+  const daveExclusiveInvitation = await invitationIssuer.claim(daveInvitation);
   const {
-    value: [daveInviteValue],
-  } = await inviteIssuer.getAmountOf(daveExclusiveInvite);
+    value: [daveInvitationValue],
+  } = await invitationIssuer.getAmountOf(daveExclusiveInvitation);
 
-  const {
-    installationHandle: daveInstallationId,
-    terms: daveTerms,
-    issuerKeywordRecord: daveIssuers,
-  } = zoe.getInstanceRecord(daveInviteValue.instanceHandle);
+  const daveTerms = zoe.getTerms(daveInvitationValue.instance);
+  const daveIssuers = zoe.getIssuers(daveInvitationValue.instance);
 
-  t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
+  t.equals(daveInvitationValue.installation, installation, 'daveInstallation');
   t.deepEquals(
     daveIssuers,
     { Asset: ccIssuer, Ask: moolaIssuer },
     'daveIssuers',
   );
   t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
-  t.deepEquals(daveInviteValue.minimumBid, moola(3), 'daveMinimumBid');
+  t.deepEquals(daveInvitationValue.minimumBid, moola(3), 'daveMinimumBid');
   t.deepEquals(
-    daveInviteValue.auctionedAssets,
+    daveInvitationValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'daveAssets',
   );
@@ -558,34 +540,29 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Dave escrows with zoe
   // Dave bids
-  const { payout: davePayoutP, outcome: daveOutcomeP } = await zoe.offer(
-    daveExclusiveInvite,
+  const daveSeat = await zoe.offer(
+    daveExclusiveInvitation,
     daveProposal,
     davePayments,
   );
 
   t.equals(
-    await daveOutcomeP,
+    await E(daveSeat).getOfferResult(),
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'daveOutcome',
   );
 
-  const aliceResult = await alicePayoutP;
-  const bobResult = await bobPayoutP;
-  const carolResult = await carolPayoutP;
-  const daveResult = await davePayoutP;
+  const aliceCcPayout = await aliceSeat.getPayout('Asset');
+  const aliceMoolaPayout = await aliceSeat.getPayout('Ask');
 
-  const aliceCcPayout = await aliceResult.Asset;
-  const aliceMoolaPayout = await aliceResult.Ask;
+  const bobCcPayout = await bobSeat.getPayout('Asset');
+  const bobMoolaPayout = await bobSeat.getPayout('Bid');
 
-  const bobCcPayout = await bobResult.Asset;
-  const bobMoolaPayout = await bobResult.Bid;
+  const carolCcPayout = await carolSeat.getPayout('Asset');
+  const carolMoolaPayout = await carolSeat.getPayout('Bid');
 
-  const carolCcPayout = await carolResult.Asset;
-  const carolMoolaPayout = await carolResult.Bid;
-
-  const daveCcPayout = await daveResult.Asset;
-  const daveMoolaPayout = await daveResult.Bid;
+  const daveCcPayout = await daveSeat.getPayout('Asset');
+  const daveMoolaPayout = await daveSeat.getPayout('Bid');
 
   // Alice (the creator of the auction) gets back the second highest bid
   t.deepEquals(

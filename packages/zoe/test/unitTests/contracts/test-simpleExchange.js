@@ -13,7 +13,7 @@ import {
   installationPFromSource,
   assertPayoutDeposit,
   assertOfferResult,
-  getInviteFields,
+  getInvitationFields,
 } from '../../zoeTestHelpers';
 
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
@@ -47,14 +47,12 @@ test('simpleExchange with valid offers', async t => {
   // and wide with instructions on how to call makeInvite().
   const {
     creatorInvitation: aliceInvite,
-    creatorFacet,
+    publicFacet,
+    instance,
   } = await zoe.makeInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
-
-  const publicFacet = await creatorFacet.getPublicFacet();
-  const instance = creatorFacet.getInstance();
 
   const aliceNotifier = publicFacet.getNotifier();
   E(aliceNotifier)
@@ -121,7 +119,7 @@ test('simpleExchange with valid offers', async t => {
     });
 
   const bobInvite = await E(publicFacet).makeInvite();
-  const { installation: bobInstallation } = await getInviteFields(
+  const { installation: bobInstallation } = await getInvitationFields(
     inviteIssuer,
     bobInvite,
   );
@@ -374,7 +372,7 @@ test('simpleExchange with non-fungible assets', async t => {
   const {
     installation: bobInstallation,
     instance: bobInstance,
-  } = await getInviteFields(inviteIssuer, bobInvite);
+  } = await getInvitationFields(inviteIssuer, bobInvite);
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
 
   t.equals(bobInstallation, installation);
