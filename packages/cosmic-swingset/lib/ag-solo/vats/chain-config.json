@@ -1,0 +1,49 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "zcf": {
+      "sourcePath": "../../../../zoe/src/contractFacet.js"
+    }
+  },
+  "vats": {
+    "board": {
+      "sourcePath": "vat-board.js"
+    },
+    "host": {
+      "sourcePath": "vat-host.js"
+    },
+    "http": {
+      "sourcePath": "vat-http.js"
+    },
+    "ibc": {
+      "sourcePath": "vat-ibc.js"
+    },
+    "mints": {
+      "sourcePath": "vat-mints.js"
+    },
+    "network": {
+      "sourcePath": "vat-network.js"
+    },
+    "provisioning": {
+      "sourcePath": "vat-provisioning.js"
+    },
+    "registrar": {
+      "sourcePath": "vat-registrar.js"
+    },
+    "sharing": {
+      "sourcePath": "vat-sharing.js"
+    },
+    "uploads": {
+      "sourcePath": "vat-uploads.js"
+    },
+    "zoe": {
+      "sourcePath": "vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
+    },
+    "bootstrap": {
+      "sourcePath": "bootstrap.js"
+    }
+  }
+}

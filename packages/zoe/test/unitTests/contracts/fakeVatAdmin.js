@@ -7,7 +7,7 @@ export default harden({
       root: E(evalContractBundle(bundle)).buildRootObject(),
     });
   },
-  createVatByName: name => {
+  createVatByName: _name => {
     throw Error(`createVatByName not supported in fake mode`);
   },
 });
