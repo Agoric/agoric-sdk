@@ -14,8 +14,8 @@ end box
 CosmicSwingset -> Zoe : makeZoe(adminVat)
 Alice -> Zoe : install(bundle)
 Alice //-- Zoe : <font color=gray><size:12> installation
-Alice -> Zoe : makeInstance(installation...)
-Zoe -> Zoe : makeInstance()
+Alice -> Zoe : startInstance(installation...)
+Zoe -> Zoe : startInstance()
 Zoe -> Zoe : makeZoeInstanceAdminForZcf()
 Zoe -> Zoe : createVat()
 Zoe -> Zcf : E(zcfRoot).executeContract

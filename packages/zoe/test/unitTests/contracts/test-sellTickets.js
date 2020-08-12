@@ -30,7 +30,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     'moola',
   );
 
-  const { creatorFacet: ticketMaker } = await E(zoe).makeInstance(
+  const { creatorFacet: ticketMaker } = await E(zoe).startInstance(
     mintAndSellNFTInstallation,
   );
   const { sellItemsCreatorSeat, sellItemsInstance } = await E(
@@ -155,7 +155,7 @@ test(`mint and sell opera tickets`, async t => {
 
   // create an instance of the venue contract
   const mintTickets = async () => {
-    const { creatorFacet: ticketSeller } = await E(zoe).makeInstance(
+    const { creatorFacet: ticketSeller } = await E(zoe).startInstance(
       mintAndSellNFTInstallation,
     );
 

@@ -16,7 +16,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     });
     const { publicFacet, creatorInvitation: refundInvite } = await E(
       zoe,
-    ).makeInstance(installId, issuerKeywordRecord);
+    ).startInstance(installId, issuerKeywordRecord);
 
     const proposal = harden({
       give: { Contribution1: moola(3) },
@@ -53,7 +53,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     });
     const { creatorInvitation: writeCallInvitation } = await E(
       zoe,
-    ).makeInstance(installation, issuerKeywordRecord);
+    ).startInstance(installation, issuerKeywordRecord);
 
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
@@ -85,7 +85,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       UnderlyingAsset: moolaIssuer,
       StrikePrice: simoleanIssuer,
     });
-    const { creatorInvitation: writeCallInvite } = await E(zoe).makeInstance(
+    const { creatorInvitation: writeCallInvite } = await E(zoe).startInstance(
       installations.coveredCall,
       issuerKeywordRecord,
     );
@@ -128,7 +128,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Ask: simoleanIssuer,
     });
     const terms = harden({ numBidsAllowed });
-    const { creatorInvitation: sellAssetsInvite } = await E(zoe).makeInstance(
+    const { creatorInvitation: sellAssetsInvite } = await E(zoe).startInstance(
       installations.publicAuction,
       issuerKeywordRecord,
       terms,
@@ -172,7 +172,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const { creatorInvitation: firstOfferInvite } = await E(zoe).makeInstance(
+    const { creatorInvitation: firstOfferInvite } = await E(zoe).startInstance(
       installations.atomicSwap,
       issuerKeywordRecord,
     );
@@ -207,7 +207,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
     });
     const { simpleExchange } = installations;
-    const { publicFacet } = await E(zoe).makeInstance(
+    const { publicFacet } = await E(zoe).startInstance(
       simpleExchange,
       issuerKeywordRecord,
     );
@@ -253,7 +253,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
     });
     const { simpleExchange } = installations;
-    const { publicFacet } = await E(zoe).makeInstance(
+    const { publicFacet } = await E(zoe).startInstance(
       simpleExchange,
       issuerKeywordRecord,
     );
@@ -298,7 +298,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const { publicFacet, instance } = await E(zoe).makeInstance(
+    const { publicFacet, instance } = await E(zoe).startInstance(
       installations.autoswap,
       issuerKeywordRecord,
     );
@@ -373,7 +373,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
   const doSellTickets = async bobP => {
     const { mintAndSellNFT } = installations;
-    const { creatorFacet } = await E(zoe).makeInstance(mintAndSellNFT);
+    const { creatorFacet } = await E(zoe).startInstance(mintAndSellNFT);
 
     // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
     const {

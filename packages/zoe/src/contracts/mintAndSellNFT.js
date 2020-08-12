@@ -9,7 +9,7 @@ import '../../exported';
  * This contract mints non-fungible tokens and creates a selling contract
  * instance to sell the tokens in exchange for some sort of money.
  *
- * makeInstance() returns an invitation that, when exercised, returns a
+ * startInstance() returns an invitation that, when exercised, returns a
  * ticketMaker with a `.sellTokens()` method. `.sellTokens()` takes a
  * specification of what is being sold, such as:
  * {
@@ -77,7 +77,7 @@ const start = (zcf, { tokenName = 'token' }) => {
       pricePerItem,
     });
     return E(zoeService)
-      .makeInstance(sellItemsInstallation, issuerKeywordRecord, sellItemsTerms)
+      .startInstance(sellItemsInstallation, issuerKeywordRecord, sellItemsTerms)
       .then(({ creatorInvitation, creatorFacet, instance, publicFacet }) => {
         return E(zoeService)
           .offer(creatorInvitation, proposal, paymentKeywordRecord)

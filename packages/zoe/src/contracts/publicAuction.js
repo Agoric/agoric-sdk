@@ -21,7 +21,7 @@ import '../../exported';
  * price rule is followed, so the highest bidder pays the amount bid by the
  * second highest bidder.
  *
- * makeInstance() specifies the issuers and terms ({ numBidsAllowed }) specify
+ * startInstance() specifies the issuers and terms ({ numBidsAllowed }) specify
  * the number of bids required. An invitation for the seller is
  * returned as the creatorInvitation. The
  * seller's offer should look like

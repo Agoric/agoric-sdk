@@ -16,7 +16,7 @@ import '../../exported';
  * more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
  *
  * When the contract is instantiated, the two tokens are specified in the
- * issuerKeywordRecord. The party that calls makeInstance gets an invitation
+ * issuerKeywordRecord. The party that calls startInstance gets an invitation
  * to add liquidity. The same invitation is available by calling
  * `await E(publicAPI).makeAddLiquidityInvite()`. Separate invitations are available for
  * adding and removing liquidity, and for doing a swap. Other API operations

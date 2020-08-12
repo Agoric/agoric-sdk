@@ -26,5 +26,5 @@ test('zoe - test zcf', async t => {
     Pixels: moolaIssuer,
     Money: simoleanIssuer,
   });
-  t.doesNotReject(() => zoe.makeInstance(installation, issuerKeywordRecord));
+  t.doesNotReject(() => zoe.startInstance(installation, issuerKeywordRecord));
 });

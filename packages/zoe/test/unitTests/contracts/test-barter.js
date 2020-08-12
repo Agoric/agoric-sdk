@@ -37,7 +37,7 @@ test('barter with valid offers', async t => {
 
   // 1: Simon creates a barter instance and spreads the instance far and
   // wide with instructions on how to use it.
-  const { instance } = await zoe.makeInstance(installation, {
+  const { instance } = await zoe.startInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });

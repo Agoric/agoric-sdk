@@ -30,12 +30,12 @@ test('zoe - coveredCall', async t => {
           const installationP = E(zoe).install(bundle);
           return installationP;
         },
-        makeInstance: async installation => {
+        startInstance: async installation => {
           const issuerKeywordRecord = harden({
             UnderlyingAsset: moolaKit.issuer,
             StrikePrice: simoleanKit.issuer,
           });
-          const adminP = zoe.makeInstance(installation, issuerKeywordRecord);
+          const adminP = zoe.startInstance(installation, issuerKeywordRecord);
           return adminP;
         },
         offer: async createCallOptionInvitation => {
@@ -173,7 +173,7 @@ test('zoe - coveredCall', async t => {
     const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7));
     const bob = makeBob(timer, installation, bobSimoleanPayment);
 
-    const { creatorInvitation } = await alice.makeInstance(installation);
+    const { creatorInvitation } = await alice.startInstance(installation);
     const invitation = await alice.offer(creatorInvitation);
 
     // Alice spreads the invitation far and wide with instructions
@@ -209,7 +209,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       UnderlyingAsset: moolaR.issuer,
       StrikePrice: simoleanR.issuer,
     });
-    const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+    const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
       coveredCallInstallation,
       issuerKeywordRecord,
     );
@@ -348,7 +348,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
       UnderlyingAsset: moolaR.issuer,
       StrikePrice: simoleanR.issuer,
     });
-    const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+    const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
       coveredCallInstallation,
       issuerKeywordRecord,
     );
@@ -406,7 +406,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
       Asset: invitationIssuer,
       Price: bucksR.issuer,
     });
-    const { creatorInvitation: bobSwapInvitation } = await zoe.makeInstance(
+    const { creatorInvitation: bobSwapInvitation } = await zoe.startInstance(
       swapInstallationId,
       swapIssuerKeywordRecord,
     );
@@ -606,7 +606,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     });
     const {
       creatorInvitation: aliceCoveredCallInvitation,
-    } = await zoe.makeInstance(coveredCallInstallation, issuerKeywordRecord);
+    } = await zoe.startInstance(coveredCallInstallation, issuerKeywordRecord);
 
     // Alice escrows with Zoe. She specifies her proposal,
     // which include what she wants and gives as well as the exit
@@ -665,7 +665,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     });
     const {
       creatorInvitation: bobInvitationForSecondCoveredCall,
-    } = await zoe.makeInstance(coveredCallInstallation, issuerKeywordRecord2);
+    } = await zoe.startInstance(coveredCallInstallation, issuerKeywordRecord2);
 
     // Bob wants to swap an invitation with the same amount as his
     // current invitation from Alice. He wants 1 buck in return.
@@ -878,7 +878,7 @@ test('zoe - coveredCall non-fungible', async t => {
     StrikePrice: rpgIssuer,
   });
   // separate issuerKeywordRecord from contract-specific terms
-  const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+  const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     coveredCallInstallation,
     issuerKeywordRecord,
   );

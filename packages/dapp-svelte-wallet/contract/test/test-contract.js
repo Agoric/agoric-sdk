@@ -68,7 +68,7 @@ test('contract with valid offers', async t => {
     const {
       invite: adminInvite,
       instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installationHandle, {
+    } = await E(zoe).startInstance(installationHandle, {
       Tip: bucksIssuer,
     });
 

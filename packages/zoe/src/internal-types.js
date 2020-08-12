@@ -183,14 +183,14 @@
  */
 
 /**
- * @callback MakeMakeInstanceFn
+ * @callback MakeStartInstanceFn
  * @param {VatAdminSvc} vatAdminSvc,
  * @param {GetPromiseForIssuerRecord} getPromiseForIssuerRecord,
  * @param {IssuerKit} invitationKit,
  * @param {HasInstallation} hasInstallation,
  * @param {ZoeService} zoeService,
  * @param {AddInstance} addInstance,
- * @returns MakeInstance
+ * @returns StartInstance
  */
 
 /**

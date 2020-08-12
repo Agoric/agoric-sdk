@@ -45,7 +45,7 @@ test('simpleExchange with valid offers', async t => {
     creatorInvitation: aliceInvite,
     publicFacet,
     instance,
-  } = await zoe.makeInstance(installation, {
+  } = await zoe.startInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
@@ -228,7 +228,7 @@ test('simpleExchange with multiple sell offers', async t => {
     const {
       creatorInvitation: aliceInvite1,
       creatorFacet,
-    } = await zoe.makeInstance(installation, {
+    } = await zoe.startInstance(installation, {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
@@ -337,7 +337,7 @@ test('simpleExchange with non-fungible assets', async t => {
   const {
     creatorInvitation: aliceInvite,
     creatorFacet,
-  } = await zoe.makeInstance(installation, {
+  } = await zoe.startInstance(installation, {
     Asset: rpgIssuer,
     Price: ccIssuer,
   });

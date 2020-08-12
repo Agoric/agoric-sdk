@@ -24,7 +24,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     // This invite throws a metering exception
     const {
       instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installId, issuerKeywordRecord);
+    } = await E(zoe).startInstance(installId, issuerKeywordRecord);
     const proposal = harden({
       give: { Asset: moola(3) },
       want: { Price: simoleans(7) },
@@ -62,7 +62,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       );
 
     // zoe should still be able to make new vats.
-    const { instanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -85,7 +85,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
     const {
       instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installId, issuerKeywordRecord);
+    } = await E(zoe).startInstance(installId, issuerKeywordRecord);
 
     const swapProposal = harden({
       give: { Asset: moola(5) },
@@ -164,7 +164,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       );
 
     // zoe should still be able to make new vats.
-    const { instanceRecord: newInstanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord: newInstanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -179,7 +179,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const { instanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -214,7 +214,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     logCounter(log, instanceRecord.publicAPI);
 
     // zoe should still be able to make new vats.
-    const { instanceRecord: newInstanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord: newInstanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -253,7 +253,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const { instanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -309,7 +309,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     logCounter(log, instanceRecord.publicAPI);
 
     // zoe should still be able to make new vats.
-    const { instanceRecord: newInstanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord: newInstanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -350,7 +350,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const { instanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -399,7 +399,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       );
 
     // We should still be able to create new vats.
-    const { instanceRecord: newInstanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord: newInstanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -415,14 +415,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
       Price: simoleanIssuer,
     });
     E(zoe)
-      .makeInstance(installId, issuerKeywordRecord, { meter: true })
+      .startInstance(installId, issuerKeywordRecord, { meter: true })
       .then(
         () => assert(false, 'contract should not finish creation'),
         e => log(`contract creation failed: ${e}`),
       );
 
     // We should still be able to create new vats.
-    const { instanceRecord: newInstanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord: newInstanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -438,14 +438,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
       Price: simoleanIssuer,
     });
     E(zoe)
-      .makeInstance(installId, issuerKeywordRecord, { throw: true })
+      .startInstance(installId, issuerKeywordRecord, { throw: true })
       .then(
         () => assert(false, 'contract should not finish creation'),
         e => log(`contract creation failed: ${e}`),
       );
 
     // We should still be able to create new vats.
-    const { instanceRecord: newInstanceRecord } = await E(zoe).makeInstance(
+    const { instanceRecord: newInstanceRecord } = await E(zoe).startInstance(
       installId,
       issuerKeywordRecord,
     );

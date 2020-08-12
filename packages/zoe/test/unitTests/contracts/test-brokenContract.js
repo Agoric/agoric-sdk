@@ -28,8 +28,8 @@ test('zoe - brokenAutomaticRefund', async t => {
     'EXPECTED ERROR: The contract did not correctly return a creatorInvitation',
   );
   t.rejects(
-    () => zoe.makeInstance(installation, issuerKeywordRecord),
+    () => zoe.startInstance(installation, issuerKeywordRecord),
     new Error('The contract did not correctly return a creatorInvitation'),
-    'makeInstance should have thrown',
+    'startInstance should have thrown',
   );
 });

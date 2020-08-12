@@ -33,7 +33,7 @@ test('zoe - escrowToVote', async t => {
   // She makes a running contract instance using the installation, and
   // receives a special, secretary facet back which has the special
   // authority to close elections.
-  const { creatorFacet: secretary } = await E(zoe).makeInstance(
+  const { creatorFacet: secretary } = await E(zoe).startInstance(
     installationHandle,
     issuerKeywordRecord,
     terms,

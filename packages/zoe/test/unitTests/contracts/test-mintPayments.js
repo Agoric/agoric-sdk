@@ -27,8 +27,8 @@ test('zoe - mint payments', async t => {
           const installationP = E(zoe).install(bundle);
           return installationP;
         },
-        makeInstance: async installation => {
-          const adminP = zoe.makeInstance(installation);
+        startInstance: async installation => {
+          const adminP = zoe.startInstance(installation);
           return adminP;
         },
       };
@@ -74,7 +74,7 @@ test('zoe - mint payments', async t => {
     // Setup Alice
     const alice = await makeAlice();
     const installation = await alice.installCode();
-    const { creatorFacet } = await E(alice).makeInstance(installation);
+    const { creatorFacet } = await E(alice).startInstance(installation);
     const invitation = E(creatorFacet).makeInvitation(1000);
 
     // Setup Bob
@@ -102,12 +102,12 @@ test('zoe - mint payments with unrelated give and want', async t => {
           const installationP = E(zoe).install(bundle);
           return installationP;
         },
-        makeInstance: async installation => {
+        startInstance: async installation => {
           const issuerKeywordRecord = harden({
             Asset: moolaKit.issuer,
             Price: simoleanKit.issuer,
           });
-          const adminP = await E(zoe).makeInstance(
+          const adminP = await E(zoe).startInstance(
             installation,
             issuerKeywordRecord,
           );
@@ -176,7 +176,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
     // Setup Alice
     const alice = await makeAlice();
     const installation = await alice.installCode();
-    const { creatorFacet } = await E(alice).makeInstance(installation);
+    const { creatorFacet } = await E(alice).startInstance(installation);
     const invitation = E(creatorFacet).makeInvitation(1000);
 
     // Setup Bob
