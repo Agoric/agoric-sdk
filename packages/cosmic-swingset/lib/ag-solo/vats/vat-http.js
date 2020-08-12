@@ -71,9 +71,8 @@ export function buildRootObject(vatPowers) {
       // TODO: Break this out into a separate vat.
       const captpHandler = getCapTPHandler(
         send,
-        // Harden only our exported objects.
+        // Harden only our exported objects, and fetch them afresh each time.
         () => harden(exportedToCapTP),
-        { E, harden, ...vatPowers },
       );
       registerURLHandler(captpHandler, '/private/captp');
     },
