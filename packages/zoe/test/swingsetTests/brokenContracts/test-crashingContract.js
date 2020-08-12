@@ -38,7 +38,7 @@ const meterExceededInOfferLog = [
   'counter: 2',
 ];
 
-test('ZCF metering crash on invite exercise', async t => {
+test('ZCF metering crash on invitation exercise', async t => {
   t.plan(1);
   try {
     const dump = await main(['meterInOfferHook', [3, 0, 0]]);
@@ -51,13 +51,13 @@ test('ZCF metering crash on invite exercise', async t => {
 const meterExceededInSecondOfferLog = [
   '=> alice is set up',
   '=> alice.doMeterExceptionInHook called',
-  'Swap outcome resolves to an invite: [Presence o-74]',
+  'Swap outcome resolves to an invitation: [Presence o-73]',
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
-  'outcome correctly resolves to broken: RangeError: Allocate meter exceeded',
   'aliceMoolaPurse: balance {"brand":{},"value":5}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
   'swap value, 5',
+  'outcome correctly resolves to broken: RangeError: Allocate meter exceeded',
   'contract no longer responds: RangeError: Allocate meter exceeded',
   'aliceMoolaPurse: balance {"brand":{},"value":8}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
@@ -65,10 +65,10 @@ const meterExceededInSecondOfferLog = [
   'counter: 2',
 ];
 
-test('ZCF metering crash on invite exercise', async t => {
+test('ZCF metering crash on invitation exercise', async t => {
   t.plan(1);
   try {
-    const dump = await main(['meterInSecondInvite', [8, 0, 0]]);
+    const dump = await main(['meterInSecondInvitation', [8, 0, 0]]);
     t.deepEquals(dump.log, meterExceededInSecondOfferLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected metering exception in crashing contract test');
@@ -79,8 +79,8 @@ const throwInOfferLog = [
   '=> alice is set up',
   '=> alice.doThrowInHook called',
   'counter: 2',
-  'outcome correctly resolves to broken: Error: someException',
   'counter: 4',
+  'outcome correctly resolves to broken: Error: someException',
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
   'counter: 5',
@@ -91,7 +91,7 @@ const throwInOfferLog = [
   'counter: 7',
 ];
 
-test('ZCF throwing on invite exercise', async t => {
+test('ZCF throwing on invitation exercise', async t => {
   t.plan(1);
   try {
     const dump = await main(['throwInOfferHook', [3, 0, 0]]);
@@ -108,13 +108,13 @@ const throwInAPILog = [
   'throwingAPI should throw Error: someException',
   'counter: 5',
   'counter: 6',
-  'Swap outcome is an invite (true).',
+  'Swap outcome is an invitation (true).',
   'newCounter: 2',
-  'outcome correctly resolves: "The offer has been accepted. Once the contract has been completed, please check your payout"',
   'counter: 7',
+  'outcome correctly resolves: "The offer has been accepted. Once the contract has been completed, please check your payout"',
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
-  'second moolaPurse: balance {"brand":{},"value":2}',
   'aliceSimoleanPurse: balance {"brand":{},"value":8}',
+  'second moolaPurse: balance {"brand":{},"value":2}',
   'second simoleanPurse: balance {"brand":{},"value":4}',
 ];
 
@@ -133,9 +133,9 @@ const meteringExceededInAPILog = [
   '=> alice.doMeterInApiCall called',
   'counter: 2',
   'counter: 3',
-  'outcome correctly resolves to "The offer was accepted"',
   'counter: 5',
   'Vat correctly died for RangeError: Allocate meter exceeded',
+  'outcome correctly resolves to "The offer was accepted"',
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
   'contract no longer responds: RangeError: Allocate meter exceeded',

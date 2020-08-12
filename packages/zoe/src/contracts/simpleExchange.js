@@ -27,7 +27,7 @@ import {
  * not partially fill orders.
  *
  * The invitation returned on installation of the contract is the same as what
- * is returned by calling `await E(publicAPI).makeInvite().
+ * is returned by calling `await E(publicAPI).makeInvitation().
  *
  * @type {ContractStartFn}
  */

@@ -1,4 +1,4 @@
-export const makeContract = () => {
+export const start = () => {
   for (;;) {
     // Nothing.
   }
