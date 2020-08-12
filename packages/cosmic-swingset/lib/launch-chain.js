@@ -22,7 +22,9 @@ async function buildSwingset(
   storage,
   vatsDir,
   argv,
+  debugName = undefined,
 ) {
+  const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   const config = {};
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(mailboxState);
@@ -50,6 +52,7 @@ async function buildSwingset(
 
   const controller = await buildVatController(config, argv, {
     hostStorage: storage,
+    debugPrefix,
   });
   await controller.run();
 
@@ -64,6 +67,7 @@ export async function launch(
   flushChainSends,
   vatsDir,
   argv,
+  debugName = undefined,
 ) {
   log.info('Launching SwingSet kernel');
 
@@ -87,6 +91,7 @@ export async function launch(
     storage,
     vatsDir,
     argv,
+    debugName,
   );
 
   function saveChainState() {

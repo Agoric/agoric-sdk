@@ -62,6 +62,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     flushChainSends,
     vatsdir,
     argv,
+    GCI, // debugName
   );
 
   const blockManager = makeBlockManager(s);
