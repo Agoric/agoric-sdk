@@ -28,34 +28,44 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     const versions = new Map();
     log('removing', linkFolder);
     await rimraf(linkFolder);
-    for (const pkg of allPackages) {
-      const dir = `${sdkPackagesDir}/${pkg}`;
-      let packageJSON;
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        packageJSON = await fs.readFile(`${dir}/package.json`);
-      } catch (e) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-      if (packageJSON) {
-        const pj = JSON.parse(packageJSON);
-        if (!pj.private) {
-          if (
-            // eslint-disable-next-line no-await-in-loop
-            await pspawn('yarn', linkFlags, {
-              stdio: 'inherit',
-              cwd: dir,
-            })
-          ) {
-            log.error('Cannot yarn link', dir);
-            return 1;
-          }
-          packages.set(pkg, pj.name);
-          versions.set(pj.name, pj.version);
+    await Promise.all(
+      allPackages.map(async pkg => {
+        const dir = `${sdkPackagesDir}/${pkg}`;
+        const packageJSON = await fs
+          .readFile(`${dir}/package.json`)
+          .catch(_ => undefined);
+        if (!packageJSON) {
+          return undefined;
         }
-      }
-    }
+
+        const pj = JSON.parse(packageJSON);
+        if (pj.private) {
+          log('not linking private package', pj.name);
+          return undefined;
+        }
+
+        // Save our metadata.
+        packages.set(pkg, pj.name);
+        versions.set(pj.name, pj.version);
+
+        // eslint-disable-next-line no-constant-condition
+        if (false) {
+          // This use of yarn is noisy and slow.
+          return pspawn('yarn', linkFlags, {
+            stdio: 'inherit',
+            cwd: dir,
+          });
+        }
+
+        // This open-coding of the above yarn command is quiet and fast.
+        const linkName = `${linkFolder}/${pj.name}`;
+        const linkDir = path.dirname(linkName);
+        log('linking', linkName);
+        return fs
+          .mkdir(linkDir, { recursive: true })
+          .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
+      }),
+    );
     await Promise.all(
       subdirs.map(async subdir => {
         const nm = `${subdir}/node_modules`;
