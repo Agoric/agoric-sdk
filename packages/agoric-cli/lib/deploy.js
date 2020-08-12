@@ -50,10 +50,13 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const wsurl = `ws://${opts.hostport}/private/captp`;
   const exit = makePromiseKit();
   let connected = false;
-  let retries = 0;
+  process.stdout.write(`Open CapTP connection to ${wsurl}...`);
+  let progressDot = '.';
+  const progressTimer = setInterval(
+    () => process.stdout.write(progressDot),
+    1000,
+  );
   const retryWebsocket = () => {
-    retries += 1;
-    console.info(`Open CapTP connection to ${wsurl} (try=${retries})...`);
     const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
     ws.on('open', async () => {
       connected = true;
@@ -80,9 +83,11 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         let bootP = getBootstrap();
         let lastUpdateCount;
         let stillLoading = [...need].sort();
+        progressDot = 'o';
         while (stillLoading.length) {
           // Wait for the notifier to report a new state.
-          console.warn('need:', stillLoading.join(', '));
+          process.stdout.write(progressDot);
+          console.debug('need:', stillLoading.join(', '));
           const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
             lastUpdateCount,
           );
@@ -97,6 +102,8 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           stillLoading = nextLoading;
         }
 
+        clearInterval(progressTimer);
+        process.stdout.write('\n');
         console.debug(JSON.stringify(need), 'loaded');
         // Take a new copy, since the chain objects have been added to bootstrap.
         bootP = getBootstrap();
@@ -124,7 +131,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         }
 
         if (provide.length) {
-          console.warn('provide:', provide.join(', '));
+          console.debug('provide:', provide.join(', '));
           await E(E.G(E.G(bootP).local).http).doneLoading(provide);
         }
 
