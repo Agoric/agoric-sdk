@@ -33,6 +33,8 @@ import zcfContractBundle from '../bundles/bundle-contractFacet';
  *
  * @param {Object} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
+ * @param {string} [zcfBundleName] - Optional name of the kernel bundle for zcf
+ *
  * @returns {ZoeService} The created Zoe service.
  */
 function makeZoe(vatAdminSvc, zcfBundleName) {
@@ -241,6 +243,17 @@ function makeZoe(vatAdminSvc, zcfBundleName) {
       );
       const publicApiP = makePromiseKit();
 
+      // If `makeZoe` was passed a bundle name for zcf, the named kernel bundle
+      // will be used to generate the zcf vat; otherwise the imported zcf bundle
+      // file will be used directly.  Using a named bundle avoids transmitting
+      // the bundle itself across the network as an extremely long (300K+)
+      // string, as well as avoiding having this same large string appear
+      // several times in the kernel transcript.  However, the named bundle
+      // option is only available if (a) the Zoe vat was configured to have it
+      // (it is not required) and (b) Zoe is running in a context where the
+      // kernel bundle table is actually available for such a lookup (for
+      // example, many unit tests lack this since they don't have a SwingSet
+      // kernel present at all).
       const vatP = zcfBundleName
         ? E(vatAdminSvc).createVatByName(zcfBundleName)
         : E(vatAdminSvc).createVat(zcfContractBundle);
