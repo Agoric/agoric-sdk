@@ -152,6 +152,11 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
     const secondaryBrand = await E(secondaryIssuer).getBrand();
+    const brandMatches = await E(secondaryBrand).isMyIssuer(secondaryIssuer);
+    assert(
+      brandMatches,
+      `The provided issuer was using another issuer's brand`,
+    );
     assert(
       !isSecondary(secondaryBrand),
       details`issuer ${secondaryIssuer} already has a pool`,

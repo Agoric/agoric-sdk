@@ -86,6 +86,8 @@ export async function makeWallet({
             // remote calls which immediately return a promise
             const mathHelpersNameP = E(issuer).getMathHelpersName();
             const brandP = E(issuer).getBrand();
+            const brandMatchesP = E(brandP).isMyIssuer(issuer);
+
             const issuerBoardIdP = E(board)
               .has(issuer)
               .then(hasIt => hasIt && E(board).getId(issuer));
@@ -95,7 +97,12 @@ export async function makeWallet({
               brandP,
               mathHelpersNameP,
               issuerBoardIdP,
-            ]).then(([brand, mathHelpersName, issuerBoardId]) => {
+              brandMatchesP,
+            ]).then(([brand, mathHelpersName, issuerBoardId, brandMatches]) => {
+              assert(
+                brandMatches,
+                `issuer was using a brand which was not its own`,
+              );
               if (!issuerToBrand.has(issuer)) {
                 const amountMath = makeAmountMath(brand, mathHelpersName);
                 const issuerRecord = {
