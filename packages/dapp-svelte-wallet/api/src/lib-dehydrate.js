@@ -14,6 +14,7 @@ export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
   }
+  assert(x.length > 0, details`Path ${q(x)} must not be empty`);
   for (const name of x) {
     if (typeof name !== 'string') {
       return false;
@@ -232,15 +233,37 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       valToPetname.init(val, petname);
     };
 
+    /**
+     * @param {Petname} petname
+     * @param {any} val
+     * @returns {Petname}
+     */
     const suggestPetname = (petname, val) => {
-      if (petnameToVal.has(petname)) {
-        return;
-      }
       if (valToPetname.has(val)) {
-        return;
+        // Already have a petname, so just return it.
+        return valToPetname.get(val);
       }
 
-      addPetname(petname, val);
+      if (!isPath(petname)) {
+        // Assert that the name doesn't exist, and add it.
+        addPetname(petname, val);
+        return petname;
+      }
+
+      // Find a unique path.
+      let uniquePath = petname;
+      let nonce = 2;
+      while (petnameToVal.has(uniquePath)) {
+        // Add the nonce to the path, and try again.
+        uniquePath = [...petname, `${nonce}`];
+        nonce += 1;
+      }
+
+      // We must be unique now, so add the path.
+      // The validity of the path will still be determined by whether
+      // we have a petname for its edge (first element).
+      addPetname(uniquePath, val);
+      return uniquePath;
     };
 
     const deletePetname = petname => {
