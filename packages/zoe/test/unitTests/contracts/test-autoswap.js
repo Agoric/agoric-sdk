@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { E } from '@agoric/eventual-send';
 
 import { setup } from '../setupBasicMints';
@@ -70,7 +70,7 @@ test('autoSwap with valid offers', async t => {
 
     const liquidityPayout = await aliceSeat.getPayout('Liquidity');
     assertPayoutAmount(t, liquidityIssuer, liquidityPayout, liquidity(10));
-    t.deepEquals(
+    t.deepEqual(
       await E(publicFacet).getPoolAllocation(),
       {
         TokenA: moola(10),
@@ -89,7 +89,7 @@ test('autoSwap with valid offers', async t => {
       installation: bobInstallation,
       instance: bobInstance,
     } = await getInviteFields(inviteIssuer, bobExclInvite);
-    t.equals(bobInstallation, installation, `installation`);
+   t.is(bobInstallation, installation, `installation`);
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
     // Bob looks up the price of 3 moola in simoleans
@@ -97,7 +97,7 @@ test('autoSwap with valid offers', async t => {
       moola(3),
       simoleans(0).brand,
     );
-    t.deepEquals(simoleanAmounts, simoleans(1), `currentPrice`);
+    t.deepEqual(simoleanAmounts, simoleans(1), `currentPrice`);
 
     // Bob escrows
     const bobMoolaForSimProposal = harden({
@@ -122,7 +122,7 @@ test('autoSwap with valid offers', async t => {
 
     assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0));
     assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout1, simoleans(1));
-    t.deepEquals(
+    t.deepEqual(
       await E(bobAutoswap).getPoolAllocation(),
       {
         TokenA: moola(13),
@@ -137,7 +137,7 @@ test('autoSwap with valid offers', async t => {
       simoleans(3),
       moola(0).brand,
     );
-    t.deepEquals(moolaAmounts, moola(5), `price 2`);
+    t.deepEqual(moolaAmounts, moola(5), `price 2`);
 
     // Bob makes another offer and swaps
     const bobSecondInvite = await E(bobAutoswap).makeSwapInvite();
@@ -196,7 +196,7 @@ test('autoSwap with valid offers', async t => {
     assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(7));
     assertPayoutAmount(t, liquidityIssuer, aliceLiquidityPayout, liquidity(0));
 
-    t.deepEquals(await E(publicFacet).getPoolAllocation(), {
+    t.deepEqual(await E(publicFacet).getPoolAllocation(), {
       TokenA: moola(0),
       TokenB: simoleans(0),
       Liquidity: liquidity(10),
@@ -266,7 +266,7 @@ test('autoSwap - test fee', async t => {
     const liquidityPayout = await aliceSeat.getPayout('Liquidity');
     assertPayoutAmount(t, liquidityIssuer, liquidityPayout, liquidity(10000));
 
-    t.deepEquals(
+    t.deepEqual(
       await E(publicFacet).getPoolAllocation(),
       {
         TokenA: moola(10000),
@@ -285,7 +285,7 @@ test('autoSwap - test fee', async t => {
       installation: bobInstallation,
       instance: bobInstance,
     } = await getInviteFields(inviteIssuer, bobExclInvite);
-    t.equals(bobInstallation, bobInstallation);
+   t.is(bobInstallation, bobInstallation);
 
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
     // Bob looks up the price of 1000 moola in simoleans
@@ -293,7 +293,7 @@ test('autoSwap - test fee', async t => {
       moola(1000),
       simoleans(0).brand,
     );
-    t.deepEquals(simoleanAmounts, simoleans(906), `simoleans out`);
+    t.deepEqual(simoleanAmounts, simoleans(906), `simoleans out`);
 
     // Bob escrows
     const bobMoolaForSimProposal = harden({
@@ -318,7 +318,7 @@ test('autoSwap - test fee', async t => {
 
     assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(0));
     assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(906));
-    t.deepEquals(
+    t.deepEqual(
       await E(bobAutoswap).getPoolAllocation(),
       {
         TokenA: moola(11000),

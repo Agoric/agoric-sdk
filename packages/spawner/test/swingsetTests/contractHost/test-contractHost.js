@@ -1,5 +1,5 @@
 import '@agoric/install-metering-and-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
@@ -27,8 +27,8 @@ const contractMintGolden = [
 
 test.skip('run contractHost Demo --mint', async t => {
   const dump = await main('contractHost', ['mint']);
-  t.deepEquals(dump.log, contractMintGolden);
-  t.end();
+  t.deepEqual(dump.log, contractMintGolden);
+ return; // t.end();
 });
 
 const contractTrivialGolden = [
@@ -40,14 +40,14 @@ const contractTrivialGolden = [
 ];
 test('run contractHost Demo --trivial', async t => {
   const dump = await main('contractHost', ['trivial']);
-  t.deepEquals(dump.log, contractTrivialGolden);
-  t.end();
+  t.deepEqual(dump.log, contractTrivialGolden);
+ return; // t.end();
 });
 
 test('run contractHost Demo --trivial-oldformat', async t => {
   const dump = await main('contractHost', ['trivial-oldformat']);
-  t.deepEquals(dump.log, contractTrivialGolden);
-  t.end();
+  t.deepEqual(dump.log, contractTrivialGolden);
+ return; // t.end();
 });
 
 const contractExhaustedGolden = [
@@ -59,8 +59,8 @@ const contractExhaustedGolden = [
 
 test('run contractHost Demo -- exhaust', async t => {
   const dump = await main('contractHost', ['exhaust']);
-  t.deepEquals(dump.log, contractExhaustedGolden);
-  t.end();
+  t.deepEqual(dump.log, contractExhaustedGolden);
+ return; // t.end();
 });
 
 const contractAliceFirstGolden = [
@@ -71,8 +71,8 @@ const contractAliceFirstGolden = [
 
 test.skip('run contractHost Demo --alice-first', async t => {
   const dump = await main('contractHost', ['alice-first']);
-  t.deepEquals(dump.log, contractAliceFirstGolden);
-  t.end();
+  t.deepEqual(dump.log, contractAliceFirstGolden);
+ return; // t.end();
 });
 
 const contractBobFirstGolden = [
@@ -93,8 +93,8 @@ const contractBobFirstGolden = [
 
 test.skip('run contractHost Demo --bob-first', async t => {
   const dump = await main('contractHost', ['bob-first']);
-  t.deepEquals(dump.log, contractBobFirstGolden);
-  t.end();
+  t.deepEqual(dump.log, contractBobFirstGolden);
+ return; // t.end();
 });
 
 const contractCoveredCallGolden = [
@@ -116,8 +116,8 @@ const contractCoveredCallGolden = [
 
 test.skip('run contractHost Demo --covered-call', async t => {
   const dump = await main('contractHost', ['covered-call']);
-  t.deepEquals(dump.log, contractCoveredCallGolden);
-  t.end();
+  t.deepEqual(dump.log, contractCoveredCallGolden);
+ return; // t.end();
 });
 
 const contractCoveredCallSaleGolden = [
@@ -146,6 +146,6 @@ const contractCoveredCallSaleGolden = [
 
 test.skip('run contractHost Demo --covered-call-sale', async t => {
   const dump = await main('contractHost', ['covered-call-sale']);
-  t.deepEquals(dump.log, contractCoveredCallSaleGolden);
-  t.end();
+  t.deepEqual(dump.log, contractCoveredCallSaleGolden);
+ return; // t.end();
 });

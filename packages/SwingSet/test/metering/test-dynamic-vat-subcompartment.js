@@ -97,5 +97,5 @@ tap.test('metering dynamic vat which imports bundle', async t => {
     'whole dynamic vat is dead',
   );
 
-  t.end();
+ return; // t.end();
 });

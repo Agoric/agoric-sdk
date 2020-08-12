@@ -1,14 +1,14 @@
 import '@agoric/install-ses';
-import test from 'tape-promise/tape';
+import test from 'ava';
 import { E, HandledPromise } from '../src/index';
 
 test('E reexports', async t => {
   try {
-    t.equals(E.resolve, HandledPromise.resolve, 'E reexports resolve');
+   t.is(E.resolve, HandledPromise.resolve, 'E reexports resolve');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -16,7 +16,7 @@ test('E.when', async t => {
   try {
     let stash;
     await E.when(123, val => (stash = val));
-    t.equals(stash, 123, `onfulfilled handler fires`);
+   t.is(stash, 123, `onfulfilled handler fires`);
     let raised;
     // eslint-disable-next-line prefer-promise-reject-errors
     await E.when(Promise.reject('foo'), undefined, val => (raised = val));
@@ -29,8 +29,8 @@ test('E.when', async t => {
       val => (ret = val),
       val => (exc = val),
     );
-    t.equals(ret, 'foo', 'onfulfilled option fires');
-    t.equals(exc, undefined, 'onrejected option does not fire');
+   t.is(ret, 'foo', 'onfulfilled option fires');
+   t.is(exc, undefined, 'onrejected option does not fire');
 
     let ret2;
     let exc2;
@@ -40,12 +40,12 @@ test('E.when', async t => {
       val => (ret2 = val),
       val => (exc2 = val),
     );
-    t.equals(ret2, undefined, 'onfulfilled option does not fire');
-    t.equals(exc2, 'foo', 'onrejected option fires');
+   t.is(ret2, undefined, 'onfulfilled option does not fire');
+   t.is(exc2, 'foo', 'onrejected option fires');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -57,12 +57,12 @@ test('E method calls', async t => {
       },
     };
     const d = E(x).double(6);
-    t.equal(typeof d.then, 'function', 'return is a thenable');
-    t.equal(await d, 12, 'method call works');
+   t.is(typeof d.then, 'function', 'return is a thenable');
+   t.is(await d, 12, 'method call works');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -80,16 +80,16 @@ test('E shortcuts', async t => {
         return `${greeting}, ${this.name}!`;
       },
     };
-    t.equal(await E(x).hello('Hello'), 'Hello, buddy!', 'method call works');
-    t.equal(
+   t.is(await E(x).hello('Hello'), 'Hello, buddy!', 'method call works');
+   t.is(
       await E(await E.G(await E.G(x).y).fn)(4),
       8,
       'anonymous method works',
     );
-    t.equal(await E.G(x).val, 123, 'property get');
+   t.is(await E.G(x).val, 123, 'property get');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

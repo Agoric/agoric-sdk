@@ -1,7 +1,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
 import { checkKT } from './util';
@@ -24,8 +24,8 @@ test('load empty', async t => {
   const config = {};
   const controller = await buildVatController(config);
   await controller.run();
-  t.ok(true);
-  t.end();
+ t.assert(true);
+ return; // t.end();
 });
 
 async function simpleCall(t) {
@@ -77,9 +77,9 @@ async function simpleCall(t) {
   });
 
   controller.log('2');
-  t.equal(controller.dump().log[1], '2');
+ t.is(controller.dump().log[1], '2');
 
-  t.end();
+ return; // t.end();
 }
 
 test('simple call', async t => {
@@ -95,7 +95,7 @@ test('bootstrap', async t => {
   // left[0].bootstrap
   const c = await buildVatController(config);
   t.deepEqual(c.dump().log, ['bootstrap called']);
-  t.end();
+ return; // t.end();
 });
 
 test('bootstrap export', async t => {
@@ -260,5 +260,5 @@ test('bootstrap export', async t => {
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, []);
 
-  t.end();
+ return; // t.end();
 });

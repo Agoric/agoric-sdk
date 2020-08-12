@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import bundleSource from '..';
 
 function runTests({ rollup, pathResolve, resolvePlugin, dirname }) {

@@ -1,6 +1,6 @@
 /* global Compartment */
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import bundleSource from '..';
 
 function evaluate(src, endowments) {
@@ -24,15 +24,15 @@ test('trailing comment', async t => {
     const ex1 = nestedEvaluate(srcMap1)();
 
     // console.log(err.stack);
-    t.equals(
+   t.is(
       typeof ex1.buildRootObject,
       'function',
       `buildRootObject is exported`,
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -54,9 +54,9 @@ test('comment block opener', async t => {
     const srcMap1 = `(${src1})`;
     nestedEvaluate(srcMap1)();
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -78,8 +78,8 @@ test('comment block closer', async t => {
     const srcMap1 = `(${src1})`;
     nestedEvaluate(srcMap1)();
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

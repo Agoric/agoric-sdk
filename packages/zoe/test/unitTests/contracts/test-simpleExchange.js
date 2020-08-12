@@ -1,7 +1,7 @@
 import '@agoric/install-ses';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
 
@@ -60,7 +60,7 @@ test('simpleExchange with valid offers', async t => {
   E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: beforeAliceOrders, updateCount: beforeAliceCount }) => {
-      t.deepEquals(
+      t.deepEqual(
         beforeAliceOrders,
         {
           buys: [],
@@ -68,13 +68,13 @@ test('simpleExchange with valid offers', async t => {
         },
         `Order book is empty`,
       );
-      t.equals(beforeAliceCount, 3);
+     t.is(beforeAliceCount, 3);
     });
 
   const {
     value: initialOrders,
   } = await publicFacet.getNotifier().getUpdateSince();
-  t.deepEquals(
+  t.deepEqual(
     initialOrders,
     { buys: [], sells: [] },
     `order notifier is initialized`,
@@ -99,7 +99,7 @@ test('simpleExchange with valid offers', async t => {
   E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: afterAliceOrders, updateCount: afterAliceCount }) => {
-      t.deepEquals(
+      t.deepEqual(
         afterAliceOrders,
         {
           buys: [],
@@ -112,11 +112,11 @@ test('simpleExchange with valid offers', async t => {
         },
         `order notifier is updated with Alice's sell order`,
       );
-      t.equals(afterAliceCount, 4);
+     t.is(afterAliceCount, 4);
 
       aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
-        t.notOk(update.value.sells[0], 'accepted offer from Bob');
-        t.equals(update.updateCount, 5);
+       t.falsy(update.value.sells[0], 'accepted offer from Bob');
+       t.is(update.updateCount, 5);
       });
     });
 
@@ -131,7 +131,7 @@ test('simpleExchange with valid offers', async t => {
 
   const bobIssuers = zoe.getIssuers(instance);
 
-  t.equals(bobInstallation, installation);
+ t.is(bobInstallation, installation);
 
   assert(
     bobIssuers.Asset === moolaIssuer,
@@ -162,7 +162,7 @@ test('simpleExchange with valid offers', async t => {
   const { value: afterBobOrders } = await E(
     E(publicFacet).getNotifier(),
   ).getUpdateSince();
-  t.deepEquals(
+  t.deepEqual(
     afterBobOrders,
     { buys: [], sells: [] },
     `order notifier is updated when Bob fulfills the order`,
@@ -182,7 +182,7 @@ test('simpleExchange with valid offers', async t => {
   } = await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
-  t.ok(
+ t.assert(
     amountMaths
       .get('simoleans')
       .isGTE(
@@ -193,7 +193,7 @@ test('simpleExchange with valid offers', async t => {
   );
 
   // Alice sold all of her moola
-  t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
   // 6: Alice deposits her payout to ensure she can
   // Alice had 0 moola and 4 simoleans.
@@ -304,7 +304,7 @@ test('simpleExchange with multiple sell offers', async t => {
           { want: { Price: simoleans(8) }, give: { Asset: moola(5) } },
         ],
       };
-      t.deepEquals(
+      t.deepEqual(
         (await E(E(publicFacet).getNotifier()).getUpdateSince()).value,
         expectedBook,
       );
@@ -377,7 +377,7 @@ test('simpleExchange with non-fungible assets', async t => {
   } = await getInviteFields(inviteIssuer, bobInvite);
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
 
-  t.equals(bobInstallation, installation);
+ t.is(bobInstallation, installation);
 
   const bobIssuers = zoe.getIssuers(bobInstance);
   assert(
@@ -420,7 +420,7 @@ test('simpleExchange with non-fungible assets', async t => {
   } = await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
-  t.ok(
+ t.assert(
     amountMaths
       .get('cc')
       .isGTE(
@@ -430,7 +430,7 @@ test('simpleExchange with non-fungible assets', async t => {
   );
 
   // Alice sold the Spell
-  t.deepEquals(
+  t.deepEqual(
     await rpgIssuer.getAmountOf(aliceRpgPayout),
     rpgItems(harden([])),
   );

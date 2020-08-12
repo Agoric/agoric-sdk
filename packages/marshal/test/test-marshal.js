@@ -1,7 +1,7 @@
 /* global harden BigInt */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import {
   Remotable,
   getInterfaceOf,
@@ -81,22 +81,22 @@ test('serialize static data', t => {
   });
 
   const cd = ser(harden([1, 2]));
-  t.equal(Object.isFrozen(cd), true);
-  t.equal(Object.isFrozen(cd.slots), true);
+ t.is(Object.isFrozen(cd), true);
+ t.is(Object.isFrozen(cd.slots), true);
 
-  t.end();
+ return; // t.end();
 });
 
 test('unserialize static data', t => {
   const m = makeMarshal();
   const uns = body => m.unserialize({ body, slots: [] });
-  t.equal(uns('1'), 1);
-  t.equal(uns('"abc"'), 'abc');
-  t.equal(uns('false'), false);
+ t.is(uns('1'), 1);
+ t.is(uns('"abc"'), 'abc');
+ t.is(uns('false'), false);
 
   // JS primitives that aren't natively representable by JSON
   t.deepEqual(uns('{"@qclass":"undefined"}'), undefined);
-  t.ok(Object.is(uns('{"@qclass":"NaN"}'), NaN));
+ t.assert(Object.is(uns('{"@qclass":"NaN"}'), NaN));
   t.deepEqual(uns('{"@qclass":"Infinity"}'), Infinity);
   t.deepEqual(uns('{"@qclass":"-Infinity"}'), -Infinity);
 
@@ -118,17 +118,17 @@ test('unserialize static data', t => {
   const em1 = uns(
     '{"@qclass":"error","name":"ReferenceError","message":"msg"}',
   );
-  t.ok(em1 instanceof ReferenceError);
-  t.equal(em1.message, 'msg');
-  t.ok(Object.isFrozen(em1));
+ t.assert(em1 instanceof ReferenceError);
+ t.is(em1.message, 'msg');
+ t.assert(Object.isFrozen(em1));
 
   const em2 = uns('{"@qclass":"error","name":"TypeError","message":"msg2"}');
-  t.ok(em2 instanceof TypeError);
-  t.equal(em2.message, 'msg2');
+ t.assert(em2 instanceof TypeError);
+ t.is(em2.message, 'msg2');
 
   const em3 = uns('{"@qclass":"error","name":"Unknown","message":"msg3"}');
-  t.ok(em3 instanceof Error);
-  t.equal(em3.message, 'msg3');
+ t.assert(em3 instanceof Error);
+ t.is(em3.message, 'msg3');
 
   t.deepEqual(uns('[1,2]'), [1, 2]);
   t.deepEqual(uns('{"a":1,"b":2}'), { a: 1, b: 2 });
@@ -136,14 +136,14 @@ test('unserialize static data', t => {
 
   // should be frozen
   const arr = uns('[1,2]');
-  t.ok(Object.isFrozen(arr));
+ t.assert(Object.isFrozen(arr));
   const a = uns('{"b":{"c":{"d": []}}}');
-  t.ok(Object.isFrozen(a));
-  t.ok(Object.isFrozen(a.b));
-  t.ok(Object.isFrozen(a.b.c));
-  t.ok(Object.isFrozen(a.b.c.d));
+ t.assert(Object.isFrozen(a));
+ t.assert(Object.isFrozen(a.b));
+ t.assert(Object.isFrozen(a.b.c));
+ t.assert(Object.isFrozen(a.b.c.d));
 
-  t.end();
+ return; // t.end();
 });
 
 test('serialize ibid cycle', t => {
@@ -157,7 +157,7 @@ test('serialize ibid cycle', t => {
     body: '["a",{"@qclass":"ibid","index":0},"c"]',
     slots: [],
   });
-  t.end();
+ return; // t.end();
 });
 
 test('forbid ibid cycle', t => {
@@ -165,63 +165,63 @@ test('forbid ibid cycle', t => {
   const uns = body => m.unserialize({ body, slots: [] });
   t.throws(
     () => uns('["a",{"@qclass":"ibid","index":0},"c"]'),
-    /Ibid cycle at 0/,
+    { message: /Ibid cycle at 0/ },
   );
-  t.end();
+ return; // t.end();
 });
 
 test('unserialize ibid cycle', t => {
   const m = makeMarshal();
   const uns = body => m.unserialize({ body, slots: [] }, 'warnOfCycles');
   const cycle = uns('["a",{"@qclass":"ibid","index":0},"c"]');
-  t.ok(Object.is(cycle[1], cycle));
-  t.end();
+ t.assert(Object.is(cycle[1], cycle));
+ return; // t.end();
 });
 
 test('null cannot be pass-by-presence', t => {
   t.throws(() => mustPassByPresence(null), /null cannot be pass-by-remote/);
-  t.end();
+ return; // t.end();
 });
 
 test('mal-formed @qclass', t => {
   const m = makeMarshal();
   const uns = body => m.unserialize({ body, slots: [] });
   t.throws(() => uns('{"@qclass": 0}'), /invalid qclass/);
-  t.end();
+ return; // t.end();
 });
 
 test('Remotable/getInterfaceOf', t => {
   t.throws(
     () => Remotable({ bar: 29 }),
-    /unimplemented/,
+    { message: /unimplemented/ },
     'object ifaces are not implemented',
   );
   t.throws(
     () => Remotable('MyHandle', { foo: 123 }),
-    /cannot serialize/,
+    { message: /cannot serialize/ },
     'non-function props are not implemented',
   );
   t.throws(
     () => Remotable('MyHandle', {}, a => a + 1),
-    /cannot serialize/,
+    { message: /cannot serialize/ },
     'function presences are not implemented',
   );
 
-  t.equals(getInterfaceOf('foo'), undefined, 'string, no interface');
-  t.equals(getInterfaceOf(null), undefined, 'null, no interface');
-  t.equals(
+ t.is(getInterfaceOf('foo'), undefined, 'string, no interface');
+ t.is(getInterfaceOf(null), undefined, 'null, no interface');
+ t.is(
     getInterfaceOf(a => a + 1),
     undefined,
     'function, no interface',
   );
-  t.equals(getInterfaceOf(123), undefined, 'number, no interface');
+ t.is(getInterfaceOf(123), undefined, 'number, no interface');
 
   // Check that a handle can be created.
   const p = Remotable('MyHandle');
   harden(p);
   // console.log(p);
-  t.equals(getInterfaceOf(p), 'MyHandle', `interface is MyHandle`);
-  t.equals(`${p}`, '[MyHandle]', 'stringify is [MyHandle]');
+ t.is(getInterfaceOf(p), 'MyHandle', `interface is MyHandle`);
+ t.is(`${p}`, '[MyHandle]', 'stringify is [MyHandle]');
 
   const p2 = Remotable('Thing', {
     name() {
@@ -231,8 +231,8 @@ test('Remotable/getInterfaceOf', t => {
       return now - 64;
     },
   });
-  t.equals(getInterfaceOf(p2), 'Thing', `interface is Thing`);
-  t.equals(p2.name(), 'cretin', `name() method is presence`);
-  t.equals(p2.birthYear(2020), 1956, `birthYear() works`);
-  t.end();
+ t.is(getInterfaceOf(p2), 'Thing', `interface is Thing`);
+ t.is(p2.name(), 'cretin', `name() method is presence`);
+ t.is(p2.birthYear(2020), 1956, `birthYear() works`);
+ return; // t.end();
 });

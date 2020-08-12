@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
@@ -20,8 +20,8 @@ const sharedMapContentsGolden = ['starting testSharedMapStorage'];
 
 test('run sharing Demo --sharedMap contents', async t => {
   const dump = await main('sharingService', ['sharedMap']);
-  t.deepEquals(dump.log, sharedMapContentsGolden);
-  t.end();
+  t.deepEqual(dump.log, sharedMapContentsGolden);
+ return; // t.end();
 });
 
 const sharingTestGolden = [
@@ -31,8 +31,8 @@ const sharingTestGolden = [
 
 test('run sharing Demo --sharing service', async t => {
   const dump = await main('sharingService', ['sharing']);
-  t.deepEquals(dump.log, sharingTestGolden);
-  t.end();
+  t.deepEqual(dump.log, sharingTestGolden);
+ return; // t.end();
 });
 
 const twoPartySharingGolden = [
@@ -42,6 +42,6 @@ const twoPartySharingGolden = [
 
 test('run sharing Demo --Two Party handoff', async t => {
   const dump = await main('sharingService', ['twoVatSharing']);
-  t.deepEquals(dump.log, twoPartySharingGolden);
-  t.end();
+  t.deepEqual(dump.log, twoPartySharingGolden);
+ return; // t.end();
 });

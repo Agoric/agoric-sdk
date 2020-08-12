@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
@@ -62,7 +62,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const aliceInviteAmount = await inviteIssuer.getAmountOf(
       aliceAddLiquidityInvitation,
     );
-    t.deepEquals(
+    t.deepEqual(
       aliceInviteAmount,
       inviteAmountMath.make(
         harden([
@@ -96,7 +96,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const simoleanLiquidity = simoleanLiquidityAmountMath.make;
 
     const issuerKeywordRecord = zoe.getIssuers(instance);
-    t.deepEquals(
+    t.deepEqual(
       issuerKeywordRecord,
       harden({
         Central: centralR.issuer,
@@ -107,12 +107,12 @@ test('multipoolAutoSwap with valid offers', async t => {
       }),
       `There are keywords for central token and two additional tokens and liquidity`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await E(publicFacet).getPoolAllocation(moolaR.brand),
       {},
       `The poolAllocation object values for moola should be empty`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await E(publicFacet).getPoolAllocation(simoleanR.brand),
       {},
       `The poolAllocation object values for simoleans should be empty`,
@@ -136,7 +136,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       alicePayments,
     );
 
-    t.equals(
+   t.is(
       await E(addLiquiditySeat).getOfferResult(),
       'Added liquidity.',
       `Alice added moola and central liquidity`,
@@ -144,11 +144,11 @@ test('multipoolAutoSwap with valid offers', async t => {
 
     const liquidityPayout = await addLiquiditySeat.getPayout('Liquidity');
 
-    t.deepEquals(
+    t.deepEqual(
       await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
       moolaLiquidity(50),
     );
-    t.deepEquals(
+    t.deepEqual(
       await E(publicFacet).getPoolAllocation(moolaR.brand),
       harden({
         Secondary: moola(100),
@@ -165,7 +165,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       value: [bobInviteValue],
     } = await inviteIssuer.getAmountOf(bobSwapInvite1);
     const bobPublicFacet = zoe.getPublicFacet(bobInviteValue.instance);
-    t.equals(
+   t.is(
       bobInviteValue.installation,
       installation,
       `installation is as expected`,
@@ -176,7 +176,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       moola(17),
       centralR.brand,
     );
-    t.deepEquals(
+    t.deepEqual(
       priceInCentrals,
       centralTokens(7),
       `price in central tokens of 17 moola is as expected`,
@@ -195,7 +195,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       bobMoolaForCentralPayments,
     );
 
-    t.equal(await E(bobSeat).getOfferResult(), 'Swap successfully completed.');
+   t.is(await E(bobSeat).getOfferResult(), 'Swap successfully completed.');
 
     const bobMoolaPayout1 = await bobSeat.getPayout('In');
     const bobCentralPayout1 = await bobSeat.getPayout('Out');
@@ -210,7 +210,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       centralTokens(7),
       `bob gets the same price as when he called the getCurrentPrice method`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
       {
         Secondary: moola(117),
@@ -228,7 +228,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       centralTokens(7),
       moolaR.brand,
     );
-    t.deepEquals(
+    t.deepEqual(
       moolaAmounts,
       moola(16),
       `the fee was one moola over the two trades`,
@@ -250,7 +250,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       centralForMoolaPayments,
     );
 
-    t.equal(
+   t.is(
       await bobSeat2.getOfferResult(),
       'Swap successfully completed.',
       `second swap successful`,
@@ -304,7 +304,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       aliceSimCentralPayments,
     );
 
-    t.equals(
+   t.is(
       await aliceSeat2.getOfferResult(),
       'Added liquidity.',
       `Alice added simoleans and central liquidity`,
@@ -312,12 +312,12 @@ test('multipoolAutoSwap with valid offers', async t => {
 
     const simoleanLiquidityPayout = await aliceSeat2.getPayout('Liquidity');
 
-    t.deepEquals(
+    t.deepEqual(
       await simoleanLiquidityIssuer.getAmountOf(simoleanLiquidityPayout),
       simoleanLiquidity(43),
       `simoleanLiquidity minted was equal to the amount of central tokens added to pool`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await E(publicFacet).getPoolAllocation(simoleanR.brand),
       harden({
         Secondary: simoleans(398),
@@ -338,7 +338,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       simoleans(74),
       moolaR.brand,
     );
-    t.deepEquals(
+    t.deepEqual(
       priceInMoola,
       moola(10),
       `price is as expected for secondary token to secondary token`,
@@ -349,7 +349,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       simoleans(74),
       centralR.brand,
     );
-    t.deepEquals(
+    t.deepEqual(
       priceInCentral,
       centralTokens(6),
       `price is as expected for secondary token to central`,
@@ -359,7 +359,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       centralTokens(6),
       moolaR.brand,
     );
-    t.deepEquals(
+    t.deepEqual(
       centralPriceInMoola,
       moola(10),
       `price is as expected for secondary token to secondary token`,
@@ -433,7 +433,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       harden({ Liquidity: liquidityPayout }),
     );
 
-    t.equals(
+   t.is(
       await aliceSeat3.getOfferResult(),
       'Liquidity successfully removed.',
     );
@@ -442,17 +442,17 @@ test('multipoolAutoSwap with valid offers', async t => {
     const aliceCentralPayout = await aliceSeat3.getPayout('Central');
     const aliceLiquidityPayout = await aliceSeat3.getPayout('Liquidity');
 
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),
       moola(91),
       `alice gets all the moola in the pool`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await centralR.issuer.getAmountOf(aliceCentralPayout),
       centralTokens(56),
       `alice gets all the central tokens in the pool`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await moolaLiquidityIssuer.getAmountOf(aliceLiquidityPayout),
       moolaLiquidity(0),
       `alice gets no liquidity tokens`,

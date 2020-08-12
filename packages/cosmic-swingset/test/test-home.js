@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeFixture, E } from './captp-fixture';
@@ -13,9 +13,9 @@ test('setup', async t => {
     teardown = kill;
     home = await homeP;
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -26,42 +26,42 @@ test('home.registry', async t => {
   try {
     const { registry } = E.G(home);
     const regVal = await E(registry).get('foolobr_19191');
-    t.equals(regVal, undefined, 'random registry name is undefined');
+   t.is(regVal, undefined, 'random registry name is undefined');
 
     const target = 'something';
     const myRegKey = await E(registry).register('myname', target);
-    t.equals(typeof myRegKey, 'string', 'registry key is string');
+   t.is(typeof myRegKey, 'string', 'registry key is string');
 
     const registered = await E(registry).get(myRegKey);
-    t.equals(registered, target, 'registry registers target');
+   t.is(registered, target, 'registry registers target');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
 test('home.board', async t => {
   try {
     const { board } = E.G(home);
-    t.rejects(
+    t.throwsAsync(
       () => E(board).getValue('0000000000'),
       `getting a value for a fake id throws`,
     );
 
     const myValue = {};
     const myId = await E(board).getId(myValue);
-    t.equals(typeof myId, 'string', `board key is string`);
+   t.is(typeof myId, 'string', `board key is string`);
 
     const valueInBoard = await E(board).getValue(myId);
-    t.deepEquals(valueInBoard, myValue, `board contains myValue`);
+    t.deepEqual(valueInBoard, myValue, `board contains myValue`);
 
     const myId2 = await E(board).getId(myValue);
-    t.equals(myId2, myId, `board gives the same id for the same value`);
+   t.is(myId2, myId, `board gives the same id for the same value`);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -82,14 +82,14 @@ test('home.wallet - receive zoe invite', async t => {
     const zoeInviteIssuer = await E(zoe).getInvitationIssuer();
     const issuers = await E(wallet).getIssuers();
     const issuersMap = new Map(issuers);
-    t.deepEquals(
+    t.deepEqual(
       issuersMap.get('zoe invite'),
       zoeInviteIssuer,
       `wallet knows about the Zoe invite issuer`,
     );
     const invitePurse = await E(wallet).getPurse('Default Zoe invite purse');
     const zoeInviteBrand = await E(invitePurse).getAllegedBrand();
-    t.equals(
+   t.is(
       zoeInviteBrand,
       await E(zoeInviteIssuer).getBrand(),
       `invite purse is actually a zoe invite purse`,
@@ -107,15 +107,15 @@ test('home.wallet - receive zoe invite', async t => {
 
     // The invite was successfully received in the user's wallet.
     const invitePurseBalance = await E(invitePurse).getCurrentAmount();
-    t.equals(
+   t.is(
       invitePurseBalance.value[0].description,
       'getRefund',
       `invite successfully deposited`,
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -125,8 +125,8 @@ test('teardown', async t => {
   try {
     await teardown();
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

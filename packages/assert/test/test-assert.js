@@ -5,20 +5,20 @@ import { throwsAndLogs } from './throwsAndLogs';
 
 test('an', t => {
   try {
-    t.equal(an('object'), 'an object');
-    t.equal(an('function'), 'a function');
+   t.is(an('object'), 'an object');
+   t.is(an('function'), 'a function');
     // does not treat an initial 'y' as a vowel
-    t.equal(an('yaml file'), 'a yaml file');
+   t.is(an('yaml file'), 'a yaml file');
     // recognize upper case vowels
-    t.equal(an('Object'), 'an Object');
+   t.is(an('Object'), 'an Object');
     // coerce non-objects to strings.
     // non-letters are treated as non-vowels
-    t.equal(an({}), 'a [object Object]');
+   t.is(an({}), 'a [object Object]');
   } catch (e) {
     console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -39,7 +39,7 @@ test('throwsAndLogs', t => {
     console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -64,7 +64,7 @@ test('assert', t => {
     console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -98,7 +98,7 @@ test('assert equals', t => {
     console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -118,7 +118,7 @@ test('assert typeof', t => {
     console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -164,6 +164,6 @@ test('assert q', t => {
     console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

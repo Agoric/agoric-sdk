@@ -1,7 +1,7 @@
 /* eslint-disable-next-line import/no-unresolved, import/no-extraneous-dependencies */
 import puppeteer from 'puppeteer';
 /* eslint-disable-next-line import/no-unresolved, import/no-extraneous-dependencies */
-import test from 'tape-promise/tape';
+import test from 'ava';
 
 import path from 'path';
 
@@ -42,8 +42,8 @@ const testBundler = (bundlerName, indexFile) => {
   test(`HandledPromise works with ${bundlerName}`, t => {
     runBrowserTests(indexFile).then(({ numTests, numPass }) => {
       t.notEqual(numTests, undefined);
-      t.equal(numTests, numPass);
-      t.end();
+     t.is(numTests, numPass);
+     return; // t.end();
     });
   });
 };

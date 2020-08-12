@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { spawn } from 'child_process';
 
 async function innerTest(t, extraFlags) {
@@ -17,7 +17,7 @@ async function innerTest(t, extraFlags) {
         output += data;
       });
       proc.addListener('exit', code => {
-        t.equal(code, 0, 'exits successfully');
+       t.is(code, 0, 'exits successfully');
         const uMsg = 'user vat is happy';
         t.notEqual(output.indexOf(`\n${uMsg}\n`), -1, uMsg);
         const bMsg = 'bot vat is happy';
@@ -26,9 +26,9 @@ async function innerTest(t, extraFlags) {
       });
     });
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 }
 

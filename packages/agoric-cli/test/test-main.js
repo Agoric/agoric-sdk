@@ -1,5 +1,5 @@
 /* global globalThis */
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import '@agoric/install-ses';
 import fs from 'fs';
 import anylogger from 'anylogger';
@@ -28,13 +28,13 @@ test('sanity', async t => {
         globalThis.console = oldConsole;
       }
     };
-    t.equal(await myMain(['help']), 0, 'help exits zero');
-    t.equal(await myMain(['--help']), 0, '--help exits zero');
-    t.equal(await myMain(['--version']), 0, '--version exits zero');
-    t.equal(await myMain(['zorgar']), 1, 'unknown command fails');
+   t.is(await myMain(['help']), 0, 'help exits zero');
+   t.is(await myMain(['--help']), 0, '--help exits zero');
+   t.is(await myMain(['--version']), 0, '--version exits zero');
+   t.is(await myMain(['zorgar']), 1, 'unknown command fails');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

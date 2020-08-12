@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import { makeStateMachine } from '../../../src/contractSupport';
 
@@ -17,11 +17,11 @@ test('stateMachine', t => {
       ['closed', []],
     ];
     const stateMachine = makeStateMachine(startState, allowedTransitions);
-    t.equal(stateMachine.getStatus(), 'empty');
-    t.ok(stateMachine.canTransitionTo('open'));
-    t.notOk(stateMachine.canTransitionTo('closed'));
+   t.is(stateMachine.getStatus(), 'empty');
+   t.assert(stateMachine.canTransitionTo('open'));
+   t.falsy(stateMachine.canTransitionTo('closed'));
     stateMachine.transitionTo('open');
-    t.equal(stateMachine.getStatus(), 'open');
+   t.is(stateMachine.getStatus(), 'open');
   } catch (e) {
     t.assert(false, e);
   }

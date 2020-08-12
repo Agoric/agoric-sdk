@@ -8,10 +8,10 @@ tap.test('nodeWorker vat manager', async t => {
   const c = await buildVatController(config, []);
 
   await c.run();
-  t.equal(c.bootstrapResult.status(), 'fulfilled');
+ t.is(c.bootstrapResult.status(), 'fulfilled');
 
   await c.shutdown();
-  t.end();
+ return; // t.end();
 });
 
 tap.test('node-subprocess vat manager', async t => {
@@ -20,8 +20,8 @@ tap.test('node-subprocess vat manager', async t => {
   const c = await buildVatController(config, []);
 
   await c.run();
-  t.equal(c.bootstrapResult.status(), 'fulfilled');
+ t.is(c.bootstrapResult.status(), 'fulfilled');
 
   await c.shutdown();
-  t.end();
+ return; // t.end();
 });

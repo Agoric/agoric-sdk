@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
@@ -46,7 +46,7 @@ test('contract with valid offers', async t => {
     // want to check more extensively,
     const installedBundle = await E(zoe).getInstallation(installationHandle);
     const code = installedBundle.source;
-    t.ok(
+   t.assert(
       code.includes(`This contract provides encouragement. `),
       `the code installed passes a quick check of what we intended to install`,
     );
@@ -74,7 +74,7 @@ test('contract with valid offers', async t => {
 
     // Check that we received an invite as the result of making the
     // contract instance.
-    t.ok(
+   t.assert(
       await E(inviteIssuer).isLive(adminInvite),
       `an valid invite (an ERTP payment) was created`,
     );
@@ -87,7 +87,7 @@ test('contract with valid offers', async t => {
       completeObj: { complete: completeAdmin },
     } = await E(zoe).offer(adminInvite);
 
-    t.equals(
+   t.is(
       await adminOutcomeP,
       `admin invite redeemed`,
       `admin outcome is correct`,
@@ -106,9 +106,9 @@ test('contract with valid offers', async t => {
     const nextUpdateP = E(notifier).getUpdateSince(updateCount);
 
     // Count starts at 0
-    t.equals(value.count, 0, `count starts at 0`);
+   t.is(value.count, 0, `count starts at 0`);
 
-    t.deepEquals(
+    t.deepEqual(
       value.messages,
       harden({
         basic: `You're doing great!`,
@@ -122,7 +122,7 @@ test('contract with valid offers', async t => {
 
     const { outcome: encouragementP } = await E(zoe).offer(encouragementInvite);
 
-    t.equals(
+   t.is(
       await encouragementP,
       `You're doing great!`,
       `encouragement matches expected`,
@@ -130,7 +130,7 @@ test('contract with valid offers', async t => {
 
     // Getting encouragement resolves the 'nextUpdateP' promise
     nextUpdateP.then(async result => {
-      t.equals(result.value.count, 1, 'count increments by 1');
+     t.is(result.value.count, 1, 'count increments by 1');
 
       // Now, let's get a premium encouragement message
       const encouragementInvite2 = await E(publicAPI).makeInvite();
@@ -144,24 +144,24 @@ test('contract with valid offers', async t => {
         paymentKeywordRecord,
       );
 
-      t.equals(
+     t.is(
         await secondEncouragementP,
         `Wow, just wow. I have never seen such talent!`,
         `premium message is as expected`,
       );
 
       const newResult = await E(notifier).getUpdateSince();
-      t.deepEquals(newResult.value.count, 2, `count is now 2`);
+      t.deepEqual(newResult.value.count, 2, `count is now 2`);
 
       // Let's get our Tips
       completeAdmin();
       Promise.resolve(E.G(adminPayoutP).Tip).then(tip => {
         bucksIssuer.getAmountOf(tip).then(tipAmount => {
-          t.deepEquals(tipAmount, bucks5, `payout is 5 bucks, all the tips`);
+          t.deepEqual(tipAmount, bucks5, `payout is 5 bucks, all the tips`);
         });
       });
     });
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });

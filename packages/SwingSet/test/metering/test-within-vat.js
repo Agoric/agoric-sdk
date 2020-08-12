@@ -144,5 +144,5 @@ tap.test('metering within a vat', async t => {
     'compute meter refilled',
   );
 
-  t.end();
+ return; // t.end();
 });

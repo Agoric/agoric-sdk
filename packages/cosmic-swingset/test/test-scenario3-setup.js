@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { spawn } from 'child_process';
 
 test('make scenario3-setup', async t => {
@@ -8,13 +8,13 @@ test('make scenario3-setup', async t => {
         cwd: `${__dirname}/..`,
         stdio: ['ignore', 'ignore', 'inherit'],
       }).addListener('exit', code => {
-        t.equal(code, 0, 'exits successfully');
+       t.is(code, 0, 'exits successfully');
         resolve();
       }),
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

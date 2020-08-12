@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import makeStore from '@agoric/weak-store';
 import makeIssuerKit from '@agoric/ertp';
@@ -49,7 +49,7 @@ test(`areRightsConserved - true for amount with nat values`, t => {
     ).flat();
     const newAmounts = makeAmountMatrix(amountMathArray, newValues).flat();
 
-    t.ok(
+   t.assert(
       areRightsConserved(getAmountMathForBrand, previousAmounts, newAmounts),
     );
   } catch (e) {
@@ -76,7 +76,7 @@ test(`areRightsConserved - false for amount with Nat values`, t => {
     const oldAmounts = makeAmountMatrix(amountMathArray, oldValues).flat();
     const newAmounts = makeAmountMatrix(amountMathArray, newValues).flat();
 
-    t.notOk(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
+   t.falsy(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -89,7 +89,7 @@ test(`areRightsConserved - empty arrays`, t => {
     const oldAmounts = [];
     const newAmounts = [];
 
-    t.ok(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
+   t.assert(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   }

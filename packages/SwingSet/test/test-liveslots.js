@@ -1,7 +1,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
@@ -101,7 +101,7 @@ test('calls', async t => {
 
   // TODO: more calls, more slot types
 
-  t.end();
+ return; // t.end();
 });
 
 test('liveslots pipelines to syscall.send', async t => {
@@ -164,7 +164,7 @@ test('liveslots pipelines to syscall.send', async t => {
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p3 });
 
-  t.end();
+ return; // t.end();
 });
 
 test('liveslots pipeline/non-pipeline calls', async t => {
@@ -240,7 +240,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+7' });
   t.deepEqual(log, []);
 
-  t.end();
+ return; // t.end();
 });
 
 async function doOutboundPromise(t, mode) {
@@ -341,7 +341,7 @@ async function doOutboundPromise(t, mode) {
 
   t.deepEqual(log, []);
 
-  t.end();
+ return; // t.end();
 }
 
 test('liveslots does not retire outbound promise IDs after fulfillToPresence', async t => {
@@ -459,7 +459,7 @@ async function doResultPromise(t, mode) {
   // instead we get a send to p+5
   t.deepEqual(log, []);
 
-  t.end();
+ return; // t.end();
 }
 
 test('liveslots does not retire result promise IDs after fulfillToPresence', async t => {

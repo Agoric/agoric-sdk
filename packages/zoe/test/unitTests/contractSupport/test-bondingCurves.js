@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import {
   getInputPrice,
@@ -9,7 +9,7 @@ import {
 
 const testGetPrice = (t, input, expectedOutput) => {
   const output = getInputPrice(input);
-  t.deepEquals(output, expectedOutput);
+  t.deepEqual(output, expectedOutput);
 };
 
 // If these tests of `getInputPrice` fail, it would indicate that we have
@@ -127,8 +127,8 @@ test('calculate value to mint - positive supply', t => {
     inputValue: 30,
     inputReserve: 5,
   });
-  t.equals(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
-  t.end();
+ t.is(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
+ return; // t.end();
 });
 
 test('calculate value to mint - mispelled key', t => {
@@ -141,7 +141,7 @@ test('calculate value to mint - mispelled key', t => {
       }),
     `calcLiqValueToMint should throw if a key is misspelled`,
   );
-  t.end();
+ return; // t.end();
 });
 
 test('calculate value to mint - positive supply', t => {
@@ -150,8 +150,8 @@ test('calculate value to mint - positive supply', t => {
     inputValue: 8,
     inputReserve: 7,
   });
-  t.equals(res, 5, 'When supply is present, floor(x*y/z)');
-  t.end();
+ t.is(res, 5, 'When supply is present, floor(x*y/z)');
+ return; // t.end();
 });
 
 test('calculate value to mint - no supply', t => {
@@ -160,6 +160,6 @@ test('calculate value to mint - no supply', t => {
     inputValue: 30,
     inputReserve: 5,
   });
-  t.equals(res, 30, 'When the supply is empty, return inputValue');
-  t.end();
+ t.is(res, 30, 'When the supply is empty, return inputValue');
+ return; // t.end();
 });

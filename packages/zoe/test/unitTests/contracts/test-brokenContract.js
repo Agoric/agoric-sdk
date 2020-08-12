@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
@@ -27,7 +27,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   console.log(
     'EXPECTED ERROR: The contract did not correctly return a creatorInvitation',
   );
-  t.rejects(
+  t.throwsAsync(
     () => zoe.makeInstance(installation, issuerKeywordRecord),
     new Error('The contract did not correctly return a creatorInvitation'),
     'makeInstance should have thrown',

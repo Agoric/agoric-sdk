@@ -1,7 +1,7 @@
 /* global Compartment */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import bundleSource from '..';
 
 function evaluate(src, endowments) {

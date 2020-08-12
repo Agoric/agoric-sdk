@@ -1,4 +1,4 @@
-import test from 'tape-promise/tape';
+import test from 'ava';
 import { HandledPromise } from '../src/index';
 
 const { getPrototypeOf } = Object;

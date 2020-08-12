@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'tape-promise/tape';
+import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
@@ -103,14 +103,14 @@ test('lib-wallet issuer and purse methods', async t => {
       pursesStateChangeLog,
     } = await setupTest();
     const inviteIssuer = await E(zoe).getInvitationIssuer();
-    t.deepEquals(
+    t.deepEqual(
       wallet.getIssuers(),
       [['zoe invite', inviteIssuer]],
       `wallet starts off with only the zoe invite issuer`,
     );
     await wallet.addIssuer('moola', moolaBundle.issuer);
     await wallet.addIssuer('rpg', rpgBundle.issuer);
-    t.deepEquals(
+    t.deepEqual(
       wallet.getIssuers(),
       [
         ['zoe invite', inviteIssuer],
@@ -120,7 +120,7 @@ test('lib-wallet issuer and purse methods', async t => {
       `two issuers added`,
     );
     const issuersMap = new Map(wallet.getIssuers());
-    t.equals(
+   t.is(
       issuersMap.get('moola'),
       moolaBundle.issuer,
       `can get issuer by issuer petname`,
@@ -129,19 +129,19 @@ test('lib-wallet issuer and purse methods', async t => {
     const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
     const invitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
-    t.deepEquals(
+    t.deepEqual(
       wallet.getPurses(),
       [['Default Zoe invite purse', invitePurse]],
       `starts off with only the invite purse`,
     );
     await wallet.makeEmptyPurse('moola', 'fun money');
     const moolaPurse = wallet.getPurse('fun money');
-    t.deepEquals(
+    t.deepEqual(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.getEmpty(),
       `empty purse is empty`,
     );
-    t.deepEquals(
+    t.deepEqual(
       wallet.getPurses(),
       [
         ['Default Zoe invite purse', invitePurse],
@@ -149,7 +149,7 @@ test('lib-wallet issuer and purse methods', async t => {
       ],
       `two purses currently`,
     );
-    t.deepEquals(
+    t.deepEqual(
       wallet.getPurseIssuer('fun money'),
       moolaBundle.issuer,
       `can get issuer from purse petname`,
@@ -158,13 +158,13 @@ test('lib-wallet issuer and purse methods', async t => {
       moolaBundle.amountMath.make(100),
     );
     await wallet.deposit('fun money', moolaPayment);
-    t.deepEquals(
+    t.deepEqual(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(100),
       `deposit successful`,
     );
-    t.equals(pursesStateChangeLog.length, 4, `pursesStateChangeLog length`);
-    t.deepEquals(
+   t.is(pursesStateChangeLog.length, 4, `pursesStateChangeLog length`);
+    t.deepEqual(
       JSON.parse(pursesStateChangeLog[pursesStateChangeLog.length - 1]),
       [
         {
@@ -199,9 +199,9 @@ test('lib-wallet issuer and purse methods', async t => {
       ],
       `pursesStateChangeLog`,
     );
-    t.deepEquals(inboxStateChangeLog, [], `inboxStateChangeLog`);
+    t.deepEqual(inboxStateChangeLog, [], `inboxStateChangeLog`);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -223,7 +223,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     const bucksIssuerBoardId = await E(board).getId(bucksIssuer);
     await wallet.suggestIssuer('bucks', bucksIssuerBoardId);
 
-    t.equals(
+   t.is(
       wallet.getIssuer('bucks'),
       bucksIssuer,
       `bucksIssuer is stored in wallet`,
@@ -277,7 +277,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     wallet.deposit('Default Zoe invite purse', invite2);
 
     const currentAmount = await E(zoeInvitePurse).getCurrentAmount();
-    t.deepEquals(
+    t.deepEqual(
       currentAmount.value,
       [
         {
@@ -293,7 +293,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     const zoeInvitePurseState = JSON.parse(
       pursesStateChangeLog[pursesStateChangeLog.length - 2],
     );
-    t.deepEquals(
+    t.deepEqual(
       zoeInvitePurseState[0],
       {
         brandBoardId: '3812059',
@@ -339,7 +339,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       automaticRefundInstanceBoardId,
     );
 
-    t.equals(
+   t.is(
       wallet.getInstance('automaticRefund'),
       instance,
       `automaticRefund instance stored in wallet`,
@@ -353,7 +353,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       automaticRefundInstallationBoardId,
     );
 
-    t.equals(
+   t.is(
       wallet.getInstallation('automaticRefund'),
       installation,
       `automaticRefund installation stored in wallet`,
@@ -364,7 +364,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     );
     await wallet.suggestInstallation('autoswap', autoswapInstallationBoardId);
 
-    t.equals(
+   t.is(
       wallet.getInstallation('autoswap'),
       autoswapInstallationHandle,
       `autoswap installation stored in wallet`,
@@ -374,7 +374,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       pursesStateChangeLog[pursesStateChangeLog.length - 1],
     )[0];
 
-    t.deepEquals(
+    t.deepEqual(
       zoeInvitePurseState2,
       {
         brandBoardId: '3812059',
@@ -420,7 +420,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     const inboxState1 = JSON.parse(
       inboxStateChangeLog[inboxStateChangeLog.length - 1],
     )[0];
-    t.deepEquals(
+    t.deepEqual(
       inboxState1,
       {
         id: 'unknown#1588645041696',
@@ -439,18 +439,18 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     console.log('EXPECTED ERROR ->>> "petname" not found');
     t.throws(
       () => wallet.getInstallation('whatever'),
-      /"petname" not found/,
+      { message: /"petname" not found/ },
       `using a petname that doesn't exist errors`,
     );
 
-    await t.doesNotReject(
+    await t.notThrowsAsync(
       wallet.suggestInstallation('autoswap', autoswapInstallationBoardId),
       `resuggesting a petname doesn't error`,
     );
 
     await wallet.renameInstallation('automaticRefund2', installation);
 
-    t.equals(
+   t.is(
       wallet.getInstallation('automaticRefund2'),
       installation,
       `automaticRefund installation renamed in wallet`,
@@ -460,7 +460,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     // by the time we check it.
     // TODO: check the pursesState changes in a less fragile way.
     const currentAmount2 = await E(zoeInvitePurse).getCurrentAmount();
-    t.deepEquals(
+    t.deepEqual(
       currentAmount2.value,
       [
         {
@@ -477,7 +477,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       pursesStateChangeLog[pursesStateChangeLog.length - 1],
     )[0];
 
-    t.deepEquals(
+    t.deepEqual(
       zoeInvitePurseState3,
       {
         brandBoardId: '3812059',
@@ -522,7 +522,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     const inboxState2 = JSON.parse(
       inboxStateChangeLog[inboxStateChangeLog.length - 1],
     )[0];
-    t.deepEquals(
+    t.deepEqual(
       inboxState2,
       {
         id: 'unknown#1588645041696',
@@ -538,7 +538,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `inboxStateChangeLog with new names`,
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -599,7 +599,7 @@ test('lib-wallet offer methods', async t => {
 
     await wallet.addOffer(offer);
 
-    t.deepEquals(
+    t.deepEqual(
       wallet.getOffers(),
       [
         {
@@ -620,13 +620,13 @@ test('lib-wallet offer methods', async t => {
     const accepted = await wallet.acceptOffer(id);
     assert(accepted);
     const { outcome, depositedP } = accepted;
-    t.equals(await outcome, 'The offer was accepted', `offer was accepted`);
+   t.is(await outcome, 'The offer was accepted', `offer was accepted`);
     await depositedP;
     const seats = wallet.getSeats(harden([id]));
     const seat = wallet.getSeat(id);
-    t.equals(seat, seats[0], `both getSeat(s) methods work`);
+   t.is(seat, seats[0], `both getSeat(s) methods work`);
     const moolaPurse = wallet.getPurse('Fun budget');
-    t.deepEquals(
+    t.deepEqual(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(100),
       `moolaPurse balance`,
@@ -649,10 +649,10 @@ test('lib-wallet offer methods', async t => {
     // simpleExchange
     const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
     const zoePurseAmount = await E(zoeInvitePurse).getCurrentAmount();
-    t.deepEquals(zoePurseAmount.value, [], `zoeInvitePurse balance`);
+    t.deepEqual(zoePurseAmount.value, [], `zoeInvitePurse balance`);
     const lastPurseState = JSON.parse(pursesStateChangeLog.pop());
     const [zoeInvitePurseState, moolaPurseState] = lastPurseState;
-    t.deepEquals(
+    t.deepEqual(
       zoeInvitePurseState,
       {
         brandBoardId: '3812059',
@@ -671,7 +671,7 @@ test('lib-wallet offer methods', async t => {
       },
       `zoeInvitePurseState`,
     );
-    t.deepEquals(
+    t.deepEqual(
       moolaPurseState,
       {
         brandBoardId: '16679794',
@@ -690,7 +690,7 @@ test('lib-wallet offer methods', async t => {
       `moolaPurseState`,
     );
     const lastInboxState = JSON.parse(inboxStateChangeLog.pop());
-    t.deepEquals(
+    t.deepEqual(
       lastInboxState,
       [
         {
@@ -757,7 +757,7 @@ test('lib-wallet offer methods', async t => {
       `inboxStateChangeLog`,
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -882,7 +882,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const accepted = await wallet.acceptOffer(id);
     assert(accepted);
     const { outcome, depositedP } = accepted;
-    t.equals(
+   t.is(
       await outcome,
       'Swap successfully completed.',
       `offer was accepted`,
@@ -890,18 +890,18 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     await depositedP;
     const seats = wallet.getSeats(harden([id]));
     const seat = wallet.getSeat(id);
-    t.equals(seat, seats[0], `both getSeat(s) methods work`);
-    t.deepEquals(
+   t.is(seat, seats[0], `both getSeat(s) methods work`);
+    t.deepEqual(
       await moolaPurse.getCurrentAmount(),
       moolaBundle.amountMath.make(70),
       `moola purse balance`,
     );
-    t.deepEquals(
+    t.deepEqual(
       await simoleanPurse.getCurrentAmount(),
       simoleanBundle.amountMath.make(516),
       `simolean purse balance`,
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });

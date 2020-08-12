@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import fs from 'fs';
 import tmp from 'tmp';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -92,12 +92,12 @@ test('workflow', async t => {
 
       // ==============
       // agoric init dapp-foo
-      t.equals(await myMain(['init', 'dapp-foo']), 0, 'init dapp-foo works');
+     t.is(await myMain(['init', 'dapp-foo']), 0, 'init dapp-foo works');
       process.chdir('dapp-foo');
 
       // ==============
       // agoric install
-      t.equals(await myMain(['install']), 0, 'install works');
+     t.is(await myMain(['install']), 0, 'install works');
 
       // ==============
       // agoric start --reset
@@ -119,7 +119,7 @@ test('workflow', async t => {
       }
 
       let timeout = setTimeout(startResult.resolve, 60000, 'timeout');
-      t.equals(
+     t.is(
         await startResult.promise,
         true,
         `swingset running before timeout`,
@@ -139,7 +139,7 @@ test('workflow', async t => {
 
       timeout = setTimeout(deployResult.resolve, 60000, 'timeout');
       const done = await Promise.race([deployResult.promise, deployP]);
-      t.equals(done, 0, `deploy successful before timeout`);
+     t.is(done, 0, `deploy successful before timeout`);
       clearTimeout(timeout);
 
       for (const [suffix, code] of [
@@ -161,7 +161,7 @@ test('workflow', async t => {
         // eslint-disable-next-line no-await-in-loop
         const urlDone = await urlP;
         clearTimeout(urlTimeout);
-        t.equals(urlDone, code, `${url} gave status ${code}`);
+       t.is(urlDone, code, `${url} gave status ${code}`);
       }
 
       // ==============
@@ -171,7 +171,7 @@ test('workflow', async t => {
         cwd: 'ui',
         detached: true,
       });
-      t.equals(instRet, 0, `cd ui && yarn install succeeded`);
+     t.is(instRet, 0, `cd ui && yarn install succeeded`);
 
       // ==============
       // cd ui && yarn start
@@ -211,7 +211,7 @@ test('workflow', async t => {
           console.error('cannot make request', e);
         }
       }, 3000);
-      t.equals(
+     t.is(
         await Promise.race([uiStartP, uiListening.promise]),
         'listening',
         `cd ui && yarn start succeeded`,
@@ -224,8 +224,8 @@ test('workflow', async t => {
       removeCallback();
     }
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

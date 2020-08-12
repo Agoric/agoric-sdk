@@ -1,5 +1,5 @@
 /* eslint-disable no-await-in-loop */
-import test from 'tape-promise/tape';
+import test from 'ava';
 
 import { makeMeter } from '../src/index';
 import * as c from '../src/constants';
@@ -56,9 +56,9 @@ test('meter running', async t => {
     t.throws(() => meter3[c.METER_ENTER](), RangeError, 'stack exhausted');
     testAllExhausted(t, meter3, 'stack meter');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -102,23 +102,23 @@ test('meter running', async t => {
     );
     testAllExhausted(t, meter, 'combined meter');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
 test('getBalance', async t => {
   try {
     const { meter, refillFacet } = makeMeter({ budgetCompute: 10 });
-    t.equal(refillFacet.getComputeBalance(), 10);
+   t.is(refillFacet.getComputeBalance(), 10);
     meter[c.METER_COMPUTE](3);
-    t.equal(refillFacet.getComputeBalance(), 7);
-    t.equal(refillFacet.getAllocateBalance(), c.DEFAULT_COMBINED_METER);
-    t.equal(refillFacet.getCombinedBalance(), c.DEFAULT_COMBINED_METER);
+   t.is(refillFacet.getComputeBalance(), 7);
+   t.is(refillFacet.getAllocateBalance(), c.DEFAULT_COMBINED_METER);
+   t.is(refillFacet.getCombinedBalance(), c.DEFAULT_COMBINED_METER);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

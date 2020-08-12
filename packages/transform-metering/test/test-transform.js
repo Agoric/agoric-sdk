@@ -1,5 +1,5 @@
 /* eslint-disable no-await-in-loop */
-import test from 'tape-promise/tape';
+import test from 'ava';
 import * as babelCore from '@babel/core';
 import fs from 'fs';
 
@@ -25,7 +25,7 @@ test('meter transform', async t => {
         sourceType: 'script',
       });
 
-      t.equals(cMeter, source.length, `compute meter updated ${testName}`);
+     t.is(cMeter, source.length, `compute meter updated ${testName}`);
       return ss.src;
     };
 
@@ -51,11 +51,11 @@ test('meter transform', async t => {
       if (rewritten === undefined) {
         console.log(transformed);
       }
-      t.equals(transformed, rewritten.trimRight(), `rewrite ${testDir}`);
+     t.is(transformed, rewritten.trimRight(), `rewrite ${testDir}`);
     }
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

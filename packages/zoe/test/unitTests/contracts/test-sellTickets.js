@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 import bundleSource from '@agoric/bundle-source';
@@ -45,7 +45,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     sellItemsInstallation,
     pricePerItem: moolaAmountMath.make(20),
   });
-  t.equals(
+ t.is(
     await sellItemsCreatorSeat.getOfferResult(),
     defaultAcceptanceMsg,
     `escrowTicketsOutcome is default acceptance message`,
@@ -56,7 +56,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const sellItemsInstance = await E(sellItemsCreatorFacet).getInstance();
   const ticketSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
   const ticketsForSale = await E(ticketSalesPublicFacet).getAvailableItems();
-  t.deepEquals(
+  t.deepEqual(
     ticketsForSale,
     {
       brand: ticketBrand,
@@ -96,7 +96,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const sellItemsInstance2 = sellItemsCreatorFacet2.getInstance();
   const sellItemsPublicFacet2 = await E(zoe).getPublicFacet(sellItemsInstance2);
   const ticketsForSale2 = await E(sellItemsPublicFacet2).getAvailableItems();
-  t.deepEquals(
+  t.deepEqual(
     ticketsForSale2,
     {
       brand: ticketBrand,
@@ -115,7 +115,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     },
     `we can reuse the mint to make more tickets and sell them in a different instance`,
   );
-  t.end();
+ return; // t.end();
 });
 
 // __Test Scenario__
@@ -181,7 +181,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const ticketsForSale = await E(ticketSalesPublicFacet).getAvailableItems();
 
-    t.equal(ticketsForSale.value.length, 3, `3 tickets for sale`);
+   t.is(ticketsForSale.value.length, 3, `3 tickets for sale`);
 
     return harden({
       sellItemsCreatorSeat,
@@ -205,26 +205,26 @@ test(`mint and sell opera tickets`, async t => {
     const alicePurse = await E(moolaIssuer).makeEmptyPurse();
     await E(alicePurse).deposit(moola100Payment);
 
-    t.deepEquals(terms.pricePerItem, moola(22), `pricePerItem is 22 moola`);
+    t.deepEqual(terms.pricePerItem, moola(22), `pricePerItem is 22 moola`);
 
     const availableTickets = await E(
       ticketSalesPublicFacet,
     ).getAvailableItems();
 
-    t.equal(
+   t.is(
       availableTickets.value.length,
       3,
       'Alice should see 3 available tickets',
     );
-    t.ok(
+   t.assert(
       availableTickets.value.find(ticket => ticket.number === 1),
       `availableTickets contains ticket number 1`,
     );
-    t.ok(
+   t.assert(
       availableTickets.value.find(ticket => ticket.number === 2),
       `availableTickets contains ticket number 2`,
     );
-    t.ok(
+   t.assert(
       availableTickets.value.find(ticket => ticket.number === 3),
       `availableTickets contains ticket number 3`,
     );
@@ -255,12 +255,12 @@ test(`mint and sell opera tickets`, async t => {
       aliceTickets,
     );
 
-    t.equal(
+   t.is(
       aliceBoughtTicketAmount.value[0].show,
       'Steven Universe, the Opera',
       'Alice should have received the ticket for the correct show',
     );
-    t.equal(
+   t.is(
       aliceBoughtTicketAmount.value[0].number,
       1,
       'Alice should have received the ticket for the correct number',
@@ -317,9 +317,9 @@ test(`mint and sell opera tickets`, async t => {
     console.log(
       'EXPECTED ERROR: Some of the wanted items were not available for sale >>>',
     );
-    t.rejects(
+    t.throwsAsync(
       seat.getOfferResult(),
-      /Some of the wanted items were not available for sale/,
+      { message: /Some of the wanted items were not available for sale/ },
       'ticket 1 is no longer available',
     );
 
@@ -330,11 +330,11 @@ test(`mint and sell opera tickets`, async t => {
       seat.getPayout('Money'),
     );
 
-    t.ok(
+   t.assert(
       ticketAmountMath.isEmpty(jokerTicketPayoutAmount),
       'Joker should not receive ticket #1',
     );
-    t.deepEquals(
+    t.deepEqual(
       jokerMoneyPayoutAmount,
       moola(22),
       'Joker should get a refund after trying to get ticket #1',
@@ -391,9 +391,9 @@ test(`mint and sell opera tickets`, async t => {
     console.log(
       'EXPECTED ERROR: More money is required to buy these items >>> ',
     );
-    t.rejects(
+    t.throwsAsync(
       seat.getOfferResult(),
-      /More money.*is required to buy these items/,
+      { message: /More money.*is required to buy these items/ },
       'outcome from Joker should throw when trying to buy a ticket for 1 moola',
     );
 
@@ -404,11 +404,11 @@ test(`mint and sell opera tickets`, async t => {
       seat.getPayout('Money'),
     );
 
-    t.ok(
+   t.assert(
       ticketAmountMath.isEmpty(jokerTicketPayoutAmount),
       'Joker should not receive ticket #2',
     );
-    t.deepEquals(
+    t.deepEqual(
       jokerMoneyPayoutAmount,
       insufficientAmount,
       'Joker should get a refund after trying to get ticket #2 for 1 moola',
@@ -437,20 +437,20 @@ test(`mint and sell opera tickets`, async t => {
     ).getAvailableItems();
 
     // Bob sees the currently available tickets
-    t.equal(
+   t.is(
       availableTickets.value.length,
       2,
       'Bob should see 2 available tickets',
     );
-    t.ok(
+   t.assert(
       !availableTickets.value.find(ticket => ticket.number === 1),
       `availableTickets should NOT contain ticket number 1`,
     );
-    t.ok(
+   t.assert(
       availableTickets.value.find(ticket => ticket.number === 2),
       `availableTickets should still contain ticket number 2`,
     );
-    t.ok(
+   t.assert(
       availableTickets.value.find(ticket => ticket.number === 3),
       `availableTickets should still contain ticket number 3`,
     );
@@ -483,16 +483,16 @@ test(`mint and sell opera tickets`, async t => {
     const bobTicketAmount = await E(ticketIssuer).getAmountOf(
       seat.getPayout('Items'),
     );
-    t.equal(
+   t.is(
       bobTicketAmount.value.length,
       2,
       'Bob should have received 2 tickets',
     );
-    t.ok(
+   t.assert(
       bobTicketAmount.value.find(ticket => ticket.number === 2),
       'Bob should have received tickets #2',
     );
-    t.ok(
+   t.assert(
       bobTicketAmount.value.find(ticket => ticket.number === 3),
       'Bob should have received tickets #3',
     );
@@ -506,7 +506,7 @@ test(`mint and sell opera tickets`, async t => {
     const availableTickets = await E(sellItemsCreatorFacet).getAvailableItems();
     const ticketIssuer = await E(sellItemsCreatorFacet).getItemsIssuer();
     const ticketAmountMath = await E(ticketIssuer).getAmountMath();
-    t.ok(
+   t.assert(
       ticketAmountMath.isEmpty(availableTickets),
       'All the tickets have been sold',
     );
@@ -519,7 +519,7 @@ test(`mint and sell opera tickets`, async t => {
     await E(operaPurse).deposit(moneyPayment);
     const currentPurseBalance = await E(operaPurse).getCurrentAmount();
 
-    t.equal(
+   t.is(
       currentPurseBalance.value,
       3 * 22,
       `The Opera should get ${3 * 22} moolas from ticket sales`,
@@ -548,5 +548,5 @@ test(`mint and sell opera tickets`, async t => {
     moolaMint.mintPayment(moola(100)),
   );
   await ticketSellerClosesContract(sellItemsCreatorSeat, sellItemsCreatorFacet);
-  t.end();
+ return; // t.end();
 });

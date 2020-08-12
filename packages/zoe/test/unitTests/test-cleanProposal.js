@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import makeStore from '@agoric/weak-store';
 import { cleanProposal } from '../../src/zoeService/cleanProposal';
 import { setup } from './setupBasicMints';
@@ -32,7 +32,7 @@ test('cleanProposal test', t => {
 
     const actual = cleanProposal(getAmountMathForBrand, proposal);
 
-    t.deepEquals(actual, expected);
+    t.deepEqual(actual, expected);
   } catch (e) {
     t.assert(false, e);
   }
@@ -63,7 +63,7 @@ test('cleanProposal - all empty', t => {
     });
 
     // cleanProposal no longer fills in empty keywords
-    t.deepEquals(cleanProposal(getAmountMathForBrand, proposal), expected);
+    t.deepEqual(cleanProposal(getAmountMathForBrand, proposal), expected);
   } catch (e) {
     t.assert(false, e);
   }
@@ -97,9 +97,9 @@ test('cleanProposal - repeated brands', t => {
     });
     // cleanProposal no longer fills in empty keywords
     const actual = cleanProposal(getAmountMathForBrand, proposal);
-    t.deepEquals(actual.want, expected.want);
-    t.deepEquals(actual.give, expected.give);
-    t.deepEquals(actual.exit, expected.exit);
+    t.deepEqual(actual.want, expected.want);
+    t.deepEqual(actual.give, expected.give);
+    t.deepEqual(actual.exit, expected.exit);
   } catch (e) {
     t.assert(false, e);
   }

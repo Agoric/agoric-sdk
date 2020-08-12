@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
@@ -71,12 +71,12 @@ test('zoe - escrowToVote', async t => {
     const voter = await voterP;
     const result = await E(voter).vote('YES');
 
-    t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
+   t.is(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
     payoutP.then(async payout => {
       const moolaPayment = await payout.Assets;
 
-      t.deepEquals(
+      t.deepEqual(
         await moolaIssuer.getAmountOf(moolaPayment),
         moola(3),
         `voter1 gets everything she escrowed back`,
@@ -85,7 +85,7 @@ test('zoe - escrowToVote', async t => {
       console.log('EXPECTED ERROR ->>>');
       t.throws(
         () => voter.vote('NO'),
-        /the escrowing offer is no longer active/,
+        { message: /the escrowing offer is no longer active/ },
         `voter1 voting fails once offer is withdrawn or amounts are reallocated`,
       );
     });
@@ -110,23 +110,23 @@ test('zoe - escrowToVote', async t => {
 
     const voter = await voterP;
     console.log('EXPECTED ERROR ->>>');
-    t.rejects(
+    t.throwsAsync(
       () => E(voter).vote('NOT A VALID ANSWER'),
-      /the answer "NOT A VALID ANSWER" was not 'YES' or 'NO'/,
+      { message: /the answer "NOT A VALID ANSWER" was not 'YES' or 'NO'/ },
       `A vote with an invalid answer throws`,
     );
 
     const result1 = await E(voter).vote('YES');
-    t.equals(result1, `Successfully voted 'YES'`, `voter2 votes YES`);
+   t.is(result1, `Successfully voted 'YES'`, `voter2 votes YES`);
 
     // Votes can be recast at any time
     const result2 = await E(voter).vote('NO');
-    t.equals(result2, `Successfully voted 'NO'`, `voter 2 recast vote for NO`);
+   t.is(result2, `Successfully voted 'NO'`, `voter 2 recast vote for NO`);
 
     payoutP.then(async payout => {
       const moolaPayment = await payout.Assets;
 
-      t.deepEquals(
+      t.deepEqual(
         await moolaIssuer.getAmountOf(moolaPayment),
         moola(5),
         `voter2 gets everything she escrowed back`,
@@ -135,7 +135,7 @@ test('zoe - escrowToVote', async t => {
       console.log('EXPECTED ERROR ->>>');
       t.throws(
         () => voter.vote('NO'),
-        /the escrowing offer is no longer active/,
+        { message: /the escrowing offer is no longer active/ },
         `voter2 voting fails once offer is withdrawn or amounts are reallocated`,
       );
     });
@@ -159,7 +159,7 @@ test('zoe - escrowToVote', async t => {
 
     const voter = await voterP;
     const result = await E(voter).vote('NO');
-    t.equals(result, `Successfully voted 'NO'`, `voter3 votes NOT`);
+   t.is(result, `Successfully voted 'NO'`, `voter3 votes NOT`);
 
     // Voter3 completes their offer and exits before the election is
     // closed. Voter3's vote will not be counted.
@@ -169,7 +169,7 @@ test('zoe - escrowToVote', async t => {
 
     const moolaPayment = await payout.Assets;
 
-    t.deepEquals(
+    t.deepEqual(
       await moolaIssuer.getAmountOf(moolaPayment),
       moola(1),
       `voter3 gets everything she escrowed back`,
@@ -178,7 +178,7 @@ test('zoe - escrowToVote', async t => {
     console.log('EXPECTED ERROR ->>>');
     t.throws(
       () => voter.vote('NO'),
-      /the escrowing offer is no longer active/,
+      { message: /the escrowing offer is no longer active/ },
       `voter3 voting fails once offer is withdrawn or amounts are reallocated`,
     );
   };
@@ -202,12 +202,12 @@ test('zoe - escrowToVote', async t => {
     const voter = await voterP;
     const result = await E(voter).vote('YES');
 
-    t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
+   t.is(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
     payoutP.then(async payout => {
       const moolaPayment = await payout.Assets;
 
-      t.deepEquals(
+      t.deepEqual(
         await moolaIssuer.getAmountOf(moolaPayment),
         moola(4),
         `voter4 gets everything she escrowed back`,
@@ -219,7 +219,7 @@ test('zoe - escrowToVote', async t => {
 
   // Secretary closes election and tallies the votes.
   const electionResults = await E(secretary).closeElection();
-  t.deepEquals(electionResults, { YES: moola(7), NO: moola(5) });
+  t.deepEqual(electionResults, { YES: moola(7), NO: moola(5) });
 
   // Once the election is closed, the voters get their escrowed funds
   // back and can no longer vote. See the voter functions for the

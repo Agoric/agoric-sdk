@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
@@ -56,7 +56,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             .getPayout('Asset')
             .then(moolaPurse.deposit)
             .then(amountDeposited =>
-              t.deepEquals(
+              t.deepEqual(
                 amountDeposited,
                 moola(0),
                 `Alice didn't get any of what she put in`,
@@ -67,7 +67,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             .getPayout('Ask')
             .then(simoleanPurse.deposit)
             .then(amountDeposited =>
-              t.deepEquals(
+              t.deepEqual(
                 amountDeposited,
                 simoleans(7),
                 `Alice got the second price bid, Carol's bid, even though Bob won`,
@@ -96,23 +96,23 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             value: [invitationValue],
           } = await invitationIssuer.getAmountOf(invitation);
 
-          t.equals(
+         t.is(
             invitationValue.installation,
             installation,
             'installation is publicAuction',
           );
-          t.deepEquals(
+          t.deepEqual(
             invitationValue.auctionedAssets,
             moola(1),
             `asset to be auctioned is 1 moola`,
           );
-          t.deepEquals(
+          t.deepEqual(
             invitationValue.minimumBid,
             simoleans(3),
             `minimum bid is 3 simoleans`,
           );
 
-          t.deepEquals(
+          t.deepEqual(
             invitationValue.numBidsAllowed,
             3,
             `auction will be closed after 3 bids`,
@@ -126,7 +126,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
           const seat = await zoe.offer(invitation, proposal, payments);
 
-          t.equals(
+         t.is(
             await E(seat).getOfferResult(),
             'The offer has been accepted. Once the contract has been completed, please check your payout',
           );
@@ -135,7 +135,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             .getPayout('Asset')
             .then(moolaPurse.deposit)
             .then(amountDeposited =>
-              t.deepEquals(
+              t.deepEqual(
                 amountDeposited,
                 proposal.want.Asset,
                 `Bob wins the auction`,
@@ -146,7 +146,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             .getPayout('Bid')
             .then(simoleanPurse.deposit)
             .then(amountDeposited =>
-              t.deepEquals(
+              t.deepEqual(
                 amountDeposited,
                 simoleans(4),
                 `Bob gets the difference between the second-price bid (Carol's 7 simoleans) and his bid back`,
@@ -172,7 +172,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
           const seat = await zoe.offer(invitation, proposal, payments);
 
-          t.equals(
+         t.is(
             await E(seat).getOfferResult(),
             'The offer has been accepted. Once the contract has been completed, please check your payout',
           );
@@ -181,14 +181,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             .getPayout('Asset')
             .then(moolaPurse.deposit)
             .then(amountDeposited =>
-              t.deepEquals(amountDeposited, moola(0), `didn't win the auction`),
+              t.deepEqual(amountDeposited, moola(0), `didn't win the auction`),
             );
 
           E(seat)
             .getPayout('Bid')
             .then(simoleanPurse.deposit)
             .then(amountDeposited =>
-              t.deepEquals(amountDeposited, bidAmount, `full refund`),
+              t.deepEqual(amountDeposited, bidAmount, `full refund`),
             );
         },
       });
@@ -277,7 +277,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     const [bobInvite] = await E(publicAPI).makeInvites(1);
 
-    t.equals(
+   t.is(
       await aliceOutcomeP,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
@@ -302,7 +302,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       bobPayments,
     );
 
-    t.rejects(
+    t.throwsAsync(
       () => brokenOutcomeP,
       new Error(
         'The item up for auction has been withdrawn or the auction has completed',
@@ -319,13 +319,13 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const bobSimoleanPayout = await bobResult.Bid;
 
     // Alice (the creator of the auction) gets back what she put in
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),
       aliceProposal.give.Asset,
     );
 
     // Alice didn't get any of what she wanted
-    t.deepEquals(
+    t.deepEqual(
       await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
       simoleans(0),
     );
@@ -335,8 +335,8 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob gets a refund
-    t.deepEquals(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0));
-    t.deepEquals(
+    t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0));
+    t.deepEqual(
       await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
       bobProposal.give.Bid,
     );
@@ -350,10 +350,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Bob had 0 moola and 11 simoleans.
     // Carol had 0 moola and 7 simoleans.
     // Dave had 0 moola and 5 simoleans.
-    t.equals(aliceMoolaPurse.getCurrentAmount().value, 1);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 0);
-    t.equals(bobMoolaPurse.getCurrentAmount().value, 0);
-    t.equals(bobSimoleanPurse.getCurrentAmount().value, 11);
+   t.is(aliceMoolaPurse.getCurrentAmount().value, 1);
+   t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
+   t.is(bobMoolaPurse.getCurrentAmount().value, 0);
+   t.is(bobSimoleanPurse.getCurrentAmount().value, 11);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -428,7 +428,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     3,
   );
 
-  t.equals(
+ t.is(
     await aliceOutcomeP,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'aliceOutcome',
@@ -447,11 +447,11 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     issuerKeywordRecord: bobIssuers,
   } = zoe.getInstanceRecord(bobInviteValue.instanceHandle);
 
-  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
-  t.deepEquals(bobIssuers, { Asset: ccIssuer, Ask: moolaIssuer }, 'bobIssuers');
-  t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
-  t.deepEquals(bobInviteValue.minimumBid, moola(3), 'minimumBid');
-  t.deepEquals(
+ t.is(bobInstallationId, installationHandle, 'bobInstallationId');
+  t.deepEqual(bobIssuers, { Asset: ccIssuer, Ask: moolaIssuer }, 'bobIssuers');
+ t.is(bobTerms.numBidsAllowed, 3, 'bobTerms');
+  t.deepEqual(bobInviteValue.minimumBid, moola(3), 'minimumBid');
+  t.deepEqual(
     bobInviteValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'assets',
@@ -471,7 +471,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     bobPayments,
   );
 
-  t.equals(
+ t.is(
     await bobOutcomeP,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'bobOutcome',
@@ -490,15 +490,15 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     issuerKeywordRecord: carolIssuers,
   } = zoe.getInstanceRecord(carolInviteValue.instanceHandle);
 
-  t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
-  t.deepEquals(
+ t.is(carolInstallationId, installationHandle, 'carolInstallationId');
+  t.deepEqual(
     carolIssuers,
     { Asset: ccIssuer, Ask: moolaIssuer },
     'carolIssuers',
   );
-  t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
-  t.deepEquals(carolInviteValue.minimumBid, moola(3), 'carolMinimumBid');
-  t.deepEquals(
+ t.is(carolTerms.numBidsAllowed, 3, 'carolTerms');
+  t.deepEqual(carolInviteValue.minimumBid, moola(3), 'carolMinimumBid');
+  t.deepEqual(
     carolInviteValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'carolAuctionedAssets',
@@ -518,7 +518,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     carolPayments,
   );
 
-  t.equals(
+ t.is(
     await carolOutcomeP,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'carolOutcome',
@@ -536,15 +536,15 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     issuerKeywordRecord: daveIssuers,
   } = zoe.getInstanceRecord(daveInviteValue.instanceHandle);
 
-  t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
-  t.deepEquals(
+ t.is(daveInstallationId, installationHandle, 'daveInstallationHandle');
+  t.deepEqual(
     daveIssuers,
     { Asset: ccIssuer, Ask: moolaIssuer },
     'daveIssuers',
   );
-  t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
-  t.deepEquals(daveInviteValue.minimumBid, moola(3), 'daveMinimumBid');
-  t.deepEquals(
+ t.is(daveTerms.numBidsAllowed, 3, 'bobTerms');
+  t.deepEqual(daveInviteValue.minimumBid, moola(3), 'daveMinimumBid');
+  t.deepEqual(
     daveInviteValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'daveAssets',
@@ -564,7 +564,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     davePayments,
   );
 
-  t.equals(
+ t.is(
     await daveOutcomeP,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
     'daveOutcome',
@@ -588,14 +588,14 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const daveMoolaPayout = await daveResult.Bid;
 
   // Alice (the creator of the auction) gets back the second highest bid
-  t.deepEquals(
+  t.deepEqual(
     await moolaIssuer.getAmountOf(aliceMoolaPayout),
     carolProposal.give.Bid,
     `alice gets carol's bid`,
   );
 
   // Alice didn't get any of what she put in
-  t.deepEquals(
+  t.deepEqual(
     await ccIssuer.getAmountOf(aliceCcPayout),
     cryptoCats(harden([])),
     `alice gets nothing of what she put in`,
@@ -607,12 +607,12 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Bob (the winner of the auction) gets the one moola and the
   // difference between his bid and the price back
-  t.deepEquals(
+  t.deepEqual(
     await ccIssuer.getAmountOf(bobCcPayout),
     cryptoCats(harden(['Felix'])),
     `bob is the winner`,
   );
-  t.deepEquals(
+  t.deepEqual(
     await moolaIssuer.getAmountOf(bobMoolaPayout),
     moola(4),
     `bob gets difference back`,
@@ -623,12 +623,12 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   await bobMoolaPurse.deposit(bobMoolaPayout);
 
   // Carol gets a full refund
-  t.deepEquals(
+  t.deepEqual(
     await ccIssuer.getAmountOf(carolCcPayout),
     cryptoCats(harden([])),
     `carol doesn't win`,
   );
-  t.deepEquals(
+  t.deepEqual(
     await moolaIssuer.getAmountOf(carolMoolaPayout),
     carolProposal.give.Bid,
     `carol gets a refund`,
@@ -639,7 +639,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   await carolMoolaPurse.deposit(carolMoolaPayout);
 
   // Dave gets a full refund
-  t.deepEquals(
+  t.deepEqual(
     await moolaIssuer.getAmountOf(daveMoolaPayout),
     daveProposal.give.Bid,
     `dave gets a refund`,
@@ -660,12 +660,12 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Bob: the CryptoCat and 4 moola
   // Carol: an empty CryptoCat purse and 7 moola
   // Dave: an empty CryptoCat purse and 5 moola
-  t.deepEquals(aliceCcPurse.getCurrentAmount().value, []);
-  t.equals(aliceMoolaPurse.getCurrentAmount().value, 7);
-  t.deepEquals(bobCcPurse.getCurrentAmount().value, ['Felix']);
-  t.equals(bobMoolaPurse.getCurrentAmount().value, 4);
-  t.deepEquals(carolCcPurse.getCurrentAmount().value, []);
-  t.equals(carolMoolaPurse.getCurrentAmount().value, 7);
-  t.deepEquals(daveCcPurse.getCurrentAmount().value, []);
-  t.equals(daveMoolaPurse.getCurrentAmount().value, 5);
+  t.deepEqual(aliceCcPurse.getCurrentAmount().value, []);
+ t.is(aliceMoolaPurse.getCurrentAmount().value, 7);
+  t.deepEqual(bobCcPurse.getCurrentAmount().value, ['Felix']);
+ t.is(bobMoolaPurse.getCurrentAmount().value, 4);
+  t.deepEqual(carolCcPurse.getCurrentAmount().value, []);
+ t.is(carolMoolaPurse.getCurrentAmount().value, 7);
+  t.deepEqual(daveCcPurse.getCurrentAmount().value, []);
+ t.is(daveMoolaPurse.getCurrentAmount().value, 5);
 });

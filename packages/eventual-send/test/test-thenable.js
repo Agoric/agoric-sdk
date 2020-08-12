@@ -1,4 +1,4 @@
-import test from 'tape-promise/tape';
+import test from 'ava';
 import { E, HandledPromise } from '../src/index';
 
 test('E.resolve is always asynchronous', async t => {
@@ -9,11 +9,11 @@ test('E.resolve is always asynchronous', async t => {
     let thened = false;
     const p2 = E.resolve(p).then(ret => (thened = ret));
     t.is(thened, false, `p2 is not yet resolved`);
-    t.equal(await p2, 'done', `p2 is resolved`);
+   t.is(await p2, 'done', `p2 is resolved`);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -25,10 +25,10 @@ test('HandledPromise.resolve is always asynchronous', async t => {
     let thened = false;
     const p2 = HandledPromise.resolve(p).then(ret => (thened = ret));
     t.is(thened, false, `p2 is not yet resolved`);
-    t.equal(await p2, 'done', `p2 is resolved`);
+   t.is(await p2, 'done', `p2 is resolved`);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

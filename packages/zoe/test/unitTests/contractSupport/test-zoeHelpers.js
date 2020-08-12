@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
@@ -15,11 +15,11 @@ import {
 test('ZoeHelpers messages', t => {
   t.plan(2);
   try {
-    t.equals(
+   t.is(
       defaultAcceptanceMsg,
       `The offer has been accepted. Once the contract has been completed, please check your payout`,
     );
-    t.equals(
+   t.is(
       defaultRejectMsg,
       `The offer was invalid. Please check your refund.`,
     );
@@ -90,17 +90,17 @@ test('ZoeHelpers assertKeywords', t => {
     );
     t.throws(
       () => assertKeywords(['TokenA', 'TokenB']),
-      /were not as expected/,
+      { message: /were not as expected/ },
       `The wrong keywords will throw`,
     );
     t.throws(
       () => assertKeywords(['Asset', 'Price', 'Price2']),
-      /were not as expected/,
+      { message: /were not as expected/ },
       `An extra keyword will throw`,
     );
     t.throws(
       () => assertKeywords(['Asset']),
-      /were not as expected/,
+      { message: /were not as expected/ },
       `a missing keyword will throw`,
     );
   } catch (e) {
@@ -190,7 +190,7 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       /The offer was invalid. Please check your refund./,
       `had the wrong exit rule`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       [],
       `offers 1, 2, 3, (zero-indexed) won't be completed before rejection`,
@@ -223,7 +223,7 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       /The offer was invalid. Please check your refund./,
       `had the wrong want`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       [],
       `offers won't be completed before rejection`,
@@ -249,7 +249,7 @@ test('ZoeHelpers checkIfProposal', t => {
     const mockZCF = mockZCFBuilder.build();
 
     const { checkIfProposal } = makeZoeHelpers(mockZCF);
-    t.ok(
+   t.assert(
       checkIfProposal(
         handle,
         harden({
@@ -260,7 +260,7 @@ test('ZoeHelpers checkIfProposal', t => {
       ),
       `want, give, and exit match expected`,
     );
-    t.notOk(
+   t.falsy(
       checkIfProposal(
         handle,
         harden({
@@ -270,7 +270,7 @@ test('ZoeHelpers checkIfProposal', t => {
       ),
       `want was not as expected`,
     );
-    t.ok(
+   t.assert(
       checkIfProposal(handle, harden({})),
       `having no expectations passes trivially`,
     );
@@ -295,7 +295,7 @@ test('ZoeHelpers checkIfProposal multiple keys', t => {
   const mockZCF = mockZCFBuilder.build();
 
   const { checkIfProposal } = makeZoeHelpers(mockZCF);
-  t.ok(
+ t.assert(
     checkIfProposal(
       handle,
       harden({
@@ -306,7 +306,7 @@ test('ZoeHelpers checkIfProposal multiple keys', t => {
     ),
     `want, give, and exit match expected`,
   );
-  t.ok(
+ t.assert(
     checkIfProposal(
       handle,
       harden({
@@ -337,7 +337,7 @@ test('ZoeHelpers getActiveOffers', t => {
     });
     const { getActiveOffers } = makeZoeHelpers(mockZCF);
     const offerHandles = harden([{}, {}]);
-    t.deepEquals(
+    t.deepEqual(
       getActiveOffers(offerHandles),
       harden([{ handle: offerHandles[0], id: 0 }]),
       `active offers gotten`,
@@ -359,16 +359,16 @@ test('ZoeHelpers rejectOffer', t => {
     const offerHandles = harden([{}, {}]);
     t.throws(
       () => rejectOffer(offerHandles[0]),
-      /Error: The offer was invalid. Please check your refund./,
+      { message: /Error: The offer was invalid. Please check your refund./ },
       `rejectOffer intentionally throws`,
     );
-    t.deepEquals(completedOfferHandles, harden([]), 'no completion');
+    t.deepEqual(completedOfferHandles, harden([]), 'no completion');
     t.throws(
       () => rejectOffer(offerHandles[1], 'offer was wrong'),
-      /Error: offer was wrong/,
+      { message: /Error: offer was wrong/ },
       `rejectOffer throws with custom msg`,
     );
-    t.deepEquals(
+    t.deepEqual(
       completedOfferHandles,
       [],
       'rejection does not include completions',
@@ -416,19 +416,19 @@ test('ZoeHelpers swap ok', t => {
     });
     const mockZCF = mockZCFBuilder.build();
     const { swap } = makeZoeHelpers(mockZCF);
-    t.ok(
+   t.assert(
       swap(
         leftOfferHandle,
         rightOfferHandle,
         'prior offer no longer available',
       ),
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedAmountObjs(),
       [
         { Asset: moola(3), Price: simoleans(4) },
@@ -436,7 +436,7 @@ test('ZoeHelpers swap ok', t => {
       ],
       `amounts reallocated passed to reallocate were as expected`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles were completed`,
@@ -489,10 +489,10 @@ test('ZoeHelpers swap keep inactive', t => {
       `throws if keepHandle offer is not active`,
     );
     const reallocatedHandles = mockZCF.getReallocatedHandles();
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
     const reallocatedAmountObjs = mockZCF.getReallocatedAmountObjs();
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
-    t.deepEquals(
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([]),
       `no offers were completed`,
@@ -550,11 +550,11 @@ test(`ZoeHelpers swap - can't trade with`, t => {
       `throws if can't trade with left and right`,
     );
     const reallocatedHandles = mockZcf.getReallocatedHandles();
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
     const reallocatedAmountObjs = mockZcf.getReallocatedAmountObjs();
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
     const completedHandles = mockZcf.getCompletedHandles();
-    t.deepEquals(completedHandles, harden([]), `no offers were completed`);
+    t.deepEqual(completedHandles, harden([]), `no offers were completed`);
   } catch (e) {
     t.assert(false, e);
   }
@@ -588,8 +588,8 @@ test('ZoeHelpers makeEmptyOffer', async t => {
     });
     const { makeEmptyOffer } = makeZoeHelpers(mockZCF);
     const result = await makeEmptyOffer();
-    t.deepEquals(result, offerHandle, `offerHandle was returned`);
-    t.deepEquals(redeemedInvites, harden(['anInvite']), `invite was redeemed`);
+    t.deepEqual(result, offerHandle, `offerHandle was returned`);
+    t.deepEqual(redeemedInvites, harden(['anInvite']), `invite was redeemed`);
   } catch (e) {
     t.assert(false, e);
   }
@@ -622,23 +622,23 @@ test('ZoeHelpers isOfferSafe', t => {
     });
     const mockZCF = mockZCFBuilder.build();
     const { isOfferSafe } = makeZoeHelpers(mockZCF);
-    t.ok(
+   t.assert(
       isOfferSafe(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(4),
       }),
       `giving someone exactly what they want is offer safe`,
     );
-    t.notOk(
+   t.falsy(
       isOfferSafe(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(3),
       }),
       `giving someone less than what they want and not what they gave is not offer safe`,
     );
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
-    t.deepEquals(completedHandles, harden([]), `no offers completed`);
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(completedHandles, harden([]), `no offers completed`);
   } catch (e) {
     t.assert(false, e);
   }
@@ -671,30 +671,30 @@ test('ZoeHelpers satisfies', t => {
     });
     const mockZCF = mockZCFBuilder.build();
     const { satisfies } = makeZoeHelpers(mockZCF);
-    t.ok(
+   t.assert(
       satisfies(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(4),
       }),
       `giving someone exactly what they want satisifies wants`,
     );
-    t.notOk(
+   t.falsy(
       satisfies(leftOfferHandle, {
         Asset: moola(10),
         Price: simoleans(3),
       }),
       `giving someone less than what they want even with a refund doesn't satisfy wants`,
     );
-    t.notOk(
+   t.falsy(
       satisfies(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(3),
       }),
       `giving someone less than what they want even with a refund doesn't satisfy wants`,
     );
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
-    t.deepEquals(completedHandles, harden([]), `no offers completed`);
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(completedHandles, harden([]), `no offers completed`);
   } catch (e) {
     t.assert(false, e);
   }
@@ -741,12 +741,12 @@ test('ZoeHelpers trade ok', t => {
         },
       ),
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedAmountObjs(),
       [
         { Asset: moola(3), Bid: simoleans(4) },
@@ -754,7 +754,7 @@ test('ZoeHelpers trade ok', t => {
       ],
       `amounts reallocated passed to reallocate were as expected`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([]),
       `no handles were completed`,
@@ -808,17 +808,17 @@ test('ZoeHelpers trade sameHandle', t => {
       /an offer cannot trade with itself/,
       `safe offer trading with itself fails with nice error message`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedHandles(),
       harden([]),
       `no handles reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedAmountObjs(),
       [],
       `no amounts reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([]),
       `no handles were completed`,

@@ -1,4 +1,4 @@
-import test from 'tape-promise/tape';
+import test from 'ava';
 import { HandledPromise } from '../src/index';
 
 test('chained properties', async t => {
@@ -40,9 +40,9 @@ test('chained properties', async t => {
     );
     await pr.p;
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
 
@@ -71,7 +71,7 @@ test('no local stalls', async t => {
   log.push(`end of turn 3`);
   await Promise.resolve();
 
-  t.deepEquals(
+  t.deepEqual(
     log,
     [
       'calling 1',

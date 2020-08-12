@@ -42,6 +42,7 @@
     "packages/notifier"
   ],
   "devDependencies": {
+    "ava": "^3.11.1",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-config-airbnb-base": "^14.0.0",
@@ -70,5 +71,24 @@
   },
   "dependencies": {
     "@agoric/store": "^0.2.0"
+  },
+  "ava": {
+    "files": [
+      "packages/**/test/**/test-*"
+    ],
+    "concurrency": 12,
+    "failFast": false,
+    "failWithoutAssertions": false,
+    "environmentVariables": {
+      "MY_ENVIRONMENT_VARIABLE": "some value"
+    },
+    "verbose": false,
+    "require": [
+      "esm"
+    ],
+    "nodeArguments": [
+      "--trace-deprecation",
+      "--napi-modules"
+    ]
   }
 }

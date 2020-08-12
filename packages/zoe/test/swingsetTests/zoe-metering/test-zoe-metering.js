@@ -1,5 +1,5 @@
 import '@agoric/install-metering-and-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';
 import bundleSource from '../../bundle-source';
@@ -41,9 +41,9 @@ test('zoe - metering - infinite loop in installation', async t => {
   t.plan(1);
   try {
     const dump = await main(['infiniteInstallLoop']);
-    t.deepEquals(dump.log, infiniteInstallLoopLog, 'log is correct');
+    t.deepEqual(dump.log, infiniteInstallLoopLog, 'log is correct');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -56,9 +56,9 @@ test('zoe - metering - infinite loop in instantiation', async t => {
   t.plan(1);
   try {
     const dump = await main(['infiniteInstanceLoop']);
-    t.deepEquals(dump.log, infiniteInstanceLoopLog, 'log is correct');
+    t.deepEqual(dump.log, infiniteInstanceLoopLog, 'log is correct');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -72,9 +72,9 @@ test('zoe - metering - infinite loop in contract method', async t => {
   t.plan(1);
   try {
     const dump = await main(['infiniteTestLoop']);
-    t.deepEquals(dump.log, infiniteTestLoopLog, 'log is correct');
+    t.deepEqual(dump.log, infiniteTestLoopLog, 'log is correct');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -88,8 +88,8 @@ test('zoe - metering - expensive builtins in contract method', async t => {
   t.plan(1);
   try {
     const dump = await main(['testBuiltins']);
-    t.deepEquals(dump.log, testBuiltinsLog, 'log is correct');
+    t.deepEqual(dump.log, testBuiltinsLog, 'log is correct');
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });

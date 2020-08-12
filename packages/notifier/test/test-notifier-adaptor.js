@@ -1,6 +1,6 @@
 // @ts-check
 import '@agoric/install-ses';
-import test from 'tape-promise/tape';
+import test from 'ava';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,
@@ -44,14 +44,14 @@ const explodingStream = makeIterable(true);
 const testEnding = (t, p, fails) => {
   return Promise.resolve(p).then(
     result => {
-      t.equal(fails, false);
-      t.equal(result, refResult);
-      return t.end();
+     t.is(fails, false);
+     t.is(result, refResult);
+      returnreturn; // t.end();
     },
     reason => {
-      t.equal(fails, true);
-      t.equal(reason, refReason);
-      return t.end();
+     t.is(fails, true);
+     t.is(reason, refReason);
+      returnreturn; // t.end();
     },
   );
 };
@@ -72,7 +72,7 @@ const testManualConsumer = (t, iterable, lossy) => {
     return iterator.next().then(
       ({ value, done }) => {
         if (done) {
-          t.equal(i, payloads.length);
+         t.is(i, payloads.length);
           return value;
         }
         i = skip(i, value, lossy);
@@ -82,7 +82,7 @@ const testManualConsumer = (t, iterable, lossy) => {
         return testLoop(i + 1);
       },
       reason => {
-        t.equal(i, payloads.length);
+       t.is(i, payloads.length);
         throw reason;
       },
     );
@@ -101,7 +101,7 @@ const testAutoConsumer = async (t, iterable, lossy) => {
       i += 1;
     }
   } finally {
-    t.equal(i, payloads.length);
+   t.is(i, payloads.length);
   }
   // The for-await-of loop cannot observe the final value of the iterator
   // so this consumer cannot test what that was. Just return what testEnding
@@ -120,14 +120,14 @@ const makeTestUpdater = (t, lossy, fails) => {
       i += 1;
     },
     finish(finalState) {
-      t.equal(fails, false);
-      t.equal(finalState, refResult);
-      return t.end();
+     t.is(fails, false);
+     t.is(finalState, refResult);
+      returnreturn; // t.end();
     },
     fail(reason) {
-      t.equal(fails, true);
-      t.equal(reason, refReason);
-      return t.end();
+     t.is(fails, true);
+     t.is(reason, refReason);
+      returnreturn; // t.end();
     },
   });
 };

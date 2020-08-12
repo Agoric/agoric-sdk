@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import path from 'path';
 
@@ -20,8 +20,8 @@ const escrowGolden = ['starting testEscrowServiceSuccess'];
 
 test('escrow checkUnits w/SES', async t => {
   const dump = await main('escrow', ['escrow matches']);
-  t.deepEquals(dump.log, escrowGolden);
-  t.end();
+  t.deepEqual(dump.log, escrowGolden);
+ return; // t.end();
 });
 
 const escrowMismatchGolden = [
@@ -31,8 +31,8 @@ const escrowMismatchGolden = [
 
 test.skip('escrow check misMatches w/SES', async t => {
   const dump = await main('escrow', ['escrow misMatches']);
-  t.deepEquals(dump.log, escrowMismatchGolden);
-  t.end();
+  t.deepEqual(dump.log, escrowMismatchGolden);
+ return; // t.end();
 });
 
 const escrowCheckPartialWrongPriceGolden = [
@@ -42,8 +42,8 @@ const escrowCheckPartialWrongPriceGolden = [
 
 test.skip('escrow check partial misMatches w/SES', async t => {
   const dump = await main('escrow', ['escrow partial price']);
-  t.deepEquals(dump.log, escrowCheckPartialWrongPriceGolden);
-  t.end();
+  t.deepEqual(dump.log, escrowCheckPartialWrongPriceGolden);
+ return; // t.end();
 });
 
 const escrowCheckPartialWrongStockGolden = [
@@ -53,8 +53,8 @@ const escrowCheckPartialWrongStockGolden = [
 
 test.skip('escrow check partial misMatches w/SES', async t => {
   const dump = await main('escrow', ['escrow partial stock']);
-  t.deepEquals(dump.log, escrowCheckPartialWrongStockGolden);
-  t.end();
+  t.deepEqual(dump.log, escrowCheckPartialWrongStockGolden);
+ return; // t.end();
 });
 
 const escrowCheckPartialWrongSeatGolden = [
@@ -64,6 +64,6 @@ const escrowCheckPartialWrongSeatGolden = [
 
 test.skip('escrow check partial wrong seat w/SES', async t => {
   const dump = await main('escrow', ['escrow partial seat']);
-  t.deepEquals(dump.log, escrowCheckPartialWrongSeatGolden);
-  t.end();
+  t.deepEqual(dump.log, escrowCheckPartialWrongSeatGolden);
+ return; // t.end();
 });

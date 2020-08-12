@@ -74,5 +74,5 @@ tap.test('metering dynamic vats', async t => {
     'stay dead',
   );
 
-  t.end();
+ return; // t.end();
 });

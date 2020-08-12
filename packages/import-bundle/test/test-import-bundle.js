@@ -78,7 +78,7 @@ tap.test('test import', async function testImport(t) {
   );
   await testBundle1(b1NestedEvaluate, 'nestedEvaluate', endowments);
 
-  t.end();
+ return; // t.end();
 });
 
 tap.test('test missing sourceMap', async function testImport(t) {
@@ -95,7 +95,7 @@ tap.test('test missing sourceMap', async function testImport(t) {
   delete b1.sourceMap;
   const ns1 = await importBundle(b1, { endowments });
   tap.equal(ns1.f1(1), 2, `missing sourceMap ns.f1 ok`);
-  t.end();
+ return; // t.end();
 });
 
 tap.test('inescapable transforms', async function testInescapableTransforms(t) {
@@ -114,7 +114,7 @@ tap.test('inescapable transforms', async function testInescapableTransforms(t) {
     inescapableTransforms: [transform1],
   });
   tap.equal(ns.f4('is ok'), 'substitution is ok', `iT ns.f4 ok`);
-  t.end();
+ return; // t.end();
 });
 
 tap.test(
@@ -136,6 +136,6 @@ tap.test(
     });
     tap.equal(ns.f3(1), 4, `iGL ns.f3 ok`);
 
-    t.end();
+   return; // t.end();
   },
 );

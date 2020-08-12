@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { rollup } from 'rollup/dist/rollup.es';
 import * as acorn from 'acorn';
 import eventualSend from '..';
@@ -11,10 +11,10 @@ test('SwingSet bug', async t => {
       external: [],
       acornInjectPlugins: [eventualSend(acorn)],
     });
-    t.ok(bundle);
+   t.assert(bundle);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

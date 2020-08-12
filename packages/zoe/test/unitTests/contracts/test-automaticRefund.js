@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
@@ -47,7 +47,7 @@ test('zoe - simplest automaticRefund', async t => {
     const aliceMoolaPayout = await seat.getPayout('Contribution');
 
     // Alice got back what she put in
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),
       aliceProposal.give.Contribution,
       `Alice's payout matches what she put in`,
@@ -95,7 +95,7 @@ test('zoe - automaticRefund same issuer', async t => {
     const aliceMoolaPayout = await E(seat).getPayout('Contribution2');
 
     // Alice got back what she put in
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),
       aliceProposal.give.Contribution2,
     );
@@ -157,7 +157,7 @@ test('zoe with automaticRefund', async t => {
 
     const bobInvitation = await E(publicFacet).makeInvitation();
     const count = await E(publicFacet).getOffersCount();
-    t.equals(count, 1);
+   t.is(count, 1);
 
     // Imagine that Alice has shared the bobInvitation with Bob. He
     // will do a claim on the invitation with the Zoe invitation issuer and
@@ -168,12 +168,12 @@ test('zoe with automaticRefund', async t => {
     const {
       value: [bobInviteValue],
     } = await E(invitationIssuer).getAmountOf(exclusBobInvitation);
-    t.equals(bobInviteValue.installation, installation);
+   t.is(bobInviteValue.installation, installation);
 
     // bob wants to know what issuers this contract is about and in
     // what order. Is it what he expects?
     const bobIssuers = await E(zoe).getIssuers(bobInviteValue.instance);
-    t.deepEquals(bobIssuers, {
+    t.deepEqual(bobIssuers, {
       Contribution1: moolaR.issuer,
       Contribution2: simoleanR.issuer,
     });
@@ -194,8 +194,8 @@ test('zoe with automaticRefund', async t => {
       bobPayments,
     );
 
-    t.equals(await E(aliceSeat).getOfferResult(), 'The offer was accepted');
-    t.equals(await E(bobSeat).getOfferResult(), 'The offer was accepted');
+   t.is(await E(aliceSeat).getOfferResult(), 'The offer was accepted');
+   t.is(await E(bobSeat).getOfferResult(), 'The offer was accepted');
 
     // These promise resolve when the offer completes, but it may
     // still take longer for a remote issuer to actually make the
@@ -210,13 +210,13 @@ test('zoe with automaticRefund', async t => {
     const bobSimoleanPayout = await bobSeat.getPayout('Contribution2');
 
     // Alice got back what she put in
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),
       aliceProposal.give.Contribution1,
     );
 
     // Alice didn't get any of what she wanted
-    t.deepEquals(
+    t.deepEqual(
       await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
       simoleans(0),
     );
@@ -232,10 +232,10 @@ test('zoe with automaticRefund', async t => {
     // Assert that the correct refund was achieved.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(aliceMoolaPurse.getCurrentAmount().value, 3);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 0);
-    t.equals(bobMoolaPurse.getCurrentAmount().value, 0);
-    t.equals(bobSimoleanPurse.getCurrentAmount().value, 17);
+   t.is(aliceMoolaPurse.getCurrentAmount().value, 3);
+   t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
+   t.is(bobMoolaPurse.getCurrentAmount().value, 0);
+   t.is(bobSimoleanPurse.getCurrentAmount().value, 17);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -308,23 +308,23 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     const moolaPayout3 = await seat3.getPayout('ContributionA');
 
     // Ensure that she got what she put in for each
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(moolaPayout1),
       aliceProposal.give.ContributionA,
     );
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(moolaPayout2),
       aliceProposal.give.ContributionA,
     );
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(moolaPayout3),
       aliceProposal.give.ContributionA,
     );
 
     // Ensure that the number of offers received by each instance is one
-    t.equals(await E(publicFacet1).getOffersCount(), 1);
-    t.equals(await E(publicFacet2).getOffersCount(), 1);
-    t.equals(await E(publicFacet3).getOffersCount(), 1);
+   t.is(await E(publicFacet1).getOffersCount(), 1);
+   t.is(await E(publicFacet2).getOffersCount(), 1);
+   t.is(await E(publicFacet3).getOffersCount(), 1);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -371,22 +371,22 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
     console.log(
       'EXPECTED ERROR: Cannot exit seat. Seat has already exited >>>',
     );
-    t.rejects(
+    t.throwsAsync(
       () => E(aliceSeat).exit(),
-      /Error: Cannot exit seat. Seat has already exited/,
+      { message: /Error: Cannot exit seat. Seat has already exited/ },
     );
 
     const moolaPayout = await aliceSeat.getPayout('ContributionA');
     const simoleanPayout = await aliceSeat.getPayout('ContributionB');
 
     // Alice got back what she put in
-    t.deepEquals(
+    t.deepEqual(
       await moolaR.issuer.getAmountOf(moolaPayout),
       aliceProposal.give.ContributionA,
     );
 
     // Alice didn't get any of what she wanted
-    t.deepEquals(
+    t.deepEqual(
       await simoleanR.issuer.getAmountOf(simoleanPayout),
       simoleans(0),
     );
@@ -397,8 +397,8 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
     // Assert that the correct refund was achieved.
     // Alice had 3 moola and 0 simoleans.
-    t.equals(aliceMoolaPurse.getCurrentAmount().value, 3);
-    t.equals(aliceSimoleanPurse.getCurrentAmount().value, 0);
+   t.is(aliceMoolaPurse.getCurrentAmount().value, 3);
+   t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -435,7 +435,7 @@ test('zoe - automaticRefund non-fungible', async t => {
   const aliceCcPayout = await seat.getPayout('Contribution');
 
   // Alice got back what she put in
-  t.deepEquals(
+  t.deepEqual(
     await ccIssuer.getAmountOf(aliceCcPayout),
     aliceProposal.give.Contribution,
   );

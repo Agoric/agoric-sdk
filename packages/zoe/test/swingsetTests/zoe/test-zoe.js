@@ -1,6 +1,6 @@
 import '@agoric/install-metering-and-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -58,9 +58,9 @@ test('zoe - automaticRefund - valid inputs', async t => {
       [0, 17, 0],
     ];
     const dump = await main(['automaticRefundOk', startingValues]);
-    t.deepEquals(dump.log, expectedAutomaticRefundOkLog);
+    t.deepEqual(dump.log, expectedAutomaticRefundOkLog);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -83,9 +83,9 @@ test('zoe - coveredCall - valid inputs', async t => {
       [0, 7, 0],
     ];
     const dump = await main(['coveredCallOk', startingValues]);
-    t.deepEquals(dump.log, expectedCoveredCallOkLog);
+    t.deepEqual(dump.log, expectedCoveredCallOkLog);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -117,9 +117,9 @@ test('zoe - swapForOption - valid inputs', async t => {
       [0, 7, 1], // Dave starts with 7 simoleans and 1 buck
     ];
     const dump = await main(['swapForOptionOk', startingValues]);
-    t.deepEquals(dump.log, expectedSwapForOptionOkLog);
+    t.deepEqual(dump.log, expectedSwapForOptionOkLog);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -148,9 +148,9 @@ test('zoe - publicAuction - valid inputs', async t => {
       [0, 5, 0],
     ];
     const dump = await main(['publicAuctionOk', startingValues]);
-    t.deepEquals(dump.log, expectedPublicAuctionOkLog);
+    t.deepEqual(dump.log, expectedPublicAuctionOkLog);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -170,9 +170,9 @@ test('zoe - atomicSwap - valid inputs', async t => {
       [0, 7, 0],
     ];
     const dump = await main(['atomicSwapOk', startingValues]);
-    t.deepEquals(dump.log, expectedAtomicSwapOkLog);
+    t.deepEqual(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -194,9 +194,9 @@ test('zoe - simpleExchange - valid inputs', async t => {
       [0, 7, 0],
     ];
     const dump = await main(['simpleExchangeOk', startingValues]);
-    t.deepEquals(dump.log, expectedSimpleExchangeOkLog);
+    t.deepEqual(dump.log, expectedSimpleExchangeOkLog);
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   }
 });
 
@@ -232,7 +232,7 @@ test('zoe - simpleExchange - state Update', async t => {
     [0, 24, 0],
   ];
   const dump = await main(['simpleExchangeNotifier', startingValues]);
-  t.deepEquals(dump.log, expectedSimpleExchangeNotificationLog);
+  t.deepEqual(dump.log, expectedSimpleExchangeNotificationLog);
 });
 
 const expectedAutoswapOkLog = [
@@ -257,7 +257,7 @@ test('zoe - autoswap - valid inputs', async t => {
     [3, 7, 0],
   ];
   const dump = await main(['autoswapOk', startingValues]);
-  t.deepEquals(dump.log, expectedAutoswapOkLog);
+  t.deepEqual(dump.log, expectedAutoswapOkLog);
 });
 
 const expectedSellTicketsOkLog = [
@@ -274,5 +274,5 @@ test('zoe - sellTickets - valid inputs', async t => {
     [22, 0, 0],
   ];
   const dump = await main(['sellTicketsOk', startingValues]);
-  t.deepEquals(dump.log, expectedSellTicketsOkLog);
+  t.deepEqual(dump.log, expectedSellTicketsOkLog);
 });

@@ -1,7 +1,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 
 import { buildVatController } from '../src/index';
@@ -53,7 +53,7 @@ test('d0', async t => {
     'd-70',
     'd-71',
   ]);
-  t.end();
+ return; // t.end();
 });
 
 test('d1', async t => {
@@ -86,7 +86,7 @@ test('d1', async t => {
     JSON.stringify(capargs({ ret: 3 })),
   ]);
   t.deepEqual(sharedArray, ['pushed']);
-  t.end();
+ return; // t.end();
 });
 
 async function test2(t, mode) {
@@ -150,7 +150,7 @@ async function test2(t, mode) {
       'ret done',
     ]);
   }
-  t.end();
+ return; // t.end();
 }
 
 test('d2.1', async t => {
@@ -197,7 +197,7 @@ test('device state', async t => {
   t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), capargs({ s: 'new' }));
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 
-  t.end();
+ return; // t.end();
 });
 
 test('mailbox outbound', async t => {
@@ -237,7 +237,7 @@ test('mailbox outbound', async t => {
   s2.populateFromData(s.exportToData());
   t.deepEqual(s.exportToData(), s2.exportToData());
 
-  t.end();
+ return; // t.end();
 });
 
 test('mailbox inbound', async t => {
@@ -265,7 +265,7 @@ test('mailbox inbound', async t => {
     ],
     0,
   );
-  t.ok(rc);
+ t.assert(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2']);
 
@@ -278,7 +278,7 @@ test('mailbox inbound', async t => {
     ],
     3,
   );
-  t.ok(rc);
+ t.assert(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
 
@@ -291,7 +291,7 @@ test('mailbox inbound', async t => {
     ],
     3,
   );
-  t.notOk(rc);
+ t.falsy(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
 
@@ -305,7 +305,7 @@ test('mailbox inbound', async t => {
     ],
     3,
   );
-  t.ok(rc);
+ t.assert(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
     'dm-peer1',
@@ -326,7 +326,7 @@ test('mailbox inbound', async t => {
     ],
     4,
   );
-  t.ok(rc);
+ t.assert(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
     'dm-peer1',
@@ -339,7 +339,7 @@ test('mailbox inbound', async t => {
   ]);
 
   rc = mb.deliverInbound('peer2', [[4, 'msg4']], 5);
-  t.ok(rc);
+ t.assert(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
     'dm-peer1',
@@ -354,7 +354,7 @@ test('mailbox inbound', async t => {
     'da-peer2-5',
   ]);
 
-  t.end();
+ return; // t.end();
 });
 
 test('command broadcast', async t => {
@@ -374,7 +374,7 @@ test('command broadcast', async t => {
   await c.run();
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 
-  t.end();
+ return; // t.end();
 });
 
 test('command deliver', async t => {
@@ -409,5 +409,5 @@ test('command deliver', async t => {
   t.deepEqual(c.dump().log, ['handle-0-missing', 'handle-1-errory']);
   t.deepEqual(rejection, { response: 'body' });
 
-  t.end();
+ return; // t.end();
 });

@@ -1,6 +1,6 @@
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import { makeDehydrator } from '../src/lib-dehydrate';
 
@@ -20,24 +20,24 @@ test('makeDehydrator', async t => {
     console.log(`ERROR EXPECTED 'already has a petname' >>>>`);
     t.throws(
       () => instanceHandleMapping.addPetname('simpleExchange2', handle1),
-      `cannot add a second petname for the same value`,
+      { message: `cannot add a second petname for the same value` },
     );
     console.log(
       `ERROR EXPECTED 'petname simpleExchange is already in use' >>>>`,
     );
     t.throws(
       () => instanceHandleMapping.addPetname('simpleExchange', harden({})),
-      `cannot add another value for the same petname`,
+      { message: `cannot add another value for the same petname` },
     );
 
     // Test renaming.
     instanceHandleMapping.renamePetname('whatever', handle1);
-    t.equals(
+   t.is(
       instanceHandleMapping.valToPetname.get(handle1),
       'whatever',
       `renaming is successful going from val to petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       instanceHandleMapping.petnameToVal.get('whatever'),
       handle1,
       `renaming is successful going from val to petname`,
@@ -47,17 +47,17 @@ test('makeDehydrator', async t => {
     );
     t.throws(
       () => instanceHandleMapping.renamePetname('new value', harden({})),
-      /has not been previously named, would you like to add it instead\?/,
+      { message: /has not been previously named, would you like to add it instead\?/ },
       `can't rename something that was never added`,
     );
     // rename it back
     instanceHandleMapping.renamePetname('simpleExchange', handle1);
-    t.equals(
+    t.is(
       instanceHandleMapping.valToPetname.get(handle1),
       'simpleExchange',
       `second renaming is successful going from val to petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       instanceHandleMapping.petnameToVal.get('simpleExchange'),
       handle1,
       `second renaming is successful going from val to petname`,
@@ -66,12 +66,12 @@ test('makeDehydrator', async t => {
     // Test deletion.
     const temp = harden({});
     instanceHandleMapping.addPetname('to be deleted', temp);
-    t.equals(
+   t.is(
       instanceHandleMapping.valToPetname.get(temp),
       'to be deleted',
       `'to be deleted' present going from val to petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       instanceHandleMapping.petnameToVal.get('to be deleted'),
       handle1,
       `'to be deleted' present going from val to petname`,
@@ -80,7 +80,7 @@ test('makeDehydrator', async t => {
     console.log(`ERROR EXPECTED '"petname" not found' >>>>`);
     t.throws(
       () => instanceHandleMapping.petnameToVal.get('to be deleted'),
-      /"petname" not found/,
+      { message: /"petname" not found/ },
       `can't get what has been deleted`,
     );
 
@@ -95,7 +95,7 @@ test('makeDehydrator', async t => {
     const brand3 = makeMockBrand();
     brandMapping.addPetname('moola', brand1);
     brandMapping.addPath(['agoric', 'Moola'], brand1);
-    t.deepEquals(
+    t.deepEqual(
       brandMapping.valToPaths.get(brand1),
       [['agoric', 'Moola']],
       `use valToPaths`,
@@ -103,7 +103,7 @@ test('makeDehydrator', async t => {
     brandMapping.addPetname('simolean', brand2);
     brandMapping.addPetname('zoeInvite', brand3);
 
-    t.deepEquals(
+    t.deepEqual(
       dehydrate(harden({ handle: handle1 })),
       {
         body: '{"handle":{"@qclass":"slot","index":0}}',
@@ -111,7 +111,7 @@ test('makeDehydrator', async t => {
       },
       `serialize val with petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       hydrate(
         harden({
           body: '{"handle":{"@qclass":"slot","index":0}}',
@@ -126,7 +126,7 @@ test('makeDehydrator', async t => {
       harden({ handle: handle1 }),
       `deserialize val with petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       dehydrate(harden({ brand: brand1, value: 40 })),
       harden({
         body: '{"brand":{"@qclass":"slot","index":0},"value":40}',
@@ -134,7 +134,7 @@ test('makeDehydrator', async t => {
       }),
       `serialize brand with petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       hydrate(
         harden({
           body: '{"brand":{"@qclass":"slot","index":0},"value":40}',
@@ -159,7 +159,7 @@ test('makeDehydrator', async t => {
         },
       },
     });
-    t.deepEquals(
+    t.deepEqual(
       dehydrate(proposal),
       {
         body:
@@ -174,7 +174,7 @@ test('makeDehydrator', async t => {
       },
       `dehydrated proposal`,
     );
-    t.deepEquals(
+    t.deepEqual(
       hydrate(
         harden({
           body:
@@ -192,7 +192,7 @@ test('makeDehydrator', async t => {
       `hydrated proposal`,
     );
     const handle4 = harden({});
-    t.deepEquals(
+    t.deepEqual(
       dehydrate(harden({ handle: handle4 })),
       {
         body: '{"handle":{"@qclass":"slot","index":0}}',
@@ -200,7 +200,7 @@ test('makeDehydrator', async t => {
       },
       `serialize val with no petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       hydrate(
         harden({
           body: '{"handle":{"@qclass":"slot","index":0}}',
@@ -212,7 +212,7 @@ test('makeDehydrator', async t => {
     );
     // Name a previously unnamed handle
     instanceHandleMapping.addPetname('autoswap', handle4);
-    t.deepEquals(
+    t.deepEqual(
       dehydrate(harden({ handle: handle4 })),
       {
         body: '{"handle":{"@qclass":"slot","index":0}}',
@@ -220,7 +220,7 @@ test('makeDehydrator', async t => {
       },
       `serialize val with new petname`,
     );
-    t.deepEquals(
+    t.deepEqual(
       hydrate(
         harden({
           body: '{"handle":{"@qclass":"slot","index":0}}',
@@ -242,7 +242,7 @@ test('makeDehydrator', async t => {
       { handle: handle4 },
       `deserialize with no slots does not produce the real object`,
     );
-    t.deepEquals(
+    t.deepEqual(
       hydrate(
         harden({
           body: '{"handle":{"kind":"instanceHandle","petname":"autoswap"}}',
@@ -255,8 +255,8 @@ test('makeDehydrator', async t => {
       `deserialize with no slots does not produce the real object`,
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

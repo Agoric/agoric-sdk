@@ -67,5 +67,5 @@ tap.test('unmetered dynamic vat', async t => {
   await c.run();
   t.deepEqual(nextLog(), ['failed to explode'], 'metering disabled');
 
-  t.end();
+ return; // t.end();
 });

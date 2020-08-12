@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import * as acorn from 'acorn';
 import eventualSend from '..';
 

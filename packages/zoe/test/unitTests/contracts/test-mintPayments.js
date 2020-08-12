@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
@@ -44,7 +44,7 @@ test('zoe - mint payments', async t => {
             value: [invitationValue],
           } = await E(invitationIssuer).getAmountOf(invitation);
 
-          t.equals(
+         t.is(
             invitationValue.installation,
             installation,
             'installation is mintPayment',
@@ -66,7 +66,7 @@ test('zoe - mint payments', async t => {
           const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(paymentP);
 
           // Bob got 1000 tokens
-          t.deepEquals(tokenPayoutAmount, tokens1000);
+          t.deepEqual(tokenPayoutAmount, tokens1000);
         },
       };
     };
@@ -126,7 +126,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
             value: [invitationValue],
           } = await E(invitationIssuer).getAmountOf(invitation);
 
-          t.equals(
+         t.is(
             invitationValue.installation,
             installation,
             'installation is mintPayment',
@@ -162,10 +162,10 @@ test('zoe - mint payments with unrelated give and want', async t => {
           );
 
           // Bob got 1000 tokens
-          t.deepEquals(tokenPayoutAmount, tokens1000);
+          t.deepEqual(tokenPayoutAmount, tokens1000);
 
           // Got refunded all the moola given
-          t.deepEquals(
+          t.deepEqual(
             await E(moolaKit.issuer).getAmountOf(moolaRefundP),
             moolaKit.amountMath.make(10),
           );

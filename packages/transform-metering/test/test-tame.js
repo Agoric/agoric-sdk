@@ -2,7 +2,7 @@
 import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
 
 // eslint-disable-next-line import/order
-import test from 'tape-promise/tape';
+import test from 'ava';
 
 import { makeMeter, makeWithMeter } from '../src/index';
 
@@ -16,14 +16,14 @@ test('meter running', async t => {
     const withMeterFn = (thunk, newMeter = meter) => () =>
       withMeter(thunk, newMeter);
 
-    t.equal(new [].constructor(40).length, 40, `new [].constructor works`);
+   t.is(new [].constructor(40).length, 40, `new [].constructor works`);
 
-    t.equal(
+   t.is(
       withoutMeter(() => true),
       true,
       `withoutMeter works`,
     );
-    t.equal(
+   t.is(
       withMeter(() => true),
       true,
       `withMeter works`,
@@ -51,8 +51,8 @@ test('meter running', async t => {
       'map to Object create exhausted',
     );
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });

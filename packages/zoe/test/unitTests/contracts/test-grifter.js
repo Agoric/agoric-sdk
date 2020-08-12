@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
@@ -53,9 +53,9 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
     vicPayments,
   );
 
-  t.rejects(
+  t.throwsAsync(
     vicOutcomeP,
-    /The reallocation was not offer safe/,
+    { message: /The reallocation was not offer safe/ },
     `vicOffer is rejected`,
   );
 });

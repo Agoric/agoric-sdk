@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { buildVatController } from '../src/index';
 
 async function beginning(t, mode) {
@@ -12,19 +12,19 @@ async function beginning(t, mode) {
     },
   };
   const controller = await buildVatController(config, [mode]);
-  t.equal(controller.bootstrapResult.status(), 'pending');
+ t.is(controller.bootstrapResult.status(), 'pending');
   return controller;
 }
 
 async function bootstrapSuccessfully(t, mode, body, slots) {
   const controller = await beginning(t, mode);
   await controller.run();
-  t.equal(controller.bootstrapResult.status(), 'fulfilled');
+ t.is(controller.bootstrapResult.status(), 'fulfilled');
   t.deepEqual(controller.bootstrapResult.resolution(), {
     body,
     slots,
   });
-  t.end();
+ return; // t.end();
 }
 
 test('bootstrap returns data', async t => {
@@ -57,15 +57,15 @@ async function testFailure(t) {
     await controller.run();
   } catch (e) {
     failureHappened = true;
-    t.equal(e.message, 'kernel panic bootstrap failure');
+   t.is(e.message, 'kernel panic bootstrap failure');
   }
-  t.ok(failureHappened);
-  t.equal(controller.bootstrapResult.status(), 'rejected');
+ t.assert(failureHappened);
+ t.is(controller.bootstrapResult.status(), 'rejected');
   t.deepEqual(controller.bootstrapResult.resolution(), {
     body: '{"@qclass":"error","name":"Error","message":"gratuitous error"}',
     slots: [],
   });
-  t.end();
+ return; // t.end();
 }
 
 test('bootstrap failure', async t => {
@@ -84,12 +84,12 @@ async function extraMessage(t, mode, status, body, slots) {
     'ignore',
   );
   await controller.run();
-  t.equal(extraResult.status(), status);
+ t.is(extraResult.status(), status);
   t.deepEqual(extraResult.resolution(), {
     body,
     slots,
   });
-  t.end();
+ return; // t.end();
 }
 
 test('extra message returns data', async t => {

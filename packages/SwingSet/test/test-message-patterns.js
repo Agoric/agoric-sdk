@@ -3,7 +3,7 @@
 /* eslint object-shorthand: "off" */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
 import { buildPatterns } from './message-patterns';
@@ -62,7 +62,7 @@ function testLocalPatterns() {
     modes[mode](`test pattern ${name} locally`, async t => {
       const logs = await runVatsLocally(t, name);
       t.deepEqual(logs, bp.expected[name]);
-      t.end();
+     return; // t.end();
     });
   }
 }
@@ -114,7 +114,7 @@ function testCommsPatterns() {
         expected = bp.expected_pipelined[name];
       }
       t.deepEqual(logs, expected);
-      t.end();
+     return; // t.end();
     });
   }
 }

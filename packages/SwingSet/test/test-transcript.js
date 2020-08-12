@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 // import fs from 'fs';
 import {
@@ -46,7 +46,7 @@ test('transcript-one save', async t => {
   states1.forEach((s, i) => {
     t.deepEqual(s, states2[i]);
   });
-  t.end();
+ return; // t.end();
 });
 
 test('transcript-one load', async t => {
@@ -76,5 +76,5 @@ test('transcript-one load', async t => {
     //                                   JSON.stringify(newstates[j])));
     t.deepEqual(states.slice(i), newstates);
   }
-  t.end();
+ return; // t.end();
 });

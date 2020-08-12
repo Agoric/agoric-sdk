@@ -1,6 +1,6 @@
 /* global Compartment */
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import bundleSource from '..';
 
 function evaluate(src, endowments) {
@@ -16,7 +16,7 @@ test(`external require('fs')`, async t => {
       'nestedEvaluate',
     );
 
-    const myRequire = mod => t.equals(mod, 'fs', 'required fs module');
+    const myRequire = mod =>t.is(mod, 'fs', 'required fs module');
 
     const nestedEvaluate = src => {
       // console.log('========== evaluating', src);
@@ -26,8 +26,8 @@ test(`external require('fs')`, async t => {
     const srcMap1 = `(${src1})`;
     nestedEvaluate(srcMap1)();
   } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
+   t.not(e, e, 'unexpected exception');
   } finally {
-    t.end();
+   return; // t.end();
   }
 });
