@@ -604,7 +604,7 @@ export async function makeWallet({
     updatePursesState(purseMapping.valToPetname.get(purse), purse);
   };
 
-  function deposit(pursePetname, payment) {
+  async function deposit(pursePetname, payment) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     return purse.deposit(payment);
   }
@@ -974,12 +974,10 @@ export async function makeWallet({
   const addPayment = async (payment, depositTo = undefined) => {
     // We don't even create the record until we get an alleged brand.
     const brand = await E(payment).getAllegedBrand();
+    const depositedPK = makePromiseKit();
 
     /** @type {PaymentRecord} */
-    let paymentRecord;
-
-    const depositedPK = makePromiseKit();
-    paymentRecord = {
+    let paymentRecord = {
       payment,
       brand,
       issuer: undefined,

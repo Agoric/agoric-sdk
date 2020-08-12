@@ -274,7 +274,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     const {
       value: [{ handle: inviteHandle2 }],
     } = await E(inviteIssuer).getAmountOf(invite2);
-    wallet.deposit('Default Zoe invite purse', invite2);
+    await wallet.deposit('Default Zoe invite purse', invite2);
 
     const currentAmount = await E(zoeInvitePurse).getCurrentAmount();
     t.deepEquals(
