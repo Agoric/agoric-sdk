@@ -46,12 +46,10 @@ const testEnding = (t, p, fails) => {
     result => {
      t.is(fails, false);
      t.is(result, refResult);
-      returnreturn; // t.end();
     },
     reason => {
      t.is(fails, true);
      t.is(reason, refReason);
-      returnreturn; // t.end();
     },
   );
 };
@@ -122,12 +120,10 @@ const makeTestUpdater = (t, lossy, fails) => {
     finish(finalState) {
      t.is(fails, false);
      t.is(finalState, refResult);
-      returnreturn; // t.end();
     },
     fail(reason) {
      t.is(fails, true);
      t.is(reason, refReason);
-      returnreturn; // t.end();
     },
   });
 };

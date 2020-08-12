@@ -78,7 +78,7 @@
     ],
     "concurrency": 12,
     "failFast": false,
-    "failWithoutAssertions": false,
+    "failWithoutAssertions": true,
     "environmentVariables": {
       "MY_ENVIRONMENT_VARIABLE": "some value"
     },

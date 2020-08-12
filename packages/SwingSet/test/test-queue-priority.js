@@ -19,5 +19,4 @@ test('Promise queue should be higher priority than IO/timer queue', async t => {
   await p;
 
   t.deepEqual(log, [1, 2, 3, 4, 5, 6]);
-  returnreturn; // t.end();
 });
