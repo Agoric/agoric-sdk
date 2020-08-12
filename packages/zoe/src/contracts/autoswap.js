@@ -133,7 +133,7 @@ const start = async (zcf, _terms) => {
 
   /** @type {OfferHandler} */
   const removeLiquidityHandler = removeLiqSeat => {
-    // TODO (cth) should burn tokens?
+    // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
 

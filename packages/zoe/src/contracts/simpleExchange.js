@@ -129,11 +129,11 @@ const start = (zcf, _terms) => {
     return 'Trade Successful';
   };
 
-  const makeExchangeInvite = () =>
+  const makeExchangeInvitation = () =>
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
   const publicFacet = harden({
-    makeInvite: makeExchangeInvite,
+    makeInvitation: makeExchangeInvitation,
     getNotifier: () => notifier,
   });
 
@@ -143,7 +143,11 @@ const start = (zcf, _terms) => {
 
   // set the initial state of the notifier
   bookOrdersChanged();
-  return { creatorInvitation: makeExchangeInvite(), creatorFacet, publicFacet };
+  return {
+    creatorInvitation: makeExchangeInvitation(),
+    creatorFacet,
+    publicFacet,
+  };
 };
 
 harden(start);
