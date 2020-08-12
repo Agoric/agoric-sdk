@@ -29,7 +29,7 @@ test('zoe - useObj', async t => {
   const issuerKeywordRecord = harden({
     Pixels: moolaIssuer,
   });
-  const { publicFacet } = await zoe.makeInstance(
+  const { publicFacet } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
   );

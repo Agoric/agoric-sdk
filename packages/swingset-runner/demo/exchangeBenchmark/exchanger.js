@@ -47,7 +47,7 @@ async function build(name, zoe, issuers, payments, installations) {
     const {
       invite: addOrderInvite,
       instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(simpleExchange, issuerKeywordRecord);
+    } = await E(zoe).startInstance(simpleExchange, issuerKeywordRecord);
 
     const mySellOrderProposal = harden({
       give: { Asset: moola(1) },

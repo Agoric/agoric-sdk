@@ -29,13 +29,13 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           const installationP = E(zoe).install(bundle);
           return installationP;
         },
-        makeInstance: async installation => {
+        startInstance: async installation => {
           const issuerKeywordRecord = harden({
             Asset: moolaKit.issuer,
             Ask: simoleanKit.issuer,
           });
           const terms = harden({ numBidsAllowed: 3 });
-          const adminP = zoe.makeInstance(
+          const adminP = zoe.startInstance(
             installation,
             issuerKeywordRecord,
             terms,
@@ -212,7 +212,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       await simoleanKit.mint.mintPayment(simoleans(5)),
     );
 
-    const { creatorInvitation } = await alice.makeInstance(installation);
+    const { creatorInvitation } = await alice.startInstance(installation);
 
     const makeInvitationsObj = await alice.offer(creatorInvitation);
 
@@ -257,7 +257,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       Ask: simoleanR.issuer,
     });
     const terms = harden({ numBidsAllowed });
-    const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+    const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
       terms,
@@ -396,7 +396,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Ask: moolaIssuer,
   });
   const terms = harden({ numBidsAllowed });
-  const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+  const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
     terms,

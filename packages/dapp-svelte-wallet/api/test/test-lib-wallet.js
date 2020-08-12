@@ -41,7 +41,7 @@ async function setupTest() {
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
   const installation = await zoe.install(automaticRefundBundle);
   const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
-  const { creatorInvitation: invite, instance } = await zoe.makeInstance(
+  const { creatorInvitation: invite, instance } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -59,7 +59,7 @@ async function setupTest() {
   const {
     publicFacet: autoswapPublicFacet,
     instance: autoswapInstanceHandle,
-  } = await zoe.makeInstance(
+  } = await zoe.startInstance(
     autoswapInstallationHandle,
     autoswapIssuerKeywordRecord,
   );

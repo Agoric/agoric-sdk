@@ -75,7 +75,7 @@ test('home.wallet - receive zoe invite', async t => {
     );
     const bundle = await bundleSource(contractRoot);
     const installationHandle = await E(zoe).install(bundle);
-    const { creatorInvitation: invite } = await E(zoe).makeInstance(
+    const { creatorInvitation: invite } = await E(zoe).startInstance(
       installationHandle,
     );
 

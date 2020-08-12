@@ -197,7 +197,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
         Asset: inviteIssuer,
         Price: bucksIssuer,
       });
-      const { invite: bobSwapInvite } = await E(zoe).makeInstance(
+      const { invite: bobSwapInvite } = await E(zoe).startInstance(
         installations.atomicSwap,
         issuerKeywordRecord,
       );

@@ -35,7 +35,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         const issuerKeywordRecord = harden({ Keyword1: inviteIssuer });
         const {
           instanceRecord: { publicAPI },
-        } = await E(zoe).makeInstance(installId, issuerKeywordRecord);
+        } = await E(zoe).startInstance(installId, issuerKeywordRecord);
         log(`invoking ${testName}.doTest()`);
         await E(publicAPI).doTest();
         log(`complete`);

@@ -26,12 +26,12 @@ test('zoe - atomicSwap', async t => {
         const installationP = E(zoe).install(bundle);
         return installationP;
       },
-      makeInstance: async installation => {
+      startInstance: async installation => {
         const issuerKeywordRecord = harden({
           Asset: moolaKit.issuer,
           Price: simoleanKit.issuer,
         });
-        const adminP = zoe.makeInstance(installation, issuerKeywordRecord);
+        const adminP = zoe.startInstance(installation, issuerKeywordRecord);
         return adminP;
       },
       offer: async firstInvitation => {
@@ -154,7 +154,7 @@ test('zoe - atomicSwap', async t => {
     installation,
     await E(simoleanKit.mint).mintPayment(simoleans(7)),
   );
-  const { creatorInvitation } = await alice.makeInstance(installation);
+  const { creatorInvitation } = await alice.startInstance(installation);
   const invitation = await alice.offer(creatorInvitation);
 
   // Alice spreads the invitation far and wide with instructions
@@ -188,12 +188,12 @@ test('zoe - non-fungible atomicSwap', async t => {
         const installationP = E(zoe).install(bundle);
         return installationP;
       },
-      makeInstance: async installation => {
+      startInstance: async installation => {
         const issuerKeywordRecord = harden({
           Asset: ccIssuer,
           Price: rpgIssuer,
         });
-        const adminP = zoe.makeInstance(installation, issuerKeywordRecord);
+        const adminP = zoe.startInstance(installation, issuerKeywordRecord);
         return adminP;
       },
       offer: async (firstInvitation, calico37Amount, vorpalAmount) => {
@@ -319,7 +319,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   const vorpalAmount = rpgItems(vorpalSword);
   const bobRpgPayment = await E(rpgMint).mintPayment(vorpalAmount);
   const bob = await makeBob(installation, bobRpgPayment);
-  const { creatorInvitation } = await alice.makeInstance(installation);
+  const { creatorInvitation } = await alice.startInstance(installation);
   const invitation = await alice.offer(
     creatorInvitation,
     calico37Amount,
@@ -357,7 +357,7 @@ test('zoe - atomicSwap like-for-like', async t => {
     Asset: moolaIssuer,
     Price: moolaIssuer,
   });
-  const { creatorInvitation: aliceInvitation } = await zoe.makeInstance(
+  const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
   );

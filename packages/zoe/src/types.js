@@ -50,7 +50,7 @@
  * a smart contract in particular ways.
  *
  * @property {Install} install
- * @property {MakeInstance} makeInstance
+ * @property {StartInstance} startInstance
  * @property {Offer} offer
  * @property {(instance: Instance) => Object} getPublicFacet
  * @property {(instance: Instance) => IssuerKeywordRecord} getIssuers
@@ -109,7 +109,7 @@
  */
 
 /**
- * @typedef {Object} MakeInstanceResult
+ * @typedef {Object} StartInstanceResult
  * @property {Record<string, Function>} creatorFacet
  * @property {Record<string, Function>} publicFacet
  * @property {Instance} instance
@@ -117,11 +117,11 @@
  */
 
 /**
- * @callback MakeInstance
+ * @callback StartInstance
  * @param {Installation} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
- * @returns {Promise<MakeInstanceResult>}
+ * @returns {Promise<StartInstanceResult>}
  *
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
