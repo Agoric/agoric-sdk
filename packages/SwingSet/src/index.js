@@ -1,4 +1,8 @@
-export { loadBasedir, buildVatController } from './controller';
+export {
+  loadBasedir,
+  loadSwingsetConfigFile,
+  buildVatController,
+} from './controller';
 
 export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 export { buildTimer } from './devices/timer';
