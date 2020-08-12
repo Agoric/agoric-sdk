@@ -3,7 +3,6 @@
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
 
 import { satisfiesWant } from '../contractFacet/offerSafety';
 
@@ -293,29 +292,6 @@ export const assertProposalKeywords = (offerHandler, expected) =>
     assertKeys(actual.exit, expected.exit);
     return offerHandler(seat);
   };
-/**
- * Return a record with a promise for the userSeat and a promise for
- * the zcfSeat
- *
- * This offer will have an empty 'give' and 'want', making it useful
- * for contracts to use for unrestricted internal asset reallocation.
- * One example is the Autoswap contract, which uses an empty offer
- * to manage internal escrowed assets.
- * @param {ContractFacet} zcf
- * @returns {{userSeat: Promise<UserSeat>, zcfSeat: Promise<ZCFSeat>}}
- */
-export const makeEmptyOffer = zcf => {
-  const ZCFSeatPromiseKit = makePromiseKit();
-  const invite = zcf.makeInvitation(
-    seat => ZCFSeatPromiseKit.resolve(seat),
-    'empty offer',
-  );
-  const zoeService = zcf.getZoeService();
-  return {
-    userSeat: E(zoeService).offer(invite),
-    zcfSeat: ZCFSeatPromiseKit.promise,
-  };
-};
 
 /**
  * Escrow payments with Zoe and reallocate the amount of each
