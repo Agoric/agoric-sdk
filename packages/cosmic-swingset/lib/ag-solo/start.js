@@ -12,6 +12,7 @@ import anylogger from 'anylogger';
 
 import {
   loadBasedir,
+  loadSwingsetConfigFile,
   buildCommand,
   buildVatController,
   buildMailboxStateMap,
@@ -87,7 +88,10 @@ async function buildSwingset(
   const cm = buildCommand(broadcast);
   const timer = buildTimer();
 
-  const config = await loadBasedir(vatsDir);
+  let config = loadSwingsetConfigFile(`${vatsDir}/solo-config.json`);
+  if (config === null) {
+    config = loadBasedir(vatsDir);
+  }
   config.devices = [
     ['mailbox', mb.srcPath, mb.endowments],
     ['command', cm.srcPath, cm.endowments],

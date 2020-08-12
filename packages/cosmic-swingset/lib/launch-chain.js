@@ -1,4 +1,3 @@
-import fs from 'fs';
 import path from 'path';
 import anylogger from 'anylogger';
 
@@ -9,6 +8,8 @@ import {
   buildTimer,
   buildBridge,
   buildVatController,
+  loadBasedir,
+  loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { getBestSwingStore } from './check-lmdb';
 
@@ -25,7 +26,10 @@ async function buildSwingset(
   debugName = undefined,
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  const config = {};
+  let config = loadSwingsetConfigFile(`${vatsDir}/chain-config.json`);
+  if (config === null) {
+    config = loadBasedir(vatsDir);
+  }
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(mailboxState);
   const timer = buildTimer();
@@ -36,19 +40,6 @@ async function buildSwingset(
     ['mailbox', mb.srcPath, mb.endowments],
     ['timer', timer.srcPath, timer.endowments],
   ];
-  config.vats = {};
-  for (const fname of fs.readdirSync(vatsDir)) {
-    const match = fname.match(/^vat-(.*)\.js$/);
-    if (match) {
-      config.vats[match[1]] = {
-        sourcePath: require.resolve(`${vatsDir}/${fname}`),
-      };
-    }
-  }
-  config.vats.bootstrap = {
-    sourcePath: require.resolve(`${vatsDir}/bootstrap.js`),
-  };
-  config.bootstrap = 'bootstrap';
 
   const controller = await buildVatController(config, argv, {
     hostStorage: storage,
