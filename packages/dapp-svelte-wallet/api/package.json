@@ -1,8 +1,8 @@
 {
-  "name": "@agoric/dapp-encouragement-api",
+  "name": "@agoric/dapp-svelte-wallet-api",
   "private": true,
   "version": "0.1.0",
-  "description": "dapp-encouragement Agoric Dapp web server handler",
+  "description": "Wallet web server handler",
   "scripts": {
     "build": "exit 0",
     "test": "tape -r esm 'test/**/*.js'",
