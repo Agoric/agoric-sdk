@@ -13,6 +13,7 @@ type beginBlockAction struct {
 	StoragePort int    `json:"storagePort"`
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
+	ChainID     string `json:"chainID"`
 }
 
 type endBlockAction struct {
@@ -34,6 +35,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		StoragePort: GetPort("storage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
+		ChainID:     ctx.ChainID(),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {

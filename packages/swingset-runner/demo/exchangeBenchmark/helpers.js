@@ -15,7 +15,7 @@ export async function showPurseBalance(purseP, name, log) {
 export function getLocalAmountMath(issuer) {
   return Promise.all([
     E(issuer).getBrand(),
-    E(issuer).getMathHelpersName(),
+    E(issuer).getMathHelperName(),
   ]).then(([brand, mathHelpersName]) => makeAmountMath(brand, mathHelpersName));
 }
 

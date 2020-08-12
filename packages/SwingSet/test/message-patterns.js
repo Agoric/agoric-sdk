@@ -7,6 +7,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { ignore } from './util';
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.
@@ -515,6 +516,27 @@ export function buildPatterns(log) {
     'p3.then',
   ];
   test('a72');
+
+  // Exercise bug #1400. We set up two messages:
+  //   pipe1 = bob~.one()
+  //   pipe1~.two()
+  // but their handling must meet two ordering constraints:
+  // 1: left-comms transmits two() before learning about pipe1 resolving
+  // 2: right-comms receives two() *after* learning about pipe1 resolving
+  // to achieve this, we changed loopbox() to deliver one message at a time
+  {
+    objA.a73 = async () => {
+      const pipe1 = E(b.bob).b73_one();
+      const p2 = E(pipe1).two();
+      ignore(p2);
+    };
+    objB.b73_one = () =>
+      harden({
+        two: () => log('two'),
+      });
+  }
+  out.a73 = ['two'];
+  test('a73');
 
   return harden({
     setA,

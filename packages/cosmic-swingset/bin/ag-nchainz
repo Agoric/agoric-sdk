@@ -58,17 +58,30 @@ testnet)
   i=$(echo $chainid | sed -e 's/^[^0-9]*//')
   portstart=$(( $BASE_PORT + $i * $NUM_SOLOS ))
   portend=$(( $portstart + $NUM_SOLOS - 1 ))
+  SOLO_ADDRS=()
+  SOLO_NAMES=()
+  POWER_FLAGS='["agoric.vattp"]'
+  egresses=
+  sep=''
   for port in `seq $portstart $portend`; do
-    echo "Initializing ag-solo in $chainid/ag-solo-$port"
-		$SOLO init $chainid/ag-solo-$port --webport=$port
+    solo="$chainid/ag-solo-$port"
+    echo "Initializing ag-solo in $solo"
+		$SOLO init $solo --webport=$port
+    addr=$(cat $solo/ag-cosmos-helper-address)
 		$DAEMON add-genesis-account --home=$n0d \
-      --home-client=$chainid/ag-solo-$port/$CLI-statedir --keyring-backend=test \
+      --home-client=$solo/$CLI-statedir --keyring-backend=test \
       ag-solo 1000uag
+    # Generate powerful SwingSet egresses.
+    egresses="$egresses$sep{\"nickname\":\"$solo\",\"peer\":\"$addr\",\"powerFlags\":$POWER_FLAGS}"
+    sep=,
 	done
-	"$thisdir/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos $n0d/config
-  for node in `ls -d $chainid/n[1-9]* 2>/dev/null || true`; do
-    cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
+  for node in `ls -d $chainid/n* 2>/dev/null || true`; do
+    [[ "$node/$DAEMON" == $n0d ]] || cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
 	  "$thisdir/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos $node/$DAEMON/config
+    cp "$node/$DAEMON/config/genesis.json" "$node/$DAEMON/config/genesis-orig.json"
+    # Append the egresses to the genesis and reset bond_denom.
+    jq ".*{app_state:{staking:{params:{bond_denom:\"stake\"}},swingset:{egresses:(.app_state.swingset.egresses+[$egresses])}}}" \
+      "$node/$DAEMON/config/genesis-orig.json" > "$node/$DAEMON/config/genesis.json"
   done
   exit 0
   ;;
@@ -79,16 +92,15 @@ start-daemon)
   fi
   BASEDIR=$1
   shift
-  ba=$($CLI --home "$BASEDIR/n0/$CLI" keys show n0 --keyring-backend=test | jq -r .address)
   for solo in `ls -d $BASEDIR/ag-solo-* 2>&1`; do
     cp -r "$BASEDIR/n0/$CLI/config" "$solo/$CLI-statedir/"
-    ba="$ba $(cat $solo/ag-cosmos-helper-address)"
   done
-  echo "Starting BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}"
+  # "$($CLI --home "$BASEDIR/n0/$CLI" keys show n0 --keyring-backend=test | jq -r .address)"
+  echo "Starting $DAEMON ${1+"$@"}"
   if [[ $debug == yes ]]; then
-    DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba node --inspect-brk $(which $DAEMON) ${1+"$@"}
+    DEBUG=agoric ROLE=two_chain node --inspect-brk $(which $DAEMON) ${1+"$@"}
   else
-    DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+    DEBUG=agoric ROLE=two_chain $DAEMON ${1+"$@"}
   fi
   exit 0
   ;;

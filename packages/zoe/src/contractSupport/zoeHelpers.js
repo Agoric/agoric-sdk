@@ -384,7 +384,7 @@ export const escrowAndAllocateTo = (
 export const assertNatMathHelpers = (zcf, brand) => {
   const amountMath = zcf.getAmountMath(brand);
   assert(
-    amountMath.getMathHelpersName() === 'nat',
+    amountMath.getMathHelperName() === 'nat',
     details`issuer must have natMathHelpers`,
   );
 };

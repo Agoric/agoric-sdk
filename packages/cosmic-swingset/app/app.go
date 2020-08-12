@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -418,6 +419,13 @@ func NewAgoricApp(
 	return app
 }
 
+type cosmosInitAction struct {
+	Type        string `json:"type"`
+	IBCPort     int    `json:"ibcPort"`
+	StoragePort int    `json:"storagePort"`
+	ChainID     string `json:"chainID"`
+}
+
 // Name returns the name of the App
 func (app *AgoricApp) Name() string { return app.BaseApp.Name() }
 
@@ -428,8 +436,16 @@ func (app *AgoricApp) MustInitController(ctx sdk.Context) {
 	app.controllerInited = true
 
 	// Begin initializing the controller here.
-	msg := fmt.Sprintf(`{"type":"AG_COSMOS_INIT","ibcPort":%d,"storagePort":%d}`, app.IBCPort, swingset.GetPort("storage"))
-	_, err := app.swingSetKeeper.CallToController(ctx, msg)
+	action := &cosmosInitAction{
+		Type:        "AG_COSMOS_INIT",
+		IBCPort:     app.IBCPort,
+		StoragePort: swingset.GetPort("storage"),
+		ChainID:     ctx.ChainID(),
+	}
+	bz, err := json.Marshal(action)
+	if err == nil {
+		_, err = app.swingSetKeeper.CallToController(ctx, string(bz))
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
 		os.Exit(1)

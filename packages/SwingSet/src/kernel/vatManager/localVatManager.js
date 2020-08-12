@@ -78,9 +78,11 @@ export function makeLocalVatManagerFactory(tools) {
     assert(setup instanceof Function, 'setup is not an in-realm function');
     const { syscall, finish } = prepare(vatID, managerOptions);
 
+    const { vatParameters } = managerOptions;
+    const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
-    const vatPowers = harden({ ...baseVP, testLog: allVatPowers.testLog });
+    const vatPowers = harden({ ...baseVP, vatParameters, testLog });
     const dispatch = setup(syscall, state, helpers, vatPowers);
     const meterRecord = null;
     return finish(dispatch, meterRecord);
@@ -128,6 +130,7 @@ export function makeLocalVatManagerFactory(tools) {
     const vatPowers = harden({
       ...baseVP,
       ...imVP,
+      vatParameters,
       testLog: allVatPowers.testLog,
     });
     const state = null; // TODO remove from makeLiveSlots()

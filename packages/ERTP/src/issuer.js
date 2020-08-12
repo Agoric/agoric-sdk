@@ -174,7 +174,9 @@ function makeIssuerKit(allegedName, mathHelpersName = 'nat') {
     getBrand: () => brand,
     getAllegedName: () => allegedName,
     getAmountMath: () => amountMath,
+    /** @deprecated Use getMathHelperName */
     getMathHelpersName: () => mathHelpersName,
+    getMathHelperName: () => mathHelpersName,
     makeEmptyPurse: () => {
       const purse = makePurse();
       purseLedger.init(purse, amountMath.getEmpty());

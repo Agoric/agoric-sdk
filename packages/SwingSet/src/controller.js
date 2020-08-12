@@ -35,11 +35,6 @@ function makeConsole(tag) {
 }
 const console = makeConsole('SwingSet:controller');
 
-// FIXME: Put this somewhere better.
-process.on('unhandledRejection', e =>
-  console.error('UnhandledPromiseRejectionWarning:', e),
-);
-
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
 const KERNEL_SOURCE_PATH = require.resolve('./kernel/kernel.js');
@@ -135,9 +130,18 @@ export async function buildVatController(
   argv = [],
   runtimeOptions = {},
 ) {
+  const { debugPrefix = '' } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling buildVatController');
   }
+
+  // eslint-disable-next-line no-shadow
+  const console = makeConsole(`${debugPrefix}SwingSet:controller`);
+
+  // FIXME: Put this somewhere better.
+  process.on('unhandledRejection', e =>
+    console.error('UnhandledPromiseRejectionWarning:', e),
+  );
 
   // https://github.com/Agoric/SES-shim/issues/292
   harden(Object.getPrototypeOf(console));
@@ -168,7 +172,7 @@ export async function buildVatController(
   const kernelNS = await importBundle(kernelSource, {
     filePrefix: 'kernel',
     endowments: {
-      console: makeConsole('SwingSet:kernel'),
+      console: makeConsole(`${debugPrefix}SwingSet:kernel`),
       require: kernelRequire,
       HandledPromise,
     },
@@ -203,7 +207,7 @@ export async function buildVatController(
 
   function makeVatEndowments(consoleTag) {
     return harden({
-      console: makeConsole(`SwingSet:${consoleTag}`),
+      console: makeConsole(`${debugPrefix}SwingSet:${consoleTag}`),
       HandledPromise,
       // re2 is a RegExp work-a-like that disables backtracking expressions for
       // safer memory consumption

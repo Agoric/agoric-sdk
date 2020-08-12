@@ -797,7 +797,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const getLocalAmountMath = issuer =>
       Promise.all([
         E(issuer).getBrand(),
-        E(issuer).getMathHelpersName(),
+        E(issuer).getMathHelperName(),
       ]).then(([brand, mathHelpersName]) =>
         makeAmountMath(brand, mathHelpersName),
       );

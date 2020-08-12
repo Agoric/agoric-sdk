@@ -23,14 +23,14 @@ function getInboundFor(state, remoteID, remoteTarget) {
         return p.resolution.slot;
       }
       if (p.resolution.type === 'data') {
-        throw new Error(`todo: error for fulfilledToData`);
+        throw Error(`todo: error for fulfilledToData`);
       }
       if (p.resolution.type === 'reject') {
-        throw new Error(`todo: error for rejected`);
+        throw Error(`todo: error for rejected`);
       }
-      throw new Error(`unknown res type ${p.resolution.type}`);
+      throw Error(`unknown res type ${p.resolution.type}`);
     }
-    throw new Error(`unknown p.state ${p.state}`);
+    throw Error(`unknown p.state ${p.state}`);
   }
   return target;
 }
