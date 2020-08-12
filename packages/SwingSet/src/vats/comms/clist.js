@@ -54,7 +54,9 @@ export function mapOutbound(state, remoteID, s, syscall) {
         }
         const owner = state.objectTable.get(s);
         throw new Error(
-          `unimplemented three-party handoff (object ${s}) from ${owner} to ${remote.id})`,
+          `unimplemented three-party handoff (object ${s}) from ${owner} ${
+            getRemote(state, owner).name
+          } to ${remoteID} ${remote.name})`,
         );
       } else {
         // allocated by kernel: a local vat is exposing an object to the

@@ -73,7 +73,9 @@ function makeAmountMath(brand, mathHelpersName) {
 
   const amountMath = harden({
     getBrand: () => brand,
+    /** @deprecated Use getMathHelperName */
     getMathHelpersName: () => mathHelpersName,
+    getMathHelperName: () => mathHelpersName,
 
     /**
      * Make an amount from a value by adding the brand.

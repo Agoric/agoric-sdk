@@ -53,7 +53,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const makeAmountMathFromIssuer = issuer =>
       Promise.all([
         E(issuer).getBrand(),
-        E(issuer).getMathHelpersName(),
+        E(issuer).getMathHelperName(),
       ]).then(([brand, mathName]) => makeAmountMath(brand, mathName));
     const inviteAmountMath = await makeAmountMathFromIssuer(inviteIssuer);
 

@@ -291,7 +291,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     );
 
     const zoeInvitePurseState = JSON.parse(
-      pursesStateChangeLog[pursesStateChangeLog.length - 2],
+      pursesStateChangeLog[pursesStateChangeLog.length - 1],
     );
     t.deepEquals(
       zoeInvitePurseState[0],
@@ -313,7 +313,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             '{"brand":{"@qclass":"slot","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
           slots: [
             { kind: 'brand', petname: 'zoe invite' },
-            { kind: 'unnamed', petname: 'unnamed-1' },
+            { kind: 'unnamed', petname: 'unnamed-4' },
             { kind: 'unnamed', petname: 'unnamed-2' },
             { kind: 'unnamed', petname: 'unnamed-3' },
           ],
@@ -323,7 +323,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           value: [
             {
               description: 'getRefund',
-              handle: { kind: 'unnamed', petname: 'unnamed-1' },
+              handle: { kind: 'unnamed', petname: 'unnamed-4' },
               instance: { kind: 'unnamed', petname: 'unnamed-2' },
               installation: { kind: 'unnamed', petname: 'unnamed-3' },
             },
@@ -797,7 +797,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const getLocalAmountMath = issuer =>
       Promise.all([
         E(issuer).getBrand(),
-        E(issuer).getMathHelpersName(),
+        E(issuer).getMathHelperName(),
       ]).then(([brand, mathHelpersName]) =>
         makeAmountMath(brand, mathHelpersName),
       );

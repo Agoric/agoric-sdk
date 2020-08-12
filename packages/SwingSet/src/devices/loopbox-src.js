@@ -1,8 +1,21 @@
 /* global harden */
 
 export function buildRootDeviceNode(tools) {
-  const { SO } = tools;
+  const { SO, endowments } = tools;
+  const { registerPassOneMessage, deliverMode } = endowments;
   const inboundHandlers = harden(new Map());
+
+  const queuedMessages = [];
+
+  function loopboxPassOneMessage() {
+    if (queuedMessages.length) {
+      const [h, sender, count, body] = queuedMessages.shift();
+      SO(h).deliverInboundMessages(sender, harden([[count, body]]));
+      return true;
+    }
+    return false;
+  }
+  registerPassOneMessage(loopboxPassOneMessage);
 
   return harden({
     registerInboundHandler(name, handler) {
@@ -20,7 +33,11 @@ export function buildRootDeviceNode(tools) {
             throw new Error(`unregistered peer '${peer}'`);
           }
           const h = inboundHandlers.get(peer);
-          SO(h).deliverInboundMessages(sender, harden([[count, body]]));
+          if (deliverMode === 'immediate') {
+            SO(h).deliverInboundMessages(sender, harden([[count, body]]));
+          } else {
+            queuedMessages.push([h, sender, count, body]);
+          }
           count += 1;
         },
         remove(_peer, _msgnum) {},

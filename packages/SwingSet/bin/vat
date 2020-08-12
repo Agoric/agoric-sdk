@@ -28,8 +28,9 @@ async function main() {
   const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   const config = await loadBasedir(basedir);
-  const ldSrcPath = require.resolve('../src/devices/loopbox-src');
-  config.devices = [['loopbox', ldSrcPath, {}]];
+  const { buildLoopbox } = require('../src/devices/loopbox');
+  const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
+  config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
 
   const controller = await buildVatController(config, withSES, vatArgv);
   if (command === 'run') {
