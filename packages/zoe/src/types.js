@@ -336,7 +336,7 @@
  */
 
 /**
- * @typedef {Object} NonCustomTerms
+ * @typedef {Object} StandardTerms
  * @property {IssuerKeywordRecord} terms.issuers - record with
  * keywords keys, issuer values
  * @property {BrandKeywordRecord} terms.brands - record with keywords
@@ -344,7 +344,7 @@
  * @property {AmountMathKeywordRecord} terms.maths - record with keywords
  * keys, amountMath values
  * 
- * @typedef {NonCustomTerms & Record<string, any>} Terms
+ * @typedef {StandardTerms & Record<string, any>} Terms
  *
  * @typedef {object} InstanceRecord
  * @property {Installation} installation
