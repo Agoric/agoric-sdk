@@ -125,15 +125,48 @@ export function loadBasedir(basedir) {
   return config;
 }
 
+/**
+ * Resolve a pathname found in a config descriptor.  First try to resolve it as
+ * a module path, and then if that doesn't work try to resolve it as an
+ * ordinary path relative to the directory in which the config file was found.
+ *
+ * @param dirname  Path to directory containing the config file
+ * @param specPath  Path found in a `sourceSpec` or `bundleSpec` property
+ *
+ * @return the absolute path corresponding to `specPath` if it can be
+ *    determined.
+ */
+function resolveSpecFromConfig(dirname, specPath) {
+  try {
+    return require.resolve(specPath);
+  } catch (e) {
+    if (e.code === 'MODULE_NOT_FOUND') {
+      return path.resolve(dirname, specPath);
+    } else {
+      throw e;
+    }
+  }
+}
+
+/**
+ * For each entry in a config descriptor (i.e, `vats`, `bundles`, etc), convert
+ * it to normal form: resolve each pathname to a context-insensitive absolute
+ * path and make sure it has a `parameters` property if it's supposed to.
+ *
+ * @param desc  The config descriptor to be normalized.
+ * @param dirname  The pathname of the directory in which the config file was found
+ * @param expectParameters `true` if the entries should have parameters (for
+ *    example, `true` for `vats` but `false` for bundles).
+ */
 function normalizeConfigDescriptor(desc, dirname, expectParameters) {
   if (desc) {
     for (const name of Object.keys(desc)) {
       const entry = desc[name];
       if (entry.sourceSpec) {
-        entry.sourceSpec = path.resolve(dirname, entry.sourceSpec);
+        entry.sourceSpec = resolveSpecFromConfig(dirname, entry.sourceSpec);
       }
       if (entry.bundleSpec) {
-        entry.bundleSpec = path.resolve(dirname, entry.bundleSpec);
+        entry.bundleSpec = resolveSpecFromConfig(dirname, entry.bundleSpec);
       }
       if (expectParameters && !entry.parameters) {
         entry.parameters = {};
@@ -142,6 +175,17 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
   }
 }
 
+/**
+ * Read and parse a swingset config file and return it in normalized form.
+ *
+ * @param configPath  Path to the config file to be processed
+ *
+ * @return the contained config object, in normalized form, or null if the
+ *    requested config file did not exist.
+ *
+ * @throws if the file existed but was inaccessible, malformed, or otherwise
+ *    invalid.
+ */
 export function loadSwingsetConfigFile(configPath) {
   try {
     const config = JSON.parse(fs.readFileSync(configPath));
@@ -398,21 +442,9 @@ export async function buildVatController(
         if (!desc.bundleName) {
           names.push(name);
           if (desc.sourceSpec) {
-            const sourceSpec = desc.sourceSpec;
-            if (!(sourceSpec[0] === '.' || path.isAbsolute(sourceSpec))) {
-              throw Error(
-                'sourceSpec must be relative (./foo) or absolute (/foo) not bare (foo)',
-              );
-            }
-            presumptiveBundles.push(bundleSource(sourceSpec));
+            presumptiveBundles.push(bundleSource(desc.sourceSpec));
           } else if (desc.bundleSpec) {
-            const bundleSpec = desc.bundleSpec;
-            if (!(bundleSpec[0] === '.' || path.isAbsolute(bundleSpec))) {
-              throw Error(
-                'bundleSpec must be relative (./foo) or absolute (/foo) not bare (foo)',
-              );
-            }
-            presumptiveBundles.push(fs.readFileSync(bundleSpec));
+            presumptiveBundles.push(fs.readFileSync(desc.bundleSpec));
           } else if (desc.bundle) {
             presumptiveBundles.push(desc.bundle);
           } else {
