@@ -21,7 +21,7 @@ test('d0', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-0'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-0'),
         creationOptions: { enableSetup: true },
       },
     },
@@ -62,7 +62,7 @@ test('d1', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-1'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-1'),
         creationOptions: { enableSetup: true },
       },
     },
@@ -94,10 +94,10 @@ async function test2(t, mode) {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
       },
       left: {
-        sourcePath: require.resolve('./files-devices/vat-left.js'),
+        sourceSpec: require.resolve('./files-devices/vat-left.js'),
       },
     },
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
@@ -179,7 +179,7 @@ test('device state', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-3'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-3'),
       },
     },
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
@@ -207,7 +207,7 @@ test('mailbox outbound', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
       },
     },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
@@ -247,7 +247,7 @@ test('mailbox inbound', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
       },
     },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
@@ -364,7 +364,7 @@ test('command broadcast', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
       },
     },
     devices: [['command', cm.srcPath, cm.endowments]],
@@ -383,7 +383,7 @@ test('command deliver', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-devices/bootstrap-2'),
+        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
       },
     },
     devices: [['command', cm.srcPath, cm.endowments]],

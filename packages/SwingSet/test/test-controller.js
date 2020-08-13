@@ -32,7 +32,7 @@ async function simpleCall(t) {
   const config = {
     vats: {
       vat1: {
-        sourcePath: require.resolve('./vat-controller-1'),
+        sourceSpec: require.resolve('./vat-controller-1'),
         creationOptions: { enableSetup: true },
       },
     },

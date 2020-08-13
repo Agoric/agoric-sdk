@@ -10,7 +10,7 @@ test('vattp', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-vattp/bootstrap-test-vattp'),
+        sourceSpec: require.resolve('./files-vattp/bootstrap-test-vattp'),
       },
     },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
@@ -63,7 +63,7 @@ test('vattp 2', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./files-vattp/bootstrap-test-vattp'),
+        sourceSpec: require.resolve('./files-vattp/bootstrap-test-vattp'),
       },
     },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
