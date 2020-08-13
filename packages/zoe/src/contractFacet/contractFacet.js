@@ -180,12 +180,21 @@ export function buildRootObject() {
           details`reallocating must be done over two or more seats`,
         );
 
-        seatStagings.forEach(seatStaging =>
+        // Keep track of seats used so far in this call, to prevent aliasing.
+        const seatsSoFar = new WeakSet();
+
+        seatStagings.forEach(seatStaging => {
           assert(
             allSeatStagings.has(seatStaging),
             details`The seatStaging ${seatStaging} was not recognized`,
-          ),
-        );
+          );
+          const seat = seatStaging.getSeat();
+          assert(
+            !seatsSoFar.has(seat),
+            details`Seat (${seat}) was already an argument to reallocate`,
+          );
+          seatsSoFar.add(seat);
+        });
 
         // Ensure that rights are conserved overall. Offer safety was
         // already checked when an allocation was staged for an individual seat.
