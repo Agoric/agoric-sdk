@@ -34,17 +34,6 @@ export function buildRootObject(vatPowers, vatParameters) {
     ]);
   }
 
-<<<<<<< HEAD
-  const getLocalAmountMath = issuer =>
-    Promise.all([
-      E(issuer).getBrand(),
-      E(issuer).getMathHelperName(),
-    ]).then(([brand, mathHelpersName]) =>
-      makeAmountMath(brand, mathHelpersName),
-    );
-
-=======
->>>>>>> refactor: move AmountMath from names to Kinds; easier local creation
   const fakeNeverTimer = harden({
     setWakeup(deadline, _resolution = undefined) {
       log(`Pretend ${deadline} never happens`);

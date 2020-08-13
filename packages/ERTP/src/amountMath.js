@@ -12,7 +12,7 @@ import './types';
 const MathKind = {
   NAT: 'nat',
   SET: 'set',
-  STR_SET: 'strSet',
+  STRING_SET: 'strSet',
 };
 
 /**
@@ -57,8 +57,8 @@ const MathKind = {
  * There's no performance cost for the brand being a presence, as the only
  * operations on the brand in this module are equality tests.
  *
- * AmountMath exports amountMathKinds, which contains constants for the kinds:
- * NAT, SET, and STR_SET.
+ * AmountMath exports MathKind, which contains constants for the kinds:
+ * NAT, SET, and STRING_SET.
  *
  * Each issuer of digital assets has an associated brand in a one-to-one
  * mapping. In untrusted contexts, such as in analyzing payments and

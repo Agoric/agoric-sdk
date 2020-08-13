@@ -301,12 +301,11 @@ export default makeIssuerKit;
  * @returns {Promise<AmountMath>}
  */
 const makeLocalAmountMath = async issuer => {
-  return Promise.all([
+  const [brand, amountMathKind] = await Promise.all([
     E(issuer).getBrand(),
     E(issuer).getAmountMathKind(),
-  ]).then(([brand, amountMathKind]) => {
-    return makeAmountMath(brand, amountMathKind);
-  });
+  ]);
+  return makeAmountMath(brand, amountMathKind);
 };
 
 export { makeLocalAmountMath, makeIssuerKit };

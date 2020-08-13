@@ -22,17 +22,6 @@ function makeAliceMaker(host, log) {
     });
   }
 
-<<<<<<< HEAD
-  const getLocalAmountMath = issuer =>
-    Promise.all([
-      E(issuer).getBrand(),
-      E(issuer).getMathHelperName(),
-    ]).then(([brand, mathHelpersName]) =>
-      makeAmountMath(brand, mathHelpersName),
-    );
-
-=======
->>>>>>> refactor: move AmountMath from names to Kinds; easier local creation
   return harden({
     async make(
       escrowExchangeInstallationP,

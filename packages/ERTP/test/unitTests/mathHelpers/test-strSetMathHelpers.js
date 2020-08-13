@@ -39,7 +39,7 @@ test('strSetMathHelpers', t => {
     // getAmountMathKind
     t.deepEquals(
       getAmountMathKind(),
-      MathKind.STR_SET,
+      MathKind.STRING_SET,
       'amountMathKind is strSet',
     );
 
