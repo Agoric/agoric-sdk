@@ -14,7 +14,6 @@ import { isTamed, tameMetering } from '@agoric/tame-metering';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
-import { HandledPromise } from '@agoric/eventual-send';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
 
@@ -258,7 +257,6 @@ export async function buildVatController(
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
       require: kernelRequire,
-      HandledPromise,
     },
   });
   const buildKernel = kernelNS.default;
@@ -292,7 +290,6 @@ export async function buildVatController(
   function makeVatEndowments(consoleTag) {
     return harden({
       console: makeConsole(`${debugPrefix}SwingSet:${consoleTag}`),
-      HandledPromise,
       // re2 is a RegExp work-a-like that disables backtracking expressions for
       // safer memory consumption
       RegExp: re2,

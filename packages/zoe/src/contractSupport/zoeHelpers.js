@@ -2,7 +2,7 @@
 
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { E, HandledPromise } from '@agoric/eventual-send';
+import { E } from '@agoric/eventual-send';
 import { satisfiesWant, isOfferSafe } from '../offerSafety';
 
 import '../../exported';
@@ -362,7 +362,7 @@ export const makeZoeHelpers = zcf => {
      * @returns {Promise<OfferHandle>}
      */
     makeEmptyOffer: () =>
-      new HandledPromise(resolve => {
+      new Promise(resolve => {
         const invite = zcf.makeInvitation(
           offerHandle => resolve(offerHandle),
           'empty offer',
