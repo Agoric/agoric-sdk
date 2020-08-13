@@ -10,6 +10,7 @@
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
+    "@agoric/eventual-send": "^0.9.3",
     "@agoric/transform-metering": "^1.3.0",
     "esm": "^3.2.5",
     "tap": "^14.10.5",
