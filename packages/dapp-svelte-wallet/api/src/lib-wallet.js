@@ -76,7 +76,10 @@ export async function makeWallet({
     const issuerToBrand = makeWeakStore('issuer');
     const makeCustomProperties = table =>
       harden({
-        addIssuer: issuerP => {
+        /**
+         * @param {ERef<Issuer>} issuerP
+         */
+        addIssuer(issuerP) {
           return Promise.resolve(issuerP).then(issuer => {
             if (issuersInProgress.has(issuer)) {
               // a promise which resolves to the issuer record
