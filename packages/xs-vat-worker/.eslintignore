@@ -2,3 +2,8 @@
 /scripts/
 /xs_modules/
 /swingset/
+/moddable/
+build/
+bundle-*.js
+test/bug1/
+src-native/

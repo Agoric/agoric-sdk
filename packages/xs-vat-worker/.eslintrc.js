@@ -7,6 +7,7 @@ module.exports = {
   },
   globals: {
     "harden": "readonly",
+    "globalThis": "writeable",
   },
   rules: {
     'implicit-arrow-linebreak': 'off',
