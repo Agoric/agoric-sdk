@@ -138,14 +138,13 @@ export function loadBasedir(basedir) {
  */
 function resolveSpecFromConfig(dirname, specPath) {
   try {
-    return require.resolve(specPath);
+    return require.resolve(specPath, { path: [dirname] });
   } catch (e) {
-    if (e.code === 'MODULE_NOT_FOUND') {
-      return path.resolve(dirname, specPath);
-    } else {
+    if (e.code !== 'MODULE_NOT_FOUND') {
       throw e;
     }
   }
+  return path.resolve(dirname, specPath);
 }
 
 /**
