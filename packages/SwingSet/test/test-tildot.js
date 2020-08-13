@@ -7,7 +7,7 @@ test('vat code can use tildot', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./vat-tildot.js'),
+        sourceSpec: require.resolve('./vat-tildot.js'),
       },
     },
   };

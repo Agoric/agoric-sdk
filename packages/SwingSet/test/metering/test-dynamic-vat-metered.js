@@ -24,7 +24,7 @@ tap.test('metering dynamic vats', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./vat-load-dynamic.js'),
+        sourceSpec: require.resolve('./vat-load-dynamic.js'),
       },
     },
   };

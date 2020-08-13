@@ -2,10 +2,10 @@
   "bootstrap": "bootstrap",
   "vats": {
     "bob": {
-      "sourcePath": "vat-bob.js"
+      "sourceSpec": "vat-bob.js"
     },
     "bootstrap": {
-      "sourcePath": "bootstrap.js"
+      "sourceSpec": "bootstrap.js"
     }
   }
 }

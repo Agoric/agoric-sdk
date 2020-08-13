@@ -94,7 +94,7 @@ function generateIndirectConfig(baseConfig) {
     bundles: {},
     vats: {
       launcher: {
-        sourcePath: path.resolve(__dirname, 'vat-launcher.js'),
+        sourceSpec: path.resolve(__dirname, 'vat-launcher.js'),
         parameters: {
           config: {
             bootstrap: baseConfig.bootstrap,
@@ -108,12 +108,12 @@ function generateIndirectConfig(baseConfig) {
     for (const vatName of Object.keys(baseConfig.vats)) {
       const baseVat = { ...baseConfig.vats[vatName] };
       let newBundleName = `bundle-${vatName}`;
-      if (baseVat.sourcePath) {
-        config.bundles[newBundleName] = { sourcePath: baseVat.sourcePath };
-        delete baseVat.sourcePath;
-      } else if (baseVat.bundlePath) {
-        config.bundles[newBundleName] = { bundlePath: baseVat.bundlePath };
-        delete baseVat.bundlePath;
+      if (baseVat.sourceSpec) {
+        config.bundles[newBundleName] = { sourceSpec: baseVat.sourceSpec };
+        delete baseVat.sourceSpec;
+      } else if (baseVat.bundleSpec) {
+        config.bundles[newBundleName] = { bundleSpec: baseVat.bundleSpec };
+        delete baseVat.bundleSpec;
       } else if (baseVat.bundle) {
         config.bundles[newBundleName] = { bundle: baseVat.bundle };
         delete baseVat.bundle;

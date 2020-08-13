@@ -18,7 +18,7 @@ test('bridge device', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./device-bridge-bootstrap.js'),
+        sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
       },
     },
     devices: [['bridge', bd.srcPath, bd.endowments]],
@@ -65,7 +65,7 @@ test('bridge device', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./device-bridge-bootstrap.js'),
+        sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
       },
     },
     devices: [['bridge', bd2.srcPath, bd2.endowments]],
@@ -123,7 +123,7 @@ test('bridge device can return undefined', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./device-bridge-bootstrap.js'),
+        sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
       },
     },
     devices: [['bridge', bd.srcPath, bd.endowments]],

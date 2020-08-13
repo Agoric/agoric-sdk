@@ -2,24 +2,24 @@
   "bootstrap": "bootstrap",
   "bundles": {
     "zcf": {
-      "sourcePath": "../../../zoe/src/contractFacet.js"
+      "sourceSpec": "../../../zoe/src/contractFacet.js"
     }
   },
   "vats": {
     "alice": {
-      "sourcePath": "vat-alice.js"
+      "sourceSpec": "vat-alice.js"
     },
     "bob": {
-      "sourcePath": "vat-bob.js"
+      "sourceSpec": "vat-bob.js"
     },
     "zoe": {
-      "sourcePath": "vat-zoe.js",
+      "sourceSpec": "vat-zoe.js",
       "parameters": {
         "zcfBundleName": "zcf"
       }
     },
     "bootstrap": {
-      "sourcePath": "bootstrap.js"
+      "sourceSpec": "bootstrap.js"
     }
   }
 }

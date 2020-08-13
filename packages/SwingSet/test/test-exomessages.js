@@ -7,7 +7,7 @@ async function beginning(t, mode) {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve(`./vat-exomessages.js`),
+        sourceSpec: require.resolve(`./vat-exomessages.js`),
       },
     },
   };

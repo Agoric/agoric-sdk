@@ -68,12 +68,12 @@ const KNOWN_CREATION_OPTIONS = harden([
  *   bootstrap: "bootstrap",
  *   vats: {
  *     NAME: {
- *       sourcePath: PATHSTRING
+ *       sourceSpec: PATHSTRING
  *     }
  *   }
  * }
  *
- * Where NAME is the name of the vat; `sourcePath` contains the path to the vat with that name.  Note that
+ * Where NAME is the name of the vat; `sourceSpec` contains the path to the vat with that name.  Note that
  * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
  * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
  * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
@@ -99,7 +99,7 @@ export function loadBasedir(basedir) {
     ) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const vatSourcePath = path.resolve(basedir, dirent.name);
-      vats[name] = { sourcePath: vatSourcePath, parameters: {} };
+      vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
     } else {
       console.debug(`ignoring file ${dirent.name} in ${basedir}`);
     }
@@ -117,7 +117,7 @@ export function loadBasedir(basedir) {
   const config = { vats };
   if (bootstrapPath) {
     vats.bootstrap = {
-      sourcePath: bootstrapPath,
+      sourceSpec: bootstrapPath,
       parameters: {},
     };
     config.bootstrap = 'bootstrap';
@@ -129,11 +129,11 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
   if (desc) {
     for (const name of Object.keys(desc)) {
       const entry = desc[name];
-      if (entry.sourcePath) {
-        entry.sourcePath = path.resolve(dirname, entry.sourcePath);
+      if (entry.sourceSpec) {
+        entry.sourceSpec = path.resolve(dirname, entry.sourceSpec);
       }
-      if (entry.bundlePath) {
-        entry.bundlePath = path.resolve(dirname, entry.bundlePath);
+      if (entry.bundleSpec) {
+        entry.bundleSpec = path.resolve(dirname, entry.bundleSpec);
       }
       if (expectParameters && !entry.parameters) {
         entry.parameters = {};
@@ -365,10 +365,10 @@ export async function buildVatController(
       }
       count += 1;
     }
-    if (desc.sourcePath) {
+    if (desc.sourceSpec) {
       count += 1;
     }
-    if (desc.bundlePath) {
+    if (desc.bundleSpec) {
       count += 1;
     }
     if (desc.bundle) {
@@ -376,11 +376,11 @@ export async function buildVatController(
     }
     if (count > 1) {
       throw Error(
-        `config ${groupName}.${descName}: "bundleName", "bundle", "bundlePath", and "sourcePath" are mutually exclusive`,
+        `config ${groupName}.${descName}: "bundleName", "bundle", "bundleSpec", and "sourceSpec" are mutually exclusive`,
       );
     } else if (count === 0) {
       throw Error(
-        `config ${groupName}.${descName}: you must specify one of: "bundleName", "bundle", "bundlePath", or "sourcePath"`,
+        `config ${groupName}.${descName}: you must specify one of: "bundleName", "bundle", "bundleSpec", or "sourceSpec"`,
       );
     }
     if (kernel.hasBundle(descName) && !desc.bundleName) {
@@ -397,22 +397,22 @@ export async function buildVatController(
         validateBundleDescriptor(desc, groupName, name);
         if (!desc.bundleName) {
           names.push(name);
-          if (desc.sourcePath) {
-            const sourcePath = desc.sourcePath;
-            if (!(sourcePath[0] === '.' || path.isAbsolute(sourcePath))) {
+          if (desc.sourceSpec) {
+            const sourceSpec = desc.sourceSpec;
+            if (!(sourceSpec[0] === '.' || path.isAbsolute(sourceSpec))) {
               throw Error(
-                'sourcePath must be relative (./foo) or absolute (/foo) not bare (foo)',
+                'sourceSpec must be relative (./foo) or absolute (/foo) not bare (foo)',
               );
             }
-            presumptiveBundles.push(bundleSource(sourcePath));
-          } else if (desc.bundlePath) {
-            const bundlePath = desc.bundlePath;
-            if (!(bundlePath[0] === '.' || path.isAbsolute(bundlePath))) {
+            presumptiveBundles.push(bundleSource(sourceSpec));
+          } else if (desc.bundleSpec) {
+            const bundleSpec = desc.bundleSpec;
+            if (!(bundleSpec[0] === '.' || path.isAbsolute(bundleSpec))) {
               throw Error(
-                'bundlePath must be relative (./foo) or absolute (/foo) not bare (foo)',
+                'bundleSpec must be relative (./foo) or absolute (/foo) not bare (foo)',
               );
             }
-            presumptiveBundles.push(fs.readFileSync(bundlePath));
+            presumptiveBundles.push(fs.readFileSync(bundleSpec));
           } else if (desc.bundle) {
             presumptiveBundles.push(desc.bundle);
           } else {

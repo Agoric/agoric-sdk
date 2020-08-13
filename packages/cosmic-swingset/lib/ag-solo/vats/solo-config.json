@@ -2,48 +2,48 @@
   "bootstrap": "bootstrap",
   "bundles": {
     "zcf": {
-      "sourcePath": "../../../../zoe/src/contractFacet.js"
+      "sourceSpec": "../../../../zoe/src/contractFacet.js"
     }
   },
   "vats": {
     "board": {
-      "sourcePath": "vat-board.js"
+      "sourceSpec": "vat-board.js"
     },
     "host": {
-      "sourcePath": "vat-host.js"
+      "sourceSpec": "vat-host.js"
     },
     "http": {
-      "sourcePath": "vat-http.js"
+      "sourceSpec": "vat-http.js"
     },
     "ibc": {
-      "sourcePath": "vat-ibc.js"
+      "sourceSpec": "vat-ibc.js"
     },
     "mints": {
-      "sourcePath": "vat-mints.js"
+      "sourceSpec": "vat-mints.js"
     },
     "network": {
-      "sourcePath": "vat-network.js"
+      "sourceSpec": "vat-network.js"
     },
     "provisioning": {
-      "sourcePath": "vat-provisioning.js"
+      "sourceSpec": "vat-provisioning.js"
     },
     "registrar": {
-      "sourcePath": "vat-registrar.js"
+      "sourceSpec": "vat-registrar.js"
     },
     "sharing": {
-      "sourcePath": "vat-sharing.js"
+      "sourceSpec": "vat-sharing.js"
     },
     "uploads": {
-      "sourcePath": "vat-uploads.js"
+      "sourceSpec": "vat-uploads.js"
     },
     "zoe": {
-      "sourcePath": "vat-zoe.js",
+      "sourceSpec": "vat-zoe.js",
       "parameters": {
         "zcfBundleName": "zcf"
       }
     },
     "bootstrap": {
-      "sourcePath": "bootstrap.js"
+      "sourceSpec": "bootstrap.js"
     }
   }
 }
