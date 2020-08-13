@@ -6,10 +6,7 @@
   "module": "dist/vat-worker.esm.js",
   "browser": "dist/vat-worker.umd.js",
   "scripts": {
-    "xs-build": "mkdir -p build; mcconfig -o build -p x-cli-lin -m -d",
-    "xs-run": "yarn xs-build && ./build/bin/lin/debug/make-vat-transcript",
-    "xs-build-release": "mkdir -p build; mcconfig -o build -p x-cli-lin -m",
-    "xs-run-release": "yarn xs-build-release && ./build/bin/lin/release/make-vat-transcript",
+    "build:xs-lin": "make -f xs-lin.mk",
     "test": "tape -r esm 'test/**/test-*.js'",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
