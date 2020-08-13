@@ -20,5 +20,4 @@ export {
   satisfies,
   escrowAndAllocateTo,
   assertNatMathHelpers,
-  makeEmptyOffer,
 } from './zoeHelpers';

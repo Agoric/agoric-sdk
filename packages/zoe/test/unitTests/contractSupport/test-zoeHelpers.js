@@ -560,41 +560,6 @@ test.skip(`ZoeHelpers swap - can't trade with`, t => {
   }
 });
 
-test.skip('ZoeHelpers makeEmptyOffer', async t => {
-  t.plan(2);
-  const { moolaR, simoleanR } = setup();
-  const redeemedInvites = [];
-  try {
-    const offerHandle = harden({});
-    const mockZCF = harden({
-      getInstanceRecord: () =>
-        harden({
-          issuerKeywordRecord: {
-            Asset: moolaR.issuer,
-            Price: simoleanR.issuer,
-          },
-        }),
-      getZoeService: () =>
-        harden({
-          offer: invite => {
-            redeemedInvites.push(invite);
-            return Promise.resolve();
-          },
-        }),
-      makeInvitation: offerHook => {
-        offerHook(offerHandle);
-        return 'anInvite';
-      },
-    });
-    const { makeEmptyOffer } = makeZoeHelpers(mockZCF);
-    const result = await makeEmptyOffer();
-    t.deepEquals(result, offerHandle, `offerHandle was returned`);
-    t.deepEquals(redeemedInvites, harden(['anInvite']), `invite was redeemed`);
-  } catch (e) {
-    t.assert(false, e);
-  }
-});
-
 test.skip('ZoeHelpers isOfferSafe', t => {
   t.plan(5);
   const { moolaR, simoleanR, moola, simoleans } = setup();
