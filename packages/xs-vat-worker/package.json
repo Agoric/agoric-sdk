@@ -1,11 +1,11 @@
 {
   "name": "@agoric/xs-vat-worker",
-  "version": "0.0.1",
-  "description": "???",
-  "main": "dist/vat-worker.cjs.js",
-  "module": "dist/vat-worker.esm.js",
-  "browser": "dist/vat-worker.umd.js",
+  "version": "0.1.0",
+  "description": "swingset-vat worker for XS js runtime",
+  "main": "src/locate.js",
+  "module": "src/locate.js",
   "scripts": {
+    "postinstall": "cp src/locate-undefined.js src/locate.js",
     "build:xs-lin": "make -f xs-lin.mk",
     "test": "tape -r esm 'test/**/test-*.js'",
     "build": "exit 0",
