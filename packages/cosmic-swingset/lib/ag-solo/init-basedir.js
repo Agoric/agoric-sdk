@@ -71,7 +71,7 @@ export default function initBasedir(
   const dstVatdir = path.join(basedir, 'vats');
   fs.mkdirSync(dstVatdir);
   fs.readdirSync(srcVatdir)
-    .filter(name => name.match(/\.js$/))
+    .filter(name => name.match(/\.(js|json)$/))
     .forEach(name => {
       fs.copyFileSync(path.join(srcVatdir, name), path.join(dstVatdir, name));
     });
