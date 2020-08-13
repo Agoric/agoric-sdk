@@ -144,7 +144,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
    * its keyword must not have been already used
    * @param {Issuer} secondaryIssuer
    * @param {Keyword} keyword - will be used in the
-   * issuerKeywordRecord for the contract, but not used otherwise
+   * terms.issuers for the contract, but not used otherwise
    */
   const addPool = async (secondaryIssuer, keyword) => {
     zcf.assertUniqueKeyword(keyword);

@@ -20,7 +20,7 @@ import '../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
   /** @type {OfferHandler} */

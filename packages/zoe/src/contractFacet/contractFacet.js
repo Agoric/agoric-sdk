@@ -46,40 +46,55 @@ export function buildRootObject() {
     /** @type WeakStore<ZCFSeat,ZCFSeatAdmin> */
     const seatToZCFSeatAdmin = makeWeakStore('seat');
 
-    const issuers = Object.values(instanceRecord.issuerKeywordRecord);
+    const keywords = Object.keys(instanceRecord.terms.issuers);
+    const issuers = Object.values(instanceRecord.terms.issuers);
 
     const getPromiseForIssuerRecords = issuersP =>
       Promise.all(issuersP.map(issuerTable.getPromiseForIssuerRecord));
 
-    await getPromiseForIssuerRecords(issuers);
-
-    const allSeatStagings = new WeakSet();
-
     const registerIssuerRecord = (keyword, issuerRecord) => {
-      assertKeywordName(keyword);
-      assert(
-        !getKeywords(instanceRecord.issuerKeywordRecord).includes(keyword),
-        details`keyword ${keyword} must be unique`,
-      );
       instanceRecord = {
         ...instanceRecord,
-        issuerKeywordRecord: {
-          ...instanceRecord.issuerKeywordRecord,
-          [keyword]: issuerRecord.issuer,
-        },
-        brandKeywordRecord: {
-          ...instanceRecord.brandKeywordRecord,
-          [keyword]: issuerRecord.brand,
+        terms: {
+          ...instanceRecord.terms,
+          issuers: {
+            ...instanceRecord.terms.issuers,
+            [keyword]: issuerRecord.issuer,
+          },
+          brands: {
+            ...instanceRecord.terms.brands,
+            [keyword]: issuerRecord.brand,
+          },
+          maths: {
+            ...instanceRecord.terms.maths,
+            [keyword]: issuerRecord.amountMath,
+          },
         },
       };
 
       return issuerRecord;
     };
 
+    const registerIssuerRecordWKeyword = (keyword, issuerRecord) => {
+      assertKeywordName(keyword);
+      assert(
+        !getKeywords(instanceRecord.terms.issuers).includes(keyword),
+        details`keyword ${keyword} must be unique`,
+      );
+      return registerIssuerRecord(keyword, issuerRecord);
+    };
+
+    const issuerRecords = await getPromiseForIssuerRecords(issuers);
+    issuerRecords.forEach((issuerRecord, i) => {
+      registerIssuerRecord(keywords[i], issuerRecord);
+    });
+
+    const allSeatStagings = new WeakSet();
+
     /** @type MakeZCFMint */
     const makeZCFMint = async (keyword, mathHelperName = 'nat') => {
       assert(
-        !(keyword in instanceRecord.issuerKeywordRecord),
+        !(keyword in instanceRecord.terms.issuers),
         details`Keyword ${keyword} already registered`,
       );
 
@@ -94,7 +109,7 @@ export function buildRootObject() {
         issuer: mintyIssuer,
         amountMath: mintyAmountMath,
       });
-      registerIssuerRecord(keyword, mintyIssuerRecord);
+      registerIssuerRecordWKeyword(keyword, mintyIssuerRecord);
       issuerTable.registerIssuerRecord(mintyIssuerRecord);
 
       /** @type ZCFMint */
@@ -226,7 +241,7 @@ export function buildRootObject() {
       assertUniqueKeyword: keyword => {
         assertKeywordName(keyword);
         assert(
-          !getKeywords(instanceRecord.issuerKeywordRecord).includes(keyword),
+          !getKeywords(instanceRecord.terms.issuers).includes(keyword),
           details`keyword ${keyword} must be unique`,
         );
       },
@@ -240,7 +255,7 @@ export function buildRootObject() {
           .then(() => {
             return issuerTable
               .getPromiseForIssuerRecord(issuerP)
-              .then(record => registerIssuerRecord(keyword, record));
+              .then(record => registerIssuerRecordWKeyword(keyword, record));
           });
       },
       makeInvitation: (offerHandler, description, customProperties = {}) => {
@@ -266,7 +281,7 @@ export function buildRootObject() {
       // The methods below are pure and have no side-effects //
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
-      getInstanceRecord: () => instanceRecord,
+      getTerms: () => instanceRecord.terms,
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
       getAmountMath,
@@ -340,7 +355,7 @@ export function buildRootObject() {
     // Next, execute the contract code, passing in zcf and the terms
     /** @type {Promise<Invite>} */
     return E(contractCode)
-      .start(zcf, instanceRecord.terms)
+      .start(zcf)
       .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
         return harden({
           creatorFacet,

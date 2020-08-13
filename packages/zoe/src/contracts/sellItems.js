@@ -29,10 +29,13 @@ import '../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, { pricePerItem }) => {
+const start = zcf => {
+  const { pricePerItem, issuers, maths } = zcf.getTerms();
   const allKeywords = ['Items', 'Money'];
   assertIssuerKeywords(zcf, harden(allKeywords));
   assertNatMathHelpers(zcf, pricePerItem.brand);
+
+  const { Money: moneyMath, Items: itemsMath } = maths;
 
   let sellerSeat;
 
@@ -49,21 +52,18 @@ const start = (zcf, { pricePerItem }) => {
       want: { Items: wantedItems },
     } = buyerSeat.getProposal();
 
-    const moneyAmountMaths = zcf.getAmountMath(pricePerItem.brand);
-    const itemsAmountMath = zcf.getAmountMath(wantedItems.brand);
-
     // Check that the wanted items are still for sale.
-    if (!itemsAmountMath.isGTE(currentItemsForSale, wantedItems)) {
+    if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
       throw buyerSeat.kickOut(rejectMsg);
     }
 
-    const totalCost = moneyAmountMaths.make(
+    const totalCost = moneyMath.make(
       pricePerItem.value * wantedItems.value.length,
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
-    if (!moneyAmountMaths.isGTE(providedMoney, totalCost)) {
+    if (!moneyMath.isGTE(providedMoney, totalCost)) {
       const rejectMsg = `More money (${totalCost}) is required to buy these items`;
       throw buyerSeat.kickOut(rejectMsg);
     }
@@ -88,8 +88,7 @@ const start = (zcf, { pricePerItem }) => {
     return sellerSeat.getAmountAllocated('Items');
   };
 
-  const getItemsIssuer = () =>
-    zcf.getInstanceRecord().issuerKeywordRecord.Items;
+  const getItemsIssuer = () => issuers.Items;
 
   const publicFacet = {
     getAvailableItems,
@@ -99,9 +98,8 @@ const start = (zcf, { pricePerItem }) => {
   const creatorFacet = {
     makeBuyerInvite: () => {
       const itemsAmount = sellerSeat.getAmountAllocated('Items');
-      const itemsAmountMath = zcf.getAmountMath(itemsAmount.brand);
       assert(
-        sellerSeat && !itemsAmountMath.isEmpty(itemsAmount),
+        sellerSeat && !itemsMath.isEmpty(itemsAmount),
         details`no items are for sale`,
       );
       const buyerExpected = harden({

@@ -23,12 +23,13 @@ import '../../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, { question }) => {
+const start = zcf => {
+  const {
+    question,
+    brands: { Assets: assetsBrand },
+  } = zcf.getTerms();
   let electionOpen = true;
   assertIssuerKeywords(zcf, harden(['Assets']));
-  const {
-    brandKeywordRecord: { Assets: assetsBrand },
-  } = zcf.getInstanceRecord();
   assert.typeof(question, 'string');
   assertNatMathHelpers(zcf, assetsBrand);
   const amountMath = zcf.getAmountMath(assetsBrand);

@@ -33,7 +33,11 @@ import '../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, { numBidsAllowed = 3 }) => {
+const start = zcf => {
+  const {
+    maths: { Asset: assetMath, Ask: bidMath },
+  } = zcf.getTerms();
+  let { numBidsAllowed = 3 } = zcf.getTerms();
   numBidsAllowed = Nat(numBidsAllowed);
 
   let sellSeat;
@@ -56,11 +60,11 @@ const start = (zcf, { numBidsAllowed = 3 }) => {
     }
     const sellerSatisfied = satisfies(zcf, sellSeat, {
       Ask: bidSeat.getAmountAllocated('Bid', minimumBid.brand),
-      Asset: zcf.getAmountMath(auctionedAssets.brand).getEmpty(),
+      Asset: assetMath.getEmpty(),
     });
     const bidderSatisfied = satisfies(zcf, bidSeat, {
       Asset: sellSeat.getAmountAllocated('Asset', auctionedAssets.brand),
-      Bid: zcf.getAmountMath(minimumBid.brand).getEmpty(),
+      Bid: bidMath.getEmpty(),
     });
     if (!(sellerSatisfied && bidderSatisfied)) {
       const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
@@ -119,5 +123,4 @@ const start = (zcf, { numBidsAllowed = 3 }) => {
   });
 };
 
-harden(start);
 export { start };

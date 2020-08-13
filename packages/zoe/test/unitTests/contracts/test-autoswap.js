@@ -42,7 +42,7 @@ test('autoSwap with valid offers', async t => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const { creatorFacet: publicFacet } = await zoe.startInstance(
+    const { publicFacet } = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );
@@ -234,7 +234,7 @@ test('autoSwap - test fee', async t => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const { creatorFacet: publicFacet } = await zoe.startInstance(
+    const { publicFacet } = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );

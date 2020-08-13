@@ -19,7 +19,7 @@ import { trade, satisfies } from '../contractSupport';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
   // bookOrders is a Map of Maps. The first key is the brand of the offer's
   // GIVE, and the second key is the brand of its WANT. For each offer, we
   // store its handle and the amounts for `give` and `want`.

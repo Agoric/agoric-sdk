@@ -125,17 +125,18 @@
  *
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
- * as well as the `issuerKeywordRecord` and `terms` of the contract.
- * The `issuerKeywordRecord` is a record mapping string names
- * (keywords) to issuers, such as `{ Asset: simoleanIssuer}`. (Note
- * that the keywords must begin with a capital letter and must be
- * ASCII identifiers.) Parties to the contract will use the keywords
- * to index their proposal and their payments.
+ * as well as the `terms` of the contract. The `terms.issuers` is a
+ * record mapping string names (keywords) to issuers, such as `{
+ * Asset: simoleanIssuer}`. (Note that the keywords must begin with a
+ * capital letter and must be ASCII identifiers.) Parties to the
+ * contract will use the keywords to index their proposal and their
+ * payments.
  *
- * Terms are the arguments to the contract, such as the number of bids
- * an auction will wait for before closing. Terms are up to the
- * discretion of the smart contract. We get back the admin facet as
- * defined by the contract.
+ * The custom terms are the arguments to the contract, such as the
+ * number of bids an auction will wait for before closing. Custom
+ * terms are up to the discretion of the smart contract. We get back
+ * the creator facet, public facet, and creator invitation as defined
+ * by the contract.
  */
 
 /**
@@ -190,7 +191,7 @@
  * @property {Shutdown} shutdown
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInvitationIssuer
- * @property {() => InstanceRecord } getInstanceRecord
+ * @property {() => Terms } getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
@@ -335,12 +336,20 @@
  */
 
 /**
+ * @typedef {Object} NonCustomTerms
+ * @property {IssuerKeywordRecord} terms.issuers - record with
+ * keywords keys, issuer values
+ * @property {BrandKeywordRecord} terms.brands - record with keywords
+ * keys, brand values
+ * @property {AmountMathKeywordRecord} terms.maths - record with keywords
+ * keys, amountMath values
+ * 
+ * @typedef {NonCustomTerms & Record<string, any>} Terms
  *
  * @typedef {object} InstanceRecord
- * @property {Object} terms - contract parameters
- * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
- * @property {BrandKeywordRecord} brandKeywordRecord - record with
- * keywords keys, brand values
+ * @property {Installation} installation
+ * @property {Terms} terms - contract parameters
+
  *
  * @typedef {Object} IssuerRecord
  * @property {Brand} brand

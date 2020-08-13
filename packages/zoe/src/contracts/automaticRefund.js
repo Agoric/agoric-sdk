@@ -16,7 +16,7 @@ import '../../exported';
  * @type {ContractStartFn}
  * @param {ContractFacet} zcf
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
   let offersCount = 0;
 
   /** @type {OfferHandler} */
