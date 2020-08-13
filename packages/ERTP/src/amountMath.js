@@ -7,13 +7,18 @@ import mathHelpersLib from './mathHelpersLib';
 
 import './types';
 
-// constants for the kinds of amountMath we support.
-/** @enum {string} */
+// We want an enum, but narrowed to the AmountMathKind type.
+/**
+ * Constants for the kinds of amountMath we support.
+ * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet' }}
+ */
 const MathKind = {
   NAT: 'nat',
   SET: 'set',
   STRING_SET: 'strSet',
 };
+harden(MathKind);
+export { MathKind };
 
 /**
  * Amounts describe digital assets. From an amount, you can learn the
@@ -175,4 +180,4 @@ function makeAmountMath(brand, amountMathKind) {
 
 export default harden(makeAmountMath);
 
-export { makeAmountMath, MathKind };
+export { makeAmountMath };

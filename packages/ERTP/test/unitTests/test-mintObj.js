@@ -34,7 +34,10 @@ test('mint.mintPayment default natMathHelper', t => {
 
 test('mint.mintPayment strSetMathHelpers', t => {
   t.plan(2);
-  const { mint, issuer, amountMath } = makeIssuerKit('items', MathKind.STRING_SET);
+  const { mint, issuer, amountMath } = makeIssuerKit(
+    'items',
+    MathKind.STRING_SET,
+  );
   const items1and2and4 = amountMath.make(harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
   issuer.getAmountOf(payment1).then(paymentBalance1 => {

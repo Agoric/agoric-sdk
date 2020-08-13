@@ -32,7 +32,7 @@
  */
 
 /**
- * @typedef {('nat' | 'set' | 'strSet')} AmountMathKind
+ * @typedef {'nat' | 'set' | 'strSet'} AmountMathKind
  */
 
 /**
