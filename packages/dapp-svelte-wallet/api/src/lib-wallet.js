@@ -3,7 +3,7 @@
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 // TODO: move the Table abstraction out of Zoe
 import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
@@ -87,7 +87,7 @@ export async function makeWallet({
             }
 
             // remote calls which immediately return a promise
-            const mathHelpersNameP = E(issuer).getMathHelperName();
+            const amountMathKindP = E(issuer).getAmountMathKind();
             const brandP = E(issuer).getBrand();
             const brandMatchesP = E(brandP).isMyIssuer(issuer);
 
@@ -98,16 +98,16 @@ export async function makeWallet({
             // a promise for a synchronously accessible record
             const synchronousRecordP = Promise.all([
               brandP,
-              mathHelpersNameP,
+              amountMathKindP,
               issuerBoardIdP,
               brandMatchesP,
-            ]).then(([brand, mathHelpersName, issuerBoardId, brandMatches]) => {
+            ]).then(([brand, amountMathKind, issuerBoardId, brandMatches]) => {
               assert(
                 brandMatches,
                 `issuer was using a brand which was not its own`,
               );
               if (!issuerToBrand.has(issuer)) {
-                const amountMath = makeAmountMath(brand, mathHelpersName);
+                const amountMath = makeLocalAmountMath(brand);
                 const issuerRecord = {
                   issuer,
                   brand,

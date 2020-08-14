@@ -5,8 +5,8 @@ import {
   getInputPrice,
   calcLiqValueToMint,
   calcValueToRemove,
-  assertNatMathHelpers,
   trade,
+  assertUsesNatMath,
 } from '../../contractSupport';
 
 import '../../../exported';
@@ -162,7 +162,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     );
 
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    assertNatMathHelpers(zcf, secondaryBrand);
+    assertUsesNatMath(zcf, secondaryBrand);
     const liquidityZCFMint = await zcf.makeZCFMint(liquidityKeyword);
     const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit(zcf);
     const poolSeat = await poolSeatP;

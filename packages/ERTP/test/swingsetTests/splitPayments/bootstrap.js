@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import makeIssuerKit from '../../../src/issuer';
+import { makeIssuerKit } from '../../../src';
 
 export function buildRootObject(vatPowers, vatParameters) {
   function testSplitPayments(aliceMaker) {

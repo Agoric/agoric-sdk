@@ -1,5 +1,4 @@
 // @ts-check
-import makeIssuerKit from '@agoric/ertp';
 import makeWeakStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -9,6 +8,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  */
 import '@agoric/ertp/exported';
+import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -28,7 +28,7 @@ import { makeHandle } from '../table';
  * @returns {ZoeService} The created Zoe service.
  */
 function makeZoe(vatAdminSvc) {
-  const invitationKit = makeIssuerKit('Zoe Invitation', 'set');
+  const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
 
   // Zoe state shared among functions
   const issuerTable = makeIssuerTable();
@@ -165,7 +165,7 @@ function makeZoe(vatAdminSvc) {
       };
 
       /** @type MakeZoeMint */
-      const makeZoeMint = (keyword, mathHelperName = 'nat') => {
+      const makeZoeMint = (keyword, amountMathKind = MathKind.NAT) => {
         // Local indicates one that zoe itself makes from vetted code,
         // and so can be assumed correct and fresh by zoe.
         const {
@@ -173,7 +173,7 @@ function makeZoe(vatAdminSvc) {
           issuer: localIssuer,
           amountMath: localAmountMath,
           brand: localBrand,
-        } = makeIssuerKit(keyword, mathHelperName);
+        } = makeIssuerKit(keyword, amountMathKind);
         const localIssuerRecord = harden({
           brand: localBrand,
           issuer: localIssuer,

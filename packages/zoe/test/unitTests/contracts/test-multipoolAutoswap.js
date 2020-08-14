@@ -4,8 +4,7 @@ import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
-import makeAmountMath from '@agoric/ertp/src/amountMath';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from './fakeVatAdmin';
 
@@ -50,13 +49,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       publicFacet,
     ).makeAddLiquidityInvitation();
 
-    const makeAmountMathFromIssuer = issuer =>
-      Promise.all([
-        E(issuer).getBrand(),
-        E(issuer).getMathHelperName(),
-      ]).then(([brand, mathName]) => makeAmountMath(brand, mathName));
-    const inviteAmountMath = await makeAmountMathFromIssuer(inviteIssuer);
-
+    const inviteAmountMath = await makeLocalAmountMath(inviteIssuer);
     const aliceInviteAmount = await inviteIssuer.getAmountOf(
       aliceAddLiquidityInvitation,
     );
@@ -79,7 +72,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       moolaR.issuer,
       'Moola',
     );
-    const moolaLiquidityAmountMath = await makeAmountMathFromIssuer(
+    const moolaLiquidityAmountMath = await makeLocalAmountMath(
       moolaLiquidityIssuer,
     );
     const moolaLiquidity = moolaLiquidityAmountMath.make;
@@ -88,7 +81,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       simoleanR.issuer,
       'Simoleans',
     );
-    const simoleanLiquidityAmountMath = await makeAmountMathFromIssuer(
+    const simoleanLiquidityAmountMath = await makeLocalAmountMath(
       simoleanLiquidityIssuer,
     );
     const simoleanLiquidity = simoleanLiquidityAmountMath.make;

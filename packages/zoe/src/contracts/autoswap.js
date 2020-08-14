@@ -6,8 +6,9 @@ import {
   calcLiqValueToMint,
   calcValueToRemove,
   assertProposalKeywords,
+  assertUsesNatMath,
 } from '../contractSupport';
-import { trade, assertNatMathHelpers } from '../contractSupport/zoeHelpers';
+import { trade } from '../contractSupport/zoeHelpers';
 
 import '../../exported';
 
@@ -42,7 +43,7 @@ const start = async zcf => {
   // all the brands, we must call ZCF rather than use the static
   // brands in the terms.
   const { brands } = zcf.getTerms();
-  Object.values(brands).forEach(brand => assertNatMathHelpers(zcf, brand));
+  Object.values(brands).forEach(brand => assertUsesNatMath(zcf, brand));
   const getPoolKeyword = brandToMatch => {
     const entries = Object.entries(brands);
     for (const [keyword, brand] of entries) {

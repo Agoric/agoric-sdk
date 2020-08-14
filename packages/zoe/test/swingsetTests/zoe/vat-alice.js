@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
-import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
+import { makeLocalAmountMath } from '@agoric/ertp';
+import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
@@ -303,7 +304,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
     );
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
+    const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
     const liquidity = liquidityAmountMath.make;
 
     // Alice adds liquidity

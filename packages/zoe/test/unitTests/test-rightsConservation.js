@@ -3,7 +3,7 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 
 import makeStore from '@agoric/weak-store';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import { areRightsConserved } from '../../src/contractFacet/rightsConservation';
 
 const setupAmountMaths = () => {

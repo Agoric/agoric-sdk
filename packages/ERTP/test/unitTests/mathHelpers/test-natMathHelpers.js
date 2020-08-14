@@ -1,9 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-
 import '@agoric/install-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import makeAmountMath from '../../../src/amountMath';
+import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -14,13 +14,13 @@ const mockBrand = harden({
   getAllegedName: () => 'mock',
 });
 
-const amountMath = makeAmountMath(mockBrand, 'nat');
+const amountMath = makeAmountMath(mockBrand, MathKind.NAT);
 
 test('natMathHelpers', t => {
   try {
     const {
       getBrand,
-      getMathHelperName,
+      getAmountMathKind,
       make,
       coerce,
       getValue,
@@ -35,8 +35,8 @@ test('natMathHelpers', t => {
     // getBrand
     t.deepEquals(getBrand(), mockBrand, 'brand is brand');
 
-    // getMathHelperName
-    t.deepEquals(getMathHelperName(), 'nat', 'mathHelpersName is nat');
+    // getAmountMathKind
+    t.deepEquals(getAmountMathKind(), MathKind.NAT, 'amountMathKind is nat');
 
     // make
     t.deepEquals(make(4), { brand: mockBrand, value: 4 });

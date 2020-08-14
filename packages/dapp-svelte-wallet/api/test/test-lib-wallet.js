@@ -3,9 +3,8 @@ import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 
-import makeIssuerKit from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeRegistrar } from '@agoric/registrar';
@@ -793,15 +792,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const publicAPI = await E(zoe).getPublicFacet(autoswapInstanceHandle);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
 
-    /** @param {Issuer} issuer */
-    const getLocalAmountMath = issuer =>
-      Promise.all([
-        E(issuer).getBrand(),
-        E(issuer).getMathHelperName(),
-      ]).then(([brand, mathHelpersName]) =>
-        makeAmountMath(brand, mathHelpersName),
-      );
-    const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
+    const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
 
     // Let's add liquidity using our wallet and the addLiquidityInvite
     // we have.

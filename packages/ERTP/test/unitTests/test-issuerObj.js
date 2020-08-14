@@ -1,9 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
-
-import makeIssuerKit from '../../src/issuer';
+import { MathKind, makeIssuerKit } from '../../src';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
   try {
@@ -24,10 +24,9 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   }
 });
 
-test('issuer.getAmountMath', t => {
+test('amountMath from makeIssuerKit', t => {
   try {
-    const { issuer, amountMath, brand } = makeIssuerKit('fungible');
-    t.equals(issuer.getAmountMath(), amountMath);
+    const { amountMath, brand } = makeIssuerKit('fungible');
     const fungible = amountMath.make;
     t.ok(
       amountMath.isEqual(
@@ -44,10 +43,10 @@ test('issuer.getAmountMath', t => {
   }
 });
 
-test('issuer.getMathHelperName', t => {
+test('issuer.getAmountMathKind', t => {
   try {
     const { issuer } = makeIssuerKit('fungible');
-    t.equals(issuer.getMathHelperName(), 'nat');
+    t.equals(issuer.getAmountMathKind(), MathKind.NAT);
   } catch (e) {
     t.assert(false, e);
   } finally {

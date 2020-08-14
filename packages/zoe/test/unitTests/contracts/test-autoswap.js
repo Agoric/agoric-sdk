@@ -2,6 +2,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
@@ -46,8 +47,8 @@ test('autoSwap with valid offers', async t => {
       installation,
       issuerKeywordRecord,
     );
-    const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidity = liquidityIssuer.getAmountMath().make;
+    const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
+    const liquidity = (await makeLocalAmountMath(liquidityIssuerP)).make;
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -66,10 +67,10 @@ test('autoSwap with valid offers', async t => {
       aliceProposal,
       alicePayments,
     );
-    assertOfferResult(t, aliceSeat, 'Added liquidity.');
 
+    assertOfferResult(t, aliceSeat, 'Added liquidity.');
     const liquidityPayout = await aliceSeat.getPayout('Liquidity');
-    assertPayoutAmount(t, liquidityIssuer, liquidityPayout, liquidity(10));
+    assertPayoutAmount(t, liquidityIssuerP, liquidityPayout, liquidity(10));
     t.deepEquals(
       await E(publicFacet).getPoolAllocation(),
       {
@@ -194,7 +195,7 @@ test('autoSwap with valid offers', async t => {
     } = await aliceRmLiqSeat.getPayouts();
     assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(8));
     assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(7));
-    assertPayoutAmount(t, liquidityIssuer, aliceLiquidityPayout, liquidity(0));
+    assertPayoutAmount(t, liquidityIssuerP, aliceLiquidityPayout, liquidity(0));
 
     t.deepEquals(await E(publicFacet).getPoolAllocation(), {
       TokenA: moola(0),
@@ -239,7 +240,7 @@ test('autoSwap - test fee', async t => {
       issuerKeywordRecord,
     );
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidity = liquidityIssuer.getAmountMath().make;
+    const liquidity = (await makeLocalAmountMath(liquidityIssuer)).make;
 
     // Alice adds liquidity
     const aliceProposal = harden({
@@ -264,6 +265,7 @@ test('autoSwap - test fee', async t => {
     assertOfferResult(t, aliceSeat, 'Added liquidity.');
 
     const liquidityPayout = await aliceSeat.getPayout('Liquidity');
+
     assertPayoutAmount(t, liquidityIssuer, liquidityPayout, liquidity(10000));
 
     t.deepEquals(

@@ -1,7 +1,8 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
+import { makeLocalAmountMath } from '@agoric/ertp';
+import { showPurseBalance, setupIssuers } from '../helpers';
 import { getInvitationFields } from '../../zoeTestHelpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
@@ -520,7 +521,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const publicFacet = await E(zoe).getPublicFacet(instance);
       const terms = await E(zoe).getTerms(instance);
       const ticketIssuer = await E(publicFacet).getItemsIssuer();
-      const ticketAmountMath = await getLocalAmountMath(ticketIssuer);
+      const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
       const availableTickets = await E(publicFacet).getAvailableItems();
       log('availableTickets: ', availableTickets);

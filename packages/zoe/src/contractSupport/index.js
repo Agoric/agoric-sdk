@@ -19,5 +19,5 @@ export {
   assertIssuerKeywords,
   satisfies,
   escrowAndAllocateTo,
-  assertNatMathHelpers,
+  assertUsesNatMath,
 } from './zoeHelpers';

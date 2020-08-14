@@ -4,6 +4,7 @@ import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 
+import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 
 import '../../exported';
@@ -353,14 +354,12 @@ export const escrowAndAllocateTo = (
       // seat is allocated the value of the payment.
     });
 };
-/*
- * Given a brand, assert that the mathHelpers for that issuer are
- * 'nat' mathHelpers
- */
-export const assertNatMathHelpers = (zcf, brand) => {
+
+/* Given a brand, assert that the issuer uses NAT amountMath. */
+export const assertUsesNatMath = (zcf, brand) => {
   const amountMath = zcf.getAmountMath(brand);
   assert(
-    amountMath.getMathHelperName() === 'nat',
-    details`issuer must have natMathHelpers`,
+    amountMath.getAmountMathKind() === MathKind.NAT,
+    details`issuer must use NAT amountMath`,
   );
 };

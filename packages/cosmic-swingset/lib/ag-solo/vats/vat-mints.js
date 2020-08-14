@@ -1,6 +1,6 @@
 /* global harden */
 
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
 
