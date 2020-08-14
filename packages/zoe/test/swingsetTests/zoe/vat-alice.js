@@ -15,7 +15,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Contribution1: moolaIssuer,
       Contribution2: simoleanIssuer,
     });
-    const { publicFacet, creatorInvitation: refundInvite } = await E(
+    const { publicFacet, creatorInvitation: refundInvitation } = await E(
       zoe,
     ).startInstance(installId, issuerKeywordRecord);
 
@@ -27,14 +27,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     const paymentKeywordRecord = { Contribution1: moolaPayment };
     const refundSeatP = await E(zoe).offer(
-      refundInvite,
+      refundInvitation,
       proposal,
       paymentKeywordRecord,
     );
     log(await E(refundSeatP).getOfferResult());
 
-    const bobInvite = E(publicFacet).makeInvitation();
-    await E(bobP).doAutomaticRefund(bobInvite);
+    const bobInvitation = E(publicFacet).makeInvitation();
+    await E(bobP).doAutomaticRefund(bobInvitation);
     const moolaPayout = await E(refundSeatP).getPayout('Contribution1');
     const simoleanPayout = await E(refundSeatP).getPayout('Contribution2');
 
@@ -86,10 +86,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       UnderlyingAsset: moolaIssuer,
       StrikePrice: simoleanIssuer,
     });
-    const { creatorInvitation: writeCallInvite } = await E(zoe).startInstance(
-      installations.coveredCall,
-      issuerKeywordRecord,
-    );
+    const { creatorInvitation: writeCallInvitation } = await E(
+      zoe,
+    ).startInstance(installations.coveredCall, issuerKeywordRecord);
 
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
@@ -104,14 +103,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     const paymentKeywordRecord = harden({ UnderlyingAsset: moolaPayment });
     const seatP = await E(zoe).offer(
-      writeCallInvite,
+      writeCallInvitation,
       proposal,
       paymentKeywordRecord,
     );
 
     log('call option made');
-    const inviteForBob = E(seatP).getOfferResult();
-    await E(bobP).doSwapForOption(inviteForBob, daveP);
+    const invitationForBob = E(seatP).getOfferResult();
+    await E(bobP).doSwapForOption(invitationForBob, daveP);
     const moolaPayout = await E(seatP).getPayout('UnderlyingAsset');
     const simoleanPayout = await E(seatP).getPayout('StrikePrice');
 
@@ -129,11 +128,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Ask: simoleanIssuer,
     });
     const terms = harden({ numBidsAllowed });
-    const { creatorInvitation: sellAssetsInvite } = await E(zoe).startInstance(
-      installations.publicAuction,
-      issuerKeywordRecord,
-      terms,
-    );
+    const { creatorInvitation: sellAssetsInvitation } = await E(
+      zoe,
+    ).startInstance(installations.publicAuction, issuerKeywordRecord, terms);
 
     const proposal = harden({
       give: { Asset: moola(1) },
@@ -142,7 +139,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
     const aliceSeatP = await E(zoe).offer(
-      sellAssetsInvite,
+      sellAssetsInvitation,
       proposal,
       paymentKeywordRecord,
     );
@@ -173,10 +170,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const { creatorInvitation: firstOfferInvite } = await E(zoe).startInstance(
-      installations.atomicSwap,
-      issuerKeywordRecord,
-    );
+    const { creatorInvitation: firstOfferInvitation } = await E(
+      zoe,
+    ).startInstance(installations.atomicSwap, issuerKeywordRecord);
 
     const proposal = harden({
       give: { Asset: moola(3) },
@@ -185,7 +181,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
     const seatP = await E(zoe).offer(
-      firstOfferInvite,
+      firstOfferInvitation,
       proposal,
       paymentKeywordRecord,
     );
@@ -213,7 +209,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
     );
 
-    const addOrderInvite = await E(publicFacet).makeInvitation();
+    const addOrderInvitation = await E(publicFacet).makeInvitation();
     const aliceSellOrderProposal = harden({
       give: { Asset: moola(3) },
       want: { Price: simoleans(4) },
@@ -221,15 +217,15 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
     const addOrderSeatP = await E(zoe).offer(
-      addOrderInvite,
+      addOrderInvitation,
       aliceSellOrderProposal,
       paymentKeywordRecord,
     );
 
     log(await E(addOrderSeatP).getOfferResult());
 
-    const bobInviteP = E(publicFacet).makeInvitation();
-    await E(bobP).doSimpleExchange(bobInviteP);
+    const bobInvitationP = E(publicFacet).makeInvitation();
+    await E(bobP).doSimpleExchange(bobInvitationP);
     const moolaPayout = await E(addOrderSeatP).getPayout('Asset');
     const simoleanPayout = await E(addOrderSeatP).getPayout('Price');
 
@@ -267,29 +263,29 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
-    const addOrderInvite = await E(publicFacet).makeInvitation();
+    const addOrderInvitation = await E(publicFacet).makeInvitation();
     const addOrderSeatP = await E(zoe).offer(
-      addOrderInvite,
+      addOrderInvitation,
       aliceSellOrderProposal,
       paymentKeywordRecord,
     );
 
     log(await E(addOrderSeatP).getOfferResult());
 
-    const bobInvite1P = E(publicFacet).makeInvitation();
-    await E(bobP).doSimpleExchangeUpdates(bobInvite1P, 3, 7);
-    const bobInvite2P = E(publicFacet).makeInvitation();
-    await E(bobP).doSimpleExchangeUpdates(bobInvite2P, 8, 2);
+    const bobInvitation1P = E(publicFacet).makeInvitation();
+    await E(bobP).doSimpleExchangeUpdates(bobInvitation1P, 3, 7);
+    const bobInvitation2P = E(publicFacet).makeInvitation();
+    await E(bobP).doSimpleExchangeUpdates(bobInvitation2P, 8, 2);
 
     const moolaPayout = await E(addOrderSeatP).getPayout('Asset');
     const simoleanPayout = await E(addOrderSeatP).getPayout('Price');
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);
-    const bobInvite3P = E(publicFacet).makeInvitation();
-    await E(bobP).doSimpleExchangeUpdates(bobInvite3P, 20, 13);
-    const bobInvite4P = E(publicFacet).makeInvitation();
-    await E(bobP).doSimpleExchangeUpdates(bobInvite4P, 5, 2);
+    const bobInvitation3P = E(publicFacet).makeInvitation();
+    await E(bobP).doSimpleExchangeUpdates(bobInvitation3P, 20, 13);
+    const bobInvitation4P = E(publicFacet).makeInvitation();
+    await E(bobP).doSimpleExchangeUpdates(bobInvitation4P, 5, 2);
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
@@ -318,9 +314,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       TokenA: moolaPayment,
       TokenB: simoleanPayment,
     });
-    const addLiquidityInvite = E(publicFacet).makeAddLiquidityInvite();
+    const addLiquidityInvitation = E(publicFacet).makeAddLiquidityInvitation();
     const addLiqSeatP = await E(zoe).offer(
-      addLiquidityInvite,
+      addLiquidityInvitation,
       addLiquidityProposal,
       paymentKeywordRecord,
     );
@@ -343,10 +339,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
       liquidity(10),
     );
-    const removeLiquidityInvite = E(publicFacet).makeRemoveLiquidityInvite();
+    const removeLiquidityInvitation = E(
+      publicFacet,
+    ).makeRemoveLiquidityInvitation();
 
     const removeLiquiditySeatP = await E(zoe).offer(
-      removeLiquidityInvite,
+      removeLiquidityInvitation,
       aliceRemoveLiquidityProposal,
       harden({ Liquidity: liquidityTokenPayment }),
     );
@@ -392,8 +390,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       sellItemsInstallation: installations.sellItems,
       pricePerItem: moola(22),
     });
-    const buyerInvite = E(sellItemsCreatorFacet).makeBuyerInvite();
-    await E(bobP).doBuyTickets(ticketSalesInstance, buyerInvite);
+    const buyerInvitation = E(sellItemsCreatorFacet).makeBuyerInvitation();
+    await E(bobP).doBuyTickets(ticketSalesInstance, buyerInvitation);
 
     const availableTickets = await E(sellItemsPublicFacet).getAvailableItems();
 

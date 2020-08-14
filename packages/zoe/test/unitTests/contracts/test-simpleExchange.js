@@ -1,7 +1,8 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
 
@@ -26,7 +27,7 @@ test('simpleExchange with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const inviteIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = zoe.getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -37,14 +38,12 @@ test('simpleExchange with valid offers', async t => {
 
   // 1: Alice creates a simpleExchange instance and spreads the publicFacet far
   // and wide with instructions on how to call makeInvitation().
-  const {
-    creatorInvitation: aliceInvite,
-    publicFacet,
-    instance,
-  } = await zoe.startInstance(installation, {
+  const { publicFacet, instance } = await zoe.startInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
+
+  const aliceInvitation = E(publicFacet).makeInvitation();
 
   const aliceNotifier = publicFacet.getNotifier();
   E(aliceNotifier)
@@ -81,7 +80,7 @@ test('simpleExchange with valid offers', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
   // 4: Alice adds her sell order to the exchange
   const aliceSeat = await E(zoe).offer(
-    aliceInvite,
+    aliceInvitation,
     aliceSellOrderProposal,
     alicePayments,
   );
@@ -110,10 +109,11 @@ test('simpleExchange with valid offers', async t => {
       });
     });
 
-  const bobInvite = await E(publicFacet).makeInvitation();
-  const bobInstallation = await E(zoe).getInstallation(bobInvite);
+  const bobInvitation = await E(publicFacet).makeInvitation();
+  const bobInstallation = await E(zoe).getInstallation(bobInvitation);
+
   // 5: Bob decides to join.
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
 
   const bobIssuers = zoe.getIssuers(instance);
 
@@ -140,7 +140,7 @@ test('simpleExchange with valid offers', async t => {
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
   const bobSeat = await zoe.offer(
-    bobExclusiveInvite,
+    bobExclusiveInvitation,
     bobBuyOrderProposal,
     bobPayments,
   );
@@ -204,7 +204,7 @@ test('simpleExchange with multiple sell offers', async t => {
       simoleans,
       zoe,
     } = setup();
-    const inviteIssuer = zoe.getInvitationIssuer();
+    const invitationIssuer = zoe.getInvitationIssuer();
     const installation = await installationPFromSource(zoe, simpleExchange);
 
     // Setup Alice
@@ -217,15 +217,10 @@ test('simpleExchange with multiple sell offers', async t => {
 
     // 1: Simon creates a simpleExchange instance and spreads the publicFacet
     // far and wide with instructions on how to use it.
-    const {
-      creatorInvitation: aliceInvite1,
-      creatorFacet,
-    } = await zoe.startInstance(installation, {
+    const { publicFacet } = await zoe.startInstance(installation, {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-
-    const publicFacet = await creatorFacet.getPublicFacet();
 
     // 2: Alice escrows with zoe to create a sell order. She wants to
     // sell 3 moola and wants to receive at least 4 simoleans in
@@ -237,15 +232,17 @@ test('simpleExchange with multiple sell offers', async t => {
     });
 
     const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3)) };
+
+    const aliceInvitation1 = E(publicFacet).makeInvitation();
     // 4: Alice adds her sell order to the exchange
     const aliceSeat = await zoe.offer(
-      aliceInvite1,
+      aliceInvitation1,
       aliceSale1OrderProposal,
       alicePayments,
     );
 
     // 5: Alice adds another sell order to the exchange
-    const aliceInvite2 = await inviteIssuer.claim(
+    const aliceInvitation2 = await invitationIssuer.claim(
       await E(publicFacet).makeInvitation(),
     );
     const aliceSale2OrderProposal = harden({
@@ -257,13 +254,13 @@ test('simpleExchange with multiple sell offers', async t => {
       Asset: aliceMoolaPurse.withdraw(moola(5)),
     };
     const aliceSeat2 = await zoe.offer(
-      aliceInvite2,
+      aliceInvitation2,
       aliceSale2OrderProposal,
       proposal2,
     );
 
     // 5: Alice adds a buy order to the exchange
-    const aliceInvite3 = await inviteIssuer.claim(
+    const aliceInvitation3 = await invitationIssuer.claim(
       await E(publicFacet).makeInvitation(),
     );
     const aliceBuyOrderProposal = harden({
@@ -273,7 +270,7 @@ test('simpleExchange with multiple sell offers', async t => {
     });
     const proposal3 = { Price: aliceSimoleanPurse.withdraw(simoleans(18)) };
     const aliceSeat3 = await zoe.offer(
-      aliceInvite3,
+      aliceInvitation3,
       aliceBuyOrderProposal,
       proposal3,
     );
@@ -314,7 +311,7 @@ test('simpleExchange with non-fungible assets', async t => {
     createRpgItem,
     zoe,
   } = setupNonFungible();
-  const inviteIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = zoe.getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -324,16 +321,13 @@ test('simpleExchange with non-fungible assets', async t => {
   // Setup Bob
   const bobCcPayment = ccMint.mintPayment(cryptoCats(harden(['Cheshire Cat'])));
 
-  // 1: Simon creates a simpleExchange instance and spreads the invite far and
+  // 1: Simon creates a simpleExchange instance and spreads the invitation far and
   // wide with instructions on how to use it.
-  const {
-    creatorInvitation: aliceInvite,
-    creatorFacet,
-  } = await zoe.startInstance(installation, {
+  const { publicFacet } = await zoe.startInstance(installation, {
     Asset: rpgIssuer,
     Price: ccIssuer,
   });
-  const publicFacet = await creatorFacet.getPublicFacet();
+  const aliceInvitation = E(publicFacet).makeInvitation();
 
   // 2: Alice escrows with zoe to create a sell order. She wants to
   // sell a Spell of Binding and wants to receive CryptoCats in return.
@@ -345,17 +339,17 @@ test('simpleExchange with non-fungible assets', async t => {
   const alicePayments = { Asset: aliceRpgPayment };
   // 4: Alice adds her sell order to the exchange
   const aliceSeat = await zoe.offer(
-    aliceInvite,
+    aliceInvitation,
     aliceSellOrderProposal,
     alicePayments,
   );
 
-  const bobInvite = await E(publicFacet).makeInvitation();
+  const bobInvitation = await E(publicFacet).makeInvitation();
 
   // 5: Bob decides to join.
-  const bobInstance = await E(zoe).getInstance(bobInvite);
-  const bobInstallation = await E(zoe).getInstallation(bobInvite);
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const bobInstance = await E(zoe).getInstance(bobInvitation);
+  const bobInstallation = await E(zoe).getInstallation(bobInvitation);
+  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
 
   t.equals(bobInstallation, installation);
 
@@ -381,7 +375,7 @@ test('simpleExchange with non-fungible assets', async t => {
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
   const bobSeat = await zoe.offer(
-    bobExclusiveInvite,
+    bobExclusiveInvitation,
     bobBuyOrderProposal,
     bobPayments,
   );
