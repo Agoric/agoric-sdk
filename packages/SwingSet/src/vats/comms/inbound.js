@@ -101,7 +101,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
 
     if (state.debug) {
       console.log(
-        `-- syscall.resolve(${target}) ${type}}, ${slots[0]} ${data}`,
+        `-- syscall.resolve(${target}) ${type}), ${slots[0]}`, data,
       );
     }
     if (type === 'object') {
