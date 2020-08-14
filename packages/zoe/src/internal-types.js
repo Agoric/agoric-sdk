@@ -130,6 +130,19 @@
  * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeOfferlessSeat} makeOfferlessSeat
+ * @property {ReplaceAllocations} replaceAllocations
+ */
+
+/**
+ * @typedef {Object} ZoeSeatAdminAllocation
+ * @property {ZoeSeatAdmin} zoeSeatAdmin
+ * @property {Allocation} allocation
+ */
+
+/**
+ * @callback ReplaceAllocations
+ * @param {ZoeSeatAdminAllocation[]} zoeSeatAdminAllocations
+ * @returns {void}
  */
 
 /**

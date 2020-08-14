@@ -246,6 +246,11 @@ function makeZoe(vatAdminSvc) {
           adminNode.terminate();
         },
         makeZoeMint,
+        replaceAllocations: zoeAdminSeatAllocations => {
+          zoeAdminSeatAllocations.forEach(({ zoeSeatAdmin, allocation }) => {
+            zoeSeatAdmin.replaceAllocation(allocation);
+          });
+        },
       };
 
       // At this point, the contract will start executing. All must be ready
