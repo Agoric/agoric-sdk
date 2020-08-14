@@ -107,6 +107,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
   while (passOneMessage()) {
     await c.run();
   }
+  console.log(`bootstrapResult`, c.bootstrapResult.status());
   return c.dump().log;
 }
 

@@ -379,18 +379,50 @@ export function buildPatterns(log) {
   out.a63 = ['a63 done, match true'];
   test('a63');
 
+
+
   // TODO #1404: test case to add: A allocates promise, sends to B, B sends back
-  // a: bob~.one(P(amy))
-  // b.x(p): alice~.two(p)
-  // a.two(p): compart p and P(amy) (should resolve to the same thing)
+  // a: bob~.one(amyP)
+  // b.x(amyP): return [amyP]
+  // a: compare p and P(amy) (should resolve to the same thing)
   // exercises comms.clist.mapInbound non-flip bug in promise addition
   {
+    const pX = makePromiseKit();
+    const pY = makePromiseKit();
     objA.a64 = async () => {
+      // We make an additional promise 'resP' first, as the result of a
+      // message-send. The ID is allocated by the sender, just like 'amyP',
+      // so the signs should be the same in all message logs. Result promises
+      // are handled by a different code path in clist.mapInbound /
+      // clist.mapInboundResult, and the #1404 bug lies in the difference
+      // between those two paths (mapInboundResult corrected for a bug in
+      // mapInbound, but only for the result-promise case). The main reason
+      // to send this additional promise is to make the logs easier to read
+      // (if the signs of the rpids are different, something is wrong), but
+      // it also serves to ... xxx
+      const resPX = E(b.bob).b64_one();
+      const argPY = pY.promise; // resolves to alice
+      const [resPX2, argPY2] = await E(b.bob).a64_two(resPX, argPY);
+      E(b.bob).b64_three(a.amy);
+      const [amy2, amy3] = await Promise.all([resPX, resPX2]);
+      log(a.amy === amy2);
+      log(amy2 === amy3);
+      pY.resolve(a.alice);
+      const [alice2, alice3] = await Promise.all([argPY, argPY2]);
+      log(a.alice === alice2);
+      log(alice2 === alice3);
     };
-    objB.a64 = async() => {
+    objB.b64_one = () => {
+      return pX.promise; // resolves to amy
+    };
+    objB.b64_two = (resPX, argPY) => {
+      return harden([resPX, argPY]);
+    };
+    objB.b64_three = (amy) => {
+      pX.resolve(amy);
     };
   }
-  out.a64 = [];
+  out.a64 = ['true', 'true', 'true', 'true'];
   test.onlyComms('a64');
 
 
@@ -552,6 +584,261 @@ export function buildPatterns(log) {
   }
   out.a73 = ['two'];
   test('a73');
+
+  // 80-series: exercise handling of resolved promises
+  //
+  // We retire promise IDs across the vat-kernel boundary upon resolution,
+  // under the theory that most resolved promises are never referenced again,
+  // so we can reap storage savings by forgetting their IDs (and allocate new
+  // ones again if we're wrong). The vat-kernel boundary is synchronous, in
+  // that a kernel->vat resolution delivery is seen by the vat before
+  // creating any vat->kernel syscalls, so the kernel can expect the vat to
+  // process the retirement first, and won't reference the retired ID after
+  // the delivery begins. The vat->kernel boundary is similar: no new
+  // deliveries will happen until after the kernel has processed the
+  // retirement syscall.
+
+  // Unfortunately the comms-comms boundary (between two remote machines) is
+  // not synchronous: there may already be messages in flight, containing
+  // promise-ids which the recipient has already resolved. So we cannot
+  // retire these promise-ids without a specific ack/decref message, which is
+  // not yet implemented.
+
+  // So the recipient of a remote message may have to tell their kernel about
+  // an old promise. The kernel will have forgotten about the ID, so we can
+  // re-use the same ID, and the kernel will allocate a new kpid for it. But
+  // we must re-resolve it into the kernel, we means we (comms) must remember
+  // the resolution.
+
+  // These tests are broken into a 2x2x2 matrix (XY times AB times 12):
+
+  // first step: b.comms sees a promise for the first time
+  //  X: it arrives from local kernel (as an argument of an outbound message)
+  //  Y: it arrives from A (as the result= of an inbound message )
+  // second step: b.comms sees the promise get resolved (by local kernel)
+  //  A: promise is resolved to something on A
+  //  B: promise is resolved to something on B
+  //  (later) C: promise is resolved to something on third-party C
+  // third step:
+  //  1: b.comms sees promise arrive as target of an inbound message
+  //  2: b.comms sees promise arrive in arguments of an inbound message
+  // fourth step: check that the two promises are equivalent
+  //
+  // We cannot compare promises for identity, so instead we send a message to
+  // the third-step one and make sure it arrives at the right place. For case
+  // X, we also wait for it to resolve and then compare the resolutions for
+  // identity.
+
+  // b.comms won't ever see an unresolved promise arrive from the kernel,
+  // because of the retired-promise policy TODO: b.comms *shouldn't* see
+  // remote machine reference a promise they resolved themselves, but a
+  // buggy/malicious one might, so we should be prepared. There's no simple
+  // way to test that case, however.
+
+  // TODO implementation: inbound messsages should be converted from
+  // them-space to me-vat-space first. Then the target is looked up. If the
+  // target is the local kernel, translate to kernel-space and syscall.send .
+  // If the target is A, translate into to-them-space (which is different
+  // from from-them-space anyways) and send it back to them. If the target is
+  // on a third party, that's the time to translate to to-other-them-space.
+
+  // XA1
+  {
+    objA.a80 = async () => {
+      console.log('####start');
+      const [aliceP] = await E(b.bob).b80_one();
+      console.log('####two');
+      E(b.bob).b80_two(a.alice); // tell bob to resolve it
+      E(aliceP).a80_three('calling alice');
+    };
+    const p1 = makePromiseKit();
+    objB.b80_one = () => {
+      const aliceP = p1.promise;
+      return harden([aliceP]);
+    };
+    objB.b80_two = (alice) => {
+      p1.resolve(alice); // resolves to something on A
+    };
+    objA.a80_three = () => log('three');
+  }
+  out.a80 = ['three'];
+  //test.onlyComms('a80');
+
+  // XA2
+  {
+    objA.a81 = async () => {
+      console.log('####start');
+      const [aliceP] = await E(b.bob).b81_one();
+      console.log('####two');
+      E(b.bob).b81_two(a.alice); // tell bob to resolve it
+      E(b.bob).b81_three(aliceP);
+    };
+    const p1 = makePromiseKit();
+    objB.b81_one = () => {
+      const aliceP = p1.promise;
+      return harden([aliceP]);
+    };
+    objB.b81_two = (alice) => {
+      p1.resolve(alice); // resolves to something on A
+    };
+    objB.b81_three = async (alice, aliceP) => { // commsB hears about the promise in an argument
+      E(aliceP).a81_four(); // make sure we can send to it
+      const alice2 = await aliceP;
+      log(alice2 === alice);
+    };
+    objA.a81_four = () => log('four');
+  }
+  out.a81 = ['four', 'true'];
+  //test.onlyComms('a81');
+
+  // XB1
+  {
+    objA.a82 = async () => {
+      console.log('####start');
+      const [billP] = await E(b.bob).b82_one();
+      console.log('####two');
+      // now send two messages in quick succession, so commsA will send the
+      // second before hearing about the resolution of billP. The
+      // cross-machine queue will ensure that commsB processes the first
+      // (resolving billP) before processing the second (targetting billP).
+      E(b.bob).b82_two(); // tell bob to resolve it
+      E(billP).log_bill('three');
+    };
+    const p1 = makePromiseKit();
+    objB.b82_one = () => {
+      const billP = p1.promise;
+      return harden([billP]);
+    };
+    objB.b82_two = () => {
+      p1.resolve(b.bill); // resolves to something on B
+    };
+  }
+  out.a82 = ['three'];
+  //test.onlyComms('a82');
+
+  // XB2
+  {
+    objA.a83 = async () => {
+      console.log('####start');
+      const [billP] = await E(b.bob).b83_one();
+      console.log('####two');
+      E(b.bob).b83_two(); // tell bob to resolve it
+      E(b.bob).b83_three(billP);
+    };
+    const p1 = makePromiseKit();
+    objB.b83_one = () => {
+      const billP = p1.promise;
+      return harden([billP]);
+    };
+    objB.b83_two = () => {
+      p1.resolve(b.bill); // resolves to something on B
+    };
+    objB.b83_three = async (billP) => { // commsB hears about the promise in an argument
+      E(billP).log_bill('three');
+      const bill2 = await billP;
+      log(b.bill === bill2);
+    };
+  }
+  out.a83 = ['three', 'true'];
+  //test.onlyComms('a83');
+
+  // YA1
+  {
+    objA.a84 = async () => {
+      console.log('####start');
+      const aliceP = E(b.bob).b84_one(); // Y: promise first arrives as a result
+      console.log('####two');
+      E(b.bob).b84_two(a.alice); // tell bob to resolve it
+      E(aliceP).a84_three('calling alice'); // 1: promise second appears as target
+    };
+    const p1 = makePromiseKit();
+    objB.b84_one = () => {
+      const aliceP = p1.promise;
+      return aliceP;
+    };
+    objB.b84_two = (alice) => {
+      p1.resolve(alice); // resolves to something on A
+    };
+    objA.a84_three = () => log('three');
+  }
+  out.a84 = ['three'];
+  //test.onlyComms('a84');
+
+  // YA2
+  {
+    objA.a85 = async () => {
+      console.log('####start');
+      const aliceP = await E(b.bob).b85_one(); // Y: promise first arrives as a result
+      console.log('####two');
+      E(b.bob).b85_two(a.alice); // tell bob to resolve it
+      E(b.bob).b85_three(a.alice, aliceP); // 2: promise second appears as argument
+    };
+    const p1 = makePromiseKit();
+    objB.b85_one = () => {
+      const aliceP = p1.promise;
+      return harden(aliceP);
+    };
+    objB.b85_two = (alice) => {
+      p1.resolve(alice); // resolves to something on A
+    };
+    objB.b85_three = async (alice, aliceP) => { // commsB hears about the promise in an argument
+      E(aliceP).a85_four(); // make sure we can send to it
+      const alice2 = await aliceP;
+      log(alice2 === alice);
+    };
+    objA.a85_four = () => log('four');
+  }
+  out.a85 = ['four', 'true'];
+  //test.onlyComms('a85');
+
+  // YB1
+  {
+    objA.a86 = async () => {
+      console.log('####start');
+      const billP = await E(b.bob).b86_one(); // Y: promise first arrives as a result
+      console.log('####two');
+      E(b.bob).b86_two(); // tell bob to resolve it
+      E(billP).log_bill('three'); // 1: promise second appears as a target
+    };
+    const p1 = makePromiseKit();
+    objB.b86_one = () => {
+      const billP = p1.promise;
+      return harden(billP);
+    };
+    objB.b86_two = () => {
+      p1.resolve(b.bill); // resolves to something on B
+    };
+  }
+  out.a86 = ['three'];
+  //test.onlyComms('a86');
+
+  // YB2
+  {
+    objA.a87 = async () => {
+      console.log('####start');
+      const billP = await E(b.bob).b87_one(); // Y: promise
+      console.log('####two');
+      E(b.bob).b87_two(); // tell bob to resolve it
+      E(b.bob).b87_three(billP); // 2: promise second appears as argument
+    };
+    const p1 = makePromiseKit();
+    objB.b87_one = () => {
+      const billP = p1.promise;
+      return harden(billP);
+    };
+    objB.b87_two = () => {
+      p1.resolve(b.bill); // resolves to something on B
+    };
+    objB.b87_three = async (billP) => { // commsB hears about the promise in an argument
+      E(billP).log_bill('three');
+      const bill2 = await billP;
+      log(b.bill === bill2);
+    };
+  }
+  out.a87 = ['three', 'true'];
+  //test.onlyComms('a87');
+
+
 
   return harden({
     setA,

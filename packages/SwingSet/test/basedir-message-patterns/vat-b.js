@@ -4,7 +4,9 @@ import { buildPatterns } from '../message-patterns';
 
 export function buildRootObject(vatPowers) {
   const bert = harden({ toString: () => 'obj-bert' });
-  const bill = harden({ toString: () => 'obj-bill' });
+  const bill = harden({ toString: () => 'obj-bill',
+                        log_bill(msg) { vatPowers.testLog(msg); },
+                      });
 
   const root = harden({
     init() {
