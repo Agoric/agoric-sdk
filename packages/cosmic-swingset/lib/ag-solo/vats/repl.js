@@ -1,7 +1,7 @@
 /* global harden Compartment */
 
 import { isPromise } from '@agoric/promise-kit';
-import { E, HandledPromise } from '@agoric/eventual-send';
+import { E } from '@agoric/eventual-send';
 
 import makeUIAgentMakers from './ui-agent';
 
@@ -158,7 +158,6 @@ export function getReplHandler(replObjects, send, vatPowers) {
     getInterfaceOf,
     console: replConsole,
     E,
-    HandledPromise,
     commands,
     history,
     harden,

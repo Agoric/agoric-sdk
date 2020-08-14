@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
-import { makeCapTP, E, HandledPromise } from '@agoric/captp';
+import { makeCapTP, E } from '@agoric/captp';
 
 const PORT = 8000;
 
@@ -93,7 +93,7 @@ export function makeFixture() {
       });
     }
 
-    return new HandledPromise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       cp.addListener('exit', code => {
         if (!expectedToExit) {
           // Display all our output.

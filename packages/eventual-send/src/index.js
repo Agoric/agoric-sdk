@@ -1,6 +1,4 @@
-/* global harden HandledPromise */
-
-import makeE from './E';
+/* global harden */
 
 const {
   defineProperties,
@@ -9,25 +7,6 @@ const {
   getPrototypeOf,
   isFrozen,
 } = Object;
-
-const { prototype: promiseProto } = Promise;
-const { then: originalThen } = promiseProto;
-
-// 'E' and 'HandledPromise' are exports of the module
-
-// For now:
-// import { HandledPromise, E } from '@agoric/eventual-send';
-// ...
-
-const hp =
-  typeof HandledPromise === 'undefined'
-    ? // eslint-disable-next-line no-use-before-define
-      makeHandledPromise(Promise)
-    : harden(HandledPromise);
-
-// Provide our exports.
-export { hp as HandledPromise };
-export const E = makeE(hp);
 
 // the following method (makeHandledPromise) is part
 // of the shim, and will not be exported by the module once the feature
@@ -45,7 +24,7 @@ export const E = makeE(hp);
  *
  * @return {typeof HandledPromise} Handled promise
  */
-export function makeHandledPromise(Promise) {
+export function makeHandledPromise() {
   // xs doesn't support WeakMap in pre-loaded closures
   // aka "vetted customization code"
   let presenceToHandler;
@@ -112,7 +91,6 @@ export function makeHandledPromise(Promise) {
   // handled Promises to their corresponding fulfilledHandler.
   let forwardingHandler;
   let handle;
-  let promiseResolve;
 
   function HandledPromise(executor, unsettledHandler = undefined) {
     if (new.target === undefined) {
@@ -303,20 +281,19 @@ export function makeHandledPromise(Promise) {
     return handledP;
   }
 
-  HandledPromise.prototype = promiseProto;
+  HandledPromise.prototype = Promise.prototype;
   Object.setPrototypeOf(HandledPromise, Promise);
 
   function isFrozenPromiseThen(p) {
     return (
       isFrozen(p) &&
-      getPrototypeOf(p) === promiseProto &&
-      promiseResolve(p) === p &&
-      gopd(p, 'then') === undefined &&
-      gopd(promiseProto, 'then').value === originalThen // unnecessary under SES
+      getPrototypeOf(p) === Promise.prototype &&
+      Promise.resolve(p) === p &&
+      gopd(p, 'then') === undefined
     );
   }
 
-  const staticMethods = harden({
+  const staticMethods = {
     get(target, key) {
       return handle(target, 'get', key);
     },
@@ -340,7 +317,7 @@ export function makeHandledPromise(Promise) {
       // Resolving a Presence returns the pre-registered handled promise.
       let resolvedPromise = presenceToPromise.get(value);
       if (!resolvedPromise) {
-        resolvedPromise = promiseResolve(value);
+        resolvedPromise = Promise.resolve(value);
       }
       // Prevent any proxy trickery.
       harden(resolvedPromise);
@@ -351,10 +328,10 @@ export function makeHandledPromise(Promise) {
       const executeThen = (resolve, reject) =>
         resolvedPromise.then(resolve, reject);
       return harden(
-        promiseResolve().then(_ => new HandledPromise(executeThen)),
+        Promise.resolve().then(_ => new HandledPromise(executeThen)),
       );
     },
-  });
+  };
 
   defineProperties(HandledPromise, getOwnPropertyDescriptors(staticMethods));
 
@@ -457,6 +434,8 @@ export function makeHandledPromise(Promise) {
     return returnedP;
   };
 
-  promiseResolve = Promise.resolve.bind(Promise);
-  return harden(HandledPromise);
+  // We cannot harden(HandledPromise) because we're a vetted shim which
+  // runs before lockdown() allows harden to function.  In that case,
+  // though, globalThis.HandledPromise will be hardened after lockdown.
+  return HandledPromise;
 }
