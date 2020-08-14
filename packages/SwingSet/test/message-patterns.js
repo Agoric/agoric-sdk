@@ -402,7 +402,7 @@ export function buildPatterns(log) {
       // it also serves to ... xxx
       const resPX = E(b.bob).b64_one();
       const argPY = pY.promise; // resolves to alice
-      const [resPX2, argPY2] = await E(b.bob).a64_two(resPX, argPY);
+      const [resPX2, argPY2] = await E(b.bob).b64_two(resPX, argPY);
       E(b.bob).b64_three(a.amy);
       const [amy2, amy3] = await Promise.all([resPX, resPX2]);
       log(a.amy === amy2);
@@ -423,7 +423,8 @@ export function buildPatterns(log) {
     };
   }
   out.a64 = ['true', 'true', 'true', 'true'];
-  test.onlyComms('a64');
+  //test.onlyComms('a64');
+  //test.onlyLocal('a64');
 
 
   // bob!pipe1()!pipe2()!pipe3() // pipelining
@@ -649,12 +650,12 @@ export function buildPatterns(log) {
       const [aliceP] = await E(b.bob).b80_one();
       console.log('####two');
       E(b.bob).b80_two(a.alice); // tell bob to resolve it
-      E(aliceP).a80_three('calling alice');
+      E(aliceP).a80_three('calling alice'); // 1: promise second appears as target
     };
     const p1 = makePromiseKit();
     objB.b80_one = () => {
       const aliceP = p1.promise;
-      return harden([aliceP]);
+      return harden([aliceP]); // X: promise first arrives as argument
     };
     objB.b80_two = (alice) => {
       p1.resolve(alice); // resolves to something on A
@@ -663,6 +664,7 @@ export function buildPatterns(log) {
   }
   out.a80 = ['three'];
   //test.onlyComms('a80');
+  test('a80');
 
   // XA2
   {
@@ -671,25 +673,26 @@ export function buildPatterns(log) {
       const [aliceP] = await E(b.bob).b81_one();
       console.log('####two');
       E(b.bob).b81_two(a.alice); // tell bob to resolve it
-      E(b.bob).b81_three(aliceP);
+      E(b.bob).b81_three(a.alice, aliceP); // 2: promise second appears as argument
     };
     const p1 = makePromiseKit();
     objB.b81_one = () => {
       const aliceP = p1.promise;
-      return harden([aliceP]);
+      return harden([aliceP]); // X: promise first arrives as argument
     };
     objB.b81_two = (alice) => {
       p1.resolve(alice); // resolves to something on A
     };
     objB.b81_three = async (alice, aliceP) => { // commsB hears about the promise in an argument
-      E(aliceP).a81_four(); // make sure we can send to it
       const alice2 = await aliceP;
       log(alice2 === alice);
+      E(aliceP).a81_four(); // make sure we can send to it
     };
     objA.a81_four = () => log('four');
   }
-  out.a81 = ['four', 'true'];
+  out.a81 = ['true', 'four'];
   //test.onlyComms('a81');
+  test('a81');
 
   // XB1
   {
@@ -702,12 +705,12 @@ export function buildPatterns(log) {
       // cross-machine queue will ensure that commsB processes the first
       // (resolving billP) before processing the second (targetting billP).
       E(b.bob).b82_two(); // tell bob to resolve it
-      E(billP).log_bill('three');
+      E(billP).log_bill('three'); // 1: promise second appears as target
     };
     const p1 = makePromiseKit();
     objB.b82_one = () => {
       const billP = p1.promise;
-      return harden([billP]);
+      return harden([billP]); // X: promise first arrives as argument
     };
     objB.b82_two = () => {
       p1.resolve(b.bill); // resolves to something on B
@@ -715,6 +718,7 @@ export function buildPatterns(log) {
   }
   out.a82 = ['three'];
   //test.onlyComms('a82');
+  test('a82');
 
   // XB2
   {
@@ -723,24 +727,25 @@ export function buildPatterns(log) {
       const [billP] = await E(b.bob).b83_one();
       console.log('####two');
       E(b.bob).b83_two(); // tell bob to resolve it
-      E(b.bob).b83_three(billP);
+      E(b.bob).b83_three(billP); // 2: promise second appears as argument
     };
     const p1 = makePromiseKit();
     objB.b83_one = () => {
       const billP = p1.promise;
-      return harden([billP]);
+      return harden([billP]); // X: promise first arrives as argument
     };
     objB.b83_two = () => {
       p1.resolve(b.bill); // resolves to something on B
     };
     objB.b83_three = async (billP) => { // commsB hears about the promise in an argument
-      E(billP).log_bill('three');
       const bill2 = await billP;
       log(b.bill === bill2);
+      E(billP).log_bill('three');
     };
   }
-  out.a83 = ['three', 'true'];
+  out.a83 = ['true', 'three'];
   //test.onlyComms('a83');
+  test('a83');
 
   // YA1
   {
@@ -763,39 +768,45 @@ export function buildPatterns(log) {
   }
   out.a84 = ['three'];
   //test.onlyComms('a84');
+  test('a84');
 
   // YA2
   {
     objA.a85 = async () => {
       console.log('####start');
-      const aliceP = await E(b.bob).b85_one(); // Y: promise first arrives as a result
+      const aliceP = E(b.bob).b85_one(); // Y: promise first arrives as a result
       console.log('####two');
       E(b.bob).b85_two(a.alice); // tell bob to resolve it
       E(b.bob).b85_three(a.alice, aliceP); // 2: promise second appears as argument
     };
     const p1 = makePromiseKit();
     objB.b85_one = () => {
+      console.log('##b85_one');
       const aliceP = p1.promise;
       return harden(aliceP);
     };
     objB.b85_two = (alice) => {
+      console.log('##b85_two');
       p1.resolve(alice); // resolves to something on A
     };
     objB.b85_three = async (alice, aliceP) => { // commsB hears about the promise in an argument
-      E(aliceP).a85_four(); // make sure we can send to it
+      console.log('##b85_three');
       const alice2 = await aliceP;
+      console.log('##b85_three 2');
       log(alice2 === alice);
+      E(aliceP).a85_four(); // make sure we can send to it
     };
     objA.a85_four = () => log('four');
   }
-  out.a85 = ['four', 'true'];
+  out.a85 = ['true', 'four'];
   //test.onlyComms('a85');
+  test('a85');
 
   // YB1
   {
     objA.a86 = async () => {
       console.log('####start');
-      const billP = await E(b.bob).b86_one(); // Y: promise first arrives as a result
+      const billP = E(b.bob).b86_one(); // Y: promise first arrives as a result
       console.log('####two');
       E(b.bob).b86_two(); // tell bob to resolve it
       E(billP).log_bill('three'); // 1: promise second appears as a target
@@ -811,12 +822,13 @@ export function buildPatterns(log) {
   }
   out.a86 = ['three'];
   //test.onlyComms('a86');
+  test('a86');
 
   // YB2
   {
     objA.a87 = async () => {
       console.log('####start');
-      const billP = await E(b.bob).b87_one(); // Y: promise
+      const billP = E(b.bob).b87_one(); // Y: promise
       console.log('####two');
       E(b.bob).b87_two(); // tell bob to resolve it
       E(b.bob).b87_three(billP); // 2: promise second appears as argument
@@ -830,13 +842,14 @@ export function buildPatterns(log) {
       p1.resolve(b.bill); // resolves to something on B
     };
     objB.b87_three = async (billP) => { // commsB hears about the promise in an argument
-      E(billP).log_bill('three');
       const bill2 = await billP;
       log(b.bill === bill2);
+      E(billP).log_bill('three');
     };
   }
-  out.a87 = ['three', 'true'];
+  out.a87 = ['true', 'three'];
   //test.onlyComms('a87');
+  test('a87');
 
 
 
