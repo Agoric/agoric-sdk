@@ -1,4 +1,5 @@
-import { makeCapTP, E, HandledPromise } from '@agoric/captp';
+/* global HandledPromise */
+import { makeCapTP, E } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 export function makeCapTPConnection(makeConnection, { onReset }) {
