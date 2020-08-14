@@ -17,6 +17,7 @@
     "tape": "^4.13.2"
   },
   "dependencies": {
+    "@agoric/eventual-send": "^0.9.3",
     "@agoric/install-ses": "^0.2.0",
     "@agoric/tame-metering": "^1.2.3"
   },
