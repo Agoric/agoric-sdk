@@ -13,8 +13,8 @@ test('Node version for IO queue priority', t => {
 
 test('Node version', t => {
   t.true(
-    semver.satisfies(process.version, '>=12.16.1'),
-    'we only test against Node 12.16.1 (LTS)',
+    semver.satisfies(process.version, '>=12.14.1'),
+    'we only test against Node 12.14.1 (LTS)',
   );
   t.end();
 });
