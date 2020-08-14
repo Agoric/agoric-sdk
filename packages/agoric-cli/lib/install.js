@@ -16,7 +16,15 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
-  const subdirs = ['.', '_agstate/agoric-servers', 'contract', 'api'].sort();
+  const existingSubdirs = await Promise.all(
+    ['.', '_agstate/agoric-servers', 'contract', 'api']
+      .sort()
+      .map(async subd => {
+        const exists = await fs.stat(subd).catch(_ => false);
+        return exists && subd;
+      }),
+  );
+  const subdirs = existingSubdirs.filter(subd => subd);
 
   const linkFolder = path.resolve(`_agstate/yarn-links`);
   const linkFlags = [`--link-folder=${linkFolder}`, 'link'];
@@ -33,7 +41,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         const dir = `${sdkPackagesDir}/${pkg}`;
         const packageJSON = await fs
           .readFile(`${dir}/package.json`)
-          .catch(_ => undefined);
+          .catch(err => log('error reading', `${dir}/package.json`, err));
         if (!packageJSON) {
           return undefined;
         }
@@ -74,7 +82,10 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
         // Update all the package dependencies according to the SDK.
         const pjson = `${subdir}/package.json`;
-        const packageJSON = await fs.readFile(pjson);
+        const packageJSON = await fs.readFile(pjson).catch(_ => undefined);
+        if (!packageJSON) {
+          return;
+        }
         const pj = JSON.parse(packageJSON);
         for (const section of ['dependencies', 'devDependencies']) {
           const deps = pj[section];
@@ -115,19 +126,22 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     );
   }
 
-  if (await pspawn('yarn', [linkFlags[0], 'install'], { stdio: 'inherit' })) {
+  const yarnInstall = await pspawn('yarn', [linkFlags[0], 'install'], {
+    stdio: 'inherit',
+  });
+  if (yarnInstall) {
     // Try to install via Yarn.
     log.error('Cannot yarn install');
     return 1;
   }
 
-  if (
-    await pspawn('yarn', [linkFlags[0], 'install'], {
+  // Try to install via Yarn.
+  const yarnInstallUi = await (subdirs.includes('ui') &&
+    pspawn('yarn', [linkFlags[0], 'install'], {
       stdio: 'inherit',
       cwd: 'ui',
-    })
-  ) {
-    // Try to install via Yarn.
+    }));
+  if (yarnInstallUi) {
     log.warn('Cannot yarn install in ui directory');
     return 1;
   }
