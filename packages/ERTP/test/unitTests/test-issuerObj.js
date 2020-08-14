@@ -3,9 +3,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
-import { MathKind } from '../../src/amountMath';
-
-import { makeIssuerKit } from '../../src/issuer';
+import { MathKind, makeIssuerKit } from '../../src';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
   try {

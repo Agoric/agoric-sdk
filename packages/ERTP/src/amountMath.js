@@ -3,9 +3,11 @@
 import { assert, details } from '@agoric/assert';
 
 import { mustBeComparable } from '@agoric/same-structure';
-import mathHelpersLib from './mathHelpersLib';
 
 import './types';
+import natMathHelpers from './mathHelpers/natMathHelpers';
+import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
+import setMathHelpers from './mathHelpers/setMathHelpers';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
@@ -51,16 +53,14 @@ export { MathKind };
  * function `coerce` takes an amount and checks it, returning an amount (amount
  * -> amount).
  *
- * `makeAmountMath` takes in a brand and the kind of mathHelpers to use.
+ * `makeAmountMath` takes in a brand and the kind of amountMath to use.
  *
- * amountMath is unfortunately not pass-by-copy. If you call
- * `getAmountMath` on a remote issuer, it will return a remote object and
- * each call will incur the costs of calling a remote object. However,
- * you can create a local amountMath by importing this module locally
- * and passing `makeAmountMath` the brand and the kind of amountMath. The
- * amountMath kind is a pass-by-copy string, while the brand is a presence.
- * There's no performance cost for the brand being a presence, as the only
- * operations on the brand in this module are equality tests.
+ * amountMath is not pass-by-copy, but everything it does can be done
+ * locally in each vat that needs the functionality. If the operations
+ * are done against a remote version, they have the same semantics, but
+ * require an extra messaging round-trip per call. The best way to use
+ * it is to make a local copy, which can be done by calling
+ * makeLocalAmountMath(issuer).
  *
  * AmountMath exports MathKind, which contains constants for the kinds:
  * NAT, SET, and STRING_SET.
@@ -78,7 +78,12 @@ function makeAmountMath(brand, amountMathKind) {
   mustBeComparable(brand);
   assert.typeof(amountMathKind, 'string');
 
-  const helpers = mathHelpersLib[amountMathKind];
+  const mathHelpers = {
+    nat: natMathHelpers,
+    strSet: strSetMathHelpers,
+    set: setMathHelpers,
+  };
+  const helpers = mathHelpers[amountMathKind];
   assert(
     helpers !== undefined,
     details`unrecognized amountMathKind: ${amountMathKind}`,
@@ -178,6 +183,6 @@ function makeAmountMath(brand, amountMathKind) {
   return amountMath;
 }
 
-export default harden(makeAmountMath);
+harden(makeAmountMath);
 
 export { makeAmountMath };

@@ -2,7 +2,7 @@
 
 /* global harden */
 import { E } from '@agoric/eventual-send';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 import { assert, details } from '@agoric/assert';
 

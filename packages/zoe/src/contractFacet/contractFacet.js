@@ -11,7 +11,7 @@ import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 
-import { makeAmountMath, MathKind } from '@agoric/ertp/src/amountMath';
+import { makeAmountMath, MathKind } from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { areRightsConserved } from './rightsConservation';

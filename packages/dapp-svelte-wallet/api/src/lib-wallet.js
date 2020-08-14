@@ -3,7 +3,7 @@
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
-import makeLocalAmountMath from '@agoric/ertp';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 // TODO: move the Table abstraction out of Zoe
 import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
@@ -107,7 +107,7 @@ export async function makeWallet({
                 `issuer was using a brand which was not its own`,
               );
               if (!issuerToBrand.has(issuer)) {
-                const amountMath = makeLocalAmountMath(brand, amountMathKind);
+                const amountMath = makeLocalAmountMath(brand);
                 const issuerRecord = {
                   issuer,
                   brand,

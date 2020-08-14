@@ -1,10 +1,9 @@
 // @ts-check
 
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import '../../exported';
-import { MathKind } from '@agoric/ertp/src/amountMath';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract

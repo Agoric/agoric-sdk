@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 export const showPurseBalance = async (purseP, name, log) => {
   try {

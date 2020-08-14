@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers';
 import { getInvitationFields } from '../../zoeTestHelpers';
 

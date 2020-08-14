@@ -4,7 +4,7 @@ import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 
-import { MathKind } from '@agoric/ertp/src/amountMath';
+import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 
 import '../../exported';

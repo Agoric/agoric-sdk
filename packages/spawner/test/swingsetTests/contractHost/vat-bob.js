@@ -3,7 +3,7 @@
 
 /* global harden */
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { makeCollect } from '../../../src/makeCollect';
 

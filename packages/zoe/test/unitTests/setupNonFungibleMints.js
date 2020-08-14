@@ -1,4 +1,4 @@
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from './contracts/fakeVatAdmin';
 

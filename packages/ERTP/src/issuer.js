@@ -5,7 +5,6 @@
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
 import { isPromise } from '@agoric/promise-kit';
-import { E } from '@agoric/eventual-send';
 
 import { makeAmountMath, MathKind } from './amountMath';
 
@@ -294,18 +293,4 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
 
 harden(makeIssuerKit);
 
-export default makeIssuerKit;
-
-/**
- * @param {Issuer} issuer
- * @returns {Promise<AmountMath>}
- */
-const makeLocalAmountMath = async issuer => {
-  const [brand, amountMathKind] = await Promise.all([
-    E(issuer).getBrand(),
-    E(issuer).getAmountMathKind(),
-  ]);
-  return makeAmountMath(brand, amountMathKind);
-};
-
-export { makeLocalAmountMath, makeIssuerKit };
+export { makeIssuerKit };

@@ -5,7 +5,7 @@ import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from './fakeVatAdmin';
 

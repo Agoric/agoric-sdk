@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 /* eslint-disable import/extensions, import/no-unresolved */
 import crashingAutoRefund from './bundle-crashingAutoRefund';
 /* eslint-enable import/extensions, import/no-unresolved */

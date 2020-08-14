@@ -3,8 +3,7 @@ import '@agoric/install-ses';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
-import { makeIssuerKit } from '../../src/issuer';
-import { MathKind } from '../../src/amountMath';
+import { makeIssuerKit, MathKind } from '../../src';
 
 test('mint.getIssuer', t => {
   try {
@@ -17,7 +16,7 @@ test('mint.getIssuer', t => {
   }
 });
 
-test('mint.mintPayment default natMathHelper', t => {
+test('mint.mintPayment default nat MathKind', t => {
   t.plan(2);
   const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const fungible1000 = amountMath.make(1000);
@@ -32,7 +31,7 @@ test('mint.mintPayment default natMathHelper', t => {
   });
 });
 
-test('mint.mintPayment strSetMathHelpers', t => {
+test('mint.mintPayment strSet MathKind', t => {
   t.plan(2);
   const { mint, issuer, amountMath } = makeIssuerKit(
     'items',
@@ -51,7 +50,7 @@ test('mint.mintPayment strSetMathHelpers', t => {
   });
 });
 
-test('mint.mintPayment setMathHelpers', t => {
+test('mint.mintPayment set MathKind', t => {
   t.plan(3);
   const { mint, issuer, amountMath } = makeIssuerKit('items', MathKind.SET);
   const item1handle = {};
@@ -77,7 +76,7 @@ test('mint.mintPayment setMathHelpers', t => {
   });
 });
 
-test('mint.mintPayment setMathHelpers with invites', t => {
+test('mint.mintPayment set MathKind with invites', t => {
   t.plan(2);
   const { mint, issuer, amountMath } = makeIssuerKit('items', MathKind.SET);
   const instanceHandle1 = {};

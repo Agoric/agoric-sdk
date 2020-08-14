@@ -2,7 +2,7 @@
 
 /* global harden */
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';

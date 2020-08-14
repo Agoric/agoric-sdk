@@ -1,7 +1,7 @@
 /* global harden */
 
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from './helpers';
 import { makePrintLog } from './printLog';
 

@@ -1,9 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-
 import '@agoric/install-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { makeAmountMath, MathKind } from '../../../src/amountMath';
+import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -36,7 +36,7 @@ test('natMathHelpers', t => {
     t.deepEquals(getBrand(), mockBrand, 'brand is brand');
 
     // getAmountMathKind
-    t.deepEquals(getAmountMathKind(), 'nat', 'amountMathKind is nat');
+    t.deepEquals(getAmountMathKind(), MathKind.NAT, 'amountMathKind is nat');
 
     // make
     t.deepEquals(make(4), { brand: mockBrand, value: 4 });

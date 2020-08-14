@@ -100,8 +100,9 @@
  * not be trusted as accurate.
  *
  * Every amount created by a particular AmountMath will share the same brand,
- * but recipients cannot use the brand by itself to verify that a purported
- * amount is authentic, since the brand can be reused by a misbehaving issuer.
+ * but recipients cannot rely on the brand to verify that a purported amount
+ * represents the issuer they intended, since the same brand can be reused by
+ * a misbehaving issuer.
  *
  * @property {(allegedIssuer: any) => boolean} isMyIssuer Should be used with
  * `issuer.getBrand` to ensure an issuer and brand match.
@@ -185,7 +186,6 @@
  * @param {AmountMathKind} amountMathKind
  * @returns {IssuerKit}
  *
- * @property {(allegedName: string, amountMathKind: AmountMathKind) => IssuerKit} makeIssuerKit
  * The allegedName becomes part of the brand in asset descriptions. The
  * allegedName doesn't have to be a string, but it will only be used for
  * its value. The allegedName is useful for debugging and double-checking

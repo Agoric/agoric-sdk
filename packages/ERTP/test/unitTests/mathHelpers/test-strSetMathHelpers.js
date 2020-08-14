@@ -4,7 +4,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { makeAmountMath, MathKind } from '../../../src/amountMath';
+import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled

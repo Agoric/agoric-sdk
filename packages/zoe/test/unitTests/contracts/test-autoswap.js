@@ -2,7 +2,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp/src/issuer';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
