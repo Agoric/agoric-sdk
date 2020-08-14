@@ -1,4 +1,3 @@
-/* global HandledPromise */
 import Nat from '@agoric/nat';
 
 import makeIssuerKit from '@agoric/ertp';

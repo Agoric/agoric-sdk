@@ -1,14 +1,12 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden HandledPromise */
+/* global harden */
 
-import Nat from '@agoric/nat';
 import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
 import makeIssuerKit from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
 
 export { makeCollect } from './makeCollect';
 
