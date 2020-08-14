@@ -32,6 +32,11 @@ export const makeZcfSeatAdminKit = (
         details`The seatStaging ${seatStaging} was not recognized`,
       );
       currentAllocation = seatStaging.getStagedAllocation();
+      return harden({
+        // PLEASE REVIEW THIS LINE BEFORE ACCEPTING THIS SUGGESTION
+        zoeSeatAdmin,
+        allocation: currentAllocation,
+      });
     },
     updateHasExited: () => {
       assertExitedFalse();

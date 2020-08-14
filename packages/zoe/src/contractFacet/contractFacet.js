@@ -45,7 +45,6 @@ export function buildRootObject() {
 
     /** @type WeakStore<ZCFSeat,ZCFSeatAdmin> */
     const seatToZCFSeatAdmin = makeWeakStore('seat');
-    const seatToZoeSeatAdmin = makeWeakStore('seat');
 
     const issuers = Object.values(instanceRecord.issuerKeywordRecord);
 
@@ -124,7 +123,6 @@ export function buildRootObject() {
             ...updates,
           });
           const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
-          const zoeSeatAdmin = seatToZoeSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. Commit point. The following two steps
@@ -134,13 +132,8 @@ export function buildRootObject() {
           // If we minted only, no one would ever get those
           // invisibly-minted assets.
           E(zoeMintP).mintAndEscrow(totalToMint);
-          zcfSeatAdmin.commit(seatStaging);
-          E(zoeInstanceAdmin).replaceAllocations([
-            {
-              zoeSeatAdmin,
-              allocation: zcfSeat.getCurrentAllocation(),
-            },
-          ]);
+          const zoeSeatAdminAllocation = zcfSeatAdmin.commit(seatStaging);
+          E(zoeInstanceAdmin).replaceAllocations([zoeSeatAdminAllocation]);
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
@@ -163,7 +156,6 @@ export function buildRootObject() {
             ...updates,
           });
           const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
-          const zoeSeatAdmin = seatToZoeSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. Commit point. The following two steps
@@ -172,13 +164,8 @@ export function buildRootObject() {
           // it is not a disater if they are not.
           // If we only commit the staging, no one would ever get the
           // unburned assets.
-          zcfSeatAdmin.commit(seatStaging);
-          E(zoeInstanceAdmin).replaceAllocations([
-            {
-              zoeSeatAdmin,
-              allocation: zcfSeat.getCurrentAllocation(),
-            },
-          ]);
+          const zoeSeatAdminAllocation = zcfSeatAdmin.commit(seatStaging);
+          E(zoeInstanceAdmin).replaceAllocations([zoeSeatAdminAllocation]);
           E(zoeMintP).withdrawAndBurn(totalToBurn);
         },
       });
@@ -234,19 +221,10 @@ export function buildRootObject() {
 
         // Commit the staged allocations and inform Zoe of the
         // newAllocation.
-        seatStagings.forEach(seatStaging => {
-          const zcfSeat = seatStaging.getSeat();
-          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
-          zcfSeatAdmin.commit(seatStaging);
-        });
-
         const zoeSeatAdminAllocations = seatStagings.map(seatStaging => {
           const zcfSeat = seatStaging.getSeat();
-          const zoeSeatAdmin = seatToZoeSeatAdmin.get(zcfSeat);
-          return {
-            zoeSeatAdmin,
-            allocation: zcfSeat.getCurrentAllocation(),
-          };
+          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
+          return zcfSeatAdmin.commit(seatStaging);
         });
 
         E(zoeInstanceAdmin).replaceAllocations(zoeSeatAdminAllocations);
@@ -324,8 +302,6 @@ export function buildRootObject() {
             updateFromNotifier(updater, zoeNotifier);
             zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
             userSeatPromiseKit.resolve(userSeat);
-
-            seatToZoeSeatAdmin.init(zcfSeat, zoeSeatAdmin);
           });
 
         seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
@@ -346,7 +322,6 @@ export function buildRootObject() {
           getAmountMath,
         );
         seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
-        seatToZoeSeatAdmin.init(zcfSeat, zoeSeatAdmin);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(err => {

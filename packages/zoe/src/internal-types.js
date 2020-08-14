@@ -87,7 +87,7 @@
 /**
  * @typedef {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}} ZcfSeatAdminKit
  * @typedef {Object} ZCFSeatAdmin
- * @property {(seatStaging: SeatStaging) => void} commit
+ * @property {(seatStaging: SeatStaging) => ZoeSeatAdminAllocation} commit
  * @property {() => void} updateHasExited - updates `exited` state to true
  */
 
