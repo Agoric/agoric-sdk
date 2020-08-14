@@ -337,11 +337,11 @@
 
 /**
  * @typedef {Object} StandardTerms
- * @property {IssuerKeywordRecord} terms.issuers - record with
+ * @property {IssuerKeywordRecord} issuers - record with
  * keywords keys, issuer values
- * @property {BrandKeywordRecord} terms.brands - record with keywords
+ * @property {BrandKeywordRecord} brands - record with keywords
  * keys, brand values
- * @property {AmountMathKeywordRecord} terms.maths - record with keywords
+ * @property {AmountMathKeywordRecord} maths - record with keywords
  * keys, amountMath values
  * 
  * @typedef {StandardTerms & Record<string, any>} Terms

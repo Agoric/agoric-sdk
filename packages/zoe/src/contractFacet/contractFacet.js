@@ -75,7 +75,7 @@ export function buildRootObject() {
       return issuerRecord;
     };
 
-    const registerIssuerRecordWKeyword = (keyword, issuerRecord) => {
+    const registerIssuerRecordWithKeyword = (keyword, issuerRecord) => {
       assertKeywordName(keyword);
       assert(
         !getKeywords(instanceRecord.terms.issuers).includes(keyword),
@@ -109,7 +109,7 @@ export function buildRootObject() {
         issuer: mintyIssuer,
         amountMath: mintyAmountMath,
       });
-      registerIssuerRecordWKeyword(keyword, mintyIssuerRecord);
+      registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
       issuerTable.registerIssuerRecord(mintyIssuerRecord);
 
       /** @type ZCFMint */
@@ -255,7 +255,7 @@ export function buildRootObject() {
           .then(() => {
             return issuerTable
               .getPromiseForIssuerRecord(issuerP)
-              .then(record => registerIssuerRecordWKeyword(keyword, record));
+              .then(record => registerIssuerRecordWithKeyword(keyword, record));
           });
       },
       makeInvitation: (offerHandler, description, customProperties = {}) => {

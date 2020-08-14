@@ -30,12 +30,14 @@ import '../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  const { pricePerItem, issuers, maths } = zcf.getTerms();
+  const {
+    pricePerItem,
+    issuers,
+    maths: { Money: moneyMath, Items: itemsMath },
+  } = zcf.getTerms();
   const allKeywords = ['Items', 'Money'];
   assertIssuerKeywords(zcf, harden(allKeywords));
   assertNatMathHelpers(zcf, pricePerItem.brand);
-
-  const { Money: moneyMath, Items: itemsMath } = maths;
 
   let sellerSeat;
 
