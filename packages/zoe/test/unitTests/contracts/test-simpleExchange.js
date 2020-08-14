@@ -10,11 +10,7 @@ import { assert, details } from '@agoric/assert';
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
 import { installationPFromSource } from '../installFromSource';
-import {
-  assertPayoutAmount,
-  assertOfferResult,
-  getInvitationFields,
-} from '../../zoeTestHelpers';
+import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers';
 
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
@@ -115,11 +111,7 @@ test('simpleExchange with valid offers', async t => {
     });
 
   const bobInvite = await E(publicFacet).makeInvitation();
-  const { installation: bobInstallation } = await getInvitationFields(
-    inviteIssuer,
-    bobInvite,
-  );
-
+  const bobInstallation = await E(zoe).getInstallation(bobInvite);
   // 5: Bob decides to join.
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
 
@@ -361,10 +353,8 @@ test('simpleExchange with non-fungible assets', async t => {
   const bobInvite = await E(publicFacet).makeInvitation();
 
   // 5: Bob decides to join.
-  const {
-    installation: bobInstallation,
-    instance: bobInstance,
-  } = await getInvitationFields(inviteIssuer, bobInvite);
+  const bobInstance = await E(zoe).getInstance(bobInvite);
+  const bobInstallation = await E(zoe).getInstallation(bobInvite);
   const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
 
   t.equals(bobInstallation, installation);

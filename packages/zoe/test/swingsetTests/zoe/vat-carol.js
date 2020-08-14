@@ -2,7 +2,6 @@ import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
-import { getInvitationFields } from '../../zoeTestHelpers';
 
 const build = async (log, zoe, issuers, payments, installations) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
@@ -14,10 +13,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
   return harden({
     doPublicAuction: async inviteP => {
       const invite = await E(inviteIssuer).claim(inviteP);
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const terms = await E(zoe).getTerms(instance);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(invite);

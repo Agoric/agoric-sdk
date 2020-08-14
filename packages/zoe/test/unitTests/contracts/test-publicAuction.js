@@ -92,9 +92,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           // an
           const invitation = await invitationIssuer.claim(untrustedInvitation);
 
-          const {
-            value: [invitationValue],
-          } = await invitationIssuer.getAmountOf(invitation);
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
           t.equals(
             invitationValue.installation,
@@ -422,9 +420,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Alice spreads the invitations far and wide and Bob decides he
   // wants to participate in the auction.
   const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
-  const {
-    value: [bobInvitationValue],
-  } = await invitationIssuer.getAmountOf(bobExclusiveInvitation);
+  const bobInvitationValue = await E(zoe).getInvitationDetails(
+    bobExclusiveInvitation,
+  );
 
   const bobTerms = zoe.getTerms(bobInvitationValue.instance);
   const bobIssuers = zoe.getIssuers(bobInvitationValue.instance);
@@ -464,9 +462,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const carolExclusiveInvitation = await invitationIssuer.claim(
     carolInvitation,
   );
-  const {
-    value: [carolInvitationValue],
-  } = await invitationIssuer.getAmountOf(carolExclusiveInvitation);
+  const carolInvitationValue = await E(zoe).getInvitationDetails(
+    carolExclusiveInvitation,
+  );
 
   const carolTerms = zoe.getTerms(carolInvitationValue.instance);
   const carolIssuers = zoe.getIssuers(carolInvitationValue.instance);
@@ -511,9 +509,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Dave decides to bid for the one moola
   const daveExclusiveInvitation = await invitationIssuer.claim(daveInvitation);
-  const {
-    value: [daveInvitationValue],
-  } = await invitationIssuer.getAmountOf(daveExclusiveInvitation);
+  const daveInvitationValue = await E(zoe).getInvitationDetails(
+    daveExclusiveInvitation,
+  );
 
   const daveTerms = zoe.getTerms(daveInvitationValue.instance);
   const daveIssuers = zoe.getIssuers(daveInvitationValue.instance);

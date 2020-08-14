@@ -3,7 +3,6 @@ import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers';
-import { getInvitationFields } from '../../zoeTestHelpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const {
@@ -22,10 +21,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   return harden({
     doAutomaticRefund: async inviteP => {
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const exclInvite = await E(inviteIssuer).claim(invite);
 
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
@@ -72,10 +69,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doCoveredCall: async inviteP => {
       // Bob claims all with the Zoe inviteIssuer
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const exclInvite = await E(inviteIssuer).claim(invite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
@@ -139,10 +134,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doSwapForOption: async (inviteP, daveP) => {
       // Bob claims all with the Zoe inviteIssuer
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const exclInvite = await E(inviteIssuer).claim(invite);
 
       const { UnderlyingAsset, StrikePrice } = await E(zoe).getIssuers(
@@ -226,10 +219,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
     doPublicAuction: async inviteP => {
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const terms = await E(zoe).getTerms(instance);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const exclInvite = await E(inviteIssuer).claim(invite);
@@ -277,10 +268,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
     doAtomicSwap: async inviteP => {
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const exclInvite = await E(inviteIssuer).claim(invite);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
@@ -334,10 +323,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     doSimpleExchange: async inviteP => {
       const invite = await inviteP;
-      const { installation, instance } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const exclInvite = await E(inviteIssuer).claim(invite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
@@ -380,10 +367,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
     doSimpleExchangeUpdates: async (inviteP, m, s) => {
       const invite = await E(inviteIssuer).claim(inviteP);
-      const { installation, instance } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       assert(
@@ -433,10 +418,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doAutoswap: async instance => {
       const publicFacet = await E(zoe).getPublicFacet(instance);
       const buyBInvite = await E(publicFacet).makeSwapInvite();
-      const { installation } = await getInvitationFields(
-        inviteIssuer,
-        buyBInvite,
-      );
+      const installation = await E(zoe).getInstallation(buyBInvite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       assert(
         installation === installations.autoswap,

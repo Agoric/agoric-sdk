@@ -2,7 +2,6 @@ import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
-import { getInvitationFields } from '../../zoeTestHelpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const {
@@ -21,10 +20,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   return harden({
     doPublicAuction: async inviteP => {
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const exclInvite = await E(inviteIssuer).claim(invite);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
@@ -76,10 +73,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave is looking to buy the option to trade his 7 simoleans for
       // 3 moola, and is willing to pay 1 buck for the option.
       const invite = await inviteP;
-      const { instance, installation } = await getInvitationFields(
-        inviteIssuer,
-        invite,
-      );
+      const instance = await E(zoe).getInstance(invite);
+      const installation = await E(zoe).getInstallation(invite);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const exclInvite = await E(inviteIssuer).claim(invite);
       const { value: inviteValue } = await E(inviteIssuer).getAmountOf(

@@ -6,11 +6,7 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
-import {
-  assertOfferResult,
-  assertPayoutAmount,
-  getInvitationFields,
-} from '../../zoeTestHelpers';
+import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers';
 
 const autoswap = `${__dirname}/../../../src/contracts/autoswap`;
 
@@ -86,10 +82,8 @@ test('autoSwap with valid offers', async t => {
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
-    const {
-      installation: bobInstallation,
-      instance: bobInstance,
-    } = await getInvitationFields(inviteIssuer, bobExclInvite);
+    const bobInstance = await E(zoe).getInstance(bobExclInvite);
+    const bobInstallation = await E(zoe).getInstallation(bobExclInvite);
     t.equals(bobInstallation, installation, `installation`);
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
@@ -283,10 +277,8 @@ test('autoSwap - test fee', async t => {
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
-    const {
-      installation: bobInstallation,
-      instance: bobInstance,
-    } = await getInvitationFields(inviteIssuer, bobExclInvite);
+    const bobInstance = await E(zoe).getInstance(bobExclInvite);
+    const bobInstallation = await E(zoe).getInstallation(bobExclInvite);
     t.equals(bobInstallation, bobInstallation);
 
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);

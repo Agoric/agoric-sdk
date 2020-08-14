@@ -66,6 +66,18 @@ function makeZoe(vatAdminSvc) {
     getBrands: instance => instanceToInstanceAdmin.get(instance).getBrands(),
     getIssuers: instance => instanceToInstanceAdmin.get(instance).getIssuers(),
     getTerms: instance => instanceToInstanceAdmin.get(instance).getTerms(),
+    getInstance: invitation =>
+      E(invitationKit.issuer)
+        .getAmountOf(invitation)
+        .then(amount => amount.value[0].instance),
+    getInstallation: invitation =>
+      E(invitationKit.issuer)
+        .getAmountOf(invitation)
+        .then(amount => amount.value[0].installation),
+    getInvitationDetails: invitation =>
+      E(invitationKit.issuer)
+        .getAmountOf(invitation)
+        .then(amount => amount.value[0]),
     startInstance: async (
       installation,
       uncleanIssuerKeywordRecord = harden({}),
