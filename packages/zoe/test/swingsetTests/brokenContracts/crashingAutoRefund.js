@@ -16,7 +16,8 @@ import '../../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, terms) => {
+const start = zcf => {
+  const terms = zcf.getTerms();
   let offersCount = 0;
 
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));

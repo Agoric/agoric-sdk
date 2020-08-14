@@ -31,7 +31,7 @@ import {
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
   let sellOfferSeats = [];
   let buyOfferSeats = [];
   // eslint-disable-next-line no-use-before-define

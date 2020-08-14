@@ -101,8 +101,8 @@ const mergeAllocations = (currentAllocation, allocation) => {
 };
 
 export const assertIssuerKeywords = (zcf, expected) => {
-  const { issuerKeywordRecord } = zcf.getInstanceRecord();
-  const actual = getKeysSorted(issuerKeywordRecord);
+  const { issuers } = zcf.getTerms();
+  const actual = getKeysSorted(issuers);
   expected = [...expected]; // in case hardened
   expected.sort();
   assert(

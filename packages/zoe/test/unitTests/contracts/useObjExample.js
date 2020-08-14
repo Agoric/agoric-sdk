@@ -11,10 +11,12 @@ import {
  * Give a use object when a payment is escrowed
  * @type {ContractStartFn}
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
+  const {
+    brands: { Pixels: pixelBrand },
+  } = zcf.getTerms();
   assertIssuerKeywords(zcf, harden(['Pixels']));
-  const { brandKeywordRecord } = zcf.getInstanceRecord();
-  const amountMath = zcf.getAmountMath(brandKeywordRecord.Pixels);
+  const amountMath = zcf.getAmountMath(pixelBrand);
 
   const makeUseObj = seat => {
     const useObj = harden({
@@ -27,10 +29,7 @@ const start = (zcf, _terms) => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
         assert(!seat.hasExited(), `the escrowing offer is no longer active`);
-        const escrowedAmount = seat.getAmountAllocated(
-          'Pixels',
-          brandKeywordRecord.Pixels,
-        );
+        const escrowedAmount = seat.getAmountAllocated('Pixels', pixelBrand);
         // If no amountToColor is provided, color all the pixels
         // escrowed for this offer.
         if (amountToColor === undefined) {

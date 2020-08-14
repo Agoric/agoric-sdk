@@ -69,7 +69,7 @@ function makeZoe(vatAdminSvc) {
     startInstance: async (
       installation,
       uncleanIssuerKeywordRecord = harden({}),
-      terms = harden({}),
+      customTerms = harden({}),
     ) => {
       // Unpack the invitationKit.
 
@@ -105,17 +105,27 @@ function makeZoe(vatAdminSvc) {
         }
       });
 
-      const instanceRecord = {
-        issuerKeywordRecord: arrayToObj(
-          issuerRecords.map(record => record.issuer),
-          keywords,
-        ),
-        brandKeywordRecord: arrayToObj(
-          issuerRecords.map(record => record.brand),
-          keywords,
-        ),
+      const issuers = arrayToObj(
+        issuerRecords.map(record => record.issuer),
+        keywords,
+      );
+      const brands = arrayToObj(
+        issuerRecords.map(record => record.brand),
+        keywords,
+      );
+      const maths = arrayToObj(
+        issuerRecords.map(record => record.amountMath),
+        keywords,
+      );
+
+      let instanceRecord = {
         installation,
-        terms,
+        terms: {
+          ...customTerms,
+          issuers,
+          brands,
+          maths,
+        },
       };
 
       const createVatResult = await E(vatAdminSvc).createVat(zcfContractBundle);
@@ -133,14 +143,24 @@ function makeZoe(vatAdminSvc) {
           () => exitAllSeats(),
         );
 
-      const registerIssuerByKeyword = (keyword, issuer, brand) => {
-        instanceRecord.issuerKeywordRecord = {
-          ...instanceRecord.issuerKeywordRecord,
-          [keyword]: issuer,
-        };
-        instanceRecord.brandKeywordRecord = {
-          ...instanceRecord.brandKeywordRecord,
-          [keyword]: brand,
+      const registerIssuerByKeyword = (keyword, issuerRecord) => {
+        instanceRecord = {
+          ...instanceRecord,
+          terms: {
+            ...instanceRecord.terms,
+            issuers: {
+              ...instanceRecord.terms.issuers,
+              [keyword]: issuerRecord.issuer,
+            },
+            brands: {
+              ...instanceRecord.terms.brands,
+              [keyword]: issuerRecord.brand,
+            },
+            maths: {
+              ...instanceRecord.terms.maths,
+              [keyword]: issuerRecord.amountMath,
+            },
+          },
         };
       };
 
@@ -160,7 +180,7 @@ function makeZoe(vatAdminSvc) {
           amountMath: localAmountMath,
         });
         issuerTable.registerIssuerRecord(localIssuerRecord);
-        registerIssuerByKeyword(keyword, localIssuer, localBrand);
+        registerIssuerByKeyword(keyword, localIssuerRecord);
         const localPooledPurse = localIssuer.makeEmptyPurse();
         brandToPurse.init(localBrand, localPooledPurse);
 
@@ -197,8 +217,8 @@ function makeZoe(vatAdminSvc) {
         removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
         getPublicFacet: () => publicFacetPromiseKit.promise,
         getTerms: () => instanceRecord.terms,
-        getIssuers: () => instanceRecord.issuerKeywordRecord,
-        getBrands: () => instanceRecord.brandKeywordRecord,
+        getIssuers: () => instanceRecord.terms.issuers,
+        getBrands: () => instanceRecord.terms.brands,
         getInstance: () => instance,
       };
 
@@ -222,14 +242,13 @@ function makeZoe(vatAdminSvc) {
         },
         // checks of keyword done on zcf side
         saveIssuer: (issuerP, keyword) =>
-          issuerTable
-            .getPromiseForIssuerRecord(issuerP)
-            .then(({ issuer, brand }) => {
-              registerIssuerByKeyword(keyword, issuer, brand);
-              if (!brandToPurse.has(brand)) {
-                brandToPurse.init(brand, E(issuer).makeEmptyPurse());
-              }
-            }),
+          issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
+            registerIssuerByKeyword(keyword, issuerRecord);
+            const { issuer, brand } = issuerRecord;
+            if (!brandToPurse.has(brand)) {
+              brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+            }
+          }),
         // A Seat requested by the contract without an offer
         makeOfferlessSeat: (initialAllocation, proposal) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(

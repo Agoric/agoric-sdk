@@ -16,7 +16,7 @@ import '../../exported';
  * more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
  *
  * When the contract is instantiated, the two tokens are specified in the
- * issuerKeywordRecord. The party that calls startInstance gets an invitation
+ * terms.issuers. The party that calls startInstance gets an invitation
  * to add liquidity. The same invitation is available by calling
  * `await E(publicAPI).makeAddLiquidityInvite()`. Separate invitations are available for
  * adding and removing liquidity, and for doing a swap. Other API operations
@@ -24,7 +24,10 @@ import '../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = async (zcf, _terms) => {
+const start = async zcf => {
+  const {
+    maths: { TokenA: tokenAMath, TokenB: tokenBMath },
+  } = zcf.getTerms();
   // Create a local liquidity mint and issuer.
   const liquidityMint = await zcf.makeZCFMint('Liquidity');
   // AWAIT  ////////////////////
@@ -35,12 +38,13 @@ const start = async (zcf, _terms) => {
   } = liquidityMint.getIssuerRecord();
   let liqTokenSupply = 0;
 
-  const { brandKeywordRecord } = zcf.getInstanceRecord();
-  Object.values(brandKeywordRecord).forEach(brand =>
-    assertNatMathHelpers(zcf, brand),
-  );
+  // We have added a new issuer to the contract, so in order to get
+  // all the brands, we must call ZCF rather than use the static
+  // brands in the terms.
+  const { brands } = zcf.getTerms();
+  Object.values(brands).forEach(brand => assertNatMathHelpers(zcf, brand));
   const getPoolKeyword = brandToMatch => {
-    const entries = Object.entries(brandKeywordRecord);
+    const entries = Object.entries(brands);
     for (const [keyword, brand] of entries) {
       if (brand === brandToMatch) {
         return keyword;
@@ -137,28 +141,24 @@ const start = async (zcf, _terms) => {
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
 
-    const newUserTokenAAmount = zcf
-      .getAmountMath(userAllocation.TokenA.brand)
-      .make(
-        calcValueToRemove(
-          harden({
-            liqTokenSupply,
-            poolValue: getPoolAmount(userAllocation.TokenA.brand).value,
-            liquidityValueIn,
-          }),
-        ),
-      );
-    const newUserTokenBAmount = zcf
-      .getAmountMath(userAllocation.TokenB.brand)
-      .make(
-        calcValueToRemove(
-          harden({
-            liqTokenSupply,
-            poolValue: getPoolAmount(userAllocation.TokenB.brand).value,
-            liquidityValueIn,
-          }),
-        ),
-      );
+    const newUserTokenAAmount = tokenAMath.make(
+      calcValueToRemove(
+        harden({
+          liqTokenSupply,
+          poolValue: getPoolAmount(userAllocation.TokenA.brand).value,
+          liquidityValueIn,
+        }),
+      ),
+    );
+    const newUserTokenBAmount = tokenBMath.make(
+      calcValueToRemove(
+        harden({
+          liqTokenSupply,
+          poolValue: getPoolAmount(userAllocation.TokenB.brand).value,
+          liquidityValueIn,
+        }),
+      ),
+    );
 
     liqTokenSupply -= liquidityValueIn;
 
@@ -245,7 +245,7 @@ const start = async (zcf, _terms) => {
     makeRemoveLiquidityInvite,
   });
 
-  return { publicFacet, creatorFacet: publicFacet };
+  return harden({ publicFacet });
 };
 
 harden(start);

@@ -9,7 +9,7 @@ import {
 /**
  * @type {ContractStartFn}
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
   const makeAccompliceInvite = malSeat => {

@@ -28,7 +28,7 @@ import '../../../exported';
  * be shared as much as possible.
  *
  * When the contract is instantiated, the central token is specified in the
- * issuerKeywordRecord. The party that calls `E(zoe).startInstance` gets an invitation
+ * terms. The party that calls `E(zoe).startInstance` gets an invitation
  * that can be used to request an invitation to add liquidity. The same
  * invitation is available by calling `await E(publicAPI).getLiquidityIssuer(brand)`.
  * Separate invitations are available for adding and removing liquidity, and for
@@ -37,11 +37,13 @@ import '../../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, _terms) => {
+const start = zcf => {
   // This contract must have a "Central" keyword and issuer in the
   // IssuerKeywordRecord.
+  const {
+    brands: { Central: centralBrand },
+  } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
-  const centralBrand = zcf.getInstanceRecord().brandKeywordRecord.Central;
   assert(centralBrand !== undefined, details`centralBrand must be present`);
 
   const secondaryBrandToPool = makeWeakStore();

@@ -18,7 +18,7 @@ import '../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = async (zcf, _terms) => {
+const start = async zcf => {
   // Create the internal token mint for a fungible digital asset. Note
   // that 'Tokens' is both the keyword and the allegedName.
   const zcfMint = await zcf.makeZCFMint('Tokens');

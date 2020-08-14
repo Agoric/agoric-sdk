@@ -25,7 +25,8 @@ import '../../exported';
  *
  * @type {ContractStartFn}
  */
-const start = (zcf, { tokenName = 'token' }) => {
+const start = zcf => {
+  const { tokenName = 'token' } = zcf.getTerms();
   // Create the internal token mint
   const { issuer, mint, amountMath: tokenAmountMath } = makeIssuerKit(
     tokenName,
