@@ -20,7 +20,7 @@ tap.test('metering within a vat', async t => {
   const config = {
     vats: {
       within: {
-        sourcePath: require.resolve('./vat-within.js'),
+        sourceSpec: require.resolve('./vat-within.js'),
       },
     },
   };

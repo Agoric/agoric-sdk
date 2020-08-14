@@ -14,6 +14,7 @@ tap.test('nodeWorker vat manager', async t => {
   t.end();
 });
 
+/* // disabling for now due to possible buffering issue on MacOS
 tap.test('node-subprocess vat manager', async t => {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType: 'node-subprocess' };
@@ -25,3 +26,4 @@ tap.test('node-subprocess vat manager', async t => {
   await c.shutdown();
   t.end();
 });
+*/

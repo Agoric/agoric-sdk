@@ -1,23 +1,31 @@
 {
   "bootstrap": "bootstrap",
+  "bundles": {
+    "zcf": {
+      "sourceSpec": "../../../zoe/src/contractFacet.js"
+    }
+  },
   "vats": {
     "alice": {
-      "sourcePath": "vat-alice.js"
+      "sourceSpec": "vat-alice.js"
     },
     "bob": {
-      "sourcePath": "vat-bob.js"
+      "sourceSpec": "vat-bob.js"
     },
     "carol": {
-      "sourcePath": "vat-carol.js"
+      "sourceSpec": "vat-carol.js"
     },
     "dave": {
-      "sourcePath": "vat-dave.js"
+      "sourceSpec": "vat-dave.js"
     },
     "zoe": {
-      "sourcePath": "vat-zoe.js"
+      "sourceSpec": "vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
     },
     "bootstrap": {
-      "sourcePath": "bootstrap.js",
+      "sourceSpec": "bootstrap.js",
       "parameters": {
         "startingValues": {
           "automaticRefundOk": [

@@ -1,0 +1,25 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/src/contractFacet"
+    }
+  },
+  "vats": {
+    "alice": {
+      "sourceSpec": "vat-alice.js"
+    },
+    "bob": {
+      "sourceSpec": "vat-bob.js"
+    },
+    "zoe": {
+      "sourceSpec": "vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
+    },
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    }
+  }
+}

@@ -17,10 +17,10 @@ tap.test('create with setup and buildRootObject', async t => {
   const config = {
     vats: {
       setup: {
-        sourcePath: require.resolve('./vat-setup.js'),
+        sourceSpec: require.resolve('./vat-setup.js'),
       },
       liveslots: {
-        sourcePath: require.resolve('./vat-liveslots.js'),
+        sourceSpec: require.resolve('./vat-liveslots.js'),
       },
     },
   };
