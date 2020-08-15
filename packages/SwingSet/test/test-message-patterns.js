@@ -69,6 +69,7 @@ function testLocalPatterns() {
 }
 testLocalPatterns();
 
+// fails: 87 85 84 83 82 81 80, all but 86 (which I fixed earlier)
 const commsSourcePath = require.resolve('../src/vats/comms');
 const vatTPSourcePath = require.resolve('../src/vats/vat-tp');
 
