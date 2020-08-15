@@ -1,5 +1,4 @@
 export const start = zcf => {
-  const creatorInvitation = zcf.makeInvitation(() => {}, 'tester');
   const publicFacet = harden({
     doTest: () => {
       for (;;) {
@@ -7,5 +6,5 @@ export const start = zcf => {
       }
     },
   });
-  return harden({ creatorInvitation, publicFacet });
+  return harden({ publicFacet });
 };
