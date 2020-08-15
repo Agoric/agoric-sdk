@@ -17,7 +17,6 @@
 export function buildRootDeviceNode({ endowments }) {
   const {
     create: kernelVatCreationFn,
-    createByName: kernelVatCreationByNameFn,
     stats: kernelVatStatsFn,
     // terminate: kernelTerminateFn,
   } = endowments;
@@ -28,11 +27,11 @@ export function buildRootDeviceNode({ endowments }) {
     // kernel's vat creator fn. Remember that the root object will arrive
     // separately. Clean up the outgoing and incoming arguments.
     create(bundle, options) {
-      const vatID = kernelVatCreationFn(bundle, options);
+      const vatID = kernelVatCreationFn({ bundle }, options);
       return vatID;
     },
     createByName(bundleName, options) {
-      const vatID = kernelVatCreationByNameFn(bundleName, options);
+      const vatID = kernelVatCreationFn({ bundleName }, options);
       return vatID;
     },
     terminate(_vatID) {
