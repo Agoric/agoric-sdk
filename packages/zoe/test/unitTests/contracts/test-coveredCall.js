@@ -97,9 +97,7 @@ test('zoe - coveredCall', async t => {
             untrustedInvitation,
           );
 
-          const {
-            value: [invitationValue],
-          } = await invitationIssuer.getAmountOf(invitation);
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
           t.equals(
             invitationValue.installation,
@@ -246,9 +244,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 
     const invitationIssuer = zoe.getInvitationIssuer();
     const bobExclOption = await invitationIssuer.claim(optionP);
-    const {
-      value: [optionValue],
-    } = await invitationIssuer.getAmountOf(bobExclOption);
+    const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
     t.equal(optionValue.installation, coveredCallInstallation);
     t.equal(optionValue.description, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
@@ -648,9 +644,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     const invitationIssuer = zoe.getInvitationIssuer();
     const invitationAmountMath = await makeLocalAmountMath(invitationIssuer);
     const bobExclOption = await invitationIssuer.claim(optionP);
-    const {
-      value: [optionValue],
-    } = await invitationIssuer.getAmountOf(bobExclOption);
+    const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
     t.equal(optionValue.installation, coveredCallInstallation);
     t.equal(optionValue.description, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
@@ -701,9 +695,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     // 3 moola, and is willing to pay 1 buck for the option. He
     // checks that this invitation matches what he wants
     const daveExclOption = await invitationIssuer.claim(invitationForDaveP);
-    const {
-      value: [daveOptionValue],
-    } = await invitationIssuer.getAmountOf(daveExclOption);
+    const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
     t.equal(daveOptionValue.installation, coveredCallInstallation);
     t.equal(daveOptionValue.description, 'exerciseOption');
     t.ok(bucksR.amountMath.isEqual(daveOptionValue.strikePrice, bucks(1)));
@@ -908,9 +900,7 @@ test('zoe - coveredCall non-fungible', async t => {
 
   const invitationIssuer = zoe.getInvitationIssuer();
   const bobExclOption = await invitationIssuer.claim(optionP);
-  const {
-    value: [optionValue],
-  } = await invitationIssuer.getAmountOf(bobExclOption);
+  const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.equal(optionValue.installation, coveredCallInstallation);
   t.equal(optionValue.description, 'exerciseOption');
   t.ok(

@@ -1,5 +1,3 @@
-import { E } from '@agoric/eventual-send';
-
 export const assertPayoutAmount = (t, issuer, payout, expectedAmount) => {
   issuer.getAmountOf(payout).then(amount => {
     t.deepEquals(amount, expectedAmount, `payout was ${amount.value}`);
@@ -30,8 +28,3 @@ export const assertRejectedOfferResult = (t, seat, expected) => {
     e => t.equals(e, expected, 'Expected offer to be rejected'),
   );
 };
-
-export const getInvitationFields = (invitationIssuer, invitationP) =>
-  E(invitationIssuer)
-    .getAmountOf(invitationP)
-    .then(amount => amount.value[0]);

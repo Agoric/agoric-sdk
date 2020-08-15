@@ -85,10 +85,7 @@ test('zoe - atomicSwap', async t => {
         // transform an untrusted invitation that Alice also has access to, to
         // an
         const invitation = await invitationIssuer.claim(untrustedInvitation);
-
-        const {
-          value: [invitationValue],
-        } = await invitationIssuer.getAmountOf(invitation);
+        const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
         t.equals(
           invitationValue.installation,
@@ -248,10 +245,7 @@ test('zoe - non-fungible atomicSwap', async t => {
         // transform an untrusted invitation that Alice also has access to, to
         // an
         const invitation = await invitationIssuer.claim(untrustedInvitation);
-
-        const {
-          value: [invitationValue],
-        } = await invitationIssuer.getAmountOf(invitation);
+        const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
         t.equals(
           invitationValue.installation,
@@ -383,9 +377,7 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   const bobInviteP = E(aliceSeat).getOfferResult();
   const bobExclusiveInvite = await invitationIssuer.claim(bobInviteP);
-  const {
-    value: [bobInviteValue],
-  } = await invitationIssuer.getAmountOf(bobExclusiveInvite);
+  const bobInviteValue = await E(zoe).getInvitationDetails(bobExclusiveInvite);
 
   const bobIssuers = zoe.getIssuers(bobInviteValue.instance);
 

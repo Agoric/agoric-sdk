@@ -6,11 +6,7 @@ import { E } from '@agoric/eventual-send';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
-import {
-  assertPayoutAmount,
-  assertOfferResult,
-  getInvitationFields,
-} from '../../zoeTestHelpers';
+import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers';
 
 const barter = `${__dirname}/../../../src/contracts/barterExchange`;
 
@@ -67,10 +63,8 @@ test('barter with valid offers', async t => {
   const bobInvitation = await E(
     E(zoe).getPublicFacet(instance),
   ).makeInvitation();
-  const {
-    installation: bobInstallation,
-    instance: bobInstance,
-  } = await getInvitationFields(invitationIssuer, bobInvitation);
+  const bobInstance = await E(zoe).getInstance(bobInvitation);
+  const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
   const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
