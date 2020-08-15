@@ -98,7 +98,7 @@ const start = zcf => {
   };
 
   const creatorFacet = {
-    makeBuyerInvite: () => {
+    makeBuyerInvitation: () => {
       const itemsAmount = sellerSeat.getAmountAllocated('Items');
       assert(
         sellerSeat && !itemsMath.isEmpty(itemsAmount),

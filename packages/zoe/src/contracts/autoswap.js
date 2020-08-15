@@ -1,5 +1,7 @@
 // @ts-check
 
+import { assert } from '@agoric/assert';
+
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   getInputPrice,
@@ -7,8 +9,8 @@ import {
   calcValueToRemove,
   assertProposalKeywords,
   assertUsesNatMath,
+  trade,
 } from '../contractSupport';
-import { trade } from '../contractSupport/zoeHelpers';
 
 import '../../exported';
 
@@ -19,16 +21,13 @@ import '../../exported';
  * When the contract is instantiated, the two tokens are specified in the
  * terms.issuers. The party that calls startInstance gets an invitation
  * to add liquidity. The same invitation is available by calling
- * `await E(publicAPI).makeAddLiquidityInvite()`. Separate invitations are available for
+ * `E(publicFacet).makeAddLiquidityInvitation()`. Separate invitations are available for
  * adding and removing liquidity, and for doing a swap. Other API operations
  * support monitoring the price and the size of the liquidity pool.
  *
  * @type {ContractStartFn}
  */
 const start = async zcf => {
-  const {
-    maths: { TokenA: tokenAMath, TokenB: tokenBMath },
-  } = zcf.getTerms();
   // Create a local liquidity mint and issuer.
   const liquidityMint = await zcf.makeZCFMint('Liquidity');
   // AWAIT  ////////////////////
@@ -39,25 +38,28 @@ const start = async zcf => {
   } = liquidityMint.getIssuerRecord();
   let liqTokenSupply = 0;
 
-  // We have added a new issuer to the contract, so in order to get
-  // all the brands, we must call ZCF rather than use the static
-  // brands in the terms.
-  const { brands } = zcf.getTerms();
+  // In order to get all the brands, we must call zcf.getTerms() after
+  // we create the liquidityIssuer
+  const {
+    brands,
+    maths: { TokenA: tokenAMath, TokenB: tokenBMath },
+  } = zcf.getTerms();
   Object.values(brands).forEach(brand => assertUsesNatMath(zcf, brand));
-  const getPoolKeyword = brandToMatch => {
-    const entries = Object.entries(brands);
-    for (const [keyword, brand] of entries) {
-      if (brand === brandToMatch) {
-        return keyword;
-      }
-    }
-    throw new Error('getPoolKeyword: brand not found');
+  /** @typedef {Map<Brand,Keyword>} */
+  const brandToKeyword = new Map(
+    Object.entries(brands).map(([keyword, brand]) => [brand, keyword]),
+  );
+  /** @return {string} */
+  const getPoolKeyword = brand => {
+    assert(brandToKeyword.has(brand), 'getPoolKeyword: brand not found');
+    // @ts-ignore
+    return brandToKeyword.get(brand);
   };
 
   const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
   const getPoolAmount = brand => {
     const keyword = getPoolKeyword(brand);
-    return poolSeat.getCurrentAllocation()[keyword];
+    return poolSeat.getAmountAllocated(keyword, brand);
   };
 
   /** @type {OfferHandler} */
@@ -107,13 +109,11 @@ const start = async zcf => {
     // If the current supply is zero, start off by just taking the
     // value at TokenA and using it as the value for the
     // liquidity token.
-    const tokenAPoolAmount = getPoolAmount(userAllocation.TokenA.brand);
-    const inputReserve = tokenAPoolAmount ? tokenAPoolAmount.value : 0;
     const liquidityValueOut = calcLiqValueToMint(
       harden({
         liqTokenSupply,
         inputValue: userAllocation.TokenA.value,
-        inputReserve,
+        inputReserve: getPoolAmount(userAllocation.TokenA.brand).value,
       }),
     );
     const liquidityAmountOut = liquidityAmountMath.make(liquidityValueOut);
@@ -197,19 +197,19 @@ const start = async zcf => {
     give: { In: null },
   };
 
-  const makeAddLiquidityInvite = () =>
+  const makeAddLiquidityInvitation = () =>
     zcf.makeInvitation(
       assertProposalKeywords(addLiquidityHandler, addLiquidityExpected),
       'autoswap add liquidity',
     );
 
-  const makeRemoveLiquidityInvite = () =>
+  const makeRemoveLiquidityInvitation = () =>
     zcf.makeInvitation(
       assertProposalKeywords(removeLiquidityHandler, removeLiquidityExpected),
       'autoswap remove liquidity',
     );
 
-  const makeSwapInvite = () =>
+  const makeSwapInvitation = () =>
     zcf.makeInvitation(
       assertProposalKeywords(swapHandler, swapExpected),
       'autoswap swap',
@@ -241,9 +241,9 @@ const start = async zcf => {
     getCurrentPrice,
     getLiquidityIssuer: () => liquidityIssuer,
     getPoolAllocation,
-    makeSwapInvite,
-    makeAddLiquidityInvite,
-    makeRemoveLiquidityInvite,
+    makeSwapInvitation,
+    makeAddLiquidityInvitation,
+    makeRemoveLiquidityInvitation,
   });
 
   return harden({ publicFacet });

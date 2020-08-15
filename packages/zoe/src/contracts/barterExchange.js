@@ -41,8 +41,8 @@ const start = zcf => {
   function findMatchingTrade(newDetails, orders) {
     return orders.find(order => {
       return (
-        satisfies(zcf, newDetails.offerSeat, { Out: order.amountIn }) &&
-        satisfies(zcf, order.offerSeat, { Out: newDetails.amountIn })
+        satisfies(zcf, newDetails.seat, { Out: order.amountIn }) &&
+        satisfies(zcf, order.seat, { Out: newDetails.amountIn })
       );
     });
   }
@@ -66,7 +66,7 @@ const start = zcf => {
       trade(
         zcf,
         {
-          seat: matchingTrade.offerSeat,
+          seat: matchingTrade.seat,
           gains: {
             Out: matchingTrade.amountOut,
           },
@@ -75,7 +75,7 @@ const start = zcf => {
           },
         },
         {
-          seat: offerDetails.offerSeat,
+          seat: offerDetails.seat,
           gains: {
             Out: offerDetails.amountOut,
           },
@@ -85,8 +85,8 @@ const start = zcf => {
         },
       );
       removeFromOrders(matchingTrade);
-      offerDetails.offerSeat.exit();
-      matchingTrade.offerSeat.exit();
+      offerDetails.seat.exit();
+      matchingTrade.seat.exit();
 
       return true;
     }
@@ -101,22 +101,22 @@ const start = zcf => {
     orders.push(offerDetails);
   }
 
-  function extractOfferDetails(offerSeat) {
+  function extractOfferDetails(seat) {
     const {
       give: { In: amountIn },
       want: { Out: amountOut },
-    } = offerSeat.getProposal();
+    } = seat.getProposal();
 
     return {
-      offerSeat,
+      seat,
       amountIn,
       amountOut,
     };
   }
 
   /** @type {OfferHandler} */
-  const exchangeOfferHandler = offerSeat => {
-    const offerDetails = extractOfferDetails(offerSeat);
+  const exchangeOfferHandler = seat => {
+    const offerDetails = extractOfferDetails(seat);
 
     if (!tradeWithMatchingOffer(offerDetails)) {
       addToBook(offerDetails);
@@ -125,15 +125,11 @@ const start = zcf => {
     return 'Trade completed.';
   };
 
-  const makeExchangeInvitation = () =>
-    zcf.makeInvitation(exchangeOfferHandler, 'exchange');
-
-  const publicFacet = harden({ makeInvitation: makeExchangeInvitation });
-  const creatorFacet = harden({
-    makeInvitation: makeExchangeInvitation,
+  const publicFacet = harden({
+    makeInvitation: () => zcf.makeInvitation(exchangeOfferHandler, 'exchange'),
   });
 
-  return { publicFacet, creatorFacet };
+  return { publicFacet };
 };
 
 harden(start);

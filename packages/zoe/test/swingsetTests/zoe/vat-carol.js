@@ -8,16 +8,18 @@ const build = async (log, zoe, issuers, payments, installations) => {
   const [moolaPurseP, simoleanPurseP] = purses;
   const [_moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
-  const inviteIssuer = await E(zoe).getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   return harden({
-    doPublicAuction: async inviteP => {
-      const invite = await E(inviteIssuer).claim(inviteP);
-      const instance = await E(zoe).getInstance(invite);
-      const installation = await E(zoe).getInstallation(invite);
+    doPublicAuction: async invitationP => {
+      const invitation = await E(invitationIssuer).claim(invitationP);
+      const instance = await E(zoe).getInstance(invitation);
+      const installation = await E(zoe).getInstallation(invitation);
       const terms = await E(zoe).getTerms(instance);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(invite);
+      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
+        invitation,
+      );
 
       assert(
         installation === installations.publicAuction,
@@ -31,8 +33,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
         details`issuerKeywordRecord were not as expected`,
       );
       assert(terms.numBidsAllowed === 3, details`terms not as expected`);
-      assert(sameStructure(inviteValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(inviteValue[0].auctionedAssets, moola(1)));
+      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
+      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },
@@ -41,7 +43,11 @@ const build = async (log, zoe, issuers, payments, installations) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const seatP = await E(zoe).offer(invite, proposal, paymentKeywordRecord);
+      const seatP = await E(zoe).offer(
+        invitation,
+        proposal,
+        paymentKeywordRecord,
+      );
 
       log(`Carol: ${await E(seatP).getOfferResult()}`);
 

@@ -26,20 +26,19 @@ import {
  * Price is a limit that may be improved on. This simple exchange does
  * not partially fill orders.
  *
- * The invitation returned on installation of the contract is the same as what
- * is returned by calling `await E(publicAPI).makeInvitation().
+ * The publicFacet is returned from the contract.
  *
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  let sellOfferSeats = [];
-  let buyOfferSeats = [];
+  let sellSeats = [];
+  let buySeats = [];
   // eslint-disable-next-line no-use-before-define
   const { notifier, updater } = makeNotifierKit(getBookOrders());
 
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
-  function dropOnExit(p) {
+  function dropExit(p) {
     return {
       want: p.want,
       give: p.give,
@@ -48,15 +47,13 @@ const start = zcf => {
 
   function flattenOrders(seats) {
     const activeSeats = seats.filter(s => !s.hasExited());
-    return activeSeats.map(offerRecord =>
-      dropOnExit(offerRecord.getProposal()),
-    );
+    return activeSeats.map(seat => dropExit(seat.getProposal()));
   }
 
   function getBookOrders() {
     return {
-      buys: flattenOrders(buyOfferSeats),
-      sells: flattenOrders(sellOfferSeats),
+      buys: flattenOrders(buySeats),
+      sells: flattenOrders(sellSeats),
     };
   }
 
@@ -68,12 +65,12 @@ const start = zcf => {
   // If there's an existing offer that this offer is a match for, make the trade
   // and return the handle for the matched offer. If not, return undefined, so
   // the caller can know to add the new offer to the book.
-  function swapIfCanTrade(offers, offerSeat) {
+  function swapIfCanTrade(offers, seat) {
     for (const offer of offers) {
       const satisfiedBy = (xSeat, ySeat) =>
         satisfies(zcf, xSeat, ySeat.getCurrentAllocation());
-      if (satisfiedBy(offer, offerSeat) && satisfiedBy(offerSeat, offer)) {
-        swap(zcf, offerSeat, offer);
+      if (satisfiedBy(offer, seat) && satisfiedBy(seat, offer)) {
+        swap(zcf, seat, offer);
         // return handle to remove
         return offer;
       }
@@ -85,21 +82,21 @@ const start = zcf => {
   // the matching offer and return the remaining counterOffers. If there's no
   // matching offer, add the offerHandle to the coOffers, and return the
   // unmodified counterOfffers
-  function swapIfCanTradeAndUpdateBook(counterOffers, coOffers, offerSeat) {
-    const offer = swapIfCanTrade(counterOffers, offerSeat);
+  function swapIfCanTradeAndUpdateBook(counterOffers, coOffers, seat) {
+    const offer = swapIfCanTrade(counterOffers, seat);
     if (offer) {
       // remove the matched offer.
       counterOffers = counterOffers.filter(value => value !== offer);
     } else {
       // Save the order in the book
-      coOffers.push(offerSeat);
+      coOffers.push(seat);
     }
 
     return counterOffers;
   }
 
   /** @type {OfferHandler} */
-  const exchangeOfferHandler = offerSeat => {
+  const exchangeOfferHandler = seat => {
     const buyAssetForPrice = harden({
       give: { Price: null },
       want: { Asset: null },
@@ -108,22 +105,14 @@ const start = zcf => {
       give: { Asset: null },
       want: { Price: null },
     });
-    if (checkIfProposal(offerSeat, sellAssetForPrice)) {
-      buyOfferSeats = swapIfCanTradeAndUpdateBook(
-        buyOfferSeats,
-        sellOfferSeats,
-        offerSeat,
-      );
+    if (checkIfProposal(seat, sellAssetForPrice)) {
+      buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
       /* eslint-disable no-else-return */
-    } else if (checkIfProposal(offerSeat, buyAssetForPrice)) {
-      sellOfferSeats = swapIfCanTradeAndUpdateBook(
-        sellOfferSeats,
-        buyOfferSeats,
-        offerSeat,
-      );
+    } else if (checkIfProposal(seat, buyAssetForPrice)) {
+      sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
     } else {
       // Eject because the offer must be invalid
-      throw offerSeat.kickOut();
+      throw seat.kickOut();
     }
     bookOrdersChanged();
     return 'Trade Successful';
@@ -137,17 +126,9 @@ const start = zcf => {
     getNotifier: () => notifier,
   });
 
-  const creatorFacet = harden({
-    getPublicFacet: () => publicFacet,
-  });
-
   // set the initial state of the notifier
   bookOrdersChanged();
-  return {
-    creatorInvitation: makeExchangeInvitation(),
-    creatorFacet,
-    publicFacet,
-  };
+  return harden({ publicFacet });
 };
 
 harden(start);

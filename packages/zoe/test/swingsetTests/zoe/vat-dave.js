@@ -15,17 +15,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
-  const inviteIssuer = await E(zoe).getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   return harden({
-    doPublicAuction: async inviteP => {
-      const invite = await inviteP;
-      const instance = await E(zoe).getInstance(invite);
-      const installation = await E(zoe).getInstallation(invite);
+    doPublicAuction: async invitation => {
+      const instance = await E(zoe).getInstance(invitation);
+      const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvite = await E(inviteIssuer).claim(invite);
-      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
-        exclInvite,
+      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
+        exclInvitation,
       );
 
       assert(
@@ -41,8 +40,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
       const terms = await E(zoe).getTerms(instance);
       assert(terms.numBidsAllowed === 3, details`terms not as expected`);
-      assert(sameStructure(inviteValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(inviteValue[0].auctionedAssets, moola(1)));
+      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
+      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },
@@ -52,7 +51,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
       const seatP = await E(zoe).offer(
-        exclInvite,
+        exclInvitation,
         proposal,
         paymentKeywordRecord,
       );
@@ -69,16 +68,15 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(simoleanPurseP, 'daveSimoleanPurse', log);
     },
 
-    doSwapForOption: async (inviteP, optionAmounts) => {
+    doSwapForOption: async (invitation, optionAmounts) => {
       // Dave is looking to buy the option to trade his 7 simoleans for
       // 3 moola, and is willing to pay 1 buck for the option.
-      const invite = await inviteP;
-      const instance = await E(zoe).getInstance(invite);
-      const installation = await E(zoe).getInstallation(invite);
+      const instance = await E(zoe).getInstance(invitation);
+      const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvite = await E(inviteIssuer).claim(invite);
-      const { value: inviteValue } = await E(inviteIssuer).getAmountOf(
-        exclInvite,
+      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
+        exclInvitation,
       );
       const { source } = await E(installation).getBundle();
       // pick some arbitrary code points as a signature.
@@ -100,7 +98,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
       assert(
         sameStructure(
-          harden({ Asset: inviteIssuer, Price: bucksIssuer }),
+          harden({ Asset: invitationIssuer, Price: bucksIssuer }),
           issuerKeywordRecord,
         ),
         details`issuerKeywordRecord were not as expected`,
@@ -109,17 +107,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       assert(
-        sameStructure(inviteValue[0].asset, optionAmounts),
+        sameStructure(invitationValue[0].asset, optionAmounts),
         details`asset is the option`,
       );
       assert(
-        sameStructure(inviteValue[0].price, bucks(1)),
+        sameStructure(invitationValue[0].price, bucks(1)),
         details`price is 1 buck`,
       );
       const optionValue = optionAmounts.value;
       assert(
         optionValue[0].description === 'exerciseOption',
-        details`wrong invite`,
+        details`wrong invitation`,
       );
       assert(
         moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)),
@@ -142,7 +140,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
       const seatP = await E(zoe).offer(
-        exclInvite,
+        exclInvitation,
         daveSwapProposal,
         daveSwapPayments,
       );

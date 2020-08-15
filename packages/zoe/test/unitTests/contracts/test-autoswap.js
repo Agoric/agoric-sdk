@@ -1,8 +1,11 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'tape-promise/tape';
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+
+import '../../../exported';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
@@ -22,7 +25,7 @@ test('autoSwap with valid offers', async t => {
       simoleans,
       zoe,
     } = setup();
-    const inviteIssuer = zoe.getInvitationIssuer();
+    const invitationIssuer = zoe.getInvitationIssuer();
     const installation = await installationPFromSource(zoe, autoswap);
 
     // Setup Alice
@@ -44,7 +47,8 @@ test('autoSwap with valid offers', async t => {
       issuerKeywordRecord,
     );
     const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
-    const liquidity = (await makeLocalAmountMath(liquidityIssuerP)).make;
+    const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuerP);
+    const liquidity = liquidityAmountMath.make;
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -57,9 +61,9 @@ test('autoSwap with valid offers', async t => {
       TokenA: aliceMoolaPayment,
       TokenB: aliceSimoleanPayment,
     };
-    const aliceInvite = await publicFacet.makeAddLiquidityInvite();
+    const aliceInvitation = await publicFacet.makeAddLiquidityInvitation();
     const aliceSeat = await zoe.offer(
-      aliceInvite,
+      aliceInvitation,
       aliceProposal,
       alicePayments,
     );
@@ -77,13 +81,13 @@ test('autoSwap with valid offers', async t => {
       `pool allocation`,
     );
 
-    // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = await E(publicFacet).makeSwapInvite();
+    // Alice creates an invitation for autoswap and sends it to Bob
+    const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
     // Bob claims it
-    const bobExclInvite = await inviteIssuer.claim(bobInvite);
-    const bobInstance = await E(zoe).getInstance(bobExclInvite);
-    const bobInstallation = await E(zoe).getInstallation(bobExclInvite);
+    const bobExclInvitation = await invitationIssuer.claim(bobInvitation);
+    const bobInstance = await E(zoe).getInstance(bobExclInvitation);
+    const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
     t.equals(bobInstallation, installation, `installation`);
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
@@ -102,7 +106,7 @@ test('autoSwap with valid offers', async t => {
     const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
     const bobSeat = await zoe.offer(
-      bobExclInvite,
+      bobExclInvitation,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );
@@ -135,7 +139,7 @@ test('autoSwap with valid offers', async t => {
     t.deepEquals(moolaAmounts, moola(5), `price 2`);
 
     // Bob makes another offer and swaps
-    const bobSecondInvite = await E(bobAutoswap).makeSwapInvite();
+    const bobSecondInvitation = E(bobAutoswap).makeSwapInvitation();
     const bobSimsForMoolaProposal = harden({
       want: { Out: moola(5) },
       give: { In: simoleans(3) },
@@ -143,7 +147,7 @@ test('autoSwap with valid offers', async t => {
     const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
 
     const bobSecondSeat = await zoe.offer(
-      bobSecondInvite,
+      bobSecondInvitation,
       bobSimsForMoolaProposal,
       simsForMoolaPayments,
     );
@@ -168,7 +172,9 @@ test('autoSwap with valid offers', async t => {
     );
 
     // Alice removes her liquidity
-    const aliceSecondInvite = await E(publicFacet).makeRemoveLiquidityInvite();
+    const aliceSecondInvitation = await E(
+      publicFacet,
+    ).makeRemoveLiquidityInvitation();
     // She's not picky...
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
@@ -176,7 +182,7 @@ test('autoSwap with valid offers', async t => {
     });
 
     const aliceRmLiqSeat = await zoe.offer(
-      aliceSecondInvite,
+      aliceSecondInvitation,
       aliceRemoveLiquidityProposal,
       harden({ Liquidity: liquidityPayout }),
     );
@@ -214,7 +220,7 @@ test('autoSwap - test fee', async t => {
       simoleans,
       zoe,
     } = setup();
-    const inviteIssuer = zoe.getInvitationIssuer();
+    const invitationIssuer = zoe.getInvitationIssuer();
     const installation = await installationPFromSource(zoe, autoswap);
 
     // Setup Alice
@@ -249,9 +255,9 @@ test('autoSwap - test fee', async t => {
       TokenB: aliceSimoleanPayment,
     });
 
-    const aliceAddLiquidityInvite = await publicFacet.makeAddLiquidityInvite();
+    const aliceAddLiquidityInvitation = await publicFacet.makeAddLiquidityInvitation();
     const aliceSeat = await zoe.offer(
-      aliceAddLiquidityInvite,
+      aliceAddLiquidityInvitation,
       aliceProposal,
       alicePayments,
     );
@@ -272,13 +278,13 @@ test('autoSwap - test fee', async t => {
       `pool allocation`,
     );
 
-    // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = await E(publicFacet).makeSwapInvite();
+    // Alice creates an invitation for autoswap and sends it to Bob
+    const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
     // Bob claims it
-    const bobExclInvite = await inviteIssuer.claim(bobInvite);
-    const bobInstance = await E(zoe).getInstance(bobExclInvite);
-    const bobInstallation = await E(zoe).getInstallation(bobExclInvite);
+    const bobExclInvitation = await invitationIssuer.claim(bobInvitation);
+    const bobInstance = await E(zoe).getInstance(bobExclInvitation);
+    const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
     t.equals(bobInstallation, bobInstallation);
 
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
@@ -298,7 +304,7 @@ test('autoSwap - test fee', async t => {
 
     // Bob swaps
     const bobSeat = await zoe.offer(
-      bobExclInvite,
+      bobExclInvitation,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );

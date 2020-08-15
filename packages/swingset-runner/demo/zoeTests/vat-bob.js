@@ -523,7 +523,7 @@ const build = async (zoe, issuers, payments, installations, timer) => {
       const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
 
       // Bob makes an invite
-      const invite = await E(ticketSalesPublicAPI).makeBuyerInvite();
+      const invite = await E(ticketSalesPublicAPI).makeBuyerInvitation();
 
       const availableTickets = await E(
         ticketSalesPublicAPI,
