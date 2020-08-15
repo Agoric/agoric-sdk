@@ -52,6 +52,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     makeNodeWorker,
     startSubprocessWorker,
     writeSlogObject,
+    startXsWorker,
   } = kernelEndowments;
   const { verbose } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
@@ -613,6 +614,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     waitUntilQuiescent,
     makeNodeWorker,
     startSubprocessWorker,
+    startXsWorker,
   });
 
   function buildVatSyscallHandler(vatID, translators) {
