@@ -63,7 +63,7 @@ async function setupTest() {
     autoswapIssuerKeywordRecord,
   );
 
-  const addLiquidityInvite = await autoswapPublicFacet.makeAddLiquidityInvite();
+  const addLiquidityInvite = await autoswapPublicFacet.makeAddLiquidityInvitation();
 
   const wallet = await makeWallet({
     zoe,
@@ -788,7 +788,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
     );
 
-    /** @type {{ getLiquidityIssuer(): Issuer, makeSwapInvite(): Invitation }} */
+    /** @type {{ getLiquidityIssuer(): Issuer, makeSwapInvitation(): Invitation }} */
     const publicAPI = await E(zoe).getPublicFacet(autoswapInstanceHandle);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
 
@@ -826,7 +826,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     const liqSeat = await E(zoe).offer(addLiquidityInvite, proposal, payments);
     await E(liqSeat).getOfferResult();
 
-    const invite = await E(publicAPI).makeSwapInvite();
+    const invite = await E(publicAPI).makeSwapInvitation();
     const inviteIssuer = await E(zoe).getInvitationIssuer();
     const {
       value: [{ handle: inviteHandle }],

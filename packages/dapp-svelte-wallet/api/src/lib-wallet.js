@@ -98,16 +98,15 @@ export async function makeWallet({
             // a promise for a synchronously accessible record
             const synchronousRecordP = Promise.all([
               brandP,
-              amountMathKindP,
               issuerBoardIdP,
               brandMatchesP,
-            ]).then(([brand, amountMathKind, issuerBoardId, brandMatches]) => {
+              makeLocalAmountMath(issuer),
+            ]).then(([brand, issuerBoardId, brandMatches, amountMath]) => {
               assert(
                 brandMatches,
                 `issuer was using a brand which was not its own`,
               );
               if (!issuerToBrand.has(issuer)) {
-                const amountMath = makeLocalAmountMath(brand);
                 const issuerRecord = {
                   issuer,
                   brand,
