@@ -522,22 +522,22 @@ test(`mint and sell opera tickets`, async t => {
   };
 
   const { sellItemsCreatorSeat, sellItemsCreatorFacet } = await mintTickets();
-  const ticketSalesInvitation1 = E(sellItemsCreatorFacet).makeBuyerInvite();
+  const ticketSalesInvitation1 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await aliceBuysTicket1(
     ticketSalesInvitation1,
     moolaMint.mintPayment(moola(100)),
   );
-  const ticketSalesInvitation2 = E(sellItemsCreatorFacet).makeBuyerInvite();
+  const ticketSalesInvitation2 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await jokerBuysTicket1(
     ticketSalesInvitation2,
     moolaMint.mintPayment(moola(100)),
   );
-  const ticketSalesInvitation3 = E(sellItemsCreatorFacet).makeBuyerInvite();
+  const ticketSalesInvitation3 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await jokerTriesToBuyTicket2(
     ticketSalesInvitation3,
     moolaMint.mintPayment(moola(100)),
   );
-  const ticketSalesInvitation4 = E(sellItemsCreatorFacet).makeBuyerInvite();
+  const ticketSalesInvitation4 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await bobBuysTicket2And3(
     ticketSalesInvitation4,
     moolaMint.mintPayment(moola(100)),

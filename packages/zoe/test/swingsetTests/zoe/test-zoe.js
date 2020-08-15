@@ -94,7 +94,7 @@ const expectedSwapForOptionOkLog = [
   '=> alice.doSwapForOption called',
   'call option made',
   '@@ schedule task for:100, currently: 0 @@',
-  'swap invite made',
+  'swap invitation made',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'daveMoolaPurse: balance {"brand":{},"value":3}',
