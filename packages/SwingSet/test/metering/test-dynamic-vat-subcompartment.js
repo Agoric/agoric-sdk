@@ -23,7 +23,7 @@ tap.test('metering dynamic vat which imports bundle', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./vat-load-dynamic.js'),
+        sourceSpec: require.resolve('./vat-load-dynamic.js'),
       },
     },
   };

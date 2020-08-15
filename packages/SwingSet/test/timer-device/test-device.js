@@ -11,7 +11,7 @@ test('wake', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./bootstrap'),
+        sourceSpec: require.resolve('./bootstrap'),
       },
     },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
@@ -31,7 +31,7 @@ test('repeater', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./bootstrap'),
+        sourceSpec: require.resolve('./bootstrap'),
       },
     },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
@@ -54,7 +54,7 @@ test('repeater2', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./bootstrap'),
+        sourceSpec: require.resolve('./bootstrap'),
       },
     },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
@@ -80,7 +80,7 @@ test('repeaterZero', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourcePath: require.resolve('./bootstrap'),
+        sourceSpec: require.resolve('./bootstrap'),
       },
     },
     devices: [['timer', require.resolve(TimerSrc), timer.endowments]],

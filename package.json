@@ -54,21 +54,24 @@
     "prettier": "^1.18.2"
   },
   "engines": {
-    "node": ">=12.16.1"
+    "node": ">=12.14.1"
   },
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
     "prettier": "yarn workspaces run prettier",
     "lerna": "lerna",
-    "link-cli": "node ./scripts/link-cli.cjs",
+    "link-cli": "yarn run create-agoric-cli",
+    "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "lint": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
-    "build": "yarn workspaces run build"
+    "build": "yarn workspaces run build",
+    "patch-package": "patch-package"
   },
   "dependencies": {
-    "@agoric/store": "^0.2.0"
+    "@agoric/store": "^0.2.0",
+    "patch-package": "^6.2.2"
   }
 }

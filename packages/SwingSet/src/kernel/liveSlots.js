@@ -1,6 +1,5 @@
-/* global harden */
+/* global harden HandledPromise */
 
-import { HandledPromise } from '@agoric/eventual-send';
 import {
   QCLASS,
   Remotable,

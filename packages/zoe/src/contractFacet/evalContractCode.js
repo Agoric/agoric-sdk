@@ -1,7 +1,6 @@
 // @ts-check
 
 import { importBundle } from '@agoric/import-bundle';
-import { HandledPromise } from '@agoric/eventual-send';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {
   // Make the console more verbose.
@@ -12,7 +11,6 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
 
   const defaultEndowments = {
     console: louderConsole,
-    HandledPromise,
   };
 
   const fullEndowments = Object.create(null, {

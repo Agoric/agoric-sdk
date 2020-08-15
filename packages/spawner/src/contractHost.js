@@ -2,14 +2,11 @@
 
 /* global harden */
 
-import Nat from '@agoric/nat';
 import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
 import { makeIssuerKit } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { E, HandledPromise } from '@agoric/eventual-send';
 
 export { makeCollect } from './makeCollect';
 
@@ -48,19 +45,8 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     });
   }
 
-  // TODO: this should really have console and HandledPromise. We need
-  // 'require' until we change the environment definition (and
-  // bundle-source's "externals" list) to get 'harden' from a global, not an
-  // import, and then change the nestedEvaluate format to stop needing
-  // 'require' even though nobody calls it. The bundles we install here
-  // should be standalone, with no remaining require() calls. Probably.
   const defaultEndowments = {
     console,
-    E,
-    harden,
-    Nat,
-    makePromiseKit,
-    HandledPromise,
   };
 
   // note: support for check functions was removed during warner's

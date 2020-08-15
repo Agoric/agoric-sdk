@@ -8,7 +8,6 @@ import anylogger from 'anylogger';
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf } from '@agoric/marshal';
-import { HandledPromise } from '@agoric/eventual-send';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 
@@ -77,7 +76,6 @@ parentPort.on('message', ([type, ...margs]) => {
     const [bundle, vatParameters] = margs;
     const endowments = {
       console: makeConsole(`SwingSet:vatWorker`),
-      HandledPromise,
     };
     importBundle(bundle, { endowments }).then(vatNS => {
       workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
