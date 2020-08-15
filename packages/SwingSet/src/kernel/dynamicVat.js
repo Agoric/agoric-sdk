@@ -1,4 +1,5 @@
 /* global harden */
+import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatSlot } from '../parseVatSlots';
 
@@ -58,6 +59,7 @@ export function makeDynamicVatCreator(stuff) {
   }
 
   function create(vatID, source, dynamicOptions, notifyNewVat) {
+    assert(source.bundle || source.bundleName, 'broken source');
     const vatSourceBundle = source.bundle || getBundle(source.bundleName);
     if (!vatSourceBundle) {
       throw Error(`Bundle ${source.bundleName} not found`);
@@ -127,21 +129,19 @@ export function makeDynamicVatCreator(stuff) {
     }
 
     function makeErrorResponse(error) {
-      if (!notifyNewVat) {
-        // if we fail to recreate the vat during replay, crash the kernel,
-        // because we can no longer inform the original caller
-        panic(`unable to re-create dynamic vat ${vatID}`);
-      }
       return {
         body: JSON.stringify([vatID, { error: `${error}` }]),
         slots: [],
       };
     }
 
+    function errorDuringReplay(error) {
+      // if we fail to recreate the vat during replay, crash the kernel,
+      // because we no longer have any way to inform the original caller
+      panic(`unable to re-create dynamic vat ${vatID}`, error);
+    }
+
     function sendResponse(args) {
-      if (!notifyNewVat) {
-        return;
-      }
       const vatAdminVatId = vatNameToID('vatAdmin');
       const vatAdminRootObjectSlot = makeVatRootObjectSlot();
       queueToExport(
@@ -163,13 +163,17 @@ export function makeDynamicVatCreator(stuff) {
     // queue) in the middle of some other vat's crank. TODO: find a safer
     // way, maybe the response should go out to the controller's "queue
     // things single file into the kernel" queue, once such a thing exists.
-    Promise.resolve()
-      .then(build)
-      .then(makeSuccessResponse, makeErrorResponse)
-      .then(sendResponse)
-      .catch(err => console.error(`error in createVatDynamically`, err));
-    // and we return the vatID right away, so the the admin vat can prepare
-    // for the notification
+    const p = Promise.resolve().then(build);
+    if (notifyNewVat) {
+      p.then(makeSuccessResponse, makeErrorResponse)
+        .then(sendResponse)
+        .catch(err => console.error(`error in createVatDynamically`, err));
+    } else {
+      p.catch(errorDuringReplay);
+    }
+
+    // we return the vatID right away, so the the admin vat can prepare for
+    // the notification
     return vatID;
   }
 
