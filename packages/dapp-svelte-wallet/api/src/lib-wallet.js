@@ -87,7 +87,6 @@ export async function makeWallet({
             }
 
             // remote calls which immediately return a promise
-            const amountMathKindP = E(issuer).getAmountMathKind();
             const brandP = E(issuer).getBrand();
             const brandMatchesP = E(brandP).isMyIssuer(issuer);
 
