@@ -18,6 +18,7 @@ import { insistDeviceID, insistVatID } from './id';
 import { makeMessageResult } from './messageResult';
 import { makeMeterManager } from './metering';
 import { makeKernelSyscallHandler } from './kernelSyscall';
+import { makeSlogger, makeDummySlogger } from './slogger';
 
 import { makeDynamicVatCreator } from './dynamicVat';
 import { makeVatTranslators } from './vatTranslator';
@@ -38,19 +39,28 @@ function makeError(s) {
   return harden({ body: JSON.stringify(s), slots: [] });
 }
 
-export default function buildKernel(kernelEndowments) {
+export default function buildKernel(kernelEndowments, kernelOptions = {}) {
   const {
     waitUntilQuiescent,
     hostStorage,
-    makeVatEndowments,
+    debugPrefix,
+    vatEndowments,
+    makeConsole,
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
     makeNodeWorker,
     startSubprocessWorker,
+    writeSlogObject,
   } = kernelEndowments;
+  const { disableSlog = false } = kernelOptions;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
+
+  const kernelSlog = disableSlog
+    ? makeDummySlogger(makeConsole)
+    : makeSlogger(writeSlogObject);
+
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
 
   const meterManager = makeMeterManager(replaceGlobalMeter);
@@ -80,6 +90,11 @@ export default function buildKernel(kernelEndowments) {
     ephemeral.log.push(rendered.join(''));
   }
   harden(testLog);
+
+  function makeVatConsole(vatID) {
+    const origConsole = makeConsole(`${debugPrefix}SwingSet:${vatID}`);
+    return kernelSlog.vatConsole(vatID, origConsole);
+  }
 
   // track results of externally-injected messages (queueToExport, bootstrap)
   const pendingMessageResults = new Map(); // kpid -> messageResult
@@ -263,6 +278,29 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
+  async function deliverAndLogToVat(vatID, kernelDelivery, vatDelivery) {
+    const vat = ephemeral.vats.get(vatID);
+    const crankNum = kernelKeeper.getCrankNumber();
+    const finish = kernelSlog.delivery(
+      vatID,
+      crankNum,
+      kernelDelivery,
+      vatDelivery,
+    );
+    try {
+      const deliveryResult = await vat.manager.deliver(vatDelivery);
+      finish(deliveryResult);
+      // TODO: eventually
+      // if (deliveryResult === death) {
+      //   vat.notifyTermination(deliveryResult.causeOfDeath);
+      // }
+    } catch (e) {
+      // log so we get a stack trace
+      console.error(`error in kernel.deliver:`, e);
+      throw e;
+    }
+  }
+
   async function deliverToVat(vatID, target, msg) {
     insistMessage(msg);
     const vat = ephemeral.vats.get(vatID);
@@ -274,19 +312,7 @@ export default function buildKernel(kernelEndowments) {
     } else {
       const kd = harden(['message', target, msg]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
-      try {
-        await vat.manager.deliver(vd);
-        /* // TODO: eventually this will be as follows, once deliver can return a delivery status
-        const deliveryResult = await vat.manager.deliver(vd);
-        if (deliveryResult === death) {
-          vat.notifyTermination(deliveryResult.causeOfDeath);
-        }
-        */
-      } catch (e) {
-        // log so we get a stack trace
-        console.error(`error in kernel.deliver:`, e);
-        throw e;
-      }
+      await deliverAndLogToVat(vatID, kd, vd);
     }
   }
 
@@ -362,19 +388,7 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper.incStat(statNameForNotify(p.state));
       const kd = harden(['notify', kpid, p]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
-      try {
-        await vat.manager.deliver(vd);
-        /* // TODO: eventually this will be as follows, once deliver can return a delivery status
-        const deliveryResult = await vat.manager.deliver(vd);
-        if (deliveryResult === death) {
-          vat.notifyTermination(deliveryResult.causeOfDeath);
-        }
-        */
-      } catch (e) {
-        // log so we get a stack trace
-        console.error(`error in kernel.processNotify:`, e);
-        throw e;
-      }
+      await deliverAndLogToVat(vatID, kd, vd);
     }
   }
 
@@ -592,7 +606,7 @@ export default function buildKernel(kernelEndowments) {
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
-    makeVatEndowments,
+    vatEndowments,
     meterManager,
     testLog,
     transformMetering,
@@ -601,40 +615,7 @@ export default function buildKernel(kernelEndowments) {
     startSubprocessWorker,
   });
 
-  /*
-   * Take an existing VatManager (which is already configured to talk to a
-   * VatWorker, loaded with some vat code) and connect it to the rest of the
-   * kernel. The vat must be ready to go: any initial buildRootObject
-   * construction should have happened by this point. However the kernel
-   * might tell the manager to replay the transcript later, if it notices
-   * we're reloading a saved state vector.
-   */
-  function addVatManager(vatID, manager, managerOptions) {
-    // addVatManager takes a manager, not a promise for one
-    assert(
-      manager.deliver && manager.setVatSyscallHandler,
-      `manager lacks .deliver, isPromise=${manager instanceof Promise}`,
-    );
-
-    const {
-      enablePipelining = false,
-      notifyTermination = () => {},
-    } = managerOptions;
-    // This should create the vatKeeper. Other users get it from the
-    // kernelKeeper, so we don't need a reference ourselves.
-    kernelKeeper.allocateVatKeeperIfNeeded(vatID);
-    const translators = makeVatTranslators(vatID, kernelKeeper);
-
-    ephemeral.vats.set(
-      vatID,
-      harden({
-        translators,
-        manager,
-        notifyTermination,
-        enablePipelining: Boolean(enablePipelining),
-      }),
-    );
-
+  function buildVatSyscallHandler(vatID, translators) {
     // This handler never throws. The VatSyscallResult it returns is one of:
     // * success, no response data: ['ok', null]
     // * success, capdata (callNow) ['ok', capdata]
@@ -661,6 +642,7 @@ export default function buildKernel(kernelEndowments) {
         return harden(['error', 'clist violation: prepare to die']);
       }
 
+      const finish = kernelSlog.syscall(vatID, ksc, vatSyscallObject);
       let vres;
       try {
         // this can fail if kernel or device code is buggy
@@ -674,6 +656,7 @@ export default function buildKernel(kernelEndowments) {
         // capdata.
         vres = translators.kernelSyscallResultToVatSyscallResult(kres);
         // here, vres is either ['ok', null] or ['ok', capdata]
+        finish(kres, vres); // TODO call meaningfully on failure too?
       } catch (err) {
         // kernel/device errors cause a kernel panic
         panic(`error during syscall/device.invoke: ${err}`, err);
@@ -684,6 +667,43 @@ export default function buildKernel(kernelEndowments) {
 
       return vres;
     }
+    return vatSyscallHandler;
+  }
+
+  /*
+   * Take an existing VatManager (which is already configured to talk to a
+   * VatWorker, loaded with some vat code) and connect it to the rest of the
+   * kernel. The vat must be ready to go: any initial buildRootObject
+   * construction should have happened by this point. However the kernel
+   * might tell the manager to replay the transcript later, if it notices
+   * we're reloading a saved state vector.
+   */
+  function addVatManager(vatID, manager, managerOptions) {
+    // addVatManager takes a manager, not a promise for one
+    assert(
+      manager.deliver && manager.setVatSyscallHandler,
+      `manager lacks .deliver, isPromise=${manager instanceof Promise}`,
+    );
+    const {
+      enablePipelining = false,
+      notifyTermination = () => {},
+    } = managerOptions;
+    // This should create the vatKeeper. Other users get it from the
+    // kernelKeeper, so we don't need a reference ourselves.
+    kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+    const translators = makeVatTranslators(vatID, kernelKeeper);
+
+    ephemeral.vats.set(
+      vatID,
+      harden({
+        translators,
+        manager,
+        notifyTermination,
+        enablePipelining: Boolean(enablePipelining),
+      }),
+    );
+
+    const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
     manager.setVatSyscallHandler(vatSyscallHandler);
   }
 
@@ -715,6 +735,8 @@ export default function buildKernel(kernelEndowments) {
     allocateUnusedVatID: kernelKeeper.allocateUnusedVatID,
     vatNameToID,
     vatManagerFactory,
+    kernelSlog,
+    makeVatConsole,
     addVatManager,
     addExport,
     queueToExport,
@@ -783,11 +805,17 @@ export default function buildKernel(kernelEndowments) {
 
     // instantiate all genesis vats
     for (const name of genesisVats.keys()) {
-      const managerOptions = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
+      kernelSlog.addVat(vatID, false, name);
+      const managerOptions = harden({
+        ...genesisVats.get(name),
+        vatConsole: makeVatConsole(vatID),
+      });
+      const finish = kernelSlog.startup(vatID);
       // eslint-disable-next-line no-await-in-loop
       const manager = await vatManagerFactory(vatID, managerOptions);
+      finish();
       addVatManager(vatID, manager, managerOptions);
     }
 
@@ -837,10 +865,11 @@ export default function buildKernel(kernelEndowments) {
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
       console.debug(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
       const { bundle, endowments: devEndowments } = genesisDevices.get(name);
+      const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
       // eslint-disable-next-line no-await-in-loop
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}`,
-        endowments: makeVatEndowments(`dev-${name}`),
+        endowments: harden({ ...vatEndowments, console: devConsole }),
       });
       assert(
         typeof NS.buildRootDeviceNode === 'function',

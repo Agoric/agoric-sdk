@@ -8,7 +8,7 @@ import { makeNodeSubprocessFactory } from './worker-subprocess-node';
 export function makeVatManagerFactory({
   allVatPowers,
   kernelKeeper,
-  makeVatEndowments,
+  vatEndowments,
   meterManager,
   transformMetering,
   waitUntilQuiescent,
@@ -18,7 +18,7 @@ export function makeVatManagerFactory({
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
     kernelKeeper,
-    makeVatEndowments,
+    vatEndowments,
     meterManager,
     transformMetering,
     waitUntilQuiescent,
@@ -45,6 +45,7 @@ export function makeVatManagerFactory({
       'enableInternalMetering',
       'notifyTermination',
       'vatParameters',
+      'vatConsole',
     ]);
     const {
       setup,

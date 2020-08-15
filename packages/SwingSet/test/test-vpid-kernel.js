@@ -3,6 +3,7 @@
 
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -20,11 +21,21 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
+}
+
 function makeEndowments() {
   return {
     waitUntilQuiescent,
     hostStorage: initSwingStore().storage,
     runEndOfCrank: () => {},
+    makeConsole,
   };
 }
 
@@ -189,7 +200,7 @@ function inCList(kernel, vatID, kpid, vpid) {
 }
 
 async function doTest123(t, which, mode) {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   // vatA is our primary actor
   const { log: logA, getSyscall: getSyscallA } = buildRawVat('vatA', kernel);
   // we use vatB when necessary to send messages to vatA
@@ -358,7 +369,7 @@ for (const caseNum of [1, 2, 3]) {
 }
 
 async function doTest4567(t, which, mode) {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   // vatA is our primary actor
   let onDispatchCallback;
   function odc(d) {

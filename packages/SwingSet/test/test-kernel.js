@@ -2,6 +2,7 @@
 
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -34,16 +35,26 @@ function emptySetup(_syscall) {
   return { deliver };
 }
 
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
+}
+
 function makeEndowments() {
   return {
     waitUntilQuiescent,
     hostStorage: initSwingStore().storage,
     runEndOfCrank: () => {},
+    makeConsole,
   };
 }
 
 test('build kernel', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   await kernel.start(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
@@ -52,7 +63,7 @@ test('build kernel', async t => {
 });
 
 test('simple call', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
   function setup1(syscall, state, _helpers, vatPowers) {
     function deliver(facetID, method, args) {
@@ -98,7 +109,7 @@ test('simple call', async t => {
 });
 
 test('map inbound', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
   function setup1(_syscall) {
     function deliver(facetID, method, args) {
@@ -148,7 +159,7 @@ test('map inbound', async t => {
 });
 
 test('addImport', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   function setup(_syscall) {
     function deliver(_facetID, _method, _args) {}
     return { deliver };
@@ -169,7 +180,7 @@ test('addImport', async t => {
 });
 
 test('outbound call', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
   let v1tovat25;
   const p7 = 'p+7';
@@ -368,7 +379,7 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
   let bobForA;
   let carolForA;
@@ -499,7 +510,7 @@ test('three-party', async t => {
 });
 
 test('transfer promise', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   let syscallA;
   const logA = [];
   function setupA(syscall) {
@@ -603,7 +614,7 @@ test('transfer promise', async t => {
 });
 
 test('subscribe to promise', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   let syscall;
   const log = [];
   function setup(s) {
@@ -646,7 +657,7 @@ test('subscribe to promise', async t => {
 });
 
 test('promise resolveToData', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
 
   let syscallA;
@@ -723,7 +734,7 @@ test('promise resolveToData', async t => {
 });
 
 test('promise resolveToPresence', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
 
   let syscallA;
@@ -803,7 +814,7 @@ test('promise resolveToPresence', async t => {
 });
 
 test('promise reject', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
 
   let syscallA;
@@ -881,7 +892,7 @@ test('promise reject', async t => {
 
 test('transcript', async t => {
   const aliceForAlice = 'o+1';
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   function setup(syscall, _state) {
     function deliver(facetID, _method, args) {
       if (facetID === aliceForAlice) {
@@ -937,7 +948,7 @@ test('transcript', async t => {
 // have a decider. Make sure p3 gets queued in p2 rather than exploding.
 
 test('non-pipelined promise queueing', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
 
   let syscall;
@@ -1054,7 +1065,7 @@ test('non-pipelined promise queueing', async t => {
 // get delivered to vat-with-x.
 
 test('pipelined promise queueing', async t => {
-  const kernel = buildKernel(makeEndowments());
+  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
   const log = [];
 
   let syscall;
