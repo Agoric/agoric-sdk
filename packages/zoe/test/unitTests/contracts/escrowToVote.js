@@ -19,7 +19,7 @@ import '../../../exported';
  * by making an offer using a voter invitation and escrowing assets. The
  * brand of assets is determined on contract instantiation through an
  * issuerKeywordRecord. The instantiator gets the only Secretary
- * invitation.
+ * access through the creatorFacet.
  *
  * @type {ContractStartFn}
  */
@@ -27,12 +27,12 @@ const start = zcf => {
   const {
     question,
     brands: { Assets: assetsBrand },
+    maths: { Assets: amountMath },
   } = zcf.getTerms();
   let electionOpen = true;
   assertIssuerKeywords(zcf, harden(['Assets']));
   assert.typeof(question, 'string');
   assertUsesNatMath(zcf, assetsBrand);
-  const amountMath = zcf.getAmountMath(assetsBrand);
 
   const seatToResponse = makeStore('seat');
 
@@ -43,7 +43,7 @@ const start = zcf => {
       details`the answer ${q(response)} was not 'YES' or 'NO'`,
     );
     // Throw an error if the response is not valid, but do not
-    // complete the offer. We should allow the voter to recast their vote.
+    // exit the seat. We should allow the voter to recast their vote.
   };
 
   const voteHandler = voterSeat => {

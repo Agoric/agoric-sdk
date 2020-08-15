@@ -19,7 +19,7 @@ test('zoe - escrowToVote', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   // Alice creates an instance and acts as the Secretary
   const issuerKeywordRecord = harden({
@@ -34,7 +34,7 @@ test('zoe - escrowToVote', async t => {
   // receives a special, secretary facet back which has the special
   // authority to close elections.
   const { creatorFacet: secretary } = await E(zoe).startInstance(
-    installationHandle,
+    installation,
     issuerKeywordRecord,
     terms,
   );
@@ -81,7 +81,7 @@ test('zoe - escrowToVote', async t => {
 
   await voter1Votes(voterInvitation1);
 
-  // Voter 2 makes badly formed votes, then votes YES, then changes
+  // Voter 2 makes badly formed vote, then votes YES, then changes
   // vote to NO. Vote will be weighted by 5 (5 moola escrowed).
   const voter2Votes = async invitation => {
     const proposal = harden({
@@ -125,9 +125,9 @@ test('zoe - escrowToVote', async t => {
 
   await voter2Votes(voterInvitation2);
 
-  // Voter 3 votes NO and then completes their offer, meaning that
-  // their vote should not be counted. They get their full moola (1
-  // moola) back as a payout.
+  // Voter 3 votes NO and then exits the seat, retrieving their
+  // assets, meaning that their vote should not be counted. They get
+  // their full moola (1 moola) back as a payout.
   const voter3Votes = async invitation => {
     const proposal = harden({
       give: { Assets: moola(1) },
