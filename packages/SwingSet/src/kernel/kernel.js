@@ -646,13 +646,33 @@ export default function buildKernel(kernelEndowments) {
     manager.setVatSyscallHandler(vatSyscallHandler);
   }
 
-  const createVatDynamically = makeDynamicVatCreator({
+  const knownBundles = new Map();
+
+  function hasBundle(name) {
+    return knownBundles.has(name);
+  }
+
+  function getBundle(name) {
+    return knownBundles.get(name);
+  }
+
+  function addBundle(name, bundle) {
+    knownBundles.set(name, bundle);
+  }
+
+  const {
+    createVatDynamically,
+    recreateVatDynamically,
+  } = makeDynamicVatCreator({
     allocateUnusedVatID: kernelKeeper.allocateUnusedVatID,
     vatNameToID,
     vatManagerFactory,
     addVatManager,
     addExport,
     queueToExport,
+    getBundle,
+    kernelKeeper,
+    panic,
   });
 
   function buildDeviceManager(deviceID, name, buildRootDeviceNode, endowments) {
@@ -700,20 +720,6 @@ export default function buildKernel(kernelEndowments) {
     return vatKeeper.vatStats();
   }
 
-  const knownBundles = new Map();
-
-  function hasBundle(name) {
-    return knownBundles.has(name);
-  }
-
-  function getBundle(name) {
-    return knownBundles.get(name);
-  }
-
-  function addBundle(name, bundle) {
-    knownBundles.set(name, bundle);
-  }
-
   async function start(bootstrapVatName) {
     if (started) {
       throw new Error('kernel.start already called');
@@ -727,7 +733,7 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper.createStartingKernelState();
     }
 
-    // instantiate all vats
+    // instantiate all genesis vats
     for (const name of genesisVats.keys()) {
       const managerOptions = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
@@ -737,20 +743,23 @@ export default function buildKernel(kernelEndowments) {
       addVatManager(vatID, manager, managerOptions);
     }
 
-    function createVatDynamicallyByName(bundleName, options) {
-      const bundle = getBundle(bundleName);
-      if (bundle) {
-        return createVatDynamically(bundle, options);
-      } else {
-        throw Error(`Bundle ${bundleName} not found`);
-      }
+    // instantiate all dynamic vats
+    for (const vatID of kernelKeeper.getAllDynamicVatIDs()) {
+      console.debug(`Loading dynamic vat ${vatID}`);
+      const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+      const {
+        source,
+        options: dynamicOptions,
+      } = vatKeeper.getSourceAndOptions();
+      // eslint-disable-next-line no-await-in-loop
+      await recreateVatDynamically(vatID, source, dynamicOptions);
+      // now the vatManager is attached and ready for transcript replay
     }
 
     if (vatAdminDeviceBundle) {
       // if we have a device bundle, then vats[vatAdmin] will be present too
       const endowments = {
         create: createVatDynamically,
-        createByName: createVatDynamicallyByName,
         stats: collectVatStats,
         /* TODO: terminate */
       };
@@ -803,12 +812,11 @@ export default function buildKernel(kernelEndowments) {
         // eslint-disable-next-line no-await-in-loop
         await vat.manager.replayTranscript();
         console.debug(`finished replaying vatID ${vatID} transcript `);
-      }
-      const newLength = kernelKeeper.getRunQueueLength();
-      if (newLength !== oldLength) {
-        throw new Error(
-          `replayTranscript added run-queue entries, wasn't supposed to`,
-        );
+        const newLength = kernelKeeper.getRunQueueLength();
+        if (newLength !== oldLength) {
+          console.log(`SPURIOUS RUNQUEUE`, kernelKeeper.dump().runQueue);
+          throw Error(`replay ${vatID} added spurious run-queue entries`);
+        }
       }
       kernelKeeper.loadStats();
     }
