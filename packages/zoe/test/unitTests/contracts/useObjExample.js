@@ -1,7 +1,7 @@
 // @ts-check
 
-// Eventually will be importable from '@agoric/zoe-contract-support'
 import { assert, details } from '@agoric/assert';
+// Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
   assertProposalKeywords,

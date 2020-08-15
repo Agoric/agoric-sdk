@@ -1,7 +1,7 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
@@ -295,9 +295,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     t.rejects(
       () => E(bobSeat).getOfferResult(),
-      new Error(
-        'The item up for auction has been withdrawn or the auction has completed',
-      ),
+      /The item up for auction is not available or the auction has completed/,
       'The bid should have failed.',
     );
 

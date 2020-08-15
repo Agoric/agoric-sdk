@@ -1,7 +1,8 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'tape-promise/tape';
+
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
