@@ -10,8 +10,10 @@ export function makeKernelSyscallHandler(tools) {
     kernelKeeper,
     ephemeral,
     pendingMessageResults,
+    notePendingMessageResolution,
     notify,
     notifySubscribersAndQueue,
+    deliverToError,
   } = tools;
 
   const OKNULL = harden(['ok', null]);
@@ -80,12 +82,6 @@ export function makeKernelSyscallHandler(tools) {
     return p;
   }
 
-  function notePendingMessageResolution(kpid, status, resolution) {
-    const result = pendingMessageResults.get(kpid);
-    pendingMessageResults.delete(kpid);
-    result.noteResolution(status, resolution);
-  }
-
   function fulfillToPresence(vatID, kpid, targetSlot) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
@@ -139,18 +135,7 @@ export function makeKernelSyscallHandler(tools) {
     insistCapData(data);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallReject');
-    const p = getResolveablePromise(kpid, vatID);
-    const { subscribers, queue } = p;
-    let idx = 0;
-    for (const dataSlot of data.slots) {
-      kernelKeeper.incrementRefCount(dataSlot, `reject|s${idx}`);
-      idx += 1;
-    }
-    kernelKeeper.rejectKernelPromise(kpid, data);
-    notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
-    if (pendingMessageResults.has(kpid)) {
-      notePendingMessageResolution(kpid, 'rejected', data);
-    }
+    deliverToError(kpid, data, vatID);
     return OKNULL;
   }
 
