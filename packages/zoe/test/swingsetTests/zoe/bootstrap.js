@@ -104,23 +104,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
       };
 
-      const testName = vatParameters.argv[0] || 'simpleExchangeOk';
-      const startingValuesStr = vatParameters.argv[1];
-      let startingValues;
-      if (startingValuesStr) {
-        startingValues = JSON.parse(startingValuesStr);
-      } else if (
-        vatParameters.startingValues &&
-        vatParameters.startingValues[testName]
-      ) {
-        startingValues = vatParameters.startingValues[testName];
-      } else {
-        throw Error(
-          `Cannot find startingValues for ${testName} in ${JSON.stringify(
-            vatParameters,
-          )} or ${JSON.stringify(vatPowers)}`,
-        );
-      }
+      const [testName, startingValues] = vatParameters.argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         vatPowers.testLog,
