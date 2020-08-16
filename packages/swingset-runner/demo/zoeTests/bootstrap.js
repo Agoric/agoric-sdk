@@ -120,7 +120,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
         throw Error(
           `Cannot find startingValues for ${testName} in ${JSON.stringify(
             vatParameters,
-          )} or ${JSON.stringify(_vatPowers)}`,
+          )}`,
         );
       }
 
