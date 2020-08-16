@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit } from '@agoric/ertp';
-import buildManualTimer from '../../../tools/manualTimer';
+import buildManualTimer from './manualTimer';
 
 /* eslint-disable import/no-unresolved, import/extensions */
 import automaticRefundBundle from './bundle-automaticRefund';

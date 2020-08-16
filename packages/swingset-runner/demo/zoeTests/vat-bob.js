@@ -2,7 +2,7 @@ import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
-import { showPurseBalance, setupIssuers } from '../helpers';
+import { showPurseBalance, setupIssuers } from './helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const {
