@@ -3,6 +3,8 @@ import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from './helpers';
 
+import { makePrintLog } from './printLog';
+
 const build = async (log, zoe, issuers, payments, installations) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
@@ -63,8 +65,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
   });
 };
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(_vatPowers) {
   return harden({
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (...args) => build(makePrintLog(), ...args),
   });
 }

@@ -2,6 +2,8 @@ import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from './helpers';
 
+import { makePrintLog } from './printLog';
+
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
@@ -444,8 +446,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   });
 };
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(_vatPowers) {
   return harden({
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (...args) => build(makePrintLog(), ...args),
   });
 }

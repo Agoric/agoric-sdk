@@ -3,6 +3,8 @@ import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from './helpers';
 
+import { makePrintLog } from './printLog';
+
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const {
     moola,
@@ -180,8 +182,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   });
 };
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(_vatPowers) {
   return harden({
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (...args) => build(makePrintLog(), ...args),
   });
 }

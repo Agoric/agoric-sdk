@@ -2,6 +2,8 @@ import { E } from '@agoric/eventual-send';
 import { makeIssuerKit } from '@agoric/ertp';
 import buildManualTimer from './manualTimer';
 
+import { makePrintLog } from './printLog';
+
 /* eslint-disable import/no-unresolved, import/extensions */
 import automaticRefundBundle from './bundle-automaticRefund';
 import coveredCallBundle from './bundle-coveredCall';
@@ -86,7 +88,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   return harden(result);
 };
 
-export function buildRootObject(vatPowers, vatParameters) {
+export function buildRootObject(_vatPowers, vatParameters) {
   const obj0 = {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
@@ -118,12 +120,12 @@ export function buildRootObject(vatPowers, vatParameters) {
         throw Error(
           `Cannot find startingValues for ${testName} in ${JSON.stringify(
             vatParameters,
-          )} or ${JSON.stringify(vatPowers)}`,
+          )} or ${JSON.stringify(_vatPowers)}`,
         );
       }
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
-        vatPowers.testLog,
+        makePrintLog(),
         vats,
         zoe,
         installations,
