@@ -17,7 +17,7 @@ import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
-import { cleanKeywords, cleanProposal } from './cleanProposal';
+import { cleanKeywords, cleanProposal } from '../cleanProposal';
 import { makeHandle } from '../table';
 
 /**

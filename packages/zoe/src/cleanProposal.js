@@ -1,10 +1,10 @@
 import { assert, details, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 
-import '../../exported';
-import '../internal-types';
+import '../exported';
+import './internal-types';
 
-import { arrayToObj, assertSubset } from '../objArrayConversion';
+import { arrayToObj, assertSubset } from './objArrayConversion';
 
 // We adopt simple requirements on keywords so that they do not accidentally
 // conflict with existing property names.

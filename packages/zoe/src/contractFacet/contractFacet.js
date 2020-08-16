@@ -20,7 +20,7 @@ import {
   assertKeywordName,
   getKeywords,
   cleanProposal,
-} from '../zoeService/cleanProposal';
+} from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
