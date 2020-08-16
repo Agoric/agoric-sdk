@@ -2,7 +2,7 @@
 
 package ZoeService <<Rectangle>> {
   object UserSeat
-  UserSeat : exit()
+  UserSeat : tryExit()
   UserSeat : ...
 
   object ZoeSeatAdmin

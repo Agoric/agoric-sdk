@@ -279,7 +279,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Alice completes her offer, making the auction stop accepting
     // offers
-    aliceSeat.exit();
+    aliceSeat.tryExit();
 
     // Alice gives Bob the invitation
 

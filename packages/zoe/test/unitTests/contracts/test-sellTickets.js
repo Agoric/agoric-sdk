@@ -507,7 +507,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const operaPurse = moolaIssuer.makeEmptyPurse();
 
-    await E(sellItemsCreatorSeat).exit();
+    await E(sellItemsCreatorSeat).tryExit();
 
     const moneyPayment = await E(sellItemsCreatorSeat).getPayout('Money');
     await E(operaPurse).deposit(moneyPayment);
