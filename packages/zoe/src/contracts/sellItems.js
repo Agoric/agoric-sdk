@@ -92,11 +92,13 @@ const start = zcf => {
 
   const getItemsIssuer = () => issuers.Items;
 
+  /** @type {SellItemsPublicFacet} */
   const publicFacet = {
     getAvailableItems,
     getItemsIssuer,
   };
 
+  /** @type {SellItemsCreatorFacet} */
   const creatorFacet = {
     makeBuyerInvitation: () => {
       const itemsAmount = sellerSeat.getAmountAllocated('Items');

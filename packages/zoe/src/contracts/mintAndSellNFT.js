@@ -9,7 +9,7 @@ import '../../exported';
  * This contract mints non-fungible tokens and creates a selling contract
  * instance to sell the tokens in exchange for some sort of money.
  *
- * startInstance() returns an invitation that, when exercised, returns a
+ * startInstance() returns a creatorFacet which is a
  * ticketMaker with a `.sellTokens()` method. `.sellTokens()` takes a
  * specification of what is being sold, such as:
  * {
@@ -77,9 +77,21 @@ const start = zcf => {
     const sellItemsTerms = harden({
       pricePerItem,
     });
-    return E(zoeService)
-      .startInstance(sellItemsInstallation, issuerKeywordRecord, sellItemsTerms)
-      .then(({ creatorInvitation, creatorFacet, instance, publicFacet }) => {
+    /**
+     * @type {Promise<{
+     *   creatorInvitation: Invitation,
+     *   creatorFacet: SellItemsCreatorFacet,
+     *   instance: Instance,
+     *   publicFacet: SellItemsPublicFacet,
+     * }>}
+     */
+    const instanceRecordP = E(zoeService).startInstance(
+      sellItemsInstallation,
+      issuerKeywordRecord,
+      sellItemsTerms,
+    );
+    return instanceRecordP.then(
+      ({ creatorInvitation, creatorFacet, instance, publicFacet }) => {
         return E(zoeService)
           .offer(creatorInvitation, proposal, paymentKeywordRecord)
           .then(sellItemsCreatorSeat => {
@@ -90,9 +102,11 @@ const start = zcf => {
               sellItemsPublicFacet: publicFacet,
             });
           });
-      });
+      },
+    );
   };
 
+  /** @type {MintAndSellNFTCreatorFacet} */
   const creatorFacet = harden({ sellTokens, getIssuer: () => issuer });
 
   return harden({ creatorFacet });
