@@ -1,4 +1,4 @@
-export const start = zcf => {
+export const start = _zcf => {
   const publicFacet = harden({
     doTest: () => {
       for (;;) {
