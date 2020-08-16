@@ -237,6 +237,7 @@ const start = async zcf => {
 
   const getPoolAllocation = poolSeat.getCurrentAllocation;
 
+  /** @type {AutoswapPublicFacet} */
   const publicFacet = harden({
     getCurrentPrice,
     getLiquidityIssuer: () => liquidityIssuer,

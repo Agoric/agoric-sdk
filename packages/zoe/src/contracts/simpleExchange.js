@@ -121,6 +121,7 @@ const start = zcf => {
   const makeExchangeInvitation = () =>
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
+  /** @type {SimpleExchangePublicFacet} */
   const publicFacet = harden({
     makeInvitation: makeExchangeInvitation,
     getNotifier: () => notifier,

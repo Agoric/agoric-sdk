@@ -9,7 +9,7 @@ import '../../exported';
  * This contract mints non-fungible tokens and creates a selling contract
  * instance to sell the tokens in exchange for some sort of money.
  *
- * startInstance() returns an invitation that, when exercised, returns a
+ * startInstance() returns an creatorFacet which is a
  * ticketMaker with a `.sellTokens()` method. `.sellTokens()` takes a
  * specification of what is being sold, such as:
  * {
@@ -85,14 +85,15 @@ const start = zcf => {
           .then(sellItemsCreatorSeat => {
             return harden({
               sellItemsCreatorSeat,
-              sellItemsCreatorFacet: creatorFacet,
+              sellItemsCreatorFacet: /** @type {SellItemsCreatorFacet} */ (creatorFacet),
               sellItemsInstance: instance,
-              sellItemsPublicFacet: publicFacet,
+              sellItemsPublicFacet: /** @type {SellItemsPublicFacet} */ (publicFacet),
             });
           });
       });
   };
 
+  /** @type {MintAndSellNFTCreatorFacet} */
   const creatorFacet = harden({ sellTokens, getIssuer: () => issuer });
 
   return harden({ creatorFacet });

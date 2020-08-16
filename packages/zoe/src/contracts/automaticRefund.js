@@ -27,6 +27,7 @@ const start = zcf => {
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
+  /** @type {AutomaticRefundPublicFacet} */
   const publicFacet = harden({
     getOffersCount: () => offersCount,
     makeInvitation: makeRefundInvitation,
