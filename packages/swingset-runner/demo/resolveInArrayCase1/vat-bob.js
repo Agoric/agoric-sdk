@@ -1,5 +1,3 @@
-/* global harden */
-
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {

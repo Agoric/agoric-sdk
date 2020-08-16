@@ -1,5 +1,3 @@
-/* global harden */
-
 import { E } from '@agoric/eventual-send';
 
 const log = console.log;

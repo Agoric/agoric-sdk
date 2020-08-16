@@ -2,7 +2,7 @@
   "bootstrap": "bootstrap",
   "bundles": {
     "zcf": {
-      "sourceSpec": "../../../zoe/src/contractFacet.js"
+      "sourceSpec": "@agoric/zoe/contractFacet"
     }
   },
   "vats": {

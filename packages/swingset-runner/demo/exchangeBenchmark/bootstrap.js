@@ -1,5 +1,3 @@
-/* global harden */
-
 import { makeIssuerKit } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePrintLog } from './printLog';
