@@ -903,7 +903,7 @@ export async function makeWallet({
 
       idToComplete.set(id, () => {
         alreadyResolved = true;
-        return E(seat).exit();
+        return E(seat).tryExit();
       });
       idToSeat.set(id, seat);
       // The offer might have been postponed, or it might have been immediately
