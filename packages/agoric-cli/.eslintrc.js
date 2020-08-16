@@ -9,10 +9,12 @@ module.exports = {
     'function-paren-newline': 'off',
     'arrow-parens': 'off',
     strict: 'off',
+    'prefer-destructuring': 'off',
+    'no-else-return': 'off',
     'no-console': 'off',
     'no-unused-vars': ['error', {
       argsIgnorePattern: '^_',
-      varsIgnorePattern: '^_'
+      varsIgnorePattern: '^_',
     }],
     'no-return-assign': 'off',
     'no-param-reassign': 'off',
@@ -20,6 +22,6 @@ module.exports = {
     'no-unused-expressions': 'off',
     'no-loop-func': 'off',
     'no-inner-declarations': 'off',
-    'import/prefer-default-export': 'off', // contrary to Agoric standard
+    'import/prefer-default-export': 'off',
   },
 };
