@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootObject(_vatPowers) {
   return harden({
     hello() {
