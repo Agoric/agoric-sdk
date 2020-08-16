@@ -179,6 +179,18 @@ export function makeVatKeeper(
     }
   }
 
+  function markAsDead() {
+    const deathKey = `${vatID}.dead`;
+    if (storage.has(deathKey)) {
+      throw Error(`vat ${vatID} is already dead`);
+    }
+    storage.set(deathKey, true);
+  }
+
+  function isDead() {
+    return storage.get(`${vatID}.dead`);
+  }
+
   /**
    * Generator function to return the vat's transcript, one entry at a time.
    */
@@ -244,6 +256,8 @@ export function makeVatKeeper(
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
     deleteCListEntry,
+    markAsDead,
+    isDead,
     getTranscript,
     addToTranscript,
     vatStats,
