@@ -228,8 +228,11 @@ export function buildRootObject() {
 
         assertRightsConserved(getAmountMath, previousAmounts, newAmounts);
 
+        // COMMIT POINT
         // Commit the staged allocations and inform Zoe of the
         // newAllocation.
+        // Note that there is an atomicity issue:
+        // https://github.com/Agoric/agoric-sdk/issues/1391
         seatStagings.forEach(seatStaging =>
           seatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
         );
@@ -273,14 +276,6 @@ export function buildRootObject() {
       },
       // Shutdown the entire vat and give payouts
       shutdown: () => E(zoeInstanceAdmin).shutdown(),
-
-      // The methods below are pure and have no side-effects //
-      getZoeService: () => zoeService,
-      getInvitationIssuer: () => invitationIssuer,
-      getTerms: () => instanceRecord.terms,
-      getBrandForIssuer: issuer =>
-        issuerTable.getIssuerRecordByIssuer(issuer).brand,
-      getAmountMath,
       makeZCFMint,
       makeEmptySeatKit: () => {
         const initialAllocation = harden({});
@@ -311,6 +306,14 @@ export function buildRootObject() {
         seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         return { zcfSeat, userSeat: userSeatPromiseKit.promise };
       },
+
+      // The methods below are pure and have no side-effects //
+      getZoeService: () => zoeService,
+      getInvitationIssuer: () => invitationIssuer,
+      getTerms: () => instanceRecord.terms,
+      getBrandForIssuer: issuer =>
+        issuerTable.getIssuerRecordByIssuer(issuer).brand,
+      getAmountMath,
     };
     harden(zcf);
 

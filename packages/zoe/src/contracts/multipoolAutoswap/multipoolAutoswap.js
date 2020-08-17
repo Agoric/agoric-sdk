@@ -13,7 +13,8 @@ import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity';
 import '../../../exported';
 
 /**
- * Autoswap is a rewrite of Uniswap. Please see the documentation for more
+ * Autoswap is a rewrite of Uniswap. Please see the documentation for
+ * more
  * https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
  *
  * We expect that this contract will have tens to hundreds of issuers.
@@ -24,16 +25,14 @@ import '../../../exported';
  * would first use the pool (X, C) then the pool (Y, C). There are no
  * liquidity pools between two secondary tokens.
  *
- * There should only need to be one instance of this contract, so liquidity can
- * be shared as much as possible.
+ * There should only need to be one instance of this contract, so
+ * liquidity can be shared as much as possible.
  *
- * When the contract is instantiated, the central token is specified in the
- * terms. The party that calls `E(zoe).startInstance` gets an invitation
- * that can be used to request an invitation to add liquidity. The same
- * invitation is available by calling `await E(publicAPI).getLiquidityIssuer(brand)`.
- * Separate invitations are available for adding and removing liquidity, and for
- * making trades. Other API operations support monitoring prices and the sizes
- * of pools.
+ * When the contract is instantiated, the central token is specified
+ * in the terms. Separate invitations are available by calling methods
+ * on the publicFacet for adding and removing liquidity, and for
+ * making trades. Other publicFacet operations support monitoring
+ * prices and the sizes of pools.
  *
  * @type {ContractStartFn}
  */

@@ -83,14 +83,6 @@ function makeZoe(vatAdminSvc) {
       uncleanIssuerKeywordRecord = harden({}),
       customTerms = harden({}),
     ) => {
-      // Unpack the invitationKit.
-
-      const {
-        issuer: invitationIssuer,
-        mint: invitationMint,
-        amountMath: invitationAmountMath,
-      } = invitationKit;
-
       /** @param {Issuer[]} issuers */
       const getPromiseForIssuerRecords = issuers =>
         Promise.all(issuers.map(issuerTable.getPromiseForIssuerRecord));
@@ -236,6 +228,14 @@ function makeZoe(vatAdminSvc) {
 
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
+      // Unpack the invitationKit.
+
+      const {
+        issuer: invitationIssuer,
+        mint: invitationMint,
+        amountMath: invitationAmountMath,
+      } = invitationKit;
+
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = {
         makeInvitation: (invitationHandle, description, customProperties) => {
@@ -284,7 +284,7 @@ function makeZoe(vatAdminSvc) {
       const {
         creatorFacet = {},
         publicFacet = {},
-        creatorInvitation,
+        creatorInvitation: creatorInvitationP,
         addSeatObj,
       } = await E(zcfRoot).executeContract(
         bundle,
@@ -299,20 +299,24 @@ function makeZoe(vatAdminSvc) {
 
       // creatorInvitation can be undefined, but if it is defined,
       // let's make sure it is an invitation.
-      if (creatorInvitation !== undefined) {
-        assert(
-          await invitationIssuer.isLive(creatorInvitation),
-          details`The contract did not correctly return a creatorInvitation`,
-        );
-      }
-
-      // Actually returned to the user.
-      return {
-        creatorFacet,
-        creatorInvitation: await creatorInvitation,
-        instance,
-        publicFacet,
-      };
+      return Promise.allSettled([
+        Promise.resolve(creatorInvitationP),
+        invitationIssuer.isLive(creatorInvitationP),
+      ]).then(([{ value: creatorInvitation }, isLiveResult]) => {
+        if (creatorInvitation !== undefined) {
+          assert(
+            isLiveResult.value,
+            details`The contract did not correctly return a creatorInvitation`,
+          );
+        }
+        // Actually returned to the user.
+        return {
+          creatorFacet,
+          creatorInvitation,
+          instance,
+          publicFacet,
+        };
+      });
     },
     offer: async (
       invitation,
