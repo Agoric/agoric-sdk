@@ -351,7 +351,7 @@ export function buildRootObject() {
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
 
-    // Next, execute the contract code, passing in zcf and the terms
+    // Next, execute the contract code, passing in zcf
     /** @type {Promise<Invitation>} */
     return E(contractCode)
       .start(zcf)

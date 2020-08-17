@@ -413,7 +413,6 @@
 /**
  * @callback ContractStartFn
  * @param {ContractFacet} zcf
- * @param {Object} terms
  * @returns {ContractStartFnResult}
  */
 
