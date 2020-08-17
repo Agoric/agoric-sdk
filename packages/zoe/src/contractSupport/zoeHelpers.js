@@ -176,7 +176,9 @@ export const trade = (zcf, keepLeft, tryRight) => {
     ));
   } catch (err) {
     console.log(err);
-    throw tryRight.seat.kickOut();
+    throw tryRight.seat.kickOut(
+      `The trade between left ${keepLeft} and right ${tryRight} failed. Please check the log for more information`,
+    );
   }
 
   // Check whether reallocate would error before calling. If
@@ -198,7 +200,9 @@ export const trade = (zcf, keepLeft, tryRight) => {
     if (!offerSafeForRight) {
       console.log(`offer not safe for right`);
     }
-    return tryRight.seat.kickOut();
+    return tryRight.seat.kickOut(
+      `The trade between left ${keepLeft} and right ${tryRight} failed offer safety. Please check the log for more information`,
+    );
   }
 
   return zcf.reallocate(
