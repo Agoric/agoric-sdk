@@ -30,14 +30,18 @@ const sumByBrand = (getAmountMath, amounts) => {
 };
 
 /**
- * Do the left sums by brand equal the right sums by brand?
+ * Assert that the left sums by brand equal the right sums by brand
  * @param {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
  * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
  * @param  {Store<Brand, Amount>} rightSumsByBrand - a map of brands to sums
  * indexed by issuer
  */
-const isEqualPerBrand = (getAmountMath, leftSumsByBrand, rightSumsByBrand) => {
+const assertEqualPerBrand = (
+  getAmountMath,
+  leftSumsByBrand,
+  rightSumsByBrand,
+) => {
   const leftKeys = leftSumsByBrand.keys();
   const rightKeys = rightSumsByBrand.keys();
   assert.equal(
@@ -45,18 +49,21 @@ const isEqualPerBrand = (getAmountMath, leftSumsByBrand, rightSumsByBrand) => {
     rightKeys.length,
     details`${leftKeys.length} should be equal to ${rightKeys.length}`,
   );
-  return leftSumsByBrand
+  leftSumsByBrand
     .keys()
-    .every(brand =>
-      getAmountMath(brand).isEqual(
-        leftSumsByBrand.get(brand),
-        rightSumsByBrand.get(brand),
+    .forEach(brand =>
+      assert(
+        getAmountMath(brand).isEqual(
+          leftSumsByBrand.get(brand),
+          rightSumsByBrand.get(brand),
+        ),
+        details`rights were not conserved for brand ${brand}`,
       ),
     );
 };
 
 /**
- * `areRightsConserved` checks that the total amount per brand is
+ * `assertRightsConserved` checks that the total amount per brand is
  * equal to the total amount per brand in the proposed reallocation
  * @param {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
@@ -65,12 +72,12 @@ const isEqualPerBrand = (getAmountMath, leftSumsByBrand, rightSumsByBrand) => {
  * @param  {Amount[]} newAmounts - an array of the amounts in the
  * proposed reallocation
  *
- * @returns {boolean} isEqualPerBrand
+ * @returns {void}
  */
-function areRightsConserved(getAmountMath, previousAmounts, newAmounts) {
+function assertRightsConserved(getAmountMath, previousAmounts, newAmounts) {
   const sumsPrevAmounts = sumByBrand(getAmountMath, previousAmounts);
   const sumsNewAmounts = sumByBrand(getAmountMath, newAmounts);
-  return isEqualPerBrand(getAmountMath, sumsPrevAmounts, sumsNewAmounts);
+  assertEqualPerBrand(getAmountMath, sumsPrevAmounts, sumsNewAmounts);
 }
 
-export { areRightsConserved };
+export { assertRightsConserved };

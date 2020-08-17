@@ -14,7 +14,7 @@ import makeWeakStore from '@agoric/weak-store';
 import { makeAmountMath, MathKind } from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { areRightsConserved } from './rightsConservation';
+import { assertRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
 import {
   assertKeywordName,
@@ -213,7 +213,7 @@ export function buildRootObject() {
 
         // Ensure that rights are conserved overall. Offer safety was
         // already checked when an allocation was staged for an individual seat.
-        const flattenAllocations = allocations => 
+        const flattenAllocations = allocations =>
           allocations.flatMap(Object.values);
 
         const previousAllocations = seatStagings.map(seatStaging =>
@@ -226,10 +226,7 @@ export function buildRootObject() {
         );
         const newAmounts = flattenAllocations(newAllocations);
 
-        assert(
-          areRightsConserved(getAmountMath, previousAmounts, newAmounts),
-          details`Rights are not conserved in the proposed reallocation`,
-        );
+        assertRightsConserved(getAmountMath, previousAmounts, newAmounts);
 
         // Commit the staged allocations and inform Zoe of the
         // newAllocation.
