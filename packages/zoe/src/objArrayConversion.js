@@ -22,11 +22,7 @@ export const arrayToObj = (array, keys) => {
     array.length === keys.length,
     details`array and keys must be of equal length`,
   );
-  const obj =
-    /** @type {Record<U, T>} */
-    ({});
-  keys.forEach((key, i) => (obj[key] = array[i]));
-  return obj;
+  return Object.fromEntries(keys.map((key, i) => [key, array[i]]));
 };
 
 export const objToArray = (obj, keywords) => {
