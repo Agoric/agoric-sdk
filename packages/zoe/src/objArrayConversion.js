@@ -24,17 +24,6 @@ export const arrayToObj = (array, keys) => {
   return obj;
 };
 
-export const objToArray = (obj, keywords) => {
-  const keys = Object.getOwnPropertyNames(obj);
-  assert(
-    keys.length === keywords.length,
-    details`object keys ${q(keys)} and keywords ${q(
-      keywords,
-    )} must be of equal length`,
-  );
-  return keywords.map(keyword => obj[keyword]);
-};
-
 export const assertSubset = (whole, part) => {
   part.forEach(key => {
     assert.typeof(key, 'string');
