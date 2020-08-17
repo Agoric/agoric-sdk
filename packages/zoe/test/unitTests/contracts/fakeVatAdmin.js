@@ -19,4 +19,7 @@ export default harden({
   createVatByName: _name => {
     throw Error(`createVatByName not supported in fake mode`);
   },
+  createVatByName: name => {
+    throw Error(`createVatByName not supported in fake mode`);
+  },
 });
