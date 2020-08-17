@@ -125,7 +125,7 @@
  * @property {any} creatorFacet
  * @property {any} publicFacet
  * @property {Instance} instance
- * @property {Payment} creatorInvitation
+ * @property {Payment | undefined} creatorInvitation
  */
 
 /**
@@ -327,6 +327,7 @@
 /**
  * @typedef {Object} VatAdminSvc
  * @property {(bundle: SourceBundle) => RootAndAdminNode} createVat
+ * @property {(BundleName: string) => RootAndAdminNode} createVatByName
  */
 
 /**

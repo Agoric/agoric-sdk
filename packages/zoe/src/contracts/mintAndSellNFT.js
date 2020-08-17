@@ -4,6 +4,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import '../../exported';
+import { assert } from '@agoric/assert';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -79,7 +80,7 @@ const start = zcf => {
     });
     /**
      * @type {Promise<{
-     *   creatorInvitation: Invitation,
+     *   creatorInvitation: Invitation | undefined,
      *   creatorFacet: SellItemsCreatorFacet,
      *   instance: Instance,
      *   publicFacet: SellItemsPublicFacet,
@@ -92,6 +93,7 @@ const start = zcf => {
     );
     return instanceRecordP.then(
       ({ creatorInvitation, creatorFacet, instance, publicFacet }) => {
+        assert(creatorInvitation);
         return E(zoeService)
           .offer(creatorInvitation, proposal, paymentKeywordRecord)
           .then(sellItemsCreatorSeat => {

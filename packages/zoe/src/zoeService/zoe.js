@@ -25,9 +25,10 @@ import { makeHandle } from '../table';
  *
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
+ * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {ZoeService} The created Zoe service.
  */
-function makeZoe(vatAdminSvc) {
+function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
 
   // Zoe state shared among functions
@@ -132,8 +133,10 @@ function makeZoe(vatAdminSvc) {
         },
       };
 
-      const createVatResult = await E(vatAdminSvc).createVat(zcfContractBundle);
-      const { adminNode, root } = createVatResult;
+      const createVatResultP = zcfBundleName
+        ? E(vatAdminSvc).createVatByName(zcfBundleName)
+        : E(vatAdminSvc).createVat(zcfContractBundle);
+      const { adminNode, root } = await createVatResultP;
       /** @type {ZCFRoot} */
       const zcfRoot = root;
 
@@ -300,12 +303,16 @@ function makeZoe(vatAdminSvc) {
       // creatorInvitation can be undefined, but if it is defined,
       // let's make sure it is an invitation.
       return Promise.allSettled([
-        Promise.resolve(creatorInvitationP),
+        creatorInvitationP,
         invitationIssuer.isLive(creatorInvitationP),
-      ]).then(([{ value: creatorInvitation }, isLiveResult]) => {
+      ]).then(([invitationResult, isLiveResult]) => {
+        let creatorInvitation;
+        if (invitationResult.status === 'fulfilled') {
+          creatorInvitation = invitationResult.value;
+        }
         if (creatorInvitation !== undefined) {
           assert(
-            isLiveResult.value,
+            isLiveResult.status === 'fulfilled' && isLiveResult.value,
             details`The contract did not correctly return a creatorInvitation`,
           );
         }
