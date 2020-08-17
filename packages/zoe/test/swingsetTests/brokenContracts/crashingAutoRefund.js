@@ -3,7 +3,7 @@
 import {
   swap,
   assertIssuerKeywords,
-  assertProposalKeywords,
+  assertProposalShape,
 } from '../../../src/contractSupport';
 
 import '../../../exported';
@@ -72,7 +72,7 @@ const start = zcf => {
 
   const makeSwapInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(makeMatchingInvitation, swapOfferExpected),
+      assertProposalShape(makeMatchingInvitation, swapOfferExpected),
       'firstOffer',
     );
 

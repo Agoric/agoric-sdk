@@ -9,19 +9,14 @@ import { setup } from '../setupBasicMints';
 
 import {
   defaultAcceptanceMsg,
-  defaultRejectMsg,
 } from '../../../src/contractSupport';
 
 test('ZoeHelpers messages', t => {
-  t.plan(2);
+  t.plan(1);
   try {
     t.equals(
       defaultAcceptanceMsg,
       `The offer has been accepted. Once the contract has been completed, please check your payout`,
-    );
-    t.equals(
-      defaultRejectMsg,
-      `The offer was invalid. Please check your refund.`,
     );
   } catch (e) {
     t.assert(false, e);

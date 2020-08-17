@@ -1,4 +1,4 @@
-import { assertProposalKeywords } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport';
 
 import '../../../exported';
 
@@ -24,7 +24,7 @@ export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
 
   const makeAddLiquidityInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(addLiquidity, addLiquidityExpected),
+      assertProposalShape(addLiquidity, addLiquidityExpected),
       'multipool autoswap add liquidity',
     );
 

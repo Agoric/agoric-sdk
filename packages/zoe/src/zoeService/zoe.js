@@ -257,13 +257,14 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         },
         // checks of keyword done on zcf side
         saveIssuer: (issuerP, keyword) =>
-          issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
+          (issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
             registerIssuerByKeyword(keyword, issuerRecord);
             const { issuer, brand } = issuerRecord;
             if (!brandToPurse.has(brand)) {
               brandToPurse.init(brand, E(issuer).makeEmptyPurse());
             }
-          }),
+            return undefined;
+          })),
         // A Seat requested by the contract without an offer
         makeOfferlessSeat: (initialAllocation, proposal) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
@@ -372,8 +373,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             proposal,
             brandToPurse,
             {
-              offerResult: offerResultPromiseKit,
-              exitObj: exitObjPromiseKit,
+              offerResult: offerResultPromiseKit.promise,
+              exitObj: exitObjPromiseKit.promise,
             },
           );
 

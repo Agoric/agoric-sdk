@@ -6,7 +6,7 @@ import {
   assertIssuerKeywords,
   trade,
   defaultAcceptanceMsg,
-  assertProposalKeywords,
+  assertProposalShape,
   assertUsesNatMath,
 } from '../contractSupport';
 
@@ -111,7 +111,7 @@ const start = zcf => {
         give: { Money: null },
       });
       return zcf.makeInvitation(
-        assertProposalKeywords(buy, buyerExpected),
+        assertProposalShape(buy, buyerExpected),
         'buyer',
       );
     },

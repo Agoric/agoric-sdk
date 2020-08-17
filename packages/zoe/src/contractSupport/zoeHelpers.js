@@ -5,10 +5,10 @@ import { sameStructure } from '@agoric/same-structure';
 
 import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
+import { objectMap } from '../objArrayConversion';
 
 import '../../exported';
 
-export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 const getKeysSorted = obj =>
@@ -41,8 +41,8 @@ const checkKeys = (actual, expected) => {
  * @returns {FromToAllocations} allocations - new allocations
  *
  * @typedef FromToAllocations
- * @property {AmountKeywordRecord} from
- * @property {AmountKeywordRecord} to
+ * @property {Allocation} from
+ * @property {Allocation} to
  */
 const calcNewAllocations = (
   zcf,
@@ -68,10 +68,12 @@ const calcNewAllocations = (
     return amount || amountToAdd;
   };
 
-  const newFromAllocation = Object.fromEntries(
-    Object.entries(allocations.from).map(([keyword, allocAmount]) => {
-      return [keyword, subtract(allocAmount, fromLosses[keyword])];
-    }),
+  const newFromAllocation = objectMap(
+    allocations.from,
+    ([keyword, allocAmount]) => [
+      keyword,
+      subtract(allocAmount, fromLosses[keyword]),
+    ],
   );
 
   const allToKeywords = [
@@ -90,14 +92,6 @@ const calcNewAllocations = (
     from: newFromAllocation,
     to: newToAllocation,
   });
-};
-
-const mergeAllocations = (currentAllocation, allocation) => {
-  const newAllocation = {
-    ...currentAllocation,
-    ...allocation,
-  };
-  return newAllocation;
 };
 
 export const assertIssuerKeywords = (zcf, expected) => {
@@ -134,17 +128,17 @@ export const checkIfProposal = (seat, expected) => {
  * Check whether an update to currentAllocation satisfies
  * proposal.want. Note that this is half of the offer safety
  * check; whether the allocation constitutes a refund is not
- * checked. Allocation is merged with currentAllocation
- * (allocations' values prevailing if the keywords are the same)
+ * checked. The update is merged with currentAllocation
+ * (update's values prevailing if the keywords are the same)
  * to produce the newAllocation.
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} seat
- * @param {Allocation} allocation
+ * @param {AmountKeywordRecord} update
  * @returns {boolean}
  */
-export const satisfies = (zcf, seat, allocation) => {
+export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
-  const newAllocation = mergeAllocations(currentAllocation, allocation);
+  const newAllocation = { ...currentAllocation, ...update };
   const proposal = seat.getProposal();
   return satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
 };
@@ -223,7 +217,7 @@ export const trade = (zcf, keepLeft, tryRight) => {
  * offer will be rejected with a message (provided by 'keepHandleInactiveMsg').
  *
  * TODO: If the try offer is no longer active, swap() should terminate with
- * a useful error message, like defaultRejectMsg.
+ * a useful error message.
  *
  * If the swap fails, no assets are transferred, and the 'try' offer is rejected.
  *
@@ -278,7 +272,7 @@ export const swap = (
  * @param {OfferHandler} offerHandler
  * @param {ExpectedRecord} expected
  */
-export const assertProposalKeywords = (offerHandler, expected) =>
+export const assertProposalShape = (offerHandler, expected) =>
   /** @param {ZCFSeat} seat */
   seat => {
     const actual = seat.getProposal();

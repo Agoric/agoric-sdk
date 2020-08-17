@@ -4,7 +4,7 @@
 import {
   assertIssuerKeywords,
   swap,
-  assertProposalKeywords,
+  assertProposalShape,
 } from '../contractSupport';
 
 import '../../exported';
@@ -28,18 +28,18 @@ const start = zcf => {
     const { want, give } = firstSeat.getProposal();
 
     /** @type {OfferHandler} */
-    const secondSeatOfferHandler = secondSeat =>
-      swap(zcf, firstSeat, secondSeat);
+    const matchingSeatOfferHandler = matchingSeat =>
+      swap(zcf, firstSeat, matchingSeat);
 
-    const secondSeatInvitation = zcf.makeInvitation(
-      secondSeatOfferHandler,
+    const matchingSeatInvitation = zcf.makeInvitation(
+      matchingSeatOfferHandler,
       'matchOffer',
       {
         asset: give.Asset,
         price: want.Price,
       },
     );
-    return secondSeatInvitation;
+    return matchingSeatInvitation;
   };
 
   const firstProposalExpected = harden({
@@ -48,7 +48,7 @@ const start = zcf => {
   });
 
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalKeywords(makeMatchingInvitation, firstProposalExpected),
+    assertProposalShape(makeMatchingInvitation, firstProposalExpected),
     'firstOffer',
   );
 

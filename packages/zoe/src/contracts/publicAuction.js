@@ -9,7 +9,7 @@ import {
   satisfies,
   secondPriceLogic,
   closeAuction,
-  assertProposalKeywords,
+  assertProposalShape,
 } from '../contractSupport';
 
 import '../../exported';
@@ -86,7 +86,7 @@ const start = zcf => {
 
   const makeBidInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(bid, bidExpected),
+      assertProposalShape(bid, bidExpected),
       'bid',
       harden({
         auctionedAssets,
@@ -114,7 +114,7 @@ const start = zcf => {
   };
 
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalKeywords(sell, sellExpected),
+    assertProposalShape(sell, sellExpected),
     'sellAssets',
   );
 

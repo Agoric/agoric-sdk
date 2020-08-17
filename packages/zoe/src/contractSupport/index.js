@@ -12,10 +12,9 @@ export { makeStateMachine } from './stateMachine';
 
 export {
   defaultAcceptanceMsg,
-  defaultRejectMsg,
   trade,
   swap,
-  assertProposalKeywords,
+  assertProposalShape,
   assertIssuerKeywords,
   satisfies,
   assertUsesNatMath,

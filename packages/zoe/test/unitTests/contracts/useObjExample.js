@@ -4,7 +4,7 @@ import { assert, details } from '@agoric/assert';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
-  assertProposalKeywords,
+  assertProposalShape,
 } from '../../../src/contractSupport';
 
 /**
@@ -57,7 +57,7 @@ const start = zcf => {
     // The only publicFacet method is to make an invitation.
     makeInvitation: () =>
       zcf.makeInvitation(
-        assertProposalKeywords(makeUseObj, expected),
+        assertProposalShape(makeUseObj, expected),
         'use object',
       ),
   };

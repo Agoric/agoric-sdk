@@ -1,4 +1,4 @@
-import { assertProposalKeywords, trade } from '../../contractSupport';
+import { assertProposalShape, trade } from '../../contractSupport';
 
 import '../../../exported';
 
@@ -128,7 +128,7 @@ export const makeMakeSwapInvitation = (
 
   const makeSwapInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(swap, swapExpected),
+      assertProposalShape(swap, swapExpected),
       'autoswap swap',
     );
 

@@ -4,7 +4,7 @@
 import {
   swap,
   assertIssuerKeywords,
-  assertProposalKeywords,
+  assertProposalShape,
 } from '../contractSupport';
 
 import '../../exported';
@@ -17,22 +17,23 @@ import '../../exported';
  *
  * In this contract, the expiry date is the deadline when the offer
  * escrowing the underlying assets is cancelled. Therefore, the
- * proposal for the underlying assets must have an exit record with
+ * proposal to sell the underlying assets must have an exit record with
  * the key "afterDeadline".
  *
  * The invitation received by the covered call creator is the call
  * option. It has this additional information in the invitation's
- * value: { expirationDate, timerAuthority, underlyingAsset,
- * strikePrice }
+ * value:
+ * { expirationDate, timerAuthority, underlyingAsset, strikePrice }
  *
  * The initial proposal should be:
  * {
- *   give: { UnderlyingAsset: assetAmount }, want: { StrikePrice:
- *   priceAmount  }, exit: { afterDeadline: { deadline: time, timer:
- *   timer } },
+ *   give: { UnderlyingAsset: assetAmount },
+ *   want: { StrikePrice: priceAmount  },
+ *   exit: { afterDeadline: { deadline: time, timer: timer } },
  * }
  * The result of the initial offer is a seat where the payout will
- * eventually resolve to the strikePrice, and the offerResult is an
+ * eventually resolve either to the strikePrice or to a refund of the
+ * underlying asset. The offerResult is the call option, which is an
  * assayable invitation to buy the underlying asset. Since the
  * contract provides assurance that the underlying asset is available
  * on the specified terms, the invitation itself can be traded as a
@@ -57,7 +58,7 @@ const start = zcf => {
     });
 
     return zcf.makeInvitation(
-      assertProposalKeywords(exerciseOption, exerciseOptionExpected),
+      assertProposalShape(exerciseOption, exerciseOptionExpected),
       'exerciseOption',
       harden({
         expirationDate: exit.afterDeadline.deadline,
@@ -75,7 +76,7 @@ const start = zcf => {
   });
 
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalKeywords(makeCallOption, makeCallOptionExpected),
+    assertProposalShape(makeCallOption, makeCallOptionExpected),
     'makeCallOption',
   );
 
