@@ -31,11 +31,16 @@ const enableKernelPromiseGC = true;
 // The schema is:
 //
 // vat.names = JSON([names..])
+// vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
 // vat.nextID = $NN
 // device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
+
+// dynamic vats have these too:
+// v$NN.source = JSON({ bundle }) or JSON({ bundleName })
+// v$NN.options = JSON
 
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
@@ -221,6 +226,7 @@ export default function makeKernelKeeper(storage) {
 
   function createStartingKernelState() {
     storage.set('vat.names', '[]');
+    storage.set('vat.dynamicIDs', '[]');
     storage.set('vat.nextID', JSON.stringify(FIRST_VAT_ID));
     storage.set('device.names', '[]');
     storage.set('device.nextID', JSON.stringify(FIRST_DEVICE_ID));
@@ -498,6 +504,18 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
+  function addDynamicVatID(vatID) {
+    assert.typeof(vatID, 'string');
+    const KEY = 'vat.dynamicIDs';
+    const dynamicVatIDs = JSON.parse(getRequired(KEY));
+    dynamicVatIDs.push(vatID);
+    storage.set(KEY, JSON.stringify(dynamicVatIDs));
+  }
+
+  function getAllDynamicVatIDs() {
+    return JSON.parse(getRequired('vat.dynamicIDs'));
+  }
+
   const deadKernelPromises = new Set();
 
   /**
@@ -769,6 +787,8 @@ export default function makeKernelKeeper(storage) {
     allocateUnusedVatID,
     allocateVatKeeperIfNeeded,
     getAllVatNames,
+    addDynamicVatID,
+    getAllDynamicVatIDs,
 
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,
