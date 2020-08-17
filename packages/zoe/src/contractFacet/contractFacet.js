@@ -213,9 +213,8 @@ export function buildRootObject() {
 
         // Ensure that rights are conserved overall. Offer safety was
         // already checked when an allocation was staged for an individual seat.
-        const flattened = arr => [].concat(...arr);
-        const flattenAllocations = allocations =>
-          flattened(allocations.map(allocation => Object.values(allocation)));
+        const flattenAllocations = allocations => 
+          allocations.flatMap(Object.values);
 
         const previousAllocations = seatStagings.map(seatStaging =>
           seatStaging.getSeat().getCurrentAllocation(),
