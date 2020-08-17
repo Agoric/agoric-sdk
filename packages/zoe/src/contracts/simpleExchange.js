@@ -112,7 +112,9 @@ const start = zcf => {
       sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
     } else {
       // Eject because the offer must be invalid
-      throw seat.kickOut();
+      throw seat.kickOut(
+        `The proposal did not match either a buy or sell order.`,
+      );
     }
     bookOrdersChanged();
     return 'Trade Successful';
