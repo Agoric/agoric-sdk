@@ -9,9 +9,9 @@ const start = zcf => {
     seat.exit();
     return `The offer was accepted`;
   };
-  const makeRefundInvite = () => zcf.makeInvitation(refund, 'getRefund');
-  // should be makeRefundInvite(). Intentionally wrong to provoke an error.
-  return { creatorInvitation: makeRefundInvite };
+  const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
+  // should be makeRefundInvitation(). Intentionally wrong to provoke an error.
+  return { creatorInvitation: makeRefundInvitation };
 };
 
 harden(start);

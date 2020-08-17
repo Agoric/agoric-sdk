@@ -12,7 +12,7 @@ import {
 const start = zcf => {
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
-  const makeAccompliceInvite = malSeat => {
+  const makeAccompliceInvitation = malSeat => {
     const { want: wantProposal } = malSeat.getProposal();
 
     return zcf.makeInvitation(
@@ -38,7 +38,7 @@ const start = zcf => {
   });
 
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalKeywords(makeAccompliceInvite, firstOfferExpected),
+    assertProposalKeywords(makeAccompliceInvitation, firstOfferExpected),
     'firstOffer',
   );
 

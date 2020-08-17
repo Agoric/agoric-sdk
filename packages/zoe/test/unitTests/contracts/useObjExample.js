@@ -54,7 +54,7 @@ const start = zcf => {
   });
 
   const publicFacet = {
-    // The only publicFacet method is to make an invite.
+    // The only publicFacet method is to make an invitation.
     makeInvitation: () =>
       zcf.makeInvitation(
         assertProposalKeywords(makeUseObj, expected),

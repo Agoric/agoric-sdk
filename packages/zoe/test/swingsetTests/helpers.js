@@ -12,7 +12,7 @@ export const showPurseBalance = async (purseP, name, log) => {
 
 export const setupIssuers = async (zoe, issuers) => {
   const purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
-  const inviteIssuer = await E(zoe).getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
 
   const moolaAmountMath = await makeLocalAmountMath(moolaIssuer);
@@ -25,7 +25,7 @@ export const setupIssuers = async (zoe, issuers) => {
 
   return harden({
     issuers: harden([moolaIssuer, simoleanIssuer]),
-    inviteIssuer,
+    invitationIssuer,
     moolaIssuer,
     simoleanIssuer,
     bucksIssuer,

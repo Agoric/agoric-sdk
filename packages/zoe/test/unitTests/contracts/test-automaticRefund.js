@@ -163,13 +163,13 @@ test('zoe with automaticRefund', async t => {
     const exclusBobInvitation = await invitationIssuer.claim(bobInvitation);
 
     const {
-      value: [bobInviteValue],
+      value: [bobInvitationValue],
     } = await E(invitationIssuer).getAmountOf(exclusBobInvitation);
-    t.equals(bobInviteValue.installation, installation);
+    t.equals(bobInvitationValue.installation, installation);
 
     // bob wants to know what issuers this contract is about and in
     // what order. Is it what he expects?
-    const bobIssuers = await E(zoe).getIssuers(bobInviteValue.instance);
+    const bobIssuers = await E(zoe).getIssuers(bobInvitationValue.instance);
     t.deepEquals(bobIssuers, {
       Contribution1: moolaR.issuer,
       Contribution2: simoleanR.issuer,

@@ -66,7 +66,7 @@ test('zoe - atomicSwap', async t => {
             ),
           );
 
-        // The result of making the first offer is an invite to swap by
+        // The result of making the first offer is an invitation to swap by
         // providing the other goods.
         const invitationP = E(seat).getOfferResult();
         return invitationP;
@@ -225,7 +225,7 @@ test('zoe - non-fungible atomicSwap', async t => {
             ),
           );
 
-        // The result of making the first offer is an invite to swap by
+        // The result of making the first offer is an invitation to swap by
         // providing the other goods.
         const invitationP = seat.getOfferResult();
         return invitationP;
@@ -371,20 +371,22 @@ test('zoe - atomicSwap like-for-like', async t => {
     alicePayments,
   );
 
-  // 4: Alice spreads the invite far and wide with instructions
+  // 4: Alice spreads the invitation far and wide with instructions
   // on how to use it and Bob decides he wants to be the
   // counter-party.
 
-  const bobInviteP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvite = await invitationIssuer.claim(bobInviteP);
-  const bobInviteValue = await E(zoe).getInvitationDetails(bobExclusiveInvite);
+  const bobInvitationP = E(aliceSeat).getOfferResult();
+  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitationP);
+  const bobInvitationValue = await E(zoe).getInvitationDetails(
+    bobExclusiveInvitation,
+  );
 
-  const bobIssuers = zoe.getIssuers(bobInviteValue.instance);
+  const bobIssuers = zoe.getIssuers(bobInvitationValue.instance);
 
-  t.equals(bobInviteValue.installation, installation, 'bobInstallationId');
+  t.equals(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
-  t.deepEquals(bobInviteValue.asset, moola(3));
-  t.deepEquals(bobInviteValue.price, moola(7));
+  t.deepEquals(bobInvitationValue.asset, moola(3));
+  t.deepEquals(bobInvitationValue.price, moola(7));
 
   const bobProposal = harden({
     give: { Price: moola(7) },
@@ -394,7 +396,11 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobPayments = { Price: bobMoolaPayment };
 
   // 5: Bob makes an offer
-  const bobSeat = await zoe.offer(bobExclusiveInvite, bobProposal, bobPayments);
+  const bobSeat = await zoe.offer(
+    bobExclusiveInvitation,
+    bobProposal,
+    bobPayments,
+  );
 
   t.equals(
     await E(bobSeat).getOfferResult(),

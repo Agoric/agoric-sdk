@@ -17,7 +17,7 @@
 
 /**
  * @typedef {string} Keyword
- * @typedef {Handle<'InvitationHandle'>} InvitationHandle - an opaque handle for an invite
+ * @typedef {Handle<'InvitationHandle'>} InvitationHandle - an opaque handle for an invitation
  * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
  * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
  * @typedef {Record<Keyword,Payment>} PaymentKeywordRecord
@@ -105,7 +105,7 @@
  * @param {PaymentKeywordRecord=} paymentKeywordRecord
  * @returns {Promise<UserSeat>} seat
  *
- * To redeem an invite, the user normally provides a proposal (their
+ * To redeem an invitation, the user normally provides a proposal (their
  * rules for the offer) as well as payments to be escrowed by Zoe.  If
  * either the proposal or payments would be empty, indicate this by
  * omitting that argument or passing undefined, rather than passing an

@@ -353,7 +353,7 @@ export function buildRootObject() {
     const contractCode = evalContractBundle(bundle);
 
     // Next, execute the contract code, passing in zcf and the terms
-    /** @type {Promise<Invite>} */
+    /** @type {Promise<Invitation>} */
     return E(contractCode)
       .start(zcf)
       .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
