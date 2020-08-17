@@ -54,7 +54,7 @@ test('zoe - useObj', async t => {
     `use of use object works`,
   );
 
-  aliceSeat.exit();
+  aliceSeat.tryExit();
 
   const aliceMoolaPayoutPayment = await E(aliceSeat).getPayout('Pixels');
 

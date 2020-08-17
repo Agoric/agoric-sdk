@@ -397,7 +397,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     log('after ticket1 purchased: ', availableTickets);
 
-    await E(sellItemsCreatorSeat).exit();
+    await E(sellItemsCreatorSeat).tryExit();
 
     const moneyPayment = await E(sellItemsCreatorSeat).getPayout('Money');
     await E(moolaPurseP).deposit(moneyPayment);

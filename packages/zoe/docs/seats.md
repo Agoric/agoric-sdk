@@ -5,7 +5,7 @@ how to develop smart contracts, please see
 https://agoric.com/documentation/
 
 
-__UserSeat.exit() Flow__
+__UserSeat.tryExit() Flow__
 ![UserSeat Exit Flow](./user-seat-exit-flow.png)
 
 __ZCFSeat.exit() Flow__

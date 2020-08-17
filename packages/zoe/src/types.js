@@ -91,7 +91,7 @@
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult
- * @property {() => void=} exit
+ * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
  * @property {() => Promise<Notifier>} getNotifier
  *

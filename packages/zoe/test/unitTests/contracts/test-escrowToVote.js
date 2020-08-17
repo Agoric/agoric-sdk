@@ -143,7 +143,7 @@ test('zoe - escrowToVote', async t => {
 
     // Voter3 exits before the election is closed. Voter3's vote will
     // not be counted.
-    seat.exit();
+    seat.tryExit();
 
     const moolaPayment = await seat.getPayout('Assets');
 

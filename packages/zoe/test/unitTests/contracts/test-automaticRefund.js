@@ -366,7 +366,7 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
     await E(aliceSeat).getOfferResult();
 
     console.log('EXPECTED ERROR: seat has been exited >>>');
-    t.rejects(() => E(aliceSeat).exit(), /Error: seat has been exited/);
+    t.rejects(() => E(aliceSeat).tryExit(), /Error: seat has been exited/);
 
     const moolaPayout = await aliceSeat.getPayout('ContributionA');
     const simoleanPayout = await aliceSeat.getPayout('ContributionB');
