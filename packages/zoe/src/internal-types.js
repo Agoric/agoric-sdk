@@ -24,15 +24,6 @@
  */
 
 /**
- * @typedef {Object} ZoeForZcf
- * @property {<OC>(inviteHandler: InviteHandler<OC>, inviteDesc: string, options?: MakeInvitationOptions) => Invite<OC>} makeInvitation
- * @property {(offerHandles: OfferHandle[], reallocations: Allocation[]) => OfferHandle[]} updateAmounts
- * @property {(publicAPI: PublicAPI) => void} updatePublicAPI
- * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => Promise<void>} addNewIssuer
- * @property {(offerHandles: OfferHandle[]) => void} completeOffers
- */
-
-/**
  * @template T
  * @typedef {Object} Table
  * @property {(record: any) => record is T} validate
