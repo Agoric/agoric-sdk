@@ -3,9 +3,10 @@ import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+import { E } from '@agoric/eventual-send';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import fakeVatAdmin from './fakeVatAdmin';
 
@@ -25,7 +26,7 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
     Price: moolaR.issuer,
   });
 
-  const { invite: malloryInvite } = await zoe.makeInstance(
+  const { creatorInvitation: malloryInvitation } = await zoe.startInstance(
     installationHandle,
     issuerKeywordRecord,
   );
@@ -34,11 +35,13 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
   const malloryProposal = harden({
     want: { Price: moola(37) },
   });
-  const { outcome: vicInviteP } = await zoe.offer(
-    malloryInvite,
+  const mallorySeat = await zoe.offer(
+    malloryInvitation,
     malloryProposal,
     harden({}),
   );
+
+  const vicInvitationP = await E(mallorySeat).getOfferResult();
 
   const vicMoolaPayment = moolaMint.mintPayment(moola(37));
   const vicProposal = harden({
@@ -47,14 +50,10 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
     exit: { onDemand: null },
   });
   const vicPayments = { Price: vicMoolaPayment };
-  const { outcome: vicOutcomeP } = await zoe.offer(
-    vicInviteP,
-    vicProposal,
-    vicPayments,
-  );
+  const vicSeat = await zoe.offer(vicInvitationP, vicProposal, vicPayments);
 
   t.rejects(
-    vicOutcomeP,
+    E(vicSeat).getOfferResult(),
     /The reallocation was not offer safe/,
     `vicOffer is rejected`,
   );

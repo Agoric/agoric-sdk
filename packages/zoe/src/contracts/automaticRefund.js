@@ -13,29 +13,30 @@ import '../../exported';
  * Since the contract doesn't attempt any reallocation, the offer can contain
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
- *
+ * @type {ContractStartFn}
  * @param {ContractFacet} zcf
  */
-const makeContract = zcf => {
+const start = zcf => {
   let offersCount = 0;
 
-  const refundOfferHook = offerHandle => {
+  /** @type {OfferHandler} */
+  const refund = seat => {
     offersCount += 1;
-    zcf.complete(harden([offerHandle]));
+    seat.exit();
     return `The offer was accepted`;
   };
-  const makeRefundInvite = () =>
-    zcf.makeInvitation(refundOfferHook, 'getRefund');
+  const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
-  zcf.initPublicAPI(
-    harden({
-      getOffersCount: () => offersCount,
-      makeInvite: makeRefundInvite,
-    }),
-  );
+  /** @type {AutomaticRefundPublicFacet} */
+  const publicFacet = harden({
+    getOffersCount: () => offersCount,
+    makeInvitation: makeRefundInvitation,
+  });
 
-  return makeRefundInvite();
+  const creatorInvitation = makeRefundInvitation();
+
+  return harden({ creatorInvitation, publicFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

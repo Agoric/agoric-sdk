@@ -32,7 +32,7 @@
  */
 
 /**
- * @typedef {'nat'|'set'|'strSet'} MathHelpersName
+ * @typedef {'nat' | 'set' | 'strSet'} AmountMathKind
  */
 
 /**
@@ -45,10 +45,8 @@
  * abstract right to participate in a particular exchange.
  *
  * @property {() => Brand} getBrand Return the brand.
- * @property {() => MathHelpersName} getMathHelpersName
- * Deprecated. Use getMathHelperName
- * @property {() => MathHelpersName} getMathHelperName
- * Get the name of the mathHelpers used. This can be used as an
+ * @property {() => AmountMathKind} getAmountMathKind
+ * Get the kind of amountMath used. This can be passed as an
  * argument to `makeAmountMath` to create local amountMath.
  *
  * @property {(allegedValue: Value) => Amount} make
@@ -101,11 +99,13 @@
  * as 'BTC' or 'moola') is provided by the maker of the issuer and should
  * not be trusted as accurate.
  *
- * Every amount created by AmountMath will have the same brand, but recipients
- * cannot use the brand by itself to verify that a purported amount is
- * authentic, since the brand can be reused by a misbehaving issuer.
+ * Every amount created by a particular AmountMath will share the same brand,
+ * but recipients cannot rely on the brand to verify that a purported amount
+ * represents the issuer they intended, since the same brand can be reused by
+ * a misbehaving issuer.
  *
- * @property {(issuer: Issuer) => boolean} isMyIssuer
+ * @property {(allegedIssuer: any) => boolean} isMyIssuer Should be used with
+ * `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  */
 
@@ -121,18 +121,16 @@
  * exclusively). The issuer should be gotten from a trusted source and
  * then relied upon as the decider of whether an untrusted payment is valid.
  *
- * @property {() => Brand} getBrand Get the Brand for this Issuer. The Brand indicates the kind of
+ * @property {() => Brand} getBrand Get the Brand for this Issuer. The Brand
+ * indicates the kind of
  * digital asset and is shared by the mint, the issuer, and any purses
  * and payments of this particular kind. The brand is not closely
  * held, so this function should not be trusted to identify an issuer
  * alone. Fake digital assets and amount can use another issuer's brand.
  *
  * @property {() => string} getAllegedName Get the allegedName for this mint/issuer
- * @property {() => AmountMath} getAmountMath Get the AmountMath for this Issuer.
- * @property {() => MathHelpersName} getMathHelpersName
- * Deprecated. Use getMathHelperName
- * @property {() => MathHelpersName} getMathHelperName Get the name of the
- * MathHelpers for this Issuer.
+ * @property {() => AmountMathKind} getAmountMathKind Get the kind of
+ * MathHelpers used by this Issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
  * @property {(payment: PaymentP) => Promise<boolean>} isLive
  * Return true if the payment continues to exist.
@@ -183,28 +181,17 @@
  */
 
 /**
- * @typedef {Object} Brand
- * The Brand indicates the kind of digital asset and is shared by
- * the mint, the issuer, and any purses and payments of this
- * particular kind. Fake digital assets and amount can use another
- * issuer's brand.
+ * @callback MakeIssuerKit
+ * @param {string} allegedName
+ * @param {AmountMathKind} amountMathKind
+ * @returns {IssuerKit}
  *
- * @property {(allegedIssuer: any) => boolean} isMyIssuer Should be used with
- * `issuer.getBrand` to ensure an issuer and brand match.
- * @property {() => string} getAllegedName
- */
-
-/**
- * @typedef {Object} IssuerMaker
- * Makes Issuers.
- *
- * @property {(allegedName: string, mathHelperName: string) => IssuerKit} makeIssuerKit
  * The allegedName becomes part of the brand in asset descriptions. The
  * allegedName doesn't have to be a string, but it will only be used for
  * its value. The allegedName is useful for debugging and double-checking
  * assumptions, but should not be trusted.
  *
- * The mathHelpersName will be used to import a specific mathHelpers
+ * The amountMathKind will be used to import a specific mathHelpers
  * from the mathHelpers library. For example, natMathHelpers, the
  * default, is used for basic fungible tokens.
  *

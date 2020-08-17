@@ -2,7 +2,7 @@
 
 /* global harden */
 
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 
 export function buildRootObject(_vatPowers) {
   return harden({ makeIssuerKit });

@@ -2,18 +2,17 @@
 
 /**
  * This is a a broken contact to test zoe's error handling
- * @type {import('@agoric/zoe').MakeContract} zoe - the contract facet of zoe
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const refundOfferHook = offerHandle => {
-    zcf.complete(harden([offerHandle]));
+const start = zcf => {
+  const refund = seat => {
+    seat.exit();
     return `The offer was accepted`;
   };
-  const makeRefundInvite = () =>
-    zcf.makeInvitation(refundOfferHook, 'getRefund');
-  // should be makeRefundInvite(). Intentionally wrong to provoke an error.
-  return makeRefundInvite;
+  const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
+  // should be makeRefundInvitation(). Intentionally wrong to provoke an error.
+  return { creatorInvitation: makeRefundInvitation };
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

@@ -3,7 +3,7 @@
 /* global harden */
 import { E } from '@agoric/eventual-send';
 import { allComparable } from '@agoric/same-structure';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { makeCollect } from '../../../src/makeCollect';
 
@@ -22,14 +22,6 @@ function makeAliceMaker(host, log) {
     });
   }
 
-  const getLocalAmountMath = issuer =>
-    Promise.all([
-      E(issuer).getBrand(),
-      E(issuer).getMathHelperName(),
-    ]).then(([brand, mathHelpersName]) =>
-      makeAmountMath(brand, mathHelpersName),
-    );
-
   return harden({
     async make(
       escrowExchangeInstallationP,
@@ -42,10 +34,10 @@ function makeAliceMaker(host, log) {
       myOptFinPurseP = undefined,
       optFredP = undefined,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
+      const inviteIssuerP = E(host).getInvitationIssuer();
 
-      const moneyMath = await getLocalAmountMath(moneyIssuerP);
-      const stockMath = await getLocalAmountMath(stockIssuerP);
+      const moneyMath = await makeLocalAmountMath(moneyIssuerP);
+      const stockMath = await makeLocalAmountMath(stockIssuerP);
 
       const alice = harden({
         payBobWell(bob) {

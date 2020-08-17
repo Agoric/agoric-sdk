@@ -28,7 +28,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
   // Stable identity for the connection handler.
   async function onOpen(event) {
     const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } =
-      makeCapTP('@agoric/wallet-frontend', sendMessage);
+      makeCapTP('@agoric/dapp-svelte-wallet-ui', sendMessage);
     abort = ctpAbort;
     dispatch = ctpDispatch;
 

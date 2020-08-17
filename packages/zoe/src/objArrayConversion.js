@@ -1,11 +1,14 @@
+// @ts-check
+
 import { assert, details, q } from '@agoric/assert';
 
-/** @type {<T extends string[]>(...args: T) => T} */
-export const tuple = (...args) => args;
+/**
+ * @typedef {bigint|boolean|null|number|string|symbol|undefined} Primitive
+ */
 
 /**
  * @template T
- * @template U
+ * @template {string | number | symbol} U
  * @param {T[]} array
  * @param {U[]} keys
  */
@@ -14,21 +17,11 @@ export const arrayToObj = (array, keys) => {
     array.length === keys.length,
     details`array and keys must be of equal length`,
   );
-  /** @type {{[Keyword: U]: T}} */
-  const obj = {};
+  const obj =
+    /** @type {Record<U, T>} */
+    ({});
   keys.forEach((key, i) => (obj[key] = array[i]));
   return obj;
-};
-
-export const objToArray = (obj, keywords) => {
-  const keys = Object.getOwnPropertyNames(obj);
-  assert(
-    keys.length === keywords.length,
-    details`object keys ${q(keys)} and keywords ${q(
-      keywords,
-    )} must be of equal length`,
-  );
-  return keywords.map(keyword => obj[keyword]);
 };
 
 export const assertSubset = (whole, part) => {
@@ -42,42 +35,14 @@ export const assertSubset = (whole, part) => {
 };
 
 /**
- * Return a new object with only the keys in subsetKeys.
- * `obj` must have values for all the `subsetKeys`.
- * @template T
- * @template {(keyof T)[]} U
- * @param {T} obj
- * @param {U} subsetKeys
- * @returns {Pick<T,U[number]>}
+ * @template T, U
+ * @template {keyof T} K
+ * @param {Record<K, T>} original
+ * @param {(pair: [K, T]) => [K, U]} mapPairFn
+ * @returns {Record<K, U>}
  */
-export const filterObj = (obj, subsetKeys) => {
-  const newObj = {};
-  subsetKeys.forEach(key => {
-    assert(
-      obj[key] !== undefined,
-      details`obj[key] must be defined for keyword ${q(key)}`,
-    );
-    newObj[key] = obj[key];
-  });
-  return newObj;
-};
-
-/**
- * Return a new object with only the keys in `amountMathKeywordRecord`, but fill
- * in empty amounts for any key that is undefined in the original allocation
- * @param {Allocation} allocation
- * @param {AmountMathKeywordRecord} amountMathKeywordRecord
- * @returns {Allocation}
- * */
-export const filterFillAmounts = (allocation, amountMathKeywordRecord) => {
-  const filledAllocation = {};
-  const subsetKeywords = Object.getOwnPropertyNames(amountMathKeywordRecord);
-  subsetKeywords.forEach(keyword => {
-    if (allocation[keyword] === undefined) {
-      filledAllocation[keyword] = amountMathKeywordRecord[keyword].getEmpty();
-    } else {
-      filledAllocation[keyword] = allocation[keyword];
-    }
-  });
-  return filledAllocation;
+export const objectMap = (original, mapPairFn) => {
+  const ents = /** @type {[K, T][]} */ (Object.entries(original));
+  const mapEnts = ents.map(ent => mapPairFn(ent));
+  return /** @type {Record<K, U>} */ (Object.fromEntries(mapEnts));
 };

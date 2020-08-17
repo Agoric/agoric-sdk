@@ -5,7 +5,6 @@
   "agoric-wallet": {
     "htmlBasedir": "./ui/public/wallet",
     "deploy": [
-      "./contract/deploy.js",
       "./api/deploy.js"
     ]
   },

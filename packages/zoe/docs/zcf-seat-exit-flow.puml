@@ -1,0 +1,26 @@
+@startuml ZCFSeat.exit() flow
+
+package ZoeService <<Rectangle>> {
+  object UserSeat
+  UserSeat : tryExit()
+  UserSeat : ...
+
+  object ZoeSeatAdmin
+  ZoeSeatAdmin : exit()
+  ZoeSeatAdmin : replaceAllocation()
+}
+
+package ZCF <<Rectangle>> {
+  object ZCFSeat
+  ZCFSeat : exit()
+  ZCFSeat : ...
+
+  object ZCFSeatAdmin
+  ZCFSeatAdmin : commit()
+
+  object ExitObj
+  ExitObj : exit()
+}
+
+ZCFSeat --|> ZoeSeatAdmin : (1) exit
+@enduml

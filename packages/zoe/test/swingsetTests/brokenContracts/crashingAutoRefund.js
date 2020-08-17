@@ -1,6 +1,12 @@
 // @ts-check
 
-import { makeZoeHelpers } from '../../../src/contractSupport';
+import {
+  swap,
+  assertIssuerKeywords,
+  assertProposalKeywords,
+} from '../../../src/contractSupport';
+
+import '../../../exported';
 
 /**
  * This is an atomic swap contract to test Zoe handling contract failures.
@@ -8,98 +14,92 @@ import { makeZoeHelpers } from '../../../src/contractSupport';
  * This contract exceeds metering limits or throws exceptions in various
  * situations. We want to see that each is handled correctly.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const { swap, assertKeywords, checkHook } = makeZoeHelpers(zcf);
-
+const start = zcf => {
+  const terms = zcf.getTerms();
   let offersCount = 0;
 
-  assertKeywords(harden(['Asset', 'Price']));
+  assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
-  const { terms } = zcf.getInstanceRecord();
   if (terms.throw) {
     throw new Error('blowup in makeContract');
   } else if (terms.meter) {
+    // @ts-ignore
     return new Array(1e9);
   }
 
-  const safeAutoRefundHook = offerHandle => {
+  const safeAutoRefund = seat => {
     offersCount += 1;
-    zcf.complete(harden([offerHandle]));
+    seat.exit();
     return `The offer was accepted`;
   };
-  const makeSafeInvite = () =>
-    zcf.makeInvitation(safeAutoRefundHook, 'getRefund');
+  const makeSafeInvitation = () =>
+    zcf.makeInvitation(safeAutoRefund, 'getRefund');
 
-  const meterExceededHook = () => {
+  const meterExceeded = () => {
     offersCount += 1;
     return new Array(1e9);
   };
-  const makeExcessiveInvite = () =>
-    zcf.makeInvitation(meterExceededHook, 'getRefund');
+  const makeExcessiveInvitation = () =>
+    zcf.makeInvitation(meterExceeded, 'getRefund');
 
-  const throwingHook = () => {
+  const throwing = () => {
     offersCount += 1;
     throw new Error('someException');
   };
-  const makeThrowingInvite = () =>
-    zcf.makeInvitation(throwingHook, 'getRefund');
+  const makeThrowingInvitation = () =>
+    zcf.makeInvitation(throwing, 'getRefund');
 
   const swapOfferExpected = harden({
     give: { Asset: null },
     want: { Price: null },
   });
 
-  const makeMatchingInvite = firstOfferHandle => {
+  const makeMatchingInvitation = firstSeat => {
     offersCount += 1;
-    const {
-      proposal: { want, give },
-    } = zcf.getOffer(firstOfferHandle);
+    const { want, give } = firstSeat.getProposal();
 
     return zcf.makeInvitation(
-      offerHandle => swap(firstOfferHandle, offerHandle),
+      secondSeat => swap(zcf, firstSeat, secondSeat),
       'matchOffer',
       harden({
-        customProperties: {
-          asset: give.Asset,
-          price: want.Price,
-        },
+        asset: give.Asset,
+        price: want.Price,
       }),
     );
   };
 
-  const makeSwapInvite = () =>
+  const makeSwapInvitation = () =>
     zcf.makeInvitation(
-      checkHook(makeMatchingInvite, swapOfferExpected),
+      assertProposalKeywords(makeMatchingInvitation, swapOfferExpected),
       'firstOffer',
     );
 
   offersCount += 1;
-  zcf.initPublicAPI(
-    harden({
-      getOffersCount: () => {
-        offersCount += 1;
-        return offersCount;
-      },
-      makeSafeInvite,
-      makeSwapInvite,
-      makeExcessiveInvite,
-      makeThrowingInvite,
-      meterException: () => {
-        offersCount += 1;
-        return new Array(1e9);
-      },
-      throwSomething: () => {
-        offersCount += 1;
-        throw new Error('someException');
-      },
-    }),
-  );
+  const publicFacet = harden({
+    getOffersCount: () => {
+      offersCount += 1;
+      return offersCount;
+    },
+    makeSafeInvitation,
+    makeSwapInvitation,
+    makeExcessiveInvitation,
+    makeThrowingInvitation,
+    meterException: () => {
+      offersCount += 1;
+      return new Array(1e9);
+    },
+    throwSomething: () => {
+      offersCount += 1;
+      throw new Error('someException');
+    },
+  });
 
-  return makeSafeInvite();
+  const creatorInvitation = makeSafeInvitation();
+
+  return harden({ creatorInvitation, publicFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

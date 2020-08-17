@@ -6,7 +6,7 @@ import { importBundle } from '@agoric/import-bundle';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 
 export { makeCollect } from './makeCollect';
 
@@ -61,7 +61,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
 
   /** The contract host is designed to have a long-lived credible identity. */
   const contractHost = harden({
-    getInviteIssuer() {
+    getInvitationIssuer() {
       return inviteIssuer;
     },
     // contractBundle is a record containing source code for the functions

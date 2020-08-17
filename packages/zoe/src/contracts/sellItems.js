@@ -2,7 +2,13 @@
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
-import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
+import {
+  assertIssuerKeywords,
+  trade,
+  defaultAcceptanceMsg,
+  assertProposalKeywords,
+  assertUsesNatMath,
+} from '../contractSupport';
 
 import '../../exported';
 
@@ -21,60 +27,47 @@ import '../../exported';
  * available to sell, and the money should be pricePerItem times the number of
  * items requested.
  *
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const allKeywords = ['Items', 'Money'];
+const start = zcf => {
   const {
-    assertKeywords,
-    rejectOffer,
-    checkHook,
-    assertNatMathHelpers,
-    trade,
-  } = makeZoeHelpers(zcf);
-  assertKeywords(harden(allKeywords));
+    pricePerItem,
+    issuers,
+    maths: { Money: moneyMath, Items: itemsMath },
+  } = zcf.getTerms();
+  const allKeywords = ['Items', 'Money'];
+  assertIssuerKeywords(zcf, harden(allKeywords));
+  assertUsesNatMath(zcf, pricePerItem.brand);
 
-  const { pricePerItem } = zcf.getInstanceRecord().terms;
-  assertNatMathHelpers(pricePerItem.brand);
-  let sellerOfferHandle;
+  let sellerSeat;
 
-  const sellerOfferHook = offerHandle => {
-    sellerOfferHandle = offerHandle;
+  const sell = seat => {
+    sellerSeat = seat;
     return defaultAcceptanceMsg;
   };
 
-  const buyerOfferHook = buyerOfferHandle => {
-    const { brandKeywordRecord } = zcf.getInstanceRecord();
-    const [sellerAllocation, buyerAllocation] = zcf.getCurrentAllocations(
-      [sellerOfferHandle, buyerOfferHandle],
-      [brandKeywordRecord, brandKeywordRecord],
-    );
-    const currentItemsForSale = sellerAllocation.Items;
-    const providedMoney = buyerAllocation.Money;
+  const buy = buyerSeat => {
+    const currentItemsForSale = sellerSeat.getAmountAllocated('Items');
+    const providedMoney = buyerSeat.getAmountAllocated('Money');
 
-    const { proposal } = zcf.getOffer(buyerOfferHandle);
-    const wantedItems = proposal.want.Items;
-    const numItemsWanted = wantedItems.value.length;
-    const totalCostValue = pricePerItem.value * numItemsWanted;
-    const moneyAmountMaths = zcf.getAmountMath(pricePerItem.brand);
-    const itemsAmountMath = zcf.getAmountMath(wantedItems.brand);
-
-    const totalCost = moneyAmountMaths.make(totalCostValue);
+    const {
+      want: { Items: wantedItems },
+    } = buyerSeat.getProposal();
 
     // Check that the wanted items are still for sale.
-    if (!itemsAmountMath.isGTE(currentItemsForSale, wantedItems)) {
-      return rejectOffer(
-        buyerOfferHandle,
-        `Some of the wanted items were not available for sale`,
-      );
+    if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
+      const rejectMsg = `Some of the wanted items were not available for sale`;
+      throw buyerSeat.kickOut(rejectMsg);
     }
 
+    const totalCost = moneyMath.make(
+      pricePerItem.value * wantedItems.value.length,
+    );
+
     // Check that the money provided to pay for the items is greater than the totalCost.
-    if (!moneyAmountMaths.isGTE(providedMoney, totalCost)) {
-      return rejectOffer(
-        buyerOfferHandle,
-        `More money (${totalCost}) is required to buy these items`,
-      );
+    if (!moneyMath.isGTE(providedMoney, totalCost)) {
+      const rejectMsg = `More money (${totalCost}) is required to buy these items`;
+      throw buyerSeat.kickOut(rejectMsg);
     }
 
     // Reallocate. We are able to trade by only defining the gains
@@ -82,46 +75,54 @@ const makeContract = zcf => {
     // the same, so the gains for one offer are the losses for the
     // other.
     trade(
-      { offerHandle: sellerOfferHandle, gains: { Money: providedMoney } },
-      { offerHandle: buyerOfferHandle, gains: { Items: wantedItems } },
+      zcf,
+      { seat: sellerSeat, gains: { Money: providedMoney } },
+      { seat: buyerSeat, gains: { Items: wantedItems } },
     );
 
-    // Complete the buyer offer.
-    zcf.complete([buyerOfferHandle]);
+    // exit the buyer seat
+    buyerSeat.exit();
     return defaultAcceptanceMsg;
   };
 
-  const buyerExpected = harden({
-    want: { Items: null },
-    give: { Money: null },
-  });
+  const getAvailableItems = () => {
+    assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
+    return sellerSeat.getAmountAllocated('Items');
+  };
 
-  zcf.initPublicAPI(
-    harden({
-      makeBuyerInvite: () => {
-        const itemsAmount = zcf.getCurrentAllocation(sellerOfferHandle).Items;
-        const itemsAmountMath = zcf.getAmountMath(itemsAmount.brand);
-        assert(
-          sellerOfferHandle && !itemsAmountMath.isEmpty(itemsAmount),
-          details`no items are for sale`,
-        );
-        return zcf.makeInvitation(
-          checkHook(buyerOfferHook, buyerExpected),
-          'buyer',
-        );
-      },
-      getAvailableItems: () => {
-        if (!sellerOfferHandle) {
-          throw new Error(`no items have been escrowed`);
-        }
-        return zcf.getCurrentAllocation(sellerOfferHandle).Items;
-      },
-      getItemsIssuer: () => zcf.getInstanceRecord().issuerKeywordRecord.Items,
-    }),
-  );
+  const getItemsIssuer = () => issuers.Items;
 
-  return zcf.makeInvitation(sellerOfferHook, 'seller');
+  /** @type {SellItemsPublicFacet} */
+  const publicFacet = {
+    getAvailableItems,
+    getItemsIssuer,
+  };
+
+  /** @type {SellItemsCreatorFacet} */
+  const creatorFacet = {
+    makeBuyerInvitation: () => {
+      const itemsAmount = sellerSeat.getAmountAllocated('Items');
+      assert(
+        sellerSeat && !itemsMath.isEmpty(itemsAmount),
+        details`no items are for sale`,
+      );
+      const buyerExpected = harden({
+        want: { Items: null },
+        give: { Money: null },
+      });
+      return zcf.makeInvitation(
+        assertProposalKeywords(buy, buyerExpected),
+        'buyer',
+      );
+    },
+    getAvailableItems,
+    getItemsIssuer,
+  };
+
+  const creatorInvitation = zcf.makeInvitation(sell, 'seller');
+
+  return harden({ creatorFacet, creatorInvitation, publicFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

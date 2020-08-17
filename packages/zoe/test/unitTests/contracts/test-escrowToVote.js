@@ -5,7 +5,7 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import fakeVatAdmin from './fakeVatAdmin';
 
@@ -19,7 +19,7 @@ test('zoe - escrowToVote', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   // Alice creates an instance and acts as the Secretary
   const issuerKeywordRecord = harden({
@@ -31,51 +31,39 @@ test('zoe - escrowToVote', async t => {
   const terms = { question: QUESTION };
 
   // She makes a running contract instance using the installation, and
-  // receives a special, secretary invite back which has the special
+  // receives a special, secretary facet back which has the special
   // authority to close elections.
-  const { invite: secretaryInvite } = await E(zoe).makeInstance(
-    installationHandle,
+  const { creatorFacet: secretary } = await E(zoe).startInstance(
+    installation,
     issuerKeywordRecord,
     terms,
   );
 
-  // Alice makes an offer to use the secretary invite and gets a
-  // secretary use object back.
-  const { outcome: secretaryUseObjP } = await E(zoe).offer(secretaryInvite);
+  // The secretary has the unique power to make voter invitations.
+  const voterInvitation1 = E(secretary).makeVoterInvitation();
+  const voterInvitation2 = E(secretary).makeVoterInvitation();
+  const voterInvitation3 = E(secretary).makeVoterInvitation();
+  const voterInvitation4 = E(secretary).makeVoterInvitation();
 
-  const secretary = await secretaryUseObjP;
-
-  // The secretary has the unique power to make voter invites.
-  const voterInvite1 = E(secretary).makeVoterInvite();
-  const voterInvite2 = E(secretary).makeVoterInvite();
-  const voterInvite3 = E(secretary).makeVoterInvite();
-  const voterInvite4 = E(secretary).makeVoterInvite();
-
-  // Let's imagine that we send the voterInvites to various parties
+  // Let's imagine that we send the voterInvitations to various parties
   // who use them to make an offer with Zoe in which they escrow moola.
 
   // Voter 1 votes YES. Vote will be weighted by 3 (3 moola escrowed).
-  const voter1Votes = async invite => {
+  const voter1Votes = async invitation => {
     const proposal = harden({
       give: { Assets: moola(3) },
     });
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(3)),
     });
-    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
-      invite,
-      proposal,
-      payments,
-    );
+    const seat = await E(zoe).offer(invitation, proposal, payments);
 
-    const voter = await voterP;
+    const voter = await E(seat).getOfferResult();
     const result = await E(voter).vote('YES');
 
     t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
-    payoutP.then(async payout => {
-      const moolaPayment = await payout.Assets;
-
+    seat.getPayout('Assets').then(async moolaPayment => {
       t.deepEquals(
         await moolaIssuer.getAmountOf(moolaPayment),
         moola(3),
@@ -85,30 +73,26 @@ test('zoe - escrowToVote', async t => {
       console.log('EXPECTED ERROR ->>>');
       t.throws(
         () => voter.vote('NO'),
-        /the escrowing offer is no longer active/,
+        /the voter seat has exited/,
         `voter1 voting fails once offer is withdrawn or amounts are reallocated`,
       );
     });
   };
 
-  await voter1Votes(voterInvite1);
+  await voter1Votes(voterInvitation1);
 
-  // Voter 2 makes badly formed votes, then votes YES, then changes
+  // Voter 2 makes badly formed vote, then votes YES, then changes
   // vote to NO. Vote will be weighted by 5 (5 moola escrowed).
-  const voter2Votes = async invite => {
+  const voter2Votes = async invitation => {
     const proposal = harden({
       give: { Assets: moola(5) },
     });
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(5)),
     });
-    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
-      invite,
-      proposal,
-      payments,
-    );
+    const seat = await E(zoe).offer(invitation, proposal, payments);
 
-    const voter = await voterP;
+    const voter = await E(seat).getOfferResult();
     console.log('EXPECTED ERROR ->>>');
     t.rejects(
       () => E(voter).vote('NOT A VALID ANSWER'),
@@ -123,9 +107,7 @@ test('zoe - escrowToVote', async t => {
     const result2 = await E(voter).vote('NO');
     t.equals(result2, `Successfully voted 'NO'`, `voter 2 recast vote for NO`);
 
-    payoutP.then(async payout => {
-      const moolaPayment = await payout.Assets;
-
+    seat.getPayout('Assets').then(async moolaPayment => {
       t.deepEquals(
         await moolaIssuer.getAmountOf(moolaPayment),
         moola(5),
@@ -135,39 +117,35 @@ test('zoe - escrowToVote', async t => {
       console.log('EXPECTED ERROR ->>>');
       t.throws(
         () => voter.vote('NO'),
-        /the escrowing offer is no longer active/,
+        /the voter seat has exited/,
         `voter2 voting fails once offer is withdrawn or amounts are reallocated`,
       );
     });
   };
 
-  await voter2Votes(voterInvite2);
+  await voter2Votes(voterInvitation2);
 
-  // Voter 3 votes NO and then completes their offer, meaning that
-  // their vote should not be counted. They get their full moola (1
-  // moola) back as a payout.
-  const voter3Votes = async invite => {
+  // Voter 3 votes NO and then exits the seat, retrieving their
+  // assets, meaning that their vote should not be counted. They get
+  // their full moola (1 moola) back as a payout.
+  const voter3Votes = async invitation => {
     const proposal = harden({
       give: { Assets: moola(1) },
     });
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(1)),
     });
-    const { payout: payoutP, outcome: voterP, completeObj } = await E(
-      zoe,
-    ).offer(invite, proposal, payments);
+    const seat = await E(zoe).offer(invitation, proposal, payments);
 
-    const voter = await voterP;
+    const voter = await E(seat).getOfferResult();
     const result = await E(voter).vote('NO');
     t.equals(result, `Successfully voted 'NO'`, `voter3 votes NOT`);
 
-    // Voter3 completes their offer and exits before the election is
-    // closed. Voter3's vote will not be counted.
-    completeObj.complete();
+    // Voter3 exits before the election is closed. Voter3's vote will
+    // not be counted.
+    seat.tryExit();
 
-    const payout = await payoutP;
-
-    const moolaPayment = await payout.Assets;
+    const moolaPayment = await seat.getPayout('Assets');
 
     t.deepEquals(
       await moolaIssuer.getAmountOf(moolaPayment),
@@ -178,35 +156,29 @@ test('zoe - escrowToVote', async t => {
     console.log('EXPECTED ERROR ->>>');
     t.throws(
       () => voter.vote('NO'),
-      /the escrowing offer is no longer active/,
+      /the voter seat has exited/,
       `voter3 voting fails once offer is withdrawn or amounts are reallocated`,
     );
   };
 
-  await voter3Votes(voterInvite3);
+  await voter3Votes(voterInvitation3);
 
   // Voter4 votes YES with a weight of 4
-  const voter4Votes = async invite => {
+  const voter4Votes = async invitation => {
     const proposal = harden({
       give: { Assets: moola(4) },
     });
     const payments = harden({
       Assets: moolaMint.mintPayment(moola(4)),
     });
-    const { payout: payoutP, outcome: voterP } = await E(zoe).offer(
-      invite,
-      proposal,
-      payments,
-    );
+    const seat = await E(zoe).offer(invitation, proposal, payments);
 
-    const voter = await voterP;
+    const voter = await E(seat).getOfferResult();
     const result = await E(voter).vote('YES');
 
     t.equals(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
-    payoutP.then(async payout => {
-      const moolaPayment = await payout.Assets;
-
+    seat.getPayout('Assets').then(async moolaPayment => {
       t.deepEquals(
         await moolaIssuer.getAmountOf(moolaPayment),
         moola(4),
@@ -215,7 +187,7 @@ test('zoe - escrowToVote', async t => {
     });
   };
 
-  await voter4Votes(voterInvite4);
+  await voter4Votes(voterInvitation4);
 
   // Secretary closes election and tallies the votes.
   const electionResults = await E(secretary).closeElection();

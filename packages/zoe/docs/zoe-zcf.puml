@@ -2,53 +2,51 @@
 @startuml Zoe communication with Zcf
 scale 8
 
-participant SwingSet
+participant CosmicSwingset
 actor Alice
+actor Bob
 participant Zoe
 box new vat per contract
 collections Zcf
 database contract
 end box
 
-SwingSet -> Zoe : create
-Alice -> Zoe : install bundle
-Alice //-- Zoe : <font color=gray><size:12> installHandle
-Alice -> Zoe : makeInstance(handle, ...)
+CosmicSwingset -> Zoe : makeZoe(adminVat)
+Alice -> Zoe : install(bundle)
+Alice //-- Zoe : <font color=gray><size:12> installation
+Alice -> Zoe : startInstance(installation...)
+Zoe -> Zoe : startInstance()
+Zoe -> Zoe : makeZoeInstanceAdminForZcf()
 Zoe -> Zoe : createVat()
-Zoe -> Zoe : makeZoeForZcf
-Zoe -> Zcf : startContract(zoeForZcf)
+Zoe -> Zcf : E(zcfRoot).executeContract
 Zcf -> Zcf : evalContractBundle()
-Zcf -> Zcf : makeZcfForContract
-Zcf -> contract : makeContract(zcfForContract)
-contract --\\ Zcf : <font color=gray><size:12> invite
-Zcf --\\ Zoe : <font color=gray><size:12> {invite, zcfForZoe}
-Alice //-- Zoe : <font color=gray><size:12> { invite, instanceRecord }
-
-====
+Zcf -> Zcf : makeZcf
+Zcf -> contract : start(zcf)
 contract -> Zcf : makeInvitation(...)
 Zcf -> Zoe : makeInvitation(...)
-note right
-build invokable object around hook
-call Zoe.makeInvitation(callbackObj)
-end note
 note left
-create inviteHandle
-save callBackObj keyed by InviteHandle
-create InviteAmount
-mint invitePayment
+mint invitation payment
 end note
+Zoe --\\ Zcf : <font color=gray><size:12> invitation
+Zcf --\\ Contract : <font color=gray><size:12> invitation
+contract --\\ Zcf : <font color=gray><size:12> {creatorFacet, creatorInvitation, publicFacet }
+Zcf --\\ Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation, addSeatObj}
+Alice //-- Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation}
 
-Zoe --\\ Zcf : <font color=gray><size:12> invite
-Zcf -> Bob :  <font color=slategray><size:12>//<out of band>// <font color=gray><size:12> invite
-Bob -> Zoe : offer(invite)
+====
+
+Alice -> Zoe : offer(invitation...)
+Zoe -> Zoe : makeUserSeat
+Zoe -> Alice : <font color=gray><size:12> userSeat
+Zoe -> Zcf : addSeat
 note left
-record Deposit
-create payout
+deposit payments
 end note
-Zoe -> Zcf : addOffer
-Zcf -> Zcf : setup completion actions
-Zcf --\\ Zoe : <font color=gray><size:12> completeObj
-Zoe -> Zcf : seatCallBack.invoke()
-Zoe --\\ Bob : <font color=gray><size:12> offerResult
+Zcf -> Zcf : makeZCFSeat
+Zcf -> Contract : offerHandler(ZCFSeat)
+Contract -> Zcf : <font color=gray><size:12> offerResult
+Zcf --\\ Zoe : <font color=gray><size:12> { offerResult, exitObj }
+
+Zoe --\\ Zoe : <font color=gray><size:12> userSeat promises updated
 
 @enduml

@@ -1,7 +1,9 @@
+// @ts-check
+
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp';
 
 // TODO: move the Table abstraction out of Zoe
 import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
@@ -14,9 +16,30 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
+import '@agoric/zoe/exported';
+import './types';
+
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
+const cmp = (a, b) => {
+  if (a > b) {
+    return 1;
+  }
+  if (a === b) {
+    return 0;
+  }
+  return -1;
+};
+
+/**
+ * @typedef {Object} MakeWalletParams
+ * @property {ZoeService} zoe
+ * @property {Board} board
+ * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
+ * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
+ * @param {MakeWalletParams} param0
+ */
 export async function makeWallet({
   zoe,
   board,
@@ -26,24 +49,37 @@ export async function makeWallet({
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
+  /** @type {Mapping<Purse>} */
   const purseMapping = makeMapping('purse');
+  /** @type {Mapping<Brand>} */
   const brandMapping = makeMapping('brand');
+  /** @type {Mapping<Contact>} */
   const contactMapping = makeMapping('contact');
+  /** @type {Mapping<Instance>} */
   const instanceMapping = makeMapping('instance');
+  /** @type {Mapping<Installation>} */
   const installationMapping = makeMapping('installation');
 
-  // Brand Table
-  // Columns: key:brand | issuer | amountMath
+  /**
+   * Brand Table
+   */
   const makeBrandTable = () => {
-    const validateSomewhat = makeValidateProperties(
-      harden(['brand', 'issuer', 'issuerBoardId', 'amountMath']),
-    );
+    /** @type {(record: any) => record is BrandRecord} */
+    const validateSomewhat = makeValidateProperties([
+      'brand',
+      'issuer',
+      'issuerBoardId',
+      'amountMath',
+    ]);
 
     const issuersInProgress = makeStore('issuer');
     const issuerToBrand = makeWeakStore('issuer');
     const makeCustomProperties = table =>
       harden({
-        addIssuer: issuerP => {
+        /**
+         * @param {ERef<Issuer>} issuerP
+         */
+        addIssuer(issuerP) {
           return Promise.resolve(issuerP).then(issuer => {
             if (issuersInProgress.has(issuer)) {
               // a promise which resolves to the issuer record
@@ -51,8 +87,9 @@ export async function makeWallet({
             }
 
             // remote calls which immediately return a promise
-            const mathHelpersNameP = E(issuer).getMathHelperName();
             const brandP = E(issuer).getBrand();
+            const brandMatchesP = E(brandP).isMyIssuer(issuer);
+
             const issuerBoardIdP = E(board)
               .has(issuer)
               .then(hasIt => hasIt && E(board).getId(issuer));
@@ -60,11 +97,15 @@ export async function makeWallet({
             // a promise for a synchronously accessible record
             const synchronousRecordP = Promise.all([
               brandP,
-              mathHelpersNameP,
               issuerBoardIdP,
-            ]).then(([brand, mathHelpersName, issuerBoardId]) => {
+              brandMatchesP,
+              makeLocalAmountMath(issuer),
+            ]).then(([brand, issuerBoardId, brandMatches, amountMath]) => {
+              assert(
+                brandMatches,
+                `issuer was using a brand which was not its own`,
+              );
               if (!issuerToBrand.has(issuer)) {
-                const amountMath = makeAmountMath(brand, mathHelpersName);
                 const issuerRecord = {
                   issuer,
                   brand,
@@ -93,8 +134,11 @@ export async function makeWallet({
   };
 
   const brandTable = makeBrandTable();
+  /** @type {WeakStore<Purse, Brand>} */
   const purseToBrand = makeWeakStore('purse');
+  /** @type {Store<Brand, string>} */
   const brandToDepositFacetId = makeStore('brand');
+  /** @type {Store<Brand, Purse>} */
   const brandToAutoDepositPurse = makeStore('brand');
 
   // Offers that the wallet knows about (the inbox).
@@ -104,22 +148,28 @@ export async function makeWallet({
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
   const idToComplete = new Map();
-  const idToOfferHandle = new Map();
+  const idToSeat = new Map();
   const idToOutcome = new Map();
 
   // Client-side representation of the purses inbox;
+  /** @type {Map<string, PursesJSONState>} */
   const pursesState = new Map();
+
+  /** @type {Map<Purse, PursesFullState>} */
   const pursesFullState = new Map();
   const inboxState = new Map();
 
-  // The default Zoe invite purse is used to make an offer.
+  /**
+   * The default Zoe invite purse is used to make an offer.
+   * @type {Purse}
+   */
   let zoeInvitePurse;
 
   function getSortedValues(map) {
     const entries = [...map.entries()];
     // Sort for determinism.
     const values = entries
-      .sort(([id1], [id2]) => id1 > id2)
+      .sort(([id1], [id2]) => cmp(id1, id2))
       .map(([_id, value]) => value);
 
     return JSON.stringify(values);
@@ -140,10 +190,15 @@ export async function makeWallet({
   // @qclass is lost.
   const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
 
-  const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
-    [],
-  );
+  const {
+    notifier: pursesNotifier,
+    updater: pursesUpdater,
+  } = /** @type {NotifierRecord<PursesFullState[]>} */ (makeNotifierKit([]));
 
+  /**
+   * @param {Petname} pursePetname
+   * @param {Purse} purse
+   */
   async function updatePursesState(pursePetname, purse) {
     const purseKey = purseMapping.implode(pursePetname);
     for (const key of pursesState.keys()) {
@@ -166,6 +221,9 @@ export async function makeWallet({
       // We have a depositId for the purse.
       depositBoardId = brandToDepositFacetId.get(brand);
     }
+    /**
+     * @type {PursesJSONState}
+     */
     const jstate = {
       brandBoardId,
       ...(depositBoardId && { depositBoardId }),
@@ -302,7 +360,9 @@ export async function makeWallet({
   const {
     updater: issuersUpdater,
     notifier: issuersNotifier,
-  } = makeNotifierKit([]);
+  } = /** @type {NotifierRecord<[Petname, BrandRecord][]>} */ (makeNotifierKit(
+    [],
+  ));
 
   function updateAllIssuersState() {
     issuersUpdater.updateState(
@@ -322,11 +382,11 @@ export async function makeWallet({
 
   // handle the update, which has already resolved to a record. If the offer is
   // 'done', mark the offer 'complete', otherwise resubscribe to the notifier.
-  function updateOrResubscribe(id, offerHandle, update) {
+  function updateOrResubscribe(id, seat, update) {
     const { updateCount } = update;
     if (updateCount === undefined) {
       // TODO do we still need these?
-      idToOfferHandle.delete(id);
+      idToSeat.delete(id);
 
       const offer = idToOffer.get(id);
       const completedOffer = {
@@ -339,21 +399,26 @@ export async function makeWallet({
     } else {
       E(idToNotifierP.get(id))
         .getUpdateSince(updateCount)
-        .then(nextUpdate => updateOrResubscribe(id, offerHandle, nextUpdate));
+        .then(nextUpdate => updateOrResubscribe(id, seat, nextUpdate));
     }
   }
 
-  // There's a new offer. Ask Zoe to notify us when the offer is complete.
-  async function subscribeToNotifier(id, offerHandle) {
-    E(zoe)
-      .getOfferNotifier(offerHandle)
+  /**
+   * There's a new offer. Ask Zoe to notify us when the offer is complete.
+   *
+   * @param {string} id
+   * @param {UserSeat} seat
+   */
+  async function subscribeToNotifier(id, seat) {
+    E(seat)
+      .getNotifier()
       .then(offerNotifierP => {
         if (!idToNotifierP.has(id)) {
           idToNotifierP.init(id, offerNotifierP);
         }
         E(offerNotifierP)
           .getUpdateSince()
-          .then(update => updateOrResubscribe(id, offerHandle, update));
+          .then(update => updateOrResubscribe(id, seat, update));
       });
   }
 
@@ -400,57 +465,42 @@ export async function makeWallet({
     // === AWAITING TURN ===
     // =====================
 
-    const {
-      payout: payoutObjP,
-      completeObj,
-      outcome: outcomeP,
-      offerHandle: offerHandleP,
-    } = await E(zoe).offer(
+    const seat = await E(zoe).offer(
       invite,
       harden(proposal),
       harden(paymentKeywordRecord),
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-    // This settles when the payments are escrowed in Zoe
-    const offerHandle = await offerHandleP;
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-    // This settles when the offer hook completes.
-    const outcome = await outcomeP;
-
     // We'll resolve when deposited.
-    const depositedP = payoutObjP.then(payoutObj => {
-      const payoutIndexToKeyword = [];
-      return Promise.all(
-        Object.entries(payoutObj).map(([keyword, payoutP], i) => {
-          // keyword may be an index for zoeKind === 'indexed', but we can still treat it
-          // as the keyword name for looking up purses and payouts (just happens to
-          // be an integer).
-          payoutIndexToKeyword[i] = keyword;
-          return payoutP;
-        }),
-      ).then(payoutArray =>
-        Promise.all(
-          payoutArray.map(async (payoutP, payoutIndex) => {
-            const keyword = payoutIndexToKeyword[payoutIndex];
-            const purse = purseKeywordRecord[keyword];
-            if (purse && payoutP) {
-              const payout = await payoutP;
-              // eslint-disable-next-line no-use-before-define
-              return addPayment(payout, purse);
-            }
-            return undefined;
+    const depositedP = E(seat)
+      .getPayouts()
+      .then(payoutObj => {
+        const payoutIndexToKeyword = [];
+        return Promise.all(
+          Object.entries(payoutObj).map(([keyword, payoutP], i) => {
+            // keyword may be an index for zoeKind === 'indexed', but we can still treat it
+            // as the keyword name for looking up purses and payouts (just happens to
+            // be an integer).
+            payoutIndexToKeyword[i] = keyword;
+            return payoutP;
           }),
-        ),
-      );
-    });
+        ).then(payoutArray =>
+          Promise.all(
+            payoutArray.map(async (payoutP, payoutIndex) => {
+              const keyword = payoutIndexToKeyword[payoutIndex];
+              const purse = purseKeywordRecord[keyword];
+              if (purse && payoutP) {
+                const payout = await payoutP;
+                // eslint-disable-next-line no-use-before-define
+                return addPayment(payout, purse);
+              }
+              return undefined;
+            }),
+          ),
+        );
+      });
 
-    return { depositedP, completeObj, outcome, offerHandle };
+    return { depositedP, seat };
   }
 
   // === API
@@ -460,7 +510,7 @@ export async function makeWallet({
     const addBrandPetname = ({ brand }) => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
-      brandMapping.suggestPetname(petnameForBrand, brand);
+      petnameForBrand = brandMapping.suggestPetname(petnameForBrand, brand);
       if (!already && makePurse) {
         // eslint-disable-next-line no-use-before-define
         p = makeEmptyPurse(petnameForBrand, petnameForBrand);
@@ -485,7 +535,7 @@ export async function makeWallet({
   const {
     updater: contactsUpdater,
     notifier: contactsNotifier,
-  } = makeNotifierKit([]);
+  } = /** @type {NotifierRecord<[Petname, Contact][]>} */ (makeNotifierKit([]));
 
   const addContact = async (petname, actions) => {
     const already = await E(board).has(actions);
@@ -525,7 +575,7 @@ export async function makeWallet({
     // We currently just add the petname mapped to the instanceHandle
     // value, but we could have a list of known instances for
     // possible display in the wallet.
-    instanceMapping.suggestPetname(petname, instanceHandle);
+    petname = instanceMapping.suggestPetname(petname, instanceHandle);
     // We don't wait for the update before returning.
     updateAllState();
     return `instance ${q(petname)} successfully added to wallet`;
@@ -535,17 +585,13 @@ export async function makeWallet({
     // We currently just add the petname mapped to the installationHandle
     // value, but we could have a list of known installations for
     // possible display in the wallet.
-    installationMapping.suggestPetname(petname, installationHandle);
+    petname = installationMapping.suggestPetname(petname, installationHandle);
     // We don't wait for the update before returning.
     updateAllState();
     return `installation ${q(petname)} successfully added to wallet`;
   };
 
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
-    assert(
-      !purseMapping.petnameToVal.has(petnameForPurse),
-      details`Purse petname ${q(petnameForPurse)} already used in wallet.`,
-    );
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.get(brand);
 
@@ -558,11 +604,11 @@ export async function makeWallet({
     );
 
     purseToBrand.init(purse, brand);
-    purseMapping.suggestPetname(petnameForPurse, purse);
-    updatePursesState(purseMapping.valToPetname.get(purse), purse);
+    petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
+    updatePursesState(petnameForPurse, purse);
   };
 
-  function deposit(pursePetname, payment) {
+  async function deposit(pursePetname, payment) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     return purse.deposit(payment);
   }
@@ -591,7 +637,7 @@ export async function makeWallet({
           origin === null ||
           (offer.requestContext && offer.requestContext.dappOrigin === origin),
       )
-      .sort(([id1], [id2]) => id1 > id2)
+      .sort(([id1], [id2]) => cmp(id1, id2))
       .map(([_id, offer]) => harden(offer));
   }
 
@@ -628,7 +674,10 @@ export async function makeWallet({
   };
 
   const compileOffer = async offer => {
-    const { inviteHandleBoardId } = offer;
+    const {
+      inviteHandleBoardId, // Keep for backward-compatibility.
+      invitationHandleBoardId = inviteHandleBoardId,
+    } = offer;
     const { proposal, purseKeywordRecord } = compileProposal(
       offer.proposalTemplate,
     );
@@ -637,14 +686,16 @@ export async function makeWallet({
     const { value: inviteValueElems } = await E(
       zoeInvitePurse,
     ).getCurrentAmount();
-    const inviteHandle = await E(board).getValue(inviteHandleBoardId);
+    const inviteHandle = await E(board).getValue(invitationHandleBoardId);
     const matchInvite = element => element.handle === inviteHandle;
     const inviteBrand = purseToBrand.get(zoeInvitePurse);
     const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
     const matchingInvite = inviteValueElems.find(matchInvite);
     assert(
       matchingInvite,
-      details`Cannot find invite corresponding to ${q(inviteHandleBoardId)}`,
+      details`Cannot find invite corresponding to ${q(
+        invitationHandleBoardId,
+      )}`,
     );
     const inviteAmount = inviteAmountMath.make(
       harden([inviteValueElems.find(matchInvite)]),
@@ -654,10 +705,12 @@ export async function makeWallet({
     return { proposal, inviteP, purseKeywordRecord };
   };
 
+  /** @type {Store<string, DappRecord>} */
   const dappOrigins = makeStore('dappOrigin');
-  const { notifier: dappsNotifier, updater: dappsUpdater } = makeNotifierKit(
-    [],
-  );
+  const {
+    notifier: dappsNotifier,
+    updater: dappsUpdater,
+  } = /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
   function updateDapp(dappRecord) {
     harden(dappRecord);
@@ -673,62 +726,63 @@ export async function makeWallet({
       let resolve;
       let reject;
       let approvalP;
+
       dappRecord = {
         suggestedPetname,
         petname: suggestedPetname,
         origin,
-      };
-
-      dappRecord.actions = {
-        setPetname(petname) {
-          if (dappRecord.petname === petname) {
+        approvalP,
+        actions: {
+          setPetname(petname) {
+            if (dappRecord.petname === petname) {
+              return dappRecord.actions;
+            }
+            if (edgeMapping.valToPetname.has(origin)) {
+              edgeMapping.renamePetname(petname, origin);
+            } else {
+              petname = edgeMapping.suggestPetname(petname, origin);
+            }
+            dappRecord = {
+              ...dappRecord,
+              petname,
+            };
+            updateDapp(dappRecord);
+            updateAllState();
             return dappRecord.actions;
-          }
-          if (edgeMapping.valToPetname.has(origin)) {
-            edgeMapping.renamePetname(petname, origin);
-          } else {
-            edgeMapping.suggestPetname(petname, origin);
-          }
-          dappRecord = {
-            ...dappRecord,
-            petname,
-          };
-          updateDapp(dappRecord);
-          updateAllState();
-          return dappRecord.actions;
-        },
-        enable() {
-          // Enable the dapp with the attached petname.
-          dappRecord = {
-            ...dappRecord,
-            enable: true,
-          };
-          edgeMapping.suggestPetname(dappRecord.petname, origin);
-          updateDapp(dappRecord);
+          },
+          enable() {
+            // Enable the dapp with the attached petname.
+            dappRecord = {
+              ...dappRecord,
+              enable: true,
+            };
+            edgeMapping.suggestPetname(dappRecord.petname, origin);
+            updateDapp(dappRecord);
 
-          // Allow the pending requests to pass.
-          resolve();
-          return dappRecord.actions;
-        },
-        disable(reason = undefined) {
-          // Reject the pending dapp requests.
-          if (reject) {
-            reject(reason);
-          }
-          // Create a new, suspended-approval record.
-          ({ resolve, reject, promise: approvalP } = makePromiseKit());
-          dappRecord = {
-            ...dappRecord,
-            enable: false,
-            approvalP,
-          };
-          updateDapp(dappRecord);
-          return dappRecord.actions;
+            // Allow the pending requests to pass.
+            resolve();
+            return dappRecord.actions;
+          },
+          disable(reason = undefined) {
+            // Reject the pending dapp requests.
+            if (reject) {
+              reject(reason);
+            }
+            // Create a new, suspended-approval record.
+            ({ resolve, reject, promise: approvalP } = makePromiseKit());
+            dappRecord = {
+              ...dappRecord,
+              enable: false,
+              approvalP,
+            };
+            updateDapp(dappRecord);
+            return dappRecord.actions;
+          },
         },
       };
 
       // Prepare the table entry to be updated.
-      dappOrigins.init(origin, {});
+      dappOrigins.init(origin, dappRecord);
 
       // Initially disable it.
       dappRecord.actions.disable();
@@ -820,6 +874,7 @@ export async function makeWallet({
       return undefined;
     }
 
+    /** @type {{ outcome?: any, depositedP?: Promise<any[]> }} */
     let ret = {};
     let alreadyResolved = false;
     const rejected = e => {
@@ -844,31 +899,27 @@ export async function makeWallet({
       updateInboxState(id, pendingOffer);
       const compiledOffer = await idToCompiledOfferP.get(id);
 
-      const {
-        depositedP,
-        completeObj,
-        outcome,
-        offerHandle,
-      } = await executeOffer(compiledOffer);
+      const { depositedP, seat } = await executeOffer(compiledOffer);
 
       idToComplete.set(id, () => {
         alreadyResolved = true;
-        return E(completeObj).complete();
+        return E(seat).tryExit();
       });
-      idToOfferHandle.set(id, offerHandle);
+      idToSeat.set(id, seat);
       // The offer might have been postponed, or it might have been immediately
       // consummated. Only subscribe if it was postponed.
-      E(zoe)
-        .isOfferActive(offerHandle)
-        .then(active => {
-          if (active) {
-            subscribeToNotifier(id, offerHandle);
+      E(seat)
+        .hasExited()
+        .then(exited => {
+          if (!exited) {
+            subscribeToNotifier(id, seat);
           }
         });
 
       // The outcome is most often a string that can be returned, but
       // it could be an object. We don't do anything currently if it
       // is an object, but we will store it here for future use.
+      const outcome = await E(seat).getOfferResult();
       idToOutcome.set(id, outcome);
 
       ret = { outcome, depositedP };
@@ -896,6 +947,7 @@ export async function makeWallet({
     return ret;
   }
 
+  /** @returns {[Petname, Issuer][]} */
   function getIssuers() {
     return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
       const { issuer } = brandTable.get(brand);
@@ -903,11 +955,15 @@ export async function makeWallet({
     });
   }
 
+  /** @type {Store<Payment, PaymentRecord>} */
   const payments = makeStore('payment');
   const {
     updater: paymentsUpdater,
     notifier: paymentsNotifier,
-  } = makeNotifierKit([]);
+  } = /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
+  /**
+   * @param {PaymentRecord} param0
+   */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = { ...preDisplay, actions, displayPayment };
@@ -915,100 +971,98 @@ export async function makeWallet({
     paymentsUpdater.updateState([...payments.values()]);
   };
 
+  /**
+   * @param {Payment} payment
+   * @param {Purse | Petname=} depositTo
+   */
   const addPayment = async (payment, depositTo = undefined) => {
-    /**
-     * @typedef {Object} PaymentRecord
-     * @property {Issuer} issuer
-     * @property {Payment} payment
-     * @property {Brand} brand
-     * @property {'pending'|'deposited'} status
-     * @property {typeof actions} actions
-     */
-
     // We don't even create the record until we get an alleged brand.
     const brand = await E(payment).getAllegedBrand();
+    const depositedPK = makePromiseKit();
 
-    /** @type {Partial<PaymentRecord>} */
+    /** @type {PaymentRecord} */
     let paymentRecord = {
       payment,
       brand,
       issuer: undefined,
       status: undefined,
-    };
-
-    const depositedPK = makePromiseKit();
-    const actions = {
-      async deposit(purseOrPetname = undefined) {
-        let purse;
-        if (purseOrPetname === undefined) {
-          if (!brandToAutoDepositPurse.has(brand)) {
-            // No automatic purse right now.
-            return depositedPK.promise;
+      actions: {
+        async deposit(purseOrPetname = undefined) {
+          /** @type {Purse} */
+          let purse;
+          if (purseOrPetname === undefined) {
+            if (!brandToAutoDepositPurse.has(brand)) {
+              // No automatic purse right now.
+              return depositedPK.promise;
+            }
+            // Plop into the current autodeposit purse.
+            purse = brandToAutoDepositPurse.get(brand);
+          } else if (
+            Array.isArray(purseOrPetname) ||
+            typeof purseOrPetname === 'string'
+          ) {
+            purse = purseMapping.petnameToVal.get(purseOrPetname);
+          } else {
+            purse = purseOrPetname;
           }
-          // Plop into the current autodeposit purse.
-          purse = brandToAutoDepositPurse.get(brand);
-        } else if (typeof purseOrPetname === 'string') {
-          purse = purseMapping.petnameToVal.get(purseOrPetname);
-        } else {
-          purse = purseOrPetname;
-        }
-        paymentRecord = {
-          ...paymentRecord,
-          status: 'pending',
-        };
-        updatePaymentRecord(paymentRecord);
-        // Now try depositing.
-        const depositedAmount = await E(purse).deposit(payment);
-        paymentRecord = {
-          ...paymentRecord,
-          status: 'deposited',
-          depositedAmount,
-        };
-        updatePaymentRecord(paymentRecord);
-        depositedPK.resolve(depositedAmount);
-        return depositedPK.promise;
-      },
-      async refresh() {
-        if (!brandTable.has(brand)) {
-          return false;
-        }
-
-        const { issuer } = paymentRecord;
-        if (!issuer) {
           paymentRecord = {
             ...paymentRecord,
-            ...brandTable.get(brand),
+            status: 'pending',
           };
           updatePaymentRecord(paymentRecord);
-        }
+          // Now try depositing.
+          const depositedAmount = await E(purse).deposit(payment);
+          paymentRecord = {
+            ...paymentRecord,
+            status: 'deposited',
+            depositedAmount,
+          };
+          updatePaymentRecord(paymentRecord);
+          depositedPK.resolve(depositedAmount);
+          return depositedPK.promise;
+        },
+        async refresh() {
+          if (!brandTable.has(brand)) {
+            return false;
+          }
 
-        return actions.getAmountOf();
-      },
-      async getAmountOf() {
-        const { issuer } = paymentRecord;
+          const { issuer } = paymentRecord;
+          if (!issuer) {
+            paymentRecord = {
+              ...paymentRecord,
+              ...brandTable.get(brand),
+            };
+            updatePaymentRecord(paymentRecord);
+          }
 
-        // Fetch the current amount of the payment.
-        const lastAmount = await E(issuer).getAmountOf(payment);
+          return paymentRecord.actions.getAmountOf();
+        },
+        async getAmountOf() {
+          const { issuer } = paymentRecord;
+          assert(issuer);
 
-        paymentRecord = {
-          ...paymentRecord,
-          lastAmount,
-        };
-        updatePaymentRecord(paymentRecord);
-        return true;
+          // Fetch the current amount of the payment.
+          const lastAmount = await E(issuer).getAmountOf(payment);
+
+          paymentRecord = {
+            ...paymentRecord,
+            lastAmount,
+          };
+          updatePaymentRecord(paymentRecord);
+          return true;
+        },
       },
     };
 
-    paymentRecord.actions = actions;
     payments.init(payment, harden(paymentRecord));
-    const refreshed = await actions.refresh();
+    const refreshed = await paymentRecord.actions.refresh();
     if (!refreshed) {
       // Only update if the refresh didn't.
       updatePaymentRecord(paymentRecord);
     }
 
     // Try an automatic deposit.
-    return actions.deposit(depositTo);
+    return paymentRecord.actions.deposit(depositTo);
   };
 
   // Allow people to send us payments.
@@ -1018,13 +1072,9 @@ export async function makeWallet({
     },
   });
 
-  function getDepositFacetId(brandBoardId) {
-    return E(board)
-      .getValue(brandBoardId)
-      .then(brand => {
-        const depositFacetBoardId = brandToDepositFacetId.get(brand);
-        return depositFacetBoardId;
-      });
+  async function getDepositFacetId(_brandBoardId) {
+    // Always return the generic deposit facet.
+    return selfContact.depositBoardId;
   }
 
   async function disableAutoDeposit(pursePetname) {
@@ -1222,8 +1272,8 @@ export async function makeWallet({
     cancelOffer,
     acceptOffer,
     getOffers,
-    getOfferHandle: id => idToOfferHandle.get(id),
-    getOfferHandles: ids => ids.map(wallet.getOfferHandle),
+    getSeat: id => idToSeat.get(id),
+    getSeats: ids => ids.map(wallet.getSeat),
     enableAutoDeposit,
     disableAutoDeposit,
     getDepositFacetId,
@@ -1243,7 +1293,7 @@ export async function makeWallet({
   // Make Zoe invite purse
   const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
   const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
-  const inviteIssuerP = E(zoe).getInviteIssuer();
+  const inviteIssuerP = E(zoe).getInvitationIssuer();
   const addZoeIssuer = issuerP =>
     wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerP);
   const makeInvitePurse = () =>

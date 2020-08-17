@@ -1,5 +1,3 @@
-/* global harden */
-
 const log = console.log;
 
 function makePR() {

@@ -1,11 +1,12 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'tape-promise/tape';
+
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import fakeVatAdmin from './fakeVatAdmin';
 
@@ -19,14 +20,12 @@ test('zoe - test zcf', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installationHandle = await zoe.install(bundle);
+  const installation = await zoe.install(bundle);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
     Pixels: moolaIssuer,
     Money: simoleanIssuer,
   });
-  t.doesNotReject(() =>
-    zoe.makeInstance(installationHandle, issuerKeywordRecord),
-  );
+  t.doesNotReject(() => zoe.startInstance(installation, issuerKeywordRecord));
 });

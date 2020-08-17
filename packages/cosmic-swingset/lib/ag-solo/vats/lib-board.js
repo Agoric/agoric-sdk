@@ -37,3 +37,5 @@ function makeBoard(seed = 0) {
 }
 
 export { makeBoard };
+
+/** @typedef {ReturnType<typeof makeBoard>} Board */
