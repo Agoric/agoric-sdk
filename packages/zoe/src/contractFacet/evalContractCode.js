@@ -1,9 +1,5 @@
-import Nat from '@agoric/nat';
+// @ts-check
 
-import makeIssuerKit from '@agoric/ertp';
-import { assert } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { sameStructure } from '@agoric/same-structure';
 import { importBundle } from '@agoric/import-bundle';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {
@@ -13,15 +9,8 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
     log: console.info,
   };
 
-  // TODO: this should really only be console
   const defaultEndowments = {
-    assert,
     console: louderConsole,
-    harden,
-    Nat,
-    makeIssuerKit,
-    makePromiseKit,
-    sameStructure,
   };
 
   const fullEndowments = Object.create(null, {

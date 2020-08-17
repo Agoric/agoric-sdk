@@ -1,5 +1,3 @@
-/* global harden */
-
 function makePR() {
   let r;
   const p = new Promise((resolve, _reject) => {

@@ -1,9 +1,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-
 import '@agoric/install-ses';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import makeAmountMath from '../../../src/amountMath';
+import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -20,7 +21,7 @@ test('strSetMathHelpers', t => {
   try {
     const {
       getBrand,
-      getMathHelperName,
+      getAmountMathKind,
       make,
       coerce,
       getValue,
@@ -35,8 +36,12 @@ test('strSetMathHelpers', t => {
     // getBrand
     t.deepEquals(getBrand(), mockBrand, 'brand is brand');
 
-    // getMathHelperName
-    t.deepEquals(getMathHelperName(), 'strSet', 'mathHelpersName is strSet');
+    // getAmountMathKind
+    t.deepEquals(
+      getAmountMathKind(),
+      MathKind.STRING_SET,
+      'amountMathKind is strSet',
+    );
 
     // make
     t.doesNotThrow(

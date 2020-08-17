@@ -1,13 +1,10 @@
-export const makeContract = zcf => {
-  const invite = zcf.makeInvitation(() => {}, 'tester');
-  zcf.initPublicAPI(
-    harden({
-      doTest: () => {
-        for (;;) {
-          // Nothing
-        }
-      },
-    }),
-  );
-  return invite;
+export const start = _zcf => {
+  const publicFacet = harden({
+    doTest: () => {
+      for (;;) {
+        // Nothing
+      }
+    },
+  });
+  return harden({ publicFacet });
 };

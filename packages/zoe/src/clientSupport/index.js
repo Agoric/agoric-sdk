@@ -1,1 +1,0 @@
-export { makeGetInstanceHandle } from './instanceHandle';

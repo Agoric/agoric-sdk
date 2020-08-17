@@ -2,7 +2,7 @@
 
 /* global harden */
 import { E } from '@agoric/eventual-send';
-import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
@@ -33,14 +33,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         .catch(err => console.log(err)),
     ]);
   }
-
-  const getLocalAmountMath = issuer =>
-    Promise.all([
-      E(issuer).getBrand(),
-      E(issuer).getMathHelperName(),
-    ]).then(([brand, mathHelpersName]) =>
-      makeAmountMath(brand, mathHelpersName),
-    );
 
   const fakeNeverTimer = harden({
     setWakeup(deadline, _resolution = undefined) {
@@ -78,7 +70,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         const fooInviteP = E(installationP).spawn('foo terms');
 
-        const inviteIssuerP = E(host).getInviteIssuer();
+        const inviteIssuerP = E(host).getInvitationIssuer();
         return Promise.resolve(
           showPaymentBalance('foo', inviteIssuerP, fooInviteP),
         ).then(_ => {
@@ -140,7 +132,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const { mint: moneyMint, issuer: moneyIssuer } = await E(
       mint,
     ).makeIssuerKit('moola');
-    const moolaAmountMath = await getLocalAmountMath(moneyIssuer);
+    const moolaAmountMath = await makeLocalAmountMath(moneyIssuer);
     const moola = moolaAmountMath.make;
     const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
     const bobMoneyPaymentP = E(moneyMint).mintPayment(moola(1001));
@@ -148,7 +140,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const { mint: stockMint, issuer: stockIssuer } = await E(
       mint,
     ).makeIssuerKit('Tyrell');
-    const stockAmountMath = await getLocalAmountMath(stockIssuer);
+    const stockAmountMath = await makeLocalAmountMath(stockIssuer);
     const stocks = stockAmountMath.make;
     const aliceStockPaymentP = E(stockMint).mintPayment(stocks(2002));
     const bobStockPaymentP = E(stockMint).mintPayment(stocks(2003));
@@ -191,7 +183,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const { mint: moneyMint, issuer: moneyIssuer } = await E(
       mint,
     ).makeIssuerKit('clams');
-    const moneyAmountMath = await getLocalAmountMath(moneyIssuer);
+    const moneyAmountMath = await makeLocalAmountMath(moneyIssuer);
     const money = moneyAmountMath.make;
     const aliceMoneyPayment = await E(moneyMint).mintPayment(money(1000));
     const bobMoneyPayment = await E(moneyMint).mintPayment(money(1001));
@@ -199,7 +191,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const { mint: stockMint, issuer: stockIssuer } = await E(
       mint,
     ).makeIssuerKit('fudco');
-    const stockAmountMath = await getLocalAmountMath(stockIssuer);
+    const stockAmountMath = await makeLocalAmountMath(stockIssuer);
     const stocks = stockAmountMath.make;
     const aliceStockPayment = await E(stockMint).mintPayment(stocks(2002));
     const bobStockPayment = await E(stockMint).mintPayment(stocks(2003));

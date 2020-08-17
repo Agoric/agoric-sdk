@@ -2,7 +2,7 @@
   "name": "@agoric/zoe",
   "version": "0.7.0",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
-  "main": "src/zoe.js",
+  "main": "src/zoeService/zoe.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -60,6 +60,7 @@
   },
   "files": [
     "src/",
+    "*.js",
     "NEWS.md"
   ],
   "eslintConfig": {

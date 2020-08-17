@@ -3,36 +3,38 @@
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { makeZoeHelpers } from '../../../src/contractSupport';
+import {
+  assertIssuerKeywords,
+  assertProposalKeywords,
+  assertUsesNatMath,
+} from '../../../src/contractSupport';
+
+import '../../../exported';
 
 /**
  * This contract implements coin voting. There are two roles: the
  * Secretary, who can determine the question (a string), make voting
- * invites, and close the election; and the Voters, who can vote YES or
+ * invitations, and close the election; and the Voters, who can vote YES or
  * NO on the question. The voters can only get the capability to vote
- * by making an offer using a voter invite and escrowing assets. The
+ * by making an offer using a voter invitation and escrowing assets. The
  * brand of assets is determined on contract instantiation through an
  * issuerKeywordRecord. The instantiator gets the only Secretary
- * invite.
+ * access through the creatorFacet.
  *
- * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
- * @typedef {import('@agoric/ERTP').Amount} Amount
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const { assertKeywords, assertNatMathHelpers, checkHook } = makeZoeHelpers(
-    zcf,
-  );
-  assertKeywords(harden(['Assets']));
+const start = zcf => {
   const {
-    terms: { question },
-    brandKeywordRecord: { Assets: assetsBrand },
-  } = zcf.getInstanceRecord();
+    question,
+    brands: { Assets: assetsBrand },
+    maths: { Assets: amountMath },
+  } = zcf.getTerms();
+  let electionOpen = true;
+  assertIssuerKeywords(zcf, harden(['Assets']));
   assert.typeof(question, 'string');
-  assertNatMathHelpers(assetsBrand);
-  const amountMath = zcf.getAmountMath(assetsBrand);
+  assertUsesNatMath(zcf, assetsBrand);
 
-  const offerHandleToResponse = makeStore('offerHandle');
+  const seatToResponse = makeStore('seat');
 
   // We assume the only valid responses are 'YES' and 'NO'
   const assertResponse = response => {
@@ -41,10 +43,10 @@ const makeContract = zcf => {
       details`the answer ${q(response)} was not 'YES' or 'NO'`,
     );
     // Throw an error if the response is not valid, but do not
-    // complete the offer. We should allow the voter to recast their vote.
+    // exit the seat. We should allow the voter to recast their vote.
   };
 
-  const voterHook = voterOfferHandle => {
+  const voteHandler = voterSeat => {
     const voter = harden({
       /**
        * Vote on a particular issue
@@ -53,18 +55,15 @@ const makeContract = zcf => {
       vote: response => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(
-          zcf.isOfferActive(voterOfferHandle),
-          details`the escrowing offer is no longer active`,
-        );
+        assert(!voterSeat.hasExited(), details`the voter seat has exited`);
 
         assertResponse(response);
 
         // Record the response
-        if (offerHandleToResponse.has(voterOfferHandle)) {
-          offerHandleToResponse.set(voterOfferHandle, response);
+        if (seatToResponse.has(voterSeat)) {
+          seatToResponse.set(voterSeat, response);
         } else {
-          offerHandleToResponse.init(voterOfferHandle, response);
+          seatToResponse.init(voterSeat, response);
         }
         return `Successfully voted '${response}'`;
       },
@@ -76,57 +75,43 @@ const makeContract = zcf => {
     give: { Assets: null },
   });
 
-  const expectedSecretaryProposal = harden({});
+  const creatorFacet = harden({
+    closeElection: () => {
+      assert(electionOpen, 'the election is already closed');
+      // YES | NO to Nat
+      const tally = new Map();
+      tally.set('YES', amountMath.getEmpty());
+      tally.set('NO', amountMath.getEmpty());
 
-  const secretaryHook = secretaryOfferHandle => {
-    // TODO: what if the secretary offer is no longer active?
-    const secretary = harden({
-      closeElection: () => {
-        assert(
-          zcf.isOfferActive(secretaryOfferHandle),
-          'the election is already closed',
-        );
-        // YES | NO to Nat
-        const tally = new Map();
-        tally.set('YES', amountMath.getEmpty());
-        tally.set('NO', amountMath.getEmpty());
-
-        for (const [offerHandle, response] of offerHandleToResponse.entries()) {
-          if (zcf.isOfferActive(offerHandle)) {
-            const escrowedAmount = zcf.getCurrentAllocation(offerHandle).Assets;
-            const sumSoFar = tally.get(response);
-            tally.set(response, amountMath.add(escrowedAmount, sumSoFar));
-            zcf.complete([offerHandle]);
-          }
+      for (const [seat, response] of seatToResponse.entries()) {
+        if (!seat.hasExited()) {
+          const escrowedAmount = seat.getAmountAllocated('Assets');
+          const sumSoFar = tally.get(response);
+          tally.set(response, amountMath.add(escrowedAmount, sumSoFar));
+          seat.exit();
         }
-        zcf.complete([secretaryOfferHandle]);
+      }
+      electionOpen = false;
 
-        return harden({
-          YES: tally.get('YES'),
-          NO: tally.get('NO'),
-        });
-      },
-      makeVoterInvite: () => {
-        assert(
-          zcf.isOfferActive(secretaryOfferHandle),
-          'the election is closed',
-        );
-        return zcf.makeInvitation(
-          checkHook(voterHook, expectedVoterProposal),
-          'voter',
-        );
-      },
-    });
-    return secretary;
-  };
+      return harden({
+        YES: tally.get('YES'),
+        NO: tally.get('NO'),
+      });
+    },
+    makeVoterInvitation: () => {
+      assert(electionOpen, 'the election is closed');
+      return zcf.makeInvitation(
+        assertProposalKeywords(voteHandler, expectedVoterProposal),
+        'voter',
+      );
+    },
+  });
 
-  // Return the secretary invite so that the entity that created the
+  // Return the creatorFacet so that the creator of the
   // contract instance can hand out scarce votes and close the election.
-  return zcf.makeInvitation(
-    checkHook(secretaryHook, expectedSecretaryProposal),
-    'secretary',
-  );
+
+  return harden({ creatorFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

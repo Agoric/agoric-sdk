@@ -1,25 +1,15 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
-
 /**
  * Tests ZCF
- *
- * @typedef {import('../../../src/zoe').ContractFacet} ContractFacet
- * @typedef {import('@agoric/ERTP').Amount} Amount
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const { brandKeywordRecord, issuerKeywordRecord } = zcf.getInstanceRecord();
-  Object.keys(brandKeywordRecord).forEach(keyword => {
-    // TODO: import tap/tape and do t.equals
-    assert.equal(
-      zcf.getIssuerForBrand(brandKeywordRecord[keyword]),
-      issuerKeywordRecord[keyword],
-    );
-  });
-  return zcf.makeInvitation(() => {}, 'test');
+const start = _zcf => {
+  // TODO: import tap/tape and do t.equals
+  // TODO: Test ZCF here
+
+  return harden({});
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

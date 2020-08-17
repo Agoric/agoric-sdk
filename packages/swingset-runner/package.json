@@ -70,6 +70,7 @@
       "import/prefer-default-export": "off"
     },
     "globals": {
+      "harden": "readonly",
       "BigInt": "readonly"
     }
   },

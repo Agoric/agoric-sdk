@@ -1,4 +1,6 @@
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
+import { makeZoe } from '../../src/zoeService/zoe';
+import fakeVatAdmin from './contracts/fakeVatAdmin';
 
 const setupMixed = () => {
   const ccBundle = makeIssuerKit('CryptoCats', 'strSet');
@@ -22,7 +24,10 @@ const setupMixed = () => {
   const moolaMint = mints.get('moola');
   const cryptoCats = allBundles.cc.amountMath.make;
   const moola = allBundles.moola.amountMath.make;
+
+  const zoe = makeZoe(fakeVatAdmin);
   return {
+    zoe,
     ccIssuer,
     moolaIssuer,
     ccMint,

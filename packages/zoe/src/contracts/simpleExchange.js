@@ -1,9 +1,14 @@
 // @ts-check
 
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
 import '../../exported';
+import {
+  swap,
+  satisfies,
+  checkIfProposal,
+  assertIssuerKeywords,
+} from '../contractSupport/zoeHelpers';
 
 /**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows
@@ -21,56 +26,35 @@ import '../../exported';
  * Price is a limit that may be improved on. This simple exchange does
  * not partially fill orders.
  *
- * The invitation returned on installation of the contract is the same as what
- * is returned by calling `await E(publicAPI).makeInvite().
+ * The publicFacet is returned from the contract.
  *
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  let sellOfferHandles = [];
-  let buyOfferHandles = [];
+const start = zcf => {
+  let sellSeats = [];
+  let buySeats = [];
   // eslint-disable-next-line no-use-before-define
   const { notifier, updater } = makeNotifierKit(getBookOrders());
 
-  const {
-    rejectOffer,
-    checkIfProposal,
-    swap,
-    satisfies,
-    getActiveOffers,
-    assertKeywords,
-  } = makeZoeHelpers(zcf);
+  assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
-  assertKeywords(harden(['Asset', 'Price']));
-
-  function flattenOffer(o) {
+  function dropExit(p) {
     return {
-      want: o.proposal.want,
-      give: o.proposal.give,
+      want: p.want,
+      give: p.give,
     };
   }
 
-  function flattenOrders(offerHandles) {
-    const result = zcf
-      .getOffers(zcf.getOfferStatuses(offerHandles).active)
-      .map(offerRecord => flattenOffer(offerRecord));
-    return result;
+  function flattenOrders(seats) {
+    const activeSeats = seats.filter(s => !s.hasExited());
+    return activeSeats.map(seat => dropExit(seat.getProposal()));
   }
 
   function getBookOrders() {
     return {
-      buys: flattenOrders(buyOfferHandles),
-      sells: flattenOrders(sellOfferHandles),
+      buys: flattenOrders(buySeats),
+      sells: flattenOrders(sellSeats),
     };
-  }
-
-  function getOffer(offerHandle) {
-    for (const handle of [...sellOfferHandles, ...buyOfferHandles]) {
-      if (offerHandle === handle) {
-        return flattenOffer(getActiveOffers([offerHandle])[0]);
-      }
-    }
-    return 'not an active offer';
   }
 
   // Tell the notifier that there has been a change to the book orders
@@ -81,17 +65,14 @@ const makeContract = zcf => {
   // If there's an existing offer that this offer is a match for, make the trade
   // and return the handle for the matched offer. If not, return undefined, so
   // the caller can know to add the new offer to the book.
-  function swapIfCanTrade(offerHandles, offerHandle) {
-    for (const iHandle of offerHandles) {
-      const satisfiedBy = (xHandle, yHandle) =>
-        satisfies(xHandle, zcf.getCurrentAllocation(yHandle));
-      if (
-        satisfiedBy(iHandle, offerHandle) &&
-        satisfiedBy(offerHandle, iHandle)
-      ) {
-        swap(offerHandle, iHandle);
+  function swapIfCanTrade(offers, seat) {
+    for (const offer of offers) {
+      const satisfiedBy = (xSeat, ySeat) =>
+        satisfies(zcf, xSeat, ySeat.getCurrentAllocation());
+      if (satisfiedBy(offer, seat) && satisfiedBy(seat, offer)) {
+        swap(zcf, seat, offer);
         // return handle to remove
-        return iHandle;
+        return offer;
       }
     }
     return undefined;
@@ -101,20 +82,21 @@ const makeContract = zcf => {
   // the matching offer and return the remaining counterOffers. If there's no
   // matching offer, add the offerHandle to the coOffers, and return the
   // unmodified counterOfffers
-  function swapIfCanTradeAndUpdateBook(counterOffers, coOffers, offerHandle) {
-    const handle = swapIfCanTrade(counterOffers, offerHandle);
-    if (handle) {
+  function swapIfCanTradeAndUpdateBook(counterOffers, coOffers, seat) {
+    const offer = swapIfCanTrade(counterOffers, seat);
+    if (offer) {
       // remove the matched offer.
-      counterOffers = counterOffers.filter(value => value !== handle);
+      counterOffers = counterOffers.filter(value => value !== offer);
     } else {
       // Save the order in the book
-      coOffers.push(offerHandle);
+      coOffers.push(seat);
     }
 
     return counterOffers;
   }
 
-  const exchangeOfferHook = offerHandle => {
+  /** @type {OfferHandler} */
+  const exchangeOfferHandler = seat => {
     const buyAssetForPrice = harden({
       give: { Price: null },
       want: { Asset: null },
@@ -123,40 +105,34 @@ const makeContract = zcf => {
       give: { Asset: null },
       want: { Price: null },
     });
-    if (checkIfProposal(offerHandle, sellAssetForPrice)) {
-      buyOfferHandles = swapIfCanTradeAndUpdateBook(
-        buyOfferHandles,
-        sellOfferHandles,
-        offerHandle,
-      );
+    if (checkIfProposal(seat, sellAssetForPrice)) {
+      buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
       /* eslint-disable no-else-return */
-    } else if (checkIfProposal(offerHandle, buyAssetForPrice)) {
-      sellOfferHandles = swapIfCanTradeAndUpdateBook(
-        sellOfferHandles,
-        buyOfferHandles,
-        offerHandle,
-      );
+    } else if (checkIfProposal(seat, buyAssetForPrice)) {
+      sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
     } else {
       // Eject because the offer must be invalid
-      return rejectOffer(offerHandle);
+      throw seat.kickOut(
+        `The proposal did not match either a buy or sell order.`,
+      );
     }
     bookOrdersChanged();
-    return defaultAcceptanceMsg;
+    return 'Trade Successful';
   };
 
-  const makeExchangeInvite = () =>
-    zcf.makeInvitation(exchangeOfferHook, 'exchange');
+  const makeExchangeInvitation = () =>
+    zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
-  zcf.initPublicAPI(
-    harden({
-      makeInvite: makeExchangeInvite,
-      getOffer,
-      getNotifier: () => notifier,
-    }),
-  );
+  /** @type {SimpleExchangePublicFacet} */
+  const publicFacet = harden({
+    makeInvitation: makeExchangeInvitation,
+    getNotifier: () => notifier,
+  });
 
-  return makeExchangeInvite();
+  // set the initial state of the notifier
+  bookOrdersChanged();
+  return harden({ publicFacet });
 };
 
-harden(makeContract);
-export { makeContract };
+harden(start);
+export { start };

@@ -14,6 +14,7 @@ export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
   }
+  assert(x.length > 0, details`Path ${q(x)} must not be empty`);
   for (const name of x) {
     if (typeof name !== 'string') {
       return false;
@@ -36,7 +37,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const searchOrder = [];
 
   // Paths are kept across all kinds.
-  /** @type {Store<string, Path[]>} */
+  /** @type {Store<any, Path[]>} */
   const valToPaths = makeStore('value');
 
   /**
@@ -83,11 +84,16 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     return `${IMPLODE_PREFIX}${JSON.stringify(path)}`;
   };
 
+  /**
+   * @template T
+   * @param {string} kind
+   * @returns {Mapping<T>}
+   */
   const makeMapping = kind => {
     assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
-    /** @type {Store<any, string>} */
+    /** @type {Store<T, string>} */
     const rawValToPetname = makeStore('value');
-    /** @type {Store<any, string | Path>} */
+    /** @type {Store<T, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -108,9 +114,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return rawValToPetname.values().map(val => explode(val));
       },
     };
-    /** @type {Store<string, any>} */
+    /** @type {Store<string, T>} */
     const rawPetnameToVal = makeStore('petname');
-    /** @type {Store<Path | string, any>} */
+    /** @type {Store<Path | string, T>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {
@@ -227,15 +233,37 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       valToPetname.init(val, petname);
     };
 
+    /**
+     * @param {Petname} petname
+     * @param {any} val
+     * @returns {Petname}
+     */
     const suggestPetname = (petname, val) => {
-      if (petnameToVal.has(petname)) {
-        return;
-      }
       if (valToPetname.has(val)) {
-        return;
+        // Already have a petname, so just return it.
+        return valToPetname.get(val);
       }
 
-      addPetname(petname, val);
+      if (!isPath(petname)) {
+        // Assert that the name doesn't exist, and add it.
+        addPetname(petname, val);
+        return petname;
+      }
+
+      // Find a unique path.
+      let uniquePath = petname;
+      let nonce = 2;
+      while (petnameToVal.has(uniquePath)) {
+        // Add the nonce to the path, and try again.
+        uniquePath = [...petname, `${nonce}`];
+        nonce += 1;
+      }
+
+      // We must be unique now, so add the path.
+      // The validity of the path will still be determined by whether
+      // we have a petname for its edge (first element).
+      addPetname(uniquePath, val);
+      return uniquePath;
     };
 
     const deletePetname = petname => {
@@ -251,6 +279,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       petnameToVal.delete(petname);
       valToPetname.delete(val);
     };
+    /** @type {Mapping<T>} */
     const mapping = harden({
       implode,
       explode,
@@ -321,6 +350,11 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     hydrate,
     dehydrate,
     edgeMapping,
+    /**
+     * @template T
+     * @param {string} kind
+     * @returns {Mapping<T>}
+     */
     makeMapping: kind => {
       const mapping = makeMapping(kind);
       searchOrder.push(kind);

@@ -5,9 +5,11 @@ import Nat from '@agoric/nat';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   defaultAcceptanceMsg,
-  makeZoeHelpers,
+  assertIssuerKeywords,
+  satisfies,
   secondPriceLogic,
   closeAuction,
+  assertProposalKeywords,
 } from '../contractSupport';
 
 import '../../exported';
@@ -19,131 +21,106 @@ import '../../exported';
  * price rule is followed, so the highest bidder pays the amount bid by the
  * second highest bidder.
  *
- * makeInstance() specifies the issuers and terms ({ numBidsAllowed }) specify
- * the number of bids required. An invitation for the seller is returned. The
+ * startInstance() specifies the issuers and terms ({ numBidsAllowed }) specify
+ * the number of bids required. An invitation for the seller is
+ * returned as the creatorInvitation. The
  * seller's offer should look like
  * { give: { Asset: asset }, want: { Ask: minimumBidAmount } }
  * The asset can be non-fungible, but the Ask amount should be of a fungible
  * brand.
- * The bidder invitations are available from await E(publicAPI).makeInvites(n). Each
+ * The bidder invitations can be made by calling makeBidInvitation on the creatorFacet. Each
  * bidder can submit an offer: { give: { Bid: null } want: { Asset: null } }.
  *
- * publicAPI also has methods to find out what's being auctioned
- * (getAuctionedAssetsAmounts()), or the minimum bid (getMinimumBid()).
- *
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  */
-const makeContract = zcf => {
-  const { rejectOffer, satisfies, assertKeywords, checkHook } = makeZoeHelpers(
-    zcf,
-  );
+const start = zcf => {
+  const {
+    maths: { Asset: assetMath, Ask: bidMath },
+  } = zcf.getTerms();
+  let { numBidsAllowed = 3 } = zcf.getTerms();
+  numBidsAllowed = Nat(numBidsAllowed);
 
-  let {
-    terms: { numBidsAllowed },
-  } = zcf.getInstanceRecord();
-  numBidsAllowed = Nat(numBidsAllowed !== undefined ? numBidsAllowed : 3);
-
-  let sellerOfferHandle;
+  let sellSeat;
   let minimumBid;
   let auctionedAssets;
-  const allBidHandles = [];
+  const bidSeats = [];
 
   // seller will use 'Asset' and 'Ask'. buyer will use 'Asset' and 'Bid'
-  assertKeywords(harden(['Asset', 'Ask']));
+  assertIssuerKeywords(zcf, harden(['Asset', 'Ask']));
 
-  const bidderOfferHook = offerHandle => {
+  /** @type {OfferHandler} */
+  const bid = bidSeat => {
     // Check that the item is still up for auction
-    if (!zcf.isOfferActive(sellerOfferHandle)) {
+    if (sellSeat.hasExited()) {
       const rejectMsg = `The item up for auction is not available or the auction has completed`;
-      throw rejectOffer(offerHandle, rejectMsg);
+      throw bidSeat.kickOut(rejectMsg);
     }
-    if (allBidHandles.length >= numBidsAllowed) {
-      throw rejectOffer(offerHandle, `No further bids allowed.`);
+    if (bidSeats.length >= numBidsAllowed) {
+      throw bidSeat.kickOut(`No further bids allowed.`);
     }
-    const sellerSatisfied = satisfies(sellerOfferHandle, {
-      Ask: zcf.getCurrentAllocation(offerHandle).Bid,
-      Asset: zcf.getAmountMath(auctionedAssets.brand).getEmpty(),
+    const sellerSatisfied = satisfies(zcf, sellSeat, {
+      Ask: bidSeat.getAmountAllocated('Bid', minimumBid.brand),
+      Asset: assetMath.getEmpty(),
     });
-    const bidderSatisfied = satisfies(offerHandle, {
-      Asset: zcf.getCurrentAllocation(sellerOfferHandle).Asset,
-      Bid: zcf.getAmountMath(minimumBid.brand).getEmpty(),
+    const bidderSatisfied = satisfies(zcf, bidSeat, {
+      Asset: sellSeat.getAmountAllocated('Asset', auctionedAssets.brand),
+      Bid: bidMath.getEmpty(),
     });
     if (!(sellerSatisfied && bidderSatisfied)) {
       const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
-      throw rejectOffer(offerHandle, rejectMsg);
+      throw bidSeat.kickOut(rejectMsg);
     }
 
     // Save valid bid and try to close.
-    allBidHandles.push(offerHandle);
-    if (allBidHandles.length >= numBidsAllowed) {
-      closeAuction(zcf, {
-        auctionLogicFn: secondPriceLogic,
-        sellerOfferHandle,
-        allBidHandles,
-      });
+    bidSeats.push(bidSeat);
+    if (bidSeats.length >= numBidsAllowed) {
+      closeAuction(zcf, secondPriceLogic, sellSeat, bidSeats);
     }
     return defaultAcceptanceMsg;
   };
 
-  const bidderOfferExpected = harden({
+  const bidExpected = harden({
     give: { Bid: null },
     want: { Asset: null },
   });
 
-  const makeBidderInvite = () =>
+  const makeBidInvitation = () =>
     zcf.makeInvitation(
-      checkHook(bidderOfferHook, bidderOfferExpected),
+      assertProposalKeywords(bid, bidExpected),
       'bid',
       harden({
-        customProperties: {
-          auctionedAssets,
-          minimumBid,
-        },
+        auctionedAssets,
+        minimumBid,
+        numBidsAllowed,
       }),
     );
 
-  const sellerOfferHook = offerHandle => {
-    if (auctionedAssets) {
-      throw rejectOffer(offerHandle, `assets already present`);
-    }
-    // Save the valid offer
-    sellerOfferHandle = offerHandle;
-    const { proposal } = zcf.getOffer(offerHandle);
-    auctionedAssets = proposal.give.Asset;
-    minimumBid = proposal.want.Ask;
-    return defaultAcceptanceMsg;
-  };
-
-  const sellerOfferExpected = harden({
+  const sellExpected = harden({
     give: { Asset: null },
     want: { Ask: null },
   });
 
-  const makeSellerInvite = () =>
-    zcf.makeInvitation(
-      checkHook(sellerOfferHook, sellerOfferExpected),
-      'sellAssets',
-    );
+  const sell = seat => {
+    // Save the valid seat for when the auction closes.
+    sellSeat = seat;
+    ({
+      give: { Asset: auctionedAssets },
+      want: { Ask: minimumBid },
+    } = seat.getProposal());
 
-  zcf.initPublicAPI(
-    harden({
-      makeInvites: numInvites => {
-        if (auctionedAssets === undefined) {
-          throw new Error(`No assets are up for auction.`);
-        }
-        const invites = [];
-        for (let i = 0; i < numInvites; i += 1) {
-          invites.push(makeBidderInvite());
-        }
-        return invites;
-      },
-      getAuctionedAssetsAmounts: () => auctionedAssets,
-      getMinimumBid: () => minimumBid,
-    }),
+    // The bid invitations can only be sent out after the assets to be
+    // auctioned are escrowed.
+    return harden({ makeBidInvitation });
+  };
+
+  const creatorInvitation = zcf.makeInvitation(
+    assertProposalKeywords(sell, sellExpected),
+    'sellAssets',
   );
 
-  return makeSellerInvite();
+  return harden({
+    creatorInvitation,
+  });
 };
 
-harden(makeContract);
-export { makeContract };
+export { start };

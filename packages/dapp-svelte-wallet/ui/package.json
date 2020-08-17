@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/wallet-frontend",
+  "name": "@agoric/dapp-svelte-wallet-ui",
   "version": "1.0.0",
   "scripts": {
     "build": "rollup -c",
