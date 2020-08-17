@@ -1,9 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'tape-promise/tape';
 import makeStore from '@agoric/weak-store';
-import { cleanProposal } from '../../src/zoeService/cleanProposal';
+import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
 
