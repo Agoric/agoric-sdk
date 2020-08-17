@@ -10,7 +10,7 @@ import { E } from '@agoric/eventual-send';
 export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
 
-  /** @type {ExitObj | undefined} */
+  /** @type {ExitObj} */
   let exitObj = harden({
     exit: () => {
       throw new Error(
