@@ -30,16 +30,13 @@ export const makeZoeSeatAdminKit = (
 ) => {
   const payoutPromiseKit = makePromiseKit();
   const offerResultPromiseKit = promises.offerResult || makePromiseKit();
-  const exitObjPromiseKitPromise =
-    promises.exitObj ||
-    Promise.resolve(
+  const exitObjP = promises.exitObj ? promises.exitObj.promise :
       // Offerless seat case
       harden({
         exit: () => {
           throw new Error(`Offerless seats may not be exited`);
         },
-      }),
-    );
+      });
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
