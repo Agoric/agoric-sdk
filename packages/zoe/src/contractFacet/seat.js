@@ -56,12 +56,10 @@ export const makeZcfSeatAdminKit = (
       assert.fail(msg);
     },
     getNotifier: () => {
-      assertExitedFalse();
       return notifier;
     },
     hasExited: () => exited,
     getProposal: () => {
-      assertExitedFalse();
       return proposal;
     },
     getAmountAllocated: (keyword, brand) => {

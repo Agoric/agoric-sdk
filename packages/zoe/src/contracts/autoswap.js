@@ -7,7 +7,7 @@ import {
   getInputPrice,
   calcLiqValueToMint,
   calcValueToRemove,
-  assertProposalKeywords,
+  assertProposalShape,
   assertUsesNatMath,
   trade,
 } from '../contractSupport';
@@ -199,19 +199,19 @@ const start = async zcf => {
 
   const makeAddLiquidityInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(addLiquidityHandler, addLiquidityExpected),
+      assertProposalShape(addLiquidityHandler, addLiquidityExpected),
       'autoswap add liquidity',
     );
 
   const makeRemoveLiquidityInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(removeLiquidityHandler, removeLiquidityExpected),
+      assertProposalShape(removeLiquidityHandler, removeLiquidityExpected),
       'autoswap remove liquidity',
     );
 
   const makeSwapInvitation = () =>
     zcf.makeInvitation(
-      assertProposalKeywords(swapHandler, swapExpected),
+      assertProposalShape(swapHandler, swapExpected),
       'autoswap swap',
     );
 

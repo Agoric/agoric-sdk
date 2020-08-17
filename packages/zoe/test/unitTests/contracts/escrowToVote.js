@@ -5,7 +5,7 @@ import makeStore from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
-  assertProposalKeywords,
+  assertProposalShape,
   assertUsesNatMath,
 } from '../../../src/contractSupport';
 
@@ -101,7 +101,7 @@ const start = zcf => {
     makeVoterInvitation: () => {
       assert(electionOpen, 'the election is closed');
       return zcf.makeInvitation(
-        assertProposalKeywords(voteHandler, expectedVoterProposal),
+        assertProposalShape(voteHandler, expectedVoterProposal),
         'voter',
       );
     },

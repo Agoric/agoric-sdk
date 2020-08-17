@@ -4,9 +4,19 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { objectMap } from '../objArrayConversion';
 
 import '../types';
 import '../internal-types';
+
+// Offerless seat case
+
+const defaultExitObj = harden({
+  exit: () => {
+    throw new Error(`Offerless seats may not be exited`);
+  },
+});
+
 /**
  * makeZoeSeatAdminKit makes an object that manages the state of a seat
  * participating in a Zoe contract and return its two facets.
@@ -19,25 +29,15 @@ import '../internal-types';
  * The zoeSeatAdmin is passed by Zoe to the ContractFacet (zcf), to allow zcf to
  * query or update the allocation or exit the seat cleanly.
  */
-
 /** @type {MakeZoeSeatAdminKit} */
 export const makeZoeSeatAdminKit = (
   initialAllocation,
   instanceAdmin,
   proposal,
   brandToPurse,
-  promises = {},
+  { offerResult = undefined, exitObj = defaultExitObj } = {},
 ) => {
   const payoutPromiseKit = makePromiseKit();
-  const offerResultPromiseKit = promises.offerResult || makePromiseKit();
-  const exitObjP = promises.exitObj
-    ? promises.exitObj.promise
-    : // Offerless seat case
-      harden({
-        exit: () => {
-          throw new Error(`Offerless seats may not be exited`);
-        },
-      });
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
@@ -64,10 +64,9 @@ export const makeZoeSeatAdminKit = (
       instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
 
       /** @type {PaymentPKeywordRecord} */
-      const payout = {};
-      Object.entries(currentAllocation).forEach(([keyword, payoutAmount]) => {
+      const payout = objectMap(currentAllocation, ([keyword, payoutAmount]) => {
         const purse = brandToPurse.get(payoutAmount.brand);
-        payout[keyword] = E(purse).withdraw(payoutAmount);
+        return [keyword, E(purse).withdraw(payoutAmount)];
       });
       harden(payout);
       payoutPromiseKit.resolve(payout);
@@ -82,9 +81,9 @@ export const makeZoeSeatAdminKit = (
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword =>
       payoutPromiseKit.promise.then(payouts => payouts[keyword]),
-    getOfferResult: async () => offerResultPromiseKit.promise,
+    getOfferResult: async () => offerResult,
     hasExited: async () => instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-    tryExit: async () => E(exitObjP).exit(),
+    tryExit: async () => E(exitObj).exit(),
     getNotifier: async () => notifier,
   });
 

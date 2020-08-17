@@ -53,7 +53,7 @@
  * @param {InstanceAdmin} instanceAdmin - pass-by-copy data to use to make the seat
  * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
- * @param {{ offerResult?: PromiseRecord<OfferResult>, exitObj?: PromiseRecord<ExitObj>}} [promises={}]
+ * @param {{ offerResult?: ERef<OfferResult>, exitObj?: ERef<ExitObj>}} [options={}]
  * @returns {ZoeSeatAdminKit}
  *
  * @typedef {Object} ZoeSeatAdmin
@@ -118,7 +118,9 @@
  *             customProperties?: {},
  *            ) => Payment} makeInvitation
  * @property {() => void} shutdown
- * @property {(issuerP: ERef<Issuer>, keyword: Keyword) => void} saveIssuer
+ * @property {(issuerP: ERef<Issuer>,
+ *             keyword: Keyword
+ *            ) => Promise<void>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeOfferlessSeat} makeOfferlessSeat
  */

@@ -3,7 +3,7 @@
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
-  assertProposalKeywords,
+  assertProposalShape,
 } from '../../../src/contractSupport';
 
 /**
@@ -38,7 +38,7 @@ const start = zcf => {
   });
 
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalKeywords(makeAccompliceInvitation, firstOfferExpected),
+    assertProposalShape(makeAccompliceInvitation, firstOfferExpected),
     'firstOffer',
   );
 
