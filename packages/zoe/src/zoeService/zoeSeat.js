@@ -30,7 +30,16 @@ export const makeZoeSeatAdminKit = (
 ) => {
   const payoutPromiseKit = makePromiseKit();
   const offerResultPromiseKit = promises.offerResult || makePromiseKit();
-  const exitObjPromiseKit = promises.exitObj || makePromiseKit();
+  const exitObjPromiseKitPromise =
+    promises.exitObj ||
+    Promise.resolve(
+      // Offerless seat case
+      harden({
+        exit: () => {
+          throw new Error(`Offerless seats may not be exited`);
+        },
+      }),
+    );
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
@@ -77,8 +86,7 @@ export const makeZoeSeatAdminKit = (
       payoutPromiseKit.promise.then(payouts => payouts[keyword]),
     getOfferResult: async () => offerResultPromiseKit.promise,
     hasExited: async () => instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-    tryExit: async () =>
-      exitObjPromiseKit.promise.then(exitObj => E(exitObj).exit()),
+    tryExit: async () => E(exitObjPromiseKitPromise).exit(),
     getNotifier: async () => notifier,
   });
 

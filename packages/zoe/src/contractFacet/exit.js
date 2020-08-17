@@ -11,7 +11,13 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
 
   /** @type {ExitObj | undefined} */
-  let exitObj;
+  let exitObj = harden({
+    exit: () => {
+      throw new Error(
+        `Only seats with the exitKind "onDemand" can exit at will`,
+      );
+    },
+  });
 
   const exitFn = () => {
     zcfSeatAdmin.updateHasExited();
