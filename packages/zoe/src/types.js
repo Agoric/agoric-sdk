@@ -125,7 +125,7 @@
  * @property {any} creatorFacet
  * @property {any} publicFacet
  * @property {Instance} instance
- * @property {Payment} creatorInvitation
+ * @property {Payment | undefined} creatorInvitation
  */
 
 /**

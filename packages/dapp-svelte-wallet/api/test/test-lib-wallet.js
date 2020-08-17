@@ -44,6 +44,7 @@ async function setupTest() {
     installation,
     issuerKeywordRecord,
   );
+  assert(invite);
 
   // Create Autoswap instance
   const autoswapContractRoot = require.resolve(

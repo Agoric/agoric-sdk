@@ -303,12 +303,16 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       // creatorInvitation can be undefined, but if it is defined,
       // let's make sure it is an invitation.
       return Promise.allSettled([
-        Promise.resolve(creatorInvitationP),
+        creatorInvitationP,
         invitationIssuer.isLive(creatorInvitationP),
-      ]).then(([{ value: creatorInvitation }, isLiveResult]) => {
+      ]).then(([invitationResult, isLiveResult]) => {
+        let creatorInvitation;
+        if (invitationResult.status === 'fulfilled') {
+          creatorInvitation = invitationResult.value;
+        }
         if (creatorInvitation !== undefined) {
           assert(
-            isLiveResult.value,
+            isLiveResult.status === 'fulfilled' && isLiveResult.value,
             details`The contract did not correctly return a creatorInvitation`,
           );
         }
