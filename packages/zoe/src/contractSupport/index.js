@@ -18,6 +18,5 @@ export {
   assertProposalKeywords,
   assertIssuerKeywords,
   satisfies,
-  escrowAndAllocateTo,
   assertUsesNatMath,
 } from './zoeHelpers';

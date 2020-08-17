@@ -2,7 +2,6 @@
 
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { E } from '@agoric/eventual-send';
 
 import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
@@ -293,67 +292,6 @@ export const assertProposalKeywords = (offerHandler, expected) =>
     assertKeys(actual.exit, expected.exit);
     return offerHandler(seat);
   };
-
-/**
- * Escrow payments with Zoe and reallocate the amount of each
- * payment to a recipient.
- *
- * @param {ContractFacet} zcf
- * @param {ZCFSeat} recipientSeat
- * @param {AmountKeywordRecord} giveAmountKeywordRecord - the keywords
- * and amounts to give to recipient. Keywords must match the keywords
- * for the payments.
- * @param {PaymentKeywordRecord} paymentKeywordRecord
- * @returns {Promise<void>}
- */
-export const escrowAndAllocateTo = (
-  zcf,
-  recipientSeat,
-  giveAmountKeywordRecord,
-  paymentKeywordRecord,
-) => {
-  // We will create a temporary seat to be able to escrow our payment
-  // with Zoe.
-  let tempSeat;
-
-  // We need to make an invitation and store the seat associated with
-  // that invitation for future use
-  const contractSelfInvite = zcf.makeInvitation(
-    seat => (tempSeat = seat),
-    'self invite',
-  );
-  // To escrow the payments, we must get the Zoe Service facet and
-  // make an offer
-  const proposal = harden({ give: giveAmountKeywordRecord });
-
-  return E(zcf.getZoeService())
-    .offer(contractSelfInvite, proposal, paymentKeywordRecord)
-    .then(() => {
-      // At this point, the temporary offer has the amount from the
-      // payment but nothing else. The recipient offer may have any
-      // allocation, so we can't assume the allocation is currently empty for this
-      // keyword.
-
-      trade(
-        zcf,
-        {
-          seat: tempSeat,
-          gains: {},
-          losses: giveAmountKeywordRecord,
-        },
-        {
-          seat: recipientSeat,
-          gains: giveAmountKeywordRecord,
-        },
-      );
-
-      // Exit the temporary seat
-      tempSeat.exit();
-
-      // Now, the temporary seat no longer exists, but the recipient
-      // seat is allocated the value of the payment.
-    });
-};
 
 /* Given a brand, assert that the issuer uses NAT amountMath. */
 export const assertUsesNatMath = (zcf, brand) => {
