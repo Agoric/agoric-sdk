@@ -191,7 +191,7 @@ function makeZoe(vatAdminSvc) {
           issuer: localIssuer,
           amountMath: localAmountMath,
         });
-        issuerTable.registerIssuerRecord(localIssuerRecord);
+        issuerTable.initIssuerRecord(localIssuerRecord);
         registerIssuerByKeyword(keyword, localIssuerRecord);
         const localPooledPurse = localIssuer.makeEmptyPurse();
         brandToPurse.init(localBrand, localPooledPurse);

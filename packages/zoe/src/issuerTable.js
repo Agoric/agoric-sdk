@@ -16,7 +16,7 @@ import './internal-types';
  */
 
 // Issuer Table key: brand
-// Columns: issuer | amountMath | brand
+// Columns: brand | issuer | amountMath
 //
 // The IssuerTable is keyed by brand, but the Issuer is required in order for
 // getPromiseForIssuerRecord() to initialize the records. When
@@ -44,7 +44,7 @@ const makeIssuerTable = () => {
     /** @type {WeakStore<Issuer,Brand>} */
     const issuerToBrand = makeWeakStore('issuer');
 
-    const registerIssuerRecord = issuerRecord => {
+    const initIssuerRecord = issuerRecord => {
       const { brand, issuer } = issuerRecord;
       table.create(issuerRecord, brand);
       issuerToBrand.init(issuer, brand);
@@ -83,7 +83,7 @@ const makeIssuerTable = () => {
             issuer,
             amountMath,
           };
-          registerIssuerRecord(issuerRecord);
+          initIssuerRecord(issuerRecord);
           issuersInProgress.delete(issuer);
           return table.get(brand);
         },
@@ -112,7 +112,7 @@ const makeIssuerTable = () => {
           }
         });
       },
-      registerIssuerRecord,
+      initIssuerRecord,
       // Synchronous, but throws if not present.
       getIssuerRecordByIssuer: issuer => table.get(issuerToBrand.get(issuer)),
     });

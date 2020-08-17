@@ -110,7 +110,7 @@ export function buildRootObject() {
         amountMath: mintyAmountMath,
       });
       registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
-      issuerTable.registerIssuerRecord(mintyIssuerRecord);
+      issuerTable.initIssuerRecord(mintyIssuerRecord);
 
       /** @type ZCFMint */
       const zcfMint = harden({
