@@ -32,10 +32,10 @@ test('terminate', async t => {
     'query2 2',
     'QUERY 3',
     'GOT QUERY 3',
-    // these two will be added in phase 2
-    // 'foreverP.catch (err??)',
-    // 'afterForeverP.catch (err??)',
+    'foreverP.catch vat terminated',
+    'query3P.catch vat terminated',
     'foo4P.catch vat is dead',
+    'afterForeverP.catch vat terminated',
     'done',
   ]);
   t.end();

@@ -808,6 +808,10 @@ export default function buildKernel(kernelEndowments) {
       const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
       if (!vatKeeper.isDead()) {
         vatKeeper.markAsDead();
+        const err = makeError('vat terminated');
+        for (const kpid of kernelKeeper.findPromisesFromDeadVat(vatID)) {
+          deliverToError(kpid, err, vatID);
+        }
         removeVatManager(vatID).then(
           () => kdebug(`terminated vat ${vatID}`),
           e => console.error(`problem terminating vat ${vatID}`, e),

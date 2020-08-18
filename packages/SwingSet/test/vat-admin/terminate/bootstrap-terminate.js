@@ -45,8 +45,8 @@ export function buildRootObject(vatPowers) {
       // the first will trigger another outgoing query ..
       const query3P = E(dude.root).elsewhere(self, 3);
       query3P.then(
-        answer => testLog(`3P.then ${answer}`),
-        err => testLog(`3P.catch ${err}`),
+        answer => testLog(`query3P.then ${answer}`),
+        err => testLog(`query3P.catch ${err}`),
       );
       // .. but it will be killed ..
       E(dude.adminNode).terminate();
@@ -70,53 +70,40 @@ export function buildRootObject(vatPowers) {
       // [adminNode.terminate, dude.foo(4), adminNode.terminate, self.query(3)]
 
       // then terminate() is delivered, and the vat is killed. The kernel pushes a
-      // message to vatAdmin to let the done() promise resolve. (PHASE 2) The kernel also
+      // message to vatAdmin to let the done() promise resolve. The kernel also
       // looks for the unresolved promises decided by the late vat, and rejects them,
       // which pushes notify events on the queue
-      // (PHASE 1) run-queue is:
-      // [dude.foo(4), adminNode.terminate, self.query(3), vatAdmin.fireDone]
-      // (PHASE 2) run-queue is:
+      // run-queue is:
       // [dude.foo(4), adminNode.terminate, self.query(3), vatAdmin.fireDone,
       //  self.notify(foreverP), self.notify(afterForeverP)]
 
       // now dude.foo(4) comes up for delivery, and deliverToVat notices the
       // target is dead, so the kernel rejects the result, pushing another
       // notify
-      // (PHASE 1) run-queue is:
-      // [adminNode.terminate, self.query(3), vatAdmin.fireDone, self.notify(foo4P)]
-      // (PHASE 2) run-queue is:
+      // run-queue is:
       // [adminNode.terminate, self.query(3), vatAdmin.fireDone,
       //  self.notify(foreverP), self.notify(afterForeverP), self.notify(foo4P)]
 
       // now the duplicate terminate() comes up, and vatAdminVat should ignore it
-      // (PHASE 1) run-queue is:
-      // [self.query(3), vatAdmin.fireDone, self.notify(foo4P)]
-      // (PHASE 2) run-queue is:
+      // run-queue is:
       // [self.query(3), vatAdmin.fireDone, self.notify(foreverP),
       //  self.notify(afterForeverP), self.notify(foo4P)]
 
       // now the self.query(3) gets delivered, which pushes 'GOT QUERY 3' onto testLog, and
       // resolves the result promise. The dead vat is the only subscriber, so the kernel
       // pushes a notify event to vat-dude for it (which will never be delivered)
-      // (PHASE 1) run-queue is:
-      // [vatAdmin.fireDone, self.notify(foo4P), dude.notify(answerP)]
-      // (PHASE 2) run-queue is:
+      // run-queue is:
       // [vatAdmin.fireDone, self.notify(foreverP), self.notify(afterForeverP),
       //  self.notify(foo4P), dude.notify(answerP)]
 
       // now vatAdmin gets fireDone, which resolves the 'done' promise we've been awaiting for,
       // which pushes a notify
-      // (PHASE 1) run-queue is:
-      // [self.notify(foo4P), dude.notify(answerP), self.notify(doneP)]
-      // (PHASE 2) run-queue is:
+      // run-queue is:
       // [self.notify(foreverP), self.notify(afterForeverP), self.notify(foo4P),
       //  dude.notify(answerP), self.notify(doneP)]
 
-      // PHASE 2: we receive the rejection of foreverP, pushing
-      // 'foreverP.catch (err)' to testLog
-      // PHASE 2: we receive the rejection of afterForeverP, pushing
-      // 'afterForeverP.catch (err)' to testLog
-
+      // We receive the rejection of foreverP, pushing 'foreverP.catch (err)' to testLog
+      // We receive the rejection of afterForeverP, pushing 'afterForeverP.catch (err)' to testLog
       // run-queue is:
       // [self.notify(foo4P), dude.notify(answerP), self.notify(doneP)]
 
@@ -130,8 +117,6 @@ export function buildRootObject(vatPowers) {
 
       // We finally hear about doneP resolving, allowing the bootstrap to
       // proceed to the end of the test. We push the 'done' message to testLog
-      // CHIP TODO PHASE1: (or defer to phase1.5): uncomment, wire up
-      //                   queueToExport(vatAdminVat) to make it fire 'done'
       await doneP;
       testLog('done');
 

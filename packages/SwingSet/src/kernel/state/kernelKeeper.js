@@ -213,7 +213,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function setInitialized() {
-    storage.set('initialized', true);
+    storage.set('initialized', 'true');
   }
 
   function getCrankNumber() {
@@ -430,6 +430,20 @@ export default function makeKernelKeeper(storage) {
     storage.set(`${kernelSlot}.state`, 'rejected');
     storage.set(`${kernelSlot}.data.body`, capdata.body);
     storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
+  }
+
+  function findPromisesFromDeadVat(vatID) {
+    const prefixKey = `${vatID}.c.p`;
+    const endKey = `${vatID}.c.q`;
+    const result = [];
+    for (const k of storage.getKeys(prefixKey, endKey)) {
+      const kpid = storage.get(k);
+      const p = getKernelPromise(kpid);
+      if (p.state === 'unresolved' && p.decider === vatID) {
+        result.push(kpid);
+      }
+    }
+    return result;
   }
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
@@ -793,6 +807,7 @@ export default function makeKernelKeeper(storage) {
     fulfillKernelPromiseToPresence,
     fulfillKernelPromiseToData,
     rejectKernelPromise,
+    findPromisesFromDeadVat,
     addMessageToPromiseQueue,
     addSubscriberToPromise,
     setDecider,

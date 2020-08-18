@@ -180,11 +180,11 @@ export function makeVatKeeper(
   }
 
   function markAsDead() {
-    storage.set(`${vatID}.dead`, true);
+    storage.set(`${vatID}.dead`, 'true');
   }
 
   function isDead() {
-    return storage.get(`${vatID}.dead`);
+    return !!storage.get(`${vatID}.dead`);
   }
 
   /**
