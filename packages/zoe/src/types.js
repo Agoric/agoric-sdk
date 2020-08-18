@@ -205,6 +205,7 @@
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => Terms } getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
+ * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
  * @property {() => ZcfSeatKit} makeEmptySeatKit
