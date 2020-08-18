@@ -104,7 +104,7 @@
  * represents the issuer they intended, since the same brand can be reused by
  * a misbehaving issuer.
  *
- * @property {(allegedIssuer: any) => boolean} isMyIssuer Should be used with
+ * @property {(allegedIssuer: any) => Promise<boolean>} isMyIssuer Should be used with
  * `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  */
