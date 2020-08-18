@@ -332,10 +332,12 @@ export function buildRootObject() {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(err => {
+          console.error(err);
           if (!zcfSeat.hasExited()) {
-            zcfSeat.exit();
+            throw zcfSeat.kickOut(err.message);
+          } else {
+            throw err;
           }
-          throw err;
         });
         const exitObj = makeExitObj(
           seatData.proposal,

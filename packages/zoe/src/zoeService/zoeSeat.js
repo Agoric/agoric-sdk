@@ -42,6 +42,18 @@ export const makeZoeSeatAdminKit = (
 
   let currentAllocation = initialAllocation;
 
+  const doExit = zoeSeatAdmin => {
+    instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
+
+    /** @type {PaymentPKeywordRecord} */
+    const payout = objectMap(currentAllocation, ([keyword, payoutAmount]) => {
+      const purse = brandToPurse.get(payoutAmount.brand);
+      return [keyword, E(purse).withdraw(payoutAmount)];
+    });
+    harden(payout);
+    payoutPromiseKit.resolve(payout);
+  };
+
   /** @type {ZoeSeatAdmin} */
   const zoeSeatAdmin = harden({
     replaceAllocation: replacementAllocation => {
@@ -61,15 +73,16 @@ export const makeZoeSeatAdminKit = (
         `Cannot exit seat. Seat has already exited`,
       );
       updater.finish(undefined);
-      instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
-
-      /** @type {PaymentPKeywordRecord} */
-      const payout = objectMap(currentAllocation, ([keyword, payoutAmount]) => {
-        const purse = brandToPurse.get(payoutAmount.brand);
-        return [keyword, E(purse).withdraw(payoutAmount)];
-      });
-      harden(payout);
-      payoutPromiseKit.resolve(payout);
+      doExit(zoeSeatAdmin);
+    },
+    kickOut: msg => {
+      assert(
+        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+        `Cannot kick out of seat. Seat has already exited`,
+      );
+      updater.fail(msg);
+      doExit(zoeSeatAdmin);
+      assert.fail(msg);
     },
     getCurrentAllocation: () => currentAllocation,
   });
