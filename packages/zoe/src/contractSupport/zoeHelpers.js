@@ -190,6 +190,7 @@ export const trade = (zcf, keepLeft, tryRight) => {
  *
  * If the swap fails, no assets are transferred, and the 'try' offer is rejected.
  *
+ * @param {ContractFacet} zcf
  * @param {ZCFSeat} keepSeat
  * @param {ZCFSeat} trySeat
  * @param {String} [keepHandleInactiveMsg]
@@ -229,7 +230,7 @@ export const swap = (
  */
 
 /**
- * Make an offerHook that wraps the provided `offerHook`, to first
+ * Make an offerHandler that wraps the provided `offerHandler`, to first
  * check the submitted offer against an `expected` record that says
  * what shape of proposal is acceptable.
  *
