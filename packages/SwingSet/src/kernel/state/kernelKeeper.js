@@ -432,11 +432,14 @@ export default function makeKernelKeeper(storage) {
     storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
   }
 
-  function findPromisesFromDeadVat(vatID) {
+  function findPromisesDecidedByVat(vatID) {
     const prefixKey = `${vatID}.c.p`;
     const endKey = `${vatID}.c.q`;
     const result = [];
     for (const k of storage.getKeys(prefixKey, endKey)) {
+      // The store semantics ensure this iteration is lexicographic.  Any
+      // changes to the creation of the list of promises need to preserve this
+      // in order to preserve determinism.
       const kpid = storage.get(k);
       const p = getKernelPromise(kpid);
       if (p.state === 'unresolved' && p.decider === vatID) {
@@ -807,7 +810,7 @@ export default function makeKernelKeeper(storage) {
     fulfillKernelPromiseToPresence,
     fulfillKernelPromiseToData,
     rejectKernelPromise,
-    findPromisesFromDeadVat,
+    findPromisesDecidedByVat,
     addMessageToPromiseQueue,
     addSubscriberToPromise,
     setDecider,
