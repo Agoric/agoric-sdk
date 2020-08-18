@@ -180,11 +180,7 @@ export function makeVatKeeper(
   }
 
   function markAsDead() {
-    const deathKey = `${vatID}.dead`;
-    if (storage.has(deathKey)) {
-      throw Error(`vat ${vatID} is already dead`);
-    }
-    storage.set(deathKey, true);
+    storage.set(`${vatID}.dead`, true);
   }
 
   function isDead() {

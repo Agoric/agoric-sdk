@@ -341,6 +341,27 @@ export default function makeKernelKeeper(storage) {
     return harden(p);
   }
 
+  function getResolveablePromise(kpid, expectedDecider) {
+    insistKernelType('promise', kpid);
+    if (expectedDecider) {
+      insistVatID(expectedDecider);
+    }
+    const p = getKernelPromise(kpid);
+    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    if (expectedDecider) {
+      assert(
+        p.decider === expectedDecider,
+        details`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
+      );
+    } else {
+      assert(
+        !p.decider,
+        details`${kpid} is decided by ${p.decider}, not the kernel`,
+      );
+    }
+    return p;
+  }
+
   function hasKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
     return storage.has(`${kernelSlot}.state`);
@@ -767,6 +788,7 @@ export default function makeKernelKeeper(storage) {
     addKernelPromise,
     addKernelPromiseForVat,
     getKernelPromise,
+    getResolveablePromise,
     hasKernelPromise,
     fulfillKernelPromiseToPresence,
     fulfillKernelPromiseToData,

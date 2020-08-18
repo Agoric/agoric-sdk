@@ -116,17 +116,15 @@ export function makeDeliver(tools, dispatch) {
   }
 
   async function replayTranscript() {
-    if (!vatKeeper.isDead()) {
-      transcriptManager.startReplay();
-      for (const t of vatKeeper.getTranscript()) {
-        transcriptManager.checkReplayError();
-        transcriptManager.startReplayDelivery(t.syscalls);
-        // eslint-disable-next-line no-await-in-loop
-        await doProcess(t.d, null);
-      }
+    transcriptManager.startReplay();
+    for (const t of vatKeeper.getTranscript()) {
       transcriptManager.checkReplayError();
-      transcriptManager.finishReplay();
+      transcriptManager.startReplayDelivery(t.syscalls);
+      // eslint-disable-next-line no-await-in-loop
+      await doProcess(t.d, null);
     }
+    transcriptManager.checkReplayError();
+    transcriptManager.finishReplay();
   }
 
   return harden({ deliver, replayTranscript });

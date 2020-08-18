@@ -56,7 +56,7 @@ export function makeLocalVatManagerFactory(tools) {
         dispatch,
       );
 
-      function shutdown() {
+      async function shutdown() {
         // local workers don't need anything special to shut down between turns
       }
 
@@ -65,6 +65,7 @@ export function makeLocalVatManagerFactory(tools) {
         setVatSyscallHandler,
         deliver,
         shutdown,
+        notifyTermination,
       });
       return manager;
     }

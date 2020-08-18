@@ -57,8 +57,7 @@ export function buildRootObject(vatPowers) {
         err => testLog(`foo4P.catch ${err}`),
       );
       // then we try to kill the vat again, which should be idempotent
-      // CHIP TODO PHASE1: uncomment, make controlFacet.terminate idempotent
-      // E(dude.adminNode).terminate();
+      E(dude.adminNode).terminate();
 
       // the run-queue should now look like:
       // [dude.elsewhere(3), adminNode.terminate, dude.foo(4), adminNode.terminate]
@@ -91,22 +90,18 @@ export function buildRootObject(vatPowers) {
 
       // now the duplicate terminate() comes up, and vatAdminVat should ignore it
       // (PHASE 1) run-queue is:
-      // [self.query(3),
-      //  vatAdmin.fireDone, self.notify(foo4P)]
+      // [self.query(3), vatAdmin.fireDone, self.notify(foo4P)]
       // (PHASE 2) run-queue is:
-      // [self.query(3), vatAdmin.fireDone,
-      //  self.notify(foreverP), self.notify(afterForeverP),
-      //  self.notify(foo4P)]
+      // [self.query(3), vatAdmin.fireDone, self.notify(foreverP),
+      //  self.notify(afterForeverP), self.notify(foo4P)]
 
       // now the self.query(3) gets delivered, which pushes 'GOT QUERY 3' onto testLog, and
       // resolves the result promise. The dead vat is the only subscriber, so the kernel
       // pushes a notify event to vat-dude for it (which will never be delivered)
       // (PHASE 1) run-queue is:
-      // [vatAdmin.fireDone,
-      //  self.notify(foo4P), dude.notify(answerP)]
+      // [vatAdmin.fireDone, self.notify(foo4P), dude.notify(answerP)]
       // (PHASE 2) run-queue is:
-      // [vatAdmin.fireDone,
-      //  self.notify(foreverP), self.notify(afterForeverP),
+      // [vatAdmin.fireDone, self.notify(foreverP), self.notify(afterForeverP),
       //  self.notify(foo4P), dude.notify(answerP)]
 
       // now vatAdmin gets fireDone, which resolves the 'done' promise we've been awaiting for,
@@ -114,8 +109,8 @@ export function buildRootObject(vatPowers) {
       // (PHASE 1) run-queue is:
       // [self.notify(foo4P), dude.notify(answerP), self.notify(doneP)]
       // (PHASE 2) run-queue is:
-      // [self.notify(foreverP), self.notify(afterForeverP),
-      //  self.notify(foo4P), dude.notify(answerP), self.notify(doneP)]
+      // [self.notify(foreverP), self.notify(afterForeverP), self.notify(foo4P),
+      //  dude.notify(answerP), self.notify(doneP)]
 
       // PHASE 2: we receive the rejection of foreverP, pushing
       // 'foreverP.catch (err)' to testLog
@@ -137,9 +132,8 @@ export function buildRootObject(vatPowers) {
       // proceed to the end of the test. We push the 'done' message to testLog
       // CHIP TODO PHASE1: (or defer to phase1.5): uncomment, wire up
       //                   queueToExport(vatAdminVat) to make it fire 'done'
-      // const doneMessage = await doneP;
-      // testLog(doneMessage);
-      doneP.then(() => 0); // hush eslint, delete after uncommenting await
+      await doneP;
+      testLog('done');
 
       return 'bootstrap done';
     },

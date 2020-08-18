@@ -1,5 +1,5 @@
 /* global harden */
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistMessage } from '../message';
 import { insistCapData } from '../capdata';
@@ -70,25 +70,13 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
-  function getResolveablePromise(kpid, resolvingVatID) {
-    insistKernelType('promise', kpid);
-    insistVatID(resolvingVatID);
-    const p = kernelKeeper.getKernelPromise(kpid);
-    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
-    assert(
-      p.decider === resolvingVatID,
-      details`${kpid} is decided by ${p.decider}, not ${resolvingVatID}`,
-    );
-    return p;
-  }
-
   function fulfillToPresence(vatID, kpid, targetSlot) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     insistKernelType('object', targetSlot);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallFulfillToPresence');
-    const p = getResolveablePromise(kpid, vatID);
+    const p = kernelKeeper.getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
     kernelKeeper.fulfillKernelPromiseToPresence(kpid, targetSlot);
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
@@ -114,7 +102,7 @@ export function makeKernelSyscallHandler(tools) {
     insistCapData(data);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallFulfillToData');
-    const p = getResolveablePromise(kpid, vatID);
+    const p = kernelKeeper.getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
     let idx = 0;
     for (const dataSlot of data.slots) {

@@ -36,8 +36,7 @@ test('terminate', async t => {
     // 'foreverP.catch (err??)',
     // 'afterForeverP.catch (err??)',
     'foo4P.catch vat is dead',
-    // CHIP TODO phase 1.5, when done() is wired up
-    // '(vat termination message????)',
+    'done',
   ]);
   t.end();
 });
