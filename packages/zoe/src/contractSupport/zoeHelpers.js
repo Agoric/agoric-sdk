@@ -16,7 +16,7 @@ const getKeysSorted = obj =>
 
 /**
  * Given toGains (an AmountKeywordRecord), and allocations (a pair,
- * 'to' and 'from', of AmountKeywordRecords), all the entries in
+ * 'to' and 'from', of Allocations), all the entries in
  * toGains will be added to 'to'. If fromLosses is defined, all the
  * entries in fromLosses are subtracted from 'from'. (If fromLosses
  * is not defined, toGains is subtracted from 'from'.)
@@ -67,10 +67,7 @@ const calcNewAllocations = (
     ],
   );
 
-  const allToKeywords = [
-    ...Object.keys(toGains),
-    ...Object.keys(allocations.to),
-  ];
+  const allToKeywords = Object.keys({ ...allocations.to, ...toGains });
 
   const newToAllocation = Object.fromEntries(
     allToKeywords.map(keyword => [
