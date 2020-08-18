@@ -298,8 +298,8 @@ export async function makeWallet({
         return [
           petname,
           {
-            issuerBoardId: issuerToBoardId.get(issuerRecord.issuer),
             ...issuerRecord,
+            issuerBoardId: issuerToBoardId.get(issuerRecord.issuer),
           },
         ];
       }),
@@ -438,9 +438,11 @@ export async function makeWallet({
 
   // === API
 
-  const addIssuer = (petnameForBrand, issuer, makePurse = false) => {
-    const issuerSavedP = brandTable.initIssuer(issuer);
-    const addBrandPetname = ({ brand }) => {
+  const addIssuer = async (petnameForBrand, issuerP, makePurse = false) => {
+    const { brand, issuer } = await brandTable.initIssuer(issuerP);
+    const issuerBoardId = await E(board).getId(issuer);
+    issuerToBoardId.init(issuer, issuerBoardId);
+    const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
       petnameForBrand = brandMapping.suggestPetname(petnameForBrand, brand);
@@ -454,13 +456,16 @@ export async function makeWallet({
         _ => `issuer ${q(petnameForBrand)} successfully added to wallet`,
       );
     };
-    return issuerSavedP.then(addBrandPetname).then(updateAllIssuersState);
+    return addBrandPetname().then(updateAllIssuersState);
   };
 
   const publishIssuer = async brand => {
-    const brandRecord = brandTable.getByBrand(brand);
-    const issuerBoardId = await E(board).getId(brandRecord.issuer);
-    issuerToBoardId.set(brandRecord.issuer, issuerBoardId);
+    const { issuer } = brandTable.getByBrand(brand);
+    if (issuerToBoardId.has(issuer)) {
+      return issuerToBoardId.get(issuer);
+    }
+    const issuerBoardId = await E(board).getId(issuer);
+    issuerToBoardId.init(issuer, issuerBoardId);
     updateAllIssuersState();
     return issuerBoardId;
   };
