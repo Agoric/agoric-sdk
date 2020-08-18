@@ -376,7 +376,7 @@
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(msg?: string) => void} kickOut
+ * @property {(msg?: string) => never} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal

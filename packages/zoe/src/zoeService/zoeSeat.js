@@ -82,6 +82,7 @@ export const makeZoeSeatAdminKit = (
       );
       updater.fail(msg);
       doExit(zoeSeatAdmin);
+      assert.fail(msg);
     },
     getCurrentAllocation: () => currentAllocation,
   });
