@@ -40,7 +40,6 @@
       "function-paren-newline": "off",
       "arrow-parens": "off",
       "strict": "off",
-      "no-lonely-if": "off",
       "prefer-destructuring": "off",
       "no-else-return": "off",
       "no-console": "off",
@@ -60,14 +59,15 @@
       "no-unused-expressions": "off",
       "no-loop-func": "off",
       "no-inner-declarations": "off",
+      "import/prefer-default-export": "off",
+      "no-lonely-if": "off",
       "yoda": [
         "error",
         "never",
         {
           "exceptRange": true
         }
-      ],
-      "import/prefer-default-export": "off"
+      ]
     },
     "globals": {
       "harden": "readonly",

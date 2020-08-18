@@ -118,8 +118,8 @@ jobs:
       run: cd packages/bundle-source && yarn test
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
-    - name: yarn test (dapp-svelte-wallet)
-      run: cd packages/dapp-svelte-wallet && yarn test
+    - name: yarn test (dapp-svelte-wallet/api)
+      run: cd packages/dapp-svelte-wallet/api && yarn test
     - name: yarn test (deployment)
       run: cd packages/deployment && yarn test
     - name: yarn test (ERTP)

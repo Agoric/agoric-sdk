@@ -59,6 +59,7 @@
  * @typedef {Object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {() => void} exit
+ * @property {(msg: String) => never} kickOut
  * @property {() => Allocation} getCurrentAllocation
  */
 

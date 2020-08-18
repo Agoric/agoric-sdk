@@ -52,7 +52,8 @@ export const makeZcfSeatAdminKit = (
       msg = 'Kicked out of seat. Please check the log for more information.',
     ) => {
       assertExitedFalse();
-      zcfSeat.exit();
+      zcfSeatAdmin.updateHasExited();
+      E(zoeSeatAdmin).kickOut(msg);
       assert.fail(msg);
     },
     getNotifier: () => {
