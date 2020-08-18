@@ -49,6 +49,7 @@ const enableKernelPromiseGC = true;
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.t.$NN = JSON(transcript entry)
 // v$NN.t.nextID = $NN
+// v$NN.dead = missing | true
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -338,6 +339,27 @@ export default function makeKernelKeeper(storage) {
         throw new Error(`unknown state for ${kernelSlot}: ${p.state}`);
     }
     return harden(p);
+  }
+
+  function getResolveablePromise(kpid, expectedDecider) {
+    insistKernelType('promise', kpid);
+    if (expectedDecider) {
+      insistVatID(expectedDecider);
+    }
+    const p = getKernelPromise(kpid);
+    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    if (expectedDecider) {
+      assert(
+        p.decider === expectedDecider,
+        details`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
+      );
+    } else {
+      assert(
+        !p.decider,
+        details`${kpid} is decided by ${p.decider}, not the kernel`,
+      );
+    }
+    return p;
   }
 
   function hasKernelPromise(kernelSlot) {
@@ -766,6 +788,7 @@ export default function makeKernelKeeper(storage) {
     addKernelPromise,
     addKernelPromiseForVat,
     getKernelPromise,
+    getResolveablePromise,
     hasKernelPromise,
     fulfillKernelPromiseToPresence,
     fulfillKernelPromiseToData,
