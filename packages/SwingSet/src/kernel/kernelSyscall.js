@@ -13,7 +13,7 @@ export function makeKernelSyscallHandler(tools) {
     notePendingMessageResolution,
     notify,
     notifySubscribersAndQueue,
-    deliverToError,
+    resolveToError,
   } = tools;
 
   const OKNULL = harden(['ok', null]);
@@ -123,7 +123,7 @@ export function makeKernelSyscallHandler(tools) {
     insistCapData(data);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallReject');
-    deliverToError(kpid, data, vatID);
+    resolveToError(kpid, data, vatID);
     return OKNULL;
   }
 

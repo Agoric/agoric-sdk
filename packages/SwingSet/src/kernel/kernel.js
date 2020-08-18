@@ -181,7 +181,7 @@ export default function buildKernel(kernelEndowments) {
     // eslint-disable-next-line no-use-before-define
     notifySubscribersAndQueue,
     // eslint-disable-next-line no-use-before-define
-    deliverToError,
+    resolveToError,
   });
 
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
@@ -246,7 +246,7 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  function deliverToError(kpid, errorData, expectedDecider) {
+  function resolveToError(kpid, errorData, expectedDecider) {
     insistCapData(errorData);
     const p = kernelKeeper.getResolveablePromise(kpid, expectedDecider);
     const { subscribers, queue } = p;
@@ -270,7 +270,7 @@ export default function buildKernel(kernelEndowments) {
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
     if (vat.dead) {
-      deliverToError(msg.result, makeError('vat is dead'));
+      resolveToError(msg.result, makeError('vat is dead'));
     } else {
       const kd = harden(['message', target, msg]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
@@ -307,13 +307,13 @@ export default function buildKernel(kernelEndowments) {
       } else if (kp.state === 'fulfilledToData') {
         if (msg.result) {
           const s = `data is not callable, has no method ${msg.method}`;
-          await deliverToError(msg.result, makeError(s));
+          await resolveToError(msg.result, makeError(s));
         }
         // todo: maybe log error?
       } else if (kp.state === 'rejected') {
         // TODO would it be simpler to redirect msg.kpid to kp?
         if (msg.result) {
-          await deliverToError(msg.result, kp.data);
+          await resolveToError(msg.result, kp.data);
         }
       } else if (kp.state === 'unresolved') {
         if (!kp.decider) {
@@ -808,6 +808,10 @@ export default function buildKernel(kernelEndowments) {
       const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
       if (!vatKeeper.isDead()) {
         vatKeeper.markAsDead();
+        const err = makeError('vat terminated');
+        for (const kpid of kernelKeeper.findPromisesDecidedByVat(vatID)) {
+          resolveToError(kpid, err, vatID);
+        }
         removeVatManager(vatID).then(
           () => kdebug(`terminated vat ${vatID}`),
           e => console.error(`problem terminating vat ${vatID}`, e),
