@@ -10,7 +10,7 @@ export function makeLocalVatManagerFactory(tools) {
   const {
     allVatPowers,
     kernelKeeper,
-    makeVatEndowments,
+    vatEndowments,
     meterManager,
     transformMetering,
     waitUntilQuiescent,
@@ -86,17 +86,19 @@ export function makeLocalVatManagerFactory(tools) {
     const vatPowers = harden({ ...baseVP, vatParameters, testLog });
     const dispatch = setup(syscall, state, helpers, vatPowers);
     const meterRecord = null;
-    return finish(dispatch, meterRecord);
+    const manager = finish(dispatch, meterRecord);
+    return manager;
   }
 
   async function createFromBundle(vatID, bundle, managerOptions) {
     const {
       metered = false,
-      notifyTermination,
       enableSetup = false,
       enableInternalMetering = false,
       vatParameters = {},
+      vatConsole,
     } = managerOptions;
+    assert(vatConsole, 'vats need managerOptions.vatConsole');
 
     let meterRecord = null;
     if (metered) {
@@ -121,12 +123,12 @@ export function makeLocalVatManagerFactory(tools) {
 
     const vatNS = await importBundle(bundle, {
       filePrefix: vatID,
-      endowments: makeVatEndowments(vatID),
+      endowments: harden({ ...vatEndowments, console: vatConsole }),
       inescapableTransforms,
       inescapableGlobalLexicals,
     });
 
-    const { syscall, finish } = prepare(vatID, { notifyTermination });
+    const { syscall, finish } = prepare(vatID, managerOptions);
     const imVP = enableInternalMetering ? internalMeteringVP : {};
     const vatPowers = harden({
       ...baseVP,
@@ -155,7 +157,9 @@ export function makeLocalVatManagerFactory(tools) {
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       dispatch = setup(syscall, state, helpers, vatPowers);
     }
-    return finish(dispatch, meterRecord);
+
+    const manager = finish(dispatch, meterRecord);
+    return manager;
   }
 
   const localVatManagerFactory = harden({

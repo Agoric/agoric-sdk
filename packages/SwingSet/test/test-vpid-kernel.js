@@ -3,6 +3,7 @@
 
 import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
+import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -20,11 +21,21 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
+}
+
 function makeEndowments() {
   return {
     waitUntilQuiescent,
     hostStorage: initSwingStore().storage,
     runEndOfCrank: () => {},
+    makeConsole,
   };
 }
 

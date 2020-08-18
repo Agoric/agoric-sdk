@@ -287,14 +287,12 @@ export async function buildVatController(
   // the same is true for the tildot transform
   const transformTildot = harden(makeTransform(babelParser, babelGenerate));
 
-  function makeVatEndowments(consoleTag) {
-    return harden({
-      console: makeConsole(`${debugPrefix}SwingSet:${consoleTag}`),
-      // re2 is a RegExp work-a-like that disables backtracking expressions for
-      // safer memory consumption
-      RegExp: re2,
-    });
-  }
+  // all vats get these in their global scope, plus a vat-specific 'console'
+  const vatEndowments = harden({
+    // re2 is a RegExp work-a-like that disables backtracking expressions for
+    // safer memory consumption
+    RegExp: re2,
+  });
 
   const hostStorage = runtimeOptions.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
@@ -320,15 +318,23 @@ export async function buildVatController(
     return new Worker(supercode);
   }
 
+  function writeSlogObject(_obj) {
+    // TODO sqlite
+    // console.log(`--slog ${JSON.stringify(obj)}`);
+  }
+
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
-    makeVatEndowments,
+    debugPrefix,
+    vatEndowments,
+    makeConsole,
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
     makeNodeWorker,
     startSubprocessWorker,
+    writeSlogObject,
   };
 
   const kernel = buildKernel(kernelEndowments);

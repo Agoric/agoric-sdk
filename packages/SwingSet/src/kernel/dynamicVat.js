@@ -12,6 +12,8 @@ export function makeDynamicVatCreator(stuff) {
     allocateUnusedVatID,
     vatNameToID,
     vatManagerFactory,
+    kernelSlog,
+    makeVatConsole,
     addVatManager,
     addExport,
     queueToExport,
@@ -64,6 +66,11 @@ export function makeDynamicVatCreator(stuff) {
     if (!vatSourceBundle) {
       throw Error(`Bundle ${source.bundleName} not found`);
     }
+    // TODO: maybe hash the bundle object somehow for the description
+    const description = source.bundle
+      ? '(source bundle)'
+      : `from: ${source.bundleName}`;
+
     assertKnownOptions(dynamicOptions, ['metered', 'vatParameters']);
     const { metered = true, vatParameters = {} } = dynamicOptions;
     let terminated = false;
@@ -102,12 +109,14 @@ export function makeDynamicVatCreator(stuff) {
         );
       }
 
+      kernelSlog.addVat(vatID, true, description);
       const managerOptions = {
         bundle: vatSourceBundle,
         metered,
         enableSetup: false,
         enableInternalMetering: false,
         notifyTermination: metered ? notifyTermination : undefined,
+        vatConsole: makeVatConsole(vatID),
         vatParameters,
       };
       const manager = await vatManagerFactory(vatID, managerOptions);

@@ -148,7 +148,7 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   const kernelSyscallHandler = harden({
-    send,
+    send, // TODO remove these individual ones
     invoke,
     subscribe,
     fulfillToPresence,
