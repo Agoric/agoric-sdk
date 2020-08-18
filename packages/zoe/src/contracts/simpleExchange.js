@@ -63,7 +63,7 @@ const start = zcf => {
   }
 
   // If there's an existing offer that this offer is a match for, make the trade
-  // and return the handle for the matched offer. If not, return undefined, so
+  // and return the seat for the matched offer. If not, return undefined, so
   // the caller can know to add the new offer to the book.
   function swapIfCanTrade(offers, seat) {
     for (const offer of offers) {
@@ -91,7 +91,7 @@ const start = zcf => {
       // Save the order in the book
       coOffers.push(seat);
     }
-
+    bookOrdersChanged();
     return counterOffers;
   }
 
@@ -102,7 +102,6 @@ const start = zcf => {
 
   const sell = seat => {
     buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
-    bookOrdersChanged();
     return 'Trade Successful';
   };
 
@@ -115,7 +114,6 @@ const start = zcf => {
 
   const buy = seat => {
     sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
-    bookOrdersChanged();
     return 'Trade Successful';
   };
 
