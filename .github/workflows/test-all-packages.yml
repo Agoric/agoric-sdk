@@ -138,8 +138,6 @@ jobs:
       run: cd packages/marshal && yarn test
     - name: yarn test (notifier)
       run: cd packages/notifier && yarn test
-    - name: yarn test (produce-promise)
-      run: cd packages/produce-promise && yarn test
     - name: yarn test (promise-kit)
       run: cd packages/promise-kit && yarn test
     - name: yarn test (registrar)
