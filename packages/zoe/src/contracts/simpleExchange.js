@@ -6,7 +6,7 @@ import '../../exported';
 import {
   swap,
   satisfies,
-  checkIfProposal,
+  assertProposalShape,
   assertIssuerKeywords,
 } from '../contractSupport/zoeHelpers';
 
@@ -63,7 +63,7 @@ const start = zcf => {
   }
 
   // If there's an existing offer that this offer is a match for, make the trade
-  // and return the handle for the matched offer. If not, return undefined, so
+  // and return the seat for the matched offer. If not, return undefined, so
   // the caller can know to add the new offer to the book.
   function swapIfCanTrade(offers, seat) {
     for (const offer of offers) {
@@ -91,33 +91,48 @@ const start = zcf => {
       // Save the order in the book
       coOffers.push(seat);
     }
-
+    bookOrdersChanged();
     return counterOffers;
   }
 
+  const sellAssetForPrice = harden({
+    give: { Asset: null },
+    want: { Price: null },
+  });
+
+  const sell = seat => {
+    buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
+    return 'Trade Successful';
+  };
+
+  const sellHandler = assertProposalShape(sell, sellAssetForPrice);
+
+  const buyAssetForPrice = harden({
+    give: { Price: null },
+    want: { Asset: null },
+  });
+
+  const buy = seat => {
+    sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
+    return 'Trade Successful';
+  };
+
+  const buyHandler = assertProposalShape(buy, buyAssetForPrice);
+
   /** @type {OfferHandler} */
   const exchangeOfferHandler = seat => {
-    const buyAssetForPrice = harden({
-      give: { Price: null },
-      want: { Asset: null },
-    });
-    const sellAssetForPrice = harden({
-      give: { Asset: null },
-      want: { Price: null },
-    });
-    if (checkIfProposal(seat, sellAssetForPrice)) {
-      buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
-      /* eslint-disable no-else-return */
-    } else if (checkIfProposal(seat, buyAssetForPrice)) {
-      sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
-    } else {
-      // Eject because the offer must be invalid
-      throw seat.kickOut(
-        `The proposal did not match either a buy or sell order.`,
-      );
+    // Buy Order
+    if (seat.getProposal().want.Asset) {
+      return buyHandler(seat);
     }
-    bookOrdersChanged();
-    return 'Trade Successful';
+    // Sell Order
+    if (seat.getProposal().give.Asset) {
+      return sellHandler(seat);
+    }
+    // Eject because the offer must be invalid
+    throw seat.kickOut(
+      `The proposal did not match either a buy or sell order.`,
+    );
   };
 
   const makeExchangeInvitation = () =>

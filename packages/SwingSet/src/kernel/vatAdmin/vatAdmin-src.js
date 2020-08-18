@@ -18,7 +18,7 @@ export function buildRootDeviceNode({ endowments }) {
   const {
     create: kernelVatCreationFn,
     stats: kernelVatStatsFn,
-    // terminate: kernelTerminateFn,
+    terminate: kernelTerminateVatFn,
   } = endowments;
 
   // The Root Device Node.
@@ -34,8 +34,8 @@ export function buildRootDeviceNode({ endowments }) {
       const vatID = kernelVatCreationFn({ bundleName }, options);
       return vatID;
     },
-    terminate(_vatID) {
-      // TODO(hibbert)
+    terminate(vatID) {
+      kernelTerminateVatFn(vatID);
     },
     // Call the registered kernel function to request vat stats. Clean up the
     // outgoing and incoming arguments.

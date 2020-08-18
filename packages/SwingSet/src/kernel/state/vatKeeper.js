@@ -179,6 +179,14 @@ export function makeVatKeeper(
     }
   }
 
+  function markAsDead() {
+    storage.set(`${vatID}.dead`, true);
+  }
+
+  function isDead() {
+    return storage.get(`${vatID}.dead`);
+  }
+
   /**
    * Generator function to return the vat's transcript, one entry at a time.
    */
@@ -244,6 +252,8 @@ export function makeVatKeeper(
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
     deleteCListEntry,
+    markAsDead,
+    isDead,
     getTranscript,
     addToTranscript,
     vatStats,

@@ -14,15 +14,6 @@ export const defaultAcceptanceMsg = `The offer has been accepted. Once the contr
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 
-// Compare actual keys to expected keys. If expectedKeys is
-// undefined, return true trivially.
-const checkKeys = (actual, expected) => {
-  if (expected === undefined) {
-    return true;
-  }
-  return sameStructure(getKeysSorted(actual), getKeysSorted(expected));
-};
-
 /**
  * Given toGains (an AmountKeywordRecord), and allocations (a pair,
  * 'to' and 'from', of AmountKeywordRecords), all the entries in
@@ -102,25 +93,6 @@ export const assertIssuerKeywords = (zcf, expected) => {
   assert(
     sameStructure(actual, harden(expected)),
     details`keywords: ${actual} were not as expected: ${expected}`,
-  );
-};
-
-/**
- * Check if the keywords match expected. Returns a boolean and does
- * not throw.
- * @param {ZCFSeat} seat
- * @param {ExpectedRecord} expected
- * @returns {boolean}
- */
-export const checkIfProposal = (seat, expected) => {
-  const actual = seat.getProposal();
-  return (
-    // Check that the "give" keys match expected keys.
-    checkKeys(actual.give, expected.give) &&
-    // Check that the "want" keys match expected keys.
-    checkKeys(actual.want, expected.want) &&
-    // Check that the "exit" key (i.e. "onDemand") matches the expected key.
-    checkKeys(actual.exit, expected.exit)
   );
 };
 

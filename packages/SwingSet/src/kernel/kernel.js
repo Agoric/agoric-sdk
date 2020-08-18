@@ -31,6 +31,13 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
+function makeError(s) {
+  // TODO: create a @qclass=error, once we define those or maybe replicate
+  // whatever happens with {}.foo() or 3.foo() etc: "TypeError: {}.foo is not a
+  // function"
+  return harden({ body: JSON.stringify(s), slots: [] });
+}
+
 export default function buildKernel(kernelEndowments) {
   const {
     waitUntilQuiescent,
@@ -76,6 +83,12 @@ export default function buildKernel(kernelEndowments) {
 
   // track results of externally-injected messages (queueToExport, bootstrap)
   const pendingMessageResults = new Map(); // kpid -> messageResult
+
+  function notePendingMessageResolution(kpid, status, resolution) {
+    const result = pendingMessageResults.get(kpid);
+    pendingMessageResults.delete(kpid);
+    result.noteResolution(status, resolution);
+  }
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
@@ -162,9 +175,13 @@ export default function buildKernel(kernelEndowments) {
     ephemeral,
     pendingMessageResults,
     // eslint-disable-next-line no-use-before-define
+    notePendingMessageResolution,
+    // eslint-disable-next-line no-use-before-define
     notify,
     // eslint-disable-next-line no-use-before-define
     notifySubscribersAndQueue,
+    // eslint-disable-next-line no-use-before-define
+    deliverToError,
   });
 
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
@@ -203,31 +220,6 @@ export default function buildKernel(kernelEndowments) {
     return resultRead;
   }
 
-  async function deliverToVat(vatID, target, msg) {
-    insistMessage(msg);
-    const vat = ephemeral.vats.get(vatID);
-    assert(vat, details`unknown vatID ${vatID}`);
-    kernelKeeper.incStat('dispatches');
-    kernelKeeper.incStat('dispatchDeliver');
-    const kd = harden(['message', target, msg]);
-    const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
-    try {
-      await vat.manager.deliver(vd);
-    } catch (e) {
-      // log so we get a stack trace
-      console.error(`error in kernel.deliver:`, e);
-      throw e;
-    }
-  }
-
-  function getKernelResolveablePromise(kpid) {
-    insistKernelType('promise', kpid);
-    const p = kernelKeeper.getKernelPromise(kpid);
-    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
-    assert(!p.decider, details`${kpid} is decided by ${p.decider}, not kernel`);
-    return p;
-  }
-
   function notify(vatID, kpid) {
     const m = harden({ type: 'notify', vatID, kpid });
     kernelKeeper.incrementRefCount(kpid, `enq|notify`);
@@ -254,20 +246,48 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  function makeError(s) {
-    // TODO: create a @qclass=error, once we define those
-    // or maybe replicate whatever happens with {}.foo()
-    // or 3.foo() etc: "TypeError: {}.foo is not a function"
-    return harden({ body: JSON.stringify(s), slots: [] });
+  function deliverToError(kpid, errorData, expectedDecider) {
+    insistCapData(errorData);
+    const p = kernelKeeper.getResolveablePromise(kpid, expectedDecider);
+    const { subscribers, queue } = p;
+    let idx = 0;
+    for (const dataSlot of errorData.slots) {
+      kernelKeeper.incrementRefCount(dataSlot, `reject|s${idx}`);
+      idx += 1;
+    }
+    kernelKeeper.rejectKernelPromise(kpid, errorData);
+    // we don't notify the decider; they already know
+    notifySubscribersAndQueue(kpid, expectedDecider, subscribers, queue);
+    if (pendingMessageResults.has(kpid)) {
+      notePendingMessageResolution(kpid, 'rejected', errorData);
+    }
   }
 
-  function deliverToError(kpid, errorData) {
-    // todo: see if this can be merged with reject()
-    insistCapData(errorData);
-    const p = getKernelResolveablePromise(kpid);
-    const { subscribers, queue } = p;
-    kernelKeeper.rejectKernelPromise(kpid, errorData);
-    notifySubscribersAndQueue(kpid, undefined, subscribers, queue);
+  async function deliverToVat(vatID, target, msg) {
+    insistMessage(msg);
+    const vat = ephemeral.vats.get(vatID);
+    assert(vat, details`unknown vatID ${vatID}`);
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchDeliver');
+    if (vat.dead) {
+      deliverToError(msg.result, makeError('vat is dead'));
+    } else {
+      const kd = harden(['message', target, msg]);
+      const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
+      try {
+        await vat.manager.deliver(vd);
+        /* // TODO: eventually this will be as follows, once deliver can return a delivery status
+        const deliveryResult = await vat.manager.deliver(vd);
+        if (deliveryResult === death) {
+          vat.notifyTermination(deliveryResult.causeOfDeath);
+        }
+        */
+      } catch (e) {
+        // log so we get a stack trace
+        console.error(`error in kernel.deliver:`, e);
+        throw e;
+      }
+    }
   }
 
   async function deliverToTarget(target, msg) {
@@ -335,16 +355,26 @@ export default function buildKernel(kernelEndowments) {
     const vat = ephemeral.vats.get(vatID);
     assert(vat, details`unknown vatID ${vatID}`);
     kernelKeeper.incStat('dispatches');
-    const p = kernelKeeper.getKernelPromise(kpid);
-    kernelKeeper.incStat(statNameForNotify(p.state));
-    const kd = harden(['notify', kpid, p]);
-    const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
-    try {
-      await vat.manager.deliver(vd);
-    } catch (e) {
-      // log so we get a stack trace
-      console.error(`error in kernel.processNotify:`, e);
-      throw e;
+    if (vat.dead) {
+      kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
+    } else {
+      const p = kernelKeeper.getKernelPromise(kpid);
+      kernelKeeper.incStat(statNameForNotify(p.state));
+      const kd = harden(['notify', kpid, p]);
+      const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
+      try {
+        await vat.manager.deliver(vd);
+        /* // TODO: eventually this will be as follows, once deliver can return a delivery status
+        const deliveryResult = await vat.manager.deliver(vd);
+        if (deliveryResult === death) {
+          vat.notifyTermination(deliveryResult.causeOfDeath);
+        }
+        */
+      } catch (e) {
+        // log so we get a stack trace
+        console.error(`error in kernel.processNotify:`, e);
+        throw e;
+      }
     }
   }
 
@@ -585,7 +615,11 @@ export default function buildKernel(kernelEndowments) {
       manager.deliver && manager.setVatSyscallHandler,
       `manager lacks .deliver, isPromise=${manager instanceof Promise}`,
     );
-    const { enablePipelining = false } = managerOptions;
+
+    const {
+      enablePipelining = false,
+      notifyTermination = () => {},
+    } = managerOptions;
     // This should create the vatKeeper. Other users get it from the
     // kernelKeeper, so we don't need a reference ourselves.
     kernelKeeper.allocateVatKeeperIfNeeded(vatID);
@@ -596,6 +630,7 @@ export default function buildKernel(kernelEndowments) {
       harden({
         translators,
         manager,
+        notifyTermination,
         enablePipelining: Boolean(enablePipelining),
       }),
     );
@@ -607,6 +642,12 @@ export default function buildKernel(kernelEndowments) {
     // the VatManager+VatWorker will see the error case, but liveslots will
     // not
     function vatSyscallHandler(vatSyscallObject) {
+      if (ephemeral.vats.get(vatID).dead) {
+        // This is a safety check -- this case should never happen unless the
+        // vatManager is somehow confused.
+        console.error(`vatSyscallHandler invoked on dead vat ${vatID}`);
+        return harden(['error', 'vat is dead']);
+      }
       let ksc;
       try {
         // this can fail if the vat asks for something not on their clist,
@@ -644,6 +685,13 @@ export default function buildKernel(kernelEndowments) {
       return vres;
     }
     manager.setVatSyscallHandler(vatSyscallHandler);
+  }
+
+  function removeVatManager(vatID) {
+    const old = ephemeral.vats.get(vatID);
+    ephemeral.vats.set(vatID, harden({ dead: true }));
+    old.notifyTermination(null);
+    return old.manager.shutdown();
   }
 
   const knownBundles = new Map();
@@ -756,12 +804,23 @@ export default function buildKernel(kernelEndowments) {
       // now the vatManager is attached and ready for transcript replay
     }
 
+    function terminateVat(vatID) {
+      const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+      if (!vatKeeper.isDead()) {
+        vatKeeper.markAsDead();
+        removeVatManager(vatID).then(
+          () => kdebug(`terminated vat ${vatID}`),
+          e => console.error(`problem terminating vat ${vatID}`, e),
+        );
+      }
+    }
+
     if (vatAdminDeviceBundle) {
       // if we have a device bundle, then vats[vatAdmin] will be present too
       const endowments = {
         create: createVatDynamically,
         stats: collectVatStats,
-        /* TODO: terminate */
+        terminate: terminateVat,
       };
       genesisDevices.set('vatAdmin', {
         bundle: vatAdminDeviceBundle,
@@ -809,13 +868,17 @@ export default function buildKernel(kernelEndowments) {
       for (const vatID of ephemeral.vats.keys()) {
         console.debug(`Replaying transcript of vatID ${vatID}`);
         const vat = ephemeral.vats.get(vatID);
-        // eslint-disable-next-line no-await-in-loop
-        await vat.manager.replayTranscript();
-        console.debug(`finished replaying vatID ${vatID} transcript `);
-        const newLength = kernelKeeper.getRunQueueLength();
-        if (newLength !== oldLength) {
-          console.log(`SPURIOUS RUNQUEUE`, kernelKeeper.dump().runQueue);
-          throw Error(`replay ${vatID} added spurious run-queue entries`);
+        if (vat.dead) {
+          console.debug(`skipping reload of dead vat ${vatID}`);
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          await vat.manager.replayTranscript();
+          console.debug(`finished replaying vatID ${vatID} transcript `);
+          const newLength = kernelKeeper.getRunQueueLength();
+          if (newLength !== oldLength) {
+            console.log(`SPURIOUS RUNQUEUE`, kernelKeeper.dump().runQueue);
+            throw Error(`replay ${vatID} added spurious run-queue entries`);
+          }
         }
       }
       kernelKeeper.loadStats();
