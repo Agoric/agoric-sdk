@@ -39,7 +39,7 @@ function makeError(s) {
   return harden({ body: JSON.stringify(s), slots: [] });
 }
 
-export default function buildKernel(kernelEndowments, kernelOptions = {}) {
+export default function buildKernel(kernelEndowments) {
   const {
     waitUntilQuiescent,
     hostStorage,
@@ -53,13 +53,12 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     startSubprocessWorker,
     writeSlogObject,
   } = kernelEndowments;
-  const { disableSlog = false } = kernelOptions;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
 
-  const kernelSlog = disableSlog
-    ? makeDummySlogger(makeConsole)
-    : makeSlogger(writeSlogObject);
+  const kernelSlog = writeSlogObject
+    ? makeSlogger(writeSlogObject)
+    : makeDummySlogger(makeConsole);
 
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
 

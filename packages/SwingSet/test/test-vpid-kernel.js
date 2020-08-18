@@ -200,7 +200,7 @@ function inCList(kernel, vatID, kpid, vpid) {
 }
 
 async function doTest123(t, which, mode) {
-  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
+  const kernel = buildKernel(makeEndowments());
   // vatA is our primary actor
   const { log: logA, getSyscall: getSyscallA } = buildRawVat('vatA', kernel);
   // we use vatB when necessary to send messages to vatA
@@ -369,7 +369,7 @@ for (const caseNum of [1, 2, 3]) {
 }
 
 async function doTest4567(t, which, mode) {
-  const kernel = buildKernel(makeEndowments(), { disableSlog: true });
+  const kernel = buildKernel(makeEndowments());
   // vatA is our primary actor
   let onDispatchCallback;
   function odc(d) {
