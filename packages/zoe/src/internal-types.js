@@ -177,17 +177,6 @@
  */
 
 /**
- * @callback MakeStartInstanceFn
- * @param {VatAdminSvc} vatAdminSvc,
- * @param {GetPromiseForIssuerRecord} getPromiseForIssuerRecord,
- * @param {IssuerKit} invitationKit,
- * @param {HasInstallation} hasInstallation,
- * @param {ZoeService} zoeService,
- * @param {AddInstance} addInstance,
- * @returns StartInstance
- */
-
-/**
  * @callback MakeExitObj
  * @param {ProposalRecord} proposal
  * @param {ZoeSeatAdmin} zoeSeatAdmin
@@ -197,4 +186,14 @@
 /**
  * @typedef {Object} ExitObj
  * @property {() => void} exit
+ */
+
+/**
+ * @typedef {Object} IssuerTable
+ * @propert {(brand: Brand) => boolean} hasByBrand
+ * @property {(brand: Brand) => IssuerRecord} getByBrand
+ * @property {(issuer: Issuer) => boolean} hasByIssuer
+ * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
+ * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
+ * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
  */

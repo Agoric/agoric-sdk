@@ -18,7 +18,6 @@ import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from '../cleanProposal';
-import { makeHandle } from '../table';
 
 /**
  * Create an instance of Zoe.
@@ -40,10 +39,24 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
   /** @type {GetAmountMath<any>} */
-  const getAmountMath = brand => issuerTable.get(brand).amountMath;
+  const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeWeakStore('brand');
+
+  /**
+   * Create an opaque handle object.
+   *
+   * @template {string} H
+   * @param {H} handleType the string literal type of the handle
+   * @returns {Handle<H>}
+   */
+  const makeHandle = handleType => {
+    // This assert ensures that handleType is referenced.
+    assert.typeof(handleType, 'string', 'handleType must be a string');
+    // Return the intersection type (really just an empty object).
+    return /** @type {Handle<H>} */ (harden({}));
+  };
 
   /**
    * Create an installation by permanently storing the bundle. It will be
@@ -85,8 +98,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       customTerms = harden({}),
     ) => {
       /** @param {Issuer[]} issuers */
-      const getPromiseForIssuerRecords = issuers =>
-        Promise.all(issuers.map(issuerTable.getPromiseForIssuerRecord));
+      const initIssuers = issuers =>
+        Promise.all(issuers.map(issuerTable.initIssuer));
       assert(
         installations.has(installation),
         details`${installation} was not a valid installation`,
@@ -103,7 +116,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       // The issuers may not have been seen before, so we must wait for the
       // issuer records to be available synchronously
-      const issuerRecords = await getPromiseForIssuerRecords(issuerPs);
+      const issuerRecords = await initIssuers(issuerPs);
       issuerRecords.forEach(record => {
         if (!brandToPurse.has(record.brand)) {
           brandToPurse.init(record.brand, E(record.issuer).makeEmptyPurse());
@@ -186,7 +199,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           issuer: localIssuer,
           amountMath: localAmountMath,
         });
-        issuerTable.initIssuerRecord(localIssuerRecord);
+        issuerTable.initIssuerByRecord(localIssuerRecord);
         registerIssuerByKeyword(keyword, localIssuerRecord);
         const localPooledPurse = localIssuer.makeEmptyPurse();
         brandToPurse.init(localBrand, localPooledPurse);
@@ -257,7 +270,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         },
         // checks of keyword done on zcf side
         saveIssuer: (issuerP, keyword) =>
-          (issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
+          (issuerTable.initIssuer(issuerP).then(issuerRecord => {
             registerIssuerByKeyword(keyword, issuerRecord);
             const { issuer, brand } = issuerRecord;
             if (!brandToPurse.has(brand)) {

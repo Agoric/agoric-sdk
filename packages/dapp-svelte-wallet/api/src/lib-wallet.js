@@ -3,10 +3,8 @@
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
-// TODO: move the Table abstraction out of Zoe
-import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal } from '@agoric/marshal';
@@ -60,80 +58,9 @@ export async function makeWallet({
   /** @type {Mapping<Installation>} */
   const installationMapping = makeMapping('installation');
 
-  /**
-   * Brand Table
-   */
-  const makeBrandTable = () => {
-    /** @type {(record: any) => record is BrandRecord} */
-    const validateSomewhat = makeValidateProperties([
-      'brand',
-      'issuer',
-      'issuerBoardId',
-      'amountMath',
-    ]);
+  const brandTable = makeIssuerTable();
+  const issuerToBoardId = makeWeakStore('issuer');
 
-    const issuersInProgress = makeStore('issuer');
-    const issuerToBrand = makeWeakStore('issuer');
-    const makeCustomProperties = table =>
-      harden({
-        /**
-         * @param {ERef<Issuer>} issuerP
-         */
-        addIssuer(issuerP) {
-          return Promise.resolve(issuerP).then(issuer => {
-            if (issuersInProgress.has(issuer)) {
-              // a promise which resolves to the issuer record
-              return issuersInProgress.get(issuer);
-            }
-
-            // remote calls which immediately return a promise
-            const brandP = E(issuer).getBrand();
-            const brandMatchesP = E(brandP).isMyIssuer(issuer);
-
-            const issuerBoardIdP = E(board)
-              .has(issuer)
-              .then(hasIt => hasIt && E(board).getId(issuer));
-
-            // a promise for a synchronously accessible record
-            const synchronousRecordP = Promise.all([
-              brandP,
-              issuerBoardIdP,
-              brandMatchesP,
-              makeLocalAmountMath(issuer),
-            ]).then(([brand, issuerBoardId, brandMatches, amountMath]) => {
-              assert(
-                brandMatches,
-                `issuer was using a brand which was not its own`,
-              );
-              if (!issuerToBrand.has(issuer)) {
-                const issuerRecord = {
-                  issuer,
-                  brand,
-                  amountMath,
-                  issuerBoardId,
-                };
-                table.create(issuerRecord, brand);
-                issuerToBrand.init(issuer, brand);
-              }
-              issuersInProgress.delete(issuer);
-              return table.get(brand);
-            });
-            issuersInProgress.init(issuer, synchronousRecordP);
-            return synchronousRecordP;
-          });
-        },
-        getBrandForIssuer: issuerToBrand.get,
-        hasIssuer: issuerToBrand.has,
-      });
-    const brandTable = makeTable(
-      validateSomewhat,
-      'brand',
-      makeCustomProperties,
-    );
-    return brandTable;
-  };
-
-  const brandTable = makeBrandTable();
   /** @type {WeakStore<Purse, Brand>} */
   const purseToBrand = makeWeakStore('purse');
   /** @type {Store<Brand, string>} */
@@ -242,7 +169,7 @@ export async function makeWallet({
         brand,
         actions: {
           async send(receiverP, valueToSend) {
-            const { amountMath } = brandTable.get(brand);
+            const { amountMath } = brandTable.getByBrand(brand);
             const amount = amountMath.make(valueToSend);
             const payment = await E(purse).withdraw(amount);
             try {
@@ -366,10 +293,16 @@ export async function makeWallet({
 
   function updateAllIssuersState() {
     issuersUpdater.updateState(
-      [...brandMapping.petnameToVal.entries()].map(([petname, brand]) => [
-        petname,
-        brandTable.get(brand),
-      ]),
+      [...brandMapping.petnameToVal.entries()].map(([petname, brand]) => {
+        const issuerRecord = brandTable.getByBrand(brand);
+        return [
+          petname,
+          {
+            issuerBoardId: issuerToBoardId.get(issuerRecord.issuer),
+            ...issuerRecord,
+          },
+        ];
+      }),
     );
   }
 
@@ -506,7 +439,7 @@ export async function makeWallet({
   // === API
 
   const addIssuer = (petnameForBrand, issuer, makePurse = false) => {
-    const issuerSavedP = brandTable.addIssuer(issuer);
+    const issuerSavedP = brandTable.initIssuer(issuer);
     const addBrandPetname = ({ brand }) => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -525,9 +458,9 @@ export async function makeWallet({
   };
 
   const publishIssuer = async brand => {
-    const brandRecord = brandTable.get(brand);
+    const brandRecord = brandTable.getByBrand(brand);
     const issuerBoardId = await E(board).getId(brandRecord.issuer);
-    brandTable.update(brand, { issuerBoardId });
+    issuerToBoardId.set(brandRecord.issuer, issuerBoardId);
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -593,7 +526,7 @@ export async function makeWallet({
 
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
-    const { issuer } = brandTable.get(brand);
+    const { issuer } = brandTable.getByBrand(brand);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
@@ -624,7 +557,7 @@ export async function makeWallet({
   function getPurseIssuer(pursePetname) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     const brand = purseToBrand.get(purse);
-    const { issuer } = brandTable.get(brand);
+    const { issuer } = brandTable.getByBrand(brand);
     return issuer;
   }
 
@@ -689,7 +622,7 @@ export async function makeWallet({
     const inviteHandle = await E(board).getValue(invitationHandleBoardId);
     const matchInvite = element => element.handle === inviteHandle;
     const inviteBrand = purseToBrand.get(zoeInvitePurse);
-    const { amountMath: inviteAmountMath } = brandTable.get(inviteBrand);
+    const { amountMath: inviteAmountMath } = brandTable.getByBrand(inviteBrand);
     const matchingInvite = inviteValueElems.find(matchInvite);
     assert(
       matchingInvite,
@@ -950,7 +883,7 @@ export async function makeWallet({
   /** @returns {[Petname, Issuer][]} */
   function getIssuers() {
     return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
-      const { issuer } = brandTable.get(brand);
+      const { issuer } = brandTable.getByBrand(brand);
       return [petname, issuer];
     });
   }
@@ -1022,15 +955,17 @@ export async function makeWallet({
           return depositedPK.promise;
         },
         async refresh() {
-          if (!brandTable.has(brand)) {
+          if (!brandTable.hasByBrand(brand)) {
             return false;
           }
 
           const { issuer } = paymentRecord;
           if (!issuer) {
+            const brandRecord = brandTable.getByBrand(brand);
             paymentRecord = {
               ...paymentRecord,
-              ...brandTable.get(brand),
+              ...brandRecord,
+              issuerBoardId: issuerToBoardId.get(brandRecord.issuer),
             };
             updatePaymentRecord(paymentRecord);
           }
@@ -1198,11 +1133,11 @@ export async function makeWallet({
 
   function renameIssuer(petname, issuer) {
     assert(
-      brandTable.hasIssuer(issuer),
+      brandTable.hasByIssuer(issuer),
       `issuer has not been previously added`,
     );
-    const brand = brandTable.getBrandForIssuer(issuer);
-    brandMapping.renamePetname(petname, brand);
+    const brandRecord = brandTable.getByIssuer(issuer);
+    brandMapping.renamePetname(petname, brandRecord.brand);
     // We don't wait for the update before returning.
     updateAllState();
     return `issuer ${q(petname)} successfully renamed in wallet`;
@@ -1224,7 +1159,7 @@ export async function makeWallet({
 
   function getIssuer(petname) {
     const brand = brandMapping.petnameToVal.get(petname);
-    return brandTable.get(brand).issuer;
+    return brandTable.getByBrand(brand).issuer;
   }
 
   function getSelfContact() {

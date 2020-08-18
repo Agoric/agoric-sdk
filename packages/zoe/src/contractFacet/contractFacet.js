@@ -39,7 +39,7 @@ export function buildRootObject() {
     instanceRecord,
   ) => {
     const issuerTable = makeIssuerTable();
-    const getAmountMath = brand => issuerTable.get(brand).amountMath;
+    const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
@@ -49,8 +49,8 @@ export function buildRootObject() {
     const keywords = Object.keys(instanceRecord.terms.issuers);
     const issuers = Object.values(instanceRecord.terms.issuers);
 
-    const getPromiseForIssuerRecords = issuersP =>
-      Promise.all(issuersP.map(issuerTable.getPromiseForIssuerRecord));
+    const initIssuers = issuersP =>
+      Promise.all(issuersP.map(issuerTable.initIssuer));
 
     const registerIssuerRecord = (keyword, issuerRecord) => {
       instanceRecord = {
@@ -84,7 +84,7 @@ export function buildRootObject() {
       return registerIssuerRecord(keyword, issuerRecord);
     };
 
-    const issuerRecords = await getPromiseForIssuerRecords(issuers);
+    const issuerRecords = await initIssuers(issuers);
     issuerRecords.forEach((issuerRecord, i) => {
       registerIssuerRecord(keywords[i], issuerRecord);
     });
@@ -110,7 +110,7 @@ export function buildRootObject() {
         amountMath: mintyAmountMath,
       });
       registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
-      issuerTable.initIssuerRecord(mintyIssuerRecord);
+      issuerTable.initIssuerByRecord(mintyIssuerRecord);
 
       /** @type ZCFMint */
       const zcfMint = harden({
@@ -253,7 +253,7 @@ export function buildRootObject() {
           .saveIssuer(issuerP, keyword)
           .then(() => {
             return issuerTable
-              .getPromiseForIssuerRecord(issuerP)
+              .initIssuer(issuerP)
               .then(record => registerIssuerRecordWithKeyword(keyword, record));
           });
       },
@@ -311,9 +311,8 @@ export function buildRootObject() {
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
       getTerms: () => instanceRecord.terms,
-      getBrandForIssuer: issuer =>
-        issuerTable.getIssuerRecordByIssuer(issuer).brand,
-      getIssuerForBrand: brand => issuerTable.get(brand).issuer,
+      getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
+      getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
       getAmountMath,
     };
     harden(zcf);
