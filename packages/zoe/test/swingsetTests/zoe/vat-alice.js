@@ -121,13 +121,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  const doPublicAuction = async (bobP, carolP, daveP) => {
-    const numBidsAllowed = 3;
+  const doSecondPriceAuction = async (bobP, carolP, daveP) => {
     const issuerKeywordRecord = harden({
       Asset: moolaIssuer,
       Ask: simoleanIssuer,
     });
-    const terms = harden({ numBidsAllowed });
+    const now = await E(timer).getCurrentTimestamp();
+    const terms = harden({ timerAuthority: timer, closesAfter: now + 1 });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
     ).startInstance(
@@ -139,7 +139,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const proposal = harden({
       give: { Asset: moola(1) },
       want: { Ask: simoleans(3) },
-      exit: { onDemand: null },
+      exit: { waived: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
     const aliceSeatP = await E(zoe).offer(
@@ -153,11 +153,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const carolInvitation = E(makeBidInvitationObj).makeBidInvitation();
     const daveInvitation = E(makeBidInvitationObj).makeBidInvitation();
 
-    const bobDoneP = E(bobP).doPublicAuction(bobInvitation);
-    const carolDoneP = E(carolP).doPublicAuction(carolInvitation);
-    const daveDoneP = E(daveP).doPublicAuction(daveInvitation);
+    const bobBidDoneP = E(bobP).doSecondPriceAuctionBid(bobInvitation);
+    const carolBidDoneP = E(carolP).doSecondPriceAuctionBid(carolInvitation);
+    const daveBidDoneP = E(daveP).doSecondPriceAuctionBid(daveInvitation);
 
-    await Promise.all([bobDoneP, carolDoneP, daveDoneP]);
+    await Promise.all([bobBidDoneP, carolBidDoneP, daveBidDoneP]);
+    await E(timer).tick();
+
+    const bobCollectDoneP = E(bobP).doSecondPriceAuctionGetPayout();
+    const carolCollectDoneP = E(carolP).doSecondPriceAuctionGetPayout();
+    const daveCollectDoneP = E(daveP).doSecondPriceAuctionGetPayout();
+    await Promise.all([bobCollectDoneP, carolCollectDoneP, daveCollectDoneP]);
 
     const moolaPayout = await E(aliceSeatP).getPayout('Asset');
     const simoleanPayout = await E(aliceSeatP).getPayout('Ask');
@@ -423,7 +429,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doSwapForOption(bobP, carolP, daveP);
         }
         case 'secondPriceAuctionOk': {
-          return doPublicAuction(bobP, carolP, daveP);
+          return doSecondPriceAuction(bobP, carolP, daveP);
         }
         case 'atomicSwapOk': {
           return doAtomicSwap(bobP, carolP, daveP);
