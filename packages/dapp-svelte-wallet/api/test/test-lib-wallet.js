@@ -168,7 +168,7 @@ test('lib-wallet issuer and purse methods', async t => {
       JSON.parse(pursesStateChangeLog[pursesStateChangeLog.length - 1]),
       [
         {
-          brandBoardId: '3812059',
+          brandBoardId: '16679794',
           depositBoardId: '6043467',
           brandPetname: 'zoe invite',
           pursePetname: 'Default Zoe invite purse',
@@ -183,7 +183,7 @@ test('lib-wallet issuer and purse methods', async t => {
           },
         },
         {
-          brandBoardId: '16679794',
+          brandBoardId: '7279951',
           brandPetname: 'moola',
           pursePetname: 'fun money',
           value: 0,
@@ -296,7 +296,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.deepEquals(
       zoeInvitePurseState[0],
       {
-        brandBoardId: '3812059',
+        brandBoardId: '16679794',
         depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
@@ -377,7 +377,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.deepEquals(
       zoeInvitePurseState2,
       {
-        brandBoardId: '3812059',
+        brandBoardId: '16679794',
         depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
@@ -424,9 +424,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       inboxState1,
       {
         id: 'unknown#1588645041696',
-        inviteHandleBoardId: '15326650',
-        instanceHandleBoardId: '7279951',
-        installationHandleBoardId: '3715714',
+        inviteHandleBoardId: '7279951',
+        instanceHandleBoardId: '3715714',
+        installationHandleBoardId: '14561541',
         proposalTemplate: {},
         requestContext: { dappOrigin: 'unknown' },
         instancePetname: 'automaticRefund',
@@ -480,7 +480,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     t.deepEquals(
       zoeInvitePurseState3,
       {
-        brandBoardId: '3812059',
+        brandBoardId: '16679794',
         depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
@@ -526,9 +526,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       inboxState2,
       {
         id: 'unknown#1588645041696',
-        inviteHandleBoardId: '15326650',
-        instanceHandleBoardId: '7279951',
-        installationHandleBoardId: '3715714',
+        inviteHandleBoardId: '7279951',
+        instanceHandleBoardId: '3715714',
+        installationHandleBoardId: '14561541',
         proposalTemplate: {},
         requestContext: { dappOrigin: 'unknown' },
         instancePetname: 'automaticRefund',
@@ -604,9 +604,9 @@ test('lib-wallet offer methods', async t => {
       [
         {
           id: 'unknown#1588645041696',
-          inviteHandleBoardId: '15765496',
-          instanceHandleBoardId: '15326650',
-          installationHandleBoardId: '7279951',
+          inviteHandleBoardId: '7279951',
+          instanceHandleBoardId: '3715714',
+          installationHandleBoardId: '14561541',
           proposalTemplate: {
             give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
             exit: { onDemand: null },
@@ -655,7 +655,7 @@ test('lib-wallet offer methods', async t => {
     t.deepEquals(
       zoeInvitePurseState,
       {
-        brandBoardId: '3812059',
+        brandBoardId: '16679794',
         depositBoardId: '6043467',
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
@@ -674,7 +674,7 @@ test('lib-wallet offer methods', async t => {
     t.deepEquals(
       moolaPurseState,
       {
-        brandBoardId: '16679794',
+        brandBoardId: '15326650',
         brandPetname: 'moola',
         pursePetname: 'Fun budget',
         value: 100,
@@ -695,9 +695,9 @@ test('lib-wallet offer methods', async t => {
       [
         {
           id: 'unknown#1588645041696',
-          inviteHandleBoardId: '15765496',
-          instanceHandleBoardId: '15326650',
-          installationHandleBoardId: '7279951',
+          inviteHandleBoardId: '7279951',
+          instanceHandleBoardId: '3715714',
+          installationHandleBoardId: '14561541',
           proposalTemplate: {
             give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
             exit: { onDemand: null },
@@ -725,9 +725,9 @@ test('lib-wallet offer methods', async t => {
         },
         {
           id: 'unknown#1588645230204',
-          inviteHandleBoardId: '3715714',
-          instanceHandleBoardId: '15326650',
-          installationHandleBoardId: '7279951',
+          inviteHandleBoardId: '5007165',
+          instanceHandleBoardId: '3715714',
+          installationHandleBoardId: '14561541',
           proposalTemplate: {
             give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
             exit: { onDemand: null },
