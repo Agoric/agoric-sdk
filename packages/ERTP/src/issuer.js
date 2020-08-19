@@ -4,6 +4,7 @@
 
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
+import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
@@ -20,7 +21,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
 
   const brand = harden({
     isMyIssuer: allegedIssuerP => {
-      return Promise.resolve(allegedIssuerP).then(allegedIssuer => {
+      return E.when(allegedIssuerP, allegedIssuer => {
         // eslint-disable-next-line no-use-before-define
         return allegedIssuer === issuer;
       });
@@ -185,19 +186,19 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
     },
 
     isLive: paymentP => {
-      return Promise.resolve(paymentP).then(payment => {
+      return E.when(paymentP, payment => {
         return paymentLedger.has(payment);
       });
     },
     getAmountOf: paymentP => {
-      return Promise.resolve(paymentP).then(payment => {
+      return E.when(paymentP, payment => {
         assertKnownPayment(payment);
         return paymentLedger.get(payment);
       });
     },
 
     burn: (paymentP, optAmount = undefined) => {
-      return Promise.resolve(paymentP).then(payment => {
+      return E.when(paymentP, payment => {
         assertKnownPayment(payment);
         const paymentBalance = paymentLedger.get(payment);
         assertAmountEqual(paymentBalance, optAmount);
@@ -207,7 +208,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       });
     },
     claim: (paymentP, optAmount = undefined) => {
-      return Promise.resolve(paymentP).then(srcPayment => {
+      return E.when(paymentP, srcPayment => {
         assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
         assertAmountEqual(srcPaymentBalance, optAmount);
@@ -242,7 +243,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
     },
     // payment to two payments, A and B
     split: (paymentP, paymentAmountA) => {
-      return Promise.resolve(paymentP).then(srcPayment => {
+      return E.when(paymentP, srcPayment => {
         paymentAmountA = amountMath.coerce(paymentAmountA);
         assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
@@ -261,7 +262,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       });
     },
     splitMany: (paymentP, amounts) => {
-      return Promise.resolve(paymentP).then(srcPayment => {
+      return E.when(paymentP, srcPayment => {
         assertKnownPayment(srcPayment);
         amounts = amounts.map(amountMath.coerce);
         // Commit point
