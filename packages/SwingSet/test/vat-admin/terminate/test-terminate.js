@@ -2,6 +2,11 @@
 import '@agoric/install-ses';
 import path from 'path';
 import { test } from 'tape-promise/tape';
+import {
+  initSwingStore,
+  getAllState,
+  setAllState,
+} from '@agoric/swing-store-simple';
 import { buildVatController, loadSwingsetConfigFile } from '../../../src/index';
 
 function capdata(body, slots = []) {
@@ -10,6 +15,10 @@ function capdata(body, slots = []) {
 
 function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
+}
+
+function copy(data) {
+  return JSON.parse(JSON.stringify(data));
 }
 
 test('terminate', async t => {
@@ -38,5 +47,37 @@ test('terminate', async t => {
     'afterForeverP.catch vat terminated',
     'done',
   ]);
+  t.end();
+});
+
+test('replay does not resurrect dead vat', async t => {
+  const configPath = path.resolve(__dirname, 'swingset-no-zombies.json');
+  const config = loadSwingsetConfigFile(configPath);
+
+  const { storage: storage1 } = initSwingStore();
+  {
+    const c1 = await buildVatController(copy(config), [], {
+      hostStorage: storage1,
+    });
+    t.equal(c1.bootstrapResult.status(), 'pending');
+    await c1.run();
+    t.equal(c1.bootstrapResult.status(), 'fulfilled');
+    t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
+    // this comes from the dynamic vat...
+    t.deepEqual(c1.dump().log, [`I ate'nt dead`]);
+  }
+
+  const state1 = getAllState(storage1);
+  const { storage: storage2 } = initSwingStore();
+  setAllState(storage2, state1);
+  {
+    const c2 = await buildVatController(copy(config), [], {
+      hostStorage: storage2,
+    });
+    await c2.run();
+    // ...which shouldn't run the second time through
+    t.deepEqual(c2.dump().log, []);
+  }
+
   t.end();
 });

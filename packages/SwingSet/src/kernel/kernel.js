@@ -822,13 +822,17 @@ export default function buildKernel(kernelEndowments) {
     for (const vatID of kernelKeeper.getAllDynamicVatIDs()) {
       console.debug(`Loading dynamic vat ${vatID}`);
       const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
-      const {
-        source,
-        options: dynamicOptions,
-      } = vatKeeper.getSourceAndOptions();
-      // eslint-disable-next-line no-await-in-loop
-      await recreateVatDynamically(vatID, source, dynamicOptions);
-      // now the vatManager is attached and ready for transcript replay
+      if (vatKeeper.isDead()) {
+        kernelKeeper.forgetVat(vatID);
+      } else {
+        const {
+          source,
+          options: dynamicOptions,
+        } = vatKeeper.getSourceAndOptions();
+        // eslint-disable-next-line no-await-in-loop
+        await recreateVatDynamically(vatID, source, dynamicOptions);
+        // now the vatManager is attached and ready for transcript replay
+      }
     }
 
     function terminateVat(vatID) {
@@ -843,6 +847,7 @@ export default function buildKernel(kernelEndowments) {
           () => kdebug(`terminated vat ${vatID}`),
           e => console.error(`problem terminating vat ${vatID}`, e),
         );
+        kernelKeeper.forgetVat(vatID);
       }
     }
 
