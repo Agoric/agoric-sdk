@@ -14,20 +14,22 @@ import { assertBidSeat } from './assertBidSeat';
 import '../../../exported';
 
 /**
- * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC AND CAN BE GAMED.
- * An auction contract in which the seller offers an Asset for sale,
- * and states a minimum price. The seller's offer will expire at a
- * particular deadline, and at this time the auction will close. The
- * second price rule is followed, so the highest bidder pays the
- * amount bid by the second highest bidder.
+ * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC. An auction
+ * contract in which the seller offers an Asset for sale, and states a
+ * minimum price. The auction closes at the deadline specified by the
+ * timerAuthority and closesAfter parameters in the terms provided by
+ * the creator of the contract instance. The second price rule is
+ * followed, so the highest bidder pays the amount bid by the second
+ * highest bidder.
  *
- * startInstance() specifies the issuers. An invitation for the seller
- * is returned as the creatorInvitation. The seller's offer should
- * look like { give: { Asset: asset }, want: { Ask: minimumBidAmount }
- * } The asset can be non-fungible, but the Ask amount should be of a
- * fungible brand. The bidder invitations can be made by calling
- * makeBidInvitation on the creatorFacet. Each bidder can submit an
- * offer: { give: { Bid: null } want: { Asset: null } }.
+ * startInstance() specifies the issuers and the terms. An invitation
+ * for the seller is returned as the creatorInvitation. The seller's
+ * offer should look like { give: { Asset: asset }, want: { Ask:
+ * minimumBidAmount}} The asset can be non-fungible, but the Ask
+ * amount should be of a fungible brand. The bidder invitations can be
+ * made by calling makeBidInvitation on the object returned from the
+ * seller's offer. Each bidder can submit an offer: { give: { Bid:
+ * null } want: { Asset: null } }.
  *
  * @type {ContractStartFn}
  */
