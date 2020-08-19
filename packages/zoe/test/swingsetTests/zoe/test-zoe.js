@@ -12,7 +12,7 @@ const CONTRACT_FILES = [
   'automaticRefund',
   'autoswap',
   'coveredCall',
-  'publicAuction',
+  'secondPriceAuction',
   'atomicSwap',
   'simpleExchange',
   'sellItems',
@@ -137,7 +137,7 @@ const expectedPublicAuctionOkLog = [
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
 ];
-test('zoe - publicAuction - valid inputs', async t => {
+test('zoe - secondPriceAuction - valid inputs', async t => {
   t.plan(1);
   try {
     const startingValues = [
@@ -146,7 +146,7 @@ test('zoe - publicAuction - valid inputs', async t => {
       [0, 7, 0],
       [0, 5, 0],
     ];
-    const dump = await main(['publicAuctionOk', startingValues]);
+    const dump = await main(['secondPriceAuctionOk', startingValues]);
     t.deepEquals(dump.log, expectedPublicAuctionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');

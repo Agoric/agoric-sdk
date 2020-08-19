@@ -1,5 +1,3 @@
-export { secondPriceLogic, closeAuction } from './auctions';
-
 export {
   getInputPrice,
   calcLiqValueToMint,

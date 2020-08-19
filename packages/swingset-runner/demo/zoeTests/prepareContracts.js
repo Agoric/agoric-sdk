@@ -6,7 +6,7 @@ const CONTRACT_FILES = [
   'automaticRefund',
   'autoswap',
   'coveredCall',
-  'publicAuction',
+  'secondPriceAuction',
   'atomicSwap',
   'simpleExchange',
   'sellItems',

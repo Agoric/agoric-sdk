@@ -22,7 +22,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       );
 
       assert(
-        installation === installations.publicAuction,
+        installation === installations.secondPriceAuction,
         details`wrong installation`,
       );
       assert(

@@ -130,7 +130,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const terms = harden({ numBidsAllowed });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
-    ).startInstance(installations.publicAuction, issuerKeywordRecord, terms);
+    ).startInstance(
+      installations.secondPriceAuction,
+      issuerKeywordRecord,
+      terms,
+    );
 
     const proposal = harden({
       give: { Asset: moola(1) },
@@ -418,7 +422,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         case 'swapForOptionOk': {
           return doSwapForOption(bobP, carolP, daveP);
         }
-        case 'publicAuctionOk': {
+        case 'secondPriceAuctionOk': {
           return doPublicAuction(bobP, carolP, daveP);
         }
         case 'atomicSwapOk': {
