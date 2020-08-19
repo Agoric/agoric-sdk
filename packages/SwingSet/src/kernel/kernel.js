@@ -303,11 +303,10 @@ export default function buildKernel(kernelEndowments) {
   async function deliverToVat(vatID, target, msg) {
     insistMessage(msg);
     const vat = ephemeral.vats.get(vatID);
-    assert(vat, details`unknown vatID ${vatID}`);
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
-    if (vat.dead) {
-      resolveToError(msg.result, makeError('vat is dead'));
+    if (!vat || vat.dead) {
+      resolveToError(msg.result, makeError('unknown vat'));
     } else {
       const kd = harden(['message', target, msg]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
@@ -378,7 +377,7 @@ export default function buildKernel(kernelEndowments) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     const vat = ephemeral.vats.get(vatID);
-    assert(vat, details`unknown vatID ${vatID}`);
+    assert(vat, details`notify unknown vatID ${vatID}`);
     kernelKeeper.incStat('dispatches');
     if (vat.dead) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);

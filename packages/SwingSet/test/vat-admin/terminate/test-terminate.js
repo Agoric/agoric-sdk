@@ -43,10 +43,48 @@ test('terminate', async t => {
     'GOT QUERY 3',
     'foreverP.catch vat terminated',
     'query3P.catch vat terminated',
-    'foo4P.catch vat is dead',
+    'foo4P.catch unknown vat',
     'afterForeverP.catch vat terminated',
     'done',
   ]);
+  t.end();
+});
+
+test('vat referencing the dead does not harm kernel', async t => {
+  const configPath = path.resolve(__dirname, 'swingset-speak-to-dead.json');
+  const config = loadSwingsetConfigFile(configPath);
+
+  const { storage: storage1 } = initSwingStore();
+  {
+    const c1 = await buildVatController(copy(config), [], {
+      hostStorage: storage1,
+    });
+    await c1.run();
+    t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
+    t.deepEqual(c1.dump().log, ['live 1 failed: unknown vat']);
+  }
+  const state1 = getAllState(storage1);
+  const { storage: storage2 } = initSwingStore();
+  setAllState(storage2, state1);
+  {
+    const c2 = await buildVatController(copy(config), [], {
+      hostStorage: storage2,
+    });
+    const r2 = c2.queueToVatExport(
+      'bootstrap',
+      'o+0',
+      'speakAgain',
+      capargs([]),
+      'panic',
+    );
+    await c2.run();
+    t.equal(r2.status(), 'fulfilled');
+    t.deepEqual(c2.dump().log, [
+      'live 1 failed: unknown vat',
+      'live 2 failed: unknown vat',
+    ]);
+  }
+
   t.end();
 });
 
@@ -59,9 +97,7 @@ test('replay does not resurrect dead vat', async t => {
     const c1 = await buildVatController(copy(config), [], {
       hostStorage: storage1,
     });
-    t.equal(c1.bootstrapResult.status(), 'pending');
     await c1.run();
-    t.equal(c1.bootstrapResult.status(), 'fulfilled');
     t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
     // this comes from the dynamic vat...
     t.deepEqual(c1.dump().log, [`I ate'nt dead`]);
