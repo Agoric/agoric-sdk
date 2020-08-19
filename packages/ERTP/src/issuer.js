@@ -19,8 +19,12 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   assert.typeof(allegedName, 'string');
 
   const brand = harden({
-    // eslint-disable-next-line no-use-before-define
-    isMyIssuer: allegedIssuer => allegedIssuer === issuer,
+    isMyIssuer: allegedIssuerP => {
+      return Promise.resolve(allegedIssuerP).then(allegedIssuer => {
+        // eslint-disable-next-line no-use-before-define
+        return allegedIssuer === issuer;
+      });
+    },
     getAllegedName: () => allegedName,
   });
 
