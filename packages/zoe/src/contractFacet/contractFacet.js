@@ -313,6 +313,7 @@ export function buildRootObject() {
       getTerms: () => instanceRecord.terms,
       getBrandForIssuer: issuer =>
         issuerTable.getIssuerRecordByIssuer(issuer).brand,
+      getIssuerForBrand: brand => issuerTable.get(brand).issuer,
       getAmountMath,
     };
     harden(zcf);
