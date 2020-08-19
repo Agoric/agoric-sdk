@@ -30,6 +30,13 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
       proposal.exit.afterDeadline.deadline,
       harden({
         wake: exitFn,
+      }).catch(err => {
+        console.error(
+          `The seat could not be made with the provided timer ${proposal.exit.afterDeadline.timer} and deadline ${proposal.exit.afterDeadline.deadline}`,
+        );
+        console.error(err);
+        exitFn();
+        throw err;
       }),
     );
   } else if (exitKind === 'onDemand') {
