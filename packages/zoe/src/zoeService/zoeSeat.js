@@ -35,7 +35,8 @@ export const makeZoeSeatAdminKit = (
   instanceAdmin,
   proposal,
   brandToPurse,
-  { offerResult = undefined, exitObj = defaultExitObj } = {},
+  offerResult = undefined,
+  exitObj = defaultExitObj,
 ) => {
   const payoutPromiseKit = makePromiseKit();
   const { notifier, updater } = makeNotifierKit();

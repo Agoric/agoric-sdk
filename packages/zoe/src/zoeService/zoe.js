@@ -18,6 +18,7 @@ import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from '../cleanProposal';
+import { makeHandle } from '../makeHandle';
 
 /**
  * Create an instance of Zoe.
@@ -44,19 +45,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeWeakStore('brand');
 
-  /**
-   * Create an opaque handle object.
-   *
-   * @template {string} H
-   * @param {H} handleType the string literal type of the handle
-   * @returns {Handle<H>}
-   */
-  const makeHandle = handleType => {
-    // This assert ensures that handleType is referenced.
-    assert.typeof(handleType, 'string', 'handleType must be a string');
-    // Return the intersection type (really just an empty object).
-    return /** @type {Handle<H>} */ (harden({}));
-  };
+  /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
+  const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
+
+  /** @type {Set<ZoeSeatAdmin>} */
+  const zoeSeatAdmins = new Set();
 
   /**
    * Create an installation by permanently storing the bundle. It will be
@@ -105,7 +98,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         details`${installation} was not a valid installation`,
       );
 
-      const zoeSeatAdmins = new Set();
       const instance = makeHandle('InstanceHandle');
 
       const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
@@ -227,11 +219,16 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       /** @type {InstanceAdmin} */
       const instanceAdmin = {
-        addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
+        addZoeSeatAdmin: async (
+          invitationHandle,
+          zoeSeatAdmin,
+          seatData,
+          seatHandle,
+        ) => {
           zoeSeatAdmins.add(zoeSeatAdmin);
           return E(
-            /** @type Promise<addSeatObj> */ (addSeatObjPromiseKit.promise),
-          ).addSeat(invitationHandle, zoeSeatAdmin, seatData);
+            /** @type Promise<AddSeatObj> */ (addSeatObjPromiseKit.promise),
+          ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
         },
         hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
         removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
@@ -279,14 +276,15 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             return undefined;
           })),
         // A Seat requested by the contract without an offer
-        makeOfferlessSeat: (initialAllocation, proposal) => {
+        makeOfferlessSeat: (initialAllocation, proposal, seatHandle) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,
-            cleanProposal(getAmountMath, proposal),
+            proposal,
             brandToPurse,
           );
           zoeSeatAdmins.add(zoeSeatAdmin);
+          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
         shutdown: () => {
@@ -294,6 +292,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           adminNode.terminate();
         },
         makeZoeMint,
+        replaceAllocations: seatHandleAllocations => {
+          seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
+            const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
+            zoeSeatAdmin.replaceAllocation(allocation);
+          });
+        },
       };
 
       // At this point, the contract will start executing. All must be ready
@@ -379,22 +383,28 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           const offerResultPromiseKit = makePromiseKit();
           const exitObjPromiseKit = makePromiseKit();
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
+          const seatHandle = makeHandle('SeatHandle');
 
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,
             proposal,
             brandToPurse,
-            {
-              offerResult: offerResultPromiseKit.promise,
-              exitObj: exitObjPromiseKit.promise,
-            },
+            offerResultPromiseKit.promise,
+            exitObjPromiseKit.promise,
           );
+
+          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
 
           const seatData = harden({ proposal, initialAllocation, notifier });
 
           instanceAdmin
-            .addZoeSeatAdmin(invitationHandle, zoeSeatAdmin, seatData)
+            .addZoeSeatAdmin(
+              invitationHandle,
+              zoeSeatAdmin,
+              seatData,
+              seatHandle,
+            )
             .then(({ offerResultP, exitObj }) => {
               offerResultPromiseKit.resolve(offerResultP);
               exitObjPromiseKit.resolve(exitObj);
