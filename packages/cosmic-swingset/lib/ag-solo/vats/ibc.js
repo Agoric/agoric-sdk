@@ -220,7 +220,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           localAddr,
           remoteAddr,
         );
-        const connP = E.when(conn);
+        const connP = E.resolve(conn);
         channelKeyToConnP.init(channelKey, connP);
       },
       onReceive,
