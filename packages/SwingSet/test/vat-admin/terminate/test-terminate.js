@@ -2,6 +2,11 @@
 import '@agoric/install-ses';
 import path from 'path';
 import { test } from 'tape-promise/tape';
+import {
+  initSwingStore,
+  getAllState,
+  setAllState,
+} from '@agoric/swing-store-simple';
 import { buildVatController, loadSwingsetConfigFile } from '../../../src/index';
 
 function capdata(body, slots = []) {
@@ -10,6 +15,10 @@ function capdata(body, slots = []) {
 
 function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
+}
+
+function copy(data) {
+  return JSON.parse(JSON.stringify(data));
 }
 
 test('terminate', async t => {
@@ -34,9 +43,83 @@ test('terminate', async t => {
     'GOT QUERY 3',
     'foreverP.catch vat terminated',
     'query3P.catch vat terminated',
-    'foo4P.catch vat is dead',
+    'foo4P.catch unknown vat',
     'afterForeverP.catch vat terminated',
     'done',
   ]);
+  t.end();
+});
+
+test('dispatches to the dead do not harm kernel', async t => {
+  const configPath = path.resolve(__dirname, 'swingset-speak-to-dead.json');
+  const config = loadSwingsetConfigFile(configPath);
+
+  const { storage: storage1 } = initSwingStore();
+  {
+    const c1 = await buildVatController(copy(config), [], {
+      hostStorage: storage1,
+    });
+    await c1.run();
+    t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
+    t.deepEqual(c1.dump().log, [
+      'w: p1 = before',
+      `w: I ate'nt dead`,
+      'b: p1b = I so resolve',
+      'b: p2b fails vat terminated',
+    ]);
+  }
+  const state1 = getAllState(storage1);
+  const { storage: storage2 } = initSwingStore();
+  setAllState(storage2, state1);
+  {
+    const c2 = await buildVatController(copy(config), [], {
+      hostStorage: storage2,
+    });
+    const r2 = c2.queueToVatExport(
+      'bootstrap',
+      'o+0',
+      'speakAgain',
+      capargs([]),
+      'panic',
+    );
+    await c2.run();
+    t.equal(r2.status(), 'fulfilled');
+    t.deepEqual(c2.dump().log, [
+      'b: p1b = I so resolve',
+      'b: p2b fails vat terminated',
+      'm: live 2 failed: unknown vat',
+    ]);
+  }
+
+  t.end();
+});
+
+test('replay does not resurrect dead vat', async t => {
+  const configPath = path.resolve(__dirname, 'swingset-no-zombies.json');
+  const config = loadSwingsetConfigFile(configPath);
+
+  const { storage: storage1 } = initSwingStore();
+  {
+    const c1 = await buildVatController(copy(config), [], {
+      hostStorage: storage1,
+    });
+    await c1.run();
+    t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
+    // this comes from the dynamic vat...
+    t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
+  }
+
+  const state1 = getAllState(storage1);
+  const { storage: storage2 } = initSwingStore();
+  setAllState(storage2, state1);
+  {
+    const c2 = await buildVatController(copy(config), [], {
+      hostStorage: storage2,
+    });
+    await c2.run();
+    // ...which shouldn't run the second time through
+    t.deepEqual(c2.dump().log, []);
+  }
+
   t.end();
 });

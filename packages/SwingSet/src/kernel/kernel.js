@@ -1,7 +1,7 @@
 /* global harden */
 
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatManagerFactory } from './vatManager/factory';
@@ -303,11 +303,10 @@ export default function buildKernel(kernelEndowments) {
   async function deliverToVat(vatID, target, msg) {
     insistMessage(msg);
     const vat = ephemeral.vats.get(vatID);
-    assert(vat, details`unknown vatID ${vatID}`);
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
-    if (vat.dead) {
-      resolveToError(msg.result, makeError('vat is dead'));
+    if (!vat || vat.dead) {
+      resolveToError(msg.result, makeError('unknown vat'));
     } else {
       const kd = harden(['message', target, msg]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
@@ -378,9 +377,8 @@ export default function buildKernel(kernelEndowments) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     const vat = ephemeral.vats.get(vatID);
-    assert(vat, details`unknown vatID ${vatID}`);
     kernelKeeper.incStat('dispatches');
-    if (vat.dead) {
+    if (!vat || vat.dead) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
     } else {
       const p = kernelKeeper.getKernelPromise(kpid);
@@ -822,13 +820,17 @@ export default function buildKernel(kernelEndowments) {
     for (const vatID of kernelKeeper.getAllDynamicVatIDs()) {
       console.debug(`Loading dynamic vat ${vatID}`);
       const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
-      const {
-        source,
-        options: dynamicOptions,
-      } = vatKeeper.getSourceAndOptions();
-      // eslint-disable-next-line no-await-in-loop
-      await recreateVatDynamically(vatID, source, dynamicOptions);
-      // now the vatManager is attached and ready for transcript replay
+      if (vatKeeper.isDead()) {
+        kernelKeeper.forgetVat(vatID);
+      } else {
+        const {
+          source,
+          options: dynamicOptions,
+        } = vatKeeper.getSourceAndOptions();
+        // eslint-disable-next-line no-await-in-loop
+        await recreateVatDynamically(vatID, source, dynamicOptions);
+        // now the vatManager is attached and ready for transcript replay
+      }
     }
 
     function terminateVat(vatID) {
@@ -843,6 +845,7 @@ export default function buildKernel(kernelEndowments) {
           () => kdebug(`terminated vat ${vatID}`),
           e => console.error(`problem terminating vat ${vatID}`, e),
         );
+        kernelKeeper.forgetVat(vatID);
       }
     }
 

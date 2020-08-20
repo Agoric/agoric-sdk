@@ -643,6 +643,11 @@ export default function makeKernelKeeper(storage) {
     return ephemeral.vatKeepers.get(vatID);
   }
 
+  function forgetVat(vatID) {
+    insistVatID(vatID);
+    ephemeral.vatKeepers.delete(vatID);
+  }
+
   function getAllVatIDs() {
     const nextID = Nat(Number(getRequired(`vat.nextID`)));
     const vatIDs = [];
@@ -827,6 +832,7 @@ export default function makeKernelKeeper(storage) {
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
     allocateVatKeeperIfNeeded,
+    forgetVat,
     getAllVatNames,
     addDynamicVatID,
     getAllDynamicVatIDs,

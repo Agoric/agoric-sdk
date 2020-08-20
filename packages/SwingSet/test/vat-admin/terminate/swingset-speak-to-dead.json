@@ -1,0 +1,16 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "weatherwax": {
+      "sourceSpec": "vat-weatherwax-terminate.js"
+    }
+  },
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "bootstrap-speak-to-dead.js"
+    },
+    "medium": {
+      "sourceSpec": "vat-medium-terminate.js"
+    }
+  }
+}
