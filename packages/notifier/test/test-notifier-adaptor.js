@@ -1,5 +1,6 @@
 // @ts-check
 import '@agoric/install-ses';
+import { E } from '@agoric/eventual-send';
 import test from 'tape-promise/tape';
 import {
   makeAsyncIterableFromNotifier,
@@ -42,7 +43,8 @@ const finiteStream = makeIterable(false);
 const explodingStream = makeIterable(true);
 
 const testEnding = (t, p, fails) => {
-  return Promise.resolve(p).then(
+  return E.when(
+    p,
     result => {
       t.equal(fails, false);
       t.equal(result, refResult);
@@ -71,18 +73,18 @@ const testManualConsumer = (t, iterable, lossy) => {
   const testLoop = i => {
     return iterator.next().then(
       ({ value, done }) => {
+        i = skip(i, value, lossy);
         if (done) {
           t.equal(i, payloads.length);
           return value;
         }
-        i = skip(i, value, lossy);
         t.assert(i < payloads.length);
         // Need precise equality
         t.assert(Object.is(value, payloads[i]));
         return testLoop(i + 1);
       },
       reason => {
-        t.equal(i, payloads.length);
+        t.assert(i <= payloads.length);
         throw reason;
       },
     );
@@ -101,7 +103,7 @@ const testAutoConsumer = async (t, iterable, lossy) => {
       i += 1;
     }
   } finally {
-    t.equal(i, payloads.length);
+    t.assert(i <= payloads.length);
   }
   // The for-await-of loop cannot observe the final value of the iterator
   // so this consumer cannot test what that was. Just return what testEnding
