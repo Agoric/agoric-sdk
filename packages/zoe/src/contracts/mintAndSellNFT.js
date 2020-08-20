@@ -29,7 +29,7 @@ import { assert } from '@agoric/assert';
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();
   // Create the internal token mint
-  const { issuer, mint, amountMath: tokenAmountMath } = makeIssuerKit(
+  const { issuer, mint, amountMath: tokenMath } = makeIssuerKit(
     tokenName,
     MathKind.SET,
   );
@@ -43,7 +43,7 @@ const start = zcf => {
     sellItemsInstallation,
     pricePerItem,
   }) => {
-    const tokenAmount = tokenAmountMath.make(
+    const tokenAmount = tokenMath.make(
       harden(
         Array(count)
           .fill(undefined)
