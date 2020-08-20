@@ -42,7 +42,7 @@
             [  0,  0,  0 ],
             [  0,  7,  1 ]
           ],
-          "publicAuctionOk": [
+          "secondPriceAuctionOk": [
             [  1,  0,  0 ],
             [  0, 11,  0 ],
             [  0,  7,  0 ],

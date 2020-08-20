@@ -1,9 +1,9 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-metering-and-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
 import fs from 'fs';
@@ -12,20 +12,31 @@ const CONTRACT_FILES = [
   'automaticRefund',
   'autoswap',
   'coveredCall',
-  'publicAuction',
+  {
+    contractPath: 'auction/secondPriceAuction',
+    bundleName: 'secondPriceAuction',
+  },
   'atomicSwap',
   'simpleExchange',
   'sellItems',
   'mintAndSellNFT',
 ];
 const generateBundlesP = Promise.all(
-  CONTRACT_FILES.map(async contract => {
+  CONTRACT_FILES.map(async settings => {
+    let bundleName;
+    let contractPath;
+    if (typeof settings === 'string') {
+      bundleName = settings;
+      contractPath = settings;
+    } else {
+      ({ bundleName, contractPath } = settings);
+    }
     const bundle = await bundleSource(
-      `${__dirname}/../../../src/contracts/${contract}`,
+      `${__dirname}/../../../src/contracts/${contractPath}`,
     );
-    const obj = { bundle, contract };
+    const obj = { bundle, contractPath };
     fs.writeFileSync(
-      `${__dirname}/bundle-${contract}.js`,
+      `${__dirname}/bundle-${bundleName}.js`,
       `export default ${JSON.stringify(obj)};`,
     );
   }),
@@ -123,11 +134,14 @@ test('zoe - swapForOption - valid inputs', async t => {
   }
 });
 
-const expectedPublicAuctionOkLog = [
+const expectedSecondPriceAuctionOkLog = [
   '=> alice, bob, carol and dave are set up',
+  '@@ schedule task for:1, currently: 0 @@',
   'Carol: The offer has been accepted. Once the contract has been completed, please check your payout',
   'Bob: The offer has been accepted. Once the contract has been completed, please check your payout',
   'Dave: The offer has been accepted. Once the contract has been completed, please check your payout',
+  '@@ tick:1 @@',
+  '&& running a task scheduled for 1. &&',
   'carolMoolaPurse: balance {"brand":{},"value":0}',
   'bobMoolaPurse: balance {"brand":{},"value":1}',
   'daveMoolaPurse: balance {"brand":{},"value":0}',
@@ -137,7 +151,7 @@ const expectedPublicAuctionOkLog = [
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
 ];
-test('zoe - publicAuction - valid inputs', async t => {
+test('zoe - secondPriceAuction - valid inputs', async t => {
   t.plan(1);
   try {
     const startingValues = [
@@ -146,8 +160,8 @@ test('zoe - publicAuction - valid inputs', async t => {
       [0, 7, 0],
       [0, 5, 0],
     ];
-    const dump = await main(['publicAuctionOk', startingValues]);
-    t.deepEquals(dump.log, expectedPublicAuctionOkLog);
+    const dump = await main(['secondPriceAuctionOk', startingValues]);
+    t.deepEquals(dump.log, expectedSecondPriceAuctionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   }

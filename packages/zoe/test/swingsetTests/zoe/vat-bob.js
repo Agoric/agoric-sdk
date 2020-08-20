@@ -18,6 +18,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
+  let secondPriceAuctionSeatP;
+
   return harden({
     doAutomaticRefund: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
@@ -219,10 +221,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
       await showPurseBalance(bucksPurseP, 'bobBucksPurse;', log);
     },
-    doPublicAuction: async invitation => {
+    doSecondPriceAuctionBid: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const terms = await E(zoe).getTerms(instance);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const exclInvitation = await E(invitationIssuer).claim(invitation);
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
@@ -230,7 +231,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       assert(
-        installation === installations.publicAuction,
+        installation === installations.secondPriceAuction,
         details`wrong installation`,
       );
       assert(
@@ -240,7 +241,6 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         details`issuerKeywordRecord was not as expected`,
       );
-      assert(terms.numBidsAllowed === 3, details`terms not as expected`);
       assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
       assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
 
@@ -250,16 +250,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const seatP = await E(zoe).offer(
+      secondPriceAuctionSeatP = E(zoe).offer(
         exclInvitation,
         proposal,
         paymentKeywordRecord,
       );
-
-      log(`Bob: ${await E(seatP).getOfferResult()}`);
-
-      const moolaPayout = await E(seatP).getPayout('Asset');
-      const simoleanPayout = await E(seatP).getPayout('Bid');
+      log(`Bob: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
+    },
+    doSecondPriceAuctionGetPayout: async () => {
+      const moolaPayout = await E(secondPriceAuctionSeatP).getPayout('Asset');
+      const simoleanPayout = await E(secondPriceAuctionSeatP).getPayout('Bid');
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);

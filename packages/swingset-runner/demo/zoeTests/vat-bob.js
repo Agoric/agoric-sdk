@@ -221,7 +221,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
       await showPurseBalance(bucksPurseP, 'bobBucksPurse;', log);
     },
-    doPublicAuction: async invitation => {
+    doSecondPriceAuction: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const terms = await E(zoe).getTerms(instance);
@@ -232,7 +232,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       assert(
-        installation === installations.publicAuction,
+        installation === installations.secondPriceAuction,
         details`wrong installation`,
       );
       assert(

@@ -1,3 +1,5 @@
+import { E } from '@agoric/eventual-send';
+
 // A fake clock that also logs progress in tests.
 export default function buildManualTimer(log, startValue = 0) {
   let ticks = startValue;
@@ -23,7 +25,7 @@ export default function buildManualTimer(log, startValue = 0) {
       if (schedule.has(ticks)) {
         for (const h of schedule.get(ticks)) {
           log(`&& running a task scheduled for ${ticks}. &&`);
-          h.wake(ticks);
+          E(h).wake(ticks);
         }
       }
     },

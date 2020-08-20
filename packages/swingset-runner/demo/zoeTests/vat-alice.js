@@ -123,7 +123,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  const doPublicAuction = async (bobP, carolP, daveP) => {
+  const doSecondPriceAuction = async (bobP, carolP, daveP) => {
     const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaIssuer,
@@ -132,7 +132,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const terms = harden({ numBidsAllowed });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
-    ).startInstance(installations.publicAuction, issuerKeywordRecord, terms);
+    ).startInstance(
+      installations.secondPriceAuction,
+      issuerKeywordRecord,
+      terms,
+    );
 
     const proposal = harden({
       give: { Asset: moola(1) },
@@ -151,9 +155,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const carolInvitation = E(makeBidInvitationObj).makeBidInvitation();
     const daveInvitation = E(makeBidInvitationObj).makeBidInvitation();
 
-    const bobDoneP = E(bobP).doPublicAuction(bobInvitation);
-    const carolDoneP = E(carolP).doPublicAuction(carolInvitation);
-    const daveDoneP = E(daveP).doPublicAuction(daveInvitation);
+    const bobDoneP = E(bobP).doSecondPriceAuction(bobInvitation);
+    const carolDoneP = E(carolP).doSecondPriceAuction(carolInvitation);
+    const daveDoneP = E(daveP).doSecondPriceAuction(daveInvitation);
 
     await Promise.all([bobDoneP, carolDoneP, daveDoneP]);
 
@@ -420,8 +424,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         case 'swapForOptionOk': {
           return doSwapForOption(bobP, carolP, daveP);
         }
-        case 'publicAuctionOk': {
-          return doPublicAuction(bobP, carolP, daveP);
+        case 'secondPriceAuctionOk': {
+          return doSecondPriceAuction(bobP, carolP, daveP);
         }
         case 'atomicSwapOk': {
           return doAtomicSwap(bobP, carolP, daveP);

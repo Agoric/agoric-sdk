@@ -20,7 +20,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   return harden({
-    doPublicAuction: async invitation => {
+    doSecondPriceAuction: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
@@ -30,7 +30,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       assert(
-        installation === installations.publicAuction,
+        installation === installations.secondPriceAuction,
         details`wrong installation`,
       );
       assert(

@@ -5,7 +5,7 @@ import buildManualTimer from '../../../tools/manualTimer';
 /* eslint-disable import/no-unresolved, import/extensions */
 import automaticRefundBundle from './bundle-automaticRefund';
 import coveredCallBundle from './bundle-coveredCall';
-import publicAuctionBundle from './bundle-publicAuction';
+import secondPriceAuctionBundle from './bundle-secondPriceAuction';
 import atomicSwapBundle from './bundle-atomicSwap';
 import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
@@ -96,7 +96,9 @@ export function buildRootObject(vatPowers, vatParameters) {
       const installations = {
         automaticRefund: await E(zoe).install(automaticRefundBundle.bundle),
         coveredCall: await E(zoe).install(coveredCallBundle.bundle),
-        publicAuction: await E(zoe).install(publicAuctionBundle.bundle),
+        secondPriceAuction: await E(zoe).install(
+          secondPriceAuctionBundle.bundle,
+        ),
         atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
         simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
         autoswap: await E(zoe).install(autoswapBundle.bundle),
