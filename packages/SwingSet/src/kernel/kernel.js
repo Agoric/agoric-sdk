@@ -1,7 +1,7 @@
 /* global harden */
 
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatManagerFactory } from './vatManager/factory';
@@ -377,9 +377,8 @@ export default function buildKernel(kernelEndowments) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     const vat = ephemeral.vats.get(vatID);
-    assert(vat, details`notify unknown vatID ${vatID}`);
     kernelKeeper.incStat('dispatches');
-    if (vat.dead) {
+    if (!vat || vat.dead) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
     } else {
       const p = kernelKeeper.getKernelPromise(kpid);

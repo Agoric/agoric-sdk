@@ -1,13 +1,26 @@
 /* global harden */
+import { makePromiseKit } from '@agoric/promise-kit';
 
 export function buildRootObject(vatPowers) {
   // we use testLog to attempt to deliver messages even after we're supposed
   // to be dead and gone
   const { testLog } = vatPowers;
+  let resolvers;
 
   return harden({
     live() {
-      testLog(`I ate'nt dead`);
+      testLog(`w: I ate'nt dead`);
+      if (resolvers && resolvers.length) {
+        resolvers.shift()('I so resolve');
+      }
+    },
+    rememberThese(p1, p2) {
+      p1.then(v => testLog(`w: p1 = ${v}`));
+      p2.then(v => testLog(`w: p2 = ${v}`));
+      const { promise: pBefore, resolve: rBefore } = makePromiseKit();
+      const { promise: pAfter, resolve: rAfter } = makePromiseKit();
+      resolvers = [rBefore, rAfter];
+      return [pBefore, pAfter];
     },
   });
 }

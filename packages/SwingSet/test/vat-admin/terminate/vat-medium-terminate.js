@@ -9,7 +9,7 @@ export function buildRootObject(vatPowers) {
       try {
         await E(target).live();
       } catch (e) {
-        testLog(`live ${tag} failed: ${e}`);
+        testLog(`m: live ${tag} failed: ${e}`);
       }
     },
   });

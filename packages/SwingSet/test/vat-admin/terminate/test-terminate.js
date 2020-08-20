@@ -50,7 +50,7 @@ test('terminate', async t => {
   t.end();
 });
 
-test('vat referencing the dead does not harm kernel', async t => {
+test('dispatches to the dead do not harm kernel', async t => {
   const configPath = path.resolve(__dirname, 'swingset-speak-to-dead.json');
   const config = loadSwingsetConfigFile(configPath);
 
@@ -61,7 +61,12 @@ test('vat referencing the dead does not harm kernel', async t => {
     });
     await c1.run();
     t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
-    t.deepEqual(c1.dump().log, ['live 1 failed: unknown vat']);
+    t.deepEqual(c1.dump().log, [
+      'w: p1 = before',
+      `w: I ate'nt dead`,
+      'b: p1b = I so resolve',
+      'b: p2b fails vat terminated',
+    ]);
   }
   const state1 = getAllState(storage1);
   const { storage: storage2 } = initSwingStore();
@@ -80,8 +85,9 @@ test('vat referencing the dead does not harm kernel', async t => {
     await c2.run();
     t.equal(r2.status(), 'fulfilled');
     t.deepEqual(c2.dump().log, [
-      'live 1 failed: unknown vat',
-      'live 2 failed: unknown vat',
+      'b: p1b = I so resolve',
+      'b: p2b fails vat terminated',
+      'm: live 2 failed: unknown vat',
     ]);
   }
 
@@ -100,7 +106,7 @@ test('replay does not resurrect dead vat', async t => {
     await c1.run();
     t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
     // this comes from the dynamic vat...
-    t.deepEqual(c1.dump().log, [`I ate'nt dead`]);
+    t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }
 
   const state1 = getAllState(storage1);
