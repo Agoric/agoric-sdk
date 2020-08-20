@@ -60,7 +60,7 @@
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {() => void} exit
  * @property {(reason: any) => never} kickOut called with the reason this seat
- * is being kicked our, where reason is normally an instanceof Error.
+ * is being kicked out, where reason is normally an instanceof Error.
  * @property {() => Allocation} getCurrentAllocation
  */
 
