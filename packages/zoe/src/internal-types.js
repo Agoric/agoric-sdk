@@ -37,7 +37,8 @@
  * @param {InstanceAdmin} instanceAdmin
  * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
- * @param {{ offerResult?: ERef<OfferResult>, exitObj?: ERef<ExitObj>}} [options={}]
+ * @param {ERef<OfferResult>=} offerResult
+ * @param {ERef<ExitObj>=} exitObj
  * @returns {ZoeSeatAdminKit}
  *
  * @typedef {Object} ZoeSeatAdmin
@@ -81,6 +82,7 @@
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
+ *             seatHandle: SeatHandle,
  *            ) => Promise<AddSeatResult>} addZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
@@ -96,6 +98,7 @@
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
+ *             seatHandle: SeatHandle,
  *            ) => AddSeatResult} addSeat
  */
 
@@ -111,6 +114,7 @@
  *            ) => Promise<void>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeOfferlessSeat} makeOfferlessSeat
+ * @property {ReplaceAllocations} replaceAllocations
  */
 
 /**
@@ -123,8 +127,20 @@
 /**
  * @callback MakeOfferlessSeat
  * @param {Allocation} initialAllocation
- * @param {Proposal} proposal
+ * @param {ProposalRecord} proposal
+ * @param {SeatHandle} seatHandle
  * @returns {ZoeSeatAdminKit}
+ */
+
+/**
+ * @callback ReplaceAllocations
+ * @param {SeatHandleAllocation[]} seatHandleAllocations
+ */
+
+/**
+ * @typedef {Object} SeatHandleAllocation
+ * @property {SeatHandle} seatHandle
+ * @property {Allocation} allocation
  */
 
 /**
@@ -179,4 +195,8 @@
  * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
  * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
  * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
+ */
+
+/**
+ * @typedef {Handle<'SeatHandle'>} SeatHandle
  */
