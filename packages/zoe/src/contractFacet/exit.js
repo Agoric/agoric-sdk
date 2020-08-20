@@ -26,12 +26,22 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
 
   if (exitKind === 'afterDeadline') {
     // Automatically exit the seat after deadline.
-    E(proposal.exit.afterDeadline.timer).setWakeup(
-      proposal.exit.afterDeadline.deadline,
-      harden({
-        wake: exitFn,
-      }),
-    );
+    E(proposal.exit.afterDeadline.timer)
+      .setWakeup(
+        proposal.exit.afterDeadline.deadline,
+        harden({
+          wake: exitFn,
+        }),
+      )
+      .catch(reason => {
+        console.error(
+          `The seat could not be made with the provided timer ${proposal.exit.afterDeadline.timer} and deadline ${proposal.exit.afterDeadline.deadline}`,
+        );
+        console.error(reason);
+        zcfSeatAdmin.updateHasExited();
+        E(zoeSeatAdmin).kickOut(reason);
+        throw reason;
+      });
   } else if (exitKind === 'onDemand') {
     // Allow the user to exit their seat on demand. Note: we must wrap
     // it in an object to send it back to Zoe because our marshalling layer

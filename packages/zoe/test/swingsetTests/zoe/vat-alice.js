@@ -416,6 +416,48 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     log('alice earned: ', currentPurseBalance);
   };
 
+  const doBadTimer = async () => {
+    log(`=> alice.doBadTimer called`);
+    const installation = installations.coveredCall;
+    const issuerKeywordRecord = harden({
+      UnderlyingAsset: moolaIssuer,
+      StrikePrice: simoleanIssuer,
+    });
+    const { creatorInvitation: writeCallInvitation } = await E(
+      zoe,
+    ).startInstance(installation, issuerKeywordRecord);
+
+    const proposal = harden({
+      give: { UnderlyingAsset: moola(3) },
+      want: { StrikePrice: simoleans(7) },
+      exit: { afterDeadline: { timer: {}, deadline: 1 } },
+    });
+
+    const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
+
+    const seatP = await E(zoe).offer(
+      writeCallInvitation,
+      proposal,
+      paymentKeywordRecord,
+    );
+
+    // Bad timer error is logged but does not cause seat methods to
+    // throw.
+    const callOption = await E(seatP).getOfferResult();
+    const invitationIssuer = await E(zoe).getInvitationIssuer();
+    const isInvitation = await E(invitationIssuer).isLive(callOption);
+    log(`is a zoe invitation: ${isInvitation}`);
+
+    // The seat is automatically exited
+    const moolaPayout = await E(seatP).getPayout('UnderlyingAsset');
+    const simoleanPayout = await E(seatP).getPayout('StrikePrice');
+    await E(moolaPurseP).deposit(moolaPayout);
+    await E(simoleanPurseP).deposit(simoleanPayout);
+
+    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+  };
+
   return harden({
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
@@ -445,6 +487,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         }
         case 'sellTicketsOk': {
           return doSellTickets(bobP, carolP, daveP);
+        }
+        case 'badTimer': {
+          return doBadTimer();
         }
         default: {
           throw new Error(`testName ${testName} not recognized`);

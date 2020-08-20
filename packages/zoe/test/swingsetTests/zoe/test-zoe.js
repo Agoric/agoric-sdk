@@ -289,3 +289,20 @@ test('zoe - sellTickets - valid inputs', async t => {
   const dump = await main(['sellTicketsOk', startingValues]);
   t.deepEquals(dump.log, expectedSellTicketsOkLog);
 });
+
+const expectedBadTimerLog = [
+  '=> alice, bob, carol and dave are set up',
+  '=> alice.doBadTimer called',
+  'is a zoe invitation: true',
+  'aliceMoolaPurse: balance {"brand":{},"value":3}',
+  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
+];
+test('zoe - bad timer', async t => {
+  t.plan(1);
+  const startingValues = [
+    [3, 0, 0],
+    [0, 0, 0],
+  ];
+  const dump = await main(['badTimer', startingValues]);
+  t.deepEquals(dump.log, expectedBadTimerLog);
+});
