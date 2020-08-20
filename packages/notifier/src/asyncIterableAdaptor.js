@@ -107,7 +107,8 @@ export const updateFromIterable = (updater, asyncIterable) => {
   const iterator = asyncIterable[Symbol.asyncIterator]();
   return new Promise(ack => {
     const recur = () => {
-      E.when(iterator.next()).then(
+      E.when(
+        iterator.next(),
         ({ value, done }) => {
           if (done) {
             updater.finish && updater.finish(value);
