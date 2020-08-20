@@ -131,7 +131,7 @@ const start = zcf => {
     }
     // Eject because the offer must be invalid
     throw seat.kickOut(
-      `The proposal did not match either a buy or sell order.`,
+      new Error(`The proposal did not match either a buy or sell order.`),
     );
   };
 

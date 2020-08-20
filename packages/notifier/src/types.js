@@ -57,7 +57,7 @@
  * @property {(finalState: T) => void} finish sets the final state, sends a
  * final update, and freezes the
  * updater
- * @property {(reason: T) => void} fail the stream becomes erroneously
+ * @property {(reason: Error) => void} fail the stream becomes erroneously
  * terminated, allegedly for the stated reason.
  */
 

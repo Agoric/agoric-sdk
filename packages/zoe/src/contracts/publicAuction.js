@@ -53,10 +53,10 @@ const start = zcf => {
     // Check that the item is still up for auction
     if (sellSeat.hasExited()) {
       const rejectMsg = `The item up for auction is not available or the auction has completed`;
-      throw bidSeat.kickOut(rejectMsg);
+      throw bidSeat.kickOut(new Error(rejectMsg));
     }
     if (bidSeats.length >= numBidsAllowed) {
-      throw bidSeat.kickOut(`No further bids allowed.`);
+      throw bidSeat.kickOut(new Error(`No further bids allowed.`));
     }
     const sellerSatisfied = satisfies(zcf, sellSeat, {
       Ask: bidSeat.getAmountAllocated('Bid', minimumBid.brand),
@@ -68,7 +68,7 @@ const start = zcf => {
     });
     if (!(sellerSatisfied && bidderSatisfied)) {
       const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
-      throw bidSeat.kickOut(rejectMsg);
+      throw bidSeat.kickOut(new Error(rejectMsg));
     }
 
     // Save valid bid and try to close.

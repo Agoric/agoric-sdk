@@ -357,7 +357,7 @@
  * keys, brand values
  * @property {AmountMathKeywordRecord} maths - record with keywords
  * keys, amountMath values
- * 
+ *
  * @typedef {StandardTerms & Record<string, any>} Terms
  *
  * @typedef {object} InstanceRecord
@@ -377,7 +377,7 @@
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(msg?: string) => never} kickOut
+ * @property {(reason?: Error) => never} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal

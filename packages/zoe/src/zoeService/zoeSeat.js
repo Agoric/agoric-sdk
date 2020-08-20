@@ -75,14 +75,15 @@ export const makeZoeSeatAdminKit = (
       updater.finish(undefined);
       doExit(zoeSeatAdmin);
     },
-    kickOut: msg => {
+    kickOut: reason => {
       assert(
         instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
         `Cannot kick out of seat. Seat has already exited`,
       );
-      updater.fail(msg);
+      updater.fail(reason);
       doExit(zoeSeatAdmin);
-      assert.fail(msg);
+      console.log(reason);
+      throw reason;
     },
     getCurrentAllocation: () => currentAllocation,
   });
