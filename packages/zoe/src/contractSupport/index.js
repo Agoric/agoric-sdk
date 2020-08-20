@@ -1,7 +1,9 @@
 export {
   getInputPrice,
+  getOutputPrice,
   calcLiqValueToMint,
   calcValueToRemove,
+  calcSecondaryRequired,
 } from './bondingCurves';
 
 export { natSafeMath } from './safeMath';

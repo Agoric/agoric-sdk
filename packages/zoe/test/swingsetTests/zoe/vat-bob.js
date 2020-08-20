@@ -427,8 +427,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(
         sameStructure(
           harden({
-            TokenA: moolaIssuer,
-            TokenB: simoleanIssuer,
+            Central: moolaIssuer,
+            Secondary: simoleanIssuer,
             Liquidity: liquidityIssuer,
           }),
           issuerKeywordRecord,
@@ -436,7 +436,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         details`issuers were not as expected`,
       );
 
-      // bob checks the price of 3 moola. The price is 1 simolean
+      // bob checks how many simoleans he can get for 3 moola
       const simoleanAmounts = await E(publicFacet).getCurrentPrice(
         moola(3),
         simoleans(0).brand,
@@ -445,7 +445,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       const moolaForSimProposal = harden({
         give: { In: moola(3) },
-        want: { Out: simoleans(1) },
+        want: { Out: simoleans(0) },
       });
 
       const moolaForSimPayments = harden({ In: moolaPayment });
@@ -463,16 +463,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(moolaPurseP).deposit(await moolaPayout1);
       await E(simoleanPurseP).deposit(await simoleanPayout1);
 
-      // Bob looks up the price of 3 simoleans. It's 5 moola
-      const moolaAmounts = await E(publicFacet).getCurrentPrice(
-        simoleans(3),
-        moola(0).brand,
+      // Bob looks up the price of 6 moola. It's 3 simoleans
+      const moolaAmounts = await E(publicFacet).getPriceForOutput(
+        moola(6),
+        simoleans(0).brand,
       );
-      log(`moolaAmounts `, moolaAmounts);
+      log(`moola price `, moolaAmounts);
 
       // Bob makes another offer and swaps
       const bobSimsForMoolaProposal = harden({
-        want: { Out: moola(5) },
+        want: { Out: moola(6) },
         give: { In: simoleans(3) },
       });
       await E(simoleanPurseP).deposit(simoleanPayment);
