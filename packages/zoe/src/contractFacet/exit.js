@@ -33,14 +33,14 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
           wake: exitFn,
         }),
       )
-      .catch(err => {
+      .catch(reason => {
         console.error(
           `The seat could not be made with the provided timer ${proposal.exit.afterDeadline.timer} and deadline ${proposal.exit.afterDeadline.deadline}`,
         );
-        console.error(err);
+        console.error(reason);
         zcfSeatAdmin.updateHasExited();
-        E(zoeSeatAdmin).kickOut(err);
-        throw err;
+        E(zoeSeatAdmin).kickOut(reason);
+        throw reason;
       });
   } else if (exitKind === 'onDemand') {
     // Allow the user to exit their seat on demand. Note: we must wrap
