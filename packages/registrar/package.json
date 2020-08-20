@@ -1,6 +1,6 @@
 {
   "name": "@agoric/registrar",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Register objects for public use",
   "main": "src/registrar.js",
   "engines": {
@@ -26,11 +26,11 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.0.8",
-    "@agoric/sparse-ints": "^0.0.7"
+    "@agoric/assert": "^0.0.9",
+    "@agoric/sparse-ints": "^0.0.8"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.2.0",
+    "@agoric/install-ses": "^0.3.0",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",

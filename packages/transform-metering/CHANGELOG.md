@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.3.0...@agoric/transform-metering@1.3.1) (2020-08-20)
+
+
+### Bug Fixes
+
+* excise @agoric/harden from the codebase ([eee6fe1](https://github.com/Agoric/agoric-sdk/commit/eee6fe1153730dec52841c9eb4c056a8c5438b0f))
+* reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
+
+
+
+
+
 # [1.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.2.5...@agoric/transform-metering@1.3.0) (2020-06-30)
 
 

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-manager@0.0.7...@agoric/import-manager@0.1.0) (2020-08-20)
+
+
+### Bug Fixes
+
+* reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
+
+
+### Features
+
+* ERTP v0.7.0 ([#1317](https://github.com/Agoric/agoric-sdk/issues/1317)) ([2d66b5a](https://github.com/Agoric/agoric-sdk/commit/2d66b5ae1feaeef1024fc6bfac7066a385ed5207)), closes [#1306](https://github.com/Agoric/agoric-sdk/issues/1306) [#1305](https://github.com/Agoric/agoric-sdk/issues/1305)
+
+
+
+
+
 ## [0.0.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-manager@0.0.6...@agoric/import-manager@0.0.7) (2020-06-30)
 
 **Note:** Version bump only for package @agoric/import-manager

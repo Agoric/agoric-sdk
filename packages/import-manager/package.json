@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-manager",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "Share code across vat boundaries",
   "main": "src/importManager.js",
   "engines": {
@@ -27,10 +27,8 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "dependencies": {
-  },
   "devDependencies": {
-    "@agoric/install-ses": "^0.2.0",
+    "@agoric/install-ses": "^0.3.0",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",

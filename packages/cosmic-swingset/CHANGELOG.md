@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.19.0...@agoric/cosmic-swingset@0.20.0) (2020-08-20)
+
+
+### Bug Fixes
+
+* add `local.comms` object as well ([cf5566f](https://github.com/Agoric/agoric-sdk/commit/cf5566f2e6f7848c3ca1d4034394dcc83074d02b))
+* add a version check assertion to enforce Golang 1.14+ ([433d1ce](https://github.com/Agoric/agoric-sdk/commit/433d1ce78d92d5d89beb460075a85acaa6455fa5))
+* add local.vattp to localBundle ([a26165a](https://github.com/Agoric/agoric-sdk/commit/a26165aee025d302bc2c9a430917fa5a4bd0fb8b))
+* change the default wallet to dapp-svelte-wallet ([6722f23](https://github.com/Agoric/agoric-sdk/commit/6722f2384d4cfe65a0fc8a79ae0a03e1fbcb62e8))
+* clean up E.when and E.resolve ([#1561](https://github.com/Agoric/agoric-sdk/issues/1561)) ([634046c](https://github.com/Agoric/agoric-sdk/commit/634046c0fc541fc1db258105a75c7313b5668aa0))
+* clear up and solve the races around ag-solo initialisation ([f6482ac](https://github.com/Agoric/agoric-sdk/commit/f6482ac7f5f01cc4c7626610e81c191fd939c69a))
+* ensure all presences are resolved before creating bundle ([c66e58c](https://github.com/Agoric/agoric-sdk/commit/c66e58c948236eccac9cc3ecdaf1777e9c6464d4))
+* improve wallet contents migration, but still not great ([650f4f5](https://github.com/Agoric/agoric-sdk/commit/650f4f584b8d724260479e003da92033b626d863))
+* make local.vattp and agoric.vattp symmetrical ([9b366d0](https://github.com/Agoric/agoric-sdk/commit/9b366d02667404fca7fa88ee1c70f0e27b9fd209))
+* make scenario2 Makefile rules work again ([3c2647a](https://github.com/Agoric/agoric-sdk/commit/3c2647aa5a22c785600f9dbef7a328841ba37607))
+* match notifier semantics to async iterables ([#1332](https://github.com/Agoric/agoric-sdk/issues/1332)) ([efbf359](https://github.com/Agoric/agoric-sdk/commit/efbf359e7f1b4ca0eb07e3ae8a12e1f061758927))
+* properly abort all communication when CapTP is disconnected ([c2c0196](https://github.com/Agoric/agoric-sdk/commit/c2c0196001c2bc94d14645272b931e39ee38c197))
+* quieter CapTP disconnections on the ag-solo side ([6bfe9d6](https://github.com/Agoric/agoric-sdk/commit/6bfe9d64be3cd56a69191e2f22769109162fe50a))
+* rearrange `home` into `local` and `agoric` ([44ba391](https://github.com/Agoric/agoric-sdk/commit/44ba391db3551b40f5a45ba68cc4e0b7689a8299))
+* reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
+* **ag-nchainz:** give solo vats the `agoric.vattp` power ([a58bbba](https://github.com/Agoric/agoric-sdk/commit/a58bbbaaea964dd2423586dde330803fb6176c31))
+* Protect ag-solo script from shells with prompt strings ($PS1) ([3d5cbe3](https://github.com/Agoric/agoric-sdk/commit/3d5cbe3ad9ea9d3829b5d4de7691bef50c544ea2))
+* remove more controller references ([c9af5a1](https://github.com/Agoric/agoric-sdk/commit/c9af5a11ac5ffa1afcbc47c6399f35945055e3b2))
+* remove obsolete bundle command ([e87fecc](https://github.com/Agoric/agoric-sdk/commit/e87fecc1431c8c13bd26b9dbb678bcd29615fafd))
+* remove remaining set-json.js instances ([987426f](https://github.com/Agoric/agoric-sdk/commit/987426f98fc4da01e32034df3f962c731fa0f6bb))
+* remove unnecessary types ([e242143](https://github.com/Agoric/agoric-sdk/commit/e24214342062f908ebee91a775c0427abc21e263))
+* rename producePromise to makePromiseKit ([#1329](https://github.com/Agoric/agoric-sdk/issues/1329)) ([1d2925a](https://github.com/Agoric/agoric-sdk/commit/1d2925ad640cce7b419751027b44737bd46a6d59))
+* silence more debug messages ([e5ffb67](https://github.com/Agoric/agoric-sdk/commit/e5ffb6786126cad7a20b85039ffdbab1fc6c9d11))
+
+
+### Features
+
+* allow dapps to suggest a petname that is forwarded ([1183a19](https://github.com/Agoric/agoric-sdk/commit/1183a19d5887f62af4ac14cded91c3685df65c2d))
+* allow dapps to suggest petnames for issuer/brand, instance, installation ([#1308](https://github.com/Agoric/agoric-sdk/issues/1308)) ([0eb378b](https://github.com/Agoric/agoric-sdk/commit/0eb378bdd70fe008e535e818148a915c3f3db34c))
+* ERTP v0.7.0 ([#1317](https://github.com/Agoric/agoric-sdk/issues/1317)) ([2d66b5a](https://github.com/Agoric/agoric-sdk/commit/2d66b5ae1feaeef1024fc6bfac7066a385ed5207)), closes [#1306](https://github.com/Agoric/agoric-sdk/issues/1306) [#1305](https://github.com/Agoric/agoric-sdk/issues/1305)
+* make production Zoe use prebundled zcf ([138ddd7](https://github.com/Agoric/agoric-sdk/commit/138ddd70cba6e1b11a4a8c0d59f15a018f8bb0e6))
+* make Zoe in cosmic-swingset work with prebundled zcf ([2859650](https://github.com/Agoric/agoric-sdk/commit/285965047ba92608b39d9fa496b1bf2b952d748d))
+* **vattp:** allow specifying a console object for logging ([ae1a2a0](https://github.com/Agoric/agoric-sdk/commit/ae1a2a03bf2f823b5420b8777ec6c436cbb4b349))
+* defer the wallet UI until the start process ([18ee099](https://github.com/Agoric/agoric-sdk/commit/18ee0990836280478917265bbab966dee15e3dfe))
+* implement wallet upgrade, though not for dapp-react-wallet ([8945ebb](https://github.com/Agoric/agoric-sdk/commit/8945ebb695d42f5124495275d3412b721f1cfc07))
+* plumb up the chainID into BEGIN_BLOCK and AG_COSMOS_INIT ([23aa90d](https://github.com/Agoric/agoric-sdk/commit/23aa90d5750a0c3776613febffd8c388f4680861))
+* reintroduce anylogger as the console endowment ([98cd5cd](https://github.com/Agoric/agoric-sdk/commit/98cd5cd5c59e9121169bb8104b70c63ccc7f5f01))
+* separate wallet implementation from ag-solo ([0bf7eab](https://github.com/Agoric/agoric-sdk/commit/0bf7eab1f575a8805e3908f38271cd3ce1bff053))
+* use debugName to differentiate sim-chain instances ([0efc33f](https://github.com/Agoric/agoric-sdk/commit/0efc33fafbeefeff587f94251dc3052179b17642))
+* **cosmic-swingset:** add attenuated vattp to fake chain clients ([e6f6aeb](https://github.com/Agoric/agoric-sdk/commit/e6f6aeb6ed64ccf5608cbe6e26fd429283ab8a2e))
+* **cosmic-swingset:** send powerFlags from tx provision-one ([5b68af5](https://github.com/Agoric/agoric-sdk/commit/5b68af594b5c8ea0732eb70aeae8ed5139b7b6cb))
+
+
+
+
+
 # [0.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.18.0...@agoric/cosmic-swingset@0.19.0) (2020-06-30)
 
 
