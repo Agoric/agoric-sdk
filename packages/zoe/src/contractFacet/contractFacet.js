@@ -145,8 +145,6 @@ export function buildRootObject() {
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. Commit point. The following two steps
           // *should* be committed atomically.
-          // But unlike https://github.com/Agoric/agoric-sdk/issues/1391
-          // it is not a disater if they are not.
           // If we minted only, no one would ever get those
           // invisibly-minted assets.
           E(zoeMintP).mintAndEscrow(totalToMint);
@@ -181,8 +179,6 @@ export function buildRootObject() {
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. Commit point. The following two steps
           // *should* be committed atomically.
-          // But unlike https://github.com/Agoric/agoric-sdk/issues/1391
-          // it is not a disater if they are not.
           // If we only commit the staging, no one would ever get the
           // unburned assets.
           zcfSeatAdmin.commit(seatStaging);
@@ -242,8 +238,6 @@ export function buildRootObject() {
         // COMMIT POINT
         // Commit the staged allocations and inform Zoe of the
         // newAllocation.
-        // Note that there is an atomicity issue:
-        // https://github.com/Agoric/agoric-sdk/issues/1391
         seatStagings.forEach(seatStaging =>
           zcfSeatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
         );
