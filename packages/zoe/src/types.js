@@ -377,8 +377,8 @@
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(reason?: any) => never} kickOut alled with the reason this seat
- * is being kicked out, where reason is normally an instanceof Error.
+ * @property {(reason?: any) => never} kickOut called with the reason this
+ * seat is being kicked out, where reason is normally an instanceof Error.
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
