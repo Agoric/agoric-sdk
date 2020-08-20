@@ -38,7 +38,8 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
           `The seat could not be made with the provided timer ${proposal.exit.afterDeadline.timer} and deadline ${proposal.exit.afterDeadline.deadline}`,
         );
         console.error(err);
-        exitFn();
+        zcfSeatAdmin.updateHasExited();
+        E(zoeSeatAdmin).kickOut(err);
         throw err;
       });
   } else if (exitKind === 'onDemand') {
