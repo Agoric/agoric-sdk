@@ -18,7 +18,7 @@
 
 {#if Array.isArray(name)}
   <span class:color class="confirmedPetname">{name[0]}</span><span class:color class="untrustedName">
-    {#each name.slice(1) as path}.{path}{#if plural}s{/if}{/each}
+    {#each name.slice(1) as path}.{path}{/each}{#if plural}s{/if}
   </span>
 {:else}
   <span class:color class="confirmedPetname">

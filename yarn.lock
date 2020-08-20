@@ -8652,15 +8652,6 @@ serve-static@1.14.1:
     parseurl "~1.3.3"
     send "0.17.1"
 
-ses@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.10.0.tgz#2523263c99f0d808f7742e74c43311e323bfad03"
-  integrity sha512-c5Scmvd9rQ1VqTCu1iAVESrublpZP/TOJhrANohuQInTwlIXNw5saGQkpnPGY4oCOqSSjz4eYkzMaKn67jL5Mg==
-  dependencies:
-    "@agoric/babel-standalone" "^7.9.5"
-    "@agoric/make-hardener" "^0.1.0"
-    "@agoric/transform-module" "^0.3.0"
-
 ses@^0.10.1:
   version "0.10.1"
   resolved "https://registry.yarnpkg.com/ses/-/ses-0.10.1.tgz#7506ce0e48e98a518fde20604072b523228b9441"
