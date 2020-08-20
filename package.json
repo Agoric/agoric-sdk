@@ -70,7 +70,6 @@
     "patch-package": "patch-package"
   },
   "dependencies": {
-    "@agoric/store": "^0.2.0",
     "patch-package": "^6.2.2"
   }
 }
