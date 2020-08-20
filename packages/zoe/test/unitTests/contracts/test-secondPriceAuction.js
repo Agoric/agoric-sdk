@@ -304,8 +304,15 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     // Bob bids
     const bobSeat = await zoe.offer(bobInvitation, bobProposal, bobPayments);
 
+    t.equals(
+      await E(bobSeat).getOfferResult(),
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
+    );
+
     // Bob exits early, but this does not stop the auction.
-    bobSeat.tryExit();
+    await E(bobSeat).tryExit();
+    const bobMoolaPayout = await bobSeat.getPayout('Asset');
+    const bobSimoleanPayout = await bobSeat.getPayout('Bid');
 
     const carolInvitation = await E(makeInvitationObj).makeBidInvitation();
 
@@ -326,8 +333,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 
     const aliceMoolaPayout = await aliceSeat.getPayout('Asset');
     const aliceSimoleanPayout = await aliceSeat.getPayout('Ask');
-    const bobMoolaPayout = await bobSeat.getPayout('Asset');
-    const bobSimoleanPayout = await bobSeat.getPayout('Bid');
+
     const carolMoolaPayout = await carolSeat.getPayout('Asset');
     const carolSimoleanPayout = await carolSeat.getPayout('Bid');
 
@@ -336,7 +342,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     t.deepEquals(
       await moolaR.issuer.getAmountOf(aliceMoolaPayout),
       moola(0),
-      `alice has no assets`,
+      `alice has no moola`,
     );
 
     // Alice got Carol's simoleans
