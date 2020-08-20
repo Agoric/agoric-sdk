@@ -60,15 +60,16 @@ const start = zcf => {
       throw buyerSeat.kickOut(new Error(rejectMsg));
     }
 
+    // All items are the same price.
     const totalCost = moneyMath.make(
       pricePerItem.value * wantedItems.value.length,
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
-    if (!moneyMath.isGTE(providedMoney, totalCost)) {
-      const rejectMsg = `More money (${totalCost}) is required to buy these items`;
-      throw buyerSeat.kickOut(new Error(rejectMsg));
-    }
+    assert(
+      moneyMath.isGTE(providedMoney, totalCost),
+      details`More money (${totalCost}) is required to buy these items`,
+    );
 
     // Reallocate. We are able to trade by only defining the gains
     // (omitting the losses) because the keywords for both offers are
@@ -80,22 +81,18 @@ const start = zcf => {
       { seat: buyerSeat, gains: { Items: wantedItems } },
     );
 
-    // exit the buyer seat
+    // The buyer's offer has been processed.
     buyerSeat.exit();
     return defaultAcceptanceMsg;
   };
 
-  const getAvailableItems = () => {
-    assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
-    return sellerSeat.getAmountAllocated('Items');
-  };
-
-  const getItemsIssuer = () => issuers.Items;
-
   /** @type {SellItemsPublicFacet} */
   const publicFacet = {
-    getAvailableItems,
-    getItemsIssuer,
+    getAvailableItems: () => {
+      assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
+      return sellerSeat.getAmountAllocated('Items');
+    },
+    getItemsIssuer: () => issuers.Items,
   };
 
   /** @type {SellItemsCreatorFacet} */
@@ -115,8 +112,8 @@ const start = zcf => {
         'buyer',
       );
     },
-    getAvailableItems,
-    getItemsIssuer,
+    getAvailableItems: publicFacet.getAvailableItems,
+    getItemsIssuer: publicFacet.getItemsIssuer,
   };
 
   const creatorInvitation = zcf.makeInvitation(sell, 'seller');
