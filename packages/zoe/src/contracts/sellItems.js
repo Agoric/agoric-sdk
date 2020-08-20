@@ -57,7 +57,7 @@ const start = zcf => {
     // Check that the wanted items are still for sale.
     if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
-      throw buyerSeat.kickOut(rejectMsg);
+      throw buyerSeat.kickOut(new Error(rejectMsg));
     }
 
     const totalCost = moneyMath.make(
@@ -67,7 +67,7 @@ const start = zcf => {
     // Check that the money provided to pay for the items is greater than the totalCost.
     if (!moneyMath.isGTE(providedMoney, totalCost)) {
       const rejectMsg = `More money (${totalCost}) is required to buy these items`;
-      throw buyerSeat.kickOut(rejectMsg);
+      throw buyerSeat.kickOut(new Error(rejectMsg));
     }
 
     // Reallocate. We are able to trade by only defining the gains

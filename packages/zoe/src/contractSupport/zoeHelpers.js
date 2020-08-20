@@ -140,7 +140,9 @@ export const trade = (zcf, keepLeft, tryRight) => {
   } catch (err) {
     console.log(err);
     throw tryRight.seat.kickOut(
-      `The trade between left ${keepLeft} and right ${tryRight} failed. Please check the log for more information`,
+      new Error(
+        `The trade between left ${keepLeft} and right ${tryRight} failed. Please check the log for more information`,
+      ),
     );
   }
 
@@ -164,7 +166,9 @@ export const trade = (zcf, keepLeft, tryRight) => {
       console.log(`offer not safe for right`);
     }
     return tryRight.seat.kickOut(
-      `The trade between left ${keepLeft} and right ${tryRight} failed offer safety. Please check the log for more information`,
+      new Error(
+        `The trade between left ${keepLeft} and right ${tryRight} failed offer safety. Please check the log for more information`,
+      ),
     );
   }
 
@@ -202,7 +206,7 @@ export const swap = (
   keepHandleInactiveMsg = 'prior offer is unavailable',
 ) => {
   if (keepSeat.hasExited()) {
-    throw trySeat.kickOut(keepHandleInactiveMsg);
+    throw trySeat.kickOut(new Error(keepHandleInactiveMsg));
   }
 
   trade(

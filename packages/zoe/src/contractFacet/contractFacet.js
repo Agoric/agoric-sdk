@@ -331,12 +331,12 @@ export function buildRootObject() {
         seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
-        const offerResultP = E(offerHandler)(zcfSeat).catch(err => {
-          console.error(err);
+        const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
+          console.error(reason);
           if (!zcfSeat.hasExited()) {
-            throw zcfSeat.kickOut(err.message);
+            throw zcfSeat.kickOut(reason);
           } else {
-            throw err;
+            throw reason;
           }
         });
         const exitObj = makeExitObj(
