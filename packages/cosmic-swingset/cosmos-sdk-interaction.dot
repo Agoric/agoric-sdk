@@ -1,0 +1,27 @@
+digraph G {
+
+  start [label="Start",shape=Mdiamond];
+  crash [label="Crash\nRecovery",color="red",shape=Mdiamond];
+  genesis [label="Read\nGenesis"];
+  between [label="Receiving\nTxes"];
+  propose [label="Block\nTxes\nChosen"];
+  executing [label="Executing\nTxes"];
+  beginCosmosCommit [label="Precommit\nPhase"];
+  endCosmosCommit [label="Commit\nCosmos"]
+  swingSetCommit [label="Commit\nSwingset"];
+
+  start -> genesis;
+  genesis -> propose;
+  between -> between [label="SIMULATE_TX"];
+  between -> propose [label="Proposal\nbegins"];
+  propose -> executing [label="BEGIN_BLOCK"];
+  executing -> executing [label="DELIVER_TX"];
+  executing -> beginCosmosCommit [label="END_BLOCK"];
+  // beginCosmosCommit -> propose [label="FIXME\nRetry?",color="blue"];
+  beginCosmosCommit -> swingSetCommit [label="COMMIT_BLOCK"];
+  swingSetCommit -> endCosmosCommit;
+  endCosmosCommit -> between;
+  
+  crash -> propose [color="red",style="dashed"];
+  crash -> between [color="red",style="dashed"];
+}
