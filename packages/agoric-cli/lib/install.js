@@ -41,7 +41,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       allPackages.map(async pkg => {
         const dir = `${sdkPackagesDir}/${pkg}`;
         const packageJSON = await fs
-          .readFile(`${dir}/package.json`)
+          .readFile(`${dir}/package.json`, 'utf-8')
           .catch(err => log('error reading', `${dir}/package.json`, err));
         if (!packageJSON) {
           return undefined;
@@ -83,7 +83,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
         // Mark all the SDK package dependencies as wildcards.
         const pjson = `${subdir}/package.json`;
-        const packageJSON = await fs.readFile(pjson).catch(_ => undefined);
+        const packageJSON = await fs
+          .readFile(pjson, 'utf-8')
+          .catch(_ => undefined);
         if (!packageJSON) {
           return;
         }
@@ -92,8 +94,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
           const deps = pj[section];
           if (deps) {
             for (const pkg of Object.keys(deps)) {
-              const latest = versions.get(pkg);
-              if (latest) {
+              if (versions.has(pkg)) {
                 deps[pkg] = `*`;
               }
             }
