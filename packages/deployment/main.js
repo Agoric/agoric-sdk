@@ -551,8 +551,6 @@ show-config      display the client connection parameters
       const pserverHost = pserverFlags
         ? `https://${match[1]}`
         : `http://${match[1]}:8001`;
-      const pserverUrl = `${pserverHost}${pserverPassword &&
-        `/provision-${pserverPassword}`}`;
       initHint();
 
       console.error(
