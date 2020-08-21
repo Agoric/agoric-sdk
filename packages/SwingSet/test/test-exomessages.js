@@ -1,4 +1,5 @@
 import '@agoric/install-ses';
+import { REMOTE_STYLE } from '@agoric/marshal';
 import test from 'ava';
 import { buildVatController } from '../src/index';
 
@@ -39,7 +40,7 @@ test('bootstrap returns presence', async t => {
   // prettier-ignore
   await bootstrapSuccessfully(
     t,
-    'presence',
+    REMOTE_STYLE,
     '{"@qclass":"slot",index:0}',
     ['ko25'],
   );
@@ -103,7 +104,7 @@ test('extra message returns presence', async t => {
   // prettier-ignore
   await extraMessage(
     t,
-    'presence',
+    REMOTE_STYLE,
     'fulfilled',
     '{"@qclass":"slot",index:0}',
     ['ko25'],
