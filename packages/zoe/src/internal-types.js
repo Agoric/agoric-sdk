@@ -37,8 +37,8 @@
  * @param {InstanceAdmin} instanceAdmin
  * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
+ * @param {ERef<ExitObj>} exitObj
  * @param {ERef<OfferResult>=} offerResult
- * @param {ERef<ExitObj>=} exitObj
  * @returns {ZoeSeatAdminKit}
  *
  * @typedef {Object} ZoeSeatAdmin
@@ -122,7 +122,7 @@
  *             keyword: Keyword
  *            ) => Promise<void>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
- * @property {MakeOfferlessSeat} makeOfferlessSeat
+ * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  */
 
@@ -134,9 +134,10 @@
  */
 
 /**
- * @callback MakeOfferlessSeat
+ * @callback MakeNoEscrowSeat
  * @param {Allocation} initialAllocation
  * @param {ProposalRecord} proposal
+ * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
  * @returns {ZoeSeatAdminKit}
  */
@@ -187,7 +188,7 @@
 /**
  * @callback MakeExitObj
  * @param {ProposalRecord} proposal
- * @param {ZoeSeatAdmin} zoeSeatAdmin
+ * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
  * @param {ZCFSeatAdmin} zcfSeatAdmin
  */
 
