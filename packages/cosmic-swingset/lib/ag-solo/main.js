@@ -57,6 +57,20 @@ start
   }
 
   switch (argv[0]) {
+    case 'setup': {
+      const { netconfig } = parseArgs(argv.slice(1));
+      if (!AG_SOLO_BASEDIR) {
+        console.error(`setup: you must set $AG_SOLO_BASEDIR`);
+        return;
+      }
+      if (!fs.existsSync(AG_SOLO_BASEDIR)) {
+        await solo(progname, ['init', AG_SOLO_BASEDIR, ...rawArgv.slice(1)]);
+      }
+      process.chdir(AG_SOLO_BASEDIR);
+      await solo(progname, ['add-chain', netconfig]);
+      await solo(progname, ['start']);
+      break;
+    }
     case 'init': {
       const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
         default: {

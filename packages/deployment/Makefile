@@ -11,7 +11,7 @@ docker-show-fat:
 	docker build --file=Dockerfile.show-fat ../..
 
 docker-build: docker-build-base docker-build-sdk docker-build-solo \
-	docker-build-pserver docker-build-setup docker-build-setup-solo
+	docker-build-setup
 
 docker-build-sdk:
 	docker build -t $(REPOSITORY_SDK):latest --file=Dockerfile.sdk ../..
@@ -25,14 +25,8 @@ docker-build-base:
 	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
 	docker build -t $(REPOSITORY):latest $(SS)
 
-docker-build-pserver:
-	docker build -t $(REPOSITORY)-pserver:latest $(SS)provisioning-server
-
 docker-build-solo:
 	docker build -t $(REPOSITORY)-solo:latest $(SS)lib/ag-solo
-
-docker-build-setup-solo:
-	docker build -t $(REPOSITORY)-setup-solo:latest $(SS)setup-solo
 
 docker-push: docker-push-base docker-push-solo docker-push-setup \
 	docker-push-pserver docker-push-setup-solo docker-push-ibc-alpha
