@@ -11,7 +11,7 @@ docker-show-fat:
 	docker build --file=Dockerfile.show-fat ../..
 
 docker-build: docker-build-base docker-build-sdk docker-build-solo \
-	docker-build-setup
+	docker-build-pserver docker-build-setup
 
 docker-build-sdk:
 	docker build -t $(REPOSITORY_SDK):latest --file=Dockerfile.sdk ../..
@@ -25,11 +25,14 @@ docker-build-base:
 	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
 	docker build -t $(REPOSITORY):latest $(SS)
 
+docker-build-pserver:
+	docker build -t $(REPOSITORY)-pserver:latest $(SS)provisioning-server
+
 docker-build-solo:
 	docker build -t $(REPOSITORY)-solo:latest $(SS)lib/ag-solo
 
 docker-push: docker-push-base docker-push-solo docker-push-setup \
-	docker-push-pserver docker-push-setup-solo docker-push-ibc-alpha
+	docker-push-pserver docker-push-ibc-alpha
 
 # ./docker is an emptyish directory.
 docker-build-ibc-alpha:
@@ -57,8 +60,3 @@ docker-push-solo:
 	docker tag $(REPOSITORY)-solo:latest $(REPOSITORY)-solo:$(TAG)
 	$(DONT_PUSH_LATEST) docker push $(REPOSITORY)-solo:latest
 	docker push $(REPOSITORY)-solo:$(TAG)
-
-docker-push-setup-solo:
-	docker tag $(REPOSITORY)-setup-solo:latest $(REPOSITORY)-setup-solo:$(TAG)
-	$(DONT_PUSH_LATEST) docker push $(REPOSITORY)-setup-solo:latest
-	docker push $(REPOSITORY)-setup-solo:$(TAG)

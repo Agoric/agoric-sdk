@@ -48,24 +48,20 @@ all: build-cosmos install
 scenario0-setup:
 	mkdir -p t9
 	rm -rf t9/$(BASE_PORT)
-	bin/ag-solo init t9/$(BASE_PORT) --webport=$(BASE_PORT)
 
-scenario0-run:
-	(cd t9/$(BASE_PORT) && ../../bin/ag-solo add-chain)
-	(cd t9/$(BASE_PORT) && ../../bin/ag-solo start)
-
-scenario0-run-client: scenario0-run
+scenario0-run scenario0-run-client:
+	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) bin/ag-solo setup --webport=$(BASE_PORT)
 scenario0-run-chain:
-	@echo 'No local chain needs to run in scenario0'
+	@echo 'We use the Agoric testnet, not a local chain.'
 
 scenario1-setup: scenario0-setup
 scenario1-run-chain:
 	@test "`uname -s`" = Linux || \
 		{ echo 'Must run under Linux; use "(cd ../deployment && make docker-build) && docker/ag-setup-cosmos bootstrap"'; exit 1; }
-	AG_SETUP_COSMOS_HOME=t8 setup/ag-setup-cosmos bootstrap
+	AG_SETUP_COSMOS_HOME=t8 ../deployment/ag-setup-cosmos bootstrap
 
 scenario1-run-client:
-	AG_SOLO_BASEDIR=t9 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
+	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) bin/ag-solo setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
 AGC = ./bin/ag-chain-cosmos
 AGCH = ag-cosmos-helper
