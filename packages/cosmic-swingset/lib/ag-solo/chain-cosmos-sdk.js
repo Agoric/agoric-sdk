@@ -14,6 +14,18 @@ import anylogger from 'anylogger';
 const log = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
+const SUPPORT_ADDRESS =
+  '@agoric.support#testnet on Keybase (https://keybase.io)';
+
+const adviseProvision = myAddr =>
+  `\
+
+
+Send:
+
+  !faucet provision ${myAddr}
+
+to ${SUPPORT_ADDRESS}`;
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 
@@ -298,6 +310,41 @@ export async function connectToChain(
         });
       });
     });
+
+  // Validate that our chain egress exists.
+  await retryRpcAddr(async rpcAddr => {
+    const args = ['query', 'swingset', 'egress', myAddr];
+    const fullArgs = [
+      ...args,
+      `--chain-id=${chainID}`,
+      '--output=json',
+      `--node=tcp://${rpcAddr}`,
+      `--home=${helperDir}`,
+    ];
+    // log(HELPER, ...fullArgs);
+    const r = await new Promise(resolve => {
+      execFile(HELPER, fullArgs, (error, stdout, stderr) => {
+        resolve({ error, stdout, stderr });
+      });
+    });
+
+    if (r.stderr.includes('not found: unknown request')) {
+      console.error(`\
+=============
+${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
+        myAddr,
+      )}
+=============
+`);
+      return undefined;
+    } else if (r.error) {
+      console.error(`Error running`, HELPER, ...args);
+      console.error(r.stderr);
+      return undefined;
+    }
+
+    return r;
+  });
 
   // We need one subscription-type thing
   // to tell us that a new block exists, then we can use a different

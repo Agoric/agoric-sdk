@@ -8,6 +8,7 @@ import { assert } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 // Start a network service
+import addChain from './add-chain';
 import initBasedir from './init-basedir';
 import resetState from './reset-state';
 import setGCIIngress from './set-gci-ingress';
@@ -85,6 +86,15 @@ start
       // log.error(
       //   `Run '(cd ${basedir} && ${progname} start)' to start the vat machine`,
       // );
+      break;
+    }
+    case 'add-chain': {
+      const basedir = insistIsBasedir();
+      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
+        boolean: ['reset'],
+      });
+      const [chainConfig] = subArgs;
+      await addChain(basedir, chainConfig, subOpts.reset);
       break;
     }
     case 'set-gci-ingress': {

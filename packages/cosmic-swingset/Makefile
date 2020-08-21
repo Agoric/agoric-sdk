@@ -1,6 +1,6 @@
 REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
-INITIAL_TOKENS = 10000000000000000000000000uag
+INITIAL_TOKENS = 1000000000000uag
 
 # By default, make the fake chain in scenario3 produce
 # "blocks" as soon as they come in.
@@ -46,13 +46,15 @@ include Makefile.ledger
 all: build-cosmos install
 
 scenario0-setup:
-	rm -rf ~/.ag-chain-cosmos
-	python3 -mvenv ve3
-	ve3/bin/pip install setup-solo/
+	mkdir -p t9
+	rm -rf t9/$(BASE_PORT)
+	bin/ag-solo init t9/$(BASE_PORT) --webport=$(BASE_PORT)
 
-scenario0-run-client:
-	AG_SOLO_BASEDIR=t9 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
+scenario0-run:
+	(cd t9/$(BASE_PORT) && ../../bin/ag-solo add-chain)
+	(cd t9/$(BASE_PORT) && ../../bin/ag-solo start)
 
+scenario0-run-client: scenario0-run
 scenario0-run-chain:
 	@echo 'No local chain needs to run in scenario0'
 
@@ -63,7 +65,7 @@ scenario1-run-chain:
 	AG_SETUP_COSMOS_HOME=t8 setup/ag-setup-cosmos bootstrap
 
 scenario1-run-client:
-	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
+	AG_SOLO_BASEDIR=t9 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
 AGC = ./bin/ag-chain-cosmos
 AGCH = ag-cosmos-helper

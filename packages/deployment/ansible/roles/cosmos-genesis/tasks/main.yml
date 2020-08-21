@@ -34,19 +34,13 @@
     - "/home/{{ service }}/.{{ service }}/config/gentx"
     - "/home/{{ service }}/validator-txes.txt"
 
-- name: "Add bootstrap coins to {{ service }}"
-  become: yes
-  become_user: "{{ service }}"
-  shell: "{{ service }} add-genesis-account {{ BOOTSTRAP_ADDRESS }} {{ BOOTSTRAP_TOKENS }}"
-  ignore_errors: true
-
 - name: "Add faucet coins to {{ service }}"
   become: yes
   become_user: "{{ service }}"
   shell: "\
     {{ service }} add-genesis-account \
       $(ag-cosmos-helper keys show --keyring-backend=test faucet -a) \
-      {{ STAKER_TOKENS }}"
+      {{ STAKER_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
   ignore_errors: true
 
 - name: "Add {{ STAKER_AMOUNT }} coins to {{ STAKER }}-{{ STAKER_NODE }}"
