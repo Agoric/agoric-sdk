@@ -8,11 +8,10 @@
 
 /**
  * @template {string} H - the name of the handle
- * @typedef {H & {}} Handle A type constructor for an opaque type identified by
- * the H string.
- * This uses an intersection type ('MyHandle' & {}) to tag the handle's type even
- * though the
- * actual value is just an empty object.
+ * @typedef {H & {}} Handle A type constructor for an opaque type
+ * identified by the H string. This uses an intersection type
+ * ('MyHandle' & {}) to tag the handle's type even though the actual
+ * value is just an empty object.
  */
 
 /**
@@ -188,17 +187,18 @@
  */
 
 /**
- * @typedef {Object} ContractFacet
- * The Zoe interface specific to a contract instance.
- * The Zoe Contract Facet is an API object used by running contract instances to
- * access the Zoe state for that instance. The Zoe Contract Facet is accessed
- * synchronously from within the contract, and usually is referred to in code as
- * zcf.
+ * @typedef {Object} ContractFacet The Zoe interface specific to a
+ * contract instance. The Zoe Contract Facet is an API object used by
+ * running contract instances to access the Zoe state for that
+ * instance. The Zoe Contract Facet is accessed synchronously from
+ * within the contract, and usually is referred to in code as zcf.
  * @property {Reallocate} reallocate - reallocate amounts among seats
  * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
- * whether a keyword is valid and unique and could be added in `saveIssuer`
+ * whether a keyword is valid and unique and could be added in
+ * `saveIssuer`
  * @property {SaveIssuer} saveIssuer - save an issuer to ZCF and Zoe
- * and get the amountMath and brand synchronously accessible after saving
+ * and get the amountMath and brand synchronously accessible after
+ * saving
  * @property {MakeInvitation} makeInvitation
  * @property {Shutdown} shutdown
  * @property {() => ZoeService} getZoeService
@@ -220,7 +220,6 @@
 
 /**
  * @typedef {Object} ZCFMint
- *
  * @property {() => IssuerRecord} getIssuerRecord
  * @property {(gains: AmountKeywordRecord,
  *             zcfSeat?: ZCFSeat,
@@ -299,24 +298,6 @@
  * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
  * @returns {Promise<IssuerRecord>} Issuer is added and ready
- */
-
-/**
- * @callback AddNewIssuer
- * Informs Zoe about an issuer and returns a promise for acknowledging
- * when the issuer is added and ready.
- * @param {ERef<Issuer>} issuerP Promise for issuer
- * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord>} Issuer is added and ready
- *
- * @typedef {Record<string,function>} PublicAPI
- *
- * @callback InitPublicAPI
- * Initialize the publicAPI for the contract instance, as stored by Zoe in
- * the instanceRecord.
- * @param {PublicAPI} publicAPI - an object whose methods are the API
- * available to anyone who knows the instanceHandle
- * @returns {void}
  */
 
 /**
@@ -428,7 +409,6 @@
  */
 
 /**
- * @template T
  * @callback GetAmountMath
  * @param {Brand} brand
  * @returns {AmountMath}
