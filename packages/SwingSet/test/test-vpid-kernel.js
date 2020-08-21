@@ -2,7 +2,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
@@ -249,7 +249,7 @@ async function doTest123(t, which, mode) {
     dataPromiseB = 'p-61';
     syscallA.send(rootBvatA, 'one', capargs([slot0arg], [exportedP1VatA]));
     p1kernel = clistVatToKernel(kernel, vatA, exportedP1VatA);
-    t.equal(p1kernel, expectedP1kernel);
+    t.is(p1kernel, expectedP1kernel);
     await kernel.run();
 
     t.deepEqual(logB.shift(), {
@@ -264,7 +264,7 @@ async function doTest123(t, which, mode) {
     syscallB.subscribe(importedP1VatB);
     await kernel.run();
     t.deepEqual(logB, []);
-    t.equal(inCList(kernel, vatB, p1kernel, importedP1VatB), true);
+    t.is(inCList(kernel, vatB, p1kernel, importedP1VatB), true);
   } else if (which === 2) {
     // 2: Bob sends a message to Alice, Alice resolves the result promise
     // B: alice~.one()
@@ -325,7 +325,7 @@ async function doTest123(t, which, mode) {
   }
 
   // before resolution, A's c-list should have the promise
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+  t.is(inCList(kernel, vatA, p1kernel, p1VatA), true);
 
   const targetsA = {
     target2: rootBvatA,
@@ -345,15 +345,14 @@ async function doTest123(t, which, mode) {
 
   if (expectRetirement) {
     // after resolution, A's c-list should *not* have the promise
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
-    t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-    t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
+    t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+    t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
   } else {
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
-    t.equal(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
-    t.equal(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), true);
+    t.is(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
+    t.is(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
   }
-  t.end();
 }
 // uncomment this when debugging specific problems
 // test.only(`XX`, async t => {
@@ -422,7 +421,7 @@ async function doTest4567(t, which, mode) {
     dataPromiseA = 'p-61';
     syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedP1VatB]));
     p1kernel = clistVatToKernel(kernel, vatB, exportedP1VatB);
-    t.equal(p1kernel, expectedP1kernel);
+    t.is(p1kernel, expectedP1kernel);
     await kernel.run();
 
     t.deepEqual(logA.shift(), {
@@ -518,7 +517,7 @@ async function doTest4567(t, which, mode) {
   }
 
   // before resolution, A's c-list should have the promise
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+  t.is(inCList(kernel, vatA, p1kernel, p1VatA), true);
 
   // Now bob resolves it. We want to examine the kernel's c-lists at the
   // moment the notification is delivered to Alice. We only expect one
@@ -530,7 +529,7 @@ async function doTest4567(t, which, mode) {
   };
   onDispatchCallback = function odc1(d) {
     t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), !expectRetirement);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), !expectRetirement);
   };
   const targetsB = {
     target2: rootAvatB,
@@ -546,15 +545,14 @@ async function doTest4567(t, which, mode) {
 
   if (expectRetirement) {
     // after resolution, A's c-list should *not* have the promise
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
-    t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-    t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
+    t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+    t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
   } else {
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
-    t.equal(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
-    t.equal(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), true);
+    t.is(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
+    t.is(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
   }
-  t.end();
 }
 
 for (const caseNum of [4, 5, 6, 7]) {

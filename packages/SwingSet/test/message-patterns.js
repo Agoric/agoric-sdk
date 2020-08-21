@@ -30,15 +30,6 @@ import { ignore } from './util';
 // (which will only occur when using the comms layer, not in the
 // direct-to-kernel test). 'outPipelined' holds these alternate expectations.
 
-// 'patterns' is used to track which tests should be skipped (or which should
-// be the only test run at all). Each defined pattern must call test(name) to
-// add it to the list. In addition, if you want to skip something, call
-// 'test. skipLocal(name)' (without the space) and/or 'test.
-// skipComms(name)'. To mark a test as the only one to run, call `test.
-// onlyLocal(name)' or 'test. onlyComms(name)' (again without the space). (We
-// insert a space in this description so a simple 'grep' can still accurately
-// show the presence of skipped/only tests).
-
 // Initial Conditions: vat A (which hosts objects 'alice' and 'amy'), and vat
 // B (hosting objects 'bob' and 'bert' and 'bill'). Initially alice has
 // access to amy/bob/bert but not bill. Bob has access to bert and bill.
@@ -67,13 +58,7 @@ export function buildPatterns(log) {
   const out = {};
   const outPipelined = {};
 
-  // avoid dot-notation to preserve the utility of 'grep test(.)only'
   const test = name => patterns.set(name, { local: 'test', comms: 'test' });
-  test['onlyLocal'] = n => patterns.set(n, { local: 'only', comms: 'test' });
-  test['onlyComms'] = n => patterns.set(n, { local: 'test', comms: 'only' });
-  test['skipLocal'] = n => patterns.set(n, { local: 'skip', comms: 'test' });
-  test['skipComms'] = n => patterns.set(n, { local: 'test', comms: 'skip' });
-  test['skipBoth'] = n => patterns.set(n, { local: 'skip', comms: 'skip' });
 
   // bob!x()
   test('a10');

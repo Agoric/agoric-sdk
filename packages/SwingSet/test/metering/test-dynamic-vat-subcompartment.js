@@ -2,7 +2,7 @@
 
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
-import tap from 'tap';
+import test from 'ava';
 import { buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
 
@@ -17,7 +17,7 @@ function capargs(args, slots = []) {
 // This test checks that dynamic vats (which are metered) can import bundles,
 // and that those bundles are also metered.
 
-tap.test('metering dynamic vat which imports bundle', async t => {
+test('metering dynamic vat which imports bundle', async t => {
   // We first create a static vat with vat-load-dynamic.js
   const config = {
     bootstrap: 'bootstrap',
@@ -96,6 +96,4 @@ tap.test('metering dynamic vat which imports bundle', async t => {
     ['run exploded: RangeError: Allocate meter exceeded'],
     'whole dynamic vat is dead',
   );
-
-  t.end();
 });

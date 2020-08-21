@@ -2,7 +2,7 @@
 
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
-import tap from 'tap';
+import test from 'ava';
 import { buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
 
@@ -16,7 +16,7 @@ function capargs(args, slots = []) {
 
 // Dynamic vats can be created without metering
 
-tap.test('unmetered dynamic vat', async t => {
+test('unmetered dynamic vat', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -66,6 +66,4 @@ tap.test('unmetered dynamic vat', async t => {
   );
   await c.run();
   t.deepEqual(nextLog(), ['failed to explode'], 'metering disabled');
-
-  t.end();
 });

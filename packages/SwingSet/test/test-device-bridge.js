@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { initSwingStore } from '@agoric/swing-store-simple';
 
 import { buildVatController, buildBridge } from '../src/index';
@@ -105,8 +105,6 @@ test('bridge device', async t => {
     'inbound',
     JSON.stringify([inboundArg2, inboundArg3]),
   ]);
-
-  t.end();
 });
 
 test('bridge device can return undefined', async t => {
@@ -139,6 +137,4 @@ test('bridge device can return undefined', async t => {
 
   t.deepEqual(outboundLog, argv);
   t.deepEqual(c.dump().log, ['outbound retval', '', 'true']);
-
-  t.end();
 });

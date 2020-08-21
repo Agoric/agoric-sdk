@@ -1,7 +1,7 @@
 /* global harden */
 import '@agoric/install-metering-and-ses';
 import path from 'path';
-import { test } from 'tape';
+import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import {
   initSwingStore,
@@ -73,7 +73,6 @@ test('replay bundleSource-based dynamic vat', async t => {
     await c2.run();
     t.deepEqual(r2.resolution(), capargs('ok'));
   }
-  t.end();
 });
 
 test('replay bundleName-based dynamic vat', async t => {
@@ -120,5 +119,4 @@ test('replay bundleName-based dynamic vat', async t => {
     await c2.run();
     t.deepEqual(r2.resolution(), capargs('ok'));
   }
-  t.end();
 });
