@@ -123,6 +123,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     }
 
     function replayTranscript() {
+      // TODO unimplemented
       throw Error(`replayTranscript not yet implemented`);
     }
 

@@ -167,6 +167,7 @@ export function buildRootObject() {
           return mintyIssuerRecord;
         },
         mintGains: (gains, zcfSeat = undefined) => {
+          // TODO unimplemented
           assert(
             zcfSeat !== undefined,
             details`On demand seat creation not yet implemented`,

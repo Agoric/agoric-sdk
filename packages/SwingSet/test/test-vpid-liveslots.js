@@ -709,4 +709,5 @@ for (const mode of modes) {
   });
 }
 
+// TODO unimplemented
 // cases 5 and 6 are not implemented due to #886

@@ -87,6 +87,7 @@ export function makeDeliver(tools, dispatch) {
       case 'fulfilledToPresence':
         return doProcess(['notifyFulfillToPresence', vpid, vp.slot], errmsg);
       case 'redirected':
+        // TODO unimplemented
         throw new Error('not implemented yet');
       case 'fulfilledToData':
         return doProcess(['notifyFulfillToData', vpid, vp.data], errmsg);

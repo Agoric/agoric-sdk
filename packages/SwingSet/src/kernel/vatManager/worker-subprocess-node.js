@@ -124,6 +124,7 @@ export function makeNodeSubprocessFactory(tools) {
     }
 
     function replayTranscript() {
+      // TODO unimplemented
       throw Error(`replayTranscript not yet implemented`);
     }
 

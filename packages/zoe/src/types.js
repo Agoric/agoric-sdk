@@ -232,7 +232,9 @@
  *
  * Mint that amount of assets into the pooled purse.
  * If a seat is provided, it is returned. Otherwise a new seat is
- * returned. TODO This creation-on-demand is not yet implemented.
+ * returned.
+ * TODO unimplemented
+ * This creation-on-demand is not yet implemented.
  *
  * @property {(losses: AmountKeywordRecord,
  *             zcfSeat: ZCFSeat,
