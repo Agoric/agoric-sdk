@@ -73,20 +73,23 @@ const fakeConsole = makeFakeConsole(fakeLog);
 //               [['error', 'what ', err]]);
 // ```
 function throwsAndLogs(t, thunk, regexp, goldenLog) {
-  t.throws(() => {
-    fakeLog.length = 0;
-    const originalConsole = console;
-    // eslint-disable-next-line no-global-assign
-    console = fakeConsole;
-    try {
-      // If thunk() throws, we restore the console but not the fakeLog array.
-      // An outer catcher could then both takeLog() and check the error.
-      thunk();
-    } finally {
+  t.throws(
+    () => {
+      fakeLog.length = 0;
+      const originalConsole = console;
       // eslint-disable-next-line no-global-assign
-      console = originalConsole;
-    }
-  }, regexp);
+      console = fakeConsole;
+      try {
+        // If thunk() throws, we restore the console but not the fakeLog array.
+        // An outer catcher could then both takeLog() and check the error.
+        thunk();
+      } finally {
+        // eslint-disable-next-line no-global-assign
+        console = originalConsole;
+      }
+    },
+    { message: regexp },
+  );
   t.deepEqual(takeLog(), goldenLog);
 }
 harden(throwsAndLogs);

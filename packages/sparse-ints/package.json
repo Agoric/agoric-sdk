@@ -25,18 +25,23 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
-    "esm": "^3.2.25",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1",
+    "esm": "^3.2.25"
   },
   "files": [
     "src/",
     "NEWS.md"
   ],
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ]
+  },
   "eslintConfig": {
     "extends": [
       "airbnb-base",

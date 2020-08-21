@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "test": "ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -27,19 +27,20 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "@agoric/install-ses": "^0.2.0",
-    "esm": "^3.2.25",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1",
+    "esm": "^3.2.25"
   },
   "files": [
     "src/",
     "NEWS.md"
   ],
+  "ava": {
+    "files": ["test/**/test-*.js"],
+    "require": ["esm"]
+  },
   "eslintConfig": {
     "extends": [
       "airbnb-base",
