@@ -20,19 +20,20 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     ['.', '_agstate/agoric-servers', 'contract', 'api']
       .sort()
       .map(async subd => {
-        const exists = await fs.stat(subd).catch(_ => false);
+        const exists = await fs.stat(`${subd}/package.json`).catch(_ => false);
         return exists && subd;
       }),
   );
   const subdirs = existingSubdirs.filter(subd => subd);
 
   const linkFolder = path.resolve(`_agstate/yarn-links`);
-  const linkFlags = [`--link-folder=${linkFolder}`, 'link'];
+  const linkFlags = [`--link-folder=${linkFolder}`];
+  let packages;
 
   if (opts.sdk) {
     const sdkPackagesDir = path.resolve(__dirname, '../../../packages');
     const allPackages = await fs.readdir(sdkPackagesDir);
-    const packages = new Map();
+    packages = new Map();
     const versions = new Map();
     log('removing', linkFolder);
     await rimraf(linkFolder);
@@ -59,7 +60,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         // eslint-disable-next-line no-constant-condition
         if (false) {
           // This use of yarn is noisy and slow.
-          return pspawn('yarn', linkFlags, {
+          return pspawn('yarn', [...linkFlags, 'link'], {
             stdio: 'inherit',
             cwd: dir,
           });
@@ -80,7 +81,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         log(chalk.bold.green(`removing ${nm} link`));
         await fs.unlink(nm).catch(_ => {});
 
-        // Update all the package dependencies according to the SDK.
+        // Mark all the SDK package dependencies as wildcards.
         const pjson = `${subdir}/package.json`;
         const packageJSON = await fs.readFile(pjson).catch(_ => undefined);
         if (!packageJSON) {
@@ -93,7 +94,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
             for (const pkg of Object.keys(deps)) {
               const latest = versions.get(pkg);
               if (latest) {
-                deps[pkg] = `^${latest}`;
+                deps[pkg] = `*`;
               }
             }
           }
@@ -102,19 +103,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         await fs.writeFile(pjson, `${JSON.stringify(pj, null, 2)}\n`);
       }),
     );
-    const sdkPackages = [...packages.values()].sort();
-    for (const subdir of subdirs) {
-      if (
-        // eslint-disable-next-line no-await-in-loop
-        await pspawn('yarn', [...linkFlags, ...sdkPackages], {
-          stdio: 'inherit',
-          cwd: subdir,
-        })
-      ) {
-        log.error('Cannot yarn link', ...sdkPackages);
-        return 1;
-      }
-    }
   } else {
     // Delete all old node_modules.
     await Promise.all(
@@ -126,7 +114,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     );
   }
 
-  const yarnInstall = await pspawn('yarn', [linkFlags[0], 'install'], {
+  const yarnInstall = await pspawn('yarn', [...linkFlags, 'install'], {
     stdio: 'inherit',
   });
   if (yarnInstall) {
@@ -135,9 +123,25 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     return 1;
   }
 
+  if (packages) {
+    const sdkPackages = [...packages.values()].sort();
+    for (const subdir of subdirs) {
+      if (
+        // eslint-disable-next-line no-await-in-loop
+        await pspawn('yarn', [...linkFlags, 'link', ...sdkPackages], {
+          stdio: 'inherit',
+          cwd: subdir,
+        })
+      ) {
+        log.error('Cannot yarn link', ...sdkPackages);
+        return 1;
+      }
+    }
+  }
+
   // Try to install via Yarn.
   const yarnInstallUi = await (subdirs.includes('ui') &&
-    pspawn('yarn', [linkFlags[0], 'install'], {
+    pspawn('yarn', [...linkFlags, 'install'], {
       stdio: 'inherit',
       cwd: 'ui',
     }));
