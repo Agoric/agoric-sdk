@@ -2,7 +2,7 @@
 
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
-import tap from 'tap';
+import test from 'ava';
 import { buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
 
@@ -14,7 +14,7 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-tap.test('metering dynamic vats', async t => {
+test('metering dynamic vats', async t => {
   // we'll give this bundle to the loader vat, which will use it to create a
   // new (metered) dynamic vat
   const dynamicVatBundle = await bundleSource(
@@ -73,6 +73,4 @@ tap.test('metering dynamic vats', async t => {
     ['run exploded: RangeError: Allocate meter exceeded'],
     'stay dead',
   );
-
-  t.end();
 });

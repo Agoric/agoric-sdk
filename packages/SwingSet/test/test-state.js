@@ -1,7 +1,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import {
   initSwingStore,
   getAllState,
@@ -36,12 +36,12 @@ function checkState(t, getState, expected) {
 }
 
 function testStorage(t, s, getState, commit) {
-  t.notOk(s.has('missing'));
-  t.equal(s.get('missing'), undefined);
+  t.falsy(s.has('missing'));
+  t.is(s.get('missing'), undefined);
 
   s.set('foo', 'f');
-  t.ok(s.has('foo'));
-  t.equal(s.get('foo'), 'f');
+  t.truthy(s.has('foo'));
+  t.is(s.get('foo'), 'f');
 
   s.set('foo2', 'f2');
   s.set('foo1', 'f1');
@@ -50,8 +50,8 @@ function testStorage(t, s, getState, commit) {
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo2', 'foo3']);
 
   s.delete('foo2');
-  t.notOk(s.has('foo2'));
-  t.equal(s.get('foo2'), undefined);
+  t.falsy(s.has('foo2'));
+  t.is(s.get('foo2'), undefined);
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
   if (commit) {
@@ -68,7 +68,6 @@ function testStorage(t, s, getState, commit) {
 test('storageInMemory', t => {
   const { storage } = initSwingStore();
   testStorage(t, storage, () => getAllState(storage), null);
-  t.end();
 });
 
 function buildHostDBAndGetState() {
@@ -80,12 +79,12 @@ function buildHostDBAndGetState() {
 test('hostDBInMemory', t => {
   const { hostDB, getState } = buildHostDBAndGetState();
 
-  t.notOk(hostDB.has('missing'));
-  t.equal(hostDB.get('missing'), undefined);
+  t.falsy(hostDB.has('missing'));
+  t.is(hostDB.get('missing'), undefined);
 
   hostDB.applyBatch([{ op: 'set', key: 'foo', value: 'f' }]);
-  t.ok(hostDB.has('foo'));
-  t.equal(hostDB.get('foo'), 'f');
+  t.truthy(hostDB.has('foo'));
+  t.is(hostDB.get('foo'), 'f');
 
   hostDB.applyBatch([
     { op: 'set', key: 'foo2', value: 'f2' },
@@ -100,8 +99,8 @@ test('hostDBInMemory', t => {
   ]);
 
   hostDB.applyBatch([{ op: 'delete', key: 'foo2' }]);
-  t.notOk(hostDB.has('foo2'));
-  t.equal(hostDB.get('foo2'), undefined);
+  t.falsy(hostDB.has('foo2'));
+  t.is(hostDB.get('foo2'), undefined);
   t.deepEqual(Array.from(hostDB.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
   checkState(t, getState, [
@@ -109,28 +108,24 @@ test('hostDBInMemory', t => {
     ['foo1', 'f1'],
     ['foo3', 'f3'],
   ]);
-  t.end();
 });
 
 test('blockBuffer fulfills storage API', t => {
   const { hostDB, getState } = buildHostDBAndGetState();
   const { blockBuffer, commitBlock } = buildBlockBuffer(hostDB);
   testStorage(t, blockBuffer, getState, commitBlock);
-  t.end();
 });
 
 test('guardStorage fulfills storage API', t => {
   const { storage } = initSwingStore();
   const guardedHostStorage = guardStorage(storage);
   testStorage(t, guardedHostStorage, () => getAllState(storage), null);
-  t.end();
 });
 
 test('crankBuffer fulfills storage API', t => {
   const { storage } = initSwingStore();
   const { crankBuffer, commitCrank } = buildCrankBuffer(storage);
   testStorage(t, crankBuffer, () => getAllState(storage), commitCrank);
-  t.end();
 });
 
 test('crankBuffer can abortCrank', t => {
@@ -141,8 +136,8 @@ test('crankBuffer can abortCrank', t => {
   );
 
   s.set('foo', 'f');
-  t.ok(s.has('foo'));
-  t.equal(s.get('foo'), 'f');
+  t.truthy(s.has('foo'));
+  t.is(s.get('foo'), 'f');
 
   s.set('foo2', 'f2');
   s.set('foo1', 'f1');
@@ -151,8 +146,8 @@ test('crankBuffer can abortCrank', t => {
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo2', 'foo3']);
 
   s.delete('foo2');
-  t.notOk(s.has('foo2'));
-  t.equal(s.get('foo2'), undefined);
+  t.falsy(s.has('foo2'));
+  t.is(s.get('foo2'), undefined);
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
   commitBlock();
@@ -186,8 +181,6 @@ test('crankBuffer can abortCrank', t => {
     ['foo3', 'f3'],
     ['foo5', 'f5'],
   ]);
-
-  t.end();
 });
 
 test('storage helpers', t => {
@@ -228,18 +221,16 @@ test('storage helpers', t => {
   t.deepEqual(Array.from(s.getPrefixedValues('foo.', 1)), ['f1', 'f2', 'f3']);
 
   s.deletePrefixedKeys('foo.', 1);
-  t.ok(s.has('foo.0'));
-  t.notOk(s.has('foo.1'));
-  t.notOk(s.has('foo.2'));
-  t.notOk(s.has('foo.3'));
-  t.notOk(s.has('foo.4'));
-  t.ok(s.has('foo.5'));
+  t.truthy(s.has('foo.0'));
+  t.falsy(s.has('foo.1'));
+  t.falsy(s.has('foo.2'));
+  t.falsy(s.has('foo.3'));
+  t.falsy(s.has('foo.4'));
+  t.truthy(s.has('foo.5'));
   checkState(t, () => getAllState(storage), [
     ['foo.0', 'f0'],
     ['foo.5', 'f5'],
   ]);
-
-  t.end();
 });
 
 function buildKeeperStorageInMemory() {
@@ -262,7 +253,7 @@ function duplicateKeeper(getState) {
 test('kernel state', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  t.ok(!k.getInitialized());
+  t.truthy(!k.getInitialized());
   k.createStartingKernelState();
   k.setInitialized();
 
@@ -280,7 +271,6 @@ test('kernel state', async t => {
     ['kd.nextID', '30'],
     ['kp.nextID', '40'],
   ]);
-  t.end();
 });
 
 test('kernelKeeper vat names', async t => {
@@ -290,8 +280,8 @@ test('kernelKeeper vat names', async t => {
 
   const v1 = k.allocateVatIDForNameIfNeeded('vatname5');
   const v2 = k.allocateVatIDForNameIfNeeded('Frank');
-  t.equal(v1, 'v1');
-  t.equal(v2, 'v2');
+  t.is(v1, 'v1');
+  t.is(v2, 'v2');
 
   commitCrank();
   checkState(t, getState, [
@@ -309,14 +299,13 @@ test('kernelKeeper vat names', async t => {
     ['vat.name.Frank', 'v2'],
   ]);
   t.deepEqual(k.getAllVatNames(), ['Frank', 'vatname5']);
-  t.equal(k.getVatIDForName('Frank'), v2);
-  t.equal(k.allocateVatIDForNameIfNeeded('Frank'), v2);
+  t.is(k.getVatIDForName('Frank'), v2);
+  t.is(k.allocateVatIDForNameIfNeeded('Frank'), v2);
 
   const k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getAllVatNames(), ['Frank', 'vatname5']);
-  t.equal(k2.getVatIDForName('Frank'), v2);
-  t.equal(k2.allocateVatIDForNameIfNeeded('Frank'), v2);
-  t.end();
+  t.is(k2.getVatIDForName('Frank'), v2);
+  t.is(k2.allocateVatIDForNameIfNeeded('Frank'), v2);
 });
 
 test('kernelKeeper device names', async t => {
@@ -326,8 +315,8 @@ test('kernelKeeper device names', async t => {
 
   const d7 = k.allocateDeviceIDForNameIfNeeded('devicename5');
   const d8 = k.allocateDeviceIDForNameIfNeeded('Frank');
-  t.equal(d7, 'd7');
-  t.equal(d8, 'd8');
+  t.is(d7, 'd7');
+  t.is(d8, 'd8');
 
   commitCrank();
   checkState(t, getState, [
@@ -345,14 +334,13 @@ test('kernelKeeper device names', async t => {
     ['device.name.Frank', 'd8'],
   ]);
   t.deepEqual(k.getAllDeviceNames(), ['Frank', 'devicename5']);
-  t.equal(k.getDeviceIDForName('Frank'), d8);
-  t.equal(k.allocateDeviceIDForNameIfNeeded('Frank'), d8);
+  t.is(k.getDeviceIDForName('Frank'), d8);
+  t.is(k.allocateDeviceIDForNameIfNeeded('Frank'), d8);
 
   const k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getAllDeviceNames(), ['Frank', 'devicename5']);
-  t.equal(k2.getDeviceIDForName('Frank'), d8);
-  t.equal(k2.allocateDeviceIDForNameIfNeeded('Frank'), d8);
-  t.end();
+  t.is(k2.getDeviceIDForName('Frank'), d8);
+  t.is(k2.allocateDeviceIDForNameIfNeeded('Frank'), d8);
 });
 
 test('kernelKeeper runQueue', async t => {
@@ -360,37 +348,35 @@ test('kernelKeeper runQueue', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  t.ok(k.isRunQueueEmpty());
-  t.equal(k.getRunQueueLength(), 0);
+  t.truthy(k.isRunQueueEmpty());
+  t.is(k.getRunQueueLength(), 0);
 
   k.addToRunQueue({ type: 'send', stuff: 'awesome' });
-  t.notOk(k.isRunQueueEmpty());
-  t.equal(k.getRunQueueLength(), 1);
+  t.falsy(k.isRunQueueEmpty());
+  t.is(k.getRunQueueLength(), 1);
 
   k.addToRunQueue({ type: 'notify', stuff: 'notifawesome' });
-  t.notOk(k.isRunQueueEmpty());
-  t.equal(k.getRunQueueLength(), 2);
+  t.falsy(k.isRunQueueEmpty());
+  t.is(k.getRunQueueLength(), 2);
 
   commitCrank();
   const k2 = duplicateKeeper(getState);
 
   t.deepEqual(k.getNextMsg(), { type: 'send', stuff: 'awesome' });
-  t.notOk(k.isRunQueueEmpty());
-  t.equal(k.getRunQueueLength(), 1);
+  t.falsy(k.isRunQueueEmpty());
+  t.is(k.getRunQueueLength(), 1);
 
   t.deepEqual(k.getNextMsg(), { type: 'notify', stuff: 'notifawesome' });
-  t.ok(k.isRunQueueEmpty());
-  t.equal(k.getRunQueueLength(), 0);
+  t.truthy(k.isRunQueueEmpty());
+  t.is(k.getRunQueueLength(), 0);
 
   t.deepEqual(k2.getNextMsg(), { type: 'send', stuff: 'awesome' });
-  t.notOk(k2.isRunQueueEmpty());
-  t.equal(k2.getRunQueueLength(), 1);
+  t.falsy(k2.isRunQueueEmpty());
+  t.is(k2.getRunQueueLength(), 1);
 
   t.deepEqual(k2.getNextMsg(), { type: 'notify', stuff: 'notifawesome' });
-  t.ok(k2.isRunQueueEmpty());
-  t.equal(k2.getRunQueueLength(), 0);
-
-  t.end();
+  t.truthy(k2.isRunQueueEmpty());
+  t.is(k2.getRunQueueLength(), 0);
 });
 
 test('kernelKeeper promises', async t => {
@@ -406,8 +392,8 @@ test('kernelKeeper promises', async t => {
     subscribers: [],
     decider: 'v4',
   });
-  t.ok(k.hasKernelPromise(p1));
-  t.notOk(k.hasKernelPromise('kp99'));
+  t.truthy(k.hasKernelPromise(p1));
+  t.falsy(k.hasKernelPromise('kp99'));
 
   commitCrank();
   let k2 = duplicateKeeper(getState);
@@ -419,7 +405,7 @@ test('kernelKeeper promises', async t => {
     subscribers: [],
     decider: 'v4',
   });
-  t.ok(k2.hasKernelPromise(p1));
+  t.truthy(k2.hasKernelPromise(p1));
 
   k.clearDecider(p1);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -477,7 +463,7 @@ test('kernelKeeper promises', async t => {
     refCount: 0,
     slot: 'ko44',
   });
-  t.ok(k.hasKernelPromise(p1));
+  t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
   commitCrank();
   checkState(t, getState, [
@@ -495,7 +481,6 @@ test('kernelKeeper promises', async t => {
     ['kp40.state', 'fulfilledToPresence'],
     ['kp40.refCount', '0'],
   ]);
-  t.end();
 });
 
 test('kernelKeeper promise resolveToData', async t => {
@@ -514,7 +499,6 @@ test('kernelKeeper promise resolveToData', async t => {
       slots: ['ko22', 'kp24', 'kd25'],
     },
   });
-  t.end();
 });
 
 test('kernelKeeper promise reject', async t => {
@@ -533,7 +517,6 @@ test('kernelKeeper promise reject', async t => {
       slots: ['ko22', 'kp24', 'kd25'],
     },
   });
-  t.end();
 });
 
 test('vatKeeper', async t => {
@@ -547,25 +530,23 @@ test('vatKeeper', async t => {
 
   const vatExport1 = 'o+4';
   const kernelExport1 = vk.mapVatSlotToKernelSlot(vatExport1);
-  t.equal(kernelExport1, 'ko20');
-  t.equal(vk.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
-  t.equal(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(kernelExport1, 'ko20');
+  t.is(vk.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
+  t.is(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
   commitCrank();
   let vk2 = duplicateKeeper(getState).allocateVatKeeperIfNeeded(v1);
-  t.equal(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
-  t.equal(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
+  t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
   const kernelImport2 = 'ko25';
   const vatImport2 = vk.mapKernelSlotToVatSlot(kernelImport2);
-  t.equal(vatImport2, 'o-50');
-  t.equal(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
-  t.equal(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
+  t.is(vatImport2, 'o-50');
+  t.is(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
+  t.is(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
   commitCrank();
   vk2 = duplicateKeeper(getState).allocateVatKeeperIfNeeded(v1);
-  t.equal(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
-  t.equal(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
-
-  t.end();
+  t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
+  t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 });

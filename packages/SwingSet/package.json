@@ -12,8 +12,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "tap --no-coverage test/test-node-version.js && tap --no-coverage --jobs=1 --timeout 600 'test/**/test*.js'",
-    "test-nosort": "tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
+    "test": "ava",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint --fix",
@@ -23,10 +22,7 @@
   },
   "devDependencies": {
     "@agoric/install-metering-and-ses": "^0.1.1",
-    "esm": "^3.2.5",
-    "tap": "^14.10.5",
-    "tape": "^4.13.2",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.0.8",
@@ -46,6 +42,7 @@
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",
     "anylogger": "^0.21.0",
+    "esm": "^3.2.5",
     "netstring-stream": "^1.0.1",
     "re2": "^1.10.5",
     "rollup": "^1.23.1",
@@ -72,5 +69,10 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "ava": {
+    "files": ["test/**/test-*.js"],
+    "require": ["esm"],
+    "timeout": "2m"
   }
 }

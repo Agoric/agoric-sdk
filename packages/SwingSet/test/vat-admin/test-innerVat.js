@@ -1,6 +1,6 @@
 import '@agoric/install-metering-and-ses';
 import path from 'path';
-import { test } from 'tape';
+import test from 'ava';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import bundleSource from '@agoric/bundle-source';
 import { buildVatController, loadBasedir } from '../../src';
@@ -29,7 +29,6 @@ test('VatAdmin inner vat creation', async t => {
     await c.step();
   }
   t.deepEqual(c.dump().log, ['starting newVat test', '13']);
-  t.end();
 });
 
 test('VatAdmin counter test', async t => {
@@ -37,7 +36,6 @@ test('VatAdmin counter test', async t => {
   await c.run();
   await c.run();
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
-  t.end();
 });
 
 test('VatAdmin broken vat creation', async t => {
@@ -47,7 +45,6 @@ test('VatAdmin broken vat creation', async t => {
     'starting brokenVat test',
     'yay, rejected: Error: Vat Creation Error: ReferenceError: missing is not defined',
   ]);
-  t.end();
 });
 
 test('error creating vat from non-bundle', async t => {
@@ -58,7 +55,6 @@ test('error creating vat from non-bundle', async t => {
     'yay, rejected: Error: Vat Creation Error: Error: createVatDynamically() requires bundle, not a plain string',
   ]);
   await c.run();
-  t.end();
 });
 
 test('VatAdmin get vat stats', async t => {
@@ -71,5 +67,4 @@ test('VatAdmin get vat stats', async t => {
     '{"objectCount":0,"promiseCount":2,"deviceCount":0,"transcriptCount":2}',
   ]);
   await c.run();
-  t.end();
 });

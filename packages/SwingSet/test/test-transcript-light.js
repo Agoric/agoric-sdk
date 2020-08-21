@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import {
   initSwingStore,
@@ -15,8 +15,8 @@ test('transcript-light load', async t => {
   const { storage } = initSwingStore();
   const c = await buildVatController(config, ['one'], { hostStorage: storage });
   const state0 = getAllState(storage);
-  t.equal(state0.initialized, 'true');
-  t.notEqual(state0.runQueue, '[]');
+  t.is(state0.initialized, 'true');
+  t.not(state0.runQueue, '[]');
 
   await c.step();
   const state1 = getAllState(storage);
@@ -94,6 +94,4 @@ test('transcript-light load', async t => {
 
   await c2.step();
   t.deepEqual(state5, getAllState(storage2), `p14`);
-
-  t.end();
 });

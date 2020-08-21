@@ -9,7 +9,7 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeMeter, makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
 import re2 from 're2';
-import tap from 'tap';
+import test from 'ava';
 import { waitUntilQuiescent } from '../../src/waitUntilQuiescent';
 
 // Run a function under the control of a meter. The function must not have
@@ -90,7 +90,7 @@ async function meteredImportBundle(bundle, endowments) {
   };
 }
 
-tap.test('metering a single bundle', async function testSingleBundle(t) {
+test('metering a single bundle', async function testSingleBundle(t) {
   const bundle = await bundleSource(require.resolve('./metered-code.js'));
   harden(Object.getPrototypeOf(console));
   const endowments = { console };
@@ -106,18 +106,18 @@ tap.test('metering a single bundle', async function testSingleBundle(t) {
   let ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
   t.deepEqual(log2, ['started', 'done'], 'computation completed');
   log2.splice(0);
-  t.equal(ok, true, 'meter should not be exhausted');
+  t.is(ok, true, 'meter should not be exhausted');
 
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'compute'));
   t.deepEqual(log2, ['started'], 'computation started but halted');
   log2.splice(0);
-  t.equal(ok, false, 'meter should be exhausted (compute)');
+  t.is(ok, false, 'meter should be exhausted (compute)');
 
   // Run the same code (without an infinite loop) against the old exhausted
   // meter. It should halt right away.
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
-  t.equal(log2.length, 0, 'computation did not start');
-  t.equal(ok, false, 'meter should be exhausted (still compute)');
+  t.is(log2.length, 0, 'computation did not start');
+  t.is(ok, false, 'meter should be exhausted (still compute)');
 
   // Refill the meter, and the code should run again.
   // refillFacet.combined(10000000);
@@ -126,13 +126,13 @@ tap.test('metering a single bundle', async function testSingleBundle(t) {
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
   t.deepEqual(log2, ['started', 'done'], 'computation completed');
   log2.splice(0);
-  t.equal(ok, true, 'meter should not be exhausted');
+  t.is(ok, true, 'meter should not be exhausted');
 
   // now check that metering catches infinite stack
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'stack'));
   t.deepEqual(log2, ['started'], 'computation started but halted');
   log2.splice(0);
-  t.equal(ok, false, 'meter should be exhausted (stack)');
+  t.is(ok, false, 'meter should be exhausted (stack)');
 
   // Refill the meter, and the code should run again.
   // refillFacet.combined(10000000);
@@ -141,18 +141,18 @@ tap.test('metering a single bundle', async function testSingleBundle(t) {
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
   t.deepEqual(log2, ['started', 'done'], 'computation completed');
   log2.splice(0);
-  t.equal(ok, true, 'meter should not be exhausted');
+  t.is(ok, true, 'meter should not be exhausted');
 
   // metering should catch primordial allocation too
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'allocate'));
   t.deepEqual(log2, ['started'], 'computation started but halted');
   log2.splice(0);
-  t.equal(ok, false, 'meter should be exhausted (allocate)');
+  t.is(ok, false, 'meter should be exhausted (allocate)');
 
   // Refill the meter, and the code should run again.
   refillFacet.allocate(10000000);
   ok = await runBundleThunkUnderMeter(() => meterMe(log2, 'no'));
   t.deepEqual(log2, ['started', 'done'], 'computation completed');
   log2.splice(0);
-  t.equal(ok, true, 'meter should not be exhausted');
+  t.is(ok, true, 'meter should not be exhausted');
 });

@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
@@ -20,7 +20,7 @@ test('vattp', async t => {
   await c.run();
   t.deepEqual(s.exportToData(), {});
 
-  t.equal(
+  t.is(
     mb.deliverInbound(
       'remote1',
       [
@@ -39,7 +39,7 @@ test('vattp', async t => {
   ]);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
-  t.equal(
+  t.is(
     mb.deliverInbound(
       'remote1',
       [
@@ -52,8 +52,6 @@ test('vattp', async t => {
   );
   await c.run();
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
-
-  t.end();
 });
 
 test('vattp 2', async t => {
@@ -75,19 +73,19 @@ test('vattp 2', async t => {
     remote1: { outbox: [[1, 'out1']], inboundAck: 0 },
   });
 
-  t.equal(mb.deliverInbound('remote1', [], 1), true);
+  t.is(mb.deliverInbound('remote1', [], 1), true);
   await c.run();
   t.deepEqual(c.dump().log, []);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 0 } });
 
-  t.equal(mb.deliverInbound('remote1', [[1, 'msg1']], 1), true);
+  t.is(mb.deliverInbound('remote1', [[1, 'msg1']], 1), true);
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 1 } });
 
-  t.equal(mb.deliverInbound('remote1', [[1, 'msg1']], 1), false);
+  t.is(mb.deliverInbound('remote1', [[1, 'msg1']], 1), false);
 
-  t.equal(
+  t.is(
     mb.deliverInbound(
       'remote1',
       [
@@ -101,6 +99,4 @@ test('vattp 2', async t => {
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
-
-  t.end();
 });

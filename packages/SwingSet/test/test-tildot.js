@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { buildVatController } from '../src/index';
 
 test('vat code can use tildot', async t => {
@@ -19,5 +19,4 @@ test('vat code can use tildot', async t => {
     'HandledPromise.applyMethod(x, "foo", [y]);',
     'ok',
   ]);
-  t.end();
 });

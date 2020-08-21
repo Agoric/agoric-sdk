@@ -1,7 +1,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
@@ -59,7 +59,6 @@ test('build kernel', async t => {
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
   t.deepEqual(data.kernelTable, []);
-  t.end();
 });
 
 test('simple call', async t => {
@@ -98,14 +97,12 @@ test('simple call', async t => {
   t.deepEqual(log, [['o+1', 'foo', capdata('args')]]);
 
   data = kernel.dump();
-  t.equal(data.log.length, 1);
+  t.is(data.log.length, 1);
   t.deepEqual(JSON.parse(data.log[0]), {
     facetID: 'o+1',
     method: 'foo',
     args: capdata('args'),
   });
-
-  t.end();
 });
 
 test('map inbound', async t => {
@@ -154,8 +151,6 @@ test('map inbound', async t => {
     ['ko22', vat1, 'o+1'],
     ['kp40', vat1, 'p-60'],
   ]);
-
-  t.end();
 });
 
 test('addImport', async t => {
@@ -176,7 +171,6 @@ test('addImport', async t => {
     ['ko20', vat1, 'o-50'],
     ['ko20', vat2, 'o+5'],
   ]);
-  t.end();
 });
 
 test('outbound call', async t => {
@@ -374,8 +368,6 @@ test('outbound call', async t => {
       queue: [],
     },
   ]);
-
-  t.end();
 });
 
 test('three-party', async t => {
@@ -505,8 +497,6 @@ test('three-party', async t => {
   kt.push([carol, vatB, 'o-50']);
   kt.push(['kp42', vatB, 'p-60']);
   checkKT(t, kernel, kt);
-
-  t.end();
 });
 
 test('transfer promise', async t => {
@@ -609,8 +599,6 @@ test('transfer promise', async t => {
   t.deepEqual(logA, []);
   checkPromises(t, kernel, kp);
   checkKT(t, kernel, kt);
-
-  t.end();
 });
 
 test('subscribe to promise', async t => {
@@ -652,8 +640,6 @@ test('subscribe to promise', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
   t.deepEqual(log, []);
-
-  t.end();
 });
 
 test('promise resolveToData', async t => {
@@ -729,8 +715,6 @@ test('promise resolveToData', async t => {
     ]);
   }
   t.deepEqual(kernel.dump().runQueue, []);
-
-  t.end();
 });
 
 test('promise resolveToPresence', async t => {
@@ -810,7 +794,6 @@ test('promise resolveToPresence', async t => {
     ]);
   }
   t.deepEqual(kernel.dump().runQueue, []);
-  t.end();
 });
 
 test('promise reject', async t => {
@@ -886,8 +869,6 @@ test('promise reject', async t => {
     ]);
   }
   t.deepEqual(kernel.dump().runQueue, []);
-
-  t.end();
 });
 
 test('transcript', async t => {
@@ -922,7 +903,7 @@ test('transcript', async t => {
   // the transcript records vat-specific import/export slots
 
   const tr = kernel.dump().vatTables[0].state.transcript;
-  t.equal(tr.length, 1);
+  t.is(tr.length, 1);
   t.deepEqual(tr[0], {
     d: [
       'deliver',
@@ -939,8 +920,6 @@ test('transcript', async t => {
     ],
     crankNumber: 1,
   });
-
-  t.end();
 });
 
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a
@@ -1057,8 +1036,6 @@ test('non-pipelined promise queueing', async t => {
       queue: [],
     },
   ]);
-
-  t.end();
 });
 
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); with pipelining. All three should
@@ -1166,6 +1143,4 @@ test('pipelined promise queueing', async t => {
       queue: [],
     },
   ]);
-
-  t.end();
 });

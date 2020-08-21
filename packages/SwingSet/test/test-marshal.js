@@ -1,7 +1,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
@@ -36,8 +36,6 @@ test('serialize exports', t => {
     body: '[{"@qclass":"slot","index":0},{"@qclass":"slot","index":1}]',
     slots: ['o+2', 'o+1'],
   });
-
-  t.end();
 });
 
 test('deserialize imports', async t => {
@@ -48,8 +46,8 @@ test('deserialize imports', async t => {
     slots: ['o-1'],
   });
   // a should be a proxy/presence. For now these are obvious.
-  t.equal(a.toString(), '[Presence o-1]');
-  t.ok(Object.isFrozen(a));
+  t.is(a.toString(), '[Presence o-1]');
+  t.truthy(Object.isFrozen(a));
 
   // m now remembers the proxy
   const b = m.unserialize({
@@ -64,8 +62,6 @@ test('deserialize imports', async t => {
     slots: ['x', 'x', 'o-1'],
   });
   t.is(a, c);
-
-  t.end();
 });
 
 test('deserialize exports', t => {
@@ -77,8 +73,6 @@ test('deserialize exports', t => {
     slots: ['o+1'],
   });
   t.is(a, o1);
-
-  t.end();
 });
 
 test('serialize imports', async t => {
@@ -92,8 +86,6 @@ test('serialize imports', async t => {
     body: '{"@qclass":"slot","index":0}',
     slots: ['o-1'],
   });
-
-  t.end();
 });
 
 test('serialize promise', async t => {
@@ -129,8 +121,6 @@ test('serialize promise', async t => {
   setImmediate(() => pauseRes());
   await pauseP;
   t.deepEqual(log, [{ result: 'p+5', data: { body: '5', slots: [] } }]);
-
-  t.end();
 });
 
 test('unserialize promise', async t => {
@@ -148,7 +138,5 @@ test('unserialize promise', async t => {
     slots: ['p-1'],
   });
   t.deepEqual(log, ['subscribe-p-1']);
-  t.ok(p instanceof Promise);
-
-  t.end();
+  t.truthy(p instanceof Promise);
 });
