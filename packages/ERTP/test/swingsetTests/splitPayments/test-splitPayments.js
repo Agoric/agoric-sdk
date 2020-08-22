@@ -1,4 +1,3 @@
-import '@agoric/install-ses';
 import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';

@@ -62,8 +62,8 @@
       "test/**/test-*.js"
     ],
     "require": [
-      "@agoric/install-ses",
-      "esm"
+      "esm",
+      "@agoric/install-ses" 
     ]
   },
   "eslintConfig": {
