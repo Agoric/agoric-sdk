@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
 
@@ -11,7 +11,6 @@ test('flush', async t => {
   // all promises should settle before c.step() fires
   await c.step();
   t.deepEqual(c.dump().log, ['then1', 'then2']);
-  t.end();
 });
 
 test('E() resolve', async t => {
@@ -25,7 +24,6 @@ test('E() resolve', async t => {
     'b.resolved 3',
     'left.then 4',
   ]);
-  t.end();
 });
 
 test('E(E(x).foo()).bar()', async t => {
@@ -48,7 +46,6 @@ test('E(E(x).foo()).bar()', async t => {
     'left.call3 2',
     'b.resolved 3',
   ]);
-  t.end();
 });
 
 test('E(Promise.resolve(presence)).foo()', async t => {
@@ -62,7 +59,6 @@ test('E(Promise.resolve(presence)).foo()', async t => {
     'left.call3 2',
     'b.resolved 3',
   ]);
-  t.end();
 });
 
 test('E(local).foo()', async t => {
@@ -71,7 +67,6 @@ test('E(local).foo()', async t => {
 
   await c.run();
   t.deepEqual(c.dump().log, ['b.local1.finish', 'local.foo 1', 'b.resolved 2']);
-  t.end();
 });
 
 test('resolve-to-local', async t => {
@@ -85,7 +80,6 @@ test('resolve-to-local', async t => {
     'local.foo 2',
     'b.resolved 3',
   ]);
-  t.end();
 });
 
 test('send-promise-resolve-to-local', async t => {
@@ -100,7 +94,6 @@ test('send-promise-resolve-to-local', async t => {
     'local.foo 1',
     'b.resolved 4',
   ]);
-  t.end();
 });
 
 test('send-harden-promise-1', async t => {
@@ -122,7 +115,6 @@ test('send-harden-promise-1', async t => {
     'o1 frozen true',
     'b.harden-promise-1.finish',
   ]);
-  t.end();
 });
 
 test('circular promise resolution data', async t => {
@@ -162,5 +154,4 @@ test('circular promise resolution data', async t => {
     });
   }
   t.deepEqual(c.dump().promises, expectedPromises);
-  t.end();
 });

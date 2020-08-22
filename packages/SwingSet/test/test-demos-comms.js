@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { buildLoopbox } from '../src/devices/loopbox';
 import { loadBasedir, buildVatController } from '../src/index';
 
@@ -29,12 +29,10 @@ const encouragementBotCommsGolden = [
 
 test('run encouragementBotComms Demo', async t => {
   const dump = await main('demo/encouragementBotComms', []);
-  t.deepEquals(dump.log, encouragementBotCommsGolden);
-  t.end();
+  t.deepEqual(dump.log, encouragementBotCommsGolden);
 });
 
 test('run encouragementBotCommsWavyDot Demo', async t => {
   const dump = await main('demo/encouragementBotCommsWavyDot', []);
-  t.deepEquals(dump.log, encouragementBotCommsGolden);
-  t.end();
+  t.deepEqual(dump.log, encouragementBotCommsGolden);
 });

@@ -1,7 +1,7 @@
 /* global harden */
 import '@agoric/install-ses';
 import path from 'path';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import {
   initSwingStore,
   getAllState,
@@ -25,9 +25,9 @@ test('terminate', async t => {
   const configPath = path.resolve(__dirname, 'swingset-terminate.json');
   const config = loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config);
-  t.equal(controller.bootstrapResult.status(), 'pending');
+  t.is(controller.bootstrapResult.status(), 'pending');
   await controller.run();
-  t.equal(controller.bootstrapResult.status(), 'fulfilled');
+  t.is(controller.bootstrapResult.status(), 'fulfilled');
   t.deepEqual(
     controller.bootstrapResult.resolution(),
     capargs('bootstrap done'),
@@ -47,7 +47,6 @@ test('terminate', async t => {
     'afterForeverP.catch vat terminated',
     'done',
   ]);
-  t.end();
 });
 
 test('dispatches to the dead do not harm kernel', async t => {
@@ -83,15 +82,13 @@ test('dispatches to the dead do not harm kernel', async t => {
       'panic',
     );
     await c2.run();
-    t.equal(r2.status(), 'fulfilled');
+    t.is(r2.status(), 'fulfilled');
     t.deepEqual(c2.dump().log, [
       'b: p1b = I so resolve',
       'b: p2b fails vat terminated',
       'm: live 2 failed: unknown vat',
     ]);
   }
-
-  t.end();
 });
 
 test('replay does not resurrect dead vat', async t => {
@@ -120,6 +117,4 @@ test('replay does not resurrect dead vat', async t => {
     // ...which shouldn't run the second time through
     t.deepEqual(c2.dump().log, []);
   }
-
-  t.end();
 });

@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { buildVatController } from '../../src/index';
 import { buildTimer } from '../../src/devices/timer';
 
@@ -22,7 +22,6 @@ test('wake', async t => {
   timer.poll(5);
   await c.step();
   t.deepEqual(c.dump().log, ['starting wake test', 'handler.wake()']);
-  t.end();
 });
 
 test('repeater', async t => {
@@ -45,7 +44,6 @@ test('repeater', async t => {
     'starting repeater test',
     'handler.wake(3) called 1 times.',
   ]);
-  t.end();
 });
 
 test('repeater2', async t => {
@@ -71,7 +69,6 @@ test('repeater2', async t => {
     'handler.wake(3) called 1 times.',
     'handler.wake(7) called 2 times.',
   ]);
-  t.end();
 });
 
 test('repeaterZero', async t => {
@@ -112,5 +109,4 @@ test('repeaterZero', async t => {
     'handler.wake(6) called 2 times.',
     'handler.wake(9) called 3 times.',
   ]);
-  t.end();
 });

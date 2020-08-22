@@ -1,6 +1,6 @@
 /* global harden */
 import '@agoric/install-ses';
-import tap from 'tap';
+import test from 'ava';
 import { buildVatController } from '../../src/index';
 
 const mUndefined = { '@qclass': 'undefined' };
@@ -13,7 +13,7 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-tap.test('create with setup and buildRootObject', async t => {
+test('create with setup and buildRootObject', async t => {
   const config = {
     vats: {
       setup: {

@@ -3,7 +3,7 @@
 /* eslint object-shorthand: "off" */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import path from 'path';
 import { buildVatController, loadBasedir } from '../src/index';
 import { buildLoopbox } from '../src/devices/loopbox';
@@ -11,15 +11,9 @@ import { buildPatterns } from './message-patterns';
 
 // This exercises all the patterns in 'message-patterns.js' twice (once with
 // vatA/vatB connected directly through the kernel, and a second time with
-// comms vats in the path). To enable/disable specific tests, edit the
-// entries in that file.
-
-// use test['only'] so 'grep test(.)only' won't have false matches
-const modes = {
-  test: test,
-  only: test['only'],
-  skip: test['skip'],
-};
+// comms vats in the path). To enable/disable specific tests, run with e.g.
+// 'yarn test test/test-message-patterns.js -m "test pattern a72 local"'
+// or '-m "*a72 local"'
 
 // eslint-disable-next-line no-unused-vars
 async function runWithTrace(c) {
@@ -56,18 +50,15 @@ export async function runVatsLocally(t, name) {
   return c.dump().log;
 }
 
-function testLocalPatterns() {
-  const bp = buildPatterns();
-  for (const name of Array.from(bp.patterns.keys()).sort()) {
-    const mode = bp.patterns.get(name).local;
-    modes[mode](`test pattern ${name} locally`, async t => {
-      const logs = await runVatsLocally(t, name);
-      t.deepEqual(logs, bp.expected[name]);
-      t.end();
-    });
-  }
+const bp = buildPatterns();
+async function testLocalPattern(t, name) {
+  const logs = await runVatsLocally(t, name);
+  t.deepEqual(logs, bp.expected[name]);
 }
-testLocalPatterns();
+testLocalPattern.title = (_, name) => `test pattern ${name} local`;
+for (const name of Array.from(bp.patterns.keys()).sort()) {
+  test('local patterns', testLocalPattern, name);
+}
 
 const commsSourcePath = require.resolve('../src/vats/comms');
 const vatTPSourcePath = require.resolve('../src/vats/vat-tp');
@@ -108,20 +99,18 @@ export async function runVatsInComms(t, enablePipelining, name) {
   return c.dump().log;
 }
 
-function testCommsPatterns() {
+async function testCommsPattern(t, name) {
   const enablePipelining = true;
-  const bp = buildPatterns();
-  for (const name of Array.from(bp.patterns.keys()).sort()) {
-    const mode = bp.patterns.get(name).comms;
-    modes[mode](`test pattern ${name} locally`, async t => {
-      const logs = await runVatsInComms(t, enablePipelining, name);
-      let expected = bp.expected[name];
-      if (enablePipelining && name in bp.expected_pipelined) {
-        expected = bp.expected_pipelined[name];
-      }
-      t.deepEqual(logs, expected);
-      t.end();
-    });
+  const logs = await runVatsInComms(t, enablePipelining, name);
+  let expected;
+  if (enablePipelining && name in bp.expected_pipelined) {
+    expected = bp.expected_pipelined[name];
+  } else {
+    expected = bp.expected[name];
   }
+  t.deepEqual(logs, expected);
 }
-testCommsPatterns();
+testCommsPattern.title = (_, name) => `test pattern ${name} comms`;
+for (const name of Array.from(bp.patterns.keys()).sort()) {
+  test('comms patterns', testCommsPattern, name);
+}

@@ -312,8 +312,10 @@ export async function buildVatController(
   );
 
   function makeNodeWorker() {
+    // TODO: after we move away from `-r esm` and use real ES6 modules, point
+    // this at nodeWorkerSupervisor.js instead of the CJS intermediate
     const supercode = require.resolve(
-      './kernel/vatManager/nodeWorkerSupervisor.js',
+      './kernel/vatManager/nodeWorkerSupervisorCJS.js',
     );
     return new Worker(supercode);
   }

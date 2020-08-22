@@ -2,7 +2,7 @@
 /* global setImmediate harden */
 
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -261,8 +261,6 @@ async function doVatResolveCase1(t, mode) {
     t.deepEqual(log.shift(), resolutionOf(expectedP3, mode, targets));
   }
   t.deepEqual(log, []);
-
-  t.end();
 }
 
 for (const mode of modes) {
@@ -539,19 +537,17 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   // assert that the vat saw the local promise being resolved too
   if (mode === 'presence') {
-    t.equal(resolutionOfP1.toString(), `[Presence ${target2}]`);
+    t.is(resolutionOfP1.toString(), `[Presence ${target2}]`);
   } else if (mode === 'data') {
-    t.equal(resolutionOfP1, 4);
+    t.is(resolutionOfP1, 4);
   } else if (mode === 'promise-data') {
-    t.equal(Array.isArray(resolutionOfP1), true);
-    t.equal(resolutionOfP1.length, 1);
+    t.is(Array.isArray(resolutionOfP1), true);
+    t.is(resolutionOfP1.length, 1);
     t.is(resolutionOfP1[0], Promise.resolve(resolutionOfP1[0]));
     t.is(resolutionOfP1[0], stashP1);
   } else if (mode === 'reject') {
-    t.equal(resolutionOfP1, 'rejected');
+    t.is(resolutionOfP1, 'rejected');
   }
-
-  t.end();
 }
 
 // uncomment this when debugging specific problems
@@ -704,8 +700,6 @@ async function doVatResolveCase4(t, mode) {
 
   // if p1 rejects or resolves to data, the kernel never hears about four()
   t.deepEqual(log, []);
-
-  t.end();
 }
 
 for (const mode of modes) {
