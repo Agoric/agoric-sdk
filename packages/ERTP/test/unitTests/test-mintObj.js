@@ -22,7 +22,10 @@ test('mint.mintPayment default nat MathKind', async t => {
 });
 
 test('mint.mintPayment strSet MathKind', async t => {
-  const { mint, issuer, amountMath } = makeIssuerKit('items', MathKind.STRING_SET);
+  const { mint, issuer, amountMath } = makeIssuerKit(
+    'items',
+    MathKind.STRING_SET,
+  );
   const items1and2and4 = amountMath.make(harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -65,12 +68,12 @@ test('mint.mintPayment set MathKind with invites', async t => {
   const invites1and2 = amountMath.make(harden([invite1Value, invite2Value]));
   const payment1 = mint.mintPayment(invites1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
-    t.assert(amountMath.isEqual(paymentBalance1, invites1and2));
+  t.assert(amountMath.isEqual(paymentBalance1, invites1and2));
 
   const invite3 = amountMath.make(harden([invite3Value]));
   const payment2 = mint.mintPayment(invite3);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
-    t.assert(amountMath.isEqual(paymentBalance2, invite3));
+  t.assert(amountMath.isEqual(paymentBalance2, invite3));
 });
 
 // Tests related to non-fungible tokens
@@ -112,10 +115,12 @@ test('non-fungible tokens example', async t => {
   // ALICE SIDE
   // Alice bought ticket 1 and has access to the balletTicketIssuer, because it's public
   const myTicketPaymentAlice = await balletTicketIssuer.claim(paymentForAlice);
-    // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
-    // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive access
-    // to its handle
-  const paymentAmountAlice = await balletTicketIssuer.getAmountOf(myTicketPaymentAlice);
+  // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
+  // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive access
+  // to its handle
+  const paymentAmountAlice = await balletTicketIssuer.getAmountOf(
+    myTicketPaymentAlice,
+  );
   t.is(paymentAmountAlice.value.length, 1);
   t.is(paymentAmountAlice.value[0].seat, 1);
   t.is(paymentAmountAlice.value[0].show, 'The Sofa');
@@ -124,7 +129,9 @@ test('non-fungible tokens example', async t => {
   // BOB SIDE
   // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because it's public
   const bobTicketPayment = await balletTicketIssuer.claim(paymentForBob);
-  const paymentAmountBob = await balletTicketIssuer.getAmountOf(bobTicketPayment);
+  const paymentAmountBob = await balletTicketIssuer.getAmountOf(
+    bobTicketPayment,
+  );
   t.is(paymentAmountBob.value.length, 2);
   t.is(paymentAmountBob.value[0].seat, 3);
   t.is(paymentAmountBob.value[1].seat, 4);

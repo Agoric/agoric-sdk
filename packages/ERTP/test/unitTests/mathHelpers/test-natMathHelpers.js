@@ -42,7 +42,11 @@ test('natMathHelpers', t => {
     { instanceOf: RangeError, message: 'not a safe integer' },
     `'abc' is not a nat`,
   );
-  t.throws(() => make(-1), { instanceOf: RangeError, message: 'negative' }, `- 1 is not a valid Nat`);
+  t.throws(
+    () => make(-1),
+    { instanceOf: RangeError, message: 'negative' },
+    `- 1 is not a valid Nat`,
+  );
 
   // coerce
   t.deepEqual(
@@ -55,10 +59,10 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () =>
-      coerce(
-        harden({ brand: { getAllegedName: () => 'somename' }, value: 4 }),
-      ),
-    { message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/ },
+      coerce(harden({ brand: { getAllegedName: () => 'somename' }, value: 4 })),
+    {
+      message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
+    },
     `coerce can't take the wrong brand`,
   );
   t.throws(

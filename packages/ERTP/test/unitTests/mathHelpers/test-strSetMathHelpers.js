@@ -33,13 +33,14 @@ test('strSetMathHelpers', t => {
   t.deepEqual(getBrand(), mockBrand, 'brand is brand');
 
   // getMathHelpersName
-  t.deepEqual(getAmountMathKind(), MathKind.STRING_SET, 'amountMathKind is strSet');
+  t.deepEqual(
+    getAmountMathKind(),
+    MathKind.STRING_SET,
+    'amountMathKind is strSet',
+  );
 
   // make
-  t.notThrows(
-    () => make(harden(['1'])),
-    `['1'] is a valid string array`,
-  );
+  t.notThrows(() => make(harden(['1'])), `['1'] is a valid string array`);
   t.throws(
     () => make(4),
     { message: /value must be an array/ },
@@ -115,7 +116,7 @@ test('strSetMathHelpers', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-      null,
+    null,
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -124,7 +125,7 @@ test('strSetMathHelpers', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-      null,
+    null,
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(
@@ -139,14 +140,14 @@ test('strSetMathHelpers', t => {
       harden({ brand: mockBrand, value: ['a', 'b'] }),
       harden({ brand: mockBrand, value: ['a'] }),
     ),
-    `['a', 'b'] is gte to ['a']` ,
+    `['a', 'b'] is gte to ['a']`,
   );
   t.falsy(
     isGTE(
       harden({ brand: mockBrand, value: ['a'] }),
       harden({ brand: mockBrand, value: ['b'] }),
     ),
-    `['a'] is not gte to ['b']` ,
+    `['a'] is not gte to ['b']`,
   );
 
   // isEqual

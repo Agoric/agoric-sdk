@@ -4,20 +4,22 @@ import { E } from '@agoric/eventual-send';
 import { MathKind, makeIssuerKit } from '../../src';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
-    const { issuer, brand } = makeIssuerKit('fungible');
-    const myBrand = issuer.getBrand();
-   t.assert(myBrand.isMyIssuer(issuer));
-   t.is(
-      brand,
-      myBrand,
-      'brand returned from `makeIssuerKit` and from `getBrand` the same',
-    );
-   t.is(issuer.getAllegedName(), myBrand.getAllegedName());
-   t.is(issuer.getAllegedName(), 'fungible');
+  const { issuer, brand } = makeIssuerKit('fungible');
+  const myBrand = issuer.getBrand();
+  t.assert(myBrand.isMyIssuer(issuer));
+  t.is(
+    brand,
+    myBrand,
+    'brand returned from `makeIssuerKit` and from `getBrand` the same',
+  );
+  t.is(issuer.getAllegedName(), myBrand.getAllegedName());
+  t.is(issuer.getAllegedName(), 'fungible');
 });
 
-test('issuer.getAmountMath', t => {
+test('issuer.getAmountMath', async t => {
   const { issuer, amountMath, brand } = makeIssuerKit('fungible');
+  const ibrand = await E(issuer).getBrand();
+  t.is(ibrand, brand);
   const fungible = amountMath.make;
   t.assert(
     amountMath.isEqual(
@@ -40,19 +42,19 @@ test('issuer.makeEmptyPurse', t => {
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(amountMath.make(837));
 
- t.assert(
+  t.assert(
     amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
     `empty purse is empty`,
   );
- t.is(purse.getAllegedBrand(), brand, `purse's brand is correct`);
+  t.is(purse.getAllegedBrand(), brand, `purse's brand is correct`);
   const fungible837 = amountMath.make(837);
 
   const checkDeposit = newPurseBalance => {
-   t.assert(
+    t.assert(
       amountMath.isEqual(newPurseBalance, fungible837),
       `the balance returned is the purse balance`,
     );
-   t.assert(
+    t.assert(
       amountMath.isEqual(purse.getCurrentAmount(), fungible837),
       `the new purse balance is the payment's old balance`,
     );
@@ -62,22 +64,22 @@ test('issuer.makeEmptyPurse', t => {
 
   const checkWithdrawal = newPayment => {
     issuer.getAmountOf(newPayment).then(amount => {
-     t.assert(
+      t.assert(
         amountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,
       );
     });
-   t.assert(
+    t.assert(
       amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
       `the purse is empty again`,
     );
   };
 
   return E(purse)
-      .deposit(payment, fungible837)
-      .then(checkDeposit)
-      .then(performWithdrawal)
-      .then(checkWithdrawal);
+    .deposit(payment, fungible837)
+    .then(checkDeposit)
+    .then(performWithdrawal)
+    .then(checkWithdrawal);
 });
 
 test('purse.deposit', async t => {
@@ -97,11 +99,11 @@ test('purse.deposit', async t => {
     expectedNewBalance,
   ) => depositResult => {
     const delta = amountMath.subtract(expectedNewBalance, expectedOldBalance);
-   t.assert(
+    t.assert(
       amountMath.isEqual(depositResult, delta),
       `the balance changes by the deposited amount: ${delta.value}`,
     );
-   t.assert(
+    t.assert(
       amountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
       `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
     );
@@ -140,11 +142,11 @@ test('purse.makeDepositFacet', async t => {
   const payment = mint.mintPayment(fungible25);
 
   const checkDeposit = newPurseBalance => {
-   t.assert(
+    t.assert(
       amountMath.isEqual(newPurseBalance, fungible25),
       `the balance returned is the purse balance`,
     );
-   t.assert(
+    t.assert(
       amountMath.isEqual(purse.getCurrentAmount(), fungible25),
       `the new purse balance is the payment's old balance`,
     );
@@ -161,13 +163,14 @@ test('issuer.burn', async t => {
   const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const payment1 = mint.mintPayment(amountMath.make(837));
 
-  const burntBalance 
-    = await E(issuer).burn(payment1, amountMath.make(837));
+  const burntBalance = await E(issuer).burn(payment1, amountMath.make(837));
   t.assert(
     amountMath.isEqual(burntBalance, amountMath.make(837)),
     `entire minted payment was burnt`,
   );
-  await t.throwsAsync(() => issuer.getAmountOf(payment1), { message: /payment not found/ });
+  await t.throwsAsync(() => issuer.getAmountOf(payment1), {
+    message: /payment not found/,
+  });
 });
 
 test('issuer.claim', async t => {
@@ -189,7 +192,9 @@ test('issuer.claim', async t => {
         );
       });
 
-      return t.throwsAsync(() => issuer.getAmountOf(payment1), { message: /payment not found/});
+      return t.throwsAsync(() => issuer.getAmountOf(payment1), {
+        message: /payment not found/,
+      });
     });
 });
 
@@ -211,8 +216,10 @@ test('issuer.splitMany good amount', async t => {
   const goodAmounts = Array(10).fill(amountMath.make(10));
 
   const checkPayments = async splitPayments => {
-    for (const payment of splitPayments) {
-      const amount = await issuer.getAmountOf(payment);
+    const amounts = await Promise.all(
+      splitPayments.map(payment => issuer.getAmountOf(payment)),
+    );
+    for (const amount of amounts) {
       t.deepEqual(
         amount,
         amountMath.make(10),
@@ -237,7 +244,9 @@ test('issuer.split bad amount', t => {
   const payment = mint.mintPayment(amountMath.make(1000));
   return t.throwsAsync(
     _ => E(issuer).split(payment, otherUnitOps.make(10)),
-    { message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/ },
+    {
+      message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
+    },
     'throws for bad amount',
   );
 });
@@ -248,8 +257,10 @@ test('issuer.split good amount', async t => {
   const oldPayment = mint.mintPayment(amountMath.make(20));
 
   const checkPayments = async splitPayments => {
-    for (const payment of splitPayments) {
-      const amount = await issuer.getAmountOf(payment);
+    const amounts = await Promise.all(
+      splitPayments.map(payment => issuer.getAmountOf(payment)),
+    );
+    for (const amount of amounts) {
       t.deepEqual(
         amount,
         amountMath.make(10),
@@ -257,7 +268,7 @@ test('issuer.split good amount', async t => {
       );
     }
     await t.throwsAsync(
-      () => E(issuer).getAmountOf(oldPayment),
+      () => issuer.getAmountOf(oldPayment),
       { message: /payment not found/ },
       `oldPayment no longer exists`,
     );
@@ -283,13 +294,16 @@ test('issuer.combine good payments', t => {
       amountMath.make(100),
       `combined payment equal to the original payments total`,
     );
-    for (const payment of payments) {
-      await t.throwsAsync(
-        () => issuer.getAmountOf(payment),
-        { message: /payment not found/ },
-        `original payments no longer exist`,
-      );
-    }
+
+    await Promise.all(
+      payments.map(payment =>
+        t.throwsAsync(
+          () => issuer.getAmountOf(payment),
+          { message: /payment not found/ },
+          `original payments no longer exist`,
+        ),
+      ),
+    );
   };
   return E(issuer)
     .combine(payments)
@@ -308,14 +322,13 @@ test('issuer.combine array of promises', t => {
 
   const checkCombinedResult = paymentP => {
     issuer.getAmountOf(paymentP).then(pAmount => {
-     t.is(pAmount.value, 100);
+      t.is(pAmount.value, 100);
     });
   };
 
   return E(issuer)
     .combine(paymentsP)
-    .then(checkCombinedResult)
-    .catch(e => t.assert(false, e));
+    .then(checkCombinedResult);
 });
 
 test('issuer.combine bad payments', async t => {
