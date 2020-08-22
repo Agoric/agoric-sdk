@@ -1,15 +1,38 @@
-- name: "Check faucet exists"
-  become: yes
-  become_user: "{{ service }}"
-  shell: "ag-cosmos-helper keys show --keyring-backend=test faucet"
-  ignore_errors: true
-  register: faucet_exists
+- name: "Create val.sh"
+  delegate_to: localhost
+  template:
+    src: val.sh.j2
+    dest: "{{ SETUP_HOME + '/val.sh' }"
+    mode: '755'
 
-- name: "Create faucet account for {{ service }}"
-  become: yes
-  become_user: "{{ service }}"
-  shell: "ag-cosmos-helper keys add --keyring-backend=test faucet"
-  when: faucet_exists.rc != 0
+- name: "Create provision.sh"
+  delegate_to: localhost
+  template:
+    src: provision.sh.j2
+    dest: "{{ SETUP_HOME + '/provision.sh' }"
+    mode: '755'
+
+- set_fact:
+    faucet: "{{ lookup('file', SETUP_HOME + '/faucet/address.txt', errors='ignore') }}"
+
+- name: "Create faucet account"
+  delegate_to: localhost
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} --keyring-backend=test keys add faucet < /dev/null"
+  when: not faucet
+
+- name: "Extract faucet address"
+  delegate_to: localhost
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} --keyring-backend=test keys show -a faucet > {{ SETUP_HOME + '/faucet/address.txt' }}"
+  when: not faucet
+
+- set_fact:
+    faucet: "{{ lookup('file', SETUP_HOME + '/faucet/address.txt') }}"
+
+- name: "Set faucet chain params"
+  delegate_to: localhost
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} config chain-id {{ CHAIN_NAME }} && \
+    ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} config node tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 && \
+    ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} config keyring-backend test"
 
 - name: "Check {{ STAKER }}-{{ STAKER_NODE }} exists"
   become: yes
@@ -34,13 +57,12 @@
     - "/home/{{ service }}/.{{ service }}/config/gentx"
     - "/home/{{ service }}/validator-txes.txt"
 
-- name: "Add faucet coins to {{ service }}"
+- name: "Add faucet coins to {{ service }} genesis account"
   become: yes
   become_user: "{{ service }}"
   shell: "\
     {{ service }} add-genesis-account \
-      $(ag-cosmos-helper keys show --keyring-backend=test faucet -a) \
-      {{ STAKER_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
+      {{ faucet }} {{ STAKER_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
   ignore_errors: true
 
 - name: "Add {{ STAKER_AMOUNT }} coins to {{ STAKER }}-{{ STAKER_NODE }}"

@@ -1,0 +1,42 @@
+#! /bin/bash
+set -e
+
+thisdir=$(dirname -- "$0")
+MAX_LINES=-1
+
+STAKE=50000000uagstake
+UNIQUE=$1
+ADDR=$2
+NAME=$3
+
+case "$ADDR$NAME" in
+                *\'*) echo 1>&2 'Exploded!'; exit 1 ;;
+        esac
+
+[[ -n $NAME ]] || exit 1
+
+if [[ $UNIQUE != no && $MAX_LINES -ge 0 && $(wc -l $thisdir/cosmos-delegates.txt | sed -e 's/ .*//') -ge $MAX_LINES ]]; then
+        echo "Sorry, we've capped the number of validators at $MAX_LINES"
+        exit 1
+fi
+if [[ $UNIQUE != no ]]; then
+        line=$(grep -e ":$NAME$" $thisdir/cosmos-delegates.txt || true)
+  if [[ -n $line ]]; then
+        echo "$NAME has already tapped the faucet:" 1>&2
+        echo "$line" 1>&2
+        exit 1
+
+  fi
+fi
+if [[ $UNIQUE != no ]]; then
+        line=$(grep -e "^$ADDR:" $thisdir/cosmos-delegates.txt || true)
+        if [[ -n $line ]]; then
+          echo "$ADDR already received a tap:" 1>&2
+          echo "$line" 1>&2
+          exit 1
+        fi
+fi
+
+ag-cosmos-helper --home=$thisdir/faucet -- tx send faucet "$ADDR" "$STAKE"
+sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
+echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt

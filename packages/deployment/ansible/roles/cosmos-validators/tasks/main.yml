@@ -2,7 +2,7 @@
   become: yes
   become_user: "{{ service }}"
   delegate_to: "{{ STAKER_NODE }}"
-  shell: "ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ inventory_hostname }}"
+  shell: "ag-cosmos-helper keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
   ignore_errors: true
   register: staker_exists
 
@@ -15,16 +15,19 @@
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE and staker_exists.rc != 0
 
-- name: "Transfer {{ STAKER_AMOUNT }} to {{ STAKER }}-*"
+- name: "Check {{ STAKER }}-* exists"
+  become: yes
   become_user: "{{ service }}"
-  become: true
   delegate_to: "{{ STAKER_NODE }}"
+  shell: "ag-cosmos-helper keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
+  register: staker_address
+
+- name: "Transfer {{ STAKER_AMOUNT }} to {{ STAKER }}-*"
+  delegate_to: localhost
   shell: "\
-    ag-cosmos-helper tx send --keyring-backend=test \
-      faucet \
-      $(ag-cosmos-helper keys show --keyring-backend=test {{ staker }} -a) \
-      {{ STAKER_AMOUNT }} \
-      --chain-id={{ CHAIN_NAME }} --broadcast-mode=block --yes"
+    ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} \
+     tx send faucet {{ staker_address.stdout }} {{ STAKER_AMOUNT }} \
+      --broadcast-mode=block --yes"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE
