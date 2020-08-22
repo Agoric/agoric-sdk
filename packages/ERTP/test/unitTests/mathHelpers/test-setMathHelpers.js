@@ -1,8 +1,5 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
-
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import { makeAmountMath, MathKind } from '../../../src';
 
@@ -37,124 +34,124 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   } = amountMath;
 
   // getBrand
-  t.deepEquals(getBrand(), mockBrand, 'brand is brand');
+  t.deepEqual(getBrand(), mockBrand, 'brand is brand');
 
   // getAmountMathKind
-  t.deepEquals(getAmountMathKind(), MathKind.SET, 'amountMathKind is set');
+  t.deepEqual(getAmountMathKind(), MathKind.SET, 'amountMathKind is set');
 
   // make
-  t.deepEquals(
+  t.deepEqual(
     make(harden([a])),
     { brand: mockBrand, value: [a] },
     `[a] is a valid set`,
   );
-  t.deepEquals(
+  t.deepEqual(
     make(harden([a, b])),
     { brand: mockBrand, value: [a, b] },
     `[a, b] is a valid set`,
   );
-  t.deepEquals(
+  t.deepEqual(
     make(harden([])),
     { brand: mockBrand, value: [] },
     `[] is a valid set`,
   );
   t.throws(
     () => make(harden([a, a])),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in make should throw`,
   );
-  t.deepEquals(
+  t.deepEqual(
     make(harden(['a', 'b'])),
     { brand: mockBrand, value: ['a', 'b'] },
     'anything comparable is a valid element',
   );
   t.throws(
     () => make(harden('a')),
-    /list must be an array/,
+    { message: /list must be an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
     t.throws(
       () => make(harden([a, a2])),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
 
   // coerce
-  t.deepEquals(
+  t.deepEqual(
     coerce(harden({ brand: mockBrand, value: [a] })),
     harden({ brand: mockBrand, value: [a] }),
     `[a] is a valid set`,
   );
-  t.deepEquals(
+  t.deepEqual(
     coerce(harden({ brand: mockBrand, value: [a, b] })),
     harden({ brand: mockBrand, value: [a, b] }),
     `[a, b] is a valid set`,
   );
-  t.deepEquals(
+  t.deepEqual(
     coerce(harden({ brand: mockBrand, value: [] })),
     harden({ brand: mockBrand, value: [] }),
     `[] is a valid set`,
   );
   t.throws(
     () => coerce(make(harden([a, a]))),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in coerce should throw`,
   );
-  t.deepEquals(
+  t.deepEqual(
     coerce(make(harden(['a', 'b']))),
     { brand: mockBrand, value: ['a', 'b'] },
     'anything comparable is a valid element',
   );
   t.throws(
     () => coerce(harden({ brand: mockBrand, value: 'a' })),
-    /list must be an array/,
+    { message: /list must be an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
     t.throws(
       () => coerce(harden({ brand: mockBrand, value: [a, a2] })),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
 
   // getValue
-  t.deepEquals(
+  t.deepEqual(
     getValue(harden({ brand: mockBrand, value: [a] })),
     [a],
     `getValue of make([a]) is [a]`,
   );
 
   // getEmpty
-  t.deepEquals(
+  t.deepEqual(
     getEmpty(),
     harden({ brand: mockBrand, value: [] }),
     `empty is []`,
   );
 
   // isEmpty
-  t.ok(isEmpty(make(harden([]))), `isEmpty([]) is true`);
+  t.assert(isEmpty(make(harden([]))), `isEmpty([]) is true`);
   t.throws(
     () => isEmpty(harden({ brand: mockBrand, value: {} })),
-    /list must be an array/,
+    { message: /list must be an array/ },
     `isEmpty({}) throws`,
   );
-  t.notOk(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
-  t.notOk(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
+  t.falsy(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
+  t.falsy(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
   t.throws(
     () => isEmpty(harden({ brand: mockBrand, value: [a, a] })),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in value in isEmpty throw because of coercion`,
   );
-  t.ok(isEmpty(make(harden([]))), `isEmpty([]) is true`);
-  t.notOk(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
-  t.notOk(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
+  t.assert(isEmpty(make(harden([]))), `isEmpty([]) is true`);
+  t.falsy(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
+  t.falsy(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
   if (a2 !== undefined) {
     t.throws(
       () => isEmpty(harden({ brand: mockBrand, value: [a, a2] })),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
@@ -166,7 +163,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [b] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -175,24 +172,24 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [b, b] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in the right of isGTE should throw`,
   );
-  t.ok(
+  t.assert(
     isGTE(
       harden({ brand: mockBrand, value: [a] }),
       harden({ brand: mockBrand, value: [a] }),
     ),
     `overlap between left and right of isGTE should not throw`,
   );
-  t.ok(
+  t.assert(
     isGTE(
       harden({ brand: mockBrand, value: [a, b] }),
       harden({ brand: mockBrand, value: [b] }),
     ),
     '[a, b] is GTE [b]',
   );
-  t.notOk(
+  t.falsy(
     isGTE(
       harden({ brand: mockBrand, value: [b] }),
       harden({ brand: mockBrand, value: [b, a] }),
@@ -206,7 +203,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [b] }),
         ),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
@@ -218,7 +215,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [a] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in left of isEqual should throw`,
   );
   t.throws(
@@ -227,24 +224,24 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [a, a] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in right of isEqual should throw`,
   );
-  t.ok(
+  t.assert(
     isEqual(
       harden({ brand: mockBrand, value: [a] }),
       harden({ brand: mockBrand, value: [a] }),
     ),
     `overlap between left and right of isEqual is ok`,
   );
-  t.ok(
+  t.assert(
     isEqual(
       harden({ brand: mockBrand, value: [b, a, c] }),
       harden({ brand: mockBrand, value: [a, c, b] }),
     ),
     `order doesn't matter`,
   );
-  t.notOk(
+  t.falsy(
     isEqual(
       harden({ brand: mockBrand, value: [b, c] }),
       harden({ brand: mockBrand, value: [b, a] }),
@@ -258,7 +255,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [a] }),
         ),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
@@ -270,7 +267,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [b] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in left of add should throw`,
   );
   t.throws(
@@ -279,7 +276,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [b, b] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in right of add should throw`,
   );
   t.throws(
@@ -288,10 +285,10 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [a] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `overlap between left and right of add should throw`,
   );
-  t.deepEquals(
+  t.deepEqual(
     add(
       harden({ brand: mockBrand, value: [] }),
       harden({ brand: mockBrand, value: [b, c] }),
@@ -299,7 +296,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     harden({ brand: mockBrand, value: [b, c] }),
     `anything + identity stays same`,
   );
-  t.deepEquals(
+  t.deepEqual(
     add(
       harden({ brand: mockBrand, value: [b, c] }),
       harden({ brand: mockBrand, value: [] }),
@@ -314,7 +311,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [b] }),
         ),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
@@ -326,7 +323,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, a] }),
         harden({ brand: mockBrand, value: [b] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in left of subtract should throw`,
   );
   t.throws(
@@ -335,10 +332,10 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [b, b] }),
       ),
-    /value has duplicates/,
+    { message: /value has duplicates/ },
     `duplicates in right of subtract should throw`,
   );
-  t.deepEquals(
+  t.deepEqual(
     subtract(
       harden({ brand: mockBrand, value: [a] }),
       harden({ brand: mockBrand, value: [a] }),
@@ -352,10 +349,10 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, b] }),
         harden({ brand: mockBrand, value: [c] }),
       ),
-    /was not in left/,
+    { message: /was not in left/ },
     `elements in right but not in left of subtract should throw`,
   );
-  t.deepEquals(
+  t.deepEqual(
     subtract(
       harden({ brand: mockBrand, value: [b, c] }),
       harden({ brand: mockBrand, value: [] }),
@@ -363,7 +360,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     harden({ brand: mockBrand, value: [b, c] }),
     `anything - identity stays same`,
   );
-  t.deepEquals(
+  t.deepEqual(
     subtract(
       harden({ brand: mockBrand, value: [b, c] }),
       harden({ brand: mockBrand, value: [b] }),
@@ -378,54 +375,36 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
           harden({ brand: mockBrand, value: [a, a2] }),
           harden({ brand: mockBrand, value: [b] }),
         ),
-      /value has duplicates/,
+      { message: /value has duplicates/ },
       `data identity throws`,
     );
   }
 };
 
 test('setMathHelpers with handles', t => {
-  try {
-    const a = harden({});
-    const b = harden({});
-    const c = harden({});
+  const a = harden({});
+  const b = harden({});
+  const c = harden({});
 
-    runSetMathHelpersTests(t, harden([a, b, c]));
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  runSetMathHelpersTests(t, harden([a, b, c]));
 });
 
 test('setMathHelpers with basic objects', t => {
-  try {
-    const a = harden({ name: 'a' });
-    const b = harden({ name: 'b' });
-    const c = harden({ name: 'c' });
+  const a = harden({ name: 'a' });
+  const b = harden({ name: 'b' });
+  const c = harden({ name: 'c' });
 
-    const a2 = harden({ ...a });
+  const a2 = harden({ ...a });
 
-    runSetMathHelpersTests(t, harden([a, b, c]), a2);
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  runSetMathHelpersTests(t, harden([a, b, c]), a2);
 });
 
 test('setMathHelpers with complex objects', t => {
-  try {
-    const a = { handle: {}, instanceHandle: {}, name: 'a' };
-    const b = { handle: {}, instanceHandle: a.instanceHandle, name: 'b' };
-    const c = { handle: {}, instanceHandle: {}, name: 'c' };
+  const a = { handle: {}, instanceHandle: {}, name: 'a' };
+  const b = { handle: {}, instanceHandle: a.instanceHandle, name: 'b' };
+  const c = { handle: {}, instanceHandle: {}, name: 'c' };
 
-    const a2 = harden({ ...a });
+  const a2 = harden({ ...a });
 
-    runSetMathHelpersTests(t, harden([a, b, c]), a2);
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  runSetMathHelpersTests(t, harden([a, b, c]), a2);
 });

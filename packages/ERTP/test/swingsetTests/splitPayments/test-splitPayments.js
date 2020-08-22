@@ -1,7 +1,5 @@
 import '@agoric/install-ses';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
 
@@ -22,6 +20,5 @@ const expectedTapFaucetLog = [
 
 test('test splitPayments', async t => {
   const dump = await main('splitPayments', ['splitPayments']);
-  t.deepEquals(dump.log, expectedTapFaucetLog);
-  t.end();
+  t.deepEqual(dump.log, expectedTapFaucetLog);
 });
