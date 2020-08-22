@@ -85,19 +85,3 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
         tags: latest
-  
-  docker-setup-solo:
-    needs: docker-solo
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Build setup-solo image
-      uses: elgohr/Publish-Docker-Github-Action@master
-      with:
-        name: agoric/cosmic-swingset-setup-solo
-        dockerfile: packages/cosmic-swingset/setup-solo/Dockerfile
-        context: packages/cosmic-swingset/setup-solo
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        snapshot: true
-        tags: latest

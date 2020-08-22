@@ -551,8 +551,6 @@ show-config      display the client connection parameters
       const pserverHost = pserverFlags
         ? `https://${match[1]}`
         : `http://${match[1]}:8001`;
-      const pserverUrl = `${pserverHost}${pserverPassword &&
-        `/provision-${pserverPassword}`}`;
       initHint();
 
       console.error(
@@ -560,8 +558,6 @@ show-config      display the client connection parameters
 ${chalk.yellow.bold(
   `ag-setup-solo --netconfig='${pserverHost}/network-config'`,
 )}
-and get your codes from:
-${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
 `,
       );
       if (await exists('/vagrant')) {
