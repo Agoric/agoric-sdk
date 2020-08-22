@@ -1,15 +1,8 @@
-- name: "Create val.sh"
+- name: "Create faucet-helper.sh"
   delegate_to: localhost
   template:
-    src: val.sh.j2
-    dest: "{{ SETUP_HOME + '/val.sh' }"
-    mode: '755'
-
-- name: "Create provision.sh"
-  delegate_to: localhost
-  template:
-    src: provision.sh.j2
-    dest: "{{ SETUP_HOME + '/provision.sh' }"
+    src: faucet-helper.sh.j2
+    dest: "{{ SETUP_HOME + '/faucet-helper.sh' }}"
     mode: '755'
 
 - set_fact:

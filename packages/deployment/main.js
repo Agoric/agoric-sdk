@@ -567,6 +567,13 @@ ${chalk.yellow.bold(
       break;
     }
 
+    case 'add-egress':
+    case 'add-delegate': {
+      await inited();
+      await needDoRun(['./faucet-helper.sh', ...args]);
+      break;
+    }
+
     case 'show-chain-name': {
       await inited();
       const chainName = await trimReadFile(`${COSMOS_DIR}/chain-name.txt`);

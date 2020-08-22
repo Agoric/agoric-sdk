@@ -1,0 +1,89 @@
+#! /bin/bash
+set -e
+
+thisdir=$(dirname -- "$0")
+
+MAX_LINES=-1
+STAKE=50000000uagstake
+
+OP=$1
+shift
+
+NETWORK_CONFIG_URL="{{ NETWORK_CONFIG_URL }}"
+nc=$(curl -s $NETWORK_CONFIG_URL)
+chainName=$(echo "$nc" | jq -r .chainName)
+rpcAddrs=$(echo "$nc" | jq .rpcAddrs)
+numAddrs=$(echo "$rpcAddrs" | jq '. | length')
+
+while [[ $numAddrs -gt 0 ]]; do
+  r=$(( $RANDOM % $numAddrs ))
+  selected=$(echo "$rpcAddrs" | jq -r ".[$r]")
+  rpcAddrs=$(echo "$rpcAddrs" | jq ".[0:$r] + .[$(( $r + 1 )):$numAddrs]")
+  numAddrs=$(echo "$rpcAddrs" | jq '. | length')
+
+  # echo "Checking if $selected is alive"
+  if [[ $(curl -s http://$selected/status | jq .result.sync_info.catching_up) == false ]]; then
+    case $OP in
+    debug)
+      echo "would try $selected"
+      ;;
+    add-egress)
+      NAME=$1
+      ADDR=$2
+      exec ag-cosmos-helper --home=$thisdir/faucet \
+        tx swingset provision-one \
+        --node=tcp://$selected --chain-id=$chainName \
+        --yes --gas=auto --gas-adjustment=1.5 --broadcast-mode=block \
+        --from=faucet -- "$NAME" "$ADDR"
+      ;;
+    add-delegate)
+      UNIQUE=yes
+      case "$1" in
+      --force | -f) UNIQUE=no; shift ;;
+      esac
+      NAME=$1
+      ADDR=$2
+
+      if [[ $UNIQUE != no && $MAX_LINES -ge 0 && $(wc -l $thisdir/cosmos-delegates.txt | sed -e 's/ .*//') -ge $MAX_LINES ]]; then
+        echo "Sorry, we've capped the number of validators at $MAX_LINES"
+        exit 1
+      fi
+      if [[ $UNIQUE != no ]]; then
+        line=$(grep -e ":$NAME$" $thisdir/cosmos-delegates.txt || true)
+        if [[ -n $line ]]; then
+          echo "$NAME has already tapped the faucet:" 1>&2
+          echo "$line" 1>&2
+          exit 1
+        fi
+      fi
+      if [[ $UNIQUE != no ]]; then
+        line=$(grep -e "^$ADDR:" $thisdir/cosmos-delegates.txt || true)
+        if [[ -n $line ]]; then
+          echo "$ADDR already received a tap:" 1>&2
+          echo "$line" 1>&2
+          exit 1
+        fi
+      fi
+
+      ag-cosmos-helper --home=$thisdir/faucet tx send faucet "$ADDR" "$STAKE"
+      if ag-cosmos-helper --home=$thisdir/faucet \
+        tx send \
+        --node=tcp://$selected --chain-id=$chainName \
+        --yes --gas=auto --gas-adjustment=1.5 --broadcast-mode=block \
+        -- faucet "$ADDR" "$STAKE"; then
+        # Record the information before exiting.
+        sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
+        echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt
+        exit 0
+      fi
+      ;;
+    *)
+      echo 1>&2 "Unknown operation $OP"
+      exit 1
+      ;;
+    esac
+  fi
+done
+
+echo 1>&2 "No active chain nodes found in: $(echo "$nc" | jq .rpcAddrs)"
+exit 1
