@@ -1,6 +1,0 @@
-v1.t.0 :: {"d":["deliver","o+0","zero",{"body":"[{\"@qclass\":\"slot\",\"index\":0},{\"@qclass\":\"slot\",\"index\":1},{\"@qclass\":\"slot\",\"index\":2}]","slots":["o-50","p-60","p-61"]},"p-62"],"syscalls":[{"d":["subscribe","p-60"],"response":null},{"d":["subscribe","p-61"],"response":null},{"d":["send","o-50","callback",{"body":"[11,12]","slots":[]},"p+5"],"response":null},{"d":["subscribe","p+5"],"response":null},{"d":["fulfillToData","p-62",{"body":"[{\"@qclass\":\"slot\",\"index\":0},{\"@qclass\":\"slot\",\"index\":1}]","slots":["p+6","p+7"]}],"response":null}],"crankNumber":2}
-v1.t.1 :: {"d":["deliver","o+0","one",{"body":"[]","slots":[]},"p-63"],"syscalls":[{"d":["fulfillToPresence","p+6","o-50"],"response":null},{"d":["reject","p+7",{"body":"{\"@qclass\":\"error\",\"name\":\"Error\",\"message\":\"oops\"}","slots":[]}],"response":null},{"d":["fulfillToData","p-63",{"body":"1","slots":[]}],"response":null}],"crankNumber":3}
-v1.t.2 :: {"d":["notifyFulfillToPresence","p-60","o-50"],"syscalls":[],"crankNumber":4}
-v1.t.3 :: {"d":["notifyReject","p-61",{"body":"{\"@qclass\":\"error\",\"name\":\"Error\",\"message\":\"four\"}","slots":[]}],"syscalls":[],"crankNumber":5}
-v1.t.4 :: {"d":["notifyFulfillToData","p+5",{"body":"[\"data\",{\"@qclass\":\"slot\",\"index\":0}]","slots":["o-50"]}],"syscalls":[],"crankNumber":9}
-v1.t.nextID :: 5
