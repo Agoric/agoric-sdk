@@ -7,7 +7,7 @@ const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
 export default async function main(progname, args, { path, env, agcc }) {
   const bootAddress = env.BOOT_ADDRESS;
-  const role = env.ROLE || 'chain';
+  const role = 'chain';
 
   const portNums = {};
 

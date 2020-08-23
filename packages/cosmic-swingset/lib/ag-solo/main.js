@@ -64,7 +64,7 @@ start
         return;
       }
       if (!fs.existsSync(AG_SOLO_BASEDIR)) {
-        await solo(progname, ['init', AG_SOLO_BASEDIR, ...rawArgv.slice(1)]);
+        await solo(progname, ['init', AG_SOLO_BASEDIR, ...argv.slice(1)]);
       }
       process.chdir(AG_SOLO_BASEDIR);
       await solo(progname, ['add-chain', netconfig]);

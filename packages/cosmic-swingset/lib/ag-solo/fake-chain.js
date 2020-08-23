@@ -41,7 +41,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
 
   const vatsdir = path.join(basedir, 'vats');
   const argv = [
-    `--role=${role}`,
+    `--role=sim-chain`,
     `--give-me-all-the-agoric-powers`,
     bootAddress,
   ];
