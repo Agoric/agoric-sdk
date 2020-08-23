@@ -202,10 +202,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         !petnameToVal.has(petname),
         details`petname ${petname} is already in use`,
       );
-      assert(
-        !valToPetname.has(val),
-        details`val ${val} already has a strong name`,
-      );
+      assert(!valToPetname.has(val), details`val ${val} already has a petname`);
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
 

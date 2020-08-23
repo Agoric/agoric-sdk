@@ -202,7 +202,7 @@ test('lib-wallet issuer and purse methods', async t => {
 });
 
 test('lib-wallet dapp suggests issuer, instance, installation petnames', async t => {
-  t.plan(14);
+  t.plan(13);
   const {
     board,
     zoe,
@@ -438,7 +438,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
   // `resuggesting a petname doesn't error`
   await wallet.suggestInstallation('autoswap', autoswapInstallationBoardId);
-
   await wallet.renameInstallation('automaticRefund2', installation);
 
   t.is(
@@ -449,7 +448,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
   // We need this await for the pursesStateChangeLog to be updated
   // by the time we check it.
-  // TODO: check the pursesState changes in a less fragile way.
   const currentAmount2 = await E(zoeInvitePurse).getCurrentAmount();
   t.deepEqual(
     currentAmount2.value,
@@ -490,7 +488,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
           { kind: 'instance', petname: 'automaticRefund' },
-          { kind: 'installation', petname: 'automaticRefund' },
+          { kind: 'installation', petname: 'automaticRefund2' },
         ],
       },
       currentAmount: {
@@ -502,7 +500,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             instance: { kind: 'instance', petname: 'automaticRefund' },
             installation: {
               kind: 'installation',
-              petname: 'automaticRefund',
+              petname: 'automaticRefund2',
             },
           },
         ],
