@@ -8,7 +8,7 @@
     "build": "exit 0",
     "build:gyp": "make compile-gyp",
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
-    "test": "tap --no-coverage --jobs=1 --timeout 600 'test/**/test*.js'",
+    "test": "ava --serial",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint --fix",
@@ -66,16 +66,23 @@
     "ws": "^7.2.0"
   },
   "devDependencies": {
+    "ava": "3.11.1",
     "napi-thread-safe-callback": "0.0.6",
-    "node-addon-api": "^1.7.1",
-    "tap": "^14.10.5",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "node-addon-api": "^1.7.1"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
     "node": ">=11.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "10m"
   }
 }
