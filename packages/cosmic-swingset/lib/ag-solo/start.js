@@ -274,11 +274,10 @@ export default async function start(basedir, argv) {
           }
           break;
         case 'fake-chain': {
-          log(`adding follower/sender for fake chain ${c.role} ${c.GCI}`);
+          log(`adding follower/sender for fake chain ${c.GCI}`);
           const deliverator = await connectToFakeChain(
             basedir,
             c.GCI,
-            c.role,
             c.fakeDelay,
             deliverInboundToMbx,
           );

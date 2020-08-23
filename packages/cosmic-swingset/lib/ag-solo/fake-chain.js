@@ -33,7 +33,7 @@ async function writeMap(file, map) {
   await fs.promises.writeFile(file, json);
 }
 
-export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
+export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
 
