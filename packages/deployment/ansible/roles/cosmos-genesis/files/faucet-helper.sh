@@ -9,17 +9,13 @@ STAKE=50000000uagstake
 OP=$1
 shift
 
-NETWORK_CONFIG_URL="{{ NETWORK_CONFIG_URL }}"
-nc=$(curl -s $NETWORK_CONFIG_URL)
-chainName=$(echo "$nc" | jq -r .chainName)
-rpcAddrs=$(echo "$nc" | jq .rpcAddrs)
-numAddrs=$(echo "$rpcAddrs" | jq '. | length')
+chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
+IFS=, read -r -a rpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
 
-while [[ $numAddrs -gt 0 ]]; do
-  r=$(( $RANDOM % $numAddrs ))
-  selected=$(echo "$rpcAddrs" | jq -r ".[$r]")
-  rpcAddrs=$(echo "$rpcAddrs" | jq ".[0:$r] + .[$(( $r + 1 )):$numAddrs]")
-  numAddrs=$(echo "$rpcAddrs" | jq '. | length')
+while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
+  r=$(( $RANDOM % ${#rpcAddrs[@]} ))
+  selected=${rpcAddrs[$r]}
+  rpcAddrs=( ${rpcAddrs[@]/$selected} )
 
   # echo "Checking if $selected is alive"
   if [[ $(curl -s http://$selected/status | jq .result.sync_info.catching_up) == false ]]; then

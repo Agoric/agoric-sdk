@@ -1,7 +1,7 @@
-- name: "Create faucet-helper.sh"
+- name: "Copy faucet-helper.sh"
   delegate_to: localhost
-  template:
-    src: faucet-helper.sh.j2
+  copy:
+    src: faucet-helper.sh
     dest: "{{ SETUP_HOME + '/faucet-helper.sh' }}"
     mode: '755'
 
