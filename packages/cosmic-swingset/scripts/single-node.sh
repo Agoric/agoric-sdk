@@ -5,7 +5,7 @@ set -e
 DAEMON=${DAEMON-gaiad}
 CLI=${CLI-gaiacli}
 STAKE=${STAKE-10000000000stake}
-coins="${STAKE},100000000000samoleans,10000000000000000000000000uag"
+coins="${STAKE},100000000000samoleans,1000000000uag,100provisionpass"
 
 CHAINID=$1
 GENACCT=$2
@@ -23,7 +23,7 @@ fi
 # Build genesis file incl account for passed address
 $DAEMON init --chain-id $CHAINID $CHAINID
 $CLI keys add validator --keyring-backend="test"
-$DAEMON add-genesis-account validator $coins --keyring-backend="test"
+$DAEMON add-genesis-account validator $STAKE --keyring-backend="test"
 $DAEMON add-genesis-account $GENACCT $coins --keyring-backend="test"
 $DAEMON gentx --name validator --amount=$STAKE --keyring-backend="test"
 $DAEMON collect-gentxs
@@ -45,9 +45,6 @@ ag-chain-cosmos)
   # For Agoric
   DIR=$(dirname -- "${BASH_SOURCE[0]}")
   "$DIR/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos ~/.$DAEMON/config
-  
-  export BOOTSTRAP_ADDRESS=$GENACCT
-  export ROLE=two_chain
   ;;
 esac
 
