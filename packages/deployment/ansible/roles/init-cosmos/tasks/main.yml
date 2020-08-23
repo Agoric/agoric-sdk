@@ -23,4 +23,5 @@
 - name: "Initialize {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "{{ service }} init --overwrite {{ inventory_hostname }} --chain-id={{ CHAIN_NAME }}"
+  shell: "{{ service }} init {{ moniker | default(inventory_hostname) }} \
+    --overwrite --chain-id={{ CHAIN_NAME }}"

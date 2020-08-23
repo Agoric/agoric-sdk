@@ -7,10 +7,10 @@
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - service: ag-chain-cosmos
     - BOOTSTRAP_TOKENS: "{{ lookup('file', SETUP_HOME + '/boot-tokens.txt') }},100provisionpass"
-    - BOOTSTRAP_ADDRESS: "{{ lookup('file', SETUP_HOME + '/ag-pserver/data/node0/boot-address.txt') }}"
+    - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/ag-chain-cosmos/chain-name.txt') }}"
+    - NETWORK_CONFIG_URL: https://testnet.agoric.com/network-config
     - STAKER: ag-staker
     - STAKER_TOKENS: 10000000000000000000000000uagstake
-    - STAKER_IDENTITY_FLAGS: "--website=https://testnet.agoric.com --identity=https://keybase.io/team/agoric.testnet.validators"
     - STAKER_AMOUNT: 50000000uagstake
     - STAKER_NODE: node0
   roles:

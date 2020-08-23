@@ -24,7 +24,7 @@ MOD_READONLY = # -mod=readonly
 
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
-COMMIT := $(shell git log -1 --format='%H' || cat lib/git-revision.txt)
+COMMIT := $(shell git log -1 --format='%H' 2>/dev/null || cat lib/git-revision.txt)
 
 ldflags = \
 	-X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
