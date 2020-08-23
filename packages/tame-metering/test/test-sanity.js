@@ -1,9 +1,8 @@
 import '../src/install-global-metering';
-import test from 'tape-promise/tape';
+import test from 'ava';
 
 test('symbol properties', t => {
-  t.assert(RegExp[Symbol.species], 'RegExp[Symbol.species] is kept');
-  t.end();
+  t.truthy(RegExp[Symbol.species], 'RegExp[Symbol.species] is kept');
 });
 
 function foo(_bar) {
@@ -12,6 +11,5 @@ function foo(_bar) {
 }
 
 test('direct eval', t => {
-  t.equals(foo(123), 123, 'direct eval succeeds');
-  t.end();
+  t.is(foo(123), 123, 'direct eval succeeds');
 });
