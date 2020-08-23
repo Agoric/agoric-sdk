@@ -13,7 +13,7 @@ async function main(basedir, argv) {
 
 const escrowGolden = ['starting testEscrowServiceSuccess'];
 
-test('escrow checkUnits w/SES', async t => {
+test.skip('escrow checkUnits w/SES', async t => {
   const dump = await main('escrow', ['escrow matches']);
   t.deepEqual(dump.log, escrowGolden);
 });
