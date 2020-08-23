@@ -3,7 +3,7 @@ SOLO_NAME=${SOLO_NAME-agoric}
 SOLO_HOME=${SOLO_HOME-$SOLO_NAME}
 PORT=${PORT-8000}
 HOST_PORT=${HOST_PORT-$PORT}
-IMAGE=agoric/cosmic-swingset-solo
+IMAGE=agoric/cosmic-swingset-solo:latest
 case "$1" in
 --pull)
   shift
@@ -16,7 +16,7 @@ if test "$1" = shell; then
   ARGS=
   shift
 else
-  set dummy --webport=$PORT --webhost=0.0.0.0 ${1+"$@"}
+  set dummy setup --webport=$PORT --webhost=0.0.0.0 ${1+"$@"}
   shift
 fi
 exec docker run \
@@ -24,4 +24,4 @@ exec docker run \
   --volume=ag-solo-state:/usr/src/app/solo \
   -eAG_SOLO_BASEDIR="$SOLO_HOME" \
   --rm -it $FLAGS \
-  "$IMAGE" setup ${1+"$@"}
+  "$IMAGE" ${1+"$@"}

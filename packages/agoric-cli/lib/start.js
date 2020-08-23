@@ -150,7 +150,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       log(chalk.yellow(`setting sim chain with ${fakeDelay} second delay`));
       await pspawn(
         agSolo,
-        ['set-fake-chain', '--role=two_chain', `--delay=${fakeDelay}`, fakeGCI],
+        ['set-fake-chain', `--delay=${fakeDelay}`, fakeGCI],
         {
           cwd: agServer,
         },
@@ -162,7 +162,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 0;
     }
 
-    const ps = pspawn(agSolo, [...debugOpts, 'start', '--role=two_client'], {
+    const ps = pspawn(agSolo, [...debugOpts, 'start'], {
       cwd: agServer,
     });
     process.on('SIGINT', () => ps.cp.kill('SIGINT'));
@@ -475,9 +475,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     // Now actually start the solo.
-    return soloSpawn(['start', '--role=two_client'], spawnOpts, [
-      `--publish=${portNum}:${portNum}`,
-    ]);
+    return soloSpawn(['start'], spawnOpts, [`--publish=${portNum}:${portNum}`]);
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
