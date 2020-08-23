@@ -1,4 +1,4 @@
-FROM debian:stretch AS build
+FROM debian:buster AS build
 
 RUN apt-get update -y && apt-get install gcc python3 python3-venv python3-dev -y && apt-get clean -y
 
@@ -9,7 +9,7 @@ RUN ve3/bin/pip install wheel
 COPY . provisioning-server/
 RUN ve3/bin/pip install provisioning-server/
 
-FROM debian:stretch AS install
+FROM debian:buster AS install
 
 WORKDIR /usr/src/app
 RUN apt-get update -y && apt-get install python3 -y && apt-get clean -y
