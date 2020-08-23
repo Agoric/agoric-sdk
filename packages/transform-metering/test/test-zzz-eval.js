@@ -3,7 +3,7 @@
 import { replaceGlobalMeter } from './install-metering';
 import '@agoric/install-ses'; // calls lockdown()
 
-import test from 'tape-promise/tape';
+import test from 'ava';
 import * as babelCore from '@babel/core';
 
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
@@ -77,15 +77,15 @@ test.skip('metering evaluator', async t => {
     };
     */
     const src1 = `123; 456;`;
-    t.equals(await myEval(meter, src1), 456, 'trivial source succeeds');
+    t.is(await myEval(meter, src1), 456, 'trivial source succeeds');
 
     const src5a = `\
 ('x'.repeat(1e8), 0)
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src5a),
-      /Allocate meter exceeded/,
+      { message: /Allocate meter exceeded/ },
       'big string exhausts',
     );
 
@@ -93,9 +93,9 @@ test.skip('metering evaluator', async t => {
 (new Array(1e9), 0)
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src5),
-      /Allocate meter exceeded/,
+      { message: /Allocate meter exceeded/ },
       'big array exhausts',
     );
 
@@ -106,9 +106,9 @@ function f(a) {
 f(1);
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src2),
-      /Stack meter exceeded/,
+      { message: /Stack meter exceeded/ },
       'stack overflow exhausts',
     );
 
@@ -116,9 +116,9 @@ f(1);
 while (true) {}
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src3),
-      /Compute meter exceeded/,
+      { message: /Compute meter exceeded/ },
       'infinite loop exhausts',
     );
 
@@ -126,9 +126,9 @@ while (true) {}
 (() => { while(true) {} })();
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src3b),
-      /Compute meter exceeded/,
+      { message: /Compute meter exceeded/ },
       'nested loop exhausts',
     );
 
@@ -140,9 +140,9 @@ Promise.resolve().then(
 0
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src3a),
-      /Compute meter exceeded/,
+      { message: /Compute meter exceeded/ },
       'promised infinite loop exhausts',
     );
 
@@ -154,16 +154,16 @@ f();
 0
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src3c),
-      / meter exceeded/,
+      { message: / meter exceeded/ },
       'promise loop exhausts',
     );
 
     const src4 = `\
 /(x+x+)+y/.test('x'.repeat(10000));
 `;
-    t.equals(
+    t.is(
       await myEval(meter, src4),
       false,
       `catastrophic backtracking doesn't happen`,
@@ -173,21 +173,18 @@ f();
 new Array(1e8).map(Object.create); 0
 `;
     expectedExhaustedTimes += 1;
-    await t.rejects(
+    await t.throwsAsync(
       myEval(meter, src6),
-      /Allocate meter exceeded/,
+      { message: /Allocate meter exceeded/ },
       'long map exhausts',
     );
 
-    t.equals(
+    t.is(
       exhaustedTimes,
       expectedExhaustedTimes,
       `meter was exhausted ${expectedExhaustedTimes} times`,
     );
-  } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
   } finally {
     process.off('unhandledRejection', rejectionHandler);
-    t.end();
   }
 });

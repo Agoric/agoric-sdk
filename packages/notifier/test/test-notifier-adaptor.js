@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
-import test from 'tape-promise/tape';
+import test from 'ava';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,
@@ -46,14 +46,12 @@ const testEnding = (t, p, fails) => {
   return E.when(
     p,
     result => {
-      t.equal(fails, false);
-      t.equal(result, refResult);
-      return t.end();
+      t.is(fails, false);
+      t.is(result, refResult);
     },
     reason => {
-      t.equal(fails, true);
-      t.equal(reason, refReason);
-      return t.end();
+      t.is(fails, true);
+      t.is(reason, refReason);
     },
   );
 };
@@ -75,16 +73,16 @@ const testManualConsumer = (t, iterable, lossy) => {
       ({ value, done }) => {
         i = skip(i, value, lossy);
         if (done) {
-          t.equal(i, payloads.length);
+          t.is(i, payloads.length);
           return value;
         }
-        t.assert(i < payloads.length);
+        t.truthy(i < payloads.length);
         // Need precise equality
-        t.assert(Object.is(value, payloads[i]));
+        t.truthy(Object.is(value, payloads[i]));
         return testLoop(i + 1);
       },
       reason => {
-        t.assert(i <= payloads.length);
+        t.truthy(i <= payloads.length);
         throw reason;
       },
     );
@@ -97,13 +95,13 @@ const testAutoConsumer = async (t, iterable, lossy) => {
   try {
     for await (const value of iterable) {
       i = skip(i, value, lossy);
-      t.assert(i < payloads.length);
+      t.truthy(i < payloads.length);
       // Need precise equality
-      t.assert(Object.is(value, payloads[i]));
+      t.truthy(Object.is(value, payloads[i]));
       i += 1;
     }
   } finally {
-    t.assert(i <= payloads.length);
+    t.truthy(i <= payloads.length);
   }
   // The for-await-of loop cannot observe the final value of the iterator
   // so this consumer cannot test what that was. Just return what testEnding
@@ -116,20 +114,18 @@ const makeTestUpdater = (t, lossy, fails) => {
   return harden({
     updateState(newState) {
       i = skip(i, newState, lossy);
-      t.assert(i < payloads.length);
+      t.truthy(i < payloads.length);
       // Need precise equality
-      t.assert(Object.is(newState, payloads[i]));
+      t.truthy(Object.is(newState, payloads[i]));
       i += 1;
     },
     finish(finalState) {
-      t.equal(fails, false);
-      t.equal(finalState, refResult);
-      return t.end();
+      t.is(fails, false);
+      t.is(finalState, refResult);
     },
     fail(reason) {
-      t.equal(fails, true);
-      t.equal(reason, refReason);
-      return t.end();
+      t.is(fails, true);
+      t.is(reason, refReason);
     },
   });
 };
