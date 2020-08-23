@@ -85,3 +85,18 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
         tags: latest
+
+  docker-vagrant:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Build setup image
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: agoric/vagrant-debian
+        dockerfile: vagrant/Dockerfile
+        context: vagrant
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        snapshot: true
+        tags: latest

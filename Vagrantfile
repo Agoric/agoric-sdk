@@ -13,7 +13,7 @@
 
 TERRAFORM_VERSION = "0.11.14"
 NODE_VERSION = "12.x"
-GO_VERSION = "1.13.4"
+GO_VERSION = "1.14.3"
 #DOCKER_VERSION = "=17.09.0~ce-0~debian"
 DOCKER_VERSION = ""
 
@@ -107,7 +107,7 @@ def get_ipaddr(hostname, default)
 end
 
 Vagrant.configure("2") do |config|
-    config.vm.box = "debian/contrib-stretch64"
+    config.vm.box = "debian/contrib-buster64"
     config.vm.hostname = "agoric-sdk"
 
     private_network_ip = get_ipaddr(config.vm.hostname, "10.10.10.10")
@@ -129,7 +129,7 @@ Vagrant.configure("2") do |config|
     config.vm.provider :docker do |docker, override|
       override.vm.box = nil
       docker.build_dir = "vagrant"
-      docker.build_args = ['-t', 'agoric/agoric-sdk:local']
+      docker.build_args = ['-t', 'agoric/vagrant-debian:latest']
       docker.name = "agoric-sdk-docker"
       docker.ports = ['127.0.0.1:8000:8000', '127.0.0.1:9229:9229']
       docker.remains_running = true

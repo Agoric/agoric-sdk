@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:buster
 # MAINTAINER Tasos Latsas "tlatsas@kodama.gr"
 LABEL maintainer="mfig@agoric.com"
 
