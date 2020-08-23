@@ -885,6 +885,7 @@ ${name}:
         for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
           const node = `node${offset + instance}`;
+          const moniker = `Agoric${offset + instance}`;
           const units =
             node === PROVISIONER_NODE
               ? `\
@@ -895,6 +896,7 @@ ${name}:
               : '';
           const host = `\
 ${node}:
+  moniker: ${moniker}
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'
