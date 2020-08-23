@@ -1,7 +1,6 @@
 - name: "Check {{ STAKER }}-* exists"
   become: yes
   become_user: "{{ service }}"
-  delegate_to: "{{ STAKER_NODE }}"
   shell: "ag-cosmos-helper keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
   ignore_errors: true
   register: staker_exists
@@ -9,7 +8,6 @@
 - name: "Create {{ STAKER }}-*"
   become_user: "{{ service }}"
   become: true
-  delegate_to: "{{ STAKER_NODE }}"
   shell: "ag-cosmos-helper keys add --keyring-backend=test {{ staker }}"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
@@ -18,7 +16,6 @@
 - name: "Check {{ STAKER }}-* exists"
   become: yes
   become_user: "{{ service }}"
-  delegate_to: "{{ STAKER_NODE }}"
   shell: "ag-cosmos-helper keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
   register: staker_address
 
@@ -35,7 +32,6 @@
 - name: "Create validators for {{ STAKER }}-*"
   become_user: "{{ service }}"
   become: true
-  delegate_to: "{{ STAKER_NODE }}"
   shell: "\
     ag-cosmos-helper tx staking create-validator --keyring-backend=test \
       --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_AMOUNT }} \
