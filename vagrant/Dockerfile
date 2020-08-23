@@ -3,7 +3,7 @@ FROM debian:buster
 LABEL maintainer="mfig@agoric.com"
 
 RUN apt-get update \
-    && apt-get install -y init openssh-server sudo curl python python3-venv python3-dev \
+    && apt-get install -y init openssh-server sudo curl python python3-venv python3-dev vim jq less \
     && apt-get clean
 
 RUN useradd --create-home --shell /bin/bash vagrant
