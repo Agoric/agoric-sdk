@@ -64,7 +64,7 @@ start
         return;
       }
       if (!fs.existsSync(AG_SOLO_BASEDIR)) {
-        await solo(progname, ['init', AG_SOLO_BASEDIR, ...rawArgv.slice(1)]);
+        await solo(progname, ['init', AG_SOLO_BASEDIR, ...argv.slice(1)]);
       }
       process.chdir(AG_SOLO_BASEDIR);
       await solo(progname, ['add-chain', netconfig]);
@@ -122,9 +122,9 @@ start
     }
     case 'set-fake-chain': {
       const basedir = insistIsBasedir();
-      const { _: subArgs, role, delay } = parseArgs(argv.slice(1), {});
+      const { _: subArgs, delay } = parseArgs(argv.slice(1), {});
       const GCI = subArgs[0];
-      setFakeChain(basedir, GCI, role, delay);
+      setFakeChain(basedir, GCI, delay);
       break;
     }
     case 'start': {

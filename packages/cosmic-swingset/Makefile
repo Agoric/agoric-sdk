@@ -111,7 +111,7 @@ t1-provision-one:
 
 # Actually start the ag-solo.
 t1-start-ag-solo:
-	cd t1/$(BASE_PORT) && ../../bin/ag-solo start --role=two_client
+	cd t1/$(BASE_PORT) && ../../bin/ag-solo start
 
 # scenario3 is a single JS process without any Golang.  However,
 # the client and the chain within the process run two separate
@@ -131,17 +131,8 @@ scenario3-run-client: scenario3-run
 # Set the fake chain here in case the delay has changed.
 scenario3-run:
 	(cd t3 && \
-			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI)
-	cd t3 && ../bin/ag-solo start --role=two_client
-
-# These rules are the old scenario3.  No fake delay at all.
-# It's generally better to use the new scenario3.
-deprecated-scenario3-setup:
-	rm -rf t3
-	bin/ag-solo init t3 --egresses=none
-
-deprecated-scenario3-run-client:
-	cd t3 && ../bin/ag-solo start --role=three_client
+			../bin/ag-solo set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI)
+	cd t3 && ../bin/ag-solo start
 
 docker-pull:
 	for f in '' -pserver -setup -setup-solo -solo; do \
