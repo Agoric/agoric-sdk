@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - name: Save Git revision
+      run: git log -1 --format='%H' > packages/cosmic-swingset/lib/git-revision.txt
     - name: Build Go dependencies image
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
