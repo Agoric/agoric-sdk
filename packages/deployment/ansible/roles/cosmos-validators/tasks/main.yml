@@ -22,7 +22,7 @@
 - name: "Transfer {{ STAKER_AMOUNT }} to {{ STAKER }}-*"
   delegate_to: localhost
   shell: "\
-    ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} \
+    ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} \
      tx send faucet {{ staker_address.stdout }} {{ STAKER_AMOUNT }} \
       --broadcast-mode=block --yes"
   vars:

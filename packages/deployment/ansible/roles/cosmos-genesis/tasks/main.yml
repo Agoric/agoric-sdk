@@ -6,26 +6,26 @@
     mode: '755'
 
 - set_fact:
-    faucet: "{{ lookup('file', SETUP_HOME + '/faucet/address.txt', errors='ignore') }}"
+    faucet: "{{ lookup('file', SETUP_HOME + '/../faucet/address.txt', errors='ignore') }}"
 
 - name: "Create faucet account"
   delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} --keyring-backend=test keys add faucet < /dev/null"
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} --keyring-backend=test keys add faucet < /dev/null"
   when: not faucet
 
 - name: "Extract faucet address"
   delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} --keyring-backend=test keys show -a faucet > {{ SETUP_HOME + '/faucet/address.txt' }}"
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} --keyring-backend=test keys show -a faucet > {{ SETUP_HOME + '/../faucet/address.txt' }}"
   when: not faucet
 
 - set_fact:
-    faucet: "{{ lookup('file', SETUP_HOME + '/faucet/address.txt') }}"
+    faucet: "{{ lookup('file', SETUP_HOME + '/../faucet/address.txt') }}"
 
 - name: "Set faucet chain params"
   delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} config chain-id {{ CHAIN_NAME }} && \
-    ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} config node tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 && \
-    ag-cosmos-helper --home={{ SETUP_HOME + '/faucet' }} config keyring-backend test"
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} config chain-id {{ CHAIN_NAME }} && \
+    ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} config node tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 && \
+    ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} config keyring-backend test"
 
 - name: "Check {{ STAKER }}-{{ STAKER_NODE }} exists"
   become: yes

@@ -2,6 +2,7 @@
 set -e
 
 thisdir=$(dirname -- "$0")
+FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
 STAKE=50000000uagstake
@@ -10,8 +11,9 @@ OP=$1
 shift
 
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
-IFS=, read -r -a rpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
+IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
 
+rpcAddrs=(${origRpcAddrs[@]})
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
   r=$(( $RANDOM % ${#rpcAddrs[@]} ))
   selected=${rpcAddrs[$r]}
@@ -26,7 +28,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
     add-egress)
       NAME=$1
       ADDR=$2
-      exec ag-cosmos-helper --home=$thisdir/faucet \
+      exec ag-cosmos-helper --home=$FAUCET_HOME \
         tx swingset provision-one \
         --node=tcp://$selected --chain-id=$chainName \
         --yes --gas=auto --gas-adjustment=1.5 --broadcast-mode=block \
@@ -61,8 +63,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         fi
       fi
 
-      ag-cosmos-helper --home=$thisdir/faucet tx send faucet "$ADDR" "$STAKE"
-      if ag-cosmos-helper --home=$thisdir/faucet \
+      if ag-cosmos-helper --home=$FAUCET_HOME \
         tx send \
         --node=tcp://$selected --chain-id=$chainName \
         --yes --gas=auto --gas-adjustment=1.5 --broadcast-mode=block \
@@ -81,5 +82,5 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
   fi
 done
 
-echo 1>&2 "No active chain nodes found in: $(echo "$nc" | jq .rpcAddrs)"
+echo 1>&2 "No active chain nodes found in: ${origRpcAddrs[@]}"
 exit 1
