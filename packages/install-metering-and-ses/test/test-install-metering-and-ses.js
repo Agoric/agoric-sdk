@@ -1,6 +1,6 @@
 /* global Compartment harden */
-import './install-metering-and-ses';
-import test from 'tape';
+import '../install-metering-and-ses';
+import test from 'ava';
 import { makeMeter } from '@agoric/transform-metering';
 
 // I don't know how to test that replaceGlobalMeter already exists, because
@@ -16,15 +16,14 @@ import { tameMetering } from '@agoric/tame-metering';
 const replaceGlobalMeter = tameMetering();
 
 test('SES globals are present', t => {
-  t.equal(typeof Compartment, 'function');
-  t.equal(typeof harden, 'function');
-  t.end();
+  t.is(typeof Compartment, 'function');
+  t.is(typeof harden, 'function');
 });
 
 test('can replaceGlobalMeter', t => {
   const { meter } = makeMeter();
   const oldMeter = replaceGlobalMeter(meter);
-  t.isNot(meter, oldMeter);
+  t.not(meter, oldMeter);
   // provoke some globals
   const a = [];
   a.length = 10;
@@ -33,5 +32,4 @@ test('can replaceGlobalMeter', t => {
   t.is(meter, newMeter);
   // TODO: once meters provide an API to read out their value, assert that
   // the value changed at all
-  t.end();
 });

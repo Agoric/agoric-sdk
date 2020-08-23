@@ -18,12 +18,19 @@
     "vega-canvas": "^1.2.1"
   },
   "devDependencies": {
-    "esm": "^3.2.25",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.10.2",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1",
+    "esm": "^3.2.25"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
   }
 }
