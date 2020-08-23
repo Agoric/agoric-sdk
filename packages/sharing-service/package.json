@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "tap --no-coverage --jobs=1 'test/**/test*.js'",
+    "test": "ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -32,10 +32,8 @@
     "@agoric/eventual-send": "^0.9.3",
     "@agoric/install-ses": "^0.2.0",
     "@agoric/swingset-vat": "^0.6.0",
-    "esm": "^3.2.25",
-    "tap": "^14.10.5",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "ava": "3.11.1",
+    "esm": "^3.2.25"
   },
   "files": [
     "src/",
@@ -85,5 +83,14 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
   }
 }
