@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { importBundle } from '@agoric/import-bundle';
 import { bundleFunction } from './make-function-bundle';
 
@@ -17,6 +17,5 @@ test('bundleFunction', async t => {
       return 'yes';
     },
   };
-  t.equal(ns.default('terms', inviteMaker), 'yes');
-  t.end();
+  t.is(ns.default('terms', inviteMaker), 'yes');
 });
