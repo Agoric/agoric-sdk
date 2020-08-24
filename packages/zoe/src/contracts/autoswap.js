@@ -11,13 +11,10 @@ import {
   assertProposalShape,
   assertUsesNatMath,
   trade,
-  natSafeMath,
   calcSecondaryRequired,
 } from '../contractSupport';
 
 import '../../exported';
-
-const { multiply } = natSafeMath;
 
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for
@@ -100,7 +97,7 @@ const start = async zcf => {
    */
   const swapHandler = swapSeat => {
     if (getPoolAmount(brands.Central).value === 0) {
-      swapSeat.exit();
+      swapSeat.kickOut('Pool not initialized');
       return 'Pool not initialized';
     }
 
@@ -120,7 +117,7 @@ const start = async zcf => {
         outputReserve: getPoolAmount(wantedAmountOut.brand).value,
       });
       if (tradePrice > amountIn.value) {
-        swapSeat.exit();
+        swapSeat.kickOut('amountIn insufficient');
         return 'amountIn insufficient';
       }
       const inAmountMath = zcf.getAmountMath(amountIn.brand);
@@ -219,14 +216,6 @@ const start = async zcf => {
     const secondaryIn = userAllocation.Secondary.value;
     const secondaryPool = getPoolAmount(userAllocation.Secondary.brand).value;
 
-    // Use this method when you want to specify Central precisely, which means
-    // that enough secondary must be provided.
-    if (
-      multiply(centralIn, secondaryPool) >= multiply(secondaryIn, centralPool)
-    ) {
-      liqSeat.exit();
-    }
-
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
     const secondaryOut = calcSecondaryRequired({
@@ -235,8 +224,11 @@ const start = async zcf => {
       secondaryPool,
       secondaryIn,
     });
+
+    // When this method is used we treat Central as having been specified
+    // precisely. That means the offer must provide enough secondary.
     if (secondaryIn < secondaryOut) {
-      liqSeat.exit();
+      liqSeat.kickOut('insufficient Secondary deposited');
       return 'insufficient Secondary deposited';
     }
 

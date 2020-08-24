@@ -704,7 +704,11 @@ test('autoSwap - trade attempt before init', async t => {
       proposal,
       payment,
     );
-    assertOfferResult(t, seat, 'Pool not initialized');
+    t.rejects(
+      seat.getOfferResult(),
+      /Pool not initialized/,
+      'The pool has not been initialized',
+    );
 
     const { In: mPayout, Out: sPayout } = await seat.getPayouts();
     assertPayoutAmount(t, moolaIssuer, mPayout, moola(100));
@@ -845,7 +849,13 @@ test('autoSwap - swap varying amounts', async t => {
 
     // Attempt (unsucessfully) to trade for a specified amount
     const failedSeat = await alice.offerAndTrade(simoleans(75), moola(3));
-    assertOfferResult(t, failedSeat, 'amountIn insufficient');
+
+    t.rejects(
+      failedSeat.getOfferResult(),
+      /amountIn insufficient/,
+      'amountIn insufficient when want specified',
+    );
+
     const { In: moolaReturn, Out: noSimoleans } = await failedSeat.getPayouts();
     assertPayoutAmount(t, moolaIssuer, moolaReturn, moola(3));
     assertPayoutAmount(t, simoleanIssuer, noSimoleans, simoleans(0));
