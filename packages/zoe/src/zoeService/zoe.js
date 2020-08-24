@@ -38,7 +38,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
-  /** @type {GetAmountMath<any>} */
+  /** @type {GetAmountMath} */
   const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
   /** @type {WeakStore<Brand, ERef<Purse>>} */
