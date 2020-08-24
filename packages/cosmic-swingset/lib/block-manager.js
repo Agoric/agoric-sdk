@@ -70,7 +70,6 @@ export default function makeBlockManager({
 
   let currentActions = [];
   let decohered;
-  let saveTime = 0;
 
   async function blockManager(action) {
     if (decohered) {
@@ -85,17 +84,6 @@ export default function makeBlockManager({
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
           );
         }
-
-        const start = Date.now();
-
-        // Save the kernel's computed state because we've committed
-        // the block (i.e. have obtained consensus on the prior
-        // state).
-        saveOutsideState(computedHeight, savedActions);
-        savedHeight = computedHeight;
-
-        saveTime = Date.now() - start;
-        currentActions = [];
         break;
       }
 
@@ -138,8 +126,8 @@ export default function makeBlockManager({
         if (computedHeight === action.blockHeight) {
           // We are reevaluating, so send exactly the same downcalls to the chain.
           //
-          // This is necessary since the block proposer will be asked to validate
-          // the actions it just proposed (in Tendermint v0.33.0).
+          // This is necessary only after a restart when Tendermint is reevaluating the
+          // block that was interrupted and not committed.
           //
           // We assert that the return values are identical, which allows us not
           // to resave our state.
@@ -165,17 +153,24 @@ export default function makeBlockManager({
         const start = Date.now();
         const { mailboxSize } = saveChainState();
         const mbTime = Date.now() - start;
-        log.debug(
-          `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
-        );
 
         // Advance our saved state variables.
         savedActions = currentActions;
         computedHeight = action.blockHeight;
-        if (action.blockHeight === 0) {
-          // No replay, no errors on genesis init.
-          currentActions = [];
-        }
+
+        // Save the kernel's computed state so that we can recover if we ever
+        // reset before Cosmos SDK commit.
+        const start2 = Date.now();
+        saveOutsideState(computedHeight, savedActions);
+        savedHeight = computedHeight;
+
+        const saveTime = Date.now() - start2;
+
+        log.debug(
+          `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
+        );
+        currentActions = [];
+
         break;
       }
 
