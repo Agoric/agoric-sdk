@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - name: Save Git revision
+      run: git log -1 --format='%H' > packages/cosmic-swingset/lib/git-revision.txt
     - name: Build Go dependencies image
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
@@ -85,18 +87,17 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
         tags: latest
-  
-  docker-setup-solo:
-    needs: docker-solo
+
+  docker-vagrant:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Build setup-solo image
+    - name: Build setup image
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
-        name: agoric/cosmic-swingset-setup-solo
-        dockerfile: packages/cosmic-swingset/setup-solo/Dockerfile
-        context: packages/cosmic-swingset/setup-solo
+        name: agoric/vagrant-debian
+        dockerfile: vagrant/Dockerfile
+        context: vagrant
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true

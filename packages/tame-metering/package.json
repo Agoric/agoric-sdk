@@ -4,16 +4,16 @@
   "description": "tame-metering",
   "main": "src/index.js",
   "scripts": {
-    "test": "tap --no-coverage 'test/**/test*.js'",
+    "test": "ava",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
   },
   "dependencies": {
-    "esm": "^3.2.5",
-    "tap": "^14.10.5",
-    "tape": "^4.9.2",
-    "tape-promise": "^4.0.0"
+    "esm": "^3.2.5"
+  },
+  "devDependencies": {
+    "ava": "^3.11.1"
   },
   "keywords": [],
   "files": [
@@ -32,5 +32,14 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
   }
 }

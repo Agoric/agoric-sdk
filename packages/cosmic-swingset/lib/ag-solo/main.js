@@ -8,6 +8,7 @@ import { assert } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 // Start a network service
+import addChain from './add-chain';
 import initBasedir from './init-basedir';
 import resetState from './reset-state';
 import setGCIIngress from './set-gci-ingress';
@@ -56,6 +57,20 @@ start
   }
 
   switch (argv[0]) {
+    case 'setup': {
+      const { netconfig } = parseArgs(argv.slice(1));
+      if (!AG_SOLO_BASEDIR) {
+        console.error(`setup: you must set $AG_SOLO_BASEDIR`);
+        return;
+      }
+      if (!fs.existsSync(AG_SOLO_BASEDIR)) {
+        await solo(progname, ['init', AG_SOLO_BASEDIR, ...argv.slice(1)]);
+      }
+      process.chdir(AG_SOLO_BASEDIR);
+      await solo(progname, ['add-chain', netconfig]);
+      await solo(progname, ['start']);
+      break;
+    }
     case 'init': {
       const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
         default: {
@@ -87,6 +102,15 @@ start
       // );
       break;
     }
+    case 'add-chain': {
+      const basedir = insistIsBasedir();
+      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
+        boolean: ['reset'],
+      });
+      const [chainConfig] = subArgs;
+      await addChain(basedir, chainConfig, subOpts.reset);
+      break;
+    }
     case 'set-gci-ingress': {
       const basedir = insistIsBasedir();
       const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {});
@@ -98,9 +122,9 @@ start
     }
     case 'set-fake-chain': {
       const basedir = insistIsBasedir();
-      const { _: subArgs, role, delay } = parseArgs(argv.slice(1), {});
+      const { _: subArgs, delay } = parseArgs(argv.slice(1), {});
       const GCI = subArgs[0];
-      setFakeChain(basedir, GCI, role, delay);
+      setFakeChain(basedir, GCI, delay);
       break;
     }
     case 'start': {

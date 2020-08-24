@@ -12,9 +12,6 @@
     "host": {
       "sourceSpec": "vat-host.js"
     },
-    "http": {
-      "sourceSpec": "vat-http.js"
-    },
     "ibc": {
       "sourceSpec": "vat-ibc.js"
     },
@@ -32,9 +29,6 @@
     },
     "sharing": {
       "sourceSpec": "vat-sharing.js"
-    },
-    "uploads": {
-      "sourceSpec": "vat-uploads.js"
     },
     "zoe": {
       "sourceSpec": "vat-zoe.js",

@@ -1,6 +1,6 @@
 ARG TAG=latest
 ARG REPO=agoric/agoric-sdk
-FROM golang:stretch AS go-build
+FROM golang:buster AS go-build
 
 WORKDIR /usr/src/journalbeat
 RUN apt-get update -y && apt-get install -y libsystemd-dev

@@ -15,7 +15,7 @@ export function buildRootObject(_vatPowers) {
     vattp = v;
   }
 
-  async function pleaseProvision(nickname, pubkey, powerFlags = []) {
+  async function pleaseProvision(nickname, pubkey, powerFlags) {
     let chainBundle;
     const fetch = harden({
       getDemoBundle() {
@@ -32,7 +32,7 @@ export function buildRootObject(_vatPowers) {
 
     // Do this here so that any side-effects don't happen unless
     // the egress has been successfully added.
-    chainBundle = E(bundler).createUserBundle(nickname, powerFlags);
+    chainBundle = E(bundler).createUserBundle(nickname, powerFlags || []);
     return { ingressIndex: INDEX };
   }
 

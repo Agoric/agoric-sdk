@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export default function setFakeChain(basedir, GCI, role, fakeDelay) {
+export default function setFakeChain(basedir, GCI, fakeDelay) {
   const fn = path.join(basedir, 'connections.json');
   const connsByType = {};
   const add = c => {
@@ -34,7 +34,6 @@ export default function setFakeChain(basedir, GCI, role, fakeDelay) {
     type: 'fake-chain',
     GCI,
     fakeDelay,
-    role,
   };
   add(newconn);
   const connections = [];

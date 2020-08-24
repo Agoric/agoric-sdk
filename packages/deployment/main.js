@@ -551,8 +551,6 @@ show-config      display the client connection parameters
       const pserverHost = pserverFlags
         ? `https://${match[1]}`
         : `http://${match[1]}:8001`;
-      const pserverUrl = `${pserverHost}${pserverPassword &&
-        `/provision-${pserverPassword}`}`;
       initHint();
 
       console.error(
@@ -560,14 +558,19 @@ show-config      display the client connection parameters
 ${chalk.yellow.bold(
   `ag-setup-solo --netconfig='${pserverHost}/network-config'`,
 )}
-and get your codes from:
-${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
 `,
       );
       if (await exists('/vagrant')) {
         console.log(`to publish a chain-connected server to your host, do something like:
 "${chalk.yellow.bold(`ve3/bin/ag-setup-solo --webhost=0.0.0.0`)}"`);
       }
+      break;
+    }
+
+    case 'add-egress':
+    case 'add-delegate': {
+      await inited();
+      await needDoRun(['./faucet-helper.sh', ...args]);
       break;
     }
 
@@ -882,6 +885,7 @@ ${name}:
         for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
           const node = `node${offset + instance}`;
+          const moniker = `Agoric${offset + instance}`;
           const units =
             node === PROVISIONER_NODE
               ? `\
@@ -892,6 +896,7 @@ ${name}:
               : '';
           const host = `\
 ${node}:
+  moniker: ${moniker}
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'

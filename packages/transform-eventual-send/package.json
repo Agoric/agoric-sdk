@@ -4,7 +4,7 @@
   "description": "transform-eventual-send",
   "main": "src/index.js",
   "scripts": {
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "build": "exit 0"
@@ -13,10 +13,8 @@
     "@agoric/acorn-eventual-send": "^2.0.6",
     "@agoric/babel-parser": "^7.6.4",
     "@babel/generator": "^7.5.0",
-    "esm": "^3.2.5",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.9.2",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1",
+    "esm": "^3.2.5"
   },
   "keywords": [],
   "files": [
@@ -35,5 +33,14 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
   }
 }

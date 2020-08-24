@@ -1,30 +1,30 @@
 - name: "Check {{ STAKER }}-* exists"
   become: yes
   become_user: "{{ service }}"
-  delegate_to: "{{ STAKER_NODE }}"
-  shell: "ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ inventory_hostname }}"
+  shell: "ag-cosmos-helper keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
   ignore_errors: true
   register: staker_exists
 
 - name: "Create {{ STAKER }}-*"
   become_user: "{{ service }}"
   become: true
-  delegate_to: "{{ STAKER_NODE }}"
   shell: "ag-cosmos-helper keys add --keyring-backend=test {{ staker }}"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE and staker_exists.rc != 0
 
-- name: "Transfer {{ STAKER_AMOUNT }} to {{ STAKER }}-*"
+- name: "Check {{ STAKER }}-* exists"
+  become: yes
   become_user: "{{ service }}"
-  become: true
-  delegate_to: "{{ STAKER_NODE }}"
+  shell: "ag-cosmos-helper keys show --keyring-backend=test -a {{ STAKER }}-{{ inventory_hostname }}"
+  register: staker_address
+
+- name: "Transfer {{ STAKER_AMOUNT }} to {{ STAKER }}-*"
+  delegate_to: localhost
   shell: "\
-    ag-cosmos-helper tx send --keyring-backend=test \
-      faucet \
-      $(ag-cosmos-helper keys show --keyring-backend=test {{ staker }} -a) \
-      {{ STAKER_AMOUNT }} \
-      --chain-id={{ CHAIN_NAME }} --broadcast-mode=block --yes"
+    ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} \
+     tx send faucet {{ staker_address.stdout }} {{ STAKER_AMOUNT }} \
+      --broadcast-mode=block --yes"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE
@@ -32,12 +32,12 @@
 - name: "Create validators for {{ STAKER }}-*"
   become_user: "{{ service }}"
   become: true
-  delegate_to: "{{ STAKER_NODE }}"
   shell: "\
     ag-cosmos-helper tx staking create-validator --keyring-backend=test \
       --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_AMOUNT }} \
-      --moniker={{ inventory_hostname }} --pubkey={{ valconspub }} \
-      {{ STAKER_IDENTITY_FLAGS }}
+      --moniker={{ moniker | default(inventory_hostname) }} --pubkey={{ valconspub }} \
+      {{ (website | default(None)) and '--website=' ~ website }} \
+      {{ (identity | default(None)) and '--identity=' ~ identity }} \
       --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
       --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
   vars:

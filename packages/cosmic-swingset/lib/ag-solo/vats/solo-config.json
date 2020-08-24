@@ -1,46 +1,17 @@
 {
   "bootstrap": "bootstrap",
-  "bundles": {
-    "zcf": {
-      "sourceSpec": "@agoric/zoe/contractFacet"
-    }
-  },
   "vats": {
-    "board": {
-      "sourceSpec": "vat-board.js"
-    },
     "host": {
       "sourceSpec": "vat-host.js"
     },
     "http": {
       "sourceSpec": "vat-http.js"
     },
-    "ibc": {
-      "sourceSpec": "vat-ibc.js"
-    },
-    "mints": {
-      "sourceSpec": "vat-mints.js"
-    },
     "network": {
       "sourceSpec": "vat-network.js"
     },
-    "provisioning": {
-      "sourceSpec": "vat-provisioning.js"
-    },
-    "registrar": {
-      "sourceSpec": "vat-registrar.js"
-    },
-    "sharing": {
-      "sourceSpec": "vat-sharing.js"
-    },
     "uploads": {
       "sourceSpec": "vat-uploads.js"
-    },
-    "zoe": {
-      "sourceSpec": "vat-zoe.js",
-      "parameters": {
-        "zcfBundleName": "zcf"
-      }
     },
     "bootstrap": {
       "sourceSpec": "bootstrap.js"

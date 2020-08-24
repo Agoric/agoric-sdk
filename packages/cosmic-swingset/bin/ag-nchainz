@@ -126,7 +126,7 @@ start-solos)
 
       $SOLO set-gci-ingress --chainID="$chainid" "$gci" "$rpcport"
 
-      DEBUG=agoric $SOLO start --role=two_client
+      DEBUG=agoric $SOLO start
     ) >>nchainz/logs/$log 2>&1 &
   done
   sleep 2

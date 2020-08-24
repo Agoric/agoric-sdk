@@ -6,9 +6,6 @@ import makeBlockManager from './block-manager';
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
 export default async function main(progname, args, { path, env, agcc }) {
-  const bootAddress = env.BOOT_ADDRESS;
-  const role = env.ROLE || 'chain';
-
   const portNums = {};
 
   // TODO: use the 'basedir' pattern
@@ -184,10 +181,7 @@ export default async function main(progname, args, { path, env, agcc }) {
     }
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
-    const argv = [`--role=${role}`];
-    if (bootAddress) {
-      argv.push(...bootAddress.trim().split(/\s+/));
-    }
+    const argv = [`--role=chain`];
     const s = await launch(
       stateDBDir,
       mailboxStorage,

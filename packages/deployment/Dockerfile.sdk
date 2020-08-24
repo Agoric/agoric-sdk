@@ -3,7 +3,7 @@ ARG REPO=agoric/cosmic-swingset
 FROM $REPO:$SWINGSET_TAG as cosmic-swingset-go
 
 # The js build container
-FROM node:lts-stretch AS build-js
+FROM node:lts-buster AS build-js
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
@@ -18,7 +18,7 @@ RUN cd packages/cosmic-swingset && yarn build:gyp
 RUN yarn build
 
 # The install container.
-FROM node:lts-stretch AS install
+FROM node:lts-buster AS install
 
 # Install some conveniences.
 RUN apt-get update && apt-get install -y vim jq less && apt-get clean -y

@@ -39,7 +39,7 @@ function parseArgs(argv) {
     }
   });
   if (!gotRoles) {
-    ROLE = 'three_client';
+    ROLE = 'client';
   }
 
   return { ROLE, giveMeAllTheAgoricPowers, hardcodedClientAddresses };
@@ -112,7 +112,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
 
         const additionalPowers = {};
-        if (powerFlags.includes('agoric.vattp')) {
+        if (powerFlags && powerFlags.includes('agoric.vattp')) {
           // Give the authority to create a new host for vattp to share objects with.
           additionalPowers.vattp = makeVattpFrom(vats);
         }
@@ -311,8 +311,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       // localhost, with HTML frontend. Multi-player mode.
       switch (ROLE) {
         // REAL VALIDATORS run this.
-        case 'chain':
-        case 'one_chain': {
+        case 'chain': {
           // provisioning vat can ask the demo server for bundles, and can
           // register client pubkeys with comms
           await E(vats.provisioning).register(
@@ -325,9 +324,9 @@ export function buildRootObject(vatPowers, vatParameters) {
           await registerNetworkProtocols(vats, bridgeManager);
           break;
         }
+
         // ag-setup-solo runs this.
-        case 'client':
-        case 'one_client': {
+        case 'client': {
           if (!GCI) {
             throw new Error(`client must be given GCI`);
           }
@@ -354,11 +353,9 @@ export function buildRootObject(vatPowers, vatParameters) {
           });
           break;
         }
-        case 'two_chain': {
-          // scenario #2: one-node chain running on localhost, solo node on
-          // localhost, HTML frontend on localhost. Single-player mode.
 
-          // bootAddress holds the pubkey of localclient
+        // fake-chain runs this
+        case 'sim-chain': {
           const chainBundler = await makeChainBundler(
             vats,
             devices.timer,
@@ -405,55 +402,6 @@ export function buildRootObject(vatPowers, vatParameters) {
             }),
           );
 
-          break;
-        }
-        case 'two_client': {
-          if (!GCI) {
-            throw new Error(`client must be given GCI`);
-          }
-          await setupCommandDevice(vats.http, devices.command, {
-            client: true,
-          });
-          const localTimerService = await E(vats.timer).createTimerService(
-            devices.timer,
-          );
-          await registerNetworkProtocols(vats, bridgeManager);
-          await addRemote(GCI);
-          // addEgress(..., PROVISIONER_INDEX) is called in case two_chain
-          const demoProvider = E(vats.comms).addIngress(GCI, PROVISIONER_INDEX);
-          // Get the demo bundle from the chain-side provider
-          const localBundle = await createLocalBundle(vats);
-          await E(vats.http).setPresences(localBundle);
-          const bundle = await E(demoProvider).getDemoBundle('client');
-          await E(vats.http).setPresences(localBundle, bundle, {
-            localTimerService,
-          });
-          break;
-        }
-        case 'three_client': {
-          // scenario #3: no chain. solo node on localhost with HTML
-          // frontend. Limited subset of demo runs inside the solo node.
-
-          // We pretend we're on-chain.
-          const chainBundler = makeChainBundler(
-            vats,
-            devices.timer,
-            vatAdminSvc,
-          );
-          await registerNetworkProtocols(vats, bridgeManager);
-
-          // Shared Setup (virtual chain side) ///////////////////////////
-          await setupCommandDevice(vats.http, devices.command, {
-            client: true,
-          });
-          const localBundle = await createLocalBundle(vats);
-          await E(vats.http).setPresences(localBundle);
-          const bundle = await E(chainBundler).createUserBundle('localuser');
-
-          // Setup of the Local part /////////////////////////////////////
-          await E(vats.http).setPresences(localBundle, bundle, {
-            localTimerService: bundle.chainTimerService,
-          });
           break;
         }
         default:

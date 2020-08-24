@@ -11,4 +11,5 @@ packages/cosmic-swingset/lib/lib*.so
 **/__pycache__
 **/*.egg-info
 **/swingset-kernel-state
+**/_agstate
 .vagrant

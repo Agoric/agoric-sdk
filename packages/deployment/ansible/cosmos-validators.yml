@@ -11,7 +11,6 @@
     - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
     - STAKER: ag-staker
     - STAKER_NODE: node0
-    - STAKER_IDENTITY_FLAGS: "--website=https://testnet.agoric.com --identity=https://keybase.io/team/agoric.testnet.validators"
     - STAKER_AMOUNT: 50000000uagstake
   roles:
     - cosmos-validators
