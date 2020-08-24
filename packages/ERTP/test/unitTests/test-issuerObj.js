@@ -15,7 +15,7 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   t.is(issuer.getAllegedName(), 'fungible');
 });
 
-test('issuer.getAmountMath', async t => {
+test('amountMath from makeIssuerKit', async t => {
   const { issuer, amountMath, brand } = makeIssuerKit('fungible');
   const ibrand = await E(issuer).getBrand();
   t.is(ibrand, brand);
