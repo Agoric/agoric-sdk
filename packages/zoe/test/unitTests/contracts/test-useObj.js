@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'tape-promise/tape';
+import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -48,7 +48,7 @@ test('zoe - useObj', async t => {
 
   const useObj = await E(aliceSeat).getOfferResult();
 
-  t.equals(
+  t.is(
     useObj.colorPixels('purple'),
     `successfully colored 3 pixels purple`,
     `use of use object works`,
@@ -58,7 +58,7 @@ test('zoe - useObj', async t => {
 
   const aliceMoolaPayoutPayment = await E(aliceSeat).getPayout('Pixels');
 
-  t.deepEquals(
+  t.deepEqual(
     await moolaIssuer.getAmountOf(aliceMoolaPayoutPayment),
     moola(3),
     `alice gets everything she escrowed back`,
@@ -67,7 +67,7 @@ test('zoe - useObj', async t => {
   console.log('EXPECTED ERROR ->>>');
   t.throws(
     () => useObj.colorPixels('purple'),
-    /the escrowing offer is no longer active/,
+    { message: /the escrowing offer is no longer active/ },
     `use of use object fails once offer is withdrawn or amounts are reallocated`,
   );
 });

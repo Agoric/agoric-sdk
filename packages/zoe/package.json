@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "yarn build && tap --no-coverage --jobs=1 --timeout 600 'test/**/test-*.js'",
+    "test": "ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
@@ -53,16 +53,21 @@
     "@agoric/install-metering-and-ses": "^0.1.1",
     "@agoric/install-ses": "^0.2.0",
     "@agoric/swingset-vat": "^0.6.0",
-    "esm": "^3.2.25",
-    "tap": "^14.10.5",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1",
+    "esm": "^3.2.25"
   },
   "files": [
     "src/",
-    "*.js",
     "NEWS.md"
   ],
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ]
+  },
   "eslintConfig": {
     "extends": [
       "airbnb-base",
