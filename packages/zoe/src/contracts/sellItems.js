@@ -98,7 +98,7 @@ const start = zcf => {
     // The buyer's offer has been processed.
     buyerSeat.exit();
 
-    if (publicFacet.getAvailableItems().value.length === 0) {
+    if (itemsMath.isEmpty(publicFacet.getAvailableItems())) {
       zcf.shutdown();
     }
     return defaultAcceptanceMsg;
