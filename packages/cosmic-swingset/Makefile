@@ -135,7 +135,7 @@ scenario3-run:
 	cd t3 && ../bin/ag-solo start
 
 docker-pull:
-	for f in '' -pserver -setup -setup-solo -solo; do \
+	for f in '' -setup -solo; do \
 		docker pull $(REPOSITORY)$$f:latest || exit $$?; \
 	done
 
@@ -190,21 +190,6 @@ set-local-gci-ingress:
 		(cd $$dir && \
 			../../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
 	done
-
-install-pserver:
-	python3 -mvenv ve3
-	ve3/bin/pip install -U setuptools wheel
-	ve3/bin/pip install --editable ./provisioning-server
-
-run-pserver:
-	ve3/bin/ag-pserver --listen tcp:8001 --controller tcp:localhost:8002
-
-install-setup-client:
-	python3 -mvenv ve3-client
-	ve3-client/bin/pip install -U setuptools wheel
-	ve3-client/bin/pip install --editable ./setup-solo
-run-setup-client:
-	ve3-client/bin/ag-setup-solo
 
 ###############################################################################
 ###                                Protobuf                                 ###
