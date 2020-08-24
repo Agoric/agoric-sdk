@@ -5,7 +5,7 @@
  * @type {ContractStartFn}
  */
 const start = _zcf => {
-  // TODO: import tap/tape and do t.equals
+  // TODO: import tap/tape and do t.is
   // TODO: Test ZCF here
 
   return harden({});
