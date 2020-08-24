@@ -22,7 +22,8 @@ export const makeZcfSeatAdminKit = (
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
 
-  const assertExitedFalse = () => assert(!exited, `seat has been exited`);
+  const assertExitedFalse = () =>
+    assert(!exited, details`seat has been exited`);
 
   /** @type {ZCFSeatAdmin} */
   const zcfSeatAdmin = harden({
