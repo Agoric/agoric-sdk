@@ -89,7 +89,7 @@ scenario2-setup-nobuild:
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
-	$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --pruning=nothing
+	$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
