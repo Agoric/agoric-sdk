@@ -1,0 +1,31 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet"
+    }
+  },
+  "vats": {
+    "alice": {
+      "sourceSpec": "exchanger.js",
+      "parameters": {
+        "name": "alice"
+      }
+    },
+    "bob": {
+      "sourceSpec": "exchanger.js",
+      "parameters": {
+        "name": "bob"
+      }
+    },
+    "zoe": {
+      "sourceSpec": "vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
+    },
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    }
+  }
+}
