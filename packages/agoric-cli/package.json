@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "ava --config .ava-unit-test.config.js",
+    "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
@@ -17,15 +18,13 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.2.0",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0",
+    "ava": "3.11.1",
     "tmp": "^0.1.0"
   },
   "dependencies": {
     "@agoric/bundle-source": "^1.1.6",
-    "@agoric/install-ses": "^0.2.0",
     "@agoric/captp": "^1.3.3",
+    "@agoric/install-ses": "^0.2.0",
     "@agoric/promise-kit": "^0.1.3",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",

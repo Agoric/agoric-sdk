@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import {
   initSwingStore,
   openSwingStore,
@@ -10,12 +10,12 @@ import {
 } from '../simpleSwingStore';
 
 function testStorage(t, storage) {
-  t.notOk(storage.has('missing'));
-  t.equal(storage.get('missing'), undefined);
+  t.falsy(storage.has('missing'));
+  t.is(storage.get('missing'), undefined);
 
   storage.set('foo', 'f');
-  t.ok(storage.has('foo'));
-  t.equal(storage.get('foo'), 'f');
+  t.truthy(storage.has('foo'));
+  t.is(storage.get('foo'), 'f');
 
   storage.set('foo2', 'f2');
   storage.set('foo1', 'f1');
@@ -28,8 +28,8 @@ function testStorage(t, storage) {
   ]);
 
   storage.delete('foo2');
-  t.notOk(storage.has('foo2'));
-  t.equal(storage.get('foo2'), undefined);
+  t.falsy(storage.has('foo2'));
+  t.is(storage.get('foo2'), undefined);
   t.deepEqual(Array.from(storage.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
   const reference = {
@@ -43,33 +43,30 @@ function testStorage(t, storage) {
 test('storageInMemory', t => {
   const { storage } = initSwingStore();
   testStorage(t, storage);
-  t.end();
 });
 
 test('storageInFile', t => {
-  fs.rmdirSync('testdb', { recursive: true });
-  t.equal(isSwingStore('testdb'), false);
-  const { storage, commit, close } = initSwingStore('testdb');
+  const dbDir = 'testdb';
+  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
+  fs.rmdirSync(dbDir, { recursive: true });
+  t.is(isSwingStore(dbDir), false);
+  const { storage, commit, close } = initSwingStore(dbDir);
   testStorage(t, storage);
   commit();
   const before = getAllState(storage);
   close();
-  t.equal(isSwingStore('testdb'), true);
+  t.is(isSwingStore(dbDir), true);
 
-  const { storage: after } = openSwingStore('testdb');
+  const { storage: after } = openSwingStore(dbDir);
   t.deepEqual(getAllState(after), before, 'check state after reread');
-  t.equal(isSwingStore('testdb'), true);
-  t.end();
+  t.is(isSwingStore(dbDir), true);
 });
 
 test('rejectLMDB', t => {
   const notSimpleDir = 'testdb-lmdb';
+  t.teardown(() => fs.rmdirSync(notSimpleDir, { recursive: true }));
   fs.mkdirSync(notSimpleDir, { recursive: true });
   fs.writeFileSync(path.resolve(notSimpleDir, 'data.mdb'), 'some data\n');
   fs.writeFileSync(path.resolve(notSimpleDir, 'lock.mdb'), 'lock stuff\n');
-  t.equal(isSwingStore(notSimpleDir), false);
-  t.end();
+  t.is(isSwingStore(notSimpleDir), false);
 });
-
-test.onFinish(() => fs.rmdirSync('testdb', { recursive: true }));
-test.onFinish(() => fs.rmdirSync('testdb-lmdb', { recursive: true }));
