@@ -6,12 +6,17 @@
   "module": "src/locate.js",
   "scripts": {
     "build:xs-lin": "make -f xs-lin.mk",
-    "test": "tape -r esm 'test/**/test-*.js'",
+    "test": "ava",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+  },
+  "ava": {
+    "files": ["test/**/test-*.js"],
+    "require": ["esm"],
+    "timeout": "2m"
   },
   "devDependencies": {
     "detective-es6": "^2.2.0",
@@ -24,8 +29,7 @@
     "filing-cabinet": "^2.5.1",
     "prettier": "^1.18.2",
     "tap-spec": "^5.0.0",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.0.8",
