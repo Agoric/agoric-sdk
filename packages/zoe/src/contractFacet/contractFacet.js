@@ -125,7 +125,8 @@ export function buildRootObject() {
       // updates from zcf to zoe, its effects must occur immediately in zoe
       // on reception, and must not fail.
       //
-      // Commit the staged allocations and inform Zoe of the
+      // Commit the staged allocations (currentAllocation is replaced
+      // for each of the seats) and inform Zoe of the
       // newAllocation.
 
       seatStagings.forEach(seatStaging =>
@@ -188,9 +189,9 @@ export function buildRootObject() {
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. COMMIT POINT. The following two steps
-          // *should* be committed atomically.
-          // If we minted only, no one would ever get those
-          // invisibly-minted assets.
+          // *should* be committed atomically, but it is not a
+          // disaster if they are not. If we minted only, no one would
+          // ever get those invisibly-minted assets.
           E(zoeMintP).mintAndEscrow(totalToMint);
           reallocateInternal([seatStaging]);
           return zcfSeat;
@@ -217,9 +218,9 @@ export function buildRootObject() {
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. Commit point. The following two steps
-          // *should* be committed atomically.
-          // If we only commit the staging, no one would ever get the
-          // unburned assets.
+          // *should* be committed atomically, but it is not a
+          // disaster if they are not. If we only commit the staging,
+          // no one would ever get the unburned assets.
           reallocateInternal([seatStaging]);
           E(zoeMintP).withdrawAndBurn(totalToBurn);
         },

@@ -27,6 +27,8 @@ export const makeZcfSeatAdminKit = (
 
   /** @type {ZCFSeatAdmin} */
   const zcfSeatAdmin = harden({
+    // Updates the currentAllocation of the seat, using the allocation
+    // from seatStaging.
     commit: seatStaging => {
       assertExitedFalse();
       assert(

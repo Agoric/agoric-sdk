@@ -78,6 +78,10 @@
  */
 
 /**
+ * The seatHandle may be created in either the Zoe or ZCF vat,
+ * depending on whether the seat comes from a normal offer or a
+ * request by the contract for an "empty" seat.
+ *
  * @typedef {Object} InstanceAdmin
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
@@ -94,6 +98,10 @@
  */
 
 /**
+ * The seatHandle may be created in either the Zoe or ZCF vat,
+ * depending on whether the seat comes from a normal offer or a
+ * request by the contract for an "empty" seat.
+ *
  * @typedef {Object} AddSeatObj
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
