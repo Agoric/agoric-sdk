@@ -282,13 +282,11 @@ export function buildRootObject() {
         const proposal = cleanProposal(getAmountMath, harden({}));
         const { notifier, updater } = makeNotifierKit();
         const zoeSeatAdminPromiseKit = makePromiseKit();
-        zoeSeatAdminPromiseKit.promise.catch(_ =>
-          console.log('zoeSeatAdminPromiseKit'),
-        );
+        // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+        zoeSeatAdminPromiseKit.promise.catch(_ => {});
         const userSeatPromiseKit = makePromiseKit();
-        userSeatPromiseKit.promise.catch(_ =>
-          console.log('userSeatPromiseKit'),
-        );
+        // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+        userSeatPromiseKit.promise.catch(_ => {});
 
         E(zoeInstanceAdmin)
           .makeOfferlessSeat(initialAllocation, proposal)

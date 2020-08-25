@@ -38,7 +38,8 @@ export const makeZoeSeatAdminKit = (
   { offerResult = undefined, exitObj = defaultExitObj } = {},
 ) => {
   const payoutPromiseKit = makePromiseKit();
-  payoutPromiseKit.promise.catch(_ => console.log('payoutPromiseKit'));
+  // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+  payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;

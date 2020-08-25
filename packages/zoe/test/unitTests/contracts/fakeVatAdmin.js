@@ -10,7 +10,8 @@ export default harden({
       adminNode: {
         done: () => {
           const kit = makePromiseKit();
-          kit.promise.catch(err => console.log(err));
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          kit.promise.catch(_ => {});
           return kit.promise;
         },
         terminate: () => {},

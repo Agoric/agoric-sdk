@@ -223,14 +223,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
-      addSeatObjPromiseKit.promise.catch(err => {
-        console.log(err);
-        console.log('addSeatObjPromiseKit');
-      });
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      addSeatObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
-      publicFacetPromiseKit.promise.catch(_ =>
-        console.log('publicFacetPromiseKit'),
-      );
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      publicFacetPromiseKit.promise.catch(_ => {});
 
       /** @type {InstanceAdmin} */
       const instanceAdmin = {
@@ -384,15 +381,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           const initialAllocation = arrayToObj(amountsArray, proposalKeywords);
 
           const offerResultPromiseKit = makePromiseKit();
-          // This is necessary to prevent Node from thinking there is
-          // an unhandled promise rejection.
-          offerResultPromiseKit.promise.catch(_ => {
-            console.log('offerResultPromise rejected');
-          });
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          offerResultPromiseKit.promise.catch(_ => {});
           const exitObjPromiseKit = makePromiseKit();
-          exitObjPromiseKit.promise.catch(_ =>
-            console.log('exitObjPromiseKit rejected'),
-          );
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          exitObjPromiseKit.promise.catch(_ => {});
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
