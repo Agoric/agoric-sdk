@@ -5,14 +5,10 @@ import { existsSync } from 'fs';
 import { locateWorkerBin } from '@agoric/xs-vat-worker';
 import { loadBasedir, buildVatController } from '../../src/index';
 
-test('xs vat manager', async t => {
-  const bin = locateWorkerBin({ resolve });
-  if (!existsSync(bin)) {
-    console.warn(`XS vat worker ${bin} not built; skipping`);
-    t.falsy.skip(false);
-    return;
-  }
+const xsWorkerBin = locateWorkerBin({ resolve });
+const maybeTestXS = existsSync(xsWorkerBin) ? test : test.skip;
 
+maybeTestXS('xs vat manager', async t => {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType: 'xs-worker' };
   const c = await buildVatController(config, []);
