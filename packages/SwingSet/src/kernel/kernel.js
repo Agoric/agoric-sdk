@@ -39,7 +39,7 @@ function makeError(s) {
   return harden({ body: JSON.stringify(s), slots: [] });
 }
 
-export default function buildKernel(kernelEndowments, kernelOptions) {
+export default function buildKernel(kernelEndowments, kernelOptions = {}) {
   const {
     waitUntilQuiescent,
     hostStorage,
