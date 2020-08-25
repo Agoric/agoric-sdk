@@ -53,7 +53,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
         const seat = await E(zoe).offer(sellInvitation, proposal, payments);
 
-        E(seat)
+        const makeBidInvitationObj = await E(seat).getOfferResult();
+        return { seat, makeBidInvitationObj };
+      },
+      collectPayout: async seat => {
+        await E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
@@ -64,7 +68,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
             ),
           );
 
-        E(seat)
+        await E(seat)
           .getPayout('Ask')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
@@ -74,9 +78,6 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
               `Alice got the second price bid, Carol's bid, even though Bob won`,
             ),
           );
-
-        const makeBidInvitationObj = await E(seat).getOfferResult();
-        return makeBidInvitationObj;
       },
     };
   };
@@ -129,19 +130,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           await E(seat).getOfferResult(),
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
-
-        E(seat)
+        return seat;
+      },
+      collectPayout: async seat => {
+        await E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              proposal.want.Asset,
-              `Bob wins the auction`,
-            ),
+            t.deepEqual(amountDeposited, moola(1), `Bob wins the auction`),
           );
 
-        E(seat)
+        await E(seat)
           .getPayout('Bid')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
@@ -175,15 +174,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           await E(seat).getOfferResult(),
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
-
-        E(seat)
+        return seat;
+      },
+      collectPayout: async seat => {
+        await E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(0), `didn't win the auction`),
           );
 
-        E(seat)
+        await E(seat)
           .getPayout('Bid')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
@@ -214,16 +215,25 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
   const { creatorInvitation } = await alice.startInstance(installation);
 
-  const makeInvitationsObj = await alice.offer(creatorInvitation);
+  const { seat: aliceSeat, makeBidInvitationObj } = await alice.offer(
+    creatorInvitation,
+  );
 
-  const bidInvitation1 = E(makeInvitationsObj).makeBidInvitation();
-  const bidInvitation2 = E(makeInvitationsObj).makeBidInvitation();
-  const bidInvitation3 = E(makeInvitationsObj).makeBidInvitation();
+  const bidInvitation1 = E(makeBidInvitationObj).makeBidInvitation();
+  const bidInvitation2 = E(makeBidInvitationObj).makeBidInvitation();
+  const bidInvitation3 = E(makeBidInvitationObj).makeBidInvitation();
 
-  await bob.offer(bidInvitation1);
-  await carol.offer(bidInvitation2);
-  await dave.offer(bidInvitation3);
+  const bobSeat = await bob.offer(bidInvitation1);
+  const carolSeat = await carol.offer(bidInvitation2);
+  const daveSeat = await dave.offer(bidInvitation3);
   timer.tick();
+
+  await Promise.all([
+    alice.collectPayout(aliceSeat),
+    bob.collectPayout(bobSeat),
+    carol.collectPayout(carolSeat),
+    dave.collectPayout(daveSeat),
+  ]);
 });
 
 test('zoe - secondPriceAuction - alice tries to exit', async t => {

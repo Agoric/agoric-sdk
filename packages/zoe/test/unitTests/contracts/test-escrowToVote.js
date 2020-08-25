@@ -62,24 +62,27 @@ test('zoe - escrowToVote', async t => {
     const result = await E(voter).vote('YES');
 
     t.is(result, `Successfully voted 'YES'`, `voter1 votes YES`);
-
-    seat.getPayout('Assets').then(async moolaPayment => {
-      t.deepEqual(
-        await moolaIssuer.getAmountOf(moolaPayment),
-        moola(3),
-        `voter1 gets everything she escrowed back`,
-      );
-
-      console.log('EXPECTED ERROR ->>>');
-      t.throws(
-        () => voter.vote('NO'),
-        { message: /the voter seat has exited/ },
-        `voter1 voting fails once offer is withdrawn or amounts are reallocated`,
-      );
-    });
+    return { voter, seat };
   };
 
-  await voter1Votes(voterInvitation1);
+  const voter1CollectsPayout = async ({ voter, seat }) => {
+    const moolaPayment = await seat.getPayout('Assets');
+    t.deepEqual(
+      await moolaIssuer.getAmountOf(moolaPayment),
+      moola(3),
+      `voter1 gets everything she escrowed back`,
+    );
+
+    console.log('EXPECTED ERROR ->>>');
+    t.throws(
+      () => voter.vote('NO'),
+      { message: /the voter seat has exited/ },
+      `voter1 voting fails once offer is withdrawn or amounts are reallocated`,
+    );
+  };
+
+  const voter1Result = await voter1Votes(voterInvitation1);
+  const voter1DoneP = voter1CollectsPayout(voter1Result);
 
   // Voter 2 makes badly formed vote, then votes YES, then changes
   // vote to NO. Vote will be weighted by 5 (5 moola escrowed).
@@ -106,24 +109,27 @@ test('zoe - escrowToVote', async t => {
     // Votes can be recast at any time
     const result2 = await E(voter).vote('NO');
     t.is(result2, `Successfully voted 'NO'`, `voter 2 recast vote for NO`);
-
-    seat.getPayout('Assets').then(async moolaPayment => {
-      t.deepEqual(
-        await moolaIssuer.getAmountOf(moolaPayment),
-        moola(5),
-        `voter2 gets everything she escrowed back`,
-      );
-
-      console.log('EXPECTED ERROR ->>>');
-      t.throws(
-        () => voter.vote('NO'),
-        { message: /the voter seat has exited/ },
-        `voter2 voting fails once offer is withdrawn or amounts are reallocated`,
-      );
-    });
+    return { voter, seat };
   };
 
-  await voter2Votes(voterInvitation2);
+  const voter2CollectsPayout = async ({ voter, seat }) => {
+    const moolaPayment = await seat.getPayout('Assets');
+    t.deepEqual(
+      await moolaIssuer.getAmountOf(moolaPayment),
+      moola(5),
+      `voter2 gets everything she escrowed back`,
+    );
+
+    console.log('EXPECTED ERROR ->>>');
+    t.throws(
+      () => voter.vote('NO'),
+      { message: /the voter seat has exited/ },
+      `voter2 voting fails once offer is withdrawn or amounts are reallocated`,
+    );
+  };
+
+  const voter2Result = await voter2Votes(voterInvitation2);
+  const voter2DoneP = voter2CollectsPayout(voter2Result);
 
   // Voter 3 votes NO and then exits the seat, retrieving their
   // assets, meaning that their vote should not be counted. They get
@@ -145,6 +151,10 @@ test('zoe - escrowToVote', async t => {
     // not be counted.
     seat.tryExit();
 
+    return { voter, seat };
+  };
+
+  const voter3CollectsPayout = async ({ voter, seat }) => {
     const moolaPayment = await seat.getPayout('Assets');
 
     t.deepEqual(
@@ -161,7 +171,8 @@ test('zoe - escrowToVote', async t => {
     );
   };
 
-  await voter3Votes(voterInvitation3);
+  const voter3Result = await voter3Votes(voterInvitation3);
+  const voter3DoneP = voter3CollectsPayout(voter3Result);
 
   // Voter4 votes YES with a weight of 4
   const voter4Votes = async invitation => {
@@ -178,22 +189,26 @@ test('zoe - escrowToVote', async t => {
 
     t.is(result, `Successfully voted 'YES'`, `voter1 votes YES`);
 
-    seat.getPayout('Assets').then(async moolaPayment => {
-      t.deepEqual(
-        await moolaIssuer.getAmountOf(moolaPayment),
-        moola(4),
-        `voter4 gets everything she escrowed back`,
-      );
-    });
+    return seat;
   };
 
-  await voter4Votes(voterInvitation4);
+  const voter4CollectsPayout = async seat => {
+    const moolaPayment = seat.getPayout('Assets');
+    t.deepEqual(
+      await moolaIssuer.getAmountOf(moolaPayment),
+      moola(4),
+      `voter4 gets everything she escrowed back`,
+    );
+  };
+
+  const voter4Seat = await voter4Votes(voterInvitation4);
+  const voter4DoneP = voter4CollectsPayout(voter4Seat);
 
   // Secretary closes election and tallies the votes.
   const electionResults = await E(secretary).closeElection();
   t.deepEqual(electionResults, { YES: moola(7), NO: moola(5) });
 
   // Once the election is closed, the voters get their escrowed funds
-  // back and can no longer vote. See the voter functions for the
-  // resolution of the payout promises for each voter.
+  // back and can no longer vote.
+  await Promise.all([voter1DoneP, voter2DoneP, voter3DoneP, voter4DoneP]);
 });
