@@ -86,7 +86,7 @@ test('getInputPrice ok 6', t => {
   testGetPrice(t, input, expectedOutput);
 });
 
-test('calculate value to mint - positive supply', t => {
+test('calculate value to mint - positive supply 1', t => {
   const res = calcLiqValueToMint({
     liqTokenSupply: 20,
     inputValue: 30,
@@ -103,11 +103,14 @@ test('calculate value to mint - mispelled key', t => {
         inputValue: 30,
         inputReserve: 5,
       }),
+    {
+      message: /value required/,
+    },
     `calcLiqValueToMint should throw if a key is misspelled`,
   );
 });
 
-test('calculate value to mint - positive supply', t => {
+test('calculate value to mint - positive supply 2', t => {
   const res = calcLiqValueToMint({
     liqTokenSupply: 5,
     inputValue: 8,

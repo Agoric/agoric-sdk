@@ -355,10 +355,12 @@ export function buildRootObject() {
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
+    // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    contractCode.catch(() => {});
 
     // Next, execute the contract code, passing in zcf
-    /** @type {Promise<Invitation>} */
-    return E(contractCode)
+    /** @type {Promise<ExecuteContractResult>} */
+    const result = E(contractCode)
       .start(zcf)
       .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
         return harden({
@@ -368,6 +370,8 @@ export function buildRootObject() {
           addSeatObj,
         });
       });
+    result.catch(() => {}); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    return result;
   };
 
   return harden({ executeContract });
