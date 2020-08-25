@@ -32,7 +32,6 @@ function makeConsole(tag) {
   }
   return harden(cons);
 }
-const console = makeConsole('SwingSet:controller');
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
@@ -80,7 +79,6 @@ const KNOWN_CREATION_OPTIONS = harden([
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
 export function loadBasedir(basedir) {
-  console.debug(`= loading config from basedir ${basedir}`);
   const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
@@ -99,8 +97,6 @@ export function loadBasedir(basedir) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const vatSourcePath = path.resolve(basedir, dirent.name);
       vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
-    } else {
-      console.debug(`ignoring file ${dirent.name} in ${basedir}`);
     }
   });
   let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
@@ -213,7 +209,7 @@ export async function buildVatController(
   argv = [],
   runtimeOptions = {},
 ) {
-  const { debugPrefix = '' } = runtimeOptions;
+  const { debugPrefix = '', verbose = false } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling buildVatController');
   }
@@ -339,7 +335,8 @@ export async function buildVatController(
     writeSlogObject,
   };
 
-  const kernel = buildKernel(kernelEndowments);
+  const kernelOptions = { verbose };
+  const kernel = buildKernel(kernelEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
     kernel.kdebugEnable(true);
@@ -384,7 +381,9 @@ export async function buildVatController(
     vatParameters = {},
     creationOptions = {},
   ) {
-    console.debug(`= adding vat '${name}' from bundle ${bundleName}`);
+    if (verbose) {
+      console.debug(`= adding vat '${name}' from bundle ${bundleName}`);
+    }
     const bundle = kernel.getBundle(bundleName);
     kernel.addGenesisVat(name, bundle, vatParameters, creationOptions);
   }
