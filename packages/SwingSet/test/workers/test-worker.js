@@ -1,6 +1,23 @@
 import '@agoric/install-ses';
 import test from 'ava';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
+import { locateWorkerBin } from '@agoric/xs-vat-worker';
 import { loadBasedir, buildVatController } from '../../src/index';
+
+const xsWorkerBin = locateWorkerBin({ resolve });
+const maybeTestXS = existsSync(xsWorkerBin) ? test : test.skip;
+
+maybeTestXS('xs vat manager', async t => {
+  const config = await loadBasedir(__dirname);
+  config.vats.target.creationOptions = { managerType: 'xs-worker' };
+  const c = await buildVatController(config, []);
+
+  await c.run();
+  t.is(c.bootstrapResult.status(), 'fulfilled');
+
+  await c.shutdown();
+});
 
 test('nodeWorker vat manager', async t => {
   const config = await loadBasedir(__dirname);

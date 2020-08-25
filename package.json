@@ -38,7 +38,8 @@
     "packages/cosmic-swingset",
     "packages/agoric-cli",
     "packages/deployment",
-    "packages/notifier"
+    "packages/notifier",
+    "packages/xs-vat-worker"
   ],
   "devDependencies": {
     "ava": "^3.11.1",

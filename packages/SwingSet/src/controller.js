@@ -16,6 +16,7 @@ import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
+import { locateWorkerBin } from '@agoric/xs-vat-worker';
 
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { assertKnownOptions } from './assertOptions';
@@ -321,6 +322,12 @@ export async function buildVatController(
     // console.log(`--slog ${JSON.stringify(obj)}`);
   }
 
+  const startSubprocessWorkerNode = () => startSubprocessWorker();
+  const xsWorkerBin = locateWorkerBin({ resolve: path.resolve });
+  const startSubprocessWorkerXS = fs.existsSync(xsWorkerBin)
+    ? () => startSubprocessWorker({ execPath: xsWorkerBin, args: [] })
+    : undefined;
+
   const kernelEndowments = {
     waitUntilQuiescent,
     hostStorage,
@@ -331,7 +338,8 @@ export async function buildVatController(
     transformMetering,
     transformTildot,
     makeNodeWorker,
-    startSubprocessWorker,
+    startSubprocessWorkerNode,
+    startSubprocessWorkerXS,
     writeSlogObject,
   };
 

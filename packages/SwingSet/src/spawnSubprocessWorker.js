@@ -20,8 +20,10 @@ const supercode = require.resolve(
 // always be Node.
 const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 
-export function startSubprocessWorker() {
-  const proc = spawn(process.execPath, ['-r', 'esm', supercode], { stdio });
+export function startSubprocessWorker(options) {
+  const execPath = options.execPath || process.execPath;
+  const args = options.args || ['-r', 'esm', supercode];
+  const proc = spawn(execPath, args, { stdio });
 
   const toChild = Netstring.writeStream();
   toChild.pipe(proc.stdio[3]);

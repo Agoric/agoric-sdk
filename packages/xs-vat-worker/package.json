@@ -1,0 +1,61 @@
+{
+  "name": "@agoric/xs-vat-worker",
+  "version": "0.1.0",
+  "description": "swingset-vat worker for XS js runtime",
+  "main": "src/locate.js",
+  "module": "src/locate.js",
+  "scripts": {
+    "build:xs-lin": "make -f xs-lin.mk",
+    "test": "ava",
+    "build": "exit 0",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+  },
+  "ava": {
+    "files": ["test/**/test-*.js"],
+    "require": ["esm"],
+    "timeout": "2m"
+  },
+  "devDependencies": {
+    "detective-es6": "^2.2.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-jessie": "^0.0.4",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.2",
+    "filing-cabinet": "^2.5.1",
+    "prettier": "^1.18.2",
+    "ava": "^3.11.1"
+  },
+  "dependencies": {
+    "@agoric/assert": "^0.0.8",
+    "@agoric/bundle-source": "^1.1.6",
+    "@agoric/eventual-send": "^0.9.3",
+    "@agoric/import-bundle": "^0.0.8",
+    "@agoric/install-ses": "^0.2.0",
+    "@agoric/marshal": "^0.2.3",
+    "@agoric/promise-kit": "^0.1.3",
+    "@agoric/swingset-vat": "^0.6.0",
+    "anylogger": "^0.21.0",
+    "esm": "^3.2.5"
+  },
+  "keywords": [],
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme"
+}

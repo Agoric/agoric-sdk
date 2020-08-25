@@ -50,7 +50,8 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     transformMetering,
     transformTildot,
     makeNodeWorker,
-    startSubprocessWorker,
+    startSubprocessWorkerNode,
+    startSubprocessWorkerXS,
     writeSlogObject,
   } = kernelEndowments;
   const { verbose } = kernelOptions;
@@ -612,7 +613,8 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     transformMetering,
     waitUntilQuiescent,
     makeNodeWorker,
-    startSubprocessWorker,
+    startSubprocessWorkerNode,
+    startSubprocessWorkerXS,
   });
 
   function buildVatSyscallHandler(vatID, translators) {
