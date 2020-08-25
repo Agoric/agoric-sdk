@@ -440,6 +440,7 @@ show-config      display the client connection parameters
           )}`,
         ]),
       );
+
       await guardFile(`${COSMOS_DIR}/start.stamp`, () =>
         needReMain(['play', 'start']),
       );
@@ -476,41 +477,45 @@ show-config      display the client connection parameters
       const match = rpcAddrs.match(/^([^,]+):\d+(,|$)/);
 
       let execline = `npx http-server ./public`;
-      let pWebHost;
+      let dwebHost;
       const cert = `${networkName}.crt`;
       const key = `${networkName}.key`;
       if ((await exists(cert)) && (await exists(key))) {
         execline += ` --port=443 --ssl`;
         execline += ` --cert=${shellEscape(cert)}`;
         execline += ` --key=${shellEscape(key)}`;
-        pWebHost = `https://${match[1]}`;
+        dwebHost = `https://${match[1]}`;
       } else {
         execline += ` --port=80`;
-        pWebHost = `http://${match[1]}`;
+        dwebHost = `http://${match[1]}`;
       }
 
+      await reMain(['play', 'stop', '-eservice=dweb']);
+
       // Copy the needed files to the web server.
-      await needReMain(['play', 'dweb-copy']);
+      await needReMain([
+        'play',
+        'dweb-copy',
+        `-eexecline=${shellEscape(execline)}`,
+      ]);
 
       await guardFile(`${DWEB_DIR}/service.stamp`, () =>
         needReMain([
           'play',
           'install',
           '-eservice=dweb',
-          `-eexecline=${shellEscape(execline)}`,
+          `-eexecline=/home/dweb/start.sh`,
           `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
         ]),
       );
 
-      await guardFile(`${DWEB_DIR}/start.stamp`, () =>
-        needReMain(['play', 'start', '-eservice=dweb']),
-      );
+      await needReMain(['play', 'start', '-eservice=dweb']);
 
       initHint();
 
       console.error(
         `Use the following to provision:
-${chalk.yellow.bold(`ag-setup-solo --netconfig='${pWebHost}/network-config'`)}
+${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 `,
       );
       if (await exists('/vagrant')) {
@@ -831,6 +836,7 @@ ${name}:
 
       const addAll = makeGroup('all');
       const addChainCosmos = makeGroup('ag-chain-cosmos', 4);
+      const addDweb = makeGroup('dweb', 4);
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
         const addProvider = makeGroup(provider, 4);
         const ips = prov.public_ips.value[provider];
@@ -861,9 +867,9 @@ ${units}`;
 
           // We add all the nodes to ag-chain-cosmos.
           addChainCosmos(host);
-          if (node === PROVISIONER_NODE) {
-            makeGroup('dweb', 4)(host);
-          }
+
+          // Install the decentralised web on all the hosts.
+          addDweb(host);
         }
       }
       out.write(byGroup.all);
