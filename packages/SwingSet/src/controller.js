@@ -322,9 +322,10 @@ export async function buildVatController(
     // console.log(`--slog ${JSON.stringify(obj)}`);
   }
 
+  const startSubprocessWorkerNode = () => startSubprocessWorker();
   const xsWorkerBin = locateWorkerBin({ resolve: path.resolve });
-  const startXsWorker = fs.existsSync(xsWorkerBin)
-    ? () => startSubprocessWorker(xsWorkerBin, [])
+  const startSubprocessWorkerXS = fs.existsSync(xsWorkerBin)
+    ? () => startSubprocessWorker({ execPath: xsWorkerBin, args: [] })
     : undefined;
 
   const kernelEndowments = {
@@ -337,9 +338,9 @@ export async function buildVatController(
     transformMetering,
     transformTildot,
     makeNodeWorker,
-    startSubprocessWorker,
+    startSubprocessWorkerNode,
+    startSubprocessWorkerXS,
     writeSlogObject,
-    startXsWorker,
   };
 
   const kernelOptions = { verbose };
