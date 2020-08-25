@@ -49,7 +49,9 @@ const start = zcf => {
     const rejectMsg = `The covered call option is expired.`;
 
     const exerciseOption = exerciserSeat => {
-      return swap(zcf, sellerSeat, exerciserSeat, rejectMsg);
+      const swapResult = swap(zcf, sellerSeat, exerciserSeat, rejectMsg);
+      zcf.shutdown();
+      return swapResult;
     };
 
     const exerciseOptionExpected = harden({

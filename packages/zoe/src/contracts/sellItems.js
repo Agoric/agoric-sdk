@@ -27,6 +27,11 @@ import '../../exported';
  * available to sell, and the money should be pricePerItem times the number of
  * items requested.
  *
+ * When all the items have been sold, the contract will terminate, triggering
+ * the creator's payout. If the creator has an onDemand exit clause, they can
+ * exit early to collect their winnings. The remaining items will still be
+ * available for sale, but the creator won't be able to collect later earnings.
+ *
  * @type {ContractStartFn}
  */
 const start = zcf => {
@@ -44,6 +49,15 @@ const start = zcf => {
   const sell = seat => {
     sellerSeat = seat;
     return defaultAcceptanceMsg;
+  };
+
+  /** @type {SellItemsPublicFacet} */
+  const publicFacet = {
+    getAvailableItems: () => {
+      assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
+      return sellerSeat.getAmountAllocated('Items');
+    },
+    getItemsIssuer: () => issuers.Items,
   };
 
   const buy = buyerSeat => {
@@ -83,16 +97,11 @@ const start = zcf => {
 
     // The buyer's offer has been processed.
     buyerSeat.exit();
-    return defaultAcceptanceMsg;
-  };
 
-  /** @type {SellItemsPublicFacet} */
-  const publicFacet = {
-    getAvailableItems: () => {
-      assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
-      return sellerSeat.getAmountAllocated('Items');
-    },
-    getItemsIssuer: () => issuers.Items,
+    if (itemsMath.isEmpty(publicFacet.getAvailableItems())) {
+      zcf.shutdown();
+    }
+    return defaultAcceptanceMsg;
   };
 
   /** @type {SellItemsCreatorFacet} */
