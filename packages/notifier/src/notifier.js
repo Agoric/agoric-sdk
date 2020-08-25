@@ -108,6 +108,8 @@ export const makeNotifierKit = (...args) => {
       assert(nextPromiseKit);
       currentUpdateCount = undefined;
       currentResponse = undefined;
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      nextPromiseKit.promise.catch(_ => {});
       nextPromiseKit.reject(reason);
     },
   });
