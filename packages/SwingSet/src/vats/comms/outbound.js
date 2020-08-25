@@ -1,7 +1,11 @@
 import { assert, details } from '@agoric/assert';
 import { insistVatType } from '../../parseVatSlots';
 import { insistRemoteType } from './parseRemoteSlot';
-import { getOutbound, mapOutbound, mapOutboundResult } from './clist';
+import {
+  getRemoteForLocal,
+  provideRemoteForLocal,
+  provideRemoteForLocalResult,
+} from './clist';
 import {
   getPromiseSubscriber,
   insistPromiseDeciderIsMe,
@@ -55,9 +59,9 @@ export function deliverToRemote(
   assert(remoteID, details`oops ${target}`);
   insistCapData(args);
 
-  const remoteTargetSlot = getOutbound(state, remoteID, target);
+  const remoteTargetSlot = getRemoteForLocal(state, remoteID, target);
   const remoteMessageSlots = args.slots.map(s =>
-    mapOutbound(state, remoteID, s, syscall),
+    provideRemoteForLocal(state, remoteID, s, syscall),
   );
   let rmss = remoteMessageSlots.join(':');
   if (rmss) {
@@ -68,7 +72,7 @@ export function deliverToRemote(
     insistVatType('promise', result);
     // outbound: promiseID=p-NN -> rp-NN
     // inbound: rp+NN -> p-NN
-    remoteResultSlot = mapOutboundResult(state, remoteID, result);
+    remoteResultSlot = provideRemoteForLocalResult(state, remoteID, result);
   }
 
   // now render the transmission. todo: 'method' lives in the transmission
@@ -98,13 +102,15 @@ export function resolvePromiseToRemote(
   markPromiseAsResolved(state, promiseID, resolution);
 
   // for now, promiseID = p-NN, later will be p+NN
-  const target = getOutbound(state, remoteID, promiseID);
+  const target = getRemoteForLocal(state, remoteID, promiseID);
   // target should be rp+NN
   insistRemoteType('promise', target);
   // assert(parseRemoteSlot(target).allocatedByRecipient, target); // rp+NN for them
   function mapSlots() {
     const { slots } = resolution.data;
-    const rms = slots.map(s => mapOutbound(state, remoteID, s, syscall));
+    const rms = slots.map(s =>
+      provideRemoteForLocal(state, remoteID, s, syscall),
+    );
     let rmss = rms.join(':');
     if (rmss) {
       rmss = `:${rmss}`;
@@ -114,7 +120,7 @@ export function resolvePromiseToRemote(
 
   let msg;
   if (resolution.type === 'object') {
-    const resolutionRef = mapOutbound(
+    const resolutionRef = provideRemoteForLocal(
       state,
       remoteID,
       resolution.slot,

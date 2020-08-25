@@ -2,7 +2,11 @@
 
 import { assert, details } from '@agoric/assert';
 import { insistRemoteType } from './parseRemoteSlot';
-import { getInbound, mapInbound, mapInboundResult } from './clist';
+import {
+  getLocalForRemote,
+  provideLocalForRemote,
+  provideLocalForRemoteResult,
+} from './clist';
 import {
   insistPromiseIsUnresolved,
   insistPromiseDeciderIs,
@@ -10,7 +14,7 @@ import {
 } from './state';
 
 function getInboundFor(state, remoteID, remoteTarget) {
-  const target = getInbound(state, remoteID, remoteTarget);
+  const target = getLocalForRemote(state, remoteID, remoteTarget);
   // That might point to o-NN or a promise. Check if the promise was resolved
   // already.
   if (state.promiseTable.has(target)) {
@@ -38,6 +42,25 @@ function getInboundFor(state, remoteID, remoteTarget) {
 export function deliverFromRemote(syscall, state, remoteID, message) {
   const command = message.split(':', 1)[0];
 
+  // we deal with three different kinds of slot namespace ("slotspace") here:
+  // 1: remote[NAME] : ro+NN/etc
+  // 2: local: o+NN/etc
+  // 3: kernel: ko+NN/etc
+
+  // we start by translating inbound messages from the remote's slotspace to
+  // our own (the comms vat)
+
+  // Then we figure out where the message is headed. Most messages are for a
+  // local vat, but they might be destined for a different remote (if we
+  // shared a third-party reference for the target), or maybe even the same
+  // remote who gave us the message (if the target is a promise that we
+  // resolved to them, but they haven't gotten the resolution message yet)
+
+  // if the message is going to our kernel, translate the message from our
+  // local vat slotspace into the kernel slotspace
+
+  // otherwise translate it into the destination remote's slotspace
+
   if (command === 'deliver') {
     // deliver:$target:$method:[$result][:$slots..];body
     const sci = message.indexOf(';');
@@ -50,12 +73,14 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const target = getInboundFor(state, remoteID, slots[0]);
     const method = slots[1];
     const result = slots[2]; // 'rp-NN' or empty string
-    const msgSlots = slots.slice(3).map(s => mapInbound(state, remoteID, s));
+    const msgSlots = slots
+      .slice(3)
+      .map(s => provideLocalForRemote(state, remoteID, s));
     const body = message.slice(sci + 1);
     const args = harden({ body, slots: msgSlots });
     let r; // send() if result promise is provided, else sendOnly()
     if (result.length) {
-      r = mapInboundResult(state, remoteID, result);
+      r = provideLocalForRemoteResult(state, remoteID, result);
     }
     syscall.send(target, method, args, r);
     if (r) {
@@ -83,8 +108,10 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const remoteTarget = pieces[2];
     const remoteSlots = pieces.slice(3); // length=1 for resolve:object
     insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
-    const target = getInbound(state, remoteID, remoteTarget);
-    const slots = remoteSlots.map(s => mapInbound(state, remoteID, s));
+    const target = getLocalForRemote(state, remoteID, remoteTarget);
+    const slots = remoteSlots.map(s =>
+      provideLocalForRemote(state, remoteID, s),
+    );
     const body = message.slice(sci + 1);
     const data = harden({ body, slots });
 

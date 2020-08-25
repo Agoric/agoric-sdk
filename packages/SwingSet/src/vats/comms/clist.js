@@ -19,7 +19,7 @@ import {
   setPromiseSubscriber,
 } from './state';
 
-export function getOutbound(state, remoteID, target) {
+export function getRemoteForLocal(state, remoteID, target) {
   const remote = getRemote(state, remoteID);
 
   if (!remote.toRemote.has(target)) {
@@ -30,7 +30,7 @@ export function getOutbound(state, remoteID, target) {
   return remote.toRemote.get(target);
 }
 
-export function mapOutbound(state, remoteID, s, syscall) {
+export function provideRemoteForLocal(state, remoteID, s, syscall) {
   // We're sending a slot to a remote system. If we've ever sent it before,
   // or if they're the ones who sent it to us in the first place, it will be
   // in the outbound table already.
@@ -119,7 +119,7 @@ export function mapOutbound(state, remoteID, s, syscall) {
   return remote.toRemote.get(s);
 }
 
-export function mapOutboundResult(state, remoteID, s) {
+export function provideRemoteForLocalResult(state, remoteID, s) {
   // We're sending a slot to a remote system for use as a result. We must do
   // some additional who-is-the-decider checks.
   const remote = getRemote(state, remoteID);
@@ -163,7 +163,7 @@ export function mapOutboundResult(state, remoteID, s) {
   return remote.toRemote.get(s);
 }
 
-export function mapInbound(state, remoteID, s) {
+export function provideLocalForRemote(state, remoteID, s) {
   // We're receiving a slot from a remote system. If they've sent it to us
   // previously, or if we're the ones who sent it to them earlier, it will be
   // in the inbound table already.
@@ -193,7 +193,7 @@ export function mapInbound(state, remoteID, s) {
       } else {
         const promiseID = allocateUnresolvedPromise(state, remoteID);
         remote.fromRemote.set(s, promiseID);
-        remote.toRemote.set(promiseID, s); // TODO: wrong? undone in mapInboundResult #1404
+        remote.toRemote.set(promiseID, s); // TODO: wrong? undone in provideLocalForRemoteResult #1404
         // remote.toRemote.set(promiseID, flipRemoteSlot(s));
         // TODO: *not* undone for non-result promises??
         // console.debug(`inbound promise ${s} mapped to ${promiseID}`);
@@ -205,7 +205,7 @@ export function mapInbound(state, remoteID, s) {
   return remote.fromRemote.get(s);
 }
 
-export function getInbound(state, remoteID, target) {
+export function getLocalForRemote(state, remoteID, target) {
   const remote = getRemote(state, remoteID);
   if (!remote.fromRemote.has(target)) {
     throw new Error(
@@ -215,10 +215,10 @@ export function getInbound(state, remoteID, target) {
   return remote.fromRemote.get(target);
 }
 
-export function mapInboundResult(state, remoteID, result) {
+export function provideLocalForRemoteResult(state, remoteID, result) {
   insistRemoteType('promise', result);
   assert(!parseRemoteSlot(result).allocatedByRecipient, details`${result}`); // temp?
-  const r = mapInbound(state, remoteID, result);
+  const r = provideLocalForRemote(state, remoteID, result);
   insistVatType('promise', r);
   insistPromiseIsUnresolved(state, r);
   insistPromiseDeciderIs(state, r, remoteID);
@@ -233,7 +233,7 @@ export function mapInboundResult(state, remoteID, result) {
 
 export function addEgress(state, remoteID, remoteRefID, localRef) {
   // Make 'localRef' available to remoteID as 'remoteRefID'. This is kind of
-  // like mapOutbound, but it uses a caller-provided remoteRef instead of
+  // like provideRemoteForLocal, but it uses a caller-provided remoteRef instead of
   // allocating a new one. This is used to bootstrap initial connectivity
   // between machines.
   const remote = getRemote(state, remoteID);
@@ -272,8 +272,8 @@ export function addEgress(state, remoteID, remoteRefID, localRef) {
 
 export function addIngress(state, remoteID, remoteRefID) {
   // Return a localRef that maps to 'remoteRef' at remoteRefID. Just a
-  // wrapper around mapInbound.
+  // wrapper around provideLocalForRemote.
   const inboundRemoteRef = makeRemoteSlot('object', false, remoteRefID);
-  const localRef = mapInbound(state, remoteID, inboundRemoteRef);
+  const localRef = provideLocalForRemote(state, remoteID, inboundRemoteRef);
   return localRef;
 }

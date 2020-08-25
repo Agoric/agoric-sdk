@@ -7,20 +7,20 @@ import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 import { makeState } from '../src/vats/comms/state';
 import { addRemote } from '../src/vats/comms/remote';
 import {
-  getInbound,
-  getOutbound,
-  mapInbound,
-  mapOutbound,
+  getLocalForRemote,
+  getRemoteForLocal,
+  provideLocalForRemote,
+  provideRemoteForLocal,
 } from '../src/vats/comms/clist';
 import { debugState } from '../src/vats/comms/dispatch';
 
-test('mapOutbound', t => {
+test('provideRemoteForLocal', t => {
   const s = makeState();
   const { remoteID } = addRemote(s, 'remote1', 'o-1');
-  t.is(mapOutbound(s, remoteID, 'o-4'), 'ro-20');
-  t.is(mapOutbound(s, remoteID, 'o-4'), 'ro-20');
-  t.is(mapOutbound(s, remoteID, 'o-5'), 'ro-21');
-  t.throws(() => mapOutbound(s, remoteID, 'o+5'), {
+  t.is(provideRemoteForLocal(s, remoteID, 'o-4'), 'ro-20');
+  t.is(provideRemoteForLocal(s, remoteID, 'o-4'), 'ro-20');
+  t.is(provideRemoteForLocal(s, remoteID, 'o-5'), 'ro-21');
+  t.throws(() => provideRemoteForLocal(s, remoteID, 'o+5'), {
     message: /sending non-remote object o\+5 to remote machine/,
   });
 });
@@ -55,7 +55,7 @@ test('transmit', t => {
   const transmitterID = 'o-1';
   const alice = 'o-10';
   const { remoteID } = addRemote(state, 'remote1', transmitterID);
-  const bob = mapInbound(state, remoteID, 'ro-23');
+  const bob = provideLocalForRemote(state, remoteID, 'ro-23');
 
   // now tell the comms vat to send a message to a remote machine, the
   // equivalent of bob!foo()
@@ -74,7 +74,7 @@ test('transmit', t => {
     encodeArgs('deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
   // the outbound ro-20 should match an inbound ro+20, both represent 'alice'
-  t.is(getInbound(state, remoteID, 'ro+20'), alice);
+  t.is(getLocalForRemote(state, remoteID, 'ro+20'), alice);
   // do it again, should use same values
   d.deliver(bob, 'bar', capdata('argsbytes', [alice, bob]), null);
   t.deepEqual(sends.shift(), [
@@ -103,7 +103,7 @@ test('receive', t => {
   const transmitterID = 'o-1';
   const bob = 'o-10';
   const { remoteID, receiverID } = addRemote(state, 'remote1', transmitterID);
-  const remoteBob = flipRemoteSlot(mapOutbound(state, remoteID, bob));
+  const remoteBob = flipRemoteSlot(provideRemoteForLocal(state, remoteID, bob));
   t.is(remoteBob, 'ro+20');
 
   // now pretend the transport layer received a message from remote1, as if
@@ -125,7 +125,7 @@ test('receive', t => {
   );
   t.deepEqual(sends.shift(), [bob, 'bar', capdata('argsbytes', ['o+11', bob])]);
   // if we were to send o+11, the other side should get ro+20, which is alice
-  t.is(getOutbound(state, remoteID, 'o+11'), 'ro+20');
+  t.is(getRemoteForLocal(state, remoteID, 'o+11'), 'ro+20');
 
   // bob!bar(alice, bob)
   d.deliver(
