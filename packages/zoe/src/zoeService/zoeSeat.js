@@ -38,6 +38,7 @@ export const makeZoeSeatAdminKit = (
   { offerResult = undefined, exitObj = defaultExitObj } = {},
 ) => {
   const payoutPromiseKit = makePromiseKit();
+  payoutPromiseKit.promise.catch(_ => console.log('payoutPromiseKit'));
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
@@ -82,8 +83,6 @@ export const makeZoeSeatAdminKit = (
       );
       updater.fail(reason);
       doExit(zoeSeatAdmin);
-      console.log(reason);
-      throw reason;
     },
     getCurrentAllocation: () => currentAllocation,
   });
