@@ -155,6 +155,7 @@ async function main(argv, { stdout, fsp, fileURL, cabinet }) {
   });
 
   stdout.write(JSON.stringify(info, null, 2));
+  stdout.write('\n');
 }
 
 /* global require, module, process */
