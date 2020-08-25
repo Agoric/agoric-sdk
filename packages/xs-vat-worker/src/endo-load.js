@@ -4,18 +4,23 @@ function debug(..._args) {
   // console.log(...args);
 }
 
-function SESCompartment(endowments, map, options) {
-  debug('SESCompartment', { endowments, map, options });
-  const sesGlobals = { harden, console, Compartment: SESCompartment };
-  return new Compartment({ ...sesGlobals, ...endowments }, map, options);
-}
-
-export function loadMain(compartmap) {
+export function loadMain(compartmap, HandledPromise) {
   // ISSUE: doesn't seem to work: const { entries, fromEntries, keys } = Object;
   // debug('entries, ...', { entries: typeof entries, fromEntries: typeof fromEntries, keys: typeof keys });
   const entries = o => Object.entries(o);
   const fromEntries = pvs => Object.fromEntries(pvs);
   const keys = o => Object.keys(o);
+
+  function SESCompartment(endowments, map, options) {
+    debug('SESCompartment', { endowments, map, options });
+    const sesGlobals = {
+      harden,
+      console,
+      HandledPromise,
+      Compartment: SESCompartment,
+    };
+    return new Compartment({ ...sesGlobals, ...endowments }, map, options);
+  }
 
   const memoize = f => {
     const cache = {};

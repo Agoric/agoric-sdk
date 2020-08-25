@@ -24,6 +24,7 @@
       "$(MODULES)/base/timer/timer",
       "$(MODULES)/base/timer/lin/*"
     ],
+    "@agoric/eventual-send": "../eventual-send/src/index",
 
     "main": "./start-xs",
     "src/console": "./src/console",

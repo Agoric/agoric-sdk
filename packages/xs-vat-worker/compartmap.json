@@ -12,10 +12,6 @@
           "compartment": "node_modules/@agoric/import-bundle/",
           "module": "./src/index.js"
         },
-        "@agoric/eventual-send": {
-          "compartment": "node_modules/@agoric/eventual-send/",
-          "module": "./src/index.js"
-        },
         "@agoric/marshal": {
           "compartment": "node_modules/@agoric/marshal/",
           "module": "./marshal.js"
@@ -32,15 +28,6 @@
       "contents": [
         "./src/index.js",
         "./src/compartment-wrapper.js"
-      ],
-      "modules": {}
-    },
-    "node_modules/@agoric/eventual-send/": {
-      "label": "@agoric/eventual-send@0.9.3",
-      "location": "node_modules/@agoric/eventual-send/",
-      "contents": [
-        "./src/index.js",
-        "./src/E.js"
       ],
       "modules": {}
     },
@@ -70,10 +57,6 @@
         "./src/capdata.js"
       ],
       "modules": {
-        "@agoric/eventual-send": {
-          "compartment": "node_modules/@agoric/eventual-send/",
-          "module": "./src/index.js"
-        },
         "@agoric/marshal": {
           "compartment": "node_modules/@agoric/marshal/",
           "module": "./marshal.js"
@@ -106,12 +89,7 @@
       "contents": [
         "./src/promiseKit.js"
       ],
-      "modules": {
-        "@agoric/eventual-send": {
-          "compartment": "node_modules/@agoric/eventual-send/",
-          "module": "./src/index.js"
-        }
-      }
+      "modules": {}
     },
     "node_modules/@agoric/assert/": {
       "label": "@agoric/assert@0.0.8",
@@ -129,9 +107,6 @@
     "node_modules/@agoric/assert/0_MKDIR": "$(ROOT)/node_modules/@agoric/assert/0_MKDIR",
     "node_modules/@agoric/assert/src/assert": "$(ROOT)/node_modules/@agoric/assert/src/assert",
     "node_modules/@agoric/assert/src/types": "$(ROOT)/node_modules/@agoric/assert/src/types",
-    "node_modules/@agoric/eventual-send/0_MKDIR": "$(ROOT)/node_modules/@agoric/eventual-send/0_MKDIR",
-    "node_modules/@agoric/eventual-send/src/E": "$(ROOT)/node_modules/@agoric/eventual-send/src/E",
-    "node_modules/@agoric/eventual-send/src/index": "$(ROOT)/node_modules/@agoric/eventual-send/src/index",
     "node_modules/@agoric/import-bundle/0_MKDIR": "$(ROOT)/node_modules/@agoric/import-bundle/0_MKDIR",
     "node_modules/@agoric/import-bundle/src/compartment-wrapper": "$(ROOT)/node_modules/@agoric/import-bundle/src/compartment-wrapper",
     "node_modules/@agoric/import-bundle/src/index": "$(ROOT)/node_modules/@agoric/import-bundle/src/index",

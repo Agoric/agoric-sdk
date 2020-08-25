@@ -4,6 +4,7 @@
 import Timer from '@moddable/timer';
 // eslint-disable-next-line import/no-unresolved
 import Resource from '@moddable/Resource';
+import { makeHandledPromise } from '@agoric/eventual-send';
 
 import { harden } from './src/harden';
 import { makeConsole } from './src/console';
@@ -24,7 +25,9 @@ export default async function main() {
   const inStream = new Reader(INFD);
   const outStream = new Writer(OUTFD);
 
-  const c1 = loadMain(compartmap0);
+  const HandledPromise = makeHandledPromise();
+
+  const c1 = loadMain(compartmap0, HandledPromise);
   console.log('about to import vatWorker');
   const vw = await c1.import('src/vatWorker');
 

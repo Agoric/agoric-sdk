@@ -1,5 +1,5 @@
+/* global HandledPromise */
 import { importBundle } from '@agoric/import-bundle';
-import { HandledPromise } from '@agoric/eventual-send';
 import { Remotable, getInterfaceOf } from '@agoric/marshal';
 // TODO? import anylogger from 'anylogger';
 import { makeLiveSlots } from '@agoric/swingset-vat/src/kernel/liveSlots';
