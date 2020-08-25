@@ -8,7 +8,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "test": "ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
   },
@@ -16,12 +16,19 @@
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {
-    "esm": "^3.2.25",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.10.2",
-    "tape-promise": "^4.0.0"
+    "ava": "^3.11.1",
+    "esm": "^3.2.25"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
   }
 }
