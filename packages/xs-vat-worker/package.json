@@ -5,7 +5,6 @@
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
-    "postinstall": "cp src/locate-undefined.js src/locate.js",
     "build:xs-lin": "make -f xs-lin.mk",
     "test": "tape -r esm 'test/**/test-*.js'",
     "build": "exit 0",

@@ -1,11 +1,14 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { xsWorkerBin } from '@agoric/xs-vat-worker/src/locate';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
+import { locateWorkerBin } from '@agoric/xs-vat-worker';
 import { loadBasedir, buildVatController } from '../../src/index';
 
 test('xs vat manager', async t => {
-  if (!xsWorkerBin) {
-    console.warn('XS vat worker not built; skipping');
+  const bin = locateWorkerBin({ resolve });
+  if (!existsSync(bin)) {
+    console.warn(`XS vat worker ${bin} not built; skipping`);
     t.falsy.skip(false);
     return;
   }

@@ -1,8 +1,12 @@
+import { resolve } from 'path';
+
 import { test } from 'tape-promise/tape';
 
-import { xsWorkerBin } from '../src/locate';
+import { locateWorkerBin } from '../src/locate';
 
 test('locateWorkerBin', t => {
-  t.ok(!xsWorkerBin || xsWorkerBin.endsWith('xs-vat-worker'));
+  const bin = locateWorkerBin({ resolve });
+  t.ok(bin.startsWith('/'));
+  t.ok(bin.endsWith('/xs-vat-worker'));
   t.end();
 });

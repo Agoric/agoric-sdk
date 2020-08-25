@@ -5,7 +5,6 @@ ROOT=$(PWD)/../..
 
 $(NODE_MODULES)/.bin/xs-vat-worker: build/bin/lin/debug/xs-vat-worker
 	cp $< $@
-	echo "export const xsWorkerBin =\n  '$@';" >src/locate.js
 
 build/bin/lin/debug/xs-vat-worker: build $(TOOLS)/mcconfig moddable/xs/platforms/lin_xs_cli.c compartmap.json manifest.json
 	ROOT=$(ROOT) PATH=$(TOOLS):$$PATH MODDABLE=$(MODDABLE) mcconfig -o build -p x-cli-lin -m -d
