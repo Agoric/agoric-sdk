@@ -70,7 +70,6 @@ test(`assertRightsConserved - false for amount with Nat values`, t => {
   const oldAmounts = makeAmountMatrix(amountMathArray, oldValues).flat();
   const newAmounts = makeAmountMatrix(amountMathArray, newValues).flat();
 
-  console.log('ERROR EXPECTED: rights were not conserved for brand >>>');
   t.throws(
     () => assertRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts),
     { message: /rights were not conserved for brand/ },

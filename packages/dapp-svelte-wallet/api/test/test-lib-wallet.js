@@ -436,7 +436,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       `inboxStateChangeLog with names`,
     );
 
-    console.log('EXPECTED ERROR ->>> "petname" not found');
     t.throws(
       () => wallet.getInstallation('whatever'),
       /"petname" not found/,

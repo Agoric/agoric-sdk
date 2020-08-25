@@ -162,7 +162,7 @@ function details(template, ...args) {
         parts.push('\nSee console for error data.');
       }
       const err = new Error(parts.join(''));
-      console.error('LOGGED ERROR:', ...interleaved, err);
+      // console.error('LOGGED ERROR:', ...interleaved, err);
       // eslint-disable-next-line no-debugger
       debugger;
       return err;
