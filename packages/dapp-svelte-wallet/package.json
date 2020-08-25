@@ -2,6 +2,8 @@
   "name": "@agoric/dapp-svelte-wallet",
   "version": "0.1.0",
   "main": "index.js",
+  "license": "Apache-2.0",
+  "author": "Agoric",
   "agoric-wallet": {
     "htmlBasedir": "./ui/public/wallet",
     "deploy": [

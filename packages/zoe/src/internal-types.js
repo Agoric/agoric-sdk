@@ -19,22 +19,6 @@
  */
 
 /**
- * @template T
- * @typedef {(record: any) => record is T} Validator
- */
-
-/**
- * @template T
- * @typedef {Object} Table
- * @property {(record: any) => record is T} validate
- * @property {<H>(record: Omit<T, 'handle'>, handle: H) => H} create
- * @property {(handle: any) => T} get
- * @property {(handle: any) => boolean} has
- * @property {(handle: any) => void} delete
- * @property {<H>(handle: H, partialRecord: Partial<T>) => H} update
- */
-
-/**
  * @typedef {Object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
@@ -50,7 +34,7 @@
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
- * @param {InstanceAdmin} instanceAdmin - pass-by-copy data to use to make the seat
+ * @param {InstanceAdmin} instanceAdmin
  * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
  * @param {{ offerResult?: ERef<OfferResult>, exitObj?: ERef<ExitObj>}} [options={}]
@@ -79,7 +63,9 @@
 
 /**
  * @typedef {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}} ZcfSeatAdminKit
- * @typedef {Object} ZCFSeatAdmin
+ */
+
+/** @typedef {Object} ZCFSeatAdmin
  * @property {(seatStaging: SeatStaging) => void} commit
  * @property {() => void} updateHasExited - updates `exited` state to true
  */
@@ -150,10 +136,6 @@
  * the time withdrawAndBurn returns. We rely on our other bookkeeping so that
  * these assets are assumed burned elsewhere, so no one will try to access
  * them even before they are actually burned.
- */
-
-/**
- * @typedef {Object} InstanceData
  */
 
 /**

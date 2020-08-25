@@ -1136,29 +1136,26 @@ export async function makeWallet({
     );
   }
 
-  function renameIssuer(petname, issuer) {
+  async function renameIssuer(petname, issuer) {
     assert(
       brandTable.hasByIssuer(issuer),
       `issuer has not been previously added`,
     );
     const brandRecord = brandTable.getByIssuer(issuer);
     brandMapping.renamePetname(petname, brandRecord.brand);
-    // We don't wait for the update before returning.
-    updateAllState();
+    await updateAllState();
     return `issuer ${q(petname)} successfully renamed in wallet`;
   }
 
-  function renameInstance(petname, instance) {
+  async function renameInstance(petname, instance) {
     instanceMapping.renamePetname(petname, instance);
-    // We don't wait for the update before returning.
-    updateAllState();
+    await updateAllState();
     return `instance ${q(petname)} successfully renamed in wallet`;
   }
 
-  function renameInstallation(petname, installation) {
+  async function renameInstallation(petname, installation) {
     installationMapping.renamePetname(petname, installation);
-    // We don't wait for the update before returning.
-    updateAllState();
+    await updateAllState();
     return `installation ${q(petname)} successfully renamed in wallet`;
   }
 

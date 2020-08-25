@@ -5,7 +5,7 @@
   "description": "Wallet web server handler",
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "ava",
     "lint": "yarn lint:types && eslint '**/*.js'",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
@@ -14,16 +14,14 @@
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "ava": "3.11.1",
     "eslint": "^6.1.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "0.0.3",
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.0",
-    "prettier": "^1.18.2",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "prettier": "^1.18.2"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.9.3",
@@ -78,5 +76,14 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric/issues"
   },
-  "homepage": "https://github.com/Agoric/agoric#readme"
+  "homepage": "https://github.com/Agoric/agoric#readme",
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
+  }
 }

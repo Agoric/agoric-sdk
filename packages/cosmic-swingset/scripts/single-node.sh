@@ -56,4 +56,4 @@ sedi 's/timeout_propose = "3s"/timeout_propose = "1s"/g' ~/.$DAEMON/config/confi
 sedi 's/index_all_keys = false/index_all_keys = true/g' ~/.$DAEMON/config/config.toml
 
 # Start the chain
-$DAEMON start --pruning=nothing
+$DAEMON start

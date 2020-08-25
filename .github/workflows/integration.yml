@@ -32,4 +32,6 @@ jobs:
     - run: yarn build
     - run: yarn link-cli ~/bin/agoric
 
-    - run: PATH="$PATH:$HOME/bin" node -r esm packages/agoric-cli/integration-tests/test-workflow.js
+    - name: run agoric-cli integration-test
+      working-directory: ./packages/agoric-cli
+      run: PATH="$PATH:$HOME/bin" yarn integration-test
