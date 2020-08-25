@@ -49,12 +49,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://gist.github.com/f8e0b5d838079a994784d599c282cce7.git"
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://gist.github.com/dckc/f8e0b5d838079a994784d599c282cce7"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://gist.github.com/dckc/f8e0b5d838079a994784d599c282cce7"
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme"
 }
