@@ -13,7 +13,8 @@ export function makeVatManagerFactory({
   transformMetering,
   waitUntilQuiescent,
   makeNodeWorker,
-  startSubprocessWorker,
+  startSubprocessWorkerNode,
+  startSubprocessWorkerXS,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -30,7 +31,12 @@ export function makeVatManagerFactory({
   });
 
   const nodeSubprocessFactory = makeNodeSubprocessFactory({
-    startSubprocessWorker,
+    startSubprocessWorker: startSubprocessWorkerNode,
+    kernelKeeper,
+  });
+
+  const xsWorkerFactory = makeNodeSubprocessFactory({
+    startSubprocessWorker: startSubprocessWorkerXS,
     kernelKeeper,
   });
 
@@ -91,6 +97,13 @@ export function makeVatManagerFactory({
         bundle,
         managerOptions,
       );
+    }
+
+    if (managerType === 'xs-worker') {
+      if (!startSubprocessWorkerXS) {
+        throw new Error('manager type xs-worker not available');
+      }
+      return xsWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
     }
 
     throw Error(

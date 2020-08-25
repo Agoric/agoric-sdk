@@ -99,7 +99,7 @@
 
 /**
  * @callback Offer
- * @param {Invitation|Promise<Invitation>} invitation
+ * @param {ERef<Invitation>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentKeywordRecord=} paymentKeywordRecord
  * @returns {Promise<UserSeat>} seat
@@ -295,7 +295,7 @@
  * @callback SaveIssuer
  * Informs Zoe about an issuer and returns a promise for acknowledging
  * when the issuer is added and ready.
- * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
+ * @param {ERef<Issuer>} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
  * @returns {Promise<IssuerRecord>} Issuer is added and ready
  */

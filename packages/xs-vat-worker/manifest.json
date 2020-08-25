@@ -1,0 +1,40 @@
+{
+  "build": {
+    "BUILD": "$(MODDABLE)/build",
+    "MODULES": "$(MODDABLE)/modules"
+  },
+  "creation": {
+    "keys": {
+      "available": 4096
+    },
+    "stack": 4096,
+    "parser": {
+      "buffer": 32768
+    }
+  },
+  "strip": [],
+  "modules": {
+    "@moddable/files": [
+      "$(MODULES)/base/instrumentation/*",
+      "$(MODULES)/files/file/*",
+      "$(MODULES)/files/file/lin/*"
+    ],
+    "@moddable/Resource": [ "$(MODULES)/files/resource/Resource" ],
+    "@moddable/timer": [
+      "$(MODULES)/base/timer/timer",
+      "$(MODULES)/base/timer/lin/*"
+    ],
+    "@agoric/eventual-send": "../eventual-send/src/index",
+
+    "main": "./start-xs",
+    "src/console": "./src/console",
+    "src/harden": "./src/harden",
+    "src-native/fdchan": [ "./src-native/fdchan" ],
+    "src/endo-load": "./src/endo-load",
+    "src/vatWorker": "./src/vatWorker"
+  },
+  "data": {
+    "compartmap": "./compartmap"
+  },
+  "include": [ "./compartmap.json" ]
+}
