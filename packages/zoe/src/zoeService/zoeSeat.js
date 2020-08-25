@@ -38,6 +38,8 @@ export const makeZoeSeatAdminKit = (
   { offerResult = undefined, exitObj = defaultExitObj } = {},
 ) => {
   const payoutPromiseKit = makePromiseKit();
+  // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+  payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
@@ -82,8 +84,6 @@ export const makeZoeSeatAdminKit = (
       );
       updater.fail(reason);
       doExit(zoeSeatAdmin);
-      console.log(reason);
-      throw reason;
     },
     getCurrentAllocation: () => currentAllocation,
   });

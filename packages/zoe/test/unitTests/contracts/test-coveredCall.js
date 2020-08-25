@@ -52,7 +52,14 @@ test('zoe - coveredCall', async t => {
           payments,
         );
 
-        E(seat)
+        // The result of making the first offer is the call option
+        // digital asset. It is simultaneously actually an invitation to
+        // exercise the option.
+        const invitationP = E(seat).getOfferResult();
+        return { seat, invitationP };
+      },
+      processPayouts: async seat => {
+        await E(seat)
           .getPayout('UnderlyingAsset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
@@ -63,22 +70,16 @@ test('zoe - coveredCall', async t => {
             ),
           );
 
-        E(seat)
+        await E(seat)
           .getPayout('StrikePrice')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              proposal.want.StrikePrice,
+              simoleans(7),
               `Alice got exactly what she wanted`,
             ),
           );
-
-        // The result of making the first offer is the call option
-        // digital asset. It is simultaneously actually an invitation to
-        // exercise the option.
-        const invitationP = E(seat).getOfferResult();
-        return invitationP;
       },
     };
   };
@@ -130,19 +131,17 @@ test('zoe - coveredCall', async t => {
           await E(seat).getOfferResult(),
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
-
-        E(seat)
+        return seat;
+      },
+      processPayouts: async seat => {
+        await E(seat)
           .getPayout('UnderlyingAsset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              proposal.want.UnderlyingAsset,
-              `Bob got what he wanted`,
-            ),
+            t.deepEqual(amountDeposited, moola(3), `Bob got what he wanted`),
           );
 
-        E(seat)
+        await E(seat)
           .getPayout('StrikePrice')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
@@ -170,12 +169,15 @@ test('zoe - coveredCall', async t => {
   const bob = makeBob(timer, installation, bobSimoleanPayment);
 
   const { creatorInvitation } = await alice.startInstance(installation);
-  const invitation = await alice.offer(creatorInvitation);
+  const { seat: aliceSeat, invitationP } = await alice.offer(creatorInvitation);
 
   // Alice spreads the invitation far and wide with instructions
   // on how to use it and Bob decides he wants to be the
   // counter-party, without needing to trust Alice at all.
-  await bob.offer(invitation);
+  const bobSeat = await bob.offer(invitationP);
+
+  await alice.processPayouts(aliceSeat);
+  await bob.processPayouts(bobSeat);
 });
 
 test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {

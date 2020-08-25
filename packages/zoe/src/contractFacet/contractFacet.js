@@ -282,7 +282,11 @@ export function buildRootObject() {
         const proposal = cleanProposal(getAmountMath, harden({}));
         const { notifier, updater } = makeNotifierKit();
         const zoeSeatAdminPromiseKit = makePromiseKit();
+        // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+        zoeSeatAdminPromiseKit.promise.catch(_ => {});
         const userSeatPromiseKit = makePromiseKit();
+        // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+        userSeatPromiseKit.promise.catch(_ => {});
 
         E(zoeInstanceAdmin)
           .makeOfferlessSeat(initialAllocation, proposal)
@@ -332,7 +336,6 @@ export function buildRootObject() {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          console.error(reason);
           if (!zcfSeat.hasExited()) {
             throw zcfSeat.kickOut(reason);
           } else {
