@@ -20,7 +20,13 @@ moddable/xs/platforms/lin_xs_cli.c: moddable/xs/platforms/lin_xs.h
 
 moddable/xs/platforms/lin_xs.h: /usr/include/glib-2.0/gio/gio.h
 
+.PHONY: install-gio
 /usr/include/glib-2.0/gio/gio.h:
+	@echo "GIO not installed, need root to run apt-get install libgio2.0-dev
+	@echo "feel free to stop now and run `make install-gio` directly, then rebuild"
+	$(MAKE) install-gio
+
+install-gio:
 	sudo apt-get -y update && sudo apt-get -y install libgio2.0-dev
 
 $(TOOLS)/mcconfig:
