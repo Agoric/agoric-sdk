@@ -10,19 +10,27 @@ export function buildRootObject() {
       console.log(`success result ${succBefore}`);
       try {
         const failBefore = await E(dude.root).dude(false);
-        console.log(`failure path should not yield ${failBefore}`);
+        console.log(`failure path should not yield ${failBefore} [bad]`);
       } catch (e) {
-        console.log(`failure result ${e}`);
+        console.log(`failure result ${e} [good]`);
       }
       await E(dude.root).elsewhere(self); // this will notify
-      E(dude.root).elsewhere(self); // this will not
+      console.log(`expected notify sent`);
+      const p = E(dude.root).elsewhere(self); // this will not
+
       await E(dude.adminNode).terminate();
+      p.then(
+        () => console.log(`non-notify call notified [bad]`),
+        e => console.log(`non-notify call rejected: ${e} [good]`),
+      );
+      console.log(`terminated`);
       try {
         const succAfter = await E(dude.root).dude(true);
-        console.log(`result after terminate: ${succAfter} (shouldn't happen)`);
+        console.log(`result after terminate: ${succAfter} [bad]`);
       } catch (e) {
-        console.log(`send after terminate failed (as expected): ${e}`);
+        console.log(`send after terminate failed: ${e} [good]`);
       }
+      await E(dude.adminNode).done();
     },
     query() {
       counter += 1;

@@ -68,7 +68,6 @@ async function build(name, zoe, issuers, payments, installations) {
     const paymentKeywordRecord = {
       Asset: await E(moolaPurseP).withdraw(moola(1)),
     };
-    console.error('offering', addOrderInvite);
     const seat = await E(zoe).offer(
       addOrderInvite,
       mySellOrderProposal,

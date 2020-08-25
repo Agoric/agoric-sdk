@@ -39,7 +39,7 @@ export function makeNodeSubprocessFactory(tools) {
       // stops doing that, turn this into a regular assert
       console.log(`node-worker does not support enableInternalMetering`);
     }
-    const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     const transcriptManager = makeTranscriptManager(
       kernelKeeper,
       vatKeeper,

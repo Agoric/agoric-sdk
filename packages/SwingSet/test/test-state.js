@@ -525,8 +525,8 @@ test('vatKeeper', async t => {
   k.createStartingKernelState();
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
-  const vk = k.allocateVatKeeperIfNeeded(v1);
-  t.is(vk, k.allocateVatKeeperIfNeeded(v1));
+  const vk = k.allocateVatKeeper(v1);
+  t.is(vk, k.getVatKeeper(v1));
 
   const vatExport1 = 'o+4';
   const kernelExport1 = vk.mapVatSlotToKernelSlot(vatExport1);
@@ -535,7 +535,7 @@ test('vatKeeper', async t => {
   t.is(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
   commitCrank();
-  let vk2 = duplicateKeeper(getState).allocateVatKeeperIfNeeded(v1);
+  let vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
@@ -546,7 +546,7 @@ test('vatKeeper', async t => {
   t.is(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
   commitCrank();
-  vk2 = duplicateKeeper(getState).allocateVatKeeperIfNeeded(v1);
+  vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 });
