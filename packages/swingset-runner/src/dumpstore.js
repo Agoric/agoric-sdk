@@ -63,6 +63,7 @@ export function dumpStore(store, outfile, rawMode) {
 
   p('// vat info');
   popt('vat.nextID');
+  const vatDynamicIDsRaw = popt('vat.dynamicIDs');
   const vats = new Map();
   const vatNamesRaw = popt('vat.names');
   if (vatNamesRaw) {
@@ -71,6 +72,14 @@ export function dumpStore(store, outfile, rawMode) {
       const v = popt(`vat.name.${vn}`);
       vats.set(vn, v);
     }
+  }
+  if (vatDynamicIDsRaw) {
+    const vatDynamicIDs = JSON.parse(vatDynamicIDsRaw);
+    for (const vdid of vatDynamicIDs) {
+      vats.set(`dynamic-${vdid}`, vdid);
+    }
+  }
+  if (vatNamesRaw || vatDynamicIDsRaw) {
     gap();
   }
 
@@ -92,6 +101,8 @@ export function dumpStore(store, outfile, rawMode) {
       gap();
     }
     p(`// vat ${v} (${vn})`);
+    popt(`${v}.options`);
+    popt(`${v}.source`);
     popt(`${v}.d.nextID`);
     popt(`${v}.o.nextID`);
     popt(`${v}.p.nextID`);
