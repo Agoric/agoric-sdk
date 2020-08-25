@@ -406,8 +406,7 @@ export function buildPatterns(log) {
     };
   }
   out.a64 = ['true', 'true', 'true', 'true'];
-  // test.onlyComms('a64');
-  // test.onlyLocal('a64');
+  test('a64');
 
   // bob!pipe1()!pipe2()!pipe3() // pipelining
   {
@@ -645,7 +644,6 @@ export function buildPatterns(log) {
     objA.a80_three = () => log('three');
   }
   out.a80 = ['three'];
-  // test.onlyComms('a80');
   test('a80');
 
   // XA2
@@ -674,7 +672,6 @@ export function buildPatterns(log) {
     objA.a81_four = () => log('four');
   }
   out.a81 = ['true', 'four'];
-  // test.onlyComms('a81');
   test('a81');
 
   // XB1
@@ -700,7 +697,6 @@ export function buildPatterns(log) {
     };
   }
   out.a82 = ['three'];
-  // test.onlyComms('a82');
   test('a82');
 
   // XB2
@@ -728,7 +724,6 @@ export function buildPatterns(log) {
     };
   }
   out.a83 = ['true', 'three'];
-  // test.onlyComms('a83');
   test('a83');
 
   // YA1
@@ -751,7 +746,6 @@ export function buildPatterns(log) {
     objA.a84_three = () => log('three');
   }
   out.a84 = ['three'];
-  // test.onlyComms('a84');
   test('a84');
 
   // YA2
@@ -784,7 +778,6 @@ export function buildPatterns(log) {
     objA.a85_four = () => log('four');
   }
   out.a85 = ['true', 'four'];
-  // test.onlyComms('a85');
   test('a85');
 
   // YB1
@@ -806,7 +799,6 @@ export function buildPatterns(log) {
     };
   }
   out.a86 = ['three'];
-  // test.onlyComms('a86');
   test('a86');
 
   // YB2
@@ -834,7 +826,6 @@ export function buildPatterns(log) {
     };
   }
   out.a87 = ['true', 'three'];
-  // test.onlyComms('a87');
   test('a87');
 
   return harden({
