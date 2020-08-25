@@ -39,7 +39,7 @@ function makeError(s) {
   return harden({ body: JSON.stringify(s), slots: [] });
 }
 
-export default function buildKernel(kernelEndowments) {
+export default function buildKernel(kernelEndowments, kernelOptions = {}) {
   const {
     waitUntilQuiescent,
     hostStorage,
@@ -53,6 +53,9 @@ export default function buildKernel(kernelEndowments) {
     startSubprocessWorker,
     writeSlogObject,
   } = kernelEndowments;
+  const { verbose } = kernelOptions;
+  const logStartup = verbose ? console.debug : () => 0;
+
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
 
@@ -504,7 +507,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function addGenesisDevice(name, bundle, endowments) {
-    console.debug(`kernel.addDevice(${name})`);
+    logStartup(`kernel.addDevice(${name})`);
     if (typeof bundle !== 'object') {
       throw Error(`bundle is not an object, rather ${bundle}`);
     }
@@ -552,7 +555,7 @@ export default function buildKernel(kernelEndowments) {
       const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
       const kernelSlot = vatKeeper.mapVatSlotToKernelSlot(vatSlot);
       vrefs.set(vref, kernelSlot);
-      console.debug(`adding vref ${name} [${vatID}]`);
+      logStartup(`adding vref ${name} [${vatID}]`);
     });
 
     const drefs = new Map();
@@ -570,7 +573,7 @@ export default function buildKernel(kernelEndowments) {
       const devKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
       const kernelSlot = devKeeper.mapDeviceSlotToKernelSlot(devSlot);
       drefs.set(dref, kernelSlot);
-      console.debug(`adding dref ${name} [${deviceID}]`);
+      logStartup(`adding dref ${name} [${deviceID}]`);
     });
     if (Object.getOwnPropertyNames(deviceObj0s) === 0) {
       throw new Error('pass-by-copy rules require at least one device');
@@ -793,7 +796,7 @@ export default function buildKernel(kernelEndowments) {
     }
     started = true;
     const wasInitialized = kernelKeeper.getInitialized();
-    console.debug(`wasInitialized = ${wasInitialized}`);
+    logStartup(`wasInitialized = ${wasInitialized}`);
 
     // if the state is not yet initialized, populate the starting state
     if (!wasInitialized) {
@@ -803,7 +806,7 @@ export default function buildKernel(kernelEndowments) {
     // instantiate all genesis vats
     for (const name of genesisVats.keys()) {
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
-      console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
+      logStartup(`Assigned VatID ${vatID} for genesis vat ${name}`);
       kernelSlog.addVat(vatID, false, name);
       const managerOptions = harden({
         ...genesisVats.get(name),
@@ -818,7 +821,7 @@ export default function buildKernel(kernelEndowments) {
 
     // instantiate all dynamic vats
     for (const vatID of kernelKeeper.getAllDynamicVatIDs()) {
-      console.debug(`Loading dynamic vat ${vatID}`);
+      logStartup(`Loading dynamic vat ${vatID}`);
       const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
       if (vatKeeper.isDead()) {
         kernelKeeper.forgetVat(vatID);
@@ -865,7 +868,7 @@ export default function buildKernel(kernelEndowments) {
     // instantiate all devices
     for (const name of genesisDevices.keys()) {
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
-      console.debug(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
+      logStartup(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
       const { bundle, endowments: devEndowments } = genesisDevices.get(name);
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
       // eslint-disable-next-line no-await-in-loop
@@ -892,7 +895,7 @@ export default function buildKernel(kernelEndowments) {
     let bootstrapResult = null;
     if (!wasInitialized && bootstrapVatName) {
       const bootstrapVatID = vatNameToID(bootstrapVatName);
-      console.debug(`=> queueing bootstrap()`);
+      logStartup(`=> queueing bootstrap()`);
       bootstrapResult = callBootstrap(bootstrapVatID);
     }
 
@@ -901,14 +904,14 @@ export default function buildKernel(kernelEndowments) {
       console.info('Replaying SwingSet transcripts');
       const oldLength = kernelKeeper.getRunQueueLength();
       for (const vatID of ephemeral.vats.keys()) {
-        console.debug(`Replaying transcript of vatID ${vatID}`);
+        logStartup(`Replaying transcript of vatID ${vatID}`);
         const vat = ephemeral.vats.get(vatID);
         if (vat.dead) {
-          console.debug(`skipping reload of dead vat ${vatID}`);
+          logStartup(`skipping reload of dead vat ${vatID}`);
         } else {
           // eslint-disable-next-line no-await-in-loop
           await vat.manager.replayTranscript();
-          console.debug(`finished replaying vatID ${vatID} transcript `);
+          logStartup(`finished replaying vatID ${vatID} transcript `);
           const newLength = kernelKeeper.getRunQueueLength();
           if (newLength !== oldLength) {
             console.log(`SPURIOUS RUNQUEUE`, kernelKeeper.dump().runQueue);

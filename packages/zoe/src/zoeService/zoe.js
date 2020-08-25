@@ -291,7 +291,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         },
         shutdown: () => {
           exitAllSeats();
-          adminNode.terminate();
+          E(adminNode).terminate();
         },
         makeZoeMint,
       };

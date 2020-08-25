@@ -28,8 +28,11 @@ const start = zcf => {
     const { want, give } = firstSeat.getProposal();
 
     /** @type {OfferHandler} */
-    const matchingSeatOfferHandler = matchingSeat =>
-      swap(zcf, firstSeat, matchingSeat);
+    const matchingSeatOfferHandler = matchingSeat => {
+      const swapResult = swap(zcf, firstSeat, matchingSeat);
+      zcf.shutdown();
+      return swapResult;
+    };
 
     const matchingSeatInvitation = zcf.makeInvitation(
       matchingSeatOfferHandler,
