@@ -332,10 +332,12 @@ test('autoSwap API interactions', async t => {
       Central: moolaIssuer,
       Secondary: simoleanIssuer,
     });
-    const { publicFacet } = await zoe.startInstance(
+    const startRecord = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );
+    /** @type {AutoswapPublicFacet} */
+    const publicFacet = startRecord.publicFacet;
     const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
     const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuerP);
     const liquidity = liquidityAmountMath.make;
@@ -518,10 +520,12 @@ test('autoSwap - thorough test init, add, swap', async t => {
       Central: moolaIssuer,
       Secondary: simoleanIssuer,
     });
-    const { publicFacet } = await zoe.startInstance(
+    const startRecord = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );
+    /** @type {AutoswapPublicFacet} */
+    const publicFacet = startRecord.publicFacet;
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
     const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
     let poolState = {
@@ -620,10 +624,12 @@ test('autoSwap - add liquidity in exact ratio', async t => {
       Central: moolaIssuer,
       Secondary: simoleanIssuer,
     });
-    const { publicFacet } = await zoe.startInstance(
+    const startRecord = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );
+    /** @type {AutoswapPublicFacet} */
+    const publicFacet = startRecord.publicFacet;
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
     const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
     let poolState = {
@@ -704,10 +710,12 @@ test('autoSwap - trade attempt before init', async t => {
       Central: moolaIssuer,
       Secondary: simoleanIssuer,
     });
-    const { publicFacet } = await zoe.startInstance(
+    const startRecord = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );
+    /** @type {AutoswapPublicFacet} */
+    const publicFacet = startRecord.publicFacet;
 
     const moolaPurse = moolaIssuer.makeEmptyPurse();
     moolaPurse.deposit(moolaMint.mintPayment(moola(100)));
@@ -772,10 +780,12 @@ test('autoSwap - swap varying amounts', async t => {
       Central: moolaIssuer,
       Secondary: simoleanIssuer,
     });
-    const { publicFacet } = await zoe.startInstance(
+    const startRecord = await zoe.startInstance(
       installation,
       issuerKeywordRecord,
     );
+    /** @type {AutoswapPublicFacet} */
+    const publicFacet = startRecord.publicFacet;
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
     const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
     let poolState = {
