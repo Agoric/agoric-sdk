@@ -50,7 +50,7 @@ function cycleTolerantStringify(payload) {
   return JSON.stringify(payload, replacer);
 }
 
-const declassifiers = new WeakSet();
+const declassifiers = new WeakMap();
 
 /**
  * To "declassify" and quote a substitution value used in a
@@ -72,7 +72,6 @@ const declassifiers = new WeakSet();
  * ```
  *
  * @typedef {Object} StringablePayload
- * @property {*} payload The original payload
  * @property {() => string} toString How to print the payload
  *
  * @param {*} payload What to declassify
@@ -81,10 +80,9 @@ const declassifiers = new WeakSet();
 function q(payload) {
   // Don't harden the payload
   const result = Object.freeze({
-    payload,
     toString: Object.freeze(() => cycleTolerantStringify(payload)),
   });
-  declassifiers.add(result);
+  declassifiers.set(result, payload);
   return result;
 }
 harden(q);
@@ -138,7 +136,7 @@ function details(template, ...args) {
         let argStr;
         if (declassifiers.has(arg)) {
           argStr = `${arg}`;
-          arg = arg.payload;
+          arg = declassifiers.get(arg);
         } else {
           argStr = `(${an(typeof arg)})`;
         }
