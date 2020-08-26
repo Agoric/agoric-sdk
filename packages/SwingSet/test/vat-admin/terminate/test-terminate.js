@@ -43,7 +43,7 @@ test('terminate', async t => {
     'GOT QUERY 3',
     'foreverP.catch vat terminated',
     'query3P.catch vat terminated',
-    'foo4P.catch unknown vat',
+    'foo4P.catch vat terminated',
     'afterForeverP.catch vat terminated',
     'done',
   ]);
@@ -86,7 +86,7 @@ test('dispatches to the dead do not harm kernel', async t => {
     t.deepEqual(c2.dump().log, [
       'b: p1b = I so resolve',
       'b: p2b fails vat terminated',
-      'm: live 2 failed: unknown vat',
+      'm: live 2 failed: vat terminated',
     ]);
   }
 });
@@ -139,6 +139,6 @@ test('dead vat state removed', async t => {
   controller.queueToVatExport('bootstrap', 'o+0', 'phase2', capargs([]));
   await controller.run();
   t.is(storage.get('vat.dynamicIDs'), '[]');
-  t.is(storage.get('ko26.owner'), 'none');
+  t.is(storage.get('ko26.owner'), undefined);
   t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 0);
 });

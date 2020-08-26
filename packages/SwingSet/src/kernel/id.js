@@ -26,12 +26,10 @@ export function insistVatID(s) {
     if (s !== `${s}`) {
       throw new Error(`not a string`);
     }
-    if (s !== 'none') {
-      if (!s.startsWith(`v`)) {
-        throw new Error(`does not start with 'v'`);
-      }
-      Nat(Number(s.slice(1)));
+    if (!s.startsWith(`v`)) {
+      throw new Error(`does not start with 'v'`);
     }
+    Nat(Number(s.slice(1)));
   } catch (e) {
     throw new Error(`'${s} is not a 'vNN'-style VatID: ${e.message}`);
   }
