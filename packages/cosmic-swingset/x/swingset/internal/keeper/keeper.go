@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -62,41 +63,43 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 	return k.bankKeeper.GetBalance(ctx, addr, denom)
 }
 
+// GetEgress gets the entire egress struct for a peer
 func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
-	store := ctx.KVStore(k.storeKey)
-
-	egressStore := prefix.NewStore(store, types.EgressPrefix)
-
-	addrBytes := addr.Bytes()
-	if !egressStore.Has(addrBytes) {
+	path := "egress." + addr.String()
+	storage := k.GetStorage(ctx, path)
+	if storage.Value == "" {
 		return types.Egress{}
 	}
 
-	bz := egressStore.Get(addrBytes)
 	var egress types.Egress
-	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &egress)
+	err := json.Unmarshal([]byte(storage.Value), &egress)
+	if err != nil {
+		panic(err)
+	}
+
 	return egress
 }
 
+// SetEgress sets the egress struct for a peer, and ensures its account exists
 func (k Keeper) SetEgress(ctx sdk.Context, egress types.Egress) error {
-	store := ctx.KVStore(k.storeKey)
+	path := "egress." + egress.Peer.String()
 
-	egressStore := prefix.NewStore(store, types.EgressPrefix)
+	json, err := json.Marshal(egress)
+	if err != nil {
+		return err
+	}
 
-	addr := egress.Peer
-	addrBytes := addr.Bytes()
-
-	// Make note that this egress exists.
-	egressStore.Set(addrBytes, k.cdc.MustMarshalBinaryLengthPrefixed(egress))
+	storage := types.Storage{string(json)}
+	k.SetStorage(ctx, path, storage)
 
 	// Now make sure the corresponding account has been initialised.
-	if acc := k.accountKeeper.GetAccount(ctx, addr); acc != nil {
+	if acc := k.accountKeeper.GetAccount(ctx, egress.Peer); acc != nil {
 		// Account already exists.
 		return nil
 	}
 
 	// Create an account object with the specified address.
-	acc := k.accountKeeper.NewAccountWithAddress(ctx, addr)
+	acc := k.accountKeeper.NewAccountWithAddress(ctx, egress.Peer)
 
 	// Store it in the keeper (panics on error).
 	k.accountKeeper.SetAccount(ctx, acc)
@@ -105,21 +108,21 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress types.Egress) error {
 	return nil
 }
 
-// ExportEgresses fetches all egresses
-func (k Keeper) ExportEgresses(ctx sdk.Context) []types.Egress {
+// ExportStorage fetches all storage
+func (k Keeper) ExportStorage(ctx sdk.Context) map[string]string {
 	store := ctx.KVStore(k.storeKey)
-	egressStore := prefix.NewStore(store, types.EgressPrefix)
-	egresses := []types.Egress{}
+	dataStore := prefix.NewStore(store, types.DataPrefix)
 
-	iterator := sdk.KVStorePrefixIterator(egressStore, nil)
+	iterator := sdk.KVStorePrefixIterator(dataStore, nil)
 
+	exported := make(map[string]string)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		var egress types.Egress
-		k.cdc.MustUnmarshalBinaryLengthPrefixed(iterator.Value(), &egress)
-		egresses = append(egresses, egress)
+		var storage types.Storage
+		k.cdc.MustUnmarshalBinaryLengthPrefixed(iterator.Value(), &storage)
+		exported[string(iterator.Key())] = storage.Value
 	}
-	return egresses
+	return exported
 }
 
 // GetStorage gets generic storage
@@ -204,24 +207,14 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // GetMailbox gets the entire mailbox struct for a peer
 func (k Keeper) GetMailbox(ctx sdk.Context, peer string) types.Storage {
-	store := ctx.KVStore(k.storeKey)
-	dataStore := prefix.NewStore(store, types.DataPrefix)
 	path := "mailbox." + peer
-	if !dataStore.Has([]byte(path)) {
-		return types.NewMailbox()
-	}
-	bz := dataStore.Get([]byte(path))
-	var mailbox types.Storage
-	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &mailbox)
-	return mailbox
+	return k.GetStorage(ctx, path)
 }
 
 // SetMailbox sets the entire mailbox struct for a peer
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox types.Storage) {
-	store := ctx.KVStore(k.storeKey)
-	dataStore := prefix.NewStore(store, types.DataPrefix)
 	path := "mailbox." + peer
-	dataStore.Set([]byte(path), k.cdc.MustMarshalBinaryLengthPrefixed(mailbox))
+	k.SetStorage(ctx, path, mailbox)
 }
 
 // GetPeersIterator works over all peers in which the keys are the peers and the values are the mailbox
