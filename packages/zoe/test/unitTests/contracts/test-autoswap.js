@@ -24,8 +24,8 @@ const makeScaleFn = (xPre, xPost) => value => {
 // deltaY = alpha * gamma * yPre / ( 1 + alpha * gamma )
 // gamma is (10000 - fee) / 10000
 // alpha is deltaX / xPre
-// reducing to a single division: deltaY =
-//    deltaX * gammaNum * yPre / (xPre * gammaDen + deltaX * gammaNum)
+// reducing to a single division:
+//    deltaY = deltaX * gammaNum * yPre / (xPre * gammaDen + deltaX * gammaNum)
 const outputFromInputPrice = (xPre, yPre, deltaX, fee) => {
   const gammaNumerator = 10000 - fee;
   return floorDivide(
@@ -37,8 +37,8 @@ const outputFromInputPrice = (xPre, yPre, deltaX, fee) => {
 // deltaX = beta * xPre / ( (1 - beta) * gamma )
 // gamma is (10000 - fee) / 10000
 // beta is deltaY / yPre
-// reducing to a single division: deltaX =
-//    deltaY * xPre * 10000 / (yPre - deltaY ) * gammaNum)
+// reducing to a single division:
+//    deltaX = deltaY * xPre * 10000 / (yPre - deltaY ) * gammaNum)
 const priceFromTargetOutput = (deltaY, yPre, xPre, fee) => {
   const gammaNumerator = 10000 - fee;
   return floorDivide(
@@ -47,205 +47,161 @@ const priceFromTargetOutput = (deltaY, yPre, xPre, fee) => {
   );
 };
 
-const scaleForAdd = (poolState, deposits) => {
-  const { m: mDeposit, s: sDeposit } = deposits;
+const scaleForAddLiquidity = (poolState, deposits, exactRatio) => {
+  const { c: cDeposit, s: sDeposit } = deposits;
 
-  let scaleByAlpha;
-  let poolMoolaPost;
-  let poolSimoleansPost;
-  let payoutM;
-  let payoutS;
-  let liquidityPost;
-  // When (mdeposit / poolState.m > sDeposit / poolState.s), we'll use s as
-  // primary and vice versa. When they are exactly equal, we won't add 1 to the
-  // required secondary contribution. (because L calculated according to the spec
-  // is exact. Here we
-  const productM = multiply(mDeposit, poolState.s);
-  const productS = multiply(sDeposit, poolState.m);
-  const exact = productM === productS;
-  if (productM < productS) {
-    poolMoolaPost = add(poolState.m, mDeposit);
-    scaleByAlpha = makeScaleFn(poolState.m, poolMoolaPost);
-    const deltaS = exact
-      ? scaleByAlpha(poolState.s)
-      : add(1, scaleByAlpha(poolState.s));
-    poolSimoleansPost = add(poolState.s, deltaS);
-    liquidityPost = add(poolState.l, scaleByAlpha(poolState.l));
-    payoutS = subtract(sDeposit, deltaS);
-    payoutM = 0;
-  } else {
-    poolSimoleansPost = poolState.s + sDeposit;
-    scaleByAlpha = makeScaleFn(poolState.s, poolSimoleansPost);
-    const deltaM = exact
-      ? scaleByAlpha(poolState.m)
-      : add(1, scaleByAlpha(poolState.m));
-    poolMoolaPost = add(poolState.m, deltaM);
-    liquidityPost = add(poolState.l, scaleByAlpha(poolState.l));
-    payoutS = 0;
-    payoutM = subtract(mDeposit, deltaM);
-  }
+  const poolCentralPost = add(poolState.c, cDeposit);
+  const scaleByAlpha = makeScaleFn(poolState.c, poolCentralPost);
+  // The test declares when it expects an exact ratio
+  const deltaS = exactRatio
+    ? scaleByAlpha(poolState.s)
+    : add(1, scaleByAlpha(poolState.s));
+  const poolSecondaryPost = add(poolState.s, deltaS);
+  const liquidityPost = add(poolState.l, scaleByAlpha(poolState.l));
 
   return {
-    m: poolMoolaPost,
-    s: poolSimoleansPost,
+    c: poolCentralPost,
+    s: poolSecondaryPost,
     l: liquidityPost,
-    k: multiply(poolMoolaPost, poolSimoleansPost),
+    k: multiply(poolCentralPost, poolSecondaryPost),
     payoutL: subtract(liquidityPost, poolState.l),
-    payoutM,
-    payoutS,
+    payoutC: 0,
+    payoutS: subtract(sDeposit, deltaS),
   };
 };
 
 const updatePoolState = (oldState, newState) => ({
   ...oldState,
-  m: newState.m,
+  c: newState.c,
   s: newState.s,
   l: newState.l,
   k: newState.k,
 });
 
-const makeTrader = (mPurse, sPurse, lPurse, kits, publicFacet) => {
-  const {
-    liquidityIssuer,
-    moolaIssuer,
-    simoleanIssuer,
-    moola,
-    simoleans,
-    liquidity,
-    zoe,
-  } = kits;
+const makeTrader = async (
+  purses,
+  zoe,
+  publicFacet,
+  issuerKeywordRecord,
+  liquidityIssuer,
+) => {
+  const purseMap = new Map();
+  for (const p of purses) {
+    purseMap.set(p.getAllegedBrand(), p);
+  }
+  const centralIssuer = issuerKeywordRecord.Central;
+  const { make: central } = await makeLocalAmountMath(centralIssuer);
+  const secondaryIssuer = issuerKeywordRecord.Secondary;
+  const { make: secondary } = await makeLocalAmountMath(secondaryIssuer);
+  const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
 
   const withdrawPayment = amount => {
-    return amount.brand === moolaIssuer.getBrand()
-      ? mPurse.withdraw(amount)
-      : sPurse.withdraw(amount);
+    return purseMap.get(amount.brand).withdraw(amount);
   };
 
   const trader = harden({
-    offerAndTrade: async (outAmount, inAmount) => {
+    offerAndTrade: async (outAmount, inAmount, swapIn) => {
       const proposal = harden({
         want: { Out: outAmount },
         give: { In: inAmount },
       });
       const payment = harden({ In: withdrawPayment(inAmount) });
-      const seat = await zoe.offer(
-        E(publicFacet).makeSwapInvitation(),
-        proposal,
-        payment,
-      );
+      const invitation = swapIn
+        ? E(publicFacet).makeSwapInInvitation()
+        : E(publicFacet).makeSwapOutInvitation();
+      const seat = await zoe.offer(invitation, proposal, payment);
       return seat;
     },
 
-    tradeAndCheck: async (t, mIsA, priorPoolState, tradeDetails, expected) => {
+    tradeAndCheck: async (t, swapIn, prePoolState, tradeDetails, expected) => {
       // just check that the trade went through, and the results are as stated.
       // The test will declare fees, refunds, and figure out when the trade
       // gets less than requested
-      const { m: mPoolPre, s: sPoolPre, l: lPre, k: kPre } = priorPoolState;
+
+      // c: central, s: secondary, l: liquidity
+      const { c: cPoolPre, s: sPoolPre, l: lPre, k: kPre } = prePoolState;
       const { inAmount, outAmount } = tradeDetails;
       const {
-        m: mPost,
+        c: cPost,
         s: sPost,
         l: lPost,
         k: kPost,
-        payout,
-        refund,
+        in: inExpected,
+        out: outExpected,
       } = expected;
-      const moolaIsInput = inAmount.brand === moolaIssuer.getBrand();
 
       const poolPre = await E(publicFacet).getPoolAllocation();
-      if (mIsA) {
-        t.deepEquals(moola(mPoolPre), poolPre.Central, `moola before swap`);
-        t.deepEquals(
-          simoleans(sPoolPre),
-          poolPre.Secondary,
-          `simoleans before swap`,
-        );
-      } else {
-        t.deepEquals(moola(mPoolPre), poolPre.Secondary, `moola before swap`);
-        t.deepEquals(
-          simoleans(sPoolPre),
-          poolPre.Central,
-          `simoleans before swap`,
-        );
-      }
+      t.deepEquals(central(cPoolPre), poolPre.Central, `central before swap`);
+      t.deepEquals(secondary(sPoolPre), poolPre.Secondary, `s before swap`);
       t.equals(
         lPre,
-        await E(publicFacet).getLiquidityTokens(),
+        await E(publicFacet).getLiquiditySupply(),
         'liquidity pool before trade',
       );
-      t.equals(kPre, sPoolPre * mPoolPre);
-      const seat = await trader.offerAndTrade(outAmount, inAmount);
+      t.equals(kPre, sPoolPre * cPoolPre);
+
+      const seat = await trader.offerAndTrade(outAmount, inAmount, swapIn);
       assertOfferResult(t, seat, 'Swap successfully completed.');
 
-      if (moolaIsInput) {
-        const { In: mPayout, Out: sPayout } = await seat.getPayouts();
-        assertPayoutAmount(t, moolaIssuer, mPayout, moola(refund));
-        assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(payout));
-      } else {
-        const { In: sPayout, Out: mPayout } = await seat.getPayouts();
-        assertPayoutAmount(t, moolaIssuer, mPayout, moola(payout));
-        assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(refund));
-      }
+      const [inIssuer, inMath, outIssuer, out] =
+        inAmount.brand === centralIssuer.getBrand()
+          ? [centralIssuer, central, secondaryIssuer, secondary]
+          : [secondaryIssuer, secondary, centralIssuer, central];
+      const { In: refund, Out: payout } = await seat.getPayouts();
+      assertPayoutAmount(t, outIssuer, payout, out(outExpected));
+      assertPayoutAmount(t, inIssuer, refund, inMath(inExpected));
 
       const poolPost = await E(publicFacet).getPoolAllocation();
-      if (mIsA) {
-        t.deepEquals(moola(mPost), poolPost.Central, `moola after swap`);
-        t.deepEquals(simoleans(sPost), poolPost.Secondary, `s after swap`);
-      } else {
-        t.deepEquals(moola(mPost), poolPost.Secondary, `moola after swap`);
-        t.deepEquals(simoleans(sPost), poolPost.Central, `s after swap`);
-      }
-      t.equals(kPost, sPost * mPost);
+      t.deepEquals(central(cPost), poolPost.Central, `central after swap`);
+      t.deepEquals(secondary(sPost), poolPost.Secondary, `s after swap`);
+      t.equals(kPost, sPost * cPost);
 
       seat
         .getOfferResult()
         .then(async () =>
           t.equals(
             lPost,
-            await E(publicFacet).getLiquidityTokens(),
+            await E(publicFacet).getLiquiditySupply(),
             'liquidity after',
           ),
         );
     },
 
+    // This check only handles success. Failing calls should do something else.
     addLiquidityAndCheck: async (t, priorPoolState, details, expected) => {
       // just check that it went through, and the results are as stated.
       // The test will declare fees, refunds, and figure out when the trade
       // gets less than requested
-      const { m: mPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
-      const { mAmount, sAmount, lAmount = 0 } = details;
+      const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
+      const { cAmount, sAmount, lAmount = liquidity(0) } = details;
       const {
-        m: mPost,
+        c: cPost,
         s: sPost,
         l: lPost,
         k: kPost,
         payoutL,
-        payoutM,
+        payoutC,
         payoutS,
       } = expected;
-      t.assert(payoutM === 0 || payoutS === 0, 'only refund one side');
-      const mIsBasis =
-        multiply(mAmount.value, sPre) <= multiply(sAmount.value, mPre);
-      const scaleByAlpha = mIsBasis
-        ? makeScaleFn(mPre, mPost)
-        : makeScaleFn(sPre, sPost);
+      t.assert(payoutC === 0 || payoutS === 0, 'only refund one side');
+      const scaleByAlpha = makeScaleFn(cPre, cPost);
 
       const poolPre = await E(publicFacet).getPoolAllocation();
-      t.deepEquals(moola(mPre), poolPre.Central, `moola before add liq`);
-      t.deepEquals(simoleans(sPre), poolPre.Secondary, `s before add liq`);
+      t.deepEquals(central(cPre), poolPre.Central, `central before add liq`);
+      t.deepEquals(secondary(sPre), poolPre.Secondary, `s before add liq`);
       t.equals(
         lPre,
-        await E(publicFacet).getLiquidityTokens(),
+        await E(publicFacet).getLiquiditySupply(),
         'liquidity pool before add',
       );
-      t.equals(kPre, sPre * mPre);
+      t.equals(kPre, sPre * cPre);
 
       const proposal = harden({
-        give: { Central: mAmount, Secondary: sAmount },
-        want: { Liquidity: liquidity(lAmount) },
+        give: { Central: cAmount, Secondary: sAmount },
+        want: { Liquidity: lAmount },
       });
       const payment = harden({
-        Central: withdrawPayment(mAmount),
+        Central: withdrawPayment(cAmount),
         Secondary: withdrawPayment(sAmount),
       });
 
@@ -257,36 +213,33 @@ const makeTrader = (mPurse, sPurse, lPurse, kits, publicFacet) => {
       assertOfferResult(t, seat, 'Added liquidity.');
 
       const {
-        Central: mPayout,
+        Central: cPayout,
         Secondary: sPayout,
         Liquidity: lPayout,
       } = await seat.getPayouts();
-      assertPayoutAmount(t, moolaIssuer, mPayout, moola(payoutM));
-      assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(payoutS));
+      assertPayoutAmount(t, centralIssuer, cPayout, central(payoutC));
+      assertPayoutAmount(t, secondaryIssuer, sPayout, secondary(payoutS));
       assertPayoutAmount(t, liquidityIssuer, lPayout, liquidity(payoutL));
 
       const poolPost = await E(publicFacet).getPoolAllocation();
-      t.deepEquals(moola(mPost), poolPost.Central, `moola after add liq`);
-      t.deepEquals(simoleans(sPost), poolPost.Secondary, `s after add liq`);
+      t.deepEquals(central(cPost), poolPost.Central, `central after add liq`);
+      t.deepEquals(secondary(sPost), poolPost.Secondary, `s after add liq`);
       t.equals(
         lPost,
-        await E(publicFacet).getLiquidityTokens(),
+        await E(publicFacet).getLiquiditySupply(),
         'liquidity pool after',
       );
-      t.equals(kPost, sPost * mPost, 'expected value of K after addLiquidity');
+      t.equals(kPost, sPost * cPost, 'expected value of K after addLiquidity');
       t.equals(lPost, add(lPre, scaleByAlpha(lPre)), 'liquidity scales');
-      const productM = multiply(mPre, details.sAmount.value);
-      const productS = multiply(sPre, details.mAmount.value);
-      const exact = productM === productS;
+      const productC = multiply(cPre, sAmount.value);
+      const productS = multiply(sPre, cAmount.value);
+      const exact = productC === productS;
       if (exact) {
-        t.equals(mPost, add(mPre, scaleByAlpha(mPre)), 'moola post add');
-        t.equals(sPost, add(sPre, scaleByAlpha(sPre)), 'simolean post add');
-      } else if (mIsBasis) {
-        t.equals(mPost, add(mPre, details.mAmount.value), 'moola post add');
-        t.equals(sPost, add(1, add(sPre, scaleByAlpha(sPre))), 's post add');
+        t.equals(cPost, add(cPre, scaleByAlpha(cPre)), 'central post add');
+        t.equals(sPost, add(sPre, scaleByAlpha(sPre)), 'secondary post add');
       } else {
-        t.equals(mPost, add(1, add(mPre, scaleByAlpha(mPre))), 'm post add');
-        t.equals(sPost, add(sPre, details.smAmount.value), 'simolean post add');
+        t.equals(cPost, add(cPre, cAmount.value), 'central post add');
+        t.equals(sPost, add(1, add(sPre, scaleByAlpha(sPre))), 's post add');
       }
     },
 
@@ -294,30 +247,30 @@ const makeTrader = (mPurse, sPurse, lPurse, kits, publicFacet) => {
       // just check that it went through, and the results are as stated.
       // The test will declare fees, refunds, and figure out when the trade
       // gets less than requested
-      const { m: mPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
-      const { mAmount, sAmount, lAmount = 0 } = details;
+      const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
+      const { cAmount, sAmount, lAmount = liquidity(0) } = details;
       const {
-        m: mPost,
+        c: cPost,
         s: sPost,
         l: lPost,
         k: kPost,
         payoutL,
-        payoutM,
+        payoutC,
         payoutS,
       } = expected;
-      t.assert(payoutM === 0 || payoutS === 0, 'only refund one side');
+      t.assert(payoutC === 0 || payoutS === 0, 'only refund one side');
       const poolPre = await E(publicFacet).getPoolAllocation();
-      t.deepEquals({}, poolPre, `moola before liquidity`);
-      t.equals(0, publicFacet.getLiquidityTokens(), 'liquidity pool pre init');
-      t.equals(kPre, sPre * mPre);
-      t.equals(lPre, publicFacet.getLiquidityTokens(), 'liquidity pre init');
+      t.deepEquals({}, poolPre, `central before liquidity`);
+      t.equals(0, publicFacet.getLiquiditySupply(), 'liquidity pool pre init');
+      t.equals(kPre, sPre * cPre);
+      t.equals(lPre, publicFacet.getLiquiditySupply(), 'liquidity pre init');
 
       const proposal = harden({
-        give: { Central: mAmount, Secondary: sAmount },
-        want: { Liquidity: liquidity(lAmount) },
+        give: { Central: cAmount, Secondary: sAmount },
+        want: { Liquidity: lAmount },
       });
       const payment = harden({
-        Central: withdrawPayment(mAmount),
+        Central: withdrawPayment(cAmount),
         Secondary: withdrawPayment(sAmount),
       });
 
@@ -328,26 +281,22 @@ const makeTrader = (mPurse, sPurse, lPurse, kits, publicFacet) => {
       );
       assertOfferResult(t, seat, 'Added liquidity.');
       const {
-        Central: mPayout,
+        Central: cPayout,
         Secondary: sPayout,
         Liquidity: lPayout,
       } = await seat.getPayouts();
-      assertPayoutAmount(t, moolaIssuer, mPayout, moola(payoutM));
-      assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(payoutS));
+      assertPayoutAmount(t, centralIssuer, cPayout, central(payoutC));
+      assertPayoutAmount(t, secondaryIssuer, sPayout, secondary(payoutS));
       assertPayoutAmount(t, liquidityIssuer, lPayout, liquidity(payoutL));
 
       const poolPost = await E(publicFacet).getPoolAllocation();
-      t.deepEquals(moola(mPost), poolPost.Central, `moola after init`);
-      t.deepEquals(
-        simoleans(sPost),
-        poolPost.Secondary,
-        `simolean after liquidity`,
-      );
-      t.equals(lPost, publicFacet.getLiquidityTokens(), 'liq pool after init');
-      t.assert(lPost >= lAmount, 'liquidity want was honored');
-      t.equals(kPost, sPost * mPost, 'expected value of K after init');
-      t.equals(lPost, mAmount.value, 'liquidity scales (init)');
-      t.equals(mPost, mAmount.value);
+      t.deepEquals(central(cPost), poolPost.Central, `central after init`);
+      t.deepEquals(secondary(sPost), poolPost.Secondary, `s after liquidity`);
+      t.equals(lPost, publicFacet.getLiquiditySupply(), 'liq pool after init');
+      t.assert(lPost >= lAmount.value, 'liquidity want was honored');
+      t.equals(kPost, sPost * cPost, 'expected value of K after init');
+      t.equals(lPost, lAmount.value, 'liquidity scales (init)');
+      t.equals(cPost, cAmount.value);
       t.equals(sPost, sAmount.value);
     },
   });
@@ -375,7 +324,7 @@ test('autoSwap API interactions', async t => {
     const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
 
     // Setup Bob
-    const bobMoolaPayment = moolaMint.mintPayment(moola(15));
+    const bobMoolaPayment = moolaMint.mintPayment(moola(3));
     const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(3));
 
     // Alice creates an autoswap instance
@@ -422,7 +371,7 @@ test('autoSwap API interactions', async t => {
       `pool allocation`,
     );
 
-    // Alice creates an invitation for autoswap and sends it to Bob
+    // Bob creates an invitation for autoswap
     const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
     // Bob claims it
@@ -432,17 +381,17 @@ test('autoSwap API interactions', async t => {
     t.equals(bobInstallation, installation, `installation`);
     const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
-    // Bob looks up the price of 3 moola in simoleans
-    const simoleanAmounts = await E(bobAutoswap).getPriceForOutput(
-      simoleans(3),
-      moola(0).brand,
+    // Bob looks up how much he can get in simoleans for 3 moola
+    const simoleanAmounts = await E(bobAutoswap).getInputPrice(
+      moola(3),
+      simoleans(0).brand,
     );
-    t.deepEquals(simoleanAmounts, moola(15), `currentPrice`);
+    t.deepEquals(simoleanAmounts, simoleans(1), `currentPrice`);
 
     // Bob escrows
     const bobMoolaForSimProposal = harden({
-      want: { Out: simoleans(3) },
-      give: { In: moola(15) },
+      want: { Out: simoleans(1) },
+      give: { In: moola(3) },
     });
     const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
@@ -461,30 +410,30 @@ test('autoSwap API interactions', async t => {
     } = await bobSeat.getPayouts();
 
     assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0));
-    assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout1, simoleans(3));
+    assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout1, simoleans(1));
     t.deepEquals(
       await E(bobAutoswap).getPoolAllocation(),
       {
-        Central: moola(25),
-        Secondary: simoleans(2),
+        Central: moola(13),
+        Secondary: simoleans(4),
         Liquidity: liquidity(0),
       },
       `pool allocation after first swap`,
     );
-    const liquidityOutstanding = await E(bobAutoswap).getLiquidityTokens();
+    const liquidityOutstanding = await E(bobAutoswap).getLiquiditySupply();
     t.equals(liquidityOutstanding, 10, 'liquidity outstanding');
 
     // Bob looks up how much he can get for 3 simoleans
-    const moolaAmounts = await E(bobAutoswap).getCurrentPrice(
+    const moolaAmounts = await E(bobAutoswap).getInputPrice(
       simoleans(3),
       moola(0).brand,
     );
-    t.deepEquals(moolaAmounts, moola(14), `price 2`);
+    t.deepEquals(moolaAmounts, moola(5), `price 2`);
 
     // Bob makes another offer and swaps
     const bobSecondInvitation = E(bobAutoswap).makeSwapInvitation();
     const bobSimsForMoolaProposal = harden({
-      want: { Out: moola(0) },
+      want: { Out: moola(5) },
       give: { In: simoleans(3) },
     });
     const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
@@ -501,14 +450,14 @@ test('autoSwap API interactions', async t => {
       Out: bobMoolaPayout2,
       In: bobSimoleanPayout2,
     } = await bobSecondSeat.getPayouts();
-    assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(14));
+    assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(5));
     assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout2, simoleans(0));
 
     t.deepEqual(
       await E(bobAutoswap).getPoolAllocation(),
       {
-        Central: moola(11),
-        Secondary: simoleans(5),
+        Central: moola(8),
+        Secondary: simoleans(7),
         Liquidity: liquidity(0),
       },
       `pool allocation after swap`,
@@ -536,8 +485,8 @@ test('autoSwap API interactions', async t => {
       Secondary: aliceSimoleanPayout,
       Liquidity: aliceLiquidityPayout,
     } = await aliceRmLiqSeat.getPayouts();
-    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(11));
-    assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(5));
+    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(8));
+    assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(7));
     assertPayoutAmount(t, liquidityIssuerP, aliceLiquidityPayout, liquidity(0));
 
     t.deepEquals(await E(publicFacet).getPoolAllocation(), {
@@ -574,18 +523,9 @@ test('autoSwap - thorough test init, add, swap', async t => {
       issuerKeywordRecord,
     );
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidity = (await makeLocalAmountMath(liquidityIssuer)).make;
-    const kits = {
-      moolaIssuer,
-      simoleanIssuer,
-      liquidityIssuer,
-      moola,
-      simoleans,
-      liquidity,
-      zoe,
-    };
+    const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
     let poolState = {
-      m: 0,
+      c: 0,
       s: 0,
       l: 0,
       k: 0,
@@ -596,25 +536,26 @@ test('autoSwap - thorough test init, add, swap', async t => {
     moolaPurse.deposit(moolaMint.mintPayment(moola(50000)));
     const simoleanPurse = simoleanIssuer.makeEmptyPurse();
     simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
-    const alice = makeTrader(
-      moolaPurse,
-      simoleanPurse,
-      liquidityIssuer.makeEmptyPurse(),
-      kits,
+    const alice = await makeTrader(
+      [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
+      zoe,
       publicFacet,
+      issuerKeywordRecord,
+      liquidityIssuer,
     );
 
     const initLiquidityDetails = {
-      mAmount: moola(10000),
+      cAmount: moola(10000),
       sAmount: simoleans(10000),
+      lAmount: liquidity(10000),
     };
     const initLiquidityExpected = {
-      m: 10000,
+      c: 10000,
       s: 10000,
       l: 10000,
       k: 100000000,
       payoutL: 10000,
-      payoutM: 0,
+      payoutC: 0,
       payoutS: 0,
     };
     await alice.initLiquidityAndCheck(
@@ -623,44 +564,123 @@ test('autoSwap - thorough test init, add, swap', async t => {
       initLiquidityDetails,
       initLiquidityExpected,
     );
-    t.assert(t, '..Alice added liquidity');
+    t.assert(t, '..Alice added initial liquidity');
     poolState = updatePoolState(poolState, initLiquidityExpected);
 
     const tradeDetails = {
       inAmount: moola(1000),
-      outAmount: simoleans(0),
+      outAmount: simoleans(906),
     };
     const tradeExpected = {
-      m: 11000,
+      c: 11000,
       s: 9094,
       l: 10000,
       k: 11000 * 9094,
-      payout: 906,
-      refund: 0,
+      out: 906,
+      in: 0,
     };
     await alice.tradeAndCheck(t, true, poolState, tradeDetails, tradeExpected);
     t.assert(t, '..Alice traded');
     poolState = updatePoolState(poolState, tradeExpected);
 
     const liqDetails1 = {
-      mAmount: moola(1100),
+      cAmount: moola(1100),
       sAmount: simoleans(910),
+      lAmount: liquidity(1000),
     };
 
-    const liqExpected1 = scaleForAdd(poolState, { m: 1100, s: 910 }, true);
+    const deposit1 = { c: 1100, s: 910 };
+    const liqExpected1 = scaleForAddLiquidity(poolState, deposit1, false);
     await alice.addLiquidityAndCheck(t, poolState, liqDetails1, liqExpected1);
-    t.assert(t, '..Carol added liquidity');
+    t.assert(t, '..Alice added more liquidity');
     poolState = updatePoolState(poolState, liqExpected1);
 
-    // Now add to the liquidity pool in an exact ratio. (The pool has
-    // 12100 Moola and 11000 simoleans)
-    const liqDetails2 = {
-      mAmount: moola(121),
-      sAmount: simoleans(110),
+    t.end();
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  }
+});
+
+test('autoSwap - add liquidity in exact ratio', async t => {
+  try {
+    const {
+      moolaIssuer,
+      simoleanIssuer,
+      moolaMint,
+      simoleanMint,
+      moola,
+      simoleans,
+      zoe,
+    } = setup();
+    const installation = await installationPFromSource(zoe, autoswap);
+
+    // create an autoswap instance
+    const issuerKeywordRecord = harden({
+      Central: moolaIssuer,
+      Secondary: simoleanIssuer,
+    });
+    const { publicFacet } = await zoe.startInstance(
+      installation,
+      issuerKeywordRecord,
+    );
+    const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
+    const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
+    let poolState = {
+      c: 0,
+      s: 0,
+      l: 0,
+      k: 0,
     };
-    const addLiqExpect2 = scaleForAdd(poolState, { m: 121, s: 110 });
-    alice.addLiquidityAndCheck(t, poolState, liqDetails2, addLiqExpect2);
-    poolState = updatePoolState(poolState, addLiqExpect2);
+
+    // Setup Alice
+    const moolaPurse = moolaIssuer.makeEmptyPurse();
+    moolaPurse.deposit(moolaMint.mintPayment(moola(50000)));
+    const simoleanPurse = simoleanIssuer.makeEmptyPurse();
+    simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
+    const alice = await makeTrader(
+      [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
+      zoe,
+      publicFacet,
+      issuerKeywordRecord,
+      liquidityIssuer,
+    );
+
+    const initLiquidityDetails = {
+      cAmount: moola(10000),
+      sAmount: simoleans(10000),
+      lAmount: liquidity(10000),
+    };
+    const initLiquidityExpected = {
+      c: 10000,
+      s: 10000,
+      l: 10000,
+      k: 100000000,
+      payoutL: 10000,
+      payoutC: 0,
+      payoutS: 0,
+    };
+    await alice.initLiquidityAndCheck(
+      t,
+      poolState,
+      initLiquidityDetails,
+      initLiquidityExpected,
+    );
+    t.assert(t, '..Alice added initial liquidity');
+    poolState = updatePoolState(poolState, initLiquidityExpected);
+
+    // Now add to the liquidity pool in an exact ratio. (The pool has
+    // 12100 Moola and 11000 liquidity)
+    const liqDetails1 = {
+      cAmount: moola(200),
+      sAmount: simoleans(200),
+      lAmount: liquidity(200),
+    };
+
+    const deposit1 = { c: 200, s: 200 };
+    const liqExpected1 = scaleForAddLiquidity(poolState, deposit1, true);
+    await alice.addLiquidityAndCheck(t, poolState, liqDetails1, liqExpected1);
+    poolState = updatePoolState(poolState, liqExpected1);
     t.end();
   } catch (e) {
     t.assert(false, e);
@@ -700,7 +720,7 @@ test('autoSwap - trade attempt before init', async t => {
     const payment = harden({ In: moolaPurse.withdraw(inAmount) });
 
     const seat = await zoe.offer(
-      E(publicFacet).makeSwapInvitation(),
+      E(publicFacet).makeSwapInInvitation(),
       proposal,
       payment,
     );
@@ -722,7 +742,7 @@ test('autoSwap - trade attempt before init', async t => {
       .then(async () =>
         t.equals(
           0,
-          await E(publicFacet).getLiquidityTokens(),
+          await E(publicFacet).getLiquiditySupply(),
           'liquidity empty after',
         ),
       );
@@ -757,18 +777,9 @@ test('autoSwap - swap varying amounts', async t => {
       issuerKeywordRecord,
     );
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidity = (await makeLocalAmountMath(liquidityIssuer)).make;
-    const kits = {
-      moolaIssuer,
-      simoleanIssuer,
-      liquidityIssuer,
-      moola,
-      simoleans,
-      liquidity,
-      zoe,
-    };
+    const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
     let poolState = {
-      m: 0,
+      c: 0,
       s: 0,
       l: 0,
       k: 0,
@@ -779,25 +790,26 @@ test('autoSwap - swap varying amounts', async t => {
     moolaPurse.deposit(moolaMint.mintPayment(moola(50000)));
     const simoleanPurse = simoleanIssuer.makeEmptyPurse();
     simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
-    const alice = makeTrader(
-      moolaPurse,
-      simoleanPurse,
-      liquidityIssuer.makeEmptyPurse(),
-      kits,
+    const alice = await makeTrader(
+      [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
+      zoe,
       publicFacet,
+      issuerKeywordRecord,
+      liquidityIssuer,
     );
 
     const initLiquidityDetails = {
-      mAmount: moola(10000),
+      cAmount: moola(10000),
       sAmount: simoleans(10000),
+      lAmount: liquidity(10000),
     };
     const initLiquidityExpected = {
-      m: 10000,
+      c: 10000,
       s: 10000,
       l: 10000,
       k: 100000000,
       payoutL: 10000,
-      payoutM: 0,
+      payoutC: 0,
       payoutS: 0,
     };
     await alice.initLiquidityAndCheck(
@@ -806,7 +818,7 @@ test('autoSwap - swap varying amounts', async t => {
       initLiquidityDetails,
       initLiquidityExpected,
     );
-    t.assert(t, '..Alice added liquidity');
+    t.assert(t, '..Alice initialize liquidity');
     poolState = updatePoolState(poolState, initLiquidityExpected);
 
     // (A) trade w/out specifying output
@@ -815,14 +827,14 @@ test('autoSwap - swap varying amounts', async t => {
       outAmount: simoleans(0),
     };
 
-    const simPrice = outputFromInputPrice(poolState.m, poolState.s, 1000, 30);
+    const simPrice = outputFromInputPrice(poolState.c, poolState.s, 1000, 30);
     const expectedA = {
-      m: poolState.m + 1000,
+      c: poolState.c + 1000,
       s: poolState.s - simPrice,
       l: 10000,
-      k: (poolState.m + 1000) * (poolState.s - simPrice),
-      payout: simPrice,
-      refund: 0,
+      k: (poolState.c + 1000) * (poolState.s - simPrice),
+      out: simPrice,
+      in: 0,
     };
     await alice.tradeAndCheck(t, true, poolState, tradeDetailsA, expectedA);
     t.assert(t, '..Alice traded A');
@@ -834,16 +846,16 @@ test('autoSwap - swap varying amounts', async t => {
       outAmount: simoleans(300),
     };
 
-    const mPrice = priceFromTargetOutput(300, poolState.s, poolState.m, 30);
+    const mPrice = priceFromTargetOutput(300, poolState.s, poolState.c, 30);
     const expectedB = {
-      m: poolState.m + mPrice,
+      c: poolState.c + mPrice,
       s: poolState.s - 300,
       l: 10000,
-      k: (poolState.m + mPrice) * (poolState.s - 300),
-      payout: 300,
-      refund: 500 - mPrice,
+      k: (poolState.c + mPrice) * (poolState.s - 300),
+      out: 300,
+      in: 500 - mPrice,
     };
-    await alice.tradeAndCheck(t, true, poolState, tradeDetailsB, expectedB);
+    await alice.tradeAndCheck(t, false, poolState, tradeDetailsB, expectedB);
     t.assert(t, '..Alice traded B');
     poolState = updatePoolState(poolState, expectedB);
 

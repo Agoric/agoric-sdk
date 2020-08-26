@@ -21,8 +21,8 @@ import '../../exported';
  * more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
  *
  * When the contract is instantiated, the two tokens (Central and Secondary) are
- * specified in the terms.issuers. There is no behavioral difference between the
- * two when trading; the name was chosen for consistency with our
+ * specified in the issuerKeywordRecord. There is no behavioral difference
+ * between the two when trading; the names were chosen for consistency with our
  * multipoolAutoswap. When trading, use the keywords In and Out to specify the
  * amount to be paid in, and the amount to be received.
  *
@@ -30,25 +30,28 @@ import '../../exported';
  * proportion to the current balances in the pool. The amount of the Central
  * asset is used as the basis. The Secondary assets must be added in proportion.
  * If less Secondary is provided than required, we refuse the offer. If more is
- * provide than is required, we return the excess.
+ * provided than is required, we return the excess.
  *
  * Before trading can take place, it is necessary to add liquidity using
  * makeAddLiquidityInvitation(). Separate invitations are available for adding
- * and removing liquidity, and for doing a swap. Other API operations support
- * price checks and monitoring the size of the liquidity pool.
+ * and removing liquidity, and for doing swaps. Other API operations support
+ * price checks and checking the size of the liquidity pool.
  *
- * The swap operation is sensitive to whether the Out amount was specified. If
- * it's positive, it is treated as a request for an exact amount of output, and
- * the In amount must be sufficient or the offer will be refused. If Out is 0,
- * the payout will be calculated based on the In amount.
+ * The swap operation requires either the input amount or the output amount to
+ * be specified. makeSwapInInvitation treats the give amount as definitive,
+ * while makeSwapOutInvitation honors the want amount. With swapIn, a want
+ * amount can be specified, and if the offer can't be satisfied, the offer will
+ * be refunded. Similarly with swapOut, the want amount will be satisfied if
+ * possible. If more is provided as the give amount than necessary, the excess
+ * will be refunded. If not enough is provided, the offer will be refunded.
  *
- * The publicFacet can make new invitations (makeSwapInvitation,
- * makeAddLiquidityInvitation, and makeRemoveLiquidityInvitation), tell how much
- * would be paid for a given input (getCurrentPrice), or how much would be
- * earned by depositing a specified amount (getPriceForOutput). In addition,
- * there are requests for the LiquidityIssuer (getLiquidityIssuer), the current
- * outstanding liquidity (getLiquidityTokens), and the current balances in the
- * pool (getPoolAllocation).
+ * The publicFacet can make new invitations (makeSwapInInvitation,
+ * makeSwapOutInvitation, makeAddLiquidityInvitation, and
+ * makeRemoveLiquidityInvitation), tell how much would be paid for a given input
+ * (getInputPrice), or how much would be earned by depositing a specified amount
+ * (getOutputPrice). In addition, there are requests for the LiquidityIssuer
+ * (getLiquidityIssuer), the current outstanding liquidity (getLiquiditySupply),
+ * and the current balances in the pool (getPoolAllocation).
  *
  * @type {ContractStartFn}
  */
@@ -87,63 +90,16 @@ const start = async zcf => {
     return poolSeat.getAmountAllocated(keyword, brand);
   };
 
-  /**
-   * Swap one asset for another. In specifies the asset being provided and Out
-   * specifies the wanted asset. If the want amount is 0, all of the In amount
-   * is expended. If the want amount is positive, then only enough of the In is
-   * spent to provide that Out. If the In is insufficient the trade is refused.
-   *
-   * @type {OfferHandler}
-   */
-  const swapHandler = swapSeat => {
-    if (getPoolAmount(brands.Central).value === 0) {
-      swapSeat.kickOut('Pool not initialized');
-      return 'Pool not initialized';
-    }
-
-    const {
-      give: { In: amountIn },
-      want: { Out: wantedAmountOut },
-    } = swapSeat.getProposal();
-    let tradeAmountIn;
-    let tradeAmountOut;
-
-    // if the proposal specified the Out amount, treat that as an exact request
-    if (wantedAmountOut.value > 0) {
-      tradeAmountOut = wantedAmountOut;
-      const tradePrice = getOutputPrice({
-        outputValue: wantedAmountOut.value,
-        inputReserve: getPoolAmount(amountIn.brand).value,
-        outputReserve: getPoolAmount(wantedAmountOut.brand).value,
-      });
-      if (tradePrice > amountIn.value) {
-        swapSeat.kickOut('amountIn insufficient');
-        return 'amountIn insufficient';
-      }
-      const inAmountMath = zcf.getAmountMath(amountIn.brand);
-      tradeAmountIn = inAmountMath.make(tradePrice);
-    } else {
-      tradeAmountIn = amountIn;
-      const outputValue = getInputPrice(
-        harden({
-          inputValue: amountIn.value,
-          inputReserve: getPoolAmount(amountIn.brand).value,
-          outputReserve: getPoolAmount(wantedAmountOut.brand).value,
-        }),
-      );
-      const outAmountMath = zcf.getAmountMath(wantedAmountOut.brand);
-      tradeAmountOut = outAmountMath.make(outputValue);
-    }
-
+  function consummate(tradeAmountIn, tradeAmountOut, swapSeat) {
     trade(
       zcf,
       {
         seat: poolSeat,
         gains: {
-          [getPoolKeyword(amountIn.brand)]: tradeAmountIn,
+          [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn,
         },
         losses: {
-          [getPoolKeyword(wantedAmountOut.brand)]: tradeAmountOut,
+          [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut,
         },
       },
       {
@@ -155,9 +111,76 @@ const start = async zcf => {
 
     swapSeat.exit();
     return `Swap successfully completed.`;
+  }
+
+  /**
+   * Swap one asset for another. In specifies the asset being provided and Out
+   * specifies the wanted asset. If the want amount is 0, all of the In amount
+   * is expended. If the want amount is positive, then only enough of the In is
+   * spent to provide that Out. If the In is insufficient the trade is refused.
+   *
+   * @type {OfferHandler}
+   */
+  const swapInHandler = swapSeat => {
+    assert(
+      !centralMath.isEmpty(getPoolAmount(brands.Central)),
+      `Pool not initialized`,
+    );
+
+    const {
+      give: { In: amountIn },
+      want: { Out: wantedAmountOut },
+    } = swapSeat.getProposal();
+
+    const tradeAmountIn = amountIn;
+    const outputValue = getInputPrice(
+      harden({
+        inputValue: amountIn.value,
+        inputReserve: getPoolAmount(amountIn.brand).value,
+        outputReserve: getPoolAmount(wantedAmountOut.brand).value,
+      }),
+    );
+    const outAmountMath = zcf.getAmountMath(wantedAmountOut.brand);
+    const tradeAmountOut = outAmountMath.make(outputValue);
+    return consummate(tradeAmountIn, tradeAmountOut, swapSeat);
   };
 
-  const addLiquidity = (seat, centralIn, centralPool, secondaryOut) => {
+  /**
+   * Swap one asset for another. In specifies the asset being provided and Out
+   * specifies the wanted asset. If the want amount is 0, all of the In amount
+   * is expended. If the want amount is positive, then only enough of the In is
+   * spent to provide that Out. If the In is insufficient the trade is refused.
+   *
+   * @type {OfferHandler}
+   */
+  const swapOutHandler = swapSeat => {
+    assert(
+      !centralMath.isEmpty(getPoolAmount(brands.Central)),
+      'Pool not initialized',
+    );
+
+    const {
+      give: { In: amountIn },
+      want: { Out: wantedAmountOut },
+    } = swapSeat.getProposal();
+
+    const tradeAmountOut = wantedAmountOut;
+    const tradePrice = getOutputPrice({
+      outputValue: wantedAmountOut.value,
+      inputReserve: getPoolAmount(amountIn.brand).value,
+      outputReserve: getPoolAmount(wantedAmountOut.brand).value,
+    });
+    assert(tradePrice <= amountIn.value, 'amountIn insufficient');
+    const inAmountMath = zcf.getAmountMath(amountIn.brand);
+    const tradeAmountIn = inAmountMath.make(tradePrice);
+
+    return consummate(tradeAmountIn, tradeAmountOut, swapSeat);
+  };
+
+  const addLiquidity = (seat, secondaryValue) => {
+    const userAllocation = seat.getCurrentAllocation();
+    const centralPool = getPoolAmount(brands.Central).value;
+    const centralIn = userAllocation.Central.value;
     const liquidityValueOut = calcLiqValueToMint(
       harden({
         liqTokenSupply,
@@ -175,7 +198,7 @@ const start = async zcf => {
         seat: poolSeat,
         gains: {
           Central: centralMath.make(centralIn),
-          Secondary: secondaryMath.make(secondaryOut),
+          Secondary: secondaryMath.make(secondaryValue),
         },
       },
       { seat, gains: { Liquidity: liquidityAmountOut } },
@@ -187,52 +210,42 @@ const start = async zcf => {
 
   const initiateLiquidity = liqSeat => {
     const userAllocation = liqSeat.getCurrentAllocation();
-    const centralPool = getPoolAmount(userAllocation.Central.brand).value;
-    const centralIn = userAllocation.Central.value;
-    const secondaryIn = userAllocation.Secondary.value;
-
-    return addLiquidity(liqSeat, centralIn, centralPool, secondaryIn);
+    return addLiquidity(liqSeat, userAllocation.Secondary.value);
   };
 
   /**
    * Add liquidity. We use the amount of the Central asset as the basis, and
    * require that Secondary assets be added in proportion. If less Secondary is
-   * provided than required, we refuse the offer. If more is provide than is
+   * provided than required, we refuse the offer. If more is provided than is
    * required, we return the excess.
    *
    * If this is the first time liquidity was added, we accept all of both
-   * Primary and secondary, establishing the starting trading ratio. In this
+   * Primary and Secondary, to establish the initial trading ratio. In this
    * case, we create liquidity equal to the value of Central asset contributed.
    *
    * @type {OfferHandler}
    */
   const addLiquidityHandler = liqSeat => {
-    const userAllocation = liqSeat.getCurrentAllocation();
-    const centralPool = getPoolAmount(userAllocation.Central.brand).value;
-    if (centralPool === 0) {
+    if (centralMath.isEmpty(getPoolAmount(brands.Central))) {
       return initiateLiquidity(liqSeat);
     }
-    const centralIn = userAllocation.Central.value;
+
+    const userAllocation = liqSeat.getCurrentAllocation();
     const secondaryIn = userAllocation.Secondary.value;
-    const secondaryPool = getPoolAmount(userAllocation.Secondary.brand).value;
 
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
     const secondaryOut = calcSecondaryRequired({
-      centralIn,
-      centralPool,
-      secondaryPool,
+      centralIn: userAllocation.Central.value,
+      centralPool: getPoolAmount(brands.Central).value,
+      secondaryPool: getPoolAmount(brands.Secondary).value,
       secondaryIn,
     });
 
-    // When this method is used we treat Central as having been specified
-    // precisely. That means the offer must provide enough secondary.
-    if (secondaryIn < secondaryOut) {
-      liqSeat.kickOut('insufficient Secondary deposited');
-      return 'insufficient Secondary deposited';
-    }
+    // Central was specified precisely so offer must provide enough secondary.
+    assert(secondaryIn >= secondaryOut, 'insufficient Secondary deposited');
 
-    return addLiquidity(liqSeat, centralIn, centralPool, secondaryOut);
+    return addLiquidity(liqSeat, secondaryOut);
   };
 
   /** @type {OfferHandler} */
@@ -245,7 +258,7 @@ const start = async zcf => {
       calcValueToRemove(
         harden({
           liqTokenSupply,
-          poolValue: getPoolAmount(userAllocation.Central.brand).value,
+          poolValue: getPoolAmount(brands.Central).value,
           liquidityValueIn,
         }),
       ),
@@ -254,7 +267,7 @@ const start = async zcf => {
       calcValueToRemove(
         harden({
           liqTokenSupply,
-          poolValue: getPoolAmount(userAllocation.Secondary.brand).value,
+          poolValue: getPoolAmount(brands.Secondary).value,
           liquidityValueIn,
         }),
       ),
@@ -308,20 +321,26 @@ const start = async zcf => {
       'autoswap remove liquidity',
     );
 
-  const makeSwapInvitation = () =>
+  const makeSwapInInvitation = () =>
     zcf.makeInvitation(
-      assertProposalShape(swapHandler, swapExpected),
+      assertProposalShape(swapInHandler, swapExpected),
+      'autoswap swap',
+    );
+
+  const makeSwapOutInvitation = () =>
+    zcf.makeInvitation(
+      assertProposalShape(swapOutHandler, swapExpected),
       'autoswap swap',
     );
 
   /**
-   * `getCurrentPrice` calculates the result of a trade, given a certain amount
-   * of digital assets in.
+   * `getOutputForGivenInput` calculates the result of a trade, given a certain
+   * amount of digital assets in.
    * @param {Amount} amountIn - the amount of digital
    * assets to be sent in
    * @param brandOut - The brand of asset desired
    */
-  const getCurrentPrice = (amountIn, brandOut) => {
+  const getOutputForGivenInput = (amountIn, brandOut) => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
     const outputReserve = getPoolAmount(brandOut).value;
     const outputValue = getInputPrice(
@@ -335,12 +354,12 @@ const start = async zcf => {
   };
 
   /**
-   * `getPriceForOutput` calculates the amount of assets required to be
+   * `getInputForGivenOutput` calculates the amount of assets required to be
    * provided in order to obtain a specified gain.
    * @param {Amount} amountOut - the amount of digital assets desired
    * @param brandIn - The brand of asset desired
    */
-  const getPriceForOutput = (amountOut, brandIn) => {
+  const getInputForGivenOutput = (amountOut, brandIn) => {
     const inputReserve = getPoolAmount(brandIn).value;
     const outputReserve = getPoolAmount(amountOut.brand).value;
     const outputValue = getOutputPrice(
@@ -357,12 +376,14 @@ const start = async zcf => {
 
   /** @type {AutoswapPublicFacet} */
   const publicFacet = harden({
-    getCurrentPrice,
-    getPriceForOutput,
+    getInputPrice: getOutputForGivenInput,
+    getOutputPrice: getInputForGivenOutput,
     getLiquidityIssuer: () => liquidityIssuer,
-    getLiquidityTokens: () => liqTokenSupply,
+    getLiquiditySupply: () => liqTokenSupply,
     getPoolAllocation,
-    makeSwapInvitation,
+    makeSwapInvitation: makeSwapInInvitation,
+    makeSwapInInvitation,
+    makeSwapOutInvitation,
     makeAddLiquidityInvitation,
     makeRemoveLiquidityInvitation,
   });

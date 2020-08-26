@@ -416,7 +416,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     doAutoswap: async instance => {
       const publicFacet = await E(zoe).getPublicFacet(instance);
-      const buyBInvitation = await E(publicFacet).makeSwapInvitation();
+      const buyBInvitation = await E(publicFacet).makeSwapInInvitation();
       const installation = await E(zoe).getInstallation(buyBInvitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       assert(
@@ -437,7 +437,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       // bob checks how many simoleans he can get for 3 moola
-      const simoleanAmounts = await E(publicFacet).getCurrentPrice(
+      const simoleanAmounts = await E(publicFacet).getInputPrice(
         moola(3),
         simoleans(0).brand,
       );
@@ -445,7 +445,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       const moolaForSimProposal = harden({
         give: { In: moola(3) },
-        want: { Out: simoleans(0) },
+        want: { Out: simoleans(1) },
       });
 
       const moolaForSimPayments = harden({ In: moolaPayment });
@@ -463,8 +463,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(moolaPurseP).deposit(await moolaPayout1);
       await E(simoleanPurseP).deposit(await simoleanPayout1);
 
-      // Bob looks up the price of 6 moola. It's 3 simoleans
-      const moolaAmounts = await E(publicFacet).getPriceForOutput(
+      // Bob looks up how much to pay to get 6 moola. It's 3 simoleans
+      const moolaAmounts = await E(publicFacet).getOutputPrice(
         moola(6),
         simoleans(0).brand,
       );
@@ -478,7 +478,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(simoleanPurseP).deposit(simoleanPayment);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
       const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
-      const invitation2 = E(publicFacet).makeSwapInvitation();
+      const invitation2 = E(publicFacet).makeSwapOutInvitation();
 
       const swapSeat2 = await E(zoe).offer(
         invitation2,

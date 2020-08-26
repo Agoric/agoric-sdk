@@ -103,12 +103,12 @@ export const calcLiqValueToMint = ({
 
 /**
  * Calculate how much of the secondary token is required from the user when
- * adding liquidity. We require that the deposited ratio of primary to secondary
+ * adding liquidity. We require that the deposited ratio of central to secondary
  * match the current ratio of holdings in the pool.
  *
  * @param {Object} params
- * @param params.centralIn - The value of primary assets being deposited
- * @param params.centralPool - The value of primary assets in the pool
+ * @param params.centralIn - The value of central assets being deposited
+ * @param params.centralPool - The value of central assets in the pool
  * @param params.secondaryPool - The value of secondary assets in the pool
  * @param params.secondaryIn - The value of secondary assets provided. If
  * the pool is empty, the entire amount will be accepted
