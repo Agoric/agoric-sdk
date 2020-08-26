@@ -12,7 +12,7 @@ import { deleteCListEntryIfEasy } from './cleanup';
  * objects
  */
 function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
-  const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
   // msg is { method, args, result }, all slots are kernel-centric
@@ -96,7 +96,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
  * objects
  */
 function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
-  const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
   const { mapVatSlotToKernelSlot } = vatKeeper;
 
   function translateSend(targetSlot, method, args, resultSlot) {
@@ -240,7 +240,7 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
   vatID,
   kernelKeeper,
 ) {
-  const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
 
   const { mapKernelSlotToVatSlot } = vatKeeper;
 

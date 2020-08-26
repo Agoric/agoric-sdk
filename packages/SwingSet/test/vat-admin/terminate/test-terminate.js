@@ -43,7 +43,7 @@ test('terminate', async t => {
     'GOT QUERY 3',
     'foreverP.catch vat terminated',
     'query3P.catch vat terminated',
-    'foo4P.catch unknown vat',
+    'foo4P.catch vat terminated',
     'afterForeverP.catch vat terminated',
     'done',
   ]);
@@ -86,7 +86,7 @@ test('dispatches to the dead do not harm kernel', async t => {
     t.deepEqual(c2.dump().log, [
       'b: p1b = I so resolve',
       'b: p2b fails vat terminated',
-      'm: live 2 failed: unknown vat',
+      'm: live 2 failed: vat terminated',
     ]);
   }
 });
@@ -117,4 +117,28 @@ test('replay does not resurrect dead vat', async t => {
     // ...which shouldn't run the second time through
     t.deepEqual(c2.dump().log, []);
   }
+});
+
+test('dead vat state removed', async t => {
+  const configPath = path.resolve(__dirname, 'swingset-die-cleanly.json');
+  const config = loadSwingsetConfigFile(configPath);
+  const { storage } = initSwingStore();
+
+  const controller = await buildVatController(copy(config), [], {
+    hostStorage: storage,
+  });
+  await controller.run();
+  t.deepEqual(
+    controller.bootstrapResult.resolution(),
+    capargs('bootstrap done'),
+  );
+  t.is(storage.get('vat.dynamicIDs'), '["v6"]');
+  t.is(storage.get('ko26.owner'), 'v6');
+  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 9);
+
+  controller.queueToVatExport('bootstrap', 'o+0', 'phase2', capargs([]));
+  await controller.run();
+  t.is(storage.get('vat.dynamicIDs'), '[]');
+  t.is(storage.get('ko26.owner'), undefined);
+  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 0);
 });

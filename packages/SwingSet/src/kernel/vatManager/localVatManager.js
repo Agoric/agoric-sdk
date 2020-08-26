@@ -30,7 +30,7 @@ export function makeLocalVatManagerFactory(tools) {
 
   function prepare(vatID, managerOptions = {}) {
     const { notifyTermination = undefined } = managerOptions;
-    const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     const transcriptManager = makeTranscriptManager(
       kernelKeeper,
       vatKeeper,

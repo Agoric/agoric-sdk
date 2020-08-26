@@ -39,6 +39,8 @@ function makeError(s) {
   return harden({ body: JSON.stringify(s), slots: [] });
 }
 
+const VAT_TERMINATION_ERROR = makeError('vat terminated');
+
 export default function buildKernel(kernelEndowments, kernelOptions = {}) {
   const {
     waitUntilQuiescent,
@@ -173,7 +175,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     insistVatID(forVatID);
     const kernelSlot = `${what}`;
     parseKernelSlot(what);
-    const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(forVatID);
+    const vatKeeper = kernelKeeper.getVatKeeper(forVatID);
     return vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
   }
 
@@ -184,7 +186,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     }
     insistVatID(fromVatID);
     assert(parseVatSlot(vatSlot).allocatedByVat);
-    const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(fromVatID);
+    const vatKeeper = kernelKeeper.getVatKeeper(fromVatID);
     return vatKeeper.mapVatSlotToKernelSlot(vatSlot);
   }
 
@@ -309,8 +311,8 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     const vat = ephemeral.vats.get(vatID);
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
-    if (!vat || vat.dead) {
-      resolveToError(msg.result, makeError('unknown vat'));
+    if (!vat) {
+      resolveToError(msg.result, VAT_TERMINATION_ERROR);
     } else {
       const kd = harden(['message', target, msg]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
@@ -323,8 +325,11 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     const { type } = parseKernelSlot(target);
     if (type === 'object') {
       const vatID = kernelKeeper.ownerOfKernelObject(target);
-      insistVatID(vatID);
-      await deliverToVat(vatID, target, msg);
+      if (vatID) {
+        await deliverToVat(vatID, target, msg);
+      } else {
+        resolveToError(msg.result, VAT_TERMINATION_ERROR);
+      }
     } else if (type === 'promise') {
       const kp = kernelKeeper.getKernelPromise(target);
       if (kp.state === 'fulfilledToPresence') {
@@ -348,11 +353,15 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
           kernelKeeper.addMessageToPromiseQueue(target, msg);
         } else {
           insistVatID(kp.decider);
-          const vat = ephemeral.vats.get(kp.decider);
-          if (vat.enablePipelining) {
-            await deliverToVat(kp.decider, target, msg);
+          const deciderVat = ephemeral.vats.get(kp.decider);
+          if (deciderVat) {
+            if (deciderVat.enablePipelining) {
+              await deliverToVat(kp.decider, target, msg);
+            } else {
+              kernelKeeper.addMessageToPromiseQueue(target, msg);
+            }
           } else {
-            kernelKeeper.addMessageToPromiseQueue(target, msg);
+            resolveToError(msg.result, VAT_TERMINATION_ERROR);
           }
         }
       } else {
@@ -382,7 +391,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     insistKernelType('promise', kpid);
     const vat = ephemeral.vats.get(vatID);
     kernelKeeper.incStat('dispatches');
-    if (!vat || vat.dead) {
+    if (!vat) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
     } else {
       const p = kernelKeeper.getKernelPromise(kpid);
@@ -553,7 +562,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
         },
       }); // marker
       vatObj0s[name] = vref;
-      const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+      const vatKeeper = kernelKeeper.getVatKeeper(vatID);
       const kernelSlot = vatKeeper.mapVatSlotToKernelSlot(vatSlot);
       vrefs.set(vref, kernelSlot);
       logStartup(`adding vref ${name} [${vatID}]`);
@@ -625,7 +634,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     // the VatManager+VatWorker will see the error case, but liveslots will
     // not
     function vatSyscallHandler(vatSyscallObject) {
-      if (ephemeral.vats.get(vatID).dead) {
+      if (!ephemeral.vats.get(vatID)) {
         // This is a safety check -- this case should never happen unless the
         // vatManager is somehow confused.
         console.error(`vatSyscallHandler invoked on dead vat ${vatID}`);
@@ -690,9 +699,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
       enablePipelining = false,
       notifyTermination = () => {},
     } = managerOptions;
-    // This should create the vatKeeper. Other users get it from the
-    // kernelKeeper, so we don't need a reference ourselves.
-    kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+    kernelKeeper.getVatKeeper(vatID);
     const translators = makeVatTranslators(vatID, kernelKeeper);
 
     ephemeral.vats.set(
@@ -711,7 +718,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
 
   function removeVatManager(vatID) {
     const old = ephemeral.vats.get(vatID);
-    ephemeral.vats.set(vatID, harden({ dead: true }));
+    ephemeral.vats.delete(vatID);
     old.notifyTermination(null);
     return old.manager.shutdown();
   }
@@ -788,7 +795,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
 
   function collectVatStats(vatID) {
     insistVatID(vatID);
-    const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     return vatKeeper.vatStats();
   }
 
@@ -810,6 +817,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`Assigned VatID ${vatID} for genesis vat ${name}`);
       kernelSlog.addVat(vatID, false, name);
+      kernelKeeper.allocateVatKeeper(vatID);
       const managerOptions = harden({
         ...genesisVats.get(name),
         vatConsole: makeVatConsole(vatID),
@@ -824,33 +832,26 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     // instantiate all dynamic vats
     for (const vatID of kernelKeeper.getAllDynamicVatIDs()) {
       logStartup(`Loading dynamic vat ${vatID}`);
-      const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
-      if (vatKeeper.isDead()) {
-        kernelKeeper.forgetVat(vatID);
-      } else {
-        const {
-          source,
-          options: dynamicOptions,
-        } = vatKeeper.getSourceAndOptions();
-        // eslint-disable-next-line no-await-in-loop
-        await recreateVatDynamically(vatID, source, dynamicOptions);
-        // now the vatManager is attached and ready for transcript replay
-      }
+      const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
+      const {
+        source,
+        options: dynamicOptions,
+      } = vatKeeper.getSourceAndOptions();
+      // eslint-disable-next-line no-await-in-loop
+      await recreateVatDynamically(vatID, source, dynamicOptions);
+      // now the vatManager is attached and ready for transcript replay
     }
 
     function terminateVat(vatID) {
-      const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
-      if (!vatKeeper.isDead()) {
-        vatKeeper.markAsDead();
-        const err = makeError('vat terminated');
-        for (const kpid of kernelKeeper.findPromisesDecidedByVat(vatID)) {
-          resolveToError(kpid, err, vatID);
+      if (kernelKeeper.getVatKeeper(vatID)) {
+        const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
+        for (const kpid of promisesToReject) {
+          resolveToError(kpid, VAT_TERMINATION_ERROR, vatID);
         }
         removeVatManager(vatID).then(
           () => kdebug(`terminated vat ${vatID}`),
           e => console.error(`problem terminating vat ${vatID}`, e),
         );
-        kernelKeeper.forgetVat(vatID);
       }
     }
 
@@ -908,7 +909,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
       for (const vatID of ephemeral.vats.keys()) {
         logStartup(`Replaying transcript of vatID ${vatID}`);
         const vat = ephemeral.vats.get(vatID);
-        if (vat.dead) {
+        if (!vat) {
           logStartup(`skipping reload of dead vat ${vatID}`);
         } else {
           // eslint-disable-next-line no-await-in-loop

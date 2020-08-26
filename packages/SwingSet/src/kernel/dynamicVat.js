@@ -49,7 +49,7 @@ export function makeDynamicVatCreator(stuff) {
   function createVatDynamically(source, dynamicOptions = {}) {
     const vatID = allocateUnusedVatID();
     kernelKeeper.addDynamicVatID(vatID);
-    const vatKeeper = kernelKeeper.allocateVatKeeperIfNeeded(vatID);
+    const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
     vatKeeper.setSourceAndOptions(source, dynamicOptions);
     // eslint-disable-next-line no-use-before-define
     return create(vatID, source, dynamicOptions, true);
