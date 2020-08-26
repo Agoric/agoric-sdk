@@ -199,6 +199,9 @@ func (am AppModule) OnChanOpenInit(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := channelOpenInitEvent{
@@ -260,6 +263,9 @@ func (am AppModule) OnChanOpenTry(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := channelOpenTryEvent{
@@ -313,6 +319,9 @@ func (am AppModule) OnChanOpenAck(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := channelOpenAckEvent{
@@ -351,6 +360,9 @@ func (am AppModule) OnChanOpenConfirm(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := channelOpenConfirmEvent{
@@ -389,6 +401,9 @@ func (am AppModule) OnChanCloseInit(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := channelCloseInitEvent{
@@ -426,6 +441,9 @@ func (am AppModule) OnChanCloseConfirm(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := channelCloseConfirmEvent{
@@ -461,6 +479,9 @@ func (am AppModule) OnRecvPacket(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	// Sometimes we receive duplicate packets, just with a
@@ -511,6 +532,9 @@ func (am AppModule) OnAcknowledgementPacket(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := acknowledgementPacketEvent{
@@ -552,6 +576,9 @@ func (am AppModule) OnTimeoutPacket(
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
+	} else {
+		// The simulation was done, so now allow infinite gas.
+		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
 	event := timeoutPacketEvent{
