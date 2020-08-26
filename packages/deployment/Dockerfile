@@ -28,8 +28,7 @@ RUN ln -sf $PWD/setup/ag-setup-cosmos /usr/local/bin/
 COPY package*.json setup/
 RUN cd setup && npm install --production
 
-# Add the provisioning server, so we can deploy it via Ansible.
-COPY --from=agoric/cosmic-swingset-pserver /usr/src/app/ve3/ /usr/src/app/ve3/
+# Add the ag-solo, so we can deploy it via Ansible.
 COPY --from=agoric/cosmic-swingset-solo /usr/src/app/lib/ag-solo/ /usr/src/app/lib/ag-solo/
 
 COPY . setup/

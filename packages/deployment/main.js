@@ -36,7 +36,7 @@ import {
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
 const COSMOS_DIR = 'ag-chain-cosmos';
-const CONTROLLER_DIR = 'ag-pserver';
+const DWEB_DIR = 'dweb';
 const SECONDS_BETWEEN_BLOCKS = 5;
 
 // This is needed for hyphenated group names not to trigger Ansible.
@@ -49,9 +49,7 @@ const guardFile = async (file, maker) => {
     return 0;
   }
   const parent = dirname(file);
-  if (!(await exists(parent))) {
-    await mkdir(parent);
-  }
+  await mkdir(parent, { recursive: true });
   let made = false;
   const ret = await maker(async contents => {
     await createFile(file, contents);
@@ -363,36 +361,21 @@ show-config      display the client connection parameters
       const networkName = await trimReadFile('network.txt');
       const chainVersion = await trimReadFile('chain-version.txt');
       const chainName = `${networkName}-${chainVersion}`;
-      const pserverPassword = (await exists('pserver-password.txt'))
-        ? await trimReadFile('pserver-password.txt')
-        : '';
       const currentChainName = await trimReadFile(
         `${COSMOS_DIR}/chain-name.txt`,
       ).catch(_ => undefined);
 
       if (subOpts.bump || currentChainName !== chainName) {
         // We don't have matching parameters, so restart the chain.
-        // Stop all the services.
-        await reMain(['play', 'stop', '-eservice=ag-pserver']);
-        await reMain([
-          'play',
-          'stop',
-          '-eservice=ag-controller',
-          '-euser=ag-pserver',
-        ]);
+        // Stop the chain services.
         await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
 
-        // Blow away controller/cosmos state.
-        await needDoRun(['rm', '-rf', CONTROLLER_DIR, COSMOS_DIR]);
+        // Blow away cosmos state.
+        await needDoRun(['rm', '-rf', COSMOS_DIR]);
       }
       await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
         await makeFile(chainName);
       });
-
-      // Initialize the controller.
-      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () =>
-        needReMain(['play', 'prepare-controller']),
-      );
 
       // Bootstrap the chain nodes.
       await guardFile(`${COSMOS_DIR}/prepare.stamp`, () =>
@@ -457,6 +440,7 @@ show-config      display the client connection parameters
           )}`,
         ]),
       );
+
       await guardFile(`${COSMOS_DIR}/start.stamp`, () =>
         needReMain(['play', 'start']),
       );
@@ -473,91 +457,65 @@ show-config      display the client connection parameters
           'Your Agoric Cosmos chain is now running!',
         ),
       );
+      await needReMain(['dweb']);
+      break;
+    }
+
+    case 'dweb': {
+      await inited();
+      const networkName = await trimReadFile('network.txt');
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
       process.stdout.write(`${chalk.yellow(cfg)}\n`);
 
-      await guardFile(
-        `${CONTROLLER_DIR}/data/cosmos-chain.json`,
-        async makeFile => {
-          await makeFile(cfg);
-        },
-      );
-
-      await guardFile(`${CONTROLLER_DIR}/gci.txt`, async makeFile => {
-        const gci = await needBacktick(`${shellEscape(progname)} show-gci`);
-        await makeFile(gci);
+      await guardFile(`${DWEB_DIR}/data/cosmos-chain.json`, async makeFile => {
+        await makeFile(cfg);
       });
-      await guardFile(`${CONTROLLER_DIR}/rpcaddrs.txt`, async makeFile => {
-        const rpcAddrs = await needBacktick(
-          `${shellEscape(progname)} show-rpcaddrs`,
-        );
-        await makeFile(rpcAddrs.replace(/,/g, ' '));
-      });
-      await guardFile(`${CONTROLLER_DIR}/install.stamp`, () =>
-        needReMain(['play', 'install-controller']),
-      );
-
-      // Install any pubkeys from a former instantiation.
-      await guardFile(`${CONTROLLER_DIR}/pubkeys.stamp`, () =>
-        needReMain([
-          'ssh',
-          'ag-pserver',
-          'sudo',
-          '-u',
-          'ag-pserver',
-          '/usr/src/app/ve3/bin/ag-pserver',
-          'add-pubkeys',
-          '-c',
-          'http://localhost:8000/private/repl',
-        ]),
-      );
-
-      let pserverFlags = '';
-      const installFlags = [];
-      const pub = `${networkName}.crt`;
-      const key = `${networkName}.key`;
-      if ((await exists(pub)) && (await exists(key))) {
-        pserverFlags = ` ${shellEscape(
-          `--listen=ssl:443:privateKey=.ag-pserver/${key}:certKey=.ag-pserver/${pub}`,
-        )}`;
-        installFlags.push(
-          `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
-        );
-      }
-
-      const mountpoint =
-        pserverPassword === ''
-          ? ''
-          : ` -m ${shellEscape(`/provision-${pserverPassword}`)}`;
-      const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags}${mountpoint} -c http://localhost:8000/private/repl`;
-      await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
-        needReMain([
-          'play',
-          'install',
-          '-eservice=ag-pserver',
-          `-eexecline=${shellEscape(execline)}`,
-          ...installFlags,
-        ]),
-      );
-
-      await guardFile(`${CONTROLLER_DIR}/start.stamp`, () =>
-        needReMain(['play', 'start', '-eservice=ag-pserver']),
-      );
 
       const rpcAddrs = await needBacktick(
         `${shellEscape(progname)} show-rpcaddrs`,
       );
       const match = rpcAddrs.match(/^([^,]+):\d+(,|$)/);
-      const pserverHost = pserverFlags
-        ? `https://${match[1]}`
-        : `http://${match[1]}:8001`;
+
+      let execline = `npx http-server ./public`;
+      let dwebHost;
+      const cert = `${networkName}.crt`;
+      const key = `${networkName}.key`;
+      if ((await exists(cert)) && (await exists(key))) {
+        execline += ` --port=443 --ssl`;
+        execline += ` --cert=${shellEscape(cert)}`;
+        execline += ` --key=${shellEscape(key)}`;
+        dwebHost = `https://${match[1]}`;
+      } else {
+        execline += ` --port=80`;
+        dwebHost = `http://${match[1]}`;
+      }
+
+      await reMain(['play', 'stop', '-eservice=dweb']);
+
+      // Copy the needed files to the web server.
+      await needReMain([
+        'play',
+        'dweb-copy',
+        `-eexecline=${shellEscape(execline)}`,
+      ]);
+
+      await guardFile(`${DWEB_DIR}/service.stamp`, () =>
+        needReMain([
+          'play',
+          'install',
+          '-eservice=dweb',
+          `-eexecline=/home/dweb/start.sh`,
+          `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
+        ]),
+      );
+
+      await needReMain(['play', 'start', '-eservice=dweb']);
+
       initHint();
 
       console.error(
         `Use the following to provision:
-${chalk.yellow.bold(
-  `ag-setup-solo --netconfig='${pserverHost}/network-config'`,
-)}
+${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 `,
       );
       if (await exists('/vagrant')) {
@@ -829,7 +787,7 @@ ${chalk.yellow.bold(
       }
 
       // We no longer are provisioned or have Cosmos.
-      await needDoRun(['rm', '-rf', PROVISION_DIR, CONTROLLER_DIR, COSMOS_DIR]);
+      await needDoRun(['rm', '-rf', COSMOS_DIR, PROVISION_DIR, DWEB_DIR]);
       break;
     }
 
@@ -878,6 +836,7 @@ ${name}:
 
       const addAll = makeGroup('all');
       const addChainCosmos = makeGroup('ag-chain-cosmos', 4);
+      const addDweb = makeGroup('dweb', 4);
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
         const addProvider = makeGroup(provider, 4);
         const ips = prov.public_ips.value[provider];
@@ -885,18 +844,18 @@ ${name}:
         for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
           const node = `node${offset + instance}`;
-          const moniker = `Agoric${offset + instance}`;
           const units =
             node === PROVISIONER_NODE
               ? `\
   units:
-  - ag-pserver.service
   - ag-chain-cosmos.service
 `
               : '';
           const host = `\
 ${node}:
-  moniker: ${moniker}
+  moniker: Agoric${offset + instance}
+  website: https://testnet.agoric.com
+  identity: https://keybase.io/team/agoric.testnet.validators
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'
@@ -906,12 +865,11 @@ ${units}`;
 
           addAll(host);
 
-          // TODO: Don't make these hardcoded assumptions.
-          // For now, we add all the nodes to ag-chain-cosmos, and the first node to ag-pserver.
+          // We add all the nodes to ag-chain-cosmos.
           addChainCosmos(host);
-          if (node === PROVISIONER_NODE) {
-            makeGroup('ag-pserver', 4)(host);
-          }
+
+          // Install the decentralised web on all the hosts.
+          addDweb(host);
         }
       }
       out.write(byGroup.all);
