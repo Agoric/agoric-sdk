@@ -334,7 +334,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
 
     return chainSpawn(
-      [...debugOpts, 'start', '--pruning=nothing'],
+      [...debugOpts, 'start'],
       {
         env: { ...pspawnEnv, ROLE: 'two_chain' },
       },
