@@ -53,8 +53,8 @@ async function setupTest() {
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallationHandle = await zoe.install(autoswapBundle);
   const autoswapIssuerKeywordRecord = harden({
-    TokenA: moolaBundle.issuer,
-    TokenB: simoleanBundle.issuer,
+    Central: moolaBundle.issuer,
+    Secondary: simoleanBundle.issuer,
   });
   const {
     publicFacet: autoswapPublicFacet,
@@ -780,8 +780,8 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   // we have.
   const proposal = harden({
     give: {
-      TokenA: moolaBundle.amountMath.make(900),
-      TokenB: simoleanBundle.amountMath.make(500),
+      Central: moolaBundle.amountMath.make(900),
+      Secondary: simoleanBundle.amountMath.make(500),
     },
     want: {
       Liquidity: liquidityAmountMath.getEmpty(),
@@ -796,12 +796,14 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   assert(moolaPurse);
   assert(simoleanPurse);
 
-  const moolaPayment = await E(moolaPurse).withdraw(proposal.give.TokenA);
-  const simoleanPayment = await E(simoleanPurse).withdraw(proposal.give.TokenB);
+  const moolaPayment = await E(moolaPurse).withdraw(proposal.give.Central);
+  const simoleanPayment = await E(simoleanPurse).withdraw(
+    proposal.give.Secondary,
+  );
 
   const payments = harden({
-    TokenA: moolaPayment,
-    TokenB: simoleanPayment,
+    Central: moolaPayment,
+    Secondary: simoleanPayment,
   });
   const liqSeat = await E(zoe).offer(addLiquidityInvite, proposal, payments);
   await E(liqSeat).getOfferResult();
