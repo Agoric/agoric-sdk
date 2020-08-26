@@ -61,12 +61,9 @@
     "NEWS.md"
   ],
   "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
-    ]
+    "files": ["test/**/test-*.js"],
+    "require": ["esm"],
+    "timeout": "2m"
   },
   "eslintConfig": {
     "extends": [

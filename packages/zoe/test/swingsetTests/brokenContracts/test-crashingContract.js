@@ -38,7 +38,7 @@ const meterExceededInOfferLog = [
   'counter: 2',
 ];
 
-test('ZCF metering crash on invitation exercise', async t => {
+test.skip('ZCF metering crash on invitation exercise', async t => {
   const dump = await main(['meterInOfferHook', [3, 0, 0]]);
   t.deepEqual(dump.log, meterExceededInOfferLog);
 });
@@ -60,7 +60,7 @@ const meterExceededInSecondOfferLog = [
   'counter: 2',
 ];
 
-test('ZCF metering crash on second invitation', async t => {
+test.skip('ZCF metering crash on second invitation', async t => {
   const dump = await main(['meterInSecondInvitation', [8, 0, 0]]);
   t.deepEqual(dump.log, meterExceededInSecondOfferLog);
 });
@@ -122,7 +122,7 @@ const meteringExceededInAPILog = [
   'newCounter: 2',
 ];
 
-test('ZCF metering crash in API call', async t => {
+test.skip('ZCF metering crash in API call', async t => {
   const dump = await main(['meterInApiCall', [3, 0, 0]]);
   t.deepEqual(dump.log, meteringExceededInAPILog);
 });
@@ -134,7 +134,7 @@ const meteringExceptionInMakeContractILog = [
   'newCounter: 2',
 ];
 
-test('ZCF metering crash in makeContract call', async t => {
+test.skip('ZCF metering crash in makeContract call', async t => {
   const dump = await main(['meterInMakeContract', [3, 0, 0]]);
   t.deepEqual(dump.log, meteringExceptionInMakeContractILog);
 });

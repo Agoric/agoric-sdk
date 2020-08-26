@@ -164,6 +164,7 @@
  * @param {ProposalRecord} proposal
  * @param {ZoeSeatAdmin} zoeSeatAdmin
  * @param {ZCFSeatAdmin} zcfSeatAdmin
+ * @returns {ExitObj}
  */
 
 /**

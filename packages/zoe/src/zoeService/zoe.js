@@ -233,9 +233,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const instanceAdmin = {
         addZoeSeatAdmin: async (invitationHandle, zoeSeatAdmin, seatData) => {
           zoeSeatAdmins.add(zoeSeatAdmin);
-          return E(
+          const addSeatResultP = E(
             /** @type Promise<addSeatObj> */ (addSeatObjPromiseKit.promise),
           ).addSeat(invitationHandle, zoeSeatAdmin, seatData);
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          addSeatResultP.catch(() => {});
+          return addSeatResultP;
         },
         hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
         removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),

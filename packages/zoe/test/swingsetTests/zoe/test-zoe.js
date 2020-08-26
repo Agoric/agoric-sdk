@@ -267,7 +267,7 @@ const expectedBadTimerLog = [
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
 ];
-test('zoe - bad timer', async t => {
+test.skip('zoe - bad timer', async t => {
   t.plan(1);
   const startingValues = [
     [3, 0, 0],
