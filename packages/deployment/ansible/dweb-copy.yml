@@ -1,0 +1,11 @@
+---
+
+- hosts: "{{ service }}"
+  user: root
+  strategy: free
+  vars:
+    - service: dweb
+    - NETWORK_NAME: "{{ lookup('file', SETUP_HOME + '/network.txt') }}"
+  roles:
+    - init
+    - dweb-copy
