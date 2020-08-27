@@ -21,32 +21,32 @@ type CompartmentConstructorOptions = {
   //   nowHook(): number; // Use for both Date.now() and new Date(),
   // Supplied during Module instance creation instead of option
   //   hasSourceTextAvailableHook(scriptOrModule): bool; // Used for censorship
-  resolveHook(name: string, referrer: FullSpecifier): FullSpecifier
+  resolveHook?: (name: string, referrer: FullSpecifier) => FullSpecifier
 
   // timing
   // importHook delegates to importNowHook FIRST,
   // they share a memo cache
   // order to ensures importNow never allows async value of import
   // to be accessed prior to any attached promise
-  importHook(fullSpec: FullSpecifier): Promise<StaticModuleRecord>;
-  importNowHook(fullSpec: FullSpecifier): StaticModuleRecord?;
+  importHook?: (fullSpec: FullSpecifier) => Promise<StaticModuleRecord>;
+  importNowHook?: (fullSpec: FullSpecifier) => StaticModuleRecord?;
 
   // copy own props after return
-  importMetaHook(fullSpec: FullSpecifier): object
+  importMetaHook?: (fullSpec: FullSpecifier) => object
 
   // e.g.: 'fr-FR' - Affects appropriate ECMA-402 APIs within Compartment
-  localeHook(): string;
+  localeHook?: () => string;
   // This is important to be able to override for deterministic testing and such
-  localTZAHook(): string;
+  localTZAHook?: () => string;
 
   // determines if the fn is acting as an "eval" function
-  isDirectEvalHook(evalFunctionRef: any): boolean;
+  isDirectEvalHook?: (evalFunctionRef: any) => boolean;
 
   // prep for trusted types non-string
-  canCompileHook(source: any, {
+  canCompileHook?: (source: any, /*@@not sure how to do this in ts: {
     evaluator: functionRef, // can be a value from isDirectEvalHook
-    isDirect?: boolean
-  }): boolean; // need to allow mimicing CSP including nonces
+    isDirect?: boolean,
+  }*/) => boolean; // need to allow mimicing CSP including nonces
 };
 // Exposed on global object
 // new Constructor per Compartment
@@ -54,7 +54,7 @@ type CompartmentConstructorOptions = {
 // CreateRealm needs to be refactored to take params
 //  - intrinsics: an intrinsics record from
 //                6.1.7.4 Well-Known Intrinsic Objects
-interface Compartment {
+class Compartment {
   constructor(
     // extra bindings added to the global
     endowments?: {
@@ -90,4 +90,5 @@ interface Compartment {
   // the `moduleMap` Compartment constructor argument, without importing (and
   // consequently executing) the module.
   module(specifier: string): ModuleNamespace;
-  }
+}
+
