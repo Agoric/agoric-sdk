@@ -13,9 +13,9 @@ const log = makePrintLog();
  * @param {ZoeService} zoe
  * @param {Issuer[]} issuers
  * @param {Payment[]} payments
- * @param {{ makeInvitation: () => Invitation }} publicAPI
+ * @param {{ makeInvitation: () => Invitation }} publicFacet
  */
-async function build(name, zoe, issuers, payments, publicAPI) {
+async function build(name, zoe, issuers, payments, publicFacet) {
   const { moola, simoleans, purses } = await setupPurses(
     zoe,
     issuers,
@@ -47,7 +47,7 @@ async function build(name, zoe, issuers, payments, publicAPI) {
   async function initiateTrade(otherP) {
     await preReport();
 
-    const addOrderInvitation = await E(publicAPI).makeInvitation();
+    const addOrderInvitation = await E(publicFacet).makeInvitation();
 
     const mySellOrderProposal = harden({
       give: { Asset: moola(1) },
@@ -64,7 +64,7 @@ async function build(name, zoe, issuers, payments, publicAPI) {
     );
     const payoutP = E(seat).getPayouts();
 
-    const invitationP = E(publicAPI).makeInvitation();
+    const invitationP = E(publicFacet).makeInvitation();
     await E(otherP).respondToTrade(invitationP);
 
     await receivePayout(payoutP);
@@ -105,7 +105,7 @@ async function build(name, zoe, issuers, payments, publicAPI) {
 
 export function buildRootObject(_vatPowers, vatParameters) {
   return harden({
-    build: (zoe, issuers, payments, publicAPI) =>
-      build(vatParameters.name, zoe, issuers, payments, publicAPI),
+    build: (zoe, issuers, payments, publicFacet) =>
+      build(vatParameters.name, zoe, issuers, payments, publicFacet),
   });
 }
