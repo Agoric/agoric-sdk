@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
@@ -44,32 +44,33 @@ test('zoe - atomicSwap', async t => {
 
         const seat = await E(zoe).offer(firstInvitation, proposal, payments);
 
-        E(seat)
+        // The result of making the first offer is an invitation to swap by
+        // providing the other goods.
+        const invitationP = E(seat).getOfferResult();
+        return { seat, invitationP };
+      },
+      collectPayouts: async seat => {
+        await E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               moola(0),
               `Alice didn't get any of what she put in`,
             ),
           );
 
-        E(seat)
+        await E(seat)
           .getPayout('Price')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
-              proposal.want.Price,
+              simoleans(7),
               `Alice got exactly what she wanted`,
             ),
           );
-
-        // The result of making the first offer is an invitation to swap by
-        // providing the other goods.
-        const invitationP = E(seat).getOfferResult();
-        return invitationP;
       },
     };
   };
@@ -86,18 +87,17 @@ test('zoe - atomicSwap', async t => {
         // an
         const invitation = await invitationIssuer.claim(untrustedInvitation);
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
-
-        t.equals(
+        t.is(
           invitationValue.installation,
           installation,
           'installation is atomicSwap',
         );
-        t.deepEquals(
+        t.deepEqual(
           invitationValue.asset,
           moola(3),
           `asset to be traded is 3 moola`,
         );
-        t.deepEquals(
+        t.deepEqual(
           invitationValue.price,
           simoleans(7),
           `price is 7 simoleans, so bob must give that`,
@@ -112,38 +112,39 @@ test('zoe - atomicSwap', async t => {
 
         const seat = await zoe.offer(invitation, proposal, payments);
 
-        t.equals(
+        t.is(
           await E(seat).getOfferResult(),
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
 
-        E(seat)
+        const r1 = E(seat)
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               proposal.want.Asset,
               `Bob got what he wanted`,
             ),
           );
 
-        E(seat)
+        const r2 = E(seat)
           .getPayout('Price')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               simoleans(0),
               `Bob didn't get anything back`,
             ),
           );
+        await r1;
+        await r2;
       },
     });
   };
 
   const alice = await makeAlice(await E(moolaKit.mint).mintPayment(moola(3)));
-
   // Alice makes an instance and makes her offer.
   const installation = await alice.installCode();
 
@@ -151,14 +152,16 @@ test('zoe - atomicSwap', async t => {
     installation,
     await E(simoleanKit.mint).mintPayment(simoleans(7)),
   );
+
   const { creatorInvitation } = await alice.startInstance(installation);
-  const invitation = await alice.offer(creatorInvitation);
+  const { seat, invitationP } = await alice.offer(creatorInvitation);
 
   // Alice spreads the invitation far and wide with instructions
   // on how to use it and Bob decides he wants to be the
   // counter-party, without needing to trust Alice at all.
 
-  await bob.offer(invitation);
+  await bob.offer(invitationP);
+  await alice.collectPayouts(seat);
 });
 
 test('zoe - non-fungible atomicSwap', async t => {
@@ -207,7 +210,7 @@ test('zoe - non-fungible atomicSwap', async t => {
           .getPayout('Asset')
           .then(ccPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               cryptoCats(harden([])),
               `Alice didn't get any of what she put in`,
@@ -218,7 +221,7 @@ test('zoe - non-fungible atomicSwap', async t => {
           .getPayout('Price')
           .then(rpgPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               proposal.want.Price,
               `Alice got exactly what she wanted`,
@@ -247,17 +250,17 @@ test('zoe - non-fungible atomicSwap', async t => {
         const invitation = await invitationIssuer.claim(untrustedInvitation);
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
-        t.equals(
+        t.is(
           invitationValue.installation,
           installation,
           'installation is atomicSwap',
         );
-        t.deepEquals(
+        t.deepEqual(
           invitationValue.asset,
           calico37Amount,
           `asset to be traded is a particular crypto cat`,
         );
-        t.deepEquals(
+        t.deepEqual(
           invitationValue.price,
           vorpalAmount,
           `price is vorpalAmount, so bob must give that`,
@@ -272,27 +275,27 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         const seat = await zoe.offer(invitation, proposal, payments);
 
-        t.equals(
+        t.is(
           await E(seat).getOfferResult(),
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
 
-        seat
+        await seat
           .getPayout('Asset')
           .then(ccPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               proposal.want.Asset,
               `Bob got what he wanted`,
             ),
           );
 
-        seat
+        await seat
           .getPayout('Price')
           .then(rpgPurse.deposit)
           .then(amountDeposited =>
-            t.deepEquals(
+            t.deepEqual(
               amountDeposited,
               rpgItems(harden([])),
               `Bob didn't get anything back`,
@@ -383,10 +386,10 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   const bobIssuers = zoe.getIssuers(bobInvitationValue.instance);
 
-  t.equals(bobInvitationValue.installation, installation, 'bobInstallationId');
-  t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
-  t.deepEquals(bobInvitationValue.asset, moola(3));
-  t.deepEquals(bobInvitationValue.price, moola(7));
+  t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
+  t.deepEqual(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
+  t.deepEqual(bobInvitationValue.asset, moola(3));
+  t.deepEqual(bobInvitationValue.price, moola(7));
 
   const bobProposal = harden({
     give: { Price: moola(7) },
@@ -402,7 +405,7 @@ test('zoe - atomicSwap like-for-like', async t => {
     bobPayments,
   );
 
-  t.equals(
+  t.is(
     await E(bobSeat).getOfferResult(),
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
@@ -414,29 +417,29 @@ test('zoe - atomicSwap like-for-like', async t => {
   const alicePricePayout = await aliceSeat.getPayout('Price');
 
   // Alice gets what Alice wanted
-  t.deepEquals(
+  t.deepEqual(
     await moolaIssuer.getAmountOf(alicePricePayout),
     aliceProposal.want.Price,
   );
 
   // Alice didn't get any of what Alice put in
-  t.deepEquals(await moolaIssuer.getAmountOf(aliceAssetPayout), moola(0));
+  t.deepEqual(await moolaIssuer.getAmountOf(aliceAssetPayout), moola(0));
 
   // Alice deposits her payout to ensure she can
   const aliceAssetAmount = await aliceMoolaPurse.deposit(aliceAssetPayout);
-  t.equals(aliceAssetAmount.value, 0);
+  t.is(aliceAssetAmount.value, 0);
   const alicePriceAmount = await aliceMoolaPurse.deposit(alicePricePayout);
-  t.equals(alicePriceAmount.value, 7);
+  t.is(alicePriceAmount.value, 7);
 
   // Bob deposits his original payments to ensure he can
   const bobAssetAmount = await bobMoolaPurse.deposit(bobAssetPayout);
-  t.equals(bobAssetAmount.value, 3);
+  t.is(bobAssetAmount.value, 3);
   const bobPriceAmount = await bobMoolaPurse.deposit(bobPricePayout);
-  t.equals(bobPriceAmount.value, 0);
+  t.is(bobPriceAmount.value, 0);
 
   // Assert that the correct payouts were received.
   // Alice had 3 moola from Asset and 0 from Price.
   // Bob had 0 moola from Asset and 7 from Price.
-  t.equals(aliceMoolaPurse.getCurrentAmount().value, 7);
-  t.equals(bobMoolaPurse.getCurrentAmount().value, 3);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 7);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 3);
 });

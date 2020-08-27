@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'tape-promise/tape';
+import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -27,5 +27,7 @@ test('zoe - test zcf', async t => {
     Pixels: moolaIssuer,
     Money: simoleanIssuer,
   });
-  t.doesNotReject(() => zoe.startInstance(installation, issuerKeywordRecord));
+  await t.notThrowsAsync(() =>
+    zoe.startInstance(installation, issuerKeywordRecord),
+  );
 });
