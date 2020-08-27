@@ -463,27 +463,27 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(moolaPurseP).deposit(await moolaPayout1);
       await E(simoleanPurseP).deposit(await simoleanPayout1);
 
-      // Bob looks up how much to pay to get 6 moola. It's 3 simoleans
-      const moolaAmounts = await E(publicFacet).getOutputPrice(
-        moola(6),
-        simoleans(0).brand,
+      // Bob looks up how much moola he can get for 3 simoleans. It's 5
+      const moolaProceeds = await E(publicFacet).getInputPrice(
+        simoleans(3),
+        moola(0).brand,
       );
-      log(`moola price `, moolaAmounts);
+      log(`moola proceeds `, moolaProceeds);
 
       // Bob makes another offer and swaps
-      const bobSimsForMoolaProposal = harden({
-        want: { Out: moola(6) },
+      const bobSimsForMoolaProposa2 = harden({
+        want: { Out: moola(5) },
         give: { In: simoleans(3) },
       });
       await E(simoleanPurseP).deposit(simoleanPayment);
-      const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
-      const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
-      const invitation2 = E(publicFacet).makeSwapOutInvitation();
+      const bobSimPayment2 = await E(simoleanPurseP).withdraw(simoleans(3));
+      const simsForMoolaPayments2 = harden({ In: bobSimPayment2 });
+      const invitation2 = E(publicFacet).makeSwapInInvitation();
 
       const swapSeat2 = await E(zoe).offer(
         invitation2,
-        bobSimsForMoolaProposal,
-        simsForMoolaPayments,
+        bobSimsForMoolaProposa2,
+        simsForMoolaPayments2,
       );
 
       log(await E(swapSeat2).getOfferResult());
@@ -496,6 +496,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
+
+      // Bob looks up how much simoleans he'd have to pay for 3 moola. It's 6
+      const simRequired = await E(publicFacet).getOutputPrice(
+        moola(3),
+        simoleans(0).brand,
+      );
+      log(`simoleans required `, simRequired);
     },
 
     doBuyTickets: async (instance, invitation) => {

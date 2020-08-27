@@ -115,9 +115,9 @@ const start = async zcf => {
 
   /**
    * Swap one asset for another. In specifies the asset being provided and Out
-   * specifies the wanted asset. If the want amount is 0, all of the In amount
-   * is expended. If the want amount is positive, then only enough of the In is
-   * spent to provide that Out. If the In is insufficient the trade is refused.
+   * specifies the wanted asset. The amount of Out returned is calculated based
+   * on the In amount. If the calculation produces a value less than the
+   * specified want, the trade will fail in offer safety.
    *
    * @type {OfferHandler}
    */
@@ -132,7 +132,6 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
-    const tradeAmountIn = amountIn;
     const outputValue = getInputPrice(
       harden({
         inputValue: amountIn.value,
@@ -142,14 +141,13 @@ const start = async zcf => {
     );
     const outAmountMath = zcf.getAmountMath(wantedAmountOut.brand);
     const tradeAmountOut = outAmountMath.make(outputValue);
-    return consummate(tradeAmountIn, tradeAmountOut, swapSeat);
+    return consummate(amountIn, tradeAmountOut, swapSeat);
   };
 
   /**
    * Swap one asset for another. In specifies the asset being provided and Out
-   * specifies the wanted asset. If the want amount is 0, all of the In amount
-   * is expended. If the want amount is positive, then only enough of the In is
-   * spent to provide that Out. If the In is insufficient the trade is refused.
+   * specifies the wanted asset. The In amount is calculated based on the Out
+   * amount. If the In amount provided is insufficient the trade is refused.
    *
    * @type {OfferHandler}
    */
@@ -164,7 +162,6 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
-    const tradeAmountOut = wantedAmountOut;
     const tradePrice = getOutputPrice({
       outputValue: wantedAmountOut.value,
       inputReserve: getPoolAmount(amountIn.brand).value,
@@ -174,10 +171,10 @@ const start = async zcf => {
     const inAmountMath = zcf.getAmountMath(amountIn.brand);
     const tradeAmountIn = inAmountMath.make(tradePrice);
 
-    return consummate(tradeAmountIn, tradeAmountOut, swapSeat);
+    return consummate(tradeAmountIn, wantedAmountOut, swapSeat);
   };
 
-  const addLiquidity = (seat, secondaryValue) => {
+  const addLiquidity = (seat, secondaryAmount) => {
     const userAllocation = seat.getCurrentAllocation();
     const centralPool = getPoolAmount(brands.Central).value;
     const centralIn = userAllocation.Central.value;
@@ -198,7 +195,7 @@ const start = async zcf => {
         seat: poolSeat,
         gains: {
           Central: centralMath.make(centralIn),
-          Secondary: secondaryMath.make(secondaryValue),
+          Secondary: secondaryAmount,
         },
       },
       { seat, gains: { Liquidity: liquidityAmountOut } },
@@ -210,7 +207,7 @@ const start = async zcf => {
 
   const initiateLiquidity = liqSeat => {
     const userAllocation = liqSeat.getCurrentAllocation();
-    return addLiquidity(liqSeat, userAllocation.Secondary.value);
+    return addLiquidity(liqSeat, userAllocation.Secondary);
   };
 
   /**
@@ -231,19 +228,24 @@ const start = async zcf => {
     }
 
     const userAllocation = liqSeat.getCurrentAllocation();
-    const secondaryIn = userAllocation.Secondary.value;
+    const secondaryIn = userAllocation.Secondary;
 
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
-    const secondaryOut = calcSecondaryRequired({
-      centralIn: userAllocation.Central.value,
-      centralPool: getPoolAmount(brands.Central).value,
-      secondaryPool: getPoolAmount(brands.Secondary).value,
-      secondaryIn,
-    });
+    const secondaryOut = secondaryMath.make(
+      calcSecondaryRequired({
+        centralIn: userAllocation.Central.value,
+        centralPool: getPoolAmount(brands.Central).value,
+        secondaryPool: getPoolAmount(brands.Secondary).value,
+        secondaryIn: secondaryIn.value,
+      }),
+    );
 
     // Central was specified precisely so offer must provide enough secondary.
-    assert(secondaryIn >= secondaryOut, 'insufficient Secondary deposited');
+    assert(
+      secondaryMath.isGTE(secondaryIn, secondaryOut),
+      'insufficient Secondary deposited',
+    );
 
     return addLiquidity(liqSeat, secondaryOut);
   };

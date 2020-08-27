@@ -156,15 +156,12 @@ const makeTrader = async (
       t.deepEquals(secondary(sPost), poolPost.Secondary, `s after swap`);
       t.equals(kPost, sPost * cPost);
 
-      seat
-        .getOfferResult()
-        .then(async () =>
-          t.equals(
-            lPost,
-            await E(publicFacet).getLiquiditySupply(),
-            'liquidity after',
-          ),
-        );
+      await seat.getOfferResult();
+      t.equals(
+        lPost,
+        await E(publicFacet).getLiquiditySupply(),
+        'liquidity after',
+      );
     },
 
     // This check only handles success. Failing calls should do something else.
@@ -745,15 +742,11 @@ test('autoSwap - trade attempt before init', async t => {
     const poolPost = await E(publicFacet).getPoolAllocation();
     t.deepEquals({}, poolPost, `empty Pool still`);
 
-    seat
-      .getOfferResult()
-      .then(async () =>
-        t.equals(
-          0,
-          await E(publicFacet).getLiquiditySupply(),
-          'liquidity empty after',
-        ),
-      );
+    t.equals(
+      0,
+      await E(publicFacet).getLiquiditySupply(),
+      'liquidity empty after',
+    );
 
     t.end();
   } catch (e) {
