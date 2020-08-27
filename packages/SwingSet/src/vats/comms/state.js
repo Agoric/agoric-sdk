@@ -1,6 +1,11 @@
+/* global harden */
 import { assert, details } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
 import { makeVatSlot } from '../../parseVatSlots';
+import { insistRemoteID } from './remote';
+
+const COMMS = 'comms';
+const KERNEL = 'kernel';
 
 export function makeState() {
   const state = {
@@ -9,13 +14,15 @@ export function makeState() {
     names: new Map(), // name -> remoteNN
 
     nextObjectIndex: 10,
-    remoteReceivers: new Map(), // o+NN -> remoteNN
-    objectTable: new Map(), // o+NN -> owning remote
+    remoteReceivers: new Map(), // o+NN -> remoteNN, for admin rx objects
+    objectTable: new Map(), // o+NN -> owning remote for non-admin objects
 
     // hopefully we can avoid the need for local promises
     // localPromises: new Map(), // p+NN/p-NN -> local purpose
-    promiseTable: new Map(), // p+NN/p-NN -> { state, owner, decider, subscriber }
-    // and maybe resolution, one of:
+    promiseTable: new Map(),
+    // p+NN/p-NN -> { resolved, decider, subscribers, kernelIsSubscribed }
+    // decider is one of: remoteID, 'kernel', 'comms'
+    // and maybe resolution:, one of:
     // * {type: 'object', slot}
     // * {type: 'data', data}
     // * {type: 'reject', data}
@@ -35,8 +42,13 @@ export function dumpState(state) {
   console.log(`Promise Table:`);
   for (const id of state.promiseTable.keys()) {
     const p = state.promiseTable.get(id);
+    const subscribers = Array.from(p.subscribers);
+    if (p.kernelIsSubscribed) {
+      subscribers.push('kernel');
+    }
+    const subs = subscribers.join(',');
     console.log(
-      `${id} : owner=${p.owner}, resolved=${p.resolved}, decider=${p.decider}, sub=${p.subscriber}`,
+      `${id} : owner=${p.owner}, resolved=${p.resolved}, decider=${p.decider}, sub=${subs}`,
     );
   }
   console.log();
@@ -52,98 +64,169 @@ export function dumpState(state) {
   }
 }
 
-export function trackUnresolvedPromise(state, remoteID, pid) {
-  assert(!state.promiseTable.has(pid), details`${pid} already present`);
-  state.promiseTable.set(pid, {
-    owner: remoteID,
-    state: 'unresolved',
-    decider: remoteID,
-    subscriber: null,
+export function buildStateTools(state) {
+
+  function trackUnresolvedPromise(vpid) {
+    assert(!state.promiseTable.has(vpid), `${vpid} already present`);
+    state.promiseTable.set(vpid, {
+      resolved: false,
+      decider: COMMS,
+      subscribers: [],
+      kernelIsSubscribed: false,
+    });
+  }
+
+  function allocateUnresolvedPromise() {
+    const index = state.nextPromiseIndex;
+    state.nextPromiseIndex += 1;
+    const pid = makeVatSlot('promise', true, index);
+    trackUnresolvedPromise(pid);
+    return pid;
+  }
+
+  function insistDeciderIsRemote(vpid, remoteID) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    const { decider } = p;
+    assert.equal(decider, remoteID,
+                 `${vpid} is decided by ${decider}, not ${remoteID}`);
+  }
+
+  function insistDeciderIsComms(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    const { decider } = p;
+    assert.equal(decider, COMMS,
+                 `${decider} is the decider for ${vpid}, not me`);
+  }
+
+  function insistDeciderIsKernel(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    const { decider } = p;
+    assert.equal(decider, KERNEL,
+                 `${decider} is the decider for ${vpid}, not kernel`);
+  }
+
+  // Decision authority always transfers through the comms vat, so the only
+  // legal transitions are remote <-> comms <-> kernel.
+
+  function changeDeciderToRemote(vpid, newDecider) {
+    insistRemoteID(newDecider);
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert.equal(p.decider, COMMS);
+    p.decider = newDecider;
+  }
+
+  function changeDeciderFromRemoteToComms(vpid, oldDecider) {
+    insistRemoteID(oldDecider);
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(p, `unknown ${vpid}`);
+    assert.equal(p.decider, oldDecider);
+    p.decider = COMMS;
+  }
+
+  function changeDeciderToKernel(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(p, `unknown ${vpid}`);
+    assert.equal(p.decider, COMMS);
+    p.decider = KERNEL;
+  }
+
+  function changeDeciderFromKernelToComms(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(p, `unknown ${vpid}`);
+    assert.equal(p.decider, KERNEL);
+    p.decider = COMMS;
+  }
+
+
+  function getPromiseSubscribers(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(p, `unknown ${vpid}`);
+    const { subscribers, kernelIsSubscribed } = p;
+    return { subscribers, kernelIsSubscribed };
+  }
+
+  function subscribeRemoteToPromise(vpid, subscriber) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(!p.resolved, `${vpid} already resolved`);
+    p.subscribers.push(subscriber);
+  }
+
+  function unsubscribeRemoteFromPromise(vpid, subscriber) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(!p.resolved, `${vpid} already resolved`);
+    p.subscribers = p.subscribers.filter(s => s !== subscriber);
+  }
+
+  function subscribeKernelToPromise(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(!p.resolved, `${vpid} already resolved`);
+    p.kernelIsSubscribed = true;
+  }
+
+  function unsubscribeKernelFromPromise(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(!p.resolved, `${vpid} already resolved`);
+    p.kernelIsSubscribed = false;
+  }
+
+  function insistPromiseIsUnresolved(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(!p.resolved, `${vpid} was already resolved`);
+  }
+
+  function markPromiseAsResolved(vpid, resolution) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(!p.resolved);
+    if (resolution.type === 'object') {
+      assert(resolution.slot, `resolution(object) requires .slot`);
+    } else if (resolution.type === 'data') {
+      insistCapData(resolution.data);
+    } else if (resolution.type === 'reject') {
+      insistCapData(resolution.data);
+    } else {
+      throw new Error(`unknown resolution type ${resolution.type}`);
+    }
+    p.resolved = true;
+    p.resolution = resolution;
+    p.decider = undefined;
+    p.subscribers = undefined;
+    p.kernelIsSubscribed = undefined;
+  }
+
+  return harden({
+    trackUnresolvedPromise,
+    allocateUnresolvedPromise,
+
+    insistDeciderIsRemote,
+    insistDeciderIsComms,
+    insistDeciderIsKernel,
+
+    changeDeciderToRemote,
+    changeDeciderFromRemoteToComms,
+    changeDeciderToKernel,
+    changeDeciderFromKernelToComms,
+
+    getPromiseSubscribers,
+    subscribeRemoteToPromise,
+    unsubscribeRemoteFromPromise,
+    subscribeKernelToPromise,
+    unsubscribeKernelFromPromise,
+
+    insistPromiseIsUnresolved,
+    markPromiseAsResolved,
   });
-}
-
-export function allocateUnresolvedPromise(state, remoteID) {
-  const index = state.nextPromiseIndex;
-  state.nextPromiseIndex += 1;
-  const pid = makeVatSlot('promise', true, index);
-  trackUnresolvedPromise(state, remoteID, pid);
-  return pid;
-}
-
-export function setPromiseDecider(state, promiseID, decider) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  state.promiseTable.get(promiseID).decider = decider;
-}
-
-export function setPromiseSubscriber(state, promiseID, subscriber) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  state.promiseTable.get(promiseID).subscriber = subscriber;
-}
-
-export function insistPromiseIsUnresolved(state, promiseID) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  const pstate = state.promiseTable.get(promiseID).state;
-  assert(
-    pstate === 'unresolved',
-    details`${promiseID} has state ${pstate}, not 'unresolved'`,
-  );
-}
-
-export function insistPromiseDeciderIs(state, promiseID, remoteID) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  const { decider } = state.promiseTable.get(promiseID);
-  assert(
-    decider === remoteID,
-    details`${promiseID} is decided by ${decider}, not ${remoteID}`,
-  );
-}
-
-export function insistPromiseDeciderIsMe(state, promiseID) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  const { decider } = state.promiseTable.get(promiseID);
-  assert(!decider, details`${decider} is the decider for ${promiseID}, not me`);
-}
-
-export function insistPromiseSubscriberIsNotDifferent(
-  state,
-  promiseID,
-  remoteID,
-) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  const { subscriber } = state.promiseTable.get(promiseID);
-  if (subscriber) {
-    assert(
-      subscriber === remoteID,
-      details`${promiseID} subscriber is ${subscriber}, not ${remoteID}`,
-    );
-  }
-}
-
-export function getPromiseSubscriber(state, promiseID) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  const { subscriber } = state.promiseTable.get(promiseID);
-  assert(subscriber, details`${promiseID} has no subscriber`);
-  return subscriber;
-}
-
-export function markPromiseAsResolved(state, promiseID, resolution) {
-  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
-  const p = state.promiseTable.get(promiseID);
-  assert(
-    p.state === 'unresolved',
-    details`${promiseID} is already resolved (${p.state})`,
-  );
-  if (resolution.type === 'object') {
-    assert(resolution.slot, details`resolution(object) requires .slot`);
-  } else if (resolution.type === 'data') {
-    insistCapData(resolution.data);
-  } else if (resolution.type === 'reject') {
-    insistCapData(resolution.data);
-  } else {
-    throw new Error(`unknown resolution type ${resolution.type}`);
-  }
-  p.state = 'resolved';
-  p.resolution = resolution;
-  p.decider = undefined;
-  p.subscriber = undefined;
 }

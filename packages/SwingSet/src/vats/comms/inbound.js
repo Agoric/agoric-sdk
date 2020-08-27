@@ -1,6 +1,7 @@
 /* global harden */
 
 import { assert, details } from '@agoric/assert';
+import { makeUndeliverableError } from '../../makeUndeliverableError';
 import { insistRemoteType } from './parseRemoteSlot';
 import {
   getLocalForRemote,
@@ -13,33 +14,7 @@ import {
   markPromiseAsResolved,
 } from './state';
 
-function getInboundFor(state, remoteID, remoteTarget) {
-  const target = getLocalForRemote(state, remoteID, remoteTarget);
-  // That might point to o-NN or a promise. Check if the promise was resolved
-  // already.
-  if (state.promiseTable.has(target)) {
-    const p = state.promiseTable.get(target);
-    if (p.state === 'unresolved') {
-      return target;
-    }
-    if (p.state === 'resolved') {
-      if (p.resolution.type === 'object') {
-        return p.resolution.slot;
-      }
-      if (p.resolution.type === 'data') {
-        throw Error(`todo: error for fulfilledToData`);
-      }
-      if (p.resolution.type === 'reject') {
-        throw Error(`todo: error for rejected`);
-      }
-      throw Error(`unknown res type ${p.resolution.type}`);
-    }
-    throw Error(`unknown p.state ${p.state}`);
-  }
-  return target;
-}
-
-export function deliverFromRemote(syscall, state, remoteID, message) {
+export function deliverFromRemote(syscall, handleDelivery, resolvePromiseToRemote, state, remoteID, message) {
   const command = message.split(':', 1)[0];
 
   // we deal with three different kinds of slot namespace ("slotspace") here:
@@ -70,18 +45,24 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
       .split(':')
       .slice(1);
     // slots: [$target, $method, $result, $slots..]
-    const target = getInboundFor(state, remoteID, slots[0]);
+    const remoteTarget = slots[0];
+    const localTarget = getLocalForRemote(state, remoteID, remoteTarget);
+    //const target = getInboundFor(state, remoteID, slots[0]);
     const method = slots[1];
-    const result = slots[2]; // 'rp-NN' or empty string
-    const msgSlots = slots
+    const remoteResult = slots[2]; // 'rp-NN' or empty string
+    const localResult = remoteResult.length ? provideLocalForRemoteResult(state, remoteID, remoteResult) : undefined;
+    const localSlots = slots
       .slice(3)
       .map(s => provideLocalForRemote(state, remoteID, s));
     const body = message.slice(sci + 1);
-    const args = harden({ body, slots: msgSlots });
-    let r; // send() if result promise is provided, else sendOnly()
-    if (result.length) {
-      r = provideLocalForRemoteResult(state, remoteID, result);
-    }
+    const localArgs = harden({ body, slots: localSlots });
+    const localDelivery = harden({ target: localTarget, method, result: localResult, args: localArgs });
+
+    handleDelivery(localDelivery);
+
+
+    function deliverToKernel(
+
     syscall.send(target, method, args, r);
     if (r) {
       // syscall.subscribe() happens after the send(), so it doesn't have to
