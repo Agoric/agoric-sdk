@@ -10,9 +10,9 @@
     "declaration": true,
     "emitDeclarationOnly": true,
 */
-    "downlevelIteration": true,
     "strictNullChecks": true,
+    "noImplicitAny": true,
     "moduleResolution": "node",
   },
-  "include": ["src/**/*.js", "exports.js"],
+  "include": ["src/**/*.js", "src/**/*.ts", "exports.js"],
 }
