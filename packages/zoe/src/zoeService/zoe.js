@@ -279,13 +279,19 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             }
             return undefined;
           })),
-        // A Seat requested by the contract without an offer
-        makeOfferlessSeat: (initialAllocation, proposal, seatHandle) => {
+        // A Seat requested by the contract without any payments to escrow
+        makeNoEscrowSeat: (
+          initialAllocation,
+          proposal,
+          exitObj,
+          seatHandle,
+        ) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,
             proposal,
             brandToPurse,
+            exitObj,
           );
           instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
@@ -394,8 +400,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             instanceAdmin,
             proposal,
             brandToPurse,
-            offerResultPromiseKit.promise,
             exitObjPromiseKit.promise,
+            offerResultPromiseKit.promise,
           );
 
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);

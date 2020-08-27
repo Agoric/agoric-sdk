@@ -297,21 +297,14 @@ export function buildRootObject() {
       // Shutdown the entire vat and give payouts
       shutdown: () => E(zoeInstanceAdmin).shutdown(),
       makeZCFMint,
-      makeEmptySeatKit: () => {
+      makeEmptySeatKit: (exit = undefined) => {
         const initialAllocation = harden({});
-        const proposal = cleanProposal(getAmountMath, harden({}));
+        const proposal = cleanProposal(getAmountMath, harden({ exit }));
         const { notifier, updater } = makeNotifierKit();
+        /** @type {PromiseRecord<ZoeSeatAdmin>} */
         const zoeSeatAdminPromiseKit = makePromiseKit();
         const userSeatPromiseKit = makePromiseKit();
         const seatHandle = makeHandle('SeatHandle');
-
-        E(zoeInstanceAdmin)
-          .makeOfferlessSeat(initialAllocation, proposal, seatHandle)
-          .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
-            updateFromNotifier(updater, zoeNotifier);
-            zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
-            userSeatPromiseKit.resolve(userSeat);
-          });
 
         const seatData = harden({
           proposal,
@@ -326,6 +319,21 @@ export function buildRootObject() {
         );
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
+
+        const exitObj = makeExitObj(
+          seatData.proposal,
+          zoeSeatAdminPromiseKit.promise,
+          zcfSeatAdmin,
+        );
+
+        E(zoeInstanceAdmin)
+          .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
+          .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
+            updateFromNotifier(updater, zoeNotifier);
+            zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
+            userSeatPromiseKit.resolve(userSeat);
+          });
+
         return { zcfSeat, userSeat: userSeatPromiseKit.promise };
       },
 
