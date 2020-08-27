@@ -7,8 +7,8 @@ namespace endo {
 type CompartmentMap = {
   tags: Tags,
   main: CompartmentName,
-  compartments: Object<CompartmentName, Compartment>,
-  realms: Object<RealmName, Realm>, // TODO
+  compartments: { [compartmentName: string]: Compartment },
+  realms: { [realmName: string]: Realm}, // TODO
 };
 
 // Tags are the build tags for the compartment.
@@ -42,7 +42,7 @@ type Location = string;
 
 // ModuleMap describes modules available in the compartment
 // that do not correspond to source files in the same compartment.
-type ModuleMap = Object<InternalModuleSpecifier, Module>;
+type ModuleMap = { [internalModuleSpecifier: string]: Module };
 
 // Module describes a module in a compartment.
 type Module = CompartmentModule | FileModule | ExitModule;
@@ -105,7 +105,7 @@ type ExternalModuleSpecifier = string;
 // Endo adds `{"json": "json"}` for good measure in both cases, although
 // Node.js (as of version 0.14.5) does not support importing JSON modules from
 // ESM.
-type ParserMap = Object<Extension, Parser>;
+type ParserMap = { [extension: string]: Parser };
 
 // Extension is a file extension such as "js" for "main.js" or "" for "README".
 type Extension = string;
@@ -122,7 +122,7 @@ type Parser = "mjs" | "cjs" | "json";
 // Node.js allows the "module" property in package.json to denote
 // a file that is an ECMAScript module, regardless of its extension.
 // This is the mechanism that allows Endo to respect that behavior.
-type ModuleParserMap = Object<InternalModuleSpecifier, Parser>;
+type ModuleParserMap = { [internalModuleSpecifier: string]: Parser };
 
 // ScopeMap is a map from internal module specifier prefixes
 // like "dependency" or "@organization/dependency" to another
@@ -134,7 +134,7 @@ type ModuleParserMap = Object<InternalModuleSpecifier, Parser>;
 // to a link into some internal module of the foreign compartment.
 // When Endo creates an archive, it captures all of the Modules
 // explicitly and erases the scopes entry.
-type ScopeMap = Object<InternalModuleSpecifier, Scope>;
+type ScopeMap = { [internalModuleSpecifier: string]: Scope };
 
 // Scope describes the compartment to use for all ad-hoc
 // entries in the compartment's module map.
