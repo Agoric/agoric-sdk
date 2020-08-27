@@ -13,22 +13,17 @@ const log = makePrintLog();
  * @param {ZoeService} zoe
  * @param {Issuer[]} issuers
  * @param {Payment[]} payments
- * @param {Record<string,Installation>} installations
+ * @param {{ makeInvitation: () => Invitation }} publicFacet
  */
-async function build(name, zoe, issuers, payments, installations) {
+async function build(name, zoe, issuers, payments, publicFacet) {
   const { moola, simoleans, purses } = await setupPurses(
     zoe,
     issuers,
     payments,
   );
   const [moolaPurseP, simoleanPurseP] = purses;
-  const [moolaIssuer, simoleanIssuer] = issuers;
-  const issuerKeywordRecord = harden({
-    Price: simoleanIssuer,
-    Asset: moolaIssuer,
-  });
-  const inviteIssuer = await E(zoe).getInvitationIssuer();
-  const { simpleExchange } = installations;
+
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   async function preReport() {
     await showPurseBalance(moolaPurseP, `${name} moola before`, log);
@@ -49,16 +44,10 @@ async function build(name, zoe, issuers, payments, installations) {
     await E(simoleanPurseP).deposit(simoleanPayout);
   }
 
-  async function initiateSimpleExchange(otherP) {
+  async function initiateTrade(otherP) {
     await preReport();
 
-    const { publicFacet } = await E(zoe).startInstance(
-      simpleExchange,
-      issuerKeywordRecord,
-    );
-    const publicAPI = /** @type {{ makeInvitation: () => Invitation }} */ (publicFacet);
-
-    const addOrderInvite = await E(publicAPI).makeInvitation();
+    const addOrderInvitation = await E(publicFacet).makeInvitation();
 
     const mySellOrderProposal = harden({
       give: { Asset: moola(1) },
@@ -69,24 +58,24 @@ async function build(name, zoe, issuers, payments, installations) {
       Asset: await E(moolaPurseP).withdraw(moola(1)),
     };
     const seat = await E(zoe).offer(
-      addOrderInvite,
+      addOrderInvitation,
       mySellOrderProposal,
       paymentKeywordRecord,
     );
     const payoutP = E(seat).getPayouts();
 
-    const inviteP = E(publicAPI).makeInvitation();
-    await E(otherP).respondToSimpleExchange(inviteP);
+    const invitationP = E(publicFacet).makeInvitation();
+    await E(otherP).respondToTrade(invitationP);
 
     await receivePayout(payoutP);
     await postReport();
   }
 
-  async function respondToSimpleExchange(inviteP) {
+  async function respondToTrade(invitationP) {
     await preReport();
 
-    const invite = await inviteP;
-    const exclInvite = await E(inviteIssuer).claim(invite);
+    const invitation = await invitationP;
+    const exclInvitation = await E(invitationIssuer).claim(invitation);
 
     const myBuyOrderProposal = harden({
       want: { Asset: moola(1) },
@@ -98,7 +87,7 @@ async function build(name, zoe, issuers, payments, installations) {
     };
 
     const seatP = await E(zoe).offer(
-      exclInvite,
+      exclInvitation,
       myBuyOrderProposal,
       paymentKeywordRecord,
     );
@@ -109,14 +98,14 @@ async function build(name, zoe, issuers, payments, installations) {
   }
 
   return harden({
-    initiateSimpleExchange,
-    respondToSimpleExchange,
+    initiateTrade,
+    respondToTrade,
   });
 }
 
-export function buildRootObjectCommon(name, _vatPowers) {
+export function buildRootObject(_vatPowers, vatParameters) {
   return harden({
-    build: (zoe, issuers, payments, installations) =>
-      build(name, zoe, issuers, payments, installations),
+    build: (zoe, issuers, payments, publicFacet) =>
+      build(vatParameters.name, zoe, issuers, payments, publicFacet),
   });
 }

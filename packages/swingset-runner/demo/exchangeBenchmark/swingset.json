@@ -7,10 +7,16 @@
   },
   "vats": {
     "alice": {
-      "sourceSpec": "vat-alice.js"
+      "sourceSpec": "exchanger.js",
+      "parameters": {
+        "name": "alice"
+      }
     },
     "bob": {
-      "sourceSpec": "vat-bob.js"
+      "sourceSpec": "exchanger.js",
+      "parameters": {
+        "name": "bob"
+      }
     },
     "zoe": {
       "sourceSpec": "vat-zoe.js",

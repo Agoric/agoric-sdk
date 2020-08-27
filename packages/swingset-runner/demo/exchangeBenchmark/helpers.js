@@ -33,11 +33,6 @@ export async function setupPurses(zoe, issuers, payments) {
   const simoleans = simoleanAmountMath.make;
 
   return harden({
-    issuers: harden([moolaIssuer, simoleanIssuer]),
-    moolaIssuer,
-    simoleanIssuer,
-    moolaAmountMath,
-    simoleanAmountMath,
     moola,
     simoleans,
     purses,
