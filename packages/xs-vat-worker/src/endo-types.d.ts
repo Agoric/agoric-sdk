@@ -1,4 +1,7 @@
 // https://github.com/Agoric/SES-shim/blob/kris/endo-stack/packages/endo/DESIGN.md#compartment-maps
+
+namespace endo {
+
 // CompartmentMap describes how to prepare compartments
 // to run an application.
 type CompartmentMap = {
@@ -164,3 +167,5 @@ type RealmName = string;
 // The string value is the name of the module to be provided
 // in the application's given module map.
 type ModuleParameter = string;
+
+}
