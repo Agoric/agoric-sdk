@@ -421,7 +421,6 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
         '--keyring-backend=test',
         `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
         '--gas=auto',
-        '--gas-adjustment=1.05',
         '--from=ag-solo',
         '-ojson',
         '--broadcast-mode=block', // Don't return until committed.
