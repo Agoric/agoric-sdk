@@ -72,12 +72,36 @@ import Nat from '@agoric/nat';
 // replace it with one that tracks which parts of the state have been
 // modified, to build more efficient Merkle proofs.
 
-export function buildMailboxStateMap() {
-  const state = harden(new Map());
+export function importMailbox(data, inout = {}) {
+  const outbox = new Map();
+  data.outbox.forEach(m => {
+    outbox.set(Nat(m[0]), m[1]);
+  });
+  inout.ack = data.ack;
+  inout.outbox = outbox;
+  return inout;
+}
 
+export function exportMailbox(inout) {
+  const messages = [];
+  inout.outbox.forEach((body, msgnum) => {
+    messages.push([msgnum, body]);
+  });
+  messages.sort((a, b) => a[0] - b[0]);
+  return {
+    ack: inout.ack,
+    outbox: messages,
+  };
+}
+
+export function buildMailboxStateMap(state = harden(new Map())) {
   function getOrCreatePeer(peer) {
     if (!state.has(peer)) {
-      state.set(peer, { outbox: harden(new Map()), inboundAck: 0 });
+      const inout = {
+        outbox: harden(new Map()),
+        ack: 0,
+      };
+      state.set(peer, inout);
     }
     return state.get(peer);
   }
@@ -92,18 +116,17 @@ export function buildMailboxStateMap() {
   }
 
   function setAcknum(peer, msgnum) {
-    getOrCreatePeer(`${peer}`).inboundAck = Nat(msgnum);
+    getOrCreatePeer(`${peer}`).ack = Nat(msgnum);
   }
 
   function exportToData() {
     const data = {};
     state.forEach((inout, peer) => {
-      const messages = [];
-      inout.outbox.forEach((body, msgnum) => {
-        messages.push([msgnum, body]);
-      });
-      messages.sort((a, b) => a[0] - b[0]);
-      data[peer] = { outbox: messages, inboundAck: inout.inboundAck };
+      const exported = exportMailbox(inout);
+      data[peer] = {
+        inboundAck: inout.ack,
+        outbox: exported.outbox,
+      };
     });
     return harden(data);
   }
@@ -115,10 +138,13 @@ export function buildMailboxStateMap() {
     for (const peer of Object.getOwnPropertyNames(data)) {
       const inout = getOrCreatePeer(peer);
       const d = data[peer];
-      d.outbox.forEach(m => {
-        inout.outbox.set(Nat(m[0]), m[1]);
-      });
-      inout.inboundAck = d.inboundAck;
+      importMailbox(
+        {
+          ack: d.inboundAck,
+          outbox: d.outbox,
+        },
+        inout,
+      );
     }
   }
 

@@ -151,8 +151,8 @@ export default function makeBlockManager({
 
         // Always commit all the keeper state live.
         const start = Date.now();
-        const { mailboxSize } = saveChainState();
-        const mbTime = Date.now() - start;
+        saveChainState();
+        const chainTime = Date.now() - start;
 
         // Advance our saved state variables.
         savedActions = currentActions;
@@ -167,7 +167,7 @@ export default function makeBlockManager({
         const saveTime = Date.now() - start2;
 
         log.debug(
-          `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
+          `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, outsideSave=${saveTime}ms]`,
         );
         currentActions = [];
 

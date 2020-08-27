@@ -1,7 +1,6 @@
 import path from 'path';
 import anylogger from 'anylogger';
 
-import djson from 'deterministic-json';
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -18,7 +17,7 @@ const log = anylogger('launch-chain');
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
 async function buildSwingset(
-  mailboxState,
+  mailboxStorage,
   bridgeOutbound,
   storage,
   vatsDir,
@@ -30,8 +29,7 @@ async function buildSwingset(
   if (config === null) {
     config = loadBasedir(vatsDir);
   }
-  const mbs = buildMailboxStateMap();
-  mbs.populateFromData(mailboxState);
+  const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
   const mb = buildMailbox(mbs);
   const bd = buildBridge(bridgeOutbound);
@@ -48,7 +46,7 @@ async function buildSwingset(
   await controller.run();
 
   const bridgeInbound = bd.deliverInbound;
-  return { controller, mb, mbs, bridgeInbound, timer };
+  return { controller, mb, bridgeInbound, timer };
 }
 
 export async function launch(
@@ -62,11 +60,6 @@ export async function launch(
 ) {
   log.info('Launching SwingSet kernel');
 
-  log(`checking for saved mailbox state`, mailboxStorage.has('mailbox'));
-  const mailboxState = mailboxStorage.has('mailbox')
-    ? JSON.parse(mailboxStorage.get('mailbox'))
-    : {};
-
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
@@ -76,8 +69,8 @@ export async function launch(
     return doOutboundBridge(dstID, obj);
   }
   log.debug(`buildSwingset`);
-  const { controller, mb, mbs, bridgeInbound, timer } = await buildSwingset(
-    mailboxState,
+  const { controller, mb, bridgeInbound, timer } = await buildSwingset(
+    mailboxStorage,
     bridgeOutbound,
     storage,
     vatsDir,
@@ -86,20 +79,8 @@ export async function launch(
   );
 
   function saveChainState() {
-    // now check mbs
-    const newState = mbs.exportToData();
-    const newData = djson.stringify(newState);
-
     // Save the mailbox state.
-    for (const peer of Object.getOwnPropertyNames(newState)) {
-      const data = {
-        outbox: newState[peer].outbox,
-        ack: newState[peer].inboundAck,
-      };
-      mailboxStorage.set(`mailbox.${peer}`, djson.stringify(data));
-    }
-    mailboxStorage.set('mailbox', newData);
-    return { mailboxSize: newData.length };
+    mailboxStorage.commit();
   }
 
   function saveOutsideState(savedHeight, savedActions) {
