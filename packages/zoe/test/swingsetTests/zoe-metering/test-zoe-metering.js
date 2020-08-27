@@ -37,6 +37,7 @@ const infiniteInstallLoopLog = [
   'instantiating infiniteInstallLoop',
   'error: RangeError: Compute meter exceeded',
 ];
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('zoe - metering - infinite loop in installation', async t => {
   const dump = await main(['infiniteInstallLoop']);
   t.deepEqual(dump.log, infiniteInstallLoopLog, 'log is correct');
@@ -47,6 +48,7 @@ const infiniteInstanceLoopLog = [
   'instantiating infiniteInstanceLoop',
   'error: RangeError: Compute meter exceeded',
 ];
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('zoe - metering - infinite loop in instantiation', async t => {
   const dump = await main(['infiniteInstanceLoop']);
   t.deepEqual(dump.log, infiniteInstanceLoopLog, 'log is correct');
@@ -58,6 +60,7 @@ const infiniteTestLoopLog = [
   'invoking infiniteTestLoop.doTest()',
   'error: RangeError: Compute meter exceeded',
 ];
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('zoe - metering - infinite loop in contract method', async t => {
   const dump = await main(['infiniteTestLoop']);
   t.deepEqual(dump.log, infiniteTestLoopLog, 'log is correct');
@@ -69,6 +72,7 @@ const testBuiltinsLog = [
   'invoking testBuiltins.doTest()',
   'error: RangeError: Allocate meter exceeded',
 ];
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('zoe - metering - expensive builtins in contract method', async t => {
   const dump = await main(['testBuiltins']);
   t.deepEqual(dump.log, testBuiltinsLog, 'log is correct');

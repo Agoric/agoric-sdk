@@ -37,7 +37,7 @@ const meterExceededInOfferLog = [
   'contract no longer responds: RangeError: Allocate meter exceeded',
   'counter: 2',
 ];
-
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('ZCF metering crash on invitation exercise', async t => {
   const dump = await main(['meterInOfferHook', [3, 0, 0]]);
   t.deepEqual(dump.log, meterExceededInOfferLog);
@@ -59,7 +59,7 @@ const meterExceededInSecondOfferLog = [
   'refund value, 8',
   'counter: 2',
 ];
-
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('ZCF metering crash on second invitation', async t => {
   const dump = await main(['meterInSecondInvitation', [8, 0, 0]]);
   t.deepEqual(dump.log, meterExceededInSecondOfferLog);
@@ -121,7 +121,7 @@ const meteringExceededInAPILog = [
   'contract no longer responds: RangeError: Allocate meter exceeded',
   'newCounter: 2',
 ];
-
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('ZCF metering crash in API call', async t => {
   const dump = await main(['meterInApiCall', [3, 0, 0]]);
   t.deepEqual(dump.log, meteringExceededInAPILog);
@@ -133,7 +133,7 @@ const meteringExceptionInMakeContractILog = [
   'contract creation failed: RangeError: Allocate meter exceeded',
   'newCounter: 2',
 ];
-
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('ZCF metering crash in makeContract call', async t => {
   const dump = await main(['meterInMakeContract', [3, 0, 0]]);
   t.deepEqual(dump.log, meteringExceptionInMakeContractILog);

@@ -268,6 +268,8 @@ const expectedBadTimerLog = [
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
 ];
+
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('zoe - bad timer', async t => {
   t.plan(1);
   const startingValues = [
