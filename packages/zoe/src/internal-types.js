@@ -37,7 +37,8 @@
  * @param {InstanceAdmin} instanceAdmin
  * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
- * @param {{ offerResult?: ERef<OfferResult>, exitObj?: ERef<ExitObj>}} [options={}]
+ * @param {ERef<OfferResult>=} offerResult
+ * @param {ERef<ExitObj>=} exitObj
  * @returns {ZoeSeatAdminKit}
  *
  * @typedef {Object} ZoeSeatAdmin
@@ -77,11 +78,17 @@
  */
 
 /**
+ * The seatHandle may be created in either the Zoe or ZCF vat,
+ * depending on whether the seat comes from a normal offer or a
+ * request by the contract for an "empty" seat.
+ *
  * @typedef {Object} InstanceAdmin
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => Set<ZoeSeatAdmin>} addZoeSeatAdmin
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
- *            ) => Promise<AddSeatResult>} addZoeSeatAdmin
+ *             seatHandle: SeatHandle,
+ *            ) => Promise<AddSeatResult>} tellZCFToMakeSeat
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
@@ -92,10 +99,15 @@
  */
 
 /**
+ * The seatHandle may be created in either the Zoe or ZCF vat,
+ * depending on whether the seat comes from a normal offer or a
+ * request by the contract for an "empty" seat.
+ *
  * @typedef {Object} AddSeatObj
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
+ *             seatHandle: SeatHandle,
  *            ) => AddSeatResult} addSeat
  */
 
@@ -111,6 +123,7 @@
  *            ) => Promise<void>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeOfferlessSeat} makeOfferlessSeat
+ * @property {ReplaceAllocations} replaceAllocations
  */
 
 /**
@@ -123,8 +136,20 @@
 /**
  * @callback MakeOfferlessSeat
  * @param {Allocation} initialAllocation
- * @param {Proposal} proposal
+ * @param {ProposalRecord} proposal
+ * @param {SeatHandle} seatHandle
  * @returns {ZoeSeatAdminKit}
+ */
+
+/**
+ * @callback ReplaceAllocations
+ * @param {SeatHandleAllocation[]} seatHandleAllocations
+ */
+
+/**
+ * @typedef {Object} SeatHandleAllocation
+ * @property {SeatHandle} seatHandle
+ * @property {Allocation} allocation
  */
 
 /**
@@ -179,4 +204,8 @@
  * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
  * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
  * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
+ */
+
+/**
+ * @typedef {Handle<'SeatHandle'>} SeatHandle
  */
