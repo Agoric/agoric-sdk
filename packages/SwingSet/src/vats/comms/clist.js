@@ -28,6 +28,9 @@ export function makeCListKit(state, syscall, stateKit) {
     addEgress, addIngress,
   } = makeIngressEgress(state, provideLocalForRemote);
 
+  function setDeliveryKit(deliveryKit) {
+  }
+
   return harden({
     provideLocalForRemote,
     getLocalForRemote,
@@ -44,5 +47,7 @@ export function makeCListKit(state, syscall, stateKit) {
 
     addEgress,
     addIngress,
+
+    setDeliveryKit,
   });
 }

@@ -13,9 +13,6 @@ import { makeDeliveryKit } from './delivery';
 export const debugState = new WeakMap();
 
 export function buildCommsDispatch(syscall) {
-  const state = makeState();
-  const stateKit = makeStateKit(state);
-  const clistKit = makeCListKit(state, syscall, stateKit);
   function transmit(remoteID, msg) {
     const remote = getRemote(state, remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
@@ -23,9 +20,14 @@ export function buildCommsDispatch(syscall) {
     const args = harden({ body: JSON.stringify([msg]), slots: [] });
     syscall.send(remote.transmitterID, 'transmit', args); // sendOnly
   }
+
+  const state = makeState();
+  const stateKit = makeStateKit(state);
+  const clistKit = makeCListKit(state, syscall, stateKit);
   const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit, stateKit);
+  clistKit.setDeliveryKit(deliveryKit);
+
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
-  // TODO get resolveToRemote/resolveToKernel from deliveryKit, pass into clistKit
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
