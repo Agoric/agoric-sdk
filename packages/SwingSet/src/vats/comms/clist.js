@@ -15,14 +15,14 @@ export function makeCListKit(state, syscall, stateKit) {
     getRemoteForLocal,
     provideRemoteForLocal,
     provideRemoteForLocalResult,
-  } = makeOutbound(state, syscall, stateKit);
+  } = makeOutbound(state, stateKit, resolveToRemote);
 
   const {
     provideKernelForLocal,
     provideKernelForLocalResult,
     provideLocalForKernel,
     provideLocalForKernelResult,
-  } = makeKernel(state, syscall, stateKit);
+  } = makeKernel(state, syscall, stateKit, resolveToKernel);
 
   const {
     addEgress, addIngress,

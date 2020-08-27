@@ -2,7 +2,7 @@
 import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../../parseVatSlots';
 
-export function makeKernel(state, syscall, stateKit) {
+export function makeKernel(state, syscall, stateKit, resolveToKernel) {
   const {
     trackUnresolvedPromise,
     subscribeKernelToPromise,
@@ -10,10 +10,6 @@ export function makeKernel(state, syscall, stateKit) {
     changeDeciderToKernel,
     changeDeciderFromKernelToComms,
   } = stateKit;
-
-  const {
-    resolveToKernel,
-  } = deliveryKit;
 
   // *-KernelForLocal
   // *-LocalForKernel

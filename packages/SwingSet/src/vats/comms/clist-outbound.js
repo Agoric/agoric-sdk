@@ -12,29 +12,13 @@ function rname(remote) {
   // add-*: the entry must not be present. add one.
   // provide-*: return an entry, adding one if necessary
 
-export function makeCListKit(state, syscall, stateKit) {
+export function makeOutbound(state, stateKit, resolveToRemote) {
   const {
-    allocateUnresolvedPromise,
     insistPromiseIsUnresolved,
-    insistPromiseDeciderIs,
-    insistPromiseDeciderIsMe,
-    insistPromiseSubscriberIsNotDifferent,
-    trackUnresolvedPromise,
-    setPromiseDecider,
     subscribeRemoteToPromise,
-    subscribeKernelToPromise,
     unsubscribeRemoteFromPromise,
-    unsubscribeKernelFromPromise,
     changeDeciderToRemote,
-    changeDeciderFromRemoteToComms,
-    changeDeciderToKernel,
-    changeDeciderFromKernelToComms,
   } = stateKit;
-
-  const {
-    resolveToRemote,
-    resolveToKernel,
-  } = deliveryKit;
 
   // *-RemoteForLocal: sending a local object/promise to a remote machine
 

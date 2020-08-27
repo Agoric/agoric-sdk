@@ -25,6 +25,7 @@ export function buildCommsDispatch(syscall) {
   }
   const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit, stateKit);
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
+  // TODO get resolveToRemote/resolveToKernel from deliveryKit, pass into clistKit
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
