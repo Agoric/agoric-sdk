@@ -38,7 +38,7 @@ type Compartment = {
 
 // Location is the URL relative to the compartmap.json's
 // containing location to the compartment's files.
-type Location string;
+type Location = string;
 
 // ModuleMap describes modules available in the compartment
 // that do not correspond to source files in the same compartment.
