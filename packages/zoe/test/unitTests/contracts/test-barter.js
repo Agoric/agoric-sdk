@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'tape-promise/tape';
+import test from 'ava';
 import { E } from '@agoric/eventual-send';
 
 import { setup } from '../setupBasicMints';
@@ -69,8 +69,8 @@ test('barter with valid offers', async t => {
   // 4: Bob decides to join.
   const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
 
-  t.equals(bobInstallation, installation);
-  t.equals(bobInstance, instance);
+  t.is(bobInstallation, installation);
+  t.is(bobInstance, instance);
 
   // Bob creates a buy order, saying that he wants exactly 3 moola,
   // and is willing to pay up to 7 simoleans.
@@ -101,7 +101,7 @@ test('barter with valid offers', async t => {
   } = await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
-  t.ok(
+  t.truthy(
     amountMaths
       .get('simoleans')
       .isGTE(
@@ -111,7 +111,7 @@ test('barter with valid offers', async t => {
   );
 
   // Alice sold all of her moola
-  t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
   // Alice had 0 moola and 4 simoleans.
   assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0));

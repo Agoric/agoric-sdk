@@ -2,7 +2,7 @@
 import '@agoric/install-ses';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'tape-promise/tape';
+import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
 
@@ -49,7 +49,7 @@ test('simpleExchange with valid offers', async t => {
   E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: beforeAliceOrders, updateCount: beforeAliceCount }) => {
-      t.deepEquals(
+      t.deepEqual(
         beforeAliceOrders,
         {
           buys: [],
@@ -57,13 +57,13 @@ test('simpleExchange with valid offers', async t => {
         },
         `Order book is empty`,
       );
-      t.equals(beforeAliceCount, 3);
+      t.is(beforeAliceCount, 3);
     });
 
   const {
     value: initialOrders,
   } = await publicFacet.getNotifier().getUpdateSince();
-  t.deepEquals(
+  t.deepEqual(
     initialOrders,
     { buys: [], sells: [] },
     `order notifier is initialized`,
@@ -88,7 +88,7 @@ test('simpleExchange with valid offers', async t => {
   E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: afterAliceOrders, updateCount: afterAliceCount }) => {
-      t.deepEquals(
+      t.deepEqual(
         afterAliceOrders,
         {
           buys: [],
@@ -101,11 +101,11 @@ test('simpleExchange with valid offers', async t => {
         },
         `order notifier is updated with Alice's sell order`,
       );
-      t.equals(afterAliceCount, 4);
+      t.is(afterAliceCount, 4);
 
       aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
-        t.notOk(update.value.sells[0], 'accepted offer from Bob');
-        t.equals(update.updateCount, 5);
+        t.falsy(update.value.sells[0], 'accepted offer from Bob');
+        t.is(update.updateCount, 5);
       });
     });
 
@@ -117,7 +117,7 @@ test('simpleExchange with valid offers', async t => {
 
   const bobIssuers = zoe.getIssuers(instance);
 
-  t.equals(bobInstallation, installation);
+  t.is(bobInstallation, installation);
 
   assert(
     bobIssuers.Asset === moolaIssuer,
@@ -148,7 +148,7 @@ test('simpleExchange with valid offers', async t => {
   const { value: afterBobOrders } = await E(
     E(publicFacet).getNotifier(),
   ).getUpdateSince();
-  t.deepEquals(
+  t.deepEqual(
     afterBobOrders,
     { buys: [], sells: [] },
     `order notifier is updated when Bob fulfills the order`,
@@ -168,7 +168,7 @@ test('simpleExchange with valid offers', async t => {
   } = await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
-  t.ok(
+  t.truthy(
     amountMaths
       .get('simoleans')
       .isGTE(
@@ -179,7 +179,7 @@ test('simpleExchange with valid offers', async t => {
   );
 
   // Alice sold all of her moola
-  t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
   // 6: Alice deposits her payout to ensure she can
   // Alice had 0 moola and 4 simoleans.
@@ -193,109 +193,103 @@ test('simpleExchange with valid offers', async t => {
 });
 
 test('simpleExchange with multiple sell offers', async t => {
-  t.plan(1);
-  try {
-    const {
-      moolaIssuer,
-      simoleanIssuer,
-      moolaMint,
-      simoleanMint,
-      moola,
-      simoleans,
-      zoe,
-    } = setup();
-    const invitationIssuer = zoe.getInvitationIssuer();
-    const installation = await installationPFromSource(zoe, simpleExchange);
+  const {
+    moolaIssuer,
+    simoleanIssuer,
+    moolaMint,
+    simoleanMint,
+    moola,
+    simoleans,
+    zoe,
+  } = setup();
+  const invitationIssuer = zoe.getInvitationIssuer();
+  const installation = await installationPFromSource(zoe, simpleExchange);
 
-    // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(30));
-    const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(30));
-    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
-    await aliceMoolaPurse.deposit(aliceMoolaPayment);
-    await aliceSimoleanPurse.deposit(aliceSimoleanPayment);
+  // Setup Alice
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(30));
+  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(30));
+  const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+  await aliceMoolaPurse.deposit(aliceMoolaPayment);
+  await aliceSimoleanPurse.deposit(aliceSimoleanPayment);
 
-    // 1: Simon creates a simpleExchange instance and spreads the publicFacet
-    // far and wide with instructions on how to use it.
-    const { publicFacet } = await zoe.startInstance(installation, {
-      Asset: moolaIssuer,
-      Price: simoleanIssuer,
-    });
+  // 1: Simon creates a simpleExchange instance and spreads the publicFacet
+  // far and wide with instructions on how to use it.
+  const { publicFacet } = await zoe.startInstance(installation, {
+    Asset: moolaIssuer,
+    Price: simoleanIssuer,
+  });
 
-    // 2: Alice escrows with zoe to create a sell order. She wants to
-    // sell 3 moola and wants to receive at least 4 simoleans in
-    // return.
-    const aliceSale1OrderProposal = harden({
-      give: { Asset: moola(3) },
-      want: { Price: simoleans(4) },
-      exit: { onDemand: null },
-    });
+  // 2: Alice escrows with zoe to create a sell order. She wants to
+  // sell 3 moola and wants to receive at least 4 simoleans in
+  // return.
+  const aliceSale1OrderProposal = harden({
+    give: { Asset: moola(3) },
+    want: { Price: simoleans(4) },
+    exit: { onDemand: null },
+  });
 
-    const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3)) };
+  const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3)) };
 
-    const aliceInvitation1 = E(publicFacet).makeInvitation();
-    // 4: Alice adds her sell order to the exchange
-    const aliceSeat = await zoe.offer(
-      aliceInvitation1,
-      aliceSale1OrderProposal,
-      alicePayments,
-    );
+  const aliceInvitation1 = E(publicFacet).makeInvitation();
+  // 4: Alice adds her sell order to the exchange
+  const aliceSeat = await zoe.offer(
+    aliceInvitation1,
+    aliceSale1OrderProposal,
+    alicePayments,
+  );
 
-    // 5: Alice adds another sell order to the exchange
-    const aliceInvitation2 = await invitationIssuer.claim(
-      await E(publicFacet).makeInvitation(),
-    );
-    const aliceSale2OrderProposal = harden({
-      give: { Asset: moola(5) },
-      want: { Price: simoleans(8) },
-      exit: { onDemand: null },
-    });
-    const proposal2 = {
-      Asset: aliceMoolaPurse.withdraw(moola(5)),
+  // 5: Alice adds another sell order to the exchange
+  const aliceInvitation2 = await invitationIssuer.claim(
+    await E(publicFacet).makeInvitation(),
+  );
+  const aliceSale2OrderProposal = harden({
+    give: { Asset: moola(5) },
+    want: { Price: simoleans(8) },
+    exit: { onDemand: null },
+  });
+  const proposal2 = {
+    Asset: aliceMoolaPurse.withdraw(moola(5)),
+  };
+  const aliceSeat2 = await zoe.offer(
+    aliceInvitation2,
+    aliceSale2OrderProposal,
+    proposal2,
+  );
+
+  // 5: Alice adds a buy order to the exchange
+  const aliceInvitation3 = await invitationIssuer.claim(
+    await E(publicFacet).makeInvitation(),
+  );
+  const aliceBuyOrderProposal = harden({
+    give: { Price: simoleans(18) },
+    want: { Asset: moola(29) },
+    exit: { onDemand: null },
+  });
+  const proposal3 = { Price: aliceSimoleanPurse.withdraw(simoleans(18)) };
+  const aliceSeat3 = await zoe.offer(
+    aliceInvitation3,
+    aliceBuyOrderProposal,
+    proposal3,
+  );
+
+  await Promise.all([
+    aliceSeat.getOfferResult(),
+    aliceSeat2.getOfferResult(),
+    aliceSeat3.getOfferResult(),
+  ]).then(async () => {
+    const expectedBook = {
+      buys: [{ want: { Asset: moola(29) }, give: { Price: simoleans(18) } }],
+      sells: [
+        { want: { Price: simoleans(4) }, give: { Asset: moola(3) } },
+        { want: { Price: simoleans(8) }, give: { Asset: moola(5) } },
+      ],
     };
-    const aliceSeat2 = await zoe.offer(
-      aliceInvitation2,
-      aliceSale2OrderProposal,
-      proposal2,
+    t.deepEqual(
+      (await E(E(publicFacet).getNotifier()).getUpdateSince()).value,
+      expectedBook,
     );
-
-    // 5: Alice adds a buy order to the exchange
-    const aliceInvitation3 = await invitationIssuer.claim(
-      await E(publicFacet).makeInvitation(),
-    );
-    const aliceBuyOrderProposal = harden({
-      give: { Price: simoleans(18) },
-      want: { Asset: moola(29) },
-      exit: { onDemand: null },
-    });
-    const proposal3 = { Price: aliceSimoleanPurse.withdraw(simoleans(18)) };
-    const aliceSeat3 = await zoe.offer(
-      aliceInvitation3,
-      aliceBuyOrderProposal,
-      proposal3,
-    );
-
-    await Promise.all([
-      aliceSeat.getOfferResult(),
-      aliceSeat2.getOfferResult(),
-      aliceSeat3.getOfferResult(),
-    ]).then(async () => {
-      const expectedBook = {
-        buys: [{ want: { Asset: moola(29) }, give: { Price: simoleans(18) } }],
-        sells: [
-          { want: { Price: simoleans(4) }, give: { Asset: moola(3) } },
-          { want: { Price: simoleans(8) }, give: { Asset: moola(5) } },
-        ],
-      };
-      t.deepEquals(
-        (await E(E(publicFacet).getNotifier()).getUpdateSince()).value,
-        expectedBook,
-      );
-    });
-  } catch (e) {
-    t.assert(false, e);
-    console.log(e);
-  }
+  });
 });
 
 test('simpleExchange with non-fungible assets', async t => {
@@ -351,7 +345,7 @@ test('simpleExchange with non-fungible assets', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
   const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
 
-  t.equals(bobInstallation, installation);
+  t.is(bobInstallation, installation);
 
   const bobIssuers = zoe.getIssuers(bobInstance);
   assert(
@@ -394,7 +388,7 @@ test('simpleExchange with non-fungible assets', async t => {
   } = await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
-  t.ok(
+  t.truthy(
     amountMaths
       .get('cc')
       .isGTE(
@@ -404,7 +398,7 @@ test('simpleExchange with non-fungible assets', async t => {
   );
 
   // Alice sold the Spell
-  t.deepEquals(
+  t.deepEqual(
     await rpgIssuer.getAmountOf(aliceRpgPayout),
     rpgItems(harden([])),
   );

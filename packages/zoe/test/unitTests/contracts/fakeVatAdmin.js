@@ -9,7 +9,10 @@ export default harden({
       root: E(evalContractBundle(bundle)).buildRootObject(),
       adminNode: {
         done: () => {
-          return makePromiseKit().promise;
+          const kit = makePromiseKit();
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          kit.promise.catch(_ => {});
+          return kit.promise;
         },
         terminate: () => {},
         adminData: () => ({}),

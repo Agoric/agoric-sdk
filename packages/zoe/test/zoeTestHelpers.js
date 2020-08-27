@@ -4,7 +4,7 @@ import '../exported';
 
 export const assertPayoutAmount = (t, issuer, payout, expectedAmount) => {
   issuer.getAmountOf(payout).then(amount => {
-    t.deepEquals(amount, expectedAmount, `payout was ${amount.value}`);
+    t.deepEqual(amount, expectedAmount, `payout was ${amount.value}`);
   });
 };
 
@@ -13,7 +13,7 @@ export const assertPayoutDeposit = (t, payout, purse, amount) => {
     E(purse)
       .deposit(payment)
       .then(payoutAmount => {
-        t.deepEquals(
+        t.deepEqual(
           payoutAmount,
           amount,
           `payout was ${payoutAmount.value}, expected ${amount}.value`,
@@ -26,7 +26,7 @@ export const assertOfferResult = (t, seat, expected, msg = expected) => {
   E(seat)
     .getOfferResult()
     .then(
-      result => t.equals(result, expected, msg),
+      result => t.is(result, expected, msg),
       e => t.fail(`expecting offer result to be ${expected}, ${e}`),
     );
 };
@@ -36,6 +36,4 @@ export const assertRejectedOfferResult = (
   seat,
   expected,
   msg = `offer result rejects as expected`,
-) => {
-  t.rejects(() => E(seat).getOfferResult(), expected, msg);
-};
+) => t.throwsAsync(() => E(seat).getOfferResult(), expected, msg);

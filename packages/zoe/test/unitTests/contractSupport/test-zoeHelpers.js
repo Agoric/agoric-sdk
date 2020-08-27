@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 
 import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
@@ -12,15 +12,10 @@ import {
 } from '../../../src/contractSupport';
 
 test('ZoeHelpers messages', t => {
-  t.plan(1);
-  try {
-    t.equals(
+    t.is(
       defaultAcceptanceMsg,
       `The offer has been accepted. Once the contract has been completed, please check your payout`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 function makeMockZoeBuilder() {
@@ -64,7 +59,6 @@ function makeMockZoeBuilder() {
 test.skip('ZoeHelpers assertKeywords', t => {
   t.plan(5);
   const { moolaR, simoleanR } = setup();
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.setInstanceRecord({
       issuerKeywordRecord: {
@@ -98,16 +92,12 @@ test.skip('ZoeHelpers assertKeywords', t => {
       /were not as expected/,
       `a missing keyword will throw`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip('ZoeHelpers rejectIfNotProposal', t => {
   t.plan(8);
   const { moola, simoleans } = setup();
   const offerHandles = harden([{}, {}, {}, {}, {}, {}, {}]);
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addOffer(offerHandles[4], {
       proposal: {
@@ -185,7 +175,7 @@ test.skip('ZoeHelpers rejectIfNotProposal', t => {
       /The offer was invalid. Please check your refund./,
       `had the wrong exit rule`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       [],
       `offers 1, 2, 3, (zero-indexed) won't be completed before rejection`,
@@ -218,19 +208,14 @@ test.skip('ZoeHelpers rejectIfNotProposal', t => {
       /The offer was invalid. Please check your refund./,
       `had the wrong want`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       [],
       `offers won't be completed before rejection`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip('ZoeHelpers getActiveOffers', t => {
-  t.plan(1);
-  try {
     // uses its own mock because all it needs is a variant getOffers.
     const mockZCF = harden({
       getZoeService: () => {},
@@ -246,20 +231,16 @@ test.skip('ZoeHelpers getActiveOffers', t => {
     });
     const { getActiveOffers } = makeZoeHelpers(mockZCF);
     const offerHandles = harden([{}, {}]);
-    t.deepEquals(
+    t.deepEqual(
       getActiveOffers(offerHandles),
       harden([{ handle: offerHandles[0], id: 0 }]),
       `active offers gotten`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip('ZoeHelpers rejectOffer', t => {
   t.plan(4);
   const completedOfferHandles = [];
-  try {
     const mockZCF = harden({
       getZoeService: () => {},
       complete: handles => completedOfferHandles.push(...handles),
@@ -271,20 +252,17 @@ test.skip('ZoeHelpers rejectOffer', t => {
       /Error: The offer was invalid. Please check your refund./,
       `rejectOffer intentionally throws`,
     );
-    t.deepEquals(completedOfferHandles, harden([]), 'no completion');
+    t.deepEqual(completedOfferHandles, harden([]), 'no completion');
     t.throws(
       () => rejectOffer(offerHandles[1], 'offer was wrong'),
       /Error: offer was wrong/,
       `rejectOffer throws with custom msg`,
     );
-    t.deepEquals(
+    t.deepEqual(
       completedOfferHandles,
       [],
       'rejection does not include completions',
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip('ZoeHelpers swap ok', t => {
@@ -293,7 +271,6 @@ test.skip('ZoeHelpers swap ok', t => {
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addBrand(moolaR);
     mockZCFBuilder.addBrand(simoleanR);
@@ -325,19 +302,19 @@ test.skip('ZoeHelpers swap ok', t => {
     });
     const mockZCF = mockZCFBuilder.build();
     const { swap } = makeZoeHelpers(mockZCF);
-    t.ok(
+    t.truthy(
       swap(
         leftOfferHandle,
         rightOfferHandle,
         'prior offer no longer available',
       ),
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedAmountObjs(),
       [
         { Asset: moola(3), Price: simoleans(4) },
@@ -345,14 +322,11 @@ test.skip('ZoeHelpers swap ok', t => {
       ],
       `amounts reallocated passed to reallocate were as expected`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles were completed`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip('ZoeHelpers swap keep inactive', t => {
@@ -361,7 +335,6 @@ test.skip('ZoeHelpers swap keep inactive', t => {
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addOffer(leftOfferHandle, {
       proposal: {
@@ -398,17 +371,14 @@ test.skip('ZoeHelpers swap keep inactive', t => {
       `throws if keepHandle offer is not active`,
     );
     const reallocatedHandles = mockZCF.getReallocatedHandles();
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
     const reallocatedAmountObjs = mockZCF.getReallocatedAmountObjs();
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
-    t.deepEquals(
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([]),
       `no offers were completed`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip(`ZoeHelpers swap - can't trade with`, t => {
@@ -418,7 +388,6 @@ test.skip(`ZoeHelpers swap - can't trade with`, t => {
   const rightOfferHandle = harden({});
   const cantTradeHandle = harden({});
 
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addBrand(moolaR);
     mockZCFBuilder.addBrand(simoleanR);
@@ -459,14 +428,11 @@ test.skip(`ZoeHelpers swap - can't trade with`, t => {
       `throws if can't trade with left and right`,
     );
     const reallocatedHandles = mockZcf.getReallocatedHandles();
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
     const reallocatedAmountObjs = mockZcf.getReallocatedAmountObjs();
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
     const completedHandles = mockZcf.getCompletedHandles();
-    t.deepEquals(completedHandles, harden([]), `no offers were completed`);
-  } catch (e) {
-    t.assert(false, e);
-  }
+    t.deepEqual(completedHandles, harden([]), `no offers were completed`);
 });
 
 test.skip('ZoeHelpers isOfferSafe', t => {
@@ -478,7 +444,6 @@ test.skip('ZoeHelpers isOfferSafe', t => {
   const reallocatedHandles = [];
   const reallocatedAmountObjs = [];
   const completedHandles = [];
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addBrand(moolaR);
     mockZCFBuilder.addBrand(simoleanR);
@@ -496,26 +461,23 @@ test.skip('ZoeHelpers isOfferSafe', t => {
     });
     const mockZCF = mockZCFBuilder.build();
     const { isOfferSafe } = makeZoeHelpers(mockZCF);
-    t.ok(
+    t.truthy(
       isOfferSafe(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(4),
       }),
       `giving someone exactly what they want is offer safe`,
     );
-    t.notOk(
+    t.falsy(
       isOfferSafe(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(3),
       }),
       `giving someone less than what they want and not what they gave is not offer safe`,
     );
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
-    t.deepEquals(completedHandles, harden([]), `no offers completed`);
-  } catch (e) {
-    t.assert(false, e);
-  }
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(completedHandles, harden([]), `no offers completed`);
 });
 
 test.skip('ZoeHelpers satisfies', t => {
@@ -527,7 +489,6 @@ test.skip('ZoeHelpers satisfies', t => {
   const reallocatedHandles = [];
   const reallocatedAmountObjs = [];
   const completedHandles = [];
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addBrand(moolaR);
     mockZCFBuilder.addBrand(simoleanR);
@@ -545,33 +506,30 @@ test.skip('ZoeHelpers satisfies', t => {
     });
     const mockZCF = mockZCFBuilder.build();
     const { satisfies } = makeZoeHelpers(mockZCF);
-    t.ok(
+    t.truthy(
       satisfies(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(4),
       }),
       `giving someone exactly what they want satisifies wants`,
     );
-    t.notOk(
+    t.falsy(
       satisfies(leftOfferHandle, {
         Asset: moola(10),
         Price: simoleans(3),
       }),
       `giving someone less than what they want even with a refund doesn't satisfy wants`,
     );
-    t.notOk(
+    t.falsy(
       satisfies(leftOfferHandle, {
         Asset: moola(0),
         Price: simoleans(3),
       }),
       `giving someone less than what they want even with a refund doesn't satisfy wants`,
     );
-    t.deepEquals(reallocatedHandles, harden([]), `nothing reallocated`);
-    t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
-    t.deepEquals(completedHandles, harden([]), `no offers completed`);
-  } catch (e) {
-    t.assert(false, e);
-  }
+    t.deepEqual(reallocatedHandles, harden([]), `nothing reallocated`);
+    t.deepEqual(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
+    t.deepEqual(completedHandles, harden([]), `no offers completed`);
 });
 
 test.skip('ZoeHelpers trade ok', t => {
@@ -579,7 +537,6 @@ test.skip('ZoeHelpers trade ok', t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addBrand(moolaR);
     mockZCFBuilder.addBrand(simoleanR);
@@ -615,12 +572,12 @@ test.skip('ZoeHelpers trade ok', t => {
         },
       ),
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedHandles(),
       harden([leftOfferHandle, rightOfferHandle]),
       `both handles reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedAmountObjs(),
       [
         { Asset: moola(3), Bid: simoleans(4) },
@@ -628,14 +585,11 @@ test.skip('ZoeHelpers trade ok', t => {
       ],
       `amounts reallocated passed to reallocate were as expected`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([]),
       `no handles were completed`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
 
 test.skip('ZoeHelpers trade sameHandle', t => {
@@ -643,7 +597,6 @@ test.skip('ZoeHelpers trade sameHandle', t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
-  try {
     const mockZCFBuilder = makeMockZoeBuilder();
     mockZCFBuilder.addBrand(moolaR);
     mockZCFBuilder.addBrand(simoleanR);
@@ -682,22 +635,19 @@ test.skip('ZoeHelpers trade sameHandle', t => {
       /an offer cannot trade with itself/,
       `safe offer trading with itself fails with nice error message`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedHandles(),
       harden([]),
       `no handles reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getReallocatedAmountObjs(),
       [],
       `no amounts reallocated`,
     );
-    t.deepEquals(
+    t.deepEqual(
       mockZCF.getCompletedHandles(),
       harden([]),
       `no handles were completed`,
     );
-  } catch (e) {
-    t.assert(false, e);
-  }
 });
