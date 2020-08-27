@@ -31,7 +31,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       exec ag-cosmos-helper --home=$FAUCET_HOME \
         tx swingset provision-one \
         --node=tcp://$selected --chain-id=$chainName \
-        --yes --gas=auto --gas-adjustment=1.5 --broadcast-mode=block \
+        --yes --gas=auto --broadcast-mode=block \
         --from=faucet -- "$NAME" "$ADDR"
       ;;
     add-delegate)
@@ -66,7 +66,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       if ag-cosmos-helper --home=$FAUCET_HOME \
         tx send \
         --node=tcp://$selected --chain-id=$chainName \
-        --yes --gas=auto --gas-adjustment=1.5 --broadcast-mode=block \
+        --yes --gas=auto --broadcast-mode=block \
         -- faucet "$ADDR" "$STAKE"; then
         # Record the information before exiting.
         sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt

@@ -164,7 +164,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     await zcf.saveIssuer(secondaryIssuer, keyword);
     assertUsesNatMath(zcf, secondaryBrand);
     const liquidityZCFMint = await zcf.makeZCFMint(liquidityKeyword);
-    const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit(zcf);
+    const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit();
     const poolSeat = await poolSeatP;
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
     initPool(secondaryBrand, pool);

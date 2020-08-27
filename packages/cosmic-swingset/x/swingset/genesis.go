@@ -3,84 +3,42 @@ package swingset
 import (
 	// "fmt"
 
-	"encoding/json"
-	"fmt"
-
 	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 type GenesisState struct {
-	// TODO: Provisioning records
-	Egresses []types.Egress `json:"egresses"`
+	Storage map[string]string `json:"storage"`
 }
 
 func NewGenesisState() GenesisState {
 	return GenesisState{
-		Egresses: []types.Egress{},
+		Storage: make(map[string]string),
 	}
 }
 
 func ValidateGenesis(data GenesisState) error {
-	for _, egress := range data.Egresses {
-		if egress.Peer.Empty() {
-			return fmt.Errorf("empty peer for egress nicknamed %s", egress.Nickname)
-		}
-	}
 	return nil
 }
 
 func DefaultGenesisState() GenesisState {
 	return GenesisState{
-		Egresses: []types.Egress{},
+		Storage: make(map[string]string),
 	}
 }
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data GenesisState) []abci.ValidatorUpdate {
-	for _, egress := range data.Egresses {
-		msg := MsgProvision{
-			Address:    egress.Peer,
-			Nickname:   egress.Nickname,
-			PowerFlags: egress.PowerFlags,
-		}
-		action := &provisionAction{
-			MsgProvision: msg,
-			Type:         "PLEASE_PROVISION",
-			BlockHeight:  ctx.BlockHeight(),
-			BlockTime:    ctx.BlockTime().Unix(),
-		}
-
-		// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-		b, err := json.Marshal(action)
-		if err != nil {
-			continue
-		}
-
-		// Reproduce the egress in our state.
-		egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
-		err = keeper.SetEgress(ctx, egress)
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = keeper.CallToController(ctx, string(b))
-		// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
-		if err != nil {
-			panic(err)
-		}
+	var storage types.Storage
+	for key, value := range data.Storage {
+		storage.Value = value
+		keeper.SetStorage(ctx, key, storage)
 	}
-	// Flush the genesis transactions.
-	valup, err := EndBlock(ctx, abci.RequestEndBlock{}, keeper)
-	if err != nil {
-		panic(err)
-	}
-	return valup
+	return []abci.ValidatorUpdate{}
 }
 
 func ExportGenesis(ctx sdk.Context, k Keeper) GenesisState {
-	// TODO: Preserve the SwingSet transcript
 	gs := NewGenesisState()
-	gs.Egresses = k.ExportEgresses(ctx)
+	gs.Storage = k.ExportStorage(ctx)
 	return gs
 }

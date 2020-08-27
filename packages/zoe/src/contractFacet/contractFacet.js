@@ -25,6 +25,7 @@ import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
+import { makeHandle } from '../makeHandle';
 
 import '../../exported';
 import '../internal-types';
@@ -44,7 +45,9 @@ export function buildRootObject() {
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
     /** @type WeakStore<ZCFSeat,ZCFSeatAdmin> */
-    const seatToZCFSeatAdmin = makeWeakStore('seat');
+    const zcfSeatToZCFSeatAdmin = makeWeakStore('zcfSeat');
+    /** @type WeakStore<ZCFSeat,SeatHandle> */
+    const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
 
     const keywords = Object.keys(instanceRecord.terms.issuers);
     const issuers = Object.values(instanceRecord.terms.issuers);
@@ -90,6 +93,52 @@ export function buildRootObject() {
     });
 
     const allSeatStagings = new WeakSet();
+
+    /**
+     * Unlike the zcf.reallocate method, this one does not check conservation,
+     * and so can be used internally for reallocations that violate
+     * conservation.
+     */
+    const reallocateInternal = seatStagings => {
+      // Keep track of seats used so far in this call, to prevent aliasing.
+      const seatsSoFar = new WeakSet();
+
+      seatStagings.forEach(seatStaging => {
+        assert(
+          allSeatStagings.has(seatStaging),
+          details`The seatStaging ${seatStaging} was not recognized`,
+        );
+        const seat = seatStaging.getSeat();
+        assert(
+          !seatsSoFar.has(seat),
+          details`Seat (${seat}) was already an argument to reallocate`,
+        );
+        seatsSoFar.add(seat);
+      });
+
+      // No side effects above. All conditions checked which could have
+      // caused us to reject this reallocation.
+      // COMMIT POINT
+      // All the effects below must succeed "atomically". Scare quotes because
+      // the eventual send at the bottom is part of this "atomicity" even
+      // though its effects happen later. The send occurs in the order of
+      // updates from zcf to zoe, its effects must occur immediately in zoe
+      // on reception, and must not fail.
+      //
+      // Commit the staged allocations (currentAllocation is replaced
+      // for each of the seats) and inform Zoe of the
+      // newAllocation.
+
+      seatStagings.forEach(seatStaging =>
+        zcfSeatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
+      );
+      const seatHandleAllocations = seatStagings.map(seatStaging => {
+        const zcfSeat = seatStaging.getSeat();
+        const seatHandle = zcfSeatToSeatHandle.get(zcfSeat);
+        return { seatHandle, allocation: zcfSeat.getCurrentAllocation() };
+      });
+      E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
+    };
 
     /** @type MakeZCFMint */
     const makeZCFMint = async (keyword, amountMathKind = MathKind.NAT) => {
@@ -137,17 +186,14 @@ export function buildRootObject() {
             ...oldAllocation,
             ...updates,
           });
-          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
-          // No effects above. Commit point. The following two steps
-          // *should* be committed atomically.
-          // But unlike https://github.com/Agoric/agoric-sdk/issues/1391
-          // it is not a disater if they are not.
-          // If we minted only, no one would ever get those
-          // invisibly-minted assets.
+          // No effects above. COMMIT POINT. The following two steps
+          // *should* be committed atomically, but it is not a
+          // disaster if they are not. If we minted only, no one would
+          // ever get those invisibly-minted assets.
           E(zoeMintP).mintAndEscrow(totalToMint);
-          zcfSeatAdmin.commit(seatStaging);
+          reallocateInternal([seatStaging]);
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
@@ -169,16 +215,13 @@ export function buildRootObject() {
             ...oldAllocation,
             ...updates,
           });
-          const zcfSeatAdmin = seatToZCFSeatAdmin.get(zcfSeat);
           // verifies offer safety
           const seatStaging = zcfSeat.stage(newAllocation);
           // No effects above. Commit point. The following two steps
-          // *should* be committed atomically.
-          // But unlike https://github.com/Agoric/agoric-sdk/issues/1391
-          // it is not a disater if they are not.
-          // If we only commit the staging, no one would ever get the
-          // unburned assets.
-          zcfSeatAdmin.commit(seatStaging);
+          // *should* be committed atomically, but it is not a
+          // disaster if they are not. If we only commit the staging,
+          // no one would ever get the unburned assets.
+          reallocateInternal([seatStaging]);
           E(zoeMintP).withdrawAndBurn(totalToBurn);
         },
       });
@@ -194,22 +237,6 @@ export function buildRootObject() {
           seatStagings.length >= 2,
           details`reallocating must be done over two or more seats`,
         );
-
-        // Keep track of seats used so far in this call, to prevent aliasing.
-        const seatsSoFar = new WeakSet();
-
-        seatStagings.forEach(seatStaging => {
-          assert(
-            allSeatStagings.has(seatStaging),
-            details`The seatStaging ${seatStaging} was not recognized`,
-          );
-          const seat = seatStaging.getSeat();
-          assert(
-            !seatsSoFar.has(seat),
-            details`Seat (${seat}) was already an argument to reallocate`,
-          );
-          seatsSoFar.add(seat);
-        });
 
         // Ensure that rights are conserved overall. Offer safety was
         // already checked when an allocation was staged for an individual seat.
@@ -228,14 +255,7 @@ export function buildRootObject() {
 
         assertRightsConserved(getAmountMath, previousAmounts, newAmounts);
 
-        // COMMIT POINT
-        // Commit the staged allocations and inform Zoe of the
-        // newAllocation.
-        // Note that there is an atomicity issue:
-        // https://github.com/Agoric/agoric-sdk/issues/1391
-        seatStagings.forEach(seatStaging =>
-          seatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
-        );
+        reallocateInternal(seatStagings);
       },
       assertUniqueKeyword: keyword => {
         assertKeywordName(keyword);
@@ -277,20 +297,14 @@ export function buildRootObject() {
       // Shutdown the entire vat and give payouts
       shutdown: () => E(zoeInstanceAdmin).shutdown(),
       makeZCFMint,
-      makeEmptySeatKit: () => {
+      makeEmptySeatKit: (exit = undefined) => {
         const initialAllocation = harden({});
-        const proposal = cleanProposal(getAmountMath, harden({}));
+        const proposal = cleanProposal(getAmountMath, harden({ exit }));
         const { notifier, updater } = makeNotifierKit();
+        /** @type {PromiseRecord<ZoeSeatAdmin>} */
         const zoeSeatAdminPromiseKit = makePromiseKit();
         const userSeatPromiseKit = makePromiseKit();
-
-        E(zoeInstanceAdmin)
-          .makeOfferlessSeat(initialAllocation, proposal)
-          .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
-            updateFromNotifier(updater, zoeNotifier);
-            zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
-            userSeatPromiseKit.resolve(userSeat);
-          });
+        const seatHandle = makeHandle('SeatHandle');
 
         const seatData = harden({
           proposal,
@@ -303,7 +317,23 @@ export function buildRootObject() {
           seatData,
           getAmountMath,
         );
-        seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
+        zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
+        zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
+
+        const exitObj = makeExitObj(
+          seatData.proposal,
+          zoeSeatAdminPromiseKit.promise,
+          zcfSeatAdmin,
+        );
+
+        E(zoeInstanceAdmin)
+          .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
+          .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
+            updateFromNotifier(updater, zoeNotifier);
+            zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
+            userSeatPromiseKit.resolve(userSeat);
+          });
+
         return { zcfSeat, userSeat: userSeatPromiseKit.promise };
       },
 
@@ -321,14 +351,15 @@ export function buildRootObject() {
     // added in offer(). ZCF responds with the exitObj and offerResult.
     /** @type AddSeatObj */
     const addSeatObj = {
-      addSeat: (invitationHandle, zoeSeatAdmin, seatData) => {
+      addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
         const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
           allSeatStagings,
           zoeSeatAdmin,
           seatData,
           getAmountMath,
         );
-        seatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
+        zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
+        zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {

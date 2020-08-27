@@ -9,14 +9,6 @@ import { objectMap } from '../objArrayConversion';
 import '../types';
 import '../internal-types';
 
-// Offerless seat case
-
-const defaultExitObj = harden({
-  exit: () => {
-    throw new Error(`Offerless seats may not be exited`);
-  },
-});
-
 /**
  * makeZoeSeatAdminKit makes an object that manages the state of a seat
  * participating in a Zoe contract and return its two facets.
@@ -35,7 +27,8 @@ export const makeZoeSeatAdminKit = (
   instanceAdmin,
   proposal,
   brandToPurse,
-  { offerResult = undefined, exitObj = defaultExitObj } = {},
+  exitObj,
+  offerResult,
 ) => {
   const payoutPromiseKit = makePromiseKit();
   const { notifier, updater } = makeNotifierKit();

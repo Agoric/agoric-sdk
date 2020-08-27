@@ -27,6 +27,8 @@ export const makeZcfSeatAdminKit = (
 
   /** @type {ZCFSeatAdmin} */
   const zcfSeatAdmin = harden({
+    // Updates the currentAllocation of the seat, using the allocation
+    // from seatStaging.
     commit: seatStaging => {
       assertExitedFalse();
       assert(
@@ -34,7 +36,6 @@ export const makeZcfSeatAdminKit = (
         details`The seatStaging ${seatStaging} was not recognized`,
       );
       currentAllocation = seatStaging.getStagedAllocation();
-      E(zoeSeatAdmin).replaceAllocation(currentAllocation);
     },
     updateHasExited: () => {
       assertExitedFalse();
