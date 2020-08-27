@@ -83,11 +83,12 @@
  * request by the contract for an "empty" seat.
  *
  * @typedef {Object} InstanceAdmin
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => Set<ZoeSeatAdmin>} addZoeSeatAdmin
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
  *             seatHandle: SeatHandle,
- *            ) => Promise<AddSeatResult>} addZoeSeatAdmin
+ *            ) => Promise<AddSeatResult>} tellZCFToMakeSeat
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance

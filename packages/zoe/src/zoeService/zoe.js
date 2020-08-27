@@ -48,9 +48,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
 
-  /** @type {Set<ZoeSeatAdmin>} */
-  const zoeSeatAdmins = new Set();
-
   /**
    * Create an installation by permanently storing the bundle. It will be
    * evaluated each time it is used to make a new instance of a contract.
@@ -145,16 +142,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       /** @type {ZCFRoot} */
       const zcfRoot = root;
 
-      const exitAllSeats = () =>
-        zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit());
-
-      E(adminNode)
-        .done()
-        .then(
-          () => exitAllSeats(),
-          () => exitAllSeats(),
-        );
-
       const registerIssuerByKeyword = (keyword, issuerRecord) => {
         instanceRecord = {
           ...instanceRecord,
@@ -217,29 +204,46 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const addSeatObjPromiseKit = makePromiseKit();
       const publicFacetPromiseKit = makePromiseKit();
 
-      /** @type {InstanceAdmin} */
-      const instanceAdmin = {
-        addZoeSeatAdmin: async (
-          invitationHandle,
-          zoeSeatAdmin,
-          seatData,
-          seatHandle,
-        ) => {
-          zoeSeatAdmins.add(zoeSeatAdmin);
-          return E(
-            /** @type Promise<AddSeatObj> */ (addSeatObjPromiseKit.promise),
-          ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
-        },
-        hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
-        removeZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.delete(zoeSeatAdmin),
-        getPublicFacet: () => publicFacetPromiseKit.promise,
-        getTerms: () => instanceRecord.terms,
-        getIssuers: () => instanceRecord.terms.issuers,
-        getBrands: () => instanceRecord.terms.brands,
-        getInstance: () => instance,
+      const makeInstanceAdmin = () => {
+        /** @type {Set<ZoeSeatAdmin>} */
+        const zoeSeatAdmins = new Set();
+
+        /** @type {InstanceAdmin} */
+        return {
+          addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
+          tellZCFToMakeSeat: (
+            invitationHandle,
+            zoeSeatAdmin,
+            seatData,
+            seatHandle,
+          ) => {
+            return E(
+              /** @type Promise<AddSeatObj> */ (addSeatObjPromiseKit.promise),
+            ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
+          },
+          hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
+          removeZoeSeatAdmin: zoeSeatAdmin =>
+            zoeSeatAdmins.delete(zoeSeatAdmin),
+          getPublicFacet: () => publicFacetPromiseKit.promise,
+          getTerms: () => instanceRecord.terms,
+          getIssuers: () => instanceRecord.terms.issuers,
+          getBrands: () => instanceRecord.terms.brands,
+          getInstance: () => instance,
+          exitAllSeats: () =>
+            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit()),
+        };
       };
 
+      const instanceAdmin = makeInstanceAdmin();
+
       instanceToInstanceAdmin.init(instance, instanceAdmin);
+
+      E(adminNode)
+        .done()
+        .then(
+          () => instanceAdmin.exitAllSeats(),
+          () => instanceAdmin.exitAllSeats(),
+        );
 
       // Unpack the invitationKit.
 
@@ -283,12 +287,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             proposal,
             brandToPurse,
           );
-          zoeSeatAdmins.add(zoeSeatAdmin);
+          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
         shutdown: () => {
-          exitAllSeats();
+          instanceAdmin.exitAllSeats();
           E(adminNode).terminate();
         },
         makeZoeMint,
@@ -398,8 +402,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
           const seatData = harden({ proposal, initialAllocation, notifier });
 
+          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
           instanceAdmin
-            .addZoeSeatAdmin(
+            .tellZCFToMakeSeat(
               invitationHandle,
               zoeSeatAdmin,
               seatData,
