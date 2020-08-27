@@ -8,6 +8,7 @@ on:
    branches: [master]
  pull_request:
 
+# set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -110,64 +111,124 @@ jobs:
     #  run: yarn test
     - name: yarn test (acorn-eventual-send)
       run: cd packages/acorn-eventual-send && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (agoric-cli)
       run: cd packages/agoric-cli && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (assert)
       run: cd packages/assert && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (bundle-source)
       run: cd packages/bundle-source && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (dapp-svelte-wallet/api)
       run: cd packages/dapp-svelte-wallet/api && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (deployment)
       run: cd packages/deployment && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (ERTP)
       run: cd packages/ERTP && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (eventual-send)
       run: cd packages/eventual-send && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (import-bundle)
       run: cd packages/import-bundle && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (import-manager)
       run: cd packages/import-manager && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (install-metering-and-ses)
       run: cd packages/install-metering-and-ses && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (install-ses)
       run: cd packages/install-ses && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (marshal)
       run: cd packages/marshal && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (notifier)
       run: cd packages/notifier && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (promise-kit)
       run: cd packages/promise-kit && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (registrar)
       run: cd packages/registrar && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (same-structure)
       run: cd packages/same-structure && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (sparse-ints)
       run: cd packages/sparse-ints && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (spawner)
       run: cd packages/spawner && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (stat-logger)
       run: cd packages/stat-logger && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (store)
       run: cd packages/store && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (swing-store-lmdb)
       run: cd packages/swing-store-lmdb && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (swing-store-simple)
       run: cd packages/swing-store-simple && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (tame-metering)
       run: cd packages/tame-metering && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (transform-eventual-send)
       run: cd packages/transform-eventual-send && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (transform-metering)
       run: cd packages/transform-metering && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (weak-store)
       run: cd packages/weak-store && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
 
 ##############
 # Long-running tests are executed individually.
@@ -212,6 +273,8 @@ jobs:
           ${{ runner.os }}-go-
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -243,6 +306,8 @@ jobs:
     # END-RESTORE-BOILERPLATE
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
 
   test-zoe:
     # BEGIN-TEST-BOILERPLATE
@@ -274,3 +339,5 @@ jobs:
     # END-RESTORE-BOILERPLATE
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
+      env:
+        ESM_DISABLE_CACHE: true

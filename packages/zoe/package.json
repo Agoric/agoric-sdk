@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "ava",
+    "test": "ava --verbose",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
@@ -63,7 +63,7 @@
   "ava": {
     "files": ["test/**/test-*.js"],
     "require": ["esm"],
-    "timeout": "2m"
+    "timeout": "10m"
   },
   "eslintConfig": {
     "extends": [
