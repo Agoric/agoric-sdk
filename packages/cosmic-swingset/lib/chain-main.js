@@ -209,7 +209,6 @@ export default async function main(progname, args, { path, env, agcc }) {
       stateDBDir,
       mailboxStorage,
       doOutboundBridge,
-      flushChainSends,
       vatsdir,
       argv,
     );
@@ -230,8 +229,12 @@ export default async function main(progname, args, { path, env, agcc }) {
     }
 
     if (!blockManager) {
-      const fns = await launchAndInitializeSwingSet();
-      blockManager = makeBlockManager(fns);
+      const {
+        savedChainSends: scs,
+        ...fns
+      } = await launchAndInitializeSwingSet();
+      savedChainSends = scs;
+      blockManager = makeBlockManager({ ...fns, flushChainSends });
     }
 
     if (action.type === AG_COSMOS_INIT) {
@@ -239,6 +242,6 @@ export default async function main(progname, args, { path, env, agcc }) {
       return true;
     }
 
-    return blockManager(action);
+    return blockManager(action, savedChainSends);
   }
 }

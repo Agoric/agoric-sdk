@@ -53,7 +53,6 @@ export async function launch(
   kernelStateDBDir,
   mailboxStorage,
   doOutboundBridge,
-  flushChainSends,
   vatsDir,
   argv,
   debugName = undefined,
@@ -83,10 +82,10 @@ export async function launch(
     mailboxStorage.commit();
   }
 
-  function saveOutsideState(savedHeight, savedActions) {
+  function saveOutsideState(savedHeight, savedActions, savedChainSends) {
     storage.set(
       SWING_STORE_META_KEY,
-      JSON.stringify([savedHeight, savedActions]),
+      JSON.stringify([savedHeight, savedActions, savedChainSends]),
     );
     commit();
   }
@@ -122,18 +121,18 @@ export async function launch(
     await controller.run();
   }
 
-  const [savedHeight, savedActions] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[0, []]',
+  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
+    storage.get(SWING_STORE_META_KEY) || '[0, [], []]',
   );
   return {
     deliverInbound,
     doBridgeInbound,
     // bridgeOutbound,
-    flushChainSends,
     beginBlock,
     saveChainState,
     saveOutsideState,
     savedHeight,
     savedActions,
+    savedChainSends,
   };
 }

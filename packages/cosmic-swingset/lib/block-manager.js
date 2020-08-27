@@ -71,7 +71,7 @@ export default function makeBlockManager({
   let currentActions = [];
   let decohered;
 
-  async function blockManager(action) {
+  async function blockManager(action, savedChainSends) {
     if (decohered) {
       throw decohered;
     }
@@ -84,6 +84,7 @@ export default function makeBlockManager({
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
           );
         }
+        flushChainSends(false);
         break;
       }
 
@@ -147,30 +148,30 @@ export default function makeBlockManager({
             // eslint-disable-next-line no-await-in-loop
             await kernelPerformAction(a);
           }
+
+          // We write out our on-chain state as a number of chainSends.
+          const start = Date.now();
+          saveChainState();
+          const chainTime = Date.now() - start;
+
+          // Advance our saved state variables.
+          savedActions = currentActions;
+          computedHeight = action.blockHeight;
+
+          // Save the kernel's computed state so that we can recover if we ever
+          // reset before Cosmos SDK commit.
+          const start2 = Date.now();
+          saveOutsideState(computedHeight, savedActions, savedChainSends);
+          savedHeight = computedHeight;
+
+          const saveTime = Date.now() - start2;
+
+          log.debug(
+            `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, outsideSave=${saveTime}ms]`,
+          );
         }
 
-        // Always commit all the keeper state live.
-        const start = Date.now();
-        saveChainState();
-        const chainTime = Date.now() - start;
-
-        // Advance our saved state variables.
-        savedActions = currentActions;
-        computedHeight = action.blockHeight;
-
-        // Save the kernel's computed state so that we can recover if we ever
-        // reset before Cosmos SDK commit.
-        const start2 = Date.now();
-        saveOutsideState(computedHeight, savedActions);
-        savedHeight = computedHeight;
-
-        const saveTime = Date.now() - start2;
-
-        log.debug(
-          `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, outsideSave=${saveTime}ms]`,
-        );
         currentActions = [];
-
         break;
       }
 
