@@ -151,7 +151,7 @@ export default function makeBlockManager({
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
-          saveChainState();
+          await saveChainState();
           const chainTime = Date.now() - start;
 
           // Advance our saved state variables.
@@ -161,13 +161,13 @@ export default function makeBlockManager({
           // Save the kernel's computed state so that we can recover if we ever
           // reset before Cosmos SDK commit.
           const start2 = Date.now();
-          saveOutsideState(computedHeight, savedActions, savedChainSends);
+          await saveOutsideState(computedHeight, savedActions, savedChainSends);
           savedHeight = computedHeight;
 
           const saveTime = Date.now() - start2;
 
           log.debug(
-            `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, outsideSave=${saveTime}ms]`,
+            `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
           );
         }
 

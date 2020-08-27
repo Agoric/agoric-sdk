@@ -77,17 +77,17 @@ export async function launch(
     debugName,
   );
 
-  function saveChainState() {
+  async function saveChainState() {
     // Save the mailbox state.
-    mailboxStorage.commit();
+    await mailboxStorage.commit();
   }
 
-  function saveOutsideState(savedHeight, savedActions, savedChainSends) {
+  async function saveOutsideState(savedHeight, savedActions, savedChainSends) {
     storage.set(
       SWING_STORE_META_KEY,
       JSON.stringify([savedHeight, savedActions, savedChainSends]),
     );
-    commit();
+    await commit();
   }
 
   async function deliverInbound(sender, messages, ack) {
