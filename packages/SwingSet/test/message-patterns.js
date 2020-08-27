@@ -115,7 +115,7 @@ export function buildPatterns(log) {
       log(`match: ${b20amy === data}`);
     };
   }
-  out.a20 = ['b20 got [Presence o-50]', 'match: true', 'a20 done'];
+  out.a20 = ['b20 got [Alleged: presence o-50]', 'match: true', 'a20 done'];
   test('a20');
 
   // bob!x({key: amy})
@@ -134,7 +134,7 @@ export function buildPatterns(log) {
       log(`match: ${b21amy === data.key2}`);
     };
   }
-  out.a21 = ['b21 got [Presence o-50]', 'match: true', 'a21 done'];
+  out.a21 = ['b21 got [Alleged: presence o-50]', 'match: true', 'a21 done'];
   test('a21');
 
   // bob!x(bob)
@@ -212,7 +212,7 @@ export function buildPatterns(log) {
       return b.bill;
     };
   }
-  out.a42 = ['a42 done, [Presence o-52] match true'];
+  out.a42 = ['a42 done, [Alleged: presence o-52] match true'];
   test('a42');
 
   // bob!x() -> P(data)
@@ -251,7 +251,8 @@ export function buildPatterns(log) {
       return b.bert;
     };
   }
-  out.a51 = ['a51 done, got [Presence o-51], match true true'];
+  // TODO https://github.com/Agoric/agoric-sdk/issues/1631
+  out.a51 = ['a51 done, got [Alleged: presence o-67], match true true'];
   test('a51');
 
   // bob!x() -> P(bill) // new reference
@@ -272,7 +273,7 @@ export function buildPatterns(log) {
       return b.bill;
     };
   }
-  out.a52 = ['a52 done, got [Presence o-52], match true'];
+  out.a52 = ['a52 done, got [Alleged: presence o-52], match true'];
   test('a52');
 
   // bob!x(amy) -> P(amy) // new to bob
@@ -340,7 +341,7 @@ export function buildPatterns(log) {
       p1.resolve(b.bill);
     };
   }
-  out.a62 = ['a62 done, got [Presence o-52]'];
+  out.a62 = ['a62 done, got [Alleged: presence o-52]'];
   test('a62');
 
   // bob!x(amy) -> P(amy) // resolve after receipt

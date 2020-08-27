@@ -111,11 +111,12 @@ export async function makeWallet({
   }
 
   const noOp = () => {};
-  const identityFn = slot => slot;
+  const identitySlotToValFn = (slot, _) => slot;
+
   // Instead of { body, slots }, fill the slots. This is useful for
   // display but not for data processing, since the special identifier
   // @qclass is lost.
-  const { unserialize: fillInSlots } = makeMarshal(noOp, identityFn);
+  const { unserialize: fillInSlots } = makeMarshal(noOp, identitySlotToValFn);
 
   const {
     notifier: pursesNotifier,
