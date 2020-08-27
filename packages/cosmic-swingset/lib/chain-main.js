@@ -9,6 +9,14 @@ import makeBlockManager from './block-manager';
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
+const toNumber = specimen => {
+  const number = parseInt(specimen, 10);
+  if (String(number) !== String(specimen)) {
+    throw Error(`Could not parse ${JSON.stringify(specimen)} as a number`);
+  }
+  return number;
+};
+
 const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   let cache = new Map();
   let changedKeys = new Set();
@@ -181,7 +189,11 @@ export default async function main(progname, args, { path, env, agcc }) {
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
       'mailbox.',
-      importMailbox,
+      data => {
+        const ack = toNumber(data.ack);
+        const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
+        return importMailbox({ outbox, ack });
+      },
       exportMailbox,
     );
     function doOutboundBridge(dstID, obj) {

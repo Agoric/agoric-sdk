@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/cosmos/cosmos-sdk/client/context"
-
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 
 	"github.com/gorilla/mux"
 )
 
-func getEgressHandler(cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func getEgressHandler(cliCtx client.Context, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramType := vars[peerName]
@@ -26,7 +25,7 @@ func getEgressHandler(cliCtx context.CLIContext, storeName string) http.HandlerF
 	}
 }
 
-func getStorageHandler(cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func getStorageHandler(cliCtx client.Context, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramType := vars[pathName]
@@ -41,7 +40,7 @@ func getStorageHandler(cliCtx context.CLIContext, storeName string) http.Handler
 	}
 }
 
-func getKeysHandler(cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func getKeysHandler(cliCtx client.Context, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramType, ok := vars[keysName]
@@ -62,7 +61,7 @@ func getKeysHandler(cliCtx context.CLIContext, storeName string) http.HandlerFun
 	}
 }
 
-func getMailboxHandler(cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+func getMailboxHandler(cliCtx client.Context, storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramType := vars[peerName]

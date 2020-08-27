@@ -23,7 +23,8 @@
   delegate_to: localhost
   shell: "\
     ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} \
-     tx send faucet {{ staker_address.stdout }} {{ STAKER_AMOUNT }} \
+     tx bank send faucet {{ staker_address.stdout }} {{ STAKER_AMOUNT }} \
+      --node=tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 --keyring-backend=test --chain-id={{ CHAIN_NAME }} \
       --broadcast-mode=block --yes"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"

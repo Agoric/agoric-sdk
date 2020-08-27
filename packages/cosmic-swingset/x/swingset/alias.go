@@ -30,7 +30,5 @@ type (
 	MsgDeliverInbound = types.MsgDeliverInbound
 	MsgProvision      = types.MsgProvision
 	MsgSendPacket     = types.MsgSendPacket
-	QueryResStorage   = types.QueryResStorage
-	QueryResKeys      = types.QueryResKeys
 	Storage           = types.Storage
 )

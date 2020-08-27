@@ -43,7 +43,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
       'docker',
       [
         'run',
-        `--volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper`,
+        `--volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos`,
         '--rm',
         ttyFlag,
         '--entrypoint=ag-cosmos-helper',

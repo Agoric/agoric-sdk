@@ -22,17 +22,17 @@ const (
 )
 
 // NewQuerier is the module level router for state queries
-func NewQuerier(keeper Keeper) sdk.Querier {
+func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
 		switch path[0] {
 		case QueryEgress:
-			return queryEgress(ctx, path[1], req, keeper)
+			return queryEgress(ctx, path[1], req, keeper, legacyQuerierCdc)
 		case QueryStorage:
-			return queryStorage(ctx, strings.Join(path[1:], "/"), req, keeper)
+			return queryStorage(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		case QueryKeys:
-			return queryKeys(ctx, strings.Join(path[1:], "/"), req, keeper)
+			return queryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		case QueryMailbox:
-			return queryMailbox(ctx, path[1:], req, keeper)
+			return queryMailbox(ctx, path[1:], req, keeper, legacyQuerierCdc)
 		default:
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query endpoint")
 		}
@@ -40,7 +40,7 @@ func NewQuerier(keeper Keeper) sdk.Querier {
 }
 
 // nolint: unparam
-func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper Keeper) ([]byte, error) {
+func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	acc, err := sdk.AccAddressFromBech32(bech32)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
@@ -51,7 +51,7 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("egress %s not found", bech32))
 	}
 
-	bz, err := codec.MarshalJSONIndent(keeper.cdc, types.QueryResEgress{egress.Nickname, egress.PowerFlags})
+	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, egress)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
@@ -60,7 +60,7 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 }
 
 // nolint: unparam
-func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper) (res []byte, err error) {
+func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	storage := keeper.GetStorage(ctx, path)
 	value := storage.Value
 
@@ -68,7 +68,7 @@ func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Ke
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get storage")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, types.QueryResStorage{value})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{value})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
@@ -77,7 +77,7 @@ func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Ke
 }
 
 // nolint: unparam
-func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper) (res []byte, err error) {
+func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	keys := keeper.GetKeys(ctx, path)
 	klist := keys.Keys
 
@@ -85,7 +85,7 @@ func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get keys")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, types.QueryResKeys{klist})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Keys{klist})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
@@ -94,7 +94,7 @@ func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 }
 
 // nolint: unparam
-func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err error) {
+func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	peer := path[0]
 
 	mailbox := keeper.GetMailbox(ctx, peer)
@@ -104,7 +104,7 @@ func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get peer mailbox")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, types.QueryResStorage{value})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{value})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}

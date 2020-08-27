@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
-  const myAddrFn = path.join(basedir, 'ag-cosmos-helper-address');
+  const myAddrFn = path.join(basedir, 'ag-chain-cosmos-address');
   const myAddr = fs
     .readFileSync(myAddrFn)
     .toString()

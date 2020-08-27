@@ -9,46 +9,32 @@ import (
 
 const EmptyMailboxValue = `"{\"outbox\":[], \"ack\":0}"`
 
-type Egress struct {
-	Nickname   string         `json:"nickname"`
-	Peer       sdk.AccAddress `json:"peer"`
-	PowerFlags []string       `json:"powerFlags"`
-}
-
-func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) Egress {
-	return Egress{
+func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egress {
+	return &Egress{
 		Nickname:   nickname,
 		Peer:       peer,
 		PowerFlags: powerFlags,
 	}
 }
 
-type Storage struct {
-	Value string `json:"value"`
-}
-
-func NewStorage() Storage {
-	return Storage{}
+func NewStorage() *Storage {
+	return &Storage{}
 }
 
 // Returns a new Mailbox with an empty mailbox
-func NewMailbox() Storage {
-	return Storage{
+func NewMailbox() *Storage {
+	return &Storage{
 		Value: EmptyMailboxValue,
 	}
 }
 
-type Keys struct {
-	Keys []string `json:"keys"`
-}
-
-func NewKeys() Keys {
-	return Keys{}
+func NewKeys() *Keys {
+	return &Keys{}
 }
 
 // FIXME: Should have @agoric/nat
-func Nat(num float64) (int, error) {
-	nat := int(num)
+func Nat(num float64) (uint64, error) {
+	nat := uint64(num)
 	if float64(nat) != num {
 		return 0, errors.New("Not a precise integer")
 	}
@@ -60,9 +46,9 @@ func Nat(num float64) (int, error) {
 }
 
 type Messages struct {
-	Nums     []int
+	Nums     []uint64
 	Messages []string
-	Ack      int
+	Ack      uint64
 }
 
 func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
@@ -91,7 +77,7 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 	}
 
 	ret.Messages = make([]string, len(msgs))
-	ret.Nums = make([]int, len(msgs))
+	ret.Nums = make([]uint64, len(msgs))
 	for i, nummsgi := range msgs {
 		nummsg, ok := nummsgi.([]interface{})
 		if !ok || len(nummsg) != 2 {

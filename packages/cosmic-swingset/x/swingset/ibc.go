@@ -5,12 +5,10 @@ import (
 	"fmt"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
+	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
-	port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
-	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
+	host "github.com/cosmos/cosmos-sdk/x/ibc/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -30,22 +28,22 @@ type channelMessage struct { // comes from swingset's IBC handler
 	Ack             []byte              `json:"ack"`
 }
 
-func stringToOrder(order string) ibctypes.Order {
+func stringToOrder(order string) channeltypes.Order {
 	switch order {
 	case "ORDERED":
-		return ibctypes.ORDERED
+		return channeltypes.ORDERED
 	case "UNORDERED":
-		return ibctypes.UNORDERED
+		return channeltypes.UNORDERED
 	default:
-		return ibctypes.NONE
+		return channeltypes.NONE
 	}
 }
 
-func orderToString(order ibctypes.Order) string {
+func orderToString(order channeltypes.Order) string {
 	switch order {
-	case ibctypes.ORDERED:
+	case channeltypes.ORDERED:
 		return "ORDERED"
-	case ibctypes.UNORDERED:
+	case channeltypes.UNORDERED:
 		return "UNORDERED"
 	default:
 		return "NONE"
@@ -54,7 +52,7 @@ func orderToString(order ibctypes.Order) string {
 
 // DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
 type DefaultRouter struct {
-	*port.Router
+	*porttypes.Router
 	defaultRoute porttypes.IBCModule
 }
 
@@ -111,8 +109,8 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 			}
 		}
 
-	case "packetExecuted":
-		err = ctx.Keeper.PacketExecuted(ctx.Context, msg.Packet, msg.Ack)
+	case "receiveExecuted":
+		err = ctx.Keeper.ReceiveExecuted(ctx.Context, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
@@ -188,7 +186,7 @@ type channelOpenInitEvent struct {
 // Implement IBCModule callbacks
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
-	order ibctypes.Order,
+	order channeltypes.Order,
 	connectionHops []string,
 	portID string,
 	channelID string,
@@ -228,8 +226,8 @@ func (am AppModule) OnChanOpenInit(
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err = am.keeper.ClaimCapability(ctx, channelCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
+	if err = am.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	return err
@@ -251,7 +249,7 @@ type channelOpenTryEvent struct {
 
 func (am AppModule) OnChanOpenTry(
 	ctx sdk.Context,
-	order ibctypes.Order,
+	order channeltypes.Order,
 	connectionHops []string,
 	portID,
 	channelID string,
@@ -293,8 +291,8 @@ func (am AppModule) OnChanOpenTry(
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err = am.keeper.ClaimCapability(ctx, channelCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
+	if err = am.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	return err
@@ -475,10 +473,10 @@ type receivePacketEvent struct {
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
-) (*sdk.Result, error) {
+) (*sdk.Result, []byte, error) {
 	if committedHeight == ctx.BlockHeight() {
 		// We don't support simulation.
-		return &sdk.Result{}, nil
+		return &sdk.Result{}, nil, nil
 	} else {
 		// The simulation was done, so now allow infinite gas.
 		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
@@ -502,17 +500,18 @@ func (am AppModule) OnRecvPacket(
 
 	bytes, err := json.Marshal(&event)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	// FIXME: Get acknowledgement data from this call.
 	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return &sdk.Result{
 		Events: ctx.EventManager().Events().ToABCIEvents(),
-	}, nil
+	}, nil, nil
 }
 
 type acknowledgementPacketEvent struct {

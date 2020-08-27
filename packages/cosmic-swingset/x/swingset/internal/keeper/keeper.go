@@ -11,16 +11,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/bank"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
-	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
+	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
-	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
+	host "github.com/cosmos/cosmos-sdk/x/ibc/24-host"
+	ibcexported "github.com/cosmos/cosmos-sdk/x/ibc/exported"
 
 	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 )
@@ -28,13 +28,13 @@ import (
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey sdk.StoreKey
-	cdc      *codec.Codec
+	cdc      codec.Marshaler
 
-	accountKeeper auth.AccountKeeper
-	bankKeeper    bank.Keeper
+	accountKeeper authkeeper.AccountKeeper
+	bankKeeper    bankkeeper.Keeper
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
-	scopedKeeper  capability.ScopedKeeper
+	scopedKeeper  capabilitykeeper.ScopedKeeper
 
 	// CallToController dispatches a message to the controlling process
 	CallToController func(ctx sdk.Context, str string) (string, error)
@@ -42,10 +42,10 @@ type Keeper struct {
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc *codec.Codec, key sdk.StoreKey,
+	cdc codec.Marshaler, key sdk.StoreKey,
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
-	accountKeeper auth.AccountKeeper, bankKeeper bank.Keeper,
-	scopedKeeper capability.ScopedKeeper,
+	accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper,
+	scopedKeeper capabilitykeeper.ScopedKeeper,
 ) Keeper {
 
 	return Keeper{
@@ -81,7 +81,7 @@ func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 }
 
 // SetEgress sets the egress struct for a peer, and ensures its account exists
-func (k Keeper) SetEgress(ctx sdk.Context, egress types.Egress) error {
+func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 	path := "egress." + egress.Peer.String()
 
 	json, err := json.Marshal(egress)
@@ -89,7 +89,7 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress types.Egress) error {
 		return err
 	}
 
-	storage := types.Storage{string(json)}
+	storage := &types.Storage{string(json)}
 	k.SetStorage(ctx, path, storage)
 
 	// Now make sure the corresponding account has been initialised.
@@ -126,21 +126,21 @@ func (k Keeper) ExportStorage(ctx sdk.Context) map[string]string {
 }
 
 // GetStorage gets generic storage
-func (k Keeper) GetStorage(ctx sdk.Context, path string) types.Storage {
+func (k Keeper) GetStorage(ctx sdk.Context, path string) *types.Storage {
 	//fmt.Printf("GetStorage(%s)\n", path);
 	store := ctx.KVStore(k.storeKey)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
 	if !dataStore.Has([]byte(path)) {
-		return types.Storage{""}
+		return &types.Storage{""}
 	}
 	bz := dataStore.Get([]byte(path))
 	var storage types.Storage
 	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &storage)
-	return storage
+	return &storage
 }
 
 // GetKeys gets all storage child keys at a given path
-func (k Keeper) GetKeys(ctx sdk.Context, path string) types.Keys {
+func (k Keeper) GetKeys(ctx sdk.Context, path string) *types.Keys {
 	store := ctx.KVStore(k.storeKey)
 	keysStore := prefix.NewStore(store, types.KeysPrefix)
 	if !keysStore.Has([]byte(path)) {
@@ -149,11 +149,11 @@ func (k Keeper) GetKeys(ctx sdk.Context, path string) types.Keys {
 	bz := keysStore.Get([]byte(path))
 	var keys types.Keys
 	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &keys)
-	return keys
+	return &keys
 }
 
 // SetStorage sets the entire generic storage for a path
-func (k Keeper) SetStorage(ctx sdk.Context, path string, storage types.Storage) {
+func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage) {
 	store := ctx.KVStore(k.storeKey)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
 	keysStore := prefix.NewStore(store, types.KeysPrefix)
@@ -206,13 +206,13 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // GetMailbox gets the entire mailbox struct for a peer
-func (k Keeper) GetMailbox(ctx sdk.Context, peer string) types.Storage {
+func (k Keeper) GetMailbox(ctx sdk.Context, peer string) *types.Storage {
 	path := "mailbox." + peer
 	return k.GetStorage(ctx, path)
 }
 
 // SetMailbox sets the entire mailbox struct for a peer
-func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox types.Storage) {
+func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox *types.Storage) {
 	path := "mailbox." + peer
 	k.SetStorage(ctx, path, mailbox)
 }
@@ -231,59 +231,59 @@ func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (
 
 // ChanOpenInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
-func (k Keeper) ChanOpenInit(ctx sdk.Context, order ibctypes.Order, connectionHops []string,
+func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
 	portID, channelID, rPortID, rChannelID, version string,
 ) error {
-	capName := ibctypes.PortPath(portID)
+	capName := host.PortPath(portID)
 	portCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
 	}
 	counterparty := channeltypes.Counterparty{
-		ChannelID: rChannelID,
-		PortID:    rPortID,
+		ChannelId: rChannelID,
+		PortId:    rPortID,
 	}
 	chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap, counterparty, version)
 	if err != nil {
 		return err
 	}
-	chanCapName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	chanCapName := host.ChannelCapabilityPath(portID, channelID)
 	return k.ClaimCapability(ctx, chanCap, chanCapName)
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
-func (k Keeper) SendPacket(ctx sdk.Context, packet channelexported.PacketI) error {
+func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
-	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.SendPacket(ctx, chanCap, packet)
 }
 
-// PacketExecuted defines a wrapper function for the channel Keeper's function
+// ReceiveExecuted defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
-func (k Keeper) PacketExecuted(ctx sdk.Context, packet channelexported.PacketI, acknowledgement []byte) error {
+func (k Keeper) ReceiveExecuted(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
 	portID := packet.GetDestPort()
 	channelID := packet.GetDestChannel()
-	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.PacketExecuted(ctx, chanCap, packet, acknowledgement)
+	return k.channelKeeper.ReceiveExecuted(ctx, chanCap, packet, acknowledgement)
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
-	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
 }
@@ -292,18 +292,18 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 // order to expose it to the SwingSet IBC handler.
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, ibctypes.PortPath(portID))
+	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
 }
 
 // TimeoutExecuted defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
-func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet channelexported.PacketI) error {
+func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
-	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.TimeoutExecuted(ctx, chanCap, packet)
 }

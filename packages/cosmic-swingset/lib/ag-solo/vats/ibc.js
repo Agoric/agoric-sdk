@@ -633,12 +633,12 @@ EOF
           const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
-          E(connP)
+          await E(connP)
             .send(data)
             .then(ack => {
               const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
               const ack64 = dataToBase64(realAck);
-              return callIBCDevice('packetExecuted', { packet, ack: ack64 });
+              return callIBCDevice('receiveExecuted', { packet, ack: ack64 });
             })
             .catch(e => console.error(e));
           break;

@@ -15,17 +15,13 @@
 
 - name: "Extract faucet address"
   delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} --keyring-backend=test keys show -a faucet > {{ SETUP_HOME + '/../faucet/address.txt' }}"
+  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} \
+    --keyring-backend=test \
+    keys show -a faucet > {{ SETUP_HOME + '/../faucet/address.txt' }}"
   when: not faucet
 
 - set_fact:
     faucet: "{{ lookup('file', SETUP_HOME + '/../faucet/address.txt') }}"
-
-- name: "Set faucet chain params"
-  delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} config chain-id {{ CHAIN_NAME }} && \
-    ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} config node tcp://{{ hostvars[STAKER_NODE]['ansible_host'] }}:26657 && \
-    ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} config keyring-backend test"
 
 - name: "Check {{ STAKER }}-{{ STAKER_NODE }} exists"
   become: yes
@@ -56,7 +52,6 @@
   shell: "\
     {{ service }} add-genesis-account \
       {{ faucet }} {{ STAKER_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
-  ignore_errors: true
 
 - name: "Add {{ STAKER_AMOUNT }} coins to {{ STAKER }}-{{ STAKER_NODE }}"
   become: yes
@@ -64,7 +59,6 @@
   shell: "{{ service }} add-genesis-account \
     $(ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} -a) \
     {{ STAKER_AMOUNT }}"
-  ignore_errors: true
 
 - set_fact:
     delegates: "{{ lookup('file', SETUP_HOME + '/cosmos-delegates.txt', errors='ignore') }}"
@@ -96,7 +90,7 @@
     {{ service }} gentx --keyring-backend=test --amount={{ STAKER_AMOUNT }} \
       {{ (website | default(None)) and '--website=' ~ website }} \
       {{ (identity | default(None)) and '--identity=' ~ identity }} \
-      --name={{ STAKER }}-{{ STAKER_NODE }} --output-document={{ json }}"
+      {{ STAKER }}-{{ STAKER_NODE }} --chain-id={{ CHAIN_NAME }} --output-document={{ json }}"
   vars:
     json: "/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json"
   args:

@@ -15,19 +15,26 @@ INSPECT_ADDRESS = 127.0.0.1
 BREAK_CHAIN = false
 NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
 
-MOD_READONLY = # -mod=readonly
-
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 COMMIT := $(shell git log -1 --format='%H' 2>/dev/null || cat lib/git-revision.txt)
 
-ldflags = \
-	-X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
-	-X github.com/cosmos/cosmos-sdk/version.ServerName=ag-chain-cosmos \
-	-X github.com/cosmos/cosmos-sdk/version.ClientName=ag-cosmos-helper \
-	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags)"
+MOD_READONLY = # -mod=readonly
+
+BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
+
+whitespace :=
+whitespace += $(whitespace)
+comma := ,
+build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
+
+# process linker flags
+
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-chain-cosmos \
+		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 gcflags =
 
 ifneq ($(GO_DEBUG),)
@@ -72,11 +79,11 @@ scenario2-setup-nobuild:
 	done
 	# Create the bootstrap account.
 	mkdir t1/bootstrap
-	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
-	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
+	$(AGCH) --home=t1/n0 keys add bootstrap --keyring-backend=test
+	$(AGCH) --home=t1/n0 keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
 	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGC) --home=t1/n0 gentx --keyring-backend=test --home-client=t1/bootstrap --name=bootstrap --amount=1000000uagstake
+	$(AGC) --home=t1/n0 gentx --keyring-backend=test bootstrap --amount=1000000uagstake --chain-id=$(CHAIN_ID)
 	$(AGC) --home=t1/n0 collect-gentxs
 	$(AGC) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults ag-chain-cosmos t1/n0/config
@@ -91,18 +98,18 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 t1-provision-one-with-powers:
-	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
-	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
-	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
-		  --gas=auto --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr agoric.vattp | tee /dev/stderr | grep -q 'code: 0'
+	addr=$$(cat t1/$(BASE_PORT)/ag-chain-cosmos-address); \
+	  $(AGCH) --home=t1/n0 query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+	  $(AGCH) --home=t1/n0 tx swingset provision-one --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  t1/$(BASE_PORT) $$addr agoric.vattp | tee /dev/stderr | grep -q '"code":0'
 
 t1-provision-one:
-	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
-	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
-	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
-		  --gas=auto --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q 'code: 0'
+	addr=$$(cat t1/$(BASE_PORT)/ag-chain-cosmos-address); \
+	  $(AGCH) --home=t1/n0 query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+	  $(AGCH) --home=t1/n0 tx swingset provision-one --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'
 
 # Actually start the ag-solo.
 t1-start-ag-solo:
@@ -138,13 +145,14 @@ docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
 compile-go: go.sum
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
 build-cosmos: compile-go node-compile-gyp install
 
 compile-debug:
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-chain-cosmos
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-daemon
 
 # We need this so that node-gyp can be found.
 node-compile-gyp:
@@ -161,9 +169,12 @@ compile-gyp:
 	rm -f binding.gyp
 
 install: go.sum
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
-	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; \
-	  ln -sf "$$PWD/bin/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$$bindir/"
+	mkdir -p "${BIN}"
+	ln -sf "$$PWD/bin/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "${BIN}/"
+
+go-mod-cache: go.sum
+	@echo "--> Download go modules to local cache"
+	@go mod download
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
@@ -187,57 +198,78 @@ set-local-gci-ingress:
 	done
 
 ###############################################################################
-###                                Protobuf                                 ###
+###                           Protobuf                                    ###
 ###############################################################################
 
-proto-all: proto-gen proto-lint proto-check-breaking
+proto-gen: proto-tools
+	./scripts/protocgen.sh
 
-proto-gen:
-	@./scripts/protocgen.sh
+proto-lint: proto-tools
+	buf check lint --error-format=json
 
-proto-lint:
-	@buf check lint --error-format=json
+proto-check-breaking: proto-tools
+	buf check breaking --against-input '.git#branch=master'
 
-proto-check-breaking:
-	@buf check breaking --against-input '.git#branch=master'
-
+TM_URL           = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.0-rc3/proto/tendermint
 GOGO_PROTO_URL   = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-COSMOS_SDK_URL   = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master
-COSMOS_PROTO_URL = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
+IBC_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/ibc
+COSMOS_SDK_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/cosmos/base
 
-GOGO_PROTO_TYPES    = third_party/proto/gogoproto
-COSMOS_PROTO_TYPES  = third_party/proto/cosmos-proto
-SDK_PROTO_TYPES     = third_party/proto/cosmos-sdk/types
-AUTH_PROTO_TYPES    = third_party/proto/cosmos-sdk/x/auth/types
-VESTING_PROTO_TYPES = third_party/proto/cosmos-sdk/x/auth/vesting/types
-SUPPLY_PROTO_TYPES  = third_party/proto/cosmos-sdk/x/supply/types
-
-proto-install:
-	@echo "Go to github.com/protocolbuffers/protobuf/releases"
-	go get -u github.com/golang/protobuf/protoc-gen-go
+GOGO_PROTO_TYPES  = third_party/proto/gogoproto
+IBC_CHANNEL_TYPES = third_party/proto/ibc/channel
+SDK_QUERY_TYPES  	= third_party/proto/cosmos/base/query/v1beta1
 
 proto-update-deps:
-	@mkdir -p $(GOGO_PROTO_TYPES)
-	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
+	mkdir -p $(GOGO_PROTO_TYPES)
+	curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
 
-	@mkdir -p $(COSMOS_PROTO_TYPES)
-	@curl -sSL $(COSMOS_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+	mkdir -p $(IBC_CHANNEL_TYPES)
+	curl -sSL $(IBC_PROTO_URL)/channel/channel.proto > $(IBC_CHANNEL_TYPES)/channel.proto
 
-	@mkdir -p $(SDK_PROTO_TYPES)
-	@curl -sSL $(COSMOS_SDK_URL)/types/types.proto > $(SDK_PROTO_TYPES)/types.proto
+	mkdir -p $(SDK_QUERY_TYPES)
+	curl -sSL $(COSMOS_SDK_PROTO_URL)/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto
 
-	@mkdir -p $(AUTH_PROTO_TYPES)
-	@curl -sSL $(COSMOS_SDK_URL)/x/auth/types/types.proto > $(AUTH_PROTO_TYPES)/types.proto
-	@sed -i '' '5 s|types/|third_party/proto/cosmos-sdk/types/|g' $(AUTH_PROTO_TYPES)/types.proto
 
-	@mkdir -p $(VESTING_PROTO_TYPES)
-	@curl -sSL $(COSMOS_SDK_URL)/x/auth/vesting/types/types.proto > $(VESTING_PROTO_TYPES)/types.proto
-	@sed -i '' '5 s|types/|third_party/proto/cosmos-sdk/types/|g' $(VESTING_PROTO_TYPES)/types.proto
-	@sed -i '' '6 s|x/auth/types/|third_party/proto/cosmos-sdk/x/auth/types/|g' $(VESTING_PROTO_TYPES)/types.proto
+UNAME_S ?= $(shell uname -s)
+UNAME_M ?= $(shell uname -m)
 
-	@mkdir -p $(SUPPLY_PROTO_TYPES)
-	@curl -sSL $(COSMOS_SDK_URL)/x/supply/types/types.proto > $(SUPPLY_PROTO_TYPES)/types.proto
-	@sed -i '' '5 s|types/|third_party/proto/cosmos-sdk/types/|g' $(SUPPLY_PROTO_TYPES)/types.proto
-	@sed -i '' '6 s|x/auth/types/|third_party/proto/cosmos-sdk/x/auth/types/|g' $(SUPPLY_PROTO_TYPES)/types.proto
+BUF_VERSION ?= 0.11.0
 
-.PHONY: proto-all proto-gen proto-lint proto-check-breaking proto-update-deps
+PROTOC_VERSION ?= 3.11.2
+ifeq ($(UNAME_S),Linux)
+  PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-linux-x86_64.zip
+endif
+ifeq ($(UNAME_S),Darwin)
+  PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-osx-x86_64.zip
+endif
+
+proto-tools: proto-tools-stamp buf
+
+proto-tools-stamp:
+	echo "Installing protoc compiler..."
+	(cd /tmp; \
+	curl -OL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"; \
+	unzip -o ${PROTOC_ZIP} -d ${BIN}/.. bin/protoc 'include/*'; \
+	rm -f ${PROTOC_ZIP})
+
+	echo "Installing protoc-gen-gocosmos..."
+	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
+
+	# Create dummy file to satisfy dependency and avoid
+	# rebuilding when this Makefile target is hit twice
+	# in a row
+	touch $@
+
+buf: buf-stamp
+
+buf-stamp:
+	echo "Installing buf..."
+	curl -sSL \
+    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-${UNAME_S}-${UNAME_M}" \
+    -o "${BIN}/buf" && \
+	chmod +x "${BIN}/buf"
+
+	touch $@
+
+tools-clean:
+	rm -f proto-tools-stamp buf-stamp

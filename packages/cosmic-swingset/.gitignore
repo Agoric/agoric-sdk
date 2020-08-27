@@ -86,5 +86,5 @@ typings/
 # next.js build output
 .next
 lib/git-revision.txt
-agoric/
 /binding.gyp
+*-stamp
