@@ -202,7 +202,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      addSeatObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      publicFacetPromiseKit.promise.catch(_ => {});
 
       const makeInstanceAdmin = () => {
         /** @type {Set<ZoeSeatAdmin>} */
@@ -391,7 +395,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           const initialAllocation = arrayToObj(amountsArray, proposalKeywords);
 
           const offerResultPromiseKit = makePromiseKit();
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          offerResultPromiseKit.promise.catch(_ => {});
           const exitObjPromiseKit = makePromiseKit();
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+          exitObjPromiseKit.promise.catch(_ => {});
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
           const seatHandle = makeHandle('SeatHandle');
 
@@ -419,6 +427,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             .then(({ offerResultP, exitObj }) => {
               offerResultPromiseKit.resolve(offerResultP);
               exitObjPromiseKit.resolve(exitObj);
+            })
+            .catch(err => {
+              console.log(err);
+              console.log('right here');
             });
 
           return userSeat;
