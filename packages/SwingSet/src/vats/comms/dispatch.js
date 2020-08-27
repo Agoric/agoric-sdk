@@ -4,8 +4,6 @@ import { assert, details } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
 import { makeState } from './state';
-import { deliverToRemote, resolvePromiseToRemote } from './outbound';
-import { deliverFromRemote } from './inbound';
 import { deliverToController } from './controller';
 import { insistCapData } from '../../capdata';
 import { makeStateKit } from './state';

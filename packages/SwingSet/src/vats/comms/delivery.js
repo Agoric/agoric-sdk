@@ -32,11 +32,22 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     markPromiseAsResolved,
   } = stateKit;
 
+  function mapDataToKernel(data) {
+    insistCapData(data);
+    const kernelSlots = data.slots.map(s => provideKernelForLocal(s));
+    const kernelData = harden({ body: data.body, slots: kernelSlots });
+    return kernelData;
+  }
+
+  function mapDataFromKernel(kdata) {
+    insistCapData(kdata);
+    const slots = kdata.slots.map(provideLocalForKernel);
+    return harden({ body: kdata.body, slots });
+  }
 
   function sendFromKernel(target, method, kargs, kresult) {
     const result = provideLocalForKernelResult(kresult);
-    const slots = kargs.slots.map(provideLocalForKernel);
-    const args = { ...kargs, slots };
+    const args = mapDataFromKernel(kargs);
     const localDelivery = harden({ target, method, result, args });
     handleSend(localDelivery);
   }
@@ -47,9 +58,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       return harden({ ...resolution, slot });
     }
     if (resolution.type === 'data' || resolution.type === 'reject') {
-      const slots = resolution.data.slots.map(provideLocalForKernel);
-      const data = { ...resolution.data, slots };
-      return harden({ ...resolution, data });
+      return harden({ ...resolution, data: mapDataFromKernel(resolution.data) });
     }
     throw Error(`unknown resolution type ${resolution.type}`);
   }
@@ -202,9 +211,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function sendToKernel(target, delivery) {
     const { method, args: localArgs, result: localResult } = delivery;
+    const kernelArgs = mapDataToKernel(localArgs);
     const kernelResult = localResult ? provideKernelForLocalResult(localResult) : undefined;
-    const kernelSlots = localArgs.slots.map(s => provideKernelForLocal(s));
-    const kernelArgs = harden({ body: localArgs.body, slots: kernelSlots });
 
     syscall.send(target, delivery.method, kernelArgs, kernelResult);
     if (kernelResult) {
@@ -294,11 +302,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function resolveToKernel(vpid, resolution) {
     if (resolution.type === 'object') {
-      syscall.fulfillToPresence(vpid, resolution.slot);
+      syscall.fulfillToPresence(vpid, provideKernelForLocal(resolution.slot);
     } else if (resolution.type === 'data') {
-      syscall.fulfillToData(vpid, resolution.data);
+      syscall.fulfillToData(vpid, mapDataToKernel(resolution.data));
     } else if (resolution.type === 'reject') {
-      syscall.reject(vpid, resolution.data);
+      syscall.reject(vpid, mapDataToKernel(resolution.data));
     } else {
       throw new Error(`unknown resolution type ${resolution.type}`);
     }
