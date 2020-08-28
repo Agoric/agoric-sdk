@@ -7,22 +7,38 @@ import { insistRemoteID } from './remote';
 const COMMS = 'comms';
 const KERNEL = 'kernel';
 
+// We maintain one clist for each remote.
+// The remote clists map remote-side `ro+NN/ro-NN` identifiers to the `o+NN/o-NN`
+// namespace used within the comms vat, and `rp+NN/rp-NN` to `p+NN/p-NN`.
+
+// On the kernel side, we exchange `o+NN/o-NN` with the kernel, in the
+// arguments of deliveries, resolutions, and notifications. We also exchange
+// `p+NN/p-NN` values, but only for *unresolved* promises. The swingset
+// kernel-vat interface contract says promise resolution causes the ID to be
+// retired, forgotten immediately by both sides.
+
+// If we ever have cause to send a retired vpid into the kernel, we must
+// instead allocate a new `p+NN` value, send *that* into the kernel instead,
+// immediately resolve it, and then forget about it again. We don't need to
+// record the new `p+NN` value anywhere. The counter we use for allocation
+// will continue on to the next higher NN.
+
 export function makeState() {
   const state = {
     nextRemoteIndex: 1,
     remotes: new Map(), // remoteNN -> { remoteID, name, fromRemote/toRemote, etc }
     names: new Map(), // name -> remoteNN
 
+    // we allocate `o+NN` with this counter
     nextObjectIndex: 10,
     remoteReceivers: new Map(), // o+NN -> remoteNN, for admin rx objects
     objectTable: new Map(), // o+NN -> owning remote for non-admin objects
 
-    // hopefully we can avoid the need for local promises
-    // localPromises: new Map(), // p+NN/p-NN -> local purpose
     promiseTable: new Map(),
     // p+NN/p-NN -> { resolved, decider, subscribers, kernelIsSubscribed }
     // decider is one of: remoteID, 'kernel', 'comms'
-    // and maybe resolution:, one of:
+    // once resolved, -> { resolved, resolution }
+    // where resolution is one of:
     // * {type: 'object', slot}
     // * {type: 'data', data}
     // * {type: 'reject', data}
@@ -83,6 +99,14 @@ export function makeStateKit(state) {
     return pid;
   }
 
+  function allocateResolvedPromiseID() {
+    // these are short-lived, and don't live in the table
+    const index = state.nextPromiseIndex;
+    state.nextPromiseIndex += 1;
+    const pid = makeVatSlot('promise', true, index);
+    return pid;
+  }
+
   function deciderIsKernel(vpid) {
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
@@ -138,6 +162,7 @@ export function makeStateKit(state) {
   // legal transitions are remote <-> comms <-> kernel.
 
   function changeDeciderToRemote(vpid, newDecider) {
+    // console.log(`changeDecider ${vpid}: COMMS->${newDecider}`);
     insistRemoteID(newDecider);
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
@@ -146,15 +171,16 @@ export function makeStateKit(state) {
   }
 
   function changeDeciderFromRemoteToComms(vpid, oldDecider) {
+    // console.log(`changeDecider ${vpid}: ${oldDecider}->COMMS`);
     insistRemoteID(oldDecider);
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
     assert(p, `unknown ${vpid}`);
     assert.equal(p.decider, oldDecider);
     p.decider = COMMS;
   }
 
   function changeDeciderToKernel(vpid) {
+    // console.log(`changeDecider ${vpid}: COMMS->KERNEL`);
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
     assert(p, `unknown ${vpid}`);
@@ -163,6 +189,7 @@ export function makeStateKit(state) {
   }
 
   function changeDeciderFromKernelToComms(vpid) {
+    // console.log(`changeDecider ${vpid}: KERNEL->COMMS`);
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
     assert(p, `unknown ${vpid}`);
@@ -194,13 +221,16 @@ export function makeStateKit(state) {
 
   function subscribeKernelToPromise(vpid) {
     const p = state.promiseTable.get(vpid);
+    // console.log(`subscribeKernelToPromise ${vpid} d=${p.decider}`);
     assert(p, `unknown ${vpid}`);
     assert(!p.resolved, `${vpid} already resolved`);
+    assert(p.decider !== KERNEL, `kernel is decider for ${vpid}, hush`);
     p.kernelIsSubscribed = true;
   }
 
   function unsubscribeKernelFromPromise(vpid) {
     const p = state.promiseTable.get(vpid);
+    // console.log(`unsubscribeKernelToPromise ${vpid} d=${p.decider}`);
     assert(p, `unknown ${vpid}`);
     assert(!p.resolved, `${vpid} already resolved`);
     p.kernelIsSubscribed = false;
@@ -235,6 +265,7 @@ export function makeStateKit(state) {
   return harden({
     trackUnresolvedPromise,
     allocateUnresolvedPromise,
+    allocateResolvedPromiseID,
 
     deciderIsKernel,
     deciderIsRemote,

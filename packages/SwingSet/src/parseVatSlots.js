@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
 // called "slots" are references, but the word "slot" suggests something into

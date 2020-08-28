@@ -285,14 +285,16 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     for (const remoteID of subscribers) {
       insistRemoteID(remoteID);
       resolveToRemote(remoteID, vpid, resolution);
-      // todo: what happens when we tell them about the promise again someday?
+      // TODO: what happens when we tell them about the promise again someday?
       // do we need to remember who we've notified, and never notify them
       // again?
     }
 
     if (kernelIsSubscribed) {
       resolveToKernel(vpid, resolution);
-      // remember: the kernel now forgets this vpid
+      // the kernel now forgets this vpid: the p.resolved flag in
+      // promiseTable reminds provideKernelForLocal to use a fresh VPID if we
+      // ever reference it again in the future
     }
   }
 
