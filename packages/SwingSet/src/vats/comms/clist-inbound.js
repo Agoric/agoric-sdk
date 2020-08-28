@@ -58,14 +58,14 @@ export function makeInbound(state, stateKit) {
     remote.toRemote.set(vatoid, flipRemoteSlot(roid));
   }
 
-  function addLocalPromiseForRemote(remote, remoteID, rpid) {
+  function addLocalPromiseForRemote(remote, rpid) {
     assert(
       !parseRemoteSlot(rpid).allocatedByRecipient,
       `I don't remember giving ${rpid} to ${rname(remote)}`,
     );
     // allocate a new p+NN, remember them as the decider, add to clist
     const vpid = allocateUnresolvedPromise();
-    changeDeciderToRemote(remoteID);
+    changeDeciderToRemote(vpid, remote.remoteID);
     remote.fromRemote.set(rpid, vpid);
     remote.toRemote.set(vpid, flipRemoteSlot(rpid));
   }

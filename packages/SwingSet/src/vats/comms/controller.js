@@ -81,7 +81,7 @@ export function deliverToController(
       throw new Error(`unexpected args for addEgress(): ${controllerArgs}`);
     }
     const localRef = slots[args[2].index];
-    addEgress(state, remoteID, remoteRefID, localRef);
+    addEgress(remoteID, remoteRefID, localRef);
     syscall.fulfillToData(result, UNDEFINED);
   }
 
@@ -96,7 +96,7 @@ export function deliverToController(
     );
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
-    const localRef = addIngress(state, remoteID, remoteRefID);
+    const localRef = addIngress(remoteID, remoteRefID);
     syscall.fulfillToPresence(result, localRef);
   }
 

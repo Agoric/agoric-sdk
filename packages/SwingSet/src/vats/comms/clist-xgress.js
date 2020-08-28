@@ -30,8 +30,8 @@ export function makeIngressEgress(state, provideLocalForRemote) {
   }
 
   // to let machine2 access 'o-5' on machine1, pick an unused index (12), then:
-  // * machine1 does addEgress(state, 'machine2', 12, 'o-5')
-  // * machine2 does addIngress(state, 'machine1', 12, 'o+8')
+  // * machine1 does addEgress('machine2', 12, 'o-5')
+  // * machine2 does addIngress('machine1', 12, 'o+8')
   // Messages sent to the object:
   // * machine2 toRemote[o+8] = ro+12
   // * machine1 fromRemote[ro+12] = o-5
@@ -43,7 +43,7 @@ export function makeIngressEgress(state, provideLocalForRemote) {
     // Return a local object-id that maps to a remote object with index
     // 'remoteRefID'. Just a wrapper around provideLocalForRemote.
     const inboundRRef = makeRemoteSlot('object', false, remoteRefID);
-    const vatoid = provideLocalForRemote(state, remoteID, inboundRRef);
+    const vatoid = provideLocalForRemote(remoteID, inboundRRef);
     return vatoid;
   }
 

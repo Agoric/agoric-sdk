@@ -30,6 +30,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     insistDeciderIsComms,
     insistDeciderIsKernel,
     insistPromiseIsUnresolved,
+    changeDeciderFromKernelToComms,
+    changeDeciderFromRemoteToComms,
     getPromiseSubscribers,
     markPromiseAsResolved,
   } = stateKit;
@@ -75,7 +77,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // with handleResolution
   function resolveFromKernel(vpid, resolution) {
     insistPromiseIsUnresolved(vpid);
-    insistDeciderIsComms(vpid);
+    insistDeciderIsKernel(vpid);
+    changeDeciderFromKernelToComms(vpid);
     handleResolution(vpid, mapResolutionFromKernel(resolution));
   }
 
@@ -140,6 +143,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
     const body = message.slice(sci + 1);
     const data = harden({ body, slots });
+    changeDeciderFromRemoteToComms(vpid, remoteID);
 
     let resolution;
     if (type === 'object') {
@@ -180,7 +184,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
     if (p.resolved) {
       if (p.resolution.type === 'object') {
-        return resolveTarget(state, p.resolution.slot, method);
+        return resolveTarget(p.resolution.slot, method);
       }
       if (p.resolution.type === 'data') {
         return { reject: makeUndeliverableError(method) };
