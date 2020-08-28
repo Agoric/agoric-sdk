@@ -60,7 +60,7 @@ export function makeKernel(state, syscall, stateKit) {
         // the resolution and then immediately retire the vpid again.
 
         const fresh = allocateResolvedPromiseID();
-        console.log(`fresh: ${fresh} for ${vpid}`, p.resolution);
+        // console.log(`fresh: ${fresh} for ${vpid}`, p.resolution);
         // we must tell the kernel about the resolution *after* the message
         // which introduces it
         Promise.resolve().then(() => resolveToKernel(fresh, p.resolution));
