@@ -22,9 +22,9 @@ export function makeSlogger(writeObj) {
 
   function makeVatSlog(vatID) {
     let state = IDLE; // or STARTUP or DELIVERY
-    let crankNum;
     let deliveryNum = 0;
     let syscallNum;
+    const when = { vatID };
 
     function assertOldState(exp, msg) {
       assert(state === exp, `vat ${vatID} in ${state}, not ${exp}: ${msg}`);
@@ -35,7 +35,6 @@ export function makeSlogger(writeObj) {
       for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
         vc[level] = (...args) => {
           origConsole[level](...args);
-          const when = { state, crankNum, vatID, deliveryNum };
           write({ type: 'console', ...when, level, args });
         };
       }
@@ -57,32 +56,38 @@ export function makeSlogger(writeObj) {
     function delivery(newCrankNum, kd, vd) {
       assertOldState(IDLE, 'reentrant delivery?');
       state = DELIVERY;
-      crankNum = newCrankNum;
-      const when = { crankNum, vatID, deliveryNum };
-      write({ type: 'deliver', ...when, kd, vd });
+      when.crankNum = newCrankNum;
+      when.deliveryNum = deliveryNum;
       deliveryNum += 1;
+      write({ type: 'deliver', ...when, kd, vd });
       syscallNum = 0;
 
       // dr: deliveryResult
       function finish(dr) {
         assertOldState(DELIVERY, 'delivery-finish called twice?');
+        when.syscallNum = undefined;
         write({ type: 'deliver-result', ...when, dr });
         state = IDLE;
       }
       return harden(finish);
     }
 
+    // TODO: to log errors in translation, split syscall() into vatSyscall()
+    // and kernelSyscall(), with theformer being called pre-translation. If
+    // translation fails, kernelSyscall() won't be called, but finish() will
+
     // ksc: kernelSyscallObject, vsc: vatSyscallObject
     function syscall(ksc, vsc) {
       assertOldState(DELIVERY, 'syscall invoked outside of delivery');
-      const when = { crankNum, vatID, deliveryNum, syscallNum };
-      write({ type: 'syscall', ...when, ksc, vsc });
+      when.syscallNum = syscallNum;
       syscallNum += 1;
+      write({ type: 'syscall', ...when, ksc, vsc });
 
       // ksr: kernelSyscallResult, vsr: vatSyscallResult
       function finish(ksr, vsr) {
         assertOldState(DELIVERY, 'syscall finished after delivery?');
         write({ type: 'syscall-result', ...when, ksr, vsr });
+        when.syscallNum = undefined;
       }
       return harden(finish);
     }
