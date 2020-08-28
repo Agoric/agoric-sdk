@@ -8,11 +8,7 @@ function rname(remote) {
   return `${remote.remoteID} (${remote.name})`;
 }
 
-  // get-*: the entry must be present
-  // add-*: the entry must not be present. add one.
-  // provide-*: return an entry, adding one if necessary
-
-export function makeOutbound(state, stateKit, resolveToRemote) {
+export function makeOutbound(state, stateKit) {
   const {
     insistPromiseIsUnresolved,
     subscribeRemoteToPromise,
@@ -20,7 +16,11 @@ export function makeOutbound(state, stateKit, resolveToRemote) {
     changeDeciderToRemote,
   } = stateKit;
 
-  // *-RemoteForLocal: sending a local object/promise to a remote machine
+  let resolveToRemote; // cyclic, set later
+
+  function setDeliveryKit(deliveryKit) {
+    resolveToRemote = deliveryKit.resolveToRemote;
+  }
 
   function getRemoteForLocal(remoteID, lref) {
     const remote = getRemote(state, remoteID);
@@ -126,6 +126,8 @@ export function makeOutbound(state, stateKit, resolveToRemote) {
   }
 
   return harden({
+    setDeliveryKit,
+
     getRemoteForLocal,
     provideRemoteForLocal,
     provideRemoteForLocalResult,

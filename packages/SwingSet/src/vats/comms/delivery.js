@@ -23,12 +23,12 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   } = clistKit;
 
   const {
-    insistPromiseDeciderIsRemote,
-    insistPromiseDeciderIsMe,
-
-    getPromiseSubscribers,
-
+    deciderIsRemote,
+    insistDeciderIsRemote,
+    insistDeciderIsComms,
+    insistDeciderIsKernel,
     insistPromiseIsUnresolved,
+    getPromiseSubscribers,
     markPromiseAsResolved,
   } = stateKit;
 
@@ -45,6 +45,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     return harden({ body: kdata.body, slots });
   }
 
+  // dispatch.deliver from kernel lands here (with message from local vat to
+  // remote machine): translate to local, join with handleSend
   function sendFromKernel(target, method, kargs, kresult) {
     const result = provideLocalForKernelResult(kresult);
     const args = mapDataFromKernel(kargs);
@@ -63,12 +65,18 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     throw Error(`unknown resolution type ${resolution.type}`);
   }
 
+  // dispatch.notifyResolve* from kernel lands here (local vat resolving some
+  // Promise, we need to notify remove machines): translate to local, join
+  // with handleResolution
   function resolveFromKernel(vpid, resolution) {
     insistPromiseIsUnresolved(vpid);
-    insistPromiseDeciderIsMe(vpid);
+    insistDeciderIsComms(vpid);
     handleResolution(vpid, mapResolutionFromKernel(resolution));
   }
 
+  // dispatch.deliver with msg from vattp lands here, containing a message
+  // from some remote machine. figure out whether it's a deliver or a
+  // resolve, parse, merge with handleSend/handleResolution
   function messageFromRemote(remoteID, message) {
     const command = message.split(':', 1)[0];
     if (command === 'deliver') {
@@ -119,7 +127,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     // rp+NN maps to target=p-+NN and we look at the promiseTable to make
     // sure it's in the right state.
     insistPromiseIsUnresolved(vpid);
-    insistPromiseDeciderIsRemote(vpid, remoteID);
+    insistDeciderIsRemote(vpid, remoteID);
 
     const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
     const body = message.slice(sci + 1);
@@ -138,15 +146,18 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     handleResolution(vpid, resolution);
   }
 
+  // helper function for handleSend(): for each message, either figure out
+  // the destination (remote machine or kernel), or reject the result because
+  // the destination is a brick wall (undeliverable target)
   function resolveTarget(target, method) {
     const { type, allocatedByVat } = parseVatSlot(target);
 
     if (type === 'object') {
-      const remote = state.objectTable.get(target);
-      if (remote) {
+      const remoteID = state.objectTable.get(target);
+      if (remoteID) {
         assert(allocatedByVat);
         // the target lives on a remote machine
-        return { send: target, kernel: false, remote };
+        return { send: target, kernel: false, remoteID };
       } else {
         assert(!allocatedByVat);
         // target lives in some other vat on this machine, send into the kernel
@@ -159,15 +170,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const p = state.promiseTable.get(target);
     assert(p);
 
-    if (p.state === 'unresolved') {
-      if (p.decider) {
-        return { send: target, kernel: false, remote: p.decider};
-      } else {
-        return { send: target, kernel: true};
-      }
-    }
-
-    if (p.state === 'resolved') {
+    if (p.resolved) {
       if (p.resolution.type === 'object') {
         return resolveTarget(state, p.resolution.slot, method);
       }
@@ -180,7 +183,14 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       throw Error(`unknown res type ${p.resolution.type}`);
     }
 
-    throw Error(`unknown p.state ${p.state}`);
+    // unresolved
+    const remoteID = deciderIsRemote(target);
+    if (remoteID) {
+      return { send: target, kernel: false, remoteID};
+    }
+
+    insistDeciderIsKernel(target);
+    return { send: target, kernel: true};
   }
 
   function handleSend(localDelivery) {
@@ -192,7 +202,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       if (where.kernel) {
         sendToKernel(where.send, localDelivery);
       } else {
-        sendToRemote(where.send, where.remote, localDelivery);
+        sendToRemote(where.send, where.remoteID, localDelivery);
       }
       return;
     }
@@ -248,7 +258,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     // resolution: { type, slot or data }
     insistVatType('promise', vpid);
     insistPromiseIsUnresolved(vpid);
-    insistPromiseDeciderIsMe(vpid);
+    insistDeciderIsComms(vpid);
 
     const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(vpid);
 
@@ -268,7 +278,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     if (kernelIsSubscribed) {
       resolveToKernel(vpid, resolution);
       // remember: the kernel now forgets this vpid
-    }  
+    }
   }
 
   function resolveToRemote(remoteID, vpid, resolution) {
@@ -325,34 +335,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     }
   }
 
-  return harden({ sendFromKernel, resolveFromKernel, messageFromRemote });
+  return harden({ sendFromKernel,
+                  resolveFromKernel,
+                  messageFromRemote,
+                  resolveToRemote,
+                  resolveToKernel,
+                });
 }
-
-
-// dispatch.resolve*: route to resolveFromKernel(vpid, resolution)
-// +resolveFromKernel: look up promise, assert decider=kernel state=unresolved
-//                    translate to local, route to handleResolution
-
-// dispatch.deliver (outbound): route to sendFromKernel
-// +sendFromKernel: translate to local, route to handleSend
-
-// +dispatch.deliver (inbound): parse, route to sendFromRemote or resolveFromRemote
-// +sendFromRemote: translate to local, route to handleSend
-// +resolveFromRemote: look up promise, assert decider=remote state=unresolved
-//                    translate to local, route to handleResolution
-
-// +handleSend: look up target, if unsendable then reject result
-//            route to sendToKernel or sendToRemote
-// +sendToKernel: translate to kernel, syscall.send
-// +sendToRemote: translate to remote, transmit
-
-// +handleResolution: record resolution, notify subscribers with:
-// +resolveToKernel
-// +resolveToRemote
-
-// translation
-//   if a promise is added to a c-list for the first time
-//    if the promise state is unresolved, add them as a subscriber
-//    if it is resolved, Promise.resolve().then(notify them)
-//   todo: think about sending into kernel, when to notify
-

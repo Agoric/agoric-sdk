@@ -84,10 +84,27 @@ export function buildStateTools(state) {
     return pid;
   }
 
-  function insistDeciderIsRemote(vpid, remoteID) {
+  function deciderIsKernel(vpid) {
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
     const { decider } = p;
+    return decider === KERNEL;
+  }
+
+  function deciderIsRemote(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    const { decider } = p;
+    if (decider === KERNEL || decider === COMMS) {
+      return undefined;
+    }
+    insistRemoteID(decider);
+    return decider;
+  }
+
+  function insistDeciderIsRemote(vpid, remoteID) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
     assert.equal(decider, remoteID,
                  `${vpid} is decided by ${decider}, not ${remoteID}`);
   }
@@ -210,6 +227,9 @@ export function buildStateTools(state) {
   return harden({
     trackUnresolvedPromise,
     allocateUnresolvedPromise,
+
+    deciderIsKernel,
+    deciderIsRemote,
 
     insistDeciderIsRemote,
     insistDeciderIsComms,
