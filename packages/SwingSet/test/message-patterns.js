@@ -828,6 +828,12 @@ export function buildPatterns(log) {
   out.a87 = ['true', 'three'];
   test('a87');
 
+  // TODO: kernel-allocated promise, either comms or kernel resolves it,
+  // comms needs to send into kernel again
+
+  // TODO: vat-allocated promise, either comms or kernel resolves it, comms
+  // needs to send into kernel again
+
   return harden({
     setA,
     setB,
