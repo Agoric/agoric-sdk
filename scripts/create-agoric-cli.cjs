@@ -35,7 +35,15 @@ try {
 # Always execute the checked-out Agoric CLI with the --sdk flag.
 exec ${cli} --sdk \${1+"\$@"}
 `;
+
   console.log(`creating ${script}`);
+  try {
+    // Unlink the old version in case it's a symlink.
+    fs.unlinkSync(script);
+  } catch (e) {
+    // do nothing.
+  }
+
   fs.writeFileSync(script, content);
   fs.chmodSync(script, '0755');
 } catch (err) {
