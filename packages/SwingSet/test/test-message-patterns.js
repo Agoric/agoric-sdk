@@ -62,7 +62,7 @@ for (const name of Array.from(bp.patterns.keys()).sort()) {
     // eslint-disable-next-line no-continue
     continue;
   }
-  test('local patterns', testLocalPattern, name);
+  test.serial('local patterns', testLocalPattern, name);
 }
 
 const commsSourcePath = require.resolve('../src/vats/comms');
@@ -101,6 +101,7 @@ export async function runVatsInComms(t, enablePipelining, name) {
   while (passOneMessage()) {
     await c.run();
   }
+  console.log(`bootstrapResult`, c.bootstrapResult.status());
   return c.dump().log;
 }
 
@@ -118,5 +119,5 @@ async function testCommsPattern(t, name) {
 testCommsPattern.title = (_, name) => `test pattern ${name} comms`;
 for (const name of Array.from(bp.patterns.keys()).sort()) {
   // TODO https://github.com/Agoric/agoric-sdk/issues/1631
-  test('comms patterns', testCommsPattern, name);
+  test.serial('comms patterns', testCommsPattern, name);
 }
