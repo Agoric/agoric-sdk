@@ -637,6 +637,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
       } catch (vaterr) {
         console.error(`vat ${vatID} error during translation: ${vaterr}`);
         console.error(`vat terminated`);
+        console.error(vatSyscallObject);
         // TODO: mark the vat as dead, reject subsequent syscalls, withhold
         // deliveries, notify adminvat
         return harden(['error', 'clist violation: prepare to die']);
