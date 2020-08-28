@@ -364,11 +364,11 @@ export function buildPatterns(log) {
   out.a63 = ['a63 done, match true'];
   test('a63');
 
-  // TODO #1404: test case to add: A allocates promise, sends to B, B sends back
+  // A allocates promise, sends to B, B sends back
   // a: bob~.one(amyP)
   // b.x(amyP): return [amyP]
   // a: compare p and P(amy) (should resolve to the same thing)
-  // exercises comms.clist.mapInbound non-flip bug in promise addition
+  // exercises #1404 comms.clist.mapInbound non-flip bug in promise addition
   {
     const pX = makePromiseKit();
     const pY = makePromiseKit();
@@ -381,8 +381,7 @@ export function buildPatterns(log) {
       // between those two paths (mapInboundResult corrected for a bug in
       // mapInbound, but only for the result-promise case). The main reason
       // to send this additional promise is to make the logs easier to read
-      // (if the signs of the rpids are different, something is wrong), but
-      // it also serves to ... xxx
+      // (if the signs of the rpids are different, something is wrong)
       const resPX = E(b.bob).b64_one();
       const argPY = pY.promise; // resolves to alice
       const [resPX2, argPY2] = await E(b.bob).b64_two(resPX, argPY);
@@ -617,19 +616,10 @@ export function buildPatterns(log) {
   // buggy/malicious one might, so we should be prepared. There's no simple
   // way to test that case, however.
 
-  // TODO implementation: inbound messsages should be converted from
-  // them-space to me-vat-space first. Then the target is looked up. If the
-  // target is the local kernel, translate to kernel-space and syscall.send .
-  // If the target is A, translate into to-them-space (which is different
-  // from from-them-space anyways) and send it back to them. If the target is
-  // on a third party, that's the time to translate to to-other-them-space.
-
   // XA1
   {
     objA.a80 = async () => {
-      console.log('####start');
       const [aliceP] = await E(b.bob).b80_one();
-      console.log('####two');
       E(b.bob).b80_two(a.alice); // tell bob to resolve it
       E(aliceP).a80_three('calling alice'); // 1: promise second appears as target
     };
@@ -649,9 +639,7 @@ export function buildPatterns(log) {
   // XA2
   {
     objA.a81 = async () => {
-      console.log('####start');
       const [aliceP] = await E(b.bob).b81_one();
-      console.log('####two');
       E(b.bob).b81_two(a.alice); // tell bob to resolve it
       E(b.bob).b81_three(a.alice, aliceP); // 2: promise second appears as argument
     };
@@ -677,9 +665,7 @@ export function buildPatterns(log) {
   // XB1
   {
     objA.a82 = async () => {
-      console.log('####start');
       const [billP] = await E(b.bob).b82_one();
-      console.log('####two');
       // now send two messages in quick succession, so commsA will send the
       // second before hearing about the resolution of billP. The
       // cross-machine queue will ensure that commsB processes the first
@@ -702,9 +688,7 @@ export function buildPatterns(log) {
   // XB2
   {
     objA.a83 = async () => {
-      console.log('####start');
       const [billP] = await E(b.bob).b83_one();
-      console.log('####two');
       E(b.bob).b83_two(); // tell bob to resolve it
       E(b.bob).b83_three(billP); // 2: promise second appears as argument
     };
@@ -729,9 +713,7 @@ export function buildPatterns(log) {
   // YA1
   {
     objA.a84 = async () => {
-      console.log('####start');
       const aliceP = E(b.bob).b84_one(); // Y: promise first arrives as a result
-      console.log('####two');
       E(b.bob).b84_two(a.alice); // tell bob to resolve it
       E(aliceP).a84_three('calling alice'); // 1: promise second appears as target
     };
@@ -751,27 +733,21 @@ export function buildPatterns(log) {
   // YA2
   {
     objA.a85 = async () => {
-      console.log('####start');
       const aliceP = E(b.bob).b85_one(); // Y: promise first arrives as a result
-      console.log('####two');
       E(b.bob).b85_two(a.alice); // tell bob to resolve it
       E(b.bob).b85_three(a.alice, aliceP); // 2: promise second appears as argument
     };
     const p1 = makePromiseKit();
     objB.b85_one = () => {
-      console.log('##b85_one');
       const aliceP = p1.promise;
       return harden(aliceP);
     };
     objB.b85_two = alice => {
-      console.log('##b85_two');
       p1.resolve(alice); // resolves to something on A
     };
     objB.b85_three = async (alice, aliceP) => {
       // commsB hears about the promise in an argument
-      console.log('##b85_three');
       const alice2 = await aliceP;
-      console.log('##b85_three 2');
       log(alice2 === alice);
       E(aliceP).a85_four(); // make sure we can send to it
     };
@@ -783,9 +759,7 @@ export function buildPatterns(log) {
   // YB1
   {
     objA.a86 = async () => {
-      console.log('####start');
       const billP = E(b.bob).b86_one(); // Y: promise first arrives as a result
-      console.log('####two');
       E(b.bob).b86_two(); // tell bob to resolve it
       E(billP).log_bill('three'); // 1: promise second appears as a target
     };
@@ -804,9 +778,7 @@ export function buildPatterns(log) {
   // YB2
   {
     objA.a87 = async () => {
-      console.log('####start');
       const billP = E(b.bob).b87_one(); // Y: promise
-      console.log('####two');
       E(b.bob).b87_two(); // tell bob to resolve it
       E(b.bob).b87_three(billP); // 2: promise second appears as argument
     };
