@@ -230,10 +230,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   function sendToKernel(target, delivery) {
     const { method, args: localArgs, result: localResult } = delivery;
     const kernelArgs = mapDataToKernel(localArgs);
-    const kernelResult = localResult
-      ? provideKernelForLocalResult(localResult)
-      : undefined;
-
+    const kernelResult = provideKernelForLocalResult(localResult);
     syscall.send(target, method, kernelArgs, kernelResult);
     if (kernelResult) {
       syscall.subscribe(kernelResult);

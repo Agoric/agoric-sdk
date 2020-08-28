@@ -256,5 +256,7 @@ export function makeStateKit(state) {
 
     insistPromiseIsUnresolved,
     markPromiseAsResolved,
+
+    dumpState: () => dumpState(state),
   });
 }

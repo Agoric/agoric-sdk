@@ -16,10 +16,11 @@ test('provideRemoteForLocal', t => {
   const clistKit = makeCListKit(s, fakeSyscall, stateKit);
   const { provideRemoteForLocal } = clistKit;
   const { remoteID } = addRemote(s, 'remote1', 'o-1');
-  t.is(provideRemoteForLocal(s, remoteID, 'o-4'), 'ro-20');
-  t.is(provideRemoteForLocal(s, remoteID, 'o-4'), 'ro-20');
-  t.is(provideRemoteForLocal(s, remoteID, 'o-5'), 'ro-21');
-  t.throws(() => provideRemoteForLocal(s, remoteID, 'o+5'), {
+
+  t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, 'o-5'), 'ro-21');
+  t.throws(() => provideRemoteForLocal(remoteID, 'o+5'), {
     message: /sending non-remote object o\+5 to remote machine/,
   });
 });

@@ -114,6 +114,6 @@ export function insistVatType(type, vatSlot) {
   assert.equal(
     type,
     parseVatSlot(vatSlot).type,
-    details`vatSlot ${vatSlot} is not of type ${type}`,
+    `vatSlot ${vatSlot} is not of type ${type}`,
   );
 }

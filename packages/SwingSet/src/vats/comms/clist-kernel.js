@@ -52,6 +52,9 @@ export function makeKernel(state, syscall, stateKit) {
   }
 
   function provideKernelForLocalResult(vpid) {
+    if (!vpid) {
+      return null;
+    }
     const p = state.promiseTable.get(vpid);
     assert(!p.resolved, `result ${vpid} is already resolved`);
     // TODO: reject somehow rather than crashing weirdly if we are not
@@ -95,6 +98,9 @@ export function makeKernel(state, syscall, stateKit) {
   }
 
   function provideLocalForKernelResult(vpid) {
+    if (!vpid) {
+      return null;
+    }
     assert.equal(parseVatSlot(vpid).type, 'promise');
     // first, make sure we're tracking the promise at all
     provideLocalForKernel(vpid);

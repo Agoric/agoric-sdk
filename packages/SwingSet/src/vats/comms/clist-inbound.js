@@ -39,7 +39,7 @@ export function makeInbound(state, stateKit) {
     // have been in our table already, and the fact that it isn't means
     // they're reaching for something we haven't given them.
     assert(
-      parseRemoteSlot(roid).allocatedByRecipient,
+      !parseRemoteSlot(roid).allocatedByRecipient,
       `I don't remember giving ${roid} to ${rname(remote)}`,
     );
 
@@ -60,7 +60,7 @@ export function makeInbound(state, stateKit) {
 
   function addLocalPromiseForRemote(remote, remoteID, rpid) {
     assert(
-      parseRemoteSlot(rpid).allocatedByRecipient,
+      !parseRemoteSlot(rpid).allocatedByRecipient,
       `I don't remember giving ${rpid} to ${rname(remote)}`,
     );
     // allocate a new p+NN, remember them as the decider, add to clist
