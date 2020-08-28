@@ -537,7 +537,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   // assert that the vat saw the local promise being resolved too
   if (mode === 'presence') {
-    t.is(resolutionOfP1.toString(), `[Presence ${target2}]`);
+    t.is(resolutionOfP1.toString(), `[Alleged: presence ${target2}]`);
   } else if (mode === 'data') {
     t.is(resolutionOfP1, 4);
   } else if (mode === 'promise-data') {

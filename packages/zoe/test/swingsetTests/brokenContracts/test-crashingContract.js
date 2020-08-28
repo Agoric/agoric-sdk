@@ -46,7 +46,7 @@ test.skip('ZCF metering crash on invitation exercise', async t => {
 const meterExceededInSecondOfferLog = [
   '=> alice is set up',
   '=> alice.doMeterExceptionInHook called',
-  'Swap outcome resolves to an invitation: [Presence o-73]',
+  'Swap outcome resolves to an invitation: [Alleged: presence o-73]',
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
   'aliceMoolaPurse: balance {"brand":{},"value":5}',

@@ -46,7 +46,7 @@ test('deserialize imports', async t => {
     slots: ['o-1'],
   });
   // a should be a proxy/presence. For now these are obvious.
-  t.is(a.toString(), '[Presence o-1]');
+  t.is(a.toString(), '[Alleged: presence o-1]');
   t.truthy(Object.isFrozen(a));
 
   // m now remembers the proxy
@@ -83,7 +83,7 @@ test('serialize imports', async t => {
     slots: ['o-1'],
   });
   t.deepEqual(m.serialize(a), {
-    body: '{"@qclass":"slot","index":0}',
+    body: '{"@qclass":"slot","iface":"Alleged: presence o-1","index":0}',
     slots: ['o-1'],
   });
 });

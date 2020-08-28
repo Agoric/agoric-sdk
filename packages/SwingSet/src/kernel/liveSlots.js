@@ -60,7 +60,7 @@ function build(
   let nextExportID = 1;
   let nextPromiseID = 5;
 
-  function makeImportedPresence(slot) {
+  function makeImportedPresence(slot, iface = `Alleged: presence ${slot}`) {
     // Called by convertSlotToVal for type=object (an `o-NN` reference). We
     // build a Presence for application-level code to receive. This Presence
     // is associated with 'slot' so that all handled messages get sent to
@@ -79,7 +79,7 @@ function build(
     let presence;
     const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
       const remote = resolveWithPresence(fulfilledHandler);
-      presence = Remotable(`Presence ${slot}`, undefined, remote);
+      presence = Remotable(iface, undefined, remote);
       // remote === presence, actually
 
       // todo: mfig says to swap remote and presence (resolveWithPresence
@@ -167,8 +167,8 @@ function build(
     return harden(p);
   }
 
-  function makeDeviceNode(id) {
-    return Remotable(`Device ${id}`);
+  function makeDeviceNode(id, iface = `Alleged: device ${id}`) {
+    return Remotable(iface);
   }
 
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
@@ -232,14 +232,14 @@ function build(
     return valToSlot.get(val);
   }
 
-  function convertSlotToVal(slot) {
+  function convertSlotToVal(slot, iface = undefined) {
     if (!slotToVal.has(slot)) {
       let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
       assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
         // this is a new import value
-        val = makeImportedPresence(slot);
+        val = makeImportedPresence(slot, iface);
       } else if (type === 'promise') {
         assert(
           !parseVatSlot(slot).allocatedByVat,
@@ -252,7 +252,7 @@ function build(
         // some other then-able, we could just hook then() to notify us.
         syscall.subscribe(slot);
       } else if (type === 'device') {
-        val = makeDeviceNode(slot);
+        val = makeDeviceNode(slot, iface);
       } else {
         throw Error(`unrecognized slot type '${type}'`);
       }

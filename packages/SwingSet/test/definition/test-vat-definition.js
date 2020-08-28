@@ -42,7 +42,7 @@ test('create with setup and buildRootObject', async t => {
   await c.run();
   t.deepEqual(
     r.resolution(),
-    capargs('iface1'),
+    capargs('Alleged: iface1'),
     'setup Remotable/getInterfaceOf',
   );
 
@@ -61,5 +61,9 @@ test('create with setup and buildRootObject', async t => {
   );
   r = c.queueToVatExport('liveslots', 'o+0', 'remotable', capargs([]), 'panic');
   await c.run();
-  t.deepEqual(r.resolution(), capargs('iface1'), 'ls Remotable/getInterfaceOf');
+  t.deepEqual(
+    r.resolution(),
+    capargs('Alleged: iface1'),
+    'ls Remotable/getInterfaceOf',
+  );
 });
