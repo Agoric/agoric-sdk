@@ -312,7 +312,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function resolveToKernel(vpid, resolution) {
     if (resolution.type === 'object') {
-      syscall.fulfillToPresence(vpid, provideKernelForLocal(resolution.slot);
+      syscall.fulfillToPresence(vpid, provideKernelForLocal(resolution.slot));
     } else if (resolution.type === 'data') {
       syscall.fulfillToData(vpid, mapDataToKernel(resolution.data));
     } else if (resolution.type === 'reject') {
