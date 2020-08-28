@@ -2,7 +2,7 @@
 import { makeInbound } from './clist-inbound';
 import { makeOutbound } from './clist-outbound';
 import { makeKernel } from './clist-kernel';
-import { makeIngressEgress } from './clist-xgress.js';
+import { makeIngressEgress } from './clist-xgress';
 
 // get-*: the entry must be present
 // add-*: the entry must not be present. add one.
@@ -72,9 +72,10 @@ export function makeCListKit(state, syscall, stateKit) {
     provideLocalForKernelResult,
   } = kernel;
 
-  const {
-    addEgress, addIngress,
-  } = makeIngressEgress(state, provideLocalForRemote);
+  const { addEgress, addIngress } = makeIngressEgress(
+    state,
+    provideLocalForRemote,
+  );
 
   function setDeliveryKit(deliveryKit) {
     outbound.setDeliveryKit(deliveryKit);

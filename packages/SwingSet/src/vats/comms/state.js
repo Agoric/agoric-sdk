@@ -1,5 +1,5 @@
 /* global harden */
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
 import { makeVatSlot } from '../../parseVatSlots';
 import { insistRemoteID } from './remote';
@@ -64,8 +64,7 @@ export function dumpState(state) {
   }
 }
 
-export function buildStateTools(state) {
-
+export function makeStateKit(state) {
   function trackUnresolvedPromise(vpid) {
     assert(!state.promiseTable.has(vpid), `${vpid} already present`);
     state.promiseTable.set(vpid, {
@@ -105,24 +104,34 @@ export function buildStateTools(state) {
   function insistDeciderIsRemote(vpid, remoteID) {
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
-    assert.equal(decider, remoteID,
-                 `${vpid} is decided by ${decider}, not ${remoteID}`);
+    const { decider } = p;
+    assert.equal(
+      decider,
+      remoteID,
+      `${vpid} is decided by ${decider}, not ${remoteID}`,
+    );
   }
 
   function insistDeciderIsComms(vpid) {
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
     const { decider } = p;
-    assert.equal(decider, COMMS,
-                 `${decider} is the decider for ${vpid}, not me`);
+    assert.equal(
+      decider,
+      COMMS,
+      `${decider} is the decider for ${vpid}, not me`,
+    );
   }
 
   function insistDeciderIsKernel(vpid) {
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
     const { decider } = p;
-    assert.equal(decider, KERNEL,
-                 `${decider} is the decider for ${vpid}, not kernel`);
+    assert.equal(
+      decider,
+      KERNEL,
+      `${decider} is the decider for ${vpid}, not kernel`,
+    );
   }
 
   // Decision authority always transfers through the comms vat, so the only
@@ -160,7 +169,6 @@ export function buildStateTools(state) {
     assert.equal(p.decider, KERNEL);
     p.decider = COMMS;
   }
-
 
   function getPromiseSubscribers(vpid) {
     const p = state.promiseTable.get(vpid);

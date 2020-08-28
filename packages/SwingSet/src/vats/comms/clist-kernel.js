@@ -63,7 +63,6 @@ export function makeKernel(state, syscall, stateKit) {
     return vpid;
   }
 
-
   function provideLocalForKernel(kref) {
     const { type, allocatedByVat } = parseVatSlot(kref);
     if (type !== 'object' && type !== 'promise') {
@@ -73,21 +72,23 @@ export function makeKernel(state, syscall, stateKit) {
     }
     if (type === 'object') {
       if (allocatedByVat) {
-        assert(state.objectTable.has(kref),
-             `I don't remember giving ${kref} to the kernel`);
+        assert(
+          state.objectTable.has(kref),
+          `I don't remember giving ${kref} to the kernel`,
+        );
       }
     } else if (type === 'promise') {
       const vpid = kref;
       if (allocatedByVat) {
-        assert(state.promiseTable.has(vpid),
-               `I don't remember giving ${vpid} to the kernel`);
-      } else {
-        if (!state.promiseTable.has(vpid)) {
-          // the kernel is telling us about a new promise, so it's the decider
-          trackUnresolvedPromise(vpid);
-          changeDeciderToKernel(vpid);
-          syscall.subscribe(vpid);
-        }
+        assert(
+          state.promiseTable.has(vpid),
+          `I don't remember giving ${vpid} to the kernel`,
+        );
+      } else if (!state.promiseTable.has(vpid)) {
+        // the kernel is telling us about a new promise, so it's the decider
+        trackUnresolvedPromise(vpid);
+        changeDeciderToKernel(vpid);
+        syscall.subscribe(vpid);
       }
     }
     return kref;

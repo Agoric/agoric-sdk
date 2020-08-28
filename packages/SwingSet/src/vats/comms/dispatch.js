@@ -3,16 +3,20 @@
 import { assert, details } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
-import { makeState } from './state';
+import { makeState, makeStateKit } from './state';
 import { deliverToController } from './controller';
 import { insistCapData } from '../../capdata';
-import { makeStateKit } from './state';
+
 import { makeCListKit } from './clist';
 import { makeDeliveryKit } from './delivery';
 
 export const debugState = new WeakMap();
 
 export function buildCommsDispatch(syscall) {
+  const state = makeState();
+  const stateKit = makeStateKit(state);
+  const clistKit = makeCListKit(state, syscall, stateKit);
+
   function transmit(remoteID, msg) {
     const remote = getRemote(state, remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
@@ -21,10 +25,13 @@ export function buildCommsDispatch(syscall) {
     syscall.send(remote.transmitterID, 'transmit', args); // sendOnly
   }
 
-  const state = makeState();
-  const stateKit = makeStateKit(state);
-  const clistKit = makeCListKit(state, syscall, stateKit);
-  const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit, stateKit);
+  const deliveryKit = makeDeliveryKit(
+    state,
+    syscall,
+    transmit,
+    clistKit,
+    stateKit,
+  );
   clistKit.setDeliveryKit(deliveryKit);
 
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
@@ -35,7 +42,14 @@ export function buildCommsDispatch(syscall) {
   function deliver(target, method, args, result) {
     insistCapData(args);
     if (target === controller) {
-      return deliverToController(state, method, args, result, syscall);
+      return deliverToController(
+        state,
+        clistKit,
+        method,
+        args,
+        result,
+        syscall,
+      );
     }
     // console.debug(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
@@ -103,7 +117,7 @@ export function buildCommsDispatch(syscall) {
     notifyFulfillToPresence,
     notifyReject,
   });
-  debugState.set(dispatch, state);
+  debugState.set(dispatch, { state, clistKit });
 
   return dispatch;
 }

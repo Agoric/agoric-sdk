@@ -1,7 +1,11 @@
 /* global harden */
 import { assert } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../parseVatSlots';
-import { flipRemoteSlot, insistRemoteType, makeRemoteSlot } from './parseRemoteSlot';
+import {
+  flipRemoteSlot,
+  insistRemoteType,
+  makeRemoteSlot,
+} from './parseRemoteSlot';
 import { getRemote } from './remote';
 
 function rname(remote) {
@@ -42,7 +46,10 @@ export function makeOutbound(state, stateKit) {
       // make sure it's not a local object (like one of the receivers): those
       // aren't supposed to be sent off-device
       assert(owner, `sending non-remote object ${vatoid} to remote machine`);
-      assert(owner !== remote, `hey ${vatoid} already came from ${rname(remote)}`);
+      assert(
+        owner !== remote,
+        `hey ${vatoid} already came from ${rname(remote)}`,
+      );
       // if we were logging these things
       // console.log(`three-party proxy for ${vatoid} from ${owner} to ${rname(remote)}`);
     }
@@ -71,7 +78,9 @@ export function makeOutbound(state, stateKit) {
     if (p.resolved) {
       // we must send the resolution *after* the message which introduces it
       const { remoteID } = remote;
-      Promise.resolve().then(() => resolveToRemote(remoteID, vpid, p.resolution));
+      Promise.resolve().then(() =>
+        resolveToRemote(remoteID, vpid, p.resolution),
+      );
     } else {
       // or arrange to send it later, once it resolves
       subscribeRemoteToPromise(vpid, remote.remoteID);
@@ -122,7 +131,7 @@ export function makeOutbound(state, stateKit) {
     // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
     // is currently ignored but might prompt a vat shutdown in the future.
 
-    return rpid;;
+    return rpid;
   }
 
   return harden({

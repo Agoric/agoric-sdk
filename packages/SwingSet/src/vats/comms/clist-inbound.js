@@ -1,7 +1,11 @@
 /* global harden */
 import { assert } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
-import { flipRemoteSlot,  insistRemoteType, parseRemoteSlot } from './parseRemoteSlot';
+import {
+  flipRemoteSlot,
+  insistRemoteType,
+  parseRemoteSlot,
+} from './parseRemoteSlot';
 import { getRemote } from './remote';
 
 function rname(remote) {
@@ -34,8 +38,10 @@ export function makeInbound(state, stateKit) {
     // The index must be allocated by them. If we allocated it, it should
     // have been in our table already, and the fact that it isn't means
     // they're reaching for something we haven't given them.
-    assert(parseRemoteSlot(roid).allocatedByRecipient,
-           `I don't remember giving ${roid} to ${rname(remote)}`);
+    assert(
+      parseRemoteSlot(roid).allocatedByRecipient,
+      `I don't remember giving ${roid} to ${rname(remote)}`,
+    );
 
     // So this must be a new import. Allocate a new vat object for it, which
     // will be the local machine's proxy for use by all other local vats, as
@@ -53,8 +59,10 @@ export function makeInbound(state, stateKit) {
   }
 
   function addLocalPromiseForRemote(remote, remoteID, rpid) {
-    assert(parseRemoteSlot(rpid).allocatedByRecipient,
-           `I don't remember giving ${rpid} to ${rname(remote)}`);
+    assert(
+      parseRemoteSlot(rpid).allocatedByRecipient,
+      `I don't remember giving ${rpid} to ${rname(remote)}`,
+    );
     // allocate a new p+NN, remember them as the decider, add to clist
     const vpid = allocateUnresolvedPromise();
     changeDeciderToRemote(remoteID);

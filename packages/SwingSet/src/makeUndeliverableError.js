@@ -15,8 +15,8 @@
 
 const QCLASS = '@';
 
-function makeUndeliverableError(method) {
-  const s = { 
+export function makeUndeliverableError(method) {
+  const s = {
     [QCLASS]: 'error',
     name: 'TypeError',
     message: `data is not callable, has no method ${method}`,

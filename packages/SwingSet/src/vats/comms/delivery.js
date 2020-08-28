@@ -1,6 +1,8 @@
 /* global harden */
+/* eslint-disable no-use-before-define */
+
 import { assert, details } from '@agoric/assert';
-import { insistVatType, parseVatSlot } from '../../parseVatSlot';
+import { insistVatType, parseVatSlot } from '../../parseVatSlots';
 import { makeUndeliverableError } from '../../makeUndeliverableError';
 import { insistCapData } from '../../capdata';
 import { insistRemoteType } from './parseRemoteSlot';
@@ -60,7 +62,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       return harden({ ...resolution, slot });
     }
     if (resolution.type === 'data' || resolution.type === 'reject') {
-      return harden({ ...resolution, data: mapDataFromKernel(resolution.data) });
+      return harden({
+        ...resolution,
+        data: mapDataFromKernel(resolution.data),
+      });
     }
     throw Error(`unknown resolution type ${resolution.type}`);
   }
@@ -92,7 +97,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     // deliver:$target:$method:[$result][:$slots..];body
     const sci = message.indexOf(';');
     assert(sci !== -1, details`missing semicolon in deliver ${message}`);
-    const fields = message.slice(0, sci).split(':').slice(1);
+    const fields = message
+      .slice(0, sci)
+      .split(':')
+      .slice(1);
     // fields: [$target, $method, $result, $slots..]
     const remoteTarget = fields[0];
     const target = getLocalForRemote(remoteID, remoteTarget);
@@ -186,11 +194,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     // unresolved
     const remoteID = deciderIsRemote(target);
     if (remoteID) {
-      return { send: target, kernel: false, remoteID};
+      return { send: target, kernel: false, remoteID };
     }
 
     insistDeciderIsKernel(target);
-    return { send: target, kernel: true};
+    return { send: target, kernel: true };
   }
 
   function handleSend(localDelivery) {
@@ -222,9 +230,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   function sendToKernel(target, delivery) {
     const { method, args: localArgs, result: localResult } = delivery;
     const kernelArgs = mapDataToKernel(localArgs);
-    const kernelResult = localResult ? provideKernelForLocalResult(localResult) : undefined;
+    const kernelResult = localResult
+      ? provideKernelForLocalResult(localResult)
+      : undefined;
 
-    syscall.send(target, delivery.method, kernelArgs, kernelResult);
+    syscall.send(target, method, kernelArgs, kernelResult);
     if (kernelResult) {
       syscall.subscribe(kernelResult);
     }
@@ -234,7 +244,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     assert(remoteID, details`oops ${target}`);
     insistCapData(localDelivery.args);
 
-    const { method, args: { body, slots: localSlots }, result: localResult } = localDelivery;
+    const {
+      method,
+      args: { body, slots: localSlots },
+      result: localResult,
+    } = localDelivery;
 
     const remoteTarget = getRemoteForLocal(remoteID, target);
     let remoteResult = '';
@@ -288,7 +302,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     // assert(parseRemoteSlot(rpid).allocatedByRecipient, rpid); // rp+NN for them
     function mapSlots() {
       const { slots } = resolution.data;
-      const ss = slots.map(s => provideRemoteForLocal(remoteID, s)).join(':');
+      let ss = slots.map(s => provideRemoteForLocal(remoteID, s)).join(':');
       if (ss) {
         ss = `:${ss}`;
       }
@@ -322,23 +336,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     }
   }
 
-  function resolve(target, resolution) {
-    const { type } = parseVatSlot(target);
-    assert(type === 'promise');
-    const p = state.promiseTable.get(target);
-    assert(p);
-    assert(p.state === 'unresolved');
-    if (p.decider) {
-      resolveToRemote(p.decider, target, resolution);
-    } else {
-      resolveToKernel(target, resolution);
-    }
-  }
-
-  return harden({ sendFromKernel,
-                  resolveFromKernel,
-                  messageFromRemote,
-                  resolveToRemote,
-                  resolveToKernel,
-                });
+  return harden({
+    sendFromKernel,
+    resolveFromKernel,
+    messageFromRemote,
+    resolveToRemote,
+    resolveToKernel,
+  });
 }
