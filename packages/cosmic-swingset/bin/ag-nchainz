@@ -70,7 +70,7 @@ testnet)
     addr=$(cat $solo/ag-cosmos-helper-address)
 		$DAEMON add-genesis-account --home=$n0d \
       --home-client=$solo/$CLI-statedir --keyring-backend=test \
-      ag-solo 1000uag
+      ag-solo 1000uag,1provisionpass
     # Generate powerful SwingSet egresses.
     egresses="$egresses$sep{\"nickname\":\"$solo\",\"peer\":\"$addr\",\"powerFlags\":$POWER_FLAGS}"
     sep=,
@@ -119,6 +119,11 @@ start-solos)
     (
       cd "$solo"
       n0d=../n0/$DAEMON
+
+      addr=$(cat ag-cosmos-helper-address)
+      $CLI --home=./$CLI-statedir tx swingset provision-one \
+        "$solo" "$addr" agoric.vattp \
+        --keyring-backend=test --from=ag-solo --yes
 
       # Now wire into the chain.
       gci=`$thisdir/../calc-gci.js $n0d/config/genesis.json`
