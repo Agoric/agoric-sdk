@@ -62,10 +62,9 @@ for (const name of Array.from(bp.patterns.keys()).sort()) {
     // eslint-disable-next-line no-continue
     continue;
   }
-  test('local patterns', testLocalPattern, name);
+  test.serial('local patterns', testLocalPattern, name);
 }
 
-// fails: 87 85 84 83 82 81 80, all but 86 (which I fixed earlier)
 const commsSourcePath = require.resolve('../src/vats/comms');
 const vatTPSourcePath = require.resolve('../src/vats/vat-tp');
 
@@ -120,5 +119,5 @@ async function testCommsPattern(t, name) {
 testCommsPattern.title = (_, name) => `test pattern ${name} comms`;
 for (const name of Array.from(bp.patterns.keys()).sort()) {
   // TODO https://github.com/Agoric/agoric-sdk/issues/1631
-  test('comms patterns', testCommsPattern, name);
+  test.serial('comms patterns', testCommsPattern, name);
 }
