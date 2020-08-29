@@ -334,7 +334,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     return placeholderName;
   };
 
-  const convertNameToVal = ({ kind, petname }) => {
+  const convertNameToVal = ({ kind, petname }, _iface = undefined) => {
     const { petnameToVal } = petnameKindToMapping.get(kind);
     return petnameToVal.get(petname);
   };

@@ -1,5 +1,5 @@
 import '@agoric/install-metering-and-ses';
-import { test } from 'tape-promise/tape';
+import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';
 import bundleSource from '../../bundle-source';
@@ -37,14 +37,10 @@ const infiniteInstallLoopLog = [
   'instantiating infiniteInstallLoop',
   'error: RangeError: Compute meter exceeded',
 ];
-test('zoe - metering - infinite loop in installation', async t => {
-  t.plan(1);
-  try {
-    const dump = await main(['infiniteInstallLoop']);
-    t.deepEquals(dump.log, infiniteInstallLoopLog, 'log is correct');
-  } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
-  }
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
+test.skip('zoe - metering - infinite loop in installation', async t => {
+  const dump = await main(['infiniteInstallLoop']);
+  t.deepEqual(dump.log, infiniteInstallLoopLog, 'log is correct');
 });
 
 const infiniteInstanceLoopLog = [
@@ -52,14 +48,10 @@ const infiniteInstanceLoopLog = [
   'instantiating infiniteInstanceLoop',
   'error: RangeError: Compute meter exceeded',
 ];
-test('zoe - metering - infinite loop in instantiation', async t => {
-  t.plan(1);
-  try {
-    const dump = await main(['infiniteInstanceLoop']);
-    t.deepEquals(dump.log, infiniteInstanceLoopLog, 'log is correct');
-  } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
-  }
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
+test.skip('zoe - metering - infinite loop in instantiation', async t => {
+  const dump = await main(['infiniteInstanceLoop']);
+  t.deepEqual(dump.log, infiniteInstanceLoopLog, 'log is correct');
 });
 
 const infiniteTestLoopLog = [
@@ -68,14 +60,10 @@ const infiniteTestLoopLog = [
   'invoking infiniteTestLoop.doTest()',
   'error: RangeError: Compute meter exceeded',
 ];
-test('zoe - metering - infinite loop in contract method', async t => {
-  t.plan(1);
-  try {
-    const dump = await main(['infiniteTestLoop']);
-    t.deepEquals(dump.log, infiniteTestLoopLog, 'log is correct');
-  } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
-  }
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
+test.skip('zoe - metering - infinite loop in contract method', async t => {
+  const dump = await main(['infiniteTestLoop']);
+  t.deepEqual(dump.log, infiniteTestLoopLog, 'log is correct');
 });
 
 const testBuiltinsLog = [
@@ -84,12 +72,8 @@ const testBuiltinsLog = [
   'invoking testBuiltins.doTest()',
   'error: RangeError: Allocate meter exceeded',
 ];
-test('zoe - metering - expensive builtins in contract method', async t => {
-  t.plan(1);
-  try {
-    const dump = await main(['testBuiltins']);
-    t.deepEquals(dump.log, testBuiltinsLog, 'log is correct');
-  } catch (e) {
-    t.isNot(e, e, 'unexpected exception');
-  }
+// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
+test.skip('zoe - metering - expensive builtins in contract method', async t => {
+  const dump = await main(['testBuiltins']);
+  t.deepEqual(dump.log, testBuiltinsLog, 'log is correct');
 });

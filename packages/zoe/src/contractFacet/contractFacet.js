@@ -303,7 +303,11 @@ export function buildRootObject() {
         const { notifier, updater } = makeNotifierKit();
         /** @type {PromiseRecord<ZoeSeatAdmin>} */
         const zoeSeatAdminPromiseKit = makePromiseKit();
+        // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+        zoeSeatAdminPromiseKit.promise.catch(_ => {});
         const userSeatPromiseKit = makePromiseKit();
+        // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+        userSeatPromiseKit.promise.catch(_ => {});
         const seatHandle = makeHandle('SeatHandle');
 
         const seatData = harden({
@@ -363,7 +367,6 @@ export function buildRootObject() {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          console.error(reason);
           if (!zcfSeat.hasExited()) {
             throw zcfSeat.kickOut(reason);
           } else {
@@ -383,10 +386,12 @@ export function buildRootObject() {
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
+    // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    contractCode.catch(() => {});
 
     // Next, execute the contract code, passing in zcf
-    /** @type {Promise<Invitation>} */
-    return E(contractCode)
+    /** @type {Promise<ExecuteContractResult>} */
+    const result = E(contractCode)
       .start(zcf)
       .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
         return harden({
@@ -396,6 +401,8 @@ export function buildRootObject() {
           addSeatObj,
         });
       });
+    result.catch(() => {}); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    return result;
   };
 
   return harden({ executeContract });

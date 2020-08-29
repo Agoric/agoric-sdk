@@ -1,6 +1,6 @@
 /* global harden */
 
-import { mustPassByPresence, makeMarshal } from '@agoric/marshal';
+import { Remotable, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -27,10 +27,14 @@ export function makeDeviceSlots(
     }
   }
 
-  function makePresence(id) {
-    return harden({
+  function makePresence(id, iface = undefined) {
+    const result = {
       [`_importID_${id}`]() {},
-    });
+    };
+    if (iface === undefined) {
+      return harden(result);
+    }
+    return Remotable(iface, undefined, result);
   }
 
   const outstandingProxies = new WeakSet();
@@ -73,7 +77,7 @@ export function makeDeviceSlots(
     return valToSlot.get(val);
   }
 
-  function convertSlotToVal(slot) {
+  function convertSlotToVal(slot, iface = undefined) {
     if (!slotToVal.has(slot)) {
       let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
@@ -81,7 +85,7 @@ export function makeDeviceSlots(
       if (type === 'object') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);
-        val = makePresence(slot);
+        val = makePresence(slot, iface);
         // lsdebug(` for presence`, val);
       } else if (type === 'device') {
         throw Error(`devices should not be given other devices '${slot}'`);

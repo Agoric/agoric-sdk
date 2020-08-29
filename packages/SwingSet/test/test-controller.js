@@ -184,7 +184,8 @@ test('bootstrap export', async t => {
       msg: {
         method: 'foo',
         args: {
-          body: '[1,{"@qclass":"slot","index":0}]',
+          body:
+            '[1,{"@qclass":"slot","iface":"Alleged: presence o-52","index":0}]',
           slots: [right0],
         },
         result: fooP,
@@ -206,7 +207,8 @@ test('bootstrap export', async t => {
       msg: {
         method: 'bar',
         args: {
-          body: '[2,{"@qclass":"slot","index":0}]',
+          body:
+            '[2,{"@qclass":"slot","iface":"Alleged: presence o-52","index":0}]',
           slots: [right0],
         },
         result: barP,
