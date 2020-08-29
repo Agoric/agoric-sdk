@@ -256,7 +256,7 @@ export async function connectToChain(
         log(`helper said: ${stdout}`);
         try {
           // Try to parse the stdout.
-          return JSON.parse(JSON.parse(JSON.parse(stdout).value));
+          return JSON.parse(JSON.parse(stdout).value);
         } catch (e) {
           log(`failed to parse output:`, e);
         }

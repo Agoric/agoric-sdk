@@ -26,12 +26,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const provide = opts.provide
     .split(',')
     .map(dep => dep.trim())
-    .filter(dep => dep);
+    .filter(dep => dep)
+    .sort();
 
   const need = opts.need
     .split(',')
     .map(dep => dep.trim())
-    .filter(dep => dep && !provide.includes(dep));
+    .filter(dep => dep && !provide.includes(dep))
+    .sort();
 
   if (args.length === 0 && !provide.length) {
     console.error('you must specify at least one deploy.js (or --provide=XXX)');
@@ -92,6 +94,22 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
             lastUpdateCount,
           );
           lastUpdateCount = update.updateCount;
+
+          // Skip the deploy if our provides are not needed.
+          let needsProvide = !provide.length;
+          const notNeeded = [];
+          for (const dep of provide) {
+            if (update.value.includes(dep)) {
+              needsProvide = true;
+            } else {
+              notNeeded.push(dep);
+            }
+          }
+          if (!needsProvide) {
+            console.info(`Don't need our provides: ${notNeeded.join(', ')}`);
+            return;
+          }
+
           const nextLoading = [];
           for (const dep of stillLoading) {
             if (update.value.includes(dep)) {

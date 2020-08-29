@@ -83,7 +83,6 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
     // removing this backwards-compatibility feature.
 
     install(contractBundle, oldModuleFormat = undefined) {
-      console.log(`-- install ${oldModuleFormat}`);
       if (
         oldModuleFormat === 'nestedEvaluate' ||
         oldModuleFormat === 'getExport'
