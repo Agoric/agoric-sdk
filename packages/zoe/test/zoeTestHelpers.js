@@ -2,9 +2,15 @@ import { E } from '@agoric/eventual-send';
 
 import '../exported';
 
-export const assertPayoutAmount = (t, issuer, payout, expectedAmount) => {
+export const assertPayoutAmount = (
+  t,
+  issuer,
+  payout,
+  expectedAmount,
+  label = '',
+) => {
   issuer.getAmountOf(payout).then(amount => {
-    t.deepEqual(amount, expectedAmount, `payout was ${amount.value}`);
+    t.deepEqual(expectedAmount, amount, `${label} payout was ${amount.value}`);
   });
 };
 
@@ -14,8 +20,8 @@ export const assertPayoutDeposit = (t, payout, purse, amount) => {
       .deposit(payment)
       .then(payoutAmount => {
         t.deepEqual(
-          payoutAmount,
           amount,
+          payoutAmount,
           `payout was ${payoutAmount.value}, expected ${amount}.value`,
         );
       });
