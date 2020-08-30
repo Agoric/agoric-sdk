@@ -118,6 +118,7 @@ export default function makeBlockManager({
           if (restoreHeight !== computedHeight) {
             // Keep throwing forever.
             decohered = Error(
+              // TODO unimplemented
               `Unimplemented reset state from ${computedHeight} to ${restoreHeight}`,
             );
             throw decohered;

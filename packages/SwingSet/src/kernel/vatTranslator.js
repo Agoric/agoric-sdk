@@ -61,6 +61,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       vp.slot = mapKernelSlotToVatSlot(kp.slot);
       vatKeeper.deleteCListEntry(kpid, vpid);
     } else if (kp.state === 'redirected') {
+      // TODO unimplemented
       throw new Error('not implemented yet');
     } else if (kp.state === 'fulfilledToData' || kp.state === 'rejected') {
       vp.data = {

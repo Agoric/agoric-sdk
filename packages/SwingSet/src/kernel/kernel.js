@@ -336,6 +336,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
         await deliverToTarget(kp.slot, msg);
       } else if (kp.state === 'redirected') {
         // await deliverToTarget(kp.redirectTarget, msg); // probably correct
+        // TODO unimplemented
         throw new Error('not implemented yet');
       } else if (kp.state === 'fulfilledToData') {
         if (msg.result) {
