@@ -2,17 +2,6 @@ import { E } from '@agoric/eventual-send';
 import { makeIssuerKit } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
-/* eslint-disable import/no-unresolved, import/extensions */
-import automaticRefundBundle from './bundle-automaticRefund';
-import coveredCallBundle from './bundle-coveredCall';
-import secondPriceAuctionBundle from './bundle-secondPriceAuction';
-import atomicSwapBundle from './bundle-atomicSwap';
-import simpleExchangeBundle from './bundle-simpleExchange';
-import autoswapBundle from './bundle-autoswap';
-import sellItemsBundle from './bundle-sellItems';
-import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
-/* eslint-enable import/no-unresolved, import/extensions */
-
 const setupBasicMints = () => {
   const all = [
     makeIssuerKit('moola'),
@@ -87,6 +76,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(vatPowers, vatParameters) {
+  const { argv, contractBundles: cb } = vatParameters;
   const obj0 = {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
@@ -94,19 +84,17 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
       const installations = {
-        automaticRefund: await E(zoe).install(automaticRefundBundle.bundle),
-        coveredCall: await E(zoe).install(coveredCallBundle.bundle),
-        secondPriceAuction: await E(zoe).install(
-          secondPriceAuctionBundle.bundle,
-        ),
-        atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
-        simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
-        autoswap: await E(zoe).install(autoswapBundle.bundle),
-        sellItems: await E(zoe).install(sellItemsBundle.bundle),
-        mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
+        automaticRefund: await E(zoe).install(cb.automaticRefund),
+        coveredCall: await E(zoe).install(cb.coveredCall),
+        secondPriceAuction: await E(zoe).install(cb.secondPriceAuction),
+        atomicSwap: await E(zoe).install(cb.atomicSwap),
+        simpleExchange: await E(zoe).install(cb.simpleExchange),
+        autoswap: await E(zoe).install(cb.autoswap),
+        sellItems: await E(zoe).install(cb.sellItems),
+        mintAndSellNFT: await E(zoe).install(cb.mintAndSellNFT),
       };
 
-      const [testName, startingValues] = vatParameters.argv;
+      const [testName, startingValues] = argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         vatPowers.testLog,

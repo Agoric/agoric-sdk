@@ -3,10 +3,8 @@ import '@agoric/install-metering-and-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
+import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
-
-import fs from 'fs';
 
 const CONTRACT_FILES = [
   'automaticRefund',
@@ -21,31 +19,64 @@ const CONTRACT_FILES = [
   'sellItems',
   'mintAndSellNFT',
 ];
-const generateBundlesP = Promise.all(
-  CONTRACT_FILES.map(async settings => {
-    let bundleName;
-    let contractPath;
-    if (typeof settings === 'string') {
-      bundleName = settings;
-      contractPath = settings;
-    } else {
-      ({ bundleName, contractPath } = settings);
-    }
-    const bundle = await bundleSource(
-      `${__dirname}/../../../src/contracts/${contractPath}`,
-    );
-    const obj = { bundle, contractPath };
-    fs.writeFileSync(
-      `${__dirname}/bundle-${bundleName}.js`,
-      `export default ${JSON.stringify(obj)};`,
-    );
-  }),
-);
 
-async function main(argv) {
-  const config = await loadBasedir(__dirname);
-  await generateBundlesP;
-  const controller = await buildVatController(config, argv);
+test.before(async t => {
+  const start = Date.now();
+  const kernelBundles = await buildKernelBundles();
+  const step2 = Date.now();
+  const contractBundles = {};
+  await Promise.all(
+    CONTRACT_FILES.map(async settings => {
+      let bundleName;
+      let contractPath;
+      if (typeof settings === 'string') {
+        bundleName = settings;
+        contractPath = settings;
+      } else {
+        ({ bundleName, contractPath } = settings);
+      }
+      const source = `${__dirname}/../../../src/contracts/${contractPath}`;
+      const bundle = await bundleSource(source);
+      contractBundles[bundleName] = bundle;
+    }),
+  );
+  const step3 = Date.now();
+
+  const baseVats = {};
+  await Promise.all(
+    ['alice', 'bob', 'carol', 'dave', 'zoe'].map(async name => {
+      const source = `${__dirname}/vat-${name}.js`;
+      const bundle = await bundleSource(source);
+      baseVats[name] = { bundle };
+    }),
+  );
+  const bootstrapSource = `${__dirname}/bootstrap.js`;
+  baseVats.bootstrap = { bundle: await bundleSource(bootstrapSource) };
+  const step4 = Date.now();
+  const ktime = `${(step2 - start) / 1000}s kernel`;
+  const ctime = `${(step3 - step2) / 1000}s contracts`;
+  const vtime = `${(step4 - step3) / 1000}s vats`;
+  const ttime = `${(step4 - start) / 1000}s total`;
+  console.log(`bundling: ${ktime}, ${ctime}, ${vtime}, ${ttime}`);
+  t.context.data = { kernelBundles, contractBundles, baseVats };
+});
+
+function makeConfig(argv, contractBundles, baseVats) {
+  const bootstrapVat = {
+    ...baseVats.bootstrap,
+    parameters: { argv, contractBundles },
+  };
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: { ...baseVats, bootstrap: bootstrapVat },
+  };
+  return config;
+}
+
+async function main(t, argv) {
+  const { kernelBundles, contractBundles, baseVats } = t.context.data;
+  const config = makeConfig(argv, contractBundles, baseVats);
+  const controller = await buildVatController(config, null, { kernelBundles });
   await controller.run();
   return controller.dump();
 }
@@ -61,12 +92,12 @@ const expectedAutomaticRefundOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
 ];
 
-test('zoe - automaticRefund - valid inputs', async t => {
+test.serial('zoe - automaticRefund - valid inputs', async t => {
   const startingValues = [
     [3, 0, 0],
     [0, 17, 0],
   ];
-  const dump = await main(['automaticRefundOk', startingValues]);
+  const dump = await main(t, ['automaticRefundOk', startingValues]);
   t.deepEqual(dump.log, expectedAutomaticRefundOkLog);
 });
 
@@ -81,12 +112,12 @@ const expectedCoveredCallOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
 ];
 
-test('zoe - coveredCall - valid inputs', async t => {
+test.serial('zoe - coveredCall - valid inputs', async t => {
   const startingValues = [
     [3, 0, 0],
     [0, 7, 0],
   ];
-  const dump = await main(['coveredCallOk', startingValues]);
+  const dump = await main(t, ['coveredCallOk', startingValues]);
   t.deepEqual(dump.log, expectedCoveredCallOkLog);
 });
 
@@ -108,14 +139,14 @@ const expectedSwapForOptionOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
 ];
 
-test('zoe - swapForOption - valid inputs', async t => {
+test.serial('zoe - swapForOption - valid inputs', async t => {
   const startingValues = [
     [3, 0, 0], // Alice starts with 3 moola
     [0, 0, 0], // Bob starts with nothing
     [0, 0, 0], // Carol starts with nothing
     [0, 7, 1], // Dave starts with 7 simoleans and 1 buck
   ];
-  const dump = await main(['swapForOptionOk', startingValues]);
+  const dump = await main(t, ['swapForOptionOk', startingValues]);
   t.deepEqual(dump.log, expectedSwapForOptionOkLog);
 });
 
@@ -136,14 +167,14 @@ const expectedSecondPriceAuctionOkLog = [
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
 ];
-test('zoe - secondPriceAuction - valid inputs', async t => {
+test.serial('zoe - secondPriceAuction - valid inputs', async t => {
   const startingValues = [
     [1, 0, 0],
     [0, 11, 0],
     [0, 7, 0],
     [0, 5, 0],
   ];
-  const dump = await main(['secondPriceAuctionOk', startingValues]);
+  const dump = await main(t, ['secondPriceAuctionOk', startingValues]);
   t.deepEqual(dump.log, expectedSecondPriceAuctionOkLog);
 });
 
@@ -155,12 +186,12 @@ const expectedAtomicSwapOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
   'bobSimoleanPurse: balance {"brand":{},"value":0}',
 ];
-test('zoe - atomicSwap - valid inputs', async t => {
+test.serial('zoe - atomicSwap - valid inputs', async t => {
   const startingValues = [
     [3, 0, 0],
     [0, 7, 0],
   ];
-  const dump = await main(['atomicSwapOk', startingValues]);
+  const dump = await main(t, ['atomicSwapOk', startingValues]);
   t.deepEqual(dump.log, expectedAtomicSwapOkLog);
 });
 
@@ -174,12 +205,12 @@ const expectedSimpleExchangeOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":4}',
 ];
 
-test('zoe - simpleExchange - valid inputs', async t => {
+test.serial('zoe - simpleExchange - valid inputs', async t => {
   const startingValues = [
     [3, 0, 0],
     [0, 7, 0],
   ];
-  const dump = await main(['simpleExchangeOk', startingValues]);
+  const dump = await main(t, ['simpleExchangeOk', startingValues]);
   t.deepEqual(dump.log, expectedSimpleExchangeOkLog);
 });
 
@@ -208,13 +239,13 @@ const expectedSimpleExchangeNotificationLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":4}',
 ];
 
-test('zoe - simpleExchange - state Update', async t => {
+test.serial('zoe - simpleExchange - state Update', async t => {
   t.plan(1);
   const startingValues = [
     [3, 0, 0],
     [0, 24, 0],
   ];
-  const dump = await main(['simpleExchangeNotifier', startingValues]);
+  const dump = await main(t, ['simpleExchangeNotifier', startingValues]);
   t.deepEqual(dump.log, expectedSimpleExchangeNotificationLog);
 });
 
@@ -234,13 +265,13 @@ const expectedAutoswapOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
   'aliceLiquidityTokenPurse: balance {"brand":{},"value":0}',
 ];
-test('zoe - autoswap - valid inputs', async t => {
+test.serial('zoe - autoswap - valid inputs', async t => {
   t.plan(1);
   const startingValues = [
     [10, 5, 0],
     [3, 7, 0],
   ];
-  const dump = await main(['autoswapOk', startingValues]);
+  const dump = await main(t, ['autoswapOk', startingValues]);
   t.deepEqual(dump.log, expectedAutoswapOkLog);
 });
 
@@ -251,13 +282,13 @@ const expectedSellTicketsOkLog = [
   'after ticket1 purchased: {"brand":{},"value":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
   'alice earned: {"brand":{},"value":22}',
 ];
-test('zoe - sellTickets - valid inputs', async t => {
+test.serial('zoe - sellTickets - valid inputs', async t => {
   t.plan(1);
   const startingValues = [
     [0, 0, 0],
     [22, 0, 0],
   ];
-  const dump = await main(['sellTicketsOk', startingValues]);
+  const dump = await main(t, ['sellTicketsOk', startingValues]);
   t.deepEqual(dump.log, expectedSellTicketsOkLog);
 });
 
@@ -276,6 +307,6 @@ test.skip('zoe - bad timer', async t => {
     [3, 0, 0],
     [0, 0, 0],
   ];
-  const dump = await main(['badTimer', startingValues]);
+  const dump = await main(t, ['badTimer', startingValues]);
   t.deepEqual(dump.log, expectedBadTimerLog);
 });
