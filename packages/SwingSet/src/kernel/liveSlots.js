@@ -83,7 +83,7 @@ function build(
       // remote === presence, actually
 
       // todo: mfig says to swap remote and presence (resolveWithPresence
-      // gives us a Presence, Remoteable gives us a Remote). I think that
+      // gives us a Presence, Remotable gives us a Remote). I think that
       // implies we have a lot of renaming to do, 'makeRemote' instead of
       // 'makeImportedPresence', etc. I'd like to defer that for a later
       // cleanup/renaming pass.
