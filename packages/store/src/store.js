@@ -29,34 +29,69 @@ import { assert, details, q } from '@agoric/assert';
  * @param  {string} [keyName='key'] - the column name for the key
  * @returns {Store<K,V>}
  */
-function makeStore(keyName = 'key') {
-  const store = new Map();
+export const makeStore = harden((keyName = 'key') => {
+  const map = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(!store.has(key), details`${q(keyName)} already registered: ${key}`);
+    assert(!map.has(key), details`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(store.has(key), details`${q(keyName)} not found: ${key}`);
-  return harden({
-    has: key => store.has(key),
-    init: (key, value) => {
-      assertKeyDoesNotExist(key);
-      store.set(key, value);
-    },
-    get: key => {
-      assertKeyExists(key);
-      return store.get(key);
-    },
-    set: (key, value) => {
-      assertKeyExists(key);
-      store.set(key, value);
-    },
-    delete: key => {
-      assertKeyExists(key);
-      store.delete(key);
-    },
-    keys: () => Array.from(store.keys()),
-    values: () => Array.from(store.values()),
-    entries: () => Array.from(store.entries()),
+    assert(map.has(key), details`${q(keyName)} not found: ${key}`);
+
+  // ********* Query methods ************
+
+  // eslint-disable-next-line no-use-before-define
+  const readOnlyView = () => storeReadOnlyFacet;
+  // TODO snapshot, diverge
+  // See https://github.com/tc39/proposal-readonly-collections
+
+  const has = key => map.has(key);
+  const get = key => {
+    assertKeyExists(key);
+    return map.get(key);
+  };
+
+  const keys = () => Array.from(map.keys());
+  const values = () => Array.from(map.values());
+  const entries = () => Array.from(map.entries());
+
+  // ********* Update methods ************
+
+  const init = (key, value) => {
+    assertKeyDoesNotExist(key);
+    map.set(key, value);
+  };
+  const set = (key, value) => {
+    assertKeyExists(key);
+    map.set(key, value);
+  };
+  const deleteIt = key => {
+    assertKeyExists(key);
+    map.delete(key);
+  };
+
+  // ********* Facets ************
+
+  const storeReadOnlyFacet = harden({
+    readOnlyView,
+    has,
+    get,
+
+    keys,
+    values,
+    entries,
   });
-}
-harden(makeStore);
-export default makeStore;
+
+  const store = harden({
+    readOnlyView,
+    has,
+    get,
+
+    keys,
+    values,
+    entries,
+
+    init,
+    set,
+    delete: deleteIt,
+  });
+  return store;
+});

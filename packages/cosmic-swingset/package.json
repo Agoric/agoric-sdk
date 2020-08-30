@@ -44,7 +44,6 @@
     "@agoric/swingset-vat": "^0.6.0",
     "@agoric/tendermint": "^4.1.3",
     "@agoric/transform-eventual-send": "^1.3.1",
-    "@agoric/weak-store": "^0.0.8",
     "@agoric/zoe": "^0.7.0",
     "@babel/generator": "^7.6.4",
     "@iarna/toml": "^2.2.3",

@@ -1,11 +1,23 @@
 User-visible changes in ERTP:
 
+## Next Release
+
+* Purses now support `getCurrentAmountNotifier()` that notifies of balance
+  changes.
+* Purses now support `readOnlyView()` that supports the purse query methods
+  including `getCurrentAmountNotifier()`. (If this could be authenticated from
+  the brand or issuer, without the purse itself, it would enable a certain
+  degree of honest auditing. But note that notifiers are lossy, so it would not
+  notify on each balance change.)
+* The purse `makeDepositFacet` is renamed `getDepositFacet` since it now
+  returns the same deposit facet each time.
+
 ## Release v0.7.0 (21-July-2020)
 
 * Rename `extent` to `value`
 * Rename `produceIssuer` to `makeIssuerKit`
 
-## Release v0.6.0 (29-June-2020) 
+## Release v0.6.0 (29-June-2020)
 
 * `purse.deposit()` now returns the amount of the deposit, rather than
   the purse's new balance.
@@ -26,7 +38,7 @@ which only accepts payments.
   problem because where it was used to indicate the kind, like in
   `payment.getBalance()`, a user could grab an assay from the units,
   use it to claim their payment, and think they accomplished something
-  security-wise. 
+  security-wise.
 * Relatedly, most of the methods from payments have been removed. The
   only method on payments that remains is `getAllegedBrand`. To get
   the current amount of assets in a payment, use the issuer:
@@ -35,7 +47,7 @@ which only accepts payments.
   is most important and the mint is just the admin facet of the issuer.
 * ProduceIssuer returns an object with properties like issuer, mint,
   amountMath (formerly unitOps), and brand rather than the old version
-  that just returned a mint. 
+  that just returned a mint.
 * Most configuration has been removed from ERTP in favor of a few
   built-in configurations: digital assets can be fungible (the
   default), or non-fungible. If digital assets are non-fungible, there
@@ -43,7 +55,7 @@ which only accepts payments.
   math for extents that are sets of string IDS, and 'set' mathHelpers
   handle the math for extents that are sets of more complex objects
   (which might be opaque ids called handles or data). Zoe invites use
-  'set' mathHelpers. 
+  'set' mathHelpers.
 * CoreMintKeeper was rewritten to conserve currency and then inserted
   into issuer.js (formerly mint.js)
 * We removed the issuer and purse methods with suffix 'All' and
@@ -60,11 +72,11 @@ which only accepts payments.
 
 Update dependency on pixel-demo
 
-## Release v0.3.0 (3-Feb-2020) 
+## Release v0.3.0 (3-Feb-2020)
 
 * Move a number of files out of ERTP and into their own packages in
   this monorepo, including:
-  
+
   1. `@agoric/import-manager`
   2. `@agoric/make-promise`
   3. `@agoric/sparse-ints`
@@ -90,7 +102,7 @@ Update dependency on pixel-demo
   default, users can use the contract to trade one unit of one kind of
   digital assets for one unit of another kind of digital asset
   indefinitely as long as they alternate, but this behavior is meant
-  to be altered by the smart contract developer. 
+  to be altered by the smart contract developer.
 
 ## Release v0.1.11 (11/1/2019)
 
@@ -126,7 +138,7 @@ Update dependency on pixel-demo
   string to produce a value like `myName_4409`, if `myName` was the
   user-supplied string. Then, this full name can be used to `get` the
   object back from the registrar naming service. This can be used to
-  give public names to objects meant to be shared. 
+  give public names to objects meant to be shared.
 * The contracts that run on Zoe have been updated. There are now six
   contracts: `automaticRefund`, used for testing and tutorials, which
   just gives the user their digital assets back, `autoswap`, a Uniswap
@@ -134,12 +146,12 @@ Update dependency on pixel-demo
   offer that can act as an option, `publicAuction` which is a
   second-price auction, `publicSwap` which has the same swap logic
   as the `coveredCall` contract, but which doesn't use invites, and
-  `simpleExchange` which is a naive decentralized exchange. 
+  `simpleExchange` which is a naive decentralized exchange.
 * Tests have been written for "higher order" contract uses. That is, a
   invite for one contract used as the underlying right in another
-  contract. 
+  contract.
 * Exit conditions were added to Zoe. This allows the user to specify
-  their exit conditions when they escrow an offer with Zoe. 
+  their exit conditions when they escrow an offer with Zoe.
 
 ## Release v0.1.7 (10/15/2019)
 
@@ -171,8 +183,8 @@ Update dependency on pixel-demo
        authority to create new assets. The `assay` is the
        public-facing facet that is often widely known and can be used
        to claim exclusive access to a payment or make an empty purse,
-       among other things. 
-* Added [support for uploading contracts](https://github.com/Agoric/cosmic-swingset/blob/master/lib/ag-solo/contracts/README-contract.md) at the start of the Agoric testnet. 
+       among other things.
+* Added [support for uploading contracts](https://github.com/Agoric/cosmic-swingset/blob/master/lib/ag-solo/contracts/README-contract.md) at the start of the Agoric testnet.
 * Added an [initial version of Zoe](https://github.com/Agoric/ERTP/commit/a32426aab307d31bd0fe1b6e1241d4a270964e31), our offer-safety enforcement layer.
   More on this to come.
 
@@ -229,7 +241,7 @@ Core ERTP:
   `depositExactly(amount, payment)`, which checks that the `amount` is
   equal to the `payment` balance, and `depositAll(payment)`. The
   methods for burning are now `burnExactly` and `burnAll`, and the
-  methods for claiming are now `claimExactly` and `claimAll`. 
+  methods for claiming are now `claimExactly` and `claimAll`.
 
 ## Release v0.1.1 (8/15/2019)
 
@@ -239,7 +251,7 @@ Core ERTP:
   that returns the custom purse or payment, the "trait-like" style
   combines the core methods of a purse or payment with the custom
   methods, overriding any custom methods with the core methods if
-  there is any overlap. 
+  there is any overlap.
 
 Pixel Demo:
 * Fixed a bug in which `tapFaucet` did not return newly minted
@@ -260,7 +272,7 @@ Pixel Demo:
 * Created a new representation of hierarchical rights for the pixel
   demo, which allows holders of higher-level rights to revoke rights
   held further down. This follows the pattern of owner, tenant, and
-  subtenant relationships in real property. 
+  subtenant relationships in real property.
 * Made the gallery in the pixel demo use a long-lived contract host
   rather than creating a new contract host for each contract
 

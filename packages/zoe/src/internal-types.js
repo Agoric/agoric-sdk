@@ -10,7 +10,7 @@
 
 /**
  * @template K,V
- * @typedef {import('@agoric/weak-store').WeakStore<K, V>} WeakStore
+ * @typedef {import('@agoric/store').WeakStore<K, V>} WeakStore
  */
 
 /**

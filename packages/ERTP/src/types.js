@@ -247,7 +247,7 @@
  *
  * If payment is an unresolved promise, throw an error.
  *
- * @property {() => DepositFacet} makeDepositFacet
+ * @property {() => DepositFacet} getDepositFacet
  * Create an object whose `deposit` method deposits to the current Purse.
  *
  * @property {(amount: Amount) => Payment} withdraw

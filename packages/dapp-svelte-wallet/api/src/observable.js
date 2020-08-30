@@ -6,9 +6,12 @@
  */
 export default function makeObservablePurse(E, purse, onFulfilled) {
   return {
+    // TODO This `makeDepositFacet` does not seem to be used. Should it
+    // be renamed `getDepositFacet`? Do we need to leave behind a deprecated
+    // `makeDepositFacet` alias of this method, like we did in purse?
     makeDepositFacet() {
       return E(purse)
-        .makeDepositFacet()
+        .getDepositFacet()
         .then(depositOnlyFacet => {
           return {
             receive(...args) {

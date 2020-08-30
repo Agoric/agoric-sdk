@@ -35,8 +35,8 @@
     "@agoric/nat": "^2.0.1",
     "@agoric/promise-kit": "^0.1.3",
     "@agoric/same-structure": "^0.0.8",
-    "@agoric/transform-metering": "^1.3.0",
-    "@agoric/weak-store": "^0.0.8"
+    "@agoric/store": "^0.2.0",
+    "@agoric/transform-metering": "^1.3.0"
   },
   "devDependencies": {
     "@agoric/install-metering-and-ses": "^0.1.1",

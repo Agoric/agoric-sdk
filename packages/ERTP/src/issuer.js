@@ -1,9 +1,10 @@
+/* eslint-disable no-use-before-define */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
-import makeStore from '@agoric/weak-store';
+import { makeLedger } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Remotable } from '@agoric/marshal';
 import { isPromise } from '@agoric/promise-kit';
@@ -23,7 +24,6 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   const brand = Remotable(`Alleged: ${allegedName} brand`, undefined, {
     isMyIssuer: allegedIssuerP => {
       return E.when(allegedIssuerP, allegedIssuer => {
-        // eslint-disable-next-line no-use-before-define
         return allegedIssuer === issuer;
       });
     },
@@ -32,8 +32,8 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
 
   const amountMath = makeAmountMath(brand, amountMathKind);
 
-  const paymentLedger = makeStore('payment');
-  const purseLedger = makeStore('purse');
+  const paymentLedger = makeLedger('payment');
+  const purseLedger = makeLedger('purse');
 
   function assertKnownPayment(payment) {
     assert(
@@ -62,52 +62,89 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   /**
    * @returns {Purse}
    */
-  const makePurse = () => {
+  const makeEmptyPurse = () => {
+    // ********* Query methods ************
+
+    const readOnlyView = () => purseReadOnlyFacet;
+    const getDepositFacet = () => purseDepositFacet;
+
+    const getAllegedBrand = () => brand;
+    const getCurrentAmount = () => purseLedger.get(purse);
+    const getCurrentAmountNotifier = () => purseLedger.getNotifier(purse);
+
+    // ********* Update methods ************
+
+    const deposit = (srcPayment, optAmount = undefined) => {
+      if (isPromise(srcPayment)) {
+        throw new TypeError(
+          `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+        );
+      }
+      assertKnownPayment(srcPayment);
+      const srcPaymentBalance = paymentLedger.get(srcPayment);
+      // Note: this does not guarantee that optAmount itself is a valid stable amount
+      assertAmountEqual(srcPaymentBalance, optAmount);
+      const purseBalance = purse.getCurrentAmount();
+      const newPurseBalance = amountMath.add(srcPaymentBalance, purseBalance);
+      // Commit point
+      const payments = reallocate(
+        harden({
+          payments: [srcPayment],
+          purses: [purse],
+          newPurseBalances: [newPurseBalance],
+        }),
+      );
+      assert(payments.length === 0, 'no payments should be returned');
+      return srcPaymentBalance;
+    };
+    const withdraw = amount => {
+      amount = amountMath.coerce(amount);
+      const purseBalance = purse.getCurrentAmount();
+      const newPurseBalance = amountMath.subtract(purseBalance, amount);
+      // Commit point
+      const [payment] = reallocate(
+        harden({
+          purses: [purse],
+          newPurseBalances: [newPurseBalance],
+          newPaymentBalances: [amount],
+        }),
+      );
+      return payment;
+    };
+
+    // ********* Facets ************
+
+    const purseReadOnlyFacet = Remotable(
+      `Alleged: ${allegedName} purse readOnly facet`,
+      undefined,
+      {
+        readOnlyView,
+        getAllegedBrand,
+        getCurrentAmount,
+        getCurrentAmountNotifier,
+      },
+    );
+
+    const purseDepositFacet = Remotable(
+      `Alleged: ${allegedName} purse depost facet`,
+      undefined,
+      { receive: deposit },
+    );
+
     /** @type {Purse} */
     const purse = Remotable(`Alleged: ${allegedName} purse`, undefined, {
-      deposit: (srcPayment, optAmount = undefined) => {
-        if (isPromise(srcPayment)) {
-          throw new TypeError(
-            `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
-          );
-        }
-        assertKnownPayment(srcPayment);
-        const srcPaymentBalance = paymentLedger.get(srcPayment);
-        // Note: this does not guarantee that optAmount itself is a valid stable amount
-        assertAmountEqual(srcPaymentBalance, optAmount);
-        const purseBalance = purse.getCurrentAmount();
-        const newPurseBalance = amountMath.add(srcPaymentBalance, purseBalance);
-        // Commit point
-        // eslint-disable-next-line no-use-before-define
-        const payments = reallocate(
-          harden({
-            payments: [srcPayment],
-            purses: [purse],
-            newPurseBalances: [newPurseBalance],
-          }),
-        );
-        assert(payments.length === 0, 'no payments should be returned');
-        return srcPaymentBalance;
-      },
-      withdraw: amount => {
-        amount = amountMath.coerce(amount);
-        const purseBalance = purse.getCurrentAmount();
-        const newPurseBalance = amountMath.subtract(purseBalance, amount);
-        // Commit point
-        // eslint-disable-next-line no-use-before-define
-        const [payment] = reallocate(
-          harden({
-            purses: [purse],
-            newPurseBalances: [newPurseBalance],
-            newPaymentBalances: [amount],
-          }),
-        );
-        return payment;
-      },
-      getCurrentAmount: () => purseLedger.get(purse),
-      getAllegedBrand: () => brand,
-      makeDepositFacet: () => harden({ receive: purse.deposit }),
+      readOnlyView,
+      getAllegedBrand,
+      getCurrentAmount,
+      getCurrentAmountNotifier,
+
+      getDepositFacet,
+      // @deprecated Use `getDepositFacet` instead
+      makeDepositFacet: getDepositFacet,
+      deposit,
+      withdraw,
     });
+    purseLedger.init(purse, amountMath.getEmpty());
     return purse;
   };
 
@@ -180,11 +217,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
     getBrand: () => brand,
     getAllegedName: () => allegedName,
     getAmountMathKind: () => amountMathKind,
-    makeEmptyPurse: () => {
-      const purse = makePurse();
-      purseLedger.init(purse, amountMath.getEmpty());
-      return purse;
-    },
+    makeEmptyPurse,
 
     isLive: paymentP => {
       return E.when(paymentP, payment => {
