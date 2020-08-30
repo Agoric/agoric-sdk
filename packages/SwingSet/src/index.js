@@ -2,6 +2,7 @@ export {
   loadBasedir,
   loadSwingsetConfigFile,
   buildVatController,
+  buildKernelBundles,
 } from './controller';
 
 export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';

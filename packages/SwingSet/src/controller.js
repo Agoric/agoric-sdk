@@ -34,10 +34,6 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
-const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
-const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
-const KERNEL_SOURCE_PATH = require.resolve('./kernel/kernel.js');
-
 function byName(a, b) {
   if (a.name < b.name) {
     return -1;
@@ -205,33 +201,66 @@ export function loadSwingsetConfigFile(configPath) {
   }
 }
 
+/**
+ * Build the kernel source bundles.
+ *
+ */
+export async function buildKernelBundles() {
+  // this takes 2.7s on my computer
+  const sources = {
+    kernel: require.resolve('./kernel/kernel.js'),
+    adminDevice: require.resolve('./kernel/vatAdmin/vatAdmin-src'),
+    adminVat: require.resolve('./kernel/vatAdmin/vatAdminWrapper'),
+    comms: require.resolve('./vats/comms'),
+    vattp: require.resolve('./vats/vat-tp'),
+    timer: require.resolve('./vats/vat-timerWrapper'),
+  };
+  const kernelBundles = {};
+  for (const name of Object.keys(sources)) {
+    // this was harder to read with Promise.all
+    // eslint-disable-next-line no-await-in-loop
+    kernelBundles[name] = await bundleSource(sources[name]);
+  }
+  return harden(kernelBundles);
+}
+
 export async function buildVatController(
   config,
   argv = [],
   runtimeOptions = {},
 ) {
-  const { debugPrefix = '', verbose = false } = runtimeOptions;
+  // build console early so we can add console.log to diagnose early problems
+  const { debugPrefix = '' } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling buildVatController');
   }
 
   // eslint-disable-next-line no-shadow
   const console = makeConsole(`${debugPrefix}SwingSet:controller`);
+  // We can harden this 'console' because it's new, but if we were using the
+  // original 'console' object (which has a unique prototype), we'd have to
+  // harden(Object.getPrototypeOf(console));
+  // see https://github.com/Agoric/SES-shim/issues/292 for details
+  harden(console);
+
+  const {
+    verbose = false,
+    kernelBundles = await buildKernelBundles(),
+  } = runtimeOptions;
 
   // FIXME: Put this somewhere better.
   process.on('unhandledRejection', e =>
     console.error('UnhandledPromiseRejectionWarning:', e),
   );
 
-  // https://github.com/Agoric/SES-shim/issues/292
-  harden(Object.getPrototypeOf(console));
-  harden(console);
-
   if (config.bootstrap && argv) {
-    if (!config.vats[config.bootstrap].parameters) {
-      config.vats[config.bootstrap].parameters = {};
-    }
-    config.vats[config.bootstrap].parameters.argv = argv;
+    // move 'argv' into parameters on the bootstrap vat, without changing the
+    // original config (which might be hardened or shared)
+    const bootstrapName = config.bootstrap;
+    const parameters = { ...config.vats[bootstrapName].parameters, argv };
+    const bootstrapVat = { ...config.vats[bootstrapName], parameters };
+    const vats = { ...config.vats, [bootstrapName]: bootstrapVat };
+    config = { ...config, vats };
   }
 
   function kernelRequire(what) {
@@ -248,8 +277,7 @@ export async function buildVatController(
       throw Error(`kernelRequire unprepared to satisfy require(${what})`);
     }
   }
-  const kernelSource = await bundleSource(KERNEL_SOURCE_PATH);
-  const kernelNS = await importBundle(kernelSource, {
+  const kernelNS = await importBundle(kernelBundles.kernel, {
     filePrefix: 'kernel',
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
@@ -351,19 +379,15 @@ export async function buildVatController(
   }
 
   // the vatAdminDevice is given endowments by the kernel itself
-  const vatAdminVatBundle = await bundleSource(ADMIN_VAT_PATH);
-  kernel.addGenesisVat('vatAdmin', vatAdminVatBundle);
-  const vatAdminDeviceBundle = await bundleSource(ADMIN_DEVICE_PATH);
-  kernel.addVatAdminDevice(vatAdminDeviceBundle);
+  kernel.addGenesisVat('vatAdmin', kernelBundles.adminVat);
+  kernel.addVatAdminDevice(kernelBundles.adminDevice);
 
   // comms vat is added automatically, but TODO: bootstraps must still
   // connect it to vat-tp. TODO: test-message-patterns builds two comms and
   // two vattps, must handle somehow.
-  const commsVatSourcePath = require.resolve('./vats/comms');
-  const commsVatBundle = await bundleSource(commsVatSourcePath);
   kernel.addGenesisVat(
     'comms',
-    commsVatBundle,
+    kernelBundles.comms,
     {},
     {
       enablePipelining: true,
@@ -373,15 +397,11 @@ export async function buildVatController(
 
   // vat-tp is added automatically, but TODO: bootstraps must still connect
   // it to comms
-  const vatTPSourcePath = require.resolve('./vats/vat-tp');
-  const vatTPBundle = await bundleSource(vatTPSourcePath);
-  kernel.addGenesisVat('vattp', vatTPBundle);
+  kernel.addGenesisVat('vattp', kernelBundles.vattp);
 
   // timer wrapper vat is added automatically, but TODO: bootstraps must
   // still provide a timer device, and connect it to the wrapper vat
-  const timerWrapperSourcePath = require.resolve('./vats/vat-timerWrapper');
-  const timerWrapperBundle = await bundleSource(timerWrapperSourcePath);
-  kernel.addGenesisVat('timer', timerWrapperBundle);
+  kernel.addGenesisVat('timer', kernelBundles.timer);
 
   function addGenesisVat(
     name,

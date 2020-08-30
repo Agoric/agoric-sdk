@@ -7,7 +7,11 @@ import {
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
-import { buildVatController, loadSwingsetConfigFile } from '../../../src/index';
+import {
+  buildVatController,
+  loadSwingsetConfigFile,
+  buildKernelBundles,
+} from '../../../src/index';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -17,14 +21,15 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-function copy(data) {
-  return JSON.parse(JSON.stringify(data));
-}
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
+  t.context.data = { kernelBundles };
+});
 
 test('terminate', async t => {
   const configPath = path.resolve(__dirname, 'swingset-terminate.json');
   const config = loadSwingsetConfigFile(configPath);
-  const controller = await buildVatController(config);
+  const controller = await buildVatController(config, [], t.context.data);
   t.is(controller.bootstrapResult.status(), 'pending');
   await controller.run();
   t.is(controller.bootstrapResult.status(), 'fulfilled');
@@ -55,8 +60,9 @@ test('dispatches to the dead do not harm kernel', async t => {
 
   const { storage: storage1 } = initSwingStore();
   {
-    const c1 = await buildVatController(copy(config), [], {
+    const c1 = await buildVatController(config, [], {
       hostStorage: storage1,
+      kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
     t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
@@ -71,8 +77,9 @@ test('dispatches to the dead do not harm kernel', async t => {
   const { storage: storage2 } = initSwingStore();
   setAllState(storage2, state1);
   {
-    const c2 = await buildVatController(copy(config), [], {
+    const c2 = await buildVatController(config, [], {
       hostStorage: storage2,
+      kernelBundles: t.context.data.kernelBundles,
     });
     const r2 = c2.queueToVatExport(
       'bootstrap',
@@ -97,8 +104,9 @@ test('replay does not resurrect dead vat', async t => {
 
   const { storage: storage1 } = initSwingStore();
   {
-    const c1 = await buildVatController(copy(config), [], {
+    const c1 = await buildVatController(config, [], {
       hostStorage: storage1,
+      kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
     t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
@@ -110,8 +118,9 @@ test('replay does not resurrect dead vat', async t => {
   const { storage: storage2 } = initSwingStore();
   setAllState(storage2, state1);
   {
-    const c2 = await buildVatController(copy(config), [], {
+    const c2 = await buildVatController(config, [], {
       hostStorage: storage2,
+      kernelBundles: t.context.data.kernelBundles,
     });
     await c2.run();
     // ...which shouldn't run the second time through
@@ -124,8 +133,9 @@ test('dead vat state removed', async t => {
   const config = loadSwingsetConfigFile(configPath);
   const { storage } = initSwingStore();
 
-  const controller = await buildVatController(copy(config), [], {
+  const controller = await buildVatController(config, [], {
     hostStorage: storage,
+    kernelBundles: t.context.data.kernelBundles,
   });
   await controller.run();
   t.deepEqual(
