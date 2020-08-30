@@ -17,7 +17,6 @@ export function buildRootObject(vatPowers) {
     },
 
     async run(which) {
-      console.log(`running alice[${which}]`);
       await alice[which]();
     },
   });
