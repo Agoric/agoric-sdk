@@ -1,6 +1,6 @@
 /* global harden */
 
-import { sameValueZero, passStyleOf } from '@agoric/marshal';
+import { sameValueZero, passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 import { assert, details, q } from '@agoric/assert';
 
 // Shim of Object.fromEntries from
@@ -58,7 +58,7 @@ function allComparable(passable) {
     case 'number':
     case 'symbol':
     case 'bigint':
-    case 'presence':
+    case REMOTE_STYLE:
     case 'copyError': {
       return passable;
     }
@@ -114,7 +114,7 @@ function sameStructure(left, right) {
     case 'number':
     case 'symbol':
     case 'bigint':
-    case 'presence': {
+    case REMOTE_STYLE: {
       return sameValueZero(left, right);
     }
     case 'copyRecord':
@@ -193,7 +193,7 @@ function mustBeSameStructureInternal(left, right, message, path) {
     case 'number':
     case 'symbol':
     case 'bigint':
-    case 'presence': {
+    case REMOTE_STYLE: {
       if (!sameValueZero(left, right)) {
         complain('different');
       }
