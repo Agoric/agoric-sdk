@@ -254,10 +254,13 @@ export async function buildVatController(
   );
 
   if (config.bootstrap && argv) {
-    if (!config.vats[config.bootstrap].parameters) {
-      config.vats[config.bootstrap].parameters = {};
-    }
-    config.vats[config.bootstrap].parameters.argv = argv;
+    // move 'argv' into parameters on the bootstrap vat, without changing the
+    // original config (which might be hardened or shared)
+    const bootstrapName = config.bootstrap;
+    const parameters = { ...config.vats[bootstrapName].parameters, argv };
+    const bootstrapVat = { ...config.vats[bootstrapName], parameters };
+    const vats = { ...config.vats, [bootstrapName]: bootstrapVat };
+    config = { ...config, vats };
   }
 
   function kernelRequire(what) {
