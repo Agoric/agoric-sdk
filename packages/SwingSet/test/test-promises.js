@@ -1,13 +1,22 @@
 import '@agoric/install-ses';
 import test from 'ava';
 import path from 'path';
-import { buildVatController, loadBasedir } from '../src/index';
+import {
+  buildVatController,
+  loadBasedir,
+  buildKernelBundles,
+} from '../src/index';
 
 const RETIRE_KPIDS = true;
 
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
+  t.context.data = { kernelBundles };
+});
+
 test('flush', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['flush']);
+  const c = await buildVatController(config, ['flush'], t.context.data);
   // all promises should settle before c.step() fires
   await c.step();
   t.deepEqual(c.dump().log, ['then1', 'then2']);
@@ -15,7 +24,7 @@ test('flush', async t => {
 
 test('E() resolve', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['e-then']);
+  const c = await buildVatController(config, ['e-then'], t.context.data);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -28,7 +37,7 @@ test('E() resolve', async t => {
 
 test('E(E(x).foo()).bar()', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['chain1']);
+  const c = await buildVatController(config, ['chain1'], t.context.data);
 
   /*
   while (true) {
@@ -50,7 +59,7 @@ test('E(E(x).foo()).bar()', async t => {
 
 test('E(Promise.resolve(presence)).foo()', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['chain2']);
+  const c = await buildVatController(config, ['chain2'], t.context.data);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -63,7 +72,7 @@ test('E(Promise.resolve(presence)).foo()', async t => {
 
 test('E(local).foo()', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['local1']);
+  const c = await buildVatController(config, ['local1'], t.context.data);
 
   await c.run();
   t.deepEqual(c.dump().log, ['b.local1.finish', 'local.foo 1', 'b.resolved 2']);
@@ -71,7 +80,7 @@ test('E(local).foo()', async t => {
 
 test('resolve-to-local', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['local2']);
+  const c = await buildVatController(config, ['local2'], t.context.data);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -84,7 +93,7 @@ test('resolve-to-local', async t => {
 
 test('send-promise-resolve-to-local', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
-  const c = await buildVatController(config, ['send-promise1']);
+  const c = await buildVatController(config, ['send-promise1'], t.context.data);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -100,7 +109,11 @@ test('send-harden-promise-1', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-promises-2'),
   );
-  const c = await buildVatController(config, ['harden-promise-1']);
+  const c = await buildVatController(
+    config,
+    ['harden-promise-1'],
+    t.context.data,
+  );
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -119,7 +132,7 @@ test('send-harden-promise-1', async t => {
 
 test('circular promise resolution data', async t => {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-circular'));
-  const c = await buildVatController(config);
+  const c = await buildVatController(config, [], t.context.data);
 
   await c.run();
   const expectedPromises = [
