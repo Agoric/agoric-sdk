@@ -4,7 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 
-import { buildVatController } from '../src/index';
+import { buildVatController, buildKernelBundles } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
 
@@ -15,6 +15,11 @@ function capdata(body, slots = []) {
 function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
+
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
+  t.context.data = { kernelBundles };
+});
 
 test('d0', async t => {
   const config = {
@@ -27,7 +32,7 @@ test('d0', async t => {
     },
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
   };
-  const c = await buildVatController(config);
+  const c = await buildVatController(config, [], t.context.data);
   await c.step();
   // console.log(util.inspect(c.dump(), { depth: null }));
   t.deepEqual(JSON.parse(c.dump().log[0]), [
@@ -75,7 +80,7 @@ test('d1', async t => {
       ],
     ],
   };
-  const c = await buildVatController(config);
+  const c = await buildVatController(config, [], t.context.data);
   await c.step();
   c.queueToVatExport('bootstrap', 'o+0', 'step1', capargs([]));
   await c.step();
@@ -100,7 +105,7 @@ async function test2(t, mode) {
     },
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
   };
-  const c = await buildVatController(config, [mode]);
+  const c = await buildVatController(config, [mode], t.context.data);
   await c.step();
   if (mode === '1') {
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
@@ -186,6 +191,7 @@ test('device state', async t => {
   // from bootstrap, and read it back.
   const c1 = await buildVatController(config, ['write+read'], {
     hostStorage: storage,
+    kernelBundles: t.context.data.kernelBundles,
   });
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
@@ -208,7 +214,7 @@ test('mailbox outbound', async t => {
     devices: [['mailbox', mb.srcPath, mb.endowments]],
   };
 
-  const c = await buildVatController(config, ['mailbox1']);
+  const c = await buildVatController(config, ['mailbox1'], t.context.data);
   await c.run();
   t.deepEqual(s.exportToData(), {
     peer1: {
@@ -248,7 +254,7 @@ test('mailbox inbound', async t => {
 
   let rc;
 
-  const c = await buildVatController(config, ['mailbox2']);
+  const c = await buildVatController(config, ['mailbox2'], t.context.data);
   await c.run();
   rc = mb.deliverInbound(
     'peer1',
@@ -361,7 +367,7 @@ test('command broadcast', async t => {
     devices: [['command', cm.srcPath, cm.endowments]],
   };
 
-  const c = await buildVatController(config, ['command1']);
+  const c = await buildVatController(config, ['command1'], t.context.data);
   await c.run();
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 });
@@ -378,7 +384,7 @@ test('command deliver', async t => {
     devices: [['command', cm.srcPath, cm.endowments]],
   };
 
-  const c = await buildVatController(config, ['command2']);
+  const c = await buildVatController(config, ['command2'], t.context.data);
   await c.run();
 
   t.deepEqual(c.dump().log.length, 0);
