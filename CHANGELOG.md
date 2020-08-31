@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.7.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.7.0...@agoric/sdk@2.7.1) (2020-08-31)
+
+
+### Bug Fixes
+
+* include exported.js in files list ([bd960c3](https://github.com/Agoric/agoric-sdk/commit/bd960c3b050862e998eec7fc838f14b1a2abb437))
+
+
+
+
+
 # [2.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.6.0...@agoric/sdk@2.7.0) (2020-08-31)
 
 

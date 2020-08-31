@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xs-vat-worker",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "swingset-vat worker for XS js runtime",
   "main": "src/locate.js",
   "module": "src/locate.js",
@@ -44,7 +44,7 @@
     "@agoric/install-ses": "^0.3.0",
     "@agoric/marshal": "^0.2.4",
     "@agoric/promise-kit": "^0.1.4",
-    "@agoric/swingset-vat": "^0.7.0",
+    "@agoric/swingset-vat": "^0.7.1",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5"
   },

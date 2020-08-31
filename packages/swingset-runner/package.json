@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-runner",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "main": "src/main.js",
@@ -23,9 +23,9 @@
     "@agoric/stat-logger": "^0.3.1",
     "@agoric/swing-store-lmdb": "^0.3.4",
     "@agoric/swing-store-simple": "^0.2.4",
-    "@agoric/swingset-vat": "^0.7.0",
+    "@agoric/swingset-vat": "^0.7.1",
     "@agoric/tame-metering": "^1.2.4",
-    "@agoric/zoe": "^0.8.0"
+    "@agoric/zoe": "^0.8.1"
   },
   "devDependencies": {
     "ava": "^3.11.1",
