@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sharing-service",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Share objects with another party but not publicly",
   "main": "src/sharing.js",
   "engines": {
@@ -26,12 +26,12 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.0.8"
+    "@agoric/assert": "^0.0.9"
   },
   "devDependencies": {
-    "@agoric/eventual-send": "^0.9.3",
-    "@agoric/install-ses": "^0.2.0",
-    "@agoric/swingset-vat": "^0.6.0",
+    "@agoric/eventual-send": "^0.10.0",
+    "@agoric/install-ses": "^0.3.0",
+    "@agoric/swingset-vat": "^0.7.0",
     "ava": "3.11.1",
     "esm": "^3.2.25"
   },

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/store",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Wrapper for JavaScript map",
   "main": "src/store.js",
   "engines": {
@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.0.8"
+    "@agoric/assert": "^0.0.9"
   },
   "devDependencies": {
     "ava": "^3.11.1",

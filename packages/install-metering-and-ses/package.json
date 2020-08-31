@@ -1,6 +1,6 @@
 {
   "name": "@agoric/install-metering-and-ses",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "tame metering and install SES at import time",
   "main": "install-metering-and-ses.js",
   "scripts": {
@@ -11,14 +11,14 @@
   },
   "devDependencies": {
     "@agoric/eventual-send": "^0.9.3",
-    "@agoric/transform-metering": "^1.3.0",
+    "@agoric/transform-metering": "^1.3.1",
     "ava": "^3.11.1",
     "esm": "^3.2.5"
   },
   "dependencies": {
-    "@agoric/eventual-send": "^0.9.3",
-    "@agoric/install-ses": "^0.2.0",
-    "@agoric/tame-metering": "^1.2.3"
+    "@agoric/eventual-send": "^0.10.0",
+    "@agoric/install-ses": "^0.3.0",
+    "@agoric/tame-metering": "^1.2.4"
   },
   "files": [
     "src/**/*.js"

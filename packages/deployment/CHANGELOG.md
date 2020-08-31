@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.20.0...@agoric/deployment@1.21.0) (2020-08-31)
+
+
+### Bug Fixes
+
+* add default moniker to hosts ([08cc625](https://github.com/Agoric/agoric-sdk/commit/08cc6258d5eadadd363f79fd257ff3cacd442a0a))
+* allow faucet-helper.sh to work without web access ([8439ba3](https://github.com/Agoric/agoric-sdk/commit/8439ba34ed15347428c7fcffcb8b4458d49d6863))
+* always rebuild the dweb config ([517041d](https://github.com/Agoric/agoric-sdk/commit/517041dd13ca16e5b915578b0f0cf6f8f27158fd))
+* create a dweb `start.sh` so we keep the same systemd service ([a58abb4](https://github.com/Agoric/agoric-sdk/commit/a58abb46bcd10adc0460312acd7f877411478d4c))
+* don't hardcode Agoric parameters within Ansible scripts ([19d0e13](https://github.com/Agoric/agoric-sdk/commit/19d0e1387060b54d1cfe9892039105a2270570ed))
+* force `--pruning=nothing` until we upgrade to Stargate ([9a3d54b](https://github.com/Agoric/agoric-sdk/commit/9a3d54bac54a92babe6fa1610c2a8c88f85a1e6a))
+* move faucet into SETUP_HOME/.. to share between chains ([76b6a5d](https://github.com/Agoric/agoric-sdk/commit/76b6a5db54ddf299a4933e5654a19f9763aa33bf))
+* only create-validator from the actual node ([6c76bcc](https://github.com/Agoric/agoric-sdk/commit/6c76bccae17d91b5e66ad6b43f9d684fec7d45cc))
+* reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
+* remove controller ag-solo, as it is obsolete ([c698e4c](https://github.com/Agoric/agoric-sdk/commit/c698e4c8fc71f3a334bf546dce8d1994c2a68adf))
+* remove more BOOTSTRAP_ADDRESS references ([f2141b6](https://github.com/Agoric/agoric-sdk/commit/f2141b68fe8f239e575e4a4dc7e6be70b1ffc7f0))
+* remove more controller references ([c9af5a1](https://github.com/Agoric/agoric-sdk/commit/c9af5a11ac5ffa1afcbc47c6399f35945055e3b2))
+* since we don't simulate, make sure our gas estimate is good ([a0a2df5](https://github.com/Agoric/agoric-sdk/commit/a0a2df5e614bc64a2ceddb4f988ba52dc611ffad))
+* update vagrant/Dockerfile to buster and add to build ([c8da8fc](https://github.com/Agoric/agoric-sdk/commit/c8da8fc7b9194cc099bf4ec63fdadb84d8a7d8d1))
+* upgrade Docker images to Debian buster ([1016cc5](https://github.com/Agoric/agoric-sdk/commit/1016cc5fa27624d2265398d8900f2d4847c9864f))
+* use `agoric set-default` instead of set-json.js ([7e1f612](https://github.com/Agoric/agoric-sdk/commit/7e1f612ff3f78c9e614cc63c9aa98e0d1f1a2dd5))
+
+
+### Features
+
+* add `ag-setup-solo` compatibility, `ag-solo setup` ([4abe446](https://github.com/Agoric/agoric-sdk/commit/4abe4468a0626c2adfd170459c26c3fe973595a0))
+* add a /dev/sda -> /home filesystem for Digital Ocean ([71895fc](https://github.com/Agoric/agoric-sdk/commit/71895fcb8489535f8f29569d65aaa889f94424e0))
+* add a stub for decentralised web (dweb) ([d81b1f2](https://github.com/Agoric/agoric-sdk/commit/d81b1f262f365a994e2d5e29ff0aa027ed7b2841))
+* add ansible plays for shuffling configs around ([d153aa2](https://github.com/Agoric/agoric-sdk/commit/d153aa24c43fef84614653fab401ce98d20b8c02))
+* add export-genesis playbook ([cba5ae0](https://github.com/Agoric/agoric-sdk/commit/cba5ae0e5cf82b61c8d95f5be57a7d9edb94e5b1))
+* implement add-egress, add-delegate ([ffd474a](https://github.com/Agoric/agoric-sdk/commit/ffd474abc292fbda4f314fb1715af7b4b6c92dcd))
+* move faucet account onto the controller where it is safer ([8ba1c46](https://github.com/Agoric/agoric-sdk/commit/8ba1c462b9ecd5b47c19b7fe473b49de01e268ee))
+* provision without Python ([1fdc1d3](https://github.com/Agoric/agoric-sdk/commit/1fdc1d31e7684705ebaf337be19271dbcdd9cbdc))
+
+
+
+
+
 # [1.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.19.3...@agoric/deployment@1.20.0) (2020-06-30)
 
 
