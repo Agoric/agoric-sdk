@@ -17,4 +17,25 @@
     - rsync
     - sudo
     - curl
+    - xfsprogs
     - "nodejs={{ NODEJS_VERSION }}.*"
+
+- name: Stat /dev/sda
+  stat:
+    path: /dev/sda
+  register: sda
+
+- name: Resize /dev/sda with XFS
+  filesystem:
+    fstype: xfs
+    dev: /dev/sda
+    resizefs: yes
+  when: sda.stat.exists
+
+- name: Mount /dev/sda
+  mount:
+    path: /home
+    src: /dev/sda
+    fstype: auto
+    state: mounted
+  when: sda.stat.exists

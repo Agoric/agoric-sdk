@@ -23,8 +23,12 @@ variable "instance_size" {
   default = "2gb"
 }
 
+variable "volume_size" {
+  description = "The size (in GB) of the volume to attach to each instance"
+  default = 150
+}
+
 variable "servers" {
   description = "Desired instance count"
   default     = 4
 }
-

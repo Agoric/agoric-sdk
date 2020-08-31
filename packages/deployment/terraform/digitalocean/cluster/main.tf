@@ -24,5 +24,13 @@ resource "digitalocean_droplet" "cluster" {
     timeout = "30s"
   }
 
+  volume_ids = ["${digitalocean_volume.cluster.*.id[count.index]}"]
 }
 
+resource "digitalocean_volume" "cluster" {
+  name = "${var.name}-volume${var.offset + count.index}"
+  region = "${element(var.regions, count.index)}"
+  size = "${var.volume_size}"
+  count = "${var.servers}"
+  tags = ["${digitalocean_tag.cluster.id}"]
+}
