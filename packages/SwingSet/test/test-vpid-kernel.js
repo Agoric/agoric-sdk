@@ -2,7 +2,7 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { REMOTE_STYLE } from '@agoric/marshal';
+import { 'presence' } from '@agoric/marshal';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
@@ -91,7 +91,7 @@ function buildRawVat(name, kernel, onDispatchCallback = undefined) {
 // ways:
 // prettier-ignore
 const modes = [
-  REMOTE_STYLE,     // resolveToPresence: messages can be sent to resolution
+  'presence',     // resolveToPresence: messages can be sent to resolution
   'local-object',   // resolve to a local object: messages to resolution don't create syscalls
   'data',           // resolveToData: messages are rejected as DataIsNotCallable
   'promise-data',   // resolveToData that contains a promise ID
@@ -103,7 +103,7 @@ const slot0arg = { '@qclass': 'slot', index: 0 };
 
 function doResolveSyscall(syscallA, vpid, mode, targets) {
   switch (mode) {
-    case REMOTE_STYLE:
+    case 'presence':
       syscallA.fulfillToPresence(vpid, targets.target2);
       break;
     case 'local-object':
@@ -128,7 +128,7 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
 
 function resolutionOf(vpid, mode, targets) {
   switch (mode) {
-    case REMOTE_STYLE:
+    case 'presence':
       return {
         type: 'notifyFulfillToPresence',
         promiseID: vpid,

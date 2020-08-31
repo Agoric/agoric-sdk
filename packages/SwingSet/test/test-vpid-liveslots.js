@@ -6,7 +6,7 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { REMOTE_STYLE } from '@agoric/marshal';
+import { 'presence' } from '@agoric/marshal';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 const RETIRE_VPIDS = true;
@@ -101,7 +101,7 @@ function hush(p) {
 // In addition, we want to exercise the promises being resolved in various
 // ways:
 const modes = [
-  REMOTE_STYLE, // resolveToPresence, messages can be sent to resolution
+  'presence', // resolveToPresence, messages can be sent to resolution
   'local-object', // resolve to a local object, messages can be sent but do
   //              // not create syscalls
   'data', // resolveToData, messages are rejected as DataIsNotCallable
@@ -112,7 +112,7 @@ const modes = [
 
 function resolvePR(pr, mode, targets) {
   switch (mode) {
-    case REMOTE_STYLE:
+    case 'presence':
       pr.resolve(targets.target2);
       break;
     case 'local-object':
@@ -149,7 +149,7 @@ const slot1arg = { '@qclass': 'slot', index: 1 };
 
 function resolutionOf(vpid, mode, targets) {
   switch (mode) {
-    case REMOTE_STYLE:
+    case 'presence':
       return {
         type: 'fulfillToPresence',
         promiseID: vpid,
@@ -516,7 +516,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // resolution target. If that target is a Presence, we'll see a syscall,
   // otherwise the vat handles it internally.
 
-  if (mode === REMOTE_STYLE) {
+  if (mode === 'presence') {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
@@ -537,7 +537,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log, []);
 
   // assert that the vat saw the local promise being resolved too
-  if (mode === REMOTE_STYLE) {
+  if (mode === 'presence') {
     t.is(resolutionOfP1.toString(), `[Alleged: presence ${target2}]`);
   } else if (mode === 'data') {
     t.is(resolutionOfP1, 4);
@@ -553,7 +553,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
 // uncomment this when debugging specific problems
 // test.only(`XX`, async t => {
-//   await doVatResolveCase23(t, 2, REMOTE_STYLE, 0);
+//   await doVatResolveCase23(t, 2, 'presence', 0);
 // });
 
 for (const caseNum of [2, 3]) {
@@ -639,7 +639,7 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
   t.deepEqual(log, []);
 
-  if (mode === REMOTE_STYLE) {
+  if (mode === 'presence') {
     dispatch.notifyFulfillToPresence(p1, target2);
   } else if (mode === 'local-object') {
     dispatch.notifyFulfillToPresence(p1, rootA);
@@ -683,7 +683,7 @@ async function doVatResolveCase4(t, mode) {
     target: expectedResultOfThree,
   });
 
-  if (mode === REMOTE_STYLE) {
+  if (mode === 'presence') {
     const expectedP6 = nextP();
     t.deepEqual(log.shift(), {
       type: 'send',

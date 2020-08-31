@@ -1,6 +1,6 @@
 /* global harden */
 
-import { REMOTE_STYLE } from '@agoric/marshal';
+import { 'presence' } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers, vatParameters) {
   const other = harden({
@@ -12,7 +12,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
   function behave(mode) {
     if (mode === 'data') {
       return 'a big hello to all intelligent lifeforms everywhere';
-    } else if (mode === REMOTE_STYLE) {
+    } else if (mode === 'presence') {
       return other;
     } else if (mode === 'reject') {
       throw new Error('gratuitous error');
