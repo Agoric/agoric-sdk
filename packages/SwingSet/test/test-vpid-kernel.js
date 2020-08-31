@@ -2,7 +2,6 @@
 /* global harden */
 
 import '@agoric/install-ses';
-import { 'presence' } from '@agoric/marshal';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';

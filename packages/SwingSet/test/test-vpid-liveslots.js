@@ -6,7 +6,6 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { 'presence' } from '@agoric/marshal';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 const RETIRE_VPIDS = true;

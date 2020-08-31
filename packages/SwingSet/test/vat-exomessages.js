@@ -1,7 +1,5 @@
 /* global harden */
 
-import { 'presence' } from '@agoric/marshal';
-
 export function buildRootObject(_vatPowers, vatParameters) {
   const other = harden({
     something(arg) {

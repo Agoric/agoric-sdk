@@ -1,5 +1,4 @@
 import '@agoric/install-ses';
-import { 'presence' } from '@agoric/marshal';
 import test from 'ava';
 import { buildVatController } from '../src/index';
 
