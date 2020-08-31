@@ -61,5 +61,8 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/agoric-sdk#readme"
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }
