@@ -3,6 +3,19 @@ TOOLS=$(MODDABLE)/build/bin/lin/release/
 NODE_MODULES=$(PWD)/node_modules
 ROOT=$(PWD)/../..
 
+.PHONY: all
+
+all:
+	$(MAKE) -f xs-lin.mk build
+	@echo "### building XS tools (headless)"
+	$(MAKE) -f xs-lin.mk $(TOOLS)/mcconfig
+	@echo "### building compartmap.json"
+	$(MAKE) -f xs-lin.mk compartmap.json
+	cat compartmap.json
+	@echo "### building xs-worker"
+	ROOT=$(ROOT) PATH=$(TOOLS):$$PATH MODDABLE=$(MODDABLE) mcconfig -o build -p x-cli-lin -m -d
+
+
 build/bin/lin/debug/xs-vat-worker: build $(TOOLS)/mcconfig moddable/xs/platforms/lin_xs_cli.c compartmap.json manifest.json
 	ROOT=$(ROOT) PATH=$(TOOLS):$$PATH MODDABLE=$(MODDABLE) mcconfig -o build -p x-cli-lin -m -d
 
@@ -20,14 +33,19 @@ moddable/xs/platforms/lin_xs_cli.c: moddable/xs/platforms/lin_xs.h
 
 moddable/xs/platforms/lin_xs.h: /usr/include/glib-2.0/gio/gio.h
 
+.PHONY: install-deps
+install-deps:
+	$(MAKE) -f xs-lin.mk install-gio
+
 .PHONY: install-gio
 /usr/include/glib-2.0/gio/gio.h:
-	@echo "GIO not installed, need root to run apt-get install libgio2.0-dev
+	@echo "GIO not installed, need root to run apt-get install libgio2.0-dev"
 	@echo "feel free to stop now and run `make install-gio` directly, then rebuild"
-	$(MAKE) install-gio
+	$(MAKE) -f xs-lin.mk  install-gio
 
+# ubuntu 'bionic' puts gio in libglib2.0-dev
 install-gio:
-	sudo apt-get -y update && sudo apt-get -y install libgio2.0-dev
+	sudo apt-get -y update && sudo apt-get -y install libglib2.0-dev
 
 $(TOOLS)/mcconfig:
 	cd moddable && \

@@ -73,7 +73,8 @@
     "test": "yarn workspaces run test",
     "build": "yarn workspaces run build",
     "postinstall": "patch-package",
-    "patch-package": "patch-package"
+    "patch-package": "patch-package",
+    "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
   "dependencies": {
     "patch-package": "^6.2.2"

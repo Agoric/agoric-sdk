@@ -5,6 +5,7 @@
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
+    "install:xs-lin": "make -f xs-lin.mk install-deps",
     "build:xs-lin": "make -f xs-lin.mk",
     "test": "ava",
     "build": "exit 0",
