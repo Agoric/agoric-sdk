@@ -467,9 +467,7 @@ show-config      display the client connection parameters
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
       process.stdout.write(`${chalk.yellow(cfg)}\n`);
 
-      await guardFile(`${DWEB_DIR}/data/cosmos-chain.json`, async makeFile => {
-        await makeFile(cfg);
-      });
+      await createFile(`${DWEB_DIR}/data/cosmos-chain.json`, cfg);
 
       const rpcAddrs = await needBacktick(
         `${shellEscape(progname)} show-rpcaddrs`,
