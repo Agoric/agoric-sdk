@@ -102,7 +102,7 @@ const start = zcf => {
 
   const sell = seat => {
     buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
-    return 'Trade Successful';
+    return 'Order Added';
   };
 
   const sellHandler = assertProposalShape(sell, sellAssetForPrice);
@@ -114,7 +114,7 @@ const start = zcf => {
 
   const buy = seat => {
     sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
-    return 'Trade Successful';
+    return 'Order Added';
   };
 
   const buyHandler = assertProposalShape(buy, buyAssetForPrice);
