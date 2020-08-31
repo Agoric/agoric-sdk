@@ -42,41 +42,34 @@ test.before(async t => {
   );
   const step3 = Date.now();
 
-  const baseVats = {};
+  const vats = {};
   await Promise.all(
     ['alice', 'bob', 'carol', 'dave', 'zoe'].map(async name => {
       const source = `${__dirname}/vat-${name}.js`;
       const bundle = await bundleSource(source);
-      baseVats[name] = { bundle };
+      vats[name] = { bundle };
     }),
   );
   const bootstrapSource = `${__dirname}/bootstrap.js`;
-  baseVats.bootstrap = { bundle: await bundleSource(bootstrapSource) };
+  vats.bootstrap = {
+    bundle: await bundleSource(bootstrapSource),
+    parameters: { contractBundles }, // argv will be added to this
+  };
+  const config = { bootstrap: 'bootstrap', vats };
+
   const step4 = Date.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;
   const ctime = `${(step3 - step2) / 1000}s contracts`;
   const vtime = `${(step4 - step3) / 1000}s vats`;
   const ttime = `${(step4 - start) / 1000}s total`;
   console.log(`bundling: ${ktime}, ${ctime}, ${vtime}, ${ttime}`);
-  t.context.data = { kernelBundles, contractBundles, baseVats };
+
+  t.context.data = { kernelBundles, config };
 });
 
-function makeConfig(argv, contractBundles, baseVats) {
-  const bootstrapVat = {
-    ...baseVats.bootstrap,
-    parameters: { argv, contractBundles },
-  };
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: { ...baseVats, bootstrap: bootstrapVat },
-  };
-  return config;
-}
-
 async function main(t, argv) {
-  const { kernelBundles, contractBundles, baseVats } = t.context.data;
-  const config = makeConfig(argv, contractBundles, baseVats);
-  const controller = await buildVatController(config, null, { kernelBundles });
+  const { kernelBundles, config } = t.context.data;
+  const controller = await buildVatController(config, argv, { kernelBundles });
   await controller.run();
   return controller.dump();
 }
