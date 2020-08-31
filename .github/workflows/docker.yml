@@ -2,8 +2,8 @@ name: Build release Docker Images
 
 on:
   push:
-    branches:
-      - refs/tags/@agoric/sdk@*
+    tags:
+      - "@agoric/sdk@*"
 
 jobs:
   docker-godeps:
