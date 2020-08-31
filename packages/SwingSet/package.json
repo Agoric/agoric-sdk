@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-vat",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Vat/Container Launcher",
   "main": "src/main.js",
   "module": "src/index.js",
@@ -21,25 +21,25 @@
     "lint:types": "tsc -p jsconfig.json"
   },
   "devDependencies": {
-    "@agoric/install-metering-and-ses": "^0.1.1",
+    "@agoric/install-metering-and-ses": "^0.1.2",
     "ava": "^3.11.1"
   },
   "dependencies": {
-    "@agoric/assert": "^0.0.8",
+    "@agoric/assert": "^0.0.9",
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/bundle-source": "^1.1.6",
-    "@agoric/eventual-send": "^0.9.3",
-    "@agoric/import-bundle": "^0.0.8",
-    "@agoric/install-ses": "^0.2.0",
-    "@agoric/marshal": "^0.2.3",
+    "@agoric/bundle-source": "^1.1.7",
+    "@agoric/eventual-send": "^0.10.0",
+    "@agoric/import-bundle": "^0.0.9",
+    "@agoric/install-ses": "^0.3.0",
+    "@agoric/marshal": "^0.2.4",
     "@agoric/nat": "^2.0.1",
-    "@agoric/promise-kit": "^0.1.3",
-    "@agoric/store": "^0.2.0",
-    "@agoric/swing-store-simple": "^0.2.3",
-    "@agoric/tame-metering": "^1.2.3",
-    "@agoric/transform-eventual-send": "^1.3.1",
-    "@agoric/transform-metering": "^1.3.0",
-    "@agoric/xs-vat-worker": "^0.1.0",
+    "@agoric/promise-kit": "^0.1.4",
+    "@agoric/store": "^0.2.1",
+    "@agoric/swing-store-simple": "^0.2.4",
+    "@agoric/tame-metering": "^1.2.4",
+    "@agoric/transform-eventual-send": "^1.3.2",
+    "@agoric/transform-metering": "^1.3.1",
+    "@agoric/xs-vat-worker": "^0.2.0",
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",
     "anylogger": "^0.21.0",
@@ -72,8 +72,12 @@
     "access": "public"
   },
   "ava": {
-    "files": ["test/**/test-*.js"],
-    "require": ["esm"],
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
     "timeout": "2m"
   }
 }

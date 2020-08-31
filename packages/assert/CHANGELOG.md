@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.0.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.0.8...@agoric/assert@0.0.9) (2020-08-31)
+
+
+### Bug Fixes
+
+* reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
+* seal payload used for quoted details ([#1610](https://github.com/Agoric/agoric-sdk/issues/1610)) ([1acd5ba](https://github.com/Agoric/agoric-sdk/commit/1acd5baa3e7f0185823c929409f8aecddab36a3a))
+* update JS typings ([20941e6](https://github.com/Agoric/agoric-sdk/commit/20941e675302ee5905e4825638e661065ad5d3f9))
+
+
+
+
+
 ## [0.0.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.0.7...@agoric/assert@0.0.8) (2020-06-30)
 
 

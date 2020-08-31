@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.3.1...@agoric/transform-eventual-send@1.3.2) (2020-08-31)
+
+
+### Bug Fixes
+
+* reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
+
+
+
+
+
 ## [1.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.3.0...@agoric/transform-eventual-send@1.3.1) (2020-06-30)
 
 **Note:** Version bump only for package @agoric/transform-eventual-send
