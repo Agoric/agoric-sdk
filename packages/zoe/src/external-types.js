@@ -1,1 +1,0 @@
-import '@agoric/notifier/exports';
