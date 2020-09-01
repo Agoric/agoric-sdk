@@ -211,3 +211,32 @@
 /**
  * @typedef {Handle<'SeatHandle'>} SeatHandle
  */
+
+/**
+ * @typedef RootAndAdminNode
+ * @property {Object} root
+ * @property {AdminNode} adminNode
+ */
+
+/**
+ * @typedef {Object} AdminNode
+ * A powerful object that can be used to terminate the vat in which a contract
+ * is running, to get statistics, or to be notified when it terminates. The
+ * object is only available from within the contract so
+ * that clients of the contract can tell (by getting the source code from Zoe
+ * using the installation) what use the contract makes of it. If they want to
+ * be assured of discretion, or want to know that the contract doesn't have the
+ * ability to call terminate(), Zoe makes this visible.
+ *
+ * @property {() => Promise<void>} done
+ * provides a promise that will be fulfilled when the contract is terminated.
+ * @property {() => void} terminate
+ * kills the vat in which the contract is running
+ * @property {() => Object} adminData
+ * provides some statistics about the vat in which the contract is running.
+ */
+
+/**
+ * @template T
+ * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
+ */
