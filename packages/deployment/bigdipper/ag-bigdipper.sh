@@ -2,9 +2,29 @@
 # bigdipper.sh - Run Agoric Big Dipper Explorer
 set -e
 ncf=`curl -Ss https://testnet.agoric.com/network-config`
-l=`echo "$ncf" | jq '.rpcAddrs | length'`
-rp=`echo "$ncf" | jq -r ".rpcAddrs[$(( RANDOM % l ))]"`
 cn=`echo "$ncf" | jq -r '.chainName'`
+
+origRpcAddrs=( $(echo $ncf | jq -r '.rpcAddrs | join(" ")' ) )
+
+rpcAddrs=(${origRpcAddrs[@]})
+rp=
+while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
+  r=$(( $RANDOM % ${#rpcAddrs[@]} ))
+  selected=${rpcAddrs[$r]}
+  rpcAddrs=( ${rpcAddrs[@]/$selected} )
+
+  if curl -s http://$selected/status > /dev/null; then
+    # Found an active node.
+    rp=$selected
+    break
+  fi
+done
+
+if test -z "$rp"; then
+  echo "Cannot find an active node; last tried $selected"
+  sleep 20
+  exit 1
+fi
 
 case $cn in
 testnet-1.16.8) db=meteor ;;
