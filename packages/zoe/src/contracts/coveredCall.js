@@ -45,22 +45,26 @@ const start = zcf => {
   assertIssuerKeywords(zcf, harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOption = sellerSeat => {
+    assertProposalShape(sellerSeat, {
+      give: { UnderlyingAsset: null },
+      want: { StrikePrice: null },
+      exit: { afterDeadline: null },
+    });
     const { want, give, exit } = sellerSeat.getProposal();
     const rejectMsg = `The covered call option is expired.`;
 
     const exerciseOption = exerciserSeat => {
+      assertProposalShape(exerciserSeat, {
+        give: { StrikePrice: null },
+        want: { UnderlyingAsset: null },
+      });
       const swapResult = swap(zcf, sellerSeat, exerciserSeat, rejectMsg);
       zcf.shutdown();
       return swapResult;
     };
 
-    const exerciseOptionExpected = harden({
-      give: { StrikePrice: null },
-      want: { UnderlyingAsset: null },
-    });
-
     return zcf.makeInvitation(
-      assertProposalShape(exerciseOption, exerciseOptionExpected),
+      exerciseOption,
       'exerciseOption',
       harden({
         expirationDate: exit.afterDeadline.deadline,
@@ -71,14 +75,8 @@ const start = zcf => {
     );
   };
 
-  const makeCallOptionExpected = harden({
-    give: { UnderlyingAsset: null },
-    want: { StrikePrice: null },
-    exit: { afterDeadline: null },
-  });
-
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalShape(makeCallOption, makeCallOptionExpected),
+    makeCallOption,
     'makeCallOption',
   );
 

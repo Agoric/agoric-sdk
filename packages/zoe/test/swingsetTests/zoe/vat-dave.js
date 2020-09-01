@@ -85,8 +85,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         details`source bundle didn't match at "asset: give.Asset,"`,
       );
       assert(
-        source.includes('firstProposalExpected'),
-        details`source bundle didn't match at "firstProposalExpected"`,
+        source.includes(
+          'const swapResult = swap(zcf, firstSeat, matchingSeat);',
+        ),
+        details`source bundle didn't match at "const swapResult = swap(zcf, firstSeat, matchingSeat);"`,
       );
       assert(
         source.includes('makeMatchingInvitation'),

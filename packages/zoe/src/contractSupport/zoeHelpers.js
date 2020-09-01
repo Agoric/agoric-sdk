@@ -234,36 +234,32 @@ export const swap = (
  */
 
 /**
- * Make an offerHandler that wraps the provided `offerHandler`, to first
- * check the submitted offer against an `expected` record that says
+ * Check the seat's proposal against an `expected` record that says
  * what shape of proposal is acceptable.
  *
  * This ExpectedRecord is like a Proposal, but the amounts in 'want'
  * and 'give' should be null; the exit clause should specify a rule with
- * null contents. If the client submits an Offer which does not match
- * these expectations, that offer will be rejected (and refunded).
+ * null contents. If the client submits an offer which does not match
+ * these expectations, the seat will be exited (and payments refunded).
  *
- * @param {OfferHandler} offerHandler
+ * @param {ZCFSeat} seat
  * @param {ExpectedRecord} expected
  */
-export const assertProposalShape = (offerHandler, expected) =>
-  /** @param {ZCFSeat} seat */
-  seat => {
-    const actual = seat.getProposal();
-    // Does not check values
-    const assertKeys = (a, e) => {
-      if (e !== undefined) {
-        assert(
-          sameStructure(getKeysSorted(a), getKeysSorted(e)),
-          details`actual ${a} did not match expected ${e}`,
-        );
-      }
-    };
-    assertKeys(actual.give, expected.give);
-    assertKeys(actual.want, expected.want);
-    assertKeys(actual.exit, expected.exit);
-    return offerHandler(seat);
+export const assertProposalShape = (seat, expected) => {
+  const actual = seat.getProposal();
+  // Does not check values
+  const assertKeys = (a, e) => {
+    if (e !== undefined) {
+      assert(
+        sameStructure(getKeysSorted(a), getKeysSorted(e)),
+        details`actual ${a} did not match expected ${e}`,
+      );
+    }
   };
+  assertKeys(actual.give, expected.give);
+  assertKeys(actual.want, expected.want);
+  assertKeys(actual.exit, expected.exit);
+};
 
 /* Given a brand, assert that the issuer uses NAT amountMath. */
 export const assertUsesNatMath = (zcf, brand) => {

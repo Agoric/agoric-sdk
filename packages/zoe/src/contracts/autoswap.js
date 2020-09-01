@@ -113,6 +113,12 @@ const start = async zcf => {
     return `Swap successfully completed.`;
   }
 
+  const assertSwapProposal = seat =>
+    assertProposalShape(seat, {
+      want: { Out: null },
+      give: { In: null },
+    });
+
   /**
    * Swap one asset for another. In specifies the asset being provided and Out
    * specifies the wanted asset. The amount of Out returned is calculated based
@@ -122,6 +128,7 @@ const start = async zcf => {
    * @type {OfferHandler}
    */
   const swapInHandler = swapSeat => {
+    assertSwapProposal(swapSeat);
     assert(
       !centralMath.isEmpty(getPoolAmount(brands.Central)),
       `Pool not initialized`,
@@ -152,6 +159,7 @@ const start = async zcf => {
    * @type {OfferHandler}
    */
   const swapOutHandler = swapSeat => {
+    assertSwapProposal(swapSeat);
     assert(
       !centralMath.isEmpty(getPoolAmount(brands.Central)),
       'Pool not initialized',
@@ -223,6 +231,10 @@ const start = async zcf => {
    * @type {OfferHandler}
    */
   const addLiquidityHandler = liqSeat => {
+    assertProposalShape(liqSeat, {
+      give: { Central: null, Secondary: null },
+      want: { Liquidity: null },
+    });
     if (centralMath.isEmpty(getPoolAmount(brands.Central))) {
       return initiateLiquidity(liqSeat);
     }
@@ -252,6 +264,10 @@ const start = async zcf => {
 
   /** @type {OfferHandler} */
   const removeLiquidityHandler = removeLiqSeat => {
+    assertProposalShape(removeLiqSeat, {
+      want: { Central: null, Secondary: null },
+      give: { Liquidity: null },
+    });
     // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
@@ -296,44 +312,17 @@ const start = async zcf => {
     return 'Liquidity successfully removed.';
   };
 
-  const addLiquidityExpected = harden({
-    give: { Central: null, Secondary: null },
-    want: { Liquidity: null },
-  });
-
-  const removeLiquidityExpected = harden({
-    want: { Central: null, Secondary: null },
-    give: { Liquidity: null },
-  });
-
-  const swapExpected = {
-    want: { Out: null },
-    give: { In: null },
-  };
-
   const makeAddLiquidityInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(addLiquidityHandler, addLiquidityExpected),
-      'autoswap add liquidity',
-    );
+    zcf.makeInvitation(addLiquidityHandler, 'autoswap add liquidity');
 
   const makeRemoveLiquidityInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(removeLiquidityHandler, removeLiquidityExpected),
-      'autoswap remove liquidity',
-    );
+    zcf.makeInvitation(removeLiquidityHandler, 'autoswap remove liquidity');
 
   const makeSwapInInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(swapInHandler, swapExpected),
-      'autoswap swap',
-    );
+    zcf.makeInvitation(swapInHandler, 'autoswap swap');
 
   const makeSwapOutInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(swapOutHandler, swapExpected),
-      'autoswap swap',
-    );
+    zcf.makeInvitation(swapOutHandler, 'autoswap swap');
 
   /**
    * `getOutputForGivenInput` calculates the result of a trade, given a certain

@@ -59,15 +59,14 @@ const start = zcf => {
   const makeBidInvitation = () => {
     /** @type {OfferHandler} */
     const performBid = seat => {
+      assertProposalShape(seat, {
+        give: { Bid: null },
+        want: { Asset: null },
+      });
       assertBidSeat(zcf, sellSeat, seat);
       bidSeats.push(seat);
       return defaultAcceptanceMsg;
     };
-
-    const bidExpected = harden({
-      give: { Bid: null },
-      want: { Asset: null },
-    });
 
     const customProperties = harden({
       auctionedAssets: sellSeat.getProposal().give.Asset,
@@ -76,22 +75,17 @@ const start = zcf => {
       timerAuthority,
     });
 
-    return zcf.makeInvitation(
-      assertProposalShape(performBid, bidExpected),
-      'bid',
-      customProperties,
-    );
+    return zcf.makeInvitation(performBid, 'bid', customProperties);
   };
 
-  const sellExpected = harden({
-    give: { Asset: null },
-    want: { Ask: null },
-    // The auction is not over until the deadline according to the
-    // provided timer. The seller cannot exit beforehand.
-    exit: { waived: null },
-  });
-
   const sell = seat => {
+    assertProposalShape(seat, {
+      give: { Asset: null },
+      want: { Ask: null },
+      // The auction is not over until the deadline according to the
+      // provided timer. The seller cannot exit beforehand.
+      exit: { waived: null },
+    });
     // Save the seat for when the auction closes.
     sellSeat = seat;
 
@@ -100,10 +94,7 @@ const start = zcf => {
     return harden({ makeBidInvitation });
   };
 
-  const creatorInvitation = zcf.makeInvitation(
-    assertProposalShape(sell, sellExpected),
-    'sellAssets',
-  );
+  const creatorInvitation = zcf.makeInvitation(sell, 'sellAssets');
 
   return harden({ creatorInvitation });
 };
