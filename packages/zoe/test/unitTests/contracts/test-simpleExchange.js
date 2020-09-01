@@ -154,8 +154,8 @@ test('simpleExchange with valid offers', async t => {
     `order notifier is updated when Bob fulfills the order`,
   );
 
-  assertOfferResult(t, bobSeat, 'Trade Successful');
-  assertOfferResult(t, aliceSeat, 'Trade Successful');
+  assertOfferResult(t, bobSeat, 'Order Added');
+  assertOfferResult(t, aliceSeat, 'Order Added');
 
   const {
     Asset: bobMoolaPayout,
@@ -374,8 +374,8 @@ test('simpleExchange with non-fungible assets', async t => {
     bobPayments,
   );
 
-  assertOfferResult(t, bobSeat, 'Trade Successful');
-  assertOfferResult(t, aliceSeat, 'Trade Successful');
+  assertOfferResult(t, bobSeat, 'Order Added');
+  assertOfferResult(t, aliceSeat, 'Order Added');
 
   const {
     Asset: bobRpgPayout,
