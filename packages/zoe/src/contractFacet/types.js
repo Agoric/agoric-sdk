@@ -21,12 +21,12 @@
  * @property {() => void} shutdown
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInvitationIssuer
- * @property {() => Terms } getTerms
+ * @property {() => Terms} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
- * @property {(exit: ExitRule= }) => ZcfSeatKit} makeEmptySeatKit
+ * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
  */
 
 /**
