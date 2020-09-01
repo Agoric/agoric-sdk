@@ -58,7 +58,7 @@ export const makeZcfSeatAdminKit = (
       assertExitedFalse();
       zcfSeatAdmin.updateHasExited();
       E(zoeSeatAdmin).kickOut(harden(reason));
-      throw reason;
+      return reason;
     },
     getNotifier: () => {
       return notifier;

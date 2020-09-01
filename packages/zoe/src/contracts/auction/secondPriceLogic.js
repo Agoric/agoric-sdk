@@ -29,7 +29,9 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   });
 
   if (activeBidsCount === 0) {
-    sellSeat.kickOut(new Error(`Could not close auction. No bids were active`));
+    throw sellSeat.kickOut(
+      new Error(`Could not close auction. No bids were active`),
+    );
   }
 
   if (activeBidsCount === 1) {
