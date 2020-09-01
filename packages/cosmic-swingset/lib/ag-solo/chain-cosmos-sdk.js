@@ -78,7 +78,7 @@ export async function connectToChain(
   }
   shuffle(rpcAddresses);
 
-  const helperDir = path.join(basedir, 'ag-chain-cosmos-statedir');
+  const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
 
   const queued = {};
 
@@ -116,6 +116,7 @@ export async function connectToChain(
       const fullArgs = [
         ...args,
         `--chain-id=${chainID}`,
+        '--output=json',
         `--node=tcp://${rpcAddr}`,
         `--home=${helperDir}`,
       ];
@@ -152,6 +153,7 @@ export async function connectToChain(
           log.error(`Failed to parse return:`, e);
         }
       }
+      return undefined;
     }).catch(e => {
       if (
         e === CANCEL_USE_DEFAULT &&
@@ -160,8 +162,8 @@ export async function connectToChain(
         return defaultIfCancelled;
       }
 
-      // Not silent, so rethrow.
-      throw e;
+      // Just retry.
+      return undefined;
     });
   }
 
@@ -251,7 +253,7 @@ export async function connectToChain(
           log.error(errMsg);
         }
         if (stdout) {
-          log(`helper said: ${stdout}`);
+          log.debug(`helper said: ${stdout}`);
           try {
             // Try to parse the stdout.
             return JSON.parse(JSON.parse(stdout).value);
@@ -330,6 +332,9 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
 
       // Open the WebSocket.
       const ws = new WebSocket(`ws://${rpcAddr}/websocket`);
+      ws.addEventListener('error', e => {
+        log.error('WebSocket error', e);
+      });
 
       // This magic identifier just distinguishes our subscription
       // from other noise on the Websocket, if there is any.
@@ -458,6 +463,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
         '--gas=auto',
         '--gas-adjustment=1.2',
         '--from=ag-solo',
+        '-ojson',
         '--broadcast-mode=block', // Don't return until committed.
         '--yes',
       ];
@@ -477,10 +483,13 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
           if (errMsg) {
             log.error(errMsg);
           }
-          log(`helper said: ${stdout}`);
-          // TODO: parse the helper output (JSON), we want 'code' to be 0. If
-          // not, look at .raw_log (also JSON) at .message.
-          return {};
+          log.debug(`helper said: ${stdout}`);
+          const out = JSON.parse(stdout);
+          if (out.height) {
+            // We submitted the transaction successfully.
+            return {};
+          }
+          throw Error(`Unexpected code: ${out.code}`);
         },
         undefined,
         {}, // defaultIfCancelled
