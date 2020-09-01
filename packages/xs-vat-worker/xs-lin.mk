@@ -13,7 +13,7 @@ all:
 	$(MAKE) -f xs-lin.mk compartmap.json
 	cat compartmap.json
 	@echo "### building xs-worker"
-	ROOT=$(ROOT) PATH=$(TOOLS):$$PATH MODDABLE=$(MODDABLE) mcconfig -o build -p x-cli-lin -m -d
+	$(MAKE) -f xs-lin.mk build/bin/lin/debug/xs-vat-worker
 
 
 build/bin/lin/debug/xs-vat-worker: build $(TOOLS)/mcconfig moddable/xs/platforms/lin_xs_cli.c compartmap.json manifest.json
@@ -39,7 +39,7 @@ install-deps:
 
 .PHONY: install-gio
 /usr/include/glib-2.0/gio/gio.h:
-	@echo "GIO not installed, need root to run apt-get install libgio2.0-dev"
+	@echo "GIO not installed, need root to run apt-get install libglib2.0-dev"
 	@echo "feel free to stop now and run `make install-gio` directly, then rebuild"
 	$(MAKE) -f xs-lin.mk  install-gio
 
