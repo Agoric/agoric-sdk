@@ -42,7 +42,6 @@
     "@agoric/swing-store-lmdb": "^0.3.4",
     "@agoric/swing-store-simple": "^0.2.4",
     "@agoric/swingset-vat": "^0.7.1",
-    "@agoric/tendermint": "^4.1.3",
     "@agoric/transform-eventual-send": "^1.3.2",
     "@agoric/weak-store": "^0.0.9",
     "@agoric/zoe": "^0.8.1",
