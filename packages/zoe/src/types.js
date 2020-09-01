@@ -1,8 +1,6 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import '@agoric/notifier/exports';
-
 /**
  * @template {string} H - the name of the handle
  * @typedef {H & {}} Handle A type constructor for an opaque type
