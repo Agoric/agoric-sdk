@@ -263,7 +263,7 @@ export async function connectToChain(
         }
       },
       undefined,
-      {}, // defaultIfCancelled
+      false, // defaultIfCancelled
     );
 
   // Validate that our chain egress exists.
@@ -397,11 +397,15 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
         }
         log.debug(`new block on ${GCI}, fetching mailbox`);
         getMailbox()
-          .then(({ outbox, ack }) => {
-            // console.debug('have outbox', outbox, ack);
-            if (outbox) {
-              inbound(GCI, outbox, ack);
+          .then(ret => {
+            if (!ret) {
+              // The getMailbox was cancelled.
+              return;
             }
+
+            const { outbox, ack } = ret;
+            // console.debug('have outbox', outbox, ack);
+            inbound(GCI, outbox, ack);
           })
           .catch(e => log.error(`Failed to fetch ${GCI} mailbox:`, e));
         recurseEachNewBlock(updateCount);
