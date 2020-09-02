@@ -221,7 +221,7 @@
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
- * If payment is an unresolved promise, throw an error.
+ * If payment is a promise, throw an error.
  */
 
 /**
@@ -245,7 +245,7 @@
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
- * If payment is an unresolved promise, throw an error.
+ * If payment is a promise, throw an error.
  *
  * @property {() => DepositFacet} makeDepositFacet
  * Create an object whose `deposit` method deposits to the current Purse.
