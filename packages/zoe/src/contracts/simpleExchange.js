@@ -9,7 +9,6 @@ import {
   assertProposalShape,
   assertIssuerKeywords,
 } from '../contractSupport/zoeHelpers';
-import { assert } from '@agoric/assert';
 
 /**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows
