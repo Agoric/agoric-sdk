@@ -183,7 +183,7 @@
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
- * @param {AmountMathKind} amountMathKind
+ * @param {AmountMathKind=} amountMathKind
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The
