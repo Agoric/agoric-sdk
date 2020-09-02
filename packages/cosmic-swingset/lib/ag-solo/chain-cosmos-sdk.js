@@ -485,11 +485,11 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
           }
           log.debug(`helper said: ${stdout}`);
           const out = JSON.parse(stdout);
-          if (out.height) {
+          if (Number(out.height) > 0) {
             // We submitted the transaction successfully.
             return {};
           }
-          throw Error(`Unexpected code: ${out.code}`);
+          throw Error(`Unexpected output: ${stdout.trimRight()}`);
         },
         undefined,
         {}, // defaultIfCancelled
