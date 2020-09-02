@@ -14,7 +14,6 @@ import fakeVatAdmin from './fakeVatAdmin';
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
 test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
-  t.plan(1);
   const { moolaIssuer, simoleanIssuer } = setup();
   const zoe = makeZoe(fakeVatAdmin);
 
@@ -50,22 +49,18 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     throw secondSeat.kickOut(new Error('kicked out second'));
   };
 
-  const invitation1 = zcf.makeInvitation(grabSeat, 'seat1');
-  const invitation2 = zcf.makeInvitation(kickOutSeat, 'seat2');
+  const invitation1 = await zcf.makeInvitation(grabSeat, 'seat1');
+  const invitation2 = await zcf.makeInvitation(kickOutSeat, 'seat2');
 
   const userSeat1 = await E(zoe).offer(invitation1);
   const userSeat2 = await E(zoe).offer(invitation2);
 
   t.is(await E(userSeat1).getOfferResult(), 'ok', `userSeat1 offer result`);
 
-  // await E(userSeat2).getPayouts();
-  // Results in "Unhandled rejection"
-  // E(userSeat2).getOfferResult();
+  t.deepEqual(await E(userSeat2).getPayouts(), {});
 
-  t.deepEqual(await E(userSeat1).getPayouts(), {});
-
-  await t.throwsAsync(() => E(userSeat2).getOfferResult());
-  // await t.throwsAsync(() => E(userSeat1).tryExit(), {
-  //   message: 'seat has been exited',
-  // });
+  await t.throwsAsync(E(userSeat2).getOfferResult());
+  await t.throwsAsync(() => E(userSeat1).tryExit(), {
+    message: 'seat has been exited',
+  });
 });
