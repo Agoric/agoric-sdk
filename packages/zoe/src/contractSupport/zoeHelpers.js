@@ -165,7 +165,7 @@ export const trade = (zcf, keepLeft, tryRight) => {
     if (!offerSafeForRight) {
       console.log(`offer not safe for right`);
     }
-    return tryRight.seat.kickOut(
+    throw tryRight.seat.kickOut(
       new Error(
         `The trade between left ${keepLeft} and right ${tryRight} failed offer safety. Please check the log for more information`,
       ),

@@ -430,7 +430,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             })
             .catch(err => {
               console.log(err);
-              console.log('right here');
             });
 
           return userSeat;

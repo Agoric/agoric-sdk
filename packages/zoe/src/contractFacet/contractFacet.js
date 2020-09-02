@@ -368,11 +368,7 @@ export function buildRootObject() {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          if (!zcfSeat.hasExited()) {
-            throw zcfSeat.kickOut(reason);
-          } else {
-            throw reason;
-          }
+          throw zcfSeat.kickOut(reason);
         });
         const exitObj = makeExitObj(
           seatData.proposal,

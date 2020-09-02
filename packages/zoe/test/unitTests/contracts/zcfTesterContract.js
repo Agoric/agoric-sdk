@@ -1,14 +1,13 @@
 // @ts-check
 
+import '../../../exported';
+
 /**
  * Tests ZCF
  * @type {ContractStartFn}
  */
-const start = _zcf => {
-  // TODO: import tap/tape and do t.is
-  // TODO: Test ZCF here
-
-  return harden({});
+const start = zcf => {
+  return { creatorFacet: zcf };
 };
 
 harden(start);
