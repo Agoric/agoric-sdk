@@ -15,12 +15,11 @@ export const makeMakeSwapInvitation = (
   isCentral,
   getPool,
 ) => {
-  const swapExpected = harden({
-    give: { In: null },
-    want: { Out: null },
-  });
-
   const swap = seat => {
+    assertProposalShape(seat, {
+      give: { In: null },
+      want: { Out: null },
+    });
     const {
       give: { In: amountIn },
       want: { Out: wantedAmountOut },
@@ -126,11 +125,7 @@ export const makeMakeSwapInvitation = (
     throw new Error(`brands were not recognized`);
   };
 
-  const makeSwapInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(swap, swapExpected),
-      'autoswap swap',
-    );
+  const makeSwapInvitation = () => zcf.makeInvitation(swap, 'autoswap swap');
 
   return makeSwapInvitation;
 };

@@ -95,39 +95,33 @@ const start = zcf => {
     return counterOffers;
   }
 
-  const sellAssetForPrice = harden({
-    give: { Asset: null },
-    want: { Price: null },
-  });
-
   const sell = seat => {
+    assertProposalShape(seat, {
+      give: { Asset: null },
+      want: { Price: null },
+    });
     buySeats = swapIfCanTradeAndUpdateBook(buySeats, sellSeats, seat);
     return 'Order Added';
   };
 
-  const sellHandler = assertProposalShape(sell, sellAssetForPrice);
-
-  const buyAssetForPrice = harden({
-    give: { Price: null },
-    want: { Asset: null },
-  });
-
   const buy = seat => {
+    assertProposalShape(seat, {
+      give: { Price: null },
+      want: { Asset: null },
+    });
     sellSeats = swapIfCanTradeAndUpdateBook(sellSeats, buySeats, seat);
     return 'Order Added';
   };
-
-  const buyHandler = assertProposalShape(buy, buyAssetForPrice);
 
   /** @type {OfferHandler} */
   const exchangeOfferHandler = seat => {
     // Buy Order
     if (seat.getProposal().want.Asset) {
-      return buyHandler(seat);
+      return buy(seat);
     }
     // Sell Order
     if (seat.getProposal().give.Asset) {
-      return sellHandler(seat);
+      return sell(seat);
     }
     // Eject because the offer must be invalid
     throw seat.kickOut(

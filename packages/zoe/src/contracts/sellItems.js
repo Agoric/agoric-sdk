@@ -61,6 +61,10 @@ const start = zcf => {
   };
 
   const buy = buyerSeat => {
+    assertProposalShape(buyerSeat, {
+      want: { Items: null },
+      give: { Money: null },
+    });
     const currentItemsForSale = sellerSeat.getAmountAllocated('Items');
     const providedMoney = buyerSeat.getAmountAllocated('Money');
 
@@ -112,14 +116,7 @@ const start = zcf => {
         sellerSeat && !itemsMath.isEmpty(itemsAmount),
         details`no items are for sale`,
       );
-      const buyerExpected = harden({
-        want: { Items: null },
-        give: { Money: null },
-      });
-      return zcf.makeInvitation(
-        assertProposalShape(buy, buyerExpected),
-        'buyer',
-      );
+      return zcf.makeInvitation(buy, 'buyer');
     },
     getAvailableItems: publicFacet.getAvailableItems,
     getItemsIssuer: publicFacet.getItemsIssuer,

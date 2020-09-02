@@ -19,6 +19,9 @@ const start = zcf => {
   const amountMath = zcf.getAmountMath(pixelBrand);
 
   const makeUseObj = seat => {
+    assertProposalShape(seat, {
+      give: { Pixels: null },
+    });
     const useObj = harden({
       /**
        * (Pretend to) color some pixels.
@@ -49,17 +52,9 @@ const start = zcf => {
     return useObj;
   };
 
-  const expected = harden({
-    give: { Pixels: null },
-  });
-
   const publicFacet = {
     // The only publicFacet method is to make an invitation.
-    makeInvitation: () =>
-      zcf.makeInvitation(
-        assertProposalShape(makeUseObj, expected),
-        'use object',
-      ),
+    makeInvitation: () => zcf.makeInvitation(makeUseObj, 'use object'),
   };
 
   return harden({ publicFacet });

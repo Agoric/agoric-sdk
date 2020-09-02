@@ -25,6 +25,10 @@ const start = zcf => {
 
   /** @type {OfferHandler} */
   const makeMatchingInvitation = firstSeat => {
+    assertProposalShape(firstSeat, {
+      give: { Asset: null },
+      want: { Price: null },
+    });
     const { want, give } = firstSeat.getProposal();
 
     /** @type {OfferHandler} */
@@ -45,13 +49,8 @@ const start = zcf => {
     return matchingSeatInvitation;
   };
 
-  const firstProposalExpected = harden({
-    give: { Asset: null },
-    want: { Price: null },
-  });
-
   const creatorInvitation = zcf.makeInvitation(
-    assertProposalShape(makeMatchingInvitation, firstProposalExpected),
+    makeMatchingInvitation,
     'firstOffer',
   );
 

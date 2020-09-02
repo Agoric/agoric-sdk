@@ -7,15 +7,14 @@ import '../../../exported';
  * @param {(brand: Brand) => Pool} getPool
  */
 export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
-  const addLiquidityExpected = harden({
-    give: {
-      Central: null,
-      Secondary: null,
-    },
-    want: { Liquidity: null },
-  });
-
   const addLiquidity = seat => {
+    assertProposalShape(seat, {
+      give: {
+        Central: null,
+        Secondary: null,
+      },
+      want: { Liquidity: null },
+    });
     // Get the brand of the secondary token so we can identify the liquidity pool.
     const secondaryBrand = seat.getProposal().give.Secondary.brand;
     const pool = getPool(secondaryBrand);
@@ -23,10 +22,7 @@ export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
   };
 
   const makeAddLiquidityInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(addLiquidity, addLiquidityExpected),
-      'multipool autoswap add liquidity',
-    );
+    zcf.makeInvitation(addLiquidity, 'multipool autoswap add liquidity');
 
   return makeAddLiquidityInvitation;
 };

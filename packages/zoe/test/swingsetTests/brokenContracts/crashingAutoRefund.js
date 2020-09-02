@@ -51,12 +51,11 @@ const start = zcf => {
   const makeThrowingInvitation = () =>
     zcf.makeInvitation(throwing, 'getRefund');
 
-  const swapOfferExpected = harden({
-    give: { Asset: null },
-    want: { Price: null },
-  });
-
   const makeMatchingInvitation = firstSeat => {
+    assertProposalShape(firstSeat, {
+      give: { Asset: null },
+      want: { Price: null },
+    });
     offersCount += 1;
     const { want, give } = firstSeat.getProposal();
 
@@ -71,10 +70,7 @@ const start = zcf => {
   };
 
   const makeSwapInvitation = () =>
-    zcf.makeInvitation(
-      assertProposalShape(makeMatchingInvitation, swapOfferExpected),
-      'firstOffer',
-    );
+    zcf.makeInvitation(makeMatchingInvitation, 'firstOffer');
 
   offersCount += 1;
   const publicFacet = harden({
