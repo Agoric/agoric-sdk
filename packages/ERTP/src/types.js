@@ -238,7 +238,7 @@
  * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
  *
  * @property {() => Amount} getCurrentAmount
- * Get the amount contained in this purse, confirmed by the issuer.
+ * Get the amount contained in this purse.
  *
  * @property {(payment: Payment, optAmount?: Amount) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
