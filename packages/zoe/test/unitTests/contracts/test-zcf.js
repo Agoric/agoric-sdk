@@ -55,16 +55,17 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
 
   const userSeat1 = await E(zoe).offer(invitation1);
   const userSeat2 = await E(zoe).offer(invitation2);
-  const userSeat1Result = await E(userSeat1).getOfferResult();
 
-  t.is(userSeat1Result, 'ok');
+  t.is(await E(userSeat1).getOfferResult(), 'ok', `userSeat1 offer result`);
 
-  await E(userSeat2).getPayouts();
+  // await E(userSeat2).getPayouts();
   // Results in "Unhandled rejection"
   // E(userSeat2).getOfferResult();
 
+  t.deepEqual(await E(userSeat1).getPayouts(), {});
+
   await t.throwsAsync(() => E(userSeat2).getOfferResult());
-  await t.throwsAsync(() => E(userSeat1).tryExit(), {
-    message: 'seat has been exited',
-  });
+  // await t.throwsAsync(() => E(userSeat1).tryExit(), {
+  //   message: 'seat has been exited',
+  // });
 });
