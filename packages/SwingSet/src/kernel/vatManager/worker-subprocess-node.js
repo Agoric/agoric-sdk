@@ -31,7 +31,6 @@ export function makeNodeSubprocessFactory(tools) {
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
-    assert(!managerOptions.notifyTermination, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
     if (managerOptions.enableInternalMetering) {
       // TODO: warn+ignore, rather than throw, because the kernel enables it

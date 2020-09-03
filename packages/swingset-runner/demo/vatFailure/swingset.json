@@ -1,0 +1,19 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "badvat": {
+      "sourceSpec": "vat-bad.js"
+    }
+  },
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    },
+    "badvatStatic": {
+      "bundleName": "badvat",
+      "creationOptions": {
+        "enableSetup": true
+      }
+    }
+  }
+}

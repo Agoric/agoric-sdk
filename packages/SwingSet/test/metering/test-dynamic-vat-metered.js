@@ -2,6 +2,7 @@
 
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
+import { initSwingStore } from '@agoric/swing-store-simple';
 import test from 'ava';
 import { buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
@@ -28,7 +29,10 @@ test('metering dynamic vats', async t => {
       },
     },
   };
-  const c = await buildVatController(config, []);
+  const { storage } = initSwingStore();
+  const c = await buildVatController(config, [], {
+    hostStorage: storage,
+  });
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
@@ -47,20 +51,29 @@ test('metering dynamic vats', async t => {
   // First, send a message to the dynamic vat that runs normally
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
+  t.is(storage.get('vat.dynamicIDs'), '["v6"]');
+  t.is(storage.get('ko26.owner'), 'v6');
+  t.is(Array.from(storage.getKeys('kp45.', 'kp45/')).length, 5);
+  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 9);
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
 
   // Now send a message that makes the dynamic vat exhaust its meter. The
   // message result promise should be rejected, and the control facet should
-  // report the vat's demise
+  // report the vat's demise.  Remnants of the killed vat should be gone
+  // from the kernel state store.
   c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs(['allocate']));
   await c.run();
+  t.is(storage.get('vat.dynamicIDs'), '[]');
+  t.is(storage.get('ko26.owner'), undefined);
+  t.is(Array.from(storage.getKeys('kp45.', 'kp45/')).length, 0);
+  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 0);
 
   t.deepEqual(
     nextLog(),
     [
-      'did explode: RangeError: Allocate meter exceeded',
-      'terminated: RangeError: Allocate meter exceeded',
+      'did explode: vat terminated',
+      'terminated: Error: Allocate meter exceeded',
     ],
     'first boom',
   );
@@ -68,9 +81,5 @@ test('metering dynamic vats', async t => {
   // the dead vat should stay dead
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
-  t.deepEqual(
-    nextLog(),
-    ['run exploded: RangeError: Allocate meter exceeded'],
-    'stay dead',
-  );
+  t.deepEqual(nextLog(), ['run exploded: vat terminated'], 'stay dead');
 });

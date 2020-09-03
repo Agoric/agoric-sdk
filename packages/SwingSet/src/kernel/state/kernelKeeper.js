@@ -487,7 +487,22 @@ export default function makeKernelKeeper(storage) {
     const DYNAMIC_IDS_KEY = 'vat.dynamicIDs';
     const oldDynamicVatIDs = JSON.parse(getRequired(DYNAMIC_IDS_KEY));
     const newDynamicVatIDs = oldDynamicVatIDs.filter(v => v !== vatID);
-    storage.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
+    if (newDynamicVatIDs.length !== oldDynamicVatIDs.length) {
+      storage.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
+    } else {
+      console.log(`removing static vat ${vatID}`);
+      for (const k of storage.getKeys('vat.name.', 'vat.name/')) {
+        if (storage.get(k) === vatID) {
+          storage.delete(k);
+          const VAT_NAMES_KEY = 'vat.names';
+          const name = k.slice('vat.name.'.length);
+          const oldStaticVatNames = JSON.parse(getRequired(VAT_NAMES_KEY));
+          const newStaticVatNames = oldStaticVatNames.filter(v => v !== name);
+          storage.set(VAT_NAMES_KEY, JSON.stringify(newStaticVatNames));
+          break;
+        }
+      }
+    }
 
     return kernelPromisesToReject;
   }
@@ -608,10 +623,10 @@ export default function makeKernelKeeper(storage) {
    *
    * @param kernelSlot  The kernel slot whose refcount is to be incremented.
    */
-  function incrementRefCount(kernelSlot, tag) {
+  function incrementRefCount(kernelSlot, _tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
       const refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`))) + 1;
-      kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
+      // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
       storage.set(`${kernelSlot}.refCount`, `${refCount}`);
     }
   }
@@ -633,7 +648,7 @@ export default function makeKernelKeeper(storage) {
       let refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`)));
       assert(refCount > 0, details`refCount underflow {kernelSlot} ${tag}`);
       refCount -= 1;
-      kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
+      // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       storage.set(`${kernelSlot}.refCount`, `${refCount}`);
       if (refCount === 0) {
         deadKernelPromises.add(kernelSlot);
