@@ -1,13 +1,13 @@
 // @ts-check
+import '../../exported';
 
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
+import { E } from '@agoric/eventual-send';
 
 import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
-
-import '../../exported';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -269,3 +269,45 @@ export const assertUsesNatMath = (zcf, brand) => {
     details`issuer must use NAT amountMath`,
   );
 };
+
+/**
+ * Escrow payments with Zoe and reallocate the amount of the
+ * payment to a seat. The `amounts` and `payments` records 
+ * must have corresponding keywords.
+ * 
+ * @param {ContractFacet} zcf
+ * @param {ZCFSeat} recipientSeat
+ * @param {AmountKeywordRecord} amounts
+ * @param {PaymentKeywordRecord} payments
+ * @returns {Promise<undefined>}
+ */
+export async function escrowAllTo(zcf, recipientSeat, amounts, payments) {
+  assert(!recipientSeat.hasExited(), "An active seat is required");
+
+  // We will create a temporary offer to be able to escrow our payment
+  // with Zoe.
+  function onReceipt(seat) {
+    // When the assets arrive, move them onto the target seat and 
+    // exit. Note that this happens synchronously before the 
+    // the offerResult resolves.
+    trade(zcf,
+      { seat, gains: {} },
+      {
+        seat: recipientSeat,
+        gains: amounts,
+      },
+    );
+    seat.exit();
+  }
+  const invitation = zcf.makeInvitation(onReceipt, 'escrowAllTo landing place');
+  const proposal = harden({ give: amounts });
+  harden(payments);
+  // To escrow the payment, we must get the Zoe Service facet and
+  // make an offer
+  const zoe = zcf.getZoeService();
+  const tempSeat = E(zoe).offer(invitation, proposal, payments);
+  // We aren't expecting anything back, so just return the outcome
+  // so the caller can wait till this completes. It will only
+  // fulfill after the assets have been moved onto thte `recipientSeat`
+  return E(tempSeat).getOfferResult();
+}
