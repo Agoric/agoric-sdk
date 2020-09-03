@@ -96,7 +96,7 @@
  * @callback MakeZCFMint
  * @param {Keyword} keyword
  * @param {AmountMathKind=} amountMathKind
- * @returns {Promise<ZCFMint>}
+ * @returns {ZCFMint}
  */
 
 /**

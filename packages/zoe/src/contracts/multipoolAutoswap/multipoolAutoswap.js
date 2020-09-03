@@ -38,9 +38,9 @@ import '../../../exported';
  * the input price (swapIn, getInputPrice) or the output price (swapOut,
  * getOutPutPrice) is fixed. For swaps, the required keywords are `In` for the
  * trader's `give` amount, and `Out` for the trader's `want` amount.
- * getInputPrice and getOutPrice each take an Amount for the direction that is
- * being specified, and just a brand for the desired value, which is returned as
- * the appropriate amount.
+ * getInputPrice and getOutputPrice each take an Amount for the direction that
+ * is being specified, and just a brand for the desired value, which is returned
+ * as the appropriate amount.
  *
  * When adding and removing liquidity, the keywords are Central, Secondary, and
  * Liquidity. adding liquidity has Central and Secondary in the `give` section,

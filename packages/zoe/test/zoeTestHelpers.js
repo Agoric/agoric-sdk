@@ -10,7 +10,7 @@ export const assertPayoutAmount = (
   label = '',
 ) => {
   issuer.getAmountOf(payout).then(amount => {
-    t.deepEqual(expectedAmount, amount, `${label} payout was ${amount.value}`);
+    t.deepEqual(amount, expectedAmount, `${label} payout was ${amount.value}`);
   });
 };
 
@@ -20,8 +20,8 @@ export const assertPayoutDeposit = (t, payout, purse, amount) => {
       .deposit(payment)
       .then(payoutAmount => {
         t.deepEqual(
-          amount,
           payoutAmount,
+          amount,
           `payout was ${payoutAmount.value}, expected ${amount}.value`,
         );
       });

@@ -586,7 +586,6 @@ test('multipoolAutoSwap jig - liquidity', async t => {
     payoutS: 0,
     payoutL: 10000,
   };
-  t.truthy(t, '..Alice init liquidity');
 
   await alice.initLiquidityAndCheck(
     t,
@@ -595,7 +594,6 @@ test('multipoolAutoSwap jig - liquidity', async t => {
     initLiquidityExpected,
     issuerKeywordRecord,
   );
-  t.truthy(t, '..Alice initialize liquidity');
   moolaPoolState = updatePoolState(moolaPoolState, initLiquidityExpected);
 
   // Alice adds liquidity
@@ -615,7 +613,6 @@ test('multipoolAutoSwap jig - liquidity', async t => {
     liqExpected1,
     issuerKeywordRecord,
   );
-  t.truthy(t, '..Alice added more liquidity');
   moolaPoolState = updatePoolState(moolaPoolState, liqExpected1);
 
   // Alice adds liquidity with an out-of-balance offer -- too much moola
@@ -635,7 +632,6 @@ test('multipoolAutoSwap jig - liquidity', async t => {
     liqExpected2,
     issuerKeywordRecord,
   );
-  t.truthy(t, '..Alice added more liquidity');
   moolaPoolState = updatePoolState(moolaPoolState, liqExpected2);
 
   // Alice tries to add liquidity with little moola -- the offer is rejected

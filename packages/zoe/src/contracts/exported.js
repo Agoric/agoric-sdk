@@ -56,8 +56,25 @@
  */
 
 /**
+ * @typedef {Object} Pool
+ * @property {(inputValue: Value) => Amount } getSecondaryToCentralInputPrice
+ * @property {(inputValue: Value) => Amount } getCentralToSecondaryInputPrice
+ * @property {(inputValue: Value) => Amount } getSecondaryToCentralOutputPrice
+ * @property {(inputValue: Value) => Amount } getCentralToSecondaryOutputPrice
+ * @property {() => number} getLiquiditySupply
+ * @property {(seat: ZCFSeat) => string} addLiquidity
+ * @property {(seat: ZCFSeat) => string} removeLiquidity
+ * @property {() => ZCFSeat} getPoolSeat
+ * @property {() => AmountMath} getAmountMath - get the amountMath for this
+ * pool's secondary brand
+ * @property {() => AmountMath} getCentralAmountMath
+ * @property {() => Amount} getSecondaryAmount
+ * @property {() => Amount} getCentralAmount
+ */
+
+/**
  * @typedef {Object} MultipoolAutoswapPublicFacet
- * @property {(issuer: Issuer, keyword: Keyword) => Pool} addPool
+ * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation

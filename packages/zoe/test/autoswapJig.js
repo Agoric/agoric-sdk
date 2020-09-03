@@ -140,11 +140,11 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       } = expected;
 
       const poolPre = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(central(cPoolPre), poolPre.Central, `central before swap`);
-      t.deepEqual(secondary(sPoolPre), poolPre.Secondary, `s before swap`);
+      t.deepEqual(poolPre.Central, central(cPoolPre), `central before swap`);
+      t.deepEqual(poolPre.Secondary, secondary(sPoolPre), `s before swap`);
       t.is(
-        lPre,
         await getLiquidity(secondaryIssuer),
+        lPre,
         'liquidity pool before trade',
       );
       t.is(kPre, sPoolPre * cPoolPre);
@@ -160,12 +160,12 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       assertPayoutAmount(t, inIssuer, refund, inMath(inExpected), 'trade in');
 
       const poolPost = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(central(cPost), poolPost.Central, `central after swap`);
-      t.deepEqual(secondary(sPost), poolPost.Secondary, `s after swap`);
+      t.deepEqual(poolPost.Central, central(cPost), `central after swap`);
+      t.deepEqual(poolPost.Secondary, secondary(sPost), `s after swap`);
       t.is(kPost, sPost * cPost);
 
       await seat.getOfferResult();
-      t.is(lPost, await getLiquidity(secondaryIssuer), 'liquidity after');
+      t.is(await getLiquidity(secondaryIssuer), lPost, 'liquidity after');
     },
 
     // This check only handles success. Failing calls should do something else.
@@ -197,11 +197,11 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       const scaleByAlpha = makeScaleFn(cPre, cPost);
 
       const poolPre = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(central(cPre), poolPre.Central, `central before add liq`);
-      t.deepEqual(secondary(sPre), poolPre.Secondary, `s before add liq`);
+      t.deepEqual(poolPre.Central, central(cPre), `central before add liq`);
+      t.deepEqual(poolPre.Secondary, secondary(sPre), `s before add liq`);
       t.is(
-        lPre,
         await getLiquidity(secondaryIssuer),
+        lPre,
         'liquidity pool before add',
       );
       t.is(kPre, sPre * cPre);
@@ -232,21 +232,21 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       assertPayoutAmount(t, liquidityIssuer, lPayout, liquidity(payoutL), '+l');
 
       const poolPost = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(central(cPost), poolPost.Central, `central after add liq`);
-      t.deepEqual(secondary(sPost), poolPost.Secondary, `s after add liq`);
-      t.is(lPost, await getLiquidity(secondaryIssuer), 'liquidity pool after');
+      t.deepEqual(poolPost.Central, central(cPost), `central after add liq`);
+      t.deepEqual(poolPost.Secondary, secondary(sPost), `s after add liq`);
+      t.is(await getLiquidity(secondaryIssuer), lPost, 'liquidity pool after');
       t.is(kPost, sPost * cPost, 'expected value of K after addLiquidity');
-      t.is(lPost, add(lPre, scaleByAlpha(lPre)), 'liquidity scales');
+      t.is(add(lPre, scaleByAlpha(lPre)), lPost, 'liquidity scales');
       const productC = multiply(cPre, scaleByAlpha(sPre));
 
       const productS = multiply(sPre, cAmount.value);
       const exact = productC === productS;
       if (exact) {
-        t.is(cPost, add(cPre, scaleByAlpha(cPre)), 'central post add');
-        t.is(sPost, add(sPre, scaleByAlpha(sPre)), 'secondary post add');
+        t.is(add(cPre, scaleByAlpha(cPre)), cPost, 'central post add');
+        t.is(add(sPre, scaleByAlpha(sPre)), sPost, 'secondary post add');
       } else {
-        t.is(cPost, add(cPre, cAmount.value), 'central post add');
-        t.is(sPost, add(1, add(sPre, scaleByAlpha(sPre))), 's post add');
+        t.is(add(cPre, cAmount.value), cPost, 'central post add');
+        t.is(add(1, add(sPre, scaleByAlpha(sPre))), sPost, 's post add');
       }
     },
 
@@ -277,10 +277,10 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       } = expected;
       t.truthy(payoutC === 0 || payoutS === 0, 'only refund one side');
       const poolPre = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual({}, poolPre, `central before liquidity`);
-      t.is(0, await getLiquidity(secondaryIssuer), 'liquidity pool pre init');
+      t.deepEqual(poolPre, {}, `central before liquidity`);
+      t.is(await getLiquidity(secondaryIssuer), 0, 'liquidity pool pre init');
       t.is(kPre, sPre * cPre);
-      t.is(lPre, await getLiquidity(secondaryIssuer), 'liquidity pre init');
+      t.is(await getLiquidity(secondaryIssuer), lPre, 'liquidity pre init');
 
       const proposal = harden({
         give: { Central: cAmount, Secondary: sAmount },
@@ -309,14 +309,14 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       assertPayoutAmount(t, liquidityIssuer, lPayout, liquidityAmt, 'init l');
 
       const poolPost = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(central(cPost), poolPost.Central, `central after init`);
-      t.deepEqual(secondary(sPost), poolPost.Secondary, `s after liquidity`);
-      t.is(lPost, await getLiquidity(secondaryIssuer), 'liq pool after init');
+      t.deepEqual(poolPost.Central, central(cPost), `central after init`);
+      t.deepEqual(poolPost.Secondary, secondary(sPost), `s after liquidity`);
+      t.is(await getLiquidity(secondaryIssuer), lPost, 'liq pool after init');
       t.truthy(lPost >= lAmount.value, 'liquidity want was honored');
-      t.is(kPost, sPost * cPost, 'expected value of K after init');
-      t.is(lPost, lAmount.value, 'liquidity scales (init)');
-      t.is(cPost, cAmount.value);
-      t.is(sPost, sAmount.value);
+      t.is(sPost * cPost, kPost, 'expected value of K after init');
+      t.is(lAmount.value, lPost, 'liquidity scales (init)');
+      t.is(cAmount.value, cPost);
+      t.is(sAmount.value, sPost);
     },
   });
   return trader;
