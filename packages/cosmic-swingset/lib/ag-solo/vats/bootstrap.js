@@ -16,35 +16,6 @@ const NUM_IBC_PORTS = 3;
 
 console.debug(`loading bootstrap.js`);
 
-function parseArgs(argv) {
-  let ROLE;
-  let gotRoles = false;
-  const hardcodedClientAddresses = [];
-  let giveMeAllTheAgoricPowers = false;
-  argv.forEach(arg => {
-    const match = arg.match(/^--role=(.*)$/);
-    if (match) {
-      if (gotRoles) {
-        throw new Error(`must assign only one role, saw ${ROLE}, ${match[1]}`);
-      }
-      [, ROLE] = match;
-      gotRoles = true;
-    } else if (arg === `--give-me-all-the-agoric-powers`) {
-      console.warn(`Giving all the Agoric powers to the client!`);
-      giveMeAllTheAgoricPowers = true;
-    } else if (arg.match(/^-/)) {
-      throw Error(`Unrecognized option ${arg}`);
-    } else {
-      hardcodedClientAddresses.push(arg);
-    }
-  });
-  if (!gotRoles) {
-    ROLE = 'client';
-  }
-
-  return { ROLE, giveMeAllTheAgoricPowers, hardcodedClientAddresses };
-}
-
 // Used for coordinating on an index in comms for the provisioning service
 const PROVISIONER_INDEX = 1;
 
@@ -288,7 +259,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         ROLE,
         giveMeAllTheAgoricPowers,
         hardcodedClientAddresses,
-      } = parseArgs(vatParameters.argv);
+      } = vatParameters.argv;
 
       async function addRemote(addr) {
         const { transmitter, setReceiver } = await E(vats.vattp).addRemote(

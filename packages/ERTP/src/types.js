@@ -221,7 +221,7 @@
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
- * If payment is an unresolved promise, throw an error.
+ * If payment is a promise, throw an error.
  */
 
 /**
@@ -238,14 +238,14 @@
  * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
  *
  * @property {() => Amount} getCurrentAmount
- * Get the amount contained in this purse, confirmed by the issuer.
+ * Get the amount contained in this purse.
  *
  * @property {(payment: Payment, optAmount?: Amount) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
- * If payment is an unresolved promise, throw an error.
+ * If payment is a promise, throw an error.
  *
  * @property {() => DepositFacet} makeDepositFacet
  * Create an object whose `deposit` method deposits to the current Purse.
