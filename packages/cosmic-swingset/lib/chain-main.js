@@ -204,7 +204,7 @@ export default async function main(progname, args, { path, env, agcc }) {
     }
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
-    const argv = [`--role=chain`];
+    const argv = { ROLE: 'chain' };
     const s = await launch(
       stateDBDir,
       mailboxStorage,
