@@ -30,7 +30,8 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-export function buildRootObject() {
+// TODO the `testContext` might need to be a later argument
+export function buildRootObject(testContext) {
   /** @type ExecuteContract */
   const executeContract = async (
     bundle,
@@ -232,6 +233,15 @@ export function buildRootObject() {
       return zcfMint;
     };
 
+    /** @type TestOnly */
+    const testOnly = testFn => {
+      if (testContext) {
+        console.warn("TEST ONLY: capturing test data", testFn);
+        testContext.zcf = zcf;
+        testContext.data = testFn();
+      }
+    }
+
     /** @type ContractFacet */
     const zcf = {
       reallocate: (/** @type SeatStaging[] */ ...seatStagings) => {
@@ -350,6 +360,7 @@ export function buildRootObject() {
       getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
       getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
       getAmountMath,
+      testOnly,
     };
     harden(zcf);
 
