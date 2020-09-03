@@ -1,12 +1,16 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
+import { MathKind } from '@agoric/ertp/src/amountMath';
 
 import {
   getInputPrice,
+  getOutputPrice,
   calcLiqValueToMint,
   calcValueToRemove,
   trade,
-  assertUsesNatMath,
+  calcSecondaryRequired,
 } from '../../contractSupport';
 
 import '../../../exported';
@@ -25,19 +29,46 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
       amountMath: liquidityAmountMath,
     } = liquidityZcfMint.getIssuerRecord();
 
-    /**
-     * @typedef {Object} Pool
-     * @property {(centralToSecondary: boolean, inputValue: Value) => Amount } getCurrentPrice
-     * @property {(seat: ZCFSeat) => string} addLiquidity
-     * @property {(seat: ZCFSeat) => string} removeLiquidity
-     * @property {() => ZCFSeat} getPoolSeat
-     * @property {() => AmountMath} getAmountMath
-     * @property {() => Amount} getSecondaryAmount
-     * @property {() => Amount} getCentralAmount
-     */
+    const addLiquidityActual = (pool, userSeat, secondaryAmount) => {
+      const liquidityValueOut = calcLiqValueToMint(
+        harden({
+          liqTokenSupply,
+          inputValue: userSeat.getAmountAllocated('Central').value,
+          inputReserve: pool.getCentralAmount().value,
+        }),
+      );
+
+      const liquidityAmountOut = liquidityAmountMath.make(liquidityValueOut);
+      liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
+      liqTokenSupply += liquidityValueOut;
+
+      trade(
+        zcf,
+        {
+          seat: poolSeat,
+          gains: {
+            Central: userSeat.getCurrentAllocation().Central,
+            Secondary: secondaryAmount,
+          },
+        },
+        {
+          seat: userSeat,
+          gains: { Liquidity: liquidityAmountOut },
+        },
+      );
+      userSeat.exit();
+      return 'Added liquidity.';
+    };
+
+    const assertPoolInitialized = pool =>
+      assert(
+        !pool.getAmountMath().isEmpty(pool.getSecondaryAmount()),
+        details`pool not initialized`,
+      );
 
     /** @type {Pool} */
     const pool = {
+      getLiquiditySupply: () => liqTokenSupply,
       getPoolSeat: () => poolSeat,
       getAmountMath: () => zcf.getAmountMath(secondaryBrand),
       getCentralAmountMath: () => zcf.getAmountMath(centralBrand),
@@ -45,49 +76,69 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         poolSeat.getAmountAllocated('Central', centralBrand),
       getSecondaryAmount: () =>
         poolSeat.getAmountAllocated('Secondary', secondaryBrand),
-      getCurrentPrice: (centralToSecondary, inputValue) => {
-        if (centralToSecondary) {
-          const outputValue = getInputPrice({
-            inputValue,
-            inputReserve: pool.getCentralAmount().value,
-            outputReserve: pool.getSecondaryAmount().value,
-          });
-          return pool.getAmountMath().make(outputValue);
-        }
-        const outputValue = getInputPrice({
+      getCentralToSecondaryInputPrice: inputValue => {
+        assertPoolInitialized(pool);
+        const result = getInputPrice({
+          inputValue,
+          inputReserve: pool.getCentralAmount().value,
+          outputReserve: pool.getSecondaryAmount().value,
+        });
+        return pool.getAmountMath().make(result);
+      },
+      getSecondaryToCentralInputPrice: inputValue => {
+        assertPoolInitialized(pool);
+        const result = getInputPrice({
           inputValue,
           inputReserve: pool.getSecondaryAmount().value,
           outputReserve: pool.getCentralAmount().value,
         });
-        return pool.getCentralAmountMath().make(outputValue);
+        return pool.getCentralAmountMath().make(result);
+      },
+      getCentralToSecondaryOutputPrice: outputValue => {
+        assertPoolInitialized(pool);
+        const result = getOutputPrice({
+          outputValue,
+          inputReserve: pool.getCentralAmount().value,
+          outputReserve: pool.getSecondaryAmount().value,
+        });
+        return pool.getAmountMath().make(result);
+      },
+      getSecondaryToCentralOutputPrice: outputValue => {
+        assertPoolInitialized(pool);
+        const result = getOutputPrice({
+          outputValue,
+          inputReserve: pool.getSecondaryAmount().value,
+          outputReserve: pool.getCentralAmount().value,
+        });
+        return pool.getCentralAmountMath().make(result);
       },
       addLiquidity: userSeat => {
-        // Calculate how many liquidity tokens we should be minting.
-        const liquidityValueOut = calcLiqValueToMint(
-          harden({
-            liqTokenSupply,
-            inputValue: userSeat.getAmountAllocated('Central').value,
-            inputReserve: pool.getCentralAmount().value,
+        if (liqTokenSupply === 0) {
+          const userAllocation = userSeat.getCurrentAllocation();
+          return addLiquidityActual(pool, userSeat, userAllocation.Secondary);
+        }
+
+        const userAllocation = userSeat.getCurrentAllocation();
+        const secondaryIn = userAllocation.Secondary;
+
+        // To calculate liquidity, we'll need to calculate alpha from the primary
+        // token's value before, and the value that will be added to the pool
+        const secondaryOut = pool.getAmountMath().make(
+          calcSecondaryRequired({
+            centralIn: userAllocation.Central.value,
+            centralPool: pool.getCentralAmount().value,
+            secondaryPool: pool.getSecondaryAmount().value,
+            secondaryIn: secondaryIn.value,
           }),
         );
 
-        const liquidityAmountOut = liquidityAmountMath.make(liquidityValueOut);
-        liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
-        liqTokenSupply += liquidityValueOut;
-
-        trade(
-          zcf,
-          {
-            seat: poolSeat,
-            gains: userSeat.getCurrentAllocation(),
-          },
-          {
-            seat: userSeat,
-            gains: { Liquidity: liquidityAmountOut },
-          },
+        // Central was specified precisely so offer must provide enough secondary.
+        assert(
+          pool.getAmountMath().isGTE(secondaryIn, secondaryOut),
+          'insufficient Secondary deposited',
         );
-        userSeat.exit();
-        return 'Added liquidity.';
+
+        return addLiquidityActual(pool, userSeat, secondaryOut);
       },
       removeLiquidity: userSeat => {
         const liquidityIn = userSeat.getAmountAllocated(
@@ -147,25 +198,29 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
    * terms.issuers for the contract, but not used otherwise
    */
   const addPool = async (secondaryIssuer, keyword) => {
-    zcf.assertUniqueKeyword(keyword);
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
-    const secondaryBrand = await E(secondaryIssuer).getBrand();
-    const brandMatches = await E(secondaryBrand).isMyIssuer(secondaryIssuer);
-    assert(
-      brandMatches,
-      `The provided issuer was using another issuer's brand`,
-    );
+
+    const [secondaryMathKind, secondaryBrand] = await Promise.all([
+      E(secondaryIssuer).getAmountMathKind(),
+      E(secondaryIssuer).getBrand(),
+    ]);
+
     assert(
       !isSecondary(secondaryBrand),
       details`issuer ${secondaryIssuer} already has a pool`,
     );
+    assert(
+      secondaryMathKind === MathKind.NAT,
+      details`${keyword} issuer must use NAT math`,
+    );
 
+    // We've checked all the foreseeable exceptions (except
+    // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
+    // before proceeding), so we can do the work now.
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    assertUsesNatMath(zcf, secondaryBrand);
     const liquidityZCFMint = await zcf.makeZCFMint(liquidityKeyword);
-    const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit();
-    const poolSeat = await poolSeatP;
+    const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
     initPool(secondaryBrand, pool);
     return liquidityZCFMint.getIssuerRecord().issuer;

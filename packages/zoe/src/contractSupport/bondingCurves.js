@@ -37,8 +37,7 @@ export const getInputPrice = ({
   const numerator = multiply(inputWithFee, outputReserve);
   const denominator = add(multiply(inputReserve, 10000), inputWithFee);
 
-  const outputValue = floorDivide(numerator, denominator);
-  return outputValue;
+  return floorDivide(numerator, denominator);
 };
 
 /**
@@ -127,12 +126,14 @@ export const calcSecondaryRequired = ({
     return secondaryIn;
   }
 
-  const exact =
-    multiply(centralIn, secondaryPool) === multiply(secondaryIn, centralPool);
   const scaledSecondary = floorDivide(
     multiply(centralIn, secondaryPool),
     centralPool,
   );
+  const exact =
+    multiply(centralIn, secondaryPool) ===
+    multiply(scaledSecondary, centralPool);
+
   // doesn't match the x-y-k.pdf paper, but more correct. When the ratios are
   // exactly equal, lPrime is exactly l * (1 + alpha) and adding one is wrong
   return exact ? scaledSecondary : 1 + scaledSecondary;
