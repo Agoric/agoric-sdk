@@ -149,13 +149,17 @@ export function makeLocalVatManagerFactory(tools) {
         vatPowers,
         vatParameters,
       );
-    } else {
+    } else if (enableSetup) {
       const setup = vatNS.default;
       assert(setup, `vat source bundle lacks (default) setup() function`);
-      assert(setup instanceof Function, `setup is not a function`);
-      assert(enableSetup, `got setup(), but not options.enableSetup`);
+      assert(
+        setup instanceof Function,
+        `vat source bundle default export is not a function`,
+      );
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       dispatch = setup(syscall, state, helpers, vatPowers);
+    } else {
+      throw Error(`vat source bundle lacks buildRootObject() function`);
     }
 
     const manager = finish(dispatch, meterRecord);
