@@ -27,6 +27,7 @@
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
  * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
+ * @property {TestOnly} testOnly
  */
 
 /**
@@ -97,6 +98,12 @@
  * @param {Keyword} keyword
  * @param {AmountMathKind=} amountMathKind
  * @returns {Promise<ZCFMint>}
+ */
+
+/**
+ * @callback TestOnly
+ * @param {() => any} testFn
+ * @returns {undefined}
  */
 
 /**
