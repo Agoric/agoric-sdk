@@ -6,9 +6,9 @@
  */
 export default function makeObservablePurse(E, purse, onFulfilled) {
   return {
-    makeDepositFacet() {
+    getDepositFacet() {
       return E(purse)
-        .makeDepositFacet()
+        .getDepositFacet()
         .then(depositOnlyFacet => {
           return {
             receive(...args) {
