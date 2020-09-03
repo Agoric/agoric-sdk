@@ -132,7 +132,7 @@ test('purse.deposit promise', t => {
   );
 });
 
-test('purse.makeDepositFacet', async t => {
+test('purse.getDepositFacet', async t => {
   t.plan(2);
   const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const fungible25 = amountMath.make(25);
@@ -152,7 +152,7 @@ test('purse.makeDepositFacet', async t => {
   };
 
   await E(purse)
-    .makeDepositFacet()
+    .getDepositFacet()
     .then(({ receive }) => receive(payment))
     .then(checkDeposit);
 });
