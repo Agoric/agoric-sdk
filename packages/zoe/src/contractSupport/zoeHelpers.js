@@ -150,7 +150,7 @@ export const trade = (
   }
 
   // Check whether reallocate would error before calling. If
-  // it would error, reject the right offer and return.
+  // it would error, log information and throw.
   const offerSafeForLeft = left.seat.isOfferSafe(leftAllocation);
   const offerSafeForRight = right.seat.isOfferSafe(rightAllocation);
   if (!(offerSafeForLeft && offerSafeForRight)) {
