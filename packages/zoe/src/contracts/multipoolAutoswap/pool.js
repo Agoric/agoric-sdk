@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
+import { MathKind } from '@agoric/ertp/src/amountMath';
 
 import {
   getInputPrice,
@@ -10,7 +11,6 @@ import {
   calcValueToRemove,
   trade,
   calcSecondaryRequired,
-  assertUsesNatMath,
 } from '../../contractSupport';
 
 import '../../../exported';
@@ -198,25 +198,28 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
    * terms.issuers for the contract, but not used otherwise
    */
   const addPool = async (secondaryIssuer, keyword) => {
-    zcf.assertUniqueKeyword(keyword);
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
-    const secondaryBrand = await E(secondaryIssuer).getBrand();
-    const brandMatches = await E(secondaryBrand).isMyIssuer(secondaryIssuer);
-    assert(
-      brandMatches,
-      `The provided issuer was using another issuer's brand`,
-    );
+
+    const secondaryBrandP = E(secondaryIssuer).getBrand();
+    const secondaryMathKindP = E(secondaryIssuer).getAmountMathKind();
+    const promises = [secondaryMathKindP, secondaryBrandP];
+    const [secondaryMathKind, secondaryBrand] = await Promise.all(promises);
     assert(
       !isSecondary(secondaryBrand),
       details`issuer ${secondaryIssuer} already has a pool`,
     );
+    assert(
+      secondaryMathKind === MathKind.NAT,
+      details`${keyword} issuer must use NAT math`,
+    );
 
+    // We've checked all the foreseeable exceptions (except
+    // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
+    // before proceeding), so we can do the work now.
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    assertUsesNatMath(zcf, secondaryBrand);
     const liquidityZCFMint = await zcf.makeZCFMint(liquidityKeyword);
-    const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit();
-    const poolSeat = await poolSeatP;
+    const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
     initPool(secondaryBrand, pool);
     return liquidityZCFMint.getIssuerRecord().issuer;
