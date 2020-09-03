@@ -106,8 +106,12 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       },
       getCurrentAmount: () => purseLedger.get(purse),
       getAllegedBrand: () => brand,
-      makeDepositFacet: () => harden({ receive: purse.deposit }),
+      // eslint-disable-next-line no-use-before-define
+      getDepositFacet: () => depositFacet,
     });
+
+    const depositFacet = harden({ receive: purse.deposit });
+
     return purse;
   };
 
