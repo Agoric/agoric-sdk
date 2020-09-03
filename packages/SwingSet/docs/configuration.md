@@ -33,6 +33,7 @@ config = {
       creationOptions: {
         enablePipelining: BOOL?
         metered: BOOL?
+        enableSetup: BOOL?
       }?
     }+
   }
@@ -136,3 +137,8 @@ not yet supported.
 
 - `metered` specifies whether the vat should be have metering turned
   on or not (defaults to `false` if omitted).
+
+- `enableSetup` indicates that the vat module may use the older, lower
+  level `setup()` API, which allows a vat to be defined independent of
+  the liveslots framework (defaults to `false` if omitted).  (If you
+  don't understand what this means, do not use this.)

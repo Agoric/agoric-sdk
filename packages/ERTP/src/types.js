@@ -217,8 +217,8 @@
 /**
  * @typedef {Object} DepositFacet
  * @property {(payment: Payment, optAmount?: Amount) => Amount} receive
- * Deposit all the contents of payment into the purse that made this facet, returning the
- * amount. If the optional argument `optAmount` does not equal the
+ * Deposit all the contents of payment into the purse that made this facet,
+ * returning the amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
  * If payment is a promise, throw an error.
@@ -247,8 +247,8 @@
  *
  * If payment is a promise, throw an error.
  *
- * @property {() => DepositFacet} makeDepositFacet
- * Create an object whose `deposit` method deposits to the current Purse.
+ * @property {() => DepositFacet} getDepositFacet
+ * Return an object whose `receive` method deposits to the current Purse.
  *
  * @property {(amount: Amount) => Payment} withdraw
  * Withdraw amount from this purse into a new Payment.
