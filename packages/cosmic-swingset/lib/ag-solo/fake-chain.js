@@ -45,11 +45,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
   const vatsdir = path.join(basedir, 'vats');
-  const argv = [
-    `--role=sim-chain`,
-    `--give-me-all-the-agoric-powers`,
-    bootAddress,
-  ];
+  const argv = {
+    ROLE: 'sim-chain',
+    giveMeAllTheAgoricPowers: true,
+    hardcodedClientAddresses: [bootAddress],
+  };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function doOutboundBridge(dstID, _obj) {
     // console.error('received', dstID, obj);
