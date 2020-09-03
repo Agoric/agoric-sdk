@@ -7,7 +7,8 @@ import '../../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  return { creatorFacet: zcf };
+  zcf.setTestJig(() => ({ zcf }));
+  return { };
 };
 
 harden(start);

@@ -27,7 +27,7 @@
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
  * @property {<Deadline>(exit?: ExitRule<Deadline>) => ZcfSeatKit} makeEmptySeatKit
- * @property {TestOnly} testOnly
+ * @property {SetTestJig} setTestJig
  */
 
 /**
@@ -101,7 +101,7 @@
  */
 
 /**
- * @callback TestOnly
+ * @callback SetTestJig
  * @param {() => any} testFn
  * @returns {undefined}
  */
