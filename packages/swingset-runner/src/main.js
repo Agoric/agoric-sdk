@@ -42,6 +42,7 @@ FLAGS may be:
   --lmdb           - runs using LMDB as the data store (default)
   --filedb         - runs using the simple file-based data store
   --memdb          - runs using the non-persistent in-memory data store
+  --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
   --logtimes       - log block execution time stats while running
@@ -166,6 +167,7 @@ export async function main() {
   let launchIndirectly = false;
   let benchmarkRounds = 0;
   let configPath = null;
+  let dbDir = null;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -222,6 +224,9 @@ export async function main() {
       case '--dumptag':
         dumpTag = argv.shift();
         doDumps = true;
+        break;
+      case '--dbdir':
+        dbDir = argv.shift();
         break;
       case '--raw':
         rawMode = true;
@@ -306,9 +311,12 @@ export async function main() {
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
   }
+  if (!dbDir) {
+    dbDir = basedir;
+  }
 
   let store;
-  const kernelStateDBDir = path.join(basedir, 'swingset-kernel-state');
+  const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
   switch (dbMode) {
     case '--filedb':
       if (forceReset) {
