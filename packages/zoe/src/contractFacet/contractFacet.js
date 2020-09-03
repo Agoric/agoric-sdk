@@ -230,8 +230,8 @@ export function buildRootObject(testContext) {
       return zcfMint;
     };
 
-    /** @type TestOnly */
-    const testOnly = testFn => {
+    /** @type SetTestJig */
+    const setTestJig = testFn => {
       if (testContext) {
         console.warn("TEST ONLY: capturing test data", testFn);
         testContext.zcf = zcf;
@@ -359,7 +359,7 @@ export function buildRootObject(testContext) {
       getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
       getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
       getAmountMath,
-      testOnly,
+      setTestJig,
     };
     harden(zcf);
 
