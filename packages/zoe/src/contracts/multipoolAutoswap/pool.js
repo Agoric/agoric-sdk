@@ -201,10 +201,11 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    const secondaryBrandP = E(secondaryIssuer).getBrand();
-    const secondaryMathKindP = E(secondaryIssuer).getAmountMathKind();
-    const promises = [secondaryMathKindP, secondaryBrandP];
-    const [secondaryMathKind, secondaryBrand] = await Promise.all(promises);
+    const [secondaryMathKind, secondaryBrand] = await Promise.all([
+      E(secondaryIssuer).getAmountMathKind(),
+      E(secondaryIssuer).getBrand(),
+    ]);
+
     assert(
       !isSecondary(secondaryBrand),
       details`issuer ${secondaryIssuer} already has a pool`,
