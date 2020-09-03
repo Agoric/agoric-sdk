@@ -71,8 +71,16 @@ export function makeDynamicVatCreator(stuff) {
       ? '(source bundle)'
       : `from: ${source.bundleName}`;
 
-    assertKnownOptions(dynamicOptions, ['metered', 'vatParameters']);
-    const { metered = true, vatParameters = {} } = dynamicOptions;
+    assertKnownOptions(dynamicOptions, [
+      'metered',
+      'vatParameters',
+      'enableSetup',
+    ]);
+    const {
+      metered = true,
+      vatParameters = {},
+      enableSetup = false,
+    } = dynamicOptions;
     let terminated = false;
 
     function notifyTermination(error) {
@@ -113,7 +121,7 @@ export function makeDynamicVatCreator(stuff) {
       const managerOptions = {
         bundle: vatSourceBundle,
         metered,
-        enableSetup: false,
+        enableSetup,
         enableInternalMetering: false,
         notifyTermination: metered ? notifyTermination : undefined,
         vatConsole: makeVatConsole(vatID),

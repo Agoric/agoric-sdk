@@ -25,11 +25,11 @@ export function buildRootObject(vatPowers) {
 
     const [doneP, doneRR] = producePRR();
     running.set(vatID, doneRR);
+    doneP.catch(() => {}); // shut up false whine about unhandled rejection
 
     const adminNode = harden({
       terminate() {
         D(vatAdminNode).terminate(vatID);
-        // TODO(hibbert): cleanup admin vat data structures
       },
       adminData() {
         return D(vatAdminNode).adminStats(vatID);

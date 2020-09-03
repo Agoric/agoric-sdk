@@ -1,8 +1,8 @@
 {
   "bootstrap": "bootstrap",
   "bundles": {
-    "dude": {
-      "sourceSpec": "vat-dude.js"
+    "boomer": {
+      "sourceSpec": "vat-boomer.js"
     }
   },
   "vats": {

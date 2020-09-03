@@ -28,8 +28,7 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, managerOptions = {}) {
-    const { notifyTermination = undefined } = managerOptions;
+  function prepare(vatID) {
     const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     const transcriptManager = makeTranscriptManager(
       kernelKeeper,
@@ -46,7 +45,6 @@ export function makeLocalVatManagerFactory(tools) {
         {
           vatID,
           stopGlobalMeter,
-          notifyTermination,
           meterRecord,
           refillAllMeters,
           transcriptManager,
@@ -65,7 +63,6 @@ export function makeLocalVatManagerFactory(tools) {
         setVatSyscallHandler,
         deliver,
         shutdown,
-        notifyTermination,
       });
       return manager;
     }
@@ -75,7 +72,6 @@ export function makeLocalVatManagerFactory(tools) {
   function createFromSetup(vatID, setup, managerOptions) {
     assert(!managerOptions.metered, `unsupported`);
     assert(!managerOptions.enableInternalMetering, `unsupported`);
-    assert(!managerOptions.notifyTermination, `unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
     const { syscall, finish } = prepare(vatID, managerOptions);
 

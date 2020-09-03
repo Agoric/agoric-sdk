@@ -82,8 +82,8 @@ test('metering dynamic vat which imports bundle', async t => {
   t.deepEqual(
     nextLog(),
     [
-      'did explode: RangeError: Allocate meter exceeded',
-      'terminated: RangeError: Allocate meter exceeded',
+      'did explode: vat terminated',
+      'terminated: Error: Allocate meter exceeded',
     ],
     'grandchild go boom',
   );
@@ -93,7 +93,7 @@ test('metering dynamic vat which imports bundle', async t => {
   await c.run();
   t.deepEqual(
     nextLog(),
-    ['run exploded: RangeError: Allocate meter exceeded'],
+    ['run exploded: vat terminated'],
     'whole dynamic vat is dead',
   );
 });

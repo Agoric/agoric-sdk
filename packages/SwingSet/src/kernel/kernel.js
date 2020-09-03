@@ -60,7 +60,9 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
   const logStartup = verbose ? console.debug : () => 0;
 
   insistStorageAPI(hostStorage);
-  const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
+  const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(
+    hostStorage,
+  );
 
   const kernelSlog = writeSlogObject
     ? makeSlogger(writeSlogObject)
@@ -283,6 +285,36 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     }
   }
 
+  function removeVatManager(vatID, reason) {
+    const old = ephemeral.vats.get(vatID);
+    ephemeral.vats.delete(vatID);
+    const err = reason ? Error(reason) : undefined;
+    old.notifyTermination(err); // XXX TODO: most of the places where notifyTermination gets passed don't need it
+    return old.manager.shutdown();
+  }
+
+  function terminateVat(vatID, reason) {
+    if (kernelKeeper.getVatKeeper(vatID)) {
+      const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
+      const err = reason ? makeError(reason) : VAT_TERMINATION_ERROR;
+      for (const kpid of promisesToReject) {
+        resolveToError(kpid, err, vatID);
+      }
+      removeVatManager(vatID, reason).then(
+        () => kdebug(`terminated vat ${vatID}`),
+        e => console.error(`problem terminating vat ${vatID}`, e),
+      );
+    }
+  }
+
+  let deliveryProblem;
+
+  function registerDeliveryProblem(vatID, problem, resultKP) {
+    if (!deliveryProblem) {
+      deliveryProblem = { vatID, problem, resultKP };
+    }
+  }
+
   async function deliverAndLogToVat(vatID, kernelDelivery, vatDelivery) {
     const vat = ephemeral.vats.get(vatID);
     const crankNum = kernelKeeper.getCrankNumber();
@@ -295,10 +327,10 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     try {
       const deliveryResult = await vat.manager.deliver(vatDelivery);
       finish(deliveryResult);
-      // TODO: eventually
-      // if (deliveryResult === death) {
-      //   vat.notifyTermination(deliveryResult.causeOfDeath);
-      // }
+      const [status, problem] = deliveryResult;
+      if (status !== 'ok') {
+        registerDeliveryProblem(vatID, problem);
+      }
     } catch (e) {
       // log so we get a stack trace
       console.error(`error in kernel.deliver:`, e);
@@ -426,6 +458,7 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
     }
     try {
       processQueueRunning = Error('here');
+      deliveryProblem = null;
       if (message.type === 'send') {
         kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
         kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
@@ -441,8 +474,15 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
       } else {
         throw Error(`unable to process message.type ${message.type}`);
       }
-      kernelKeeper.purgeDeadKernelPromises();
-      kernelKeeper.saveStats();
+      if (deliveryProblem) {
+        abortCrank();
+        const { vatID, problem } = deliveryProblem;
+        terminateVat(vatID, problem);
+        kdebug(`vat abnormally terminated: ${problem}`);
+      } else {
+        kernelKeeper.purgeDeadKernelPromises();
+        kernelKeeper.saveStats();
+      }
       commitCrank();
       kernelKeeper.incrementCrankNumber();
     } finally {
@@ -639,7 +679,9 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
         // This is a safety check -- this case should never happen unless the
         // vatManager is somehow confused.
         console.error(`vatSyscallHandler invoked on dead vat ${vatID}`);
-        return harden(['error', 'vat is dead']);
+        const problem = 'vat is dead';
+        registerDeliveryProblem(vatID, problem);
+        return harden(['error', problem]);
       }
       let ksc;
       try {
@@ -647,11 +689,10 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
         // which is fatal to the vat
         ksc = translators.vatSyscallToKernelSyscall(vatSyscallObject);
       } catch (vaterr) {
-        console.error(`vat ${vatID} error during translation: ${vaterr}`);
-        console.error(`vat terminated`);
-        // TODO: mark the vat as dead, reject subsequent syscalls, withhold
-        // deliveries, notify adminvat
-        return harden(['error', 'clist violation: prepare to die']);
+        kdebug(`vat ${vatID} terminated: error during translation: ${vaterr}`);
+        const problem = 'clist violation: prepare to die';
+        registerDeliveryProblem(vatID, problem);
+        return harden(['error', problem]);
       }
 
       const finish = kernelSlog.syscall(vatID, ksc, vatSyscallObject);
@@ -674,7 +715,9 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
         panic(`error during syscall/device.invoke: ${err}`, err);
         // the kernel is now in a shutdown state, but it may take a while to
         // grind to a halt
-        return harden(['error', 'you killed my kernel. prepare to die']);
+        const problem = 'you killed my kernel. prepare to die';
+        registerDeliveryProblem(vatID, problem);
+        return harden(['error', problem]);
       }
 
       return vres;
@@ -715,13 +758,6 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
 
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
     manager.setVatSyscallHandler(vatSyscallHandler);
-  }
-
-  function removeVatManager(vatID) {
-    const old = ephemeral.vats.get(vatID);
-    ephemeral.vats.delete(vatID);
-    old.notifyTermination(null);
-    return old.manager.shutdown();
   }
 
   const knownBundles = new Map();
@@ -841,19 +877,6 @@ export default function buildKernel(kernelEndowments, kernelOptions = {}) {
       // eslint-disable-next-line no-await-in-loop
       await recreateVatDynamically(vatID, source, dynamicOptions);
       // now the vatManager is attached and ready for transcript replay
-    }
-
-    function terminateVat(vatID) {
-      if (kernelKeeper.getVatKeeper(vatID)) {
-        const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
-        for (const kpid of promisesToReject) {
-          resolveToError(kpid, VAT_TERMINATION_ERROR, vatID);
-        }
-        removeVatManager(vatID).then(
-          () => kdebug(`terminated vat ${vatID}`),
-          e => console.error(`problem terminating vat ${vatID}`, e),
-        );
-      }
     }
 
     if (vatAdminDeviceBundle) {
