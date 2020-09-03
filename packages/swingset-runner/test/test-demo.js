@@ -1,10 +1,16 @@
 import test from 'ava';
 import { spawn } from 'child_process';
+import fs from 'fs';
 
-async function innerTest(t, extraFlags) {
+async function innerTest(t, extraFlags, dbdir) {
   await new Promise(resolve => {
+    const appDir = 'demo/encouragementBot';
+    if (dbdir) {
+      dbdir = `${appDir}/${dbdir}`;
+      extraFlags += ` --dbdir ${dbdir}`;
+    }
     const proc = spawn(
-      `node -r esm bin/runner --init ${extraFlags} run demo/encouragementBot`,
+      `node -r esm bin/runner --init ${extraFlags} run ${appDir}`,
       {
         cwd: `${__dirname}/..`,
         shell: true,
@@ -22,6 +28,9 @@ async function innerTest(t, extraFlags) {
       const bMsg = 'bot vat is happy';
       t.not(output.indexOf(`\n${bMsg}\n`), -1, bMsg);
       resolve();
+      if (dbdir) {
+        fs.rmdirSync(dbdir, { recursive: true });
+      }
     });
   });
 }
@@ -31,17 +40,17 @@ test('run encouragmentBot demo with memdb', async t => {
 });
 
 test('run encouragmentBot demo with filedb', async t => {
-  await innerTest(t, '--filedb');
+  await innerTest(t, '--filedb', 'filetest');
 });
 
 test('run encouragmentBot demo with lmdb', async t => {
-  await innerTest(t, '--lmdb');
+  await innerTest(t, '--lmdb', 'lmdbtest');
 });
 
 test('run encouragmentBot demo with default', async t => {
-  await innerTest(t, '');
+  await innerTest(t, '', 'defaulttest');
 });
 
 test('run encouragmentBot demo with indirectly loaded vats', async t => {
-  await innerTest(t, '--indirect');
+  await innerTest(t, '--indirect', 'indirecttest');
 });
