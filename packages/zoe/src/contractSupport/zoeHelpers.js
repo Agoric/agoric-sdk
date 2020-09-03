@@ -113,51 +113,54 @@ export const satisfies = (zcf, seat, update) => {
 };
 
 /** @type {Trade} */
-export const trade = (zcf, keepLeft, tryRight) => {
-  assert(
-    keepLeft.seat !== tryRight.seat,
-    details`an offer cannot trade with itself`,
-  );
-  let leftAllocation = keepLeft.seat.getCurrentAllocation();
-  let rightAllocation = tryRight.seat.getCurrentAllocation();
+export const trade = (
+  zcf,
+  left,
+  right,
+  leftHasExitedMsg,
+  rightHasExitedMsg,
+) => {
+  assert(left.seat !== right.seat, details`a seat cannot trade with itself`);
+  assert(!left.seat.hasExited(), leftHasExitedMsg);
+  assert(!right.seat.hasExited(), rightHasExitedMsg);
+  let leftAllocation = left.seat.getCurrentAllocation();
+  let rightAllocation = right.seat.getCurrentAllocation();
   try {
-    // for all the keywords and amounts in leftGains, transfer from
+    // for all the keywords and amounts in left.gains, transfer from
     // right to left
     ({ from: rightAllocation, to: leftAllocation } = calcNewAllocations(
       zcf,
       { from: rightAllocation, to: leftAllocation },
-      keepLeft.gains,
-      tryRight.losses,
+      left.gains,
+      right.losses,
     ));
-    // For all the keywords and amounts in rightGains, transfer from
+    // For all the keywords and amounts in right.gains, transfer from
     // left to right
     ({ from: leftAllocation, to: rightAllocation } = calcNewAllocations(
       zcf,
       { from: leftAllocation, to: rightAllocation },
-      tryRight.gains,
-      keepLeft.losses,
+      right.gains,
+      left.losses,
     ));
   } catch (err) {
     console.log(err);
-    throw tryRight.seat.kickOut(
-      new Error(
-        `The trade between left ${keepLeft} and right ${tryRight} failed. Please check the log for more information`,
-      ),
+    throw new Error(
+      `The trade between left ${left} and right ${right} failed. Please check the log for more information`,
     );
   }
 
   // Check whether reallocate would error before calling. If
-  // it would error, reject the right offer and return.
-  const offerSafeForLeft = keepLeft.seat.isOfferSafe(leftAllocation);
-  const offerSafeForRight = tryRight.seat.isOfferSafe(rightAllocation);
+  // it would error, log information and throw.
+  const offerSafeForLeft = left.seat.isOfferSafe(leftAllocation);
+  const offerSafeForRight = right.seat.isOfferSafe(rightAllocation);
   if (!(offerSafeForLeft && offerSafeForRight)) {
-    console.log(`currentLeftAllocation`, keepLeft.seat.getCurrentAllocation());
-    console.log(`currentRightAllocation`, tryRight.seat.getCurrentAllocation());
+    console.log(`currentLeftAllocation`, left.seat.getCurrentAllocation());
+    console.log(`currentRightAllocation`, right.seat.getCurrentAllocation());
     console.log(`proposed left reallocation`, leftAllocation);
     console.log(`proposed right reallocation`, rightAllocation);
     // show the constraints
-    console.log(`left want`, keepLeft.seat.getProposal().want);
-    console.log(`right want`, tryRight.seat.getProposal().want);
+    console.log(`left want`, left.seat.getProposal().want);
+    console.log(`right want`, right.seat.getProposal().want);
 
     if (!offerSafeForLeft) {
       console.log(`offer not safe for left`);
@@ -165,64 +168,47 @@ export const trade = (zcf, keepLeft, tryRight) => {
     if (!offerSafeForRight) {
       console.log(`offer not safe for right`);
     }
-    throw tryRight.seat.kickOut(
-      new Error(
-        `The trade between left ${keepLeft} and right ${tryRight} failed offer safety. Please check the log for more information`,
-      ),
+    throw new Error(
+      `The trade between left ${left} and right ${right} failed offer safety. Please check the log for more information`,
     );
   }
 
   return zcf.reallocate(
-    keepLeft.seat.stage(leftAllocation),
-    tryRight.seat.stage(rightAllocation),
+    left.seat.stage(leftAllocation),
+    right.seat.stage(rightAllocation),
   );
 };
 
-/**
- * If the two handles can trade, then swap their compatible assets,
- * marking both offers as complete.
- *
- * The surplus remains with the original offer. For example if
- * offer A gives 5 moola and offer B only wants 3 moola, offer A
- * retains 2 moola.
- *
- * If the keep offer is no longer active (it was already completed), the try
- * offer will be rejected with a message (provided by 'keepHandleInactiveMsg').
- *
- * TODO: If the try offer is no longer active, swap() should terminate with
- * a useful error message.
- *
- * If the swap fails, no assets are transferred, and the 'try' offer is rejected.
- *
- * @param {ContractFacet} zcf
- * @param {ZCFSeat} keepSeat
- * @param {ZCFSeat} trySeat
- * @param {String} [keepHandleInactiveMsg]
- */
+/** @type Swap */
 export const swap = (
   zcf,
-  keepSeat,
-  trySeat,
-  keepHandleInactiveMsg = 'prior offer is unavailable',
+  leftSeat,
+  rightSeat,
+  leftHasExitedMsg = 'the left seat in swap() has exited',
+  rightHasExitedMsg = 'the right seat in swap() has exited',
 ) => {
-  if (keepSeat.hasExited()) {
-    throw trySeat.kickOut(new Error(keepHandleInactiveMsg));
+  try {
+    trade(
+      zcf,
+      {
+        seat: leftSeat,
+        gains: leftSeat.getProposal().want,
+      },
+      {
+        seat: rightSeat,
+        gains: rightSeat.getProposal().want,
+      },
+      leftHasExitedMsg,
+      rightHasExitedMsg,
+    );
+  } catch (err) {
+    leftSeat.kickOut(err);
+    rightSeat.kickOut(err);
+    throw err;
   }
 
-  trade(
-    zcf,
-    {
-      seat: keepSeat,
-      gains: keepSeat.getProposal().want,
-    },
-    {
-      seat: trySeat,
-      gains: trySeat.getProposal().want,
-    },
-  );
-
-  keepSeat.exit();
-  trySeat.exit();
+  leftSeat.exit();
+  rightSeat.exit();
   return defaultAcceptanceMsg;
 };
 

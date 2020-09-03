@@ -13,9 +13,9 @@ import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity';
 import '../../../exported';
 
 /**
- * Autoswap is a rewrite of Uniswap. Please see the documentation for
- * more
- * https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
+ * Multipool Autoswap is a rewrite of Uniswap that supports multiple liquidity
+ * pools, and direct exchanges across pools. Please see the documentation for
+ * more:  https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
  *
  * We expect that this contract will have tens to hundreds of issuers.
  * Each liquidity pool is between the central token and a secondary
@@ -30,9 +30,25 @@ import '../../../exported';
  *
  * When the contract is instantiated, the central token is specified
  * in the terms. Separate invitations are available by calling methods
- * on the publicFacet for adding and removing liquidity, and for
- * making trades. Other publicFacet operations support monitoring
- * prices and the sizes of pools.
+ * on the publicFacet for adding and removing liquidity and for
+ * making trades. Other publicFacet operations support querying
+ * prices and the sizes of pools. New Pools can be created with addPool().
+ *
+ * When making trades or requesting prices, the caller must specify that either
+ * the input price (swapIn, getInputPrice) or the output price (swapOut,
+ * getOutPutPrice) is fixed. For swaps, the required keywords are `In` for the
+ * trader's `give` amount, and `Out` for the trader's `want` amount.
+ * getInputPrice and getOutputPrice each take an Amount for the direction that
+ * is being specified, and just a brand for the desired value, which is returned
+ * as the appropriate amount.
+ *
+ * When adding and removing liquidity, the keywords are Central, Secondary, and
+ * Liquidity. adding liquidity has Central and Secondary in the `give` section,
+ * while removing liquidity has `want` and `give` swapped.
+ *
+ * Transactions that don't require an invitation include addPool, and the
+ * queries: getInputPrice, getOutputPrice, getPoolAllocation,
+ * getLiquidityIssuer, and getLiquiditySupply.
  *
  * @type {ContractStartFn}
  */
@@ -51,6 +67,7 @@ const start = zcf => {
   const isSecondary = secondaryBrandToPool.has;
   const isCentral = brand => brand === centralBrand;
 
+  const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
   const addPool = makeAddPool(zcf, isSecondary, initPool, centralBrand);
   const getPoolAllocation = brand => {
@@ -58,13 +75,15 @@ const start = zcf => {
       .getPoolSeat()
       .getCurrentAllocation();
   };
-  const getCurrentPrice = makeGetCurrentPrice(isSecondary, isCentral, getPool);
-  const makeSwapInvitation = makeMakeSwapInvitation(
-    zcf,
-    isSecondary,
-    isCentral,
-    getPool,
-  );
+
+  const {
+    getOutputForGivenInput,
+    getInputForGivenOutput,
+  } = makeGetCurrentPrice(isSecondary, isCentral, getPool);
+  const {
+    makeSwapInInvitation,
+    makeSwapOutInvitation,
+  } = makeMakeSwapInvitation(zcf, isSecondary, isCentral, getPool);
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
     getPool,
@@ -75,12 +94,17 @@ const start = zcf => {
     getPool,
   );
 
+  /** @type {MultipoolAutoswapPublicFacet} */
   const publicFacet = {
     addPool,
     getPoolAllocation,
     getLiquidityIssuer,
-    getCurrentPrice,
-    makeSwapInvitation,
+    getLiquiditySupply,
+    getInputPrice: getOutputForGivenInput,
+    getOutputPrice: getInputForGivenOutput,
+    makeSwapInvitation: makeSwapInInvitation,
+    makeSwapInInvitation,
+    makeSwapOutInvitation,
     makeAddLiquidityInvitation,
     makeRemoveLiquidityInvitation,
   };

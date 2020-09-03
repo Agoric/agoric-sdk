@@ -183,7 +183,7 @@
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
- * @param {AmountMathKind} amountMathKind
+ * @param {AmountMathKind=} amountMathKind
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The
@@ -217,11 +217,11 @@
 /**
  * @typedef {Object} DepositFacet
  * @property {(payment: Payment, optAmount?: Amount) => Amount} receive
- * Deposit all the contents of payment into the purse that made this facet, returning the
- * amount. If the optional argument `optAmount` does not equal the
+ * Deposit all the contents of payment into the purse that made this facet,
+ * returning the amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
- * If payment is an unresolved promise, throw an error.
+ * If payment is a promise, throw an error.
  */
 
 /**
@@ -238,17 +238,17 @@
  * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
  *
  * @property {() => Amount} getCurrentAmount
- * Get the amount contained in this purse, confirmed by the issuer.
+ * Get the amount contained in this purse.
  *
  * @property {(payment: Payment, optAmount?: Amount) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
  *
- * If payment is an unresolved promise, throw an error.
+ * If payment is a promise, throw an error.
  *
- * @property {() => DepositFacet} makeDepositFacet
- * Create an object whose `deposit` method deposits to the current Purse.
+ * @property {() => DepositFacet} getDepositFacet
+ * Return an object whose `receive` method deposits to the current Purse.
  *
  * @property {(amount: Amount) => Payment} withdraw
  * Withdraw amount from this purse into a new Payment.
