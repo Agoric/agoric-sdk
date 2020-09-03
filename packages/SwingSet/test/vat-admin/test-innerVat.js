@@ -1,7 +1,6 @@
 import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
-import { initSwingStore } from '@agoric/swing-store-simple';
 import bundleSource from '@agoric/bundle-source';
 import { buildVatController, loadBasedir } from '../../src';
 
@@ -11,7 +10,6 @@ function nonBundleFunction(_E) {
 
 async function doTestSetup(mode) {
   const config = await loadBasedir(__dirname);
-  config.hostStorage = initSwingStore().storage;
   const newVatBundle = await bundleSource(path.join(__dirname, 'new-vat.js'));
   const brokenVatBundle = await bundleSource(
     path.join(__dirname, 'broken-vat.js'),
