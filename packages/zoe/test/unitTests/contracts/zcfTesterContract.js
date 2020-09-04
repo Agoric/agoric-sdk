@@ -8,7 +8,7 @@ import '../../../exported';
  */
 const start = zcf => {
   // make the `zcf` available to the tests
-  zcf.setTestJig(() => {});
+  zcf.setTestJig();
   return { };
 };
 

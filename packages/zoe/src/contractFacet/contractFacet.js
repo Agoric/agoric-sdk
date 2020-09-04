@@ -230,8 +230,17 @@ export function buildRootObject(testContext) {
       return zcfMint;
     };
 
-    /** @type SetTestJig */
-    const setTestJig = testFn => {
+    /**
+     * Provide a callback whose return result will be made available
+     * to the test that started this contract. The supplied callback
+     * will only be called in a testing context, never in production.
+     * 
+     * Additionally, when the callback is invoked, the zcf will be 
+     * made available as well.
+     * 
+     * @type SetTestJig 
+     */
+    const setTestJig = (testFn = () => { }) => {
       if (testContext) {
         console.warn("TEST ONLY: capturing test data", testFn);
         testContext.zcf = zcf;
