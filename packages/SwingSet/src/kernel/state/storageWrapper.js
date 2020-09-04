@@ -1,5 +1,6 @@
 /* global harden */
 
+import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../storageAPI';
 
 // We manage a host-realm Storage object with a has/getKeys/get/set/del API.
@@ -46,16 +47,19 @@ export function guardStorage(hostStorage) {
   }
 
   function has(key) {
-    return !!callAndWrapError('has', `${key}`);
+    assert.typeof(key, 'string');
+    return !!callAndWrapError('has', key);
   }
 
   // hostStorage.getKeys returns a host-realm Generator, so we return a
   // kernel-realm wrapper generator that returns the same contents, and guard
   // against the host-realm Generator throwing any new errors as it runs
   function* getKeys(start, end) {
+    assert.typeof(start, 'string');
+    assert.typeof(end, 'string');
     try {
-      for (const key of hostStorage.getKeys(`${start}`, `${end}`)) {
-        yield `${key}`;
+      for (const key of hostStorage.getKeys(start, end)) {
+        yield key;
       }
     } catch (err) {
       console.error(
@@ -69,19 +73,23 @@ export function guardStorage(hostStorage) {
   }
 
   function get(key) {
-    const value = callAndWrapError('get', `${key}`);
+    assert.typeof(key, 'string');
+    const value = callAndWrapError('get', key);
     if (value === undefined) {
       return undefined;
     }
-    return `${value}`;
+    return value;
   }
 
   function set(key, value) {
-    callAndWrapError('set', `${key}`, `${value}`);
+    assert.typeof(key, 'string');
+    assert.typeof(value, 'string');
+    callAndWrapError('set', key, value);
   }
 
   function del(key) {
-    callAndWrapError('delete', `${key}`);
+    assert.typeof(key, 'string');
+    callAndWrapError('delete', key);
   }
 
   return harden({ has, getKeys, get, set, delete: del });
