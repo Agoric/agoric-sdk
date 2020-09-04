@@ -102,7 +102,7 @@
 
 /**
  * @callback SetTestJig
- * @param {() => any} testFn
+ * @param {() => any=() => {}} testFn
  * @returns {void}
  */
 
