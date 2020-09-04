@@ -66,7 +66,7 @@
     "ws": "^7.2.0"
   },
   "devDependencies": {
-    "ava": "3.11.1",
+    "ava": "3.12.1",
     "napi-thread-safe-callback": "0.0.6",
     "node-addon-api": "^1.7.1"
   },
