@@ -88,7 +88,7 @@ export const makeZoeSeatAdminKit = (
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword => E.G(payoutPromiseKit.promise)[keyword],
     getOfferResult: async () => offerResult,
-    hasExited: async () => instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+    hasExited: async () => !instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
     tryExit: async () => E(exitObj).exit(),
     getNotifier: async () => notifier,
   });

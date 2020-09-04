@@ -670,32 +670,27 @@ test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
   });
 });
 
-test.failing(`zcfSeat.hasExited, exit from zcf.makeEmptySeatKit`, async t => {
+test(`zcfSeat.hasExited, exit from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   t.falsy(zcfSeat.hasExited());
   zcfSeat.exit();
   t.truthy(zcfSeat.hasExited());
-  // TODO: remove `failing` after fixing https://github.com/Agoric/agoric-sdk/issues/1729
   t.truthy(await E(userSeat).hasExited());
   t.deepEqual(await E(userSeat).getPayouts(), {});
 });
 
-test.failing(
-  `zcfSeat.hasExited, kickOut from zcf.makeEmptySeatKit`,
-  async t => {
-    const { zcf } = await setupZCFTest();
-    const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-    t.falsy(zcfSeat.hasExited());
-    const msg = `this is the error message`;
-    const err = zcfSeat.kickOut(Error(msg));
-    t.is(err.message, msg);
-    t.truthy(zcfSeat.hasExited());
-    // TODO: remove `failing` after fixing https://github.com/Agoric/agoric-sdk/issues/1729
-    t.truthy(await E(userSeat).hasExited());
-    t.deepEqual(await E(userSeat).getPayouts(), {});
-  },
-);
+test(`zcfSeat.hasExited, kickOut from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  t.falsy(zcfSeat.hasExited());
+  const msg = `this is the error message`;
+  const err = zcfSeat.kickOut(Error(msg));
+  t.is(err.message, msg);
+  t.truthy(zcfSeat.hasExited());
+  t.truthy(await E(userSeat).hasExited());
+  t.deepEqual(await E(userSeat).getPayouts(), {});
+});
 
 test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
