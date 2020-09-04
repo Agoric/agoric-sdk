@@ -9,7 +9,7 @@ import bundleSource from '@agoric/bundle-source';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import fakeVatAdmin from './fakeVatAdmin';
+import fakeVatAdmin from '../contracts/fakeVatAdmin';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 

@@ -33,6 +33,7 @@ const setup = () => {
     bucksIssuer: bucksBundle.issuer,
     bucksMint: bucksBundle.mint,
     bucksR: bucksBundle,
+    bucksKit: bucksBundle,
     amountMaths,
     brands,
     moola: moolaBundle.amountMath.make,
