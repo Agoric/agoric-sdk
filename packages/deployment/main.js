@@ -517,10 +517,6 @@ show-config      display the client connection parameters
 ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 `,
       );
-      if (await exists('/vagrant')) {
-        console.log(`to publish a chain-connected server to your host, do something like:
-"${chalk.yellow.bold(`ve3/bin/ag-setup-solo --webhost=0.0.0.0`)}"`);
-      }
       break;
     }
 
