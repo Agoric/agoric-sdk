@@ -9,13 +9,8 @@ FAKE_CHAIN_DELAY = 0
 NUM_SOLOS?=1
 BASE_PORT?=8000
 
-ifneq ("$(wildcard /vagrant)","")
-# Within a VM.  We need to get to the outside.
-INSPECT_ADDRESS = 0.0.0.0
-else
 # On a host machine.  Stay here.
 INSPECT_ADDRESS = 127.0.0.1
-endif
 
 BREAK_CHAIN = false
 NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229

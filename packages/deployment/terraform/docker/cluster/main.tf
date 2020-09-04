@@ -1,7 +1,7 @@
 resource "docker_container" "cluster" {
   name = "${var.name}-node${var.offset + count.index}"
   count = "${var.servers}"
-  image = "agoric/vagrant-debian:latest"
+  image = "agoric/deployment:latest"
 
   tmpfs {
     "/tmp" = "exec"
