@@ -250,6 +250,24 @@ function duplicateKeeper(getState) {
   return makeKernelKeeper(enhancedCrankBuffer);
 }
 
+test('hostStorage param guards', async t => {
+  const { kstorage, commitCrank } = buildKeeperStorageInMemory();
+  kstorage.set('foo', true);
+  t.throws(commitCrank, { message: /must be a string/ });
+  kstorage.set(true, 'foo');
+  t.throws(commitCrank, { message: /must be a string/ });
+  kstorage.has(true);
+  t.throws(commitCrank, { message: /must be a string/ });
+  kstorage.getKeys('foo', true);
+  t.throws(commitCrank, { message: /must be a string/ });
+  kstorage.getKeys(true, 'foo');
+  t.throws(commitCrank, { message: /must be a string/ });
+  kstorage.get(true);
+  t.throws(commitCrank, { message: /must be a string/ });
+  kstorage.delete(true);
+  t.throws(commitCrank, { message: /must be a string/ });
+});
+
 test('kernel state', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
