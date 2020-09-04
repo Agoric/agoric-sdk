@@ -7,7 +7,8 @@ import '../../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  zcf.setTestJig(() => ({ zcf }));
+  // make the `zcf` available to the tests
+  zcf.setTestJig(() => {});
   return { };
 };
 

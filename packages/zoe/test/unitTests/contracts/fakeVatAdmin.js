@@ -3,9 +3,12 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { evalContractBundle } from '../../../src/contractFacet/evalContractCode';
 
-export const testContext = {};
+// This is explicitly intended to be mutable so that 
+// test-only state can be provided from contracts
+// to their tests.
+const testContext = {};
 
-export default harden({
+const fakeVatAdmin = harden({
   createVat: bundle => {
     return harden({
       root: E(evalContractBundle(bundle)).buildRootObject(testContext),
@@ -25,3 +28,6 @@ export default harden({
     throw Error(`createVatByName not supported in fake mode`);
   },
 });
+
+export default fakeVatAdmin;
+export { fakeVatAdmin, testContext };

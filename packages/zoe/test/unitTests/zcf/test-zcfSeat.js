@@ -33,7 +33,8 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     issuerKeywordRecord,
   );
 
-  // This contract gives ZCF as the contractFacet for testing purposes
+  // The contract uses the tstJig so the contractFacet 
+  // is available here for testing purposes
   /** @type ContractFacet */
   const zcf = testContext.zcf;
 
