@@ -48,13 +48,27 @@ test('metering dynamic vats', async t => {
   await c.run();
   t.deepEqual(nextLog(), ['created'], 'first create');
 
+  // extract the vatID for the newly-created dynamic vat
+  const dynamicVatIDs = JSON.parse(storage.get('vat.dynamicIDs'));
+  t.is(dynamicVatIDs.length, 1);
+  const vatID = dynamicVatIDs[0];
+  // and it's root object, by peeking into its c-list
+  const root = storage.get(`${vatID}.c.o+0`);
+
+  // and grab a kpid that won't be resolved until the vat dies
+  const r = c.queueToVatExport('bootstrap', 'o+0', 'getNever', capargs([]));
+  await c.run();
+  const neverArgs = r.resolution();
+  const neverKPID = neverArgs.slots[0];
+
   // First, send a message to the dynamic vat that runs normally
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
-  t.is(storage.get('vat.dynamicIDs'), '["v6"]');
-  t.is(storage.get('ko26.owner'), 'v6');
-  t.is(Array.from(storage.getKeys('kp45.', 'kp45/')).length, 5);
-  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 9);
+  t.is(JSON.parse(storage.get('vat.dynamicIDs')).length, 1);
+  t.is(storage.get(`${root}.owner`), vatID);
+  t.is(Array.from(storage.getKeys(`${vatID}`, `${vatID}/`)).length, 12);
+  // neverKPID should still be unresolved
+  t.is(storage.get(`${neverKPID}.state`), 'unresolved');
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
 
@@ -64,10 +78,18 @@ test('metering dynamic vats', async t => {
   // from the kernel state store.
   c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs(['allocate']));
   await c.run();
-  t.is(storage.get('vat.dynamicIDs'), '[]');
-  t.is(storage.get('ko26.owner'), undefined);
-  t.is(Array.from(storage.getKeys('kp45.', 'kp45/')).length, 0);
-  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 0);
+  t.is(JSON.parse(storage.get('vat.dynamicIDs')).length, 0);
+  t.is(storage.get(`${root}.owner`), undefined);
+  t.is(Array.from(storage.getKeys(`${vatID}`, `${vatID}/`)).length, 0);
+  // neverKPID should be rejected
+  t.is(storage.get(`${neverKPID}.state`), 'rejected');
+  t.is(
+    storage.get(`${neverKPID}.data.body`),
+    JSON.stringify('Allocate meter exceeded'),
+  );
+  // TODO: the rejection shouldn't reveal the reason, maybe use this instead:
+  // t.is(storage.get(`${neverKPID}.data.body`),
+  //      JSON.stringify('vat terminated'));
 
   t.deepEqual(
     nextLog(),
