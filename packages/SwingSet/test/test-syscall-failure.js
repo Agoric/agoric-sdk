@@ -28,15 +28,17 @@ async function vatSyscallFailure(t, beDynamic) {
   const controller = await buildVatController(config, [], {
     hostStorage: storage,
   });
+  const badVatID = storage.get('vat.name.badvatStatic');
+  const badVatRootObject = storage.get(`${badVatID}.c.o+0`);
   if (!beDynamic) {
     // sanity check that the state of the bad static vat is what we think it is
     t.is(
       storage.get('vat.names'),
       '["vatAdmin","comms","vattp","timer","bootstrap","badvatStatic"]',
     );
-    t.is(storage.get('ko20.owner'), 'v6');
-    t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 6);
-    t.is(storage.get('vat.name.badvatStatic'), 'v6');
+    t.is(storage.get(`${badVatRootObject}.owner`), badVatID);
+    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 6);
+    t.is(storage.get('vat.name.badvatStatic'), badVatID);
   }
   await controller.run();
   if (!beDynamic) {
@@ -46,8 +48,8 @@ async function vatSyscallFailure(t, beDynamic) {
       storage.get('vat.names'),
       '["vatAdmin","comms","vattp","timer","bootstrap"]',
     );
-    t.is(storage.get('ko20.owner'), undefined);
-    t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 0);
+    t.is(storage.get(`${badVatID}.owner`), undefined);
+    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);
     t.is(storage.get('vat.name.badvatStatic'), undefined);
   }
   const log = controller.dump().log;
