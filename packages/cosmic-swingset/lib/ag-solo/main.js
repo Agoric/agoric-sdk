@@ -75,8 +75,7 @@ start
       const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
         default: {
           webport: '8000',
-          // If we're in Vagrant, default to listen on the VM's routable address.
-          webhost: fs.existsSync('/vagrant') ? '0.0.0.0' : '127.0.0.1',
+          webhost: '127.0.0.1',
           egresses: DEFAULT_EGRESSES,
         },
       });

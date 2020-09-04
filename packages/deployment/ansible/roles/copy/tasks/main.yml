@@ -7,12 +7,6 @@
     mode: push
   when: HELPER_BINARY is defined
 
-- name: "Development mode?"
-  delegate_to: localhost
-  stat:
-    path: "/vagrant"
-  register: dev
-
 - name: Agoric SDK exists
   delegate_to: localhost
   stat:
@@ -35,7 +29,7 @@
     - "--exclude=x"
     - "--exclude=t[0-9]*"
     - "--exclude=provisioning-server"
-  when: not dev.stat.exists and not ws.stat.exists
+  when: not ws.stat.exists
 
 - name: Synchronize Agoric SDK
   synchronize:
@@ -51,21 +45,14 @@
   file:
     path: /usr/src/cosmic-swingset
     state: absent
-  when: dev.stat.exists or ws.stat.exists
+  when: ws.stat.exists
 
 - name: Symlink cosmic-swingset
   file:
     src: /usr/src/agoric-sdk/packages/cosmic-swingset
     dest: /usr/src/cosmic-swingset
     state: link
-  when: not dev.stat.exists and ws.stat.exists
-
-- name: "Symlink /vagrant/cosmic-swingset"
-  file:
-    src: /vagrant/packages/cosmic-swingset
-    dest: /usr/src/cosmic-swingset
-    state: link
-  when: dev.stat.exists
+  when: ws.stat.exists
 
 - name: "Symlink /usr/src/app"
   file:
