@@ -194,4 +194,3 @@ test(`zcf.getAmountMath - from issuerKeywordRecord & zcf.saveIssuer`, async t =>
   await zcf.saveIssuer(bucksKit.issuer, 'C');
   compareAmountMath(t, zcf.getAmountMath(bucksKit.brand), bucksKit.amountMath);
 });
-});
