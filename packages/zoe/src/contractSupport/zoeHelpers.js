@@ -257,43 +257,64 @@ export const assertUsesNatMath = (zcf, brand) => {
 };
 
 /**
- * Escrow payments with Zoe and reallocate the amount of the
- * payment to a seat. The `amounts` and `payments` records 
- * must have corresponding keywords.
- * 
+ * Deposit payments such that their amounts are reallocated to a seat.
+ * The `amounts` and `payments` records must have corresponding
+ * keywords.
+ *
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} amounts
  * @param {PaymentKeywordRecord} payments
- * @returns {Promise<undefined>}
+ * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
-export async function escrowAllTo(zcf, recipientSeat, amounts, payments) {
-  assert(!recipientSeat.hasExited(), "An active seat is required");
+export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
+  assert(!recipientSeat.hasExited(), 'The recipientSeat was exited.');
 
-  // We will create a temporary offer to be able to escrow our payment
+  // We will create a temporary offer to be able to escrow our payments
   // with Zoe.
-  function onReceipt(seat) {
-    // When the assets arrive, move them onto the target seat and 
-    // exit. Note that this happens synchronously before the 
-    // the offerResult resolves.
-    trade(zcf,
-      { seat, gains: {} },
-      {
-        seat: recipientSeat,
-        gains: amounts,
-      },
+  function reallocateAfterDeposit(tempSeat) {
+    // After the assets are deposited, reallocate them onto the recipient seat and
+    // exit the temporary seat. Note that the offerResult is the return value of this
+    // function, so this synchronous trade must happen before the
+    // offerResult resolves.
+    trade(
+      zcf,
+      { seat: tempSeat, gains: {} },
+      { seat: recipientSeat, gains: amounts },
     );
-    seat.exit();
+    tempSeat.exit();
+    return `Deposit and reallocation successful.`;
   }
-  const invitation = zcf.makeInvitation(onReceipt, 'escrowAllTo landing place');
+  const invitation = zcf.makeInvitation(
+    reallocateAfterDeposit,
+    'temporary seat for deposit',
+  );
   const proposal = harden({ give: amounts });
   harden(payments);
   // To escrow the payment, we must get the Zoe Service facet and
   // make an offer
   const zoe = zcf.getZoeService();
-  const tempSeat = E(zoe).offer(invitation, proposal, payments);
-  // We aren't expecting anything back, so just return the outcome
-  // so the caller can wait till this completes. It will only
-  // fulfill after the assets have been moved onto thte `recipientSeat`
-  return E(tempSeat).getOfferResult();
+  const tempUserSeat = E(zoe).offer(invitation, proposal, payments);
+  // This will be a promise for the string: `Deposit and reallocation
+  // successful.` It will only fulfill after the assets have been
+  // successfully reallocated to the recipient seat.
+  return E(tempUserSeat).getOfferResult();
+}
+
+/**
+ * Withdraw payments from a seat. Note that withdrawing the amounts of
+ * the payments must not violate offer safety for the seat. The
+ * `amounts` and `payments` records must have corresponding keywords.
+ *
+ * @param {ContractFacet} zcf
+ * @param {ZCFSeat} seat
+ * @param {AmountKeywordRecord} amounts
+ * @returns {Promise<PaymentPKeywordRecord>}
+ */
+export async function withdrawFromSeat(zcf, seat, amounts) {
+  assert(!seat.hasExited(), 'The seat was exited.');
+  const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
+  trade(zcf, { seat: tempSeat, gains: amounts }, { seat, gains: {} });
+  tempSeat.exit();
+  return E(tempUserSeatP).getPayouts();
 }
