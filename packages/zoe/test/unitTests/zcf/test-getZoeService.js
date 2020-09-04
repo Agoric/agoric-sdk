@@ -54,6 +54,19 @@ test(`zcf.getInvitationIssuer`, async t => {
   t.is(zcfInvitationIssuer, zoeInvitationIssuer);
 });
 
+const compareAmountMath = (t, actualMath, expectedMath) => {
+  t.is(actualMath.getAmountMathKind(), expectedMath.getAmountMathKind());
+  t.is(actualMath.getBrand(), expectedMath.getBrand());
+};
+
+const compareAmountMaths = (t, actualMaths, expectedMaths) => {
+  t.deepEqual(Object.keys(actualMaths), Object.keys(expectedMaths));
+  Object.entries(actualMaths).forEach(([keyword, math]) => {
+    const expectedMath = expectedMaths[keyword];
+    compareAmountMath(t, math, expectedMath);
+  });
+};
+
 const testTerms = async (t, expected, issuerKeywordRecord, terms) => {
   const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
   // Note that the amountMath are made locally within Zoe, so they
@@ -63,17 +76,7 @@ const testTerms = async (t, expected, issuerKeywordRecord, terms) => {
   const expectedMinusAmountMath = { ...expected, maths: {} };
   t.deepEqual(zcfTermsMinusAmountMath, expectedMinusAmountMath);
 
-  // Compare amountMaths
-  // Compare amountMath keywords
-  t.deepEqual(Object.keys(zcfTerms.maths), Object.keys(expected.maths));
-
-  // Compare amountMathKind and Brand, which comprehensively determine
-  // amountMath behavior.
-  Object.entries(zcfTerms.maths).forEach(([keyword, math]) => {
-    const expectedMath = expected.maths[keyword];
-    t.is(math.getAmountMathKind(), expectedMath.getAmountMathKind());
-    t.is(math.getBrand(), expectedMath.getBrand());
-  });
+  compareAmountMaths(t, zcfTerms.maths, expected.maths);
 };
 
 test(`zcf.getTerms - empty`, async t => {
@@ -155,17 +158,7 @@ test(`zcf.getTerms & zcf.saveIssuer`, async t => {
   const expectedMinusAmountMath = { ...expected, maths: {} };
   t.deepEqual(zcfTermsMinusAmountMath, expectedMinusAmountMath);
 
-  // Compare amountMaths
-  // Compare amountMath keywords
-  t.deepEqual(Object.keys(zcfTerms.maths), Object.keys(expected.maths));
-
-  // Compare amountMathKind and Brand, which comprehensively determine
-  // amountMath behavior.
-  Object.entries(zcfTerms.maths).forEach(([keyword, math]) => {
-    const expectedMath = expected.maths[keyword];
-    t.is(math.getAmountMathKind(), expectedMath.getAmountMathKind());
-    t.is(math.getBrand(), expectedMath.getBrand());
-  });
+  compareAmountMaths(t, zcfTerms.maths, expected.maths);
 });
 
 test(`zcf.getBrandForIssuer - from issuerKeywordRecord & zcf.saveIssuer`, async t => {
@@ -192,8 +185,13 @@ test(`zcf.getAmountMath - from issuerKeywordRecord & zcf.saveIssuer`, async t =>
   const { moolaKit, simoleanKit, bucksKit } = setup();
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
   const { zcf } = await setupZCFTest(issuerKeywordRecord);
-  t.is(zcf.getAmountMath(moolaKit.brand), moolaKit.amountMath);
-  t.is(zcf.getAmountMath(simoleanKit.brand), simoleanKit.amountMath);
+  compareAmountMath(t, zcf.getAmountMath(moolaKit.brand), moolaKit.amountMath);
+  compareAmountMath(
+    t,
+    zcf.getAmountMath(simoleanKit.brand),
+    simoleanKit.amountMath,
+  );
   await zcf.saveIssuer(bucksKit.issuer, 'C');
-  t.is(zcf.getAmountMath(bucksKit.brand), bucksKit.amountMath);
+  compareAmountMath(t, zcf.getAmountMath(bucksKit.brand), bucksKit.amountMath);
+});
 });
