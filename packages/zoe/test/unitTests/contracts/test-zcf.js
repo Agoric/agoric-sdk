@@ -9,7 +9,7 @@ import bundleSource from '@agoric/bundle-source';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import fakeVatAdmin, { testContext } from './fakeVatAdmin';
+import { fakeVatAdmin, testContext } from './fakeVatAdmin';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
@@ -33,7 +33,8 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     issuerKeywordRecord,
   );
 
-  // This contract gives ZCF as the contractFacet for testing purposes
+  // The contract uses the tstJig so the contractFacet 
+  // is available here for testing purposes
   /** @type ContractFacet */
   const zcf = testContext.zcf;
 
