@@ -8,9 +8,9 @@
  * @param {ContractFacet} zcf
  * @param {SeatGainsLossesRecord} left
  * @param {SeatGainsLossesRecord} right
- * @param {String} [leftHasExitedMsg] A custom error message if
+ * @param {string} [leftHasExitedMsg] A custom error message if
  * the left seat has been exited already
- * @param {String} [rightHasExitedMsg] A custom error message if the
+ * @param {string} [rightHasExitedMsg] A custom error message if the
  * right seat has been exited already
  * @returns {void}
  *
@@ -45,7 +45,7 @@
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} leftSeat
  * @param {ZCFSeat} rightSeat
- * @param {String} [leftHasExitedMsg]
- * @param {String} [rightHasExitedMsg]
+ * @param {string} [leftHasExitedMsg]
+ * @param {string} [rightHasExitedMsg]
  * @returns {string}
  */

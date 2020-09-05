@@ -39,7 +39,7 @@ const setupZCFTest = async (issuerKeywordRecord, terms) => {
 //  * @property {MakeInvitation} makeInvitation
 //  * @property {() => void} shutdown
 //  * @property {MakeZCFMint} makeZCFMint
-//  * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
+//  * @property {<Deadline>(exit?: ExitRule<Deadline>) => ZcfSeatKit} makeEmptySeatKit
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
