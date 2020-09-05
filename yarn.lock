@@ -39,6 +39,11 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
+"@agoric/polycrc@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@agoric/polycrc/-/polycrc-0.1.1.tgz#acd868265db960c17926ac608434634851edbcbf"
+  integrity sha512-3wYc/67b3to++DtwM9DXRaETps/lxI/XJjPnExo/uiQwZEAbo3Hi0MG3t/ogtHBsrCPbvqOosYAP1/G22qvsCw==
+
 "@agoric/transform-module@^0.3.0":
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/@agoric/transform-module/-/transform-module-0.3.0.tgz#da0c4ba3b200e270db32ac5d8a56d4f5c955b89d"

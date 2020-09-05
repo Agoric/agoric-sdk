@@ -32,6 +32,7 @@
     "@agoric/marshal": "^0.2.4",
     "@agoric/nat": "2.0.1",
     "@agoric/notifier": "^0.2.0",
+    "@agoric/polycrc": "^0.1.1",
     "@agoric/promise-kit": "^0.1.4",
     "@agoric/registrar": "^0.1.4",
     "@agoric/same-structure": "^0.0.9",
