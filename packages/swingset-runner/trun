@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Run each demo in the demo directory
+#
+# If a demo has a swingset config file, use that, else use the default config
+# loader.  If it has more than one config file, run each one in turn.
+#
+# If a demo directory contains a file `sampleArgs`, do a run for each line of
+# the file, applying the contents of each line in turn as the buildRootObject
+# vatParameters.argv value, else just run the demo once.
+
+shopt -s nullglob
+
+# output timing data in a usable format
+export TIMEFORMAT='%Uu %Ss %R'
+
+# Process command line args
+# --time runs the runner with the Unix `time` command
+# --dump applies the runner --dump flag but ensures per-run dump files
+# --dryrun outputs the commands but doesn't actually execute them
+# all other args are passed to the runner
+for arg in "$@"; do
+  case $arg in
+    --time)
+      dotime=1
+      ;;
+    --dump)
+      dodump=1
+      ;;
+    --dryrun)
+      dryrun=1
+      ;;
+    *)
+      arglist="$arglist $arg"
+      ;;
+  esac
+done
+
+runct=1
+function runone {
+  cmd="bin/runner"
+  if [ $dryrun ]; then
+    cmd="echo ${cmd}"
+  fi
+  cmdargs=$arglist
+  if [ $dodump ]; then
+    cmdargs="$cmdargs --dump --dumptag t${runct}-"
+  fi
+  cmdline="$cmd $cmdargs $@"
+  echo "$cmdline"
+  if [ $dotime ]; then
+    time $cmdline > rlog-${runct}
+  else
+    $cmdline > rlog-${runct}
+  fi
+  ((runct=runct+1))
+}
+
+function rundemo {
+  dir=$1
+  target=$2
+
+  if [ -f "${dir}/sampleArgs" ]; then
+    while read line; do
+      runone $target "-- ${line}"
+    done < ${dir}/sampleArgs
+  else
+    runone $target
+  fi
+}
+
+for demo in demo/*; do
+  hadconf=0
+  for conf in ${demo}/*.json; do
+    rundemo $demo "--config $conf run"
+    hadconf=1
+  done
+  if [ "$hadconf" == "0" ]; then
+    rundemo $demo "run $demo"
+  fi
+done
