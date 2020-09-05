@@ -26,7 +26,7 @@
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
- * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
+ * @property {(exit?: ExitRule) => ZcfSeatKit} makeEmptySeatKit
  */
 
 /**
@@ -96,7 +96,7 @@
  * @callback MakeZCFMint
  * @param {Keyword} keyword
  * @param {AmountMathKind=} amountMathKind
- * @returns {ZCFMint}
+ * @returns {Promise<ZCFMint>}
  */
 
 /**

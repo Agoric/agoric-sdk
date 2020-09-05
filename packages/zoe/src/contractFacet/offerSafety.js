@@ -5,7 +5,7 @@
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?
  * @param {(brand: Brand) => AmountMath} getAmountMath
- * @param {ProposalRecord["give"] | ProposalRecord["want"]} giveOrWant
+ * @param {AmountKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
  */
 const satisfiesInternal = (getAmountMath, giveOrWant = {}, allocation) => {

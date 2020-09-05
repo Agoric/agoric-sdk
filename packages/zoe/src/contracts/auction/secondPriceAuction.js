@@ -42,7 +42,6 @@ const start = zcf => {
   // seller will use 'Asset' and 'Ask'. buyer will use 'Asset' and 'Bid'
   assertIssuerKeywords(zcf, harden(['Asset', 'Ask']));
 
-  /** @type {Timer} */
   E(timerAuthority)
     .setWakeup(
       closesAfter,

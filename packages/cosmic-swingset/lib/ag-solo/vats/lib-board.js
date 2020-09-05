@@ -1,14 +1,29 @@
+// @ts-check
 /* global harden */
 
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 
+/**
+ * @typedef {Object} Board
+ * @property {(id: string) => any} getValue
+ * @property {(value: any) => string} getId
+ * @property {(value: any) => boolean} has
+ * @property {() => string[]} ids```
+ */
+
+/**
+ * Create a board to post things on.
+ * @param {number} [seed=0]
+ * @returns {Board}
+ */
 function makeBoard(seed = 0) {
   const idToVal = makeStore('boardId');
   const valToId = makeStore('value');
   const sparseInts = generateSparseInts(seed);
 
+  /** @type {Board} */
   const board = harden({
     // Add if not already present
     getId: value => {
@@ -37,5 +52,3 @@ function makeBoard(seed = 0) {
 }
 
 export { makeBoard };
-
-/** @typedef {ReturnType<typeof makeBoard>} Board */

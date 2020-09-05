@@ -92,7 +92,7 @@
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
- * @property {() => PublicFacet} getPublicFacet
+ * @property {() => Object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
@@ -234,9 +234,4 @@
  * kills the vat in which the contract is running
  * @property {() => Object} adminData
  * provides some statistics about the vat in which the contract is running.
- */
-
-/**
- * @template T
- * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
  */

@@ -214,9 +214,9 @@ export const swap = (
 
 /**
  * @typedef ExpectedRecord
- * @property {Record<keyof ProposalRecord['give'],null>} [want]
- * @property {Record<keyof ProposalRecord['want'],null>} [give]
- * @property {Partial<Record<keyof ProposalRecord['exit'],null>>} [exit]
+ * @property {Record<Keyword, null>} [want]
+ * @property {Record<Keyword, null>} [give]
+ * @property {Record<keyof ProposalRecord['exit'], null>} [exit]
  */
 
 /**

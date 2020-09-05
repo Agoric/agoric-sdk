@@ -37,7 +37,7 @@
  * @property {Issuer} issuer
  * @property {AmountMath} amountMath
  *
- * @typedef {Record<Keyword,Amount>} Allocation
+ * @typedef {AmountKeywordRecord} Allocation
  * @typedef {Record<Keyword,AmountMath>} AmountMathKeywordRecord
  */
 

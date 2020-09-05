@@ -56,7 +56,7 @@ The type of the ZCFSeat is:
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(msg: string=) => never} kickOut
+ * @property {(msg?: string) => never} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
