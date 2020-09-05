@@ -6,7 +6,8 @@
 import { Remotable, makeMarshal, QCLASS } from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
-import { objectMap } from '@agoric/zoe/src/objArrayConversion';
+
+import { makeMembrane } from './membrane';
 
 export { E };
 
@@ -383,38 +384,6 @@ export function makeLoopback(ourId, bootstrap) {
   const slotToVal = new Map();
   const syncValToSlot = new WeakMap();
 
-  // This modifier helps synchronous arguments pass through transparently.
-  // TODO: Make a transparent proxy instead.
-  const sync = x => {
-    if (Object(x) !== x) {
-      // Primitive.
-      return x;
-    }
-    if (syncValToSlot.has(x)) {
-      // Already sync.
-      return x;
-    }
-    lastSlot += 1;
-    slotToVal.set(`S+${lastSlot}`, x);
-    syncValToSlot.set(x, `S-${lastSlot}`);
-    const newDescs = {};
-    for (const [prop, desc] of Object.entries(
-      Object.getOwnPropertyDescriptors(x),
-    )) {
-      const newDesc = {};
-      for (const [key, val] of Object.entries(desc)) {
-        if (typeof val === 'function') {
-          newDesc[key] = (...args) => sync(val(...args));
-        } else {
-          newDesc[key] = sync(val);
-        }
-      }
-      newDescs[prop] = newDesc;
-    }
-    Object.defineProperties(x, newDescs);
-    return x;
-  };
-
   let remoteDispatch;
   const {
     dispatch: localDispatch,
@@ -428,6 +397,17 @@ export function makeLoopback(ourId, bootstrap) {
     bootstrap,
   );
   remoteDispatch = dispatch;
+
+  const sync = target =>
+    harden(
+      makeMembrane(target, (xNear, xFar) => {
+        // These lines cause captp to wormhole our target through the async layer.
+        // console.log('have near', xNear, xFar);
+        lastSlot += 1;
+        slotToVal.set(`S+${lastSlot}`, xNear);
+        syncValToSlot.set(xFar, `S-${lastSlot}`);
+      }),
+    );
 
   return { bootstrap: remoteBootstrap(), sync };
 }

@@ -26,7 +26,7 @@ test('try loopback captp', async t => {
     'dean',
     harden({
       promise: pr.p,
-      syncAccess: { ...syncAccess },
+      syncAccess,
       encourager: {
         encourage(name) {
           const bang = new Promise(resolve => {
@@ -47,7 +47,7 @@ test('try loopback captp', async t => {
   );
 
   // Mark syncAccess as synchronous.
-  sync(syncAccess);
+  const sa = sync(syncAccess);
 
   const { comment, bang } = await E(E.G(rightRef).encourager).encourage(
     'buddy',
@@ -71,9 +71,9 @@ test('try loopback captp', async t => {
   );
   t.not(syncAccess.checkHandle(asyncHandle), 'async handle fails out of band');
 
-  const oobHandle = syncAccess.getHandle();
+  const oobHandle = sa.getHandle();
   t.assert(
-    syncAccess.checkHandle(oobHandle),
+    sa.checkHandle(oobHandle),
     'out-of-band handle succeeds out-of-band',
   );
   t.assert(
