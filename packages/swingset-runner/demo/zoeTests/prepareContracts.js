@@ -6,7 +6,10 @@ const CONTRACT_FILES = [
   'automaticRefund',
   'autoswap',
   'coveredCall',
-  'secondPriceAuction',
+  {
+    contractPath: 'auction/secondPriceAuction',
+    bundleName: 'secondPriceAuction',
+  },
   'atomicSwap',
   'simpleExchange',
   'sellItems',
@@ -14,14 +17,20 @@ const CONTRACT_FILES = [
 ];
 
 const generateBundlesP = Promise.all(
-  CONTRACT_FILES.map(async contract => {
-    const contractPath = require.resolve(
-      `@agoric/zoe/src/contracts/${contract}`,
-    );
-    const bundle = await bundleSource(contractPath);
-    const obj = { bundle, contract };
+  CONTRACT_FILES.map(async settings => {
+    let bundleName;
+    let contractPath;
+    if (typeof settings === 'string') {
+      bundleName = settings;
+      contractPath = settings;
+    } else {
+      ({ bundleName, contractPath } = settings);
+    }
+    const source = require.resolve(`@agoric/zoe/src/contracts/${contractPath}`);
+    const bundle = await bundleSource(source);
+    const obj = { bundle, bundleName };
     fs.writeFileSync(
-      `${__dirname}/bundle-${contract}.js`,
+      `${__dirname}/bundle-${bundleName}.js`,
       `export default ${JSON.stringify(obj)};`,
     );
   }),

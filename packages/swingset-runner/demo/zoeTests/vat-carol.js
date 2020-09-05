@@ -12,12 +12,13 @@ const build = async (log, zoe, issuers, payments, installations) => {
   const [moolaIssuer, simoleanIssuer] = issuers;
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
+  let secondPriceAuctionSeatP;
+
   return harden({
-    doSecondPriceAuction: async invitationP => {
+    doSecondPriceAuctionBid: async invitationP => {
       const invitation = await E(invitationIssuer).claim(invitationP);
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const terms = await E(zoe).getTerms(instance);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         invitation,
@@ -34,7 +35,6 @@ const build = async (log, zoe, issuers, payments, installations) => {
         ),
         details`issuerKeywordRecord were not as expected`,
       );
-      assert(terms.numBidsAllowed === 3, details`terms not as expected`);
       assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
       assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
 
@@ -45,16 +45,17 @@ const build = async (log, zoe, issuers, payments, installations) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const seatP = await E(zoe).offer(
+      secondPriceAuctionSeatP = await E(zoe).offer(
         invitation,
         proposal,
         paymentKeywordRecord,
       );
 
-      log(`Carol: ${await E(seatP).getOfferResult()}`);
-
-      const moolaPayout = await E(seatP).getPayout('Asset');
-      const simoleanPayout = await E(seatP).getPayout('Bid');
+      log(`Carol: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
+    },
+    doSecondPriceAuctionGetPayout: async () => {
+      const moolaPayout = await E(secondPriceAuctionSeatP).getPayout('Asset');
+      const simoleanPayout = await E(secondPriceAuctionSeatP).getPayout('Bid');
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);
