@@ -1,18 +1,13 @@
 /* global harden */
-export const makeMembrane = (
-  rootBlue,
-  resultBlue = x => x,
-  resultYellow = x => x,
-) => {
+const DEFAULT_RESULT = (_xNear, _xFar) => {};
+
+export const makeMembrane = (rootBlue, opts = {}) => {
+  const { resultBlue = DEFAULT_RESULT, resultYellow = DEFAULT_RESULT } = opts;
+
   const blueToYellow = new WeakMap();
   const yellowToBlue = new WeakMap();
 
-  const makePass = (
-    nearToFar,
-    farToNear,
-    inverseName,
-    result = (_xNear, _xFar) => {},
-  ) => {
+  const makePass = (nearToFar, farToNear, inverseName, result) => {
     return function passNearToFar(xNear) {
       if (Object(xNear) !== xNear) {
         return xNear;
@@ -44,39 +39,50 @@ export const makeMembrane = (
         xFar = {};
       }
 
-      // Object.setPrototypeOf(xFar, null);
       nearToFar.set(xNear, xFar);
       farToNear.set(xFar, xNear);
 
-      const xDescs = Object.getOwnPropertyDescriptors(xNear);
-      const xProto = Object.getPrototypeOf(xNear);
-      const xFarProto = passNearToFar(xProto);
-      // Object.setPrototypeOf(xFar, xFarProto);
+      const xDescsNear = Object.getOwnPropertyDescriptors(xNear);
+      const xProtoNear = Object.getPrototypeOf(xNear);
+      const xProtoFar = passNearToFar(xProtoNear);
 
-      const nearToFarMapper = ([name, vNearDesc]) => {
-        if ('value' in vNearDesc) {
-          const vFarDesc = {
-            ...vNearDesc,
-            value: passNearToFar(vNearDesc.value),
+      xProtoFar; // Silence unused warning.
+      /* Object.setPrototypeOf(xFar, xProtoFar); */
+      // FIXME: If above is uncommented, fails with:
+      // TypeError {
+      //   message: 'a prototype of something is not already in the fringeset (and .toString failed)',
+      // }
+
+      const nearToFarMapper = ([name, vDescNear]) => {
+        if ('value' in vDescNear) {
+          const vDescFar = {
+            ...vDescNear,
+            value: passNearToFar(vDescNear.value),
           };
-          return [name, vFarDesc];
+          return [name, vDescFar];
         }
         const vFarDesc = {
-          ...vNearDesc,
-          get: passNearToFar(vNearDesc.get),
-          set: passNearToFar(vNearDesc.set),
+          ...vDescNear,
+          get: passNearToFar(vDescNear.get),
+          set: passNearToFar(vDescNear.set),
         };
         return [name, vFarDesc];
       };
 
-      Object.entries(xDescs)
+      Object.entries(xDescsNear)
         .map(nearToFarMapper)
         .forEach(([name, descFar]) => {
           try {
             Object.defineProperty(xFar, name, descFar);
           } catch (e) {
-            /* console.log(xNear, xDescs);
-            throw e; */
+            /*
+            console.log(xNear, xDescsNear);
+            throw e;
+            */
+            // FIXME: If above is uncommented, fails with:
+            // TypeError {
+            //   message: 'Cannot redefine property: name',
+            // }
           }
         });
 

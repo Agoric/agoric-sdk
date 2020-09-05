@@ -372,14 +372,14 @@ const makeCapTPMaker = (syncValToSlot = new WeakMap(), slotToVal = new Map()) =>
   };
 
 /**
- * Create an async-isolated channel to the bootstrap object.
+ * Create an async-isolated channel to an object.
  *
  * @template T
  * @param {string} ourId
- * @param {T} bootstrap
- * @returns {{ bootstrap: Promise<T>, }
+ * @param {T} obj
+ * @returns {{ objFar: ERef<T>, makeNear<T>(x: T): T }}
  */
-export function makeLoopback(ourId, bootstrap) {
+export function makeFar(ourId, obj) {
   let lastSlot = 0;
   const slotToVal = new Map();
   const syncValToSlot = new WeakMap();
@@ -388,28 +388,28 @@ export function makeLoopback(ourId, bootstrap) {
   const {
     dispatch: localDispatch,
     getBootstrap: remoteBootstrap,
-  } = makeCapTPMaker(syncValToSlot)(`local-${ourId}`, obj =>
-    remoteDispatch(obj),
-  );
+  } = makeCapTPMaker(syncValToSlot)(`local-${ourId}`, o => remoteDispatch(o));
   const { dispatch } = makeCapTPMaker(undefined, slotToVal)(
     `remote-${ourId}`,
     localDispatch,
-    bootstrap,
+    obj,
   );
   remoteDispatch = dispatch;
 
-  const sync = target =>
+  const makeNear = target =>
     harden(
-      makeMembrane(target, (xNear, xFar) => {
-        // These lines cause captp to wormhole our target through the async layer.
-        // console.log('have near', xNear, xFar);
-        lastSlot += 1;
-        slotToVal.set(`S+${lastSlot}`, xNear);
-        syncValToSlot.set(xFar, `S-${lastSlot}`);
+      makeMembrane(target, {
+        resultBlue(xNear, xFar) {
+          // These lines cause captp to wormhole our target through the async layer.
+          // console.log('have near', xNear, xFar);
+          lastSlot += 1;
+          slotToVal.set(`S+${lastSlot}`, xNear);
+          syncValToSlot.set(xFar, `S-${lastSlot}`);
+        },
       }),
     );
 
-  return { bootstrap: remoteBootstrap(), sync };
+  return { objFar: remoteBootstrap(), makeNear };
 }
 
 /**

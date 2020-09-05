@@ -2,7 +2,7 @@
 
 import '@agoric/install-ses';
 import test from 'ava';
-import { E, makeLoopback } from '../lib/captp';
+import { E, makeFar } from '../lib/captp';
 
 test('try loopback captp', async t => {
   const pr = {};
@@ -22,7 +22,7 @@ test('try loopback captp', async t => {
     },
   };
 
-  const { bootstrap: rightRef, sync } = makeLoopback(
+  const { objFar: rightRef, makeNear } = makeFar(
     'dean',
     harden({
       promise: pr.p,
@@ -47,7 +47,7 @@ test('try loopback captp', async t => {
   );
 
   // Mark syncAccess as synchronous.
-  const sa = sync(syncAccess);
+  const sa = makeNear(syncAccess);
 
   const { comment, bang } = await E(E.G(rightRef).encourager).encourage(
     'buddy',

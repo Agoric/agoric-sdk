@@ -2,10 +2,10 @@
 
 import '@agoric/install-ses';
 import test from 'ava';
-import { makeLoopback, E } from '../lib/captp';
+import { makeFar, E } from '../lib/captp';
 
 test('prevent crosstalk', async t => {
-  const { bootstrap: rightRef } = makeLoopback(
+  const { objFar: rightRef } = makeFar(
     'alice',
     harden({
       isSide(objP, side) {
