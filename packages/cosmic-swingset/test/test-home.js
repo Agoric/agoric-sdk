@@ -32,8 +32,8 @@ test.serial('home.registry', async t => {
 
 test.serial('home.board', async t => {
   const { board } = E.G(home);
-  t.throwsAsync(
-    () => E(board).getValue('0000000000'),
+  await t.throwsAsync(
+    () => E(board).getValue('148'),
     { message: /board does not have id/ },
     `getting a value for a fake id throws`,
   );

@@ -2,7 +2,7 @@
 /* global harden */
 
 import { generateSparseInts } from '@agoric/sparse-ints';
-import { assert, details } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import polycrc from '@agoric/polycrc';
 
