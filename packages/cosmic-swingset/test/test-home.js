@@ -37,6 +37,11 @@ test.serial('home.board', async t => {
     { message: /board does not have id/ },
     `getting a value for a fake id throws`,
   );
+  await t.throwsAsync(
+    () => E(board).getValue('0000000000'),
+    { message: /id is probably a typo/ },
+    `using a non-verified id throws`,
+  );
 
   const myValue = {};
   const myId = await E(board).getId(myValue);

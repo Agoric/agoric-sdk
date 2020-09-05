@@ -4,12 +4,12 @@
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
-import polycrc from '@agoric/polycrc';
+import polycrc from 'polycrc';
 
 const { crc6 } = polycrc;
 
 const CRC_NUM_DIGITS = 2;
-const ID_REGEXP = new RegExp(`^[1-9][0-9]{${CRC_NUM_DIGITS},}$`);
+const ID_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);
 
 /**
  * We calculate a CRC, ensuring it's of CRC_NUM_DIGITS length.
@@ -54,7 +54,7 @@ function makeBoard(seed = 0) {
         let id;
         do {
           const num = sparseInts.next().value;
-          id = `${num.toString()}${calcCrc(num)}`;
+          id = `${num}${calcCrc(num)}`;
         } while (idToVal.has(id));
 
         valToId.init(value, id);
