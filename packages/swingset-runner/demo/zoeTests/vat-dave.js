@@ -19,8 +19,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
+  let secondPriceAuctionSeatP;
+
   return harden({
-    doSecondPriceAuction: async invitation => {
+    doSecondPriceAuctionBid: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
@@ -40,8 +42,6 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         details`issuerKeywordRecord were not as expected`,
       );
-      const terms = await E(zoe).getTerms(instance);
-      assert(terms.numBidsAllowed === 3, details`terms not as expected`);
       assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
       assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
 
@@ -52,16 +52,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const seatP = await E(zoe).offer(
+      secondPriceAuctionSeatP = await E(zoe).offer(
         exclInvitation,
         proposal,
         paymentKeywordRecord,
       );
-
-      log(`Dave: ${await E(seatP).getOfferResult()}`);
-
-      const moolaPayout = await E(seatP).getPayout('Asset');
-      const simoleanPayout = await E(seatP).getPayout('Bid');
+      log(`Dave: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
+    },
+    doSecondPriceAuctionGetPayout: async () => {
+      const moolaPayout = await E(secondPriceAuctionSeatP).getPayout('Asset');
+      const simoleanPayout = await E(secondPriceAuctionSeatP).getPayout('Bid');
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);
@@ -87,8 +87,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         details`source bundle didn't match at "asset: give.Asset,"`,
       );
       assert(
-        source.includes('firstProposalExpected'),
-        details`source bundle didn't match at "firstProposalExpected"`,
+        source.includes('swap(zcf, firstSeat, matchingSeat)'),
+        details`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
       );
       assert(
         source.includes('makeMatchingInvitation'),

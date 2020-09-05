@@ -124,12 +124,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   };
 
   const doSecondPriceAuction = async (bobP, carolP, daveP) => {
-    const numBidsAllowed = 3;
     const issuerKeywordRecord = harden({
       Asset: moolaIssuer,
       Ask: simoleanIssuer,
     });
-    const terms = harden({ numBidsAllowed });
+    const now = await E(timer).getCurrentTimestamp();
+    const terms = harden({ timerAuthority: timer, closesAfter: now + 1 });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
     ).startInstance(
@@ -141,7 +141,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const proposal = harden({
       give: { Asset: moola(1) },
       want: { Ask: simoleans(3) },
-      exit: { onDemand: null },
+      exit: { waived: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
     const aliceSeatP = await E(zoe).offer(
@@ -155,11 +155,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const carolInvitation = E(makeBidInvitationObj).makeBidInvitation();
     const daveInvitation = E(makeBidInvitationObj).makeBidInvitation();
 
-    const bobDoneP = E(bobP).doSecondPriceAuction(bobInvitation);
-    const carolDoneP = E(carolP).doSecondPriceAuction(carolInvitation);
-    const daveDoneP = E(daveP).doSecondPriceAuction(daveInvitation);
+    const bobBidDoneP = E(bobP).doSecondPriceAuctionBid(bobInvitation);
+    const carolBidDoneP = E(carolP).doSecondPriceAuctionBid(carolInvitation);
+    const daveBidDoneP = E(daveP).doSecondPriceAuctionBid(daveInvitation);
 
-    await Promise.all([bobDoneP, carolDoneP, daveDoneP]);
+    await Promise.all([bobBidDoneP, carolBidDoneP, daveBidDoneP]);
+    await E(timer).tick();
+
+    const bobCollectDoneP = E(bobP).doSecondPriceAuctionGetPayout();
+    const carolCollectDoneP = E(carolP).doSecondPriceAuctionGetPayout();
+    const daveCollectDoneP = E(daveP).doSecondPriceAuctionGetPayout();
+    await Promise.all([bobCollectDoneP, carolCollectDoneP, daveCollectDoneP]);
 
     const moolaPayout = await E(aliceSeatP).getPayout('Asset');
     const simoleanPayout = await E(aliceSeatP).getPayout('Ask');
@@ -298,8 +304,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
   const doAutoswap = async bobP => {
     const issuerKeywordRecord = harden({
-      TokenA: moolaIssuer,
-      TokenB: simoleanIssuer,
+      Central: moolaIssuer,
+      Secondary: simoleanIssuer,
     });
     const { publicFacet, instance } = await E(zoe).startInstance(
       installations.autoswap,
@@ -313,12 +319,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
     const addLiquidityProposal = harden({
-      give: { TokenA: moola(10), TokenB: simoleans(5) },
+      give: { Central: moola(10), Secondary: simoleans(5) },
       want: { Liquidity: liquidity(10) },
     });
     const paymentKeywordRecord = harden({
-      TokenA: moolaPayment,
-      TokenB: simoleanPayment,
+      Central: moolaPayment,
+      Secondary: simoleanPayment,
     });
     const addLiquidityInvitation = E(publicFacet).makeAddLiquidityInvitation();
     const addLiqSeatP = await E(zoe).offer(
@@ -339,7 +345,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     // remove the liquidity
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
-      want: { TokenA: moola(0), TokenB: simoleans(0) },
+      want: { Central: moola(0), Secondary: simoleans(0) },
     });
 
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
@@ -357,8 +363,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     log(await E(removeLiquiditySeatP).getOfferResult());
 
-    const moolaPayout = await E(removeLiquiditySeatP).getPayout('TokenA');
-    const simoleanPayout = await E(removeLiquiditySeatP).getPayout('TokenB');
+    const moolaPayout = await E(removeLiquiditySeatP).getPayout('Central');
+    const simoleanPayout = await E(removeLiquiditySeatP).getPayout('Secondary');
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);

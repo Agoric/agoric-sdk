@@ -17,6 +17,7 @@ export function buildRootObject() {
       await E(dude.root).elsewhere(self); // this will notify
       console.log(`expected notify sent`);
       const p = E(dude.root).elsewhere(self); // this will not
+      p.catch(() => {}); // just shut up already
 
       await E(dude.adminNode).terminate();
       p.then(
