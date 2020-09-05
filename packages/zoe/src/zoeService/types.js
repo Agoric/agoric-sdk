@@ -92,7 +92,7 @@
  *
  * @param {ERef<Invitation>} invitation
  * @param {Proposal=} proposal
- * @param {PaymentKeywordRecord=} paymentKeywordRecord
+ * @param {PaymentPKeywordRecord=} paymentKeywordRecord
  * @returns {Promise<UserSeat>} seat
  */
 
@@ -181,7 +181,7 @@
  */
 
 /**
- * @typedef {Record<Keyword,Promise<Payment>>} PaymentPKeywordRecord
+ * @typedef {Record<Keyword,ERef<Payment>>} PaymentPKeywordRecord
  * @typedef {Record<Keyword,Payment>} PaymentKeywordRecord
  */
 

@@ -380,7 +380,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             // cleaned proposal's amount that should be the same.
             const giveAmount = proposal.give[keyword];
             const purse = brandToPurse.get(giveAmount.brand);
-            return E(purse).deposit(paymentKeywordRecord[keyword], giveAmount);
+            return E.when(paymentKeywordRecord[keyword], payment =>
+              E(purse).deposit(payment, giveAmount),
+            );
             // eslint-disable-next-line no-else-return
           } else {
             // payments outside the give: clause are ignored.
