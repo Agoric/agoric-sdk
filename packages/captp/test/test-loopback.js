@@ -58,18 +58,20 @@ test('try loopback captp', async t => {
   t.is(await E.G(rightRef).promise, 'resolution', 'get resolution');
 
   const asyncAccess = E.G(rightRef).syncAccess;
-  t.not(
+  t.is(
     await E(asyncAccess).checkHandle(syncHandle),
+    false,
     'sync handle fails inband',
   );
 
   const asyncHandle = await E(asyncAccess).getHandle();
   // console.log('handle', ibHandle);
-  t.assert(
+  t.is(
     await E(asyncAccess).checkHandle(asyncHandle),
-    'async handle check succeeds inband',
+    true,
+    'async handle succeeds inband',
   );
-  t.not(syncAccess.checkHandle(asyncHandle), 'async handle fails out of band');
+  t.assert(sa.checkHandle(asyncHandle), 'async handle succeeds out of band');
 
   const oobHandle = sa.getHandle();
   t.assert(
@@ -78,6 +80,6 @@ test('try loopback captp', async t => {
   );
   t.assert(
     await E(asyncAccess).checkHandle(oobHandle),
-    'out-of-band handle check succeeds inband',
+    'out-of-band handle succeeds inband',
   );
 });

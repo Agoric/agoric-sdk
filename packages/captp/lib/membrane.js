@@ -1,14 +1,28 @@
 /* global harden */
-const DEFAULT_RESULT = (_xNear, _xFar) => {};
+const IDENTITY = x => x;
 
 export const makeMembrane = (rootBlue, opts = {}) => {
-  const { resultBlue = DEFAULT_RESULT, resultYellow = DEFAULT_RESULT } = opts;
+  const {
+    distortBlue = IDENTITY,
+    distortYellow = IDENTITY,
+    finishBlue = IDENTITY,
+    finishYellow = IDENTITY,
+  } = opts;
 
   const blueToYellow = new WeakMap();
   const yellowToBlue = new WeakMap();
 
-  const makePass = (nearToFar, farToNear, inverseName, result) => {
+  /**
+   *
+   * @param {WeakMap<any,any>} nearToFar
+   * @param {WeakMap<any,any>} farToNear
+   * @param {(xNear: any) => any} distort
+   * @param {(xFar: any, xNear: any) => any} finish
+   * @param {'blueToYellow' | 'yellowToBlue'} inverseName
+   */
+  const makePass = (nearToFar, farToNear, distort, finish, inverseName) => {
     return function passNearToFar(xNear) {
+      xNear = distort(xNear);
       if (Object(xNear) !== xNear) {
         return xNear;
       }
@@ -86,8 +100,8 @@ export const makeMembrane = (rootBlue, opts = {}) => {
           }
         });
 
-      result(xNear, xFar);
-      return harden(xFar);
+      const xFinished = finish(xFar, xNear);
+      return harden(xFinished);
     };
   };
 
@@ -95,14 +109,16 @@ export const makeMembrane = (rootBlue, opts = {}) => {
     passYellowToBlue: makePass(
       yellowToBlue,
       blueToYellow,
+      distortYellow,
+      finishBlue,
       'passBlueToYellow',
-      resultYellow,
     ),
     passBlueToYellow: makePass(
       blueToYellow,
       yellowToBlue,
+      distortBlue,
+      finishYellow,
       'passYellowToBlue',
-      resultBlue,
     ),
   };
 

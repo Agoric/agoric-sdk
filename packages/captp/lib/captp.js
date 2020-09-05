@@ -3,7 +3,12 @@
 
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
 // Defects in it are mfig's fault.
-import { Remotable, makeMarshal, QCLASS } from '@agoric/marshal';
+import {
+  Remotable,
+  getInterfaceOf,
+  makeMarshal,
+  QCLASS,
+} from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 
@@ -12,11 +17,15 @@ import { makeMembrane } from './membrane';
 export { E };
 
 /**
+ * @typedef {Object} CapTPMakerOpts
+ * @property {WeakMap<any, string>} [syncValToSlot=new WeakMap()] which objects are synchronous
+ * @property {Map<string, any>} [slotToVal=new Map()] exports looked up by slot
  *
- * @param {WeakMap<any, string>} [syncValToSlot=new WeakMap()] which objects are synchronous
- * @param {Map<string, any>} [slotToVal=new Map()] exports looked up by slot
+ * @param {CapTPMakerOpts} makerOpts
  */
-const makeCapTPMaker = (syncValToSlot = new WeakMap(), slotToVal = new Map()) =>
+const makeCapTPMaker = (makerOpts = {}) => {
+  const { syncValToSlot = new WeakMap(), slotToVal = new Map() } = makerOpts;
+
   /**
    * @typedef {Object} CapTPOptions the options to makeCapTP
    * @property {(err: any) => void} onReject
@@ -369,7 +378,9 @@ const makeCapTPMaker = (syncValToSlot = new WeakMap(), slotToVal = new Map()) =>
     ) => dispatch({ type: 'CTP_ABORT', exception });
 
     return harden({ abort, dispatch, getBootstrap, serialize, unserialize });
-  };
+  }
+  return makeCapTP;
+};
 
 /**
  * Create an async-isolated channel to an object.
@@ -388,26 +399,42 @@ export function makeFar(ourId, obj) {
   const {
     dispatch: localDispatch,
     getBootstrap: remoteBootstrap,
-  } = makeCapTPMaker(syncValToSlot)(`local-${ourId}`, o => remoteDispatch(o));
-  const { dispatch } = makeCapTPMaker(undefined, slotToVal)(
+    serialize,
+  } = makeCapTPMaker({
+    syncValToSlot,
+  })(`local-${ourId}`, o => remoteDispatch(o));
+  const { dispatch, unserialize } = makeCapTPMaker({ slotToVal })(
     `remote-${ourId}`,
     localDispatch,
     obj,
   );
   remoteDispatch = dispatch;
 
-  const makeNear = target =>
-    harden(
+  const makeNear = target => {
+    return harden(
       makeMembrane(target, {
-        resultBlue(xNear, xFar) {
+        finishBlue(blue, yellow) {
+          // These lines attempt to translate a local presence to the sync value.
+          if (getInterfaceOf(yellow)) {
+            try {
+              return unserialize(serialize(yellow));
+            } catch (e) {
+              // nothing
+            }
+          }
+          return blue;
+        },
+        finishYellow(yellow, blue) {
           // These lines cause captp to wormhole our target through the async layer.
-          // console.log('have near', xNear, xFar);
+          // console.log('have blue-yellow', blue, yellow);
           lastSlot += 1;
-          slotToVal.set(`S+${lastSlot}`, xNear);
-          syncValToSlot.set(xFar, `S-${lastSlot}`);
+          slotToVal.set(`S+${lastSlot}`, blue);
+          syncValToSlot.set(yellow, `S-${lastSlot}`);
+          return yellow;
         },
       }),
     );
+  };
 
   return { objFar: remoteBootstrap(), makeNear };
 }
