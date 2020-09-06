@@ -4,9 +4,7 @@
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
-import polycrc from 'polycrc';
-
-const { crc6 } = polycrc;
+import { models as crcmodels } from 'polycrc';
 
 const CRC_NUM_DIGITS = 2;
 const ID_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);
@@ -17,8 +15,9 @@ const ID_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);
  * @return {string}
  */
 const calcCrc = num => {
+  // The explicit use of crcmodels is to avoid a typing error.
   // Add 1 to guarantee we don't get a 0.
-  const crc = crc6(num) + 1;
+  const crc = crcmodels.crc6.calculate(num) + 1;
   const crcStr = crc.toString().padStart(CRC_NUM_DIGITS, '0');
   assert(
     crcStr.length <= CRC_NUM_DIGITS,
