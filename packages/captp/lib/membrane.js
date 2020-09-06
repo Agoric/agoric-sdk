@@ -1,4 +1,13 @@
-/* global harden */
+// @ts-check
+
+/**
+ * @typedef {({} | Function) & 'Near'} NearRef Intersection to make compatible only with itself.
+ * @typedef {({} | Function) & 'Far'} FarRef Intersection to make compatible only with itself.
+ */
+
+/**
+ * @param {*} x
+ */
 const IDENTITY = x => x;
 
 export const makeMembrane = (rootBlue, opts = {}) => {
@@ -13,51 +22,68 @@ export const makeMembrane = (rootBlue, opts = {}) => {
   const yellowToBlue = new WeakMap();
 
   /**
-   *
-   * @param {WeakMap<any,any>} nearToFar
-   * @param {WeakMap<any,any>} farToNear
-   * @param {(xNear: any) => any} distort
-   * @param {(xFar: any, xNear: any) => any} finish
-   * @param {'blueToYellow' | 'yellowToBlue'} inverseName
+   * @param {WeakMap<NearRef, FarRef>} nearToFar
+   * @param {WeakMap<FarRef, NearRef>} farToNear
+   * @param {(xNear: any, makeNear: (xFar: FarRef) => NearRef) => any} distort
+   * @param {(xFar: FarRef, xNear: NearRef) => any} finish
+   * @param {'passBlueToYellow' | 'passYellowToBlue'} inverseName
    */
   const makePass = (nearToFar, farToNear, distort, finish, inverseName) => {
-    return function passNearToFar(xNear) {
-      xNear = distort(xNear);
+    /**
+     * @param {any} xNear
+     * @returns {any}
+     */
+    function passNearToFar(xNear) {
+      // eslint-disable-next-line no-use-before-define
+      const passFarToNear = passFunctions[inverseName];
+
+      xNear = distort(xNear, passFarToNear);
       if (Object(xNear) !== xNear) {
+        // Primitive value, no need to membranise.
         return xNear;
       }
-      if (nearToFar.has(xNear)) {
-        return nearToFar.get(xNear);
+
+      // We now know we're dealing with an near object or function.
+      const xNearRef = /** @type {NearRef} */ (xNear);
+
+      /**
+       * @type {FarRef=}
+       */
+      let xFar = nearToFar.get(xNearRef);
+      if (xFar) {
+        // Cached.
+        return xFar;
       }
       // We have an object or function.
-      let xFar;
-      if (typeof xNear === 'function') {
-        // eslint-disable-next-line no-use-before-define
-        const passFarToNear = passFunctions[inverseName];
-        xFar = function farFunction(...argsFar) {
+      if (typeof xNearRef === 'function') {
+        const fnNear = /** @type {Function} */ (xNearRef);
+        function fnFar(...argsFar) {
           try {
             const argsNear = argsFar.map(passFarToNear);
             if (new.target) {
               const newTargetNear = passFarToNear(new.target);
               return passNearToFar(
-                Reflect.construct(xNear, argsNear, newTargetNear),
+                Reflect.construct(fnNear, argsNear, newTargetNear),
               );
             }
             const thisNear = passFarToNear(this);
-            return passNearToFar(Reflect.apply(xNear, thisNear, argsNear));
+            return passNearToFar(Reflect.apply(fnNear, thisNear, argsNear));
           } catch (eNear) {
             throw passNearToFar(eNear);
           }
-        };
+        }
+        /** Typecasts necessary */
+        const fnUnknown = /** @type {unknown} */ (fnFar);
+        xFar = /** @type {FarRef} */ (fnUnknown);
       } else {
-        xFar = {};
+        xFar = /** @type {FarRef} */ ({});
       }
 
-      nearToFar.set(xNear, xFar);
-      farToNear.set(xFar, xNear);
+      nearToFar.set(xNearRef, xFar);
+      farToNear.set(xFar, xNearRef);
 
-      const xDescsNear = Object.getOwnPropertyDescriptors(xNear);
-      const xProtoNear = Object.getPrototypeOf(xNear);
+      const xDescsNear = Object.getOwnPropertyDescriptors(xNearRef);
+      const xProtoNear = Object.getPrototypeOf(xNearRef);
       const xProtoFar = passNearToFar(xProtoNear);
 
       xProtoFar; // Silence unused warning.
@@ -67,6 +93,10 @@ export const makeMembrane = (rootBlue, opts = {}) => {
       //   message: 'a prototype of something is not already in the fringeset (and .toString failed)',
       // }
 
+      /**
+       * @param {[string, PropertyDescriptor]} param0
+       * @returns {[string, PropertyDescriptor]}
+       */
       const nearToFarMapper = ([name, vDescNear]) => {
         if ('value' in vDescNear) {
           const vDescFar = {
@@ -100,9 +130,10 @@ export const makeMembrane = (rootBlue, opts = {}) => {
           }
         });
 
-      const xFinished = finish(xFar, xNear);
+      const xFinished = finish(xFar, xNearRef);
       return harden(xFinished);
-    };
+    }
+    return passNearToFar;
   };
 
   const passFunctions = {

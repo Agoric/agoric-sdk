@@ -1,4 +1,5 @@
-/* global harden HandledPromise */
+// @ts-check
+
 // Your app may need to `import '@agoric/eventual-send/shim'` to get HandledPromise
 
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
@@ -9,7 +10,7 @@ import {
   makeMarshal,
   QCLASS,
 } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 
 import { makeMembrane } from './membrane';
@@ -61,10 +62,13 @@ const makeCapTPMaker = (makerOpts = {}) => {
       return p;
     }
 
-    function send(...args) {
+    /**
+     * @param {Record<string, any>} obj
+     */
+    function send(obj) {
       // Don't throw here if unplugged, just don't send.
       if (unplug === false) {
-        rawSend(...args);
+        rawSend(obj);
       }
     }
 
@@ -146,10 +150,12 @@ const makeCapTPMaker = (makerOpts = {}) => {
       return valToSlot.get(val);
     }
 
-    // Generate a new question in the questions table and set up a new
-    // remote handled promise.
-    // Returns: [questionId, pr]
-    //   where `pr` is the HandledPromise for this question.
+    /**
+     * Generate a new question in the questions table and set up a new
+     * remote handled promise.
+     *
+     * @returns {[number, ReturnType<typeof makeRemoteKit>]}
+     */
     function makeQuestion() {
       lastQuestionID += 1;
       const questionID = lastQuestionID;
@@ -413,16 +419,19 @@ export function makeFar(ourId, obj) {
   const makeNear = target => {
     return harden(
       makeMembrane(target, {
-        finishBlue(blue, yellow) {
+        distortYellow(yellow, makeYellow) {
           // These lines attempt to translate a local presence to the sync value.
           if (getInterfaceOf(yellow)) {
             try {
-              return unserialize(serialize(yellow));
+              // We can obtain the synchronous actual blue object from marshal.
+              const syncBlue = unserialize(serialize(yellow));
+              // Turn it back into a yellow object for membrane processing.
+              return makeYellow(syncBlue);
             } catch (e) {
               // nothing
             }
           }
-          return blue;
+          return yellow;
         },
         finishYellow(yellow, blue) {
           // These lines cause captp to wormhole our target through the async layer.
