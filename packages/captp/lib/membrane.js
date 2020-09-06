@@ -114,14 +114,13 @@ export const makeMembrane = (rootBlue, opts = {}) => {
           try {
             Object.defineProperty(xFar, name, descFar);
           } catch (e) {
-            /*
-            console.log(xNear, xDescsNear);
+            console.log(
+              'Membrane failed to defineProperty',
+              xNear,
+              xDescsNear,
+              e,
+            );
             throw e;
-            */
-            // FIXME: If above is uncommented, fails with:
-            // TypeError {
-            //   message: 'Cannot redefine property: name',
-            // }
           }
         });
 
