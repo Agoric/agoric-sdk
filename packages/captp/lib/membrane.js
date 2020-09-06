@@ -86,12 +86,7 @@ export const makeMembrane = (rootBlue, opts = {}) => {
       const xProtoNear = Object.getPrototypeOf(xNearRef);
       const xProtoFar = passNearToFar(xProtoNear);
 
-      xProtoFar; // Silence unused warning.
-      /* Object.setPrototypeOf(xFar, xProtoFar); */
-      // FIXME: If above is uncommented, fails with:
-      // TypeError {
-      //   message: 'a prototype of something is not already in the fringeset (and .toString failed)',
-      // }
+      Object.setPrototypeOf(xFar, xProtoFar);
 
       /**
        * @param {[string, PropertyDescriptor]} param0
