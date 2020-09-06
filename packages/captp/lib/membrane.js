@@ -1,8 +1,10 @@
 // @ts-check
 
 /**
- * @typedef {({} | Function) & 'Near'} NearRef Intersection to make compatible only with itself.
- * @typedef {({} | Function) & 'Far'} FarRef Intersection to make compatible only with itself.
+ * @typedef {({} | Function) & 'Near'} NearRef Intersection to make compatible
+ * only with itself.
+ * @typedef {({} | Function) & 'Far'} FarRef Intersection to make compatible
+ * only with itself.
  */
 
 /**
@@ -16,6 +18,7 @@ export const makeMembrane = (rootBlue, opts = {}) => {
     distortYellow = IDENTITY,
     finishBlue = IDENTITY,
     finishYellow = IDENTITY,
+    eager = false,
   } = opts;
 
   const blueToYellow = new WeakMap();
@@ -94,10 +97,19 @@ export const makeMembrane = (rootBlue, opts = {}) => {
        */
       const nearToFarMapper = ([name, vDescNear]) => {
         if ('value' in vDescNear) {
-          const vDescFar = {
-            ...vDescNear,
-            value: passNearToFar(vDescNear.value),
-          };
+          let vDescFar;
+          if (eager) {
+            vDescFar = {
+              ...vDescNear,
+              value: passNearToFar(vDescNear.value),
+            };
+          } else {
+            vDescFar = {
+              get: () => passNearToFar(vDescNear.value),
+              enumerable: vDescNear.enumerable,
+              configurable: vDescNear.configurable,
+            }
+          }
           return [name, vDescFar];
         }
         const vFarDesc = {
