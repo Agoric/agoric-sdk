@@ -19,10 +19,17 @@ export const makeMembrane = (rootBlue, opts = {}) => {
     finishBlue = IDENTITY,
     finishYellow = IDENTITY,
     eager = false,
+    initialBlueYellowPairs = [
+      [Object.prototype, Object.prototype],
+      [Function.prototype, Function.prototype],
+      [Array.prototype, Array.prototype],
+    ],
   } = opts;
 
-  const blueToYellow = new WeakMap();
-  const yellowToBlue = new WeakMap();
+  const initialYellowBluePairs = initialBlueYellowPairs.map(([b, y]) => [y, b]);
+  // TODO should verify that these are proper inverses
+  const blueToYellow = new WeakMap(initialBlueYellowPairs);
+  const yellowToBlue = new WeakMap(initialYellowBluePairs);
 
   /**
    * @param {WeakMap<NearRef, FarRef>} nearToFar
@@ -78,6 +85,8 @@ export const makeMembrane = (rootBlue, opts = {}) => {
         /** Typecasts necessary */
         const fnUnknown = /** @type {unknown} */ (fnFar);
         xFar = /** @type {FarRef} */ (fnUnknown);
+      } else if (Array.isArray(xNearRef)) {
+        xFar = /** @type {FarRef} */ ([]);
       } else {
         xFar = /** @type {FarRef} */ ({});
       }
