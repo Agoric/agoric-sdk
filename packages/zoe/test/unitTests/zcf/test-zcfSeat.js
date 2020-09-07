@@ -9,13 +9,14 @@ import bundleSource from '@agoric/bundle-source';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import { fakeVatAdmin, testContext } from './fakeVatAdmin';
+import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
 test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const testContext = {};
+  const zoe = makeZoe(makeFakeVatAdmin(testContext));
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
