@@ -108,7 +108,7 @@ export const makeMembrane = (rootBlue, opts = {}) => {
               get: () => passNearToFar(vDescNear.value),
               enumerable: vDescNear.enumerable,
               configurable: vDescNear.configurable,
-            }
+            };
           }
           return [name, vDescFar];
         }
