@@ -370,42 +370,56 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
  * Create an async-isolated channel to an object.
  *
  * @param {string} ourId
- * @returns {{ makeFar<T>(x: T): ERef<T> }}
+ * @returns {{ makeFar<T>(x: T): ERef<T>, makeNear<T>(x: T): ERef<T>  }}
  */
 export function makeLoopback(ourId) {
   let nextNonce = 0;
   const nonceToRef = new Map();
 
-  // Create the tunnel.
-  let remoteDispatch;
-  const { dispatch: localDispatch, getBootstrap } = makeCapTP(
-    `local-${ourId}`,
-    o => remoteDispatch(o),
-  );
-  const { dispatch } = makeCapTP(
-    `remote-${ourId}`,
-    localDispatch,
-    harden({
-      farGetter: {
-        getRef(nonce) {
-          // Find the local ref for the specified nonce.
-          const xNear = nonceToRef.get(nonce);
-          nonceToRef.delete(nonce);
-          return xNear;
-        },
+  const bootstrap = harden({
+    refGetter: {
+      getRef(nonce) {
+        // Find the local ref for the specified nonce.
+        const xFar = nonceToRef.get(nonce);
+        nonceToRef.delete(nonce);
+        return xFar;
       },
-    }),
+    },
+  });
+
+  // Create the tunnel.
+  let farDispatch;
+  const { dispatch: nearDispatch, getBootstrap: getFarBootstrap } = makeCapTP(
+    `near-${ourId}`,
+    o => farDispatch(o),
+    bootstrap,
   );
-  remoteDispatch = dispatch;
+  const { dispatch, getBootstrap: getNearBootstrap } = makeCapTP(
+    `far-${ourId}`,
+    nearDispatch,
+    bootstrap,
+  );
+  farDispatch = dispatch;
 
-  const farGetter = E.G(getBootstrap()).farGetter;
+  const farGetter = E.G(getFarBootstrap()).refGetter;
+  const nearGetter = E.G(getNearBootstrap()).refGetter;
 
-  async function makeFar(xNear) {
-    const myNonce = nextNonce;
-    nextNonce += 1;
-    nonceToRef.set(myNonce, harden(xNear));
-    return E(farGetter).getRef(myNonce);
-  }
+  /**
+   * @param {ERef<{ getRef(nonce: number): any }>} refGetter
+   */
+  const makeRefMaker = refGetter =>
+    /**
+     * @param {any} x
+     */
+    async x => {
+      const myNonce = nextNonce;
+      nextNonce += 1;
+      nonceToRef.set(myNonce, harden(x));
+      return E(refGetter).getRef(myNonce);
+    };
 
-  return { makeFar };
+  return {
+    makeFar: makeRefMaker(farGetter),
+    makeNear: makeRefMaker(nearGetter),
+  };
 }
