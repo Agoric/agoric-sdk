@@ -380,8 +380,8 @@ function build(
         // It has arguments, must be a method application.
         res = HandledPromise.applyMethod(t, method, args);
       } else {
-        // TODO: untested, but in principle sound.
         // Just a getter.
+        // TODO: untested, but in principle sound.
         res = HandledPromise.get(t, method);
       }
       res.then(notifySuccess, notifyFailure);

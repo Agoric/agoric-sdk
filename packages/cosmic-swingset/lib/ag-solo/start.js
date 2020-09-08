@@ -88,7 +88,14 @@ async function buildSwingset(
   const mb = buildMailbox(mbs);
   const cm = buildCommand(broadcast);
   const timer = buildTimer();
-  const plugin = buildPlugin(require);
+  const withInputQueue = makeWithQueue();
+  const queueThunkForKernel = withInputQueue(async thunk => {
+    thunk();
+    // eslint-disable-next-line no-use-before-define
+    await processKernel();
+  });
+
+  const plugin = buildPlugin(require, queueThunkForKernel);
 
   let config = loadSwingsetConfigFile(`${vatsDir}/solo-config.json`);
   if (config === null) {
@@ -126,8 +133,6 @@ async function buildSwingset(
       deliverOutbound();
     }
   }
-
-  const withInputQueue = makeWithQueue();
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.

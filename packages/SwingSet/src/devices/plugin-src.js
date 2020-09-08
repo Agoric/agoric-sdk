@@ -6,7 +6,7 @@ export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const restart = getDeviceState();
 
-  let registeredReceiver;
+  let registeredReceiver = restart && restart.registeredReceiver;
 
   const connectedMods = [];
   const senders = [];
@@ -15,7 +15,8 @@ export function buildRootDeviceNode(tools) {
   function saveState() {
     setDeviceState(
       harden({
-        connectedMods,
+        registeredReceiver,
+        connectedMods: [...connectedMods],
         connectedState: [...connectedState],
       }),
     );
@@ -34,14 +35,11 @@ export function buildRootDeviceNode(tools) {
       connectedMods.push(mod);
       const receiver = obj => {
         console.info('receiver', index, obj);
-        switch (obj.type) {
-          case 'PLUGIN_SAVE_STATE':
-            connectedState[index] = obj.data;
-            saveState();
-            break;
-          default:
-            SO(registeredReceiver).receive(index, obj);
-        }
+
+        // We need to run the kernel after the send-only.
+        endowments.queueThunkForKernel(() =>
+          SO(registeredReceiver).receive(index, obj),
+        );
       };
       // Create a bootstrap reference from the module.
       const bootstrap = modNS.bootPlugin(
@@ -88,7 +86,11 @@ export function buildRootDeviceNode(tools) {
     connect,
     send,
     registerReceiver(receiver) {
+      if (registeredReceiver) {
+        throw Error(`registerd receiver already set`);
+      }
       registeredReceiver = receiver;
+      saveState();
     },
   });
 }
