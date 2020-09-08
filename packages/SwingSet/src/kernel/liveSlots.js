@@ -222,6 +222,12 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
+        const iface = getInterfaceOf(val);
+        // TODO unimplemented
+        assert(
+          iface === undefined,
+          details`cannot forward ${iface}; synthetic presences not implemented`,
+        );
         mustPassByPresence(val);
         slot = exportPassByPresence();
       }
