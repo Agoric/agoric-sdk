@@ -222,12 +222,6 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
-        const iface = getInterfaceOf(val);
-        // TODO unimplemented
-        assert(
-          iface === undefined,
-          details`cannot forward ${iface}; synthetic presences not implemented`,
-        );
         mustPassByPresence(val);
         slot = exportPassByPresence();
       }
@@ -380,19 +374,17 @@ function build(
     // the kernel. deliver() does not report such exceptions to the kernel.
 
     try {
-      if (!(method in t)) {
-        const names = Object.getOwnPropertyNames(t);
-        throw new TypeError(`target[${method}] does not exist, has ${names}`);
+      // We have a presence, so forward to it.
+      let res;
+      if (args) {
+        // It has arguments, must be a method application.
+        res = HandledPromise.applyMethod(t, method, args);
+      } else {
+        // TODO: untested, but in principle sound.
+        // Just a getter.
+        res = HandledPromise.get(t, method);
       }
-      if (!(t[method] instanceof Function)) {
-        const ftype = typeof t[method];
-        const names = Object.getOwnPropertyNames(t);
-        throw new TypeError(
-          `target[${method}] is not a function, typeof is ${ftype}, has ${names}`,
-        );
-      }
-      const res = t[method](...args);
-      Promise.resolve(res).then(notifySuccess, notifyFailure);
+      res.then(notifySuccess, notifyFailure);
     } catch (err) {
       notifyFailure(err);
     }
