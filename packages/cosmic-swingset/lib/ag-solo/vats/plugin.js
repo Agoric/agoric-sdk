@@ -5,7 +5,6 @@ import makeStore from '@agoric/store';
 import { makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E, HandledPromise } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
 
 /**
  * @template T

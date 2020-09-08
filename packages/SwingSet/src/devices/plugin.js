@@ -18,7 +18,11 @@ export function buildPlugin(pluginRequire, queueThunkForKernel) {
   // during configuration.
   return {
     srcPath,
-    endowments: { require: pluginRequire, queueThunkForKernel, registerResetter },
+    endowments: {
+      require: pluginRequire,
+      queueThunkForKernel,
+      registerResetter,
+    },
     reset,
   };
 }
