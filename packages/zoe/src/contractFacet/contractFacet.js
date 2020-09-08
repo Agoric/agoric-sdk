@@ -274,7 +274,9 @@ export function buildRootObject() {
         // affect those checks and see if one can be removed.
         zcf.assertUniqueKeyword(keyword);
         await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
+        // AWAIT ///
         const record = await issuerTable.initIssuer(issuerP);
+        // AWAIT ///
         return registerIssuerRecordWithKeyword(keyword, record);
       },
       makeInvitation: (offerHandler, description, customProperties = {}) => {
