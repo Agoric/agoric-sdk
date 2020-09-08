@@ -29,12 +29,11 @@ import { makeCapTP } from '@agoric/captp';
 /**
  * Create a handler that manages a promise interface to external modules.
  *
- * @param {import('@agoric/eventual-send').EProxy} E The eventual sender
- * @param {<T>(target: Device<T>) => T} D The device sender
  * @param {Device<PluginDevice>} pluginDevice The bridge to manage
+ * @param {{ D<T>(target: Device<T>): T }} param1
  * @returns {PluginManager} admin facet for this handler
  */
-export function makePluginManager(E, D, pluginDevice) {
+export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
    * @type {import('@agoric/store').Store<number, (obj: Record<string,any>) => void>}
    */
@@ -44,7 +43,6 @@ export function makePluginManager(E, D, pluginDevice) {
   D(pluginDevice).registerReceiver(
     harden({
       receive(index, obj) {
-        console.info('receive', index, obj);
         modReceivers.get(index)(obj);
       },
     }),
@@ -58,8 +56,11 @@ export function makePluginManager(E, D, pluginDevice) {
         throw Error(index);
       }
       // Create a CapTP channel.
-      const { getBootstrap, dispatch } = makeCapTP(mod, obj =>
-        D(pluginDevice).send(index, obj),
+      const { getBootstrap, dispatch } = makeCapTP(
+        mod,
+        obj => D(pluginDevice).send(index, obj),
+        undefined,
+        vatPowers,
       );
       // Register our dispatcher for this connect index.
       modReceivers.init(index, dispatch);

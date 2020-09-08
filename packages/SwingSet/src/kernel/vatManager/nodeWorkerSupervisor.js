@@ -7,7 +7,7 @@ import anylogger from 'anylogger';
 
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { Remotable, getInterfaceOf } from '@agoric/marshal';
+import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 
@@ -103,7 +103,7 @@ parentPort.on('message', ([type, ...margs]) => {
       // vatPowers, but only if options tell us they're wanted. Maybe
       // transformTildot should be async and outsourced to the kernel
       // process/thread.
-      const vatPowers = { Remotable, getInterfaceOf };
+      const vatPowers = { Remotable, getInterfaceOf, makeMarshal };
       dispatch = makeLiveSlots(
         syscall,
         state,

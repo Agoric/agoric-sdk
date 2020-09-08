@@ -590,7 +590,7 @@ export function makeLiveSlots(
     state,
     buildRootObject,
     forVatID,
-    { ...vatPowers, getInterfaceOf, Remotable },
+    { ...vatPowers, getInterfaceOf, Remotable, makeMarshal },
     vatParameters,
   );
   return harden({

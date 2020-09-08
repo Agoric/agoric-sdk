@@ -216,7 +216,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     // Needed for DApps, maybe for user clients.
     const uploads = E(vats.uploads).getUploads();
 
-    const plugin = makePluginManager(E, D, devices.plugin);
+    const plugin = makePluginManager(E, devices.plugin, vatPowers);
 
     // This will allow dApp developers to register in their api/deploy.js
     const httpRegCallback = {
