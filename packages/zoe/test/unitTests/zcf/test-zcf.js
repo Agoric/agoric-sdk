@@ -5,33 +5,11 @@ import test from 'ava';
 
 import { MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
 
-// noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
 import buildManualTimer from '../../../tools/manualTimer';
 
-const contractRoot = `${__dirname}/zcfTesterContract`;
-
-const setupZCFTest = async (issuerKeywordRecord, terms) => {
-  /** @type {ContractFacet} */
-  let zcf;
-  const setZCF = jig => {
-    zcf = jig.zcf;
-  };
-  // The contract provides the `zcf` via `setTestJig` upon `start`.
-  const zoe = makeZoe(makeFakeVatAdmin(setZCF));
-  const bundle = await bundleSource(contractRoot);
-  const installation = await zoe.install(bundle);
-  const { creatorFacet, instance } = await E(zoe).startInstance(
-    installation,
-    issuerKeywordRecord,
-    terms,
-  );
-  return { zoe, zcf, instance, installation, creatorFacet };
-};
+import { setupZCFTest } from './setupZcfTest';
 
 // TODO: Still to be tested:
 //  * @property {Reallocate} reallocate
