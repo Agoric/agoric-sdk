@@ -91,6 +91,7 @@
  * @property {PaymentActions} actions
  * @property {Amount=} lastAmount
  * @property {Amount=} depositedAmount
+ * @property {string=} issuerBoardId
  *
  * @typedef {Object} PaymentActions
  * @property {(purseOrPetname?: Purse | Petname) => Promise<Value>} deposit
