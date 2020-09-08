@@ -42,7 +42,7 @@
     "@agoric/install-metering-and-ses": "^0.1.2",
     "@agoric/install-ses": "^0.3.0",
     "@agoric/swingset-vat": "^0.7.0",
-    "ava": "^3.11.1",
+    "ava": "^3.12.1",
     "esm": "^3.2.25"
   },
   "files": [
