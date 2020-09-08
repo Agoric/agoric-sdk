@@ -8,37 +8,51 @@ export function buildRootDeviceNode(tools) {
 
   let registeredReceiver = restart && restart.registeredReceiver;
 
-  const connectedMods = [];
-  const senders = [];
+  const senders = {};
+  // Take a shallow copy so that these are not frozen.
+  const connectedMods = restart ? [...restart.connectedMods] : [];
   const connectedState = restart ? [...restart.connectedState] : [];
 
   function saveState() {
     setDeviceState(
       harden({
         registeredReceiver,
+        // Take a shallow copy so that these are not frozen.
         connectedMods: [...connectedMods],
         connectedState: [...connectedState],
       }),
     );
   }
+  // Register our first state.
+  saveState();
 
   /**
    * Load a module and connect to it.
    * @param {string} mod module with an exported `bootPlugin(state = undefined)`
+   * @param {number} [index=connectedMods.length] the module instance index
    * @param {(obj: Record<string, any>) => void} receive a message from the module
    * @returns {(obj: Record<string, any>) => void} send a message to the module
    */
-  function connect(mod) {
+  function connect(mod, index = connectedMods.length) {
     try {
+      // Allocate this module first.
+      if (connectedMods[index] === undefined) {
+        connectedMods[index] = mod;
+        saveState();
+      }
+      if (connectedMods[index] !== mod) {
+        throw TypeError(
+          `Index ${index} is already allocated to ${connectedMods[index]}, not ${mod}`,
+        );
+      }
+
       const modNS = endowments.require(mod);
-      const index = connectedMods.length;
-      connectedMods.push(mod);
       const receiver = obj => {
-        console.info('receiver', index, obj);
+        // console.info('receiver', index, obj);
 
         // We need to run the kernel after the send-only.
         endowments.queueThunkForKernel(() =>
-          SO(registeredReceiver).receive(index, obj),
+          SO(registeredReceiver).dispatch(index, obj),
         );
       };
       // Create a bootstrap reference from the module.
@@ -67,20 +81,22 @@ export function buildRootDeviceNode(tools) {
   }
 
   function send(index, obj) {
-    const sender = senders[index];
-    console.error('send', obj);
+    const mod = connectedMods[index];
+    console.info('send', index, obj, mod);
+    if (!mod) {
+      throw TypeError(`No module associated with ${index}`);
+    }
+    let sender = senders[index];
+    if (!sender) {
+      // Lazily create a sender.
+      console.info('Destroying', index);
+      SO(registeredReceiver).abort(index);
+      connect(mod, index);
+      sender = senders[index];
+    }
+    // Now actually send.
     sender(obj);
   }
-
-  // Connect to all existing modules.
-  const preload = restart ? restart.connectedMods : [];
-  preload.forEach(mod => {
-    try {
-      connect(mod);
-    } catch (e) {
-      console.error(`Cannot connect to ${mod}:`, e);
-    }
-  });
 
   return harden({
     connect,
