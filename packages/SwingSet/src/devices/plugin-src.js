@@ -11,6 +11,7 @@ export function buildRootDeviceNode(tools) {
   const senders = {};
   // Take a shallow copy so that these are not frozen.
   const connectedMods = restart ? [...restart.connectedMods] : [];
+  const nextEpochs = restart ? [...restart.nextEpochs] : [];
   const connectedState = restart ? [...restart.connectedState] : [];
 
   function saveState() {
@@ -18,6 +19,7 @@ export function buildRootDeviceNode(tools) {
       harden({
         registeredReceiver,
         // Take a shallow copy so that these are not frozen.
+        nextEpochs: [...nextEpochs],
         connectedMods: [...connectedMods],
         connectedState: [...connectedState],
       }),
@@ -38,13 +40,15 @@ export function buildRootDeviceNode(tools) {
       // Allocate this module first.
       if (connectedMods[index] === undefined) {
         connectedMods[index] = mod;
-        saveState();
       }
       if (connectedMods[index] !== mod) {
         throw TypeError(
           `Index ${index} is already allocated to ${connectedMods[index]}, not ${mod}`,
         );
       }
+      const epoch = nextEpochs[index] || 0;
+      nextEpochs[index] = epoch + 1;
+      saveState();
 
       const modNS = endowments.require(mod);
       const receiver = obj => {
@@ -69,7 +73,7 @@ export function buildRootDeviceNode(tools) {
       );
 
       // Establish a CapTP connection.
-      const { dispatch } = makeCapTP(mod, receiver, bootstrap);
+      const { dispatch } = makeCapTP(mod, receiver, bootstrap, { epoch });
 
       // Save the dispatch function for later.
       senders[index] = dispatch;
@@ -82,15 +86,13 @@ export function buildRootDeviceNode(tools) {
 
   function send(index, obj) {
     const mod = connectedMods[index];
-    console.info('send', index, obj, mod);
+    // console.info('send', index, obj, mod);
     if (!mod) {
       throw TypeError(`No module associated with ${index}`);
     }
     let sender = senders[index];
     if (!sender) {
-      // Lazily create a sender.
-      console.info('Destroying', index);
-      SO(registeredReceiver).abort(index);
+      // Lazily create a fresh sender.
       connect(mod, index);
       sender = senders[index];
     }
@@ -98,12 +100,21 @@ export function buildRootDeviceNode(tools) {
     sender(obj);
   }
 
+  endowments.registerResetter(() => {
+    connectedMods.forEach((mod, index) => {
+      if (mod) {
+        // console.info('Startup resetting', index, mod, nextEpochs[index]);
+        SO(registeredReceiver).reset(index, nextEpochs[index]);
+      }
+    });
+  });
+
   return harden({
     connect,
     send,
     registerReceiver(receiver) {
       if (registeredReceiver) {
-        throw Error(`registerd receiver already set`);
+        throw Error(`registered receiver already set`);
       }
       registeredReceiver = receiver;
       saveState();

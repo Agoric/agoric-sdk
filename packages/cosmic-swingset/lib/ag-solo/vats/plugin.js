@@ -3,6 +3,9 @@
 
 import makeStore from '@agoric/store';
 import { makeCapTP } from '@agoric/captp';
+import { makePromiseKit } from '@agoric/promise-kit';
+import { E, HandledPromise } from '@agoric/eventual-send';
+import { assert } from '@agoric/assert';
 
 /**
  * @template T
@@ -16,7 +19,8 @@ import { makeCapTP } from '@agoric/captp';
 
 /**
  * @typedef {Object} Receiver
- * @property {(index: number, obj: Record<string, any>) => void} receive
+ * @property {(index: number, obj: Record<string, any>) => void} dispatch
+ * @property {(index: number, epoch: number) => void} reset
  */
 
 /**
@@ -35,38 +39,142 @@ import { makeCapTP } from '@agoric/captp';
  */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
-   * @type {import('@agoric/store').Store<number, (obj: Record<string,any>) => void>}
+   * @typedef {Object} AbortDispatch
+   * @property {(epoch: number) => void} reset
+   * @property {(obj: Record<string,any>) => void} dispatch
    */
-  const modReceivers = makeStore('moduleIndex');
+
+  /**
+   * @type {import('@agoric/store').Store<number, AbortDispatch>}
+   */
+  const modConnection = makeStore('moduleIndex');
 
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(
     harden({
-      receive(index, obj) {
-        modReceivers.get(index)(obj);
+      dispatch(index, obj) {
+        const conn = modConnection.get(index);
+        conn.dispatch(obj);
+      },
+      reset(index, epoch) {
+        const conn = modConnection.get(index);
+        conn.reset(epoch);
       },
     }),
   );
 
   return harden({
-    load(mod) {
-      // Start CapTP on the plugin module's side.
+    /**
+     * Load a module, and call resetter.onReset(bootP) every time it is instantiated.
+     */
+    load(mod, resetter = { onReset: _ => {} }) {
+      // This is the internal state: a promise kit that doesn't
+      // resolve until we are connected.  It is replaced by
+      // a new promise kit when we abort the prior module connection.
+      let bootPK = makePromiseKit();
+      let nextEpoch = 0;
+
+      let currentEpoch;
+      let currentDispatch = _ => {};
+      let currentReset = _ => {};
+
+      // Connect to the module.
       const index = D(pluginDevice).connect(mod);
-      if (typeof index === 'string') {
+      if (typeof index !== 'number') {
+        // An error string.
         throw Error(index);
       }
-      // Create a CapTP channel.
-      const { getBootstrap, dispatch } = makeCapTP(
-        mod,
-        obj => D(pluginDevice).send(index, obj),
-        undefined,
-        vatPowers,
+
+      // Register our stable callbacks for this connect index.
+      modConnection.init(
+        index,
+        harden({
+          dispatch(obj) {
+            if (obj.epoch !== currentEpoch) {
+              return false;
+            }
+            return currentDispatch(obj);
+          },
+          reset(epoch) {
+            return currentReset(epoch);
+          },
+        }),
       );
-      // Register our dispatcher for this connect index.
-      modReceivers.init(index, dispatch);
+
+      const connect = () => {
+        // Create a CapTP channel.
+        const myEpoch = nextEpoch;
+        nextEpoch += 1;
+        console.info(`Connecting to ${mod}.${index} with epoch ${myEpoch}`);
+        const { getBootstrap, dispatch } = makeCapTP(
+          mod,
+          obj => {
+            // console.warn('sending', index, obj);
+            D(pluginDevice).send(index, obj);
+          },
+          undefined,
+          { ...vatPowers, epoch: myEpoch },
+        );
+
+        currentReset = _epoch => {
+          bootPK = makePromiseKit();
+
+          // Tell our clients we are resetting.
+          E(resetter).onReset(bootPK.promise.then(_ => true));
+
+          // Attempt to restart the protocol using the same device connection.
+          connect();
+        };
+
+        currentDispatch = obj => {
+          // console.warn('receiving', index, obj);
+          dispatch(obj);
+        };
+
+        currentEpoch = myEpoch;
+
+        // Publish our bootstrap promise.
+        bootPK.resolve(getBootstrap());
+      };
+
+      const actions = harden({
+        /**
+         * Create a stable identity that just forwards to the current implementation.
+         */
+        makeStableForwarder(walker = { walk: bootP => bootP }) {
+          let pr;
+          // eslint-disable-next-line no-new
+          new HandledPromise((_resolve, _reject, resolveWithPresence) => {
+            pr = resolveWithPresence({
+              applyMethod(_p, name, args) {
+                // console.warn('applying method epoch', currentEpoch);
+                const targetP = E(walker).walk(bootPK.promise);
+                return HandledPromise.applyMethod(targetP, name, args);
+              },
+              get(_p, name) {
+                // console.warn('applying get epoch', currentEpoch);
+                const targetP = E(walker).walk(bootPK.promise);
+                return HandledPromise.get(targetP, name);
+              },
+            });
+          });
+          return pr;
+        },
+      });
+
+      // Declare the first reset.
+      E(resetter).onReset(false);
+
+      // Start the first connection.
+      connect();
 
       // Give up our bootstrap object for the caller to use.
-      return getBootstrap();
+      return harden({
+        // This is the public state, a promise that never resolves,
+        // but pipelines messages to the bootPK.promise.
+        bootstrap: actions.makeStableForwarder(),
+        actions,
+      });
     },
   });
 }

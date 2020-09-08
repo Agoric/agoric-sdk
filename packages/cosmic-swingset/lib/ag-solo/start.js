@@ -223,6 +223,10 @@ async function buildSwingset(
       intervalMillis = interval;
       setTimeout(queuedMoveTimeForward, intervalMillis);
     },
+    resetOutdatedState: withInputQueue(() => {
+      plugin.reset();
+      return processKernel();
+    }),
   };
 }
 
@@ -259,6 +263,7 @@ export default async function start(basedir, argv) {
     deliverInboundCommand,
     deliverOutbound,
     startTimer,
+    resetOutdatedState,
   } = d;
 
   let hostport;
@@ -313,6 +318,7 @@ export default async function start(basedir, argv) {
 
   // Start timer here!
   startTimer(1200);
+  resetOutdatedState();
 
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});

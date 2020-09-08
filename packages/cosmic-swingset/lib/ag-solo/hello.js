@@ -9,7 +9,7 @@ export const bootPlugin = ({ getState, setState }) => {
       state = { count: state.count + 1 };
       setState(state);
       await fs.writeFile(dataFile, `Said hello ${state.count} times\n`);
-      return `Hello, ${name}`;
+      return `Hello, ${name}!`;
     },
   });
 };
