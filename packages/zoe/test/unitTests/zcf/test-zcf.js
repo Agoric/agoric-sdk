@@ -420,6 +420,7 @@ test(`zcf.makeZCFMint - NAT`, async t => {
     maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.NAT);
 });
 
 test(`zcf.makeZCFMint - STRING_SET`, async t => {
@@ -432,6 +433,7 @@ test(`zcf.makeZCFMint - STRING_SET`, async t => {
     maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.STRING_SET);
 });
 
 test(`zcf.makeZCFMint - SET`, async t => {
@@ -444,6 +446,7 @@ test(`zcf.makeZCFMint - SET`, async t => {
     maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.SET);
 });
 
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
