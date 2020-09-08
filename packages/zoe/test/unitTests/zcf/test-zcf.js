@@ -208,6 +208,7 @@ test(`zcf.assertUniqueKeyword`, async t => {
     message:
       'keyword "3" must be ascii and must start with a capital letter.\nSee console for error data.',
   });
+  zcf.assertUniqueKeyword('MyKeyword');
 });
 
 test(`zcf.saveIssuer & zoe.getTerms`, async t => {
@@ -255,8 +256,7 @@ test(`zcf.saveIssuer - bad issuer`, async t => {
 test(`zcf.saveIssuer - bad keyword`, async t => {
   const { moolaKit } = setup();
   const { zcf } = await setupZCFTest();
-  // TODO: why does this not throwAsync?
-  t.throws(() => zcf.saveIssuer(moolaKit.issuer, 'bad keyword'), {
+  await t.throwsAsync(() => zcf.saveIssuer(moolaKit.issuer, 'bad keyword'), {
     message: `keyword "bad keyword" must be ascii and must start with a capital letter.\nSee console for error data.`,
   });
 });
@@ -264,11 +264,10 @@ test(`zcf.saveIssuer - bad keyword`, async t => {
 test(`zcf.saveIssuer - args reversed`, async t => {
   const { moolaKit } = setup();
   const { zcf } = await setupZCFTest();
-  // TODO: why does this not throwAsync?
   // TODO: improve error message
   // https://github.com/Agoric/agoric-sdk/issues/1702
   // @ts-ignore
-  t.throws(() => zcf.saveIssuer('A', moolaKit.issuer), {
+  await t.throwsAsync(() => zcf.saveIssuer('A', moolaKit.issuer), {
     message: `(an object) must be a string\nSee console for error data.`,
   });
 });

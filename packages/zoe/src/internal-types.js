@@ -200,7 +200,7 @@
 
 /**
  * @typedef {Object} IssuerTable
- * @propert {(brand: Brand) => boolean} hasByBrand
+ * @property {(brand: Brand) => boolean} hasByBrand
  * @property {(brand: Brand) => IssuerRecord} getByBrand
  * @property {(issuer: Issuer) => boolean} hasByIssuer
  * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
@@ -234,4 +234,18 @@
  * kills the vat in which the contract is running
  * @property {() => Object} adminData
  * provides some statistics about the vat in which the contract is running.
+ */
+
+/**
+ * @callback RegisterIssuerRecord
+ * @param {Keyword} keyword
+ * @param {IssuerRecord} issuerRecord
+ * @returns {IssuerRecord}
+ */
+
+/**
+ * @callback RegisterIssuerRecordWithKeyword
+ * @param {Keyword} keyword
+ * @param {IssuerRecord} issuerRecord
+ * @returns {IssuerRecord}
  */

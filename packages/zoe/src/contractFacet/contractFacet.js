@@ -39,6 +39,7 @@ export function buildRootObject() {
     zoeInstanceAdmin,
     instanceRecord,
   ) => {
+    /** @type IssuerTable */
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
@@ -55,6 +56,7 @@ export function buildRootObject() {
     const initIssuers = issuersP =>
       Promise.all(issuersP.map(issuerTable.initIssuer));
 
+    /** @type RegisterIssuerRecord */
     const registerIssuerRecord = (keyword, issuerRecord) => {
       instanceRecord = {
         ...instanceRecord,
@@ -78,6 +80,7 @@ export function buildRootObject() {
       return issuerRecord;
     };
 
+    /** @type RegisterIssuerRecordWithKeyword */
     const registerIssuerRecordWithKeyword = (keyword, issuerRecord) => {
       assertKeywordName(keyword);
       assert(
@@ -265,18 +268,14 @@ export function buildRootObject() {
           details`keyword ${keyword} must be unique`,
         );
       },
-      saveIssuer: (issuerP, keyword) => {
+      saveIssuer: async (issuerP, keyword) => {
         // TODO: The checks of the keyword for uniqueness are
         // duplicated. Assess how waiting on promises to resolve might
         // affect those checks and see if one can be removed.
         zcf.assertUniqueKeyword(keyword);
-        return E(zoeInstanceAdmin)
-          .saveIssuer(issuerP, keyword)
-          .then(() => {
-            return issuerTable
-              .initIssuer(issuerP)
-              .then(record => registerIssuerRecordWithKeyword(keyword, record));
-          });
+        await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
+        const record = await issuerTable.initIssuer(issuerP);
+        return registerIssuerRecordWithKeyword(keyword, record);
       },
       makeInvitation: (offerHandler, description, customProperties = {}) => {
         assert.typeof(
