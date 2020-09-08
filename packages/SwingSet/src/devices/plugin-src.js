@@ -44,7 +44,17 @@ export function buildRootDeviceNode(tools) {
         }
       };
       // Create a bootstrap reference from the module.
-      const bootstrap = modNS.bootPlugin(connectedState[index]);
+      const bootstrap = modNS.bootPlugin(
+        harden({
+          getState() {
+            return connectedState[index];
+          },
+          setState(state) {
+            connectedState[index] = state;
+            saveState();
+          },
+        }),
+      );
 
       // Establish a CapTP connection.
       const { dispatch } = makeCapTP(mod, receiver, bootstrap);
