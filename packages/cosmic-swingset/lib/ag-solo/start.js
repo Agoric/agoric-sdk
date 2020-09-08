@@ -17,6 +17,7 @@ import {
   buildVatController,
   buildMailboxStateMap,
   buildMailbox,
+  buildPlugin,
   buildTimer,
 } from '@agoric/swingset-vat';
 import { getBestSwingStore } from '../check-lmdb';
@@ -87,6 +88,7 @@ async function buildSwingset(
   const mb = buildMailbox(mbs);
   const cm = buildCommand(broadcast);
   const timer = buildTimer();
+  const plugin = buildPlugin(require);
 
   let config = loadSwingsetConfigFile(`${vatsDir}/solo-config.json`);
   if (config === null) {
@@ -96,6 +98,7 @@ async function buildSwingset(
     ['mailbox', mb.srcPath, mb.endowments],
     ['command', cm.srcPath, cm.endowments],
     ['timer', timer.srcPath, timer.endowments],
+    ['plugin', plugin.srcPath, plugin.endowments],
   ];
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
