@@ -3,6 +3,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import { MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
@@ -32,7 +33,6 @@ const setupZCFTest = async (issuerKeywordRecord, terms) => {
 // TODO: Still to be tested:
 //  * @property {Reallocate} reallocate
 //  * @property {() => void} shutdown
-//  * @property {MakeZCFMint} makeZCFMint
 //  * @property {<Deadline>(exit?: ExitRule<Deadline>) => ZcfSeatKit} makeEmptySeatKit
 
 test(`zcf.getZoeService`, async t => {
@@ -61,8 +61,7 @@ const compareAmountMaths = (t, actualMaths, expectedMaths) => {
   });
 };
 
-const testTerms = async (t, expected, issuerKeywordRecord, terms) => {
-  const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
+const testTerms = async (t, zcf, expected) => {
   // Note that the amountMath are made locally within Zoe, so they
   // will not match the amountMath gotten from the setup code.
   const zcfTerms = zcf.getTerms();
@@ -74,7 +73,8 @@ const testTerms = async (t, expected, issuerKeywordRecord, terms) => {
 };
 
 test(`zcf.getTerms - empty`, async t => {
-  await testTerms(t, { brands: {}, issuers: {}, maths: {} });
+  const { zcf } = await setupZCFTest();
+  await testTerms(t, zcf, { brands: {}, issuers: {}, maths: {} });
 });
 
 test(`zcf.getTerms - custom`, async t => {
@@ -88,7 +88,8 @@ test(`zcf.getTerms - custom`, async t => {
   const customTerms = {
     whatever: 'whatever',
   };
-  await testTerms(t, expected, issuerKeywordRecord, customTerms);
+  const { zcf } = await setupZCFTest(issuerKeywordRecord, customTerms);
+  await testTerms(t, zcf, expected);
 });
 
 test(`zcf.getTerms - standard overwrites custom`, async t => {
@@ -101,7 +102,8 @@ test(`zcf.getTerms - standard overwrites custom`, async t => {
   const customTerms = {
     brands: 'whatever',
   };
-  await testTerms(t, expected, issuerKeywordRecord, customTerms);
+  const { zcf } = await setupZCFTest(issuerKeywordRecord, customTerms);
+  await testTerms(t, zcf, expected);
 });
 
 test(`zcf.getTerms - standard with 2 issuers and custom`, async t => {
@@ -116,7 +118,8 @@ test(`zcf.getTerms - standard with 2 issuers and custom`, async t => {
   const customTerms = {
     whatever: 'whatever',
   };
-  await testTerms(t, expected, issuerKeywordRecord, customTerms);
+  const { zcf } = await setupZCFTest(issuerKeywordRecord, customTerms);
+  await testTerms(t, zcf, expected);
 });
 
 test(`zcf.getTerms & zcf.saveIssuer`, async t => {
@@ -135,24 +138,10 @@ test(`zcf.getTerms & zcf.saveIssuer`, async t => {
   const customTerms = {
     whatever: 'whatever',
   };
-
-  // We can't use the testTerms helper because we want to call
-  // zcf.saveIssuer before making assertions. Mostly duplicated here.
   const { zcf } = await setupZCFTest(issuerKeywordRecord, customTerms);
-  /** THE UNIQUE PART */
-  // The `await` here is necessary so that the issuer information is actually
-  // saved to the terms
   await zcf.saveIssuer(bucksKit.issuer, 'C');
-  /** END UNIQUE PART */
 
-  // Note that the amountMath are made locally within Zoe, so they
-  // will not match the amountMath gotten from the setup code.
-  const zcfTerms = zcf.getTerms();
-  const zcfTermsMinusAmountMath = { ...zcfTerms, maths: {} };
-  const expectedMinusAmountMath = { ...expected, maths: {} };
-  t.deepEqual(zcfTermsMinusAmountMath, expectedMinusAmountMath);
-
-  compareAmountMaths(t, zcfTerms.maths, expected.maths);
+  await testTerms(t, zcf, expected);
 });
 
 test(`zcf.getBrandForIssuer - from issuerKeywordRecord & zcf.saveIssuer`, async t => {
@@ -385,4 +374,213 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
     instance,
   });
   t.falsy(typeof details.handle === 'string');
+});
+
+test(`zcf.makeZCFMint - no keyword`, async t => {
+  const { zcf } = await setupZCFTest();
+  // @ts-ignore
+  await t.throwsAsync(() => zcf.makeZCFMint(), {
+    message: '(an undefined) must be a string\nSee console for error data.',
+  });
+});
+
+test(`zcf.makeZCFMint - keyword already in use`, async t => {
+  const { moolaIssuer } = setup();
+  const { zcf } = await setupZCFTest({ A: moolaIssuer });
+  await t.throwsAsync(() => zcf.makeZCFMint('A'), {
+    message:
+      'Keyword (a string) already registered\nSee console for error data.',
+  });
+});
+
+test(`zcf.makeZCFMint - bad keyword`, async t => {
+  const { zcf } = await setupZCFTest();
+  await t.throwsAsync(() => zcf.makeZCFMint('a'), {
+    message:
+      'keyword "a" must be ascii and must start with a capital letter.\nSee console for error data.',
+  });
+});
+
+test(`zcf.makeZCFMint - not a math kind`, async t => {
+  const { zcf } = await setupZCFTest();
+  // @ts-ignore
+  await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
+    message:
+      'unrecognized amountMathKind: (a string)\nSee console for error data.',
+  });
+});
+
+test(`zcf.makeZCFMint - NAT`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.NAT);
+  const issuerRecord = zcfMint.getIssuerRecord();
+  const expected = {
+    issuers: { A: issuerRecord.issuer },
+    brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
+  };
+  await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.NAT);
+});
+
+test(`zcf.makeZCFMint - STRING_SET`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.STRING_SET);
+  const issuerRecord = zcfMint.getIssuerRecord();
+  const expected = {
+    issuers: { A: issuerRecord.issuer },
+    brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
+  };
+  await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.STRING_SET);
+});
+
+test(`zcf.makeZCFMint - SET`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const issuerRecord = zcfMint.getIssuerRecord();
+  const expected = {
+    issuers: { A: issuerRecord.issuer },
+    brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
+  };
+  await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.SET);
+});
+
+test(`zcf.makeZCFMint - mintGains - no args`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  // TODO: create seat if one is not provided
+  // https://github.com/Agoric/agoric-sdk/issues/1696
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  // @ts-ignore
+  t.throws(() => zcfMint.mintGains(), {
+    message: 'On demand seat creation not yet implemented',
+  });
+});
+
+test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // TODO: create seat if one is not provided
+  // https://github.com/Agoric/agoric-sdk/issues/1696
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  // @ts-ignore
+  t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
+    message: 'Cannot convert undefined or null to object',
+  });
+});
+
+test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  // @ts-ignore
+  t.throws(() => zcfMint.burnLosses(), {
+    message: "Cannot read property 'getCurrentAllocation' of undefined",
+  });
+});
+
+test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  // @ts-ignore
+  t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
+    message: 'Cannot convert undefined or null to object',
+  });
+});
+
+test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
+  const { moola, moolaIssuer } = setup();
+  const { zcf } = await setupZCFTest({ Moola: moolaIssuer });
+
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  // @ts-ignore
+  t.throws(() => zcfMint.mintGains({ Moola: moola(3) }, zcfSeat), {
+    message:
+      "the brand in the allegedAmount in 'coerce' didn't match the amountMath brand",
+  });
+});
+
+test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
+  const { moola, moolaIssuer } = setup();
+  const { zcf } = await setupZCFTest({ Moola: moolaIssuer });
+
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  // @ts-ignore
+  t.throws(() => zcfMint.burnLosses({ Moola: moola(3) }, zcfSeat), {
+    message:
+      "the brand in the allegedAmount in 'coerce' didn't match the amountMath brand",
+  });
+});
+
+test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
+  const { zcf } = await setupZCFTest();
+
+  const zcfMint = await zcf.makeZCFMint('A');
+  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
+  t.is(zcfSeat2, zcfSeat);
+  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+});
+
+test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
+  const { zcf } = await setupZCFTest();
+
+  const zcfMint = await zcf.makeZCFMint('A');
+  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // TODO: improve messages
+  // https://github.com/Agoric/agoric-sdk/issues/1708
+  const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
+  t.is(zcfSeat2, zcfSeat);
+  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+  // TODO: return a seat?
+  // https://github.com/Agoric/agoric-sdk/issues/1709
+  const result = zcfMint.burnLosses({ A: amountMath.make(1) }, zcfSeat);
+  t.is(result, undefined);
+  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(3));
+});
+
+test(`zcf.makeZCFMint - mintGains - seat exited`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A');
+  const { amountMath } = zcfMint.getIssuerRecord();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  zcfSeat.exit();
+  t.throws(() => zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat), {
+    message: `seat has been exited`,
+  });
+});
+
+test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A');
+  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
+  t.is(zcfSeat2, zcfSeat);
+  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+  zcfSeat.exit();
+  t.throws(() => zcfMint.burnLosses({ A: amountMath.make(1) }, zcfSeat), {
+    message: `seat has been exited`,
+  });
 });
