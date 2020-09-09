@@ -802,7 +802,8 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   // Again, mint some gains to change the allocation.
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
 
-  // @ts-ignore
+  // TODO: make brand optional
+  // https://github.com/Agoric/agoric-sdk/issues/1725
   t.deepEqual(zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
     value: 6,
