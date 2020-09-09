@@ -33,7 +33,6 @@ const setupZCFTest = async (issuerKeywordRecord, terms) => {
 // TODO: Still to be tested:
 //  * @property {Reallocate} reallocate
 //  * @property {() => void} shutdown
-//  * @property {<Deadline>(exit?: ExitRule<Deadline>) => ZcfSeatKit} makeEmptySeatKit
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -584,3 +583,282 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
     message: `seat has been exited`,
   });
 });
+
+const makeOffer = async (zoe, zcf, proposal, payments) => {
+  let zcfSeat;
+  const getSeat = seat => {
+    zcfSeat = seat;
+  };
+  const invitation = await zcf.makeInvitation(getSeat, 'seat');
+  const userSeat = await E(zoe).offer(invitation, proposal, payments);
+  return { zcfSeat, userSeat };
+};
+
+const similarToNormalZCFSeat = async (t, emptySeat, normalSeat) => {
+  // Note: not exhaustive
+  t.deepEqual(Object.keys(emptySeat), Object.keys(normalSeat));
+  t.deepEqual(emptySeat.getProposal(), normalSeat.getProposal());
+  t.deepEqual(
+    emptySeat.getCurrentAllocation(),
+    normalSeat.getCurrentAllocation(),
+  );
+  t.is(emptySeat.hasExited(), normalSeat.hasExited());
+};
+
+const similarToNormalUserSeat = async (t, emptySeat, normalSeat) => {
+  // Note: not exhaustive
+  t.deepEqual(Object.keys(emptySeat), Object.keys(normalSeat));
+  t.deepEqual(await emptySeat.getProposal(), await normalSeat.getProposal());
+  t.deepEqual(
+    await emptySeat.getCurrentAllocation(),
+    await normalSeat.getCurrentAllocation(),
+  );
+  t.is(await emptySeat.hasExited(), await normalSeat.hasExited());
+  t.is(await emptySeat.getOfferResult(), await normalSeat.getOfferResult());
+};
+
+test(`zcf.makeEmptySeatKit`, async t => {
+  const { zcf, zoe } = await setupZCFTest();
+  const result = zcf.makeEmptySeatKit();
+  t.deepEqual(Object.keys(result), ['zcfSeat', 'userSeat']);
+  const { zcfSeat: zcfSeatActual, userSeat: userSeatActualP } = result;
+  const {
+    zcfSeat: zcfSeatExpected,
+    userSeat: userSeatExpected,
+  } = await makeOffer(zoe, zcf);
+  await similarToNormalZCFSeat(t, zcfSeatActual, zcfSeatExpected);
+  const userSeatActual = await userSeatActualP;
+  await similarToNormalUserSeat(t, userSeatActual, userSeatExpected);
+  // Currently seats made with the "makeEmptySeatKit" method cannot
+  // have any give or want because we cannot yet escrow or reallocate
+  // assets as part of the offer.
+  // TODO: add `give` and `want` to seats made on the contract/ZCF side
+  // https://github.com/Agoric/agoric-sdk/issues/1724
+});
+
+test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
+  const expectedMethods = [
+    'exit',
+    'kickOut',
+    'getNotifier',
+    'hasExited',
+    'getProposal',
+    'getAmountAllocated',
+    'getCurrentAllocation',
+    'isOfferSafe',
+    'stage',
+  ];
+  const { zcf } = await setupZCFTest();
+  const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
+  const seat = makeZCFSeat();
+  t.deepEqual(Object.keys(seat), expectedMethods);
+});
+
+test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
+  const seat = makeZCFSeat();
+  t.deepEqual(seat.getProposal(), {
+    exit: {
+      onDemand: null,
+    },
+    give: {},
+    want: {},
+  });
+});
+
+test.failing(`zcfSeat.hasExited, exit from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  t.falsy(zcfSeat.hasExited());
+  zcfSeat.exit();
+  t.truthy(zcfSeat.hasExited());
+  // TODO: remove `failing` after fixing https://github.com/Agoric/agoric-sdk/issues/1729
+  t.truthy(await E(userSeat).hasExited());
+  t.deepEqual(await E(userSeat).getPayouts(), {});
+});
+
+test.failing(
+  `zcfSeat.hasExited, kickOut from zcf.makeEmptySeatKit`,
+  async t => {
+    const { zcf } = await setupZCFTest();
+    const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+    t.falsy(zcfSeat.hasExited());
+    const msg = `this is the error message`;
+    const err = zcfSeat.kickOut(Error(msg));
+    t.is(err.message, msg);
+    t.truthy(zcfSeat.hasExited());
+    // TODO: remove `failing` after fixing https://github.com/Agoric/agoric-sdk/issues/1729
+    t.truthy(await E(userSeat).hasExited());
+    t.deepEqual(await E(userSeat).getPayouts(), {});
+  },
+);
+
+test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { moola } = setup();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+  // Anything is offer safe with no want or give
+  // @ts-ignore
+  t.truthy(zcfSeat.isOfferSafe());
+  t.truthy(zcfSeat.isOfferSafe({ Moola: moola(0) }));
+  t.truthy(zcfSeat.isOfferSafe({ Moola: moola(10) }));
+});
+
+const allocateEasy = async (
+  zcf,
+  zcfMintKeyword,
+  zcfSeat,
+  gainsKeyword,
+  gainsValue,
+) => {
+  // Mint some gains to change the allocation.
+  const zcfMint = await zcf.makeZCFMint(zcfMintKeyword);
+  const { amountMath } = zcfMint.getIssuerRecord();
+  zcfMint.mintGains({ [gainsKeyword]: amountMath.make(gainsValue) }, zcfSeat);
+  return zcfMint.getIssuerRecord();
+};
+
+test(`zcfSeat.getNotifier`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  const notifier = zcfSeat.getNotifier();
+  // These are different notifiers
+  t.not(notifier, await E(userSeat).getNotifier());
+
+  // Mint some gains to change the allocation.
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+  t.deepEqual(await notifier.getUpdateSince(), {
+    updateCount: 2,
+    value: {
+      A: {
+        brand: brand1,
+        value: 3,
+      },
+    },
+  });
+
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+  t.deepEqual(await notifier.getUpdateSince(2), {
+    updateCount: 3,
+    value: {
+      A: {
+        brand: brand1,
+        value: 3,
+      },
+      B: {
+        brand: brand2,
+        value: 6,
+      },
+    },
+  });
+
+  zcfSeat.exit();
+
+  t.deepEqual(await notifier.getUpdateSince(3), {
+    updateCount: undefined,
+    value: undefined,
+  });
+});
+
+test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+
+  t.deepEqual(
+    zcfSeat.getCurrentAllocation(),
+    await E(userSeat).getCurrentAllocation(),
+  );
+  t.deepEqual(zcfSeat.getCurrentAllocation(), {});
+
+  // Mint some gains to change the allocation.
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+
+  t.deepEqual(zcfSeat.getCurrentAllocation(), {
+    A: {
+      brand: brand1,
+      value: 3,
+    },
+  });
+
+  // Again, mint some gains to change the allocation.
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+
+  t.deepEqual(zcfSeat.getCurrentAllocation(), {
+    A: {
+      brand: brand1,
+      value: 3,
+    },
+    B: {
+      brand: brand2,
+      value: 6,
+    },
+  });
+
+  t.deepEqual(
+    zcfSeat.getCurrentAllocation(),
+    await E(userSeat).getCurrentAllocation(),
+  );
+});
+
+test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
+
+  // Mint some gains to change the allocation.
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+
+  t.deepEqual(zcfSeat.getAmountAllocated('A', brand1), {
+    brand: brand1,
+    value: 3,
+  });
+
+  // Again, mint some gains to change the allocation.
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+
+  // TODO: make brand optional
+  // https://github.com/Agoric/agoric-sdk/issues/1725
+  t.deepEqual(zcfSeat.getAmountAllocated('B'), {
+    brand: brand2,
+    value: 6,
+  });
+
+  t.deepEqual(zcfSeat.getAmountAllocated('B', brand2), {
+    brand: brand2,
+    value: 6,
+  });
+
+  // @ts-ignore
+  t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
+    message: `"brand" not found: (an undefined)\nSee console for error data.`,
+  });
+});
+
+test(`zcfSeat.stage, zcf.reallocate from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
+  const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
+
+  const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6);
+  const staging1 = zcfSeat1.stage({
+    A: issuerRecord1.amountMath.make(0),
+  });
+  const staging2 = zcfSeat2.stage({
+    B: issuerRecord1.amountMath.make(6),
+  });
+
+  zcf.reallocate(staging1, staging2);
+
+  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
+    A: issuerRecord1.amountMath.make(0),
+  });
+  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
+    B: issuerRecord1.amountMath.make(6),
+  });
+});
+
+// TODO: test userSeat from zcf.makeEmptySeatKit
+
+// TODO: test zcf.reallocate
+
+// TODO: test zcf.shutdown
