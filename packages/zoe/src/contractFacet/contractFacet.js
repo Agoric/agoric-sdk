@@ -30,7 +30,7 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = undefined) {
+export function buildRootObject(_powers, _params, testJigSetter = undefined) {
   /** @type ExecuteContract */
   const executeContract = async (
     bundle,
@@ -232,29 +232,6 @@ export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = unde
       return zcfMint;
     };
 
-    /**
-     * Provide a jig object for testing purposes only.
-     * 
-     * The contract code provides a callback whose return result will 
-     * be made available to the test that started this contract. The 
-     * supplied callback will only be called in a testing context, 
-     * never in production; i.e., it is only called if `testJigSetter`
-     * was supplied. 
-     * 
-     * If no, \testFn\ is supplied, then an empty jig will be used.
-     * An additional `zcf` property set to the current ContractFacet
-     * will be appended to the returned jig object (overriding any 
-     * provided by the `testFn`).
-     * 
-     * @type SetTestJig 
-     */
-    const setTestJig = (testFn = () => ({})) => {
-      if (testJigSetter) {
-        console.warn('TEST ONLY: capturing test data', testFn);
-        testJigSetter({ ...testFn(), zcf });
-      }
-    }
-
     /** @type ContractFacet */
     const zcf = {
       reallocate: (/** @type SeatStaging[] */ ...seatStagings) => {
@@ -329,10 +306,10 @@ export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = unde
         /** @type {PromiseRecord<ZoeSeatAdmin>} */
         const zoeSeatAdminPromiseKit = makePromiseKit();
         // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-        zoeSeatAdminPromiseKit.promise.catch(_ => { });
+        zoeSeatAdminPromiseKit.promise.catch(_ => {});
         const userSeatPromiseKit = makePromiseKit();
         // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-        userSeatPromiseKit.promise.catch(_ => { });
+        userSeatPromiseKit.promise.catch(_ => {});
         const seatHandle = makeHandle('SeatHandle');
 
         const seatData = harden({
@@ -373,7 +350,28 @@ export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = unde
       getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
       getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
       getAmountMath,
-      setTestJig,
+      /**
+       * Provide a jig object for testing purposes only.
+       *
+       * The contract code provides a callback whose return result will
+       * be made available to the test that started this contract. The
+       * supplied callback will only be called in a testing context,
+       * never in production; i.e., it is only called if `testJigSetter`
+       * was supplied.
+       *
+       * If no, \testFn\ is supplied, then an empty jig will be used.
+       * An additional `zcf` property set to the current ContractFacet
+       * will be appended to the returned jig object (overriding any
+       * provided by the `testFn`).
+       *
+       * @type SetTestJig
+       */
+      setTestJig: (testFn = () => ({})) => {
+        if (testJigSetter) {
+          console.warn('TEST ONLY: capturing test data', testFn);
+          testJigSetter({ ...testFn(), zcf });
+        }
+      },
     };
     harden(zcf);
 
@@ -409,7 +407,7 @@ export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = unde
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
     // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-    contractCode.catch(() => { });
+    contractCode.catch(() => {});
 
     // Next, execute the contract code, passing in zcf
     /** @type {Promise<ExecuteContractResult>} */
@@ -423,7 +421,7 @@ export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = unde
           addSeatObj,
         });
       });
-    result.catch(() => { }); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    result.catch(() => {}); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
     return result;
   };
 

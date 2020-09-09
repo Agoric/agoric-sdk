@@ -9,7 +9,7 @@ import '../../../exported';
 const start = zcf => {
   // make the `zcf` available to the tests
   zcf.setTestJig();
-  return { };
+  return {};
 };
 
 harden(start);
