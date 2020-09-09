@@ -15,8 +15,8 @@ const contractRoot = `${__dirname}/zcfTesterContract`;
 
 test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
-  const testContext = {};
-  const zoe = makeZoe(makeFakeVatAdmin(testContext));
+  let testJig;
+  const zoe = makeZoe(makeFakeVatAdmin(jig => testJig = jig));
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
@@ -37,7 +37,7 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   // The contract uses the tstJig so the contractFacet 
   // is available here for testing purposes
   /** @type ContractFacet */
-  const zcf = testContext.zcf;
+  const zcf = testJig.zcf;
 
   let firstSeat;
 

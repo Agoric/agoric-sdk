@@ -30,8 +30,7 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-// TODO the `testContext` might need to be a later argument
-export function buildRootObject(testContext) {
+export function buildRootObject(_vatPowers, _vatParameters, testJigSetter = undefined) {
   /** @type ExecuteContract */
   const executeContract = async (
     bundle,
@@ -238,16 +237,17 @@ export function buildRootObject(testContext) {
      * to the test that started this contract. The supplied callback
      * will only be called in a testing context, never in production.
      * 
-     * Additionally, when the callback is invoked, the zcf will be 
-     * made available as well.
+     * The callback is only called if `testJigSetter` was supplied. 
+     * If this operation is called without a `testFn`, the `testJigSetter` 
+     * will be called with object with the `zcf` property set to the
+     * current ContractFacet.
      * 
      * @type SetTestJig 
      */
-    const setTestJig = (testFn = () => { }) => {
-      if (testContext) {
-        console.warn("TEST ONLY: capturing test data", testFn);
-        testContext.zcf = zcf;
-        testContext.data = testFn();
+    const setTestJig = (testFn = undefined) => {
+      if (testJigSetter) {
+        console.warn('TEST ONLY: capturing test data', testFn || 'zcf');
+        testJigSetter(testFn ? testFn() : { zcf });
       }
     }
 
@@ -325,10 +325,10 @@ export function buildRootObject(testContext) {
         /** @type {PromiseRecord<ZoeSeatAdmin>} */
         const zoeSeatAdminPromiseKit = makePromiseKit();
         // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-        zoeSeatAdminPromiseKit.promise.catch(_ => {});
+        zoeSeatAdminPromiseKit.promise.catch(_ => { });
         const userSeatPromiseKit = makePromiseKit();
         // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-        userSeatPromiseKit.promise.catch(_ => {});
+        userSeatPromiseKit.promise.catch(_ => { });
         const seatHandle = makeHandle('SeatHandle');
 
         const seatData = harden({
@@ -405,7 +405,7 @@ export function buildRootObject(testContext) {
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
     // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-    contractCode.catch(() => {});
+    contractCode.catch(() => { });
 
     // Next, execute the contract code, passing in zcf
     /** @type {Promise<ExecuteContractResult>} */
@@ -419,7 +419,7 @@ export function buildRootObject(testContext) {
           addSeatObj,
         });
       });
-    result.catch(() => {}); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    result.catch(() => { }); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
     return result;
   };
 
