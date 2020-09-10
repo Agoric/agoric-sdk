@@ -550,6 +550,33 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
       log('boughtTicketAmount: ', boughtTicketAmount);
     },
+
+    doOTCDesk: async untrustedInvitation => {
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      assert(invitationValue.installation === installations.coveredCall);
+
+      // Bob can use whatever keywords he wants
+      const proposal = harden({
+        give: { Whatever1: simoleans(4) },
+        want: { Whatever2: moola(3) },
+        exit: { onDemand: null },
+      });
+      await E(simoleanPurseP).deposit(simoleanPayment);
+      const simoleanPayment1 = await E(simoleanPurseP).withdraw(simoleans(4));
+
+      const seat = await E(zoe).offer(invitation, proposal, {
+        Whatever1: simoleanPayment1,
+      });
+
+      log(await E(seat).getOfferResult());
+
+      const moolaPayout = await E(seat).getPayout('Whatever2');
+      const simoleansPayout = await E(seat).getPayout('Whatever1');
+
+      log(await E(moolaIssuer).getAmountOf(moolaPayout));
+      log(await E(simoleanIssuer).getAmountOf(simoleansPayout));
+    },
   });
 };
 

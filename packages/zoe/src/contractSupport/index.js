@@ -19,4 +19,6 @@ export {
   satisfies,
   assertUsesNatMath,
   swapExact,
+  depositToSeat,
+  withdrawFromSeat,
 } from './zoeHelpers';

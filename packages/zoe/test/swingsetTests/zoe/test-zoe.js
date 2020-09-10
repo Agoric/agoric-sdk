@@ -18,6 +18,7 @@ const CONTRACT_FILES = [
   'simpleExchange',
   'sellItems',
   'mintAndSellNFT',
+  'otcDesk',
 ];
 
 test.before(async t => {
@@ -280,6 +281,25 @@ test.serial('zoe - sellTickets - valid inputs', async t => {
   ];
   const dump = await main(t, ['sellTicketsOk', startingValues]);
   t.deepEqual(dump.log, expectedSellTicketsOkLog);
+});
+
+const expectedOTCDeskOkLog = [
+  '=> alice, bob, carol and dave are set up',
+  'Inventory added',
+  '@@ schedule task for:1, currently: 0 @@',
+  'The option was exercised. Please collect the assets in your payout.',
+  '{"brand":{},"value":3}',
+  '{"brand":{},"value":0}',
+  'Inventory removed',
+  '{"brand":{},"value":2}',
+];
+test('zoe - otcDesk - valid inputs', async t => {
+  const startingValues = [
+    [10000, 10000, 10000],
+    [10000, 10000, 10000],
+  ];
+  const dump = await main(t, ['otcDeskOk', startingValues]);
+  t.deepEqual(dump.log, expectedOTCDeskOkLog);
 });
 
 const expectedBadTimerLog = [
