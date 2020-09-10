@@ -42,7 +42,7 @@ import { assertProposalShape, swapExact } from '../contractSupport';
  * The offerResult of this initial seat resolves to the call option
  * itself: an inspectable invitation to buy the underlying assets. The
  * call option invitation has this additional information in the
- * value: {expirationDate, timerAuthority, underlyingAssets,
+ * value: {expirationDate, timeAuthority, underlyingAssets,
  * strikePrice }
  *
  * The invitation itself can be traded as a valuable digital asset: a
@@ -75,12 +75,12 @@ const start = zcf => {
         throw err;
       }
       zcf.shutdown();
-      return `The option was exercised. Please check your payout to receive the underlying assets.`;
+      return `The option was exercised. Please collect the assets in your payout.`;
     };
 
     const customProps = harden({
       expirationDate: sellSeat.getProposal().exit.afterDeadline.deadline,
-      timerAuthority: sellSeat.getProposal().exit.afterDeadline.timer,
+      timeAuthority: sellSeat.getProposal().exit.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });

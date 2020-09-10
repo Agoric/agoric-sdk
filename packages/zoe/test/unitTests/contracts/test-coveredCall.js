@@ -138,7 +138,7 @@ test('zoe - coveredCall', async t => {
         );
 
         t.is(invitationValue.expirationDate, 1);
-        t.deepEqual(invitationValue.timerAuthority, timer);
+        t.deepEqual(invitationValue.timeAuthority, timer);
 
         const proposal = harden({
           give: { StrikePrice1: simoleans(7), StrikePrice2: bucks(2) },
@@ -154,7 +154,7 @@ test('zoe - coveredCall', async t => {
 
         t.is(
           await E(seat).getOfferResult(),
-          `The option was exercised. Please check your payout to receive the underlying assets.`,
+          `The option was exercised. Please collect the assets in your payout.`,
         );
         return seat;
       },
@@ -282,7 +282,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
   t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7) });
   t.is(optionValue.expirationDate, 1);
-  t.deepEqual(optionValue.timerAuthority, timer);
+  t.deepEqual(optionValue.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
 
@@ -424,7 +424,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3) });
   t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7) });
   t.is(optionDesc.expirationDate, 100);
-  t.deepEqual(optionDesc.timerAuthority, timer);
+  t.deepEqual(optionDesc.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
@@ -528,7 +528,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   t.is(
     await E(daveCoveredCallSeat).getOfferResult(),
-    `The option was exercised. Please check your payout to receive the underlying assets.`,
+    `The option was exercised. Please collect the assets in your payout.`,
   );
 
   // Dave should get 3 moola, Bob should get 1 buck, and Alice
@@ -673,7 +673,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
   t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7) });
   t.is(optionValue.expirationDate, 100);
-  t.deepEqual(optionValue.timerAuthority, timer);
+  t.deepEqual(optionValue.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create another coveredCall, but
   // this time to trade this invitation for bucks.
@@ -728,7 +728,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     ),
   );
   t.is(daveOptionValue.expirationDate, 100);
-  t.deepEqual(daveOptionValue.timerAuthority, timer);
+  t.deepEqual(daveOptionValue.timeAuthority, timer);
 
   // What about the underlying asset (the other option)?
   t.is(
@@ -747,7 +747,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     ),
   );
   t.deepEqual(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timerAuthority,
+    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timeAuthority,
     timer,
   );
 
@@ -767,7 +767,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   );
   t.is(
     await E(daveSecondCoveredCallSeat).getOfferResult(),
-    `The option was exercised. Please check your payout to receive the underlying assets.`,
+    `The option was exercised. Please collect the assets in your payout.`,
     `dave second offer accepted`,
   );
 
@@ -796,7 +796,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
 
   t.is(
     await daveFirstCoveredCallSeat.getOfferResult(),
-    'The option was exercised. Please check your payout to receive the underlying assets.',
+    'The option was exercised. Please collect the assets in your payout.',
     `dave first offer accepted`,
   );
 
@@ -946,7 +946,7 @@ test('zoe - coveredCall non-fungible', async t => {
       .isEqual(optionValue.strikePrice.StrikePrice, aGloriousShieldAmount),
   );
   t.is(optionValue.expirationDate, 1);
-  t.deepEqual(optionValue.timerAuthority, timer);
+  t.deepEqual(optionValue.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };
 
@@ -962,7 +962,7 @@ test('zoe - coveredCall non-fungible', async t => {
 
   t.is(
     await E(bobSeat).getOfferResult(),
-    `The option was exercised. Please check your payout to receive the underlying assets.`,
+    `The option was exercised. Please collect the assets in your payout.`,
   );
 
   const bobCcPayout = await E(bobSeat).getPayout('UnderlyingAsset');

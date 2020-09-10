@@ -34,7 +34,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           Asset: moolaKit.issuer,
           Ask: simoleanKit.issuer,
         });
-        const terms = { timerAuthority: timer, closesAfter: 1 };
+        const terms = { timeAuthority: timer, closesAfter: 1 };
         const adminP = zoe.startInstance(
           installation,
           issuerKeywordRecord,
@@ -115,7 +115,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         t.deepEqual(
           invitationValue.closesAfter,
           1,
-          `auction will be closed after 1 tick according to the timerAuthority`,
+          `auction will be closed after 1 tick according to the timeAuthority`,
         );
 
         const proposal = harden({
@@ -265,7 +265,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     Ask: simoleanR.issuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timerAuthority: timer, closesAfter: 1 });
+  const terms = harden({ timeAuthority: timer, closesAfter: 1 });
   const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
@@ -430,7 +430,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Ask: moolaIssuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timerAuthority: timer, closesAfter: 1 });
+  const terms = harden({ timeAuthority: timer, closesAfter: 1 });
   const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,

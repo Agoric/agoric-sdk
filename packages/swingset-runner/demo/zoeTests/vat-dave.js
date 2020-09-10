@@ -133,7 +133,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         optionValue[0].expirationDate === 100,
         details`wrong expiration date`,
       );
-      assert(optionValue[0].timerAuthority === timer, details`wrong timer`);
+      assert(optionValue[0].timeAuthority === timer, details`wrong timer`);
 
       // Dave escrows his 1 buck with Zoe and forms his proposal
       const daveSwapProposal = harden({
