@@ -18,8 +18,9 @@ import { assertProposalShape, swapExact } from '../contractSupport';
  *
  * The `creatorInvitation` of this contract is an invitation to escrow
  * the underlying assets. The proposal to escrow assets can have any
- * `give` and `want` with any keywords, but it must have an exit
- * record with the key "afterDeadline":
+ * `give` and `want` with any keywords. Any number of assets of
+ * different brands can be escrowed under different keywords. The
+ * proposal must have an exit record with the key "afterDeadline":
  * {
  *    give: { ... }, want: { ... }, exit: {afterDeadline: { deadline:
  *    time, timer: myTimer }
