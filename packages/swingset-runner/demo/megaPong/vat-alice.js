@@ -4,14 +4,14 @@ const log = console.log;
 
 // Ping Print Predicate, a hack to reduce log spam
 function ppp(count) {
-  if (count > 10000) {
-    return count % 10000 === 0;
-  } else if (count > 1000) {
-    return count % 1000 === 0;
-  } else if (count > 100) {
-    return count % 100 === 0;
-  } else if (count > 10) {
-    return count % 10 === 0;
+  if (count > 9999) {
+    return count % 9999 === 0;
+  } else if (count > 999) {
+    return count % 999 === 0;
+  } else if (count > 99) {
+    return count % 99 === 0;
+  } else if (count > 9) {
+    return count % 9 === 0;
   } else {
     return true;
   }

@@ -47,9 +47,9 @@ function runone {
     cmdargs="$cmdargs --dump --dumptag t${runct}-"
   fi
   cmdline="$cmd $cmdargs $@"
-  echo "$cmdline"
+  echo "$cmdline > rlog-${runct}"
   if [ $dotime ]; then
-    time $cmdline > rlog-${runct}
+    (time $cmdline) >& rlog-${runct}
   else
     $cmdline > rlog-${runct}
   fi
