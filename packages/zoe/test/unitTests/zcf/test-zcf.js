@@ -10,13 +10,19 @@ import bundleSource from '@agoric/bundle-source';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import fakeVatAdmin from '../contracts/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
 import buildManualTimer from '../../../tools/manualTimer';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
 const setupZCFTest = async (issuerKeywordRecord, terms) => {
-  const zoe = makeZoe(fakeVatAdmin);
+  /** @type ContractFacet */
+  let zcf;
+  const setZCF = jig => {
+    zcf = jig.zcf;
+  };
+  // The contract provides the `zcf` via `setTestJig` upon `start`.
+  const zoe = makeZoe(makeFakeVatAdmin(setZCF));
   const bundle = await bundleSource(contractRoot);
   const installation = await zoe.install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(
@@ -24,10 +30,7 @@ const setupZCFTest = async (issuerKeywordRecord, terms) => {
     issuerKeywordRecord,
     terms,
   );
-  // This contract gives ZCF as the contractFacet for testing purposes
-  /** @type ContractFacet */
-  const zcf = creatorFacet;
-  return { zoe, zcf, instance, installation };
+  return { zoe, zcf, instance, installation, creatorFacet };
 };
 
 // TODO: Still to be tested:

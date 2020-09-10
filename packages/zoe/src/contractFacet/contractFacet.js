@@ -30,7 +30,7 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-export function buildRootObject() {
+export function buildRootObject(_powers, _params, testJigSetter = undefined) {
   /** @type ExecuteContract */
   const executeContract = async (
     bundle,
@@ -350,6 +350,28 @@ export function buildRootObject() {
       getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
       getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
       getAmountMath,
+      /**
+       * Provide a jig object for testing purposes only.
+       *
+       * The contract code provides a callback whose return result will
+       * be made available to the test that started this contract. The
+       * supplied callback will only be called in a testing context,
+       * never in production; i.e., it is only called if `testJigSetter`
+       * was supplied.
+       *
+       * If no, \testFn\ is supplied, then an empty jig will be used.
+       * An additional `zcf` property set to the current ContractFacet
+       * will be appended to the returned jig object (overriding any
+       * provided by the `testFn`).
+       *
+       * @type SetTestJig
+       */
+      setTestJig: (testFn = () => ({})) => {
+        if (testJigSetter) {
+          console.warn('TEST ONLY: capturing test data', testFn);
+          testJigSetter({ ...testFn(), zcf });
+        }
+      },
     };
     harden(zcf);
 

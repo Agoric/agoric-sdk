@@ -9,13 +9,17 @@ import bundleSource from '@agoric/bundle-source';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import fakeVatAdmin from '../contracts/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
 test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  let testJig;
+  const setJig = jig => {
+    testJig = jig;
+  };
+  const zoe = makeZoe(makeFakeVatAdmin(setJig));
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
@@ -28,14 +32,16 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     Money: simoleanIssuer,
   });
 
+  // eslint-disable-next-line no-unused-vars
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
 
-  // This contract gives ZCF as the contractFacet for testing purposes
+  // The contract uses the testJig so the contractFacet
+  // is available here for testing purposes
   /** @type ContractFacet */
-  const zcf = creatorFacet;
+  const zcf = testJig.zcf;
 
   let firstSeat;
 
