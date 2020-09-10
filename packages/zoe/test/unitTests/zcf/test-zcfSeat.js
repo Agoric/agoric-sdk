@@ -16,7 +16,9 @@ const contractRoot = `${__dirname}/zcfTesterContract`;
 test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
   let testJig;
-  const setJig = jig => { testJig = jig; };
+  const setJig = jig => {
+    testJig = jig;
+  };
   const zoe = makeZoe(makeFakeVatAdmin(setJig));
 
   // pack the contract
@@ -30,6 +32,7 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     Money: simoleanIssuer,
   });
 
+  // eslint-disable-next-line no-unused-vars
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,

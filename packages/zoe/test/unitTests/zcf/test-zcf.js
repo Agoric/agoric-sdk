@@ -18,7 +18,9 @@ const contractRoot = `${__dirname}/zcfTesterContract`;
 const setupZCFTest = async (issuerKeywordRecord, terms) => {
   /** @type ContractFacet */
   let zcf;
-  const setZCF = jig => { zcf = jig.zcf; };
+  const setZCF = jig => {
+    zcf = jig.zcf;
+  };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const zoe = makeZoe(makeFakeVatAdmin(setZCF));
   const bundle = await bundleSource(contractRoot);
