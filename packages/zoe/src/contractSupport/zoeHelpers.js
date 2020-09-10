@@ -256,6 +256,8 @@ export const assertUsesNatMath = (zcf, brand) => {
   );
 };
 
+export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
+
 /**
  * Deposit payments such that their amounts are reallocated to a seat.
  * The `amounts` and `payments` records must have corresponding
@@ -267,8 +269,9 @@ export const assertUsesNatMath = (zcf, brand) => {
  * @param {PaymentKeywordRecord} payments
  * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
+
 export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
-  assert(!recipientSeat.hasExited(), 'The recipientSeat was exited.');
+  assert(!recipientSeat.hasExited(), 'The recipientSeat cannot not be exited.');
 
   // We will create a temporary offer to be able to escrow our payments
   // with Zoe.
@@ -283,7 +286,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
       { seat: recipientSeat, gains: amounts },
     );
     tempSeat.exit();
-    return `Deposit and reallocation successful.`;
+    return depositToSeatSuccessMsg;
   }
   const invitation = zcf.makeInvitation(
     reallocateAfterDeposit,
@@ -303,7 +306,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
 
 /**
  * Withdraw payments from a seat. Note that withdrawing the amounts of
- * the payments must not violate offer safety for the seat. The
+ * the payments must not and cannot violate offer safety for the seat. The
  * `amounts` and `payments` records must have corresponding keywords.
  *
  * @param {ContractFacet} zcf
@@ -312,7 +315,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
  * @returns {Promise<PaymentPKeywordRecord>}
  */
 export async function withdrawFromSeat(zcf, seat, amounts) {
-  assert(!seat.hasExited(), 'The seat was exited.');
+  assert(!seat.hasExited(), 'The seat cannot be exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
   trade(zcf, { seat: tempSeat, gains: amounts }, { seat, gains: {} });
   tempSeat.exit();
