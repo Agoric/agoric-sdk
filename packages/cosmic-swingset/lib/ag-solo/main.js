@@ -128,7 +128,9 @@ start
     }
     case 'start': {
       const basedir = insistIsBasedir();
-      await start(basedir, { ROLE: 'client' });
+      await start(basedir, {
+        ROLE: 'client',
+      });
       break;
     }
     case 'reset-state': {

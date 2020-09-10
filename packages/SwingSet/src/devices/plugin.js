@@ -1,4 +1,4 @@
-export function buildPlugin(pluginRequire, queueThunkForKernel) {
+export function buildPlugin(pluginDir, pluginRequire, queueThunkForKernel) {
   const srcPath = require.resolve('./plugin-src');
   let resetter;
 
@@ -14,6 +14,10 @@ export function buildPlugin(pluginRequire, queueThunkForKernel) {
     resetter = init;
   }
 
+  function getPluginDir() {
+    return pluginDir;
+  }
+
   // srcPath and endowments are provided to buildRootDeviceNode() for use
   // during configuration.
   return {
@@ -22,6 +26,7 @@ export function buildPlugin(pluginRequire, queueThunkForKernel) {
       require: pluginRequire,
       queueThunkForKernel,
       registerResetter,
+      getPluginDir,
     },
     reset,
   };

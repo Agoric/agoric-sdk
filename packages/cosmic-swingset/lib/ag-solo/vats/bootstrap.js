@@ -216,7 +216,11 @@ export function buildRootObject(vatPowers, vatParameters) {
     // Needed for DApps, maybe for user clients.
     const uploads = E(vats.uploads).getUploads();
 
-    const plugin = makePluginManager(devices.plugin, vatPowers);
+    // Only create the plugin manager if the device exists.
+    let plugin;
+    if (devices.plugin) {
+      plugin = makePluginManager(devices.plugin, vatPowers);
+    }
 
     // This will allow dApp developers to register in their api/deploy.js
     const httpRegCallback = {
@@ -243,9 +247,9 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     return allComparable(
       harden({
+        ...(plugin ? { plugin } : {}),
         uploads,
         spawner,
-        plugin,
         network: vats.network,
         http: httpRegCallback,
         vattp: makeVattpFrom(vats),

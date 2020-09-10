@@ -96,20 +96,21 @@ async function buildSwingset(
     await processKernel();
   });
 
-  const pluginsPrefix = `${path.resolve('./plugins')}${path.sep}`;
+  const pluginDir = path.resolve('./plugins');
+  const pluginsPrefix = `${pluginDir}${path.sep}`;
   const pluginRequire = mod => {
     // Ensure they can't traverse out of the plugins prefix.
     const pluginFile = path.resolve(pluginsPrefix, mod);
     assert(
       pluginFile.startsWith(pluginsPrefix),
-      details`Cannot load ${pluginFile} plugin; outside of ./plugins`,
+      details`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`,
     );
 
     // eslint-disable-next-line import/no-dynamic-require,global-require
     return require(pluginFile);
   };
 
-  const plugin = buildPlugin(pluginRequire, queueThunkForKernel);
+  const plugin = buildPlugin(pluginDir, pluginRequire, queueThunkForKernel);
 
   let config = loadSwingsetConfigFile(`${vatsDir}/solo-config.json`);
   if (config === null) {

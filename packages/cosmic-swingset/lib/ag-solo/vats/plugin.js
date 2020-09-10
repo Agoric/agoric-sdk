@@ -27,6 +27,7 @@ import { E, HandledPromise } from '@agoric/eventual-send';
  * @property {(mod: string) => number} connect
  * @property {(receiver: Receiver) => void} registerReceiver
  * @property {(index: number, obj: Record<string, any>) => void} send
+ * @property {() => string} getPluginDir
  */
 
 /**
@@ -63,6 +64,9 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   );
 
   return harden({
+    getPluginDir() {
+      return D(pluginDevice).getPluginDir();
+    },
     /**
      * Load a module, and call resetter.onReset(bootP) every time it is instantiated.
      */

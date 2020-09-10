@@ -118,6 +118,9 @@ export function buildRootDeviceNode(tools) {
   });
 
   return harden({
+    getPluginDir() {
+      return endowments.getPluginDir();
+    },
     connect,
     send,
     registerReceiver(receiver) {
