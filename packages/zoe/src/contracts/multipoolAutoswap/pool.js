@@ -31,11 +31,9 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
 
     const addLiquidityActual = (pool, userSeat, secondaryAmount) => {
       const liquidityValueOut = calcLiqValueToMint(
-        harden({
-          liqTokenSupply,
-          inputValue: userSeat.getAmountAllocated('Central').value,
-          inputReserve: pool.getCentralAmount().value,
-        }),
+        liqTokenSupply,
+        userSeat.getAmountAllocated('Central').value,
+        pool.getCentralAmount().value,
       );
 
       const liquidityAmountOut = liquidityAmountMath.make(liquidityValueOut);
@@ -78,38 +76,38 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         poolSeat.getAmountAllocated('Secondary', secondaryBrand),
       getCentralToSecondaryInputPrice: inputValue => {
         assertPoolInitialized(pool);
-        const result = getInputPrice({
+        const result = getInputPrice(
           inputValue,
-          inputReserve: pool.getCentralAmount().value,
-          outputReserve: pool.getSecondaryAmount().value,
-        });
+          pool.getCentralAmount().value,
+          pool.getSecondaryAmount().value,
+        );
         return pool.getAmountMath().make(result);
       },
       getSecondaryToCentralInputPrice: inputValue => {
         assertPoolInitialized(pool);
-        const result = getInputPrice({
+        const result = getInputPrice(
           inputValue,
-          inputReserve: pool.getSecondaryAmount().value,
-          outputReserve: pool.getCentralAmount().value,
-        });
+          pool.getSecondaryAmount().value,
+          pool.getCentralAmount().value,
+        );
         return pool.getCentralAmountMath().make(result);
       },
       getCentralToSecondaryOutputPrice: outputValue => {
         assertPoolInitialized(pool);
-        const result = getOutputPrice({
+        const result = getOutputPrice(
           outputValue,
-          inputReserve: pool.getCentralAmount().value,
-          outputReserve: pool.getSecondaryAmount().value,
-        });
+          pool.getCentralAmount().value,
+          pool.getSecondaryAmount().value,
+        );
         return pool.getAmountMath().make(result);
       },
       getSecondaryToCentralOutputPrice: outputValue => {
         assertPoolInitialized(pool);
-        const result = getOutputPrice({
+        const result = getOutputPrice(
           outputValue,
-          inputReserve: pool.getSecondaryAmount().value,
-          outputReserve: pool.getCentralAmount().value,
-        });
+          pool.getSecondaryAmount().value,
+          pool.getCentralAmount().value,
+        );
         return pool.getCentralAmountMath().make(result);
       },
       addLiquidity: userSeat => {
@@ -123,14 +121,16 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
 
         // To calculate liquidity, we'll need to calculate alpha from the primary
         // token's value before, and the value that will be added to the pool
-        const secondaryOut = pool.getAmountMath().make(
-          calcSecondaryRequired({
-            centralIn: userAllocation.Central.value,
-            centralPool: pool.getCentralAmount().value,
-            secondaryPool: pool.getSecondaryAmount().value,
-            secondaryIn: secondaryIn.value,
-          }),
-        );
+        const secondaryOut = pool
+          .getAmountMath()
+          .make(
+            calcSecondaryRequired(
+              userAllocation.Central.value,
+              pool.getCentralAmount().value,
+              pool.getSecondaryAmount().value,
+              secondaryIn.value,
+            ),
+          );
 
         // Central was specified precisely so offer must provide enough secondary.
         assert(
@@ -146,25 +146,25 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           liquidityBrand,
         );
         const liquidityValueIn = liquidityIn.value;
-        const centralTokenAmountOut = pool.getCentralAmountMath().make(
-          calcValueToRemove(
-            harden({
+        const centralTokenAmountOut = pool
+          .getCentralAmountMath()
+          .make(
+            calcValueToRemove(
               liqTokenSupply,
-              poolValue: pool.getCentralAmount().value,
+              pool.getCentralAmount().value,
               liquidityValueIn,
-            }),
-          ),
-        );
+            ),
+          );
 
-        const tokenKeywordAmountOut = pool.getAmountMath().make(
-          calcValueToRemove(
-            harden({
+        const tokenKeywordAmountOut = pool
+          .getAmountMath()
+          .make(
+            calcValueToRemove(
               liqTokenSupply,
-              poolValue: pool.getSecondaryAmount().value,
+              pool.getSecondaryAmount().value,
               liquidityValueIn,
-            }),
-          ),
-        );
+            ),
+          );
 
         liqTokenSupply -= liquidityValueIn;
 

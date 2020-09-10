@@ -143,11 +143,9 @@ const start = async zcf => {
     } = swapSeat.getProposal();
 
     const outputValue = getInputPrice(
-      harden({
-        inputValue: amountIn.value,
-        inputReserve: getPoolAmount(amountIn.brand).value,
-        outputReserve: getPoolAmount(wantedAmountOut.brand).value,
-      }),
+      amountIn.value,
+      getPoolAmount(amountIn.brand).value,
+      getPoolAmount(wantedAmountOut.brand).value,
     );
     const outAmountMath = zcf.getAmountMath(wantedAmountOut.brand);
     const tradeAmountOut = outAmountMath.make(outputValue);
@@ -173,11 +171,11 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
-    const tradePrice = getOutputPrice({
-      outputValue: wantedAmountOut.value,
-      inputReserve: getPoolAmount(amountIn.brand).value,
-      outputReserve: getPoolAmount(wantedAmountOut.brand).value,
-    });
+    const tradePrice = getOutputPrice(
+      wantedAmountOut.value,
+      getPoolAmount(amountIn.brand).value,
+      getPoolAmount(wantedAmountOut.brand).value,
+    );
     assert(tradePrice <= amountIn.value, 'amountIn insufficient');
     const inAmountMath = zcf.getAmountMath(amountIn.brand);
     const tradeAmountIn = inAmountMath.make(tradePrice);
@@ -190,11 +188,9 @@ const start = async zcf => {
     const centralPool = getPoolAmount(brands.Central).value;
     const centralIn = userAllocation.Central.value;
     const liquidityValueOut = calcLiqValueToMint(
-      harden({
-        liqTokenSupply,
-        inputValue: centralIn,
-        inputReserve: centralPool,
-      }),
+      liqTokenSupply,
+      centralIn,
+      centralPool,
     );
     const liquidityAmountOut = liquidityMath.make(liquidityValueOut);
     liquidityMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
@@ -248,12 +244,12 @@ const start = async zcf => {
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
     const secondaryOut = secondaryMath.make(
-      calcSecondaryRequired({
-        centralIn: userAllocation.Central.value,
-        centralPool: getPoolAmount(brands.Central).value,
-        secondaryPool: getPoolAmount(brands.Secondary).value,
-        secondaryIn: secondaryIn.value,
-      }),
+      calcSecondaryRequired(
+        userAllocation.Central.value,
+        getPoolAmount(brands.Central).value,
+        getPoolAmount(brands.Secondary).value,
+        secondaryIn.value,
+      ),
     );
 
     // Central was specified precisely so offer must provide enough secondary.
@@ -277,20 +273,16 @@ const start = async zcf => {
 
     const newUserCentralAmount = centralMath.make(
       calcValueToRemove(
-        harden({
-          liqTokenSupply,
-          poolValue: getPoolAmount(brands.Central).value,
-          liquidityValueIn,
-        }),
+        liqTokenSupply,
+        getPoolAmount(brands.Central).value,
+        liquidityValueIn,
       ),
     );
     const newUserSecondaryAmount = secondaryMath.make(
       calcValueToRemove(
-        harden({
-          liqTokenSupply,
-          poolValue: getPoolAmount(brands.Secondary).value,
-          liquidityValueIn,
-        }),
+        liqTokenSupply,
+        getPoolAmount(brands.Secondary).value,
+        liquidityValueIn,
       ),
     );
 
@@ -339,11 +331,9 @@ const start = async zcf => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
     const outputReserve = getPoolAmount(brandOut).value;
     const outputValue = getInputPrice(
-      harden({
-        inputValue: amountIn.value,
-        inputReserve,
-        outputReserve,
-      }),
+      amountIn.value,
+      inputReserve,
+      outputReserve,
     );
     return zcf.getAmountMath(brandOut).make(outputValue);
   };
@@ -359,11 +349,9 @@ const start = async zcf => {
     const inputReserve = getPoolAmount(brandIn).value;
     const outputReserve = getPoolAmount(amountOut.brand).value;
     const outputValue = getOutputPrice(
-      harden({
-        outputValue: amountOut.value,
-        inputReserve,
-        outputReserve,
-      }),
+      amountOut.value,
+      inputReserve,
+      outputReserve,
     );
     return zcf.getAmountMath(brandIn).make(outputValue);
   };

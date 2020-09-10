@@ -15,24 +15,23 @@ const { add, subtract, multiply, floorDivide } = natSafeMath;
  * request, and to do the actual reallocation after an offer has
  * been made.
  *
- * @param {Object} params
- * @param  {number} params.inputValue - the value of the asset sent
+ * @param {number} inputValue - the value of the asset sent
  * in to be swapped
- * @param  {number} params.inputReserve - the value in the liquidity
+ * @param {number} inputReserve - the value in the liquidity
  * pool of the kind of asset sent in
- * @param  {number} params.outputReserve - the value in the liquidity
+ * @param {number} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
- * @param  {number} [params.feeBasisPoints=30] - the fee taken in
- * basis points. The default is 0.3% or 30 basis points. The fee is taken from
- * inputValue
+ * @param {number} [feeBasisPoints=30] - the fee taken in
+ * basis points. The default is 0.3% or 30 basis points. The fee
+ * is taken from inputValue
  * @returns {number} outputValue - the current price, in value form
  */
-export const getInputPrice = ({
+export const getInputPrice = (
   inputValue,
   inputReserve,
   outputReserve,
   feeBasisPoints = 30,
-}) => {
+) => {
   const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
   const inputWithFee = multiply(inputValue, oneMinusFeeInTenThousandths);
   const numerator = multiply(inputWithFee, outputReserve);
@@ -49,24 +48,23 @@ export const getInputPrice = ({
  * request, and to do the actual reallocation after an offer has
  * been made.
  *
- * @param {Object} params
- * @param  {number} params.outputValue - the value of the asset the user wants
+ * @param {number} outputValue - the value of the asset the user wants
  * to get
- * @param  {number} params.inputReserve - the value in the liquidity
+ * @param {number} inputReserve - the value in the liquidity
  * pool of the asset being spent
- * @param  {number} params.outputReserve - the value in the liquidity
+ * @param {number} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
- * @param  {number} [params.feeBasisPoints=30] - the fee taken in
+ * @param {number} [feeBasisPoints=30] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee is taken from
  * outputValue
  * @returns {number} inputValue - the value of input required to purchase output
  */
-export const getOutputPrice = ({
+export const getOutputPrice = (
   outputValue,
   inputReserve,
   outputReserve,
   feeBasisPoints = 30,
-}) => {
+) => {
   const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
   const numerator = multiply(multiply(outputValue, inputReserve), 10000);
   const denominator = multiply(
@@ -86,11 +84,11 @@ function assertDefined(label, value) {
 // liquidity multiplied by the ratio of new central tokens to central tokens
 // already held. If the current supply is zero, return the inputValue as the
 // initial liquidity to mint is arbitrary.
-export const calcLiqValueToMint = ({
+export const calcLiqValueToMint = (
   liqTokenSupply,
   inputValue,
   inputReserve,
-}) => {
+) => {
   assertDefined('liqTokenSupply', liqTokenSupply);
   assertDefined('inputValue', inputValue);
   assertDefined('inputReserve', inputReserve);
@@ -98,7 +96,6 @@ export const calcLiqValueToMint = ({
   if (liqTokenSupply === 0) {
     return inputValue;
   }
-
   return floorDivide(multiply(inputValue, liqTokenSupply), inputReserve);
 };
 
@@ -107,20 +104,19 @@ export const calcLiqValueToMint = ({
  * adding liquidity. We require that the deposited ratio of central to secondary
  * match the current ratio of holdings in the pool.
  *
- * @param {Object} params
- * @param {number} params.centralIn - The value of central assets being deposited
- * @param {number} params.centralPool - The value of central assets in the pool
- * @param {number} params.secondaryPool - The value of secondary assets in the pool
- * @param {number} params.secondaryIn - The value of secondary assets provided. If
+ * @param {number} centralIn - The value of central assets being deposited
+ * @param {number} centralPool - The value of central assets in the pool
+ * @param {number} secondaryPool - The value of secondary assets in the pool
+ * @param {number} secondaryIn - The value of secondary assets provided. If
  * the pool is empty, the entire amount will be accepted
  * @returns {number} - the amount of secondary required
  */
-export const calcSecondaryRequired = ({
+export const calcSecondaryRequired = (
   centralIn,
   centralPool,
   secondaryPool,
   secondaryIn,
-}) => {
+) => {
   assertDefined('centralIn', centralIn);
   assertDefined('centralPool', centralPool);
   assertDefined('secondaryReserve', secondaryPool);
@@ -143,11 +139,11 @@ export const calcSecondaryRequired = ({
 
 // Calculate how many underlying tokens (in the form of a value) should be
 // returned when removing liquidity.
-export const calcValueToRemove = ({
+export const calcValueToRemove = (
   liqTokenSupply,
   poolValue,
   liquidityValueIn,
-}) => {
+) => {
   assertDefined('liqTokenSupply', liqTokenSupply);
   assertDefined('liquidityValueIn', liquidityValueIn);
   assertDefined('poolValue', poolValue);
