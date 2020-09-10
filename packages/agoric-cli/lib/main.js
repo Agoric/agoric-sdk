@@ -132,6 +132,11 @@ const main = async (progname, rawArgs, powers) => {
     .command('deploy [script...]')
     .description('run a deployment script against the local Agoric VM')
     .option(
+      '--allow-unsafe-plugins',
+      'CAREFUL: allow the deploy script full control over the Agoric VM',
+      false,
+    )
+    .option(
       '--hostport <host:port>',
       'host and port to connect to VM',
       '127.0.0.1:8000',

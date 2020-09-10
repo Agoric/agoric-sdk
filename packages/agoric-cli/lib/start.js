@@ -22,7 +22,7 @@ const HOST_PORT = process.env.HOST_PORT || PORT;
 const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 
 export default async function startMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, spawn, os, process } = powers;
+  const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:start');
 
   const pspawnEnv = { ...process.env };
@@ -109,11 +109,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   let agSolo;
-  let agSetupSolo;
   let agServer;
   if (opts.sdk) {
     agSolo = path.resolve(__dirname, '../../cosmic-swingset/bin/ag-solo');
-    agSetupSolo = path.resolve(__dirname, '../../cosmic-swingset/setup-solo');
   } else {
     agSolo = `${process.cwd()}/node_modules/@agoric/cosmic-swingset/bin/ag-solo`;
   }
@@ -512,55 +510,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return setupRun();
   }
 
-  async function startTestnetSdk(profileName, startArgs) {
-    const virtEnv = path.resolve(
-      `_agstate/agoric-servers/ve3-${os.platform()}-${os.arch()}`,
-    );
-    if (!(await exists(`${virtEnv}/bin/pip`))) {
-      const exitStatus = await pspawn('python3', ['-mvenv', virtEnv], {
-        cwd: agSetupSolo,
-      });
-      if (exitStatus) {
-        return exitStatus;
-      }
-    }
-
-    const pipRun = (...bonusArgs) =>
-      pspawn(`${virtEnv}/bin/pip`, bonusArgs, {
-        cwd: agSetupSolo,
-      });
-
-    if (!(await exists(`${virtEnv}/bin/wheel`))) {
-      const exitStatus = await pipRun('install', 'wheel');
-      if (exitStatus) {
-        return exitStatus;
-      }
-    }
-
-    if (!(await exists(`${virtEnv}/bin/ag-setup-solo`))) {
-      const exitStatus = await pipRun('install', `--editable`, '.');
-      if (exitStatus) {
-        return exitStatus;
-      }
-    }
-
+  async function startTestnetSdk(_profileName, startArgs) {
     const setupRun = (...bonusArgs) =>
-      pspawn(
-        `${virtEnv}/bin/ag-setup-solo`,
-        [`--webport=${PORT}`, ...bonusArgs, ...startArgs],
-        {
-          env: { ...pspawnEnv, AG_SOLO_BASEDIR: agServer },
-        },
-      );
+      pspawn(agSolo, [`--webport=${PORT}`, ...bonusArgs, ...startArgs], {
+        env: { ...pspawnEnv, AG_SOLO_BASEDIR: agServer },
+      });
 
-    if (!(await exists(agServer))) {
-      const exitStatus = await setupRun('--no-restart');
-      if (exitStatus) {
-        return exitStatus;
-      }
-    }
-
-    return setupRun();
+    return setupRun('setup');
   }
 
   const profiles = {

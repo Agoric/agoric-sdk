@@ -15,13 +15,13 @@ const HELPER = 'ag-cosmos-helper';
 const SUPPORT_ADDRESS =
   '@agoric.support#testnet on Keybase (https://keybase.io)';
 
-const adviseProvision = myAddr =>
+const adviseEgress = myAddr =>
   `\
 
 
 Send:
 
-  !faucet provision ${myAddr}
+  !faucet add-egress ${myAddr}
 
 to ${SUPPORT_ADDRESS}`;
 
@@ -289,7 +289,7 @@ export async function connectToChain(
     if (!r.stdout) {
       console.error(`\
 =============
-${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
+${chainID} chain does not yet know of address ${myAddr}${adviseEgress(
         myAddr,
       )}
 =============

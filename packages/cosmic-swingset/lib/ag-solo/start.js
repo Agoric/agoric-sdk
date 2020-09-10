@@ -39,9 +39,10 @@ let swingSetRunning = false;
 
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
+const mkdir = promisify(fs.mkdir);
 const rename = promisify(fs.rename);
-const unlink = promisify(fs.unlink);
 const symlink = promisify(fs.symlink);
+const unlink = promisify(fs.unlink);
 
 async function atomicReplaceFile(filename, contents) {
   const info = await new Promise((resolve, reject) => {
@@ -97,6 +98,7 @@ async function buildSwingset(
   });
 
   const pluginDir = path.resolve('./plugins');
+  await mkdir(pluginDir, { recursive: true });
   const pluginsPrefix = `${pluginDir}${path.sep}`;
   const pluginRequire = mod => {
     // Ensure they can't traverse out of the plugins prefix.
