@@ -17,7 +17,7 @@ import '../../../exported';
  * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC. An auction
  * contract in which the seller offers an Asset for sale, and states a
  * minimum price. The auction closes at the deadline specified by the
- * timerAuthority and closesAfter parameters in the terms provided by
+ * timeAuthority and closesAfter parameters in the terms provided by
  * the creator of the contract instance. The second price rule is
  * followed, so the highest bidder pays the amount bid by the second
  * highest bidder.
@@ -34,7 +34,7 @@ import '../../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  const { timerAuthority, closesAfter } = zcf.getTerms();
+  const { timeAuthority, closesAfter } = zcf.getTerms();
 
   let sellSeat;
   const bidSeats = [];
@@ -42,14 +42,14 @@ const start = zcf => {
   // seller will use 'Asset' and 'Ask'. buyer will use 'Asset' and 'Bid'
   assertIssuerKeywords(zcf, harden(['Asset', 'Ask']));
 
-  E(timerAuthority)
+  E(timeAuthority)
     .setWakeup(
       closesAfter,
       harden({ wake: () => calcWinnerAndClose(zcf, sellSeat, bidSeats) }),
     )
     .catch(err => {
       console.error(
-        `Could not schedule the close of the auction at the 'closesAfter' deadline ${closesAfter} using this timer ${timerAuthority}`,
+        `Could not schedule the close of the auction at the 'closesAfter' deadline ${closesAfter} using this timer ${timeAuthority}`,
       );
       console.error(err);
       throw err;
@@ -71,7 +71,7 @@ const start = zcf => {
       auctionedAssets: sellSeat.getProposal().give.Asset,
       minimumBid: sellSeat.getProposal().want.Ask,
       closesAfter,
-      timerAuthority,
+      timeAuthority,
     });
 
     return zcf.makeInvitation(performBid, 'bid', customProperties);

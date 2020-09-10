@@ -186,11 +186,15 @@
  */
 
 /**
- * @typedef {Object} InvitationDetails
+ * @typedef {Object} StandardInvitationDetails
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {InvitationHandle} handle
  * @property {string} description
+ */
+
+/**
+ * @typedef {StandardInvitationDetails & Record<string, any>} InvitationDetails
  */
 
 /**

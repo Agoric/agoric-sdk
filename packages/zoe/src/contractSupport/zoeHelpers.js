@@ -117,8 +117,8 @@ export const trade = (
   zcf,
   left,
   right,
-  leftHasExitedMsg,
-  rightHasExitedMsg,
+  leftHasExitedMsg = 'the left seat has exited',
+  rightHasExitedMsg = 'the right seat has exited',
 ) => {
   assert(left.seat !== right.seat, details`a seat cannot trade with itself`);
   assert(!left.seat.hasExited(), leftHasExitedMsg);
@@ -173,10 +173,17 @@ export const trade = (
     );
   }
 
-  return zcf.reallocate(
-    left.seat.stage(leftAllocation),
-    right.seat.stage(rightAllocation),
-  );
+  try {
+    zcf.reallocate(
+      left.seat.stage(leftAllocation),
+      right.seat.stage(rightAllocation),
+    );
+  } catch (err) {
+    console.log(err);
+    throw Error(
+      `The reallocation failed to conserve rights. Please check the log for more information`,
+    );
+  }
 };
 
 /** @type Swap */
@@ -197,6 +204,47 @@ export const swap = (
       {
         seat: rightSeat,
         gains: rightSeat.getProposal().want,
+      },
+      leftHasExitedMsg,
+      rightHasExitedMsg,
+    );
+  } catch (err) {
+    leftSeat.kickOut(err);
+    rightSeat.kickOut(err);
+    throw err;
+  }
+
+  leftSeat.exit();
+  rightSeat.exit();
+  return defaultAcceptanceMsg;
+};
+
+/**
+ * @type Swap
+ * Swap such that both seats gain what they want and lose everything
+ * that they gave. Only good for exact and entire swaps where each
+ * seat wants everything that the other seat has. The benefit of using
+ * this method is that the keywords of each seat do not matter.
+ */
+export const swapExact = (
+  zcf,
+  leftSeat,
+  rightSeat,
+  leftHasExitedMsg = 'the left seat in swapExact() has exited',
+  rightHasExitedMsg = 'the right seat in swapExact() has exited',
+) => {
+  try {
+    trade(
+      zcf,
+      {
+        seat: leftSeat,
+        gains: leftSeat.getProposal().want,
+        losses: leftSeat.getProposal().give,
+      },
+      {
+        seat: rightSeat,
+        gains: rightSeat.getProposal().want,
+        losses: rightSeat.getProposal().give,
       },
       leftHasExitedMsg,
       rightHasExitedMsg,
