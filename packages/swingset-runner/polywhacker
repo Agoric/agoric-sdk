@@ -1,0 +1,16 @@
+#!/bin/bash
+
+reference='=> alice contact for bob receives ping: 1 hey!'
+success=0
+failure=0
+
+while [ 1 ]; do
+  result=`./whacker`
+  if [ "$result" == "$reference" ]; then
+    ((success=success+1))
+    echo "ok (success: $success failure: $failure)"
+  else
+    ((failure=failure+1))
+    echo "bad (success: $success failure: $failure)"
+  fi
+done

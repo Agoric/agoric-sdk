@@ -360,7 +360,7 @@ export async function main() {
   if (logTimes || logMem || logDisk) {
     let headers = ['block', 'steps'];
     if (logTimes) {
-      headers.push('btime');
+      headers.push('btime', 'ctime');
     }
     if (logMem) {
       headers = headers.concat(['rss', 'heapTotal', 'heapUsed', 'external']);
@@ -529,6 +529,7 @@ export async function main() {
         log(`===> end of crank ${crankNumber}`);
       }
     }
+    const commitStartTime = readClock();
     if (doCommit) {
       store.commit();
     }
@@ -541,6 +542,7 @@ export async function main() {
       let data = [blockNumber, actualSteps];
       if (logTimes) {
         data.push(blockEndTime - blockStartTime);
+        data.push(blockEndTime - commitStartTime);
       }
       if (logMem) {
         const mem = process.memoryUsage();
@@ -609,21 +611,13 @@ export async function main() {
         bootstrapResult = null;
       }
     }
-    if (logTimes) {
-      if (totalSteps) {
-        const per = deltaT / BigInt(totalSteps);
-        log(
-          `runner finished ${totalSteps} cranks in ${deltaT} ns (${per}/crank)`,
-        );
-      } else {
-        log(`runner finished replay in ${deltaT} ns`);
-      }
+    if (totalSteps) {
+      const per = deltaT / BigInt(totalSteps);
+      log(
+        `runner finished ${totalSteps} cranks in ${deltaT} ns (${per}/crank)`,
+      );
     } else {
-      if (totalSteps) {
-        log(`runner finished ${totalSteps} cranks`);
-      } else {
-        log(`runner finished replay`);
-      }
+      log(`runner finished replay in ${deltaT} ns`);
     }
   }
 }
