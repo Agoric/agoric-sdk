@@ -1,10 +1,8 @@
 // @ts-check
+import '../../exported';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { assertProposalShape, swapExact } from '../contractSupport';
-
-// Import types.
-import '../../exported';
 
 /**
  * A call option is the right (but not the obligation) to buy digital
@@ -36,14 +34,15 @@ import '../../exported';
  * After the owner of the digital assets escrows the assets in the
  * initial offer, they receive a seat. The payout for this seat will
  * either be a refund of the underlying assets (as mentioned above) or
- * the strike price. Zoe's enforcement of offer safety guarantees that
- * the payout is either a refund or the strike price, regardless of
- * whether this contract is buggy.
+ * payments in the amount of the strike price. Zoe's enforcement of
+ * offer safety guarantees that the payout is either a refund or
+ * payments in the amount of the strike price, regardless of whether
+ * this contract is buggy.
  *
  * The offerResult of this initial seat resolves to the call option
- * itself: an assayable invitation to buy the underlying assets. The
+ * itself: an inspectable invitation to buy the underlying assets. The
  * call option invitation has this additional information in the
- * value: { expirationDate, timerAuthority, underlyingAssets,
+ * value: {expirationDate, timerAuthority, underlyingAssets,
  * strikePrice }
  *
  * The invitation itself can be traded as a valuable digital asset: a
