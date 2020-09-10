@@ -98,7 +98,7 @@ const expectedCoveredCallOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doCreateCoveredCall called',
   '@@ schedule task for:1, currently: 0 @@',
-  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The option was exercised. Please check your payout to receive the underlying assets.',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
   'bobSimoleanPurse: balance {"brand":{},"value":0}',
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
@@ -121,7 +121,7 @@ const expectedSwapForOptionOkLog = [
   '@@ schedule task for:100, currently: 0 @@',
   'swap invitation made',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The option was exercised. Please check your payout to receive the underlying assets.',
   'daveMoolaPurse: balance {"brand":{},"value":3}',
   'daveSimoleanPurse: balance {"brand":{},"value":0}',
   'daveBucksPurse: balance {"brand":{},"value":0}',
@@ -233,7 +233,6 @@ const expectedSimpleExchangeNotificationLog = [
 ];
 
 test.serial('zoe - simpleExchange - state Update', async t => {
-  t.plan(1);
   const startingValues = [
     [3, 0, 0],
     [0, 24, 0],
@@ -259,7 +258,6 @@ const expectedAutoswapOkLog = [
   'aliceLiquidityTokenPurse: balance {"brand":{},"value":0}',
 ];
 test.serial('zoe - autoswap - valid inputs', async t => {
-  t.plan(1);
   const startingValues = [
     [10, 5, 0],
     [3, 7, 0],
@@ -276,7 +274,6 @@ const expectedSellTicketsOkLog = [
   'alice earned: {"brand":{},"value":22}',
 ];
 test.serial('zoe - sellTickets - valid inputs', async t => {
-  t.plan(1);
   const startingValues = [
     [0, 0, 0],
     [22, 0, 0],
@@ -295,7 +292,6 @@ const expectedBadTimerLog = [
 
 // TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
 test.skip('zoe - bad timer', async t => {
-  t.plan(1);
   const startingValues = [
     [3, 0, 0],
     [0, 0, 0],

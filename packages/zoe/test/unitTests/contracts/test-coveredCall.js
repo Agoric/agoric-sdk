@@ -16,12 +16,21 @@ const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - coveredCall', async t => {
-  t.plan(11);
-  const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
+  t.plan(13);
+  const {
+    moolaKit,
+    simoleanKit,
+    bucksKit,
+    moola,
+    simoleans,
+    bucks,
+    zoe,
+  } = setup();
 
   const makeAlice = async (timer, moolaPayment) => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
     const simoleanPurse = await E(simoleanKit.issuer).makeEmptyPurse();
+    const bucksPurse = await E(bucksKit.issuer).makeEmptyPurse();
     return {
       installCode: async () => {
         // pack the contract
@@ -32,19 +41,20 @@ test('zoe - coveredCall', async t => {
       },
       startInstance: async installation => {
         const issuerKeywordRecord = harden({
-          UnderlyingAsset: moolaKit.issuer,
-          StrikePrice: simoleanKit.issuer,
+          Moola: moolaKit.issuer,
+          Simoleans: simoleanKit.issuer,
+          Bucks: bucksKit.issuer,
         });
         const adminP = zoe.startInstance(installation, issuerKeywordRecord);
         return adminP;
       },
       offer: async createCallOptionInvitation => {
         const proposal = harden({
-          give: { UnderlyingAsset: moola(3) },
-          want: { StrikePrice: simoleans(7) },
+          give: { Moola: moola(3) },
+          want: { Simoleans: simoleans(7), Bucks: bucks(2) },
           exit: { afterDeadline: { deadline: 1, timer } },
         });
-        const payments = { UnderlyingAsset: moolaPayment };
+        const payments = { Moola: moolaPayment };
 
         const seat = await E(zoe).offer(
           createCallOptionInvitation,
@@ -60,7 +70,7 @@ test('zoe - coveredCall', async t => {
       },
       processPayouts: async seat => {
         await E(seat)
-          .getPayout('UnderlyingAsset')
+          .getPayout('Moola')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
             t.deepEqual(
@@ -71,7 +81,7 @@ test('zoe - coveredCall', async t => {
           );
 
         await E(seat)
-          .getPayout('StrikePrice')
+          .getPayout('Simoleans')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
             t.deepEqual(
@@ -80,13 +90,25 @@ test('zoe - coveredCall', async t => {
               `Alice got exactly what she wanted`,
             ),
           );
+
+        await E(seat)
+          .getPayout('Bucks')
+          .then(bucksPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(
+              amountDeposited,
+              bucks(2),
+              `Alice got exactly what she wanted`,
+            ),
+          );
       },
     };
   };
 
-  const makeBob = (timer, installation, simoleanPayment) => {
+  const makeBob = (timer, installation, simoleanPayment, bucksPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    const bucksPurse = bucksKit.issuer.makeEmptyPurse();
     return harden({
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
@@ -100,36 +122,39 @@ test('zoe - coveredCall', async t => {
         t.is(
           invitationValue.installation,
           installation,
-          'installation is atomicSwap',
+          'installation is coveredCall',
         );
         t.is(invitationValue.description, 'exerciseOption');
 
         t.deepEqual(
-          invitationValue.underlyingAsset,
-          moola(3),
-          `underlying asset is 3 moola`,
+          invitationValue.underlyingAssets,
+          { Moola: moola(3) },
+          `underlying assets are 3 moola`,
         );
         t.deepEqual(
           invitationValue.strikePrice,
-          simoleans(7),
-          `strike price is 7 simoleans, so bob must give that`,
+          { Simoleans: simoleans(7), Bucks: bucks(2) },
+          `strike price is 7 simoleans and 2 bucks, so bob must give that`,
         );
 
         t.is(invitationValue.expirationDate, 1);
         t.deepEqual(invitationValue.timerAuthority, timer);
 
         const proposal = harden({
-          give: { StrikePrice: simoleans(7) },
+          give: { StrikePrice1: simoleans(7), StrikePrice2: bucks(2) },
           want: { UnderlyingAsset: moola(3) },
           exit: { onDemand: null },
         });
-        const payments = { StrikePrice: simoleanPayment };
+        const payments = {
+          StrikePrice1: simoleanPayment,
+          StrikePrice2: bucksPayment,
+        };
 
         const seat = await E(zoe).offer(invitation, proposal, payments);
 
         t.is(
           await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
+          `The option was exercised. Please check your payout to receive the underlying assets.`,
         );
         return seat;
       },
@@ -142,12 +167,23 @@ test('zoe - coveredCall', async t => {
           );
 
         await E(seat)
-          .getPayout('StrikePrice')
+          .getPayout('StrikePrice1')
           .then(simoleanPurse.deposit)
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
               simoleans(0),
+              `Bob didn't get anything back`,
+            ),
+          );
+
+        await E(seat)
+          .getPayout('StrikePrice2')
+          .then(bucksPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(
+              amountDeposited,
+              bucks(0),
               `Bob didn't get anything back`,
             ),
           );
@@ -166,7 +202,8 @@ test('zoe - coveredCall', async t => {
 
   // Setup Bob
   const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7));
-  const bob = makeBob(timer, installation, bobSimoleanPayment);
+  const bobBucksPayment = bucksKit.mint.mintPayment(bucks(2));
+  const bob = makeBob(timer, installation, bobSimoleanPayment, bobBucksPayment);
 
   const { creatorInvitation } = await alice.startInstance(installation);
   const { seat: aliceSeat, invitationP } = await alice.offer(creatorInvitation);
@@ -242,16 +279,16 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.truthy(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
-  t.truthy(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
+  t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
+  t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7) });
   t.is(optionValue.expirationDate, 1);
   t.deepEqual(optionValue.timerAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
 
   const bobProposal = harden({
-    want: { UnderlyingAsset: optionValue.underlyingAsset },
-    give: { StrikePrice: optionValue.strikePrice },
+    want: optionValue.underlyingAssets,
+    give: optionValue.strikePrice,
   });
 
   // Bob escrows
@@ -384,8 +421,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const optionDesc = optionAmount.value[0];
   t.is(optionDesc.installation, coveredCallInstallation);
   t.is(optionDesc.description, 'exerciseOption');
-  t.truthy(moolaR.amountMath.isEqual(optionDesc.underlyingAsset, moola(3)));
-  t.truthy(simoleanR.amountMath.isEqual(optionDesc.strikePrice, simoleans(7)));
+  t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3) });
+  t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7) });
   t.is(optionDesc.expirationDate, 100);
   t.deepEqual(optionDesc.timerAuthority, timer);
 
@@ -491,7 +528,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   t.is(
     await E(daveCoveredCallSeat).getOfferResult(),
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    `The option was exercised. Please check your payout to receive the underlying assets.`,
   );
 
   // Dave should get 3 moola, Bob should get 1 buck, and Alice
@@ -633,8 +670,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.truthy(moolaR.amountMath.isEqual(optionValue.underlyingAsset, moola(3)));
-  t.truthy(simoleanR.amountMath.isEqual(optionValue.strikePrice, simoleans(7)));
+  t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
+  t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7) });
   t.is(optionValue.expirationDate, 100);
   t.deepEqual(optionValue.timerAuthority, timer);
 
@@ -684,24 +721,39 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
-  t.truthy(bucksR.amountMath.isEqual(daveOptionValue.strikePrice, bucks(1)));
+  t.truthy(
+    bucksR.amountMath.isEqual(
+      daveOptionValue.strikePrice.StrikePrice,
+      bucks(1),
+    ),
+  );
   t.is(daveOptionValue.expirationDate, 100);
   t.deepEqual(daveOptionValue.timerAuthority, timer);
 
   // What about the underlying asset (the other option)?
-  t.is(daveOptionValue.underlyingAsset.value[0].description, 'exerciseOption');
-  t.is(daveOptionValue.underlyingAsset.value[0].expirationDate, 100);
+  t.is(
+    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].description,
+    'exerciseOption',
+  );
+  t.is(
+    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].expirationDate,
+    100,
+  );
   t.truthy(
     simoleanR.amountMath.isEqual(
-      daveOptionValue.underlyingAsset.value[0].strikePrice,
+      daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].strikePrice
+        .StrikePrice,
       simoleans(7),
     ),
   );
-  t.deepEqual(daveOptionValue.underlyingAsset.value[0].timerAuthority, timer);
+  t.deepEqual(
+    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timerAuthority,
+    timer,
+  );
 
   // Dave's planned proposal
   const daveProposalCoveredCall = harden({
-    want: { UnderlyingAsset: daveOptionValue.underlyingAsset },
+    want: daveOptionValue.underlyingAssets,
     give: { StrikePrice: bucks(1) },
   });
 
@@ -715,7 +767,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   );
   t.is(
     await E(daveSecondCoveredCallSeat).getOfferResult(),
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    `The option was exercised. Please check your payout to receive the underlying assets.`,
     `dave second offer accepted`,
   );
 
@@ -744,7 +796,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
 
   t.is(
     await daveFirstCoveredCallSeat.getOfferResult(),
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    'The option was exercised. Please check your payout to receive the underlying assets.',
     `dave first offer accepted`,
   );
 
@@ -886,12 +938,12 @@ test('zoe - coveredCall non-fungible', async t => {
   t.truthy(
     amountMaths
       .get('cc')
-      .isEqual(optionValue.underlyingAsset, growlTigerAmount),
+      .isEqual(optionValue.underlyingAssets.UnderlyingAsset, growlTigerAmount),
   );
   t.truthy(
     amountMaths
       .get('rpg')
-      .isEqual(optionValue.strikePrice, aGloriousShieldAmount),
+      .isEqual(optionValue.strikePrice.StrikePrice, aGloriousShieldAmount),
   );
   t.is(optionValue.expirationDate, 1);
   t.deepEqual(optionValue.timerAuthority, timer);
@@ -899,8 +951,8 @@ test('zoe - coveredCall non-fungible', async t => {
   const bobPayments = { StrikePrice: bobRpgPayment };
 
   const bobProposal = harden({
-    want: { UnderlyingAsset: optionValue.underlyingAsset },
-    give: { StrikePrice: optionValue.strikePrice },
+    want: optionValue.underlyingAssets,
+    give: optionValue.strikePrice,
     exit: { onDemand: null },
   });
 
@@ -910,7 +962,7 @@ test('zoe - coveredCall non-fungible', async t => {
 
   t.is(
     await E(bobSeat).getOfferResult(),
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    `The option was exercised. Please check your payout to receive the underlying assets.`,
   );
 
   const bobCcPayout = await E(bobSeat).getPayout('UnderlyingAsset');

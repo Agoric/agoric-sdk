@@ -18,4 +18,5 @@ export {
   assertIssuerKeywords,
   satisfies,
   assertUsesNatMath,
+  swapExact,
 } from './zoeHelpers';

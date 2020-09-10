@@ -1,84 +1,94 @@
 // @ts-check
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import {
-  swap,
-  assertIssuerKeywords,
-  assertProposalShape,
-} from '../contractSupport';
+import { assertProposalShape, swapExact } from '../contractSupport';
 
+// Import types.
 import '../../exported';
 
 /**
- * In a covered call, a digital asset's owner sells a call option. A
- * call option is the right to buy the digital asset at a
- * pre-determined price, called the strike price. The call option has
- * an expiry date, when the contract will be cancelled.
+ * A call option is the right (but not the obligation) to buy digital
+ * assets at a pre-determined price, called the strike price. This
+ * call option is "covered," meaning that the owner of the digital
+ * assets must put the assets in escrow. This guarantees that the
+ * assets can be transferred without relying on the owner of the
+ * digital assets to keep their promise.
  *
- * In this contract, the expiry date is the deadline when the offer
- * escrowing the underlying assets is cancelled. Therefore, the
- * proposal to sell the underlying assets must have an exit record with
- * the key "afterDeadline".
+ * The call option has an expiration date, when the opportunity is
+ * cancelled. The owner of the digital assets cannot remove the assets
+ * from escrow before the expiration date.
  *
- * The invitation received by the covered call creator is the call
- * option. It has this additional information in the invitation's
- * value:
- * { expirationDate, timerAuthority, underlyingAsset, strikePrice }
- *
- * The initial proposal should be:
+ * The `creatorInvitation` of this contract is an invitation to escrow
+ * the underlying assets. The proposal to escrow assets can have any
+ * `give` and `want` with any keywords, but it must have an exit
+ * record with the key "afterDeadline":
  * {
- *   give: { UnderlyingAsset: assetAmount },
- *   want: { StrikePrice: priceAmount  },
- *   exit: { afterDeadline: { deadline: time, timer: timer } },
+ *    give: { ... }, want: { ... }, exit: {afterDeadline: { deadline:
+ *    time, timer: myTimer }
+ *    },
  * }
- * The result of the initial offer is a seat where the payout will
- * eventually resolve either to the strikePrice or to a refund of the
- * underlying asset. The offerResult is the call option, which is an
- * assayable invitation to buy the underlying asset. Since the
- * contract provides assurance that the underlying asset is available
- * on the specified terms, the invitation itself can be traded as a
- * valuable good.
+ *
+ * This deadline serves as the expiration date for the covered call
+ * option. After this deadline, if the option has not been exercised,
+ * the underlying assets are automatically paid out to the creator of
+ * the contract as a refund.
+ *
+ * After the owner of the digital assets escrows the assets in the
+ * initial offer, they receive a seat. The payout for this seat will
+ * either be a refund of the underlying assets (as mentioned above) or
+ * the strike price. Zoe's enforcement of offer safety guarantees that
+ * the payout is either a refund or the strike price, regardless of
+ * whether this contract is buggy.
+ *
+ * The offerResult of this initial seat resolves to the call option
+ * itself: an assayable invitation to buy the underlying assets. The
+ * call option invitation has this additional information in the
+ * value: { expirationDate, timerAuthority, underlyingAssets,
+ * strikePrice }
+ *
+ * The invitation itself can be traded as a valuable digital asset: a
+ * covered call option.
+ *
+ * The recipient of a covered call option (buying it on some other
+ * exchange or through some other trading contract) can exercise the
+ * option before the deadline by using the option as an invitation to
+ * this contract, paying the strike price and receiving the underlying
+ * assets. The recipient of a covered call option can use whatever
+ * keywords they wish, as long as they give the strike price as
+ * specified in the invitation value, and want the underlying assets
+ * exactly.
  *
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  assertIssuerKeywords(zcf, harden(['UnderlyingAsset', 'StrikePrice']));
+  const sellSeatExpiredMsg = `The covered call option is expired.`;
 
-  const makeCallOption = sellerSeat => {
-    assertProposalShape(sellerSeat, {
-      give: { UnderlyingAsset: null },
-      want: { StrikePrice: null },
-      exit: { afterDeadline: null },
-    });
-    const { want, give, exit } = sellerSeat.getProposal();
-    const rejectMsg = `The covered call option is expired.`;
+  const makeOption = sellSeat => {
+    assertProposalShape(sellSeat, { exit: { afterDeadline: null } });
 
-    const exerciseOption = exerciserSeat => {
-      assertProposalShape(exerciserSeat, {
-        give: { StrikePrice: null },
-        want: { UnderlyingAsset: null },
-      });
-      const swapResult = swap(zcf, sellerSeat, exerciserSeat, rejectMsg);
+    const exerciseOption = buySeat => {
+      try {
+        swapExact(zcf, sellSeat, buySeat, sellSeatExpiredMsg);
+      } catch (err) {
+        console.log(
+          'Swap failed. Please make sure your offer has the same underlyingAssets and strikePrice as specified in the invitation details. The keywords should not matter.',
+        );
+        throw err;
+      }
       zcf.shutdown();
-      return swapResult;
+      return `The option was exercised. Please check your payout to receive the underlying assets.`;
     };
 
-    return zcf.makeInvitation(
-      exerciseOption,
-      'exerciseOption',
-      harden({
-        expirationDate: exit.afterDeadline.deadline,
-        timerAuthority: exit.afterDeadline.timer,
-        underlyingAsset: give.UnderlyingAsset,
-        strikePrice: want.StrikePrice,
-      }),
-    );
+    const customProps = harden({
+      expirationDate: sellSeat.getProposal().exit.afterDeadline.deadline,
+      timerAuthority: sellSeat.getProposal().exit.afterDeadline.timer,
+      underlyingAssets: sellSeat.getProposal().give,
+      strikePrice: sellSeat.getProposal().want,
+    });
+    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
-  const creatorInvitation = zcf.makeInvitation(
-    makeCallOption,
-    'makeCallOption',
-  );
+  const creatorInvitation = zcf.makeInvitation(makeOption, 'makeCallOption');
 
   return harden({ creatorInvitation });
 };
