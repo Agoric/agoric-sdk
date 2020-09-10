@@ -28,3 +28,5 @@ export {
   saveAllIssuers,
   offerTo,
 } from './zoeHelpers';
+
+export { subContract } from './sub-contract';

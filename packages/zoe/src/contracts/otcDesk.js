@@ -1,13 +1,15 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert, details } from '@agoric/assert';
 import {
   trade,
   offerTo,
   saveAllIssuers,
   assertProposalShape,
+  subContract,
 } from '../contractSupport';
+import { start as coveredCallStartFn } from './coveredCall';
 
 import '../../exported';
 
@@ -51,9 +53,7 @@ import '../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  const { coveredCallInstallation } = zcf.getTerms();
   const { zcfSeat: marketMakerSeat } = zcf.makeEmptySeatKit();
-  const zoe = zcf.getZoeService();
 
   /**
    * Make a quote using the current inventory and receive a covered
@@ -66,12 +66,18 @@ const start = zcf => {
    * @returns {Promise<Payment>}
    */
   const makeQuote = async (price, assets, timeAuthority, deadline) => {
-    const { creatorInvitation } = await E(zoe).startInstance(
-      coveredCallInstallation,
+    const { creatorInvitation: creatorInvitationP } = subContract(
+      zcf,
+      coveredCallStartFn,
+      'coveredCall',
       zcf.getTerms().issuers,
     );
-    const shouldBeInvitationMsg = `The covered call instance should return a creatorInvitation`;
-    assert(creatorInvitation, shouldBeInvitationMsg);
+    const creatorInvitation = await creatorInvitationP;
+    // AWAIT
+    assert(
+      creatorInvitation,
+      details`The covered call instance should return a creatorInvitation`,
+    );
     const proposal = harden({
       give: assets,
       want: price,

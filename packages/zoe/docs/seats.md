@@ -15,7 +15,7 @@ __ZCF.reallocate() Flow__
 ![ZCF Reallocate Flow](./zcf-reallocate-flow.png)
 
 
-## UserSeat 
+## UserSeat
 
 The `UserSeat` is what is returned when a user calls
 `E(zoe).offer(invitation, proposal, payments)`. It has the following
@@ -27,7 +27,7 @@ type:
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
- * @property {(keyword: Keyword) => Promise<Payment>} getPayout
+ * @property {(keyword: Keyword) => PaymentP} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult
  * @property {() => void=} exit
  */
@@ -91,7 +91,7 @@ The type of the `ZoeSeatAdmin` is:
 
 ## ZCFSeatAdmin
 
-Internal to ZCF code only. 
+Internal to ZCF code only.
 
 The `ZCFSeatAdmin` is used by `reallocate` within ZCF to commit the
 allocation from a `seatStaging` to the corresponding `ZCFSeat`, and

@@ -42,6 +42,28 @@
  */
 
 /**
+ * @callback MakeSeatKit
+ *
+ * The zcf `makeSeatKit` method is a synchronous blend of functionality from
+ * the zcf `makeInvitation` and the zoe `offer`. Like the `offer`, it takes a
+ * `proposal` to be associated with the new seat. In place of the
+ * `paymentKeywordRecord` it takes a `paymentStaging`. It does a reallocate
+ * with the `paymentStaging` and a new seatStaging made from the new seat
+ * and the `proposal.give`, giving the new seat an initial allocation
+ * satisfying its `give`, just like a successful offer would.
+ *
+ * If this reallocate succeeds, eventually calls the `offerHandler` with the new
+ * zcfSeat and immediately returns the new seatKit. The eventual call of the
+ * `offerHandler` is the only asynchony. Everything else happens during the
+ * call to `makeSeatKit`.
+ *
+ * @param {OfferHandler} offerHandler
+ * @param {Proposal=} proposal
+ * @param {SeatStaging} paymentStaging
+ * @returns {UserSeat} seat
+ */
+
+/**
  * @callback Reallocate
  *
  * The contract can reallocate over seatStagings, which are
@@ -190,6 +212,6 @@
 /**
  * @typedef {Object} ContractStartFnResult
  * @property {Object=} creatorFacet
- * @property {Promise<Invitation>=} creatorInvitation
+ * @property {ERef<Invitation>=} creatorInvitation
  * @property {Object=} publicFacet
  */

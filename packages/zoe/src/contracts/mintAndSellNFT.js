@@ -80,10 +80,10 @@ const start = zcf => {
     });
     /**
      * @type {Promise<{
-     *   creatorInvitation: Invitation | undefined,
      *   creatorFacet: SellItemsCreatorFacet,
-     *   instance: Instance,
+     *   creatorInvitation?: ERef<Invitation>,
      *   publicFacet: SellItemsPublicFacet,
+     *   instance: Instance,
      * }>}
      */
     const instanceRecordP = E(zoeService).startInstance(

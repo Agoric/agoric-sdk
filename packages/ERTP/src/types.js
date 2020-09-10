@@ -182,7 +182,7 @@
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(paymentsArray: PaymentP[]) => Promise<Payment>} combine
+ * @property {(paymentsArray: PaymentP[]) => PaymentP} combine
  * Combine multiple payments into one payment.
  *
  * If any of the payments is a promise, the operation will proceed upon

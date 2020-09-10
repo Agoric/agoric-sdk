@@ -166,7 +166,7 @@
  *
  * @typedef {Object} ExecuteContractResult
  * @property {Object} creatorFacet
- * @property {Promise<Invitation>} creatorInvitation
+ * @property {ERef<Invitation>} creatorInvitation
  * @property {Object} publicFacet
  * @property {AddSeatObj} addSeatObj
  *

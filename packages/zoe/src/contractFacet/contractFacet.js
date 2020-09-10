@@ -356,7 +356,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
         const invitationHandle = /** @type {InvitationHandle} */ (harden({}));
         invitationHandleToHandler.init(invitationHandle, offerHandler);
-        /** @type {Promise<Payment>} */
+        /** @type {PaymentP} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(
           invitationHandle,
           description,
@@ -386,6 +386,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
       makeZCFMint,
       makeEmptySeatKit,
+
+      makeSeatKit: (_offerHandler, _proposal, _paymentStaging) => {
+        // TODO implement
+        assert.fail(details`makeSeatKit is not yet implemented`);
+      },
 
       // The methods below are pure and have no side-effects //
       getZoeService: () => zoeService,

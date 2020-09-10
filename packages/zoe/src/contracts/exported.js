@@ -4,7 +4,7 @@
  * @property {() => Amount} getAvailableItems
  *
  * @typedef {Object} SellItemsCreatorOnly
- * @property {() => Promise<Invitation>} makeBuyerInvitation
+ * @property {() => ERef<Invitation>} makeBuyerInvitation
  *
  * @typedef {SellItemsPublicFacet & SellItemsCreatorOnly} SellItemsCreatorFacet
  */
@@ -30,17 +30,17 @@
 
 /**
  * @typedef {Object} AutoswapPublicFacet
- * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
+ * @property {() => ERef<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
- * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapInInvitation make an invitation
  * that allows one to do a swap in which the In amount is specified and the Out
  * amount is calculated
- * @property {() => Promise<Invitation>} makeSwapOutInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapOutInvitation make an invitation
  * that allows one to do a swap in which the Out amount is specified and the In
  * amount is calculated
- * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
- * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {() => Issuer} getLiquidityIssuer
  * @property {() => number} getLiquiditySupply get the current value of
@@ -77,17 +77,17 @@
  * @typedef {Object} MultipoolAutoswapPublicFacet
  * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool
- * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
+ * @property {() => ERef<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
- * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapInInvitation make an invitation
  * that allows one to do a swap in which the In amount is specified and the Out
  * amount is calculated
- * @property {() => Promise<Invitation>} makeSwapOutInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapOutInvitation make an invitation
  * that allows one to do a swap in which the Out amount is specified and the In
  * amount is calculated
- * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
- * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {(brand: Brand) => Issuer} getLiquidityIssuer
  * @property {(brand: Brand) => number} getLiquiditySupply get the current value of
@@ -105,11 +105,11 @@
 /**
  * @typedef {Object} AutomaticRefundPublicFacet
  * @property {() => number} getOffersCount
- * @property {() => Promise<Invitation>} makeInvitation
+ * @property {() => ERef<Invitation>} makeInvitation
  */
 /**
  * @typedef {Object} SimpleExchangePublicFacet
- * @property {() => Promise<Invitation>} makeInvitation
+ * @property {() => ERef<Invitation>} makeInvitation
  * @property {() => Notifier<any>} getNotifier
  */
 
