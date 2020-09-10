@@ -66,8 +66,16 @@ export function buildRootDeviceNode(tools) {
             return connectedState[index];
           },
           setState(state) {
-            connectedState[index] = state;
-            saveState();
+            return new HandledPromise(resolve => {
+              connectedState[index] = state;
+              endowments.queueThunkForKernel(() => {
+                // TODO: This is not a synchronous call.
+                // We need something akin to read-write separation
+                // to get the benefits of both sync and async.
+                saveState();
+                resolve();
+              });
+            });
           },
         }),
       );
