@@ -47,13 +47,8 @@ const start = zcf => {
     E(sellerUserSeat)
       .getPayouts()
       .then(async payoutPayments => {
-        try {
-          await depositToSeat(zcf, marketMakerSeat, price, payoutPayments);
-        } catch (err) {
-          console.log(err);
-          // It might be a refund instead.
-          await depositToSeat(zcf, marketMakerSeat, assets, payoutPayments);
-        }
+        const amounts = await E(sellerUserSeat).getCurrentAllocation();
+        await depositToSeat(zcf, marketMakerSeat, amounts, payoutPayments);
       });
     const option = E(sellerUserSeat).getOfferResult();
 

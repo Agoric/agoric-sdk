@@ -314,7 +314,7 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} amounts
- * @param {PaymentKeywordRecord} payments
+ * @param {PaymentPKeywordRecord} payments
  * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
 
