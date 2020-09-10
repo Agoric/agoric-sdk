@@ -10,6 +10,7 @@ import anylogger from 'anylogger';
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
+import { assert, details } from '@agoric/assert';
 import {
   loadBasedir,
   loadSwingsetConfigFile,
@@ -95,7 +96,20 @@ async function buildSwingset(
     await processKernel();
   });
 
-  const plugin = buildPlugin(require, queueThunkForKernel);
+  const pluginsPrefix = `${path.resolve('./plugins')}${path.sep}`;
+  const pluginRequire = mod => {
+    // Ensure they can't traverse out of the plugins prefix.
+    const pluginFile = path.resolve(pluginsPrefix, mod);
+    assert(
+      pluginFile.startsWith(pluginsPrefix),
+      details`Cannot load ${pluginFile} plugin; outside of ./plugins`,
+    );
+
+    // eslint-disable-next-line import/no-dynamic-require,global-require
+    return require(pluginFile);
+  };
+
+  const plugin = buildPlugin(pluginRequire, queueThunkForKernel);
 
   let config = loadSwingsetConfigFile(`${vatsDir}/solo-config.json`);
   if (config === null) {

@@ -1,4 +1,4 @@
-/* global harden */
+/* global harden HandledPromise */
 
 import { makeCapTP } from '@agoric/captp';
 
