@@ -125,7 +125,7 @@ const makeBob = (
   simoleanPurse.deposit(simoleanPayment);
   bucksPurse.deposit(bucksPayment);
   return harden({
-    offerGood: async untrustedInvitation => {
+    offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await invitationIssuer.claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
@@ -387,7 +387,7 @@ const makeInitialPayments = (moolaValue, simoleanValue, bucksValue) => ({
   bucksPayment: bucksKit.mint.mintPayment(bucks(bucksValue)),
 });
 
-test('zoe - otcDesk - offerGood', async t => {
+test('zoe - otcDesk - offerOk', async t => {
   const timer = buildManualTimer(console.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
@@ -432,7 +432,7 @@ test('zoe - otcDesk - offerGood', async t => {
     1,
   );
 
-  await bob.offerGood(invitation1);
+  await bob.offerOk(invitation1);
   await alice.removeInventory(simoleans(2));
 });
 
@@ -533,18 +533,3 @@ test('zoe - otcDesk - offerWantTooMuch', async t => {
   // Bob tries to offer but he wants more than what was quoted.
   await bob.offerWantTooMuch(invitation3);
 });
-
-// await alice.removeInventory(simoleans(10000));
-
-// // Alice makes a quote that is currently funded, but removes the funding before Bob receives it.
-// const invitation4 = await alice.makeQuoteForBob(
-//   { Buck: bucks(500), Moola: moola(35) },
-//   { Simolean: simoleans(15) },
-//   timer,
-//   100,
-// );
-
-// await bob.offerNotCovered(invitation4);
-
-// // TODO:
-// // Alice makes a quote for Bob that isn't yet funded. She might or might not fund it before Bob exercises.
