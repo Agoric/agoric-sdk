@@ -51,10 +51,20 @@ import '../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  const { zcfSeat: marketMakerSeat } = zcf.makeEmptySeatKit();
   const { coveredCallInstallation } = zcf.getTerms();
+  const { zcfSeat: marketMakerSeat } = zcf.makeEmptySeatKit();
   const zoe = zcf.getZoeService();
 
+  /**
+   * Make a quote using the current inventory and receive a covered
+   * call option that can be freely given or sold to someone else.
+   *
+   * @param {AmountKeywordRecord} price
+   * @param {AmountKeywordRecord} assets
+   * @param {Timer<any>} timeAuthority
+   * @param {any} deadline
+   * @returns {Promise<Payment>}
+   */
   const makeQuote = async (price, assets, timeAuthority, deadline) => {
     const { creatorInvitation } = await E(zoe).startInstance(
       coveredCallInstallation,
@@ -86,8 +96,8 @@ const start = zcf => {
         const amounts = await E(sellerUserSeat).getCurrentAllocation();
         await depositToSeat(zcf, marketMakerSeat, amounts, payoutPayments);
       });
-    const option = E(sellerUserSeat).getOfferResult();
 
+    const option = E(sellerUserSeat).getOfferResult();
     return option;
   };
 
@@ -112,14 +122,25 @@ const start = zcf => {
   };
 
   const creatorFacet = {
-    // The inventory can be added in bulk before any quotes are made
-    // or can be added immediately before a quote.
+    /**
+     * The inventory can be added in bulk before any quotes are made
+     * or can be added immediately before a quote.
+     * @param {IssuerKeywordRecord=} issuerKeywordRecord
+     * @returns {Promise<Payment>}
+     */
     makeAddInventoryInvitation: async (issuerKeywordRecord = {}) => {
       await saveAllIssuers(zcf, issuerKeywordRecord);
       return zcf.makeInvitation(addInventory, 'addInventory');
     },
-    makeRemoveInventoryInvitation: () =>
-      zcf.makeInvitation(removeInventory, 'removeInventory'),
+    /**
+     * The inventory can be removed at any time, since the inventory
+     * used for active quotes is escrowed separately within the coveredCall
+     * instance.
+     * @returns {Promise<Payment>}
+     */
+    makeRemoveInventoryInvitation: () => {
+      return zcf.makeInvitation(removeInventory, 'removeInventory');
+    },
     makeQuote,
   };
 
