@@ -103,7 +103,7 @@ test.skip('ZoeHelpers rejectIfNotProposal', t => {
       proposal: {
         want: { Asset: moola(4) },
         give: { Price: simoleans(16) },
-        exit: { Waived: null },
+        exit: { waived: null },
       },
     });
     mockZCFBuilder.addOffer(offerHandles[5], {
@@ -169,7 +169,7 @@ test.skip('ZoeHelpers rejectIfNotProposal', t => {
           harden({
             want: { Asset: null },
             give: { Price: null },
-            exit: { Waived: null },
+            exit: { waived: null },
           }),
         ),
       /The offer was invalid. Please check your refund./,

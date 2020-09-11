@@ -125,7 +125,7 @@
  *
  * @typedef {{give: AmountKeywordRecord,
  *            want: AmountKeywordRecord,
- *            exit: ExitRule<any>
+ *            exit: ExitRule
  *           }} ProposalRecord
  */
 
@@ -139,25 +139,23 @@
 /**
  * @typedef {Object} Waker
  * @property {() => void} wake
- *
- * @typedef {{waived:null}} Waived
- * @typedef {{onDemand:null}} OnDemand
  */
 
 /**
- * @template Deadline
+ * @typedef {number} Deadline
+ */
+
+/**
  * @typedef {Object} Timer
  * @property {(deadline: Deadline, wakerP: ERef<Waker>) => void} setWakeup
  */
 
 /**
- * @template Deadline
- * @typedef {{afterDeadline:{timer:Timer<Deadline>, deadline:Deadline}}} AfterDeadline
- */
-
-/**
- * @template Deadline
- * @typedef {Waived | OnDemand | AfterDeadline<Deadline>} ExitRule
+ * @typedef {Object} ExitRule
+ * @property {null} [onDemand]
+ * @property {null} [waived]
+ * @property {{timer:Timer, deadline:Deadline}} [afterDeadline]
+ *
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` key.
  * The possible records are:
