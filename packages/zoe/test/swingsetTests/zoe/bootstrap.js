@@ -92,6 +92,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         autoswap: await E(zoe).install(cb.autoswap),
         sellItems: await E(zoe).install(cb.sellItems),
         mintAndSellNFT: await E(zoe).install(cb.mintAndSellNFT),
+        otcDesk: await E(zoe).install(cb.otcDesk),
       };
 
       const [testName, startingValues] = argv;
