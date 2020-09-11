@@ -34,6 +34,7 @@
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-prettier": "^3.1.2",
     "filing-cabinet": "^2.5.1",
+    "nyc": "^15.1.0",
     "prettier": "^1.18.2"
   },
   "dependencies": {

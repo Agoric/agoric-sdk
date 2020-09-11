@@ -22,7 +22,8 @@
   },
   "devDependencies": {
     "@agoric/install-metering-and-ses": "^0.1.2",
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "nyc": "^15.1.0"
   },
   "dependencies": {
     "@agoric/assert": "^0.0.9",
