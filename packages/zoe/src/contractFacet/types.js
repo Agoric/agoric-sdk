@@ -26,7 +26,7 @@
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
- * @property {<Deadline>(exit?: ExitRule<Deadline>) => ZcfSeatKit} makeEmptySeatKit
+ * @property {(exit?: ExitRule) => ZcfSeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  */
 
