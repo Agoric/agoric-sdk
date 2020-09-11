@@ -3,6 +3,7 @@
 # file, while never touching a second, will look like it covers everything,
 # when really half the source code is ignored.
 all: true
+cache: false
 
 # only report on files in each package's "src/" directory, not things in
 # node_modules/ or helpers in test/
