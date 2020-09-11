@@ -21,4 +21,5 @@ export {
   swapExact,
   depositToSeat,
   withdrawFromSeat,
+  saveAllIssuers,
 } from './zoeHelpers';

@@ -2,7 +2,12 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
-import { trade, depositToSeat, withdrawFromSeat } from '../contractSupport';
+import {
+  trade,
+  depositToSeat,
+  withdrawFromSeat,
+  saveAllIssuers,
+} from '../contractSupport';
 
 import '../../exported';
 
@@ -13,19 +18,16 @@ import '../../exported';
  */
 const start = zcf => {
   const { zcfSeat: marketMakerSeat } = zcf.makeEmptySeatKit();
-  const zoeService = zcf.getZoeService();
   const { coveredCallInstallation } = zcf.getTerms();
   const zoe = zcf.getZoeService();
 
   const makeQuote = async (price, assets, timeAuthority, deadline) => {
-    const { creatorInvitation } = await E(zoeService).startInstance(
+    const { creatorInvitation } = await E(zoe).startInstance(
       coveredCallInstallation,
       zcf.getTerms().issuers,
     );
-    assert(
-      creatorInvitation !== undefined,
-      `The covered call instance did not return a creatorInvitation`,
-    );
+    const shouldBeInvitationMsg = `The covered call instance should return a creatorInvitation`;
+    assert(creatorInvitation, shouldBeInvitationMsg);
     const proposal = harden({
       give: assets,
       want: price,
@@ -76,19 +78,8 @@ const start = zcf => {
   const creatorFacet = {
     // The inventory can be added in bulk before any quotes are made
     // or can be added immediately before a quote.
-    makeAddInventoryInvitation: async (issuerKeywordRecord = undefined) => {
-      const { issuers } = zcf.getTerms();
-      const issuersPSaved = Object.entries(issuerKeywordRecord).map(
-        ([keyword, issuer]) => {
-          // If the keyword does not yet exist, add it and the
-          // associated issuer.
-          if (issuers.keyword === undefined) {
-            return zcf.saveIssuer(issuer, keyword);
-          }
-          return undefined;
-        },
-      );
-      await Promise.all(issuersPSaved);
+    makeAddInventoryInvitation: async (issuerKeywordRecord = {}) => {
+      await saveAllIssuers(zcf, issuerKeywordRecord);
       return zcf.makeInvitation(addInventory, 'addInventory');
     },
     makeRemoveInventoryInvitation: () =>

@@ -369,3 +369,26 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();
 }
+
+/**
+ * Save all of the issuers in an issuersKeywordRecord to ZCF, using
+ * the method `zcf.saveIssuer`. This does not error if any of the keywords
+ * already exist. If the keyword is already present, it is ignored.
+ * @param {ContractFacet} zcf
+ * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
+ * ZCF
+ */
+export async function saveAllIssuers(zcf, issuerKeywordRecord = {}) {
+  const { issuers } = zcf.getTerms();
+  const issuersPSaved = Object.entries(issuerKeywordRecord).map(
+    ([keyword, issuer]) => {
+      // If the keyword does not yet exist, add it and the
+      // associated issuer.
+      if (issuers.keyword === undefined) {
+        return zcf.saveIssuer(issuer, keyword);
+      }
+      return undefined;
+    },
+  );
+  return Promise.all(issuersPSaved);
+}
