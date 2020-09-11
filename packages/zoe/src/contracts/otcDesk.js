@@ -45,8 +45,9 @@ import '../../exported';
  * understood by the timer. The quote will be cancelled after the
  * deadline. `makeQuote` returns a covered call option that can be
  * given away for free or sold. Importantly, if the recipient chooses
- * to exercise the option, the trade is guaranteed to succeed if their
- * proposal matches the quote.
+ * to exercise the option, they can verify that the goods being
+ * offered are already escrowed, and the trade is guaranteed to
+ * succeed if their proposal matches the quote.
  *
  * @type {ContractStartFn}
  */
