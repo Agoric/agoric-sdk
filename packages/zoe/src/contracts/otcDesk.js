@@ -62,7 +62,7 @@ const start = zcf => {
    *
    * @param {AmountKeywordRecord} price
    * @param {AmountKeywordRecord} assets
-   * @param {Timer<any>} timeAuthority
+   * @param {Timer} timeAuthority
    * @param {any} deadline
    * @returns {Promise<Payment>}
    */

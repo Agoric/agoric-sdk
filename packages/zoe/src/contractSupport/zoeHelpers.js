@@ -264,7 +264,7 @@ export const swapExact = (
  * @typedef ExpectedRecord
  * @property {Record<Keyword, null>} [want]
  * @property {Record<Keyword, null>} [give]
- * @property {Record<keyof ProposalRecord['exit'], null>} [exit]
+ * @property {Partial<Record<keyof ProposalRecord['exit'], null>>} [exit]
  */
 
 /**

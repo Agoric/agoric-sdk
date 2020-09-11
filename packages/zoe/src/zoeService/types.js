@@ -152,9 +152,9 @@
 
 /**
  * @typedef {Object} ExitRule
- * @property {null} [onDemand]
- * @property {null} [waived]
- * @property {{timer:Timer, deadline:Deadline}} [afterDeadline]
+ * @property {null=} onDemand
+ * @property {null=} waived
+ * @property {{timer:Timer, deadline:Deadline}=} afterDeadline
  *
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` key.
