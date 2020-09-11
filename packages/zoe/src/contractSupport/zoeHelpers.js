@@ -319,7 +319,7 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  */
 
 export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
-  assert(!recipientSeat.hasExited(), 'The recipientSeat cannot be exited.');
+  assert(!recipientSeat.hasExited(), 'The recipientSeat cannot have exited.');
 
   // We will create a temporary offer to be able to escrow our payments
   // with Zoe.
@@ -363,7 +363,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
  * @returns {Promise<PaymentPKeywordRecord>}
  */
 export async function withdrawFromSeat(zcf, seat, amounts) {
-  assert(!seat.hasExited(), 'The seat cannot be exited.');
+  assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
   trade(zcf, { seat: tempSeat, gains: amounts }, { seat, gains: {} });
   tempSeat.exit();
