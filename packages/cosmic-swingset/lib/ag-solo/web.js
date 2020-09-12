@@ -24,21 +24,17 @@ const send = (ws, msg) => {
   }
 };
 
-// Taken from https://github.com/marcsAtSkyhunter/Capper/blob/9d20b92119f91da5201a10a0834416bd449c4706/caplib.js#L80
-export function unique() {
-  const chars =
-    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
-  let ans = '';
-  const buf = crypto.randomBytes(25);
-  for (let i = 0; i < buf.length; i++) {
-    const index = buf[i] % chars.length;
-    ans += chars[index];
-  }
-  // while (ans.length < 30) {
-  //   var nextI = Math.floor(Math.random()*10000) % chars.length;
-  //   ans += chars[nextI];
-  // }
-  return ans;
+// From https://stackoverflow.com/a/43866992/14073862
+export function generateToken({ stringBase = 'base64', byteLength = 48 } = {}) {
+  return new Promise((resolve, reject) =>
+    crypto.randomBytes(byteLength, (err, buffer) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(buffer.toString(stringBase));
+      }
+    }),
+  );
 }
 
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
@@ -47,7 +43,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   const privateWebkeyFile = path.join(basedir, 'private-webkey.txt');
   if (!fs.existsSync(privateWebkeyFile)) {
     // Create the unique string for this basedir.
-    fs.writeFileSync(privateWebkeyFile, unique(), { mode: 0o600 });
+    fs.writeFileSync(privateWebkeyFile, await generateToken(), { mode: 0o600 });
   }
 
   // Enrich the inbound command with some metadata.
