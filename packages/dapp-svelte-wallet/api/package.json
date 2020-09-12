@@ -6,8 +6,8 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "lint": "yarn lint:types && eslint '**/*.js'",
-    "lint-fix": "yarn lint --fix",
+    "lint": "eslint '**/*.js' && yarn lint:types",
+    "lint-fix": "eslint --fix '**/*.js' && yarn lint:types",
     "lint-check": "yarn lint",
     "lint:types": "tsc -p jsconfig.json",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
