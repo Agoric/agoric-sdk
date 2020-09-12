@@ -43,7 +43,7 @@ async function setupContract(moolaIssuer, bucksIssuer) {
 
   await E(zoe).startInstance(installation, issuerKeywordRecord);
 
-  /** @type ContractFacet */
+  /** @type {ContractFacet} */
   const zcf = testJig.zcf;
   return { zoe, zcf };
 }

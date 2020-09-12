@@ -98,6 +98,7 @@ export const cleanKeywords = keywordRecord => {
  * `exit`, if present, must be a record of one of the following forms:
  * `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
  * :Timer, deadline :Number } }
+ *
  * @param {(brand: Brand) => AmountMath} getAmountMath
  * @param {Proposal} proposal
  * @returns {ProposalRecord}

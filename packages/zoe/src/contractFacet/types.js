@@ -26,7 +26,7 @@
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
- * @property {(exit?: ExitRule) => ZcfSeatKit} makeEmptySeatKit
+ * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  */
 
@@ -102,7 +102,7 @@
 
 /**
  * @callback SetTestJig
- * @param {() => any=() => {}} testFn
+ * @param {() => any} testFn
  * @returns {void}
  */
 
@@ -110,7 +110,7 @@
  * @typedef {Object} ZCFMint
  * @property {() => IssuerRecord} getIssuerRecord
  * @property {(gains: AmountKeywordRecord,
- *             zcfSeat?: ZCFSeat,
+ *             zcfSeat: ZCFSeat=,
  *            ) => ZCFSeat} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
@@ -138,7 +138,7 @@
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(reason?: Error) => Error} kickOut called with the reason this
+ * @property {(reason: Error=) => Error} kickOut called with the reason this
  * seat is being kicked out, where reason is normally an instanceof Error.
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
@@ -147,7 +147,7 @@
  * The brand is used for filling in an empty amount if the `keyword`
  * is not present in the allocation
  * @property {() => Allocation} getCurrentAllocation
- * @property {(newAllocation: Allocation) => Boolean} isOfferSafe
+ * @property {(newAllocation: Allocation) => boolean} isOfferSafe
  * @property {(newAllocation: Allocation) => SeatStaging} stage
  */
 

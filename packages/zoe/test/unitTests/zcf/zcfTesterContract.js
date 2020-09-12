@@ -4,6 +4,7 @@ import '../../../exported';
 
 /**
  * Tests ZCF
+ *
  * @type {ContractStartFn}
  */
 const start = zcf => {

@@ -13,6 +13,7 @@ import '../../exported';
  * Since the contract doesn't attempt any reallocation, the offer can contain
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
+ *
  * @type {ContractStartFn}
  * @param {ContractFacet} zcf
  */

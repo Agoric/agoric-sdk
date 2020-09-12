@@ -1,6 +1,7 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
+// eslint-disable-next-line jsdoc/valid-types
 /**
  * @template {string} H - the name of the handle
  * @typedef {H & {}} Handle A type constructor for an opaque type
@@ -30,7 +31,7 @@
  * @typedef {object} InstanceRecord
  * @property {Installation} installation
  * @property {Terms} terms - contract parameters
-
+ 
  *
  * @typedef {Object} IssuerRecord
  * @property {Brand} brand

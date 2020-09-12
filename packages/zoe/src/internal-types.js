@@ -115,7 +115,7 @@
  * @typedef {Object} ZoeInstanceAdmin
  * @property {(invitationHandle: InvitationHandle,
  *             description: string,
- *             customProperties?: {},
+ *             customProperties: Record<string, any>=,
  *            ) => Payment} makeInvitation
  * @property {() => void} shutdown
  * @property {(issuerP: ERef<Issuer>,

@@ -73,11 +73,14 @@ const start = async zcf => {
     maths: { Central: centralMath, Secondary: secondaryMath },
   } = zcf.getTerms();
   Object.values(brands).forEach(brand => assertUsesNatMath(zcf, brand));
-  /** @typedef {Map<Brand,Keyword>} */
+  /** @type {Map<Brand,Keyword>} */
   const brandToKeyword = new Map(
     Object.entries(brands).map(([keyword, brand]) => [brand, keyword]),
   );
-  /** @return {string} */
+  /**
+   * @param {Brand} brand
+   * @returns {string}
+   */
   const getPoolKeyword = brand => {
     assert(brandToKeyword.has(brand), 'getPoolKeyword: brand not found');
     // @ts-ignore
@@ -327,9 +330,10 @@ const start = async zcf => {
   /**
    * `getOutputForGivenInput` calculates the result of a trade, given a certain
    * amount of digital assets in.
+   *
    * @param {Amount} amountIn - the amount of digital
    * assets to be sent in
-   * @param brandOut - The brand of asset desired
+   * @param {Brand} brandOut - The brand of asset desired
    */
   const getOutputForGivenInput = (amountIn, brandOut) => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
@@ -347,8 +351,9 @@ const start = async zcf => {
   /**
    * `getInputForGivenOutput` calculates the amount of assets required to be
    * provided in order to obtain a specified gain.
+   *
    * @param {Amount} amountOut - the amount of digital assets desired
-   * @param brandIn - The brand of asset desired
+   * @param {Brand} brandIn - The brand of asset desired
    */
   const getInputForGivenOutput = (amountOut, brandIn) => {
     const inputReserve = getPoolAmount(brandIn).value;

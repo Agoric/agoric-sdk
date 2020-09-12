@@ -6,7 +6,7 @@ import { E } from '@agoric/eventual-send';
  * to request the position be exited.
  */
 
-/** @type MakeExitObj */
+/** @type {MakeExitObj} */
 export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
 

@@ -175,7 +175,7 @@
  */
 
 /**
- * @typedef {Object} SourceBundle Opaque type for a JSONable source bundle
+ * @typedef {Record<string, any>} SourceBundle Opaque type for a JSONable source bundle
  */
 
 /**
