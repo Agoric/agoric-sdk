@@ -70,7 +70,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
     /**
      * Load a module, and call resetter.onReset(bootP) every time it is instantiated.
      */
-    load(mod, resetter = { onReset: _ => {} }) {
+    load(specifier, opts = undefined, resetter = { onReset: _ => {} }) {
       // This is the internal state: a promise kit that doesn't
       // resolve until we are connected.  It is replaced by
       // a new promise kit when we abort the prior module connection.
@@ -82,7 +82,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       let currentReset = _ => {};
 
       // Connect to the module.
-      const index = D(pluginDevice).connect(mod);
+      const index = D(pluginDevice).connect(specifier);
       if (typeof index !== 'number') {
         // An error string.
         throw Error(index);
@@ -108,9 +108,11 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         // Create a CapTP channel.
         const myEpoch = nextEpoch;
         nextEpoch += 1;
-        console.info(`Connecting to ${mod}.${index} with epoch ${myEpoch}`);
+        console.info(
+          `Connecting to ${specifier}.${index} with epoch ${myEpoch}`,
+        );
         const { getBootstrap, dispatch } = makeCapTP(
-          mod,
+          specifier,
           obj => {
             // console.warn('sending', index, obj);
             D(pluginDevice).send(index, obj);
@@ -136,8 +138,8 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
 
         currentEpoch = myEpoch;
 
-        // Publish our bootstrap promise.
-        bootPK.resolve(getBootstrap());
+        // Publish our started plugin.
+        bootPK.resolve(E(getBootstrap()).start(opts));
       };
 
       const actions = harden({

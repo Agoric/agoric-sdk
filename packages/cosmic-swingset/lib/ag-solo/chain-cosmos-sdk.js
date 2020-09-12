@@ -289,9 +289,7 @@ export async function connectToChain(
     if (!r.stdout) {
       console.error(`\
 =============
-${chainID} chain does not yet know of address ${myAddr}${adviseEgress(
-        myAddr,
-      )}
+${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
 =============
 `);
       return undefined;

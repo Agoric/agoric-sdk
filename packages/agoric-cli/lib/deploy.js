@@ -173,7 +173,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
           let installUnsafePlugin;
           if (!allowUnsafePlugins) {
-            installUnsafePlugin = async plugin => {
+            installUnsafePlugin = async (plugin, _opts = undefined) => {
               throw Error(
                 `Installing unsafe plugin ${JSON.stringify(
                   pathResolve(plugin),
@@ -181,7 +181,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
               );
             };
           } else {
-            installUnsafePlugin = async plugin => {
+            installUnsafePlugin = async (plugin, pluginOpts = undefined) => {
               try {
                 const absPath = pathResolve(plugin);
                 const pluginName = absPath.replace(PATH_SEP_RE, '_');
@@ -202,7 +202,8 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
 
                 // Return the bootstrap object for this plugin.
                 console.info(`Loading plugin ${JSON.stringify(pluginFile)}`);
-                return E.G(E(pluginManager).load(pluginName)).bootstrap;
+                return E.G(E(pluginManager).load(pluginName, pluginOpts))
+                  .bootstrap;
               } catch (e) {
                 throw Error(
                   `Cannot install unsafe plugin: ${(e && e.stack) || e}`,
