@@ -4,15 +4,35 @@ const RECONNECT_BACKOFF_SECONDS = 3;
 const resetFns = [];
 let inpBackground;
 
+if (!window.location.hash) {
+  // This is friendly advice to the user who doesn't know.
+  // eslint-disable-next-line no-alert
+  window.alert(
+    `\
+You must open the Agoric Wallet+REPL with the
+    agoric open --repl=both
+command line executable.
+`,
+  );
+  window.location =
+    'https://agoric.com/documentation/getting-started/agoric-cli-guide.html#agoric-open';
+}
+
 function run() {
   const disableFns = []; // Functions to run when the input should be disabled.
   resetFns.push(() => (document.querySelector('#history').innerHTML = ''));
+
+  const loc = window.location;
+
+  const urlParams = `?${loc.hash.slice(1)}`;
+  // TODO: Maybe clear out the hash for privacy.
+  // loc.hash = 'webkey=*redacted*';
 
   let nextHistNum = 0;
   let inputHistoryNum = 0;
 
   async function call(req) {
-    const res = await fetch('/private/repl', {
+    const res = await fetch(`/private/repl${urlParams}`, {
       method: 'POST',
       body: JSON.stringify(req),
       headers: { 'Content-Type': 'application/json' },
@@ -24,9 +44,8 @@ function run() {
     throw new Error(`server error: ${JSON.stringify(j.rej)}`);
   }
 
-  const loc = window.location;
   const protocol = loc.protocol.replace(/^http/, 'ws');
-  const socketEndpoint = `${protocol}//${loc.host}/private/repl`;
+  const socketEndpoint = `${protocol}//${loc.host}/private/repl${urlParams}`;
   const ws = new WebSocket(socketEndpoint);
 
   ws.addEventListener('error', ev => {
@@ -243,9 +262,11 @@ function run() {
   resetFns.push(() =>
     document.getElementById('go').removeAttribute('disabled'),
   );
+
+  return urlParams;
 }
 
-run();
+const urlParams = run();
 
 // Display version information, if possible.
 const fetches = [];
@@ -274,14 +295,17 @@ const fpj = fetch('/package.json')
 fetches.push(fpj);
 
 // an optional `w=0` GET argument will suppress showing the wallet
-if (new URLSearchParams(window.location.search).get('w') !== '0') {
-  fetch('wallet/')
+if (
+  window.location.hash &&
+  new URLSearchParams(window.location.search).get('w') !== '0'
+) {
+  fetch(`wallet/${urlParams}`)
     .then(resp => {
       if (resp.status < 200 || resp.status >= 300) {
         throw Error(`status ${resp.status}`);
       }
       walletFrame.style.display = 'block';
-      walletFrame.src = 'wallet/';
+      walletFrame.src = `wallet/${window.location.hash}`;
     })
     .catch(e => {
       console.log('Cannot fetch wallet/', e);

@@ -5,6 +5,7 @@ import { createConnection } from 'net';
 import express from 'express';
 import WebSocket from 'ws';
 import fs from 'fs';
+import crypto from 'crypto';
 
 import anylogger from 'anylogger';
 
@@ -23,16 +24,44 @@ const send = (ws, msg) => {
   }
 };
 
+// Taken from https://github.com/marcsAtSkyhunter/Capper/blob/9d20b92119f91da5201a10a0834416bd449c4706/caplib.js#L80
+export function unique() {
+  const chars =
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
+  let ans = '';
+  const buf = crypto.randomBytes(25);
+  for (let i = 0; i < buf.length; i++) {
+    const index = buf[i] % chars.length;
+    ans += chars[index];
+  }
+  // while (ans.length < 30) {
+  //   var nextI = Math.floor(Math.random()*10000) % chars.length;
+  //   ans += chars[nextI];
+  // }
+  return ans;
+}
+
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
+  // Ensure we're protected with a unique webkey for this basedir.
+  fs.chmodSync(basedir, 0o700);
+  const privateWebkeyFile = path.join(basedir, 'private-webkey.txt');
+  if (!fs.existsSync(privateWebkeyFile)) {
+    // Create the unique string for this basedir.
+    fs.writeFileSync(privateWebkeyFile, unique(), { mode: 0o600 });
+  }
+
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
     { channelID, dispatcher, url, headers: { origin } = {} } = {},
     id = undefined,
   ) => {
+    // Strip away the query params, as the webkey is there.
+    const qmark = url.indexOf('?');
+    const shortUrl = qmark < 0 ? url : url.slice(0, qmark);
     const obj = {
       ...body,
-      meta: { channelID, dispatcher, origin, url, date: Date.now() },
+      meta: { channelID, dispatcher, origin, url: shortUrl, date: Date.now() },
     };
     return rawInboundCommand(obj).catch(err => {
       const idpfx = id ? `${id} ` : '';
@@ -75,13 +104,28 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
-  const validateOrigin = req => {
+  const validateOriginAndWebkey = req => {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
     if (!req.url.startsWith('/private/')) {
-      // Allow any origin that's not marked private.
+      // Allow any origin that's not marked private, without a webkey.
       return true;
+    }
+
+    // Validate the private webkey.
+    const privateWebkey = fs.readFileSync(privateWebkeyFile, 'utf-8');
+    const reqWebkey = new URL(`http://localhost${req.url}`).searchParams.get(
+      'webkey',
+    );
+    if (reqWebkey !== privateWebkey) {
+      log.error(
+        id,
+        `Invalid webkey ${JSON.stringify(
+          reqWebkey,
+        )}; try running "agoric open"`,
+      );
+      return false;
     }
 
     if (!origin) {
@@ -93,7 +137,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       hostname.match(/^(localhost|127\.0\.0\.1)$/);
 
     if (['chrome-extension:', 'moz-extension:'].includes(url.protocol)) {
-      // Extensions such as metamask can access the wallet.
+      // Extensions such as metamask are local and can access the wallet.
       return true;
     }
 
@@ -109,10 +153,17 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     return true;
   };
 
+  // Allow people to see where this installation is.
+  app.get('/ag-solo-basedir', (req, res) => {
+    res.contentType('text/plain');
+    res.write(basedir);
+    res.end();
+  });
+
   // accept POST messages to arbitrary endpoints
   app.post('*', (req, res) => {
-    if (!validateOrigin(req)) {
-      res.json({ ok: false, rej: 'Unauthorized Origin' });
+    if (!validateOriginAndWebkey(req)) {
+      res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
 
@@ -130,7 +181,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
-    if (!validateOrigin(req)) {
+    if (!validateOriginAndWebkey(req)) {
       socket.destroy();
       return;
     }

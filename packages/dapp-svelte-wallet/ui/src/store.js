@@ -5,9 +5,26 @@ import { updateFromNotifier } from '@agoric/notifier';
 import { makeWebSocket } from './websocket';
 import { makeCapTPConnection } from './captp';
 
+if (!location.hash) {
+  // This is friendly advice to the user who doesn't know.
+  alert(
+    `\
+You must open the Agoric wallet with the
+      agoric open
+command line executable.
+`,
+  );
+  window.location =
+    'https://agoric.com/documentation/getting-started/agoric-cli-guide.html#agoric-open';
+}
+
+const urlParams = `?${location.hash.slice(1)}`;
+// TODO: Maybe clear out the hash for privacy.
+// location.hash = 'webkey=*redacted*';
+
 // Create a connection so that we can derive presences from it.
 const { connected, makeStableForwarder } = makeCapTPConnection(
-  handler => makeWebSocket('/private/captp', handler),
+  handler => makeWebSocket(`/private/captp${urlParams}`, handler),
   { onReset },
 );
 

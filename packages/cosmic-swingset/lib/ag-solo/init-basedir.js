@@ -21,7 +21,7 @@ export default function initBasedir(
 
   const here = __dirname;
   try {
-    fs.mkdirSync(basedir);
+    fs.mkdirSync(basedir, 0o700);
   } catch (e) {
     if (!fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))) {
       log.error(
