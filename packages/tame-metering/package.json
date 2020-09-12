@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
+    "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
@@ -13,7 +14,8 @@
     "esm": "^3.2.5"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "nyc": "^15.1.0"
   },
   "keywords": [],
   "files": [

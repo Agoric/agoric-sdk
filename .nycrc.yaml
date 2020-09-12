@@ -1,0 +1,28 @@
+# Instrument/count all source files, not just the ones obviously imported by
+# the test file. Without this, a test suite that exercises all of one source
+# file, while never touching a second, will look like it covers everything,
+# when really half the source code is ignored.
+all: true
+cache: false
+
+# only report on files in each package's "src/" directory, not things in
+# node_modules/ or helpers in test/
+include:
+  - "src/**/*.js"
+
+# nyc/istanbul gets coverage data by injecting code into each source file.
+# This injected code exposes the coverage counters by setting properties on a
+# shared mutable property of the global object. The default approach gets the
+# global by using `new Function("return this")()`, which doesn't work after
+# SES tames Function (so 'this' is undefined).
+#
+# We use a patched version of nyc which accepts these three options and
+# passes them through to istanbul. `coverageGlobalScopeFunc: false` makes it
+# use `X` instead of `new Function("return X")()`, and `coverageGlobalScope:
+# globalThis` changes X from `this` to `globalThis`. We must also provide
+# 'coverageVariable', because for some reason it doesn't have a default
+# (which may be a bug in my patched version of nyc).
+
+coverageGlobalScopeFunc: false
+coverageGlobalScope: globalThis
+coverageVariable: __coverage__

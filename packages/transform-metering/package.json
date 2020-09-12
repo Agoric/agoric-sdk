@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
+    "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
@@ -14,6 +15,7 @@
     "@babel/core": "^7.5.0",
     "ava": "^3.12.1",
     "esm": "^3.2.5",
+    "nyc": "^15.1.0",
     "rollup": "^1.16.6",
     "rollup-plugin-node-resolve": "^5.2.0"
   },

@@ -9,6 +9,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
   },
@@ -17,7 +18,8 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0"
   },
   "publishConfig": {
     "access": "public"

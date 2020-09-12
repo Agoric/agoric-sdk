@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
+    "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "build": "exit 0"
@@ -14,7 +15,8 @@
     "@agoric/babel-parser": "^7.6.4",
     "@babel/generator": "^7.5.0",
     "ava": "^3.12.1",
-    "esm": "^3.2.5"
+    "esm": "^3.2.5",
+    "nyc": "^15.1.0"
   },
   "keywords": [],
   "files": [

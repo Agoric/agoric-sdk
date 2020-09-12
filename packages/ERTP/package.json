@@ -9,6 +9,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint --fix",
@@ -51,7 +52,8 @@
     "@agoric/install-ses": "^0.3.0",
     "@agoric/swingset-vat": "^0.7.0",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0"
   },
   "files": [
     "src",

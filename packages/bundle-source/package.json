@@ -6,6 +6,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -13,7 +14,8 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.3.0",
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "nyc": "^15.1.0"
   },
   "dependencies": {
     "@agoric/acorn-eventual-send": "^2.0.7",

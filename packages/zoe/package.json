@@ -9,6 +9,7 @@
   "scripts": {
     "build": "yarn build-zcfBundle",
     "test": "ava --verbose",
+    "test:nyc": "nyc ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
@@ -54,7 +55,8 @@
     "@agoric/install-ses": "^0.3.0",
     "@agoric/swingset-vat": "^0.7.1",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0"
   },
   "files": [
     "src/",

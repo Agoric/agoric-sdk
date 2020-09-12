@@ -9,6 +9,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:nyc": "nyc ava",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && eslint '**/*.js'",
@@ -37,7 +38,8 @@
   "devDependencies": {
     "@agoric/install-ses": "^0.3.0",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0"
   },
   "files": [
     "src/",

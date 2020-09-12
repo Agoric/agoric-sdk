@@ -1,0 +1,63 @@
+diff --git a/node_modules/nyc/index.js b/node_modules/nyc/index.js
+index 3164b1d..6ba672f 100755
+--- a/node_modules/nyc/index.js
++++ b/node_modules/nyc/index.js
+@@ -147,6 +147,9 @@ class NYC {
+       produceSourceMap: this.config.produceSourceMap,
+       compact: this.config.compact,
+       preserveComments: this.config.preserveComments,
++      coverageVariable: this.config.coverageVariable,
++      coverageGlobalScopeFunc: this.config.coverageGlobalScopeFunc,
++      coverageGlobalScope: this.config.coverageGlobalScope,
+       esModules: this.config.esModules,
+       parserPlugins: this.config.parserPlugins
+     })
+diff --git a/node_modules/nyc/lib/commands/helpers.js b/node_modules/nyc/lib/commands/helpers.js
+index 92e0924..5e19f23 100644
+--- a/node_modules/nyc/lib/commands/helpers.js
++++ b/node_modules/nyc/lib/commands/helpers.js
+@@ -3,23 +3,9 @@
+ const decamelize = require('decamelize')
+ const schema = require('@istanbuljs/schema')
+ 
+-/* These options still need to be connected to the instrumenter
+- * Disabling them for now also avoids the issue with OSX cutting
+- * off the error help screen at 8192 characters.
+- */
+-const blockOptions = [
+-  'coverageVariable',
+-  'coverageGlobalScope',
+-  'coverageGlobalScopeFunc'
+-]
+-
+ module.exports = {
+   setupOptions (yargs, command, cwd) {
+     Object.entries(schema.nyc.properties).forEach(([name, setup]) => {
+-      if (blockOptions.includes(name)) {
+-        return
+-      }
+-
+       const option = {
+         description: setup.description,
+         default: setup.default,
+diff --git a/node_modules/nyc/lib/instrumenters/istanbul.js b/node_modules/nyc/lib/instrumenters/istanbul.js
+index 299f9bf..b7ea957 100644
+--- a/node_modules/nyc/lib/instrumenters/istanbul.js
++++ b/node_modules/nyc/lib/instrumenters/istanbul.js
+@@ -6,13 +6,15 @@ function InstrumenterIstanbul (options) {
+ 
+   const instrumenter = createInstrumenter({
+     autoWrap: true,
+-    coverageVariable: '__coverage__',
++    coverageVariable: options.coverageVariable,
+     embedSource: true,
+     compact: options.compact,
+     preserveComments: options.preserveComments,
+     produceSourceMap: options.produceSourceMap,
+     ignoreClassMethods: options.ignoreClassMethods,
+     esModules: options.esModules,
++    coverageGlobalScopeFunc: options.coverageGlobalScopeFunc,
++    coverageGlobalScope: options.coverageGlobalScope,
+     parserPlugins: options.parserPlugins
+   })
+ 
