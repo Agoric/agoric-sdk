@@ -75,8 +75,8 @@ function run() {
       .map(
         l =>
           l
-            .replace('&', '&amp;') // quote ampersands
-            .replace('<', '&lt;') // quote html
+            .replace(/&/g, '&amp;') // quote ampersands
+            .replace(/</g, '&lt;') // quote html
             .replace(/\t/g, '  ') // expand tabs
             .replace(/ {2}/g, ' &nbsp;'), // try preserving whitespace
       )
