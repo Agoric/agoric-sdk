@@ -378,12 +378,16 @@ const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
     { proposal, initialAllocation },
     getAmountMath,
   );
+  let hasExited = false;
   const mockSeat = harden({
     isOfferSafe: actual.isOfferSafe,
     getCurrentAllocation: actual.getCurrentAllocation,
     getProposal: () => proposal,
     stage: actual.stage,
-    hasExited: actual.hasExited,
+    hasExited: () => hasExited,
+    exit: () => {
+      hasExited = true;
+    },
   });
   return mockSeat;
 };
@@ -444,6 +448,8 @@ test('ZoeHelpers trade ok', t => {
     { Items: moola(7), Money: simoleans(2) },
     'right gets what he wants',
   );
+  t.not(leftZcfSeat.hasExited(), 'Trade should not cause seats to exit');
+  t.not(rightZcfSeat.hasExited(), 'Trade should not cause seats to exit');
 });
 
 test('ZoeHelpers trade same seat', t => {
@@ -483,4 +489,5 @@ test('ZoeHelpers trade same seat', t => {
     { message: 'a seat cannot trade with itself' },
     'seats must be different',
   );
+  t.not(leftZcfSeat.hasExited(), 'Trade should not cause seats to exit');
 });
