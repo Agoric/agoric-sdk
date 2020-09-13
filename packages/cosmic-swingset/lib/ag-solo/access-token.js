@@ -4,15 +4,20 @@ import path from 'path';
 
 import { openSwingStore } from '@agoric/swing-store-simple';
 
-// From https://stackoverflow.com/a/43866992/14073862
+// Adapted from https://stackoverflow.com/a/43866992/14073862
 export function generateAccessToken({
-  stringBase = 'base64',
+  stringBase = 'base64url',
   byteLength = 48,
 } = {}) {
   return new Promise((resolve, reject) =>
     crypto.randomBytes(byteLength, (err, buffer) => {
       if (err) {
         reject(err);
+      } else if (stringBase === 'base64url') {
+        // Convert to url-safe base64.
+        const base64 = buffer.toString('base64');
+        const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_');
+        resolve(base64url);
       } else {
         resolve(buffer.toString(stringBase));
       }
