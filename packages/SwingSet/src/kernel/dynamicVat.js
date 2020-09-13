@@ -1,4 +1,3 @@
-/* global harden */
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatSlot } from '../parseVatSlots';
@@ -41,7 +40,7 @@ export function makeDynamicVatCreator(stuff) {
    * unmetered. The other is 'vatParameters', which provides the contents of
    * the second argument to 'buildRootObject()'
    *
-   * @return { vatID } the vatID for a newly created vat. The success or
+   * @returns { vatID } the vatID for a newly created vat. The success or
    * failure of the operation will be reported in a message to the admin vat,
    * citing this vatID
    */

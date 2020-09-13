@@ -1,4 +1,3 @@
-/* global harden */
 import { assert, details } from '@agoric/assert';
 import { insistMessage } from '../message';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';

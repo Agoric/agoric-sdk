@@ -1,4 +1,3 @@
-/* global harden */
 import { makeInbound } from './clist-inbound';
 import { makeOutbound } from './clist-outbound';
 import { makeKernel } from './clist-kernel';

@@ -5,12 +5,10 @@ import { assert, details } from '@agoric/assert';
  * actually is.  A capdata object should have a .body property that's a string
  * and a .slots property that's an array of strings.
  *
- * @param capdata  The object to be tested
- *
- * @throws Error if, upon inspection, the parameter does not satisfy the above
+ * @param {any} capdata  The object to be tested
+ * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- *
- * @return nothing
+ * @returns {void}
  */
 export function insistCapData(capdata) {
   assert.typeof(

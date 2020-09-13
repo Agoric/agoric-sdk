@@ -1,5 +1,3 @@
-/* global harden */
-
 /**
  * The VatAdmin wrapper vat.
  *

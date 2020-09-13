@@ -1,5 +1,3 @@
-/* global harden */
-
 export default function setup(syscall, state, _helpers, vatPowers) {
   const { testLog } = vatPowers;
   let deviceRef;

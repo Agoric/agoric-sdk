@@ -1,5 +1,3 @@
-/* global harden */
-
 /* eslint no-lone-blocks: "off" */
 /* eslint dot-notation: "off" */
 // I turned off dot-notation so eslint won't rewrite the grep-preserving

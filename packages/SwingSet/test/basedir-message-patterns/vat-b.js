@@ -1,5 +1,3 @@
-/* global harden */
-
 import { buildPatterns } from '../message-patterns';
 
 export function buildRootObject(vatPowers) {

@@ -1,5 +1,3 @@
-/* global harden */
-
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';

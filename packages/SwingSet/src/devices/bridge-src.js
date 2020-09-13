@@ -1,5 +1,3 @@
-/* global harden */
-
 function sanitize(data) {
   // TODO: Use @agoric/marshal:pureCopy when it exists.
   if (data === undefined) {

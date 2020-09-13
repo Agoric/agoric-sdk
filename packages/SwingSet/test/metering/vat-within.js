@@ -1,5 +1,3 @@
-/* global harden */
-
 import { importBundle } from '@agoric/import-bundle';
 
 export function buildRootObject(vatPowers) {

@@ -1,4 +1,3 @@
-/* global harden */
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './localVatManager';

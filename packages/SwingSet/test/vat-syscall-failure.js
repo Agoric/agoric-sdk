@@ -1,5 +1,3 @@
-/* global harden */
-
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }

@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 
 console.log(`=> loading bootstrap.js`);

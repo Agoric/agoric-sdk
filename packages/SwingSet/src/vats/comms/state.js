@@ -1,4 +1,3 @@
-/* global harden */
 import { assert } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
 import { makeVatSlot } from '../../parseVatSlots';

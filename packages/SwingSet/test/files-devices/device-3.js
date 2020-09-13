@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootDeviceNode({
   setDeviceState,
   getDeviceState,

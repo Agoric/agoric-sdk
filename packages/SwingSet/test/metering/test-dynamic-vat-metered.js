@@ -1,5 +1,3 @@
-/* global harden */
-
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';

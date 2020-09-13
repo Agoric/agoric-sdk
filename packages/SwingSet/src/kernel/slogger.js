@@ -1,4 +1,3 @@
-/* global harden */
 import { assert } from '@agoric/assert';
 
 const IDLE = 'idle';

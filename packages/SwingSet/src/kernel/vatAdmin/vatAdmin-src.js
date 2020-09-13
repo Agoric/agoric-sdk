@@ -1,5 +1,3 @@
-/* global harden */
-
 /**
  * A Vat management device that provides a capability that can be used to
  * create new vats. create(adminId, code) creates a new vat running code, and
@@ -13,6 +11,9 @@
  * endowments }. We don't currently need to use SO, or to maintain state. All
  * functionality is provided by calling kernel functions and passing in the
  * VatID. The wrapper vat sends the VatID on every call.
+ *
+ * @param {Object} param0
+ * @param {Record<string, any>} param0.endowments
  */
 export function buildRootDeviceNode({ endowments }) {
   const {

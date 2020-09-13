@@ -1,5 +1,3 @@
-/* global harden */
-
 import { assert } from '@agoric/assert';
 import { makeDeviceSlots } from './deviceSlots';
 import { insistCapData } from '../capdata';
@@ -17,10 +15,11 @@ import { insistCapData } from '../capdata';
 /**
  * Produce an object that will serve as the kernel's handle onto a device.
  *
- * @param deviceName  The device's name, for human readable diagnostics
- * @param buildRootDevice  The device's root-device-object constructor
- * @param state  A get/set object for the device's persistent state
- * @param endowments  The device's configured endowments
+ * @param {string} deviceName  The device's name, for human readable diagnostics
+ * @param {*} buildRootDeviceNode
+ * @param {*} state  A get/set object for the device's persistent state
+ * @param {Record<string, any>} endowments  The device's configured endowments
+ * @param {*} testLog
  */
 export default function makeDeviceManager(
   deviceName,
@@ -52,15 +51,18 @@ export default function makeDeviceManager(
   );
 
   /**
+   * @typedef {Object} CapData
+   * @property {string} body
+   * @property {Array<string>} slots
+   */
+  /**
+   * @typedef {['ok', CapData]} VatInvocationResults
+   */
+  /**
    * Invoke a method on a device node.
    *
-   * @param target  Kernel slot designating the device node that is the target
-   *    of the invocation
-   * @param method  A string naming the method to be invoked
-   * @param args  A capdata object containing the arguments to the invocation
-   *
-   * @return a VatInvocationResults object: ['ok', capdata]
-   *
+   * @param {[string, string, CapData]} deviceInvocation
+   * @returns {VatInvocationResults} a VatInvocationResults object
    * Throws an exeption if the invocation failed. This exception is fatal to
    * the kernel.
    */

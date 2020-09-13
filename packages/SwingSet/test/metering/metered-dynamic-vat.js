@@ -1,4 +1,3 @@
-/* global harden */
 import { importBundle } from '@agoric/import-bundle';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { meterMe } from './metered-code';

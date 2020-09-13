@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import { E as defaultE } from '@agoric/eventual-send';
@@ -98,7 +97,9 @@ export function makeRouterProtocol(E = defaultE) {
     protocolHandlers.delete(prefix);
   }
 
+  /* eslint-disable jsdoc/valid-types */
   /** @type {Protocol['bind']} */
+  /* eslint-enable jsdoc/valid-types */
   async function bind(localAddr) {
     const [route] = router.getRoutes(localAddr);
     if (route === undefined) {

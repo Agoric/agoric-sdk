@@ -19,7 +19,7 @@
 /**
  * Transform a text address to a parsed multiaddr
  *
- * @param {Textaddr|Multiaddr} ta
+ * @param {Textaddr} ma
  * @returns {Multiaddr}
  */
 export function parse(ma) {

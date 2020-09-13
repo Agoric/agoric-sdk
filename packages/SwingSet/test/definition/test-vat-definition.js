@@ -1,4 +1,3 @@
-/* global harden */
 import '@agoric/install-ses';
 import test from 'ava';
 import { buildVatController } from '../../src/index';

@@ -1,5 +1,3 @@
-/* global harden */
-
 import { makeMarshal, Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';

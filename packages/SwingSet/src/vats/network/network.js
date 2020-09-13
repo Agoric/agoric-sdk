@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import makeStore from '@agoric/store';
@@ -188,6 +187,7 @@ export function crossoverConnection(
 
 /**
  * Get the list of prefixes from longest to shortest.
+ *
  * @param {string} addr
  */
 export function getPrefixes(addr) {
@@ -218,6 +218,7 @@ export function makeNetworkProtocol(protocolHandler) {
   /**
    * Currently must be a single listenHandler.
    * TODO: Do something sensible with multiple handlers?
+   *
    * @type {Store<Endpoint, [Port, ListenHandler]>}
    */
   const listening = makeStore('localAddr');

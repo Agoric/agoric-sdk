@@ -1,4 +1,4 @@
-/* global Compartment harden */
+/* global Compartment */
 
 import fs from 'fs';
 import path from 'path';
@@ -52,28 +52,37 @@ const KNOWN_CREATION_OPTIONS = harden([
 ]);
 
 /**
+ * @typedef {Object} SwingSetConfigProperties
+ * @property {string} [sourceSpec] path to the source code
+ * @property {string} [bundleSpec]
+ * @property {Record<string, any>} [parameters]
+ */
+
+/**
+ * @typedef {Record<string, SwingSetConfigProperties>} SwingSetConfigDescriptor
+ * Where the property name is the name of the vat.  Note that
+ * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
+ * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
+ * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
+ */
+
+/**
+ * @typedef {Object} SwingSetConfig a swingset config object
+ * @property {string} bootstrap
+ * @property {SwingSetConfigDescriptor} [vats]
+ * @property {SwingSetConfigDescriptor} [bundles]
+ *
+ * Swingsets defined by scanning a directory in this manner define no devices.
+ */
+
+/**
  * Scan a directory for files defining the vats to bootstrap for a swingset, and
  * produce a swingset config object for what was found there.  Looks for files
  * with names of the pattern `vat-NAME.js` as well as a file named
  * 'bootstrap.js'.
  *
- * @param basedir  The directory to scan
- *
- * @return a swingset config object: {
- *   bootstrap: "bootstrap",
- *   vats: {
- *     NAME: {
- *       sourceSpec: PATHSTRING
- *     }
- *   }
- * }
- *
- * Where NAME is the name of the vat; `sourceSpec` contains the path to the vat with that name.  Note that
- * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
- * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
- * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
- *
- * Swingsets defined by scanning a directory in this manner define no devices.
+ * @param {string} basedir  The directory to scan
+ * @returns {SwingSetConfig}
  */
 export function loadBasedir(basedir) {
   const vats = {};
@@ -122,10 +131,10 @@ export function loadBasedir(basedir) {
  * a module path, and then if that doesn't work try to resolve it as an
  * ordinary path relative to the directory in which the config file was found.
  *
- * @param dirname  Path to directory containing the config file
- * @param specPath  Path found in a `sourceSpec` or `bundleSpec` property
+ * @param {string} dirname  Path to directory containing the config file
+ * @param {string} specPath  Path found in a `sourceSpec` or `bundleSpec` property
  *
- * @return the absolute path corresponding to `specPath` if it can be
+ * @returns {string} the absolute path corresponding to `specPath` if it can be
  *    determined.
  */
 function resolveSpecFromConfig(dirname, specPath) {
@@ -144,9 +153,9 @@ function resolveSpecFromConfig(dirname, specPath) {
  * it to normal form: resolve each pathname to a context-insensitive absolute
  * path and make sure it has a `parameters` property if it's supposed to.
  *
- * @param desc  The config descriptor to be normalized.
- * @param dirname  The pathname of the directory in which the config file was found
- * @param expectParameters `true` if the entries should have parameters (for
+ * @param {SwingSetConfigDescriptor} desc  The config descriptor to be normalized.
+ * @param {string} dirname  The pathname of the directory in which the config file was found
+ * @param {boolean} expectParameters `true` if the entries should have parameters (for
  *    example, `true` for `vats` but `false` for bundles).
  */
 function normalizeConfigDescriptor(desc, dirname, expectParameters) {
@@ -169,12 +178,12 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
 /**
  * Read and parse a swingset config file and return it in normalized form.
  *
- * @param configPath  Path to the config file to be processed
+ * @param {string} configPath  Path to the config file to be processed
  *
- * @return the contained config object, in normalized form, or null if the
+ * @returns {SwingSetConfig} the contained config object, in normalized form, or null if the
  *    requested config file did not exist.
  *
- * @throws if the file existed but was inaccessible, malformed, or otherwise
+ * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise
  *    invalid.
  */
 export function loadSwingsetConfigFile(configPath) {

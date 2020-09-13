@@ -1,5 +1,3 @@
-/* global harden */
-
 // In our system (at least for now), we make a distinction between callable
 // objects and non-callable data. Attempting to send a message to data will
 // throw an error. This function provides a consistent definition of this
