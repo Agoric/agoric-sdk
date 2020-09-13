@@ -9,7 +9,9 @@ const PORT = 7999;
 // Ensure we're all using the same HandledPromise.
 export { E };
 
-export function makeFixture() {
+export async function makeFixture() {
+  const accessToken = await getAccessToken(PORT);
+
   let expectedToExit = false;
   let buf = '';
   const cp = spawn(
@@ -38,8 +40,6 @@ export function makeFixture() {
     process.stdout.write('# connecting');
     async function tryConnect(resolve, reject) {
       process.stdout.write('.');
-
-      const accessToken = await getAccessToken(PORT);
 
       /** @type {() => void} */
       let abortCapTP;

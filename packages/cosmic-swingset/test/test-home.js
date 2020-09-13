@@ -8,7 +8,7 @@ import { makeFixture, E } from './captp-fixture';
 let home;
 let teardown;
 test.before('setup', async t => {
-  const { homeP, kill } = makeFixture();
+  const { homeP, kill } = await makeFixture();
   teardown = kill;
   home = await homeP;
   t.truthy('ready');
