@@ -4,12 +4,9 @@ import http from 'http';
 import { createConnection } from 'net';
 import express from 'express';
 import WebSocket from 'ws';
-import fs from 'fs';
-import crypto from 'crypto';
-
 import anylogger from 'anylogger';
 
-import { openSwingStore } from '@agoric/swing-store-simple';
+import { getAccessToken } from './access-token';
 
 // We need to CommonJS require morgan or else it warns, until:
 // https://github.com/expressjs/morgan/issues/190
@@ -25,40 +22,6 @@ const send = (ws, msg) => {
     ws.send(msg);
   }
 };
-
-// From https://stackoverflow.com/a/43866992/14073862
-export function generateAccessToken({
-  stringBase = 'base64',
-  byteLength = 48,
-} = {}) {
-  return new Promise((resolve, reject) =>
-    crypto.randomBytes(byteLength, (err, buffer) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(buffer.toString(stringBase));
-      }
-    }),
-  );
-}
-
-export async function getAccessToken(port) {
-  // Ensure we're protected with a unique accessToken for this basedir.
-  const sharedStateDir = path.join(process.env.HOME || '', '.agoric');
-  await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
-
-  // Ensure an access token exists.
-  const { storage, commit, close } = openSwingStore(sharedStateDir, 'state');
-  const accessTokenKey = `accessToken/${port}`;
-  if (!storage.has(accessTokenKey)) {
-    storage.set(accessTokenKey, await generateAccessToken());
-    commit();
-  }
-  const accessToken = storage.get(accessTokenKey);
-  close();
-  console.warn('FIGME: have stored accessToken', accessToken);
-  return accessToken;
-}
 
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
