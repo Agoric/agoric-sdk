@@ -75,8 +75,16 @@ function run() {
       .map(
         l =>
           l
-            .replace(/&/g, '&amp;') // quote ampersands
-            .replace(/</g, '&lt;') // quote html
+            // These replacements are for securely inserting into .innerHTML, from
+            // https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html#rule-1-html-encode-before-inserting-untrusted-data-into-html-element-content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;')
+
+            // These two replacements are just for word wrapping, not security.
             .replace(/\t/g, '  ') // expand tabs
             .replace(/ {2}/g, ' &nbsp;'), // try preserving whitespace
       )
