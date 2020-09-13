@@ -265,7 +265,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   // invite purse balance is rendered with petnames. We should see
   // unnamed first, then the petnames after those are suggested by
   // the dapp.
-  /** @type {{ makeInvitation(): Invitation }} */
+  /** @type {{ makeInvitation: () => Invitation }} */
   const publicAPI = await E(zoe).getPublicFacet(instance);
   const invite2 = await E(publicAPI).makeInvitation();
   const {
@@ -620,7 +620,7 @@ test('lib-wallet offer methods', async t => {
   );
   const rawId2 = '1588645230204';
   const id2 = `unknown#${rawId2}`;
-  /** @type {{ makeInvitation(): Invitation}} */
+  /** @type {{ makeInvitation: () => Invitation}} */
   const publicAPI = await E(zoe).getPublicFacet(instance);
   const invite2 = await E(publicAPI).makeInvitation();
   const {
@@ -774,7 +774,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
   );
 
-  /** @type {{ getLiquidityIssuer(): Issuer, makeSwapInvitation(): Invitation }} */
+  /** @type {{ getLiquidityIssuer: () => Issuer, makeSwapInvitation: () => Invitation }} */
   const publicAPI = await E(zoe).getPublicFacet(autoswapInstanceHandle);
   const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
 
