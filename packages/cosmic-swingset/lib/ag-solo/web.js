@@ -5,8 +5,11 @@ import { createConnection } from 'net';
 import express from 'express';
 import WebSocket from 'ws';
 import fs from 'fs';
+import crypto from 'crypto';
 
 import anylogger from 'anylogger';
+
+import { openSwingStore } from '@agoric/swing-store-simple';
 
 // We need to CommonJS require morgan or else it warns, until:
 // https://github.com/expressjs/morgan/issues/190
@@ -23,6 +26,40 @@ const send = (ws, msg) => {
   }
 };
 
+// From https://stackoverflow.com/a/43866992/14073862
+export function generateAccessToken({
+  stringBase = 'base64',
+  byteLength = 48,
+} = {}) {
+  return new Promise((resolve, reject) =>
+    crypto.randomBytes(byteLength, (err, buffer) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(buffer.toString(stringBase));
+      }
+    }),
+  );
+}
+
+export async function getAccessToken(port) {
+  // Ensure we're protected with a unique accessToken for this basedir.
+  const sharedStateDir = path.join(process.env.HOME || '', '.agoric');
+  await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
+
+  // Ensure an access token exists.
+  const { storage, commit, close } = openSwingStore(sharedStateDir, 'state');
+  const accessTokenKey = `accessToken/${port}`;
+  if (!storage.has(accessTokenKey)) {
+    storage.set(accessTokenKey, await generateAccessToken());
+    commit();
+  }
+  const accessToken = storage.get(accessTokenKey);
+  close();
+  console.warn('FIGME: have stored accessToken', accessToken);
+  return accessToken;
+}
+
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
@@ -30,9 +67,13 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     { channelID, dispatcher, url, headers: { origin } = {} } = {},
     id = undefined,
   ) => {
+    // Strip away the query params, as the inbound command device can't handle
+    // it and the accessToken is there.
+    const qmark = url.indexOf('?');
+    const shortUrl = qmark < 0 ? url : url.slice(0, qmark);
     const obj = {
       ...body,
-      meta: { channelID, dispatcher, origin, url, date: Date.now() },
+      meta: { channelID, dispatcher, origin, url: shortUrl, date: Date.now() },
     };
     return rawInboundCommand(obj).catch(err => {
       const idpfx = id ? `${id} ` : '';
@@ -60,28 +101,34 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   app.use(express.json()); // parse application/json
   const server = http.createServer(app);
 
-  // Override with Dapp html, if any.
-  const dapphtmldir = path.join(basedir, 'dapp-html');
-  try {
-    fs.statSync(dapphtmldir);
-    log(`Serving Dapp files from ${dapphtmldir}`);
-    app.use(express.static(dapphtmldir));
-  } catch (e) {
-    // Do nothing.
-  }
-
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
-  const validateOrigin = req => {
+  const validateOriginAndAccessToken = async req => {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
     if (!req.url.startsWith('/private/')) {
-      // Allow any origin that's not marked private.
+      // Allow any origin that's not marked private, without a accessToken.
       return true;
+    }
+
+    // Validate the private accessToken.
+    const accessToken = await getAccessToken(port);
+    const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
+      'accessToken',
+    );
+
+    if (reqToken !== accessToken) {
+      log.error(
+        id,
+        `Invalid access token ${JSON.stringify(
+          reqToken,
+        )}; try running "agoric open"`,
+      );
+      return false;
     }
 
     if (!origin) {
@@ -93,7 +140,8 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       hostname.match(/^(localhost|127\.0\.0\.1)$/);
 
     if (['chrome-extension:', 'moz-extension:'].includes(url.protocol)) {
-      // Extensions such as metamask can access the wallet.
+      // Extensions such as metamask are local and can access the wallet.
+      // Especially since the access token has been supplied.
       return true;
     }
 
@@ -110,9 +158,9 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   };
 
   // accept POST messages to arbitrary endpoints
-  app.post('*', (req, res) => {
-    if (!validateOrigin(req)) {
-      res.json({ ok: false, rej: 'Unauthorized Origin' });
+  app.post('*', async (req, res) => {
+    if (!(await validateOriginAndAccessToken(req))) {
+      res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
 
@@ -129,8 +177,8 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // This senses the Upgrade header to distinguish between plain
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
-  server.on('upgrade', (req, socket, head) => {
-    if (!validateOrigin(req)) {
+  server.on('upgrade', async (req, socket, head) => {
+    if (!(await validateOriginAndAccessToken(req))) {
       socket.destroy();
       return;
     }

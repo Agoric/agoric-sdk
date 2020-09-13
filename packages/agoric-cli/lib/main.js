@@ -6,6 +6,7 @@ import initMain from './init';
 import installMain from './install';
 import setDefaultsMain from './set-defaults';
 import startMain from './start';
+import walletMain from './open';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-encouragement';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
@@ -58,6 +59,29 @@ const main = async (progname, rawArgs, powers) => {
     .action(async (command, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(cosmosMain, ['cosmos', ...command], opts);
+    });
+
+  program
+    .command('open')
+    .description('launch the Agoric UI')
+    .option(
+      '--hostport <host:port>',
+      'host and port to connect to VM',
+      '127.0.0.1:8000',
+    )
+    .option(
+      '--repl [yes | only | no]',
+      'whether to show the Read-eval-print loop [yes]',
+      value => {
+        if (['yes', 'only', 'no'].includes(value)) {
+          return value;
+        }
+        throw TypeError(`--repl must be one of 'yes', 'no', or 'only'`);
+      },
+    )
+    .action(async cmd => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(walletMain, ['wallet'], opts);
     });
 
   program

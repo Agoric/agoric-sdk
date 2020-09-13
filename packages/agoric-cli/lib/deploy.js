@@ -4,7 +4,9 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import bundleSource from '@agoric/bundle-source';
 import path from 'path';
 
-// note: CapTP has it's own HandledPromise instantiation, and the contract
+import { getAccessToken } from './open';
+
+// note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling
 // captp, and doing a (non-isolated) dynamic import of the deploy script
 // below, so everything uses the same module table. The eventual-send that
@@ -58,8 +60,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     () => process.stdout.write(progressDot),
     1000,
   );
-  const retryWebsocket = () => {
-    const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
+
+  const retryWebsocket = async () => {
+    const accessToken = await getAccessToken(opts.hostport);
+
+    // For a WebSocket we need to put the token in the query string.
+    const wsWebkey = `${wsurl}?accessToken=${encodeURIComponent(accessToken)}`;
+
+    const ws = makeWebSocket(wsWebkey, { origin: 'http://127.0.0.1' });
     ws.on('open', async () => {
       connected = true;
       try {

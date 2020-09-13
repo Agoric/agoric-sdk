@@ -5,9 +5,32 @@ import { updateFromNotifier } from '@agoric/notifier';
 import { makeWebSocket } from './websocket';
 import { makeCapTPConnection } from './captp';
 
+// Fetch the access token from the window's URL.
+const accessTokenParams = `?${window.location.hash.slice(1)}`;
+// Now that we've captured it, clear out the access token from the URL bar.
+window.location.hash = '';
+const hasAccessToken = new URLSearchParams(accessTokenParams).has(
+  'accessToken',
+);
+
+if (!hasAccessToken) {
+  // This is friendly advice to the user who doesn't know.
+  if (confirm(
+    `\
+You must open the Agoric wallet with the
+      agoric open
+command line executable.
+
+See the documentation?`,
+  )) {
+    window.location.href =
+      'https://agoric.com/documentation/getting-started/agoric-cli-guide.html#agoric-open';
+  }
+}
+
 // Create a connection so that we can derive presences from it.
 const { connected, makeStableForwarder } = makeCapTPConnection(
-  handler => makeWebSocket('/private/captp', handler),
+  handler => makeWebSocket(`/private/captp${accessTokenParams}`, handler),
   { onReset },
 );
 
