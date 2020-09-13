@@ -12,6 +12,7 @@ import setMathHelpers from './mathHelpers/setMathHelpers';
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
  * Constants for the kinds of amountMath we support.
+ *
  * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet' }}
  */
 const MathKind = {
@@ -99,6 +100,7 @@ function makeAmountMath(brand, amountMathKind) {
 
     /**
      * Make an amount from a value by adding the brand.
+     *
      * @param {Value} allegedValue
      * @returns {Amount}
      */
@@ -111,6 +113,7 @@ function makeAmountMath(brand, amountMathKind) {
 
     /**
      * Make sure this amount is valid and return it if so, throwing if invalid.
+     *
      * @param {Amount} allegedAmount
      * @returns {Amount} or throws if invalid
      */
