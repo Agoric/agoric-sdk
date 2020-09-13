@@ -4,6 +4,7 @@
 // Type all the overloads of the assertTypeof function.
 // There may eventually be a better way to do this, but
 // thems the breaks with Typescript 4.0.
+/* eslint-disable jsdoc/valid-types */
 /**
  * @callback AssertTypeofBigint
  * @param {any} specimen
@@ -53,6 +54,7 @@
  * @param {Details} [optDetails]
  * @returns {asserts specimen is undefined}
  */
+/* eslint-enable jsdoc/valid-types */
 
 /**
  * @typedef {AssertTypeofBigint & AssertTypeofBoolean & AssertTypeofFunction & AssertTypeofNumber & AssertTypeofObject & AssertTypeofString & AssertTypeofSymbol & AssertTypeofUndefined} AssertTypeof
