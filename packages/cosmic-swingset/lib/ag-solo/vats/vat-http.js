@@ -1,4 +1,3 @@
-/* global harden */
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { getReplHandler } from './repl';

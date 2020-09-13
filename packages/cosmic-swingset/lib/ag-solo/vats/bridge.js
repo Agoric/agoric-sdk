@@ -1,11 +1,10 @@
-/* global harden */
 // @ts-check
 
 import makeStore from '@agoric/store';
 
 /**
  * @template T
- * @typedef {Object} Device
+ * @typedef {'Device' & { __deviceType__: T }} Device
  */
 
 /**
@@ -25,6 +24,7 @@ import makeStore from '@agoric/store';
  * @property {(srcID: string, handler: BridgeHandler) => void} unregister
  */
 
+/* eslint-disable jsdoc/valid-types */
 /**
  * Create a handler that demuxes/muxes the bridge device by its first argument.
  *
@@ -33,6 +33,7 @@ import makeStore from '@agoric/store';
  * @param {Device<BridgeDevice>} bridgeDevice The bridge to manage
  * @returns {BridgeManager} admin facet for this handler
  */
+/* eslint-enable jsdoc/valid-types */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
    * @type {import('@agoric/store').Store<string, BridgeHandler>}

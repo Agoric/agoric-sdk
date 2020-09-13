@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 import {
@@ -55,6 +54,7 @@ const FIXME_ALLOW_NAIVE_RELAYS = true;
 const goodLetters = 'abcdefghijklmnopqrstuvwxyz';
 /**
  * Get a sequence of letters chosen from `goodLetters`.
+ *
  * @param {number} n
  */
 function getGoodLetters(n) {
@@ -145,6 +145,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
 
   /**
    * Send a packet out via the IBC device.
+   *
    * @param {IBCPacket} packet
    * @param {Store<number, PromiseRecord<Bytes, any>>} seqToAck
    */

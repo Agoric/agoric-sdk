@@ -1,4 +1,3 @@
-/* global harden */
 // @ts-check
 
 /**
@@ -11,16 +10,21 @@
  * @property {typeof console} console
  */
 
+/* eslint-disable jsdoc/valid-types */
 /**
  * Create a set of UI agent makers.
  *
  * @param {UIAgentEndowments} param0
  * @returns {{[maker: string]: (petname: string, ext = {}) => UIAgent}}
  */
+/* eslint-enable jsdoc/valid-types */
 export default function makeAgentMakers({ console: agentConsole }) {
   return harden({
     /**
      * Create an agent that prints to the console with a petname.
+     *
+     * @param {string} petname
+     * @param {Record<string, any>} [ext={}]
      */
     text(petname, ext = {}) {
       if (petname === undefined) {
@@ -37,6 +41,9 @@ export default function makeAgentMakers({ console: agentConsole }) {
     },
     /**
      * Create a silent agent.
+     *
+     * @param {string} _petname
+     * @param {Record<string, any>} [ext={}]
      */
     silent(_petname, ext = {}) {
       return harden({

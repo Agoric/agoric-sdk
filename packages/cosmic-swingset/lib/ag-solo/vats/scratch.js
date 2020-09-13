@@ -1,5 +1,3 @@
-/* global harden */
-
 export default function makeScratchPad() {
   const map = new Map();
   async function get(idP) {

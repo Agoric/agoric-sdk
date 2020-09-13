@@ -317,6 +317,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseProvision(
 
   /**
    * Get a notifier that announces every time a block lands.
+   *
    * @returns {Notifier<any>}
    */
   const getBlockNotifier = () => {
