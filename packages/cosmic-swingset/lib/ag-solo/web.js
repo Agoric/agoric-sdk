@@ -25,7 +25,10 @@ const send = (ws, msg) => {
 };
 
 // From https://stackoverflow.com/a/43866992/14073862
-export function generateToken({ stringBase = 'base64', byteLength = 48 } = {}) {
+export function generateAccessToken({
+  stringBase = 'base64',
+  byteLength = 48,
+} = {}) {
   return new Promise((resolve, reject) =>
     crypto.randomBytes(byteLength, (err, buffer) => {
       if (err) {
@@ -40,10 +43,12 @@ export function generateToken({ stringBase = 'base64', byteLength = 48 } = {}) {
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Ensure we're protected with a unique webkey for this basedir.
   fs.chmodSync(basedir, 0o700);
-  const privateWebkeyFile = path.join(basedir, 'private-webkey.txt');
-  if (!fs.existsSync(privateWebkeyFile)) {
+  const privateAccessTokenFile = path.join(basedir, 'private-access-token.txt');
+  if (!fs.existsSync(privateAccessTokenFile)) {
     // Create the unique string for this basedir.
-    fs.writeFileSync(privateWebkeyFile, await generateToken(), { mode: 0o600 });
+    fs.writeFileSync(privateAccessTokenFile, await generateAccessToken(), {
+      mode: 0o600,
+    });
   }
 
   // Enrich the inbound command with some metadata.
@@ -52,7 +57,8 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     { channelID, dispatcher, url, headers: { origin } = {} } = {},
     id = undefined,
   ) => {
-    // Strip away the query params, as the webkey is there.
+    // Strip away the query params, as the inbound command device can't handle
+    // it and the accessToken is there.
     const qmark = url.indexOf('?');
     const shortUrl = qmark < 0 ? url : url.slice(0, qmark);
     const obj = {
@@ -100,7 +106,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
-  const validateOriginAndWebkey = req => {
+  const validateOriginAndAccessToken = req => {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
@@ -110,15 +116,16 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     }
 
     // Validate the private webkey.
-    const privateWebkey = fs.readFileSync(privateWebkeyFile, 'utf-8');
-    const reqWebkey = new URL(`http://localhost${req.url}`).searchParams.get(
-      'webkey',
+    const accessToken = fs.readFileSync(privateAccessTokenFile, 'utf-8');
+    const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
+      'accessToken',
     );
-    if (reqWebkey !== privateWebkey) {
+
+    if (reqToken !== accessToken) {
       log.error(
         id,
-        `Invalid webkey ${JSON.stringify(
-          reqWebkey,
+        `Invalid access token ${JSON.stringify(
+          reqToken,
         )}; try running "agoric open"`,
       );
       return false;
@@ -134,6 +141,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
     if (['chrome-extension:', 'moz-extension:'].includes(url.protocol)) {
       // Extensions such as metamask are local and can access the wallet.
+      // Especially since the access token has been supplied.
       return true;
     }
 
@@ -158,7 +166,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
   // accept POST messages to arbitrary endpoints
   app.post('*', (req, res) => {
-    if (!validateOriginAndWebkey(req)) {
+    if (!validateOriginAndAccessToken(req)) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -177,7 +185,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
-    if (!validateOriginAndWebkey(req)) {
+    if (!validateOriginAndAccessToken(req)) {
       socket.destroy();
       return;
     }

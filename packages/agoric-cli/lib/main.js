@@ -70,9 +70,15 @@ const main = async (progname, rawArgs, powers) => {
       '127.0.0.1:8000',
     )
     .option(
-      '--repl <both | only | none>',
+      '--repl <yes | only | no>',
       'whether to show the Read-eval-print loop',
-      'none',
+      value => {
+        if (['yes', 'only', 'no'].includes(value)) {
+          return value;
+        }
+        throw TypeError(`--repl must be one of 'yes', 'no', or 'only'`);
+      },
+      'no',
     )
     .action(async cmd => {
       const opts = { ...program.opts(), ...cmd.opts() };

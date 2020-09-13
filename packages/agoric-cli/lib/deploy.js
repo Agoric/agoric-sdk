@@ -4,7 +4,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import bundleSource from '@agoric/bundle-source';
 import path from 'path';
 
-import { getWebkey } from './open';
+import { getAccessToken } from './open';
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling
@@ -60,21 +60,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     () => process.stdout.write(progressDot),
     1000,
   );
+
   const retryWebsocket = async () => {
-    let wskeyurl;
-    try {
-      const webkey = await getWebkey(opts.hostport);
-      wskeyurl = `${wsurl}?webkey=${encodeURIComponent(webkey)}`;
-    } catch (e) {
-      if (e.code === 'ECONNREFUSED' && !connected) {
-        // Retry in a little bit.
-        setTimeout(retryWebsocket, RETRY_DELAY_MS);
-      } else {
-        console.error(`Trying to fetch webkey:`, e);
-      }
-      return;
-    }
-    const ws = makeWebSocket(wskeyurl, { origin: 'http://127.0.0.1' });
+    const accessToken = await getAccessToken(opts.hostport);
+
+    // For a WebSocket we need to put the token in the query string.
+    const wsWebkey = `${wsurl}?accessToken=${encodeURIComponent(accessToken)}`;
+
+    const ws = makeWebSocket(wsWebkey, { origin: 'http://127.0.0.1' });
     ws.on('open', async () => {
       connected = true;
       try {

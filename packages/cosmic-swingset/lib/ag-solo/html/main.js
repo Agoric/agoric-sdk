@@ -4,35 +4,41 @@ const RECONNECT_BACKOFF_SECONDS = 3;
 const resetFns = [];
 let inpBackground;
 
-if (!window.location.hash) {
+// Clear out the hash for privacy.
+const accessTokenParams = `?${window.location.hash.slice(1)}`;
+const accessTokenHash = window.location.hash;
+window.location.hash = '';
+const hasAccessToken = new URLSearchParams(accessTokenParams).has(
+  'accessToken',
+);
+
+if (!hasAccessToken) {
   // This is friendly advice to the user who doesn't know.
-  // eslint-disable-next-line no-alert
-  window.alert(
-    `\
+  if (
+    // eslint-disable-next-line no-alert
+    window.confirm(
+      `\
 You must open the Agoric Wallet+REPL with the
-    agoric open --repl=both
+    agoric open --repl=yes
 command line executable.
-`,
-  );
-  window.location =
-    'https://agoric.com/documentation/getting-started/agoric-cli-guide.html#agoric-open';
+
+See the documentation?`,
+    )
+  ) {
+    window.location.href =
+      'https://agoric.com/documentation/getting-started/agoric-cli-guide.html#agoric-open';
+  }
 }
 
 function run() {
   const disableFns = []; // Functions to run when the input should be disabled.
   resetFns.push(() => (document.querySelector('#history').innerHTML = ''));
 
-  const loc = window.location;
-
-  const urlParams = `?${loc.hash.slice(1)}`;
-  // TODO: Maybe clear out the hash for privacy.
-  // loc.hash = 'webkey=*redacted*';
-
   let nextHistNum = 0;
   let inputHistoryNum = 0;
 
   async function call(req) {
-    const res = await fetch(`/private/repl${urlParams}`, {
+    const res = await fetch(`/private/repl${accessTokenParams}`, {
       method: 'POST',
       body: JSON.stringify(req),
       headers: { 'Content-Type': 'application/json' },
@@ -44,8 +50,8 @@ function run() {
     throw new Error(`server error: ${JSON.stringify(j.rej)}`);
   }
 
-  const protocol = loc.protocol.replace(/^http/, 'ws');
-  const socketEndpoint = `${protocol}//${loc.host}/private/repl${urlParams}`;
+  const protocol = window.location.protocol.replace(/^http/, 'ws');
+  const socketEndpoint = `${protocol}//${window.location.host}/private/repl${accessTokenParams}`;
   const ws = new WebSocket(socketEndpoint);
 
   ws.addEventListener('error', ev => {
@@ -262,11 +268,9 @@ function run() {
   resetFns.push(() =>
     document.getElementById('go').removeAttribute('disabled'),
   );
-
-  return urlParams;
 }
 
-const urlParams = run();
+run();
 
 // Display version information, if possible.
 const fetches = [];
@@ -296,16 +300,16 @@ fetches.push(fpj);
 
 // an optional `w=0` GET argument will suppress showing the wallet
 if (
-  window.location.hash &&
+  hasAccessToken &&
   new URLSearchParams(window.location.search).get('w') !== '0'
 ) {
-  fetch(`wallet/${urlParams}`)
+  fetch(`wallet/${accessTokenParams}`)
     .then(resp => {
       if (resp.status < 200 || resp.status >= 300) {
         throw Error(`status ${resp.status}`);
       }
       walletFrame.style.display = 'block';
-      walletFrame.src = `wallet/${window.location.hash}`;
+      walletFrame.src = `wallet/${accessTokenHash}`;
     })
     .catch(e => {
       console.log('Cannot fetch wallet/', e);
