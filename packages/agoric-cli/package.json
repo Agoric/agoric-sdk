@@ -27,6 +27,7 @@
     "@agoric/captp": "^1.4.0",
     "@agoric/install-ses": "^0.3.0",
     "@agoric/promise-kit": "^0.1.4",
+    "@agoric/swing-store-simple": "^0.2.4",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",

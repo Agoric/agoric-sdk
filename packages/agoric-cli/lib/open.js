@@ -1,62 +1,64 @@
-/* global globalThis */
-import defaultHttp from 'http';
 import { promises as defaultFs } from 'fs';
 import opener from 'opener';
+import crypto from 'crypto';
+import path from 'path';
 
-const RETRY_DELAY_MS = 1000;
+import { openSwingStore } from '@agoric/swing-store-simple';
 
-export async function getAccessToken(hostport, powers = {}) {
-  const { fs = defaultFs, http = defaultHttp } = powers;
+// From https://stackoverflow.com/a/43866992/14073862
+export function generateAccessToken({
+  stringBase = 'base64',
+  byteLength = 48,
+} = {}) {
+  return new Promise((resolve, reject) =>
+    crypto.randomBytes(byteLength, (err, buffer) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(buffer.toString(stringBase));
+      }
+    }),
+  );
+}
 
-  if (!hostport.match(/^(localhost|127\.0\.0\.1):\d+$/)) {
-    throw TypeError(`Only localhost is supported, not ${hostport}`);
+export async function getAccessToken(port, powers = {}) {
+  const { fs = defaultFs } = powers;
+
+  const match = port.match(/^(.*:)?(\d+)$/);
+  if (match) {
+    port = match[2];
   }
 
-  const lookupToken = async () => {
-    const basedir = await new Promise((resolve, reject) => {
-      const req = http.get(`http://${hostport}/ag-solo-basedir`, res => {
-        let buf = '';
-        res.on('data', chunk => {
-          buf += chunk;
-        });
-        res.on('close', () => resolve(buf));
-      });
-      req.on('error', e => {
-        reject(e);
-      });
-    });
+  // Ensure we're protected with a unique accessToken for this basedir.
+  const sharedStateDir = path.join(process.env.HOME || '', '.agoric');
+  await fs.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
-    return fs.readFile(`${basedir}/private-access-token.txt`, 'utf-8');
-  };
-
-  return new Promise((resolve, reject) => {
-    const retryGetAccessToken = async () => {
-      try {
-        const accessToken = await lookupToken();
-        resolve(accessToken);
-      } catch (e) {
-        if (e.code === 'ECONNREFUSED') {
-          // Retry in a little bit.
-          setTimeout(retryGetAccessToken, RETRY_DELAY_MS);
-        } else {
-          reject(e);
-        }
-      }
-    };
-    retryGetAccessToken();
-  });
+  // Ensure an access token exists.
+  const { storage, commit, close } = openSwingStore(sharedStateDir, 'state');
+  const accessTokenKey = `accessToken/${port}`;
+  if (!storage.has(accessTokenKey)) {
+    storage.set(accessTokenKey, await generateAccessToken());
+    commit();
+  }
+  const accessToken = storage.get(accessTokenKey);
+  close();
+  return accessToken;
 }
 
 export default async function walletMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, http } = powers;
+  const { anylogger, fs } = powers;
   const console = anylogger('agoric:wallet');
 
   let suffix;
   switch (opts.repl) {
     case 'yes':
+    case 'true':
+    case true:
       suffix = '';
       break;
     case 'no':
+    case 'false':
+    case false:
       suffix = '/wallet';
       break;
     case 'only':
@@ -76,7 +78,6 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
   const walletAccessToken = await getAccessToken(opts.hostport, {
     console,
     fs,
-    http,
   }).catch(e => console.error(`Trying to fetch access token:`, e));
 
   clearInterval(progressTimer);

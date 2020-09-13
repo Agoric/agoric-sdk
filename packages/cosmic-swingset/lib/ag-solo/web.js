@@ -9,6 +9,8 @@ import crypto from 'crypto';
 
 import anylogger from 'anylogger';
 
+import { openSwingStore } from '@agoric/swing-store-simple';
+
 // We need to CommonJS require morgan or else it warns, until:
 // https://github.com/expressjs/morgan/issues/190
 // is fixed.
@@ -40,17 +42,25 @@ export function generateAccessToken({
   );
 }
 
-export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
-  // Ensure we're protected with a unique webkey for this basedir.
-  fs.chmodSync(basedir, 0o700);
-  const privateAccessTokenFile = path.join(basedir, 'private-access-token.txt');
-  if (!fs.existsSync(privateAccessTokenFile)) {
-    // Create the unique string for this basedir.
-    fs.writeFileSync(privateAccessTokenFile, await generateAccessToken(), {
-      mode: 0o600,
-    });
-  }
+export async function getAccessToken(port) {
+  // Ensure we're protected with a unique accessToken for this basedir.
+  const sharedStateDir = path.join(process.env.HOME || '', '.agoric');
+  await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
+  // Ensure an access token exists.
+  const { storage, commit, close } = openSwingStore(sharedStateDir, 'state');
+  const accessTokenKey = `accessToken/${port}`;
+  if (!storage.has(accessTokenKey)) {
+    storage.set(accessTokenKey, await generateAccessToken());
+    commit();
+  }
+  const accessToken = storage.get(accessTokenKey);
+  close();
+  console.warn('FIGME: have stored accessToken', accessToken);
+  return accessToken;
+}
+
+export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
@@ -91,32 +101,22 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   app.use(express.json()); // parse application/json
   const server = http.createServer(app);
 
-  // Override with Dapp html, if any.
-  const dapphtmldir = path.join(basedir, 'dapp-html');
-  try {
-    fs.statSync(dapphtmldir);
-    log(`Serving Dapp files from ${dapphtmldir}`);
-    app.use(express.static(dapphtmldir));
-  } catch (e) {
-    // Do nothing.
-  }
-
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
-  const validateOriginAndAccessToken = req => {
+  const validateOriginAndAccessToken = async req => {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
     if (!req.url.startsWith('/private/')) {
-      // Allow any origin that's not marked private, without a webkey.
+      // Allow any origin that's not marked private, without a accessToken.
       return true;
     }
 
-    // Validate the private webkey.
-    const accessToken = fs.readFileSync(privateAccessTokenFile, 'utf-8');
+    // Validate the private accessToken.
+    const accessToken = await getAccessToken(port);
     const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
       'accessToken',
     );
@@ -157,16 +157,9 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     return true;
   };
 
-  // Allow people to see where this installation is.
-  app.get('/ag-solo-basedir', (req, res) => {
-    res.contentType('text/plain');
-    res.write(basedir);
-    res.end();
-  });
-
   // accept POST messages to arbitrary endpoints
-  app.post('*', (req, res) => {
-    if (!validateOriginAndAccessToken(req)) {
+  app.post('*', async (req, res) => {
+    if (!(await validateOriginAndAccessToken(req))) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -184,8 +177,8 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // This senses the Upgrade header to distinguish between plain
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
-  server.on('upgrade', (req, socket, head) => {
-    if (!validateOriginAndAccessToken(req)) {
+  server.on('upgrade', async (req, socket, head) => {
+    if (!(await validateOriginAndAccessToken(req))) {
       socket.destroy();
       return;
     }

@@ -19,7 +19,7 @@ if (!hasAccessToken) {
     window.confirm(
       `\
 You must open the Agoric Wallet+REPL with the
-    agoric open --repl=yes
+    agoric open --repl
 command line executable.
 
 See the documentation?`,
