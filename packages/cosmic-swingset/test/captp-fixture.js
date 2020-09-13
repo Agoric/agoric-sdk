@@ -2,7 +2,9 @@ import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@agoric/captp';
 
-const PORT = 8000;
+import { getAccessToken } from '../lib/ag-solo/access-token';
+
+const PORT = 7999;
 
 // Ensure we're all using the same HandledPromise.
 export { E };
@@ -34,14 +36,19 @@ export function makeFixture() {
   let ws;
   function connect() {
     process.stdout.write('# connecting');
-    function tryConnect(resolve, reject) {
+    async function tryConnect(resolve, reject) {
       process.stdout.write('.');
+
+      const accessToken = await getAccessToken(PORT);
 
       /** @type {() => void} */
       let abortCapTP;
-      ws = new WebSocket(`ws://localhost:${PORT}/private/captp`, {
-        origin: `http://localhost:${PORT}`,
-      });
+      ws = new WebSocket(
+        `ws://localhost:${PORT}/private/captp?accessToken=${accessToken}`,
+        {
+          origin: `http://localhost:${PORT}`,
+        },
+      );
       ws.on('open', async () => {
         // Create a CapTP connection.
         const { abort, dispatch, getBootstrap } = makeCapTP(
