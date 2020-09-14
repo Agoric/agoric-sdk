@@ -41,13 +41,14 @@
 
     <button id="launchWallet">Agoric Wallet</button>
     <script type="text/javascript">
-      const accessToken = encodeURIComponent('%ACCESS_TOKEN%');
-      const walletBridgeBackend = `/private/wallet-bridge?accessToken=${accessToken}`;
       launchWallet.addEventListener('click', ev => {
-        const walletPage = new URL(`/wallet/#accessToken=${accessToken}`, window.location.href).href;
-        console.log('opening', walletPage);
-        window.open(`/wallet/#accessToken=${accessToken}`, window.location.origin);
         launchWallet.classList.remove('pulse');
+        alert(`\
+Use:
+
+   agoric open
+
+to open the wallet.`);
       });
 
       const popupWallet = () => {
