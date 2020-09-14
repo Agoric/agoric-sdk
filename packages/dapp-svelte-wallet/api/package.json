@@ -6,7 +6,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "lint": "yarn lint:types&&yarn lint:eslint",
+    "lint": "yarn lint:types && yarn lint:eslint",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
     "lint:types": "tsc -p jsconfig.json",
