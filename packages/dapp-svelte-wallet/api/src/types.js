@@ -57,6 +57,7 @@
  * @property {Promise<void>=} approvalP
  * @property {Petname} suggestedPetname
  * @property {Petname} petname
+ * @property {boolean} enable
  * @property {string} origin
  * @property {DappActions} actions
  *

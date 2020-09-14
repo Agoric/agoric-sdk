@@ -78,20 +78,23 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       return true;
     }
 
-    // Validate the private accessToken.
-    const accessToken = await getAccessToken(port);
-    const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
-      'accessToken',
-    );
-
-    if (reqToken !== accessToken) {
-      log.error(
-        id,
-        `Invalid access token ${JSON.stringify(
-          reqToken,
-        )}; try running "agoric open"`,
+    // Bypass accessToken just for the wallet bridge.
+    if (req.url !== '/private/wallet-bridge') {
+      // Validate the private accessToken.
+      const accessToken = await getAccessToken(port);
+      const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
+        'accessToken',
       );
-      return false;
+
+      if (reqToken !== accessToken) {
+        log.error(
+          id,
+          `Invalid access token ${JSON.stringify(
+            reqToken,
+          )}; try running "agoric open"`,
+        );
+        return false;
+      }
     }
 
     if (!origin) {

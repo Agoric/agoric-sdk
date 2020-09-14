@@ -44,18 +44,18 @@
       launchWallet.addEventListener('click', ev => {
         launchWallet.classList.remove('pulse');
         alert(`\
-Use:
+Use the:
 
    agoric open
 
-to open the wallet.`);
+command-line request to open the Agoric wallet.`);
       });
 
       const popupWallet = () => {
         launchWallet.classList.add('pulse');
       };
 
-      const walletPublicURL = new URL(walletBridgeBackend, window.origin.replace(/^http/, 'ws')).href;
+      const walletPublicURL = new URL('/private/wallet-bridge', window.origin.replace(/^http/, 'ws')).href;
       const ws = new WebSocket(walletPublicURL);
       const wsQueue = [];
       const dappQueue = [];

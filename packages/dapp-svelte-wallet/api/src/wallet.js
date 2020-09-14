@@ -225,8 +225,8 @@ export function buildRootObject(_vatPowers) {
               suggestedDappPetname = obj.dappOrigin || meta.origin,
             } = obj;
 
-            // The first time we hit this dapp, tell our caller.
-            const firstTime = () =>
+            // When we haven't been enabled, tell our caller.
+            const notYetEnabled = () =>
               E(http).send(
                 {
                   type: 'walletNeedDappApproval',
@@ -241,7 +241,7 @@ export function buildRootObject(_vatPowers) {
             await wallet.waitForDappApproval(
               suggestedDappPetname,
               dappOrigin,
-              firstTime,
+              notYetEnabled,
             );
 
             switch (type) {
