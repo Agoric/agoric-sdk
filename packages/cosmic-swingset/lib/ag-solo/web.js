@@ -1,4 +1,5 @@
 // Start a network service
+import fs from 'fs';
 import path from 'path';
 import http from 'http';
 import { createConnection } from 'net';
@@ -62,12 +63,33 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     }),
   );
   app.use(express.json()); // parse application/json
-  const server = http.createServer(app);
 
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
+
+  // Define a simple substitution to render the wallet-bridge.html
+  const walletBridgeHtml = path.join(htmldir, 'wallet-bridge.html');
+  app.get('/wallet-bridge.html', async (_req, res) => {
+    const accessToken = await getAccessToken(port);
+    fs.readFile(walletBridgeHtml, (err, content) => {
+      if (err) {
+        console.error(`Cannot read ${walletBridgeHtml}:`, err);
+        res.status(500);
+        return;
+      }
+      // We render the bridge with the access token.
+      const rendered = content
+        .toString()
+        .replace('%ACCESS_TOKEN%', accessToken);
+      res.type('html');
+      res.send(rendered);
+    });
+  });
+
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
+
+  const server = http.createServer(app);
 
   const validateOriginAndAccessToken = async req => {
     const { origin } = req.headers;

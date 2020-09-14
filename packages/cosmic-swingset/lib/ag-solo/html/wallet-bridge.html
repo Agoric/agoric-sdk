@@ -4,10 +4,57 @@
     <title>Agoric Wallet Bridge</title>
   </head>
   <body>
-    <p>This bridge is only for dApps to reach your wallet.  It contains no user-servicable parts.</p>
+    <style>
+      html, body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
 
+      * {
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
+      }
+
+      #launchWallet {
+        height: 100%;
+        width: 100%;
+        background-color: white;
+      }
+
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          background-color: white;
+        }
+        50% {
+          background-color: #ab2328;
+        }
+        100% {
+          background-color: white;
+        }
+      }
+    </style>
+
+    <button id="launchWallet">Agoric Wallet</button>
     <script type="text/javascript">
-      const walletPublicURL = new URL('/private/wallet-bridge', window.origin.replace(/^http/, 'ws')).href;
+      const accessToken = encodeURIComponent('%ACCESS_TOKEN%');
+      const walletBridgeBackend = `/private/wallet-bridge?accessToken=${accessToken}`;
+      launchWallet.addEventListener('click', ev => {
+        const walletPage = new URL(`/wallet/#accessToken=${accessToken}`, window.location.href).href;
+        console.log('opening', walletPage);
+        window.open(`/wallet/#accessToken=${accessToken}`, window.location.origin);
+        launchWallet.classList.remove('pulse');
+      });
+
+      const popupWallet = () => {
+        launchWallet.classList.add('pulse');
+      };
+
+      const walletPublicURL = new URL(walletBridgeBackend, window.origin.replace(/^http/, 'ws')).href;
       const ws = new WebSocket(walletPublicURL);
       const wsQueue = [];
       const dappQueue = [];
@@ -21,6 +68,10 @@
         }
         if (!obj || typeof obj.type !== 'string') {
           return;
+        }
+        if (obj.type === 'walletNeedDappApproval') {
+          // Let them approve.
+          popupWallet();
         }
         if (origin === undefined) {
           dappQueue.push(obj);
@@ -37,7 +88,12 @@
         }
         while (wsQueue.length) {
           // The queued messages are raw objects, so JSONify.
-          ws.send(JSON.stringify(wsQueue.shift()));
+          const obj = wsQueue.shift();
+          ws.send(JSON.stringify(obj));
+          if (obj.type === 'walletAddOffer') {
+            // Just pop up our corresponding UI.
+            popupWallet();
+          }
         }
       });
 
@@ -74,6 +130,10 @@
         } else {
           // console.log('sending', obj);
           ws.send(JSON.stringify(obj));
+          if (obj.type === 'walletAddOffer') {
+            // Just pop up our corresponding UI.
+            popupWallet();
+          }
         }
       });
     </script>

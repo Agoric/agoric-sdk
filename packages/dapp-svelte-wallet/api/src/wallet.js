@@ -224,7 +224,25 @@ export function buildRootObject(_vatPowers) {
               dappOrigin = meta.origin,
               suggestedDappPetname = obj.dappOrigin || meta.origin,
             } = obj;
-            await wallet.waitForDappApproval(suggestedDappPetname, dappOrigin);
+
+            // The first time we hit this dapp, tell our caller.
+            const firstTime = () =>
+              E(http).send(
+                {
+                  type: 'walletNeedDappApproval',
+                  data: {
+                    dappOrigin,
+                    suggestedDappPetname,
+                  },
+                },
+                [meta.channelHandle],
+              );
+
+            await wallet.waitForDappApproval(
+              suggestedDappPetname,
+              dappOrigin,
+              firstTime,
+            );
 
             switch (type) {
               case 'walletGetPurses':
