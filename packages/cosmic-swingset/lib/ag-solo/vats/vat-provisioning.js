@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 
 // This vat contains the controller-side provisioning service. To enable local

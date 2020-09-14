@@ -88,6 +88,7 @@ export async function makeWallet({
 
   /**
    * The default Zoe invite purse is used to make an offer.
+   *
    * @type {Purse}
    */
   let zoeInvitePurse;
@@ -288,7 +289,7 @@ export async function makeWallet({
   const {
     updater: issuersUpdater,
     notifier: issuersNotifier,
-  } = /** @type {NotifierRecord<[Petname, BrandRecord][]>} */ (makeNotifierKit(
+  } = /** @type {NotifierRecord<Array<[Petname, BrandRecord]>>} */ (makeNotifierKit(
     [],
   ));
 
@@ -474,7 +475,9 @@ export async function makeWallet({
   const {
     updater: contactsUpdater,
     notifier: contactsNotifier,
-  } = /** @type {NotifierRecord<[Petname, Contact][]>} */ (makeNotifierKit([]));
+  } = /** @type {NotifierRecord<Array<[Petname, Contact]>>} */ (makeNotifierKit(
+    [],
+  ));
 
   const addContact = async (petname, actions) => {
     const already = await E(board).has(actions);

@@ -126,6 +126,7 @@ const start = zcf => {
     /**
      * The inventory can be added in bulk before any quotes are made
      * or can be added immediately before a quote.
+     *
      * @param {IssuerKeywordRecord=} issuerKeywordRecord
      * @returns {Promise<Payment>}
      */
@@ -137,6 +138,7 @@ const start = zcf => {
      * The inventory can be removed at any time, since the inventory
      * used for active quotes is escrowed separately within the coveredCall
      * instance.
+     *
      * @returns {Promise<Payment>}
      */
     makeRemoveInventoryInvitation: () => {

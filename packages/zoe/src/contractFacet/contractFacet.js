@@ -31,7 +31,7 @@ import '../../exported';
 import '../internal-types';
 
 export function buildRootObject(_powers, _params, testJigSetter = undefined) {
-  /** @type ExecuteContract */
+  /** @type {ExecuteContract} */
   const executeContract = async (
     bundle,
     zoeService,
@@ -39,15 +39,15 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
     zoeInstanceAdmin,
     instanceRecord,
   ) => {
-    /** @type IssuerTable */
+    /** @type {IssuerTable} */
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
-    /** @type WeakStore<ZCFSeat,ZCFSeatAdmin> */
+    /** @type {WeakStore<ZCFSeat,ZCFSeatAdmin>} */
     const zcfSeatToZCFSeatAdmin = makeWeakStore('zcfSeat');
-    /** @type WeakStore<ZCFSeat,SeatHandle> */
+    /** @type {WeakStore<ZCFSeat,SeatHandle>} */
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
 
     const keywords = Object.keys(instanceRecord.terms.issuers);
@@ -56,7 +56,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
     const initIssuers = issuersP =>
       Promise.all(issuersP.map(issuerTable.initIssuer));
 
-    /** @type RegisterIssuerRecord */
+    /** @type {RegisterIssuerRecord} */
     const registerIssuerRecord = (keyword, issuerRecord) => {
       instanceRecord = {
         ...instanceRecord,
@@ -80,7 +80,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       return issuerRecord;
     };
 
-    /** @type RegisterIssuerRecordWithKeyword */
+    /** @type {RegisterIssuerRecordWithKeyword} */
     const registerIssuerRecordWithKeyword = (keyword, issuerRecord) => {
       assertKeywordName(keyword);
       assert(
@@ -101,6 +101,8 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
      * Unlike the zcf.reallocate method, this one does not check conservation,
      * and so can be used internally for reallocations that violate
      * conservation.
+     *
+     * @param {SeatStaging[]} seatStagings
      */
     const reallocateInternal = seatStagings => {
       // Keep track of seats used so far in this call, to prevent aliasing.
@@ -143,7 +145,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     };
 
-    /** @type MakeZCFMint */
+    /** @type {MakeZCFMint} */
     const makeZCFMint = async (keyword, amountMathKind = MathKind.NAT) => {
       assert(
         !(keyword in instanceRecord.terms.issuers),
@@ -164,7 +166,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
       issuerTable.initIssuerByRecord(mintyIssuerRecord);
 
-      /** @type ZCFMint */
+      /** @type {ZCFMint} */
       const zcfMint = harden({
         getIssuerRecord: () => {
           return mintyIssuerRecord;
@@ -232,9 +234,9 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       return zcfMint;
     };
 
-    /** @type ContractFacet */
+    /** @type {ContractFacet} */
     const zcf = {
-      reallocate: (/** @type SeatStaging[] */ ...seatStagings) => {
+      reallocate: (/** @type {SeatStaging[]} */ ...seatStagings) => {
         // We may want to handle this with static checking instead.
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
         assert(
@@ -364,7 +366,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
        * will be appended to the returned jig object (overriding any
        * provided by the `testFn`).
        *
-       * @type SetTestJig
+       * @type {SetTestJig}
        */
       setTestJig: (testFn = () => ({})) => {
         if (testJigSetter) {
@@ -377,7 +379,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
 
     // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
     // added in offer(). ZCF responds with the exitObj and offerResult.
-    /** @type AddSeatObj */
+    /** @type {AddSeatObj} */
     const addSeatObj = {
       addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
         const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
@@ -398,7 +400,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
           zoeSeatAdmin,
           zcfSeatAdmin,
         );
-        /** @type AddSeatResult */
+        /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });
       },
     };

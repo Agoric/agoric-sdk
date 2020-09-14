@@ -2,6 +2,7 @@
 
 /**
  * This is a a broken contact to test zoe's error handling
+ *
  * @type {ContractStartFn}
  */
 const start = zcf => {

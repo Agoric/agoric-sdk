@@ -1,5 +1,4 @@
 // @ts-check
-/* global harden */
 
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details, q } from '@agoric/assert';
@@ -11,8 +10,9 @@ const ID_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);
 
 /**
  * We calculate a CRC, ensuring it's of CRC_NUM_DIGITS length.
+ *
  * @param {number} num
- * @return {string}
+ * @returns {string}
  */
 const calcCrc = num => {
   // The explicit use of crcmodels is to avoid a typing error.
@@ -31,11 +31,12 @@ const calcCrc = num => {
  * @property {(id: string) => any} getValue
  * @property {(value: any) => string} getId
  * @property {(value: any) => boolean} has
- * @property {() => string[]} ids```
+ * @property {() => string[]} ids
  */
 
 /**
  * Create a board to post things on.
+ *
  * @param {number} [seed=0]
  * @returns {Board}
  */

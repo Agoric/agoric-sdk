@@ -11,6 +11,8 @@ import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
 
+import '../../../exported';
+
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
 test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
@@ -40,7 +42,7 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
-  /** @type ContractFacet */
+  /** @type {ContractFacet} */
   const zcf = testJig.zcf;
 
   let firstSeat;

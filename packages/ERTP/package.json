@@ -14,7 +14,8 @@
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
-    "lint": "yarn lint:types && eslint '**/*.js'",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc -p jsconfig.json",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
@@ -71,8 +72,10 @@
   "eslintConfig": {
     "extends": [
       "airbnb-base",
-      "plugin:prettier/recommended"
+      "plugin:prettier/recommended",
+      "plugin:jsdoc/recommended"
     ],
+    "parser": "@typescript-eslint/parser",
     "env": {
       "es6": true
     },
@@ -103,7 +106,13 @@
       "no-unused-expressions": "off",
       "no-loop-func": "off",
       "no-inner-declarations": "off",
-      "import/prefer-default-export": "off"
+      "import/prefer-default-export": "off",
+      "jsdoc/no-undefined-types": "off",
+      "jsdoc/require-jsdoc": "off",
+      "jsdoc/require-property-description": "off",
+      "jsdoc/require-param-description": "off",
+      "jsdoc/require-returns": "off",
+      "jsdoc/require-returns-description": "off"
     }
   },
   "prettier": {

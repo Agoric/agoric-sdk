@@ -1,5 +1,3 @@
-/* global harden */
-
 // Avoid importing the full captp bundle, which would carry
 // in its own makeHardener, etc.
 import { makeCapTP } from '@agoric/captp/lib/captp';

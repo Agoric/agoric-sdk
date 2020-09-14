@@ -14,14 +14,14 @@
  */
 
 /**
- * @template T the type of the state value
+ * @template T
  * @typedef {Object} UpdateRecord<T>
  * @property {T} value is whatever state the service wants to publish
  * @property {UpdateCount} updateCount is a value that identifies the update
  */
 
 /**
- * @template T the type of the notifier state
+ * @template T
  * @callback GetUpdateSince<T> Can be called repeatedly to get a sequence of
  * update records
  * @param {UpdateCount} [updateCount] return update record as of an update
@@ -34,7 +34,7 @@
  */
 
 /**
- * @template T the type of the notifier state
+ * @template T
  * @typedef {Object} BaseNotifier<T> an object that can be used to get the current
  * state or updates
  * @property {GetUpdateSince<T>} getUpdateSince return update record as of an
@@ -42,13 +42,13 @@
  */
 
 /**
- * @template T the type of the notifier state
+ * @template T
  * @typedef {BaseNotifier<T> & AsyncIterable<T>} Notifier<T> an object that can
  * be used to get the current state or updates
  */
 
 /**
- * @template T the type of the notifier state
+ * @template T
  * @typedef {Object} Updater<T> an object that should be closely held, as
  * anyone with access to
  * it can provide updates
@@ -63,7 +63,7 @@
  */
 
 /**
- * @template T the type of the notifier state
+ * @template T
  * @typedef {Object} NotifierRecord<T> the produced notifier/updater pair
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  * @property {Updater<T>} updater the (closely-held) notifier producer

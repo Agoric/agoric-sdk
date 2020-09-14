@@ -14,10 +14,11 @@ export const makeGetCurrentPrice = (isSecondary, isCentral, getPool) => {
   /**
    * `getOutputForGivenInput` calculates the result of a trade, given a certain
    * amount of digital assets in.
+   *
    * @param {Amount} amountIn - the amount of digital
    * assets to be sent in
    * @param {Brand} brandOut - The brand of asset desired
-   * @return {Amount} the amount that would be paid out at the current price.
+   * @returns {Amount} the amount that would be paid out at the current price.
    */
   const getOutputForGivenInput = (amountIn, brandOut) => {
     const { brand: brandIn, value: inputValue } = amountIn;
@@ -48,9 +49,10 @@ export const makeGetCurrentPrice = (isSecondary, isCentral, getPool) => {
   /**
    * `getInputForGivenOutput` calculates the amount of assets required to be
    * provided in order to obtain a specified gain.
+   *
    * @param {Amount} amountOut - the amount of digital assets desired
    * @param {Brand} brandIn - The brand of asset desired
-   * @return {Amount} The amount required to be paid in order to gain amountOut
+   * @returns {Amount} The amount required to be paid in order to gain amountOut
    */
   const getInputForGivenOutput = (amountOut, brandIn) => {
     const { brand: brandOut, value: outputValue } = amountOut;

@@ -14,6 +14,7 @@ const { add, subtract, multiply, floorDivide } = natSafeMath;
  * is valid, getting the current price for an asset on user
  * request, and to do the actual reallocation after an offer has
  * been made.
+ *
  * @param {Object} params
  * @param  {number} params.inputValue - the value of the asset sent
  * in to be swapped
@@ -47,6 +48,7 @@ export const getInputPrice = ({
  * is valid, getting the current price for an asset on user
  * request, and to do the actual reallocation after an offer has
  * been made.
+ *
  * @param {Object} params
  * @param  {number} params.outputValue - the value of the asset the user wants
  * to get
@@ -106,10 +108,10 @@ export const calcLiqValueToMint = ({
  * match the current ratio of holdings in the pool.
  *
  * @param {Object} params
- * @param params.centralIn - The value of central assets being deposited
- * @param params.centralPool - The value of central assets in the pool
- * @param params.secondaryPool - The value of secondary assets in the pool
- * @param params.secondaryIn - The value of secondary assets provided. If
+ * @param {number} params.centralIn - The value of central assets being deposited
+ * @param {number} params.centralPool - The value of central assets in the pool
+ * @param {number} params.secondaryPool - The value of secondary assets in the pool
+ * @param {number} params.secondaryIn - The value of secondary assets provided. If
  * the pool is empty, the entire amount will be accepted
  * @returns {number} - the amount of secondary required
  */

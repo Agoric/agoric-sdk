@@ -163,7 +163,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         };
       };
 
-      /** @type MakeZoeMint */
+      /** @type {MakeZoeMint} */
       const makeZoeMint = (keyword, amountMathKind = MathKind.NAT) => {
         // Local indicates one that zoe itself makes from vetted code,
         // and so can be assumed correct and fresh by zoe.
@@ -183,7 +183,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         const localPooledPurse = localIssuer.makeEmptyPurse();
         brandToPurse.init(localBrand, localPooledPurse);
 
-        /** @type ZoeMint */
+        /** @type {ZoeMint} */
         const zoeMint = harden({
           getIssuerRecord: () => {
             return localIssuerRecord;
@@ -222,7 +222,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             seatHandle,
           ) => {
             return E(
-              /** @type Promise<AddSeatObj> */ (addSeatObjPromiseKit.promise),
+              /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
             ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
           },
           hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),

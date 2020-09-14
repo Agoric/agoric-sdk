@@ -1,4 +1,5 @@
 import bundleSource from '@agoric/bundle-source';
+
 /**
  * @param {ZoeService} zoe
  * @param {string} path

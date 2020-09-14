@@ -53,6 +53,7 @@ const start = zcf => {
     const voter = harden({
       /**
        * Vote on a particular issue
+       *
        * @param {string} response - 'YES' || 'NO'
        */
       vote: response => {

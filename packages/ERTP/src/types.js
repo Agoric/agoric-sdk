@@ -144,7 +144,7 @@
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: PaymentP, optAmount?: Amount) => Promise<Amount>} burn
+ * @property {(payment: PaymentP, optAmount: Amount=) => Promise<Amount>} burn
  * Burn all of the digital assets in the payment. `optAmount` is optional.
  * If `optAmount` is present, the code will insist that the amount of
  * the digital assets in the payment is equal to `optAmount`, to
@@ -152,7 +152,7 @@
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: PaymentP, optAmount?: Amount) => Promise<Payment>} claim
+ * @property {(payment: PaymentP, optAmount: Amount=) => Promise<Payment>} claim
  * Transfer all digital assets from the payment to a new payment and
  * delete the original. `optAmount` is optional.
  * If `optAmount` is present, the code will insist that the amount of
@@ -216,7 +216,7 @@
 
 /**
  * @typedef {Object} DepositFacet
- * @property {(payment: Payment, optAmount?: Amount) => Amount} receive
+ * @property {(payment: Payment, optAmount: Amount=) => Amount} receive
  * Deposit all the contents of payment into the purse that made this facet,
  * returning the amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
@@ -240,7 +240,7 @@
  * @property {() => Amount} getCurrentAmount
  * Get the amount contained in this purse.
  *
- * @property {(payment: Payment, optAmount?: Amount) => Amount} deposit
+ * @property {(payment: Payment, optAmount: Amount=) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.

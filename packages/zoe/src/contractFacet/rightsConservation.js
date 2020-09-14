@@ -9,6 +9,7 @@ import '../internal-types';
 /**
  * Iterate over the amounts and sum, storing the sums in a
  * map by brand.
+ *
  * @param {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
  * @param  {Amount[]} amounts - an array of amounts
@@ -31,6 +32,7 @@ const sumByBrand = (getAmountMath, amounts) => {
 
 /**
  * Assert that the left sums by brand equal the right sums by brand
+ *
  * @param {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
  * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
@@ -65,6 +67,7 @@ const assertEqualPerBrand = (
 /**
  * `assertRightsConserved` checks that the total amount per brand is
  * equal to the total amount per brand in the proposed reallocation
+ *
  * @param {(brand: Brand) => AmountMath} getAmountMath - a function
  * to get amountMath given a brand.
  * @param  {Amount[]} previousAmounts - an array of the amounts before the

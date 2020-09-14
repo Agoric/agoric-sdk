@@ -9,6 +9,7 @@ import {
 
 /**
  * Give a use object when a payment is escrowed
+ *
  * @type {ContractStartFn}
  */
 const start = zcf => {
@@ -25,6 +26,7 @@ const start = zcf => {
     const useObj = harden({
       /**
        * (Pretend to) color some pixels.
+       *
        * @param {string} color
        * @param {Amount} amountToColor
        */

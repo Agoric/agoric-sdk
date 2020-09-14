@@ -24,7 +24,7 @@ import './types';
  * an initial state. Its initial state will instead be the state of the first
  * update.
  *
- * @template T the type of the notifier state
+ * @template T
  * @param {[] | [T]} args the first state to be returned
  * @returns {NotifierRecord<T>} the notifier and updater
  */

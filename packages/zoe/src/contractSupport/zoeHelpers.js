@@ -20,6 +20,7 @@ const getKeysSorted = obj =>
  * toGains will be added to 'to'. If fromLosses is defined, all the
  * entries in fromLosses are subtracted from 'from'. (If fromLosses
  * is not defined, toGains is subtracted from 'from'.)
+ *
  * @param {ContractFacet} zcf
  * @param {FromToAllocations} allocations - the 'to' and 'from'
  * allocations
@@ -100,6 +101,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
  * checked. The update is merged with currentAllocation
  * (update's values prevailing if the keywords are the same)
  * to produce the newAllocation.
+ *
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} seat
  * @param {AmountKeywordRecord} update
@@ -186,7 +188,7 @@ export const trade = (
   }
 };
 
-/** @type Swap */
+/** @type {Swap} */
 export const swap = (
   zcf,
   leftSeat,
@@ -220,7 +222,7 @@ export const swap = (
 };
 
 /**
- * @type Swap
+ * @type {Swap}
  * Swap such that both seats gain what they want and lose everything
  * that they gave. Only good for exact and entire swaps where each
  * seat wants everything that the other seat has. The benefit of using
@@ -260,12 +262,14 @@ export const swapExact = (
   return defaultAcceptanceMsg;
 };
 
+/* eslint-disable jsdoc/valid-types */
 /**
  * @typedef ExpectedRecord
  * @property {Record<Keyword, null>} [want]
  * @property {Record<Keyword, null>} [give]
  * @property {Partial<Record<keyof ProposalRecord['exit'], null>>} [exit]
  */
+/* eslint-enable jsdoc/valid-types */
 
 /**
  * Check the seat's proposal against an `expected` record that says
@@ -374,6 +378,7 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
  * Save all of the issuers in an issuersKeywordRecord to ZCF, using
  * the method `zcf.saveIssuer`. This does not error if any of the keywords
  * already exist. If the keyword is already present, it is ignored.
+ *
  * @param {ContractFacet} zcf
  * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
  * ZCF

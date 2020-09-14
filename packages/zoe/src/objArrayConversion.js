@@ -27,6 +27,7 @@ export const arrayToObj = (array, keys) => {
 
 /**
  * Assert all values from `part` appear in `whole`.
+ *
  * @param {string[]} whole
  * @param {string[]} part
  */

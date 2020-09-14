@@ -15,6 +15,7 @@ const identity = 0;
  * rounding issues make floats problematic. All operations should be
  * done with the smallest whole unit such that the NatMathHelpers never
  * deals with fractional parts.
+ *
  * @type {MathHelpers}
  */
 const natMathHelpers = harden({

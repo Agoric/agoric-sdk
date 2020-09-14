@@ -1,5 +1,3 @@
-/* global harden */
-
 import { makeBoard } from './lib-board';
 
 export function buildRootObject(_vatPowers) {
