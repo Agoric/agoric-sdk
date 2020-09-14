@@ -8,7 +8,7 @@ import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
 export const setupZCFTest = async (issuerKeywordRecord, terms) => {
-  /** @type ContractFacet */
+  /** @type {ContractFacet} */
   let zcf;
   const setZCF = jig => {
     zcf = jig.zcf;
