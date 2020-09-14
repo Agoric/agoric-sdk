@@ -143,7 +143,7 @@
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
- * @property {(keyword: Keyword, brand: Brand) => Amount} getAmountAllocated
+ * @property {(keyword: Keyword, brand: Brand=) => Amount} getAmountAllocated
  * The brand is used for filling in an empty amount if the `keyword`
  * is not present in the allocation
  * @property {() => Allocation} getCurrentAllocation
