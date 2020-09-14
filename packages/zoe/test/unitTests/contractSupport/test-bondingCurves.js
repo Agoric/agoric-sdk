@@ -7,8 +7,12 @@ import {
   calcLiqValueToMint,
 } from '../../../src/contractSupport';
 
-const testGetPrice = (t, input, expectedOutput) => {
-  const output = getInputPrice(input);
+const testGetPrice = (
+  t,
+  { inputReserve, outputReserve, inputValue },
+  expectedOutput,
+) => {
+  const output = getInputPrice(inputValue, inputReserve, outputReserve);
   t.deepEqual(output, expectedOutput);
 };
 
@@ -87,43 +91,16 @@ test('getInputPrice ok 6', t => {
 });
 
 test('calculate value to mint - positive supply 1', t => {
-  const res = calcLiqValueToMint({
-    liqTokenSupply: 20,
-    inputValue: 30,
-    inputReserve: 5,
-  });
+  const res = calcLiqValueToMint(20, 30, 5);
   t.is(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
 });
 
-test('calculate value to mint - mispelled key', t => {
-  t.throws(
-    () =>
-      calcLiqValueToMint({
-        liquidityTokenSupply: 20,
-        inputValue: 30,
-        inputReserve: 5,
-      }),
-    {
-      message: /value required/,
-    },
-    `calcLiqValueToMint should throw if a key is misspelled`,
-  );
-});
-
 test('calculate value to mint - positive supply 2', t => {
-  const res = calcLiqValueToMint({
-    liqTokenSupply: 5,
-    inputValue: 8,
-    inputReserve: 7,
-  });
+  const res = calcLiqValueToMint(5, 8, 7);
   t.is(res, 5, 'When supply is present, floor(x*y/z)');
 });
 
 test('calculate value to mint - no supply', t => {
-  const res = calcLiqValueToMint({
-    liqTokenSupply: 0,
-    inputValue: 30,
-    inputReserve: 5,
-  });
+  const res = calcLiqValueToMint(0, 30, 5);
   t.is(res, 30, 'When the supply is empty, return inputValue');
 });
