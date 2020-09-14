@@ -32,9 +32,9 @@
  * @property {(instance: Instance) => IssuerKeywordRecord} getIssuers
  * @property {(instance: Instance) => BrandKeywordRecord} getBrands
  * @property {(instance: Instance) => Object} getTerms
- * @property {(invitation: Invitation) => Promise<Instance>} getInstance
- * @property {(invitation: Invitation) => Promise<Installation>} getInstallation
- * @property {(invitation: Invitation) => Promise<InvitationDetails>}
+ * @property {(invitation: PromiseLike<Invitation>) => Promise<Instance>} getInstance
+ * @property {(invitation: PromiseLike<Invitation>) => Promise<Installation>} getInstallation
+ * @property {(invitation: PromiseLike<Invitation>) => Promise<InvitationDetails>}
  * getInvitationDetails - return an object with the instance,
  * installation, description, invitation handle, and any custom properties
  * specific to the contract.
