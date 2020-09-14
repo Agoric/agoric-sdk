@@ -73,6 +73,7 @@ export const makeZcfSeatAdminKit = (
       if (currentAllocation[keyword] !== undefined) {
         return currentAllocation[keyword];
       }
+      assert(brand, `A brand must be supplied if the keyword may not exist`);
       return getAmountMath(brand).getEmpty();
     },
     getCurrentAllocation: () => {
