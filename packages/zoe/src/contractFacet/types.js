@@ -80,7 +80,7 @@
  * getting in the `customProperties`. `customProperties` will be
  * placed in the extent of the invitation.
  *
- * @param {OfferHandler} offerHandler - a contract specific function
+ * @param {OfferHandler=} offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
  * @param {Object=} customProperties
