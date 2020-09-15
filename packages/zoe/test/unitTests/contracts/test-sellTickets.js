@@ -488,18 +488,7 @@ test(`mint and sell opera tickets`, async t => {
   };
 
   // === Final Opera part ===
-  const ticketSellerClosesContract = async (
-    sellItemsCreatorSeat,
-    sellItemsCreatorFacet,
-  ) => {
-    const availableTickets = await E(sellItemsCreatorFacet).getAvailableItems();
-    const ticketIssuer = await E(sellItemsCreatorFacet).getItemsIssuer();
-    const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
-    t.truthy(
-      ticketAmountMath.isEmpty(availableTickets),
-      'All the tickets have been sold',
-    );
-
+  const ticketSellerClosesContract = async sellItemsCreatorSeat => {
     const operaPurse = moolaIssuer.makeEmptyPurse();
 
     const moneyPayment = await E(sellItemsCreatorSeat).getPayout('Money');
@@ -534,5 +523,5 @@ test(`mint and sell opera tickets`, async t => {
     ticketSalesInvitation4,
     moolaMint.mintPayment(moola(100)),
   );
-  await ticketSellerClosesContract(sellItemsCreatorSeat, sellItemsCreatorFacet);
+  await ticketSellerClosesContract(sellItemsCreatorSeat);
 });
