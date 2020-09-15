@@ -805,9 +805,8 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
     value: 6,
   });
 
-  // @ts-ignore
   t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
-    message: `"brand" not found: (an undefined)\nSee console for error data.`,
+    message: `A brand must be supplied if the keyword may not exist`,
   });
 });
 
