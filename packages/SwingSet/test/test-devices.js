@@ -2,6 +2,7 @@
 
 import '@agoric/install-ses';
 import test from 'ava';
+import bundleSource from '@agoric/bundle-source';
 import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 
 import { buildVatController, buildKernelBundles } from '../src/index';
@@ -16,17 +17,31 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function dfile(name) {
+  return require.resolve(`./files-devices/${name}`);
+}
+
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
-  t.context.data = { kernelBundles };
+  const bootstrap0 = await bundleSource(dfile('bootstrap-0'));
+  const bootstrap1 = await bundleSource(dfile('bootstrap-1'));
+  const bootstrap2 = await bundleSource(dfile('bootstrap-2'));
+  const bootstrap3 = await bundleSource(dfile('bootstrap-3'));
+  t.context.data = {
+    kernelBundles,
+    bootstrap0,
+    bootstrap1,
+    bootstrap2,
+    bootstrap3,
+  };
 });
 
-test('d0', async t => {
+test.serial('d0', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-0'),
+        bundle: t.context.data.bootstrap0,
         creationOptions: { enableSetup: true },
       },
     },
@@ -60,13 +75,13 @@ test('d0', async t => {
   ]);
 });
 
-test('d1', async t => {
+test.serial('d1', async t => {
   const sharedArray = [];
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-1'),
+        bundle: t.context.data.bootstrap1,
         creationOptions: { enableSetup: true },
       },
     },
@@ -97,7 +112,7 @@ async function test2(t, mode) {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
+        bundle: t.context.data.bootstrap2,
       },
       left: {
         sourceSpec: require.resolve('./files-devices/vat-left.js'),
@@ -155,33 +170,33 @@ async function test2(t, mode) {
   }
 }
 
-test('d2.1', async t => {
+test.serial('d2.1', async t => {
   await test2(t, '1');
 });
 
-test('d2.2', async t => {
+test.serial('d2.2', async t => {
   await test2(t, '2');
 });
 
-test('d2.3', async t => {
+test.serial('d2.3', async t => {
   await test2(t, '3');
 });
 
-test('d2.4', async t => {
+test.serial('d2.4', async t => {
   await test2(t, '4');
 });
 
-test('d2.5', async t => {
+test.serial('d2.5', async t => {
   await test2(t, '5');
 });
 
-test('device state', async t => {
+test.serial('device state', async t => {
   const { storage } = initSwingStore();
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-3'),
+        bundle: t.context.data.bootstrap3,
       },
     },
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
@@ -201,14 +216,14 @@ test('device state', async t => {
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 });
 
-test('mailbox outbound', async t => {
+test.serial('mailbox outbound', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
+        bundle: t.context.data.bootstrap2,
       },
     },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
@@ -239,14 +254,14 @@ test('mailbox outbound', async t => {
   t.deepEqual(s.exportToData(), s2.exportToData());
 });
 
-test('mailbox inbound', async t => {
+test.serial('mailbox inbound', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
+        bundle: t.context.data.bootstrap2,
       },
     },
     devices: [['mailbox', mb.srcPath, mb.endowments]],
@@ -354,14 +369,14 @@ test('mailbox inbound', async t => {
   ]);
 });
 
-test('command broadcast', async t => {
+test.serial('command broadcast', async t => {
   const broadcasts = [];
   const cm = buildCommand(body => broadcasts.push(body));
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
+        bundle: t.context.data.bootstrap2,
       },
     },
     devices: [['command', cm.srcPath, cm.endowments]],
@@ -372,13 +387,13 @@ test('command broadcast', async t => {
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 });
 
-test('command deliver', async t => {
+test.serial('command deliver', async t => {
   const cm = buildCommand(() => {});
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-devices/bootstrap-2'),
+        bundle: t.context.data.bootstrap2,
       },
     },
     devices: [['command', cm.srcPath, cm.endowments]],
