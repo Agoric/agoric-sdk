@@ -651,6 +651,51 @@ test('multipoolAutoSwap jig - liquidity', async t => {
     { message: 'insufficient Secondary deposited' },
     `insufficient secondary is unsuccessful`,
   );
+
+  // alice checks the liquidity levels
+  const moolaAllocations = await E(publicFacet).getPoolAllocation(moolaR.brand);
+  t.is(moolaAllocations.Central.value, moolaPoolState.c);
+  t.is(moolaAllocations.Secondary.value, moolaPoolState.s);
+
+  // trade to move the balance of liquididty
+  // trade for moola specifying 300 output
+  const gainC = 300;
+  const mPriceC = priceFromTargetOutput(
+    gainC,
+    moolaPoolState.c,
+    moolaPoolState.s,
+    30,
+  );
+
+  const tradeDetailsC = {
+    inAmount: centralTokens(mPriceC),
+    outAmount: moola(gainC),
+  };
+
+  const expectedC = {
+    c: moolaPoolState.c + mPriceC,
+    s: moolaPoolState.s - gainC,
+    l: 10200,
+    k: (moolaPoolState.c + mPriceC) * (moolaPoolState.s - gainC),
+    out: gainC,
+    in: 0,
+  };
+  await alice.tradeAndCheck(
+    t,
+    false,
+    moolaPoolState,
+    tradeDetailsC,
+    expectedC,
+    { Secondary: moolaR.issuer },
+  );
+  moolaPoolState = updatePoolState(moolaPoolState, expectedC);
+
+  // alice checks the liquidity levels again
+  const newMoolaAllocations = await E(publicFacet).getPoolAllocation(
+    moolaR.brand,
+  );
+  t.is(newMoolaAllocations.Central.value, moolaPoolState.c);
+  t.is(newMoolaAllocations.Secondary.value, moolaPoolState.s);
 });
 
 test('multipoolAutoSwap jig - swapOut', async t => {
