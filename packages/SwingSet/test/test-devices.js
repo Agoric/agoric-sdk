@@ -419,3 +419,20 @@ test.serial('command deliver', async t => {
   t.deepEqual(c.dump().log, ['handle-0-missing', 'handle-1-errory']);
   t.deepEqual(rejection, { response: 'body' });
 });
+
+test('callNow refuses promises', async t => {
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: t.context.data.bootstrap2,
+        creationOptions: { enableSetup: true },
+      },
+    },
+    devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
+  };
+  const c = await buildVatController(config, ['promise1'], t.context.data);
+  await c.step();
+  // if the kernel paniced, that c.step() will reject, and the await will throw
+  t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
+});
