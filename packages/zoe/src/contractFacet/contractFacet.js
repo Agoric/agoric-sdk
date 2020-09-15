@@ -10,6 +10,7 @@
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
+import makeStore from '@agoric/store';
 
 import { makeAmountMath, MathKind } from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
@@ -45,8 +46,8 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
-    /** @type {WeakStore<ZCFSeat,ZCFSeatAdmin>} */
-    const zcfSeatToZCFSeatAdmin = makeWeakStore('zcfSeat');
+    /** @type {Store<ZCFSeat,ZCFSeatAdmin>} */
+    const zcfSeatToZCFSeatAdmin = makeStore('zcfSeat');
     /** @type {WeakStore<ZCFSeat,SeatHandle>} */
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
 
@@ -345,7 +346,12 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
         return invitationP;
       },
       // Shutdown the entire vat and give payouts
-      shutdown: () => E(zoeInstanceAdmin).shutdown(),
+      shutdown: () => {
+        E(zoeInstanceAdmin).shutdown();
+        zcfSeatToZCFSeatAdmin.values().forEach(zcfSeatAdmin => {
+          zcfSeatAdmin.updateHasExited();
+        });
+      },
       makeZCFMint,
       makeEmptySeatKit,
 

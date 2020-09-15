@@ -1208,13 +1208,12 @@ test(`zcf.shutdown - userSeat exits`, async t => {
   t.truthy(await E(userSeat).hasExited());
 });
 
-// TODO: Currently the zcfSeat does not exit
-// https://github.com/Agoric/agoric-sdk/issues/1755
-test.failing(`zcf.shutdown - zcfSeat exits`, async t => {
+test(`zcf.shutdown - zcfSeat exits`, async t => {
   const { zoe, zcf } = await setupZCFTest({});
   const { zcfSeat, userSeat } = await makeOffer(zoe, zcf);
+  t.falsy(zcfSeat.hasExited());
+  t.falsy(await E(userSeat).hasExited());
   zcf.shutdown();
-  // @ts-ignore
   t.truthy(zcfSeat.hasExited());
   t.truthy(await E(userSeat).hasExited());
 });
