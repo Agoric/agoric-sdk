@@ -348,8 +348,10 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       // Shutdown the entire vat and give payouts
       shutdown: () => {
         E(zoeInstanceAdmin).shutdown();
-        zcfSeatToZCFSeatAdmin.values().forEach(zcfSeatAdmin => {
-          zcfSeatAdmin.updateHasExited();
+        zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
+          if (!zcfSeat.hasExited()) {
+            zcfSeatAdmin.updateHasExited();
+          }
         });
       },
       makeZCFMint,
