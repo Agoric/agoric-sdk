@@ -22,7 +22,7 @@ import { assert } from '@agoric/assert';
 /**
  * Parse a vat slot reference string into a vat slot object:
  *   {
- *      type: STRING, // 'object', 'device', 'promise', or 'resolver'
+ *      type: STRING, // 'object', 'device', 'promise'
  *      allocatedByVat: BOOL, // true=>allocated by vat, false=>by the kernel
  *      id: Nat
  *   }
@@ -47,8 +47,6 @@ export function parseVatSlot(s) {
     type = 'device';
   } else if (typechar === 'p') {
     type = 'promise';
-  } else if (typechar === 'r') {
-    type = 'resolver';
   } else {
     throw new Error(`invalid vatSlot ${s}`);
   }
@@ -68,7 +66,7 @@ export function parseVatSlot(s) {
 /**
  * Generate a vat slot reference string given a type, ownership, and id.
  *
- * @param type  The type, 'object', 'device', 'promise', or 'resolver'
+ * @param type  The type, 'object', 'device', 'promise'
  * @param allocatedByVat  Flag: true=>vat allocated, false=>kernel allocated
  * @param id    The id, a Nat.
  *
@@ -92,9 +90,6 @@ export function makeVatSlot(type, allocatedByVat, id) {
   }
   if (type === 'promise') {
     return `p${idSuffix}`;
-  }
-  if (type === 'resolver') {
-    return `r${idSuffix}`;
   }
   throw new Error(`unknown type ${type}`);
 }
