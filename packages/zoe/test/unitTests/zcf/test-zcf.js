@@ -428,14 +428,21 @@ test(`zcf.makeZCFMint - SET`, async t => {
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
-  // TODO: create seat if one is not provided
-  // https://github.com/Agoric/agoric-sdk/issues/1696
   // TODO: improve messages
   // https://github.com/Agoric/agoric-sdk/issues/1708
   // @ts-ignore
   t.throws(() => zcfMint.mintGains(), {
-    message: 'On demand seat creation not yet implemented',
+    message: 'Cannot convert undefined or null to object',
   });
+});
+
+test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.NAT);
+  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const zcfSeat = zcfMint.mintGains({ A: amountMath.make(4) });
+  t.truthy(zcfSeat);
+  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
 });
 
 test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
