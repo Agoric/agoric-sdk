@@ -76,6 +76,15 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
+  // The rules for validation:
+  //
+  // path outside /private: always accept
+  //
+  // all paths within /private: origin-based access control: reject anything except
+  // chrome-extension:, moz-extension:, and http:/https: localhost/127.0.0.1
+  //
+  // path in /private but not /private/wallet-bridge: also require correct
+  // accessToken= in query params
   const validateOriginAndAccessToken = async req => {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;

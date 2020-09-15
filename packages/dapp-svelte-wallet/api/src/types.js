@@ -60,7 +60,9 @@
  * @property {boolean} enable
  * @property {string} origin
  * @property {DappActions} actions
- *
+ */
+
+/**
  * @typedef {Object} DappActions
  * @property {(petname: Petname) => DappActions} setPetname
  * @property {() => DappActions} enable
