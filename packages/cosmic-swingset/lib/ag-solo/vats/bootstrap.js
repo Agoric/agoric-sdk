@@ -7,9 +7,9 @@ import { E } from '@agoric/eventual-send';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
+import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
-import { makePluginManager } from './plugin';
 
 const NUM_IBC_PORTS = 3;
 

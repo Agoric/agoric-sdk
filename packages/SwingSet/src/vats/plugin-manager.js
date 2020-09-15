@@ -8,12 +8,36 @@ import { E, HandledPromise } from '@agoric/eventual-send';
 
 /**
  * @template T
+ * @typedef {T | PromiseLike<T>} ERef
+ */
+
+/** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
+const DEFAULT_RESETTER = harden({ onReset: _ => {} });
+
+/** @type {{ walk: (pluginRootP: any) => any }} */
+const DEFAULT_WALKER = harden({ walk: pluginRootP => pluginRootP });
+
+/**
+ * @template T
  * @typedef {T} Device
  */
 
 /**
+ * @callback LoadPlugin
+ * @param {string} specifier
+ * @param {any} [opts=undefined]
+ * @param {{ onReset: (firstTime: Promise<boolean>) => void}} [resetter=DEFAULT_RESETTER]
+ * @returns {ERef<{ pluginRoot: ERef<any>, actions: { makeStableForwarder:
+ * MakeStableForwarder }}>}
+ *
+ * @callback MakeStableForwarder
+ * @param {{ walk: (pluginRootP: Promise<any>) => any }} [walker=DEFAULT_WALKER]
+ * @returns {ERef<any>}
+ */
+
+/**
  * @typedef {Object} PluginManager
- * @property {(mod: string) => ERef<any>} load
+ * @property {LoadPlugin} load
  */
 
 /**
@@ -34,7 +58,7 @@ import { E, HandledPromise } from '@agoric/eventual-send';
  * Create a handler that manages a promise interface to external modules.
  *
  * @param {Device<PluginDevice>} pluginDevice The bridge to manage
- * @param {{ D<T>(target: Device<T>): T }} param1
+ * @param {{ D: <T>(target: Device<T>) => T, [prop: string]: any }} param1
  * @returns {PluginManager} admin facet for this handler
  */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
@@ -68,13 +92,16 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       return D(pluginDevice).getPluginDir();
     },
     /**
-     * Load a module, and call resetter.onReset(bootP) every time it is instantiated.
+     * Load a module, and call resetter.onReset(pluginRootP) every time
+     * it is instantiated.
+     *
+     * @type {LoadPlugin}
      */
-    load(specifier, opts = undefined, resetter = { onReset: _ => {} }) {
+    load(specifier, opts = undefined, resetter = DEFAULT_RESETTER) {
       // This is the internal state: a promise kit that doesn't
       // resolve until we are connected.  It is replaced by
       // a new promise kit when we abort the prior module connection.
-      let bootPK = makePromiseKit();
+      let pluginRootPK = makePromiseKit();
       let nextEpoch = 0;
 
       let currentEpoch;
@@ -108,7 +135,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         // Create a CapTP channel.
         const myEpoch = nextEpoch;
         nextEpoch += 1;
-        console.info(
+        console.debug(
           `Connecting to ${specifier}.${index} with epoch ${myEpoch}`,
         );
         const { getBootstrap, dispatch } = makeCapTP(
@@ -122,10 +149,10 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         );
 
         currentReset = _epoch => {
-          bootPK = makePromiseKit();
+          pluginRootPK = makePromiseKit();
 
           // Tell our clients we are resetting.
-          E(resetter).onReset(bootPK.promise.then(_ => true));
+          E(resetter).onReset(pluginRootPK.promise.then(_ => true));
 
           // Attempt to restart the protocol using the same device connection.
           connect();
@@ -139,26 +166,28 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         currentEpoch = myEpoch;
 
         // Publish our started plugin.
-        bootPK.resolve(E(getBootstrap()).start(opts));
+        pluginRootPK.resolve(E(getBootstrap()).start(opts));
       };
 
       const actions = harden({
         /**
          * Create a stable identity that just forwards to the current implementation.
+         *
+         * @type {MakeStableForwarder}
          */
-        makeStableForwarder(walker = { walk: bootP => bootP }) {
+        makeStableForwarder(walker = DEFAULT_WALKER) {
           let pr;
           // eslint-disable-next-line no-new
           new HandledPromise((_resolve, _reject, resolveWithPresence) => {
             pr = resolveWithPresence({
               applyMethod(_p, name, args) {
                 // console.warn('applying method epoch', currentEpoch);
-                const targetP = E(walker).walk(bootPK.promise);
+                const targetP = E(walker).walk(pluginRootPK.promise);
                 return HandledPromise.applyMethod(targetP, name, args);
               },
               get(_p, name) {
                 // console.warn('applying get epoch', currentEpoch);
-                const targetP = E(walker).walk(bootPK.promise);
+                const targetP = E(walker).walk(pluginRootPK.promise);
                 return HandledPromise.get(targetP, name);
               },
             });
@@ -168,16 +197,16 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       });
 
       // Declare the first reset.
-      E(resetter).onReset(false);
+      E(resetter).onReset(Promise.resolve(false));
 
       // Start the first connection.
       connect();
 
-      // Give up our bootstrap object for the caller to use.
+      // Give up our plugin root object for the caller to use.
       return harden({
         // This is the public state, a promise that never resolves,
-        // but pipelines messages to the bootPK.promise.
-        bootstrap: actions.makeStableForwarder(),
+        // but pipelines messages to the pluginRootPK.promise.
+        pluginRoot: actions.makeStableForwarder(),
         actions,
       });
     },
