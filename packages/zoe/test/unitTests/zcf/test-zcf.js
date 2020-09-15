@@ -806,7 +806,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   });
 
   t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
-    message: `A brand must be supplied if the keyword may not exist`,
+    message: `A brand must be supplied when the keyword is not defined`,
   });
 });
 
