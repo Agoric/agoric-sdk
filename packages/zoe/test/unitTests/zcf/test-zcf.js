@@ -248,12 +248,8 @@ test(`zcf.makeInvitation - no offerHandler`, async t => {
   const isLive = await E(invitationIssuer).isLive(invitationP);
   t.truthy(isLive);
   const seat = E(zoe).offer(invitationP);
-
-  // TODO: this should not throw
-  // https://github.com/Agoric/agoric-sdk/issues/1703
-  // const offerResult = await E(seat).getOfferResult();
-  // t.is(offerResult, undefined);
-  await t.throwsAsync(() => E(seat).getOfferResult());
+  const offerResult = await E(seat).getOfferResult();
+  t.is(offerResult, undefined);
 });
 
 test(`zcf.makeInvitation - no-op offerHandler`, async t => {

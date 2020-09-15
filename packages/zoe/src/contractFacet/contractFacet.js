@@ -281,7 +281,11 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
         // AWAIT ///
         return registerIssuerRecordWithKeyword(keyword, record);
       },
-      makeInvitation: (offerHandler, description, customProperties = {}) => {
+      makeInvitation: (
+        offerHandler = () => {},
+        description,
+        customProperties = {},
+      ) => {
         assert.typeof(
           description,
           'string',
