@@ -61,6 +61,7 @@ const start = zcf => {
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, details`centralBrand must be present`);
 
+  /** @type {WeakStore<Brand,Pool>} */
   const secondaryBrandToPool = makeWeakStore();
   const getPool = secondaryBrandToPool.get;
   const initPool = secondaryBrandToPool.init;

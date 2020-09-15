@@ -317,6 +317,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       t.is(lAmount.value, lPost, 'liquidity scales (init)');
       t.is(cAmount.value, cPost);
       t.is(sAmount.value, sPost);
+      return { central: cPayout, secondary: sPayout, liquidity: lPayout };
     },
   });
   return trader;
