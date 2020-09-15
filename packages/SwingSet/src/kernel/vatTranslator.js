@@ -149,6 +149,12 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     if (type !== 'device') {
       throw new Error(`doCallNow must target a device, not ${dev}`);
     }
+    for (const slot of args.slots) {
+      assert(
+        parseVatSlot(slot).type !== 'promise',
+        `syscall.callNow() args cannot include promises like ${slot}`,
+      );
+    }
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...args, slots: kernelSlots });
     // prettier-ignore

@@ -84,6 +84,18 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         });
         D(devices.command).registerInboundHandler(handler);
+      } else if (argv[0] === 'promise1') {
+        const p = Promise.resolve();
+        log('sending Promise');
+        try {
+          // this will be rejected immediately, killing the vat shortly
+          D(devices.d0).send({ p });
+          // shouldn't get here
+          log('oops: survived sending Promise');
+        } catch (e) {
+          // we aren't currently killed until the end of the crank
+          log('good: callNow failed');
+        }
       } else {
         throw new Error(`unknown argv mode '${argv[0]}'`);
       }
