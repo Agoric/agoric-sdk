@@ -130,10 +130,12 @@ const main = async (progname, rawArgs, powers) => {
 
   program
     .command('deploy [script...]')
-    .description('run a deployment script against the local Agoric VM')
+    .description(
+      'run a deployment script with all your user privileges against the local Agoric VM',
+    )
     .option(
       '--allow-unsafe-plugins',
-      'CAREFUL: allow the deploy script full control over the Agoric VM',
+      `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
       false,
     )
     .option(
