@@ -795,8 +795,6 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   // Again, mint some gains to change the allocation.
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
 
-  // TODO: make brand optional
-  // https://github.com/Agoric/agoric-sdk/issues/1725
   t.deepEqual(zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
     value: 6,
@@ -807,9 +805,8 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
     value: 6,
   });
 
-  // @ts-ignore
   t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
-    message: `"brand" not found: (an undefined)\nSee console for error data.`,
+    message: `A brand must be supplied when the keyword is not defined`,
   });
 });
 
