@@ -5,15 +5,12 @@ import test from 'ava';
 
 import { MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { assert } from '@agoric/assert';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
 
 import { setupZCFTest } from './setupZcfTest';
-
-// TODO: Still to be tested:
-//  * @property {Reallocate} reallocate
-//  * @property {() => void} shutdown
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -568,6 +565,13 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   });
 });
 
+/**
+ * @param {ZoeService} zoe
+ * @param {ContractFacet} zcf
+ * @param {Proposal=} proposal
+ * @param {PaymentPKeywordRecord=} payments
+ * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
+ */
 const makeOffer = async (zoe, zcf, proposal, payments) => {
   let zcfSeat;
   const getSeat = seat => {
@@ -575,6 +579,7 @@ const makeOffer = async (zoe, zcf, proposal, payments) => {
   };
   const invitation = await zcf.makeInvitation(getSeat, 'seat');
   const userSeat = await E(zoe).offer(invitation, proposal, payments);
+  assert(zcfSeat);
   return { zcfSeat, userSeat };
 };
 
@@ -1099,38 +1104,32 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
     }),
   );
 
-  // @ts-ignore
   const staging1 = zcfSeat1.stage({
     A: simoleans(2),
     B: moola(0),
   });
 
-  // @ts-ignore
   const staging2 = zcfSeat2.stage({
     Whatever: moola(2),
     Whatever2: simoleans(0),
   });
 
-  // @ts-ignore
   const staging3 = zcfSeat3.stage({
     Whatever: moola(1),
     Whatever2: simoleans(0),
   });
 
   zcf.reallocate(staging1, staging2, staging3);
-  // @ts-ignore
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
     A: simoleans(2),
     B: moola(0),
   });
 
-  // @ts-ignore
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
     Whatever: moola(2),
     Whatever2: simoleans(0),
   });
 
-  // @ts-ignore
   t.deepEqual(zcfSeat3.getCurrentAllocation(), {
     Whatever: moola(1),
     Whatever2: simoleans(0),
@@ -1189,6 +1188,16 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
   t.throws(() => zcf.reallocate(staging1, staging2, staging3), {
     message: `rights were not conserved for brand (an object)\nSee console for error data.`,
   });
+
+  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
+    A: simoleans(0),
+    B: moola(3),
+  });
+  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
+    Whatever: moola(0),
+    Whatever2: simoleans(2),
+  });
+  t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0) });
 });
 
 test(`zcf.shutdown - userSeat exits`, async t => {
