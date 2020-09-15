@@ -224,7 +224,25 @@ export function buildRootObject(_vatPowers) {
               dappOrigin = meta.origin,
               suggestedDappPetname = obj.dappOrigin || meta.origin,
             } = obj;
-            await wallet.waitForDappApproval(suggestedDappPetname, dappOrigin);
+
+            // When we haven't been enabled, tell our caller.
+            const notYetEnabled = () =>
+              E(http).send(
+                {
+                  type: 'walletNeedDappApproval',
+                  data: {
+                    dappOrigin,
+                    suggestedDappPetname,
+                  },
+                },
+                [meta.channelHandle],
+              );
+
+            await wallet.waitForDappApproval(
+              suggestedDappPetname,
+              dappOrigin,
+              notYetEnabled,
+            );
 
             switch (type) {
               case 'walletGetPurses':

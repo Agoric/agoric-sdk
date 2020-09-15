@@ -23,6 +23,13 @@ const send = (ws, msg) => {
   }
 };
 
+const verifyToken = (actual, expected) => {
+  // TODO: This should be a constant-time operation so that
+  // the caller cannot tell the difference between initial characters
+  // that match vs. ones that don't.
+  return actual === expected;
+};
+
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
@@ -69,6 +76,15 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
+  // The rules for validation:
+  //
+  // path outside /private: always accept
+  //
+  // all paths within /private: origin-based access control: reject anything except
+  // chrome-extension:, moz-extension:, and http:/https: localhost/127.0.0.1
+  //
+  // path in /private but not /private/wallet-bridge: also require correct
+  // accessToken= in query params
   const validateOriginAndAccessToken = async req => {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
@@ -78,20 +94,23 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       return true;
     }
 
-    // Validate the private accessToken.
-    const accessToken = await getAccessToken(port);
-    const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
-      'accessToken',
-    );
-
-    if (reqToken !== accessToken) {
-      log.error(
-        id,
-        `Invalid access token ${JSON.stringify(
-          reqToken,
-        )}; try running "agoric open"`,
+    // Bypass accessToken just for the wallet bridge.
+    if (req.url !== '/private/wallet-bridge') {
+      // Validate the private accessToken.
+      const accessToken = await getAccessToken(port);
+      const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
+        'accessToken',
       );
-      return false;
+
+      if (!verifyToken(reqToken, accessToken)) {
+        log.error(
+          id,
+          `Invalid access token ${JSON.stringify(
+            reqToken,
+          )}; try running "agoric open"`,
+        );
+        return false;
+      }
     }
 
     if (!origin) {

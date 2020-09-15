@@ -660,7 +660,11 @@ export async function makeWallet({
     dappsUpdater.updateState([...dappOrigins.values()]);
   }
 
-  async function waitForDappApproval(suggestedPetname, origin) {
+  async function waitForDappApproval(
+    suggestedPetname,
+    origin,
+    notYetEnabled = () => {},
+  ) {
     let dappRecord;
     if (dappOrigins.has(origin)) {
       dappRecord = dappOrigins.get(origin);
@@ -674,6 +678,7 @@ export async function makeWallet({
         petname: suggestedPetname,
         origin,
         approvalP,
+        enable: false,
         actions: {
           setPetname(petname) {
             if (dappRecord.petname === petname) {
@@ -730,6 +735,9 @@ export async function makeWallet({
       dappRecord.actions.disable();
     }
 
+    if (!dappRecord.enable) {
+      notYetEnabled();
+    }
     await dappRecord.approvalP;
     // AWAIT
     // Refetch the origin record.

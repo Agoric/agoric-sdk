@@ -9,6 +9,10 @@ import { makeCapTPConnection } from './captp';
 const accessTokenParams = `?${window.location.hash.slice(1)}`;
 // Now that we've captured it, clear out the access token from the URL bar.
 window.location.hash = '';
+window.addEventListener('hashchange', _ev => {
+  // Keep it clear.
+  window.location.hash = '';
+});
 const hasAccessToken = new URLSearchParams(accessTokenParams).has(
   'accessToken',
 );
