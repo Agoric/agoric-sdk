@@ -23,6 +23,13 @@ const send = (ws, msg) => {
   }
 };
 
+const verifyToken = (actual, expected) => {
+  // TODO: This should be a constant-time operation so that
+  // the caller cannot tell the difference between initial characters
+  // that match vs. ones that don't.
+  return actual === expected;
+};
+
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
@@ -86,7 +93,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
         'accessToken',
       );
 
-      if (reqToken !== accessToken) {
+      if (!verifyToken(reqToken, accessToken)) {
         log.error(
           id,
           `Invalid access token ${JSON.stringify(
