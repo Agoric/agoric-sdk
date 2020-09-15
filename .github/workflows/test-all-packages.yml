@@ -74,6 +74,7 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
     - name: lint check
       run: yarn lint-check
 
@@ -268,6 +269,7 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
     - name: Set up Go 1.14
       uses: actions/setup-go@v1
       with:
@@ -310,16 +312,17 @@ jobs:
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
-    - name: install XS dependencies
-      working-directory: ./packages/xs-vat-worker
-      run: yarn install:xs-lin
     - name: yarn build
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: install XS dependencies
+      working-directory: ./packages/xs-vat-worker
+      run: yarn install:xs-lin
     - name: yarn build-xs-worker
       working-directory: ./packages/xs-vat-worker
       run: yarn build:xs-lin
-    # END-RESTORE-BOILERPLATE
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
       env:
@@ -361,6 +364,7 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
       env:
