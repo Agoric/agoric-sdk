@@ -62,6 +62,7 @@
  * @property {(inputValue: Value) => Amount } getSecondaryToCentralOutputPrice
  * @property {(inputValue: Value) => Amount } getCentralToSecondaryOutputPrice
  * @property {() => number} getLiquiditySupply
+ * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
@@ -88,8 +89,8 @@
  * invitation that allows one to add liquidity to the pool.
  * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
- * @property {brand: Brand => Issuer} getLiquidityIssuer
- * @property {brand: Brand => number} getLiquiditySupply get the current value of
+ * @property {(brand: Brand) => Issuer} getLiquidityIssuer
+ * @property {(brand: Brand) => number} getLiquiditySupply get the current value of
  * liquidity in the pool for brand held by investors.
  * @property {(amountIn: Amount, brandOut: Brand) => Amount} getInputPrice
  * calculate the amount of brandOut that will be returned if the amountIn is
@@ -97,7 +98,7 @@
  * @property {(amountOut: Amount, brandIn: Brand) => Amount} getOutputPrice
  * calculate the amount of brandIn that is required in order to get amountOut
  * using makeSwapOutInvitation at the current price
- * @property {brand: Brand => Record<string, Amount>} getPoolAllocation get an
+ * @property {(brand: Brand) => Record<string, Amount>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool for brand.
  */
 

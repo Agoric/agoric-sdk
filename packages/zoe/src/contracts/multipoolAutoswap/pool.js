@@ -27,6 +27,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     const {
       brand: liquidityBrand,
       amountMath: liquidityAmountMath,
+      issuer: liquidityIssuer,
     } = liquidityZcfMint.getIssuerRecord();
 
     const addLiquidityActual = (pool, userSeat, secondaryAmount) => {
@@ -67,6 +68,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     /** @type {Pool} */
     const pool = {
       getLiquiditySupply: () => liqTokenSupply,
+      getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
       getAmountMath: () => zcf.getAmountMath(secondaryBrand),
       getCentralAmountMath: () => zcf.getAmountMath(centralBrand),
