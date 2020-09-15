@@ -1,0 +1,286 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/install-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'ava';
+
+import { E } from '@agoric/eventual-send';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
+import bundleSource from '@agoric/bundle-source';
+
+import { setupZCFTest } from './zcf/setupZcfTest';
+import { setup } from './setupBasicMints';
+
+test(`zoe.getInvitationIssuer`, async t => {
+  const { zoe, zcf } = await setupZCFTest();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitation = zcf.makeInvitation(undefined, 'invite');
+
+  // A few basic tests that the invitation issuer acts like an issuer.
+  // Not exhaustive.
+  const brand = await E(invitationIssuer).getBrand();
+  const amount = await E(invitationIssuer).getAmountOf(invitation);
+  t.is(amount.brand, brand);
+  t.truthy(await E(invitationIssuer).isLive(invitation));
+  await E(invitationIssuer).burn(invitation);
+  t.falsy(await E(invitationIssuer).isLive(invitation));
+});
+
+test(`zoe.install bad bundle`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).install(), {
+    message: 'a bundle must be provided',
+  });
+});
+
+test(`zoe.install`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/atomicSwap`;
+  const bundle = await bundleSource(contractPath);
+  t.truthy(bundle.source.includes('start'));
+  const installation = await E(zoe).install(bundle);
+  t.is(await E(installation).getBundle(), bundle);
+});
+
+test(`zoe.startInstance bad installation`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).startInstance(), {
+    message: `(an undefined) was not a valid installation\nSee console for error data.`,
+  });
+});
+
+test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
+  const { zoe, installation } = await setupZCFTest();
+  const result = await E(zoe).startInstance(installation);
+  // Note that deepEqual treats all empty objects (handles) as interchangeable.
+  t.deepEqual(result, {
+    creatorFacet: {},
+    creatorInvitation: undefined,
+    instance: result.instance,
+    publicFacet: {},
+  });
+});
+
+test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
+  const { zoe, installation } = await setupZCFTest();
+  const { moolaKit } = setup();
+  await t.throwsAsync(
+    () =>
+      E(zoe).startInstance(
+        installation,
+        // @ts-ignore
+        { something: 2 },
+        { Moola: moolaKit.issuer },
+      ),
+    {
+      message: `keyword "something" must be ascii and must start with a capital letter.\nSee console for error data.`,
+    },
+  );
+});
+
+test(`zoe.offer`, async t => {
+  const { zoe, zcf } = await setupZCFTest();
+  const invitation = zcf.makeInvitation(() => 'result', 'invitation');
+  const userSeat = E(zoe).offer(invitation);
+  t.is(await E(userSeat).getOfferResult(), 'result');
+});
+
+test(`zoe.offer - no invitation`, async t => {
+  const { zoe } = await setupZCFTest();
+  // TODO: improve error message
+  // https://github.com/Agoric/agoric-sdk/issues/1767
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).offer(), {
+    message: 'payment not found for (a string)\nSee console for error data.',
+  });
+});
+
+test(`zoe.getPublicFacet`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { publicFacet, instance } = await E(zoe).startInstance(installation);
+  const offersCount = await E(publicFacet).getOffersCount();
+  t.is(offersCount, 0);
+  t.is(await E(zoe).getPublicFacet(instance), publicFacet);
+});
+
+test(`zoe.getPublicFacet - no instance`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getPublicFacet(), {
+    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+  });
+});
+
+test(`zoe.getIssuers`, async t => {
+  const { zoe, moolaKit } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(installation, {
+    Moola: moolaKit.issuer,
+  });
+  t.deepEqual(await E(zoe).getIssuers(instance), { Moola: moolaKit.issuer });
+});
+
+test(`zoe.getIssuers - none`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(installation);
+  t.deepEqual(await E(zoe).getIssuers(instance), {});
+});
+
+test(`zoe.getIssuers - no instance`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getIssuers(), {
+    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+  });
+});
+
+test(`zoe.getBrands`, async t => {
+  const { zoe, moolaKit } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(installation, {
+    Moola: moolaKit.issuer,
+  });
+  t.deepEqual(await E(zoe).getBrands(instance), { Moola: moolaKit.brand });
+});
+
+test(`zoe.getBrands - none`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(installation);
+  t.deepEqual(await E(zoe).getBrands(instance), {});
+});
+
+test(`zoe.getBrands - no instance`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getBrands(), {
+    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+  });
+});
+
+test(`zoe.getTerms - none`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(installation);
+  t.deepEqual(await E(zoe).getTerms(instance), {
+    brands: {},
+    issuers: {},
+    maths: {},
+  });
+});
+
+test(`zoe.getTerms`, async t => {
+  const { zoe, moolaKit } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(
+    installation,
+    {
+      Moola: moolaKit.issuer,
+    },
+    {
+      someTerm: 2,
+    },
+  );
+
+  const zoeTerms = await E(zoe).getTerms(instance);
+
+  const expected = {
+    issuers: {
+      Moola: moolaKit.issuer,
+    },
+    brands: {
+      Moola: moolaKit.brand,
+    },
+    maths: { Moola: moolaKit.amountMath },
+    someTerm: 2,
+  };
+
+  t.deepEqual({ ...zoeTerms, maths: {} }, { ...expected, maths: {} });
+  t.is(
+    zoeTerms.maths.Moola.getAmountMathKind(),
+    moolaKit.amountMath.getAmountMathKind(),
+  );
+  t.is(zoeTerms.maths.Moola.getBrand(), moolaKit.amountMath.getBrand());
+});
+
+test(`zoe.getTerms - no instance`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getTerms(), {
+    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+  });
+});
+
+test(`zoe.getInstance`, async t => {
+  const { zoe, zcf, instance } = await setupZCFTest();
+  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const actualInstance = await E(zoe).getInstance(invitation);
+  t.is(actualInstance, instance);
+});
+
+test(`zoe.getInstance - no invitation`, async t => {
+  const { zoe } = await setupZCFTest();
+  // TODO: improve error message
+  // https://github.com/Agoric/agoric-sdk/issues/1767
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getInstance(), {
+    message: `payment not found for (a string)\nSee console for error data.`,
+  });
+});
+
+test(`zoe.getInstallation`, async t => {
+  const { zoe, zcf, installation } = await setupZCFTest();
+  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const actualInstallation = await E(zoe).getInstallation(invitation);
+  t.is(actualInstallation, installation);
+});
+
+test(`zoe.getInstallation - no invitation`, async t => {
+  const { zoe } = await setupZCFTest();
+  // TODO: improve error message
+  // https://github.com/Agoric/agoric-sdk/issues/1767
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getInstallation(), {
+    message: `payment not found for (a string)\nSee console for error data.`,
+  });
+});
+
+test(`zoe.getInvitationDetails`, async t => {
+  const { zoe, zcf, installation, instance } = await setupZCFTest();
+  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const details = await E(zoe).getInvitationDetails(invitation);
+  t.deepEqual(details, {
+    description: 'invitation',
+    handle: details.handle,
+    installation,
+    instance,
+  });
+});
+
+test(`zoe.getInvitationDetails - no invitation`, async t => {
+  const { zoe } = await setupZCFTest();
+  // TODO: improve error message
+  // https://github.com/Agoric/agoric-sdk/issues/1767
+  // @ts-ignore
+  await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
+    message: `payment not found for (a string)\nSee console for error data.`,
+  });
+});

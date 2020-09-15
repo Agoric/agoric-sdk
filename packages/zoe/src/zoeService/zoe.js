@@ -54,6 +54,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
    */
   /** @type {Install} */
   const install = async bundle => {
+    assert(bundle, `a bundle must be provided`);
     /** @type {Installation} */
     const installation = { getBundle: () => bundle };
     harden(installation);
