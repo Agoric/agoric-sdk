@@ -292,7 +292,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Alice tries to exit, but cannot
   await t.throwsAsync(
     () => E(aliceSeat).tryExit(),
-    { message: /Only seats with the exitKind "onDemand" can exit at will/ },
+    { message: /Only seats with the exit rule "onDemand" can exit at will/ },
     `alice can't exit`,
   );
 

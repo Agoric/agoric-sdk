@@ -888,7 +888,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - waived`, async t => {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit({ waived: null });
   t.falsy(zcfSeat.hasExited());
   await t.throwsAsync(() => E(userSeat).tryExit(), {
-    message: 'Only seats with the exitKind "onDemand" can exit at will',
+    message: 'Only seats with the exit rule "onDemand" can exit at will',
   });
   t.falsy(zcfSeat.hasExited());
   t.falsy(await E(userSeat).hasExited());
@@ -902,7 +902,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   });
   t.falsy(zcfSeat.hasExited());
   await t.throwsAsync(() => E(userSeat).tryExit(), {
-    message: 'Only seats with the exitKind "onDemand" can exit at will',
+    message: 'Only seats with the exit rule "onDemand" can exit at will',
   });
   t.falsy(zcfSeat.hasExited());
   t.falsy(await E(userSeat).hasExited());
