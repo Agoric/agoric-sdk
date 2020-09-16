@@ -2,6 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import process from 'process';
 import re2 from 're2';
 import { Worker } from 'worker_threads';
 import * as babelCore from '@babel/core';
@@ -353,6 +354,7 @@ export async function buildVatController(
     }`,
   );
 
+  // this launches a worker in a Node.js thread (aka "Worker")
   function makeNodeWorker() {
     // TODO: after we move away from `-r esm` and use real ES6 modules, point
     // this at nodeWorkerSupervisor.js instead of the CJS intermediate
@@ -362,16 +364,24 @@ export async function buildVatController(
     return new Worker(supercode);
   }
 
+  // launch a worker in a subprocess (which runs Node.js)
+  function startSubprocessWorkerNode() {
+    const supercode = require.resolve(
+      './kernel/vatManager/subprocessSupervisor.js',
+    );
+    return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
+  }
+
+  let startSubprocessWorkerXS;
+  const xsWorkerBin = locateWorkerBin({ resolve: path.resolve });
+  if (fs.existsSync(xsWorkerBin)) {
+    startSubprocessWorkerXS = () => startSubprocessWorker(xsWorkerBin);
+  }
+
   function writeSlogObject(_obj) {
     // TODO sqlite
     // console.log(`--slog ${JSON.stringify(obj)}`);
   }
-
-  const startSubprocessWorkerNode = () => startSubprocessWorker();
-  const xsWorkerBin = locateWorkerBin({ resolve: path.resolve });
-  const startSubprocessWorkerXS = fs.existsSync(xsWorkerBin)
-    ? () => startSubprocessWorker({ execPath: xsWorkerBin, args: [] })
-    : undefined;
 
   const kernelEndowments = {
     waitUntilQuiescent,
