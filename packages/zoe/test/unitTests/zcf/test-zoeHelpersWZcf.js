@@ -161,7 +161,7 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.falsy(assertIssuerKeywords(zcf, ['A', 'B']));
 });
 
-test.only(`zoeHelper with zcf - assertProposalShape`, async t => {
+test(`zoeHelper with zcf - assertProposalShape`, async t => {
   const {
     moolaIssuer,
     moola,
