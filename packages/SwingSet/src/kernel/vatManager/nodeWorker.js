@@ -55,10 +55,16 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       transcriptManager,
     );
     function handleSyscall(vatSyscallObject) {
+      // we are invoked by an async postMessage from the worker thread, whose
+      // vat code has moved on (it really wants a synchronous/immediate
+      // syscall)
       const type = vatSyscallObject[0];
       if (type === 'callNow') {
         throw Error(`nodeWorker cannot block, cannot use syscall.callNow`);
       }
+      // This might throw an Error if the syscall was faulty, in which case
+      // the vat will be terminated soon. It returns a vatSyscallResults,
+      // which we discard because there is nobody to send it to.
       doSyscall(vatSyscallObject);
     }
 
@@ -96,7 +102,8 @@ export function makeNodeWorkerVatManagerFactory(tools) {
         if (waiting) {
           const resolve = waiting;
           waiting = null;
-          resolve();
+          const deliveryResult = args;
+          resolve(deliveryResult);
         }
       } else {
         parentLog(`unrecognized uplink message ${type}`);

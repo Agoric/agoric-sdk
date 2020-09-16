@@ -42,6 +42,16 @@ async function doProcess(dispatchRecord, errmsg) {
   workerLog(`runAndWait`);
   await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
   workerLog(`doProcess done`);
+  const vatDeliveryResults = harden(['ok']);
+  return vatDeliveryResults;
+}
+
+function doMessage(targetSlot, msg) {
+  const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
+  return doProcess(
+    ['deliver', targetSlot, msg.method, msg.args, msg.result],
+    errmsg,
+  );
 }
 
 function doNotify(vpid, vp) {
@@ -79,7 +89,6 @@ function sendUplink(msg) {
 //  toParent.write('child ack');
 // });
 
-let syscallLog;
 fromParent.on('data', data => {
   const [type, ...margs] = JSON.parse(data);
   workerLog(`received`, type);
@@ -136,16 +145,9 @@ fromParent.on('data', data => {
     }
     const [dtype, ...dargs] = margs;
     if (dtype === 'message') {
-      const [targetSlot, msg] = dargs;
-      const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
-      doProcess(
-        ['deliver', targetSlot, msg.method, msg.args, msg.result],
-        errmsg,
-      ).then(() => {
-        sendUplink(['deliverDone']);
-      });
+      doMessage(...dargs).then(res => sendUplink(['deliverDone', ...res]));
     } else if (dtype === 'notify') {
-      doNotify(...dargs).then(() => sendUplink(['deliverDone', syscallLog]));
+      doNotify(...dargs).then(res => sendUplink(['deliverDone', ...res]));
     } else {
       throw Error(`bad delivery type ${dtype}`);
     }
