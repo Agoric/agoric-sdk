@@ -8,6 +8,7 @@ import {
   makeAsyncIterableFromNotifier,
   updateFromIterable,
 } from './asyncIterableAdaptor';
+import { E } from "@agoric/eventual-send";
 
 import './types';
 
@@ -40,6 +41,16 @@ export const makeNotifierKit = (...args) => {
 
   const final = () => currentUpdateCount === undefined;
 
+  const observers = new Set(); // FlexSet
+  const notifyObserver = (obs, newResponse) => {
+    E(obs).notify(newResponse).then(
+      (flag) => { if (!flag) { observers.delete(obs); },
+      () => observers.delete(obs));
+  }
+  const notifyObservers = (newResponse) => {
+    observers.forEach((obs) => notifyObserver(obs, newResponse));
+  };
+
   const baseNotifier = harden({
     // NaN matches nothing
     getUpdateSince(updateCount = NaN) {
@@ -57,6 +68,16 @@ export const makeNotifierKit = (...args) => {
       assert(nextPromiseKit);
       return nextPromiseKit.promise;
     },
+    addObserver: (obs) => {
+      if (!final()) {
+        observers.add(obs);
+      }
+      if (hasState()) {
+        notifyObserver(obs, currentResponse);
+      }
+      return true;
+    },
+    removeObserver: (obs) => observers.delete(obs);
   });
 
   const asyncIterable = makeAsyncIterableFromNotifier(baseNotifier);
@@ -79,6 +100,7 @@ export const makeNotifierKit = (...args) => {
         value: state,
         updateCount: currentUpdateCount,
       });
+      notifyObservers(currentResponse);
       nextPromiseKit.resolve(currentResponse);
       nextPromiseKit = makePromiseKit();
     },
@@ -95,6 +117,8 @@ export const makeNotifierKit = (...args) => {
         value: finalState,
         updateCount: currentUpdateCount,
       });
+      notifyObservers(currentResponse);
+      observers.clear();
       nextPromiseKit.resolve(currentResponse);
       nextPromiseKit = undefined;
     },
