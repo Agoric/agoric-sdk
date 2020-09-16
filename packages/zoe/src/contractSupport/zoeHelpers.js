@@ -290,8 +290,26 @@ export const swapExact = (
  * @param {ExpectedRecord} expected
  */
 export const assertProposalShape = (seat, expected) => {
+  assert.typeof(expected, 'object');
+  assert(!Array.isArray(expected), `Expected must be an non-array object`);
+  const assertValuesNull = e => {
+    if (e !== undefined) {
+      Object.values(e).forEach(value =>
+        assert(
+          value === null,
+          details`The value of the expected record must be null but was ${value}`,
+        ),
+      );
+    }
+  };
+
+  // Assert values of the expected record are all null. We do not
+  // check the values of the actual proposal.
+  assertValuesNull(expected.give);
+  assertValuesNull(expected.want);
+  assertValuesNull(expected.exit);
+
   const actual = seat.getProposal();
-  // Does not check values
   const assertKeys = (a, e) => {
     if (e !== undefined) {
       assert(

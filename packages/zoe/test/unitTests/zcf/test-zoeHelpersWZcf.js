@@ -159,7 +159,7 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
     },
     'no expected keywordRecord gets an error',
   );
-  t.falsy(assertIssuerKeywords(zcf, ['A', 'B']));
+  t.notThrows(() => assertIssuerKeywords(zcf, ['A', 'B']));
 });
 
 test(`zoeHelper with zcf - assertProposalShape`, async t => {
@@ -180,27 +180,29 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3)) },
   );
 
-  t.falsy(assertProposalShape(zcfSeat, []), 'empty expectation matches');
+  t.throws(() => assertProposalShape(zcfSeat, []), {
+    message: 'Expected must be an non-array object',
+  });
   t.throws(
-    () => assertProposalShape(zcfSeat, { want: { C: undefined } }),
+    () => assertProposalShape(zcfSeat, { want: { C: null } }),
     {
       message:
         'actual (an object) did not match expected (an object)\nSee console for error data.',
     },
-    'empty keywordRecord does not  match',
+    'empty keywordRecord does not match',
   );
-  t.falsy(assertProposalShape(zcfSeat, { want: { A: null } }));
-  t.falsy(assertProposalShape(zcfSeat, { give: { B: null } }));
+  t.notThrows(() => assertProposalShape(zcfSeat, { want: { A: null } }));
+  t.notThrows(() => assertProposalShape(zcfSeat, { give: { B: null } }));
   t.throws(
-    () => assertProposalShape(zcfSeat, { give: { c: undefined } }),
+    () => assertProposalShape(zcfSeat, { give: { c: null } }),
     {
       message:
         'actual (an object) did not match expected (an object)\nSee console for error data.',
     },
-    'wrong key in keywordRecord does not  match',
+    'wrong key in keywordRecord does not match',
   );
   t.throws(
-    () => assertProposalShape(zcfSeat, { exit: { onDemaind: undefined } }),
+    () => assertProposalShape(zcfSeat, { exit: { onDemaind: null } }),
     {
       message:
         'actual (an object) did not match expected (an object)\nSee console for error data.',
@@ -403,7 +405,7 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(40));
 });
 
-test.failing(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
+test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
   const {
     moolaIssuer,
     moola,
@@ -421,9 +423,7 @@ test.failing(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3)) },
   );
 
-  // TODO: providing an amount in the expected record should throw
-  // https://github.com/Agoric/agoric-sdk/issues/1769
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3) } }), {
-    message: 'expected record should have null values',
+    message: `The value of the expected record must be null but was (an object)\nSee console for error data.`,
   });
 });
