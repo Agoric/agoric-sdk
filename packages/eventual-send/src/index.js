@@ -8,6 +8,8 @@ const {
   isFrozen,
 } = Object;
 
+const q = JSON.stringify;
+
 // the following method (makeHandledPromise) is part
 // of the shim, and will not be exported by the module once the feature
 // becomes a part of standard javascript
@@ -108,7 +110,7 @@ export function makeHandledPromise() {
           return resolvedTarget;
         }
         if (forwardedPromiseToPromise.has(handledP)) {
-          throw new TypeError('internal: already forwarded');
+          throw TypeError('internal: already forwarded');
         }
         value = shorten(value);
         let targetP;
@@ -151,7 +153,7 @@ export function makeHandledPromise() {
           return;
         }
         if (forwardedPromiseToPromise.has(handledP)) {
-          throw new TypeError('internal: already forwarded');
+          throw TypeError('internal: already forwarded');
         }
         promiseToUnsettledHandler.delete(handledP);
         resolved = true;
@@ -215,7 +217,7 @@ export function makeHandledPromise() {
         return;
       }
       if (forwardedPromiseToPromise.has(handledP)) {
-        throw new TypeError('internal: already forwarded');
+        throw TypeError('internal: already forwarded');
       }
       handledReject(reason);
     };
@@ -225,7 +227,7 @@ export function makeHandledPromise() {
         return resolvedTarget;
       }
       if (forwardedPromiseToPromise.has(handledP)) {
-        throw new TypeError('internal: already forwarded');
+        throw TypeError('internal: already forwarded');
       }
       try {
         // Sanity checks.
@@ -254,7 +256,7 @@ export function makeHandledPromise() {
         return;
       }
       if (forwardedPromiseToPromise.has(handledP)) {
-        throw new TypeError('internal: already forwarded');
+        throw TypeError('internal: already forwarded');
       }
       try {
         if (deprecatedPresenceHandler) {
@@ -355,15 +357,34 @@ export function makeHandledPromise() {
   // eslint-disable-next-line prefer-const
   forwardingHandler = {
     get: makeForwarder('get', (o, key) => o[key]),
-    applyMethod: makeForwarder('applyMethod', (o, optKey, args) => {
-      if (optKey === undefined || optKey === null) {
-        return o(...args);
+    applyMethod: makeForwarder('applyMethod', (t, method, args) => {
+      if (method === undefined || method === null) {
+        if (!(t instanceof Function)) {
+          const ftype = typeof t;
+          throw TypeError(`target is not a function, typeof is ${ftype}`);
+        }
+        return t(...args);
       }
-      // console.log(`sending`, optKey, o[optKey], o);
-      if (typeof o[optKey] !== 'function') {
-        throw TypeError(`o[${JSON.stringify(optKey)}] is not a function`);
+      if (!t) {
+        const ftype = typeof t;
+        throw TypeError(
+          `target cannot contain [${q(method)}], typeof is ${ftype}`,
+        );
       }
-      return o[optKey](...args);
+      if (!(method in t)) {
+        const names = Object.getOwnPropertyNames(t).sort();
+        throw TypeError(`target[${q(method)}] does not exist, has ${names}`);
+      }
+      if (!(t[method] instanceof Function)) {
+        const ftype = typeof t[method];
+        const names = Object.getOwnPropertyNames(t).sort();
+        throw TypeError(
+          `target[${q(
+            method,
+          )}] is not a function, typeof is ${ftype}, has ${names}`,
+        );
+      }
+      return t[method](...args);
     }),
   };
 

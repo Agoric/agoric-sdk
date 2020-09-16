@@ -27,12 +27,13 @@ async function makeMapStorage(file) {
     await fs.promises.writeFile(file, json);
   };
 
+  let obj = {};
   try {
     content = await fs.promises.readFile(file);
+    obj = JSON.parse(content);
   } catch (e) {
     return map;
   }
-  const obj = JSON.parse(content);
   Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v)));
 
   return map;

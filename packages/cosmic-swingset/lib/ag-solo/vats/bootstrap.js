@@ -7,6 +7,7 @@ import { E } from '@agoric/eventual-send';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
+import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 
@@ -207,13 +208,19 @@ export function buildRootObject(vatPowers, vatParameters) {
   // objects that live in the client's solo vat. Some services should only
   // be in the DApp environment (or only in end-user), but we're not yet
   // making a distinction, so the user also gets them.
-  async function createLocalBundle(vats) {
+  async function createLocalBundle(vats, devices) {
     // This will eventually be a vat spawning service. Only needed by dev
     // environments.
     const spawner = E(vats.host).makeHost();
 
     // Needed for DApps, maybe for user clients.
     const uploads = E(vats.uploads).getUploads();
+
+    // Only create the plugin manager if the device exists.
+    let plugin;
+    if (devices.plugin) {
+      plugin = makePluginManager(devices.plugin, vatPowers);
+    }
 
     // This will allow dApp developers to register in their api/deploy.js
     const httpRegCallback = {
@@ -240,6 +247,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     return allComparable(
       harden({
+        ...(plugin ? { plugin } : {}),
         uploads,
         spawner,
         network: vats.network,
@@ -314,7 +322,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             GCI,
             PROVISIONER_INDEX,
           );
-          const localBundle = await createLocalBundle(vats);
+          const localBundle = await createLocalBundle(vats, devices);
           await E(vats.http).setPresences(localBundle);
           const bundle = await E(demoProvider).getDemoBundle();
           await E(vats.http).setPresences(localBundle, bundle, {

@@ -373,23 +373,17 @@ function build(
     // Both situations are the business of this vat and the calling vat, not
     // the kernel. deliver() does not report such exceptions to the kernel.
 
-    try {
-      if (!(method in t)) {
-        const names = Object.getOwnPropertyNames(t);
-        throw new TypeError(`target[${method}] does not exist, has ${names}`);
-      }
-      if (!(t[method] instanceof Function)) {
-        const ftype = typeof t[method];
-        const names = Object.getOwnPropertyNames(t);
-        throw new TypeError(
-          `target[${method}] is not a function, typeof is ${ftype}, has ${names}`,
-        );
-      }
-      const res = t[method](...args);
-      Promise.resolve(res).then(notifySuccess, notifyFailure);
-    } catch (err) {
-      notifyFailure(err);
+    // We have a presence, so forward to it.
+    let res;
+    if (args) {
+      // It has arguments, must be a method application.
+      res = HandledPromise.applyMethod(t, method, args);
+    } else {
+      // Just a getter.
+      // TODO: untested, but in principle sound.
+      res = HandledPromise.get(t, method);
     }
+    res.then(notifySuccess, notifyFailure);
   }
 
   function retirePromiseID(promiseID) {
@@ -590,7 +584,7 @@ export function makeLiveSlots(
     state,
     buildRootObject,
     forVatID,
-    { ...vatPowers, getInterfaceOf, Remotable },
+    { ...vatPowers, getInterfaceOf, Remotable, makeMarshal },
     vatParameters,
   );
   return harden({

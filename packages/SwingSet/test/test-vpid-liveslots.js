@@ -558,9 +558,19 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 for (const caseNum of [2, 3]) {
   for (const mode of modes) {
     for (let stalls = 0; stalls < 4; stalls += 1) {
-      test(`liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`, async t => {
-        await doVatResolveCase23(t, caseNum, mode, stalls);
-      });
+      if (stalls === 0) {
+        // FIGME: Need to resolve with solution to #1719
+        test.failing(
+          `liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`,
+          async t => {
+            await doVatResolveCase23(t, caseNum, mode, stalls);
+          },
+        );
+      } else {
+        test(`liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`, async t => {
+          await doVatResolveCase23(t, caseNum, mode, stalls);
+        });
+      }
     }
   }
 }

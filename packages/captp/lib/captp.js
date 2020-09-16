@@ -4,15 +4,27 @@
 
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
 // Defects in it are mfig's fault.
-import { Remotable, makeMarshal, QCLASS } from '@agoric/marshal';
+import {
+  Remotable as defaultRemotable,
+  makeMarshal as defaultMakeMarshal,
+  QCLASS,
+} from '@agoric/marshal';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 
 export { E };
 
 /**
+ * @template T
+ * @typedef {import('@agoric/eventual-send').ERef<T>} ERef
+ */
+
+/**
  * @typedef {Object} CapTPOptions the options to makeCapTP
  * @property {(err: any) => void} onReject
+ * @property {typeof defaultRemotable} Remotable
+ * @property {typeof defaultMakeMarshal} makeMarshal
+ * @property {number} epoch
  */
 /**
  * Create a CapTP connection.
@@ -25,11 +37,22 @@ export { E };
 export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
   const {
     onReject = err => console.error('CapTP', ourId, 'exception:', err),
+    Remotable = defaultRemotable,
+    makeMarshal = defaultMakeMarshal,
+    epoch = 0,
   } = opts;
 
+  const disconnectReason = id =>
+    Error(`${JSON.stringify(id)} connection closed`);
+
+  /** @type {any} */
   let unplug = false;
   async function quietReject(reason = undefined, returnIt = true) {
-    if (onReject && (unplug === false || reason !== unplug)) {
+    if (
+      onReject &&
+      (unplug === false || reason !== unplug) &&
+      reason !== undefined
+    ) {
       onReject(reason);
     }
     if (!returnIt) {
@@ -158,6 +181,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
         const [questionID, pr] = makeQuestion();
         send({
           type: 'CTP_CALL',
+          epoch,
           questionID,
           target,
           method: serialize(harden([prop])),
@@ -172,6 +196,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
         const [questionID, pr] = makeQuestion();
         send({
           type: 'CTP_CALL',
+          epoch,
           questionID,
           target,
           method: serialize(harden([prop, args])),
@@ -234,12 +259,15 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
       const { questionID } = obj;
       const bootstrap =
         typeof bootstrapObj === 'function' ? bootstrapObj() : bootstrapObj;
-      // console.log('sending bootstrap', bootstrap);
-      answers.set(questionID, bootstrap);
-      return send({
-        type: 'CTP_RETURN',
-        answerID: questionID,
-        result: serialize(bootstrap),
+      E.when(bootstrap, bs => {
+        // console.log('sending bootstrap', bootstrap);
+        answers.set(questionID, bs);
+        return send({
+          type: 'CTP_RETURN',
+          epoch,
+          answerID: questionID,
+          result: serialize(bs),
+        });
       });
     },
     // Remote is invoking a method or retrieving a property.
@@ -275,6 +303,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
         .then(res =>
           send({
             type: 'CTP_RETURN',
+            epoch,
             answerID: questionID,
             result: serialize(harden(res)),
           }),
@@ -282,6 +311,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
         .catch(rej =>
           send({
             type: 'CTP_RETURN',
+            epoch,
             answerID: questionID,
             exception: serialize(harden(rej)),
           }),
@@ -310,18 +340,20 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     },
     // The other side has signaled something has gone wrong.
     // Pull the plug!
-    async CTP_ABORT(obj) {
-      const { exception } = obj;
-      send(obj);
+    async CTP_DISCONNECT(obj) {
+      const { reason = disconnectReason(ourId) } = obj;
       if (unplug === false) {
-        quietReject(exception, false);
-        unplug = exception;
+        // Reject with the original reason.
+        quietReject(obj.reason, false);
+        unplug = reason;
+        // Deliver the object, even though we're unplugged.
+        rawSend(obj);
       }
       for (const pr of questions.values()) {
-        pr.rej(exception);
+        pr.rej(reason);
       }
       for (const pr of imports.values()) {
-        pr.rej(exception);
+        pr.rej(reason);
       }
     },
   };
@@ -334,6 +366,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     const [questionID, pr] = makeQuestion();
     send({
       type: 'CTP_BOOTSTRAP',
+      epoch,
       questionID,
     });
     return harden(pr.p);
@@ -359,9 +392,9 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
   };
 
   // Abort a connection.
-  const abort = (
-    exception = Error(`disconnected from ${JSON.stringify(ourId)}`),
-  ) => dispatch({ type: 'CTP_ABORT', exception });
+  const abort = (reason = undefined) => {
+    dispatch({ type: 'CTP_DISCONNECT', epoch, reason });
+  };
 
   return harden({ abort, dispatch, getBootstrap, serialize, unserialize });
 }
