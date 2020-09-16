@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.6.1...@agoric/swingset-runner@0.7.0) (2020-09-16)
+
+
+### Features
+
+* add swingset-runner bulk demo running tool ([401dcb2](https://github.com/Agoric/agoric-sdk/commit/401dcb228b426b9457e3e77b50fc32c3a330ea61))
+* further minor perf instrumentation tweaks ([8e93cd0](https://github.com/Agoric/agoric-sdk/commit/8e93cd01c7d2ffafb3a9282a453d8bed222b0e49))
+* properly terminate & clean up after failed vats ([cad2b2e](https://github.com/Agoric/agoric-sdk/commit/cad2b2e45aece7dbc150c40dea194a3fea5dbb69))
+
+
+
+
+
 ## [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.6.0...@agoric/swingset-runner@0.6.1) (2020-08-31)
 
 **Note:** Version bump only for package @agoric/swingset-runner

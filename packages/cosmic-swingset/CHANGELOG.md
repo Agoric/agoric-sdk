@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.20.1...@agoric/cosmic-swingset@0.21.0) (2020-09-16)
+
+
+### Bug Fixes
+
+* add TODO unimplemented for liveSlots synthetic presences ([6089e71](https://github.com/Agoric/agoric-sdk/commit/6089e71aaa48867625c19d2f64c6e5b29880b7ad))
+* change webkey -> accessToken and polish usage ([0362abe](https://github.com/Agoric/agoric-sdk/commit/0362abe1f6aa1322d50826e77c052881d940f72e))
+* drastically simplify the new-block listener ([2b3160f](https://github.com/Agoric/agoric-sdk/commit/2b3160fb9efe35e63749ef6cc8d616c37beb01b3))
+* excise half-fast Vagrant support ([9bbab1c](https://github.com/Agoric/agoric-sdk/commit/9bbab1c204a0c44bad2e51bcd0f7d08ad02b5a5b))
+* have accessToken use a database in ~/.agoric, not network ([bc9cf83](https://github.com/Agoric/agoric-sdk/commit/bc9cf83273b01b76006d69e4ea47b9efbee358dd))
+* implement epochs and make tolerant of restarts ([1c786b8](https://github.com/Agoric/agoric-sdk/commit/1c786b861a445891d09df2f1a47d689d641a0c5f))
+* implement robust plugin persistence model ([2de552e](https://github.com/Agoric/agoric-sdk/commit/2de552ed4a4b25e5fcc641ff5e80afd5af1d167d))
+* make generateAccessToken URL-safe by default ([722f811](https://github.com/Agoric/agoric-sdk/commit/722f811001a16d62e69af76de8a889e6eac4a48f))
+* need to expose the wallet bridge to the dapp ([e520b8f](https://github.com/Agoric/agoric-sdk/commit/e520b8fc2afa6f24447140fa54581f4c25cf08cb))
+* pass through the entire marshal stack to the vat ([f93c26b](https://github.com/Agoric/agoric-sdk/commit/f93c26b602766c9d8e3eb15740236cf81b38387f))
+* properly detect incorrect transactions ([9f8866b](https://github.com/Agoric/agoric-sdk/commit/9f8866b34f2c2ff214f006953371a447860938dd))
+* remove ability for localhost to auto-popup the wallet ([597cb80](https://github.com/Agoric/agoric-sdk/commit/597cb8071f335a3aa5a0bcc17d7ff88c1ccc4e07))
+* restoring most state, just need to isolate the plugin captp ([f92ee73](https://github.com/Agoric/agoric-sdk/commit/f92ee731afa69435b10b94cf4a483f25bed7a668))
+* restrict plugins to be loaded only from ./plugins ([2ba608e](https://github.com/Agoric/agoric-sdk/commit/2ba608e46c6d8d33bdfca03a32af09f9cde3cc34))
+* robust .innerHTML protection as per OWASP ([0e54b30](https://github.com/Agoric/agoric-sdk/commit/0e54b30f44bedf55c809fafb17a0cbf05c598636))
+* SECURITY: ensure that HTML tags in the REPL are defanged ([b9bd5eb](https://github.com/Agoric/agoric-sdk/commit/b9bd5ebc1a8071326fc206062e089212236430fc))
+* SECURITY: use a private on-disk webkey for trusted auth ([f769d95](https://github.com/Agoric/agoric-sdk/commit/f769d95031f8e0b2003d31f0554dce17d6440f1b))
+* unique() was LGPL; remove it in favour of a freer alternative ([b2a5319](https://github.com/Agoric/agoric-sdk/commit/b2a53199f238d7f9049bfb31dbb4f9b2f1d433fe))
+* upgrade to polycrc that supports safe integers ([b7674c6](https://github.com/Agoric/agoric-sdk/commit/b7674c64a4bdd321bb6fa96f9485161fc3315309))
+
+
+### Features
+
+* add a simple CRC-6 to board ids to prevent dangerous typos ([85ea976](https://github.com/Agoric/agoric-sdk/commit/85ea9760d652727ef6780efa7529e7f6f7f20b76))
+* add local.plugin~.getPluginDir() ([94e7016](https://github.com/Agoric/agoric-sdk/commit/94e70164c1be5f68aaadfcf75223c441cde9f876))
+* agoric deploy --allow-unsafe-plugins ([d2a545e](https://github.com/Agoric/agoric-sdk/commit/d2a545ed73b4403f9d85d5ff89637e2470ecdb29))
+* be resilient to losing a connection to the chain ([db4274f](https://github.com/Agoric/agoric-sdk/commit/db4274fc8d2670d9191d4373e97bae3380ddc327))
+* implement CapTP forwarding over a plugin device ([b4a1be8](https://github.com/Agoric/agoric-sdk/commit/b4a1be8f600d60191570a3bbf42bc4c82af47b06))
+* provide a button to activate the wallet from the bridge ([18f1cb2](https://github.com/Agoric/agoric-sdk/commit/18f1cb2793f9a3db25fcab09882fb6421e2e364b))
+
+
+
+
+
 ## [0.20.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.20.0...@agoric/cosmic-swingset@0.20.1) (2020-08-31)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

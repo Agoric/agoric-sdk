@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.2.1...@agoric/dapp-svelte-wallet@0.3.0) (2020-09-16)
+
+
+### Bug Fixes
+
+* change webkey -> accessToken and polish usage ([0362abe](https://github.com/Agoric/agoric-sdk/commit/0362abe1f6aa1322d50826e77c052881d940f72e))
+* implement robust plugin persistence model ([2de552e](https://github.com/Agoric/agoric-sdk/commit/2de552ed4a4b25e5fcc641ff5e80afd5af1d167d))
+* need to expose the wallet bridge to the dapp ([e520b8f](https://github.com/Agoric/agoric-sdk/commit/e520b8fc2afa6f24447140fa54581f4c25cf08cb))
+* SECURITY: use a private on-disk webkey for trusted auth ([f769d95](https://github.com/Agoric/agoric-sdk/commit/f769d95031f8e0b2003d31f0554dce17d6440f1b))
+
+
+### Features
+
+* provide a button to activate the wallet from the bridge ([18f1cb2](https://github.com/Agoric/agoric-sdk/commit/18f1cb2793f9a3db25fcab09882fb6421e2e364b))
+
+
+
+
+
 ## [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.2.0...@agoric/dapp-svelte-wallet@0.2.1) (2020-08-31)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.7.0...@agoric/ertp@0.7.1) (2020-09-16)
+
+
+### Bug Fixes
+
+* declare amountMathKind parameter to makeissuerkit optional ([a21832a](https://github.com/Agoric/agoric-sdk/commit/a21832a9a2b88aa43d2b532a5b92f99c47d3e11b)), closes [#1373](https://github.com/Agoric/agoric-sdk/issues/1373)
+
+
+
+
+
 # [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.6.0...@agoric/ertp@0.7.0) (2020-08-31)
 
 

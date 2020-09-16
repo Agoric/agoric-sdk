@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.2.0...@agoric/dapp-svelte-wallet-api@0.3.0) (2020-09-16)
+
+
+### Bug Fixes
+
+* need to expose the wallet bridge to the dapp ([e520b8f](https://github.com/Agoric/agoric/commit/e520b8fc2afa6f24447140fa54581f4c25cf08cb))
+
+
+### Features
+
+* provide a button to activate the wallet from the bridge ([18f1cb2](https://github.com/Agoric/agoric/commit/18f1cb2793f9a3db25fcab09882fb6421e2e364b))
+
+
+
+
+
 # 0.2.0 (2020-08-31)
 
 
