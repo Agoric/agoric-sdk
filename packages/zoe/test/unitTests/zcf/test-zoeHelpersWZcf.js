@@ -405,7 +405,7 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(40));
 });
 
-test.failing(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
+test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
   const {
     moolaIssuer,
     moola,
