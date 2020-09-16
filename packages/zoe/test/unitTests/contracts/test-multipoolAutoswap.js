@@ -15,6 +15,7 @@ import {
   makeTrader,
   updatePoolState,
   scaleForAddLiquidity,
+  scaleForRemoveLiquidity,
   priceFromTargetOutput,
 } from '../../autoswapJig';
 import { assertPayoutDeposit } from '../../zoeTestHelpers';
@@ -986,4 +987,308 @@ test('multipoolAutoSwap jig - swapOut', async t => {
     mIssuerKeywordRecord,
   );
   mPoolState = updatePoolState(mPoolState, expectedD);
+});
+
+test('multipoolAutoSwap jig - removeLiquidity', async t => {
+  const { moolaR, moola } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = centralR.amountMath.make;
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(centralTokens(20000));
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
+
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+  );
+  /** @type {MultipoolAutoswapPublicFacet} */
+  const { publicFacet } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityAmountMath = await makeLocalAmountMath(
+    moolaLiquidityIssuer,
+  );
+
+  const moolaLiquidity = moolaLiquidityAmountMath.make;
+  const issuerKeywordRecord = {
+    Central: centralR.issuer,
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let moolaPoolState = {
+    c: 0,
+    s: 0,
+    l: 0,
+    k: 0,
+  };
+  const initLiquidityDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: moola(10000),
+    lAmount: moolaLiquidity(10000),
+  };
+  const initLiquidityExpected = {
+    c: 10000,
+    s: 10000,
+    l: 10000,
+    k: 100000000,
+    payoutC: 0,
+    payoutS: 0,
+    payoutL: 10000,
+  };
+
+  const { liquidity: lPayout } = await alice.initLiquidityAndCheck(
+    t,
+    moolaPoolState,
+    initLiquidityDetails,
+    initLiquidityExpected,
+    issuerKeywordRecord,
+  );
+  await purses[1].deposit(await lPayout);
+  moolaPoolState = updatePoolState(moolaPoolState, initLiquidityExpected);
+
+  // Withdraw liquidity -- straightforward
+  const liqDetails1 = {
+    cAmount: centralTokens(100),
+    sAmount: moola(100),
+    lAmount: moolaLiquidity(100),
+  };
+  const withdraw = { l: 100 };
+  const liqExpected1 = scaleForRemoveLiquidity(moolaPoolState, withdraw);
+  await alice.removeLiquidityAndCheck(
+    t,
+    moolaPoolState,
+    liqDetails1,
+    liqExpected1,
+    issuerKeywordRecord,
+  );
+  moolaPoolState = updatePoolState(moolaPoolState, liqExpected1);
+
+  // Withdraw liquidity -- leave some leeway in the proposal
+  const liqDetails2 = {
+    cAmount: centralTokens(90),
+    sAmount: moola(90),
+    lAmount: moolaLiquidity(100),
+  };
+  const withdraw2 = { l: 100 };
+  const liqExpected2 = scaleForRemoveLiquidity(moolaPoolState, withdraw2);
+  await alice.removeLiquidityAndCheck(
+    t,
+    moolaPoolState,
+    liqDetails2,
+    liqExpected2,
+    issuerKeywordRecord,
+  );
+  moolaPoolState = updatePoolState(moolaPoolState, liqExpected2);
+});
+
+test('multipoolAutoSwap jig - removeLiquidity ask for too much', async t => {
+  const { moolaR, moola } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = centralR.amountMath.make;
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(centralTokens(20000));
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
+
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+  );
+  /** @type {MultipoolAutoswapPublicFacet} */
+  const { publicFacet } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityAmountMath = await makeLocalAmountMath(
+    moolaLiquidityIssuer,
+  );
+
+  const moolaLiquidity = moolaLiquidityAmountMath.make;
+  const issuerKeywordRecord = {
+    Central: centralR.issuer,
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let moolaPoolState = {
+    c: 0,
+    s: 0,
+    l: 0,
+    k: 0,
+  };
+  const initLiquidityDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: moola(10000),
+    lAmount: moolaLiquidity(10000),
+  };
+  const initLiquidityExpected = {
+    c: 10000,
+    s: 10000,
+    l: 10000,
+    k: 100000000,
+    payoutC: 0,
+    payoutS: 0,
+    payoutL: 10000,
+  };
+
+  const { liquidity: lPayout } = await alice.initLiquidityAndCheck(
+    t,
+    moolaPoolState,
+    initLiquidityDetails,
+    initLiquidityExpected,
+    issuerKeywordRecord,
+  );
+  await purses[1].deposit(await lPayout);
+  moolaPoolState = updatePoolState(moolaPoolState, initLiquidityExpected);
+
+  // Withdraw liquidity -- Ask for more than is avaiable
+  const proposal = harden({
+    give: { Liquidity: moolaLiquidity(100) },
+    want: { Central: centralTokens(100), Secondary: moola(101) },
+  });
+  const payment = harden({
+    Liquidity: purses[1].withdraw(moolaLiquidity(100)),
+  });
+
+  const seat = await E(zoe).offer(
+    E(publicFacet).makeRemoveLiquidityInvitation(),
+    proposal,
+    payment,
+  );
+  await t.throwsAsync(() => seat.getOfferResult(), {
+    message:
+      'The trade between left [object Object] and right [object Object] failed offer safety. Please check the log for more information',
+  });
+});
+
+test('multipoolAutoSwap jig - remove all liquidity', async t => {
+  const { moolaR, moola } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = centralR.amountMath.make;
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(centralTokens(20000));
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
+
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+  );
+  /** @type {MultipoolAutoswapPublicFacet} */
+  const { publicFacet } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityAmountMath = await makeLocalAmountMath(
+    moolaLiquidityIssuer,
+  );
+
+  const moolaLiquidity = moolaLiquidityAmountMath.make;
+  const issuerKeywordRecord = {
+    Central: centralR.issuer,
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let moolaPoolState = {
+    c: 0,
+    s: 0,
+    l: 0,
+    k: 0,
+  };
+  const initLiquidityDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: moola(10000),
+    lAmount: moolaLiquidity(10000),
+  };
+  const initLiquidityExpected = {
+    c: 10000,
+    s: 10000,
+    l: 10000,
+    k: 100000000,
+    payoutC: 0,
+    payoutS: 0,
+    payoutL: 10000,
+  };
+
+  const { liquidity: lPayout } = await alice.initLiquidityAndCheck(
+    t,
+    moolaPoolState,
+    initLiquidityDetails,
+    initLiquidityExpected,
+    issuerKeywordRecord,
+  );
+  await purses[1].deposit(await lPayout);
+  moolaPoolState = updatePoolState(moolaPoolState, initLiquidityExpected);
+
+  // Withdraw liquidity -- straightforward
+  const liqDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: moola(10000),
+    lAmount: moolaLiquidity(10000),
+  };
+  const withdraw = { l: 10000 };
+  const liqExpected = scaleForRemoveLiquidity(moolaPoolState, withdraw);
+  await alice.removeLiquidityAndCheck(
+    t,
+    moolaPoolState,
+    liqDetails,
+    liqExpected,
+    issuerKeywordRecord,
+  );
+  moolaPoolState = updatePoolState(moolaPoolState, liqExpected);
 });

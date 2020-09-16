@@ -71,6 +71,26 @@ export const scaleForAddLiquidity = (poolState, deposits, exactRatio) => {
   };
 };
 
+// calculation of next state for a successful removeLiquidity offer.
+export const scaleForRemoveLiquidity = (poolState, withdrawal) => {
+  const scaleByAlpha = makeScaleFn(poolState.l, poolState.l - withdrawal.l);
+  const cWithdraw = scaleByAlpha(poolState.c);
+  const sWithdraw = scaleByAlpha(poolState.s);
+  const poolCentralPost = subtract(poolState.c, cWithdraw);
+  const poolSecondaryPost = subtract(poolState.s, sWithdraw);
+  const liquidityPost = subtract(poolState.l, scaleByAlpha(poolState.l));
+
+  return {
+    c: poolCentralPost,
+    s: poolSecondaryPost,
+    l: liquidityPost,
+    k: multiply(poolCentralPost, poolSecondaryPost),
+    payoutL: 0,
+    payoutC: cWithdraw,
+    payoutS: sWithdraw,
+  };
+};
+
 // The state of the pool at the start of a transaction. The values of central,
 // and secondary pools, the liquidity outstanding, and K (the product of c and
 // s). K may turn out to always be redundant, but it was helpful in clarifying
@@ -248,6 +268,70 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         t.is(add(cPre, cAmount.value), cPost, 'central post add');
         t.is(add(1, add(sPre, scaleByAlpha(sPre))), sPost, 's post add');
       }
+    },
+
+    // This check only handles success. Failing calls should test manually.
+    removeLiquidityAndCheck: async (
+      t,
+      priorPoolState,
+      details,
+      expected,
+      { Liquidity: liquidityIssuer, Secondary: secondaryIssuer },
+    ) => {
+      const { make: central } = await makeLocalAmountMath(centralIssuer);
+      const { make: secondary } = await makeLocalAmountMath(secondaryIssuer);
+      const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
+      const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
+      const { cAmount, sAmount, lAmount = liquidity(0) } = details;
+      const {
+        c: cPost,
+        s: sPost,
+        l: lPost,
+        k: kPost,
+        payoutL,
+        payoutC,
+        payoutS,
+      } = expected;
+      const scaleByAlpha = makeScaleFn(lPre, lPost);
+
+      const poolPre = await getPoolAllocation(secondaryIssuer);
+      t.deepEqual(poolPre.Central, central(cPre), `central before add liq`);
+      t.deepEqual(poolPre.Secondary, secondary(sPre), `s before add liq`);
+      t.deepEqual(payoutL, 0, 'no liquidity refund');
+      t.is(
+        await getLiquidity(secondaryIssuer),
+        lPre,
+        'liquidity pool before remove',
+      );
+      t.is(kPre, sPre * cPre);
+
+      const proposal = harden({
+        give: { Liquidity: lAmount },
+        want: { Central: cAmount, Secondary: sAmount },
+      });
+      const payment = harden({
+        Liquidity: withdrawPayment(lAmount),
+      });
+
+      const seat = await zoe.offer(
+        E(publicFacet).makeRemoveLiquidityInvitation(),
+        proposal,
+        payment,
+      );
+      assertOfferResult(t, seat, 'Liquidity successfully removed.');
+
+      const { Central: cPayout, Secondary: sPayout } = await seat.getPayouts();
+      assertPayoutAmount(t, centralIssuer, cPayout, central(payoutC), '+c');
+      assertPayoutAmount(t, secondaryIssuer, sPayout, secondary(payoutS), '+s');
+
+      const poolPost = await getPoolAllocation(secondaryIssuer);
+      t.deepEqual(poolPost.Central, central(cPost), `central after add liq`);
+      t.deepEqual(poolPost.Secondary, secondary(sPost), `s after add liq`);
+      t.is(await getLiquidity(secondaryIssuer), lPost, 'liquidity pool after');
+      t.is(kPost, sPost * cPost, 'expected value of K after addLiquidity');
+      t.is(subtract(lPre, scaleByAlpha(lPre)), lPost, 'liquidity scales down');
+      t.is(subtract(cPre, scaleByAlpha(cPre)), cPost, 'central post reduced');
+      t.is(subtract(sPre, scaleByAlpha(sPre)), sPost, 'secondary post reduced');
     },
 
     initLiquidityAndCheck: async (
