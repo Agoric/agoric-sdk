@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.21.0...@agoric/deployment@1.21.1) (2020-09-16)
+
+
+### Bug Fixes
+
+* create dweb/data if it doesn't exist ([f6fcb2e](https://github.com/Agoric/agoric-sdk/commit/f6fcb2e89a205b9861ade6b0295d9c1376fc8c00))
+* don't rely on validator DNS names when finding the network ([56e0cb3](https://github.com/Agoric/agoric-sdk/commit/56e0cb363af5d6130e74ee6b1b5335c200f4042e))
+* excise half-fast Vagrant support ([9bbab1c](https://github.com/Agoric/agoric-sdk/commit/9bbab1c204a0c44bad2e51bcd0f7d08ad02b5a5b))
+
+
+
+
+
 # [1.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.20.0...@agoric/deployment@1.21.0) (2020-08-31)
 
 
