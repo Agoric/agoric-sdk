@@ -96,6 +96,8 @@
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
+ * @property {() => boolean} hasShutdown
+ * @property {() => void} shutdown
  */
 
 /**

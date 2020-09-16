@@ -1218,9 +1218,7 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
   t.truthy(await E(userSeat).hasExited());
 });
 
-// TODO: Any new offers should throw after zcf.shutdown() is called
-// https://github.com/Agoric/agoric-sdk/issues/1756
-test.failing(`zcf.shutdown - no further offers accepted`, async t => {
+test(`zcf.shutdown - no further offers accepted`, async t => {
   const { zoe, zcf } = await setupZCFTest({});
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdown();

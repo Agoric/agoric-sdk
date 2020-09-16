@@ -212,6 +212,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const makeInstanceAdmin = () => {
         /** @type {Set<ZoeSeatAdmin>} */
         const zoeSeatAdmins = new Set();
+        let hasShutdown = false;
 
         /** @type {InstanceAdmin} */
         return {
@@ -234,8 +235,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           getIssuers: () => instanceRecord.terms.issuers,
           getBrands: () => instanceRecord.terms.brands,
           getInstance: () => instance,
-          exitAllSeats: () =>
-            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit()),
+          hasShutdown: () => hasShutdown,
+          shutdown: () => {
+            hasShutdown = true;
+            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit());
+          },
         };
       };
 
@@ -246,8 +250,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       E(adminNode)
         .done()
         .then(
-          () => instanceAdmin.exitAllSeats(),
-          () => instanceAdmin.exitAllSeats(),
+          () => instanceAdmin.shutdown(),
+          () => instanceAdmin.shutdown(),
         );
 
       // Unpack the invitationKit.
@@ -303,7 +307,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           return { userSeat, notifier, zoeSeatAdmin };
         },
         shutdown: () => {
-          instanceAdmin.exitAllSeats();
+          instanceAdmin.shutdown();
           E(adminNode).terminate();
         },
         makeZoeMint,
@@ -368,6 +372,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           invitationAmount.value.length === 1,
           'Only one invitation can be redeemed at a time',
         );
+        const {
+          value: [{ instance, handle: invitationHandle }],
+        } = invitationAmount;
+        const instanceAdmin = instanceToInstanceAdmin.get(instance);
+        assert(!instanceAdmin.hasShutdown(), `No further offers are accepted`);
 
         const proposal = cleanProposal(getAmountMath, uncleanProposal);
         const { give, want } = proposal;
@@ -390,9 +399,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             return getAmountMath(proposal.want[keyword].brand).getEmpty();
           }
         });
-        const {
-          value: [{ instance, handle: invitationHandle }],
-        } = invitationAmount;
 
         return Promise.all(paymentDepositedPs).then(amountsArray => {
           const initialAllocation = arrayToObj(amountsArray, proposalKeywords);
@@ -403,7 +409,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           const exitObjPromiseKit = makePromiseKit();
           // Don't trigger Node.js's UnhandledPromiseRejectionWarning
           exitObjPromiseKit.promise.catch(_ => {});
-          const instanceAdmin = instanceToInstanceAdmin.get(instance);
           const seatHandle = makeHandle('SeatHandle');
 
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
