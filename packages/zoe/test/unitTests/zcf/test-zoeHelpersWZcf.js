@@ -9,6 +9,7 @@ import {
   swap,
   assertIssuerKeywords,
   assertProposalShape,
+  swapExact,
 } from '../../../src/contractSupport';
 import { assertPayoutAmount } from '../../zoeTestHelpers';
 import { setupZCFTest } from './setupZcfTest';
@@ -206,6 +207,200 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     },
     'missing exit rule',
   );
+});
+
+test(`zoeHelper w/zcf - swapExact`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: moola(20) }, give: { B: simoleans(3) } }),
+    { B: simoleanMint.mintPayment(simoleans(3)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(3) }, give: { D: moola(20) } }),
+    { D: moolaMint.mintPayment(moola(20)) },
+  );
+
+  const swapMsg = swapExact(zcf, zcfSeatA, zcfSeatB);
+
+  t.truthy(swapMsg, 'swap succeeded');
+  t.truthy(zcfSeatA.hasExited(), 'exit right');
+  assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(20));
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(0),
+  );
+  t.deepEqual(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
+    'B',
+    'A',
+  ]);
+  t.truthy(zcfSeatB.hasExited(), 'exit right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(3),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(0));
+  t.deepEqual(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
+    'D',
+    'C',
+  ]);
+});
+
+test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: moola(20) }, give: { B: simoleans(10) } }),
+    { B: simoleanMint.mintPayment(simoleans(10)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(10) }, give: { D: moola(15) } }),
+    { D: moolaMint.mintPayment(moola(15)) },
+  );
+
+  t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
+    message:
+      'The reallocation failed to conserve rights. Please check the log for more information',
+  });
+  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0));
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(10),
+  );
+  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(0),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(15));
+});
+
+test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: moola(20) }, give: { B: simoleans(10) } }),
+    { B: simoleanMint.mintPayment(simoleans(10)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(10) }, give: { D: moola(40) } }),
+    { D: moolaMint.mintPayment(moola(40)) },
+  );
+
+  t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
+    message:
+      'The reallocation failed to conserve rights. Please check the log for more information',
+  });
+  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0));
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(10),
+  );
+  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(0),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(40));
+});
+
+test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ give: { B: simoleans(10) } }),
+    { B: simoleanMint.mintPayment(simoleans(10)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(10) }, give: { D: moola(40) } }),
+    { D: moolaMint.mintPayment(moola(40)) },
+  );
+
+  t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
+    message:
+      'The reallocation failed to conserve rights. Please check the log for more information',
+  });
+  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(10),
+  );
+  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(0),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(40));
 });
 
 test.failing(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
