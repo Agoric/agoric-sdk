@@ -4,12 +4,15 @@ import { E } from '@agoric/eventual-send';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import { MathKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints';
 import {
   swap,
   assertIssuerKeywords,
   assertProposalShape,
   swapExact,
+  assertUsesNatMath,
+  saveAllIssuers,
 } from '../../../src/contractSupport';
 import { assertPayoutAmount } from '../../zoeTestHelpers';
 import { setupZCFTest } from './setupZcfTest';
@@ -99,6 +102,102 @@ test(`zoeHelper with zcf - swap no match`, async t => {
   const seat2PayoutB = await bUserSeat.getPayout('B');
   assertPayoutAmount(t, simoleanIssuer, seat2PayoutB, simoleans(0));
   assertPayoutAmount(t, moolaIssuer, await bUserSeat.getPayout('A'), moola(5));
+});
+
+test(`zcf usesNatMath`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A');
+  const { brand } = zcfMint.getIssuerRecord();
+  t.falsy(assertUsesNatMath(zcf, brand), 'default');
+});
+
+test(`zcf usesNatMath - not natMath`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { brand } = zcfMint.getIssuerRecord();
+  t.throws(() => assertUsesNatMath(zcf, brand), {
+    message: 'issuer must use NAT amountMath',
+  });
+});
+
+test(`zcf usesNatMath - not brand`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { issuer } = zcfMint.getIssuerRecord();
+  t.throws(() => assertUsesNatMath(zcf, issuer), {
+    message: '"brand" not found: (an object)\nSee console for error data.',
+  });
+});
+
+test(`zcf usesNatMath - brand not registered`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { brand } = makeIssuerKit('gelt');
+  t.throws(() => assertUsesNatMath(zcf, brand), {
+    message: '"brand" not found: (an object)\nSee console for error data.',
+  });
+});
+
+test(`zcf saveAllIssuers`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer, brand } = makeIssuerKit('gelt');
+  await saveAllIssuers(zcf, { G: issuer });
+  t.falsy(assertUsesNatMath(zcf, brand), 'gelt uses NatM');
+});
+
+test(`zcf saveAllIssuers - multiple`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer: gIssuer, brand: gBrand } = makeIssuerKit('gelt');
+  const { issuer: dIssuer, brand: dBrand } = makeIssuerKit('doubloons');
+  const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
+    'pieces of eight',
+    MathKind.STRING_SET,
+  );
+
+  await saveAllIssuers(zcf, { G: gIssuer, D: dIssuer, P: pIssuer });
+
+  t.falsy(assertUsesNatMath(zcf, gBrand), 'gelt');
+  t.falsy(assertUsesNatMath(zcf, dBrand), 'doubloons');
+  t.throws(() => assertUsesNatMath(zcf, pBrand), {
+    message: 'issuer must use NAT amountMath',
+  });
+});
+
+test.failing(`zcf saveAllIssuers - already known`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer: kIssuer, brand: kBrand } = makeIssuerKit('krugerrand');
+
+  await saveAllIssuers(zcf, { K: kIssuer });
+  t.falsy(assertUsesNatMath(zcf, kBrand), 'krugerrand');
+
+  // TODO: Shouldn't be able to add a known issuer under a second keyword.
+  // https://github.com/Agoric/agoric-sdk/issues/1786
+  t.throwsAsync(() => saveAllIssuers(zcf, { R: kIssuer }), {
+    message: 'cannot add an issuer under two keywords',
+  });
+  t.falsy(assertUsesNatMath(zcf, kBrand), 'krugerrand again');
+});
+
+test.failing(`zcf saveAllIssuers - duplicate keyword`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer: pandaIssuer, brand: pandaBrand } = makeIssuerKit('panda');
+
+  await saveAllIssuers(zcf, { P: pandaIssuer });
+  t.falsy(assertUsesNatMath(zcf, pandaBrand), 'default');
+
+  const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
+    'pieces of eight',
+    MathKind.STRING_SET,
+  );
+
+  // TODO: reusing a keyword is documented to ignore it
+  // https://github.com/Agoric/agoric-sdk/issues/1785
+  t.throwsAsync(() => saveAllIssuers(zcf, { P: pIssuer }), {
+    message: 'keyword (a string) must be unique',
+  });
+  t.falsy(assertUsesNatMath(zcf, pandaBrand), 'default');
+  t.throws(() => assertUsesNatMath(zcf, pBrand), {
+    message: '"brand" not found: (an object)\nSee console for error data.',
+  });
 });
 
 test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
