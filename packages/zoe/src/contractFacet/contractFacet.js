@@ -7,7 +7,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { assert, details } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 import makeStore from '@agoric/store';
@@ -86,7 +86,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       assertKeywordName(keyword);
       assert(
         !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-        details`keyword ${keyword} must be unique`,
+        details`keyword ${q(keyword)} must be unique`,
       );
       return registerIssuerRecord(keyword, issuerRecord);
     };
@@ -310,7 +310,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
         assertKeywordName(keyword);
         assert(
           !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-          details`keyword ${keyword} must be unique`,
+          details`keyword ${q(keyword)} must be unique`,
         );
       },
       saveIssuer: async (issuerP, keyword) => {

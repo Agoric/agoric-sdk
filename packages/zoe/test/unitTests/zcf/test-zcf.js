@@ -160,10 +160,10 @@ test(`zcf.assertUniqueKeyword`, async t => {
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
   const { zcf } = await setupZCFTest(issuerKeywordRecord);
   t.throws(() => zcf.assertUniqueKeyword('A'), {
-    message: 'keyword (a string) must be unique\nSee console for error data.',
+    message: 'keyword "A" must be unique\nSee console for error data.',
   });
   t.throws(() => zcf.assertUniqueKeyword('B'), {
-    message: 'keyword (a string) must be unique\nSee console for error data.',
+    message: 'keyword "B" must be unique\nSee console for error data.',
   });
   // Unique, but not a valid Keyword
   t.throws(() => zcf.assertUniqueKeyword('a'), {
