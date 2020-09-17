@@ -12,6 +12,10 @@ import { assert, details } from '@agoric/assert';
 
 /**
  * Parse a kernel slot reference string into a kernel slot object:
+ *   {
+ *      type: STRING, // 'object', 'device', or 'promise'
+ *      id: Nat
+ *   }
  *
  * @param {string} s  The string to be parsed, as described above.
  *

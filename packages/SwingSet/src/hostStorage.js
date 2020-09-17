@@ -81,8 +81,11 @@ export function buildHostDBInMemory(storage) {
   /**
    * Make an ordered set of changes to the state that is stored.  The changes
    * are described by a series of change description objects, each of which
-   * describes a single change.  There are currently two forms: SetOperation and
-   * DeleteOperation
+   * describes a single change.  There are currently two forms:
+   *
+   * { op: 'set', key: <KEY>, value: <VALUE> }
+   * or
+   * { op: 'delete', key: <KEY> }
    * which describe a set or delete operation respectively.
    *
    * @param {Array<SetOperation|DeleteOperation>} changes  An array of the changes to be applied in order.

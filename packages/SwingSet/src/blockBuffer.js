@@ -13,7 +13,10 @@
  * requested to commit them.
  *
  * @param {HostDB} hostDB  The hostDB object to be wrapped.
- * @returns {BlockBuffer}
+ * @returns {BlockBuffer} an object: {
+ *      blockBuffer: HostDB,     // the wrapped hostDB
+ *      commitBlock: () => void  // a function that will commit changes
+ * }
  */
 export function buildBlockBuffer(hostDB) {
   // to avoid confusion, additions and deletions should never share a key

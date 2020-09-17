@@ -1,5 +1,6 @@
 import { assert, details } from '@agoric/assert';
 
+/* eslint-disable jsdoc/valid-types,jsdoc/require-returns-check */
 /**
  * Assert function to ensure that something expected to be a capdata object
  * actually is.  A capdata object should have a .body property that's a string
@@ -8,7 +9,7 @@ import { assert, details } from '@agoric/assert';
  * @param {any} capdata  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {void}
+ * @returns {asserts capdata is CapData}
  */
 export function insistCapData(capdata) {
   assert.typeof(

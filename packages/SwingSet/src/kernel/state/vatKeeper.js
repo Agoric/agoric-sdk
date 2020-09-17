@@ -21,7 +21,7 @@ const FIRST_TRANSCRIPT_ID = 0;
  * Establish a vat's state.
  *
  * @param {*} storage  The storage in which the persistent state will be kept
- * @param {string} vatID
+ * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
  */
 export function initializeVatState(storage, vatID) {

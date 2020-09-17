@@ -550,7 +550,7 @@ function build(
  * The caller provided buildRootObject function produces and returns the new vat's
  * root object:
  *
- * buildRootObject(vatPowers, vatParameters)
+ *     buildRootObject(vatPowers, vatParameters)
  *
  * Within the vat, `import { E } from '@agoric/eventual-send'` will
  * provide the E wrapper. For any object x, E(x) returns a proxy object

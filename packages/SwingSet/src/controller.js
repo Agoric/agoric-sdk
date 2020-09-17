@@ -71,6 +71,7 @@ const KNOWN_CREATION_OPTIONS = harden([
  * @property {string} bootstrap
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
+ * @property {*} [devices]
  *
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
@@ -82,7 +83,14 @@ const KNOWN_CREATION_OPTIONS = harden([
  * 'bootstrap.js'.
  *
  * @param {string} basedir  The directory to scan
- * @returns {SwingSetConfig}
+ * @returns {SwingSetConfig} a swingset config object: {
+ *   bootstrap: "bootstrap",
+ *   vats: {
+ *     NAME: {
+ *       sourceSpec: PATHSTRING
+ *     }
+ *   }
+ * }
  */
 export function loadBasedir(basedir) {
   const vats = {};

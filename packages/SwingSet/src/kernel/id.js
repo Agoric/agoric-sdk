@@ -85,7 +85,10 @@ export function makeDeviceID(index) {
  *
  * @param {string} s  The string to be parsed.
  *
- * @returns {{ type: 'vat' | 'device', id: number}}
+ * @returns {{ type: 'vat' | 'device', id: number}} an object: {
+ *    type: STRING, // 'vat' or 'device', accordingly
+ *    id: Nat       // the index
+ *  }
  *
  * @throws {Error} if the parameter is not a string or is malformed.
  */

@@ -1,4 +1,4 @@
-/* global harden HandledPromise */
+/* global HandledPromise */
 
 import { makeCapTP } from '@agoric/captp';
 
@@ -30,6 +30,7 @@ export function buildRootDeviceNode(tools) {
 
   /**
    * Load a module and connect to it.
+   *
    * @param {string} mod module with an exported `bootPlugin(state = undefined)`
    * @param {number} [index=connectedMods.length] the module instance index
    * @param {(obj: Record<string, any>) => void} receive a message from the module

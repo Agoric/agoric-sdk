@@ -1,5 +1,3 @@
-/* global harden */
-
 export function bootPlugin() {
   return harden({
     start(opts) {

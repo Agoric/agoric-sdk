@@ -2,6 +2,8 @@ import { assert } from '@agoric/assert';
 import { makeDeviceSlots } from './deviceSlots';
 import { insistCapData } from '../capdata';
 
+import '../types';
+
 /* The DeviceManager is much simpler than the VatManager, because the feature
  * set is smaller:
  *  * the only Delivery is `invoke`
@@ -51,19 +53,21 @@ export default function makeDeviceManager(
   );
 
   /**
-   * @typedef {Object} CapData
-   * @property {string} body
-   * @property {Array<string>} slots
+   * @typedef {['ok', CapData]} VatInvocationResults
    */
   /**
-   * @typedef {['ok', CapData]} VatInvocationResults
+   * @typedef {[string, string, CapData]} DeviceInvocation
+   * @property {string} 0 Kernel slot designating the device node that is the target of
+   * the invocation
+   * @property {string} 1 A string naming the method to be invoked
+   * @property {CapData} 2 A capdata object containing the arguments to the invocation
    */
   /**
    * Invoke a method on a device node.
    *
-   * @param {[string, string, CapData]} deviceInvocation
-   * @returns {VatInvocationResults} a VatInvocationResults object
-   * Throws an exeption if the invocation failed. This exception is fatal to
+   * @param {DeviceInvocation} deviceInvocation
+   * @returns {VatInvocationResults} a VatInvocationResults object: ['ok', capdata]
+   * @throws {Error} an exeption if the invocation failed. This exception is fatal to
    * the kernel.
    */
   function invoke(deviceInvocation) {
