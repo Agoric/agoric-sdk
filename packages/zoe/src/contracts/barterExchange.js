@@ -10,6 +10,7 @@ import { trade, satisfies } from '../contractSupport';
  * This Barter Exchange accepts offers to trade arbitrary goods for other
  * things. It doesn't require registration of Issuers. If two offers satisfy
  * each other, it exchanges the specified amounts in each side's want clause.
+ * https://agoric.com/documentation/zoe/guide/contracts/barter-exchange.html
  *
  * The Barter Exchange only accepts offers that look like
  * { give: { In: amount }, want: { Out: amount} }

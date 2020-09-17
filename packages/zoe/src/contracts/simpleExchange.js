@@ -14,6 +14,7 @@ import {
  * SimpleExchange is an exchange with a simple matching algorithm, which allows
  * an unlimited number of parties to create new orders or accept existing
  * orders. The notifier allows callers to find the current list of orders.
+ * https://agoric.com/documentation/zoe/guide/contracts/simple-exchange.html
  *
  * The SimpleExchange uses Asset and Price as its keywords. The contract treats
  * the two keywords symmetrically. New offers can be created and existing offers
