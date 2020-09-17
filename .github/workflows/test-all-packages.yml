@@ -320,7 +320,7 @@ jobs:
     - name: install XS dependencies
       working-directory: ./packages/xs-vat-worker
       run: yarn install:xs-lin
-    - name: yarn build-xs-worker
+    - name: yarn build XS worker
       working-directory: ./packages/xs-vat-worker
       run: yarn build:xs-lin
     - name: yarn test (SwingSet)
@@ -330,7 +330,7 @@ jobs:
     # explicitly test the XS worker, for visibility
     - name: yarn test (SwingSet XS Worker)
       working-directory: ./packages/SwingSet
-      run: yarn test-xs-worker
+      run: yarn test:xs-worker
       env:
         ESM_DISABLE_CACHE: true
 
