@@ -14,7 +14,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
   let exitObj = harden({
     exit: () => {
       throw new Error(
-        `Only seats with the exitKind "onDemand" can exit at will`,
+        `Only seats with the exit rule "onDemand" can exit at will`,
       );
     },
   });
