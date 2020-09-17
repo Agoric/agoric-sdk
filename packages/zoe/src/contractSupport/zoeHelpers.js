@@ -413,7 +413,7 @@ export async function saveAllIssuers(zcf, issuerKeywordRecord = {}) {
     ([keyword, issuer]) => {
       // If the keyword does not yet exist, add it and the
       // associated issuer.
-      if (issuers.keyword === undefined) {
+      if (issuers[keyword] === undefined) {
         return zcf.saveIssuer(issuer, keyword);
       }
       return undefined;

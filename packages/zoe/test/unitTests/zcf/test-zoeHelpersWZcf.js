@@ -175,7 +175,7 @@ test(`zcf saveAllIssuers - already known`, async t => {
   t.is(zcf.getIssuerForBrand(kBrand), kIssuer, 'gelt');
 });
 
-test.failing(`zcf saveAllIssuers - duplicate keyword`, async t => {
+test(`zcf saveAllIssuers - duplicate keyword`, async t => {
   const { zcf } = await setupZCFTest();
 
   const { issuer: pandaIssuer, brand: pandaBrand } = makeIssuerKit('panda');
@@ -187,8 +187,6 @@ test.failing(`zcf saveAllIssuers - duplicate keyword`, async t => {
     MathKind.STRING_SET,
   );
 
-  // TODO: reusing a keyword is documented to ignore it
-  // https://github.com/Agoric/agoric-sdk/issues/1785
   await t.notThrowsAsync(
     () => saveAllIssuers(zcf, { P: pIssuer }),
     'second issuer with same keyword should be ignored.',
