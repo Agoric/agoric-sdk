@@ -24,7 +24,7 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeSubprocessFactory(tools) {
-  const { startSubprocessWorker, kernelKeeper } = tools;
+  const { startSubprocessWorker, kernelKeeper, testLog } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
@@ -99,6 +99,8 @@ export function makeNodeSubprocessFactory(tools) {
         parentLog(`syscall`, args);
         const vatSyscallObject = args;
         handleSyscall(vatSyscallObject);
+      } else if (type === 'testLog') {
+        testLog(...args);
       } else if (type === 'deliverDone') {
         parentLog(`deliverDone`);
         if (waiting) {

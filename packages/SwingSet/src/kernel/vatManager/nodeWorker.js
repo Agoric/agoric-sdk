@@ -23,7 +23,7 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeWorkerVatManagerFactory(tools) {
-  const { makeNodeWorker, kernelKeeper } = tools;
+  const { makeNodeWorker, kernelKeeper, testLog } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
@@ -97,6 +97,8 @@ export function makeNodeWorkerVatManagerFactory(tools) {
         parentLog(`syscall`, args);
         const vatSyscallObject = args;
         handleSyscall(vatSyscallObject);
+      } else if (type === 'testLog') {
+        testLog(...args);
       } else if (type === 'deliverDone') {
         parentLog(`deliverDone`);
         if (waiting) {

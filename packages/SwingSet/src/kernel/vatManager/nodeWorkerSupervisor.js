@@ -105,13 +105,22 @@ parentPort.on('message', ([type, ...margs]) => {
         reject: (...args) => doSyscall(['reject', ...args]),
       });
 
+      function testLog(...args) {
+        sendUplink(['testLog', ...args]);
+      }
+
       const state = null;
       const vatID = 'demo-vatID';
       // todo: maybe add transformTildot, makeGetMeter/transformMetering to
       // vatPowers, but only if options tell us they're wanted. Maybe
       // transformTildot should be async and outsourced to the kernel
       // process/thread.
-      const vatPowers = { Remotable, getInterfaceOf, makeMarshal };
+      const vatPowers = {
+        Remotable,
+        getInterfaceOf,
+        makeMarshal,
+        testLog,
+      };
       dispatch = makeLiveSlots(
         syscall,
         state,

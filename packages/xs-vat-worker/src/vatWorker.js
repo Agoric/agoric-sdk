@@ -127,6 +127,9 @@ function makeWorker(io, setImmediate) {
           reject: (...args) => doSyscall(['reject', ...args]),
         });
 
+        function testLog(...args) {
+          sendUplink(['testLog', ...args]);
+        }
         const state = null;
         const vatID = 'demo-vatID';
         // todo: maybe add transformTildot, makeGetMeter/transformMetering to
@@ -137,6 +140,7 @@ function makeWorker(io, setImmediate) {
           Remotable,
           getInterfaceOf,
           makeMarshal,
+          testLog,
         };
         dispatch = makeLiveSlots(
           syscall,
