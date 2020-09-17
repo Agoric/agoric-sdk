@@ -141,7 +141,7 @@ test(`zcf saveAllIssuers`, async t => {
   const { zcf } = await setupZCFTest();
   const { issuer, brand } = makeIssuerKit('gelt');
   await saveAllIssuers(zcf, { G: issuer });
-  t.falsy(assertUsesNatMath(zcf, brand), 'gelt uses NatM');
+  t.is(zcf.getBrandForIssuer(issuer), brand, 'gelt');
 });
 
 test(`zcf saveAllIssuers - multiple`, async t => {
@@ -155,34 +155,30 @@ test(`zcf saveAllIssuers - multiple`, async t => {
 
   await saveAllIssuers(zcf, { G: gIssuer, D: dIssuer, P: pIssuer });
 
-  t.falsy(assertUsesNatMath(zcf, gBrand), 'gelt');
-  t.falsy(assertUsesNatMath(zcf, dBrand), 'doubloons');
-  t.throws(() => assertUsesNatMath(zcf, pBrand), {
-    message: 'issuer must use NAT amountMath',
-  });
+  t.is(zcf.getBrandForIssuer(gIssuer), gBrand, 'gelt');
+  t.is(zcf.getIssuerForBrand(dBrand), dIssuer, 'doubloons');
+  t.is(zcf.getBrandForIssuer(pIssuer), pBrand, 'pieces of eight');
 });
 
-test.failing(`zcf saveAllIssuers - already known`, async t => {
+test(`zcf saveAllIssuers - already known`, async t => {
   const { zcf } = await setupZCFTest();
   const { issuer: kIssuer, brand: kBrand } = makeIssuerKit('krugerrand');
 
   await saveAllIssuers(zcf, { K: kIssuer });
-  t.falsy(assertUsesNatMath(zcf, kBrand), 'krugerrand');
+  t.is(zcf.getBrandForIssuer(kIssuer), kBrand, 'gelt');
 
-  // TODO: Shouldn't be able to add a known issuer under a second keyword.
-  // https://github.com/Agoric/agoric-sdk/issues/1786
-  t.throwsAsync(() => saveAllIssuers(zcf, { R: kIssuer }), {
-    message: 'cannot add an issuer under two keywords',
-  });
-  t.falsy(assertUsesNatMath(zcf, kBrand), 'krugerrand again');
+  await saveAllIssuers(zcf, { R: kIssuer });
+  t.deepEqual(zcf.getTerms().issuers.R, kIssuer);
+  t.deepEqual(zcf.getTerms().issuers.K, kIssuer);
+  t.is(zcf.getIssuerForBrand(kBrand), kIssuer, 'gelt');
 });
 
 test.failing(`zcf saveAllIssuers - duplicate keyword`, async t => {
   const { zcf } = await setupZCFTest();
-  const { issuer: pandaIssuer, brand: pandaBrand } = makeIssuerKit('panda');
 
+  const { issuer: pandaIssuer, brand: pandaBrand } = makeIssuerKit('panda');
   await saveAllIssuers(zcf, { P: pandaIssuer });
-  t.falsy(assertUsesNatMath(zcf, pandaBrand), 'default');
+  t.is(zcf.getBrandForIssuer(pandaIssuer), pandaBrand, 'panda');
 
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
@@ -191,10 +187,21 @@ test.failing(`zcf saveAllIssuers - duplicate keyword`, async t => {
 
   // TODO: reusing a keyword is documented to ignore it
   // https://github.com/Agoric/agoric-sdk/issues/1785
-  t.throwsAsync(() => saveAllIssuers(zcf, { P: pIssuer }), {
-    message: 'keyword (a string) must be unique',
-  });
-  t.falsy(assertUsesNatMath(zcf, pandaBrand), 'default');
+  await t.notThrowsAsync(
+    () => saveAllIssuers(zcf, { P: pIssuer }),
+    'second issuer with same keyword should be ignored.',
+  );
+  t.is(zcf.getBrandForIssuer(pandaIssuer), pandaBrand, 'gelt');
+
+  t.throws(
+    () => zcf.getBrandForIssuer(pIssuer),
+    {
+      message: '"issuer" not found: (an object)\nSee console for error data.',
+    },
+    'issuer should not be found',
+  );
+
+  t.notThrows(() => assertUsesNatMath(zcf, pandaBrand), 'default');
   t.throws(() => assertUsesNatMath(zcf, pBrand), {
     message: '"brand" not found: (an object)\nSee console for error data.',
   });
