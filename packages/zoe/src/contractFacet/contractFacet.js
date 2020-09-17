@@ -217,12 +217,21 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
           return mintyIssuerRecord;
         },
         mintGains: (gains, zcfSeat = undefined) => {
+          assert.typeof(
+            gains,
+            'object',
+            details`gains ${gains} must be an object`,
+          );
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
           let totalToMint = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
+            assert(
+              totalToMint.brand === amountToAdd.brand,
+              details`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
+            );
             totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
             const oldAmount = oldAllocation[seatKeyword];
             // oldAmount being absent is equivalent to empty.
@@ -246,11 +255,20 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
+          assert.typeof(
+            losses,
+            'object',
+            details`losses ${losses} must be an object`,
+          );
           let totalToBurn = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
             losses,
             ([seatKeyword, amountToSubtract]) => {
+              assert(
+                totalToBurn.brand === amountToSubtract.brand,
+                details`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
+              );
               totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
               const oldAmount = oldAllocation[seatKeyword];
               const newAmount = mintyAmountMath.subtract(
