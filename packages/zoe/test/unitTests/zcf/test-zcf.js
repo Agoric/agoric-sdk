@@ -430,7 +430,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   // @ts-ignore
   t.throws(() => zcfMint.mintGains(), {
-    message: `gains (an undefined) must be an object\nSee console for error data.`,
+    message: `gains (an undefined) must be an amountKeywordRecord\nSee console for error data.`,
   });
 });
 
@@ -452,7 +452,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // @ts-ignore
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
     message:
-      'gains (an undefined) must be an object\nSee console for error data.',
+      'gains (an undefined) must be an amountKeywordRecord\nSee console for error data.',
   });
 });
 
@@ -462,7 +462,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   // @ts-ignore
   t.throws(() => zcfMint.burnLosses(), {
     message:
-      'losses (an undefined) must be an object\nSee console for error data.',
+      'losses (an undefined) must be an amountKeywordRecord\nSee console for error data.',
   });
 });
 
@@ -473,7 +473,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   // @ts-ignore
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
     message:
-      'losses (an undefined) must be an object\nSee console for error data.',
+      'losses (an undefined) must be an amountKeywordRecord\nSee console for error data.',
   });
 });
 
