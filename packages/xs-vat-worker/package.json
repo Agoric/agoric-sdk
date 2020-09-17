@@ -5,8 +5,8 @@
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
-    "install:xs-lin": "make -f xs-lin.mk install-deps",
-    "build:xs-lin": "make -f xs-lin.mk",
+    "install:xs-lin": "make install-deps",
+    "build:xs-lin": "make",
     "test": "ava",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",

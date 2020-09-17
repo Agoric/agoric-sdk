@@ -6,14 +6,14 @@ ROOT=$(PWD)/../..
 .PHONY: all
 
 all:
-	$(MAKE) -f xs-lin.mk build
+	$(MAKE) build
 	@echo "### building XS tools (headless)"
-	$(MAKE) -f xs-lin.mk $(TOOLS)/mcconfig
+	$(MAKE) $(TOOLS)/mcconfig
 	@echo "### building compartmap.json"
-	$(MAKE) -f xs-lin.mk compartmap.json
+	$(MAKE) compartmap.json
 	cat compartmap.json
 	@echo "### building xs-worker"
-	$(MAKE) -f xs-lin.mk build/bin/lin/debug/xs-vat-worker
+	$(MAKE) build/bin/lin/debug/xs-vat-worker
 
 
 build/bin/lin/debug/xs-vat-worker: build $(TOOLS)/mcconfig moddable/xs/platforms/lin_xs_cli.c compartmap.json manifest.json
@@ -35,13 +35,13 @@ moddable/xs/platforms/lin_xs.h: /usr/include/glib-2.0/gio/gio.h
 
 .PHONY: install-deps
 install-deps:
-	$(MAKE) -f xs-lin.mk install-gio
+	$(MAKE) install-gio
 
 .PHONY: install-gio
 /usr/include/glib-2.0/gio/gio.h:
 	@echo "GIO not installed, need root to run apt-get install libglib2.0-dev"
 	@echo "feel free to stop now and run `make install-gio` directly, then rebuild"
-	$(MAKE) -f xs-lin.mk  install-gio
+	$(MAKE) install-gio
 
 # ubuntu 'bionic' puts gio in libglib2.0-dev
 install-gio:
