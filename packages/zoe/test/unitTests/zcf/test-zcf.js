@@ -1054,19 +1054,14 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   });
 });
 
-test.failing(
-  `userSeat.getPayout() should throw from zcf.makeEmptySeatKit`,
-  async t => {
-    const { zcf } = await setupZCFTest();
-    const { userSeat } = zcf.makeEmptySeatKit();
-
-    // TODO: Not providing a keyword should throw.
-    // https://github.com/Agoric/agoric-sdk/issues/1754
-    await t.throwsAsync(() => E(userSeat).getPayout(), {
-      message: 'A keyword must be provided to get the payout',
-    });
-  },
-);
+test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { userSeat } = zcf.makeEmptySeatKit();
+  // @ts-ignore
+  await t.throwsAsync(() => E(userSeat).getPayout(), {
+    message: 'A keyword must be provided',
+  });
+});
 
 test(`zcf.reallocate < 2 seats`, async t => {
   const { zcf } = await setupZCFTest();
