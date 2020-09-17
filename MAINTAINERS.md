@@ -28,11 +28,15 @@ yarn install
 yarn build
 # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
 yarn lerna publish from-package
-# Push the released non-alpha tags:
-./scripts/get-released-tags | xargs git push origin
 ```
 
-Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE REFERENCES TO YOUR TAGS.
+Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE
+REFERENCES TO YOUR TAGS.
+
+```sh
+# Publish the released package tags.
+./scripts/get-released-tags | xargs git push origin
+```
 
 ## More subtlety
 
