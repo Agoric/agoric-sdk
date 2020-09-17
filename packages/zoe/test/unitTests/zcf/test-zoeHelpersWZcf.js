@@ -104,14 +104,14 @@ test(`zoeHelper with zcf - swap no match`, async t => {
   assertPayoutAmount(t, moolaIssuer, await bUserSeat.getPayout('A'), moola(5));
 });
 
-test(`zcf usesNatMath`, async t => {
+test(`zcf assertUsesNatMath`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A');
   const { brand } = zcfMint.getIssuerRecord();
-  t.falsy(assertUsesNatMath(zcf, brand), 'default');
+  t.notThrows(() => assertUsesNatMath(zcf, brand), 'default');
 });
 
-test(`zcf usesNatMath - not natMath`, async t => {
+test(`zcf assertUsesNatMath - not natMath`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { brand } = zcfMint.getIssuerRecord();
@@ -120,16 +120,18 @@ test(`zcf usesNatMath - not natMath`, async t => {
   });
 });
 
-test(`zcf usesNatMath - not brand`, async t => {
+test.failing(`zcf assertUsesNatMath - not brand`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { issuer } = zcfMint.getIssuerRecord();
+  // TODO: distinguish non-brands from brands
+  // https://github.com/Agoric/agoric-sdk/issues/1800
   t.throws(() => assertUsesNatMath(zcf, issuer), {
-    message: '"brand" not found: (an object)\nSee console for error data.',
+    message: /assertUsesNatMath requires a brand, not (an object)/,
   });
 });
 
-test(`zcf usesNatMath - brand not registered`, async t => {
+test(`zcf assertUsesNatMath - brand not registered`, async t => {
   const { zcf } = await setupZCFTest();
   const { brand } = makeIssuerKit('gelt');
   t.throws(() => assertUsesNatMath(zcf, brand), {
