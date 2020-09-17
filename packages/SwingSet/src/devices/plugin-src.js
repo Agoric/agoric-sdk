@@ -33,7 +33,6 @@ export function buildRootDeviceNode(tools) {
    *
    * @param {string} mod module with an exported `bootPlugin(state = undefined)`
    * @param {number} [index=connectedMods.length] the module instance index
-   * @param {(obj: Record<string, any>) => void} receive a message from the module
    * @returns {(obj: Record<string, any>) => void} send a message to the module
    */
   function connect(mod, index = connectedMods.length) {

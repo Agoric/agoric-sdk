@@ -53,13 +53,15 @@ const DEFAULT_WALKER = harden({ walk: pluginRootP => pluginRootP });
  * @property {() => string} getPluginDir
  */
 
+/* eslint-disable jsdoc/valid-types */
 /**
  * Create a handler that manages a promise interface to external modules.
  *
  * @param {Device<PluginDevice>} pluginDevice The bridge to manage
- * @param {{ D: <T>(target: Device<T>) => T, [prop: string]: any }} param1
+ * @param {{ [prop: string]: any, D: <T>(target: Device<T>) => T}} param1
  * @returns {PluginManager} admin facet for this handler
  */
+/* eslint-enable jsdoc/valid-types */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
    * @typedef {Object} AbortDispatch
