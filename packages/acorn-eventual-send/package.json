@@ -1,6 +1,6 @@
 {
   "name": "@agoric/acorn-eventual-send",
-  "version": "2.0.9-dev.1",
+  "version": "2.0.9-dev.2",
   "description": "Eventual send (wavy dot) parser plugin for Acorn",
   "main": "index.js",
   "scripts": {
