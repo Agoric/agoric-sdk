@@ -7,11 +7,11 @@ git checkout -b release-$now
 ```
 
 To generate a new final release, and CHANGELOG.md files
-(use `--conventional-prerelease` if you just want to generate an alpha release):
+(use `--conventional-prerelease` instead of `--conventional-graduate` if you just want to generate a dev release):
 
 ```sh
 # Create the final release CHANGELOGs and tags, and push.
-yarn lerna version --no-push
+yarn lerna version --no-push --conventional-graduate
 # Push the branch.
 git push -u origin release-$now
 # Tell which packages have actual news.
@@ -50,5 +50,5 @@ yarn lerna publish --help
 Useful testing commands are:
 
 ```sh
-yarn lerna version --conventional-prerelease --no-git-tag-commit
+yarn lerna version --conventional-prerelease --no-git-tag-version
 ```

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.8.0...@agoric/swingset-vat@0.8.1-dev.0) (2020-09-18)
+
+
+### Bug Fixes
+
+* restore deleted comments ([9ed1f7d](https://github.com/Agoric/agoric-sdk/commit/9ed1f7d23aca6287194454f500e6238ad6f1c504))
+
+
+
+
+
 # [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.7.1...@agoric/swingset-vat@0.8.0) (2020-09-16)
 
 
