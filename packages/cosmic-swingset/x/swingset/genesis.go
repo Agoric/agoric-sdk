@@ -3,7 +3,7 @@ package swingset
 import (
 	// "fmt"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

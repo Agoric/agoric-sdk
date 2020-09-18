@@ -41,7 +41,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset"
+	"github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
 const appName = "agoric"

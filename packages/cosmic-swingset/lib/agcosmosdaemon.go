@@ -14,8 +14,8 @@ import (
 	"errors"
 	"os"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/lib/daemon"
-	swingset "github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset"
+	"github.com/Agoric/cosmic-swingset/lib/daemon"
+	swingset "github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
 type goReturn = struct {

@@ -1,9 +1,8 @@
-module github.com/Agoric/agoric-sdk/packages/cosmic-swingset
+module github.com/Agoric/cosmic-swingset
 
 go 1.14
 
 require (
-	github.com/Agoric/agoric-sdk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/bartekn/go-bip39 v0.0.0-20171116152956-a05967ea095d // indirect
 	github.com/cosmos/cosmos-sdk v0.34.4-0.20200511222341-80be50319ca5
 	github.com/gibson042/canonicaljson-go v1.0.3 // indirect
@@ -28,9 +27,3 @@ require (
 )
 
 replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
-
-replace github.com/Agoric/agoric-sdk => ../..
-
-// Need this to fix https://github.com/cosmos/cosmos-sdk/issues/6528
-// FIXME: Remove these lines when the bug is fixed upstream in a version we can upgrade to.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.0.0-20200628000041-4699b719b4ff
