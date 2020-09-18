@@ -2,7 +2,8 @@
   "command": {
     "version": {
       "message": "chore(release): publish",
-      "conventionalCommits": true
+      "conventionalCommits": true,
+      "preid": "dev"
     }
   },
   "packages": [
