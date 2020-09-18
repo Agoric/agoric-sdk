@@ -1,6 +1,6 @@
 {
   "name": "@agoric/stat-logger",
-  "version": "0.3.2",
+  "version": "0.3.3-dev.0",
   "description": "Simple library for logging and graphing performance statistics",
   "main": "src/index.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
