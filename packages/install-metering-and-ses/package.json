@@ -21,7 +21,7 @@
     "@agoric/tame-metering": "^1.2.6-dev.1"
   },
   "files": [
-    "src/**/*.js"
+    "*.js"
   ],
   "repository": {
     "type": "git",
