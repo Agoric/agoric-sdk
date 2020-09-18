@@ -30,15 +30,6 @@ yarn build
 yarn lerna publish from-package
 ```
 
-To move to a new development version, use:
-
-```sh
-# Version with `-dev.0` suffix.
-yarn lerna version --conventional-prerelease --no-push
-# Add to the release branch.
-git push
-```
-
 Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE
 REFERENCES TO YOUR TAGS.
 
@@ -59,5 +50,5 @@ yarn lerna publish --help
 Useful testing commands are:
 
 ```sh
-yarn lerna version --conventional-prerelease --no-git-tag-commit
+yarn lerna version --conventional-prerelease --no-git-tag-version
 ```
