@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.9.1-dev.0",
+  "version": "0.9.1-dev.1",
   "description": "Manage the Agoric Javascript smart contract platform",
   "main": "lib/main.js",
   "bin": "bin/agoric",
@@ -22,11 +22,11 @@
     "tmp": "^0.1.0"
   },
   "dependencies": {
-    "@agoric/bundle-source": "^1.1.9-dev.0",
-    "@agoric/captp": "^1.5.1-dev.0",
-    "@agoric/install-ses": "^0.3.2-dev.0",
-    "@agoric/promise-kit": "^0.1.6-dev.0",
-    "@agoric/swing-store-simple": "^0.2.6-dev.0",
+    "@agoric/bundle-source": "^1.1.9-dev.1",
+    "@agoric/captp": "^1.5.1-dev.1",
+    "@agoric/install-ses": "^0.3.2-dev.1",
+    "@agoric/promise-kit": "^0.1.6-dev.1",
+    "@agoric/swing-store-simple": "^0.2.6-dev.1",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",
