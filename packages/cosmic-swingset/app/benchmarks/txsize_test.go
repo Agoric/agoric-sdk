@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/app"
+	"github.com/Agoric/cosmic-swingset/app"
 )
 
 // This will fail half the time with the second output being 173

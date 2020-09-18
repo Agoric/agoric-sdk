@@ -24,7 +24,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/app"
+	"github.com/Agoric/cosmic-swingset/app"
 )
 
 var (

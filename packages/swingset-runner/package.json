@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-runner",
-  "version": "0.7.1-dev.1",
+  "version": "0.7.1-dev.2",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "main": "src/main.js",
@@ -15,18 +15,18 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.0.11-dev.1",
-    "@agoric/bundle-source": "^1.1.9-dev.1",
-    "@agoric/ertp": "^0.7.2-dev.1",
-    "@agoric/eventual-send": "^0.11.1-dev.1",
-    "@agoric/install-ses": "^0.3.2-dev.1",
-    "@agoric/same-structure": "^0.0.11-dev.1",
-    "@agoric/stat-logger": "^0.3.3-dev.1",
-    "@agoric/swing-store-lmdb": "^0.3.6-dev.1",
-    "@agoric/swing-store-simple": "^0.2.6-dev.1",
-    "@agoric/swingset-vat": "^0.8.1-dev.1",
-    "@agoric/tame-metering": "^1.2.6-dev.1",
-    "@agoric/zoe": "^0.9.1-dev.1"
+    "@agoric/assert": "^0.0.11-dev.2",
+    "@agoric/bundle-source": "^1.1.9-dev.2",
+    "@agoric/ertp": "^0.7.2-dev.2",
+    "@agoric/eventual-send": "^0.11.1-dev.2",
+    "@agoric/install-ses": "^0.3.2-dev.2",
+    "@agoric/same-structure": "^0.0.11-dev.2",
+    "@agoric/stat-logger": "^0.3.3-dev.2",
+    "@agoric/swing-store-lmdb": "^0.3.6-dev.2",
+    "@agoric/swing-store-simple": "^0.2.6-dev.2",
+    "@agoric/swingset-vat": "^0.8.1-dev.2",
+    "@agoric/tame-metering": "^1.2.6-dev.2",
+    "@agoric/zoe": "^0.9.1-dev.2"
   },
   "devDependencies": {
     "ava": "^3.12.1",

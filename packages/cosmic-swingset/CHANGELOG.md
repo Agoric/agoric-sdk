@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.1-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.21.1-dev.1...@agoric/cosmic-swingset@0.21.1-dev.2) (2020-09-18)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** remove monorepo Go dependency ([052518e](https://github.com/Agoric/agoric-sdk/commit/052518eef787f28bcf29c025bb1e25dd9c411fee))
+
+
+
+
+
 ## [0.21.1-dev.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.21.1-dev.0...@agoric/cosmic-swingset@0.21.1-dev.1) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

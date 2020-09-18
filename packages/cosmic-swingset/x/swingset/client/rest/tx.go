@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	"github.com/cosmos/cosmos-sdk/client/context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

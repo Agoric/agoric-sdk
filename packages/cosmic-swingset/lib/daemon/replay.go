@@ -17,7 +17,7 @@ import (
 	tmstore "github.com/tendermint/tendermint/store"
 	tm "github.com/tendermint/tendermint/types"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/app"
+	"github.com/Agoric/cosmic-swingset/app"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/server"

@@ -22,7 +22,7 @@ import (
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
 	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine

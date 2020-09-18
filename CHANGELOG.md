@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.8.1-dev.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.8.1-dev.2...@agoric/sdk@2.8.1-dev.3) (2020-09-18)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** remove monorepo Go dependency ([052518e](https://github.com/Agoric/agoric-sdk/commit/052518eef787f28bcf29c025bb1e25dd9c411fee))
+
+
+
+
+
 ## [2.8.1-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.8.1-dev.0...@agoric/sdk@2.8.1-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/sdk
