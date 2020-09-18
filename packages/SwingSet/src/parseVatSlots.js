@@ -27,9 +27,9 @@ import { assert } from '@agoric/assert';
  *      id: Nat
  *   }
  *
- * @param s  The string to be parsed, as described above.
+ * @param {string} s  The string to be parsed, as described above.
  *
- * @return a vat slot object corresponding to the parameter.
+ * @returns {*} a vat slot object corresponding to the parameter.
  *
  * @throws if the given string is syntactically incorrect.
  */
@@ -66,11 +66,11 @@ export function parseVatSlot(s) {
 /**
  * Generate a vat slot reference string given a type, ownership, and id.
  *
- * @param type  The type, 'object', 'device', 'promise'
- * @param allocatedByVat  Flag: true=>vat allocated, false=>kernel allocated
- * @param id    The id, a Nat.
+ * @param {'object'|'device'|'promise'} type The type
+ * @param {boolean} allocatedByVat  Flag: true=>vat allocated, false=>kernel allocated
+ * @param {number} id    The id, a Nat.
  *
- * @return the corresponding vat slot reference string.
+ * @returns {string} the corresponding vat slot reference string.
  *
  * @throws if type is not one of the above known types.
  */
@@ -98,12 +98,12 @@ export function makeVatSlot(type, allocatedByVat, id) {
  * Assert function to ensure that a vat slot reference string refers to a
  * slot of a given type.
  *
- * @param type  The vat slot type desired, a string.
- * @param vatSlot  The vat slot reference string being tested
+ * @param {string} type  The vat slot type desired, a string.
+ * @param {string} vatSlot  The vat slot reference string being tested
  *
  * @throws if vatSlot is not of the given type or is malformed.
  *
- * @return nothing
+ * @returns {void}
  */
 export function insistVatType(type, vatSlot) {
   assert.equal(

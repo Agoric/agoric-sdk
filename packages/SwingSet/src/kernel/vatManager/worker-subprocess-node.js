@@ -1,5 +1,3 @@
-/* global harden */
-
 // import { spawn } from 'child_process'; // not from Compartment
 
 import { assert } from '@agoric/assert';

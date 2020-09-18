@@ -1,5 +1,3 @@
-/* global harden */
-
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // generally from the kernel. We also have "comms vats" which use special
 // device access to interact with remote machines: messages from those

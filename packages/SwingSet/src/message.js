@@ -7,12 +7,12 @@ import { insistCapData } from './capdata';
  * string, a .args property that's a capdata object, and optionally a .result
  * property that, if present, must be a string.
  *
- * @param message  The object to be tested
+ * @param {any} message  The object to be tested
  *
- * @throws Error if, upon inspection, the parameter does not satisfy the above
+ * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @return nothing
+ * @returns {void}
  */
 export function insistMessage(message) {
   assert.typeof(

@@ -1,4 +1,4 @@
-/* global harden HandledPromise */
+/* global HandledPromise */
 
 import {
   QCLASS,
@@ -21,12 +21,13 @@ import { insistCapData } from '../capdata';
  * Instantiate the liveslots layer for a new vat and then populate the vat with
  * a new root object and its initial associated object graph, if any.
  *
- * @param syscall  Kernel syscall interface that the vat will have access to
- * @param state  Object to store and retrieve state; not used // TODO fix wart
- * @param buildRootObject  Function that will create a root object for the new vat
- * @param forVatID  Vat ID label, for use in debug diagostics
- *
- * @return an extended dispatcher object for the new vat
+ * @param {*} syscall  Kernel syscall interface that the vat will have access to
+ * @param {*} _state  Object to store and retrieve state; not used // TODO fix wart
+ * @param {*} buildRootObject  Function that will create a root object for the new vat
+ * @param {*} forVatID  Vat ID label, for use in debug diagostics
+ * @param {*} vatPowers
+ * @param {*} vatParameters
+ * @returns {*} an extended dispatcher object for the new vat
  */
 function build(
   syscall,
@@ -46,7 +47,7 @@ function build(
   const outstandingProxies = new WeakSet();
 
   /** Map in-vat object references -> vat slot strings.
-
+   
       Uses a weak map so that vat objects can (in princple) be GC'd.  Note that
       they currently can't actually be GC'd because the slotToVal table keeps
       them alive, but that will have to be addressed by a different
@@ -538,33 +539,34 @@ function build(
  * Instantiate the liveslots layer for a new vat and then populate the vat with
  * a new root object and its initial associated object graph, if any.
  *
- * @param syscall  Kernel syscall interface that the vat will have access to
- * @param state  Object to store and retrieve state
- * @param buildRootObject  Function that will create a root object for the new vat
- * @param forVatID  Vat ID label, for use in debug diagostics
- *
- * @return a dispatcher object for the new vat
+ * @param {*} syscall  Kernel syscall interface that the vat will have access to
+ * @param {*} state  Object to store and retrieve state
+ * @param {*} buildRootObject  Function that will create a root object for the new vat
+ * @param {*} forVatID  Vat ID label, for use in debug diagostics
+ * @param {*} vatPowers
+ * @param {*} vatParameters
+ * @returns {*} a dispatcher object for the new vat
  *
  * The caller provided buildRootObject function produces and returns the new vat's
  * root object:
  *
  *     buildRootObject(vatPowers, vatParameters)
  *
- *     Within the vat, `import { E } from '@agoric/eventual-send'` will
- *     provide the E wrapper. For any object x, E(x) returns a proxy object
- *     that converts any method invocation into a corresponding eventual send
- *     to x. That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1,
- *     arg2)
+ * Within the vat, `import { E } from '@agoric/eventual-send'` will
+ * provide the E wrapper. For any object x, E(x) returns a proxy object
+ * that converts any method invocation into a corresponding eventual send
+ * to x. That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1,
+ * arg2)
  *
- *     If x is the presence in this vat of a remote object (that is, an object
- *     outside the vat), this will result in a message send out of the vat via
- *     the kernel syscall interface.
+ * If x is the presence in this vat of a remote object (that is, an object
+ * outside the vat), this will result in a message send out of the vat via
+ * the kernel syscall interface.
  *
- *     In the same vein, if x is the presence in this vat of a kernel device,
- *     vatPowers.D(x) returns a proxy such that a method invocation on it is
- *     translated into the corresponding immediate invocation of the device
- *     (using, once again, the kernel syscall interface). D(x).foo(args) will
- *     perform an immediate syscall.callNow on the device node.
+ * In the same vein, if x is the presence in this vat of a kernel device,
+ * vatPowers.D(x) returns a proxy such that a method invocation on it is
+ * translated into the corresponding immediate invocation of the device
+ * (using, once again, the kernel syscall interface). D(x).foo(args) will
+ * perform an immediate syscall.callNow on the device node.
  */
 export function makeLiveSlots(
   syscall,

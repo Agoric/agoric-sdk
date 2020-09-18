@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-redeclare
-/* global setImmediate harden */
+/* global setImmediate */
 
 import '@agoric/install-ses';
 import test from 'ava';

@@ -1,4 +1,3 @@
-/* global harden */
 // this file is loaded at the start of a new subprocess
 import '@agoric/install-ses';
 

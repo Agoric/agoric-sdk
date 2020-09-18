@@ -1,4 +1,3 @@
-/* global harden */
 import djson from '../djson';
 
 export function makeTranscriptManager(kernelKeeper, vatKeeper, vatID) {

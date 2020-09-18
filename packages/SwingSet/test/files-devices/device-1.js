@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootDeviceNode({ testLog, endowments }) {
   return harden({
     set(arg1, arg2) {

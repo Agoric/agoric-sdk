@@ -1,4 +1,3 @@
-/* global harden */
 import '@agoric/install-ses';
 import path from 'path';
 import test from 'ava';

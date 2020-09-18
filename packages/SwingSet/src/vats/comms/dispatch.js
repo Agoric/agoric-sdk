@@ -1,5 +1,3 @@
-/* global harden */
-
 import { assert, details } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';

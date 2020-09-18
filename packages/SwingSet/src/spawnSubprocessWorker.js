@@ -1,4 +1,3 @@
-/* global harden */
 // this file is loaded by the controller, in the start compartment
 import process from 'process';
 import { spawn } from 'child_process';

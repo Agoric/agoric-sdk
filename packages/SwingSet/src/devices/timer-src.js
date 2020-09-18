@@ -1,5 +1,3 @@
-/* global harden */
-
 /**
  * A Timer device that provides a capability that can be used to schedule wake()
  * calls at particular times. The simpler form is a handler object with a wake()
@@ -48,6 +46,19 @@ function copyState(schedState) {
 }
 
 /**
+ * @typedef {Object} Event
+ * @property {number} time
+ * @property {Array<IndexedHandler>} handlers
+ *
+ * @typedef {Object} IndexedHandler
+ * @property {number} [index]
+ * @property {Waker} handler
+ *
+ * @typedef {Object} Waker
+ * @property {(now: number) => void} wake
+ */
+
+/**
  * A MultiMap from times to one or more values. In addition to add() and
  * remove(), removeEventsThrough() supports removing (and returning) all the
  * key-value pairs with keys (deadlines) less than or equal to some value. The
@@ -57,12 +68,16 @@ function copyState(schedState) {
  * To support quiescent solo vats (which normally only run if there's an
  * incoming event), we'd want to tell the host loop when we should next be
  * scheduled.
+ *
+ * @param {Array<Event>} [state=undefined]
  */
 function makeTimerMap(state = undefined) {
-  // an array containing events that should be triggered after specific times.
-  // Multiple events can be stored with the same time
-  // {time, handlers: [hander, ...]}. The array will be kept sorted in
-  // increasing order by timestamp.
+  /**
+   * @type {Array<Event>} an array containing events that should be triggered
+   * after specific times.  Multiple events can be stored with the same time
+   * {time, handlers: [hander, ...]}. The array will be kept sorted in
+   * increasing order by timestamp.
+   */
   const schedule = state ? copyState(state) : [];
 
   function cloneSchedule() {

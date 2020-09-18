@@ -1,5 +1,3 @@
-/* global harden */
-
 // eslint-disable-next-line import/order
 import { replaceGlobalMeter } from './install-global-metering';
 import '@agoric/install-ses';

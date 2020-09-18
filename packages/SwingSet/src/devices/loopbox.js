@@ -1,5 +1,3 @@
-/* global harden */
-
 /*
  * The "loopbox" is a special device used for unit tests, which glues one
  * comms+vattp pair to another, within the same swingset machine. It looks

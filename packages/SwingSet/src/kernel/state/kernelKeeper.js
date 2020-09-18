@@ -1,5 +1,3 @@
-/* global harden */
-
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
@@ -621,7 +619,8 @@ export default function makeKernelKeeper(storage) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {*} kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {*} _tag
    */
   function incrementRefCount(kernelSlot, _tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
@@ -637,10 +636,9 @@ export default function makeKernelKeeper(storage) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param kernelSlot  The kernel slot whose refcount is to be decremented.
-   *
-   * @return true if the reference count has been decremented to zero, false if it is still non-zero
-   *
+   * @param {*} kernelSlot  The kernel slot whose refcount is to be decremented.
+   * @param {string} tag
+   * @returns {boolean} true if the reference count has been decremented to zero, false if it is still non-zero
    * @throws if this tries to decrement the reference count below zero.
    */
   function decrementRefCount(kernelSlot, tag) {

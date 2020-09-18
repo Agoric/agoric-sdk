@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootObject(vatPowers) {
   return harden({
     bar(arg2) {

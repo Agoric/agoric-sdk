@@ -1,5 +1,3 @@
-/* global harden */
-
 import '@agoric/install-ses';
 import test from 'ava';
 import { makePromiseKit } from '@agoric/promise-kit';

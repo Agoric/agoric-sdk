@@ -15,7 +15,6 @@ The downside is that we don't have a good way to persist a vat using Liveslots. 
 Most SwingSet vats use liveslots (with the notable exception of the comms vat). The stereotypical vat definition file when using Liveslots is:
 
 ```js
-/* global harden */
 
 export buildRootObject(_vatPowers) {
   const obj0 = {

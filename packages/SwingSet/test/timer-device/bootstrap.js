@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   const log = vatPowers.testLog;

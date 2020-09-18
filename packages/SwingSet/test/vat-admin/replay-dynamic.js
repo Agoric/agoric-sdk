@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootObject() {
   let counter = 0;
   return harden({

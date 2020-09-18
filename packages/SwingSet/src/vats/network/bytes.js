@@ -25,7 +25,7 @@ export function toBytes(data) {
  * Convert bytes to a String.
  *
  * @param {Bytes} bytes
- * @return {string}
+ * @returns {string}
  */
 export function bytesToString(bytes) {
   return bytes;
@@ -38,8 +38,9 @@ const lookup64 = i => chars64[i & 0x3f];
 
 /**
  * Base64, as specified in https://tools.ietf.org/html/rfc4648#section-4
+ *
  * @param {Data} data
- * @return {string} base64 encoding
+ * @returns {string} base64 encoding
  */
 export function dataToBase64(data) {
   const bytes = toBytes(data);
@@ -96,8 +97,9 @@ chars64.split('').forEach((c, i) => (revChars64[c] = i));
 
 /**
  * The reverse of the above.
+ *
  * @param {string} b64 Base64-encoded string
- * @return {Bytes} decoded bytes
+ * @returns {Bytes} decoded bytes
  */
 export function base64ToBytes(b64) {
   const cs = b64.split('');
