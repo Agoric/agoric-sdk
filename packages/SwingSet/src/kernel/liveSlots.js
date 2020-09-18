@@ -299,6 +299,14 @@ function build(
     return p;
   }
 
+  function forbidPromises(serArgs) {
+    for (const slot of serArgs.slots) {
+      if (parseVatSlot(slot).type === 'promise') {
+        throw Error(`D() arguments cannot include a Promise`);
+      }
+    }
+  }
+
   function DeviceHandler(slot) {
     return {
       get(target, prop) {
@@ -307,6 +315,7 @@ function build(
         }
         return (...args) => {
           const serArgs = m.serialize(harden(args));
+          forbidPromises(serArgs);
           const ret = syscall.callNow(slot, prop, serArgs);
           insistCapData(ret);
           const retval = m.unserialize(ret);
