@@ -5,10 +5,29 @@ import { encode, encoderStream, decode, decoderStream } from '../src/netstring';
 
 const umlaut = 'ümlaut';
 const umlautBuffer = Buffer.from(umlaut, 'utf-8');
+// the following string may not render in your editor, but it contains four
+// emoji glued together, which is frequently rendered as a single glyph.
+const emoji = '👨‍👨‍👧‍👧';
+const emojiBuffer = Buffer.from(emoji, 'utf-8');
+// They are:
+//  U+1F468 "MAN"
+//  U+200D "ZERO WIDTH JOINER"
+//  U+1F468 "MAN"
+//  U+200D "ZERO WIDTH JOINER"
+//  U+1F467 "GIRL"
+//  U+200D "ZERO WIDTH JOINER"
+//  U+1F467 "GIRL"
+
+// The emoji are off the BMP and require two UTF-16 things, while the joiner
+// only requires one. So JavaScript considers the length to be 2+1+2+1+2+1+2
+// = 11. The UTF-8 encoding needs four bytes for the emoji, and three for the
+// joiner, so the Buffer length is 4+3+4+3+4+3+4 = 25.
 
 test('setup', t => {
   t.is(umlaut.length, 6);
   t.is(umlautBuffer.length, 7);
+  t.is(emoji.length, 11);
+  t.is(emojiBuffer.length, 25);
 });
 
 test('encode', t => {
@@ -25,8 +44,10 @@ test('encode', t => {
   eq('', '0:,');
   eq('a', '1:a,');
   eq('abc', '3:abc,');
-  const expectedBuffer = Buffer.from(`7:${umlaut},`, 'utf-8');
+  let expectedBuffer = Buffer.from(`7:${umlaut},`, 'utf-8');
   eq(umlautBuffer, expectedBuffer);
+  expectedBuffer = Buffer.from(`25:${emoji},`, 'utf-8');
+  eq(emojiBuffer, expectedBuffer);
 });
 
 test('encode stream', async t => {
@@ -42,8 +63,12 @@ test('encode stream', async t => {
   e.write(umlautBuffer);
   const b3 = Buffer.concat([Buffer.from('7:'), umlautBuffer, Buffer.from(',')]);
   t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3]));
+  e.write(emojiBuffer);
+  const b4 = Buffer.concat([Buffer.from('25:'), emojiBuffer, Buffer.from(',')]);
+  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3, b4]));
+
   e.end();
-  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3]));
+  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3, b4]));
 });
 
 test('decode', t => {
@@ -65,8 +90,11 @@ test('decode', t => {
   eq('0:,1:a', [''], '1:a');
   eq('0:,1:a,', ['', 'a'], '');
 
-  const expectedBuffer = Buffer.from(`7:${umlaut},`, 'utf-8');
+  let expectedBuffer = Buffer.from(`7:${umlaut},`, 'utf-8');
   eq(expectedBuffer, [umlaut], '');
+
+  expectedBuffer = Buffer.from(`25:${emoji},`, 'utf-8');
+  eq(expectedBuffer, [emoji], '');
 
   function bad(input, message) {
     t.throws(() => decode(Buffer.from(input)), { message });
