@@ -196,6 +196,28 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
+  const wsActions = {
+    noop() {
+      // do nothing.
+    },
+    heartbeat() {
+      this.isAlive = true;
+    },
+  };
+
+  const pingInterval = setInterval(function ping() {
+    wss.clients.forEach(ws => {
+      if (!ws.isAlive) {
+        ws.terminate();
+        return;
+      }
+      ws.isAlive = false;
+      ws.ping(wsActions.noop);
+    });
+  }, 30000);
+
+  wss.on('close', () => clearInterval(pingInterval));
+
   let lastChannelID = 0;
 
   function newChannel(ws, req) {
@@ -205,6 +227,10 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${channelID}]:`;
 
     log(id, `new WebSocket ${req.url}`);
+
+    // Manage connection pings.
+    ws.isAlive = true;
+    ws.on('pong', wsActions.heartbeat);
 
     // Register the point-to-point channel.
     channels.set(channelID, ws);

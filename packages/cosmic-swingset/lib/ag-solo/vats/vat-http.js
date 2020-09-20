@@ -45,12 +45,23 @@ export function buildRootObject(vatPowers) {
     }
   };
 
-  const handler = {};
   const registeredURLHandlers = new Map();
 
-  // TODO: Don't leak memory.
-  async function registerURLHandler(newHandler, url) {
-    const commandHandler = await E(newHandler).getCommandHandler();
+  async function registerURLHandler(handler, url) {
+    const fallback = await E(handler)
+      .getCommandHandler()
+      .catch(_ => undefined);
+    const commandHandler = getCapTPHandler(
+      send,
+      (meta, otherSide) =>
+        E(handler)
+          .open(meta, otherSide)
+          .catch(e => {
+            console.error('Loading CapTP', e);
+            return {};
+          }),
+      fallback,
+    );
     let reg = registeredURLHandlers.get(url);
     if (!reg) {
       reg = [];
@@ -67,12 +78,12 @@ export function buildRootObject(vatPowers) {
       registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
-      // TODO: Break this out into a separate vat.
-      const captpHandler = getCapTPHandler(
-        send,
-        // Harden only our exported objects, and fetch them afresh each time.
-        () => harden(exportedToCapTP),
-      );
+      const captpHandler = harden({
+        open() {
+          // Harden only our exported objects, and fetch them afresh each time.
+          return harden({ connectionFacet: exportedToCapTP });
+        },
+      });
       registerURLHandler(captpHandler, '/private/captp');
     },
 
@@ -163,19 +174,6 @@ export function buildRootObject(vatPowers) {
           channelHandle,
         };
         delete meta.channelID;
-
-        if (url === '/private/repl') {
-          // Use our local handler object (compatibility).
-          // TODO: standardise
-          if (handler[type]) {
-            D(commandDevice).sendResponse(
-              count,
-              false,
-              await handler[type](obj, meta),
-            );
-            return;
-          }
-        }
 
         const urlHandlers = registeredURLHandlers.get(url);
         if (urlHandlers) {
