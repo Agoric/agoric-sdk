@@ -27,7 +27,7 @@ import './types';
 function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   assert.typeof(allegedName, 'string');
 
-  const brand = Remotable(makeBrandInterface(), undefined, {
+  const brand = Remotable(makeBrandInterface(allegedName), undefined, {
     isMyIssuer: allegedIssuerP => {
       return E.when(allegedIssuerP, allegedIssuer => {
         // eslint-disable-next-line no-use-before-define
@@ -50,7 +50,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   }
 
   const makePayment = () =>
-    Remotable(makePaymentInterface(), undefined, {
+    Remotable(makePaymentInterface(allegedName), undefined, {
       getAllegedBrand: () => brand,
     });
 
@@ -71,7 +71,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
    */
   const makePurse = () => {
     /** @type {Purse} */
-    const purse = Remotable(makePurseInterface(), undefined, {
+    const purse = Remotable(makePurseInterface(allegedName), undefined, {
       deposit: (srcPayment, optAmount = undefined) => {
         if (isPromise(srcPayment)) {
           throw new TypeError(
@@ -187,7 +187,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   };
 
   /** @type {Issuer} */
-  const issuer = Remotable(makeIssuerInterface(), undefined, {
+  const issuer = Remotable(makeIssuerInterface(allegedName), undefined, {
     getBrand: () => brand,
     getAllegedName: () => allegedName,
     getAmountMathKind: () => amountMathKind,
@@ -290,7 +290,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   });
 
   /** @type {Mint} */
-  const mint = Remotable(makeMintInterface(), undefined, {
+  const mint = Remotable(makeMintInterface(allegedName), undefined, {
     getIssuer: () => issuer,
     mintPayment: newAmount => {
       newAmount = amountMath.coerce(newAmount);

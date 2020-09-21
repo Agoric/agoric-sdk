@@ -7,6 +7,11 @@
  */
 
 /**
+ * @typedef {import('@agoric/marshal').InterfaceSpec} InterfaceSpec
+ * @typedef {import('@agoric/marshal').GetInterfaceOf} GetInterfaceOf
+ */
+
+/**
  * @typedef {Object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
@@ -308,4 +313,134 @@
  * @property {(left: Value, right: Value) => Value} doSubtract
  * Return what remains after removing the right from the left. If
  * something in the right was not in the left, we throw an error.
+ */
+
+/**
+ * @callback MakeBrandInterface
+ * @param {string} allegedName
+ * @returns {string} brandInterface
+ */
+
+/**
+ * @callback MakeIssuerInterface
+ * @param {string} allegedName
+ * @returns {string} issuerInterface
+ */
+
+/**
+ * @callback MakePurseInterface
+ * @param {string} allegedName
+ * @returns {string} purseInterface
+ */
+
+/**
+ * @callback MakePaymentInterface
+ * @param {string} allegedName
+ * @returns {string} paymentInterface
+ */
+
+/**
+ * @callback MakeMintInterface
+ * @param {string} allegedName
+ * @returns {string} mintInterface
+ */
+
+/**
+ * @callback AssertAllegedIssuerWhen
+ *
+ * Assert that allegedIssuerP is either a local issuer, a presence for a
+ * remote issuer, or a promise for an issuer. The function waits on
+ * allegedIssuerP in case it is a promise, so the assertion happens
+ * after a turn boundary.
+ * @param {ERef<Issuer>} allegedIssuerP
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @callback AssertAllegedBrandWhen
+ *
+ * Assert that allegedBrandP is either a local brand, a presence for a
+ * remote brand, or a promise for a brand. The function waits on
+ * allegedBrandP in case it is a promise, so the assertion happens
+ * after a turn boundary.
+ * @param {ERef<Brand>} allegedBrandP
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @callback AssertAllegedPurseWhen
+ *
+ * Assert that allegedPurseP is either a local purse, a presence for a
+ * remote purse, or a promise for a purse. The function waits on
+ * allegedPurseP in case it is a promise, so the assertion happens
+ * after a turn boundary.
+ * @param {ERef<Purse>} allegedPurseP
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @callback AssertAllegedPaymentWhen
+ *
+ * Assert that allegedPaymentP is either a local payment, a presence for a
+ * remote payment, or a promise for a payment. The function waits on
+ * allegedPaymentP in case it is a promise, so the assertion happens
+ * after a turn boundary.
+ * @param {ERef<Payment>} allegedPaymentP
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @callback AssertAllegedMintWhen
+ *
+ * Assert that allegedMintP is either a local mint, a presence for a
+ * remote mint, or a promise for a mint. The function waits on
+ * allegedMintP in case it is a promise, so the assertion happens
+ * after a turn boundary.
+ * @param {ERef<Mint>} allegedMintP
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @callback MakeAssertAllegedIssuerWhen
+ * Make the AssertAllegedIssuerWhen function. `getInterfaceOf` must use the
+ * same shared state that `Remotable` does
+ *
+ * @param {GetInterfaceOf} getInterfaceOf
+ * @returns {AssertAllegedIssuerWhen}
+ */
+
+/**
+ * @callback MakeAssertAllegedBrandWhen
+ * Make the AssertAllegedBrandWhen function. `getInterfaceOf` must use the
+ * same shared state that `Remotable` does
+ *
+ * @param {GetInterfaceOf} getInterfaceOf
+ * @returns {AssertAllegedBrandWhen}
+ */
+
+/**
+ * @callback MakeAssertAllegedPurseWhen
+ * Make the AssertAllegedPurseWhen function. `getInterfaceOf` must use the
+ * same shared state that `Remotable` does
+ *
+ * @param {GetInterfaceOf} getInterfaceOf
+ * @returns {AssertAllegedPurseWhen}
+ */
+
+/**
+ * @callback MakeAssertAllegedPaymentWhen
+ * Make the AssertAllegedPaymentWhen function. `getInterfaceOf` must use the
+ * same shared state that `Remotable` does
+ *
+ * @param {GetInterfaceOf} getInterfaceOf
+ * @returns {AssertAllegedPaymentWhen}
+ */
+
+/**
+ * @callback MakeAssertAllegedMintWhen
+ * Make the AssertAllegedMintWhen function. `getInterfaceOf` must use the
+ * same shared state that `Remotable` does
+ *
+ * @param {GetInterfaceOf} getInterfaceOf
+ * @returns {AssertAllegedMintWhen}
  */

@@ -29,7 +29,7 @@ const remotableToInterface = new WeakMap();
 
 /**
  * Simple semantics, just tell what interface (or undefined) a remotable has.
- *
+ * @callback GetInterfaceOf
  * @param {*} maybeRemotable the value to check
  * @returns {InterfaceSpec|undefined} the interface specification, or undefined
  * if not a Remotable
