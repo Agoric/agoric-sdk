@@ -2,22 +2,17 @@
 // in its own makeHardener, etc.
 import { makeCapTP } from '@agoric/captp/lib/captp';
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
 
 export const getCapTPHandler = (
   send,
-  getAdminAndConnectionFacets,
+  getLocalBootstrap,
   fallback = undefined,
 ) => {
   const chans = new Map();
-  const doCall = (obj, method, ...args) => {
-    if (obj) {
-      return E(obj)
-        [method](...args)
-        .catch(_ => {});
-    }
-    return undefined;
-  };
+  const doFallback = (method, ...args) =>
+    E(fallback)
+      [method](...args)
+      .catch(_ => {});
   const handler = harden({
     onOpen(obj, meta) {
       const { channelHandle, origin = 'unknown' } = meta || {};
@@ -25,21 +20,10 @@ export const getCapTPHandler = (
       const sendObj = o => {
         send(o, [channelHandle]);
       };
-      const adminFacetPK = makePromiseKit();
-      const connectionFacetPK = makePromiseKit();
-      let booted = false;
-      const { dispatch, abort, getBootstrap } = makeCapTP(
+      const { dispatch, abort, getBootstrap: getRemoteBootstrap } = makeCapTP(
         origin,
         sendObj,
-        async () => {
-          if (!booted) {
-            booted = true;
-            const admconnP = getAdminAndConnectionFacets(meta, getBootstrap());
-            adminFacetPK.resolve(E.G(admconnP).adminFacet);
-            connectionFacetPK.resolve(E.G(admconnP).connectionFacet);
-          }
-          return connectionFacetPK.promise;
-        },
+        async () => getLocalBootstrap(getRemoteBootstrap(), meta),
         {
           onReject(err) {
             // Be quieter for sanity's sake.
@@ -50,30 +34,27 @@ export const getCapTPHandler = (
       chans.set(channelHandle, {
         dispatch,
         abort,
-        adminFacet: adminFacetPK.promise,
       });
-      doCall(fallback, 'onOpen', obj, meta);
+      doFallback('onOpen', obj, meta);
     },
     onClose(obj, meta) {
       console.debug(`Finishing CapTP`, meta);
       const chan = chans.get(meta.channelHandle);
       if (chan) {
-        const { abort, adminFacet } = chan;
-        doCall(adminFacet, 'onClose');
+        const { abort } = chan;
         abort();
       }
       chans.delete(meta.channelHandle);
-      doCall(fallback, 'onClose', obj, meta);
+      doFallback('onClose', obj, meta);
     },
     onError(obj, meta) {
       console.debug(`Error in CapTP`, meta, obj.error);
       const chan = chans.get(meta.channelHandle);
       if (chan) {
-        const { abort, adminFacet } = chan;
-        doCall(adminFacet, 'onError', obj.error);
+        const { abort } = chan;
         abort(obj.error);
       }
-      doCall(fallback, 'onError', obj, meta);
+      doFallback('onError', obj, meta);
     },
     async onMessage(obj, meta) {
       console.debug('processing inbound', obj);
@@ -84,9 +65,9 @@ export const getCapTPHandler = (
           return true;
         }
       }
-      const done = await doCall(fallback, 'onMessage', obj, meta);
+      const done = await doFallback('onMessage', obj, meta);
       if (!done) {
-        console.error(`Could not find CapTP handler ${obj.type}`, meta);
+        console.error(`Could not find handler ${obj.type}`, meta);
       }
       return done;
     },

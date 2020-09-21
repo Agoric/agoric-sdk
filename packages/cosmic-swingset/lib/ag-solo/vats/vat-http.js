@@ -53,13 +53,10 @@ export function buildRootObject(vatPowers) {
       .catch(_ => undefined);
     const commandHandler = getCapTPHandler(
       send,
-      (meta, otherSide) =>
+      (otherSide, meta) =>
         E(handler)
-          .open(meta, otherSide)
-          .catch(e => {
-            console.error('Loading CapTP', e);
-            return {};
-          }),
+          .getBootstrap(otherSide, meta)
+          .catch(_e => undefined),
       fallback,
     );
     let reg = registeredURLHandlers.get(url);
@@ -79,9 +76,9 @@ export function buildRootObject(vatPowers) {
 
       // Assign the captp handler.
       const captpHandler = harden({
-        open() {
+        getBootstrap(_otherSide, _meta) {
           // Harden only our exported objects, and fetch them afresh each time.
-          return harden({ connectionFacet: exportedToCapTP });
+          return harden(exportedToCapTP);
         },
       });
       registerURLHandler(captpHandler, '/private/captp');

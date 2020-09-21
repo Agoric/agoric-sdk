@@ -209,7 +209,7 @@ export function buildRootObject(_vatPowers) {
   function getBridgeURLHandler() {
     return harden({
       // Use CapTP to interact with this object.
-      async open(meta, otherSide) {
+      async getBootstrap(otherSide, meta) {
         const dappOrigin = meta.origin;
         const suggestedDappPetname = meta.dappOrigin || meta.origin;
 
