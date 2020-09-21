@@ -9,6 +9,13 @@ import { Remotable } from '@agoric/marshal';
 import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
+import {
+  makeBrandInterface,
+  makeIssuerInterface,
+  makePurseInterface,
+  makePaymentInterface,
+  makeMintInterface,
+} from './interfaces';
 
 import './types';
 
@@ -20,7 +27,7 @@ import './types';
 function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   assert.typeof(allegedName, 'string');
 
-  const brand = Remotable(`Alleged: ${allegedName} brand`, undefined, {
+  const brand = Remotable(makeBrandInterface(), undefined, {
     isMyIssuer: allegedIssuerP => {
       return E.when(allegedIssuerP, allegedIssuer => {
         // eslint-disable-next-line no-use-before-define
@@ -43,7 +50,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   }
 
   const makePayment = () =>
-    Remotable(`Alleged: ${allegedName} payment`, undefined, {
+    Remotable(makePaymentInterface(), undefined, {
       getAllegedBrand: () => brand,
     });
 
@@ -64,7 +71,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
    */
   const makePurse = () => {
     /** @type {Purse} */
-    const purse = Remotable(`Alleged: ${allegedName} purse`, undefined, {
+    const purse = Remotable(makePurseInterface(), undefined, {
       deposit: (srcPayment, optAmount = undefined) => {
         if (isPromise(srcPayment)) {
           throw new TypeError(
@@ -180,7 +187,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   };
 
   /** @type {Issuer} */
-  const issuer = Remotable(`Alleged: ${allegedName} issuer`, undefined, {
+  const issuer = Remotable(makeIssuerInterface(), undefined, {
     getBrand: () => brand,
     getAllegedName: () => allegedName,
     getAmountMathKind: () => amountMathKind,
@@ -283,7 +290,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   });
 
   /** @type {Mint} */
-  const mint = Remotable(`Alleged: ${allegedName} mint`, undefined, {
+  const mint = Remotable(makeMintInterface(), undefined, {
     getIssuer: () => issuer,
     mintPayment: newAmount => {
       newAmount = amountMath.coerce(newAmount);
