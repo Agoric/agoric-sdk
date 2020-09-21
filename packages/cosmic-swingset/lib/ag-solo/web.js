@@ -39,11 +39,24 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   ) => {
     // Strip away the query params, as the inbound command device can't handle
     // it and the accessToken is there.
-    const qmark = url.indexOf('?');
-    const shortUrl = qmark < 0 ? url : url.slice(0, qmark);
+    const parsedURL = new URL(url, 'http://some-host');
+    const query = {};
+    for (const [key, val] of parsedURL.searchParams) {
+      if (key !== 'accessToken') {
+        query[key] = val;
+      }
+    }
+
     const obj = {
       ...body,
-      meta: { channelID, dispatcher, origin, url: shortUrl, date: Date.now() },
+      meta: {
+        channelID,
+        dispatcher,
+        origin,
+        query,
+        url: parsedURL.pathname,
+        date: Date.now(),
+      },
     };
     return rawInboundCommand(obj).catch(err => {
       const idpfx = id ? `${id} ` : '';
@@ -89,18 +102,19 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
-    if (!req.url.startsWith('/private/')) {
+    const parsedUrl = new URL(req.url, 'http://some-host');
+    const fullPath = parsedUrl.pathname;
+
+    if (!fullPath.startsWith('/private/')) {
       // Allow any origin that's not marked private, without a accessToken.
       return true;
     }
 
     // Bypass accessToken just for the wallet bridge.
-    if (req.url !== '/private/wallet-bridge') {
+    if (fullPath !== '/private/wallet-bridge') {
       // Validate the private accessToken.
       const accessToken = await getAccessToken(port);
-      const reqToken = new URL(`http://localhost${req.url}`).searchParams.get(
-        'accessToken',
-      );
+      const reqToken = parsedUrl.searchParams.get('accessToken');
 
       if (!verifyToken(reqToken, accessToken)) {
         log.error(
@@ -117,23 +131,23 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       log.error(id, `Missing origin header`);
       return false;
     }
-    const url = new URL(origin);
+    const originUrl = new URL(origin);
     const isLocalhost = hostname =>
       hostname.match(/^(localhost|127\.0\.0\.1)$/);
 
-    if (['chrome-extension:', 'moz-extension:'].includes(url.protocol)) {
+    if (['chrome-extension:', 'moz-extension:'].includes(originUrl.protocol)) {
       // Extensions such as metamask are local and can access the wallet.
       // Especially since the access token has been supplied.
       return true;
     }
 
-    if (!isLocalhost(url.hostname)) {
+    if (!isLocalhost(originUrl.hostname)) {
       log.error(id, `Invalid origin host ${origin} is not localhost`);
       return false;
     }
 
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      log.error(id, `Invalid origin protocol ${origin}`, url.protocol);
+    if (!['http:', 'https:'].includes(originUrl.protocol)) {
+      log.error(id, `Invalid origin protocol ${origin}`, originUrl.protocol);
       return false;
     }
     return true;

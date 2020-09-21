@@ -211,7 +211,11 @@ export function buildRootObject(_vatPowers) {
       // Use CapTP to interact with this object.
       async getBootstrap(otherSide, meta) {
         const dappOrigin = meta.origin;
-        const suggestedDappPetname = meta.dappOrigin || meta.origin;
+        const suggestedDappPetname = String(
+          (meta.query && meta.query.suggestedDappPetname) ||
+            meta.dappOrigin ||
+            dappOrigin,
+        );
 
         const notYetEnabled = () =>
           E(otherSide)
