@@ -4,6 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { getInterfaceOf } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -239,7 +240,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 test('zoe - secondPriceAuction - alice tries to exit', async t => {
   t.plan(12);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));

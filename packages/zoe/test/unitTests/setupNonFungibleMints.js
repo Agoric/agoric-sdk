@@ -1,4 +1,5 @@
 import { makeIssuerKit } from '@agoric/ertp';
+import { getInterfaceOf } from '@agoric/marshal';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from './contracts/fakeVatAdmin';
 
@@ -21,7 +22,7 @@ const setupNonFungible = () => {
   function createRpgItem(name, power, desc = undefined) {
     return harden([{ name, description: desc || name, power }]);
   }
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
 
   const ccIssuer = issuers.get('cc');
   const rpgIssuer = issuers.get('rpg');

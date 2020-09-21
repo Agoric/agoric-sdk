@@ -1,7 +1,8 @@
 import { makeZoe } from '@agoric/zoe';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export function buildRootObject(vatPowers, vatParameters) {
   return harden({
-    buildZoe: adminVat => makeZoe(adminVat, vatParameters.zcfBundleName),
+    buildZoe: adminVat =>
+      makeZoe(adminVat, vatPowers.getInterfaceOf, vatParameters.zcfBundleName),
   });
 }

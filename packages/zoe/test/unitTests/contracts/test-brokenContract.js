@@ -4,6 +4,8 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
+import { getInterfaceOf } from '@agoric/marshal';
+
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
@@ -15,7 +17,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moolaR } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   const installation = await zoe.install(bundle);

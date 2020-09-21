@@ -5,6 +5,7 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
+import { getInterfaceOf } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -21,7 +22,7 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = makeZoe(makeFakeVatAdmin(setJig));
+  const zoe = makeZoe(makeFakeVatAdmin(setJig), getInterfaceOf);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

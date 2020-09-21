@@ -25,10 +25,11 @@ import { makeHandle } from '../makeHandle';
  *
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
+ * @param {GetInterfaceOf} getInterfaceOf
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {ZoeService} The created Zoe service.
  */
-function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
+function makeZoe(vatAdminSvc, getInterfaceOf, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
 
   // Zoe state shared among functions

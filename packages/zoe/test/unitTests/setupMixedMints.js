@@ -1,4 +1,5 @@
 import { makeIssuerKit } from '@agoric/ertp';
+import { getInterfaceOf } from '@agoric/marshal';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from './contracts/fakeVatAdmin';
 
@@ -25,7 +26,7 @@ const setupMixed = () => {
   const cryptoCats = allBundles.cc.amountMath.make;
   const moola = allBundles.moola.amountMath.make;
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
   return {
     zoe,
     ccIssuer,

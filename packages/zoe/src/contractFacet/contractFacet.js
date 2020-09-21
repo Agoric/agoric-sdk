@@ -31,7 +31,7 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-export function buildRootObject(_powers, _params, testJigSetter = undefined) {
+export function buildRootObject(vatPowers, _params, testJigSetter = undefined) {
   /** @type {ExecuteContract} */
   const executeContract = async (
     bundle,

@@ -4,6 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
+import { getInterfaceOf } from '@agoric/marshal';
 
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
@@ -16,7 +17,7 @@ const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
 
   const makeAlice = () => {
     return {
@@ -84,7 +85,7 @@ test('zoe - mint payments', async t => {
 
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

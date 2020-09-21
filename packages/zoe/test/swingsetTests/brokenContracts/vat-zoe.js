@@ -1,8 +1,8 @@
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
   return harden({
-    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc),
+    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc, vatPowers.getInterfaceOf),
   });
 }

@@ -5,6 +5,7 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
+import { getInterfaceOf } from '@agoric/marshal';
 
 import { setup } from '../setupBasicMints';
 import { makeZoe } from '../../..';
@@ -29,7 +30,7 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = makeZoe(makeFakeVatAdmin(setJig));
+  const zoe = makeZoe(makeFakeVatAdmin(setJig), getInterfaceOf);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

@@ -11,6 +11,7 @@ import { makeRegistrar } from '@agoric/registrar';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { getInterfaceOf } from '@agoric/marshal';
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
 import { makeWallet } from '../src/lib-wallet';
 
@@ -29,7 +30,7 @@ async function setupTest() {
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', 'strSet');
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
   const registry = makeRegistrar();
   const board = makeBoard();
 

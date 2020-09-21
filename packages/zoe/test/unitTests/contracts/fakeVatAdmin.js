@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 
 import { evalContractBundle } from '../../../src/contractFacet/evalContractCode';
 
@@ -12,7 +13,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return harden({
         root: makeRemote(
           E(evalContractBundle(bundle)).buildRootObject(
-            undefined,
+            { Remotable, getInterfaceOf, makeMarshal },
             undefined,
             testContextSetter,
           ),

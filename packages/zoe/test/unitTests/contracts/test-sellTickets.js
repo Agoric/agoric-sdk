@@ -6,6 +6,7 @@ import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { getInterfaceOf } from '@agoric/marshal';
 import fakeVatAdmin from './fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
@@ -17,7 +18,7 @@ const sellItemsRoot = `${__dirname}/../../../src/contracts/sellItems`;
 
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
@@ -141,7 +142,7 @@ test(`mint and sell opera tickets`, async t => {
     amountMath: { make: moola },
   } = makeIssuerKit('moola');
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);

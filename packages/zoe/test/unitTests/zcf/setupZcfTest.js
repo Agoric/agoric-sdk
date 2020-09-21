@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
+import { getInterfaceOf } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -14,7 +15,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     zcf = jig.zcf;
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
-  const zoe = makeZoe(makeFakeVatAdmin(setZCF));
+  const zoe = makeZoe(makeFakeVatAdmin(setZCF), getInterfaceOf);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(

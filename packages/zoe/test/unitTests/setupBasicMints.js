@@ -1,4 +1,5 @@
 import { makeIssuerKit } from '@agoric/ertp';
+import { getInterfaceOf } from '@agoric/marshal';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from './contracts/fakeVatAdmin';
 
@@ -19,7 +20,7 @@ const setup = () => {
     brands.set(k, allBundles[k].brand);
   }
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const zoe = makeZoe(fakeVatAdmin, getInterfaceOf);
 
   return harden({
     moolaIssuer: moolaBundle.issuer,
