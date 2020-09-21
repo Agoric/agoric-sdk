@@ -14,6 +14,8 @@ import {
   makePurseInterface,
   makePaymentInterface,
   makeMintInterface,
+  makeDepositFacetInterface,
+  makeAssertAllegedDepositFacetWhen,
 } from '../../src';
 
 test('interfaces - abstracted implementation', t => {
@@ -24,6 +26,8 @@ test('interfaces - abstracted implementation', t => {
   t.is(getInterfaceOf(mint), makeMintInterface(allegedName));
   const purse = issuer.makeEmptyPurse();
   t.is(getInterfaceOf(purse), makePurseInterface(allegedName));
+  const depositFacet = purse.getDepositFacet();
+  t.is(getInterfaceOf(depositFacet), makeDepositFacetInterface(allegedName));
   const payment = mint.mintPayment(amountMath.make(2));
   t.is(getInterfaceOf(payment), makePaymentInterface(allegedName));
 });
@@ -36,6 +40,8 @@ test('interfaces - particular implementation', t => {
   t.is(getInterfaceOf(mint), 'Alleged: bucks mint');
   const purse = issuer.makeEmptyPurse();
   t.is(getInterfaceOf(purse), 'Alleged: bucks purse');
+  const depositFacet = purse.getDepositFacet();
+  t.is(getInterfaceOf(depositFacet), 'Alleged: bucks depositFacet');
   const payment = mint.mintPayment(amountMath.make(2));
   t.is(getInterfaceOf(payment), 'Alleged: bucks payment');
 });
@@ -170,5 +176,42 @@ test('makeAssertAllegedPaymentWhen - promise for payment', async t => {
   const myPayment = mint.mintPayment(amountMath.make(5));
   await t.notThrowsAsync(() =>
     assertAllegedPaymentWhen(Promise.resolve(myPayment)),
+  );
+});
+
+test('makeAssertAllegedDepositFacetWhen - depositFacet', async t => {
+  const assertAllegedDepositFacetWhen = makeAssertAllegedDepositFacetWhen(
+    getInterfaceOf,
+  );
+  const { issuer } = makeIssuerKit('fungible');
+  const purse = issuer.makeEmptyPurse();
+  const depositFacet = purse.getDepositFacet();
+  await t.notThrowsAsync(() => assertAllegedDepositFacetWhen(depositFacet));
+});
+
+test('makeAssertAllegedDepositFacetWhen - not depositFacet', async t => {
+  const assertAllegedDepositFacetWhen = makeAssertAllegedDepositFacetWhen(
+    getInterfaceOf,
+  );
+  const { issuer } = makeIssuerKit('fungible');
+  // @ts-ignore
+  await t.throwsAsync(() => assertAllegedDepositFacetWhen(issuer), {
+    message: `(an object) must be "a depositFacet" or a promise for "a depositFacet"\nSee console for error data.`,
+  });
+  // @ts-ignore
+  await t.throwsAsync(() => assertAllegedDepositFacetWhen('a string'), {
+    message: `(a string) must be "a depositFacet" or a promise for "a depositFacet"\nSee console for error data.`,
+  });
+});
+
+test('makeAssertAllegedDepositFacetWhen - promise for depositFacet', async t => {
+  const assertAllegedDepositFacetWhen = makeAssertAllegedDepositFacetWhen(
+    getInterfaceOf,
+  );
+  const { issuer } = makeIssuerKit('fungible');
+  const purse = issuer.makeEmptyPurse();
+  const depositFacet = purse.getDepositFacet();
+  await t.notThrowsAsync(() =>
+    assertAllegedDepositFacetWhen(Promise.resolve(depositFacet)),
   );
 });

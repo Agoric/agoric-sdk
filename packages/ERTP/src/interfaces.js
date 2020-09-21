@@ -11,6 +11,10 @@ const ERTPKind = {
   PURSE: 'purse',
   PAYMENT: 'payment',
   MINT: 'mint',
+  // TODO: improve implementation such that spaces can be used in
+  // ERTPKind. Currently we assume that the ERTPKind is the last
+  // element of the interface, after we split on spaces.
+  DEPOSIT_FACET: 'depositFacet',
 };
 
 /**
@@ -74,6 +78,10 @@ export const makePaymentInterface = allegedName =>
 export const makeMintInterface = allegedName =>
   makeInterface(allegedName, ERTPKind.MINT);
 
+/** @type {MakeDepositFacetInterface} */
+export const makeDepositFacetInterface = allegedName =>
+  makeInterface(allegedName, ERTPKind.DEPOSIT_FACET);
+
 /** @type {MakeAssertAllegedIssuerWhen} */
 export const makeAssertAllegedIssuerWhen = getInterfaceOf =>
   makeAssertKindWhen(getInterfaceOf, ERTPKind.ISSUER);
@@ -93,3 +101,7 @@ export const makeAssertAllegedPaymentWhen = getInterfaceOf =>
 /** @type {MakeAssertAllegedMintWhen} */
 export const makeAssertAllegedMintWhen = getInterfaceOf =>
   makeAssertKindWhen(getInterfaceOf, ERTPKind.MINT);
+
+/** @type {MakeAssertAllegedDepositFacetWhen} */
+export const makeAssertAllegedDepositFacetWhen = getInterfaceOf =>
+  makeAssertKindWhen(getInterfaceOf, ERTPKind.DEPOSIT_FACET);

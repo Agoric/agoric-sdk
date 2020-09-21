@@ -346,6 +346,12 @@
  */
 
 /**
+ * @callback MakeDepositFacetInterface
+ * @param {string} allegedName
+ * @returns {string} depositFacetInterface
+ */
+
+/**
  * @callback AssertAllegedIssuerWhen
  *
  * Assert that allegedIssuerP is either a local issuer, a presence for a
@@ -401,6 +407,17 @@
  */
 
 /**
+ * @callback AssertAllegedDepositFacetWhen
+ *
+ * Assert that allegedDepositFacetP is either a local deposit facet, a presence for a
+ * remote deposit facet, or a promise for a deposit facet. The function waits on
+ * allegedDepositfacetP in case it is a promise, so the assertion happens
+ * after a turn boundary.
+ * @param {ERef<DepositFacet>} allegedDepositFacetP
+ * @returns {Promise<void>}
+ */
+
+/**
  * @callback MakeAssertAllegedIssuerWhen
  * Make the AssertAllegedIssuerWhen function. `getInterfaceOf` must use the
  * same shared state that `Remotable` does
@@ -443,4 +460,13 @@
  *
  * @param {GetInterfaceOf} getInterfaceOf
  * @returns {AssertAllegedMintWhen}
+ */
+
+/**
+ * @callback MakeAssertAllegedDepositFacetWhen
+ * Make the AssertAllegedDepositFacetWhen function. `getInterfaceOf` must use the
+ * same shared state that `Remotable` does
+ *
+ * @param {GetInterfaceOf} getInterfaceOf
+ * @returns {AssertAllegedDepositFacetWhen}
  */

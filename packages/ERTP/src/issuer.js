@@ -15,6 +15,7 @@ import {
   makePurseInterface,
   makePaymentInterface,
   makeMintInterface,
+  makeDepositFacetInterface,
 } from './interfaces';
 
 import './types';
@@ -117,7 +118,11 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       getDepositFacet: () => depositFacet,
     });
 
-    const depositFacet = harden({ receive: purse.deposit });
+    const depositFacet = Remotable(
+      makeDepositFacetInterface(allegedName),
+      undefined,
+      { receive: purse.deposit },
+    );
 
     return purse;
   };
