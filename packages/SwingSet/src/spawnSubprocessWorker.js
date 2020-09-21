@@ -1,8 +1,13 @@
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
-import Netstring from 'netstring-stream';
-
 import { makePromiseKit } from '@agoric/promise-kit';
+import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol';
+import { netstringEncoderStream, netstringDecoderStream } from './netstring';
+
+// Start a subprocess from a given executable, and arrange a bidirectional
+// message channel with a "supervisor" within that process. Return a {
+// toChild, fromChild } pair of Streams which accept/emit hardened Arrays of
+// JSON-serializable data.
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
@@ -18,11 +23,12 @@ const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 export function startSubprocessWorker(execPath, procArgs = []) {
   const proc = spawn(execPath, procArgs, { stdio });
 
-  const toChild = Netstring.writeStream();
-  toChild.pipe(proc.stdio[3]);
+  const toChild = arrayEncoderStream();
+  toChild.pipe(netstringEncoderStream()).pipe(proc.stdio[3]);
   // proc.stdio[4].setEncoding('utf-8');
-  const fromChild = proc.stdio[4].pipe(Netstring.readStream());
-  fromChild.setEncoding('utf-8');
+  const fromChild = proc.stdio[4]
+    .pipe(netstringDecoderStream())
+    .pipe(arrayDecoderStream());
 
   // fromChild.addListener('data', data => parentLog(`fd4 data`, data));
   // toChild.write('hello child');
@@ -43,13 +49,13 @@ export function startSubprocessWorker(execPath, procArgs = []) {
     proc.kill();
   }
 
-  // the Netstring objects don't like being hardened, so we wrap the methods
+  // the Transform objects don't like being hardened, so we wrap the methods
   // that get used
   const wrappedFromChild = {
-    on: (evName, f) => fromChild.on(evName, f),
+    on: (...args) => fromChild.on(...args),
   };
   const wrappedToChild = {
-    write: data => toChild.write(data),
+    write: (...args) => toChild.write(...args),
   };
 
   return harden({

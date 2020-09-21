@@ -75,8 +75,8 @@ export function makeNodeSubprocessFactory(tools) {
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();
 
     function sendToWorker(msg) {
-      assert(msg instanceof Array);
-      toChild.write(JSON.stringify(msg));
+      assert(Array.isArray(msg));
+      toChild.write(msg);
     }
 
     const {
@@ -114,10 +114,7 @@ export function makeNodeSubprocessFactory(tools) {
       }
     }
 
-    fromChild.on('data', data => {
-      const msg = JSON.parse(data);
-      handleUpstream(msg);
-    });
+    fromChild.on('data', handleUpstream);
 
     parentLog(`instructing worker to load bundle..`);
     sendToWorker(['setBundle', bundle, vatParameters]);
