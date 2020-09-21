@@ -34,6 +34,7 @@ const last = array => array[array.length - 1];
  * @param {string} allegedName The allegedName, as passed to
  *  `makeIssuerKit`
  * @param {string} kind The ERTPKind
+ * @returns {InterfaceSpec}
  */
 const makeInterface = (allegedName, kind) => `Alleged: ${allegedName} ${kind}`;
 
@@ -46,6 +47,7 @@ const makeInterface = (allegedName, kind) => `Alleged: ${allegedName} ${kind}`;
  *
  * @param {GetInterfaceOf} getInterfaceOf
  * @param {string} kind - The ERTPKind to assert
+ * @returns {Promise<void>}
  */
 const makeAssertKindWhen = (getInterfaceOf, kind) => maybeRemotableP => {
   return E.when(maybeRemotableP, maybeRemotable => {
