@@ -12,7 +12,7 @@ export function encode(data) {
 }
 
 // input is a sequence of strings, output is a byte pipe
-export function encoderStream() {
+export function netstringEncoderStream() {
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
       throw Error('stream requires Buffers');
@@ -25,6 +25,8 @@ export function encoderStream() {
     }
     callback(err);
   }
+  // (maybe empty) Buffer in, Buffer out. We use writableObjectMode to
+  // indicate that empty input buffers are important
   return new Transform({ transform, writableObjectMode: true });
 }
 
@@ -64,7 +66,7 @@ export function decode(data) {
 }
 
 // input is a byte pipe, output is a sequence of Buffers
-export function decoderStream() {
+export function netstringDecoderStream() {
   let buffered = Buffer.from('');
 
   function transform(chunk, encoding, callback) {
@@ -88,5 +90,8 @@ export function decoderStream() {
     callback(err);
   }
 
+  // Buffer in, Buffer out, except that each output Buffer is precious, even
+  // empty ones, and without readableObjectMode the Stream will discard empty
+  // buffers
   return new Transform({ transform, readableObjectMode: true });
 }
