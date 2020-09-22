@@ -55,7 +55,10 @@ command-line request to open the Agoric wallet.`);
         launchWallet.classList.add('pulse');
       };
 
-      const walletPublicURL = new URL('/private/wallet-bridge', window.origin.replace(/^http/, 'ws')).href;
+      const walletPublicURL = new URL(
+        `/private/wallet-bridge${location.search}`,
+        window.origin.replace(/^http/, 'ws'),
+      ).href;
       const ws = new WebSocket(walletPublicURL);
       const wsQueue = [];
       const dappQueue = [];
@@ -98,10 +101,6 @@ command-line request to open the Agoric wallet.`);
         }
       });
 
-      // Get the dapp's suggested petname, if there is one.
-      const sp = new URLSearchParams(location.search);
-      let suggestedDappPetname = sp.get('suggestedDappPetname');
-
       window.addEventListener('message', ev => {
         // console.log('inbound', ev.data);
         if (!ev.data || typeof ev.data.type !== 'string') {
@@ -110,8 +109,6 @@ command-line request to open the Agoric wallet.`);
         if (origin === undefined) {
           // First-come, first-serve.
           origin = ev.origin;
-          // Default the petname, if there isn't a better one.
-          suggestedDappPetname = suggestedDappPetname || origin;
           while (dappQueue.length) {
             const dappObj = dappQueue.shift();
             if (window.parent !== window) {
@@ -123,7 +120,6 @@ command-line request to open the Agoric wallet.`);
         const obj = {
           ...ev.data,
           dappOrigin: origin,
-          suggestedDappPetname,
         };
         if (ws.readyState !== ws.OPEN) {
           // console.log('queuing', obj);

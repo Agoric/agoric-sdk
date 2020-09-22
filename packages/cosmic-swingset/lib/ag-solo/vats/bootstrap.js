@@ -233,11 +233,11 @@ export function buildRootObject(vatPowers, vatParameters) {
       registerAPIHandler(handler) {
         return E(vats.http).registerURLHandler(handler, '/api');
       },
-      async registerWallet(wallet, handler, bridgeHandler) {
+      async registerWallet(wallet, privateWallet, privateWalletBridge) {
         await Promise.all([
-          E(vats.http).registerURLHandler(handler, '/private/wallet'),
+          E(vats.http).registerURLHandler(privateWallet, '/private/wallet'),
           E(vats.http).registerURLHandler(
-            bridgeHandler,
+            privateWalletBridge,
             '/private/wallet-bridge',
           ),
           E(vats.http).setWallet(wallet),

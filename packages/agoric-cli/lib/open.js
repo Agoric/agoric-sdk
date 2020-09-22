@@ -95,9 +95,11 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
   }${suffix}#accessToken=${encodeURIComponent(walletAccessToken)}`;
 
   process.stdout.write(`${walletUrl}\n`);
-  const browser = opener(walletUrl);
-  browser.unref();
-  process.stdout.unref();
-  process.stderr.unref();
-  process.stdin.unref();
+  if (opts.browser) {
+    const browser = opener(walletUrl);
+    browser.unref();
+    process.stdout.unref();
+    process.stderr.unref();
+    process.stdin.unref();
+  }
 }

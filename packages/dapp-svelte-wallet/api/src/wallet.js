@@ -208,6 +208,81 @@ export function buildRootObject(_vatPowers) {
 
   function getBridgeURLHandler() {
     return harden({
+      // Use CapTP to interact with this object.
+      async getBootstrap(otherSide, meta) {
+        const dappOrigin = meta.origin;
+        const suggestedDappPetname = String(
+          (meta.query && meta.query.suggestedDappPetname) ||
+            meta.dappOrigin ||
+            dappOrigin,
+        );
+
+        const notYetEnabled = () =>
+          E(otherSide)
+            .needDappApproval(dappOrigin, suggestedDappPetname)
+            .catch(_ => {});
+        const approve = () =>
+          wallet.waitForDappApproval(
+            suggestedDappPetname,
+            dappOrigin,
+            notYetEnabled,
+          );
+
+        return harden({
+          async getPurseNotifier() {
+            await approve();
+            return harden({
+              async getUpdateSince(count = undefined) {
+                await approve();
+                const pursesJSON = await pursesJSONNotifier.getUpdateSince(
+                  count,
+                );
+                return JSON.parse(pursesJSON);
+              },
+            });
+          },
+          async addOffer(offer) {
+            await approve();
+            return wallet.addOffer(offer, { ...meta, dappOrigin });
+          },
+          async getOfferNotifier(status = null) {
+            await approve();
+            return harden({
+              async getUpdateSince(count = undefined) {
+                await approve();
+                const update = await inboxJSONNotifier.getUpdateSince(count);
+                const offers = JSON.parse(update.value);
+                return harden(
+                  offers.filter(
+                    offer =>
+                      (status === null || offer.status === status) &&
+                      offer.requestContext &&
+                      offer.requestContext.origin === dappOrigin,
+                  ),
+                );
+              },
+            });
+          },
+          async getDepositFacetId(brandBoardId) {
+            await approve();
+            return wallet.getDepositFacetId(brandBoardId);
+          },
+          async suggestIssuer(petname, boardId) {
+            await approve();
+            return wallet.suggestIssuer(petname, boardId, dappOrigin);
+          },
+          async suggestInstallation(petname, boardId) {
+            await approve();
+            return wallet.suggestInstallation(petname, boardId, dappOrigin);
+          },
+          async suggestInstance(petname, boardId) {
+            await approve();
+            return wallet.suggestInstance(petname, boardId, dappOrigin);
+          },
+        });
+      },
+
+      // The legacy HTTP/WebSocket handler.
       getCommandHandler() {
         return harden({
           onOpen(_obj, meta) {
