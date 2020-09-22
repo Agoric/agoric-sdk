@@ -16,7 +16,11 @@ import { arrayToObj, assertSubset } from './objArrayConversion';
 // With this rule, a computed indexing expression like `a[+i]` cannot
 // lookup a keyword-named property no matter what `i` is.
 export const assertKeywordName = keyword => {
-  assert.typeof(keyword, 'string');
+  assert.typeof(
+    keyword,
+    'string',
+    details`the keyword ${keyword} must be a string`,
+  );
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
   assert(
     firstCapASCII.test(keyword),

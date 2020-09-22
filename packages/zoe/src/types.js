@@ -45,3 +45,9 @@
 /**
  * @typedef {Payment} Invitation
  */
+
+/**
+ * @callback MakeIssuerTable
+ * @param {AssertAllegedIssuerWhen} assertAllegedIssuerWhen
+ * @returns {IssuerTable}
+ */

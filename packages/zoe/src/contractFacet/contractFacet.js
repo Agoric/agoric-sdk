@@ -12,7 +12,11 @@ import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 import makeStore from '@agoric/store';
 
-import { makeAmountMath, MathKind } from '@agoric/ertp';
+import {
+  makeAmountMath,
+  MathKind,
+  makeAssertAllegedIssuerWhen,
+} from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
@@ -40,8 +44,12 @@ export function buildRootObject(vatPowers, _params, testJigSetter = undefined) {
     zoeInstanceAdmin,
     instanceRecord,
   ) => {
+    const assertAllegedIssuerWhen = makeAssertAllegedIssuerWhen(
+      vatPowers.getInterfaceOf,
+    );
+
     /** @type {IssuerTable} */
-    const issuerTable = makeIssuerTable();
+    const issuerTable = makeIssuerTable(assertAllegedIssuerWhen);
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');

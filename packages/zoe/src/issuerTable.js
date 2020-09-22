@@ -20,8 +20,10 @@ import './internal-types';
  * `initIssuerByRecord` (synchronous), or more commonly, pass an
  * issuer to `initIssuer` (asynchronous). `initIssuer` will make the
  * remote calls to get the brand and amountMath and save them.
+ *
+ * @type {MakeIssuerTable}
  */
-const makeIssuerTable = () => {
+const makeIssuerTable = assertAllegedIssuerWhen => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = makeWeakStore('brand');
   /** @type {WeakStore<Issuer,IssuerRecord>} */
@@ -36,16 +38,19 @@ const makeIssuerTable = () => {
     // `issuerP` may be a promise, presence, or local object. If there's
     // already a record, return it. Otherwise, save the record.
     initIssuer: async issuerP => {
+      const assertAllegedIssuerP = assertAllegedIssuerWhen(issuerP);
       const brandP = E(issuerP).getBrand();
       const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
       const amountMathKindP = E(issuerP).getAmountMathKind();
-      /** @type {[Issuer,Brand,boolean,AmountMathKind]} */
+      /** @type {[void, Issuer,Brand,boolean,AmountMathKind]} */
       const [
+        _assertAllegedIssuer,
         issuer,
         brand,
         brandIssuerMatch,
         amountMathKind,
       ] = await Promise.all([
+        assertAllegedIssuerP, // Will reject if not an alleged issuer
         issuerP,
         brandP,
         brandIssuerMatchP,

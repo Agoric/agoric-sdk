@@ -213,31 +213,24 @@ test(`zcf.saveIssuer - bad issuer`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore
   await t.throwsAsync(() => zcf.saveIssuer(moolaKit.brand, 'A'), {
-    // TODO: improve error message
-    // https://github.com/Agoric/agoric-sdk/issues/1701
-    message: /^target\["getBrand"\] does not exist/,
+    message: `(an object) must be "an issuer" or a promise for "an issuer"\nSee console for error data.`,
   });
 });
 
 test(`zcf.saveIssuer - bad keyword`, async t => {
   const { moolaKit } = setup();
   const { zcf } = await setupZCFTest();
-  await t.throwsAsync(
-    async () => zcf.saveIssuer(moolaKit.issuer, 'bad keyword'),
-    {
-      message: `keyword "bad keyword" must be ascii and must start with a capital letter.\nSee console for error data.`,
-    },
-  );
+  await t.throwsAsync(() => zcf.saveIssuer(moolaKit.issuer, 'bad keyword'), {
+    message: `keyword "bad keyword" must be ascii and must start with a capital letter.\nSee console for error data.`,
+  });
 });
 
 test(`zcf.saveIssuer - args reversed`, async t => {
   const { moolaKit } = setup();
   const { zcf } = await setupZCFTest();
-  // TODO: improve error message
-  // https://github.com/Agoric/agoric-sdk/issues/1702
   // @ts-ignore
-  await t.throwsAsync(async () => zcf.saveIssuer('A', moolaKit.issuer), {
-    message: `(an object) must be a string\nSee console for error data.`,
+  await t.throwsAsync(() => zcf.saveIssuer('A', moolaKit.issuer), {
+    message: `the keyword (an object) must be a string\nSee console for error data.`,
   });
 });
 

@@ -8,7 +8,11 @@ import { makePromiseKit } from '@agoric/promise-kit';
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  */
 import '@agoric/ertp/exported';
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import {
+  makeIssuerKit,
+  MathKind,
+  makeAssertAllegedIssuerWhen,
+} from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -32,8 +36,10 @@ import { makeHandle } from '../makeHandle';
 function makeZoe(vatAdminSvc, getInterfaceOf, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
 
+  const assertAllegedIssuerWhen = makeAssertAllegedIssuerWhen(getInterfaceOf);
+
   // Zoe state shared among functions
-  const issuerTable = makeIssuerTable();
+  const issuerTable = makeIssuerTable(assertAllegedIssuerWhen);
   /** @type {WeakSet<Installation>} */
   const installations = new WeakSet();
 
