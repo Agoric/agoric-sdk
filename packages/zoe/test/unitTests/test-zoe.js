@@ -89,11 +89,8 @@ test(`zoe.offer`, async t => {
 
 test(`zoe.offer - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // TODO: improve error message
-  // https://github.com/Agoric/agoric-sdk/issues/1767
-  // @ts-ignore
   await t.throwsAsync(() => E(zoe).offer(), {
-    message: 'payment not found for (a string)\nSee console for error data.',
+    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
   });
 });
 
@@ -238,11 +235,8 @@ test(`zoe.getInstance`, async t => {
 
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // TODO: improve error message
-  // https://github.com/Agoric/agoric-sdk/issues/1767
-  // @ts-ignore
   await t.throwsAsync(() => E(zoe).getInstance(), {
-    message: `payment not found for (a string)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
   });
 });
 
@@ -255,11 +249,8 @@ test(`zoe.getInstallation`, async t => {
 
 test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // TODO: improve error message
-  // https://github.com/Agoric/agoric-sdk/issues/1767
-  // @ts-ignore
   await t.throwsAsync(() => E(zoe).getInstallation(), {
-    message: `payment not found for (a string)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
   });
 });
 
@@ -277,10 +268,7 @@ test(`zoe.getInvitationDetails`, async t => {
 
 test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // TODO: improve error message
-  // https://github.com/Agoric/agoric-sdk/issues/1767
-  // @ts-ignore
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
-    message: `payment not found for (a string)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
   });
 });
