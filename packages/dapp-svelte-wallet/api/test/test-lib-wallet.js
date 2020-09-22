@@ -69,6 +69,7 @@ async function setupTest() {
 
   const wallet = await makeWallet({
     zoe,
+    getInterfaceOf,
     board,
     pursesStateChangeHandler,
     inboxStateChangeHandler,

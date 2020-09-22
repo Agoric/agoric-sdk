@@ -11,6 +11,7 @@ import { makeMarshal } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { makeAssertAllegedIssuerWhen } from '@agoric/ertp';
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
@@ -33,6 +34,7 @@ const cmp = (a, b) => {
 /**
  * @typedef {Object} MakeWalletParams
  * @property {ZoeService} zoe
+ * @property {GetInterfaceOf} getInterfaceOf
  * @property {Board} board
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
@@ -40,6 +42,7 @@ const cmp = (a, b) => {
  */
 export async function makeWallet({
   zoe,
+  getInterfaceOf,
   board,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
@@ -58,7 +61,8 @@ export async function makeWallet({
   /** @type {Mapping<Installation>} */
   const installationMapping = makeMapping('installation');
 
-  const brandTable = makeIssuerTable();
+  const assertAllegedIssuerWhen = makeAssertAllegedIssuerWhen(getInterfaceOf);
+  const brandTable = makeIssuerTable(assertAllegedIssuerWhen);
   const issuerToBoardId = makeWeakStore('issuer');
 
   /** @type {WeakStore<Purse, Brand>} */

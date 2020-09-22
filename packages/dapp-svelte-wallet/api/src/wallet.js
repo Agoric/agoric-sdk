@@ -4,7 +4,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
   let wallet;
   let pursesState = JSON.stringify([]);
   let inboxState = JSON.stringify([]);
@@ -69,6 +69,7 @@ export function buildRootObject(_vatPowers) {
   async function startup({ zoe, board }) {
     wallet = await makeWallet({
       zoe,
+      getInterfaceOf: vatPowers.getInterfaceOf,
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
