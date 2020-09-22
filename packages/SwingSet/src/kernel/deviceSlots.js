@@ -12,6 +12,7 @@ export function makeDeviceSlots(
   forDeviceName,
   endowments,
   testLog,
+  deviceParameters,
 ) {
   assert(state.get && state.set, 'deviceSlots.build got bad "state" argument');
   assert(
@@ -162,6 +163,7 @@ export function makeDeviceSlots(
     setDeviceState,
     testLog,
     endowments,
+    deviceParameters,
   });
   mustPassByPresence(rootObject);
 

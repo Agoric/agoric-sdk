@@ -33,6 +33,20 @@ export function initializeDeviceState(storage, deviceID) {
 export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   insistDeviceID(deviceID);
 
+  function setSourceAndOptions(source, options) {
+    assert.typeof(source, 'object');
+    assert(source.bundle || source.bundleName);
+    assert.typeof(options, 'object');
+    storage.set(`${deviceID}.source`, JSON.stringify(source));
+    storage.set(`${deviceID}.options`, JSON.stringify(options));
+  }
+
+  function getSourceAndOptions() {
+    const source = JSON.parse(storage.get(`${deviceID}.source`));
+    const options = JSON.parse(storage.get(`${deviceID}.options`));
+    return harden({ source, options });
+  }
+
   /**
    * Provide the kernel slot corresponding to a given device slot, including
    * creating the kernel slot if it doesn't already exist.
@@ -164,6 +178,8 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   }
 
   return harden({
+    getSourceAndOptions,
+    setSourceAndOptions,
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getDeviceState,

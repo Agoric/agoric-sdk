@@ -4,34 +4,36 @@ import { insistMessage } from '../message';
 import { insistCapData } from '../capdata';
 import { insistDeviceID, insistVatID } from './id';
 
+const OKNULL = harden(['ok', null]);
+
+export function doSend(kernelKeeper, target, msg) {
+  parseKernelSlot(target);
+  insistMessage(msg);
+  const m = harden({ type: 'send', target, msg });
+  kernelKeeper.incrementRefCount(target, `enq|msg|t`);
+  kernelKeeper.incrementRefCount(msg.result, `enq|msg|r`);
+  kernelKeeper.incStat('syscalls');
+  kernelKeeper.incStat('syscallSend');
+  let idx = 0;
+  for (const argSlot of msg.args.slots) {
+    kernelKeeper.incrementRefCount(argSlot, `enq|msg|s${idx}`);
+    idx += 1;
+  }
+  kernelKeeper.addToRunQueue(m);
+  return OKNULL;
+}
+
 export function makeKernelSyscallHandler(tools) {
   const {
     kernelKeeper,
     ephemeral,
-    pendingMessageResults,
-    notePendingMessageResolution,
     notify,
     notifySubscribersAndQueue,
     resolveToError,
   } = tools;
 
-  const OKNULL = harden(['ok', null]);
-
   function send(target, msg) {
-    parseKernelSlot(target);
-    insistMessage(msg);
-    const m = harden({ type: 'send', target, msg });
-    kernelKeeper.incrementRefCount(target, `enq|msg|t`);
-    kernelKeeper.incrementRefCount(msg.result, `enq|msg|r`);
-    kernelKeeper.incStat('syscalls');
-    kernelKeeper.incStat('syscallSend');
-    let idx = 0;
-    for (const argSlot of msg.args.slots) {
-      kernelKeeper.incrementRefCount(argSlot, `enq|msg|s${idx}`);
-      idx += 1;
-    }
-    kernelKeeper.addToRunQueue(m);
-    return OKNULL;
+    return doSend(kernelKeeper, target, msg);
   }
 
   function invoke(deviceSlot, method, args) {
@@ -85,12 +87,8 @@ export function makeKernelSyscallHandler(tools) {
     // the resolution ("you knew it was resolved, you shouldn't be sending
     // any more messages to it, send them to the resolution instead"), and we
     // must wait for those notifications to be delivered.
-    if (pendingMessageResults.has(kpid)) {
-      const data = {
-        body: '{"@qclass":"slot",index:0}',
-        slots: [targetSlot],
-      };
-      notePendingMessageResolution(kpid, 'fulfilled', data);
+    if (p.policy === 'logAlways') {
+      console.log(`${kpid}.policy logAlways: fulfillToPresence ${targetSlot}`);
     }
     return OKNULL;
   }
@@ -110,8 +108,10 @@ export function makeKernelSyscallHandler(tools) {
     }
     kernelKeeper.fulfillKernelPromiseToData(kpid, data);
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
-    if (pendingMessageResults.has(kpid)) {
-      notePendingMessageResolution(kpid, 'fulfilled', data);
+    if (p.policy === 'logAlways') {
+      console.log(
+        `${kpid}.policy logAlways: fulfillToData ${JSON.stringify(data)}`,
+      );
     }
     return OKNULL;
   }

@@ -137,6 +137,15 @@ test('circular promise resolution data', async t => {
   await c.run();
   const expectedPromises = [
     {
+      id: 'kp40',
+      state: 'fulfilledToData',
+      refCount: 1,
+      data: {
+        body: '{"@qclass":"undefined"}',
+        slots: [],
+      },
+    },
+    {
       id: 'kp41',
       state: 'fulfilledToData',
       refCount: 3,

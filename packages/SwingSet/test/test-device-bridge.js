@@ -2,7 +2,11 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { initSwingStore } from '@agoric/swing-store-simple';
 
-import { buildVatController, buildBridge } from '../src/index';
+import {
+  initializeSwingset,
+  makeSwingsetController,
+  buildBridge,
+} from '../src/index';
 
 test('bridge device', async t => {
   const outboundLog = [];
@@ -21,15 +25,22 @@ test('bridge device', async t => {
         sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
       },
     },
-    devices: [['bridge', bd.srcPath, bd.endowments]],
+    devices: {
+      bridge: {
+        sourceSpec: bd.srcPath,
+      },
+    },
+  };
+  const deviceEndowments = {
+    bridge: { ...bd.endowments },
   };
 
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  const c = await buildVatController(config, argv, {
-    hostStorage: storage.storage,
-  });
+
+  await initializeSwingset(config, argv, storage.storage);
+  const c = await makeSwingsetController(storage.storage, deviceEndowments);
   await c.run();
 
   t.deepEqual(outboundLog, argv);
@@ -61,19 +72,11 @@ test('bridge device', async t => {
     return ['new', { retval: 'is' }, 5];
   }
   const bd2 = buildBridge(outboundCallback2);
-  const config2 = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
-      },
-    },
-    devices: [['bridge', bd2.srcPath, bd2.endowments]],
+  const endowments2 = {
+    bridge: { ...bd2.endowments },
   };
 
-  const c2 = await buildVatController(config2, argv, {
-    hostStorage: storage.storage,
-  });
+  const c2 = await makeSwingsetController(storage.storage, endowments2);
   await c2.run();
   // The bootstrap is reloaded from transcript, which means it doesn't run
   // any syscalls (they are switched off during replay), so it won't re-run
@@ -124,15 +127,21 @@ test('bridge device can return undefined', async t => {
         sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
       },
     },
-    devices: [['bridge', bd.srcPath, bd.endowments]],
+    devices: {
+      bridge: {
+        sourceSpec: bd.srcPath,
+      },
+    },
+  };
+  const deviceEndowments = {
+    bridge: { ...bd.endowments },
   };
 
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  const c = await buildVatController(config, argv, {
-    hostStorage: storage.storage,
-  });
+  await initializeSwingset(config, argv, storage.storage);
+  const c = await makeSwingsetController(storage.storage, deviceEndowments);
   await c.run();
 
   t.deepEqual(outboundLog, argv);

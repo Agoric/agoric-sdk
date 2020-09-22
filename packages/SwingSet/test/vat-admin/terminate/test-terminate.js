@@ -29,11 +29,11 @@ test('terminate', async t => {
   const configPath = path.resolve(__dirname, 'swingset-terminate.json');
   const config = loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
-  t.is(controller.bootstrapResult.status(), 'pending');
+  t.is(controller.kpStatus(controller.bootstrapResult), 'pending');
   await controller.run();
-  t.is(controller.bootstrapResult.status(), 'fulfilled');
+  t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
   t.deepEqual(
-    controller.bootstrapResult.resolution(),
+    controller.kpResolution(controller.bootstrapResult),
     capargs('bootstrap done'),
   );
   t.deepEqual(controller.dump().log, [
@@ -64,7 +64,7 @@ test('dispatches to the dead do not harm kernel', async t => {
       kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
-    t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
+    t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
     t.deepEqual(c1.dump().log, [
       'w: p1 = before',
       `w: I ate'nt dead`,
@@ -88,7 +88,7 @@ test('dispatches to the dead do not harm kernel', async t => {
       'panic',
     );
     await c2.run();
-    t.is(r2.status(), 'fulfilled');
+    t.is(c2.kpStatus(r2), 'fulfilled');
     t.deepEqual(c2.dump().log, [
       'b: p1b = I so resolve',
       'b: p2b fails vat terminated',
@@ -108,7 +108,7 @@ test('replay does not resurrect dead vat', async t => {
       kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
-    t.deepEqual(c1.bootstrapResult.resolution(), capargs('bootstrap done'));
+    t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
     // this comes from the dynamic vat...
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }
@@ -138,7 +138,7 @@ test('dead vat state removed', async t => {
   });
   await controller.run();
   t.deepEqual(
-    controller.bootstrapResult.resolution(),
+    controller.kpResolution(controller.bootstrapResult),
     capargs('bootstrap done'),
   );
   t.is(storage.get('vat.dynamicIDs'), '["v6"]');

@@ -12,7 +12,6 @@ import anylogger from 'anylogger';
 
 import { assert } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
-import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
@@ -20,11 +19,14 @@ import { makeTransform } from '@agoric/transform-eventual-send';
 import { locateWorkerBin } from '@agoric/xs-vat-worker';
 
 import { startSubprocessWorker } from './spawnSubprocessWorker';
-import { assertKnownOptions } from './assertOptions';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
+import {
+  swingsetIsInitialized,
+  initializeSwingset,
+} from './initializeSwingset';
 
 function makeConsole(tag) {
   const log = anylogger(tag);
@@ -35,222 +37,17 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
-function byName(a, b) {
-  if (a.name < b.name) {
-    return -1;
-  }
-  if (a.name > b.name) {
-    return 1;
-  }
-  return 0;
-}
-
-const KNOWN_CREATION_OPTIONS = harden([
-  'enablePipelining',
-  'metered',
-  'enableSetup',
-  'managerType',
-]);
-
-/**
- * @typedef {Object} SwingSetConfigProperties
- * @property {string} [sourceSpec] path to the source code
- * @property {string} [bundleSpec]
- * @property {Record<string, any>} [parameters]
- */
-
-/**
- * @typedef {Record<string, SwingSetConfigProperties>} SwingSetConfigDescriptor
- * Where the property name is the name of the vat.  Note that
- * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
- * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
- * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
- */
-
-/**
- * @typedef {Object} SwingSetConfig a swingset config object
- * @property {string} bootstrap
- * @property {SwingSetConfigDescriptor} [vats]
- * @property {SwingSetConfigDescriptor} [bundles]
- * @property {*} [devices]
- *
- * Swingsets defined by scanning a directory in this manner define no devices.
- */
-
-/**
- * Scan a directory for files defining the vats to bootstrap for a swingset, and
- * produce a swingset config object for what was found there.  Looks for files
- * with names of the pattern `vat-NAME.js` as well as a file named
- * 'bootstrap.js'.
- *
- * @param {string} basedir  The directory to scan
- * @returns {SwingSetConfig} a swingset config object: {
- *   bootstrap: "bootstrap",
- *   vats: {
- *     NAME: {
- *       sourceSpec: PATHSTRING
- *     }
- *   }
- * }
- */
-export function loadBasedir(basedir) {
-  const vats = {};
-  const subs = fs.readdirSync(basedir, { withFileTypes: true });
-  subs.sort(byName);
-  subs.forEach(dirent => {
-    if (dirent.name.endsWith('~')) {
-      // Special case crap filter to ignore emacs backup files and the like.
-      // Note that the regular filename parsing below will ignore such files
-      // anyway, but this skips logging them so as to reduce log spam.
-      return;
-    }
-    if (
-      dirent.name.startsWith('vat-') &&
-      dirent.isFile() &&
-      dirent.name.endsWith('.js')
-    ) {
-      const name = dirent.name.slice('vat-'.length, -'.js'.length);
-      const vatSourcePath = path.resolve(basedir, dirent.name);
-      vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
-    }
-  });
-  let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
-  try {
-    fs.statSync(bootstrapPath);
-  } catch (e) {
-    // TODO this will catch the case of the file not existing but doesn't check
-    // that it's a plain file and not a directory or something else unreadable.
-    // Consider putting in a more sophisticated check if this whole directory
-    // scanning thing is something we decide we want to have long term.
-    bootstrapPath = undefined;
-  }
-  const config = { vats };
-  if (bootstrapPath) {
-    vats.bootstrap = {
-      sourceSpec: bootstrapPath,
-      parameters: {},
-    };
-    config.bootstrap = 'bootstrap';
-  }
-  return config;
-}
-
-/**
- * Resolve a pathname found in a config descriptor.  First try to resolve it as
- * a module path, and then if that doesn't work try to resolve it as an
- * ordinary path relative to the directory in which the config file was found.
- *
- * @param {string} dirname  Path to directory containing the config file
- * @param {string} specPath  Path found in a `sourceSpec` or `bundleSpec` property
- *
- * @returns {string} the absolute path corresponding to `specPath` if it can be
- *    determined.
- */
-function resolveSpecFromConfig(dirname, specPath) {
-  try {
-    return require.resolve(specPath, { path: [dirname] });
-  } catch (e) {
-    if (e.code !== 'MODULE_NOT_FOUND') {
-      throw e;
-    }
-  }
-  return path.resolve(dirname, specPath);
-}
-
-/**
- * For each entry in a config descriptor (i.e, `vats`, `bundles`, etc), convert
- * it to normal form: resolve each pathname to a context-insensitive absolute
- * path and make sure it has a `parameters` property if it's supposed to.
- *
- * @param {SwingSetConfigDescriptor} desc  The config descriptor to be normalized.
- * @param {string} dirname  The pathname of the directory in which the config file was found
- * @param {boolean} expectParameters `true` if the entries should have parameters (for
- *    example, `true` for `vats` but `false` for bundles).
- */
-function normalizeConfigDescriptor(desc, dirname, expectParameters) {
-  if (desc) {
-    for (const name of Object.keys(desc)) {
-      const entry = desc[name];
-      if (entry.sourceSpec) {
-        entry.sourceSpec = resolveSpecFromConfig(dirname, entry.sourceSpec);
-      }
-      if (entry.bundleSpec) {
-        entry.bundleSpec = resolveSpecFromConfig(dirname, entry.bundleSpec);
-      }
-      if (expectParameters && !entry.parameters) {
-        entry.parameters = {};
-      }
-    }
-  }
-}
-
-/**
- * Read and parse a swingset config file and return it in normalized form.
- *
- * @param {string} configPath  Path to the config file to be processed
- *
- * @returns {SwingSetConfig} the contained config object, in normalized form, or null if the
- *    requested config file did not exist.
- *
- * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise
- *    invalid.
- */
-export function loadSwingsetConfigFile(configPath) {
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath));
-    const dirname = path.dirname(configPath);
-    normalizeConfigDescriptor(config.vats, dirname, true);
-    normalizeConfigDescriptor(config.bundles, dirname, false);
-    // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
-    if (!config.bootstrap) {
-      throw Error(`no designated bootstrap vat in ${configPath}`);
-    } else if (!config.vats[config.bootstrap]) {
-      throw Error(
-        `bootstrap vat ${config.bootstrap} not found in ${configPath}`,
-      );
-    }
-    return config;
-  } catch (e) {
-    if (e.code === 'ENOENT') {
-      return null;
-    } else {
-      throw e;
-    }
-  }
-}
-
-/**
- * Build the kernel source bundles.
- *
- */
-export async function buildKernelBundles() {
-  // this takes 2.7s on my computer
-  const sources = {
-    kernel: require.resolve('./kernel/kernel.js'),
-    adminDevice: require.resolve('./kernel/vatAdmin/vatAdmin-src'),
-    adminVat: require.resolve('./kernel/vatAdmin/vatAdminWrapper'),
-    comms: require.resolve('./vats/comms'),
-    vattp: require.resolve('./vats/vat-tp'),
-    timer: require.resolve('./vats/vat-timerWrapper'),
-  };
-  const kernelBundles = {};
-  for (const name of Object.keys(sources)) {
-    // this was harder to read with Promise.all
-    // eslint-disable-next-line no-await-in-loop
-    kernelBundles[name] = await bundleSource(sources[name]);
-  }
-  return harden(kernelBundles);
-}
-
-export async function buildVatController(
-  config,
-  argv = [],
+export async function makeSwingsetController(
+  hostStorage = initSwingStore().storage,
+  deviceEndowments = {},
   runtimeOptions = {},
 ) {
+  insistStorageAPI(hostStorage);
+
   // build console early so we can add console.log to diagnose early problems
-  const { debugPrefix = '' } = runtimeOptions;
+  const { verbose, debugPrefix = '' } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
-    throw Error('SES must be installed before calling buildVatController');
+    throw Error('SES must be installed before calling makeSwingsetController');
   }
 
   // eslint-disable-next-line no-shadow
@@ -261,25 +58,10 @@ export async function buildVatController(
   // see https://github.com/Agoric/SES-shim/issues/292 for details
   harden(console);
 
-  const {
-    verbose = false,
-    kernelBundles = await buildKernelBundles(),
-  } = runtimeOptions;
-
   // FIXME: Put this somewhere better.
   process.on('unhandledRejection', e =>
     console.error('UnhandledPromiseRejectionWarning:', e),
   );
-
-  if (config.bootstrap && argv) {
-    // move 'argv' into parameters on the bootstrap vat, without changing the
-    // original config (which might be hardened or shared)
-    const bootstrapName = config.bootstrap;
-    const parameters = { ...config.vats[bootstrapName].parameters, argv };
-    const bootstrapVat = { ...config.vats[bootstrapName], parameters };
-    const vats = { ...config.vats, [bootstrapName]: bootstrapVat };
-    config = { ...config, vats };
-  }
 
   function kernelRequire(what) {
     if (what === 're2') {
@@ -295,7 +77,8 @@ export async function buildVatController(
       throw Error(`kernelRequire unprepared to satisfy require(${what})`);
     }
   }
-  const kernelNS = await importBundle(kernelBundles.kernel, {
+  const kernelBundle = JSON.parse(hostStorage.get('kernelBundle'));
+  const kernelNS = await importBundle(kernelBundle, {
     filePrefix: 'kernel',
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
@@ -336,9 +119,6 @@ export async function buildVatController(
     // safer memory consumption
     RegExp: re2,
   });
-
-  const hostStorage = runtimeOptions.hostStorage || initSwingStore().storage;
-  insistStorageAPI(hostStorage);
 
   // It is important that tameMetering() was called by application startup,
   // before install-ses. Rather than ask applications to capture the return
@@ -399,150 +179,13 @@ export async function buildVatController(
   };
 
   const kernelOptions = { verbose };
-  const kernel = buildKernel(kernelEndowments, kernelOptions);
+  const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
     kernel.kdebugEnable(true);
   }
 
-  // the vatAdminDevice is given endowments by the kernel itself
-  kernel.addGenesisVat('vatAdmin', kernelBundles.adminVat);
-  kernel.addVatAdminDevice(kernelBundles.adminDevice);
-
-  // comms vat is added automatically, but TODO: bootstraps must still
-  // connect it to vat-tp. TODO: test-message-patterns builds two comms and
-  // two vattps, must handle somehow.
-  kernel.addGenesisVat(
-    'comms',
-    kernelBundles.comms,
-    {},
-    {
-      enablePipelining: true,
-      enableSetup: true,
-    },
-  );
-
-  // vat-tp is added automatically, but TODO: bootstraps must still connect
-  // it to comms
-  kernel.addGenesisVat('vattp', kernelBundles.vattp);
-
-  // timer wrapper vat is added automatically, but TODO: bootstraps must
-  // still provide a timer device, and connect it to the wrapper vat
-  kernel.addGenesisVat('timer', kernelBundles.timer);
-
-  function addGenesisVat(
-    name,
-    bundleName,
-    vatParameters = {},
-    creationOptions = {},
-  ) {
-    if (verbose) {
-      console.debug(`= adding vat '${name}' from bundle ${bundleName}`);
-    }
-    const bundle = kernel.getBundle(bundleName);
-    kernel.addGenesisVat(name, bundle, vatParameters, creationOptions);
-  }
-
-  async function addGenesisDevice(name, sourcePath, endowments) {
-    const bundle = await bundleSource(sourcePath);
-    kernel.addGenesisDevice(name, bundle, endowments);
-  }
-
-  function validateBundleDescriptor(desc, groupName, descName) {
-    if (desc.bundleHash) {
-      throw Error(
-        `config ${groupName}.${descName}: "bundleHash" is not yet supported for specifying bundles`,
-      );
-    }
-    let count = 0;
-    if (desc.bundleName) {
-      if (groupName === 'bundles') {
-        throw Error(
-          `config bundles.${descName}: "bundleName" is only available in vat or device descriptors`,
-        );
-      } else if (!kernel.hasBundle(desc.bundleName)) {
-        throw Error(
-          `config ${groupName}.${descName}: bundle ${desc.bundleName} is undefined`,
-        );
-      }
-      count += 1;
-    }
-    if (desc.sourceSpec) {
-      count += 1;
-    }
-    if (desc.bundleSpec) {
-      count += 1;
-    }
-    if (desc.bundle) {
-      count += 1;
-    }
-    if (count > 1) {
-      throw Error(
-        `config ${groupName}.${descName}: "bundleName", "bundle", "bundleSpec", and "sourceSpec" are mutually exclusive`,
-      );
-    } else if (count === 0) {
-      throw Error(
-        `config ${groupName}.${descName}: you must specify one of: "bundleName", "bundle", "bundleSpec", or "sourceSpec"`,
-      );
-    }
-    if (kernel.hasBundle(descName) && !desc.bundleName) {
-      throw Error(`config ${groupName}: bundle ${descName} multiply defined`);
-    }
-  }
-
-  async function bundleBundles(group, groupName) {
-    if (group) {
-      const names = [];
-      const presumptiveBundles = [];
-      for (const name of Object.keys(group)) {
-        const desc = group[name];
-        validateBundleDescriptor(desc, groupName, name);
-        if (!desc.bundleName) {
-          names.push(name);
-          if (desc.sourceSpec) {
-            presumptiveBundles.push(bundleSource(desc.sourceSpec));
-          } else if (desc.bundleSpec) {
-            presumptiveBundles.push(fs.readFileSync(desc.bundleSpec));
-          } else if (desc.bundle) {
-            presumptiveBundles.push(desc.bundle);
-          } else {
-            assert.fail(`this can't happen`);
-          }
-        }
-      }
-      const actualBundles = await Promise.all(presumptiveBundles);
-      for (let i = 0; i < names.length; i += 1) {
-        kernel.addBundle(names[i], actualBundles[i]);
-      }
-    }
-  }
-
-  await bundleBundles(config.bundles, 'bundles');
-  await bundleBundles(config.vats, 'vats');
-  // await bundleBundles(config.devices, 'devices'); // TODO: refactor device config
-
-  if (config.devices) {
-    const devices = [];
-    for (const [name, srcpath, endowments] of config.devices) {
-      devices.push(addGenesisDevice(name, srcpath, endowments));
-    }
-    await Promise.all(devices);
-  }
-
-  if (config.vats) {
-    for (const name of Object.keys(config.vats)) {
-      const { bundleName, parameters, creationOptions = {} } = config.vats[
-        name
-      ];
-      assertKnownOptions(creationOptions, KNOWN_CREATION_OPTIONS);
-      addGenesisVat(name, bundleName || name, parameters, creationOptions);
-    }
-  }
-
-  // start() may queue bootstrap if state doesn't say we did it already. It
-  // also replays the transcripts from a previous run, if any, which will
-  // execute vat code (but all syscalls will be disabled)
-  const bootstrapResult = await kernel.start(config.bootstrap);
+  await kernel.start();
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
@@ -577,6 +220,13 @@ export async function buildVatController(
 
     // these are for tests
 
+    kpStatus(kpid) {
+      return kernel.kpStatus(kpid);
+    },
+
+    kpResolution(kpid) {
+      return kernel.kpResolution(kpid);
+    },
     vatNameToID(vatName) {
       return kernel.vatNameToID(vatName);
     },
@@ -590,11 +240,52 @@ export async function buildVatController(
       assert.typeof(method, 'string');
       insistCapData(args);
       kernel.addExport(vatID, exportID);
-      return kernel.queueToExport(vatID, exportID, method, args, resultPolicy);
+      const kpid = kernel.queueToExport(
+        vatID,
+        exportID,
+        method,
+        args,
+        resultPolicy,
+      );
+      kernel.kpRegisterInterest(kpid);
+      return kpid;
     },
-
-    bootstrapResult,
   });
 
   return controller;
+}
+
+// TODO: This is a shim provided strictly for backwards compatibility and should
+// be removed once API changes are propagated everywhere.  Note that this shim
+// will not work for use cases that need to configure devices.  It could be made
+// to, but I've already changed all the places that do that to use the new API
+// and I don't want to encourage people to use the old API.
+export async function buildVatController(
+  config,
+  argv = [],
+  runtimeOptions = {},
+) {
+  const {
+    hostStorage = initSwingStore().storage,
+    verbose,
+    kernelBundles,
+    debugPrefix,
+  } = runtimeOptions;
+  const actualRuntimeOptions = { verbose, debugPrefix };
+  const initializationOptions = { verbose, kernelBundles };
+  let bootstrapResult;
+  if (!swingsetIsInitialized(hostStorage)) {
+    bootstrapResult = await initializeSwingset(
+      config,
+      argv,
+      hostStorage,
+      initializationOptions,
+    );
+  }
+  const controller = await makeSwingsetController(
+    hostStorage,
+    {},
+    actualRuntimeOptions,
+  );
+  return harden({ bootstrapResult, ...controller });
 }

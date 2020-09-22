@@ -1,6 +1,7 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { buildVatController } from '../src/index';
+import { initSwingStore } from '@agoric/swing-store-simple';
+import { initializeSwingset, makeSwingsetController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
 test('vattp', async t => {
@@ -13,10 +14,19 @@ test('vattp', async t => {
         sourceSpec: require.resolve('./files-vattp/bootstrap-test-vattp'),
       },
     },
-    devices: [['mailbox', mb.srcPath, mb.endowments]],
+    devices: {
+      mailbox: {
+        sourceSpec: mb.srcPath,
+      },
+    },
   };
+  const deviceEndowments = {
+    mailbox: { ...mb.endowments },
+  };
+  const hostStorage = initSwingStore().storage;
 
-  const c = await buildVatController(config, ['1']);
+  await initializeSwingset(config, ['1'], hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
   t.deepEqual(s.exportToData(), {});
 
@@ -64,10 +74,19 @@ test('vattp 2', async t => {
         sourceSpec: require.resolve('./files-vattp/bootstrap-test-vattp'),
       },
     },
-    devices: [['mailbox', mb.srcPath, mb.endowments]],
+    devices: {
+      mailbox: {
+        sourceSpec: mb.srcPath,
+      },
+    },
   };
+  const deviceEndowments = {
+    mailbox: { ...mb.endowments },
+  };
+  const hostStorage = initSwingStore().storage;
 
-  const c = await buildVatController(config, ['2']);
+  await initializeSwingset(config, ['2'], hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
   t.deepEqual(s.exportToData(), {
     remote1: { outbox: [[1, 'out1']], inboundAck: 0 },

@@ -56,7 +56,7 @@ test('metering dynamic vats', async t => {
   // and grab a kpid that won't be resolved until the vat dies
   const r = c.queueToVatExport('bootstrap', 'o+0', 'getNever', capargs([]));
   await c.run();
-  const neverArgs = r.resolution();
+  const neverArgs = c.kpResolution(r);
   const neverKPID = neverArgs.slots[0];
 
   // First, send a message to the dynamic vat that runs normally
