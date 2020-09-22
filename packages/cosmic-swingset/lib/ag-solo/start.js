@@ -15,7 +15,9 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
   buildCommand,
-  buildVatController,
+  swingsetIsInitialized,
+  initializeSwingset,
+  makeSwingsetController,
   buildMailboxStateMap,
   buildMailbox,
   buildPlugin,
@@ -118,20 +120,35 @@ async function buildSwingset(
   if (config === null) {
     config = loadBasedir(vatsDir);
   }
-  config.devices = [
-    ['mailbox', mb.srcPath, mb.endowments],
-    ['command', cm.srcPath, cm.endowments],
-    ['timer', timer.srcPath, timer.endowments],
-    ['plugin', plugin.srcPath, plugin.endowments],
-  ];
+  config.devices = {
+    mailbox: {
+      sourceSpec: mb.srcPath,
+    },
+    command: {
+      sourceSpec: cm.srcPath,
+    },
+    timer: {
+      sourceSpec: timer.srcPath,
+    },
+    plugin: {
+      sourceSpec: plugin.srcPath,
+    },
+  };
+  const deviceEndowments = {
+    mailbox: { ...mb.endowments },
+    command: { ...cm.endowments },
+    timer: { ...timer.endowments },
+    plugin: { ...plugin.endowments },
+  };
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
 
-  const controller = await buildVatController(config, argv, {
-    hostStorage: storage,
-  });
+  if (!swingsetIsInitialized(storage)) {
+    await initializeSwingset(config, argv, storage);
+  }
+  const controller = await makeSwingsetController(storage, deviceEndowments);
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());

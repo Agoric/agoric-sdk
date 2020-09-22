@@ -22,6 +22,7 @@ import '../types';
  * @param {*} state  A get/set object for the device's persistent state
  * @param {Record<string, any>} endowments  The device's configured endowments
  * @param {*} testLog
+ * @param {*} deviceParameters  Parameters from the device's config entry
  */
 export default function makeDeviceManager(
   deviceName,
@@ -29,6 +30,7 @@ export default function makeDeviceManager(
   state,
   endowments,
   testLog,
+  deviceParameters,
 ) {
   let deviceSyscallHandler;
   function setDeviceSyscallHandler(handler) {
@@ -50,11 +52,13 @@ export default function makeDeviceManager(
     deviceName,
     endowments,
     testLog,
+    deviceParameters,
   );
 
   /**
    * @typedef {['ok', CapData]} VatInvocationResults
    */
+
   /**
    * @typedef {[string, string, CapData]} DeviceInvocation
    * @property {string} 0 Kernel slot designating the device node that is the target of
@@ -62,6 +66,7 @@ export default function makeDeviceManager(
    * @property {string} 1 A string naming the method to be invoked
    * @property {CapData} 2 A capdata object containing the arguments to the invocation
    */
+
   /**
    * Invoke a method on a device node.
    *

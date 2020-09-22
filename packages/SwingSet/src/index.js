@@ -1,9 +1,11 @@
+export { buildVatController, makeSwingsetController } from './controller';
 export {
+  swingsetIsInitialized,
+  initializeSwingset,
+  buildKernelBundles,
   loadBasedir,
   loadSwingsetConfigFile,
-  buildVatController,
-  buildKernelBundles,
-} from './controller';
+} from './initializeSwingset';
 
 export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 export { buildTimer } from './devices/timer';

@@ -3,7 +3,11 @@ import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 
-import { buildVatController, buildKernelBundles } from '../src/index';
+import {
+  initializeSwingset,
+  makeSwingsetController,
+  buildKernelBundles,
+} from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
 
@@ -43,9 +47,15 @@ test.serial('d0', async t => {
         creationOptions: { enableSetup: true },
       },
     },
-    devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
+    devices: {
+      d0: {
+        sourceSpec: require.resolve('./files-devices/device-0'),
+      },
+    },
   };
-  const c = await buildVatController(config, [], t.context.data);
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage, {});
   await c.step();
   // console.log(util.inspect(c.dump(), { depth: null }));
   t.deepEqual(JSON.parse(c.dump().log[0]), [
@@ -57,7 +67,6 @@ test.serial('d0', async t => {
       vattp: { '@qclass': 'slot', index: 4 },
     },
     {
-      _dummy: 'dummy',
       d0: { '@qclass': 'slot', index: 5 },
       vatAdmin: { '@qclass': 'slot', index: 6 },
     },
@@ -83,17 +92,21 @@ test.serial('d1', async t => {
         creationOptions: { enableSetup: true },
       },
     },
-    devices: [
-      [
-        'd1',
-        require.resolve('./files-devices/device-1'),
-        {
-          shared: sharedArray,
-        },
-      ],
-    ],
+    devices: {
+      d1: {
+        sourceSpec: require.resolve('./files-devices/device-1'),
+      },
+    },
   };
-  const c = await buildVatController(config, [], t.context.data);
+  const deviceEndowments = {
+    d1: {
+      shared: sharedArray,
+    },
+  };
+
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, [], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.step();
   c.queueToVatExport('bootstrap', 'o+0', 'step1', capargs([]));
   await c.step();
@@ -116,9 +129,15 @@ async function test2(t, mode) {
         sourceSpec: require.resolve('./files-devices/vat-left.js'),
       },
     },
-    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    devices: {
+      d2: {
+        sourceSpec: require.resolve('./files-devices/device-2'),
+      },
+    },
   };
-  const c = await buildVatController(config, [mode], t.context.data);
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, [mode], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, {});
   await c.step();
   if (mode === '1') {
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
@@ -197,15 +216,17 @@ test.serial('device state', async t => {
         bundle: t.context.data.bootstrap3,
       },
     },
-    devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
+    devices: {
+      d3: {
+        sourceSpec: require.resolve('./files-devices/device-3'),
+      },
+    },
   };
 
   // The initial state should be missing (null). Then we set it with the call
   // from bootstrap, and read it back.
-  const c1 = await buildVatController(config, ['write+read'], {
-    hostStorage: storage,
-    kernelBundles: t.context.data.kernelBundles,
-  });
+  await initializeSwingset(config, ['write+read'], storage, t.context.data);
+  const c1 = await makeSwingsetController(storage, {});
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
@@ -224,10 +245,19 @@ test.serial('mailbox outbound', async t => {
         bundle: t.context.data.bootstrap2,
       },
     },
-    devices: [['mailbox', mb.srcPath, mb.endowments]],
+    devices: {
+      mailbox: {
+        sourceSpec: require.resolve(mb.srcPath),
+      },
+    },
+  };
+  const deviceEndowments = {
+    mailbox: { ...mb.endowments },
   };
 
-  const c = await buildVatController(config, ['mailbox1'], t.context.data);
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, ['mailbox1'], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
   t.deepEqual(s.exportToData(), {
     peer1: {
@@ -262,12 +292,21 @@ test.serial('mailbox inbound', async t => {
         bundle: t.context.data.bootstrap2,
       },
     },
-    devices: [['mailbox', mb.srcPath, mb.endowments]],
+    devices: {
+      mailbox: {
+        sourceSpec: require.resolve(mb.srcPath),
+      },
+    },
+  };
+  const deviceEndowments = {
+    mailbox: { ...mb.endowments },
   };
 
   let rc;
 
-  const c = await buildVatController(config, ['mailbox2'], t.context.data);
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, ['mailbox2'], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
   rc = mb.deliverInbound(
     'peer1',
@@ -377,10 +416,19 @@ test.serial('command broadcast', async t => {
         bundle: t.context.data.bootstrap2,
       },
     },
-    devices: [['command', cm.srcPath, cm.endowments]],
+    devices: {
+      command: {
+        sourceSpec: require.resolve(cm.srcPath),
+      },
+    },
+  };
+  const deviceEndowments = {
+    command: { ...cm.endowments },
   };
 
-  const c = await buildVatController(config, ['command1'], t.context.data);
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, ['command1'], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 });
@@ -394,10 +442,19 @@ test.serial('command deliver', async t => {
         bundle: t.context.data.bootstrap2,
       },
     },
-    devices: [['command', cm.srcPath, cm.endowments]],
+    devices: {
+      command: {
+        sourceSpec: require.resolve(cm.srcPath),
+      },
+    },
+  };
+  const deviceEndowments = {
+    command: { ...cm.endowments },
   };
 
-  const c = await buildVatController(config, ['command2'], t.context.data);
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, ['command2'], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
 
   t.deepEqual(c.dump().log.length, 0);
@@ -427,9 +484,15 @@ test('callNow refuses promises', async t => {
         creationOptions: { enableSetup: true },
       },
     },
-    devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
+    devices: {
+      d0: {
+        sourceSpec: require.resolve('./files-devices/device-0'),
+      },
+    },
   };
-  const c = await buildVatController(config, ['promise1'], t.context.data);
+  const storage = initSwingStore().storage;
+  await initializeSwingset(config, ['promise1'], storage, t.context.data);
+  const c = await makeSwingsetController(storage, { d0: {} });
   await c.step();
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);

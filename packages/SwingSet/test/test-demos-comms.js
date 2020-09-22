@@ -1,7 +1,12 @@
 import '@agoric/install-ses';
+import { initSwingStore } from '@agoric/swing-store-simple';
 import test from 'ava';
 import { buildLoopbox } from '../src/devices/loopbox';
-import { loadBasedir, buildVatController } from '../src/index';
+import {
+  loadBasedir,
+  initializeSwingset,
+  makeSwingsetController,
+} from '../src/index';
 
 async function main(basedir, argv) {
   const config = await loadBasedir(basedir);
@@ -13,9 +18,19 @@ async function main(basedir, argv) {
     config.vats.usercomms.creationOptions = { enableSetup };
   }
   const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
-  config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
+  config.devices = {
+    loopbox: {
+      sourceSpec: loopboxSrcPath,
+    },
+  };
+  const deviceEndowments = {
+    loopbox: { ...loopboxEndowments },
+  };
 
-  const controller = await buildVatController(config, argv);
+  const storage = initSwingStore().storage;
+  await initializeSwingset(config, argv, storage);
+  const controller = await makeSwingsetController(storage, deviceEndowments);
+
   await controller.run();
   return controller.dump();
 }

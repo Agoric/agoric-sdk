@@ -34,10 +34,10 @@ async function vatSyscallFailure(t, beDynamic) {
     // sanity check that the state of the bad static vat is what we think it is
     t.is(
       storage.get('vat.names'),
-      '["vatAdmin","comms","vattp","timer","bootstrap","badvatStatic"]',
+      '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
     );
     t.is(storage.get(`${badVatRootObject}.owner`), badVatID);
-    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 6);
+    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 8);
     t.is(storage.get('vat.name.badvatStatic'), badVatID);
   }
   await controller.run();
@@ -46,7 +46,7 @@ async function vatSyscallFailure(t, beDynamic) {
     // is verified by other, more complicated tests)
     t.is(
       storage.get('vat.names'),
-      '["vatAdmin","comms","vattp","timer","bootstrap"]',
+      '["bootstrap","vatAdmin","comms","vattp","timer"]',
     );
     t.is(storage.get(`${badVatID}.owner`), undefined);
     t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);

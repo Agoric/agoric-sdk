@@ -58,7 +58,7 @@ test('metering dynamic vat which imports bundle', async t => {
     capargs([grandchildBundle]),
   );
   await c.run();
-  t.deepEqual(r.resolution(), capargs('ok'));
+  t.deepEqual(c.kpResolution(r), capargs('ok'));
 
   // First, send a message to the grandchild that runs normally
   c.queueToVatExport('bootstrap', 'o+0', 'bundleRun', capargs([]));

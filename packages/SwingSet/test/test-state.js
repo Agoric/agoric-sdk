@@ -314,12 +314,18 @@ test('kernelKeeper vat names', async t => {
     ['vat.name.vatname5', 'v1'],
     ['vat.name.Frank', 'v2'],
   ]);
-  t.deepEqual(k.getAllVatNames(), ['Frank', 'vatname5']);
+  t.deepEqual(k.getStaticVats(), [
+    ['Frank', 'v2'],
+    ['vatname5', 'v1'],
+  ]);
   t.is(k.getVatIDForName('Frank'), v2);
   t.is(k.allocateVatIDForNameIfNeeded('Frank'), v2);
 
   const k2 = duplicateKeeper(getState);
-  t.deepEqual(k2.getAllVatNames(), ['Frank', 'vatname5']);
+  t.deepEqual(k.getStaticVats(), [
+    ['Frank', 'v2'],
+    ['vatname5', 'v1'],
+  ]);
   t.is(k2.getVatIDForName('Frank'), v2);
   t.is(k2.allocateVatIDForNameIfNeeded('Frank'), v2);
 });
@@ -349,12 +355,18 @@ test('kernelKeeper device names', async t => {
     ['device.name.devicename5', 'd7'],
     ['device.name.Frank', 'd8'],
   ]);
-  t.deepEqual(k.getAllDeviceNames(), ['Frank', 'devicename5']);
+  t.deepEqual(k.getDevices(), [
+    ['Frank', 'd8'],
+    ['devicename5', 'd7'],
+  ]);
   t.is(k.getDeviceIDForName('Frank'), d8);
   t.is(k.allocateDeviceIDForNameIfNeeded('Frank'), d8);
 
   const k2 = duplicateKeeper(getState);
-  t.deepEqual(k2.getAllDeviceNames(), ['Frank', 'devicename5']);
+  t.deepEqual(k.getDevices(), [
+    ['Frank', 'd8'],
+    ['devicename5', 'd7'],
+  ]);
   t.is(k2.getDeviceIDForName('Frank'), d8);
   t.is(k2.allocateDeviceIDForNameIfNeeded('Frank'), d8);
 });
@@ -403,6 +415,7 @@ test('kernelKeeper promises', async t => {
   const p1 = k.addKernelPromiseForVat('v4');
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
+    policy: 'ignore',
     refCount: 0,
     queue: [],
     subscribers: [],
@@ -416,6 +429,7 @@ test('kernelKeeper promises', async t => {
 
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
+    policy: 'ignore',
     refCount: 0,
     queue: [],
     subscribers: [],
@@ -426,6 +440,7 @@ test('kernelKeeper promises', async t => {
   k.clearDecider(p1);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
+    policy: 'ignore',
     refCount: 0,
     queue: [],
     subscribers: [],
@@ -436,6 +451,7 @@ test('kernelKeeper promises', async t => {
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
+    policy: 'ignore',
     refCount: 0,
     queue: [],
     subscribers: [],
@@ -445,6 +461,7 @@ test('kernelKeeper promises', async t => {
   k.setDecider(p1, 'v7');
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
+    policy: 'ignore',
     refCount: 0,
     queue: [],
     subscribers: [],

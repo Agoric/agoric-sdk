@@ -33,6 +33,13 @@ export function dumpStore(store, outfile, rawMode) {
   popt('kernelStats');
   gap();
 
+  p('// bundles');
+  poptBig('bundle', 'kernelBundle');
+  for (const key of groupKeys('bundle.')) {
+    poptBig('bundle', key);
+  }
+  gap();
+
   p('// device info');
   popt('device.nextID');
   const devs = new Map();
@@ -53,6 +60,8 @@ export function dumpStore(store, outfile, rawMode) {
 
   for (const [dn, d] of devs.entries()) {
     p(`// device ${d} (${dn})`);
+    popt(`${d}.options`);
+    poptBig('bundle', `${d}.source`);
     popt(`${d}.o.nextID`);
     for (const key of groupKeys(`${d}.c.kd`)) {
       const val = popt(key);
@@ -102,7 +111,7 @@ export function dumpStore(store, outfile, rawMode) {
     }
     p(`// vat ${v} (${vn})`);
     popt(`${v}.options`);
-    popt(`${v}.source`);
+    poptBig('bundle', `${v}.source`);
     popt(`${v}.d.nextID`);
     popt(`${v}.o.nextID`);
     popt(`${v}.p.nextID`);
@@ -219,6 +228,21 @@ export function dumpStore(store, outfile, rawMode) {
     if (state.has(key)) {
       const value = state.get(key);
       pkv(key, value);
+      state.delete(key);
+      return value;
+    } else {
+      return undefined;
+    }
+  }
+
+  function poptBig(tag, key) {
+    if (state.has(key)) {
+      const value = state.get(key);
+      if (value.length > 50) {
+        pkv(key, `<<${tag} ${value.length}>>`);
+      } else {
+        pkv(key, value);
+      }
       state.delete(key);
       return value;
     } else {
