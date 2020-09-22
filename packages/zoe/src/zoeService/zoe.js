@@ -62,9 +62,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     return installation;
   };
 
-  /**
-   * @type {GetAmountOfInvitationThen}
-   */
+  /** @type {GetAmountOfInvitationThen} */
   const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
     const onRejected = () =>
       assert.fail(details`A Zoe invitation is required, not ${invitationP}`);
