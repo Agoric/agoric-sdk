@@ -62,6 +62,15 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     return installation;
   };
 
+  /** @type {GetAmountOfInvitationThen} */
+  const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
+    const onRejected = () =>
+      assert.fail(details`A Zoe invitation is required, not ${invitationP}`);
+    return E(invitationKit.issuer)
+      .getAmountOf(invitationP)
+      .then(onFulfilled, onRejected);
+  };
+
   /** @type {ZoeService} */
   const zoeService = {
     getInvitationIssuer: () => invitationKit.issuer,
@@ -71,18 +80,18 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     getBrands: instance => instanceToInstanceAdmin.get(instance).getBrands(),
     getIssuers: instance => instanceToInstanceAdmin.get(instance).getIssuers(),
     getTerms: instance => instanceToInstanceAdmin.get(instance).getTerms(),
-    getInstance: invitation =>
-      E(invitationKit.issuer)
-        .getAmountOf(invitation)
-        .then(amount => amount.value[0].instance),
-    getInstallation: invitation =>
-      E(invitationKit.issuer)
-        .getAmountOf(invitation)
-        .then(amount => amount.value[0].installation),
-    getInvitationDetails: invitation =>
-      E(invitationKit.issuer)
-        .getAmountOf(invitation)
-        .then(amount => amount.value[0]),
+    getInstance: invitation => {
+      const onFulfilled = amount => amount.value[0].instance;
+      return getAmountOfInvitationThen(invitation, onFulfilled);
+    },
+    getInstallation: invitation => {
+      const onFulfilled = amount => amount.value[0].installation;
+      return getAmountOfInvitationThen(invitation, onFulfilled);
+    },
+    getInvitationDetails: invitation => {
+      const onFulfilled = amount => amount.value[0];
+      return getAmountOfInvitationThen(invitation, onFulfilled);
+    },
     startInstance: async (
       installation,
       uncleanIssuerKeywordRecord = harden({}),
@@ -367,82 +376,95 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       uncleanProposal = harden({}),
       paymentKeywordRecord = harden({}),
     ) => {
-      return invitationKit.issuer.burn(invitation).then(invitationAmount => {
-        assert(
-          invitationAmount.value.length === 1,
-          'Only one invitation can be redeemed at a time',
-        );
-        const {
-          value: [{ instance, handle: invitationHandle }],
-        } = invitationAmount;
-        const instanceAdmin = instanceToInstanceAdmin.get(instance);
-        assert(!instanceAdmin.hasShutdown(), `No further offers are accepted`);
-
-        const proposal = cleanProposal(getAmountMath, uncleanProposal);
-        const { give, want } = proposal;
-        const giveKeywords = Object.keys(give);
-        const wantKeywords = Object.keys(want);
-        const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
-
-        const paymentDepositedPs = proposalKeywords.map(keyword => {
-          if (giveKeywords.includes(keyword)) {
-            // We cannot trust the amount in the proposal, so we use our
-            // cleaned proposal's amount that should be the same.
-            const giveAmount = proposal.give[keyword];
-            const purse = brandToPurse.get(giveAmount.brand);
-            return E.when(paymentKeywordRecord[keyword], payment =>
-              E(purse).deposit(payment, giveAmount),
-            );
-            // eslint-disable-next-line no-else-return
-          } else {
-            // payments outside the give: clause are ignored.
-            return getAmountMath(proposal.want[keyword].brand).getEmpty();
-          }
-        });
-
-        return Promise.all(paymentDepositedPs).then(amountsArray => {
-          const initialAllocation = arrayToObj(amountsArray, proposalKeywords);
-
-          const offerResultPromiseKit = makePromiseKit();
-          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-          offerResultPromiseKit.promise.catch(_ => {});
-          const exitObjPromiseKit = makePromiseKit();
-          // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-          exitObjPromiseKit.promise.catch(_ => {});
-          const seatHandle = makeHandle('SeatHandle');
-
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            instanceAdmin,
-            proposal,
-            brandToPurse,
-            exitObjPromiseKit.promise,
-            offerResultPromiseKit.promise,
+      return invitationKit.issuer.burn(invitation).then(
+        invitationAmount => {
+          assert(
+            invitationAmount.value.length === 1,
+            'Only one invitation can be redeemed at a time',
+          );
+          const {
+            value: [{ instance, handle: invitationHandle }],
+          } = invitationAmount;
+          const instanceAdmin = instanceToInstanceAdmin.get(instance);
+          assert(
+            !instanceAdmin.hasShutdown(),
+            `No further offers are accepted`,
           );
 
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+          const proposal = cleanProposal(getAmountMath, uncleanProposal);
+          const { give, want } = proposal;
+          const giveKeywords = Object.keys(give);
+          const wantKeywords = Object.keys(want);
+          const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
 
-          const seatData = harden({ proposal, initialAllocation, notifier });
+          const paymentDepositedPs = proposalKeywords.map(keyword => {
+            if (giveKeywords.includes(keyword)) {
+              // We cannot trust the amount in the proposal, so we use our
+              // cleaned proposal's amount that should be the same.
+              const giveAmount = proposal.give[keyword];
+              const purse = brandToPurse.get(giveAmount.brand);
+              return E.when(paymentKeywordRecord[keyword], payment =>
+                E(purse).deposit(payment, giveAmount),
+              );
+              // eslint-disable-next-line no-else-return
+            } else {
+              // payments outside the give: clause are ignored.
+              return getAmountMath(proposal.want[keyword].brand).getEmpty();
+            }
+          });
 
-          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
-          instanceAdmin
-            .tellZCFToMakeSeat(
-              invitationHandle,
-              zoeSeatAdmin,
-              seatData,
-              seatHandle,
-            )
-            .then(({ offerResultP, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultP);
-              exitObjPromiseKit.resolve(exitObj);
-            })
-            .catch(err => {
-              console.log(err);
-            });
+          return Promise.all(paymentDepositedPs).then(amountsArray => {
+            const initialAllocation = arrayToObj(
+              amountsArray,
+              proposalKeywords,
+            );
 
-          return userSeat;
-        });
-      });
+            const offerResultPromiseKit = makePromiseKit();
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+            offerResultPromiseKit.promise.catch(_ => {});
+            const exitObjPromiseKit = makePromiseKit();
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+            exitObjPromiseKit.promise.catch(_ => {});
+            const seatHandle = makeHandle('SeatHandle');
+
+            const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+              initialAllocation,
+              instanceAdmin,
+              proposal,
+              brandToPurse,
+              exitObjPromiseKit.promise,
+              offerResultPromiseKit.promise,
+            );
+
+            seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+
+            const seatData = harden({ proposal, initialAllocation, notifier });
+
+            instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
+            instanceAdmin
+              .tellZCFToMakeSeat(
+                invitationHandle,
+                zoeSeatAdmin,
+                seatData,
+                seatHandle,
+              )
+              .then(({ offerResultP, exitObj }) => {
+                offerResultPromiseKit.resolve(offerResultP);
+                exitObjPromiseKit.resolve(exitObj);
+              })
+              .catch(err => {
+                console.log(err);
+              });
+
+            return userSeat;
+          });
+        },
+        () => {
+          throw assert.fail(
+            details`A Zoe invitation is required, not ${invitation}`,
+          );
+        },
+      );
     },
   };
   harden(zoeService);
