@@ -3,13 +3,14 @@ import '@agoric/install-ses';
 
 import anylogger from 'anylogger';
 import fs from 'fs';
-import Netstring from 'netstring-stream';
+import process from 'process';
 
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
+import { streamDecoder, streamEncoder } from '../../worker-protocol';
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
@@ -71,96 +72,98 @@ function doNotify(vpid, vp) {
   }
 }
 
-const toParent = Netstring.writeStream();
-toParent.pipe(fs.createWriteStream('IGNORED', { fd: 4, encoding: 'utf-8' }));
+// TODO: remove these encoding:'utf-8' to give Buffers to the netstring decoder and stop the error
+const pipeOut = fs.createWriteStream('IGNORED', { fd: 4, encoding: 'utf-8' });
+const toParent = streamEncoder(data => pipeOut.write(data));
 
-const fromParent = fs
-  .createReadStream('IGNORED', { fd: 3, encoding: 'utf-8' })
-  .pipe(Netstring.readStream());
-fromParent.setEncoding('utf-8');
+const pipeIn = fs.createReadStream('IGNORED', { fd: 3, encoding: 'utf-8' });
+const fromParent = streamDecoder(pipeIn);
 
-function sendUplink(msg) {
-  assert(msg instanceof Array, `msg must be an Array`);
-  toParent.write(JSON.stringify(msg));
+async function loadBundle(bundle, vatParameters) {
+  const endowments = {
+    console: makeConsole(`SwingSet:vatWorker`),
+  };
+  const vatNS = await importBundle(bundle, { endowments });
+  workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
+  toParent(['gotBundle']);
+
+  function doSyscall(vatSyscallObject) {
+    toParent(['syscall', ...vatSyscallObject]);
+  }
+  const syscall = harden({
+    send: (...args) => doSyscall(['send', ...args]),
+    callNow: (..._args) => {
+      throw Error(`nodeWorker cannot syscall.callNow`);
+    },
+    subscribe: (...args) => doSyscall(['subscribe', ...args]),
+    fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
+    fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
+    reject: (...args) => doSyscall(['reject', ...args]),
+  });
+
+  function testLog(...args) {
+    toParent(['testLog', ...args]);
+  }
+
+  const state = null;
+  const vatID = 'demo-vatID';
+  // todo: maybe add transformTildot, makeGetMeter/transformMetering to
+  // vatPowers, but only if options tell us they're wanted. Maybe
+  // transformTildot should be async and outsourced to the kernel
+  // process/thread.
+  const vatPowers = {
+    Remotable,
+    getInterfaceOf,
+    makeMarshal,
+    testLog,
+  };
+  dispatch = makeLiveSlots(
+    syscall,
+    state,
+    vatNS.buildRootObject,
+    vatID,
+    vatPowers,
+    vatParameters,
+  );
+  workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
+  toParent(['dispatchReady']);
 }
 
-// fromParent.on('data', data => {
-//  workerLog('data from parent', data);
-//  toParent.write('child ack');
-// });
-
-fromParent.on('data', data => {
-  const [type, ...margs] = JSON.parse(data);
-  workerLog(`received`, type);
-  if (type === 'start') {
-    // TODO: parent should send ['start', vatID]
-    workerLog(`got start`);
-    sendUplink(['gotStart']);
-  } else if (type === 'setBundle') {
-    const [bundle, vatParameters] = margs;
-    const endowments = {
-      console: makeConsole(`SwingSet:vatWorker`),
-    };
-    importBundle(bundle, { endowments }).then(vatNS => {
-      workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
-      sendUplink(['gotBundle']);
-
-      function doSyscall(vatSyscallObject) {
-        sendUplink(['syscall', ...vatSyscallObject]);
-      }
-      const syscall = harden({
-        send: (...args) => doSyscall(['send', ...args]),
-        callNow: (..._args) => {
-          throw Error(`nodeWorker cannot syscall.callNow`);
-        },
-        subscribe: (...args) => doSyscall(['subscribe', ...args]),
-        fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
-        fulfillToPresence: (...args) =>
-          doSyscall(['fulfillToPresence', ...args]),
-        reject: (...args) => doSyscall(['reject', ...args]),
-      });
-
-      function testLog(...args) {
-        sendUplink(['testLog', ...args]);
-      }
-
-      const state = null;
-      const vatID = 'demo-vatID';
-      // todo: maybe add transformTildot, makeGetMeter/transformMetering to
-      // vatPowers, but only if options tell us they're wanted. Maybe
-      // transformTildot should be async and outsourced to the kernel
-      // process/thread.
-      const vatPowers = {
-        Remotable,
-        getInterfaceOf,
-        makeMarshal,
-        testLog,
-      };
-      dispatch = makeLiveSlots(
-        syscall,
-        state,
-        vatNS.buildRootObject,
-        vatID,
-        vatPowers,
-        vatParameters,
-      );
-      workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
-      sendUplink(['dispatchReady']);
-    });
-  } else if (type === 'deliver') {
-    if (!dispatch) {
-      workerLog(`error: deliver before dispatchReady`);
-      return;
-    }
-    const [dtype, ...dargs] = margs;
-    if (dtype === 'message') {
-      doMessage(...dargs).then(res => sendUplink(['deliverDone', ...res]));
-    } else if (dtype === 'notify') {
-      doNotify(...dargs).then(res => sendUplink(['deliverDone', ...res]));
+async function run() {
+  workerLog(`waiting for parent to send start or setBundle`);
+  for await (const [type, ...args] of fromParent) {
+    workerLog(`received`, type);
+    if (type === 'start') {
+      // TODO: parent should send ['start', vatID]
+      workerLog(`got start`);
+      toParent(['gotStart']);
+    } else if (type === 'setBundle') {
+      const [bundle, vatParameters] = args;
+      await loadBundle(bundle, vatParameters);
+      break;
     } else {
-      throw Error(`bad delivery type ${dtype}`);
+      throw Error(`unexpected type ${type} during load-bundle phase`);
     }
-  } else {
-    workerLog(`unrecognized downlink message ${type}`);
   }
+
+  for await (const [type, ...args] of fromParent) {
+    workerLog(`received`, type);
+    if (type === 'deliver') {
+      const [dtype, ...dargs] = args;
+      if (dtype === 'message') {
+        doMessage(...dargs).then(res => toParent(['deliverDone', ...res]));
+      } else if (dtype === 'notify') {
+        doNotify(...dargs).then(res => toParent(['deliverDone', ...res]));
+      } else {
+        throw Error(`bad delivery type ${dtype}`);
+      }
+    } else {
+      throw Error(`unexpected type ${type} during do-deliver phase`);
+    }
+  }
+}
+
+run().catch(err => {
+  console.log(`error during run`, err);
+  process.exit(1);
 });

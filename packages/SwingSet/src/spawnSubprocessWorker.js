@@ -1,8 +1,8 @@
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
-import Netstring from 'netstring-stream';
 
 import { makePromiseKit } from '@agoric/promise-kit';
+import { streamDecoder, streamEncoder } from './worker-protocol';
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
@@ -18,14 +18,12 @@ const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 export function startSubprocessWorker(execPath, procArgs = []) {
   const proc = spawn(execPath, procArgs, { stdio });
 
-  const toChild = Netstring.writeStream();
-  toChild.pipe(proc.stdio[3]);
+  const toChild = streamEncoder(data => proc.stdio[3].write(data));
   // proc.stdio[4].setEncoding('utf-8');
-  const fromChild = proc.stdio[4].pipe(Netstring.readStream());
-  fromChild.setEncoding('utf-8');
+  const fromChild = streamDecoder(proc.stdio[4]);
 
-  // fromChild.addListener('data', data => parentLog(`fd4 data`, data));
-  // toChild.write('hello child');
+  // (await fromChild.next()).data
+  // toChild('hello child');
 
   const pk = makePromiseKit();
 
@@ -43,18 +41,9 @@ export function startSubprocessWorker(execPath, procArgs = []) {
     proc.kill();
   }
 
-  // the Netstring objects don't like being hardened, so we wrap the methods
-  // that get used
-  const wrappedFromChild = {
-    on: (evName, f) => fromChild.on(evName, f),
-  };
-  const wrappedToChild = {
-    write: data => toChild.write(data),
-  };
-
   return harden({
-    fromChild: wrappedFromChild,
-    toChild: wrappedToChild,
+    fromChild,
+    toChild,
     terminate,
     done: pk.promise,
   });
