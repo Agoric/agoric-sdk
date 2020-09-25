@@ -20,9 +20,7 @@ maybeTestXS('xs vat manager', async t => {
   await c.shutdown();
 });
 
-// XXX Test temporarily disabled on account of breakage due to some kind of
-// mysterious node worker mysteriousity.
-test.skip('nodeWorker vat manager', async t => {
+test('nodeWorker vat manager', async t => {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType: 'nodeWorker' };
   const c = await buildVatController(config, []);
@@ -34,7 +32,6 @@ test.skip('nodeWorker vat manager', async t => {
   await c.shutdown();
 });
 
-/* // disabling for now due to possible buffering issue on MacOS
 test('node-subprocess vat manager', async t => {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType: 'node-subprocess' };
@@ -46,4 +43,3 @@ test('node-subprocess vat manager', async t => {
 
   await c.shutdown();
 });
-*/
