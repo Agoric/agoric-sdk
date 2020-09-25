@@ -63,3 +63,7 @@ export async function* streamDecoder(input) {
     }
   }
 }
+
+// we must harden this function, else the generators it creates cannot be
+// hardened (their prototype would not already be in the fringeset)
+harden(streamDecoder);

@@ -20,6 +20,7 @@ export async function* streamDecoder(input) {
     yield c;
   }
 }
+harden(streamDecoder);
 
 // return a function which accepts command arrays and writes
 // netstring-encoded JSON-serialized arrays to the output
