@@ -521,9 +521,15 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
         creationOptions: { enableSetup: true },
       },
     },
-    devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
+    devices: {
+      d0: {
+        sourceSpec: require.resolve('./files-devices/device-0'),
+      },
+    },
   };
-  const c = await buildVatController(config, [], t.context.data);
+  const storage = initSwingStore().storage;
+  await initializeSwingset(config, [], storage, t.context.data);
+  const c = await makeSwingsetController(storage, { d0: {} });
   await c.step();
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
