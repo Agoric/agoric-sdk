@@ -30,10 +30,16 @@ export function makeKernelSyscallHandler(tools) {
     notify,
     notifySubscribersAndQueue,
     resolveToError,
+    setTerminationTrigger,
   } = tools;
 
   function send(target, msg) {
     return doSend(kernelKeeper, target, msg);
+  }
+
+  function exit(vatID, isFailure, info) {
+    setTerminationTrigger(vatID, false, !!isFailure, info);
+    return OKNULL;
   }
 
   function invoke(deviceSlot, method, args) {
@@ -141,6 +147,8 @@ export function makeKernelSyscallHandler(tools) {
         return fulfillToData(...args);
       case 'reject':
         return reject(...args);
+      case 'exit':
+        return exit(...args);
       default:
         throw Error(`unknown vatSyscall type ${type}`);
     }

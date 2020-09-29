@@ -99,6 +99,7 @@ export function createSyscall(transcriptManager) {
     fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
     fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
     reject: (...args) => doSyscall(['reject', ...args]),
+    exit: (...args) => doSyscall(['exit', ...args]),
   });
 
   return harden({ syscall, doSyscall, setVatSyscallHandler });

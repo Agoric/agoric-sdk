@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject() {
+export function buildRootObject(vatPowers) {
   let count = 0;
   return harden({
     async elsewhere(other) {
@@ -14,6 +14,12 @@ export function buildRootObject() {
       } else {
         throw Error('Sorry, dude');
       }
+    },
+    dieHappy(completion) {
+      vatPowers.exitVat(completion);
+    },
+    dieSad(reason) {
+      vatPowers.exitVatWithFailure(reason);
     },
   });
 }

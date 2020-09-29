@@ -16,6 +16,14 @@ export function buildRootObject(vatPowers) {
       return makePromiseKit().promise; // never fires
     },
 
+    dieHappy(completion) {
+      vatPowers.exitVat(completion);
+    },
+
+    dieSad(reason) {
+      vatPowers.exitVatWithFailure(reason);
+    },
+
     async elsewhere(other, arg) {
       testLog(`QUERY ${arg}`);
       const answer = await E(other).query(arg);

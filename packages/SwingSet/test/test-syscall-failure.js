@@ -59,9 +59,9 @@ async function vatSyscallFailure(t, beDynamic) {
     'begood',
     'bebad',
     'pretendToBeAThing invoked from begood',
-    'p1 reject clist violation: prepare to die',
-    'p2 reject vat terminated',
-    'p3 reject vat terminated',
+    'p1 reject Error: vat terminated',
+    'p2 reject Error: vat terminated',
+    'p3 reject Error: vat terminated',
   ]);
 }
 

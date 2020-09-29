@@ -46,12 +46,13 @@ function build(
 
   const outstandingProxies = new WeakSet();
 
-  /** Map in-vat object references -> vat slot strings.
-   
-      Uses a weak map so that vat objects can (in princple) be GC'd.  Note that
-      they currently can't actually be GC'd because the slotToVal table keeps
-      them alive, but that will have to be addressed by a different
-      mechanism. */
+  /**
+   * Map in-vat object references -> vat slot strings.
+   *
+   * Uses a weak map so that vat objects can (in princple) be GC'd.  Note that
+   * they currently can't actually be GC'd because the slotToVal table keeps
+   * them alive, but that will have to be addressed by a different mechanism.
+   */
   const valToSlot = new WeakMap();
 
   /** Map vat slot strings -> in-vat object references. */
@@ -520,12 +521,20 @@ function build(
     retirePromiseIDIfEasy(promiseID, data);
   }
 
+  function exitVat(completion) {
+    syscall.exit(false, m.serialize(completion));
+  }
+
+  function exitVatWithFailure(reason) {
+    syscall.exit(true, m.serialize(reason));
+  }
+
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
   // (bootstrap, bridge, vat-http), swingset
 
   // here we finally invoke the vat code, and get back the root object
   const rootObject = buildRootObject(
-    harden({ D, ...vatPowers }),
+    harden({ D, exitVat, exitVatWithFailure, ...vatPowers }),
     harden(vatParameters),
   );
   mustPassByPresence(rootObject);

@@ -10,7 +10,11 @@ export function buildRootObject() {
       const weatherwax = await E(vatMaker).createVatByName('weatherwax');
       await E(weatherwax.root).live();
       E(weatherwax.adminNode).terminate();
-      await E(weatherwax.adminNode).done();
+      try {
+        await E(weatherwax.adminNode).done();
+      } catch (e) {
+        // ignored
+      }
       return 'bootstrap done';
     },
   });

@@ -83,7 +83,11 @@ test('metering dynamic vats', async t => {
   t.is(storage.get(`${neverKPID}.state`), 'rejected');
   t.is(
     storage.get(`${neverKPID}.data.body`),
-    JSON.stringify('Allocate meter exceeded'),
+    JSON.stringify({
+      '@qclass': 'error',
+      name: 'Error',
+      message: 'vat terminated',
+    }),
   );
   // TODO: the rejection shouldn't reveal the reason, maybe use this instead:
   // t.is(storage.get(`${neverKPID}.data.body`),
@@ -92,7 +96,7 @@ test('metering dynamic vats', async t => {
   t.deepEqual(
     nextLog(),
     [
-      'did explode: vat terminated',
+      'did explode: Error: vat terminated',
       'terminated: Error: Allocate meter exceeded',
     ],
     'first boom',
@@ -101,5 +105,5 @@ test('metering dynamic vats', async t => {
   // the dead vat should stay dead
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
-  t.deepEqual(nextLog(), ['run exploded: vat terminated'], 'stay dead');
+  t.deepEqual(nextLog(), ['run exploded: Error: vat terminated'], 'stay dead');
 });
