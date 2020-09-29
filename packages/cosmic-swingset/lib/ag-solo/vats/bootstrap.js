@@ -230,6 +230,9 @@ export function buildRootObject(vatPowers, vatParameters) {
       send(obj, connectionHandles) {
         return E(vats.http).send(obj, connectionHandles);
       },
+      registerURLHandler(handler, path) {
+        return E(vats.http).registerURLHandler(handler, path);
+      },
       registerAPIHandler(handler) {
         return E(vats.http).registerURLHandler(handler, '/api');
       },
@@ -248,6 +251,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     return allComparable(
       harden({
         ...(plugin ? { plugin } : {}),
+        // TODO: Our preferred name is "scratch", but there are many Dapps
+        // that use "uploads".
+        scratch: uploads,
         uploads,
         spawner,
         network: vats.network,

@@ -40,8 +40,8 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     // Strip away the query params, as the inbound command device can't handle
     // it and the accessToken is there.
     const parsedURL = new URL(url, 'http://some-host');
-    const query = {};
-    for (const [key, val] of parsedURL.searchParams) {
+    const query = { isQuery: true };
+    for (const [key, val] of parsedURL.searchParams.entries()) {
       if (key !== 'accessToken') {
         query[key] = val;
       }

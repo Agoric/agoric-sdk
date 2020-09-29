@@ -17,7 +17,11 @@
     if (!obj) {
       return;
     }
-    let { outcome } = obj;
+    let { outcomeDetails, outcome } = obj;
+    if (outcomeDetails) {
+      // They have opted-in to handling the outcome.
+      return;
+    }
     if (typeof outcome !== 'string') {
       outcome = 'Offer was accepted.';
     }
