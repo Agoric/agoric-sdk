@@ -244,13 +244,13 @@ export async function makeWallet({
     return proposal;
   };
 
-  async function updateInboxState(id, offer) {
+  async function updateInboxState(id, offer, doPush = true) {
     // Only sent the uncompiled offer to the client.
-    const { instance, installation, proposalTemplate, ...rest } = offer;
+    const { proposalTemplate } = offer;
+    const { instance, installation } = idToOffer.get(id);
     if (!instance || !installation) {
       return;
     }
-    delete rest.actions;
     // We could get the instanceHandle and installationHandle from the
     // board and store them to prevent having to make this call each
     // time, but if we want the offers to be able to sent to the
@@ -264,7 +264,10 @@ export async function makeWallet({
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
     const offerForDisplay = {
-      ...rest,
+      ...offer,
+      actions: undefined,
+      installation: undefined,
+      instance: undefined,
       proposalTemplate,
       instancePetname: instanceDisplay.petname,
       installationPetname: installationDisplay.petname,
@@ -272,15 +275,18 @@ export async function makeWallet({
     };
 
     inboxState.set(id, offerForDisplay);
-    inboxStateChangeHandler(getInboxState());
+    if (doPush) {
+      inboxStateChangeHandler(getInboxState());
+    }
   }
 
   async function updateAllInboxState() {
-    return Promise.all(
+    await Promise.all(
       Array.from(inboxState.entries()).map(([id, offer]) =>
-        updateInboxState(id, offer),
+        updateInboxState(id, offer, false),
       ),
     );
+    inboxStateChangeHandler(getInboxState());
   }
 
   const {
@@ -309,7 +315,8 @@ export async function makeWallet({
   // petname change.
   async function updateAllState() {
     updateAllIssuersState();
-    return updateAllPurseState().then(updateAllInboxState);
+    await updateAllPurseState();
+    await updateAllInboxState();
   }
 
   // handle the update, which has already resolved to a record. If the offer is
@@ -770,27 +777,28 @@ export async function makeWallet({
       status: undefined,
     });
     idToOffer.init(id, offer);
-    updateInboxState(id, offer);
+    await updateInboxState(id, offer);
 
     // Compile the offer
     const compiledOfferP = compileOffer(offer);
     idToCompiledOfferP.set(id, compiledOfferP);
 
     // Our inbox state may have an enriched offer.
-    updateInboxState(id, idToOffer.get(id));
+    await updateInboxState(id, idToOffer.get(id));
     const { installation, instance } = await compiledOfferP;
 
-    if (idToOffer.has(id)) {
-      idToOffer.set(
-        id,
-        harden({
-          ...idToOffer.get(id),
-          installation,
-          instance,
-        }),
-      );
-      updateInboxState(id, idToOffer.get(id));
+    if (!idToOffer.has(id)) {
+      return id;
     }
+    idToOffer.set(
+      id,
+      harden({
+        ...idToOffer.get(id),
+        installation,
+        instance,
+      }),
+    );
+    await updateInboxState(id, idToOffer.get(id));
     return id;
   }
 
@@ -1168,7 +1176,6 @@ export async function makeWallet({
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
-
     return acceptPetname(
       addInstallation,
       suggestedPetname,
