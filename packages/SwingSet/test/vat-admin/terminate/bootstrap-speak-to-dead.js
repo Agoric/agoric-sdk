@@ -38,7 +38,11 @@ export function buildRootObject(vatPowers) {
       }
 
       E(weatherwax.adminNode).terminate();
-      await E(weatherwax.adminNode).done();
+      try {
+        await E(weatherwax.adminNode).done();
+      } catch (e) {
+        testLog(`done: ${e}`);
+      }
 
       return 'bootstrap done';
     },

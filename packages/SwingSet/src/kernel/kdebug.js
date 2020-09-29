@@ -10,7 +10,7 @@ export function kdebug(...args) {
   }
 }
 
-function legibilizeValue(val, slots) {
+export function legibilizeValue(val, slots) {
   if (Array.isArray(val)) {
     let result = '[';
     for (const elem of val) {

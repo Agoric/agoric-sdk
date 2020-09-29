@@ -164,6 +164,7 @@ export function makeDeviceSlots(
     testLog,
     endowments,
     deviceParameters,
+    serialize: m.serialize, // We deliberately do not provide m.deserialize
   });
   mustPassByPresence(rootObject);
 

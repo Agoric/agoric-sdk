@@ -9,6 +9,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
   const self = harden({
     async bootstrap(vats, devices) {
       let badvat;
+      let done;
       if (vatParameters.argv[0] === '--bedynamic') {
         const vatMaker = E(vats.vatAdmin).createVatAdminService(
           devices.vatAdmin,
@@ -17,8 +18,17 @@ export function buildRootObject(_vatPowers, vatParameters) {
           enableSetup: true,
         });
         badvat = vat.root;
+        done = E(vat.adminNode).done();
       } else {
         badvat = vats.badvatStatic;
+      }
+      if (done) {
+        done.then(
+          v => console.log(`done resolved (bad) to ${v}`),
+          e => console.log(`done rejected (good) with ${e}`),
+        );
+      } else {
+        console.log('running statically, no done() facet');
       }
       const p1 = E(badvat).begood(ourThing);
       p1.then(

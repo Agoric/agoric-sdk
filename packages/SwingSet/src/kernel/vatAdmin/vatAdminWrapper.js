@@ -26,8 +26,8 @@ export function buildRootObject(vatPowers) {
     doneP.catch(() => {}); // shut up false whine about unhandled rejection
 
     const adminNode = harden({
-      terminate() {
-        D(vatAdminNode).terminate(vatID);
+      terminate(reason) {
+        D(vatAdminNode).terminate(vatID, reason);
       },
       adminData() {
         return D(vatAdminNode).adminStats(vatID);
@@ -66,15 +66,13 @@ export function buildRootObject(vatPowers) {
   }
 
   // the kernel sends this when the vat halts
-  function vatTerminated(vatID, error) {
-    // 'error' is undefined if adminNode.terminate() killed it, else it
-    // will be a RangeError from a metering fault
+  function vatTerminated(vatID, shouldReject, info) {
     const { resolve, reject } = running.get(vatID);
     running.delete(vatID);
-    if (error) {
-      reject(error);
+    if (shouldReject) {
+      reject(info);
     } else {
-      resolve();
+      resolve(info);
     }
   }
 

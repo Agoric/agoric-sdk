@@ -25,10 +25,10 @@ test.before(async t => {
   t.context.data = { kernelBundles };
 });
 
-test('terminate', async t => {
+async function doTerminate(t, mode, reference) {
   const configPath = path.resolve(__dirname, 'swingset-terminate.json');
   const config = loadSwingsetConfigFile(configPath);
-  const controller = await buildVatController(config, [], t.context.data);
+  const controller = await buildVatController(config, [mode], t.context.data);
   t.is(controller.kpStatus(controller.bootstrapResult), 'pending');
   await controller.run();
   t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
@@ -45,12 +45,41 @@ test('terminate', async t => {
     'query2 2',
     'QUERY 3',
     'GOT QUERY 3',
-    'foreverP.catch vat terminated',
-    'query3P.catch vat terminated',
-    'foo4P.catch vat terminated',
-    'afterForeverP.catch vat terminated',
+    'foreverP.catch Error: vat terminated',
+    'query3P.catch Error: vat terminated',
+    'foo4P.catch Error: vat terminated',
+    'afterForeverP.catch Error: vat terminated',
+    reference,
     'done',
   ]);
+}
+
+test('terminate', async t => {
+  await doTerminate(t, 'kill', 'done exception kill');
+});
+
+test('exit happy path simple result', async t => {
+  await doTerminate(t, 'happy', 'done result happy');
+});
+
+test('exit happy path complex result', async t => {
+  await doTerminate(
+    t,
+    'exceptionallyHappy',
+    'done result Error: exceptionallyHappy',
+  );
+});
+
+test('exit sad path simple result', async t => {
+  await doTerminate(t, 'sad', 'done exception sad');
+});
+
+test('exit sad path complex result', async t => {
+  await doTerminate(
+    t,
+    'exceptionallySad',
+    'done exception Error: exceptionallySad',
+  );
 });
 
 test('dispatches to the dead do not harm kernel', async t => {
@@ -69,7 +98,8 @@ test('dispatches to the dead do not harm kernel', async t => {
       'w: p1 = before',
       `w: I ate'nt dead`,
       'b: p1b = I so resolve',
-      'b: p2b fails vat terminated',
+      'b: p2b fails Error: vat terminated',
+      'done: undefined',
     ]);
   }
   const state1 = getAllState(storage1);
@@ -91,8 +121,9 @@ test('dispatches to the dead do not harm kernel', async t => {
     t.is(c2.kpStatus(r2), 'fulfilled');
     t.deepEqual(c2.dump().log, [
       'b: p1b = I so resolve',
-      'b: p2b fails vat terminated',
-      'm: live 2 failed: vat terminated',
+      'b: p2b fails Error: vat terminated',
+      'done: undefined',
+      'm: live 2 failed: Error: vat terminated',
     ]);
   }
 });

@@ -29,11 +29,9 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
-function makeError(s) {
-  // TODO: create a @qclass=error, once we define those or maybe replicate
-  // whatever happens with {}.foo() or 3.foo() etc: "TypeError: {}.foo is not a
-  // function"
-  return harden({ body: JSON.stringify(s), slots: [] });
+function makeError(message, name = 'Error') {
+  const err = { '@qclass': 'error', name, message };
+  return harden({ body: JSON.stringify(err), slots: [] });
 }
 
 const VAT_TERMINATION_ERROR = makeError('vat terminated');
@@ -230,6 +228,8 @@ export default function buildKernel(
     notifySubscribersAndQueue,
     // eslint-disable-next-line no-use-before-define
     resolveToError,
+    // eslint-disable-next-line no-use-before-define
+    setTerminationTrigger,
   });
 
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
@@ -308,33 +308,35 @@ export default function buildKernel(
     }
   }
 
-  function removeVatManager(vatID, reason) {
+  function removeVatManager(vatID, shouldReject, info) {
+    insistCapData(info);
     const old = ephemeral.vats.get(vatID);
     ephemeral.vats.delete(vatID);
-    const err = reason ? Error(reason) : undefined;
-    old.notifyTermination(err);
+    old.notifyTermination(shouldReject, info);
     return old.manager.shutdown();
   }
 
-  function terminateVat(vatID, reason) {
+  function terminateVat(vatID, shouldReject, info) {
+    insistCapData(info);
     if (kernelKeeper.getVatKeeper(vatID)) {
       const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      const err = reason ? makeError(reason) : VAT_TERMINATION_ERROR;
+      const err = VAT_TERMINATION_ERROR;
       for (const kpid of promisesToReject) {
         resolveToError(kpid, err, vatID);
       }
-      removeVatManager(vatID, reason).then(
+      removeVatManager(vatID, shouldReject, info).then(
         () => kdebug(`terminated vat ${vatID}`),
         e => console.error(`problem terminating vat ${vatID}`, e),
       );
     }
   }
 
-  let deliveryProblem;
+  let terminationTrigger;
 
-  function registerDeliveryProblem(vatID, problem, resultKP) {
-    if (!deliveryProblem) {
-      deliveryProblem = { vatID, problem, resultKP };
+  function setTerminationTrigger(vatID, shouldAbortCrank, shouldReject, info) {
+    assert(!(shouldAbortCrank && !shouldReject));
+    if (!terminationTrigger || shouldAbortCrank) {
+      terminationTrigger = { vatID, shouldAbortCrank, shouldReject, info };
     }
   }
 
@@ -352,7 +354,7 @@ export default function buildKernel(
       finish(deliveryResult);
       const [status, problem] = deliveryResult;
       if (status !== 'ok') {
-        registerDeliveryProblem(vatID, problem);
+        setTerminationTrigger(vatID, true, true, makeError(problem));
       }
     } catch (e) {
       // log so we get a stack trace
@@ -396,6 +398,8 @@ export default function buildKernel(
       } else if (kp.state === 'fulfilledToData') {
         if (msg.result) {
           const s = `data is not callable, has no method ${msg.method}`;
+          // TODO: maybe replicate whatever happens with {}.foo() or 3.foo()
+          // etc: "TypeError: {}.foo is not a function"
           await resolveToError(msg.result, makeError(s));
         }
         // todo: maybe log error?
@@ -481,7 +485,7 @@ export default function buildKernel(
     }
     try {
       processQueueRunning = Error('here');
-      deliveryProblem = null;
+      terminationTrigger = null;
       if (message.type === 'send') {
         kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
         kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
@@ -497,12 +501,22 @@ export default function buildKernel(
       } else {
         throw Error(`unable to process message.type ${message.type}`);
       }
-      if (deliveryProblem) {
-        abortCrank();
-        const { vatID, problem } = deliveryProblem;
-        terminateVat(vatID, problem);
-        kdebug(`vat abnormally terminated: ${problem}`);
-      } else {
+      let didAbort = false;
+      if (terminationTrigger) {
+        const {
+          vatID,
+          shouldAbortCrank,
+          shouldReject,
+          info,
+        } = terminationTrigger;
+        if (shouldAbortCrank) {
+          abortCrank();
+          didAbort = true;
+        }
+        terminateVat(vatID, shouldReject, info);
+        kdebug(`vat terminated: ${JSON.stringify(info)}`);
+      }
+      if (!didAbort) {
         kernelKeeper.purgeDeadKernelPromises();
         kernelKeeper.saveStats();
       }
@@ -530,6 +544,7 @@ export default function buildKernel(
     // This handler never throws. The VatSyscallResult it returns is one of:
     // * success, no response data: ['ok', null]
     // * success, capdata (callNow) ['ok', capdata]
+    // * exit, capdata ['exit', capdata]
     // * error: you are dead ['error, description]
     // the VatManager+VatWorker will see the error case, but liveslots will
     // not
@@ -539,7 +554,7 @@ export default function buildKernel(
         // vatManager is somehow confused.
         console.error(`vatSyscallHandler invoked on dead vat ${vatID}`);
         const problem = 'vat is dead';
-        registerDeliveryProblem(vatID, problem);
+        setTerminationTrigger(vatID, true, true, makeError(problem));
         return harden(['error', problem]);
       }
       let ksc;
@@ -550,7 +565,7 @@ export default function buildKernel(
       } catch (vaterr) {
         kdebug(`vat ${vatID} terminated: error during translation: ${vaterr}`);
         const problem = 'clist violation: prepare to die';
-        registerDeliveryProblem(vatID, problem);
+        setTerminationTrigger(vatID, true, true, makeError(problem));
         return harden(['error', problem]);
       }
 
@@ -575,7 +590,7 @@ export default function buildKernel(
         // the kernel is now in a shutdown state, but it may take a while to
         // grind to a halt
         const problem = 'you killed my kernel. prepare to die';
-        registerDeliveryProblem(vatID, problem);
+        setTerminationTrigger(vatID, true, true, makeError(problem));
         return harden(['error', problem]);
       }
 
@@ -765,7 +780,7 @@ export default function buildKernel(
     deviceEndowments.vatAdmin = {
       create: createVatDynamically,
       stats: collectVatStats,
-      terminate: terminateVat,
+      terminate: (vatID, reason) => terminateVat(vatID, true, reason),
     };
 
     // instantiate all devices

@@ -1,6 +1,7 @@
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatSlot } from '../parseVatSlots';
+import { insistCapData } from '../capdata';
 
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -148,7 +149,8 @@ export function makeVatLoader(stuff) {
     } = options;
     let terminated = false;
 
-    function notifyTermination(error) {
+    function notifyTermination(shouldReject, info) {
+      insistCapData(info);
       if (terminated) {
         return;
       }
@@ -156,14 +158,12 @@ export function makeVatLoader(stuff) {
       const vatAdminVatId = vatNameToID('vatAdmin');
       const vatAdminRootObjectSlot = makeVatRootObjectSlot();
 
+      // Embedding the info capdata into the arguments list, taking advantage of
+      // the fact that neither vatID (which is a string) nor shouldReject (which
+      // is a boolean) can contain any slots.
       const args = {
-        body: JSON.stringify([
-          vatID,
-          error
-            ? { '@qclass': 'error', name: error.name, message: error.message }
-            : { '@qclass': 'undefined' },
-        ]),
-        slots: [],
+        body: JSON.stringify([vatID, shouldReject, JSON.parse(info.body)]),
+        slots: info.slots,
       };
 
       queueToExport(
@@ -187,7 +187,7 @@ export function makeVatLoader(stuff) {
         enableSetup,
         enablePipelining,
         enableInternalMetering: !isDynamic,
-        notifyTermination: metered ? notifyTermination : undefined,
+        notifyTermination,
         vatConsole: makeVatConsole(vatID),
         vatParameters,
       };

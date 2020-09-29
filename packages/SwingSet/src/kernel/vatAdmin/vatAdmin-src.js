@@ -14,8 +14,9 @@
  *
  * @param {Object} param0
  * @param {Record<string, any>} param0.endowments
+ * @param {*} param0.serialize
  */
-export function buildRootDeviceNode({ endowments }) {
+export function buildRootDeviceNode({ endowments, serialize }) {
   const {
     create: kernelVatCreationFn,
     stats: kernelVatStatsFn,
@@ -35,8 +36,8 @@ export function buildRootDeviceNode({ endowments }) {
       const vatID = kernelVatCreationFn({ bundleName }, options);
       return vatID;
     },
-    terminate(vatID) {
-      kernelTerminateVatFn(vatID);
+    terminate(vatID, reason) {
+      kernelTerminateVatFn(vatID, serialize(reason));
     },
     // Call the registered kernel function to request vat stats. Clean up the
     // outgoing and incoming arguments.

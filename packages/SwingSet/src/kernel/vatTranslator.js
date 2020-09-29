@@ -3,7 +3,7 @@ import { insistMessage } from '../message';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
-import { kdebug, legibilizeMessageArgs } from './kdebug';
+import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
 import { deleteCListEntryIfEasy } from './cleanup';
 
 /*
@@ -141,6 +141,14 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return ks;
   }
 
+  function translateExit(isFailure, info) {
+    insistCapData(info);
+    kdebug(`syscall[${vatID}].exit(${isFailure},${legibilizeValue(info)})`);
+    const kernelSlots = info.slots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelInfo = harden({ ...info, slots: kernelSlots });
+    return harden(['exit', vatID, !!isFailure, kernelInfo]);
+  }
+
   function translateCallNow(target, method, args) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
@@ -230,6 +238,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateFulfillToData(...args);
       case 'reject':
         return translateReject(...args);
+      case 'exit':
+        return translateExit(...args);
       default:
         throw Error(`unknown vatSyscall type ${type}`);
     }
