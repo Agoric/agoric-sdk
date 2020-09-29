@@ -41,8 +41,16 @@
 
     <button id="launchWallet">Agoric Wallet</button>
     <script type="text/javascript">
-      launchWallet.addEventListener('click', ev => {
+      const popupWallet = () => {
+        launchWallet.classList.add('pulse');
+      };
+
+      const ackWallet = () => {
         launchWallet.classList.remove('pulse');
+      };
+
+      launchWallet.addEventListener('click', ev => {
+        ackWallet();
         alert(`\
 Use the:
 
@@ -50,10 +58,6 @@ Use the:
 
 command-line request to open the Agoric wallet.`);
       });
-
-      const popupWallet = () => {
-        launchWallet.classList.add('pulse');
-      };
 
       const walletPublicURL = new URL(
         `/private/wallet-bridge${location.search}`,
@@ -63,6 +67,7 @@ command-line request to open the Agoric wallet.`);
       const wsQueue = [];
       const dappQueue = [];
       let origin;
+      let popped = false;
       ws.addEventListener('message', ev => {
         let obj;
         try {
@@ -76,6 +81,14 @@ command-line request to open the Agoric wallet.`);
         if (obj.type === 'walletNeedDappApproval') {
           // Let them approve.
           popupWallet();
+          popped = true;
+        } else if (popped && obj.type === 'walletHaveDappApproval') {
+          ackWallet();
+          popped = false;
+        } else if (obj.type === 'walletOfferAdded') {
+          popupWallet();
+        } else if (obj.type === 'walletOfferHandled') {
+          ackWallet();
         }
         if (origin === undefined) {
           dappQueue.push(obj);
@@ -94,10 +107,6 @@ command-line request to open the Agoric wallet.`);
           // The queued messages are raw objects, so JSONify.
           const obj = wsQueue.shift();
           ws.send(JSON.stringify(obj));
-          if (obj.type === 'walletAddOffer') {
-            // Just pop up our corresponding UI.
-            popupWallet();
-          }
         }
       });
 
@@ -127,10 +136,6 @@ command-line request to open the Agoric wallet.`);
         } else {
           // console.log('sending', obj);
           ws.send(JSON.stringify(obj));
-          if (obj.type === 'walletAddOffer') {
-            // Just pop up our corresponding UI.
-            popupWallet();
-          }
         }
       });
     </script>

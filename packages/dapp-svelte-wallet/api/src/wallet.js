@@ -99,9 +99,41 @@ export function buildRootObject(_vatPowers) {
         };
       }
       case 'walletAddOffer': {
+        let handled = false;
+        const actions = harden({
+          result(offer, outcome) {
+            E(http).send(
+              {
+                type: 'walletOfferResult',
+                data: {
+                  id: offer.id,
+                  outcomeDetails: offer.outcomeDetails,
+                  outcome: `${outcome}`,
+                },
+              },
+              [meta.channelHandle],
+            );
+          },
+          handled(offer) {
+            if (handled) {
+              return;
+            }
+            handled = true;
+            E(http).send(
+              {
+                type: 'walletOfferHandled',
+                data: offer.id,
+              },
+              [meta.channelHandle],
+            );
+          },
+        });
         return {
           type: 'walletOfferAdded',
-          data: await wallet.addOffer(data, { ...meta, dappOrigin }),
+          data: await wallet.addOffer(
+            { ...data, actions },
+            { ...meta, dappOrigin },
+          ),
         };
       }
       case 'walletDeclineOffer': {
@@ -217,16 +249,22 @@ export function buildRootObject(_vatPowers) {
             dappOrigin,
         );
 
-        const notYetEnabled = () =>
-          E(otherSide)
-            .needDappApproval(dappOrigin, suggestedDappPetname)
-            .catch(_ => {});
-        const approve = () =>
-          wallet.waitForDappApproval(
+        const approve = async () => {
+          let needApproval = false;
+          await wallet.waitForDappApproval(
             suggestedDappPetname,
             dappOrigin,
-            notYetEnabled,
+            () => {
+              needApproval = true;
+              E(otherSide)
+                .needDappApproval(dappOrigin, suggestedDappPetname)
+                .catch(_ => {});
+            },
           );
+          if (needApproval) {
+            E(otherSide).dappApproved(dappOrigin);
+          }
+        };
 
         return harden({
           async getPurseNotifier() {
@@ -297,27 +335,42 @@ export function buildRootObject(_vatPowers) {
             const {
               type,
               dappOrigin = meta.origin,
-              suggestedDappPetname = obj.dappOrigin || meta.origin,
+              suggestedDappPetname = (meta.query &&
+                meta.query.suggestedDappPetname) ||
+                obj.dappOrigin ||
+                meta.origin,
             } = obj;
 
             // When we haven't been enabled, tell our caller.
-            const notYetEnabled = () =>
+            let needApproval = false;
+            await wallet.waitForDappApproval(
+              suggestedDappPetname,
+              dappOrigin,
+              () => {
+                needApproval = true;
+                E(http).send(
+                  {
+                    type: 'walletNeedDappApproval',
+                    data: {
+                      dappOrigin,
+                      suggestedDappPetname,
+                    },
+                  },
+                  [meta.channelHandle],
+                );
+              },
+            );
+            if (needApproval) {
               E(http).send(
                 {
-                  type: 'walletNeedDappApproval',
+                  type: 'walletHaveDappApproval',
                   data: {
                     dappOrigin,
-                    suggestedDappPetname,
                   },
                 },
                 [meta.channelHandle],
               );
-
-            await wallet.waitForDappApproval(
-              suggestedDappPetname,
-              dappOrigin,
-              notYetEnabled,
-            );
+            }
 
             switch (type) {
               case 'walletGetPurses':
