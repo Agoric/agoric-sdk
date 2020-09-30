@@ -35,7 +35,7 @@ const start = zcf => {
     /** @type {OfferHandler} */
     const matchingSeatOfferHandler = matchingSeat => {
       const swapResult = swap(zcf, firstSeat, matchingSeat);
-      zcf.shutdown();
+      zcf.shutdown('Swap completed.');
       return swapResult;
     };
 

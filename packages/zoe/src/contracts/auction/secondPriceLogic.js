@@ -55,4 +55,5 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
       bidSeat.exit();
     }
   });
+  zcf.shutdown('Auction closed.');
 };

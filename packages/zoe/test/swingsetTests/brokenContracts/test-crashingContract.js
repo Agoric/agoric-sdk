@@ -150,3 +150,39 @@ test('throw in makeContract call', async t => {
   const dump = await main(['throwInMakeContract', [3, 0, 0]]);
   t.deepEqual(dump.log, thrownExceptionInMakeContractILog);
 });
+
+const happyTerminationLog = [
+  '=> alice is set up',
+  '=> alice.doHappyTermintion called',
+  'happy termination saw "Success"',
+];
+
+test('happy termination path', async t => {
+  const dump = await main(['happyTermination', [3, 0, 0]]);
+  t.deepEqual(dump.log, happyTerminationLog);
+});
+
+const happyTerminationWOffersLog = [
+  '=> alice is set up',
+  '=> alice.doHappyTerminationWOffers called',
+  'Swap outcome resolves to an invitation: [Alleged: presence o-72]',
+  'happy termination saw "Success"',
+  'second moolaPurse: balance {"brand":{},"value":5}',
+  'second simoleanPurse: balance {"brand":{},"value":0}',
+];
+
+test('happy termination with offers path', async t => {
+  const dump = await main(['happyTerminationWOffers', [5, 0, 0]]);
+  t.deepEqual(dump.log, happyTerminationWOffersLog);
+});
+
+const sadTerminationLog = [
+  '=> alice is set up',
+  '=> alice.doSadTermintion called',
+  'sad termination saw reject "Sadness"',
+];
+
+test('sad termination path', async t => {
+  const dump = await main(['sadTermination', [3, 0, 0]]);
+  t.deepEqual(dump.log, sadTerminationLog);
+});

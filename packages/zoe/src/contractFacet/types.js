@@ -18,7 +18,8 @@
  * and get the amountMath and brand synchronously accessible after
  * saving
  * @property {MakeInvitation} makeInvitation
- * @property {() => void} shutdown
+ * @property {(reason: string) => void} shutdown
+ * @property {(error: string) => void} shutdownWithError
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => Terms} getTerms
