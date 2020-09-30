@@ -21,7 +21,8 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = makeZoe(makeFakeVatAdmin(setJig));
+  const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
+  const zoe = makeZoe(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
@@ -71,4 +72,5 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
   await t.throwsAsync(() => E(userSeat1).tryExit(), {
     message: 'seat has been exited',
   });
+  t.falsy(vatAdminState.getHasExited());
 });

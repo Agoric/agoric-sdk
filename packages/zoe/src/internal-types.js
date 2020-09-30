@@ -97,8 +97,9 @@
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
  * @property {() => boolean} acceptingOffers
- * @property {() => void} terminate
- * @property {(reason: string) => void} terminateOnFailure
+ * @property {() => void} exitAllSeats
+ * @property {(reason: string) => void} kickOutAllSeats
+ * @property {() => void} stopAcceptingOffers
  */
 
 /**
@@ -120,14 +121,14 @@
  *             description: string,
  *             customProperties: Record<string, any>=,
  *            ) => Payment} makeInvitation
- * @property {(completion: string) => void} terminate
- * @property {(reason: string) => void} terminateOnFailure
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
  *            ) => Promise<void>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
+ * @property {() => void} exitAllSeats
+ * @property {(reason: string) => void} kickOutAllSeats
  */
 
 /**
@@ -225,21 +226,15 @@
 /**
  * @typedef {Object} AdminNode
  * A powerful object that can be used to terminate the vat in which a contract
- * is running, to get statistics, or to be notified when it terminates. The
- * object is only available from within the contract so
- * that clients of the contract can tell (by getting the source code from Zoe
- * using the installation) what use the contract makes of it. If they want to
- * be assured of discretion, or want to know that the contract doesn't have the
- * ability to call terminate(), Zoe makes this visible.
+ * is running, to get statistics, or to be notified when it terminates.
  *
  * @property {() => Promise<void>} done
  * returns a promise that will be fulfilled or rejected when the contract is
- * terminated.
+ * terminated. If the contract terminates with a failure, the promise will be
+ * rejected with the reason. If the contract terminates successfully, the
+ * promise will fulfill to the completion value.
  * @property {(completion: string) => void} terminate
- * Terminate the vat in which the contract is running. This bypasses
- * notification of Zoe.
- * @property {(reason: string) => void} terminateOnFailure
- * Terminate the vat in which the contract is running and indicate failure. This
+ * Terminate the vat in which the contract is running as a failure. This
  * bypasses notification of Zoe.
  * @property {() => Object} adminData
  * returns some statistics about the vat in which the contract is running.
