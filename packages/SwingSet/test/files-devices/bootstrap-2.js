@@ -87,17 +87,19 @@ export function buildRootObject(vatPowers, vatParameters) {
         const p = Promise.resolve();
         log('sending Promise');
         try {
-          // this will be rejected immediately, killing the vat shortly
+          // this will be rejected by liveslots before the device is involved
           D(devices.d0).send({ p });
           // shouldn't get here
           log('oops: survived sending Promise');
         } catch (e) {
-          // we aren't currently killed until the end of the crank
           log('good: callNow failed');
         }
       } else {
         throw new Error(`unknown argv mode '${argv[0]}'`);
       }
+    },
+    ping() {
+      return true;
     },
   });
 }

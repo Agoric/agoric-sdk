@@ -29,12 +29,14 @@ test.before(async t => {
   const bootstrap1 = await bundleSource(dfile('bootstrap-1'));
   const bootstrap2 = await bundleSource(dfile('bootstrap-2'));
   const bootstrap3 = await bundleSource(dfile('bootstrap-3'));
+  const bootstrap4 = await bundleSource(dfile('bootstrap-4'));
   t.context.data = {
     kernelBundles,
     bootstrap0,
     bootstrap1,
     bootstrap2,
     bootstrap3,
+    bootstrap4,
   };
 });
 
@@ -475,7 +477,7 @@ test.serial('command deliver', async t => {
   t.deepEqual(rejection, { response: 'body' });
 });
 
-test('callNow refuses promises', async t => {
+test.serial('liveslots throws when D() gets promise', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -494,6 +496,46 @@ test('callNow refuses promises', async t => {
   await initializeSwingset(config, ['promise1'], storage, t.context.data);
   const c = await makeSwingsetController(storage, { d0: {} });
   await c.step();
+  // When liveslots catches an attempt to send a promise into D(), it throws
+  // a regular error, which the vat can catch.
+  t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
+
+  // If that isn't working as expected, and the promise makes it to
+  // syscall.callNow, the translator will notice and kill the vat. We send a
+  // ping() to it to make sure it's still alive. If the vat were dead,
+  // queueToVatExport would throw because the vat was deleted.
+  c.queueToVatExport('bootstrap', 'o+0', 'ping', capargs([]), 'panic');
+  await c.run();
+
+  // If the translator doesn't catch the promise and it makes it to the device,
+  // the kernel will panic, and the c.step() above will reject, so the
+  // 'await c.step()' will throw.
+});
+
+test.serial('syscall.callNow(promise) is vat-fatal', async t => {
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: t.context.data.bootstrap4, // uses setup() to bypass liveslots
+        creationOptions: { enableSetup: true },
+      },
+    },
+    devices: {
+      d0: {
+        sourceSpec: require.resolve('./files-devices/device-0'),
+      },
+    },
+  };
+  const storage = initSwingStore().storage;
+  await initializeSwingset(config, [], storage, t.context.data);
+  const c = await makeSwingsetController(storage, { d0: {} });
+  await c.step();
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
+  // now check that the vat was terminated: this should throw an exception
+  // because the entire bootstrap vat was deleted
+  t.throws(() => c.queueToVatExport('bootstrap', 'o+0', 'ping', capargs([])), {
+    message: `vat name bootstrap must exist, but doesn't`,
+  });
 });
