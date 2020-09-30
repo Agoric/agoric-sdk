@@ -7,6 +7,11 @@
  */
 
 /**
+ * @typedef {import('@agoric/marshal').InterfaceSpec} InterfaceSpec
+ * @typedef {import('@agoric/marshal').GetInterfaceOf} GetInterfaceOf
+ */
+
+/**
  * @typedef {Object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
@@ -308,4 +313,22 @@
  * @property {(left: Value, right: Value) => Value} doSubtract
  * Return what remains after removing the right from the left. If
  * something in the right was not in the left, we throw an error.
+ */
+
+/**
+ * @typedef {{ISSUER: 'issuer', BRAND: 'brand', PURSE: 'purse', PAYMENT:
+ * 'payment', MINT: 'mint', DEPOSIT_FACET: 'depositFacet' }} ERTPKind
+ */
+
+/**
+ * @callback MakeInterface
+ * Make the interface using the allegedName and kind. The particular
+ * structure may change in the future to be more sophisticated.
+ * Therefore, ERTP and Zoe should not depend on this particular
+ * implementation.
+ *
+ * @param {string} allegedName The allegedName, as passed to
+ *  `makeIssuerKit`
+ * @param {string} kind The ERTPKind
+ * @returns {InterfaceSpec}
  */

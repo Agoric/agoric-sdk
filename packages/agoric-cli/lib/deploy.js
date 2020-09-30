@@ -71,6 +71,10 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     ws.send(body);
   };
 
+  const match = opts.hostport.match(/^(.*):(\d+)$/);
+  const host = match ? match[1] : 'localhost';
+  const port = match ? match[2] : '8000';
+
   const wsurl = `ws://${opts.hostport}/private/captp`;
   const exit = makePromiseKit();
   let connected = false;
@@ -225,6 +229,8 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
               bundleSource: file => bundleSource(pathResolve(file)),
               pathResolve,
               installUnsafePlugin,
+              host,
+              port,
             });
           }
         }
