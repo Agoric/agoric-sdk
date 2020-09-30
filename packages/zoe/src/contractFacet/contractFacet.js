@@ -31,7 +31,7 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-export function buildRootObject(_powers, _params, testJigSetter = undefined) {
+export function buildRootObject(powers, _params, testJigSetter = undefined) {
   /** @type {ExecuteContract} */
   const executeContract = async (
     bundle,
@@ -365,20 +365,22 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       },
       // Shutdown the entire vat and give payouts
       shutdown: msg => {
-        E(zoeInstanceAdmin).exitAllSeats(msg);
+        E(zoeInstanceAdmin).exitAllSeats();
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {
             zcfSeatAdmin.updateHasExited();
           }
         });
+        powers.exitVat(msg);
       },
-      shutdownWithError: error => {
-        E(zoeInstanceAdmin).kickOutAllSeats(error);
+      shutdownWithError: reason => {
+        E(zoeInstanceAdmin).kickOutAllSeats(reason);
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {
             zcfSeatAdmin.updateHasExited();
           }
         });
+        powers.exitVatWithFailure(reason);
       },
       makeZCFMint,
       makeEmptySeatKit,

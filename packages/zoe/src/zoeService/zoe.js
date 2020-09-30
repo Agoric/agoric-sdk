@@ -258,18 +258,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       };
 
       const instanceAdmin = makeInstanceAdmin();
-
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
-      E(adminNode)
-        .done()
-        .then(
-          () => instanceAdmin.terminate(),
-          error => instanceAdmin.terminateOnFailure(error),
-        );
-
       // Unpack the invitationKit.
-
       const {
         issuer: invitationIssuer,
         mint: invitationMint,
@@ -320,7 +311,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
-        exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
+        exitAllSeats: () => instanceAdmin.exitAllSeats(),
         kickOutAllSeats: reason => instanceAdmin.kickOutAllSeats(reason),
         makeZoeMint,
         replaceAllocations: seatHandleAllocations => {
