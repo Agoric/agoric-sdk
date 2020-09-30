@@ -17,8 +17,8 @@
     if (!obj) {
       return;
     }
-    let { outcomeDetails, outcome } = obj;
-    if (outcomeDetails) {
+    let { dappContext, outcome } = obj;
+    if (dappContext) {
       // They have opted-in to handling the outcome.
       return;
     }

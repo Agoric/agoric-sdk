@@ -249,15 +249,10 @@ export async function makeWallet({
     const { proposalTemplate } = offer;
     const { instance, installation } = idToOffer.get(id);
     if (!instance || !installation) {
+      // We haven't yet deciphered the invitation, so don't send
+      // this offer.
       return;
     }
-    // We could get the instanceHandle and installationHandle from the
-    // board and store them to prevent having to make this call each
-    // time, but if we want the offers to be able to sent to the
-    // frontend, we cannot store the instanceHandle and
-    // installationHandle in these offer objects because the handles
-    // are presences and we don't wish to send presences to the
-    // frontend.
     const instanceDisplay = display(instance);
     const installationDisplay = display(installation);
     const alreadyDisplayed =
@@ -265,6 +260,9 @@ export async function makeWallet({
 
     const offerForDisplay = {
       ...offer,
+      // We cannot store the actions, installation, and instance in the
+      // displayed offer objects because they are presences are presences and we
+      // don't wish to send presences to the frontend.
       actions: undefined,
       installation: undefined,
       instance: undefined,
@@ -276,6 +274,7 @@ export async function makeWallet({
 
     inboxState.set(id, offerForDisplay);
     if (doPush) {
+      // Only trigger a state change if this was a single update.
       inboxStateChangeHandler(getInboxState());
     }
   }
@@ -283,9 +282,11 @@ export async function makeWallet({
   async function updateAllInboxState() {
     await Promise.all(
       Array.from(inboxState.entries()).map(([id, offer]) =>
+        // Don't trigger state changes.
         updateInboxState(id, offer, false),
       ),
     );
+    // Now batch together all the state changes.
     inboxStateChangeHandler(getInboxState());
   }
 
@@ -854,7 +855,7 @@ export async function makeWallet({
       return undefined;
     }
 
-    /** @type {{ outcome?: any, depositedP?: Promise<any[]>, outcomeDetails?: any }} */
+    /** @type {{ outcome?: any, depositedP?: Promise<any[]>, dappContext?: any }} */
     let ret = {};
     let alreadyResolved = false;
     const rejected = e => {
@@ -907,7 +908,7 @@ export async function makeWallet({
       ret = {
         outcome,
         depositedP,
-        outcomeDetails: offer.outcomeDetails,
+        dappContext: offer.dappContext,
       };
 
       // Update status, drop the proposal

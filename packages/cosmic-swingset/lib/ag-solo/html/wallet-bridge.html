@@ -41,13 +41,7 @@
 
     <button id="launchWallet">Agoric Wallet</button>
     <script type="text/javascript">
-      const popupWallet = () => {
-        launchWallet.classList.add('pulse');
-      };
-
-      const ackWallet = () => {
-        launchWallet.classList.remove('pulse');
-      };
+      let pendingWalletRequests = 0;
 
       launchWallet.addEventListener('click', ev => {
         ackWallet();
@@ -67,7 +61,6 @@ command-line request to open the Agoric wallet.`);
       const wsQueue = [];
       const dappQueue = [];
       let origin;
-      let popped = false;
       ws.addEventListener('message', ev => {
         let obj;
         try {
@@ -78,17 +71,28 @@ command-line request to open the Agoric wallet.`);
         if (!obj || typeof obj.type !== 'string') {
           return;
         }
-        if (obj.type === 'walletNeedDappApproval') {
-          // Let them approve.
-          popupWallet();
-          popped = true;
-        } else if (popped && obj.type === 'walletHaveDappApproval') {
-          ackWallet();
-          popped = false;
-        } else if (obj.type === 'walletOfferAdded') {
-          popupWallet();
-        } else if (obj.type === 'walletOfferHandled') {
-          ackWallet();
+        // Check if the wallet launcher needs activation.
+        switch (obj.type) {
+          case 'walletNeedDappApproval':
+          case 'walletOfferAdded': {
+            // Encourage them to approve the request.
+            launchWallet.classList.add('pulse');
+            if (pendingWalletRequests <= 0) {
+              pendingWalletRequests = 0;
+            }
+            pendingWalletRequests += 1;
+            break;
+          }
+          case 'walletHaveDappApproval':
+          case 'walletOfferHandled': {
+            // They've approved a request.
+            pendingWalletRequests -= 1;
+            if (pendingWalletRequests <= 0) {
+              pendingWalletRequests = 0;
+              launchWallet.classList.remove('pulse');
+            }
+            break;
+          }
         }
         if (origin === undefined) {
           dappQueue.push(obj);

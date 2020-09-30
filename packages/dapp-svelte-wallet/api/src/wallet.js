@@ -13,6 +13,9 @@ export function buildRootObject(_vatPowers) {
   const bridgeHandles = new Set();
   const offerSubscriptions = new Map();
 
+  const httpSend = (obj, channelHandles) =>
+    E(http).send(JSON.parse(JSON.stringify(obj)), channelHandles);
+
   const pushOfferSubscriptions = (channelHandle, offersStr) => {
     const offers = JSON.parse(offersStr);
     const subs = offerSubscriptions.get(channelHandle);
@@ -26,7 +29,7 @@ export function buildRootObject(_vatPowers) {
             offer.requestContext.origin === origin,
         ),
       );
-      E(http).send(
+      httpSend(
         {
           type: 'walletOfferDescriptions',
           data: result,
@@ -102,13 +105,13 @@ export function buildRootObject(_vatPowers) {
         let handled = false;
         const actions = harden({
           result(offer, outcome) {
-            E(http).send(
+            httpSend(
               {
                 type: 'walletOfferResult',
                 data: {
                   id: offer.id,
-                  outcomeDetails: offer.outcomeDetails,
-                  outcome: `${outcome}`,
+                  dappContext: offer.dappContext,
+                  outcome,
                 },
               },
               [meta.channelHandle],
@@ -119,7 +122,7 @@ export function buildRootObject(_vatPowers) {
               return;
             }
             handled = true;
-            E(http).send(
+            httpSend(
               {
                 type: 'walletOfferHandled',
                 data: offer.id,
@@ -186,7 +189,7 @@ export function buildRootObject(_vatPowers) {
           pursesState = m;
           pursesJSONUpdater.updateState(pursesState);
           if (http) {
-            E(http).send(
+            httpSend(
               {
                 type: 'walletUpdatePurses',
                 data: pursesState,
@@ -206,7 +209,7 @@ export function buildRootObject(_vatPowers) {
           inboxState = m;
           inboxJSONUpdater.updateState(inboxState);
           if (http) {
-            E(http).send(
+            httpSend(
               {
                 type: 'walletUpdateInbox',
                 data: inboxState,
@@ -348,7 +351,7 @@ export function buildRootObject(_vatPowers) {
               dappOrigin,
               () => {
                 needApproval = true;
-                E(http).send(
+                httpSend(
                   {
                     type: 'walletNeedDappApproval',
                     data: {
@@ -361,7 +364,7 @@ export function buildRootObject(_vatPowers) {
               },
             );
             if (needApproval) {
-              E(http).send(
+              httpSend(
                 {
                   type: 'walletHaveDappApproval',
                   data: {
