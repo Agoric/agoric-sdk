@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/app/params"
+	"github.com/Agoric/cosmic-swingset/app/params"
 	"github.com/cosmos/cosmos-sdk/codec"
 
 	"github.com/spf13/cast"
@@ -17,7 +17,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	gaia "github.com/Agoric/agoric-sdk/packages/cosmic-swingset/app"
+	gaia "github.com/Agoric/cosmic-swingset/app"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/debug"

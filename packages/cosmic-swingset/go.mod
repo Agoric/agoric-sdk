@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/99designs/keyring v1.1.5 // indirect
-	github.com/Agoric/agoric-sdk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/bartekn/go-bip39 v0.0.0-20171116152956-a05967ea095d // indirect
 	github.com/confio/ics23-iavl v0.6.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.34.4-0.20200902204113-9e85e81e0e81

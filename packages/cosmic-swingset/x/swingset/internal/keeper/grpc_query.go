@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

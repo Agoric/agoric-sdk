@@ -4,7 +4,7 @@ package agoric.swingset;
 import "gogoproto/gogo.proto";
 import "ibc/channel/channel.proto";
 
-option go_package = "github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types";
+option go_package = "github.com/Agoric/cosmic-swingset/x/swingset/internal/types";
 
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
 message MsgDeliverInbound {
