@@ -4,8 +4,14 @@ package main
 // #cgo LDFLAGS: -L/usr/local/lib
 import "C"
 
-import "github.com/Agoric/cosmic-swingset/lib/daemon"
+import (
+	"os"
+
+	"github.com/Agoric/cosmic-swingset/app"
+	"github.com/Agoric/cosmic-swingset/lib/daemon"
+)
 
 func main() {
+	app.DefaultNodeHome = os.ExpandEnv("$HOME/.ag-cosmos-helper")
 	daemon.Run()
 }
