@@ -320,9 +320,8 @@ export default function buildKernel(
     insistCapData(info);
     if (kernelKeeper.getVatKeeper(vatID)) {
       const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      const err = VAT_TERMINATION_ERROR;
       for (const kpid of promisesToReject) {
-        resolveToError(kpid, err, vatID);
+        resolveToError(kpid, VAT_TERMINATION_ERROR, vatID);
       }
       removeVatManager(vatID, shouldReject, info).then(
         () => kdebug(`terminated vat ${vatID}`),
@@ -334,7 +333,9 @@ export default function buildKernel(
   let terminationTrigger;
 
   function setTerminationTrigger(vatID, shouldAbortCrank, shouldReject, info) {
-    assert(!(shouldAbortCrank && !shouldReject));
+    if (shouldAbortCrank) {
+      assert(shouldReject);
+    }
     if (!terminationTrigger || shouldAbortCrank) {
       terminationTrigger = { vatID, shouldAbortCrank, shouldReject, info };
     }

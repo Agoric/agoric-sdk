@@ -15,7 +15,7 @@ export function buildRootObject() {
     },
     async phase2() {
       // terminate as a second phase, so we can capture the kernel state in between
-      E(dude.adminNode).terminate();
+      E(dude.adminNode).terminate('phase 2');
       await E(dude.adminNode).done();
     },
   });

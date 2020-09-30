@@ -24,6 +24,20 @@ export function buildRootObject(vatPowers) {
       vatPowers.exitVatWithFailure(reason);
     },
 
+    dieHappyButTalkToMeFirst(other, completion) {
+      vatPowers.exitVat(completion);
+      E(other).query('not dead quite yet');
+    },
+
+    dieSadButTalkToMeFirst(other, reason) {
+      vatPowers.exitVatWithFailure(reason);
+      E(other).query('not dead quite yet (but soon)');
+    },
+
+    dieReturningAPresence(other) {
+      vatPowers.exitVat({ message: 'your ad here', emissary: other });
+    },
+
     async elsewhere(other, arg) {
       testLog(`QUERY ${arg}`);
       const answer = await E(other).query(arg);

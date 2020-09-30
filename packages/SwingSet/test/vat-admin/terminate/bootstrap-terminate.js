@@ -59,11 +59,20 @@ export function buildRootObject(vatPowers, vatParameters) {
         case 'exceptionallyHappy':
           E(dude.root).dieHappy(Error(mode));
           break;
+        case 'happyTalkFirst':
+          E(dude.root).dieHappyButTalkToMeFirst(self, mode);
+          break;
         case 'sad':
           E(dude.root).dieSad(mode);
           break;
         case 'exceptionallySad':
           E(dude.root).dieSad(Error(mode));
+          break;
+        case 'sadTalkFirst':
+          E(dude.root).dieSadButTalkToMeFirst(self, Error(mode));
+          break;
+        case 'dieReturningAPresence':
+          E(dude.root).dieReturningAPresence(self, Error(mode));
           break;
         default:
           console.log('something terrible has happened');
@@ -77,7 +86,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       // then we try to kill the vat again, which should be idempotent
       if (mode === 'kill') {
-        E(dude.adminNode).terminate();
+        E(dude.adminNode).terminate('because we said so');
       }
 
       // the run-queue should now look like:
@@ -140,9 +149,9 @@ export function buildRootObject(vatPowers, vatParameters) {
       // proceed to the end of the test. We push the 'done' message to testLog
       try {
         const v = await doneP;
-        testLog(`done result ${v}`);
+        testLog(`done result ${v} (Error=${v instanceof Error})`);
       } catch (e) {
-        testLog(`done exception ${e}`);
+        testLog(`done exception ${e} (Error=${e instanceof Error})`);
       }
       testLog('done');
 
