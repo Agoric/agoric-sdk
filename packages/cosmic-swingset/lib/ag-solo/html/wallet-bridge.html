@@ -41,8 +41,10 @@
 
     <button id="launchWallet">Agoric Wallet</button>
     <script type="text/javascript">
+      let pendingWalletRequests = 0;
+
       launchWallet.addEventListener('click', ev => {
-        launchWallet.classList.remove('pulse');
+        ackWallet();
         alert(`\
 Use the:
 
@@ -50,10 +52,6 @@ Use the:
 
 command-line request to open the Agoric wallet.`);
       });
-
-      const popupWallet = () => {
-        launchWallet.classList.add('pulse');
-      };
 
       const walletPublicURL = new URL(
         `/private/wallet-bridge${location.search}`,
@@ -73,9 +71,28 @@ command-line request to open the Agoric wallet.`);
         if (!obj || typeof obj.type !== 'string') {
           return;
         }
-        if (obj.type === 'walletNeedDappApproval') {
-          // Let them approve.
-          popupWallet();
+        // Check if the wallet launcher needs activation.
+        switch (obj.type) {
+          case 'walletNeedDappApproval':
+          case 'walletOfferAdded': {
+            // Encourage them to approve the request.
+            launchWallet.classList.add('pulse');
+            if (pendingWalletRequests <= 0) {
+              pendingWalletRequests = 0;
+            }
+            pendingWalletRequests += 1;
+            break;
+          }
+          case 'walletHaveDappApproval':
+          case 'walletOfferHandled': {
+            // They've approved a request.
+            pendingWalletRequests -= 1;
+            if (pendingWalletRequests <= 0) {
+              pendingWalletRequests = 0;
+              launchWallet.classList.remove('pulse');
+            }
+            break;
+          }
         }
         if (origin === undefined) {
           dappQueue.push(obj);
@@ -94,10 +111,6 @@ command-line request to open the Agoric wallet.`);
           // The queued messages are raw objects, so JSONify.
           const obj = wsQueue.shift();
           ws.send(JSON.stringify(obj));
-          if (obj.type === 'walletAddOffer') {
-            // Just pop up our corresponding UI.
-            popupWallet();
-          }
         }
       });
 
@@ -127,10 +140,6 @@ command-line request to open the Agoric wallet.`);
         } else {
           // console.log('sending', obj);
           ws.send(JSON.stringify(obj));
-          if (obj.type === 'walletAddOffer') {
-            // Just pop up our corresponding UI.
-            popupWallet();
-          }
         }
       });
     </script>

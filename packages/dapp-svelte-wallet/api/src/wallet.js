@@ -13,6 +13,9 @@ export function buildRootObject(_vatPowers) {
   const bridgeHandles = new Set();
   const offerSubscriptions = new Map();
 
+  const httpSend = (obj, channelHandles) =>
+    E(http).send(JSON.parse(JSON.stringify(obj)), channelHandles);
+
   const pushOfferSubscriptions = (channelHandle, offersStr) => {
     const offers = JSON.parse(offersStr);
     const subs = offerSubscriptions.get(channelHandle);
@@ -26,7 +29,7 @@ export function buildRootObject(_vatPowers) {
             offer.requestContext.origin === origin,
         ),
       );
-      E(http).send(
+      httpSend(
         {
           type: 'walletOfferDescriptions',
           data: result,
@@ -99,9 +102,41 @@ export function buildRootObject(_vatPowers) {
         };
       }
       case 'walletAddOffer': {
+        let handled = false;
+        const actions = harden({
+          result(offer, outcome) {
+            httpSend(
+              {
+                type: 'walletOfferResult',
+                data: {
+                  id: offer.id,
+                  dappContext: offer.dappContext,
+                  outcome,
+                },
+              },
+              [meta.channelHandle],
+            );
+          },
+          handled(offer) {
+            if (handled) {
+              return;
+            }
+            handled = true;
+            httpSend(
+              {
+                type: 'walletOfferHandled',
+                data: offer.id,
+              },
+              [meta.channelHandle],
+            );
+          },
+        });
         return {
           type: 'walletOfferAdded',
-          data: await wallet.addOffer(data, { ...meta, dappOrigin }),
+          data: await wallet.addOffer(
+            { ...data, actions },
+            { ...meta, dappOrigin },
+          ),
         };
       }
       case 'walletDeclineOffer': {
@@ -154,7 +189,7 @@ export function buildRootObject(_vatPowers) {
           pursesState = m;
           pursesJSONUpdater.updateState(pursesState);
           if (http) {
-            E(http).send(
+            httpSend(
               {
                 type: 'walletUpdatePurses',
                 data: pursesState,
@@ -174,7 +209,7 @@ export function buildRootObject(_vatPowers) {
           inboxState = m;
           inboxJSONUpdater.updateState(inboxState);
           if (http) {
-            E(http).send(
+            httpSend(
               {
                 type: 'walletUpdateInbox',
                 data: inboxState,
@@ -217,16 +252,22 @@ export function buildRootObject(_vatPowers) {
             dappOrigin,
         );
 
-        const notYetEnabled = () =>
-          E(otherSide)
-            .needDappApproval(dappOrigin, suggestedDappPetname)
-            .catch(_ => {});
-        const approve = () =>
-          wallet.waitForDappApproval(
+        const approve = async () => {
+          let needApproval = false;
+          await wallet.waitForDappApproval(
             suggestedDappPetname,
             dappOrigin,
-            notYetEnabled,
+            () => {
+              needApproval = true;
+              E(otherSide)
+                .needDappApproval(dappOrigin, suggestedDappPetname)
+                .catch(_ => {});
+            },
           );
+          if (needApproval) {
+            E(otherSide).dappApproved(dappOrigin);
+          }
+        };
 
         return harden({
           async getPurseNotifier() {
@@ -297,27 +338,42 @@ export function buildRootObject(_vatPowers) {
             const {
               type,
               dappOrigin = meta.origin,
-              suggestedDappPetname = obj.dappOrigin || meta.origin,
+              suggestedDappPetname = (meta.query &&
+                meta.query.suggestedDappPetname) ||
+                obj.dappOrigin ||
+                meta.origin,
             } = obj;
 
             // When we haven't been enabled, tell our caller.
-            const notYetEnabled = () =>
-              E(http).send(
+            let needApproval = false;
+            await wallet.waitForDappApproval(
+              suggestedDappPetname,
+              dappOrigin,
+              () => {
+                needApproval = true;
+                httpSend(
+                  {
+                    type: 'walletNeedDappApproval',
+                    data: {
+                      dappOrigin,
+                      suggestedDappPetname,
+                    },
+                  },
+                  [meta.channelHandle],
+                );
+              },
+            );
+            if (needApproval) {
+              httpSend(
                 {
-                  type: 'walletNeedDappApproval',
+                  type: 'walletHaveDappApproval',
                   data: {
                     dappOrigin,
-                    suggestedDappPetname,
                   },
                 },
                 [meta.channelHandle],
               );
-
-            await wallet.waitForDappApproval(
-              suggestedDappPetname,
-              dappOrigin,
-              notYetEnabled,
-            );
+            }
 
             switch (type) {
               case 'walletGetPurses':
