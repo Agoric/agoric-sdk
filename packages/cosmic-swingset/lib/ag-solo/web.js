@@ -66,7 +66,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
         'from',
         JSON.stringify(obj, undefined, 2),
       );
-      throw (err && err.message) || JSON.stringify(err);
+      throw (err && err.message) || err;
     });
   };
 
