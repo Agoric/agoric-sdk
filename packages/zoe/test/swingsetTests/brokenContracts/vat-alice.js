@@ -465,6 +465,114 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
   };
 
+  const doHappyTermination = async () => {
+    log(`=> alice.doHappyTermintion called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`happy termination saw "${reason}"`);
+        },
+        e => log(`happy termination saw reject "${e}"`),
+      );
+
+    E(publicFacet).terminateClean('Success');
+  };
+
+  // contract attempts a clean shutdown, but there are outstanding seats
+  const doHappyTerminationWithOffers = async () => {
+    log(`=> alice.doHappyTerminationWOffers called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    // wait for the contract to finish.
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`happy termination saw "${reason}"`);
+        },
+        e => log(`happy termination saw reject "${e}"`),
+      );
+
+    // Alice submits an offer. The contract will be terminated before resolution
+    const swapProposal = harden({
+      give: { Asset: moola(5) },
+      want: { Price: simoleans(12) },
+      exit: { onDemand: null },
+    });
+    const aliceSwapPayments = { Asset: moolaPayment };
+    const swapInvitation = await E(publicFacet).makeSwapInvitation();
+    const seat = await E(zoe).offer(
+      swapInvitation,
+      swapProposal,
+      aliceSwapPayments,
+    );
+    E(seat)
+      .getOfferResult()
+      .then(
+        o => log(`Swap outcome resolves to an invitation: ${o}`),
+        e => assert(false, `Expected swap outcome to succeed ${e}`),
+      );
+
+    // contract asks for clean termination
+    E(publicFacet).terminateClean('Success');
+
+    const moolaSwapRefund = await E(seat).getPayout('Asset');
+    const simoleanSwapPayout = await E(seat).getPayout('Price');
+
+    const moolaPurse2P = E(moolaIssuer).makeEmptyPurse();
+    const simoleanPurse2P = E(simoleanIssuer).makeEmptyPurse();
+    await E(moolaPurse2P).deposit(moolaSwapRefund);
+    await E(simoleanPurse2P).deposit(simoleanSwapPayout);
+    await showPurseBalance(moolaPurse2P, 'second moolaPurse', log);
+    await showPurseBalance(simoleanPurse2P, 'second simoleanPurse', log);
+  };
+
+  const doSadTermination = async () => {
+    log(`=> alice.doSadTermintion called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`sad termination saw "${reason}"`);
+        },
+        e => log(`sad termination saw reject "${e}"`),
+      );
+
+    E(publicFacet).terminateFail('Sadness');
+  };
+
   return harden({
     startTest: async testName => {
       switch (testName) {
@@ -488,6 +596,15 @@ const build = async (log, zoe, issuers, payments, installations) => {
         }
         case 'meterInMakeContract': {
           return doMeterExceptionInMakeContract();
+        }
+        case 'happyTermination': {
+          return doHappyTermination();
+        }
+        case 'happyTerminationWOffers': {
+          return doHappyTerminationWithOffers();
+        }
+        case 'sadTermination': {
+          return doSadTermination();
         }
         default: {
           throw new Error(`testName ${testName} not recognized`);

@@ -103,7 +103,7 @@ const start = zcf => {
     buyerSeat.exit();
 
     if (itemsMath.isEmpty(publicFacet.getAvailableItems())) {
-      zcf.shutdown();
+      zcf.shutdown('All items sold.');
     }
     return defaultAcceptanceMsg;
   };

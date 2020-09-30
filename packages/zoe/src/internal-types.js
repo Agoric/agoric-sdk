@@ -96,8 +96,9 @@
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
- * @property {() => boolean} hasShutdown
- * @property {() => void} shutdown
+ * @property {() => boolean} acceptingOffers
+ * @property {() => void} terminate
+ * @property {(reason: string) => void} terminateOnFailure
  */
 
 /**
@@ -119,7 +120,8 @@
  *             description: string,
  *             customProperties: Record<string, any>=,
  *            ) => Payment} makeInvitation
- * @property {() => void} shutdown
+ * @property {(completion: string) => void} terminate
+ * @property {(reason: string) => void} terminateOnFailure
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
  *            ) => Promise<void>} saveIssuer
@@ -231,11 +233,16 @@
  * ability to call terminate(), Zoe makes this visible.
  *
  * @property {() => Promise<void>} done
- * provides a promise that will be fulfilled when the contract is terminated.
- * @property {() => void} terminate
- * kills the vat in which the contract is running
+ * returns a promise that will be fulfilled or rejected when the contract is
+ * terminated.
+ * @property {(completion: string) => void} terminate
+ * Terminate the vat in which the contract is running. This bypasses
+ * notification of Zoe.
+ * @property {(reason: string) => void} terminateOnFailure
+ * Terminate the vat in which the contract is running and indicate failure. This
+ * bypasses notification of Zoe.
  * @property {() => Object} adminData
- * provides some statistics about the vat in which the contract is running.
+ * returns some statistics about the vat in which the contract is running.
  */
 
 /**

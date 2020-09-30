@@ -77,7 +77,7 @@ const start = zcf => {
         );
         throw err;
       }
-      zcf.shutdown();
+      zcf.shutdown('Swap completed.');
       return `The option was exercised. Please collect the assets in your payout.`;
     };
 

@@ -100,6 +100,7 @@ const expectedCoveredCallOkLog = [
   '=> alice.doCreateCoveredCall called',
   '@@ schedule task for:1, currently: 0 @@',
   'The option was exercised. Please collect the assets in your payout.',
+  'covered call was shut down due to "Swap completed."',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
   'bobSimoleanPurse: balance {"brand":{},"value":0}',
   'aliceMoolaPurse: balance {"brand":{},"value":0}',

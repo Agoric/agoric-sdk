@@ -69,6 +69,9 @@ const start = zcf => {
     );
   };
 
+  const terminateFail = msg => zcf.shutdownWithError(msg);
+  const terminateClean = msg => zcf.shutdown(msg);
+
   const makeSwapInvitation = () =>
     zcf.makeInvitation(makeMatchingInvitation, 'firstOffer');
 
@@ -82,6 +85,8 @@ const start = zcf => {
     makeSwapInvitation,
     makeExcessiveInvitation,
     makeThrowingInvitation,
+    terminateClean,
+    terminateFail,
     meterException: () => {
       offersCount += 1;
       return new Array(1e9);

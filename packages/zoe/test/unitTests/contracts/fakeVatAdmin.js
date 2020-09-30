@@ -25,6 +25,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
             return kit.promise;
           },
           terminate: () => {},
+          terminateOnFailure: () => {},
           adminData: () => {},
         },
       });
