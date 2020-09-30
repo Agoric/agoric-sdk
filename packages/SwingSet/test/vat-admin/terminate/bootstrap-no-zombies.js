@@ -9,7 +9,7 @@ export function buildRootObject() {
       // sure everything is working
       const weatherwax = await E(vatMaker).createVatByName('weatherwax');
       await E(weatherwax.root).live();
-      E(weatherwax.adminNode).terminate();
+      E(weatherwax.adminNode).terminate('no zombies?');
       try {
         await E(weatherwax.adminNode).done();
       } catch (e) {

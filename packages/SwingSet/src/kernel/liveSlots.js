@@ -522,11 +522,11 @@ function build(
   }
 
   function exitVat(completion) {
-    syscall.exit(false, m.serialize(completion));
+    syscall.exit(false, m.serialize(harden(completion)));
   }
 
   function exitVatWithFailure(reason) {
-    syscall.exit(true, m.serialize(reason));
+    syscall.exit(true, m.serialize(harden(reason)));
   }
 
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
