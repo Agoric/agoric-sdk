@@ -17,6 +17,8 @@ jobs:
         node-version: ['12.14.1', '12.x', '14.x']
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
     - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
@@ -62,6 +64,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
     - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -70,6 +74,7 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
     - name: lint check
       run: yarn lint-check
 
@@ -95,6 +100,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
     - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -252,6 +259,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
     - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -260,6 +269,7 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
     - name: Set up Go 1.14
       uses: actions/setup-go@v1
       with:
@@ -296,6 +306,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
     - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -304,8 +316,21 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
+    - name: install XS dependencies
+      working-directory: ./packages/xs-vat-worker
+      run: yarn install:xs-lin
+    - name: yarn build XS worker
+      working-directory: ./packages/xs-vat-worker
+      run: yarn build:xs-lin
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    # explicitly test the XS worker, for visibility
+    - name: yarn test (SwingSet XS Worker)
+      working-directory: ./packages/SwingSet
+      run: yarn test:xs-worker
       env:
         ESM_DISABLE_CACHE: true
 
@@ -329,6 +354,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
     - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -337,6 +364,7 @@ jobs:
       run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
+
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
       env:
