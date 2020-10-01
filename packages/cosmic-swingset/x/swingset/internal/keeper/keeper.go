@@ -264,17 +264,10 @@ func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
 	return k.channelKeeper.SendPacket(ctx, chanCap, packet)
 }
 
-// ReceiveExecuted defines a wrapper function for the channel Keeper's function
+// WriteAcknowledgement defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
-func (k Keeper) ReceiveExecuted(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
-	portID := packet.GetDestPort()
-	channelID := packet.GetDestChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.ReceiveExecuted(ctx, chanCap, packet, acknowledgement)
+func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
+	return k.channelKeeper.WriteAcknowledgement(ctx, packet, acknowledgement)
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function

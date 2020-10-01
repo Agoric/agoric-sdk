@@ -13,7 +13,7 @@ type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channel.Channel, found bool)
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
 	SendPacket(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
-	ReceiveExecuted(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI, acknowledgement []byte) error
+	WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error
 	ChanOpenInit(ctx sdk.Context, order channel.Order, connectionHops []string, portID, channelID string,
 		portCap *capability.Capability, counterparty channel.Counterparty, version string) (*capability.Capability, error)
 

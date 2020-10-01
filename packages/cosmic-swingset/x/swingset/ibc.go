@@ -6,6 +6,7 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
+	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/02-client/types"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
 	host "github.com/cosmos/cosmos-sdk/x/ibc/24-host"
@@ -86,13 +87,15 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 			return "", fmt.Errorf("unknown sequence number")
 		}
 
-		var absoluteTimeout uint64
+		var absoluteTimeout clienttypes.Height
 		if msg.RelativeTimeout == 0 {
 			absoluteTimeout = msg.Packet.TimeoutHeight
 		} else {
 			// FIXME: Is the current context's blockheight really something we
 			// should use?  Does this need to be the destination's blockheight?
-			absoluteTimeout = uint64(ctx.Context.BlockHeight()) + msg.RelativeTimeout
+			version := clienttypes.ParseChainID(ctx.Context.ChainID())
+			blockHeight := uint64(ctx.Context.BlockHeight()) + msg.RelativeTimeout
+			absoluteTimeout = clienttypes.NewHeight(version, blockHeight)
 		}
 
 		packet := channeltypes.NewPacket(
@@ -110,7 +113,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		}
 
 	case "receiveExecuted":
-		err = ctx.Keeper.ReceiveExecuted(ctx.Context, msg.Packet, msg.Ack)
+		err = ctx.Keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
