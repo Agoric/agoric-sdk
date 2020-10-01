@@ -97,9 +97,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         optionValue[0].description === 'exerciseOption',
         details`wrong invitation`,
       );
-      assert(moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)));
       assert(
-        simoleanAmountMath.isEqual(optionValue[0].strikePrice, simoleans(7)),
+        moolaAmountMath.isEqual(
+          optionValue[0].underlyingAssets.UnderlyingAsset,
+          moola(3),
+        ),
+      );
+      assert(
+        simoleanAmountMath.isEqual(
+          optionValue[0].strikePrice.StrikePrice,
+          simoleans(7),
+        ),
       );
       assert(
         optionValue[0].expirationDate === 1,
@@ -162,11 +170,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         details`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)),
+        moolaAmountMath.isEqual(
+          optionValue[0].underlyingAssets.UnderlyingAsset,
+          moola(3),
+        ),
         details`wrong underlying asset`,
       );
       assert(
-        simoleanAmountMath.isEqual(optionValue[0].strikePrice, simoleans(7)),
+        simoleanAmountMath.isEqual(
+          optionValue[0].strikePrice.StrikePrice,
+          simoleans(7),
+        ),
         details`wrong strike price`,
       );
       assert(
@@ -257,7 +271,6 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         proposal,
         paymentKeywordRecord,
       );
-
       log(`Bob: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
     },
     doSecondPriceAuctionGetPayout: async () => {
@@ -538,6 +551,33 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         E(seat).getPayout('Items'),
       );
       log('boughtTicketAmount: ', boughtTicketAmount);
+    },
+
+    doOTCDesk: async untrustedInvitation => {
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      assert(invitationValue.installation === installations.coveredCall);
+
+      // Bob can use whatever keywords he wants
+      const proposal = harden({
+        give: { Whatever1: simoleans(4) },
+        want: { Whatever2: moola(3) },
+        exit: { onDemand: null },
+      });
+      await E(simoleanPurseP).deposit(simoleanPayment);
+      const simoleanPayment1 = await E(simoleanPurseP).withdraw(simoleans(4));
+
+      const seat = await E(zoe).offer(invitation, proposal, {
+        Whatever1: simoleanPayment1,
+      });
+
+      log(await E(seat).getOfferResult());
+
+      const moolaPayout = await E(seat).getPayout('Whatever2');
+      const simoleansPayout = await E(seat).getPayout('Whatever1');
+
+      log(await E(moolaIssuer).getAmountOf(moolaPayout));
+      log(await E(simoleanIssuer).getAmountOf(simoleansPayout));
     },
   });
 };

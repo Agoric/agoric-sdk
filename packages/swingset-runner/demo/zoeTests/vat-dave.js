@@ -122,11 +122,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         details`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(optionValue[0].underlyingAsset, moola(3)),
+        moolaAmountMath.isEqual(
+          optionValue[0].underlyingAssets.UnderlyingAsset,
+          moola(3),
+        ),
         details`wrong underlying asset`,
       );
       assert(
-        simoleanAmountMath.isEqual(optionValue[0].strikePrice, simoleans(7)),
+        simoleanAmountMath.isEqual(
+          optionValue[0].strikePrice.StrikePrice,
+          simoleans(7),
+        ),
         details`wrong strike price`,
       );
       assert(

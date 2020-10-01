@@ -13,6 +13,7 @@ import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
 import sellItemsBundle from './bundle-sellItems';
 import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
+import otcDeskBundle from './bundle-otcDesk';
 /* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
@@ -106,6 +107,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
         autoswap: await E(zoe).install(autoswapBundle.bundle),
         sellItems: await E(zoe).install(sellItemsBundle.bundle),
         mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
+        otcDesk: await E(zoe).install(otcDeskBundle.bundle),
       };
 
       const testName = vatParameters.argv[0] || 'simpleExchangeOk';
