@@ -54,7 +54,7 @@ $(TOOLS)/mcconfig:
 	make headless
 
 clean:
-	rm -rf build $(NODE_MODULES)/.bin/xs-vat-worker
+	rm -rf build
 
 realclean:
 	rm -rf build
