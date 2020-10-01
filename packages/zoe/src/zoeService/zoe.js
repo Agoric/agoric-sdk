@@ -253,12 +253,20 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             acceptingOffers = false;
             zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.kickOut(reason));
           },
+          // TODO(1834): plumb this through to ZCF
           stopAcceptingOffers: () => (acceptingOffers = false),
         };
       };
 
       const instanceAdmin = makeInstanceAdmin();
       instanceToInstanceAdmin.init(instance, instanceAdmin);
+
+      E(adminNode)
+        .done()
+        .then(
+          () => instanceAdmin.exitAllSeats(),
+          reason => instanceAdmin.kickOutAllSeats(reason),
+        );
 
       // Unpack the invitationKit.
       const {

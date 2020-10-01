@@ -153,7 +153,7 @@ test('throw in makeContract call', async t => {
 
 const happyTerminationLog = [
   '=> alice is set up',
-  '=> alice.doHappyTermintion called',
+  '=> alice.doHappyTermination called',
   'happy termination saw "Success"',
 ];
 
@@ -185,14 +185,14 @@ const doHappyTerminationRefusesContactLog = [
   'can\'t make more invitations because "Error: vat terminated"',
 ];
 
-test('happy termination refuses contact path', async t => {
+test.only('happy termination refuses contact path', async t => {
   const dump = await main(['doHappyTerminationRefusesContact', [5, 0, 0]]);
   t.deepEqual(dump.log, doHappyTerminationRefusesContactLog);
 });
 
 const sadTerminationLog = [
   '=> alice is set up',
-  '=> alice.doSadTermintion called',
+  '=> alice.doSadTermination called',
   'sad termination saw reject "Sadness"',
 ];
 

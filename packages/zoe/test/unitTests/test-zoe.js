@@ -66,6 +66,10 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   t.deepEqual(result.creatorInvitation, undefined);
   t.deepEqual(result.instance, result.instance);
   t.deepEqual(result.publicFacet, {});
+  t.deepEqual(Object.getOwnPropertyNames(result.adminFacet), [
+    'getVatShutdownPromise',
+    'getVatStats',
+  ]);
 });
 
 test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
