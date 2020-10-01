@@ -229,7 +229,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Get or create the essential addresses.
     const addrs = {};
-    for (const keyName of ['provision']) {
+    for (const keyName of ['provision', 'delegate0']) {
       /* eslint-disable no-await-in-loop */
       let capret = showKey(keyName);
       if (await capret[0]) {
@@ -263,32 +263,18 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (exitStatus) {
         return exitStatus;
       }
-      // We need to generate the delegate address on the node.
-      exitStatus = await chainSpawn([
-        'keys',
-        'add',
-        'delegate0',
-        '--keyring-backend=test',
-      ]);
-      if (exitStatus) {
-        return exitStatus;
-      }
       exitStatus = await chainSpawn([
         'add-genesis-account',
-        'delegate0',
+        addrs.delegate0,
         DELEGATE0_COINS,
-        '--keyring-backend=test',
       ]);
       if (exitStatus) {
         return exitStatus;
       }
-      const keysHome = opts.sdk
-        ? `_agstate/keys`
-        : `/usr/src/dapp/_agstate/keys`;
-      exitStatus = await chainSpawn([
+      exitStatus = await keysSpawn([
         'gentx',
         'delegate0',
-        `--home-client=${keysHome}`,
+        `--home-server=${localAgServer}`,
         '--keyring-backend=test',
         `--chain-id=${CHAIN_ID}`,
         `--amount=${DELEGATE0_COINS}`,
