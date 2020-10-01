@@ -5,10 +5,10 @@ import { showPurseBalance, setupIssuers } from './helpers';
 import { makePrintLog } from './printLog';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
-  const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
+  const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
-  const [moolaPayment, simoleanPayment] = payments;
-  const [moolaIssuer, simoleanIssuer] = issuers;
+  const [moolaPayment, simoleanPayment, bucksPayment] = payments;
+  const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
 
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
@@ -418,6 +418,71 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     log('alice earned: ', currentPurseBalance);
   };
 
+  const doOTCDesk = async bobP => {
+    const { creatorFacet } = await E(zoe).startInstance(
+      installations.otcDesk,
+      undefined,
+      { coveredCallInstallation: installations.coveredCall },
+    );
+
+    // Add inventory
+    const addInventoryInvitation = await E(
+      creatorFacet,
+    ).makeAddInventoryInvitation({
+      Moola: moolaIssuer,
+      Simolean: simoleanIssuer,
+      Buck: bucksIssuer,
+    });
+    const addInventoryProposal = harden({
+      give: {
+        Moola: moola(10000),
+        Simolean: simoleans(10000),
+        Buck: bucks(10000),
+      },
+    });
+    const addInventoryPayments = {
+      Moola: moolaPayment,
+      Simolean: simoleanPayment,
+      Buck: bucksPayment,
+    };
+
+    const addInventorySeat = await E(zoe).offer(
+      addInventoryInvitation,
+      addInventoryProposal,
+      addInventoryPayments,
+    );
+    const addInventoryOfferResult = await E(addInventorySeat).getOfferResult();
+    log(addInventoryOfferResult);
+    const bobInvitation = await E(creatorFacet).makeQuote(
+      { Simolean: simoleans(4) },
+      { Moola: moola(3) },
+      timer,
+      1,
+    );
+
+    await E(bobP).doOTCDesk(bobInvitation);
+
+    // Remove Inventory
+    const removeInventoryInvitation = await E(
+      creatorFacet,
+    ).makeRemoveInventoryInvitation();
+    // Intentionally do not remove it all
+    const removeInventoryProposal = harden({
+      want: { Simolean: simoleans(2) },
+    });
+    const removeInventorySeat = await E(zoe).offer(
+      removeInventoryInvitation,
+      removeInventoryProposal,
+    );
+    const removeInventoryOfferResult = await E(
+      removeInventorySeat,
+    ).getOfferResult();
+    log(removeInventoryOfferResult);
+    const simoleanPayout = await E(removeInventorySeat).getPayout('Simolean');
+
+    log(await E(simoleanIssuer).getAmountOf(simoleanPayout));
+  };
+
   return harden({
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
@@ -447,6 +512,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         }
         case 'sellTicketsOk': {
           return doSellTickets(bobP, carolP, daveP);
+        }
+        case 'otcDeskOk': {
+          return doOTCDesk(bobP);
         }
         default: {
           throw new Error(`testName ${testName} not recognized`);

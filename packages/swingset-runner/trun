@@ -45,11 +45,12 @@ function runone {
   fi
   cmdline="$cmd $cmdargs $@"
   echo "$cmdline > rlog-${runct}"
+  echo "$cmdline > rlog-${runct}" > rlog-${runct}
   if [ "$dryrun" != "1" ]; then
     if [ $dotime ]; then
-      (time $cmdline) >& rlog-${runct}
+      (time $cmdline) >> rlog-${runct} 2>&1
     else
-      $cmdline > rlog-${runct}
+      $cmdline >> rlog-${runct} 2>&1
     fi
   fi
   ((runct=runct+1))

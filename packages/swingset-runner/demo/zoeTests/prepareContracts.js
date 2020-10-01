@@ -14,6 +14,7 @@ const CONTRACT_FILES = [
   'simpleExchange',
   'sellItems',
   'mintAndSellNFT',
+  'otcDesk',
 ];
 
 const generateBundlesP = Promise.all(

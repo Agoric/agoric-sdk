@@ -50,7 +50,6 @@ const build = async (log, zoe, issuers, payments, installations) => {
         proposal,
         paymentKeywordRecord,
       );
-
       log(`Carol: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
     },
     doSecondPriceAuctionGetPayout: async () => {
