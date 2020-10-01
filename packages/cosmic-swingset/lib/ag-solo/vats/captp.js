@@ -9,10 +9,12 @@ export const getCapTPHandler = (
   fallback = undefined,
 ) => {
   const chans = new Map();
-  const doFallback = (method, ...args) =>
-    E(fallback)
-      [method](...args)
-      .catch(_ => {});
+  const doFallback = async (method, ...args) => {
+    if (!fallback) {
+      return {};
+    }
+    return E(fallback)[method](...args);
+  };
   const handler = harden({
     onOpen(obj, meta) {
       const { channelHandle, origin = 'unknown' } = meta || {};
