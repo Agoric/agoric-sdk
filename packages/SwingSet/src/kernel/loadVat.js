@@ -68,6 +68,7 @@ export function makeVatLoader(stuff) {
 
   const allowedDynamicOptions = [
     'metered',
+    'managerType',
     'vatParameters',
     'enableSetup',
     'enablePipelining',
@@ -75,6 +76,7 @@ export function makeVatLoader(stuff) {
 
   const allowedStaticOptions = [
     'vatParameters',
+    'managerType',
     'enableSetup',
     'enablePipelining',
   ];
