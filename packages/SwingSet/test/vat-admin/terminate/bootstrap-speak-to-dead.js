@@ -37,7 +37,7 @@ export function buildRootObject(vatPowers) {
         testLog(`b: speak failed: ${e}`);
       }
 
-      E(weatherwax.adminNode).terminate('arbitrary reason');
+      E(weatherwax.adminNode).terminateWithFailure('arbitrary reason');
       try {
         await E(weatherwax.adminNode).done();
       } catch (e) {
