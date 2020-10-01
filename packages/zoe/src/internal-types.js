@@ -98,7 +98,7 @@
  * @property {() => Object} getTerms
  * @property {() => boolean} acceptingOffers
  * @property {() => void} exitAllSeats
- * @property {(reason: string) => void} kickOutAllSeats
+ * @property {(reason: TerminationReason) => void} kickOutAllSeats
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -128,7 +128,7 @@
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {() => void} exitAllSeats
- * @property {(reason: string) => void} kickOutAllSeats
+ * @property {(reason: TerminationReason) => void} kickOutAllSeats
  */
 
 /**
@@ -228,12 +228,12 @@
  * A powerful object that can be used to terminate the vat in which a contract
  * is running, to get statistics, or to be notified when it terminates.
  *
- * @property {() => Promise<void>} done
+ * @property {() => Promise<Completion>} done
  * returns a promise that will be fulfilled or rejected when the contract is
  * terminated. If the contract terminates with a failure, the promise will be
  * rejected with the reason. If the contract terminates successfully, the
  * promise will fulfill to the completion value.
- * @property {(completion: string) => void} terminate
+ * @property {(reason: TerminationReason) => void} terminateWithFailure
  * Terminate the vat in which the contract is running as a failure. This
  * bypasses notification of Zoe.
  * @property {() => Object} adminData

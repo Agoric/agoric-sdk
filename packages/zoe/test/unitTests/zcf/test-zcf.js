@@ -1180,3 +1180,30 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
   });
   t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0) });
 });
+
+test(`zcf.shutdown - userSeat exits`, async t => {
+  const { zoe, zcf } = await setupZCFTest({});
+  const { userSeat } = await makeOffer(zoe, zcf);
+  zcf.shutdown('so long');
+  t.deepEqual(await E(userSeat).getPayouts(), {});
+  t.truthy(await E(userSeat).hasExited());
+});
+
+test(`zcf.shutdown - zcfSeat exits`, async t => {
+  const { zoe, zcf } = await setupZCFTest({});
+  const { zcfSeat, userSeat } = await makeOffer(zoe, zcf);
+  t.falsy(zcfSeat.hasExited());
+  await t.falsy(await E(userSeat).hasExited());
+  zcf.shutdown('done');
+  t.truthy(zcfSeat.hasExited());
+  t.truthy(await E(userSeat).hasExited());
+});
+
+test(`zcf.shutdown - no further offers accepted`, async t => {
+  const { zoe, zcf } = await setupZCFTest({});
+  const invitation = await zcf.makeInvitation(() => {}, 'seat');
+  zcf.shutdown('sayonara');
+  await t.throwsAsync(() => E(zoe).offer(invitation), {
+    message: 'No further offers are accepted',
+  });
+});

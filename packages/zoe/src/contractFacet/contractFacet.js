@@ -364,16 +364,16 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         return invitationP;
       },
       // Shutdown the entire vat and give payouts
-      shutdown: msg => {
+      shutdown: completion => {
         E(zoeInstanceAdmin).exitAllSeats();
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {
             zcfSeatAdmin.updateHasExited();
           }
         });
-        powers.exitVat(msg);
+        powers.exitVat(completion);
       },
-      shutdownWithError: reason => {
+      shutdownWithFailure: reason => {
         E(zoeInstanceAdmin).kickOutAllSeats(reason);
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {

@@ -2,6 +2,15 @@
 /// <reference types="ses"/>
 
 /**
+ * @typedef {any} Completion
+ * Any passable non-thenable. Often an explanatory string.
+ *
+ * @typedef {Error|any} TerminationReason
+ * Something provided as an explanation to a termination request. Usually an
+ * Error but not required to be so.
+ */
+
+/**
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -18,8 +27,8 @@
  * and get the amountMath and brand synchronously accessible after
  * saving
  * @property {MakeInvitation} makeInvitation
- * @property {(reason: string) => void} shutdown
- * @property {(error: string) => void} shutdownWithError
+ * @property {(completion: Completion) => void} shutdown
+ * @property {(reason: TerminationReason) => void} shutdownWithFailure
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => Terms} getTerms

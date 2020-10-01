@@ -36,7 +36,7 @@ export function buildRootDeviceNode({ endowments, serialize }) {
       const vatID = kernelVatCreationFn({ bundleName }, options);
       return vatID;
     },
-    terminate(vatID, reason) {
+    terminateWithFailure(vatID, reason) {
       kernelTerminateVatFn(vatID, serialize(reason));
     },
     // Call the registered kernel function to request vat stats. Clean up the

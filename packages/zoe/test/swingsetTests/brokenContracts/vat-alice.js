@@ -466,7 +466,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
   };
 
   const doHappyTermination = async () => {
-    log(`=> alice.doHappyTermintion called`);
+    log(`=> alice.doHappyTermination called`);
     const installId = installations.crashAutoRefund;
 
     const issuerKeywordRecord = harden({
@@ -487,7 +487,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
         e => log(`happy termination saw reject "${e}"`),
       );
 
-    E(publicFacet).terminateClean('Success');
+    E(publicFacet).zcfShutdown('Success');
   };
 
   // contract attempts a clean shutdown, but there are outstanding seats
@@ -535,7 +535,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       );
 
     // contract asks for clean termination
-    E(publicFacet).terminateClean('Success');
+    E(publicFacet).zcfShutdown('Success');
     log(`seat has been exited: ${E(seat).hasExited()}`);
 
     const moolaSwapRefund = await E(seat).getPayout('Asset');
@@ -582,7 +582,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     const swapInvitation = await E(publicFacet).makeSwapInvitation();
 
     // contract asks for clean termination
-    await E(publicFacet).terminateClean('Success');
+    await E(publicFacet).zcfShutdown('Success');
 
     await E(zoe)
       .offer(swapInvitation, swapProposal, aliceSwapPayments)
@@ -596,7 +596,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
   };
 
   const doSadTermination = async () => {
-    log(`=> alice.doSadTermintion called`);
+    log(`=> alice.doSadTermination called`);
     const installId = installations.crashAutoRefund;
 
     const issuerKeywordRecord = harden({
@@ -617,7 +617,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
         e => log(`sad termination saw reject "${e}"`),
       );
 
-    E(publicFacet).terminateFail('Sadness');
+    E(publicFacet).zcfShutdownWithFailure('Sadness');
   };
 
   return harden({
