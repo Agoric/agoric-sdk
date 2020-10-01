@@ -3,11 +3,15 @@ import '@agoric/install-ses';
 
 import anylogger from 'anylogger';
 import fs from 'fs';
-import Netstring from 'netstring-stream';
 
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
+import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
+import {
+  netstringEncoderStream,
+  netstringDecoderStream,
+} from '../../netstring';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 
@@ -71,17 +75,19 @@ function doNotify(vpid, vp) {
   }
 }
 
-const toParent = Netstring.writeStream();
-toParent.pipe(fs.createWriteStream('IGNORED', { fd: 4, encoding: 'utf-8' }));
+const toParent = arrayEncoderStream();
+toParent
+  .pipe(netstringEncoderStream())
+  .pipe(fs.createWriteStream('IGNORED', { fd: 4, encoding: 'utf-8' }));
 
 const fromParent = fs
   .createReadStream('IGNORED', { fd: 3, encoding: 'utf-8' })
-  .pipe(Netstring.readStream());
-fromParent.setEncoding('utf-8');
+  .pipe(netstringDecoderStream())
+  .pipe(arrayDecoderStream());
 
 function sendUplink(msg) {
   assert(msg instanceof Array, `msg must be an Array`);
-  toParent.write(JSON.stringify(msg));
+  toParent.write(msg);
 }
 
 // fromParent.on('data', data => {
@@ -90,7 +96,7 @@ function sendUplink(msg) {
 // });
 
 fromParent.on('data', data => {
-  const [type, ...margs] = JSON.parse(data);
+  const [type, ...margs] = data;
   workerLog(`received`, type);
   if (type === 'start') {
     // TODO: parent should send ['start', vatID]

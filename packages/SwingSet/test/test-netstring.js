@@ -1,7 +1,12 @@
 import '@agoric/install-ses'; // adds 'harden' to global
 
 import test from 'ava';
-import { encode, encoderStream, decode, decoderStream } from '../src/netstring';
+import {
+  encode,
+  decode,
+  netstringEncoderStream,
+  netstringDecoderStream,
+} from '../src/netstring';
 
 const umlaut = 'ümlaut';
 const umlautBuffer = Buffer.from(umlaut, 'utf-8');
@@ -51,7 +56,7 @@ test('encode', t => {
 });
 
 test('encode stream', async t => {
-  const e = encoderStream();
+  const e = netstringEncoderStream();
   const chunks = [];
   e.on('data', data => chunks.push(data));
   e.write(Buffer.from(''));
@@ -106,7 +111,7 @@ test('decode', t => {
 });
 
 test('decode stream', async t => {
-  const d = decoderStream();
+  const d = netstringDecoderStream();
   function write(s) {
     d.write(Buffer.from(s));
   }
