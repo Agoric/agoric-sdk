@@ -67,7 +67,7 @@ testnet)
     solo="$chainid/ag-solo-$port"
     echo "Initializing ag-solo in $solo"
 		$SOLO init $solo --webport=$port
-    addr=$(cat $solo/ag-chain-cosmos-address)
+    addr=$(cat $solo/ag-cosmos-helper-address)
 		$DAEMON add-genesis-account --home=$n0d \
       $($CLI --home=$solo/$CLI-statedir --keyring-backend=test keys show -a ag-solo) \
       1000uag,1provisionpass

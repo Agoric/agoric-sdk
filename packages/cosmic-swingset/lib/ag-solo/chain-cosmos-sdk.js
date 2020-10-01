@@ -78,7 +78,7 @@ export async function connectToChain(
   }
   shuffle(rpcAddresses);
 
-  const helperDir = path.join(basedir, 'ag-chain-cosmos-statedir');
+  const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
 
   const queued = {};
 

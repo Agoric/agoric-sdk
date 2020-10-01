@@ -437,7 +437,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Provision the ag-solo, if necessary.
     const soloAddr = (
-      await fs.readFile(`${localAgServer}/ag-chain-cosmos-address`, 'utf-8')
+      await fs.readFile(`${localAgServer}/ag-cosmos-helper-address`, 'utf-8')
     ).trimRight();
     for (const rpcAddr of rpcAddrs) {
       // eslint-disable-next-line no-await-in-loop

@@ -23,7 +23,7 @@ export default function initBasedir(
   try {
     fs.mkdirSync(basedir, 0o700);
   } catch (e) {
-    if (!fs.existsSync(path.join(basedir, 'ag-chain-cosmos-address'))) {
+    if (!fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))) {
       log.error(
         `unable to create basedir ${basedir}, it must not already exist`,
       );
@@ -90,7 +90,7 @@ export default function initBasedir(
 
   // cosmos-sdk keypair
   if (egresses.includes('cosmos')) {
-    const agchServerDir = path.join(basedir, 'ag-chain-cosmos-statedir');
+    const agchServerDir = path.join(basedir, 'ag-cosmos-helper-statedir');
     if (!fs.existsSync(agchServerDir)) {
       fs.mkdirSync(agchServerDir);
       // we assume 'ag-cosmos-helper' is on $PATH for now, see chain-cosmos-sdk.js
@@ -130,7 +130,7 @@ export default function initBasedir(
         },
       );
       fs.writeFileSync(
-        path.join(basedir, 'ag-chain-cosmos-address'),
+        path.join(basedir, 'ag-cosmos-helper-address'),
         kout.toString(),
       );
     }
