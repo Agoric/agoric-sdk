@@ -1,12 +1,7 @@
 import '@agoric/install-ses'; // adds 'harden' to global
 
 import test from 'ava';
-import {
-  encode,
-  decode,
-  netstringEncoderStream,
-  netstringDecoderStream,
-} from '../src/netstring';
+import { encode, decode, streamDecoder } from '../src/netstring';
 
 const umlaut = 'ümlaut';
 const umlautBuffer = Buffer.from(umlaut, 'utf-8');
@@ -55,27 +50,6 @@ test('encode', t => {
   eq(emojiBuffer, expectedBuffer);
 });
 
-test('encode stream', async t => {
-  const e = netstringEncoderStream();
-  const chunks = [];
-  e.on('data', data => chunks.push(data));
-  e.write(Buffer.from(''));
-  const b1 = Buffer.from('0:,');
-  t.deepEqual(Buffer.concat(chunks), b1);
-  e.write(Buffer.from('hello'));
-  const b2 = Buffer.from('5:hello,');
-  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2]));
-  e.write(umlautBuffer);
-  const b3 = Buffer.concat([Buffer.from('7:'), umlautBuffer, Buffer.from(',')]);
-  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3]));
-  e.write(emojiBuffer);
-  const b4 = Buffer.concat([Buffer.from('25:'), emojiBuffer, Buffer.from(',')]);
-  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3, b4]));
-
-  e.end();
-  t.deepEqual(Buffer.concat(chunks), Buffer.concat([b1, b2, b3, b4]));
-});
-
 test('decode', t => {
   function eq(input, expPayloads, expLeftover) {
     const encPayloads = expPayloads.map(Buffer.from);
@@ -110,34 +84,45 @@ test('decode', t => {
   bad('1:ab', 'malformed netstring: not terminated by comma');
 });
 
+async function* iterOf(array) {
+  for (const item of array) {
+    yield Promise.resolve(item);
+  }
+}
+
+async function collect(iter) {
+  const result = [];
+  for await (const value of iter) {
+    result.push(value);
+  }
+  return result;
+}
+
 test('decode stream', async t => {
-  const d = netstringDecoderStream();
-  function write(s) {
-    d.write(Buffer.from(s));
+  async function eq(inputBuffers, expectedPayloads) {
+    const input = iterOf(inputBuffers.map(Buffer.from));
+    const d = streamDecoder(input);
+    const result = await collect(d);
+    t.deepEqual(result, expectedPayloads.map(Buffer.from));
   }
 
-  const msgs = [];
-  d.on('data', msg => msgs.push(msg));
+  await eq([], []);
+  await eq(['0'], []);
+  await eq(['0', ':'], []);
+  await eq(['0', ':', ','], ['']);
+  await eq(['0', ':', ',', '1:'], ['']);
+  await eq(['0', ':', ',', '1:', 'a,2:ab'], ['', 'a']);
+  await eq(['0', ':', ',', '1:', 'a,2:ab', ','], ['', 'a', 'ab']);
+  await eq(
+    ['0', ':', ',', '1:', 'a,2:ab', ',', '3:abc,4:abcd,5:abcde,'],
+    ['', 'a', 'ab', 'abc', 'abcd', 'abcde'],
+  );
 
-  function eq(expectedMessages) {
-    t.deepEqual(msgs, expectedMessages.map(Buffer.from));
-  }
+  let buffer = Buffer.from(`7:${umlaut},`, 'utf-8');
+  await eq([buffer], [umlaut]);
+  await eq([buffer.slice(0, 4), buffer.slice(4)], [umlaut]);
 
-  write('');
-  eq([]);
-  write('0');
-  eq([]);
-  write(':');
-  eq([]);
-  write(',');
-  eq(['']);
-
-  write('1:');
-  eq(['']);
-  write('a,2:ab');
-  eq(['', 'a']);
-  write(',');
-  eq(['', 'a', 'ab']);
-  write('3:abc,4:abcd,5:abcde,');
-  eq(['', 'a', 'ab', 'abc', 'abcd', 'abcde']);
+  buffer = Buffer.from(`25:${emoji},`, 'utf-8');
+  await eq([buffer], [emoji]);
+  await eq([buffer.slice(0, 3), buffer.slice(3)], [emoji]);
 });

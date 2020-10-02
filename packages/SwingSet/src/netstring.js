@@ -1,5 +1,4 @@
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
-const { Transform } = require('stream');
 
 const COLON = 58;
 const COMMA = 44;
@@ -9,25 +8,6 @@ export function encode(data) {
   const prefix = Buffer.from(`${data.length}:`);
   const suffix = Buffer.from(',');
   return Buffer.concat([prefix, data, suffix]);
-}
-
-// input is a sequence of strings, output is a byte pipe
-export function netstringEncoderStream() {
-  function transform(chunk, encoding, callback) {
-    if (!Buffer.isBuffer(chunk)) {
-      throw Error('stream requires Buffers');
-    }
-    let err;
-    try {
-      this.push(encode(chunk));
-    } catch (e) {
-      err = e;
-    }
-    callback(err);
-  }
-  // (maybe empty) Buffer in, Buffer out. We use writableObjectMode to
-  // indicate that empty input buffers are important
-  return new Transform({ transform, writableObjectMode: true });
 }
 
 // Input is a Buffer containing zero or more netstrings and maybe some
@@ -65,33 +45,25 @@ export function decode(data) {
   return { leftover, payloads };
 }
 
-// input is a byte pipe, output is a sequence of Buffers
-export function netstringDecoderStream() {
-  let buffered = Buffer.from('');
+/*
+ * accept an async iterable of Buffer chunks from a byte pipe. produce an
+ * async iterable of payloads
+ */
+export async function* streamDecoder(input) {
+  let leftover = Buffer.from('');
+  let payloads;
 
-  function transform(chunk, encoding, callback) {
+  for await (const chunk of input) {
     if (!Buffer.isBuffer(chunk)) {
-      throw Error('stream requires Buffers');
+      throw Error('streamDecoder requires Buffers');
     }
-    buffered = Buffer.concat([buffered, chunk]);
-    let err;
-    try {
-      const { leftover, payloads } = decode(buffered);
-      buffered = leftover;
-      for (let i = 0; i < payloads.length; i += 1) {
-        this.push(payloads[i]);
-      }
-    } catch (e) {
-      err = e;
+    ({ leftover, payloads } = decode(Buffer.concat([leftover, chunk])));
+    while (payloads.length) {
+      yield payloads.shift();
     }
-    // we buffer all data internally, to accommodate netstrings larger than
-    // Transform's default buffer size, and callback() indicates that we've
-    // consumed the input
-    callback(err);
   }
-
-  // Buffer in, Buffer out, except that each output Buffer is precious, even
-  // empty ones, and without readableObjectMode the Stream will discard empty
-  // buffers
-  return new Transform({ transform, readableObjectMode: true });
 }
+
+// we must harden this function, else the generators it creates cannot be
+// hardened (their prototype would not already be in the fringeset)
+harden(streamDecoder);
