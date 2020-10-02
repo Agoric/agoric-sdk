@@ -615,18 +615,18 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
   const expectedMethods = [
     'exit',
     'fail',
-    'getNotifier',
-    'hasExited',
-    'getProposal',
     'getAmountAllocated',
     'getCurrentAllocation',
+    'getNotifier',
+    'getProposal',
+    'hasExited',
     'isOfferSafe',
     'stage',
   ];
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(Object.keys(seat), expectedMethods);
+  t.deepEqual(Object.getOwnPropertyNames(seat).sort(), expectedMethods);
 });
 
 test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {

@@ -185,7 +185,7 @@ const doHappyTerminationRefusesContactLog = [
   'can\'t make more invitations because "Error: vat terminated"',
 ];
 
-test.only('happy termination refuses contact path', async t => {
+test('happy termination refuses contact path', async t => {
   const dump = await main(['doHappyTerminationRefusesContact', [5, 0, 0]]);
   t.deepEqual(dump.log, doHappyTerminationRefusesContactLog);
 });

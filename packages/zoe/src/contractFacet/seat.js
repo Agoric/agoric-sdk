@@ -52,7 +52,7 @@ export const makeZcfSeatAdminKit = (
     },
     fail: (
       reason = new Error(
-        'Kicked out of seat. Please check the log for more information.',
+        'Seat exited with failure. Please check the log for more information.',
       ),
     ) => {
       if (!exited) {

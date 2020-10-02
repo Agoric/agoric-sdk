@@ -73,7 +73,7 @@ export const makeZoeSeatAdminKit = (
     fail: reason => {
       assert(
         instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
-        `Cannot kick out of seat. Seat has already exited`,
+        `Cannot fail seat. Seat has already exited`,
       );
       updater.fail(reason);
       doExit(zoeSeatAdmin);

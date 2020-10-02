@@ -54,8 +54,8 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   };
 
   const failSeat = secondSeat => {
-    firstSeat.fail(new Error('kicked out first'));
-    throw secondSeat.fail(new Error('kicked out second'));
+    firstSeat.fail(new Error('first seat failed'));
+    throw secondSeat.fail(new Error('second seat failed'));
   };
 
   const invitation1 = await zcf.makeInvitation(grabSeat, 'seat1');
@@ -68,7 +68,9 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
 
   t.deepEqual(await E(userSeat2).getPayouts(), {});
 
-  await t.throwsAsync(E(userSeat2).getOfferResult());
+  await t.throwsAsync(E(userSeat2).getOfferResult(), {
+    message: 'second seat failed',
+  });
   await t.throwsAsync(() => E(userSeat1).tryExit(), {
     message: 'seat has been exited',
   });
