@@ -4,7 +4,6 @@ FROM golang:1.14-buster
 
 WORKDIR /usr/src/app
 COPY go.mod go.sum ./
-RUN cd ../.. && go mod init github.com/Agoric/agoric-sdk
 RUN go mod download
 
 COPY Makefile* *.go ./
