@@ -1,41 +1,36 @@
-import { Transform } from 'stream';
+import {
+  encode as nsEncode,
+  streamDecoder as nsStreamDecoder,
+} from './netstring';
 
-// Transform objects which convert from hardened Arrays of JSON-serializable
-// data into Buffers suitable for netstring conversion.
-
-export function arrayEncoderStream() {
-  function transform(object, encoding, callback) {
-    if (!Array.isArray(object)) {
-      throw Error('stream requires Arrays');
+/*
+ * Accept an async iterable of Buffer chunks from a byte pipe. Produce an
+ * async iterable of command arrays. This is effectively asyncMap(p =>
+ * JSON.parse(p), if that were standardized
+ */
+export async function* streamDecoder(input) {
+  for await (const p of nsStreamDecoder(input)) {
+    if (!Buffer.isBuffer(p)) {
+      throw Error('streamDecoder requires Buffers');
     }
-    let err;
-    try {
-      this.push(Buffer.from(JSON.stringify(object)));
-    } catch (e) {
-      err = e;
+    const c = JSON.parse(p);
+    if (!Array.isArray(c)) {
+      throw Error('streamDecoder expects Arrays');
     }
-    callback(err);
+    yield c;
   }
-  // Array in, Buffer out, hence writableObjectMode
-  return new Transform({ transform, writableObjectMode: true });
 }
+harden(streamDecoder);
 
-export function arrayDecoderStream() {
-  function transform(buf, encoding, callback) {
-    let err;
-    try {
-      if (!Buffer.isBuffer(buf)) {
-        throw Error('stream expects Buffers');
-      }
-      this.push(JSON.parse(buf));
-    } catch (e) {
-      err = e;
+// return a function which accepts command arrays and writes
+// netstring-encoded JSON-serialized arrays to the output
+
+export function streamEncoder(output) {
+  function write(command) {
+    if (!Array.isArray(command)) {
+      throw Error('streamEncoder requires Arrays');
     }
-    // this Transform is a one-to-one conversion of Buffer into Array, so we
-    // always consume the input each time we're called
-    callback(err);
+    output(nsEncode(Buffer.from(JSON.stringify(command))));
   }
-
-  // Buffer in, Array out, hence readableObjectMode
-  return new Transform({ transform, readableObjectMode: true });
+  return write;
 }

@@ -1,37 +1,12 @@
 import '@agoric/install-ses'; // adds 'harden' to global
 
 import test from 'ava';
-import { arrayEncoderStream, arrayDecoderStream } from '../src/worker-protocol';
-import {
-  encode,
-  netstringEncoderStream,
-  netstringDecoderStream,
-} from '../src/netstring';
-
-test('arrayEncoderStream', async t => {
-  const e = arrayEncoderStream();
-  const chunks = [];
-  e.on('data', data => chunks.push(data));
-  e.write([]);
-
-  function eq(expected) {
-    t.deepEqual(
-      chunks.map(buf => buf.toString()),
-      expected,
-    );
-  }
-  eq([`[]`]);
-
-  e.write(['command', { foo: 1 }]);
-  eq([`[]`, `["command",{"foo":1}]`]);
-});
+import { streamEncoder, streamDecoder } from '../src/worker-protocol';
+import { encode } from '../src/netstring';
 
 test('encode stream', async t => {
-  const aStream = arrayEncoderStream();
-  const nsStream = netstringEncoderStream();
-  aStream.pipe(nsStream);
   const chunks = [];
-  nsStream.on('data', data => chunks.push(data));
+  const write = streamEncoder(data => chunks.push(data));
   function eq(expected) {
     t.deepEqual(
       chunks.map(buf => buf.toString()),
@@ -39,38 +14,46 @@ test('encode stream', async t => {
     );
   }
 
-  aStream.write([1]);
+  write([1]);
   eq(['3:[1],']);
 
-  aStream.write(['command', { foo: 4 }]);
+  write(['command', { foo: 4 }]);
   eq(['3:[1],', '21:["command",{"foo":4}],']);
 });
 
+async function* iterOf(array) {
+  for (const item of array) {
+    yield Promise.resolve(item);
+  }
+}
+
+async function collect(iter) {
+  const result = [];
+  for await (const value of iter) {
+    result.push(value);
+  }
+  return result;
+}
+
 test('decode stream', async t => {
-  const nsStream = netstringDecoderStream();
-  const aStream = arrayDecoderStream();
-  nsStream.pipe(aStream);
-  function write(s) {
-    nsStream.write(Buffer.from(s));
+  async function eq(inputChunks, expectedCommands) {
+    const input = iterOf(inputChunks.map(Buffer.from));
+    const d = streamDecoder(input);
+    const result = await collect(d);
+    t.deepEqual(result, expectedCommands);
   }
 
-  const msgs = [];
-  aStream.on('data', msg => msgs.push(msg));
-
-  function eq(expected) {
-    t.deepEqual(msgs, expected);
-  }
-
+  await eq([], []);
   let buf = encode(Buffer.from(JSON.stringify([1])));
-  write(buf.slice(0, 1));
-  eq([]);
-  write(buf.slice(1));
-  eq([[1]]);
-  msgs.pop();
+  await eq([buf], [[1]]);
+  await eq([buf.slice(0, 1)], []);
+  await eq([buf.slice(0, 1), buf.slice(1)], [[1]]);
 
   buf = encode(Buffer.from(JSON.stringify(['command', { foo: 2 }])));
-  write(buf.slice(0, 4));
-  eq([]);
-  write(buf.slice(4));
-  eq([['command', { foo: 2 }]]);
+  await eq([buf], [['command', { foo: 2 }]]);
+  await eq([buf.slice(0, 4)], []);
+  await eq(
+    [buf.slice(0, 4), buf.slice(4, 5), buf.slice(5)],
+    [['command', { foo: 2 }]],
+  );
 });
