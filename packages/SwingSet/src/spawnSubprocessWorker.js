@@ -1,13 +1,8 @@
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol';
-import { netstringEncoderStream, netstringDecoderStream } from './netstring';
 
-// Start a subprocess from a given executable, and arrange a bidirectional
-// message channel with a "supervisor" within that process. Return a {
-// toChild, fromChild } pair of Streams which accept/emit hardened Arrays of
-// JSON-serializable data.
+import { makePromiseKit } from '@agoric/promise-kit';
+import { streamDecoder, streamEncoder } from './worker-protocol';
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
@@ -23,15 +18,12 @@ const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 export function startSubprocessWorker(execPath, procArgs = []) {
   const proc = spawn(execPath, procArgs, { stdio });
 
-  const toChild = arrayEncoderStream();
-  toChild.pipe(netstringEncoderStream()).pipe(proc.stdio[3]);
+  const toChild = streamEncoder(data => proc.stdio[3].write(data));
   // proc.stdio[4].setEncoding('utf-8');
-  const fromChild = proc.stdio[4]
-    .pipe(netstringDecoderStream())
-    .pipe(arrayDecoderStream());
+  const fromChild = streamDecoder(proc.stdio[4]);
 
-  // fromChild.addListener('data', data => parentLog(`fd4 data`, data));
-  // toChild.write('hello child');
+  // (await fromChild.next()).data
+  // toChild('hello child');
 
   const pk = makePromiseKit();
 
@@ -49,18 +41,9 @@ export function startSubprocessWorker(execPath, procArgs = []) {
     proc.kill();
   }
 
-  // the Transform objects don't like being hardened, so we wrap the methods
-  // that get used
-  const wrappedFromChild = {
-    on: (...args) => fromChild.on(...args),
-  };
-  const wrappedToChild = {
-    write: (...args) => toChild.write(...args),
-  };
-
   return harden({
-    fromChild: wrappedFromChild,
-    toChild: wrappedToChild,
+    fromChild,
+    toChild,
     terminate,
     done: pk.promise,
   });
