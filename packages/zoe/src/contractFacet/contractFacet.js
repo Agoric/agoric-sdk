@@ -365,7 +365,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       },
       // Shutdown the entire vat and give payouts
       shutdown: completion => {
-        E(zoeInstanceAdmin).exitAllSeats();
+        E(zoeInstanceAdmin).exitAllSeats(completion);
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {
             zcfSeatAdmin.updateHasExited();
@@ -374,7 +374,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         powers.exitVat(completion);
       },
       shutdownWithFailure: reason => {
-        E(zoeInstanceAdmin).kickOutAllSeats(reason);
+        E(zoeInstanceAdmin).failAllSeats(reason);
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {
             zcfSeatAdmin.updateHasExited();
@@ -433,7 +433,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          throw zcfSeat.kickOut(reason);
+          throw zcfSeat.fail(reason);
         });
         const exitObj = makeExitObj(
           seatData.proposal,

@@ -614,7 +614,7 @@ test(`zcf.makeEmptySeatKit`, async t => {
 test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
   const expectedMethods = [
     'exit',
-    'kickOut',
+    'fail',
     'getNotifier',
     'hasExited',
     'getProposal',
@@ -652,12 +652,12 @@ test(`zcfSeat.hasExited, exit from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getPayouts(), {});
 });
 
-test(`zcfSeat.hasExited, kickOut from zcf.makeEmptySeatKit`, async t => {
+test(`zcfSeat.hasExited, fail from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   t.falsy(zcfSeat.hasExited());
   const msg = `this is the error message`;
-  const err = zcfSeat.kickOut(Error(msg));
+  const err = zcfSeat.fail(Error(msg));
   t.is(err.message, msg);
   t.truthy(zcfSeat.hasExited());
   t.truthy(await E(userSeat).hasExited());
@@ -1200,10 +1200,23 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - no further offers accepted`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdown('sayonara');
   await t.throwsAsync(() => E(zoe).offer(invitation), {
     message: 'No further offers are accepted',
   });
+  t.is(vatAdminState.getExitMessage(), 'sayonara');
+  t.falsy(vatAdminState.getExitWithFailure());
+});
+
+test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
+  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const invitation = await zcf.makeInvitation(() => {}, 'seat');
+  zcf.shutdownWithFailure(`And don't come back`);
+  await t.throwsAsync(() => E(zoe).offer(invitation), {
+    message: 'No further offers are accepted',
+  });
+  t.is(vatAdminState.getExitMessage(), `And don't come back`);
+  t.truthy(vatAdminState.getExitWithFailure());
 });

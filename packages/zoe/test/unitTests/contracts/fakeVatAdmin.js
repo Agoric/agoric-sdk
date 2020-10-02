@@ -7,14 +7,17 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
   // provided to allow unit testing of contracts that call zcf.shutdown()
   let exitMessage;
-  let exitWithFailure = false;
+  let hasExited = false;
+  let exitWithFailure;
   const fakeVatPowers = {
     exitVat: completion => {
       exitMessage = completion;
+      hasExited = true;
       exitWithFailure = false;
     },
     exitVatWithFailure: reason => {
       exitMessage = reason;
+      hasExited = true;
       exitWithFailure = true;
     },
   };
@@ -50,7 +53,8 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   });
   const vatAdminState = {
     getExitMessage: () => exitMessage,
-    getHasExited: () => exitWithFailure,
+    getHasExited: () => hasExited,
+    getExitWithFailure: () => exitWithFailure,
   };
   return { admin, vatAdminState };
 }

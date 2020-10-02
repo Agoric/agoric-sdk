@@ -88,7 +88,7 @@ const start = zcf => {
           const escrowedAmount = seat.getAmountAllocated('Assets');
           const sumSoFar = tally.get(response);
           tally.set(response, amountMath.add(escrowedAmount, sumSoFar));
-          seat.exit();
+          seat.exit('Thank you for voting');
         }
       }
       electionOpen = false;

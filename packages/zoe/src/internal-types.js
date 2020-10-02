@@ -43,9 +43,9 @@
  *
  * @typedef {Object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
- * @property {() => void} exit
- * @property {(reason: any) => void} kickOut called with the reason this seat
- * is being kicked out, where reason is normally an instanceof Error.
+ * @property {(completion: Completion) => void} exit
+ * @property {(reason: TerminationReason) => void} fail called with the reason
+ * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Allocation} getCurrentAllocation
  */
 
@@ -97,8 +97,8 @@
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
  * @property {() => boolean} acceptingOffers
- * @property {() => void} exitAllSeats
- * @property {(reason: TerminationReason) => void} kickOutAllSeats
+ * @property {(completion: Completion) => void} exitAllSeats
+ * @property {(reason: TerminationReason) => void} failAllSeats
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -127,8 +127,8 @@
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
- * @property {() => void} exitAllSeats
- * @property {(reason: TerminationReason) => void} kickOutAllSeats
+ * @property {(completion: Completion) => void} exitAllSeats
+ * @property {(reason: TerminationReason) => void} failAllSeats
  */
 
 /**
@@ -234,8 +234,7 @@
  * rejected with the reason. If the contract terminates successfully, the
  * promise will fulfill to the completion value.
  * @property {(reason: TerminationReason) => void} terminateWithFailure
- * Terminate the vat in which the contract is running as a failure. This
- * bypasses notification of Zoe.
+ * Terminate the vat in which the contract is running as a failure.
  * @property {() => Object} adminData
  * returns some statistics about the vat in which the contract is running.
  */
