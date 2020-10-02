@@ -34,13 +34,13 @@
  * gives 5 moola and seat B only wants 3 moola, seat A retains 2
  * moola.
  *
- * If the leftSeat has exited already, both seats will be kicked out
+ * If leftSeat has exited already, both seats will fail
  * with an error message (provided by 'leftHasExitedMsg'). Similarly,
- * if the rightSeat has exited already, both seats will be kicked out
+ * if rightSeat has exited already, both seats fail
  * with an error message (provided by 'rightHasExitedMsg').
  *
- * If the swap fails, no assets are transferred, both seats are kicked
- * out, and the function throws.
+ * If the swap fails, no assets are transferred, both seats will fail,
+ * and the function throws.
  *
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} leftSeat
