@@ -15,7 +15,7 @@ import '../../../exported';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
-test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
+test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
   let testJig;
   const setJig = jig => {
@@ -53,13 +53,13 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     return 'ok';
   };
 
-  const kickOutSeat = secondSeat => {
-    firstSeat.kickOut(new Error('kicked out first'));
-    throw secondSeat.kickOut(new Error('kicked out second'));
+  const failSeat = secondSeat => {
+    firstSeat.fail(new Error('kicked out first'));
+    throw secondSeat.fail(new Error('kicked out second'));
   };
 
   const invitation1 = await zcf.makeInvitation(grabSeat, 'seat1');
-  const invitation2 = await zcf.makeInvitation(kickOutSeat, 'seat2');
+  const invitation2 = await zcf.makeInvitation(failSeat, 'seat2');
 
   const userSeat1 = await E(zoe).offer(invitation1);
   const userSeat2 = await E(zoe).offer(invitation2);

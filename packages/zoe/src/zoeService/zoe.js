@@ -245,13 +245,15 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           getBrands: () => instanceRecord.terms.brands,
           getInstance: () => instance,
           acceptingOffers: () => acceptingOffers,
-          exitAllSeats: () => {
+          exitAllSeats: completion => {
             acceptingOffers = false;
-            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit());
+            zoeSeatAdmins.forEach(zoeSeatAdmin =>
+              zoeSeatAdmin.exit(completion),
+            );
           },
-          kickOutAllSeats: reason => {
+          failAllSeats: reason => {
             acceptingOffers = false;
-            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.kickOut(reason));
+            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
           },
           // TODO(1834): plumb this through to ZCF
           stopAcceptingOffers: () => (acceptingOffers = false),
@@ -264,8 +266,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       E(adminNode)
         .done()
         .then(
-          () => instanceAdmin.exitAllSeats(),
-          reason => instanceAdmin.kickOutAllSeats(reason),
+          completion => instanceAdmin.exitAllSeats(completion),
+          reason => instanceAdmin.failAllSeats(reason),
         );
 
       // Unpack the invitationKit.
@@ -319,8 +321,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
-        exitAllSeats: () => instanceAdmin.exitAllSeats(),
-        kickOutAllSeats: reason => instanceAdmin.kickOutAllSeats(reason),
+        exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
+        failAllSeats: reason => instanceAdmin.failAllSeats(reason),
         makeZoeMint,
         replaceAllocations: seatHandleAllocations => {
           seatHandleAllocations.forEach(({ seatHandle, allocation }) => {

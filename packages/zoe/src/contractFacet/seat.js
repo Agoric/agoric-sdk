@@ -45,19 +45,19 @@ export const makeZcfSeatAdminKit = (
 
   /** @type {ZCFSeat} */
   const zcfSeat = harden({
-    exit: () => {
+    exit: completion => {
       assertExitedFalse();
       zcfSeatAdmin.updateHasExited();
-      E(zoeSeatAdmin).exit();
+      E(zoeSeatAdmin).exit(completion);
     },
-    kickOut: (
+    fail: (
       reason = new Error(
         'Kicked out of seat. Please check the log for more information.',
       ),
     ) => {
       if (!exited) {
         zcfSeatAdmin.updateHasExited();
-        E(zoeSeatAdmin).kickOut(harden(reason));
+        E(zoeSeatAdmin).fail(harden(reason));
       }
       return reason;
     },

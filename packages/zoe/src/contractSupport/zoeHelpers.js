@@ -217,8 +217,8 @@ export const swap = (
       rightHasExitedMsg,
     );
   } catch (err) {
-    leftSeat.kickOut(err);
-    rightSeat.kickOut(err);
+    leftSeat.fail(err);
+    rightSeat.fail(err);
     throw err;
   }
 
@@ -258,8 +258,8 @@ export const swapExact = (
       rightHasExitedMsg,
     );
   } catch (err) {
-    leftSeat.kickOut(err);
-    rightSeat.kickOut(err);
+    leftSeat.fail(err);
+    rightSeat.fail(err);
     throw err;
   }
 
