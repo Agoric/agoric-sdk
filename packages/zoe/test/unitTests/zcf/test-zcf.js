@@ -621,6 +621,7 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
     'getProposal',
     'hasExited',
     'isOfferSafe',
+    'kickOut', // Deprecated. Remove when we drop kickOut().
     'stage',
   ];
   const { zcf } = await setupZCFTest();
@@ -658,6 +659,19 @@ test(`zcfSeat.hasExited, fail from zcf.makeEmptySeatKit`, async t => {
   t.falsy(zcfSeat.hasExited());
   const msg = `this is the error message`;
   const err = zcfSeat.fail(Error(msg));
+  t.is(err.message, msg);
+  t.truthy(zcfSeat.hasExited());
+  t.truthy(await E(userSeat).hasExited());
+  t.deepEqual(await E(userSeat).getPayouts(), {});
+});
+
+// TODO(1837): remove deprecated kickOut
+test(`zcfSeat.kickOut, fail from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  t.falsy(zcfSeat.hasExited());
+  const msg = `this is the error message`;
+  const err = zcfSeat.kickOut(Error(msg));
   t.is(err.message, msg);
   t.truthy(zcfSeat.hasExited());
   t.truthy(await E(userSeat).hasExited());

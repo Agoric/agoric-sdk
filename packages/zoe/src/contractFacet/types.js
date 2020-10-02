@@ -150,6 +150,9 @@
  * @property {() => void} exit
  * @property {(reason: Error=) => Error} fail called with the reason for this
  * failure, where reason is normally an instanceof Error.
+ * @property {(reason: Error=) => Error} kickOut called with the reason for
+ * this failure, where reason is normally an instanceof Error. This method
+ * is deprecated as of 0.9.1-dev.3 in favor of fail().
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal

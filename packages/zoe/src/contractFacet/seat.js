@@ -61,6 +61,9 @@ export const makeZcfSeatAdminKit = (
       }
       return reason;
     },
+    // TODO(1837) remove deprecated method before Beta release.
+    // deprecated as of 0.9.1-dev.3. Use fail() instead.
+    kickOut: reason => zcfSeat.fail(reason),
     getNotifier: () => {
       return notifier;
     },
