@@ -83,7 +83,7 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
 	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGCH) --home-server=t1/n0 --home=t1/bootstrap gentx --keyring-backend=test bootstrap --amount=1000000uagstake --chain-id=$(CHAIN_ID)
+	$(AGC) --home=t1/n0 --client-home=t1/bootstrap gentx --keyring-backend=test bootstrap --amount=1000000uagstake --chain-id=$(CHAIN_ID)
 	$(AGC) --home=t1/n0 collect-gentxs
 	$(AGC) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults ag-chain-cosmos t1/n0/config

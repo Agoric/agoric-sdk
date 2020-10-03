@@ -271,10 +271,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (exitStatus) {
         return exitStatus;
       }
-      exitStatus = await keysSpawn([
+
+      const keysHome = opts.sdk
+        ? `_agstate/keys`
+        : `/usr/src/dapp/_agstate/keys`;
+      exitStatus = await chainSpawn([
         'gentx',
         'delegate0',
-        `--home-server=${localAgServer}`,
+        `--client-home=${keysHome}`,
         '--keyring-backend=test',
         `--chain-id=${CHAIN_ID}`,
         `--amount=${DELEGATE0_COINS}`,

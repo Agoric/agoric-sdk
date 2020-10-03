@@ -87,7 +87,7 @@
   become: yes
   become_user: "{{ service }}"
   shell: "\
-    ag-cosmos-helper gentx --home-server=/home/{{ service }}/.{{ service }} \
+    {{ service }} gentx --client-home=/home/{{ service }}/.ag-cosmos-helper \
       --keyring-backend=test --amount={{ STAKER_AMOUNT }} \
       {{ (website | default(None)) and '--website=' ~ website }} \
       {{ (identity | default(None)) and '--identity=' ~ identity }} \

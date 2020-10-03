@@ -39,5 +39,6 @@ replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alpha.regen.4
 
-// FIXME: Need for gentx --home-server=xxx
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201001212829-e88edc6ee90a
+// FIXME: Need for gentx --client-home=xxx
+// Will not be necessary after https://github.com/cosmos/cosmos-sdk/pull/7436
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201002204342-955b95400aec

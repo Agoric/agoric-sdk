@@ -49,6 +49,8 @@ github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201001210213-8c0b3f33b0f0 h1:vptv4
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201001210213-8c0b3f33b0f0/go.mod h1:bLowJxl+f0nyM10MQbRIyBdXqC7yb5GErM/qsmSbz3M=
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201001212829-e88edc6ee90a h1:LTRf0qqi60MSeIF6BC+KJpgGiLWLsVKRAUspaxTt8qs=
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201001212829-e88edc6ee90a/go.mod h1:bLowJxl+f0nyM10MQbRIyBdXqC7yb5GErM/qsmSbz3M=
+github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201002204342-955b95400aec h1:sjwnpcuze6u2QlbG3CK7XBsd7r9YN5GJZQn1d5sy8f0=
+github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201002204342-955b95400aec/go.mod h1:bLowJxl+f0nyM10MQbRIyBdXqC7yb5GErM/qsmSbz3M=
 github.com/agoric-labs/cosmos-sdk v0.37.0 h1:y9OTnnORhLHPnfxLIaK4Pv/7Z7KcpnbTxpE5xxWlUUY=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
