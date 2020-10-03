@@ -13,6 +13,10 @@ const (
 	// Bech32MainPrefix defines the Bech32 prefix used by all types
 	Bech32MainPrefix = "agoric"
 
+	// CoinType is used in the slip44 HD key derivation path.
+	// https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+	CoinType = 564
+
 	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
 	Bech32PrefixAccAddr = Bech32MainPrefix
 	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
@@ -34,6 +38,7 @@ var DefaultController = func(needReply bool, str string) (string, error) {
 
 // SetConfigDefaults sets the appropriate parameters for the Agoric chain.
 func SetConfigDefaults(config *sdk.Config) {
+	config.SetCoinType(CoinType)
 	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
 	config.SetBech32PrefixForValidator(Bech32PrefixValAddr, Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(Bech32PrefixConsAddr, Bech32PrefixConsPub)
