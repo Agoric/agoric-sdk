@@ -11,3 +11,9 @@ rm ~/.ag-chain-cosmos/config/app.toml
 # Initialize the new chain
 ag-chain-cosmos --overwrite init <moniker>
 ```
+
+* The `ag-cosmos-helper` default coin type is now `--coin-type=564`.  If you
+  need to recover a key generated before this upgrade from its mnemonic, you
+  will need: `ag-cosmos-helper keys add --coin-type=118 --recover`.  If you
+  generated the key after this point, you don't need to add a special option to
+  recover it.
