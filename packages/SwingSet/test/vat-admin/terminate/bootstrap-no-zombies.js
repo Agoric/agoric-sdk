@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 
 export function buildRootObject() {
@@ -10,8 +9,12 @@ export function buildRootObject() {
       // sure everything is working
       const weatherwax = await E(vatMaker).createVatByName('weatherwax');
       await E(weatherwax.root).live();
-      E(weatherwax.adminNode).terminate();
-      await E(weatherwax.adminNode).done();
+      E(weatherwax.adminNode).terminate('no zombies?');
+      try {
+        await E(weatherwax.adminNode).done();
+      } catch (e) {
+        // ignored
+      }
       return 'bootstrap done';
     },
   });

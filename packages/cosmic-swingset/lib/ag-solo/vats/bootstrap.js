@@ -230,14 +230,17 @@ export function buildRootObject(vatPowers, vatParameters) {
       send(obj, connectionHandles) {
         return E(vats.http).send(obj, connectionHandles);
       },
+      registerURLHandler(handler, path) {
+        return E(vats.http).registerURLHandler(handler, path);
+      },
       registerAPIHandler(handler) {
         return E(vats.http).registerURLHandler(handler, '/api');
       },
-      async registerWallet(wallet, handler, bridgeHandler) {
+      async registerWallet(wallet, privateWallet, privateWalletBridge) {
         await Promise.all([
-          E(vats.http).registerURLHandler(handler, '/private/wallet'),
+          E(vats.http).registerURLHandler(privateWallet, '/private/wallet'),
           E(vats.http).registerURLHandler(
-            bridgeHandler,
+            privateWalletBridge,
             '/private/wallet-bridge',
           ),
           E(vats.http).setWallet(wallet),
@@ -248,6 +251,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     return allComparable(
       harden({
         ...(plugin ? { plugin } : {}),
+        // TODO: Our preferred name is "scratch", but there are many Dapps
+        // that use "uploads".
+        scratch: uploads,
         uploads,
         spawner,
         network: vats.network,

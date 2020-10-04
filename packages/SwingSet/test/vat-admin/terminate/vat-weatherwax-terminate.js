@@ -1,4 +1,3 @@
-/* global harden */
 import { makePromiseKit } from '@agoric/promise-kit';
 
 export function buildRootObject(vatPowers) {

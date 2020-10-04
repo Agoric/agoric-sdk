@@ -1,4 +1,3 @@
-/* global harden */
 import { makeMeter } from '@agoric/transform-metering';
 
 export function makeMeterManager(replaceGlobalMeter) {

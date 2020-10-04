@@ -1,6 +1,6 @@
 /* global HandledPromise */
 import { importBundle } from '@agoric/import-bundle';
-import { Remotable, getInterfaceOf } from '@agoric/marshal';
+import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 // TODO? import anylogger from 'anylogger';
 import { makeLiveSlots } from '@agoric/swingset-vat/src/kernel/liveSlots';
 
@@ -54,6 +54,16 @@ function makeWorker(io, setImmediate) {
       setImmediate,
     );
     workerLog(`doProcess done`);
+    const vatDeliveryResults = harden(['ok']);
+    return vatDeliveryResults;
+  }
+
+  function doMessage(targetSlot, msg) {
+    const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
+    return doProcess(
+      ['deliver', targetSlot, msg.method, msg.args, msg.result],
+      errmsg,
+    );
   }
 
   function doNotify(vpid, vp) {
@@ -82,7 +92,6 @@ function makeWorker(io, setImmediate) {
   //  toParent.write('child ack');
   // });
 
-  let syscallLog;
   const handle = harden(async ([type, ...margs]) => {
     workerLog(`received`, type);
     if (type === 'start') {
@@ -118,13 +127,21 @@ function makeWorker(io, setImmediate) {
           reject: (...args) => doSyscall(['reject', ...args]),
         });
 
+        function testLog(...args) {
+          sendUplink(['testLog', ...args]);
+        }
         const state = null;
         const vatID = 'demo-vatID';
         // todo: maybe add transformTildot, makeGetMeter/transformMetering to
         // vatPowers, but only if options tell us they're wanted. Maybe
         // transformTildot should be async and outsourced to the kernel
         // process/thread.
-        const vatPowers = { Remotable, getInterfaceOf };
+        const vatPowers = {
+          Remotable,
+          getInterfaceOf,
+          makeMarshal,
+          testLog,
+        };
         dispatch = makeLiveSlots(
           syscall,
           state,
@@ -144,17 +161,12 @@ function makeWorker(io, setImmediate) {
       }
       const [dtype, ...dargs] = margs;
       if (dtype === 'message') {
-        const [targetSlot, msg] = dargs;
-        const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
-        await doProcess(
-          ['deliver', targetSlot, msg.method, msg.args, msg.result],
-          errmsg,
-        ).then(() => {
-          sendUplink(['deliverDone']);
-        });
+        await doMessage(...dargs).then(res =>
+          sendUplink(['deliverDone', ...res]),
+        );
       } else if (dtype === 'notify') {
-        await doNotify(...dargs).then(() =>
-          sendUplink(['deliverDone', syscallLog]),
+        await doNotify(...dargs).then(res =>
+          sendUplink(['deliverDone', ...res]),
         );
       } else {
         throw Error(`bad delivery type ${dtype}`);

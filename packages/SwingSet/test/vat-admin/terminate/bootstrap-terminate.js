@@ -1,8 +1,8 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   const { testLog } = vatPowers;
+  const mode = vatParameters.argv[0];
 
   const self = harden({
     async bootstrap(vats, devices) {
@@ -49,7 +49,35 @@ export function buildRootObject(vatPowers) {
         err => testLog(`query3P.catch ${err}`),
       );
       // .. but it will be killed ..
-      E(dude.adminNode).terminate();
+      switch (mode) {
+        case 'kill':
+          E(dude.adminNode).terminate(mode);
+          break;
+        case 'happy':
+          E(dude.root).dieHappy(mode);
+          break;
+        case 'exceptionallyHappy':
+          E(dude.root).dieHappy(Error(mode));
+          break;
+        case 'happyTalkFirst':
+          E(dude.root).dieHappyButTalkToMeFirst(self, mode);
+          break;
+        case 'sad':
+          E(dude.root).dieSad(mode);
+          break;
+        case 'exceptionallySad':
+          E(dude.root).dieSad(Error(mode));
+          break;
+        case 'sadTalkFirst':
+          E(dude.root).dieSadButTalkToMeFirst(self, Error(mode));
+          break;
+        case 'dieReturningAPresence':
+          E(dude.root).dieReturningAPresence(self, Error(mode));
+          break;
+        default:
+          console.log('something terrible has happened');
+          break;
+      }
       // .. before the third message can be delivered
       const foo4P = E(dude.root).foo(4);
       foo4P.then(
@@ -57,7 +85,9 @@ export function buildRootObject(vatPowers) {
         err => testLog(`foo4P.catch ${err}`),
       );
       // then we try to kill the vat again, which should be idempotent
-      E(dude.adminNode).terminate();
+      if (mode === 'kill') {
+        E(dude.adminNode).terminate('because we said so');
+      }
 
       // the run-queue should now look like:
       // [dude.elsewhere(3), adminNode.terminate, dude.foo(4), adminNode.terminate]
@@ -117,7 +147,12 @@ export function buildRootObject(vatPowers) {
 
       // We finally hear about doneP resolving, allowing the bootstrap to
       // proceed to the end of the test. We push the 'done' message to testLog
-      await doneP;
+      try {
+        const v = await doneP;
+        testLog(`done result ${v} (Error=${v instanceof Error})`);
+      } catch (e) {
+        testLog(`done exception ${e} (Error=${e instanceof Error})`);
+      }
       testLog('done');
 
       return 'bootstrap done';

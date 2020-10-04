@@ -3,6 +3,7 @@
 import { isPromise } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 
+import Nat from '@agoric/nat';
 import makeUIAgentMakers from './ui-agent';
 
 // A REPL-specific JSON stringify.
@@ -190,6 +191,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
     doEval(obj, _meta) {
       const { number: histnum, body } = obj;
       console.debug(`doEval`, histnum, body);
+      Nat(histnum);
       if (histnum <= highestHistory) {
         throw new Error(
           `histnum ${histnum} is not larger than highestHistory ${highestHistory}`,
@@ -250,10 +252,10 @@ export function getReplHandler(replObjects, send, vatPowers) {
     },
 
     onMessage(obj, meta) {
-      if (handler[obj.type]) {
-        return handler[obj.type](obj, meta);
+      if (!handler[obj.type]) {
+        return false;
       }
-      return false;
+      return handler[obj.type](obj, meta);
     },
   });
 

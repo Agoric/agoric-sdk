@@ -1,5 +1,3 @@
-/* global harden */
-
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -25,7 +23,7 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeWorkerVatManagerFactory(tools) {
-  const { makeNodeWorker, kernelKeeper } = tools;
+  const { makeNodeWorker, kernelKeeper, testLog } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
@@ -57,10 +55,16 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       transcriptManager,
     );
     function handleSyscall(vatSyscallObject) {
+      // we are invoked by an async postMessage from the worker thread, whose
+      // vat code has moved on (it really wants a synchronous/immediate
+      // syscall)
       const type = vatSyscallObject[0];
       if (type === 'callNow') {
         throw Error(`nodeWorker cannot block, cannot use syscall.callNow`);
       }
+      // This might throw an Error if the syscall was faulty, in which case
+      // the vat will be terminated soon. It returns a vatSyscallResults,
+      // which we discard because there is nobody to send it to.
       doSyscall(vatSyscallObject);
     }
 
@@ -93,12 +97,15 @@ export function makeNodeWorkerVatManagerFactory(tools) {
         parentLog(`syscall`, args);
         const vatSyscallObject = args;
         handleSyscall(vatSyscallObject);
+      } else if (type === 'testLog') {
+        testLog(...args);
       } else if (type === 'deliverDone') {
         parentLog(`deliverDone`);
         if (waiting) {
           const resolve = waiting;
           waiting = null;
-          resolve();
+          const deliveryResult = args;
+          resolve(deliveryResult);
         }
       } else {
         parentLog(`unrecognized uplink message ${type}`);

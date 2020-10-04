@@ -12,6 +12,8 @@ import { assertProposalShape, swapExact } from '../contractSupport';
  * assets can be transferred without relying on the owner of the
  * digital assets to keep their promise.
  *
+ * https://agoric.com/documentation/zoe/guide/contracts/covered-call.html
+ *
  * The call option has an expiration date, when the opportunity is
  * cancelled. The owner of the digital assets cannot remove the assets
  * from escrow before the expiration date.

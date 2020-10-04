@@ -1,5 +1,3 @@
-/* global harden */
-
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';
@@ -58,7 +56,7 @@ test('metering dynamic vats', async t => {
   // and grab a kpid that won't be resolved until the vat dies
   const r = c.queueToVatExport('bootstrap', 'o+0', 'getNever', capargs([]));
   await c.run();
-  const neverArgs = r.resolution();
+  const neverArgs = c.kpResolution(r);
   const neverKPID = neverArgs.slots[0];
 
   // First, send a message to the dynamic vat that runs normally
@@ -85,7 +83,11 @@ test('metering dynamic vats', async t => {
   t.is(storage.get(`${neverKPID}.state`), 'rejected');
   t.is(
     storage.get(`${neverKPID}.data.body`),
-    JSON.stringify('Allocate meter exceeded'),
+    JSON.stringify({
+      '@qclass': 'error',
+      name: 'Error',
+      message: 'vat terminated',
+    }),
   );
   // TODO: the rejection shouldn't reveal the reason, maybe use this instead:
   // t.is(storage.get(`${neverKPID}.data.body`),
@@ -94,7 +96,7 @@ test('metering dynamic vats', async t => {
   t.deepEqual(
     nextLog(),
     [
-      'did explode: vat terminated',
+      'did explode: Error: vat terminated',
       'terminated: Error: Allocate meter exceeded',
     ],
     'first boom',
@@ -103,5 +105,5 @@ test('metering dynamic vats', async t => {
   // the dead vat should stay dead
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
-  t.deepEqual(nextLog(), ['run exploded: vat terminated'], 'stay dead');
+  t.deepEqual(nextLog(), ['run exploded: Error: vat terminated'], 'stay dead');
 });

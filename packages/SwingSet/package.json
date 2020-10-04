@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-vat",
-  "version": "0.8.0",
+  "version": "0.8.1-dev.2",
   "description": "Vat/Container Launcher",
   "main": "src/main.js",
   "module": "src/index.js",
@@ -13,40 +13,41 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:xs-worker": "ava test/workers/test-worker.js -m 'xs vat manager'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
-    "lint": "yarn lint:types && eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint": "yarn lint:types&&yarn lint:eslint",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/install-metering-and-ses": "^0.1.3",
+    "@agoric/install-metering-and-ses": "^0.1.4-dev.2",
     "ava": "^3.12.1",
     "nyc": "^15.1.0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.0.10",
+    "@agoric/assert": "^0.0.11-dev.2",
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/bundle-source": "^1.1.8",
-    "@agoric/captp": "^1.5.0",
-    "@agoric/eventual-send": "^0.11.0",
-    "@agoric/import-bundle": "^0.0.10",
-    "@agoric/install-ses": "^0.3.1",
-    "@agoric/marshal": "^0.2.5",
+    "@agoric/bundle-source": "^1.1.9-dev.2",
+    "@agoric/captp": "^1.5.1-dev.2",
+    "@agoric/eventual-send": "^0.11.1-dev.2",
+    "@agoric/import-bundle": "^0.0.11-dev.2",
+    "@agoric/install-ses": "^0.3.2-dev.2",
+    "@agoric/marshal": "^0.2.6-dev.2",
     "@agoric/nat": "^2.0.1",
-    "@agoric/promise-kit": "^0.1.5",
-    "@agoric/store": "^0.2.2",
-    "@agoric/swing-store-simple": "^0.2.5",
-    "@agoric/tame-metering": "^1.2.5",
-    "@agoric/transform-eventual-send": "^1.3.3",
-    "@agoric/transform-metering": "^1.3.2",
-    "@agoric/xs-vat-worker": "^0.2.2",
+    "@agoric/promise-kit": "^0.1.6-dev.2",
+    "@agoric/store": "^0.2.3-dev.2",
+    "@agoric/swing-store-simple": "^0.2.6-dev.2",
+    "@agoric/tame-metering": "^1.2.6-dev.2",
+    "@agoric/transform-eventual-send": "^1.3.4-dev.2",
+    "@agoric/transform-metering": "^1.3.3-dev.2",
+    "@agoric/xs-vat-worker": "^0.2.3-dev.2",
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5",
-    "netstring-stream": "^1.0.1",
     "re2": "^1.10.5",
     "rollup": "^1.23.1",
     "rollup-plugin-node-resolve": "^5.2.0",
@@ -69,6 +70,52 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "directories": {
     "example": "examples"
+  },
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended",
+      "plugin:jsdoc/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "env": {
+      "es6": true
+    },
+    "globals": {
+      "harden": "readonly"
+    },
+    "rules": {
+      "implicit-arrow-linebreak": "off",
+      "function-paren-newline": "off",
+      "arrow-parens": "off",
+      "strict": "off",
+      "prefer-destructuring": "off",
+      "no-else-return": "off",
+      "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "no-return-assign": "off",
+      "no-param-reassign": "off",
+      "no-restricted-syntax": [
+        "off",
+        "ForOfStatement"
+      ],
+      "no-unused-expressions": "off",
+      "no-loop-func": "off",
+      "no-inner-declarations": "off",
+      "import/prefer-default-export": "off",
+      "jsdoc/no-undefined-types": "off",
+      "jsdoc/require-jsdoc": "off",
+      "jsdoc/require-property-description": "off",
+      "jsdoc/require-param-description": "off",
+      "jsdoc/require-returns": "off",
+      "jsdoc/require-returns-description": "off"
+    }
   },
   "publishConfig": {
     "access": "public"

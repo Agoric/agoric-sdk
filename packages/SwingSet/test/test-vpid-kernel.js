@@ -1,5 +1,4 @@
 // eslint-disable-next-line no-redeclare
-/* global harden */
 
 import '@agoric/install-ses';
 import test from 'ava';
@@ -8,6 +7,7 @@ import { initSwingStore } from '@agoric/swing-store-simple';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
 import buildKernel from '../src/kernel/index';
+import { initializeKernel } from '../src/kernel/initializeKernel';
 
 import { buildDispatch } from './util';
 
@@ -39,7 +39,7 @@ function makeEndowments() {
   };
 }
 
-function buildRawVat(name, kernel, onDispatchCallback = undefined) {
+async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
   const { log, dispatch } = buildDispatch(onDispatchCallback);
   let syscall;
   function setup(s) {
@@ -50,7 +50,7 @@ function buildRawVat(name, kernel, onDispatchCallback = undefined) {
   function getSyscall() {
     return syscall;
   }
-  kernel.addGenesisVatSetup(name, setup);
+  await kernel.createTestVat(name, setup);
   return { log, getSyscall };
 }
 
@@ -200,12 +200,20 @@ function inCList(kernel, vatID, kpid, vpid) {
 }
 
 async function doTest123(t, which, mode) {
-  const kernel = buildKernel(makeEndowments());
-  // vatA is our primary actor
-  const { log: logA, getSyscall: getSyscallA } = buildRawVat('vatA', kernel);
-  // we use vatB when necessary to send messages to vatA
-  const { log: logB, getSyscall: getSyscallB } = buildRawVat('vatB', kernel);
+  const endowments = makeEndowments();
+  initializeKernel({}, endowments.hostStorage);
+  const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+  // vatA is our primary actor
+  const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
+    'vatA',
+    kernel,
+  );
+  // we use vatB when necessary to send messages to vatA
+  const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
+    'vatB',
+    kernel,
+  );
   const syscallA = getSyscallA();
   const syscallB = getSyscallB();
 
@@ -368,7 +376,10 @@ for (const caseNum of [1, 2, 3]) {
 }
 
 async function doTest4567(t, which, mode) {
-  const kernel = buildKernel(makeEndowments());
+  const endowments = makeEndowments();
+  initializeKernel({}, endowments.hostStorage);
+  const kernel = buildKernel(endowments, {}, {});
+  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatA is our primary actor
   let onDispatchCallback;
   function odc(d) {
@@ -376,14 +387,16 @@ async function doTest4567(t, which, mode) {
       onDispatchCallback(d);
     }
   }
-  const { log: logA, getSyscall: getSyscallA } = buildRawVat(
+  const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
     'vatA',
     kernel,
     odc,
   );
   // we use vatB when necessary to send messages to vatA
-  const { log: logB, getSyscall: getSyscallB } = buildRawVat('vatB', kernel);
-  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+  const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
+    'vatB',
+    kernel,
+  );
   const syscallA = getSyscallA();
   const syscallB = getSyscallB();
 

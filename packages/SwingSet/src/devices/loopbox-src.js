@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootDeviceNode(tools) {
   const { SO, endowments } = tools;
   const { registerPassOneMessage, deliverMode } = endowments;

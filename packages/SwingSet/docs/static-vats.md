@@ -68,10 +68,12 @@ Static vats currently receive the following objects in their `buildRootObject()`
 * `makeGetMeter`
 * `transformMetering`
 * `transformTildot`
+* `exitVat`
+* `exitVatWithFailure`
 
 (dynamic vats do not get `makeGetMeter` or `transformMetering`)
 
-### marshalling: Remotable and getInterfaceOf
+### marshalling: `Remotable` and `getInterfaceOf`
 
 Messages sent between vats include arguments (and return values) which are serialized with `@agoric/marshal`. This marshalling library makes a distinction between plain data, and "remotable objects". Data is merely copied, but remotables arrive as a *Presence*, to which messages can be sent, with e.g. `counter~.increment()`.
 
@@ -79,19 +81,23 @@ Objects which are frozen, and whose enumerable properties are all functions, wil
 
 This functionality is still in development. See https://github.com/Agoric/agoric-sdk/issues/804 for details.
 
-### metering: makeGetMeter, transformMetering
+### metering: `makeGetMeter`, `transformMetering`
 
 Static vats are, for now, allowed to apply metering enforcement within their own walls. These vat powers provide the tools they need to do this. `makeGetMeter` returns a new `getMeter` function and a collection of functions to check and refill the meter it wraps. `transformMetering` takes a string of code and returns a new string into which metering code has been injected. By including `getMeter` in the `endowments` of a new `Compartment`, and adding `transformMetering` in the `transforms` of that compartment, vats can impose metering limits on other code evaluated inside the new compartment. When the meter runs out, the code subject to that meter starts throwing exceptions (which it cannot catch itself), and keeps throwing them until the meter is refilled.
 
 This approach is not yet complete or sound (the evaluated code may be able to consume more CPU or memory than the meter ought to allow), and it is easy for the vat code to get confused about how much progress it has made. The metered code might call back into the vat's code, and cause a metering exception to happen halfway through that call, leaving the vat in a confused state. The safest way to meter code is to run it in a completely separate (dynamic) vat, which will live or die as a single unit.
 
-### wavy-dot: transformTildot
+### wavy-dot: `transformTildot`
 
 The "tildot transform" converts wavy-dot (aka tildot) syntax (`counter~.increment()`) into invocations of `HandledPromise` APIs (`HandledPromise.applyMethod(counter, "increment", [])`). The function passed as `vatPowers.transformTildot` accepts one string and returns a new string, with the transform applied.
 
 This is particularly useful for vats that implement a REPL, so operators can include tildot syntax in the expressions they submit. Such a vat will have to transform each expression string before passing it to e.g. `compartment.evaluate()`, generally by creating a new `Compartment` with `transforms: [ vatPowers.transformTildot ]`.
 
 `transformTildot` is provided in `vatPowers` because it relies upon the Babel parser library, and Babel does not run inside a SES non-"Start Compartment" yet. Also, Babel has a lot of code, and bundling all of it into a vat would make the vat bundle file pretty large. Finally, `transformTildot` is unmetered. This doesn't matter for static vats (which aren't metered either), but for dynamic vats (which *are* metered), calling `transformTildot` under metering would consume a lot of the vat's metering budget.
+
+### vat termination: `exitVat` and `exitVatWithFailure`
+
+A vat may signal to the kernel that it should be terminated at the end of its current crank.  Two powers are provided to do this: `exitVat(completion)` and `exitVatWithFailure(reason)`.  These powers will work in any vat but are primarily useful in dynamic vats.  The two differ in how the circumstances of termination are signalled to holders of the vat's `done` promise: `exitVat` fulfills that promise with the value provided in the `completion` parameter, whereas `exitVatWithFailure` rejects the promise with the value provided in the `reason` parameter.  Conventionally, `completion` will be a string and `reason` will be an `Error`, but any serializable object may be used for either.  After the crank in which either of these powers is invoked, no further messages will be delivered to the vat; instead, any such messages will be rejected with a `'vat terminated'` error.  Any outstanding promises for which the vat was the decider will also be rejected in the same way.  The vat and any resources it holds will become eligible for garbage collection.  However, the crank itself will end normally, meaning that any actions taken by the vat during the crank in which either exit power was invoked will become part of the persisted state of the swingset, including messages that were sent from the vat during that crank (including, notably, actions taken _after_ the exit power was invoked but before the crank finished).
 
 ## Configuring Vats
 

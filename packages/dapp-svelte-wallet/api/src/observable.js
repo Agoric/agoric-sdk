@@ -12,7 +12,7 @@ export default function makeObservablePurse(E, purse, onFulfilled) {
         .then(depositOnlyFacet => {
           return {
             receive(...args) {
-              E(depositOnlyFacet)
+              return E(depositOnlyFacet)
                 .receive(...args)
                 .then(result => {
                   onFulfilled();

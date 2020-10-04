@@ -11,6 +11,7 @@ import '../../exported';
 
 /**
  * Trade one item for another.
+ * https://agoric.com/documentation/zoe/guide/contracts/atomic-swap.html
  *
  * The initial offer is { give: { Asset: A }, want: { Price: B } }.
  * The outcome from the first offer is an invitation for the second party,

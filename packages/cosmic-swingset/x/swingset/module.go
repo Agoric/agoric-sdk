@@ -7,8 +7,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/client/cli"
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/client/rest"
+	"github.com/Agoric/cosmic-swingset/x/swingset/client/cli"
+	"github.com/Agoric/cosmic-swingset/x/swingset/client/rest"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 

@@ -6,7 +6,9 @@ import {
   buildMailboxStateMap,
   buildTimer,
   buildBridge,
-  buildVatController,
+  swingsetIsInitialized,
+  initializeSwingset,
+  makeSwingsetController,
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
@@ -33,16 +35,27 @@ async function buildSwingset(
   const timer = buildTimer();
   const mb = buildMailbox(mbs);
   const bd = buildBridge(bridgeOutbound);
-  config.devices = [
-    ['bridge', bd.srcPath, bd.endowments],
-    ['mailbox', mb.srcPath, mb.endowments],
-    ['timer', timer.srcPath, timer.endowments],
-  ];
+  config.devices = {
+    bridge: {
+      sourceSpec: bd.srcPath,
+    },
+    mailbox: {
+      sourceSpec: mb.srcPath,
+    },
+    timer: {
+      sourceSpec: timer.srcPath,
+    },
+  };
+  const deviceEndowments = {
+    bridge: { ...bd.endowments },
+    mailbox: { ...mb.endowments },
+    timer: { ...timer.endowments },
+  };
 
-  const controller = await buildVatController(config, argv, {
-    hostStorage: storage,
-    debugPrefix,
-  });
+  if (!swingsetIsInitialized(storage)) {
+    await initializeSwingset(config, argv, storage, { debugPrefix });
+  }
+  const controller = await makeSwingsetController(storage, deviceEndowments);
   await controller.run();
 
   const bridgeInbound = bd.deliverInbound;

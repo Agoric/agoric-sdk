@@ -1,4 +1,3 @@
-/* global harden */
 import { insistMessage } from '../../message';
 
 export function makeDeliver(tools, dispatch) {
@@ -16,8 +15,8 @@ export function makeDeliver(tools, dispatch) {
    * Run a function, returning a promise that waits for the promise queue to be
    * empty before resolving.
    *
-   * @param f  The function to run
-   * @param errmsg  Tag string to be associated with the error message that gets
+   * @param {*} f  The function to run
+   * @param {string} errmsg  Tag string to be associated with the error message that gets
    *     logged if `f` rejects.
    *
    * The kernel uses `runAndWait` to wait for the vat to become quiescent (that

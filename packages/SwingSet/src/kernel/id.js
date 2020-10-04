@@ -1,5 +1,3 @@
-/* global harden */
-
 import Nat from '@agoric/nat';
 
 // Vats are identified by an integer index, which (for typechecking purposes)
@@ -14,12 +12,12 @@ import Nat from '@agoric/nat';
  * Assert function to ensure that something expected to be a vat ID string
  * actually is one.
  *
- * @param s  The (alleged) string to be tested.
+ * @param {string} s  The (alleged) string to be tested.
  *
- * @throws Error if, upon inspection, the parameter is not a string or is not a
+ * @throws {Error} if, upon inspection, the parameter is not a string or is not a
  *    well-formed vat ID as described above.
  *
- * @return nothing
+ * @returns {void}
  */
 export function insistVatID(s) {
   try {
@@ -38,9 +36,9 @@ export function insistVatID(s) {
 /**
  * Generate a vat ID string given an index.
  *
- * @param index  The index.
+ * @param {number} index  The index.
  *
- * @return a vat ID string of the form "vNN" where NN is the index.
+ * @returns {string} a vat ID string of the form "vNN" where NN is the index.
  */
 export function makeVatID(index) {
   return `v${Nat(index)}`;
@@ -50,12 +48,12 @@ export function makeVatID(index) {
  * Assert function to ensure that something expected to be a device ID string
  * actually is one.
  *
- * @param s  The (alleged) string to be tested.
+ * @param {string} s  The (alleged) string to be tested.
  *
- * @throws Error if, upon inspection, the parameter is not a string or is not a
+ * @throws {Error} if, upon inspection, the parameter is not a string or is not a
  *    well-formed device ID as described above.
  *
- * @return nothing
+ * @returns {void}
  */
 export function insistDeviceID(s) {
   try {
@@ -74,9 +72,9 @@ export function insistDeviceID(s) {
 /**
  * Generate a device ID string given an index.
  *
- * @param index  The index.
+ * @param {number} index  The index.
  *
- * @return a device ID string of the form "dNN" where NN is the index.
+ * @returns {string} a device ID string of the form "dNN" where NN is the index.
  */
 export function makeDeviceID(index) {
   return `d${Nat(index)}`;
@@ -85,14 +83,14 @@ export function makeDeviceID(index) {
 /**
  * Parse a vat or device ID string into its constituent parts.
  *
- * @param s  The string to be parsed.
+ * @param {string} s  The string to be parsed.
  *
- * @return an object: {
+ * @returns {{ type: 'vat' | 'device', id: number}} an object: {
  *    type: STRING, // 'vat' or 'device', accordingly
  *    id: Nat       // the index
  *  }
  *
- * @throws if the parameter is not a string or is malformed.
+ * @throws {Error} if the parameter is not a string or is malformed.
  */
 export function parseVatOrDeviceID(s) {
   if (s !== `${s}`) {

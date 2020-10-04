@@ -15,7 +15,7 @@ import '../../../exported';
 /**
  * Multipool Autoswap is a rewrite of Uniswap that supports multiple liquidity
  * pools, and direct exchanges across pools. Please see the documentation for
- * more:  https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
+ * more: https://agoric.com/documentation/zoe/guide/contracts/multipoolAutoswap.html
  *
  * We expect that this contract will have tens to hundreds of issuers.
  * Each liquidity pool is between the central token and a secondary

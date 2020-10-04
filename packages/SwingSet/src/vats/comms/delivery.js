@@ -1,4 +1,3 @@
-/* global harden */
 /* eslint-disable no-use-before-define */
 
 import { assert, details } from '@agoric/assert';

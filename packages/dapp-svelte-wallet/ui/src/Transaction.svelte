@@ -17,7 +17,11 @@
     if (!obj) {
       return;
     }
-    let { outcome } = obj;
+    let { dappContext, outcome } = obj;
+    if (dappContext) {
+      // They have opted-in to handling the outcome.
+      return;
+    }
     if (typeof outcome !== 'string') {
       outcome = 'Offer was accepted.';
     }

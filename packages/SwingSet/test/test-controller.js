@@ -1,5 +1,3 @@
-/* global harden */
-
 import '@agoric/install-ses';
 import test from 'ava';
 import path from 'path';
@@ -40,7 +38,7 @@ async function simpleCall(t) {
   const data = controller.dump();
   // note: data.vatTables is sorted by vatID, but we have no particular
   // reason to believe that vat1 will get a lower ID than vatAdmin, because
-  // genesisVats processed in Map.keys() order
+  // vats are processed in Map.keys() order
   const adminVatID = controller.vatNameToID('vatAdmin');
   const vat1ID = controller.vatNameToID('vat1');
   const commsVatID = controller.vatNameToID('comms');
@@ -48,11 +46,11 @@ async function simpleCall(t) {
   const timerVatID = controller.vatNameToID('timer');
 
   t.deepEqual(data.vatTables, [
+    { vatID: vat1ID, state: { transcript: [] } },
     { vatID: adminVatID, state: { transcript: [] } },
     { vatID: commsVatID, state: { transcript: [] } },
     { vatID: vattpVatID, state: { transcript: [] } },
     { vatID: timerVatID, state: { transcript: [] } },
-    { vatID: vat1ID, state: { transcript: [] } },
   ]);
   t.deepEqual(data.kernelTable, []);
 
@@ -143,7 +141,7 @@ test('bootstrap export', async t => {
         method: 'bootstrap',
         args: {
           body:
-            '[{"bootstrap":{"@qclass":"slot","index":0},"comms":{"@qclass":"slot","index":1},"left":{"@qclass":"slot","index":2},"right":{"@qclass":"slot","index":3},"timer":{"@qclass":"slot","index":4},"vatAdmin":{"@qclass":"slot","index":5},"vattp":{"@qclass":"slot","index":6}},{"_dummy":"dummy","vatAdmin":{"@qclass":"slot","index":7}}]',
+            '[{"bootstrap":{"@qclass":"slot","index":0},"comms":{"@qclass":"slot","index":1},"left":{"@qclass":"slot","index":2},"right":{"@qclass":"slot","index":3},"timer":{"@qclass":"slot","index":4},"vatAdmin":{"@qclass":"slot","index":5},"vattp":{"@qclass":"slot","index":6}},{"vatAdmin":{"@qclass":"slot","index":7}}]',
           slots: [
             boot0,
             comms0,

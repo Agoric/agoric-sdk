@@ -17,7 +17,6 @@ The ability to create new vats is not ambient: it requires access to the Vat Adm
 The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function (from the `@agoric/bundle-source` package) at a local source file. This file should export a function named `buildRootObject` (it can export other things too, perhaps for unit tests, but only `buildRootObject` will be used by the dynamic vat loader). Suppose your vat code is stored in `vat-counter.js`:
 
 ```js
-/* global harden */
 export function buildRootObject() {
   let counter = 0;
   const root = {

@@ -86,7 +86,10 @@ export const makeZoeSeatAdminKit = (
     getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,
-    getPayout: async keyword => E.G(payoutPromiseKit.promise)[keyword],
+    getPayout: async keyword => {
+      assert(keyword, 'A keyword must be provided');
+      return E.G(payoutPromiseKit.promise)[keyword];
+    },
     getOfferResult: async () => offerResult,
     hasExited: async () => !instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
     tryExit: async () => E(exitObj).exit(),

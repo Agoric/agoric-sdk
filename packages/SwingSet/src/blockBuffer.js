@@ -1,19 +1,22 @@
-/* global harden */
-
 // buildBlockBuffer() is used by all hosts, to wrap whatever hostDB they use
 
 // TODO rationalize naming pattern of buildFoo vs. makeFoo
 
 /**
+ * @typedef {Object} BlockBuffer
+ * @property {HostDB} blockBuffer the wrapped hostDB
+ * @property {() => void} commitBlock a function that will commit changes
+ */
+
+/**
  * Make a wrapper around a hostDB that accumulates changes in memory until
  * requested to commit them.
  *
- * @param hostDB  The hostDB object to be wrapped.
- *
- * @return an object: {
+ * @param {HostDB} hostDB  The hostDB object to be wrapped.
+ * @returns {BlockBuffer} an object: {
  *      blockBuffer: HostDB,     // the wrapped hostDB
  *      commitBlock: () => void  // a function that will commit changes
- *    }
+ * }
  */
 export function buildBlockBuffer(hostDB) {
   // to avoid confusion, additions and deletions should never share a key

@@ -1,5 +1,3 @@
-/* global harden */
-
 import { Remotable, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
@@ -14,6 +12,7 @@ export function makeDeviceSlots(
   forDeviceName,
   endowments,
   testLog,
+  deviceParameters,
 ) {
   assert(state.get && state.set, 'deviceSlots.build got bad "state" argument');
   assert(
@@ -164,6 +163,8 @@ export function makeDeviceSlots(
     setDeviceState,
     testLog,
     endowments,
+    deviceParameters,
+    serialize: m.serialize, // We deliberately do not provide m.deserialize
   });
   mustPassByPresence(rootObject);
 

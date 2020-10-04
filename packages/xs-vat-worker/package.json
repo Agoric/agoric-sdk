@@ -1,11 +1,12 @@
 {
   "name": "@agoric/xs-vat-worker",
-  "version": "0.2.2",
+  "version": "0.2.3-dev.2",
   "description": "swingset-vat worker for XS js runtime",
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
-    "build:xs-lin": "make -f xs-lin.mk",
+    "install:xs-lin": "make install-deps",
+    "build:xs-lin": "make",
     "test": "ava",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
@@ -38,14 +39,14 @@
     "prettier": "^1.18.2"
   },
   "dependencies": {
-    "@agoric/assert": "^0.0.10",
-    "@agoric/bundle-source": "^1.1.8",
-    "@agoric/eventual-send": "^0.11.0",
-    "@agoric/import-bundle": "^0.0.10",
-    "@agoric/install-ses": "^0.3.1",
-    "@agoric/marshal": "^0.2.5",
-    "@agoric/promise-kit": "^0.1.5",
-    "@agoric/swingset-vat": "^0.8.0",
+    "@agoric/assert": "^0.0.11-dev.2",
+    "@agoric/bundle-source": "^1.1.9-dev.2",
+    "@agoric/eventual-send": "^0.11.1-dev.2",
+    "@agoric/import-bundle": "^0.0.11-dev.2",
+    "@agoric/install-ses": "^0.3.2-dev.2",
+    "@agoric/marshal": "^0.2.6-dev.2",
+    "@agoric/promise-kit": "^0.1.6-dev.2",
+    "@agoric/swingset-vat": "^0.8.1-dev.2",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5"
   },

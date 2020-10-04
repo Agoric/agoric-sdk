@@ -2,16 +2,20 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { initSwingStore } from '@agoric/swing-store-simple';
 
-import { buildVatController } from '../../src/index';
+import {
+  swingsetIsInitialized,
+  initializeSwingset,
+  makeSwingsetController,
+} from '../../src/index';
 import { buildBridge } from '../../src/devices/bridge';
 import { buildPlugin } from '../../src/devices/plugin';
 
-test.before('initialize hostStorage', t => {
+test.before('initialize storage', t => {
   const { storage } = initSwingStore(null);
-  t.context.hostStorage = storage;
+  t.context.storage = storage;
 });
 
-const setupVatController = async t => {
+async function setupVatController(t) {
   const inputQueue = [];
   const queueThunkForKernel = async thunk => {
     inputQueue.push(thunk);
@@ -24,24 +28,34 @@ const setupVatController = async t => {
   };
   const plugin = buildPlugin(__dirname, pluginRequire, queueThunkForKernel);
   const bridge = buildBridge();
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: require.resolve('./bootstrap'),
-      },
-      bridge: {
-        sourceSpec: require.resolve('./vat-bridge'),
-      },
-    },
-    devices: [
-      ['plugin', plugin.srcPath, plugin.endowments],
-      ['bridge', bridge.srcPath, bridge.endowments],
-    ],
+  const deviceEndowments = {
+    plugin: { ...plugin.endowments },
+    bridge: { ...bridge.endowments },
   };
-  const c = await buildVatController(config, ['plugin'], {
-    hostStorage: t.context.hostStorage,
-  });
+
+  if (!swingsetIsInitialized(t.context.storage)) {
+    const config = {
+      bootstrap: 'bootstrap',
+      vats: {
+        bootstrap: {
+          sourceSpec: require.resolve('./bootstrap'),
+        },
+        bridge: {
+          sourceSpec: require.resolve('./vat-bridge'),
+        },
+      },
+      devices: {
+        plugin: {
+          sourceSpec: plugin.srcPath,
+        },
+        bridge: {
+          sourceSpec: bridge.srcPath,
+        },
+      },
+    };
+    await initializeSwingset(config, ['plugin'], t.context.storage);
+  }
+  const c = await makeSwingsetController(t.context.storage, deviceEndowments);
   const cycle = async () => {
     await c.run();
     while (inputQueue.length) {
@@ -51,7 +65,7 @@ const setupVatController = async t => {
     }
   };
   return { bridge, cycle, dump: c.dump, plugin, queueThunkForKernel };
-};
+}
 
 test.serial('plugin first time', async t => {
   const { bridge, cycle, dump, queueThunkForKernel } = await setupVatController(

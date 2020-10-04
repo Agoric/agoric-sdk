@@ -1,5 +1,3 @@
-/* global harden */
-
 export function buildRootObject(_vatPowers, vatParameters) {
   const other = harden({
     something(arg) {

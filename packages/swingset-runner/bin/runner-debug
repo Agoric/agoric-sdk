@@ -1,0 +1,10 @@
+#!/usr/bin/env -S node --inspect-brk --expose-gc -r esm
+
+/**
+ * Simple boilerplate program providing linkage to launch an application written using modules within the
+ * as yet not-entirely-ESM-supporting version of NodeJS.
+ */
+import lmdb from 'node-lmdb';
+import '../src/install-optional-metering-and-ses';
+import { main } from '../src/main.js';
+main();

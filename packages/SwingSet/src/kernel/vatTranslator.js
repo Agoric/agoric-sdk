@@ -1,10 +1,9 @@
-/* global harden */
 import { assert, details } from '@agoric/assert';
 import { insistMessage } from '../message';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
-import { kdebug, legibilizeMessageArgs } from './kdebug';
+import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
 import { deleteCListEntryIfEasy } from './cleanup';
 
 /*
@@ -107,7 +106,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     const target = mapVatSlotToKernelSlot(targetSlot);
     const argList = legibilizeMessageArgs(args).join(', ');
     // prettier-ignore
-    kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}(${argList})`);
+    kdebug(`syscall[${vatID}].send(${targetSlot}/${target}).${method}(${argList})`);
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelArgs = harden({ ...args, slots: kernelSlots });
     let result = null;
@@ -142,6 +141,14 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return ks;
   }
 
+  function translateExit(isFailure, info) {
+    insistCapData(info);
+    kdebug(`syscall[${vatID}].exit(${isFailure},${legibilizeValue(info)})`);
+    const kernelSlots = info.slots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelInfo = harden({ ...info, slots: kernelSlots });
+    return harden(['exit', vatID, !!isFailure, kernelInfo]);
+  }
+
   function translateCallNow(target, method, args) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
@@ -162,54 +169,54 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['invoke', dev, method, kernelData]);
   }
 
-  function translateSubscribe(promiseID) {
-    const id = mapVatSlotToKernelSlot(promiseID);
-    kdebug(`syscall[${vatID}].subscribe(vat:${promiseID}=ker:${id})`);
-    if (!kernelKeeper.hasKernelPromise(id)) {
-      throw new Error(`unknown kernelPromise id '${id}'`);
+  function translateSubscribe(vpid) {
+    const kpid = mapVatSlotToKernelSlot(vpid);
+    kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
+    if (!kernelKeeper.hasKernelPromise(kpid)) {
+      throw new Error(`unknown kernelPromise id '${kpid}'`);
     }
-    const ks = harden(['subscribe', vatID, id]);
+    const ks = harden(['subscribe', vatID, kpid]);
     return ks;
   }
 
-  function translateFulfillToPresence(promiseID, slot) {
-    insistVatType('promise', promiseID);
-    const kpid = mapVatSlotToKernelSlot(promiseID);
+  function translateFulfillToPresence(vpid, slot) {
+    insistVatType('promise', vpid);
+    const kpid = mapVatSlotToKernelSlot(vpid);
     const targetSlot = mapVatSlotToKernelSlot(slot);
     kdebug(
-      `syscall[${vatID}].fulfillToPresence(${promiseID} / ${kpid}) = ${slot} / ${targetSlot})`,
+      `syscall[${vatID}].fulfillToPresence(${vpid}/${kpid}) = ${slot}/${targetSlot}`,
     );
-    vatKeeper.deleteCListEntry(kpid, promiseID);
+    vatKeeper.deleteCListEntry(kpid, vpid);
     return harden(['fulfillToPresence', vatID, kpid, targetSlot]);
   }
 
-  function translateFulfillToData(promiseID, data) {
-    insistVatType('promise', promiseID);
+  function translateFulfillToData(vpid, data) {
+    insistVatType('promise', vpid);
     insistCapData(data);
-    const kpid = mapVatSlotToKernelSlot(promiseID);
+    const kpid = mapVatSlotToKernelSlot(vpid);
     const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...data, slots: kernelSlots });
     kdebug(
-      `syscall[${vatID}].fulfillData(${promiseID}/${kpid}) = ${
+      `syscall[${vatID}].fulfillToData(${vpid}/${kpid}) = ${
         data.body
       } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    deleteCListEntryIfEasy(vatID, vatKeeper, kpid, promiseID, kernelData);
+    deleteCListEntryIfEasy(vatID, vatKeeper, kpid, vpid, kernelData);
     return harden(['fulfillToData', vatID, kpid, kernelData]);
   }
 
-  function translateReject(promiseID, data) {
-    insistVatType('promise', promiseID);
+  function translateReject(vpid, data) {
+    insistVatType('promise', vpid);
     insistCapData(data);
-    const kpid = mapVatSlotToKernelSlot(promiseID);
+    const kpid = mapVatSlotToKernelSlot(vpid);
     const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...data, slots: kernelSlots });
     kdebug(
-      `syscall[${vatID}].reject(${promiseID}/${kpid}) = ${
+      `syscall[${vatID}].reject(${vpid}/${kpid}) = ${
         data.body
       } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    deleteCListEntryIfEasy(vatID, vatKeeper, kpid, promiseID, kernelData);
+    deleteCListEntryIfEasy(vatID, vatKeeper, kpid, vpid, kernelData);
     return harden(['reject', vatID, kpid, kernelData]);
   }
 
@@ -231,6 +238,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateFulfillToData(...args);
       case 'reject':
         return translateReject(...args);
+      case 'exit':
+        return translateExit(...args);
       default:
         throw Error(`unknown vatSyscall type ${type}`);
     }

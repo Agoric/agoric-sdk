@@ -21,6 +21,7 @@ import '../../../exported';
  * the creator of the contract instance. The second price rule is
  * followed, so the highest bidder pays the amount bid by the second
  * highest bidder.
+ * https://agoric.com/documentation/zoe/guide/contracts/second-price-auction.html
  *
  * startInstance() specifies the issuers and the terms. An invitation
  * for the seller is returned as the creatorInvitation. The seller's

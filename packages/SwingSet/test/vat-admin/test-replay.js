@@ -1,4 +1,3 @@
-/* global harden */
 import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
@@ -49,7 +48,7 @@ test('replay bundleSource-based dynamic vat', async t => {
       'panic',
     );
     await c1.run();
-    t.deepEqual(r1.resolution(), capargs('created'));
+    t.deepEqual(c1.kpResolution(r1), capargs('created'));
   }
 
   // Now we abandon that swingset and start a new one, with the same state.
@@ -71,7 +70,7 @@ test('replay bundleSource-based dynamic vat', async t => {
       'panic',
     );
     await c2.run();
-    t.deepEqual(r2.resolution(), capargs('ok'));
+    t.deepEqual(c2.kpResolution(r2), capargs('ok'));
   }
 });
 
@@ -99,7 +98,7 @@ test('replay bundleName-based dynamic vat', async t => {
       'panic',
     );
     await c1.run();
-    t.deepEqual(r1.resolution(), capargs('created'));
+    t.deepEqual(c1.kpResolution(r1), capargs('created'));
   }
 
   const state1 = getAllState(storage1);
@@ -117,6 +116,6 @@ test('replay bundleName-based dynamic vat', async t => {
       'panic',
     );
     await c2.run();
-    t.deepEqual(r2.resolution(), capargs('ok'));
+    t.deepEqual(c2.kpResolution(r2), capargs('ok'));
   }
 });

@@ -76,7 +76,6 @@ export async function makeWallet({
   const idToCompiledOfferP = new Map();
   const idToComplete = new Map();
   const idToSeat = new Map();
-  const idToOutcome = new Map();
 
   // Client-side representation of the purses inbox;
   /** @type {Map<string, PursesJSONState>} */
@@ -182,7 +181,8 @@ export async function makeWallet({
               throw e;
             }
           },
-          receive(payment) {
+          async receive(paymentP) {
+            const payment = await paymentP;
             return E(purse).deposit(payment);
           },
           deposit(payment, amount = undefined) {
@@ -244,46 +244,50 @@ export async function makeWallet({
     return proposal;
   };
 
-  async function updateInboxState(id, offer) {
+  async function updateInboxState(id, offer, doPush = true) {
     // Only sent the uncompiled offer to the client.
-    const {
-      instanceHandleBoardId,
-      installationHandleBoardId,
-      proposalTemplate,
-    } = offer;
-    // We could get the instanceHandle and installationHandle from the
-    // board and store them to prevent having to make this call each
-    // time, but if we want the offers to be able to sent to the
-    // frontend, we cannot store the instanceHandle and
-    // installationHandle in these offer objects because the handles
-    // are presences and we don't wish to send presences to the
-    // frontend.
-    const instanceHandle = await E(board).getValue(instanceHandleBoardId);
-    const installationHandle = await E(board).getValue(
-      installationHandleBoardId,
-    );
-    const instance = display(instanceHandle);
-    const installation = display(installationHandle);
+    const { proposalTemplate } = offer;
+    const { instance, installation } = idToOffer.get(id);
+    if (!instance || !installation) {
+      // We haven't yet deciphered the invitation, so don't send
+      // this offer.
+      return;
+    }
+    const instanceDisplay = display(instance);
+    const installationDisplay = display(installation);
     const alreadyDisplayed =
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
     const offerForDisplay = {
       ...offer,
-      instancePetname: instance.petname,
-      installationPetname: installation.petname,
+      // We cannot store the actions, installation, and instance in the
+      // displayed offer objects because they are presences are presences and we
+      // don't wish to send presences to the frontend.
+      actions: undefined,
+      installation: undefined,
+      instance: undefined,
+      proposalTemplate,
+      instancePetname: instanceDisplay.petname,
+      installationPetname: installationDisplay.petname,
       proposalForDisplay: displayProposal(alreadyDisplayed || proposalTemplate),
     };
 
     inboxState.set(id, offerForDisplay);
-    inboxStateChangeHandler(getInboxState());
+    if (doPush) {
+      // Only trigger a state change if this was a single update.
+      inboxStateChangeHandler(getInboxState());
+    }
   }
 
   async function updateAllInboxState() {
-    return Promise.all(
+    await Promise.all(
       Array.from(inboxState.entries()).map(([id, offer]) =>
-        updateInboxState(id, offer),
+        // Don't trigger state changes.
+        updateInboxState(id, offer, false),
       ),
     );
+    // Now batch together all the state changes.
+    inboxStateChangeHandler(getInboxState());
   }
 
   const {
@@ -312,7 +316,8 @@ export async function makeWallet({
   // petname change.
   async function updateAllState() {
     updateAllIssuersState();
-    return updateAllPurseState().then(updateAllInboxState);
+    await updateAllPurseState();
+    await updateAllInboxState();
   }
 
   // handle the update, which has already resolved to a record. If the offer is
@@ -442,8 +447,10 @@ export async function makeWallet({
 
   const addIssuer = async (petnameForBrand, issuerP, makePurse = false) => {
     const { brand, issuer } = await brandTable.initIssuer(issuerP);
-    const issuerBoardId = await E(board).getId(issuer);
-    issuerToBoardId.init(issuer, issuerBoardId);
+    if (!issuerToBoardId.has(issuer)) {
+      const issuerBoardId = await E(board).getId(issuer);
+      issuerToBoardId.init(issuer, issuerBoardId);
+    }
     const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -486,8 +493,8 @@ export async function makeWallet({
       depositFacet = actions;
     } else {
       depositFacet = harden({
-        receive(payment) {
-          return E(actions).receive(payment);
+        receive(paymentP) {
+          return E(actions).receive(paymentP);
         },
       });
     }
@@ -620,6 +627,12 @@ export async function makeWallet({
       inviteHandleBoardId, // Keep for backward-compatibility.
       invitationHandleBoardId = inviteHandleBoardId,
     } = offer;
+
+    assert.typeof(
+      invitationHandleBoardId,
+      'string',
+      details`invitationHandleBoardId must be a string`,
+    );
     const { proposal, purseKeywordRecord } = compileProposal(
       offer.proposalTemplate,
     );
@@ -643,8 +656,17 @@ export async function makeWallet({
       harden([inviteValueElems.find(matchInvite)]),
     );
     const inviteP = E(zoeInvitePurse).withdraw(inviteAmount);
+    const { installation, instance } = await E(zoe).getInvitationDetails(
+      inviteP,
+    );
 
-    return { proposal, inviteP, purseKeywordRecord };
+    return {
+      proposal,
+      inviteP,
+      purseKeywordRecord,
+      installation,
+      instance,
+    };
   };
 
   /** @type {Store<string, DappRecord>} */
@@ -747,20 +769,8 @@ export async function makeWallet({
   async function addOffer(rawOffer, requestContext = {}) {
     const dappOrigin =
       requestContext.dappOrigin || requestContext.origin || 'unknown';
-    const {
-      id: rawId,
-      instanceHandleBoardId,
-      installationHandleBoardId,
-    } = rawOffer;
+    const { id: rawId } = rawOffer;
     const id = `${dappOrigin}#${rawId}`;
-    assert(
-      typeof instanceHandleBoardId === 'string',
-      details`instanceHandleBoardId must be a string`,
-    );
-    assert(
-      typeof installationHandleBoardId === 'string',
-      details`installationHandleBoardId must be a string`,
-    );
     const offer = harden({
       ...rawOffer,
       id,
@@ -768,18 +778,39 @@ export async function makeWallet({
       status: undefined,
     });
     idToOffer.init(id, offer);
-    updateInboxState(id, offer);
+    await updateInboxState(id, offer);
 
     // Compile the offer
-    idToCompiledOfferP.set(id, await compileOffer(offer));
+    const compiledOfferP = compileOffer(offer);
+    idToCompiledOfferP.set(id, compiledOfferP);
 
     // Our inbox state may have an enriched offer.
-    updateInboxState(id, idToOffer.get(id));
+    await updateInboxState(id, idToOffer.get(id));
+    const { installation, instance } = await compiledOfferP;
+
+    if (!idToOffer.has(id)) {
+      return id;
+    }
+    idToOffer.set(
+      id,
+      harden({
+        ...idToOffer.get(id),
+        installation,
+        instance,
+      }),
+    );
+    await updateInboxState(id, idToOffer.get(id));
     return id;
   }
 
   function consummated(offer) {
-    return offer.status !== undefined;
+    if (offer.status !== undefined) {
+      return true;
+    }
+    if (offer.actions) {
+      E(offer.actions).handled(offer);
+    }
+    return false;
   }
 
   function declineOffer(id) {
@@ -824,7 +855,7 @@ export async function makeWallet({
       return undefined;
     }
 
-    /** @type {{ outcome?: any, depositedP?: Promise<any[]> }} */
+    /** @type {{ outcome?: any, depositedP?: Promise<any[]>, dappContext?: any }} */
     let ret = {};
     let alreadyResolved = false;
     const rejected = e => {
@@ -870,9 +901,15 @@ export async function makeWallet({
       // it could be an object. We don't do anything currently if it
       // is an object, but we will store it here for future use.
       const outcome = await E(seat).getOfferResult();
-      idToOutcome.set(id, outcome);
+      if (offer.actions) {
+        E(offer.actions).result(offer, outcome);
+      }
 
-      ret = { outcome, depositedP };
+      ret = {
+        outcome,
+        depositedP,
+        dappContext: offer.dappContext,
+      };
 
       // Update status, drop the proposal
       depositedP
@@ -922,11 +959,12 @@ export async function makeWallet({
   };
 
   /**
-   * @param {Payment} payment
+   * @param {ERef<Payment>} paymentP
    * @param {Purse | Petname=} depositTo
    */
-  const addPayment = async (payment, depositTo = undefined) => {
-    // We don't even create the record until we get an alleged brand.
+  const addPayment = async (paymentP, depositTo = undefined) => {
+    // We don't even create the record until we resolve the payment.
+    const payment = await paymentP;
     const brand = await E(payment).getAllegedBrand();
     const depositedPK = makePromiseKit();
 
@@ -1139,7 +1177,6 @@ export async function makeWallet({
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
-
     return acceptPetname(
       addInstallation,
       suggestedPetname,

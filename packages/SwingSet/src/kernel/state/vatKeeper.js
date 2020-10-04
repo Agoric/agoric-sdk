@@ -1,5 +1,3 @@
-/* global harden */
-
 /**
  * Kernel's keeper of persistent state for a vat.
  */
@@ -22,9 +20,8 @@ const FIRST_TRANSCRIPT_ID = 0;
 /**
  * Establish a vat's state.
  *
- * @param storage  The storage in which the persistent state will be kept
- * @param deviceID  The device ID string of the device in question
- *
+ * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
  */
 export function initializeVatState(storage, vatID) {
@@ -37,14 +34,17 @@ export function initializeVatState(storage, vatID) {
 /**
  * Produce a vat keeper for a vat.
  *
- * @param storage  The storage in which the persistent state will be kept
- * @param vatID  The vat ID string of the vat in question
- * @param addKernelObject  Kernel function to add a new object to the kernel's
- *    mapping tables.
- * @param addKernelPromiseForVat  Kernel function to add a new promise to the
- *    kernel's mapping tables.
- *
- * @return an object to hold and access the kernel's state for the given vat
+ * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {string} vatID  The vat ID string of the vat in question
+ * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
+ * mapping tables.
+ * @param {*} addKernelPromiseForVat  Kernel function to add a new promise to the
+ * kernel's mapping tables.
+ * @param {*} incrementRefCount
+ * @param {*} decrementRefCount
+ * @param {*} incStat
+ * @param {*} decStat
+ * @returns {*} an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
   storage,
@@ -76,11 +76,11 @@ export function makeVatKeeper(
    * Provide the kernel slot corresponding to a given vat slot, creating the
    * kernel slot if it doesn't already exist.
    *
-   * @param vatSlot  The vat slot of interest
+   * @param {string} vatSlot  The vat slot of interest
    *
-   * @return the kernel slot that vatSlot maps to
+   * @returns {string} the kernel slot that vatSlot maps to
    *
-   * @throws if vatSlot is not a kind of thing that can be exported by vats
+   * @throws {Error} if vatSlot is not a kind of thing that can be exported by vats
    *    or is otherwise invalid.
    */
   function mapVatSlotToKernelSlot(vatSlot) {
@@ -120,11 +120,11 @@ export function makeVatKeeper(
    * Provide the vat slot corresponding to a given kernel slot, including
    * creating the vat slot if it doesn't already exist.
    *
-   * @param kernelSlot  The kernel slot of interest
+   * @param {string} kernelSlot  The kernel slot of interest
    *
-   * @return the vat slot kernelSlot maps to
+   * @returns {string} the vat slot kernelSlot maps to
    *
-   * @throws if kernelSlot is not a kind of thing that can be imported by vats
+   * @throws {Error} if kernelSlot is not a kind of thing that can be imported by vats
    *    or is otherwise invalid.
    */
   function mapKernelSlotToVatSlot(kernelSlot) {
@@ -162,8 +162,8 @@ export function makeVatKeeper(
   /**
    * Remove an entry from the vat's c-list.
    *
-   * @param kernelSlot  The kernel slot being removed
-   * @param vatSlot  The vat slot being removed
+   * @param {string} kernelSlot  The kernel slot being removed
+   * @param {string} vatSlot  The vat slot being removed
    */
   function deleteCListEntry(kernelSlot, vatSlot) {
     parseKernelSlot(kernelSlot);
@@ -191,7 +191,7 @@ export function makeVatKeeper(
   /**
    * Append a message to the vat's transcript.
    *
-   * @param msg  The message to append.
+   * @param {string} msg  The message to append.
    */
   function addToTranscript(msg) {
     const id = Nat(Number(storage.get(`${vatID}.t.nextID`)));
@@ -220,7 +220,7 @@ export function makeVatKeeper(
   /**
    * Produce a dump of this vat's state for debugging purposes.
    *
-   * @return an array of this vat's state information
+   * @returns {Array<[string, string, string]>} an array of this vat's state information
    */
   function dumpState() {
     const res = [];

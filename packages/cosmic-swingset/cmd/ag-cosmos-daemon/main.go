@@ -4,7 +4,7 @@ package main
 // #cgo LDFLAGS: -L/usr/local/lib
 import "C"
 
-import "github.com/Agoric/agoric-sdk/packages/cosmic-swingset/lib/daemon"
+import "github.com/Agoric/cosmic-swingset/lib/daemon"
 
 func main() {
 	daemon.Run()

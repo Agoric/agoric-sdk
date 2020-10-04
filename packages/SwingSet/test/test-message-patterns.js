@@ -6,7 +6,13 @@ import '@agoric/install-ses';
 import test from 'ava';
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
-import { buildVatController, buildKernelBundles } from '../src/index';
+import { initSwingStore } from '@agoric/swing-store-simple';
+import {
+  initializeSwingset,
+  makeSwingsetController,
+  buildVatController,
+  buildKernelBundles,
+} from '../src/index';
 import { buildLoopbox } from '../src/devices/loopbox';
 import { buildPatterns } from './message-patterns';
 
@@ -110,9 +116,19 @@ export async function runVatsInComms(t, name) {
   const { passOneMessage, loopboxSrcPath, loopboxEndowments } = buildLoopbox(
     'queued',
   );
-  const devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
+  const devices = {
+    loopbox: {
+      sourceSpec: loopboxSrcPath,
+    },
+  };
   const config = { ...commsConfig, devices };
-  const c = await buildVatController(config, [name], { kernelBundles });
+  const deviceEndowments = {
+    loopbox: { ...loopboxEndowments },
+  };
+  const hostStorage = initSwingStore().storage;
+  await initializeSwingset(config, [name], hostStorage, { kernelBundles });
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+
   // await runWithTrace(c);
   await c.run();
   while (passOneMessage()) {

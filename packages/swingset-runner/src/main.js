@@ -5,9 +5,10 @@ import util from 'util';
 
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
-  buildVatController,
   loadSwingsetConfigFile,
   loadBasedir,
+  initializeSwingset,
+  makeSwingsetController,
 } from '@agoric/swingset-vat';
 import {
   initSwingStore as initSimpleSwingStore,
@@ -38,7 +39,8 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --init           - discard any existing saved state at startup.
+  --init           - discard any existing saved state at startup
+  --initonly       - initialize the swingset but exit without running it
   --lmdb           - runs using LMDB as the data store (default)
   --filedb         - runs using the simple file-based data store
   --memdb          - runs using the non-persistent in-memory data store
@@ -168,12 +170,17 @@ export async function main() {
   let benchmarkRounds = 0;
   let configPath = null;
   let dbDir = null;
+  let initOnly = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
       case '--init':
         forceReset = true;
+        break;
+      case '--initonly':
+        forceReset = true;
+        initOnly = true;
         break;
       case '--logtimes':
         logTimes = true;
@@ -342,18 +349,28 @@ export async function main() {
     config.vats[config.bootstrap].parameters.metered = meterVats;
   }
   const runtimeOptions = {};
-  if (store) {
-    runtimeOptions.hostStorage = store.storage;
-  }
   if (verbose) {
     runtimeOptions.verbose = true;
   }
-  const controller = await buildVatController(
-    config,
-    bootstrapArgv,
+  let bootstrapResult;
+  if (forceReset) {
+    bootstrapResult = await initializeSwingset(
+      config,
+      bootstrapArgv,
+      store.storage,
+      runtimeOptions,
+    );
+    if (initOnly) {
+      store.commit();
+      store.close();
+      return;
+    }
+  }
+  const controller = await makeSwingsetController(
+    store.storage,
+    {},
     runtimeOptions,
   );
-  let bootstrapResult = controller.bootstrapResult;
 
   let blockNumber = 0;
   let statLogger = null;
@@ -488,11 +505,11 @@ export async function main() {
       );
       // eslint-disable-next-line no-await-in-loop
       const [steps, deltaT] = await runBatch(0, true);
-      const status = roundResult.status();
+      const status = controller.kpStatus(roundResult);
       if (status === 'pending') {
         log(`benchmark round ${i + 1} did not finish`);
       } else {
-        const resolution = JSON.stringify(roundResult.resolution());
+        const resolution = JSON.stringify(controller.kpResolution(roundResult));
         log(`benchmark round ${i + 1} ${status}: ${resolution}`);
       }
       totalSteps += steps;
@@ -600,17 +617,22 @@ export async function main() {
       totalSteps += moreSteps;
       deltaT += moreDeltaT;
     }
-    store.close();
     if (bootstrapResult) {
-      const status = bootstrapResult.status();
+      const status = controller.kpStatus(bootstrapResult);
       if (status === 'pending') {
         log('bootstrap result still pending');
+      } else if (status === 'unknown') {
+        log(`bootstrap result ${bootstrapResult} is unknown to the kernel`);
+        bootstrapResult = null;
       } else {
-        const resolution = JSON.stringify(bootstrapResult.resolution());
+        const resolution = JSON.stringify(
+          controller.kpResolution(bootstrapResult),
+        );
         log(`bootstrap result ${status}: ${resolution}`);
         bootstrapResult = null;
       }
     }
+    store.close();
     if (totalSteps) {
       const per = deltaT / BigInt(totalSteps);
       log(

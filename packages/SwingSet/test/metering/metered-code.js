@@ -1,5 +1,3 @@
-/* global harden */
-
 function sub() {
   return 4;
 }

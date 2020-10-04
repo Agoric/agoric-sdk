@@ -1,5 +1,3 @@
-/* global harden */
-
 /*
   The 'mailbox' device helps manage bidirectional communication with a number
   of 'peers'. Each peer is identified with a string. We exchange ordered

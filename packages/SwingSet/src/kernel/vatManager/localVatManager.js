@@ -1,4 +1,3 @@
-/* global harden */
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeLiveSlots } from '../liveSlots';

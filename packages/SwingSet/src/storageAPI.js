@@ -3,12 +3,12 @@
  * actually implements the storage API.  It should have methods `has`,
  * `getKeys`, `get`, `set`, and `delete`.
  *
- * @param storage  The object to be tested
+ * @param {*} storage  The object to be tested
  *
- * @throws Error if, upon inspection, the parameter does not satisfy the above
+ * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @return nothing
+ * @returns {void}
  */
 export function insistStorageAPI(storage) {
   for (const n of ['has', 'getKeys', 'get', 'set', 'delete']) {
@@ -24,12 +24,12 @@ export function insistStorageAPI(storage) {
  * object that additionally has the methods `enumeratePrefixedKeys`,
  * `getPrefixedValues`, and `deletePrefixedKeys`.
  *
- * @param storage  The object to be tested
+ * @param {*} storage  The object to be tested
  *
- * @throws Error if, upon inspection, the parameter does not satisfy the above
+ * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @return nothing
+ * @returns {void}
  */
 export function insistEnhancedStorageAPI(storage) {
   insistStorageAPI(storage);

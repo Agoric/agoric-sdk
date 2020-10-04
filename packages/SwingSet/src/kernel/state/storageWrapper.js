@@ -1,5 +1,3 @@
-/* global harden */
-
 import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../storageAPI';
 
@@ -22,9 +20,9 @@ import { insistStorageAPI } from '../../storageAPI';
  * thrown errors and ensures that any return values that are supposed to be
  * strings actually are.
  *
- * @param hostStorage  Alleged host storage object to be wrapped this way.
+ * @param {*} hostStorage  Alleged host storage object to be wrapped this way.
  *
- * @return a hardened version of hostStorage wrapped as described.
+ * @returns {*} a hardened version of hostStorage wrapped as described.
  */
 export function guardStorage(hostStorage) {
   insistStorageAPI(hostStorage);
@@ -99,9 +97,9 @@ export function guardStorage(hostStorage) {
  * Create and return a crank buffer, which wraps a storage object with logic
  * that buffers any mutations until told to commit them.
  *
- * @param storage  The storage object that this crank buffer will be based on.
+ * @param {*} storage  The storage object that this crank buffer will be based on.
  *
- * @return an object {
+ * @returns {*} an object {
  *   crankBuffer,  // crank buffer as described, wrapping `storage`
  *   commitCrank,  // function to save buffered mutations to `storage`
  *   abortCrank,   // function to discard buffered mutations

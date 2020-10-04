@@ -4,11 +4,15 @@ import { E } from '@agoric/eventual-send';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import { MathKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints';
 import {
   swap,
   assertIssuerKeywords,
   assertProposalShape,
+  swapExact,
+  assertUsesNatMath,
+  saveAllIssuers,
 } from '../../../src/contractSupport';
 import { assertPayoutAmount } from '../../zoeTestHelpers';
 import { setupZCFTest } from './setupZcfTest';
@@ -100,6 +104,109 @@ test(`zoeHelper with zcf - swap no match`, async t => {
   assertPayoutAmount(t, moolaIssuer, await bUserSeat.getPayout('A'), moola(5));
 });
 
+test(`zcf assertUsesNatMath`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A');
+  const { brand } = zcfMint.getIssuerRecord();
+  t.notThrows(() => assertUsesNatMath(zcf, brand), 'default');
+});
+
+test(`zcf assertUsesNatMath - not natMath`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { brand } = zcfMint.getIssuerRecord();
+  t.throws(() => assertUsesNatMath(zcf, brand), {
+    message: 'issuer must use NAT amountMath',
+  });
+});
+
+test.failing(`zcf assertUsesNatMath - not brand`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const { issuer } = zcfMint.getIssuerRecord();
+  // TODO: distinguish non-brands from brands
+  // https://github.com/Agoric/agoric-sdk/issues/1800
+  t.throws(() => assertUsesNatMath(zcf, issuer), {
+    message: /assertUsesNatMath requires a brand, not (an object)/,
+  });
+});
+
+test(`zcf assertUsesNatMath - brand not registered`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { brand } = makeIssuerKit('gelt');
+  t.throws(() => assertUsesNatMath(zcf, brand), {
+    message: '"brand" not found: (an object)\nSee console for error data.',
+  });
+});
+
+test(`zcf saveAllIssuers`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer, brand } = makeIssuerKit('gelt');
+  await saveAllIssuers(zcf, { G: issuer });
+  t.is(zcf.getBrandForIssuer(issuer), brand, 'gelt');
+});
+
+test(`zcf saveAllIssuers - multiple`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer: gIssuer, brand: gBrand } = makeIssuerKit('gelt');
+  const { issuer: dIssuer, brand: dBrand } = makeIssuerKit('doubloons');
+  const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
+    'pieces of eight',
+    MathKind.STRING_SET,
+  );
+
+  await saveAllIssuers(zcf, { G: gIssuer, D: dIssuer, P: pIssuer });
+
+  t.is(zcf.getBrandForIssuer(gIssuer), gBrand, 'gelt');
+  t.is(zcf.getIssuerForBrand(dBrand), dIssuer, 'doubloons');
+  t.is(zcf.getBrandForIssuer(pIssuer), pBrand, 'pieces of eight');
+});
+
+test(`zcf saveAllIssuers - already known`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { issuer: kIssuer, brand: kBrand } = makeIssuerKit('krugerrand');
+
+  await saveAllIssuers(zcf, { K: kIssuer });
+  t.is(zcf.getBrandForIssuer(kIssuer), kBrand, 'gelt');
+
+  await saveAllIssuers(zcf, { R: kIssuer });
+  t.deepEqual(zcf.getTerms().issuers.R, kIssuer);
+  t.deepEqual(zcf.getTerms().issuers.K, kIssuer);
+  t.is(zcf.getIssuerForBrand(kBrand), kIssuer, 'gelt');
+});
+
+test(`zcf saveAllIssuers - duplicate keyword`, async t => {
+  const { zcf } = await setupZCFTest();
+
+  const { issuer: pandaIssuer, brand: pandaBrand } = makeIssuerKit('panda');
+  await saveAllIssuers(zcf, { P: pandaIssuer });
+  t.is(zcf.getBrandForIssuer(pandaIssuer), pandaBrand, 'panda');
+
+  const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
+    'pieces of eight',
+    MathKind.STRING_SET,
+  );
+
+  await t.notThrowsAsync(
+    () => saveAllIssuers(zcf, { P: pIssuer }),
+    'second issuer with same keyword should be ignored.',
+  );
+  t.is(zcf.getBrandForIssuer(pandaIssuer), pandaBrand, 'gelt');
+
+  t.throws(
+    () => zcf.getBrandForIssuer(pIssuer),
+    {
+      message: '"issuer" not found: (an object)\nSee console for error data.',
+    },
+    'issuer should not be found',
+  );
+
+  t.notThrows(() => assertUsesNatMath(zcf, pandaBrand), 'default');
+  t.throws(() => assertUsesNatMath(zcf, pBrand), {
+    message: '"brand" not found: (an object)\nSee console for error data.',
+  });
+});
+
 test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   const {
     moolaIssuer,
@@ -158,7 +265,7 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
     },
     'no expected keywordRecord gets an error',
   );
-  t.falsy(assertIssuerKeywords(zcf, ['A', 'B']));
+  t.notThrows(() => assertIssuerKeywords(zcf, ['A', 'B']));
 });
 
 test(`zoeHelper with zcf - assertProposalShape`, async t => {
@@ -179,27 +286,29 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3)) },
   );
 
-  t.falsy(assertProposalShape(zcfSeat, []), 'empty expectation matches');
+  t.throws(() => assertProposalShape(zcfSeat, []), {
+    message: 'Expected must be an non-array object',
+  });
   t.throws(
-    () => assertProposalShape(zcfSeat, { want: { C: undefined } }),
+    () => assertProposalShape(zcfSeat, { want: { C: null } }),
     {
       message:
         'actual (an object) did not match expected (an object)\nSee console for error data.',
     },
-    'empty keywordRecord does not  match',
+    'empty keywordRecord does not match',
   );
-  t.falsy(assertProposalShape(zcfSeat, { want: { A: null } }));
-  t.falsy(assertProposalShape(zcfSeat, { give: { B: null } }));
+  t.notThrows(() => assertProposalShape(zcfSeat, { want: { A: null } }));
+  t.notThrows(() => assertProposalShape(zcfSeat, { give: { B: null } }));
   t.throws(
-    () => assertProposalShape(zcfSeat, { give: { c: undefined } }),
+    () => assertProposalShape(zcfSeat, { give: { c: null } }),
     {
       message:
         'actual (an object) did not match expected (an object)\nSee console for error data.',
     },
-    'wrong key in keywordRecord does not  match',
+    'wrong key in keywordRecord does not match',
   );
   t.throws(
-    () => assertProposalShape(zcfSeat, { exit: { onDemaind: undefined } }),
+    () => assertProposalShape(zcfSeat, { exit: { onDemaind: null } }),
     {
       message:
         'actual (an object) did not match expected (an object)\nSee console for error data.',
@@ -208,7 +317,201 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
   );
 });
 
-test.failing(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
+test(`zoeHelper w/zcf - swapExact`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: moola(20) }, give: { B: simoleans(3) } }),
+    { B: simoleanMint.mintPayment(simoleans(3)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(3) }, give: { D: moola(20) } }),
+    { D: moolaMint.mintPayment(moola(20)) },
+  );
+
+  const swapMsg = swapExact(zcf, zcfSeatA, zcfSeatB);
+
+  t.truthy(swapMsg, 'swap succeeded');
+  t.truthy(zcfSeatA.hasExited(), 'exit right');
+  assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(20));
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(0),
+  );
+  t.deepEqual(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
+    'B',
+    'A',
+  ]);
+  t.truthy(zcfSeatB.hasExited(), 'exit right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(3),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(0));
+  t.deepEqual(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
+    'D',
+    'C',
+  ]);
+});
+
+test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: moola(20) }, give: { B: simoleans(10) } }),
+    { B: simoleanMint.mintPayment(simoleans(10)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(10) }, give: { D: moola(15) } }),
+    { D: moolaMint.mintPayment(moola(15)) },
+  );
+
+  t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
+    message:
+      'The reallocation failed to conserve rights. Please check the log for more information',
+  });
+  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0));
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(10),
+  );
+  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(0),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(15));
+});
+
+test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: moola(20) }, give: { B: simoleans(10) } }),
+    { B: simoleanMint.mintPayment(simoleans(10)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(10) }, give: { D: moola(40) } }),
+    { D: moolaMint.mintPayment(moola(40)) },
+  );
+
+  t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
+    message:
+      'The reallocation failed to conserve rights. Please check the log for more information',
+  });
+  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0));
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(10),
+  );
+  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(0),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(40));
+});
+
+test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
+  const {
+    moolaIssuer,
+    moola,
+    moolaMint,
+    simoleanIssuer,
+    simoleanMint,
+    simoleans,
+  } = setup();
+  const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
+  const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
+
+  const { zcfSeat: zcfSeatA, userSeat: userSeatA } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ give: { B: simoleans(10) } }),
+    { B: simoleanMint.mintPayment(simoleans(10)) },
+  );
+  const { zcfSeat: zcfSeatB, userSeat: userSeatB } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { C: simoleans(10) }, give: { D: moola(40) } }),
+    { D: moolaMint.mintPayment(moola(40)) },
+  );
+
+  t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
+    message:
+      'The reallocation failed to conserve rights. Please check the log for more information',
+  });
+  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatA.getPayout('B'),
+    simoleans(10),
+  );
+  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    await userSeatB.getPayout('C'),
+    simoleans(0),
+  );
+  assertPayoutAmount(t, moolaIssuer, await userSeatB.getPayout('D'), moola(40));
+});
+
+test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
   const {
     moolaIssuer,
     moola,
@@ -226,9 +529,7 @@ test.failing(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3)) },
   );
 
-  // TODO: providing an amount in the expected record should throw
-  // https://github.com/Agoric/agoric-sdk/issues/1769
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3) } }), {
-    message: 'expected record should have null values',
+    message: `The value of the expected record must be null but was (an object)\nSee console for error data.`,
   });
 });

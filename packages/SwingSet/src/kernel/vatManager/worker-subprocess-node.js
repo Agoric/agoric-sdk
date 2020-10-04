@@ -1,5 +1,3 @@
-/* global harden */
-
 // import { spawn } from 'child_process'; // not from Compartment
 
 import { assert } from '@agoric/assert';
@@ -26,7 +24,7 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeSubprocessFactory(tools) {
-  const { startSubprocessWorker, kernelKeeper } = tools;
+  const { startSubprocessWorker, kernelKeeper, testLog } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
@@ -58,10 +56,18 @@ export function makeNodeSubprocessFactory(tools) {
       transcriptManager,
     );
     function handleSyscall(vatSyscallObject) {
+      // We are currently invoked by an async piped from the worker thread,
+      // whose vat code has moved on (it really wants a synchronous/immediate
+      // syscall). TODO: unlike threads, subprocesses could be made to wait
+      // by doing a blocking read from the pipe, so we could fix this, and
+      // re-enable syscall.callNow
       const type = vatSyscallObject[0];
       if (type === 'callNow') {
         throw Error(`nodeWorker cannot block, cannot use syscall.callNow`);
       }
+      // This might throw an Error if the syscall was faulty, in which case
+      // the vat will be terminated soon. It returns a vatSyscallResults,
+      // which we discard because there is currently nobody to send it to.
       doSyscall(vatSyscallObject);
     }
 
@@ -69,8 +75,8 @@ export function makeNodeSubprocessFactory(tools) {
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();
 
     function sendToWorker(msg) {
-      assert(msg instanceof Array);
-      toChild.write(JSON.stringify(msg));
+      assert(Array.isArray(msg));
+      toChild.write(msg);
     }
 
     const {
@@ -93,22 +99,22 @@ export function makeNodeSubprocessFactory(tools) {
         parentLog(`syscall`, args);
         const vatSyscallObject = args;
         handleSyscall(vatSyscallObject);
+      } else if (type === 'testLog') {
+        testLog(...args);
       } else if (type === 'deliverDone') {
         parentLog(`deliverDone`);
         if (waiting) {
           const resolve = waiting;
           waiting = null;
-          resolve();
+          const deliveryResult = args;
+          resolve(deliveryResult);
         }
       } else {
         parentLog(`unrecognized uplink message ${type}`);
       }
     }
 
-    fromChild.on('data', data => {
-      const msg = JSON.parse(data);
-      handleUpstream(msg);
-    });
+    fromChild.on('data', handleUpstream);
 
     parentLog(`instructing worker to load bundle..`);
     sendToWorker(['setBundle', bundle, vatParameters]);

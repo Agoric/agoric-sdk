@@ -1,4 +1,3 @@
-/* global harden */
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './localVatManager';
@@ -28,16 +27,19 @@ export function makeVatManagerFactory({
   const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({
     makeNodeWorker,
     kernelKeeper,
+    testLog: allVatPowers.testLog,
   });
 
   const nodeSubprocessFactory = makeNodeSubprocessFactory({
     startSubprocessWorker: startSubprocessWorkerNode,
     kernelKeeper,
+    testLog: allVatPowers.testLog,
   });
 
   const xsWorkerFactory = makeNodeSubprocessFactory({
     startSubprocessWorker: startSubprocessWorkerXS,
     kernelKeeper,
+    testLog: allVatPowers.testLog,
   });
 
   function validateManagerOptions(managerOptions) {

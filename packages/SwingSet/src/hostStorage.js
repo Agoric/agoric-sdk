@@ -1,5 +1,3 @@
-/* global harden */
-
 import { initSwingStore } from '@agoric/swing-store-simple';
 
 /*
@@ -24,7 +22,7 @@ directly.
 /**
  * Create a new instance of a bare-bones implementation of the HostDB API.
  *
- * @param storage Storage object that the new HostDB object will be based on.
+ * @param {Storage} storage Storage object that the new HostDB object will be based on.
  *    If omitted, defaults to a new in memory store.
  */
 export function buildHostDBInMemory(storage) {
@@ -35,9 +33,9 @@ export function buildHostDBInMemory(storage) {
   /**
    * Test if the storage contains a value for a given key.
    *
-   * @param key  The key that is of interest.
+   * @param {string} key  The key that is of interest.
    *
-   * @return true if a value is stored for the key, false if not.
+   * @returns {boolean} true if a value is stored for the key, false if not.
    */
   function has(key) {
     return storage.has(key);
@@ -46,10 +44,10 @@ export function buildHostDBInMemory(storage) {
   /**
    * Obtain an iterator over all the keys within a given range.
    *
-   * @param start  Start of the key range of interest (inclusive)
-   * @param end  End of the key range of interest (exclusive)
+   * @param {string} start  Start of the key range of interest (inclusive)
+   * @param {string} end  End of the key range of interest (exclusive)
    *
-   * @return an iterator for the keys from start <= key < end
+   * @returns {Iterable<string>} an iterator for the keys from start <= key < end
    */
   function getKeys(start, end) {
     return storage.getKeys(start, end);
@@ -58,14 +56,27 @@ export function buildHostDBInMemory(storage) {
   /**
    * Obtain the value stored for a given key.
    *
-   * @param key  The key whose value is sought.
+   * @param {string} key  The key whose value is sought.
    *
-   * @return the (string) value for the given key, or undefined if there is no
+   * @returns {string=} the (string) value for the given key, or undefined if there is no
    *    such value.
    */
   function get(key) {
     return storage.get(key);
   }
+
+  /**
+   * @typedef {Object} SetOperation
+   * @property {'set'} op
+   * @property {string} key
+   * @property {string} value
+   */
+
+  /**
+   * @typedef {Object} DeleteOperation
+   * @property {'delete'} op
+   * @property {string} key
+   */
 
   /**
    * Make an ordered set of changes to the state that is stored.  The changes
@@ -75,12 +86,10 @@ export function buildHostDBInMemory(storage) {
    * { op: 'set', key: <KEY>, value: <VALUE> }
    * or
    * { op: 'delete', key: <KEY> }
-   *
    * which describe a set or delete operation respectively.
    *
-   * @param changes  An array of the changes to be applied in order.
-   *
-   * @throws if any of the changes are not well formed.
+   * @param {Array<SetOperation|DeleteOperation>} changes  An array of the changes to be applied in order.
+   * @throws {Error} if any of the changes are not well formed.
    */
   function applyBatch(changes) {
     // TODO: Note that the parameter checking is done incrementally, thus a

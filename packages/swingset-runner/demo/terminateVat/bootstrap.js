@@ -1,6 +1,7 @@
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject() {
+export function buildRootObject(_vatPowers, vatParameters) {
+  const mode = vatParameters.argv[0] || 'kill';
   let counter = 46;
   const self = harden({
     async bootstrap(vats, devices) {
@@ -19,7 +20,26 @@ export function buildRootObject() {
       const p = E(dude.root).elsewhere(self); // this will not
       p.catch(() => {}); // just shut up already
 
-      await E(dude.adminNode).terminate();
+      switch (mode) {
+        case 'kill':
+          await E(dude.adminNode).terminate('with extreme prejudice');
+          break;
+        case 'happy':
+          await E(dude.root).dieHappy('I got everything I ever wanted');
+          break;
+        case 'exceptionallyHappy':
+          await E(dude.root).dieHappy(Error('catch me if you can'));
+          break;
+        case 'sad':
+          await E(dude.root).dieSad('Goodbye cruel world');
+          break;
+        case 'exceptionallySad':
+          await E(dude.root).dieSad(Error("I can't take it any more"));
+          break;
+        default:
+          console.log('this should never happen');
+          break;
+      }
       p.then(
         () => console.log(`non-notify call notified [bad]`),
         e => console.log(`non-notify call rejected: ${e} [good]`),
@@ -31,7 +51,13 @@ export function buildRootObject() {
       } catch (e) {
         console.log(`send after terminate failed: ${e} [good]`);
       }
-      await E(dude.adminNode).done();
+      try {
+        const success = await E(dude.adminNode).done();
+        // prettier-ignore
+        console.log(`done() succeeded with ${success} (${JSON.stringify(success)})`);
+      } catch (e) {
+        console.log(`done() rejected with ${e} (${JSON.stringify(e)})`);
+      }
     },
     query() {
       counter += 1;

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/weak-store",
-  "version": "0.0.10",
+  "version": "0.0.11-dev.2",
   "description": "Wrapper for JavaScript WeakMap",
   "main": "src/weakStore.js",
   "engines": {
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.0.10"
+    "@agoric/assert": "^0.0.11-dev.2"
   },
   "devDependencies": {
     "ava": "^3.12.1",

@@ -12,15 +12,15 @@ async function beginning(t, mode) {
     },
   };
   const controller = await buildVatController(config, [mode]);
-  t.is(controller.bootstrapResult.status(), 'pending');
+  t.is(controller.kpStatus(controller.bootstrapResult), 'pending');
   return controller;
 }
 
 async function bootstrapSuccessfully(t, mode, body, slots) {
   const controller = await beginning(t, mode);
   await controller.run();
-  t.is(controller.bootstrapResult.status(), 'fulfilled');
-  t.deepEqual(controller.bootstrapResult.resolution(), {
+  t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
+  t.deepEqual(controller.kpResolution(controller.bootstrapResult), {
     body,
     slots,
   });
@@ -56,11 +56,14 @@ async function testFailure(t) {
     await controller.run();
   } catch (e) {
     failureHappened = true;
-    t.is(e.message, 'kernel panic bootstrap failure');
+    t.is(
+      e.message,
+      'kernel panic kp40.policy panic: rejection {"body":"{\\"@qclass\\":\\"error\\",\\"name\\":\\"Error\\",\\"message\\":\\"gratuitous error\\"}","slots":[]}',
+    );
   }
   t.truthy(failureHappened);
-  t.is(controller.bootstrapResult.status(), 'rejected');
-  t.deepEqual(controller.bootstrapResult.resolution(), {
+  t.is(controller.kpStatus(controller.bootstrapResult), 'rejected');
+  t.deepEqual(controller.kpResolution(controller.bootstrapResult), {
     body: '{"@qclass":"error","name":"Error","message":"gratuitous error"}',
     slots: [],
   });
@@ -82,8 +85,8 @@ async function extraMessage(t, mode, status, body, slots) {
     'ignore',
   );
   await controller.run();
-  t.is(extraResult.status(), status);
-  t.deepEqual(extraResult.resolution(), {
+  t.is(controller.kpStatus(extraResult), status);
+  t.deepEqual(controller.kpResolution(extraResult), {
     body,
     slots,
   });

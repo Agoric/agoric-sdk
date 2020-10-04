@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -15,6 +14,28 @@ export function buildRootObject(vatPowers) {
 
     never() {
       return makePromiseKit().promise; // never fires
+    },
+
+    dieHappy(completion) {
+      vatPowers.exitVat(completion);
+    },
+
+    dieSad(reason) {
+      vatPowers.exitVatWithFailure(reason);
+    },
+
+    dieHappyButTalkToMeFirst(other, completion) {
+      vatPowers.exitVat(completion);
+      E(other).query('not dead quite yet');
+    },
+
+    dieSadButTalkToMeFirst(other, reason) {
+      vatPowers.exitVatWithFailure(reason);
+      E(other).query('not dead quite yet (but soon)');
+    },
+
+    dieReturningAPresence(other) {
+      vatPowers.exitVat({ message: 'your ad here', emissary: other });
     },
 
     async elsewhere(other, arg) {

@@ -241,17 +241,12 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
   await wallet.deposit('Default Zoe invite purse', invite);
 
-  const instanceHandleBoardId = await E(board).getId(instance);
-  const installationHandleBoardId = await E(board).getId(installation);
-
   const formulateBasicOffer = (id, inviteHandleBoardId) =>
     harden({
       // JSONable ID for this offer.  This is scoped to the origin.
       id,
 
       inviteHandleBoardId,
-      instanceHandleBoardId,
-      installationHandleBoardId,
 
       proposalTemplate: {},
     });
@@ -420,8 +415,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       id: 'unknown#1588645041696',
       inviteHandleBoardId: '727995140',
-      instanceHandleBoardId: '371571443',
-      installationHandleBoardId: '1456154132',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
@@ -518,8 +511,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       id: 'unknown#1588645041696',
       inviteHandleBoardId: '727995140',
-      instanceHandleBoardId: '371571443',
-      installationHandleBoardId: '1456154132',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
@@ -556,8 +547,6 @@ test('lib-wallet offer methods', async t => {
   } = await E(inviteIssuer).getAmountOf(invite);
   const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
   await wallet.deposit('Default Zoe invite purse', invite);
-  const instanceHandleBoardId = await E(board).getId(instance);
-  const installationHandleBoardId = await E(board).getId(installation);
 
   const formulateBasicOffer = (id, inviteHandleBoardId) =>
     harden({
@@ -565,8 +554,6 @@ test('lib-wallet offer methods', async t => {
       id,
 
       inviteHandleBoardId,
-      instanceHandleBoardId,
-      installationHandleBoardId,
 
       proposalTemplate: {
         give: {
@@ -592,8 +579,8 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645041696',
         inviteHandleBoardId: '727995140',
-        instanceHandleBoardId: '371571443',
-        installationHandleBoardId: '1456154132',
+        instance,
+        installation,
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -685,8 +672,6 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645041696',
         inviteHandleBoardId: '727995140',
-        instanceHandleBoardId: '371571443',
-        installationHandleBoardId: '1456154132',
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -714,9 +699,7 @@ test('lib-wallet offer methods', async t => {
       },
       {
         id: 'unknown#1588645230204',
-        inviteHandleBoardId: '500716545',
-        instanceHandleBoardId: '371571443',
-        installationHandleBoardId: '1456154132',
+        inviteHandleBoardId: '371571443',
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -756,7 +739,6 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     wallet,
     addLiquidityInvite,
     autoswapInstanceHandle,
-    autoswapInstallationHandle,
     board,
   } = await setupTest();
 
@@ -825,16 +807,9 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   const rawId = '1593482020370';
   const id = `unknown#${rawId}`;
 
-  const instanceHandleBoardId = await E(board).getId(autoswapInstanceHandle);
-  const installationHandleBoardId = await E(board).getId(
-    autoswapInstallationHandle,
-  );
-
   const offer = {
     id: rawId,
     inviteHandleBoardId,
-    instanceHandleBoardId,
-    installationHandleBoardId,
     proposalTemplate: {
       give: {
         In: {

@@ -1,5 +1,3 @@
-/* global harden */
-
 /**
  * Kernel's keeper of persistent state for a device.
  */
@@ -13,8 +11,8 @@ import { insistDeviceID } from '../id';
 /**
  * Establish a device's state.
  *
- * @param storage  The storage in which the persistent state will be kept
- * @param deviceID  The device ID string of the device in question
+ * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {string} deviceID  The device ID string of the device in question
  *
  * TODO move into makeDeviceKeeper?
  */
@@ -25,25 +23,39 @@ export function initializeDeviceState(storage, deviceID) {
 /**
  * Produce a device keeper for a device.
  *
- * @param storage  The storage in which the persistent state will be kept
- * @param deviceID  The device ID string of the device in question
- * @param addKernelDeviceNode  Kernel function to add a new device node to the
+ * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {string} deviceID  The device ID string of the device in question
+ * @param {*} addKernelDeviceNode  Kernel function to add a new device node to the
  *    kernel's mapping tables.
  *
- * @return an object to hold and access the kernel's state for the given device
+ * @returns {*} an object to hold and access the kernel's state for the given device
  */
 export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   insistDeviceID(deviceID);
+
+  function setSourceAndOptions(source, options) {
+    assert.typeof(source, 'object');
+    assert(source.bundle || source.bundleName);
+    assert.typeof(options, 'object');
+    storage.set(`${deviceID}.source`, JSON.stringify(source));
+    storage.set(`${deviceID}.options`, JSON.stringify(options));
+  }
+
+  function getSourceAndOptions() {
+    const source = JSON.parse(storage.get(`${deviceID}.source`));
+    const options = JSON.parse(storage.get(`${deviceID}.options`));
+    return harden({ source, options });
+  }
 
   /**
    * Provide the kernel slot corresponding to a given device slot, including
    * creating the kernel slot if it doesn't already exist.
    *
-   * @param devSlot  The device slot of interest
+   * @param {string} devSlot  The device slot of interest
    *
-   * @return the kernel slot that devSlot maps to
+   * @returns {string} the kernel slot that devSlot maps to
    *
-   * @throws if devSlot is not a kind of thing that can be exported by devices
+   * @throws {Error} if devSlot is not a kind of thing that can be exported by devices
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
@@ -81,11 +93,11 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    * Provide the device slot corresponding to a given kernel slot, including
    * creating the device slot if it doesn't already exist.
    *
-   * @param kernelSlot  The kernel slot of interest
+   * @param {string} kernelSlot  The kernel slot of interest
    *
-   * @return the device slot kernelSlot maps to
+   * @returns {string} the device slot kernelSlot maps to
    *
-   * @throws if kernelSlot is not a kind of thing that can be imported by
+   * @throws {Error} if kernelSlot is not a kind of thing that can be imported by
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
@@ -118,7 +130,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   /**
    * Obtain the device's state.
    *
-   * @return this device's state, or undefined if it has none.
+   * @returns {any} this device's state, or undefined if it has none.
    */
   function getDeviceState() {
     // this should return an object, generally CapData, or undefined
@@ -134,7 +146,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   /**
    * Set this device's state.
    *
-   * @param value The value to set the state to.  This should be serializable.
+   * @param {any} value The value to set the state to.  This should be serializable.
    *    (NOTE: the intent is that the structure here will eventually be more
    *    codified than it is now).
    */
@@ -145,7 +157,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   /**
    * Produce a dump of this device's state for debugging purposes.
    *
-   * @return an array of this device's state information
+   * @returns {Array<[string, string, string]>} an array of this device's state information
    */
   function dumpState() {
     const res = [];
@@ -166,6 +178,8 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   }
 
   return harden({
+    getSourceAndOptions,
+    setSourceAndOptions,
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getDeviceState,

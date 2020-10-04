@@ -7,7 +7,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { assert, details } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import makeWeakStore from '@agoric/weak-store';
 import makeStore from '@agoric/store';
@@ -86,7 +86,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
       assertKeywordName(keyword);
       assert(
         !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-        details`keyword ${keyword} must be unique`,
+        details`keyword ${q(keyword)} must be unique`,
       );
       return registerIssuerRecord(keyword, issuerRecord);
     };
@@ -217,12 +217,21 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
           return mintyIssuerRecord;
         },
         mintGains: (gains, zcfSeat = undefined) => {
+          assert.typeof(
+            gains,
+            'object',
+            details`gains ${gains} must be an amountKeywordRecord`,
+          );
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
           let totalToMint = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
+            assert(
+              totalToMint.brand === amountToAdd.brand,
+              details`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
+            );
             totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
             const oldAmount = oldAllocation[seatKeyword];
             // oldAmount being absent is equivalent to empty.
@@ -246,11 +255,20 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
+          assert.typeof(
+            losses,
+            'object',
+            details`losses ${losses} must be an amountKeywordRecord`,
+          );
           let totalToBurn = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
             losses,
             ([seatKeyword, amountToSubtract]) => {
+              assert(
+                totalToBurn.brand === amountToSubtract.brand,
+                details`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
+              );
               totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
               const oldAmount = oldAllocation[seatKeyword];
               const newAmount = mintyAmountMath.subtract(
@@ -310,7 +328,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
         assertKeywordName(keyword);
         assert(
           !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-          details`keyword ${keyword} must be unique`,
+          details`keyword ${q(keyword)} must be unique`,
         );
       },
       saveIssuer: async (issuerP, keyword) => {

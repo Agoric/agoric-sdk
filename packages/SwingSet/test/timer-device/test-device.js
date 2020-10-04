@@ -1,22 +1,35 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { buildVatController } from '../../src/index';
+import { initSwingStore } from '@agoric/swing-store-simple';
+
+import { initializeSwingset, makeSwingsetController } from '../../src/index';
 import { buildTimer } from '../../src/devices/timer';
 
-const TimerSrc = '../../src/devices/timer-src';
+const TimerSrc = require.resolve('../../src/devices/timer-src');
+
+const timerConfig = {
+  bootstrap: 'bootstrap',
+  vats: {
+    bootstrap: {
+      sourceSpec: require.resolve('./bootstrap'),
+    },
+  },
+  devices: {
+    timer: {
+      sourceSpec: TimerSrc,
+    },
+  },
+};
 
 test('wake', async t => {
   const timer = buildTimer();
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: require.resolve('./bootstrap'),
-      },
-    },
-    devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
   };
-  const c = await buildVatController(config, ['timer']);
+  const hostStorage = initSwingStore().storage;
+
+  await initializeSwingset(timerConfig, ['timer'], hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
   await c.step();
   timer.poll(5);
@@ -26,16 +39,13 @@ test('wake', async t => {
 
 test('repeater', async t => {
   const timer = buildTimer();
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: require.resolve('./bootstrap'),
-      },
-    },
-    devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
   };
-  const c = await buildVatController(config, ['repeater', 3, 2]);
+  const hostStorage = initSwingStore().storage;
+
+  await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
   await c.step();
   timer.poll(5);
@@ -48,16 +58,13 @@ test('repeater', async t => {
 
 test('repeater2', async t => {
   const timer = buildTimer();
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: require.resolve('./bootstrap'),
-      },
-    },
-    devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
   };
-  const c = await buildVatController(config, ['repeater', 3, 2]);
+  const hostStorage = initSwingStore().storage;
+
+  await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
   await c.step();
   timer.poll(5);
@@ -73,16 +80,13 @@ test('repeater2', async t => {
 
 test('repeaterZero', async t => {
   const timer = buildTimer();
-  const config = {
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: {
-        sourceSpec: require.resolve('./bootstrap'),
-      },
-    },
-    devices: [['timer', require.resolve(TimerSrc), timer.endowments]],
+  const deviceEndowments = {
+    timer: { ...timer.endowments },
   };
-  const c = await buildVatController(config, ['repeater', 0, 3]);
+  const hostStorage = initSwingStore().storage;
+
+  await initializeSwingset(timerConfig, ['repeater', 0, 3], hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
   await c.step();
   timer.poll(2);

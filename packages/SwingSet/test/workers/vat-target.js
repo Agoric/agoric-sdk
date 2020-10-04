@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -13,8 +12,11 @@ function ignore(p) {
 // inbound events ('dispatch'), which will provoke a set of outbound events
 // ('syscall'), that cover the full range of the dispatch/syscall interface
 
-export function buildRootObject() {
+export function buildRootObject(vatPowers) {
   console.log(`vat does buildRootObject`); // make sure console works
+  // note: XS doesn't appear to print console.log unless an exception happens
+  vatPowers.testLog('testLog works');
+
   const precB = makePromiseKit();
   const precC = makePromiseKit();
   let callbackObj;

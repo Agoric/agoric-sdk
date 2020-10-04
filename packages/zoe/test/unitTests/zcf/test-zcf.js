@@ -160,10 +160,10 @@ test(`zcf.assertUniqueKeyword`, async t => {
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
   const { zcf } = await setupZCFTest(issuerKeywordRecord);
   t.throws(() => zcf.assertUniqueKeyword('A'), {
-    message: 'keyword (a string) must be unique\nSee console for error data.',
+    message: 'keyword "A" must be unique\nSee console for error data.',
   });
   t.throws(() => zcf.assertUniqueKeyword('B'), {
-    message: 'keyword (a string) must be unique\nSee console for error data.',
+    message: 'keyword "B" must be unique\nSee console for error data.',
   });
   // Unique, but not a valid Keyword
   t.throws(() => zcf.assertUniqueKeyword('a'), {
@@ -428,11 +428,9 @@ test(`zcf.makeZCFMint - SET`, async t => {
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
   // @ts-ignore
   t.throws(() => zcfMint.mintGains(), {
-    message: 'Cannot convert undefined or null to object',
+    message: `gains (an undefined) must be an amountKeywordRecord\nSee console for error data.`,
   });
 });
 
@@ -451,22 +449,20 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // TODO: create seat if one is not provided
   // https://github.com/Agoric/agoric-sdk/issues/1696
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
   // @ts-ignore
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
-    message: 'Cannot convert undefined or null to object',
+    message:
+      'gains (an undefined) must be an amountKeywordRecord\nSee console for error data.',
   });
 });
 
 test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
   // @ts-ignore
   t.throws(() => zcfMint.burnLosses(), {
-    message: "Cannot read property 'getCurrentAllocation' of undefined",
+    message:
+      'losses (an undefined) must be an amountKeywordRecord\nSee console for error data.',
   });
 });
 
@@ -474,11 +470,10 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
   // @ts-ignore
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
-    message: 'Cannot convert undefined or null to object',
+    message:
+      'losses (an undefined) must be an amountKeywordRecord\nSee console for error data.',
   });
 });
 
@@ -488,12 +483,8 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
 
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
-  // @ts-ignore
   t.throws(() => zcfMint.mintGains({ Moola: moola(3) }, zcfSeat), {
-    message:
-      "the brand in the allegedAmount in 'coerce' didn't match the amountMath brand",
+    message: `Only digital assets of brand (an object) can be minted in this call. (an object) has the wrong brand.\nSee console for error data.`,
   });
 });
 
@@ -503,12 +494,8 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
 
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
-  // @ts-ignore
   t.throws(() => zcfMint.burnLosses({ Moola: moola(3) }, zcfSeat), {
-    message:
-      "the brand in the allegedAmount in 'coerce' didn't match the amountMath brand",
+    message: `Only digital assets of brand (an object) can be burned in this call. (an object) has the wrong brand.\nSee console for error data.`,
   });
 });
 
@@ -518,8 +505,6 @@ test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
   const zcfMint = await zcf.makeZCFMint('A');
   const { amountMath, brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
   const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
   t.is(zcfSeat2, zcfSeat);
   t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
@@ -531,8 +516,6 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
   const zcfMint = await zcf.makeZCFMint('A');
   const { amountMath, brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // TODO: improve messages
-  // https://github.com/Agoric/agoric-sdk/issues/1708
   const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
   t.is(zcfSeat2, zcfSeat);
   t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
@@ -888,7 +871,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - waived`, async t => {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit({ waived: null });
   t.falsy(zcfSeat.hasExited());
   await t.throwsAsync(() => E(userSeat).tryExit(), {
-    message: 'Only seats with the exitKind "onDemand" can exit at will',
+    message: 'Only seats with the exit rule "onDemand" can exit at will',
   });
   t.falsy(zcfSeat.hasExited());
   t.falsy(await E(userSeat).hasExited());
@@ -902,7 +885,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   });
   t.falsy(zcfSeat.hasExited());
   await t.throwsAsync(() => E(userSeat).tryExit(), {
-    message: 'Only seats with the exitKind "onDemand" can exit at will',
+    message: 'Only seats with the exit rule "onDemand" can exit at will',
   });
   t.falsy(zcfSeat.hasExited());
   t.falsy(await E(userSeat).hasExited());
@@ -1054,19 +1037,14 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   });
 });
 
-test.failing(
-  `userSeat.getPayout() should throw from zcf.makeEmptySeatKit`,
-  async t => {
-    const { zcf } = await setupZCFTest();
-    const { userSeat } = zcf.makeEmptySeatKit();
-
-    // TODO: Not providing a keyword should throw.
-    // https://github.com/Agoric/agoric-sdk/issues/1754
-    await t.throwsAsync(() => E(userSeat).getPayout(), {
-      message: 'A keyword must be provided to get the payout',
-    });
-  },
-);
+test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { userSeat } = zcf.makeEmptySeatKit();
+  // @ts-ignore
+  await t.throwsAsync(() => E(userSeat).getPayout(), {
+    message: 'A keyword must be provided',
+  });
+});
 
 test(`zcf.reallocate < 2 seats`, async t => {
   const { zcf } = await setupZCFTest();

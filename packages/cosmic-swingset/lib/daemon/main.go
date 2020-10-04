@@ -24,7 +24,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/app"
+	"github.com/Agoric/cosmic-swingset/app"
 )
 
 const flagInvCheckPeriod = "inv-check-period"

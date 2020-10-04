@@ -251,3 +251,13 @@
  * @param {IssuerRecord} issuerRecord
  * @returns {IssuerRecord}
  */
+
+/**
+ * @callback GetAmountOfInvitationThen
+ * Get the amount of an invitation and then call the `onFulfilled`
+ * function. If the invitation is not a Zoe invitation, the promise
+ * rejects with a helpful error message and `onFulfilled` is not called.
+ * @param {ERef<Invitation>} invitationP
+ * @param {(amount: Amount) => any} onFulfilled
+ * @returns {any} the result of `onFulfilled`
+ */

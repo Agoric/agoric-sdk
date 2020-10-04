@@ -1,4 +1,3 @@
-/* global harden */
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -38,8 +37,12 @@ export function buildRootObject(vatPowers) {
         testLog(`b: speak failed: ${e}`);
       }
 
-      E(weatherwax.adminNode).terminate();
-      await E(weatherwax.adminNode).done();
+      E(weatherwax.adminNode).terminate('arbitrary reason');
+      try {
+        await E(weatherwax.adminNode).done();
+      } catch (e) {
+        testLog(`done: ${e}`);
+      }
 
       return 'bootstrap done';
     },

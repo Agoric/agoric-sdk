@@ -1,5 +1,3 @@
-/* global harden */
-
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
@@ -38,10 +36,11 @@ const enableKernelPromiseGC = true;
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
 
-// dynamic vats have these too:
+// kernelBundle = JSON(bundle)
+// bundle.$NAME = JSON(bundle)
+
 // v$NN.source = JSON({ bundle }) or JSON({ bundleName })
 // v$NN.options = JSON
-
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
 // v$NN.d.nextID = $NN
@@ -54,6 +53,8 @@ const enableKernelPromiseGC = true;
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
 // d$NN.c.$deviceSlot = $kernelSlot = ko$NN/kd$NN
 // d$NN.deviceState = JSON
+// d$NN.source = JSON({ bundle }) or JSON({ bundleName })
+// d$NN.options = JSON
 
 // runQueue = JSON(runQueue) // usually empty on disk
 
@@ -64,6 +65,7 @@ const enableKernelPromiseGC = true;
 // kp.nextID = $NN
 // kp$NN.state = unresolved | fulfilledToPresence | fulfilledToData | rejected
 // kp$NN.decider = missing | '' | $vatID
+// kp$NN.policy = missing (=ignore) | ignore | logAlways | logFailure | panic
 // kp$NN.subscribers = '' | $vatID[,$vatID..]
 // kp$NN.queue.$NN = JSON(msg)
 // kp$NN.queue.nextID = $NN
@@ -237,6 +239,14 @@ export default function makeKernelKeeper(storage) {
     storage.set('crankNumber', '0');
   }
 
+  function addBundle(name, bundle) {
+    storage.set(`bundle.${name}`, JSON.stringify(bundle));
+  }
+
+  function getBundle(name) {
+    return harden(JSON.parse(storage.get(`bundle.${name}`)));
+  }
+
   function addKernelObject(ownerID) {
     insistVatID(ownerID);
     const id = Nat(Number(getRequired('ko.nextID')));
@@ -275,7 +285,7 @@ export default function makeKernelKeeper(storage) {
     return owner;
   }
 
-  function addKernelPromise() {
+  function addKernelPromise(policy) {
     const kpidNum = Nat(Number(getRequired('kp.nextID')));
     storage.set('kp.nextID', `${kpidNum + 1}`);
     const kpid = makeKernelSlot('promise', kpidNum);
@@ -284,6 +294,9 @@ export default function makeKernelKeeper(storage) {
     storage.set(`${kpid}.queue.nextID`, `0`);
     storage.set(`${kpid}.refCount`, `0`);
     storage.set(`${kpid}.decider`, '');
+    if (policy && policy !== 'ignore') {
+      storage.set(`${kpid}.policy`, policy);
+    }
     // queue is empty, so no state[kp$NN.queue.$NN] keys yet
     incStat('kernelPromises');
     incStat('kpUnresolved');
@@ -310,6 +323,7 @@ export default function makeKernelKeeper(storage) {
         if (p.decider === '') {
           p.decider = undefined;
         }
+        p.policy = storage.get(`${kernelSlot}.policy`) || 'ignore';
         p.subscribers = commaSplit(storage.get(`${kernelSlot}.subscribers`));
         p.queue = Array.from(
           storage.getPrefixedValues(`${kernelSlot}.queue.`),
@@ -372,6 +386,7 @@ export default function makeKernelKeeper(storage) {
     storage.delete(`${kpid}.state`);
     storage.delete(`${kpid}.decider`);
     storage.delete(`${kpid}.subscribers`);
+    storage.delete(`${kpid}.policy`);
     storage.deletePrefixedKeys(`${kpid}.queue.`);
     storage.delete(`${kpid}.queue.nextID`);
     storage.delete(`${kpid}.slot`);
@@ -574,6 +589,10 @@ export default function makeKernelKeeper(storage) {
     return msg;
   }
 
+  function hasVatWithName(name) {
+    return storage.has(`vat.name.${name}`);
+  }
+
   function getVatIDForName(name) {
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
@@ -609,7 +628,27 @@ export default function makeKernelKeeper(storage) {
     storage.set(KEY, JSON.stringify(dynamicVatIDs));
   }
 
-  function getAllDynamicVatIDs() {
+  function getStaticVats() {
+    const result = [];
+    for (const k of storage.getKeys('vat.name.', 'vat.name/')) {
+      const name = k.slice(9);
+      const vatID = storage.get(k);
+      result.push([name, vatID]);
+    }
+    return result;
+  }
+
+  function getDevices() {
+    const result = [];
+    for (const k of storage.getKeys('device.name.', 'device.name/')) {
+      const name = k.slice(12);
+      const deviceID = storage.get(k);
+      result.push([name, deviceID]);
+    }
+    return result;
+  }
+
+  function getDynamicVats() {
     return JSON.parse(getRequired('vat.dynamicIDs'));
   }
 
@@ -621,7 +660,8 @@ export default function makeKernelKeeper(storage) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {*} kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {*} _tag
    */
   function incrementRefCount(kernelSlot, _tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
@@ -637,10 +677,9 @@ export default function makeKernelKeeper(storage) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param kernelSlot  The kernel slot whose refcount is to be decremented.
-   *
-   * @return true if the reference count has been decremented to zero, false if it is still non-zero
-   *
+   * @param {*} kernelSlot  The kernel slot whose refcount is to be decremented.
+   * @param {string} tag
+   * @returns {boolean} true if the reference count has been decremented to zero, false if it is still non-zero
    * @throws if this tries to decrement the reference count below zero.
    */
   function decrementRefCount(kernelSlot, tag) {
@@ -720,11 +759,6 @@ export default function makeKernelKeeper(storage) {
     return harden(vatIDs);
   }
 
-  function getAllVatNames() {
-    const names = JSON.parse(getRequired('vat.names'));
-    return harden(names.sort());
-  }
-
   function getDeviceIDForName(name) {
     assert.typeof(name, 'string');
     const k = `device.name.${name}`;
@@ -770,11 +804,6 @@ export default function makeKernelKeeper(storage) {
       }
     }
     return harden(deviceIDs);
-  }
-
-  function getAllDeviceNames() {
-    const names = JSON.parse(getRequired('device.names'));
-    return harden(names.sort());
   }
 
   // used for debugging, and tests. This returns a JSON-serializable object.
@@ -854,6 +883,8 @@ export default function makeKernelKeeper(storage) {
     getInitialized,
     setInitialized,
     createStartingKernelState,
+    addBundle,
+    getBundle,
 
     getCrankNumber,
     incrementCrankNumber,
@@ -888,20 +919,21 @@ export default function makeKernelKeeper(storage) {
     getRunQueueLength,
     getNextMsg,
 
+    hasVatWithName,
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
     allocateVatKeeper,
     getVatKeeper,
     cleanupAfterTerminatedVat,
-    getAllVatNames,
     addDynamicVatID,
-    getAllDynamicVatIDs,
+    getDynamicVats,
+    getStaticVats,
+    getDevices,
 
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,
     allocateDeviceKeeperIfNeeded,
-    getAllDeviceNames,
 
     dump,
   });

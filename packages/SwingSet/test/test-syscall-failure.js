@@ -34,10 +34,10 @@ async function vatSyscallFailure(t, beDynamic) {
     // sanity check that the state of the bad static vat is what we think it is
     t.is(
       storage.get('vat.names'),
-      '["vatAdmin","comms","vattp","timer","bootstrap","badvatStatic"]',
+      '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
     );
     t.is(storage.get(`${badVatRootObject}.owner`), badVatID);
-    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 6);
+    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 8);
     t.is(storage.get('vat.name.badvatStatic'), badVatID);
   }
   await controller.run();
@@ -46,7 +46,7 @@ async function vatSyscallFailure(t, beDynamic) {
     // is verified by other, more complicated tests)
     t.is(
       storage.get('vat.names'),
-      '["vatAdmin","comms","vattp","timer","bootstrap"]',
+      '["bootstrap","vatAdmin","comms","vattp","timer"]',
     );
     t.is(storage.get(`${badVatID}.owner`), undefined);
     t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);
@@ -59,9 +59,9 @@ async function vatSyscallFailure(t, beDynamic) {
     'begood',
     'bebad',
     'pretendToBeAThing invoked from begood',
-    'p1 reject clist violation: prepare to die',
-    'p2 reject vat terminated',
-    'p3 reject vat terminated',
+    'p1 reject Error: vat terminated',
+    'p2 reject Error: vat terminated',
+    'p3 reject Error: vat terminated',
   ]);
 }
 

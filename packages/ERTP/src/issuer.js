@@ -9,6 +9,7 @@ import { Remotable } from '@agoric/marshal';
 import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
+import { makeInterface, ERTPKind } from './interfaces';
 
 import './types';
 
@@ -20,15 +21,19 @@ import './types';
 function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   assert.typeof(allegedName, 'string');
 
-  const brand = Remotable(`Alleged: ${allegedName} brand`, undefined, {
-    isMyIssuer: allegedIssuerP => {
-      return E.when(allegedIssuerP, allegedIssuer => {
-        // eslint-disable-next-line no-use-before-define
-        return allegedIssuer === issuer;
-      });
+  const brand = Remotable(
+    makeInterface(allegedName, ERTPKind.BRAND),
+    undefined,
+    {
+      isMyIssuer: allegedIssuerP => {
+        return E.when(allegedIssuerP, allegedIssuer => {
+          // eslint-disable-next-line no-use-before-define
+          return allegedIssuer === issuer;
+        });
+      },
+      getAllegedName: () => allegedName,
     },
-    getAllegedName: () => allegedName,
-  });
+  );
 
   const amountMath = makeAmountMath(brand, amountMathKind);
 
@@ -43,7 +48,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   }
 
   const makePayment = () =>
-    Remotable(`Alleged: ${allegedName} payment`, undefined, {
+    Remotable(makeInterface(allegedName, ERTPKind.PAYMENT), undefined, {
       getAllegedBrand: () => brand,
     });
 
@@ -64,53 +69,64 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
    */
   const makePurse = () => {
     /** @type {Purse} */
-    const purse = Remotable(`Alleged: ${allegedName} purse`, undefined, {
-      deposit: (srcPayment, optAmount = undefined) => {
-        if (isPromise(srcPayment)) {
-          throw new TypeError(
-            `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+    const purse = Remotable(
+      makeInterface(allegedName, ERTPKind.PURSE),
+      undefined,
+      {
+        deposit: (srcPayment, optAmount = undefined) => {
+          if (isPromise(srcPayment)) {
+            throw new TypeError(
+              `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+            );
+          }
+          assertKnownPayment(srcPayment);
+          const srcPaymentBalance = paymentLedger.get(srcPayment);
+          // Note: this does not guarantee that optAmount itself is a valid stable amount
+          assertAmountEqual(srcPaymentBalance, optAmount);
+          const purseBalance = purse.getCurrentAmount();
+          const newPurseBalance = amountMath.add(
+            srcPaymentBalance,
+            purseBalance,
           );
-        }
-        assertKnownPayment(srcPayment);
-        const srcPaymentBalance = paymentLedger.get(srcPayment);
-        // Note: this does not guarantee that optAmount itself is a valid stable amount
-        assertAmountEqual(srcPaymentBalance, optAmount);
-        const purseBalance = purse.getCurrentAmount();
-        const newPurseBalance = amountMath.add(srcPaymentBalance, purseBalance);
-        // Commit point
+          // Commit point
+          // eslint-disable-next-line no-use-before-define
+          const payments = reallocate(
+            harden({
+              payments: [srcPayment],
+              purses: [purse],
+              newPurseBalances: [newPurseBalance],
+            }),
+          );
+          assert(payments.length === 0, 'no payments should be returned');
+          return srcPaymentBalance;
+        },
+        withdraw: amount => {
+          amount = amountMath.coerce(amount);
+          const purseBalance = purse.getCurrentAmount();
+          const newPurseBalance = amountMath.subtract(purseBalance, amount);
+          // Commit point
+          // eslint-disable-next-line no-use-before-define
+          const [payment] = reallocate(
+            harden({
+              purses: [purse],
+              newPurseBalances: [newPurseBalance],
+              newPaymentBalances: [amount],
+            }),
+          );
+          return payment;
+        },
+        getCurrentAmount: () => purseLedger.get(purse),
+        getAllegedBrand: () => brand,
         // eslint-disable-next-line no-use-before-define
-        const payments = reallocate(
-          harden({
-            payments: [srcPayment],
-            purses: [purse],
-            newPurseBalances: [newPurseBalance],
-          }),
-        );
-        assert(payments.length === 0, 'no payments should be returned');
-        return srcPaymentBalance;
+        getDepositFacet: () => depositFacet,
       },
-      withdraw: amount => {
-        amount = amountMath.coerce(amount);
-        const purseBalance = purse.getCurrentAmount();
-        const newPurseBalance = amountMath.subtract(purseBalance, amount);
-        // Commit point
-        // eslint-disable-next-line no-use-before-define
-        const [payment] = reallocate(
-          harden({
-            purses: [purse],
-            newPurseBalances: [newPurseBalance],
-            newPaymentBalances: [amount],
-          }),
-        );
-        return payment;
-      },
-      getCurrentAmount: () => purseLedger.get(purse),
-      getAllegedBrand: () => brand,
-      // eslint-disable-next-line no-use-before-define
-      getDepositFacet: () => depositFacet,
-    });
+    );
 
-    const depositFacet = harden({ receive: purse.deposit });
+    const depositFacet = Remotable(
+      makeInterface(allegedName, ERTPKind.DEPOSIT_FACET),
+      undefined,
+      { receive: purse.deposit },
+    );
 
     return purse;
   };
@@ -180,110 +196,114 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   };
 
   /** @type {Issuer} */
-  const issuer = Remotable(`Alleged: ${allegedName} issuer`, undefined, {
-    getBrand: () => brand,
-    getAllegedName: () => allegedName,
-    getAmountMathKind: () => amountMathKind,
-    makeEmptyPurse: () => {
-      const purse = makePurse();
-      purseLedger.init(purse, amountMath.getEmpty());
-      return purse;
-    },
+  const issuer = Remotable(
+    makeInterface(allegedName, ERTPKind.ISSUER),
+    undefined,
+    {
+      getBrand: () => brand,
+      getAllegedName: () => allegedName,
+      getAmountMathKind: () => amountMathKind,
+      makeEmptyPurse: () => {
+        const purse = makePurse();
+        purseLedger.init(purse, amountMath.getEmpty());
+        return purse;
+      },
 
-    isLive: paymentP => {
-      return E.when(paymentP, payment => {
-        return paymentLedger.has(payment);
-      });
-    },
-    getAmountOf: paymentP => {
-      return E.when(paymentP, payment => {
-        assertKnownPayment(payment);
-        return paymentLedger.get(payment);
-      });
-    },
+      isLive: paymentP => {
+        return E.when(paymentP, payment => {
+          return paymentLedger.has(payment);
+        });
+      },
+      getAmountOf: paymentP => {
+        return E.when(paymentP, payment => {
+          assertKnownPayment(payment);
+          return paymentLedger.get(payment);
+        });
+      },
 
-    burn: (paymentP, optAmount = undefined) => {
-      return E.when(paymentP, payment => {
-        assertKnownPayment(payment);
-        const paymentBalance = paymentLedger.get(payment);
-        assertAmountEqual(paymentBalance, optAmount);
-        // Commit point.
-        paymentLedger.delete(payment);
-        return paymentBalance;
-      });
+      burn: (paymentP, optAmount = undefined) => {
+        return E.when(paymentP, payment => {
+          assertKnownPayment(payment);
+          const paymentBalance = paymentLedger.get(payment);
+          assertAmountEqual(paymentBalance, optAmount);
+          // Commit point.
+          paymentLedger.delete(payment);
+          return paymentBalance;
+        });
+      },
+      claim: (paymentP, optAmount = undefined) => {
+        return E.when(paymentP, srcPayment => {
+          assertKnownPayment(srcPayment);
+          const srcPaymentBalance = paymentLedger.get(srcPayment);
+          assertAmountEqual(srcPaymentBalance, optAmount);
+          // Commit point.
+          const [payment] = reallocate(
+            harden({
+              payments: [srcPayment],
+              newPaymentBalances: [srcPaymentBalance],
+            }),
+          );
+          return payment;
+        });
+      },
+      // Payments in `fromPaymentsPArray` must be distinct. Alias
+      // checking is delegated to the `reallocate` function.
+      combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
+        return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
+          fromPaymentsArray.every(assertKnownPayment);
+          const totalPaymentsBalance = fromPaymentsArray
+            .map(paymentLedger.get)
+            .reduce(add, empty);
+          assertAmountEqual(totalPaymentsBalance, optTotalAmount);
+          // Commit point.
+          const [payment] = reallocate(
+            harden({
+              payments: fromPaymentsArray,
+              newPaymentBalances: [totalPaymentsBalance],
+            }),
+          );
+          return payment;
+        });
+      },
+      // payment to two payments, A and B
+      split: (paymentP, paymentAmountA) => {
+        return E.when(paymentP, srcPayment => {
+          paymentAmountA = amountMath.coerce(paymentAmountA);
+          assertKnownPayment(srcPayment);
+          const srcPaymentBalance = paymentLedger.get(srcPayment);
+          const paymentAmountB = amountMath.subtract(
+            srcPaymentBalance,
+            paymentAmountA,
+          );
+          // Commit point
+          const newPayments = reallocate(
+            harden({
+              payments: [srcPayment],
+              newPaymentBalances: [paymentAmountA, paymentAmountB],
+            }),
+          );
+          return newPayments;
+        });
+      },
+      splitMany: (paymentP, amounts) => {
+        return E.when(paymentP, srcPayment => {
+          assertKnownPayment(srcPayment);
+          amounts = amounts.map(amountMath.coerce);
+          // Commit point
+          const newPayments = reallocate(
+            harden({
+              payments: [srcPayment],
+              newPaymentBalances: amounts,
+            }),
+          );
+          return newPayments;
+        });
+      },
     },
-    claim: (paymentP, optAmount = undefined) => {
-      return E.when(paymentP, srcPayment => {
-        assertKnownPayment(srcPayment);
-        const srcPaymentBalance = paymentLedger.get(srcPayment);
-        assertAmountEqual(srcPaymentBalance, optAmount);
-        // Commit point.
-        const [payment] = reallocate(
-          harden({
-            payments: [srcPayment],
-            newPaymentBalances: [srcPaymentBalance],
-          }),
-        );
-        return payment;
-      });
-    },
-    // Payments in `fromPaymentsPArray` must be distinct. Alias
-    // checking is delegated to the `reallocate` function.
-    combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
-      return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-        fromPaymentsArray.every(assertKnownPayment);
-        const totalPaymentsBalance = fromPaymentsArray
-          .map(paymentLedger.get)
-          .reduce(add, empty);
-        assertAmountEqual(totalPaymentsBalance, optTotalAmount);
-        // Commit point.
-        const [payment] = reallocate(
-          harden({
-            payments: fromPaymentsArray,
-            newPaymentBalances: [totalPaymentsBalance],
-          }),
-        );
-        return payment;
-      });
-    },
-    // payment to two payments, A and B
-    split: (paymentP, paymentAmountA) => {
-      return E.when(paymentP, srcPayment => {
-        paymentAmountA = amountMath.coerce(paymentAmountA);
-        assertKnownPayment(srcPayment);
-        const srcPaymentBalance = paymentLedger.get(srcPayment);
-        const paymentAmountB = amountMath.subtract(
-          srcPaymentBalance,
-          paymentAmountA,
-        );
-        // Commit point
-        const newPayments = reallocate(
-          harden({
-            payments: [srcPayment],
-            newPaymentBalances: [paymentAmountA, paymentAmountB],
-          }),
-        );
-        return newPayments;
-      });
-    },
-    splitMany: (paymentP, amounts) => {
-      return E.when(paymentP, srcPayment => {
-        assertKnownPayment(srcPayment);
-        amounts = amounts.map(amountMath.coerce);
-        // Commit point
-        const newPayments = reallocate(
-          harden({
-            payments: [srcPayment],
-            newPaymentBalances: amounts,
-          }),
-        );
-        return newPayments;
-      });
-    },
-  });
+  );
 
   /** @type {Mint} */
-  const mint = Remotable(`Alleged: ${allegedName} mint`, undefined, {
+  const mint = Remotable(makeInterface(allegedName, ERTPKind.MINT), undefined, {
     getIssuer: () => issuer,
     mintPayment: newAmount => {
       newAmount = amountMath.coerce(newAmount);
