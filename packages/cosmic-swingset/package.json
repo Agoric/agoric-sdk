@@ -61,7 +61,7 @@
     "morgan": "^1.9.1",
     "n-readlines": "^1.0.0",
     "node-fetch": "^2.6.0",
-    "node-lmdb": "^0.8.0",
+    "node-lmdb": "^0.9.4",
     "polycrc": "https://github.com/agoric-labs/node-polycrc",
     "rollup": "^1.26.2",
     "rollup-plugin-node-resolve": "^5.2.0",
