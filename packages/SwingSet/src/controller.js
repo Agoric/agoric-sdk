@@ -45,7 +45,7 @@ export async function makeSwingsetController(
   insistStorageAPI(hostStorage);
 
   // build console early so we can add console.log to diagnose early problems
-  const { verbose, debugPrefix = '' } = runtimeOptions;
+  const { verbose, debugPrefix = '', slogFile } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
   }
@@ -158,9 +158,16 @@ export async function makeSwingsetController(
     startSubprocessWorkerXS = () => startSubprocessWorker(xsWorkerBin);
   }
 
-  function writeSlogObject(_obj) {
+  const slogF =
+    slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
+
+  function writeSlogObject(obj) {
     // TODO sqlite
     // console.log(`--slog ${JSON.stringify(obj)}`);
+    if (slogF) {
+      slogF.write(JSON.stringify(obj));
+      slogF.write('\n');
+    }
   }
 
   const kernelEndowments = {
