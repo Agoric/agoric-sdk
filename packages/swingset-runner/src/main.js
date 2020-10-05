@@ -53,6 +53,7 @@ FLAGS may be:
   --logstats       - log kernel stats after each block
   --logall         - log kernel stats, block times, memory use, and disk space
   --logtag STR     - tag for stats log file (default "runner")
+  --slog FILE      - write swingset log to FILE
   --forcegc        - run garbage collector after each block
   --batchsize N    - set BATCHSIZE to N cranks (default 200)
   --verbose        - output verbose debugging messages as it runs
@@ -156,6 +157,7 @@ export async function main() {
   let logDisk = false;
   let logStats = false;
   let logTag = 'runner';
+  let slogFile = null;
   let forceGC = false;
   let verbose = false;
   let doDumps = false;
@@ -202,6 +204,9 @@ export async function main() {
         break;
       case '--logtag':
         logTag = argv.shift();
+        break;
+      case '--slog':
+        slogFile = argv.shift();
         break;
       case '--config':
         configPath = argv.shift();
@@ -351,6 +356,9 @@ export async function main() {
   const runtimeOptions = {};
   if (verbose) {
     runtimeOptions.verbose = true;
+  }
+  if (slogFile) {
+    runtimeOptions.slogFile = slogFile;
   }
   let bootstrapResult;
   if (forceReset) {
