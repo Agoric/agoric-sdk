@@ -5,7 +5,7 @@ import { makeRendezvousMaker } from '../../lib/ag-solo/vats/rendezvous';
 test('rendezvous with self', async t => {
   const makeRendezvous = makeRendezvousMaker();
   const self = makeRendezvous('self');
-  const { notifier } = self.initiateRendezvous({
+  const { notifier } = self.startRendezvous({
     [self.getLocalAddress()]: 'initiator',
   });
   t.deepEqual(self.rendezvousWith({ other: 'foo' }), {});
@@ -24,7 +24,7 @@ test('rendezvous three way', async t => {
   const testnet = makeRendezvous('testnet');
   const mainnet = makeRendezvous('mainnet');
 
-  const { notifier, completer } = solo.initiateRendezvous({
+  const { notifier, completer } = solo.startRendezvous({
     testnet: 'toTestnetFromSolo',
     mainnet: 'toMainnetFromSolo',
   });

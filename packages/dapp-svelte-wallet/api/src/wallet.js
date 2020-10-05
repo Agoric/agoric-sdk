@@ -1,16 +1,20 @@
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
+import { makePromiseKit } from '@agoric/promise-kit';
 
+import makeStore from '@agoric/store';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
 export function buildRootObject(_vatPowers) {
   let wallet;
+  let walletAddresses = [];
   let pursesState = JSON.stringify([]);
   let inboxState = JSON.stringify([]);
   let http;
+  let rendezvous;
   const adminHandles = new Set();
-  const bridgeHandles = new Set();
+  const bridgeHandleToCleanup = makeStore();
   const offerSubscriptions = new Map();
 
   const httpSend = (obj, channelHandles) =>
@@ -69,7 +73,9 @@ export function buildRootObject(_vatPowers) {
     },
   });
 
-  async function startup({ zoe, board }) {
+  async function startup({ zoe, board, rendezvous: chainRendezvous }) {
+    rendezvous = chainRendezvous;
+    walletAddresses = await Promise.all([E(rendezvous).getLocalAddress()]);
     wallet = await makeWallet({
       zoe,
       board,
@@ -144,12 +150,17 @@ export function buildRootObject(_vatPowers) {
             );
           },
         });
+        const { offer: newOffer, invitedP } = await wallet.addOffer(
+          { ...data, actions },
+          { ...meta, dappOrigin },
+        );
+        E(http).send({ type: 'walletOfferNew', data: newOffer }, [
+          meta.channelHandle,
+        ]);
+        await invitedP;
         return {
           type: 'walletOfferAdded',
-          data: await wallet.addOffer(
-            { ...data, actions },
-            { ...meta, dappOrigin },
-          ),
+          data: newOffer,
         };
       }
       case 'walletDeclineOffer': {
@@ -207,7 +218,7 @@ export function buildRootObject(_vatPowers) {
                 type: 'walletUpdatePurses',
                 data: pursesState,
               },
-              [...adminHandles.keys(), ...bridgeHandles.keys()],
+              [...adminHandles.keys(), ...bridgeHandleToCleanup.keys()],
             );
           }
         },
@@ -254,97 +265,102 @@ export function buildRootObject(_vatPowers) {
     });
   }
 
-  function getBridgeURLHandler() {
+  // Use CapTP or walletRendezvous to interact with this object.
+  async function getBootstrap(otherSide, meta) {
+    const { dappOrigin = meta.origin } = meta;
+    const suggestedDappPetname = String(
+      (meta.query && meta.query.suggestedDappPetname) ||
+        meta.dappOrigin ||
+        dappOrigin,
+    );
+
+    const approve = async () => {
+      let needApproval = false;
+      await wallet.waitForDappApproval(suggestedDappPetname, dappOrigin, () => {
+        needApproval = true;
+        E(otherSide)
+          .needDappApproval(dappOrigin, suggestedDappPetname)
+          .catch(_ => {});
+      });
+      if (needApproval) {
+        E(otherSide).dappApproved(dappOrigin);
+      }
+    };
+
     return harden({
-      // Use CapTP to interact with this object.
-      async getBootstrap(otherSide, meta) {
-        const dappOrigin = meta.origin;
-        const suggestedDappPetname = String(
-          (meta.query && meta.query.suggestedDappPetname) ||
-            meta.dappOrigin ||
-            dappOrigin,
-        );
-
-        const approve = async () => {
-          let needApproval = false;
-          await wallet.waitForDappApproval(
-            suggestedDappPetname,
-            dappOrigin,
-            () => {
-              needApproval = true;
-              E(otherSide)
-                .needDappApproval(dappOrigin, suggestedDappPetname)
-                .catch(_ => {});
-            },
-          );
-          if (needApproval) {
-            E(otherSide).dappApproved(dappOrigin);
-          }
-        };
-
+      async getPurseNotifier() {
+        await approve();
         return harden({
-          async getPurseNotifier() {
+          async getUpdateSince(count = undefined) {
             await approve();
-            return harden({
-              async getUpdateSince(count = undefined) {
-                await approve();
-                const pursesJSON = await pursesJSONNotifier.getUpdateSince(
-                  count,
-                );
-                return JSON.parse(pursesJSON);
-              },
-            });
-          },
-          async addOffer(offer) {
-            await approve();
-            return wallet.addOffer(offer, { ...meta, dappOrigin });
-          },
-          async getOfferNotifier(status = null) {
-            await approve();
-            return harden({
-              async getUpdateSince(count = undefined) {
-                await approve();
-                const update = await inboxJSONNotifier.getUpdateSince(count);
-                const offers = JSON.parse(update.value);
-                return harden(
-                  offers.filter(
-                    offer =>
-                      (status === null || offer.status === status) &&
-                      offer.requestContext &&
-                      offer.requestContext.origin === dappOrigin,
-                  ),
-                );
-              },
-            });
-          },
-          async getDepositFacetId(brandBoardId) {
-            await approve();
-            return wallet.getDepositFacetId(brandBoardId);
-          },
-          async suggestIssuer(petname, boardId) {
-            await approve();
-            return wallet.suggestIssuer(petname, boardId, dappOrigin);
-          },
-          async suggestInstallation(petname, boardId) {
-            await approve();
-            return wallet.suggestInstallation(petname, boardId, dappOrigin);
-          },
-          async suggestInstance(petname, boardId) {
-            await approve();
-            return wallet.suggestInstance(petname, boardId, dappOrigin);
+            const pursesJSON = await pursesJSONNotifier.getUpdateSince(count);
+            return JSON.parse(pursesJSON);
           },
         });
       },
+      async addOffer(offer) {
+        await approve();
+        return wallet.addOffer(offer, { ...meta, dappOrigin });
+      },
+      async addOfferInvitation(offer, invitation) {
+        await approve();
+        return wallet.addOfferInvitation(offer, invitation, {
+          ...meta,
+          dappOrigin,
+        });
+      },
+      async getOfferNotifier(status = null) {
+        await approve();
+        return harden({
+          async getUpdateSince(count = undefined) {
+            await approve();
+            const update = await inboxJSONNotifier.getUpdateSince(count);
+            const offers = JSON.parse(update.value);
+            return harden(
+              offers.filter(
+                offer =>
+                  (status === null || offer.status === status) &&
+                  offer.requestContext &&
+                  offer.requestContext.origin === dappOrigin,
+              ),
+            );
+          },
+        });
+      },
+      async getDepositFacetId(brandBoardId) {
+        await approve();
+        return wallet.getDepositFacetId(brandBoardId);
+      },
+      async suggestIssuer(petname, boardId) {
+        await approve();
+        return wallet.suggestIssuer(petname, boardId, dappOrigin);
+      },
+      async suggestInstallation(petname, boardId) {
+        await approve();
+        return wallet.suggestInstallation(petname, boardId, dappOrigin);
+      },
+      async suggestInstance(petname, boardId) {
+        await approve();
+        return wallet.suggestInstance(petname, boardId, dappOrigin);
+      },
+    });
+  }
+
+  function getBridgeURLHandler() {
+    return harden({
+      getBootstrap,
 
       // The legacy HTTP/WebSocket handler.
       getCommandHandler() {
         return harden({
           onOpen(_obj, meta) {
-            bridgeHandles.add(meta.channelHandle);
+            bridgeHandleToCleanup.init(meta.channelHandle, () => {});
           },
           onClose(_obj, meta) {
-            bridgeHandles.delete(meta.channelHandle);
+            const cleanup = bridgeHandleToCleanup.get(meta.channelHandle);
+            bridgeHandleToCleanup.delete(meta.channelHandle);
             offerSubscriptions.delete(meta.channelHandle);
+            cleanup();
           },
 
           async onMessage(obj, meta) {
@@ -389,6 +405,68 @@ export function buildRootObject(_vatPowers) {
             }
 
             switch (type) {
+              case 'walletRendezvous': {
+                const { dappAddresses } = obj;
+                const addressToWalletPK = makeStore('address');
+
+                // Create a rendezvous from all the dapp addresses to the wallet
+                // bridge facet.
+                const entries = dappAddresses.map(addr => {
+                  const walletPK = makePromiseKit();
+                  addressToWalletPK.init(addr, walletPK);
+                  return [addr, walletPK.promise];
+                });
+                const { notifier, completer } = E.G(
+                  E(rendezvous).startRendezvous(Object.fromEntries(entries)),
+                );
+
+                // If this connection closes, stop listening for addresses.
+                bridgeHandleToCleanup.set(meta.channelHandle, () =>
+                  E(completer).complete(),
+                );
+
+                // For each address, resolve the associated wallet promise.
+                async function processNextUpdate(lastUpdateCount) {
+                  // Get the next update.
+                  const { updateCount, value } = await E(
+                    notifier,
+                  ).getUpdateSince(lastUpdateCount);
+
+                  // Process all the negotiated addresses.
+                  for (const [addr, otherSide] of Object.entries(value)) {
+                    if (addressToWalletPK.has(addr)) {
+                      const walletPK = addressToWalletPK.get(addr);
+                      // Construct a custom wallet facet for the other side.
+                      walletPK.resolve(
+                        getBootstrap(otherSide, { ...meta, dappOrigin }),
+                      );
+                    }
+                  }
+
+                  if (updateCount === undefined) {
+                    // We're completed (i.e. our connection closed or got all
+                    // responses), so don't do more work.
+                    return;
+                  }
+
+                  // Go again.
+                  processNextUpdate(updateCount).catch(e =>
+                    console.error('Cannot process update', updateCount, e),
+                  );
+                }
+
+                // Prime the pump.
+                processNextUpdate(undefined).catch(e =>
+                  console.error('Cannot process first update', e),
+                );
+
+                // Tell them how to find us.
+                return {
+                  type: 'walletRendezvousResponse',
+                  data: { walletAddresses },
+                };
+              }
+
               case 'walletGetPurses':
               case 'walletAddOffer':
                 return adminOnMessage(obj, meta);

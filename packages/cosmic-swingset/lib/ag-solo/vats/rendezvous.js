@@ -9,13 +9,17 @@ import { makeNotifierKit } from '@agoric/notifier';
  */
 
 /**
+ * @typedef {Record<string, any>} AddressResults
+ */
+
+/**
  * Create a factory for makeRendezvous to revolve around.
  */
 export function makeRendezvousMaker() {
   /**
    * @type {Store<string, Store<string, PeerRecord>>}
    */
-  const addrToPeerRecordsStores = makeStore('localAddress');
+  const addrToPeerRecordStores = makeStore('localAddress');
 
   // Return a rendezvous maker.
   return addr =>
@@ -25,11 +29,13 @@ export function makeRendezvousMaker() {
         return addr;
       },
       /**
-       * Start a rendezvous process.
+       * Start a rendezvous notifier process.
        *
-       * @param {Record<string, any>} remoteAddressToResult
+       * @param {AddressResults} remoteAddressToResult
+       * @returns {{ notifier: Notifier<AddressResults>, completer: { complete:
+       * () => void }}}
        */
-      initiateRendezvous(remoteAddressToResult) {
+      startRendezvous(remoteAddressToResult) {
         /**
          * @type {Record<string, any>}
          */
@@ -37,9 +43,9 @@ export function makeRendezvousMaker() {
         let remainingToFind = 0;
 
         /**
-         * @type {NotifierRecord<Record<string, any>>}
+         * @type {NotifierRecord<AddressResults>}
          */
-        const foundNotifier = makeNotifierKit();
+        const { updater, notifier } = makeNotifierKit();
 
         /**
          * @type {Array<() => void>}
@@ -49,7 +55,7 @@ export function makeRendezvousMaker() {
         const completer = {
           complete() {
             // We want to mark the rendezvous as complete.
-            foundNotifier.updater.finish(harden({ ...foundState }));
+            updater.finish(harden({ ...foundState }));
             // Remove any stale references.
             for (const disposal of disposals) {
               disposal();
@@ -66,11 +72,11 @@ export function makeRendezvousMaker() {
            * @type {Store<string, PeerRecord>}
            */
           let addrToPeerRecord;
-          if (addrToPeerRecordsStores.has(remoteAddr)) {
-            addrToPeerRecord = addrToPeerRecordsStores.get(remoteAddr);
+          if (addrToPeerRecordStores.has(remoteAddr)) {
+            addrToPeerRecord = addrToPeerRecordStores.get(remoteAddr);
           } else {
             addrToPeerRecord = makeStore('localAddr');
-            addrToPeerRecordsStores.init(remoteAddr, addrToPeerRecord);
+            addrToPeerRecordStores.init(remoteAddr, addrToPeerRecord);
           }
 
           const found = obj => {
@@ -81,7 +87,7 @@ export function makeRendezvousMaker() {
               completer.complete();
             } else {
               // We need to keep going.
-              foundNotifier.updater.updateState(harden({ ...foundState }));
+              updater.updateState(harden({ ...foundState }));
             }
           };
           const peerRecord = harden({
@@ -104,29 +110,29 @@ export function makeRendezvousMaker() {
           });
         }
 
-        return harden({ notifier: foundNotifier.notifier, completer });
+        return harden({ notifier, completer });
       },
       /**
-       * Complete a rendezvous with multiple remote addresses.
+       * Synchronously complete a rendezvous with any number of remote addresses.
        *
-       * @param {Record<string, any>} remoteAddressToResult
-       * @returns {Record<string, Array<any>>}
+       * @param {AddressResults} remoteAddressToResult
+       * @returns {AddressResults}
        */
       rendezvousWith(remoteAddressToResult) {
         /**
-         * @type {Record<string, Array<any>>}
+         * @type {AddressResults}
          */
-        const resultsByAddress = {};
+        const addressResults = {};
         // Look up all the records associated with us and the remote address.
-        const addrToPeerRecord = addrToPeerRecordsStores.get(addr);
+        const addrToPeerRecord = addrToPeerRecordStores.get(addr);
         for (const [remoteAddr, obj] of Object.entries(remoteAddressToResult)) {
           if (addrToPeerRecord.has(remoteAddr)) {
             const { found, result } = addrToPeerRecord.get(remoteAddr);
             found(obj);
-            resultsByAddress[remoteAddr] = result;
+            addressResults[remoteAddr] = result;
           }
         }
-        return harden(resultsByAddress);
+        return harden(addressResults);
       },
     });
 }

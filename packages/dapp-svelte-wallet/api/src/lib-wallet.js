@@ -86,6 +86,16 @@ export async function makeWallet({
   const pursesFullState = new Map();
   const inboxState = new Map();
 
+  const idToInvitationPK = makeStore('offerId');
+  const ensureInvitationPK = id => {
+    if (idToInvitationPK.has(id)) {
+      return idToInvitationPK.get(id);
+    }
+    const invitationPK = makePromiseKit();
+    idToInvitationPK.init(id, invitationPK);
+    return invitationPK;
+  };
+
   /**
    * The default Zoe invite purse is used to make an offer.
    *
@@ -616,37 +626,48 @@ export async function makeWallet({
       invitationHandleBoardId = inviteHandleBoardId,
     } = offer;
 
-    assert.typeof(
-      invitationHandleBoardId,
-      'string',
-      details`invitationHandleBoardId must be a string`,
-    );
     const { proposal, purseKeywordRecord } = compileProposal(
       offer.proposalTemplate,
     );
 
-    // Find invite in wallet and withdraw
-    const { value: inviteValueElems } = await E(
-      zoeInvitePurse,
-    ).getCurrentAmount();
-    const inviteHandle = await E(board).getValue(invitationHandleBoardId);
-    const matchInvite = element => element.handle === inviteHandle;
-    const inviteBrand = purseToBrand.get(zoeInvitePurse);
-    const { amountMath: inviteAmountMath } = brandTable.getByBrand(inviteBrand);
-    const matchingInvite = inviteValueElems.find(matchInvite);
-    assert(
-      matchingInvite,
-      details`Cannot find invite corresponding to ${q(
+    const invitationPK = ensureInvitationPK(offer.id);
+    const inviteP = invitationPK.promise;
+    if (invitationHandleBoardId) {
+      // Legacy: the offer does not contain the invitation.
+      assert.typeof(
         invitationHandleBoardId,
-      )}`,
-    );
-    const inviteAmount = inviteAmountMath.make(
-      harden([inviteValueElems.find(matchInvite)]),
-    );
-    const inviteP = E(zoeInvitePurse).withdraw(inviteAmount);
+        'string',
+        details`invitationHandleBoardId must be a string`,
+      );
+
+      // Find invite in wallet and withdraw
+      const { value: inviteValueElems } = await E(
+        zoeInvitePurse,
+      ).getCurrentAmount();
+      const inviteHandle = await E(board).getValue(invitationHandleBoardId);
+      const matchInvite = element => element.handle === inviteHandle;
+      const inviteBrand = purseToBrand.get(zoeInvitePurse);
+      const { amountMath: inviteAmountMath } = brandTable.getByBrand(
+        inviteBrand,
+      );
+      const matchingInvite = inviteValueElems.find(matchInvite);
+      assert(
+        matchingInvite,
+        details`Cannot find invite corresponding to ${q(
+          invitationHandleBoardId,
+        )}`,
+      );
+      const inviteAmount = inviteAmountMath.make(
+        harden([inviteValueElems.find(matchInvite)]),
+      );
+      invitationPK.resolve(E(zoeInvitePurse).withdraw(inviteAmount));
+    }
+
+    // Find the details for the invitation.
     const { installation, instance } = await E(zoe).getInvitationDetails(
       inviteP,
     );
+    idToInvitationPK.delete(offer.id);
 
     return {
       proposal,
@@ -754,6 +775,20 @@ export async function makeWallet({
     return dappOrigins.get(origin);
   }
 
+  async function addOfferInvitation(offer, inviteP, requestContext = {}) {
+    const dappOrigin = requestContext.dappOrigin || requestContext.origin;
+    const { id } = offer;
+    if (dappOrigin !== undefined) {
+      assert(
+        id.startsWith(`${dappOrigin}#`),
+        details`Offer id ${id} is not from ${dappOrigin}`,
+      );
+    }
+    const invitationPK = ensureInvitationPK(id);
+    invitationPK.resolve(inviteP);
+    await inviteP;
+  }
+
   async function addOffer(rawOffer, requestContext = {}) {
     const dappOrigin =
       requestContext.dappOrigin || requestContext.origin || 'unknown';
@@ -774,21 +809,23 @@ export async function makeWallet({
 
     // Our inbox state may have an enriched offer.
     await updateInboxState(id, idToOffer.get(id));
-    const { installation, instance } = await compiledOfferP;
-
-    if (!idToOffer.has(id)) {
+    const invitedP = compiledOfferP.then(async ({ installation, instance }) => {
+      if (!idToOffer.has(id)) {
+        return id;
+      }
+      idToOffer.set(
+        id,
+        harden({
+          ...idToOffer.get(id),
+          installation,
+          instance,
+        }),
+      );
+      // Update the inbox any time later.
+      await updateInboxState(id, idToOffer.get(id));
       return id;
-    }
-    idToOffer.set(
-      id,
-      harden({
-        ...idToOffer.get(id),
-        installation,
-        instance,
-      }),
-    );
-    await updateInboxState(id, idToOffer.get(id));
-    return id;
+    });
+    return { offer, invitedP };
   }
 
   function consummated(offer) {
@@ -1245,6 +1282,7 @@ export async function makeWallet({
     getPurse,
     getPurseIssuer,
     addOffer,
+    addOfferInvitation,
     declineOffer,
     cancelOffer,
     acceptOffer,
