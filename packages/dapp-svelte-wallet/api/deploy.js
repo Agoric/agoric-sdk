@@ -12,7 +12,7 @@ export default async function deployWallet(
   const home = await homePromise;
   // console.log('have home', home);
   const {
-    agoric: { board, faucet, zoe },
+    agoric: { board, faucet, rendezvous, zoe },
     local: { http, spawner, wallet: oldWallet },
   } = home;
 
@@ -27,6 +27,7 @@ export default async function deployWallet(
     zoe,
     board,
     faucet,
+    rendezvous,
     http,
   });
 
@@ -34,7 +35,10 @@ export default async function deployWallet(
     if (!wallet) {
       return [];
     }
-    const issuers = await E(wallet).getIssuers();
+    const [issuers, purses] = await Promise.all([
+      E(wallet).getIssuers(),
+      E(wallet).getPurses(),
+    ]);
     const brandToIssuer = new Map();
     await Promise.all([
       issuers.map(async ([issuerPetname, issuer]) => {
@@ -44,7 +48,6 @@ export default async function deployWallet(
         brandToIssuer.set(brand, { issuerPetname, issuer });
       }),
     ]);
-    const purses = await E(wallet).getPurses();
     return Promise.all(
       purses.map(async ([pursePetname, purse]) => {
         const brand = await E(purse).getAllegedBrand();
