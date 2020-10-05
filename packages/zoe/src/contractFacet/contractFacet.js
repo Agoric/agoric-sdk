@@ -382,6 +382,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         });
         powers.exitVatWithFailure(reason);
       },
+      stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
       makeZCFMint,
       makeEmptySeatKit,
 

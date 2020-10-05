@@ -38,6 +38,7 @@
  * @property {MakeZCFMint} makeZCFMint
  * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
+ * @property {() => void} stopAcceptingOffers
  */
 
 /**

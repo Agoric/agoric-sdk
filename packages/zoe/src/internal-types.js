@@ -129,6 +129,7 @@
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {(reason: TerminationReason) => void} failAllSeats
+ * @property {() => void} stopAcceptingOffers
  */
 
 /**
