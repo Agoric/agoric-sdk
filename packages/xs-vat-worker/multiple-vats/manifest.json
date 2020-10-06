@@ -1,0 +1,31 @@
+{
+  "include": [
+    "$(MODDABLE)/examples/manifest_base.json"
+  ],
+  "creation": {
+    "static": 12288,
+    "chunk": {
+      "initial": 1536,
+      "incremental": 512
+    },
+    "heap": {
+      "initial": 64,
+      "incremental": 32
+    },
+    "keys": {
+      "available": 4096,
+      "name": 53,
+      "symbol": 3
+    },
+    "stack": 4096,
+    "main": "main"
+  },
+  "modules": {
+    "file": [
+      "$(MODULES)/base/instrumentation/*",
+      "$(MODULES)/files/file/*",
+      "$(MODULES)/files/file/lin/*"
+    ],
+    "*": ["./main", "./glue", "./vatHost"]
+  }
+}
