@@ -6,10 +6,10 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/02-client/types"
-	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
-	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
-	host "github.com/cosmos/cosmos-sdk/x/ibc/24-host"
+	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
+	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
+	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
+	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

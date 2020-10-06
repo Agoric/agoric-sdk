@@ -2,7 +2,7 @@ syntax = "proto3";
 package agoric.swingset;
 
 import "gogoproto/gogo.proto";
-import "ibc/channel/channel.proto";
+import "ibc/core/channel/v1/channel.proto";
 
 option go_package = "github.com/Agoric/cosmic-swingset/x/swingset/internal/types";
 
@@ -33,7 +33,7 @@ message MsgDeliverInbound {
 message MsgSendPacket {
     option (gogoproto.equal) = false;
 
-    ibc.channel.Packet packet = 1 [
+    ibc.core.channel.v1.Packet packet = 1 [
         (gogoproto.nullable)   = false,
         (gogoproto.jsontag)    = "packet",
         (gogoproto.moretags)   = "yaml:\"packet\""

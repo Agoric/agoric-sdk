@@ -83,7 +83,7 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
 	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGC) --home=t1/n0 --client-home=t1/bootstrap gentx --keyring-backend=test bootstrap --amount=1000000uagstake --chain-id=$(CHAIN_ID)
+	$(AGC) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap --amount=1000000uagstake --chain-id=$(CHAIN_ID)
 	$(AGC) --home=t1/n0 collect-gentxs
 	$(AGC) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults ag-chain-cosmos t1/n0/config
@@ -212,11 +212,12 @@ proto-check-breaking: proto-tools
 
 TM_URL           = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.0-rc3/proto/tendermint
 GOGO_PROTO_URL   = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-IBC_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/ibc
+IBC_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/ibc/core
 COSMOS_SDK_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/cosmos/base
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
-IBC_CHANNEL_TYPES = third_party/proto/ibc/channel
+IBC_CHANNEL_TYPES = third_party/proto/ibc/core/channel/v1
+IBC_CLIENT_TYPES = third_party/proto/ibc/core/client/v1
 SDK_QUERY_TYPES  	= third_party/proto/cosmos/base/query/v1beta1
 
 proto-update-deps:
@@ -224,7 +225,10 @@ proto-update-deps:
 	curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
 
 	mkdir -p $(IBC_CHANNEL_TYPES)
-	curl -sSL $(IBC_PROTO_URL)/channel/channel.proto > $(IBC_CHANNEL_TYPES)/channel.proto
+	curl -sSL $(IBC_PROTO_URL)/channel/v1/channel.proto > $(IBC_CHANNEL_TYPES)/channel.proto
+
+	mkdir -p $(IBC_CLIENT_TYPES)
+	curl -sSL $(IBC_PROTO_URL)/client/v1/client.proto > $(IBC_CLIENT_TYPES)/client.proto
 
 	mkdir -p $(SDK_QUERY_TYPES)
 	curl -sSL $(COSMOS_SDK_PROTO_URL)/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto
