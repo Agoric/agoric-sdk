@@ -88,11 +88,11 @@ export function makeSlogger(writeObj) {
     return harden({ vatConsole, startup, delivery, syscall });
   }
 
-  function addVat(vatID, dynamic, description) {
+  function addVat(vatID, dynamic, description, vatSourceBundle) {
     assert(!vatSlogs.has(vatID), `already have slog for ${vatID}`);
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
-    write({ type: 'create-vat', vatID, dynamic, description });
+    write({ type: 'create-vat', vatID, dynamic, description, vatSourceBundle });
     return vatSlog;
   }
 

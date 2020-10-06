@@ -67,6 +67,7 @@ export function makeVatLoader(stuff) {
   }
 
   const allowedDynamicOptions = [
+    'description',
     'metered',
     'managerType',
     'vatParameters',
@@ -75,6 +76,7 @@ export function makeVatLoader(stuff) {
   ];
 
   const allowedStaticOptions = [
+    'description',
     'vatParameters',
     'managerType',
     'enableSetup',
@@ -134,10 +136,6 @@ export function makeVatLoader(stuff) {
     if (!vatSourceBundle) {
       throw Error(`Bundle ${source.bundleName} not found`);
     }
-    // TODO: maybe hash the bundle object somehow for the description
-    const description = source.bundle
-      ? '(source bundle)'
-      : `from: ${source.bundleName}`;
 
     assertKnownOptions(
       options,
@@ -150,6 +148,12 @@ export function makeVatLoader(stuff) {
       enablePipelining = false,
     } = options;
     let terminated = false;
+
+    // TODO: maybe hash the bundle object somehow for the description
+    const sourceDesc = source.bundle
+      ? '(from source bundle)'
+      : `(from bundleName: ${source.bundleName})`;
+    const description = `${options.description || ''} ${sourceDesc}`;
 
     function notifyTermination(shouldReject, info) {
       insistCapData(info);
@@ -182,7 +186,7 @@ export function makeVatLoader(stuff) {
         throw Error(`vat creation requires a bundle, not a plain string`);
       }
 
-      kernelSlog.addVat(vatID, isDynamic, description);
+      kernelSlog.addVat(vatID, isDynamic, description, vatSourceBundle);
       const managerOptions = {
         bundle: vatSourceBundle,
         metered,
