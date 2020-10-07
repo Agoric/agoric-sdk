@@ -1,3 +1,4 @@
+// @ts-check
 // import { spawn } from 'child_process'; // not from Compartment
 
 import { assert } from '@agoric/assert';
@@ -23,9 +24,37 @@ function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
 }
 
+/**
+ * @param {{
+ *   startSubprocessWorker: () => {
+ *     fromChild: Readable,
+ *     toChild: Writable,
+ *     terminate: () => void,
+ *     done: Promise<void>,
+ *   },
+ *   kernelKeeper: {
+ *     getVatKeeper: (id: string) => unknown,
+ *   },
+ *   testLog: (...args: unknown[]) => void,
+ * }} tools
+ * @returns {{
+ *   createFromBundle: (id: string, b: Bundle, o: ManagerOptions) => Promise<VatManager>
+ * }}
+ *
+ * @typedef { import('stream').Readable } Readable
+ * @typedef { import('stream').Writable } Writable
+ * @typedef { { moduleFormat: string, source: string, sourceMap: string } } Bundle
+ */
 export function makeNodeSubprocessFactory(tools) {
   const { startSubprocessWorker, kernelKeeper, testLog, decref } = tools;
 
+  /**
+   *
+   * @param {string} vatID
+   * @param {Bundle} bundle
+   * @param {ManagerOptions} managerOptions
+   * @returns {Promise<VatManager>}
+   */
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters, virtualObjectCacheSize } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
@@ -55,13 +84,19 @@ export function makeNodeSubprocessFactory(tools) {
     const { doSyscall, setVatSyscallHandler } = createSyscall(
       transcriptManager,
     );
+    /**
+     * @param {unknown} vatSyscallObject
+     * @returns {void}
+     */
     function handleSyscall(vatSyscallObject) {
       // We are currently invoked by an async piped from the worker thread,
       // whose vat code has moved on (it really wants a synchronous/immediate
       // syscall). TODO: unlike threads, subprocesses could be made to wait
       // by doing a blocking read from the pipe, so we could fix this, and
       // re-enable syscall.callNow
-      const type = vatSyscallObject[0];
+      const type = Array.isArray(vatSyscallObject)
+        ? vatSyscallObject[0]
+        : typeof vatSyscallObject;
       if (type === 'callNow') {
         throw Error(`nodeWorker cannot block, cannot use syscall.callNow`);
       }
@@ -78,18 +113,25 @@ export function makeNodeSubprocessFactory(tools) {
     // start the worker and establish a connection
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();
 
+    /** @type {(msg: Serializable[]) => void} */
     function sendToWorker(msg) {
       assert(Array.isArray(msg));
       toChild.write(msg);
     }
 
+    /** @type { PromiseRecord<void>} */
     const {
       promise: dispatchReadyP,
       resolve: dispatchIsReady,
     } = makePromiseKit();
-    let waiting;
+    /** @type {null | ((r: Serializable[]) => void) } */
+    let waiting = null;
 
-    function handleUpstream([type, ...args]) {
+    /** @type {(data: unknown) => void} */
+    function handleUpstream(data) {
+      const type = Array.isArray(data) ? data[0] : typeof data;
+      const args = Array.isArray(data) ? data.slice(1) : [];
+
       parentLog(`received`, type);
       if (type === 'setUplinkAck') {
         parentLog(`upload ready`);
@@ -126,6 +168,10 @@ export function makeNodeSubprocessFactory(tools) {
     parentLog(`instructing worker to load bundle..`);
     sendToWorker(['setBundle', bundle, vatParameters, virtualObjectCacheSize]);
 
+    /**
+     * @param {Serializable[]} delivery
+     * @returns {Promise<Serializable[]>}
+     */
     function deliver(delivery) {
       parentLog(`sending delivery`, delivery);
       assert(!waiting, `already waiting for delivery`);
@@ -145,6 +191,7 @@ export function makeNodeSubprocessFactory(tools) {
       return done;
     }
 
+    /** @type { VatManager } */
     const manager = harden({
       replayTranscript,
       setVatSyscallHandler,

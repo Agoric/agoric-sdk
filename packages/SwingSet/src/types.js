@@ -35,3 +35,38 @@
  * @typedef {{ state: 'fulfilledToData', data: CapData }} ToData
  * @typedef {{ state: 'rejected', data: CapData }} Rejected
  */
+
+/**
+ * @typedef { import('@agoric/bundle-source').Bundle } Bundle
+ */
+
+/**
+ * @typedef {{
+ *   bundle: Bundle,
+ *   enableSetup: false,
+ * }} HasBundle
+ * @typedef {{
+ *   setup: unknown,
+ *   enableSetup: true,
+ * }} HasSetup
+ *
+ * TODO: metered...
+ * @typedef {{
+ *   managerType: 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker',
+ *   metered?: boolean,
+ *   enableInternalMetering?: boolean,
+ *   vatParameters: Serializable,
+ * } & (HasBundle | HasSetup)} ManagerOptions
+ */
+
+/** @typedef { Scalar | Scalar[] | Record<string, Scalar> } Serializable */
+/** @typedef { null | boolean | number | string } Scalar */
+
+/**
+ * @typedef {{
+ *   replayTranscript: () => void,
+ *   setVatSyscallHandler: (h: any) => void,
+ *   deliver: (d: [Serializable, ...Serializable[]]) => Promise<Serializable[]>,
+ *   shutdown: () => Promise<void>,
+ * }} VatManager
+ */
