@@ -1,5 +1,19 @@
-import { insistMessage } from '../../message';
+// @ts-check
+import { asMessage } from '../../message';
 
+/**
+ * @param {{
+ *   vatID: string;
+ *   stopGlobalMeter: () => void;
+ *   meterRecord: TODO;
+ *   refillAllMeters: () => void;
+ *   transcriptManager: TODO;
+ *   vatKeeper: TODO;
+ *   waitUntilQuiescent: () => Promise<undefined>;
+ * }} tools
+ * @param {Record<string, (...args: unknown[]) => unknown>} dispatch
+ * @typedef { any } TODO
+ */
 export function makeDeliver(tools, dispatch) {
   const {
     meterRecord,
@@ -15,9 +29,10 @@ export function makeDeliver(tools, dispatch) {
    * Run a function, returning a promise that waits for the promise queue to be
    * empty before resolving.
    *
-   * @param {*} f  The function to run
-   * @param {string} errmsg  Tag string to be associated with the error message that gets
+   * @param {() => unknown} f  The function to run
+   * @param {string | null} errmsg  Tag string to be associated with the error message that gets
    *     logged if `f` rejects.
+   * @returns { Promise<undefined> }
    *
    * The kernel uses `runAndWait` to wait for the vat to become quiescent (that
    * is, with nothing remaining on the promise queue) after a dispatch call.
@@ -43,13 +58,19 @@ export function makeDeliver(tools, dispatch) {
     // TODO: accumulate used.allocate and used.compute into vatStats
   }
 
+  /**
+   *
+   * @param {[string, ...unknown[]]} dispatchRecord
+   * @param {string|null} errmsg
+   * @returns { Promise<['ok'] | ['error', string ]> }
+   */
   async function doProcess(dispatchRecord, errmsg) {
-    const dispatchOp = dispatchRecord[0];
-    const dispatchArgs = dispatchRecord.slice(1);
+    const [dispatchOp, ...dispatchArgs] = dispatchRecord;
     transcriptManager.startDispatch(dispatchRecord);
     await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
     stopGlobalMeter();
 
+    /** @type {['ok'] | ['error', string ]} */
     let status = ['ok'];
     // refill this vat's meter, if any, accumulating its usage for stats
     if (meterRecord) {
@@ -72,8 +93,14 @@ export function makeDeliver(tools, dispatch) {
     return status;
   }
 
-  async function deliverOneMessage(targetSlot, msg) {
-    insistMessage(msg);
+  /**
+   * @param {Reference} targetSlot
+   * @param {Message} msg_ Q: is there any rhyme or reason to when args
+   *                       are assumed to be type-correct and when
+   *                       they are checked? The checking seems incomplete.
+   */
+  async function deliverOneMessage(targetSlot, msg_) {
+    const msg = asMessage(msg_);
     const errmsg = `vat[${vatID}][${targetSlot}].${msg.method} dispatch failed`;
     return doProcess(
       ['deliver', targetSlot, msg.method, msg.args, msg.result],
@@ -81,11 +108,16 @@ export function makeDeliver(tools, dispatch) {
     );
   }
 
+  /**
+   * @param {PromiseReference} vpid
+   * @param {Resolution} vp
+   */
   async function deliverOneNotification(vpid, vp) {
     const errmsg = `vat[${vatID}].promise[${vpid}] ${vp.state} failed`;
     switch (vp.state) {
       case 'fulfilledToPresence':
         return doProcess(['notifyFulfillToPresence', vpid, vp.slot], errmsg);
+      // @ts-ignore
       case 'redirected':
         // TODO unimplemented
         throw new Error('not implemented yet');
@@ -94,25 +126,31 @@ export function makeDeliver(tools, dispatch) {
       case 'rejected':
         return doProcess(['notifyReject', vpid, vp.data], errmsg);
       default:
+        // @ts-ignore
         throw Error(`unknown promise state '${vp.state}'`);
     }
   }
 
-  // vatDeliverObject is:
-  //  ['message', target, msg]
-  //   target is vid
-  //   msg is: { method, args (capdata), result }
-  //  ['notify', vpid, vp]
-  //   vp is the current (final) promise data, rendered in vat form
+  /**
+   * @param {Delivery} vatDeliverObject
+   */
   async function deliver(vatDeliverObject) {
-    const [type, ...args] = vatDeliverObject;
-    switch (type) {
-      case 'message':
-        return deliverOneMessage(...args);
-      case 'notify':
-        return deliverOneNotification(...args);
+    switch (vatDeliverObject[0]) {
+      case 'message': {
+        // Q: was the former use of ...args here defensive
+        // in case vatDeliverObject was the wrong length?
+        // If so, why assume vatDeliverObject is an Array at all?
+        // Or is the fact that the destructuring assignment
+        // will throw if it is not supposed to suffice?
+        const [_ty, ref, msg] = vatDeliverObject;
+        return deliverOneMessage(ref, msg);
+      }
+      case 'notify': {
+        const [_ty, ref, res] = vatDeliverObject;
+        return deliverOneNotification(ref, res);
+      }
       default:
-        throw Error(`unknown delivery type ${type}`);
+        throw Error(`unknown delivery type ${vatDeliverObject[0]}`);
     }
   }
 
