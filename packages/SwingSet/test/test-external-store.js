@@ -18,7 +18,7 @@ const runTests = (t, mf) => {
 
 test('original sources', t => {
   // This is the original source code.
-  const { maker: makeFoo } = makeStoreKit('foo', (msg = 'Hello') => {
+  const { make: makeFoo } = makeExternalStore((msg = 'Hello') => {
     let startCount = 24;
     startCount += 1;
     let invocationCount = startCount;
@@ -54,7 +54,7 @@ test('rewritten code', t => {
    *
    * Declarations are not considered side-effects.
    */
-  const { maker: makeFoo2, store } = makeExternalStoreKit('foo', {
+  const store = makeSwingSetKernelStore({
     adaptArguments: (msg = 'Hello') => ({ msg }),
     makeHydrate: $hinit => $hdata => {
       let startCount = $hinit && 24;
@@ -72,10 +72,9 @@ test('rewritten code', t => {
       $hinit && obj.hello('init');
       return obj;
     },
-    makeExternalStore: makeSwingSetKernelStore,
   });
 
-  const h = runTests(t, makeFoo2);
+  const h = runTests(t, store.make);
   const key = store.getKey(h);
   t.is(key, '1');
   const h2 = store.load(key);
@@ -102,7 +101,6 @@ test('rewritten code', t => {
  * @typedef {(data: Record<string, any>) => any} Hydrate
  * @typedef {(init: boolean) => Hydrate} MakeHydrate when init is falsy, prevent
  * hydrate from having any side-effects
- * @typedef {(...args: any[]) => any} MakeInstance
  */
 
 /**
@@ -112,72 +110,43 @@ test('rewritten code', t => {
  * @property {(key: string) => any} get
  *
  * @typedef {Object} ExternalStore
- * @property {(key: string) => any} load
- * @property {(data: any) => any} init
+ * @property {(...args: Array<any>) => any} make
  * @property {(value: any) => string} getKey
- *
- * @typedef {Object} ExternalStoreKit
- * @property {MakeInstance} maker
- * @property {ExternalStore} store
+ * @property {(key: string) => any} load
  */
 
 /**
- * @param {string} keyName
- * @param {MakeInstance} maker
- * @returns {ExternalStoreKit}
+ * @param {(...args: Array<any>) => any} maker
+ * @returns {ExternalStore}
  */
-function makeStoreKit(keyName, maker) {
-  // The default store kit has no query ability.
-  const store = {
+function makeExternalStore(maker) {
+  // The default store has no query ability.
+  return harden({
     load(_key) {
       throw Error('unimplemented');
     },
-    init(_data) {
-      throw Error('unimplemented');
+    make(...args) {
+      return maker(...args);
     },
     getKey(_obj) {
       throw Error('unimelpmented');
     },
-  };
-  return { maker, store };
+  });
 }
 
 /**
- * @typedef {Object} ExternalOpts
- * @property {AdaptArguments} adaptArguments
- * @property {MakeHydrate} makeHydrate
- * @property {(keyName: string, makeHydrate: MakeHydrate) => ExternalStore} makeExternalStore
- *
- * @param {string} keyName
- * @param {ExternalOpts} param1
- * @returns {ExternalStoreKit}
- */
-function makeExternalStoreKit(
-  keyName,
-  { adaptArguments, makeHydrate, makeExternalStore },
-) {
-  // Prevent side-effects when resurrecting an object.
-  const store = makeExternalStore(keyName, makeHydrate);
-  const maker = (...args) => {
-    const data = adaptArguments(...args);
-    return store.init(data);
-  };
-
-  return { maker, store };
-}
-
-/**
- * @param {string} keyName
- * @param {MakeHydrate} makeHydrate
+ * @param {object} param0
+ * @param {AdaptArguments} param0.adaptArguments
+ * @param {MakeHydrate} param0.makeHydrate
  * @returns {ExternalStore}
  */
-function makeSwingSetKernelStore(keyName, makeHydrate) {
+function makeSwingSetKernelStore({ adaptArguments, makeHydrate }) {
   const serialize = JSON.stringify;
   const unserialize = JSON.parse;
 
   const valueToKey = new WeakMap();
   let lastEntryKey = 0;
-  const store = makeStore(keyName);
+  const store = makeStore('entryKey');
 
   /**
    * Create a data object that queues writes to the store.
@@ -203,7 +172,8 @@ function makeSwingSetKernelStore(keyName, makeHydrate) {
   const initHydrate = makeHydrate(true);
   const hydrate = makeHydrate(false);
   const estore = {
-    init(data) {
+    make(...args) {
+      const data = adaptArguments(...args);
       // Create a new object with the above guts.
       lastEntryKey += 1;
       const key = `${lastEntryKey}`;
@@ -214,16 +184,16 @@ function makeSwingSetKernelStore(keyName, makeHydrate) {
       store.init(key, serialize(data));
       return estore.load(key);
     },
+    getKey(value) {
+      return valueToKey.get(value);
+    },
     load(key) {
-      // FIXME: Return an existing instance if there is one.
+      // FIXME: Maybe try to handle returning a single identity.
       const data = unserialize(store.get(key));
       const activeData = makeActiveData(key, data);
       const obj = hydrate(activeData);
       valueToKey.set(obj, key);
       return obj;
-    },
-    getKey(value) {
-      return valueToKey.get(value);
     },
   };
   return estore;
