@@ -59,14 +59,11 @@
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
 
-/** @typedef { Scalar | Scalar[] | Record<string, Scalar> } Serializable */
-/** @typedef { null | boolean | number | string } Scalar */
-
 /**
  * @typedef {{
  *   replayTranscript: () => void,
  *   setVatSyscallHandler: (h: any) => void,
- *   deliver: (d: [Serializable, ...Serializable[]]) => Promise<Serializable[]>,
+ *   deliver: (d: [unknown, ...unknown[]]) => Promise<unknown[]>,
  *   shutdown: () => Promise<void>,
  * }} VatManager
  */
