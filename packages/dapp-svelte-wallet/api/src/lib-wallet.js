@@ -369,12 +369,6 @@ export async function makeWallet({
 
     const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const invite = await inviteP;
-
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
     // Payments are made for the keywords in proposal.give.
     const keywords = [];
@@ -402,7 +396,7 @@ export async function makeWallet({
     );
 
     const seat = E(zoe).offer(
-      invite,
+      inviteP,
       harden(proposal),
       harden(paymentKeywordRecord),
     );
