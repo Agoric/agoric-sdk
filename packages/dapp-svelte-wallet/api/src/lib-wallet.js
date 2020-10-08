@@ -385,8 +385,17 @@ export async function makeWallet({
       },
     );
 
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
+
+    // this await is purely to prevent "embarresment" of
+    // revealing to zoe that we had insufficient funds/assets
+    // for the offer.
+    const payments = await paymentPs;
+
     const paymentKeywordRecord = Object.fromEntries(
-      keywords.map((keyword, i) => [keyword, paymentPs[i]]),
+      keywords.map((keyword, i) => [keyword, payments[i]]),
     );
 
     const seat = E(zoe).offer(
