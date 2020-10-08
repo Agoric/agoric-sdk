@@ -19,7 +19,7 @@ export const rethrowUnlessMissing = err => {
   // exists.
   if (
     !(err instanceof TypeError) ||
-    !err.message.match(/target\[.*\] does not exist|is not a function$/)
+    !err.message.match(/target has no method|is not a function$/)
   ) {
     throw err;
   }
