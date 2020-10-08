@@ -407,13 +407,12 @@ export async function makeWallet({
             // be an integer).
             payoutIndexToKeyword[i] = keyword;
             return payoutP;
-          }).map(async (payoutP, payoutIndex) => {
+          }).map((payoutP, payoutIndex) => {
               const keyword = payoutIndexToKeyword[payoutIndex];
               const purse = purseKeywordRecord[keyword];
               if (purse && payoutP) {
-                const payout = await payoutP;
                 // eslint-disable-next-line no-use-before-define
-                return addPayment(payout, purse);
+                return addPayment(payoutP, purse);
               }
               return undefined;
             }),
