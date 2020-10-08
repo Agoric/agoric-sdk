@@ -392,7 +392,7 @@ export async function makeWallet({
     // this await is purely to prevent "embarresment" of
     // revealing to zoe that we had insufficient funds/assets
     // for the offer.
-    const payments = await paymentPs;
+    const payments = await Promise.all(paymentPs);
 
     const paymentKeywordRecord = Object.fromEntries(
       keywords.map((keyword, i) => [keyword, payments[i]]),
