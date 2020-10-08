@@ -117,6 +117,19 @@ export function buildRootObject(_vatPowers) {
               [meta.channelHandle],
             );
           },
+          error(offer, reason) {
+            httpSend(
+              {
+                type: 'walletOfferResult',
+                data: {
+                  id: offer.id,
+                  dappContext: offer.dappContext,
+                  error: `${(reason && reason.stack) || reason}`,
+                },
+              },
+              [meta.channelHandle],
+            );
+          },
           handled(offer) {
             if (handled) {
               return;
