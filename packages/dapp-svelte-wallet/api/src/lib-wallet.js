@@ -928,6 +928,9 @@ export async function makeWallet({
         .catch(rejected);
     } catch (e) {
       console.error('Have error', e);
+      if (offer.actions) {
+        E(offer.actions).error(offer, e);
+      }
       rejected(e);
       throw e;
     }
