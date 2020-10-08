@@ -385,14 +385,8 @@ export async function makeWallet({
       },
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const payments = await Promise.all(paymentPs);
-
     const paymentKeywordRecord = Object.fromEntries(
-      keywords.map((keyword, i) => [keyword, payments[i]]),
+      keywords.map((keyword, i) => [keyword, paymentPs[i]]),
     );
 
     const seat = E(zoe).offer(
@@ -413,10 +407,7 @@ export async function makeWallet({
             // be an integer).
             payoutIndexToKeyword[i] = keyword;
             return payoutP;
-          }),
-        ).then(payoutArray =>
-          Promise.all(
-            payoutArray.map(async (payoutP, payoutIndex) => {
+          }).map(async (payoutP, payoutIndex) => {
               const keyword = payoutIndexToKeyword[payoutIndex];
               const purse = purseKeywordRecord[keyword];
               if (purse && payoutP) {
