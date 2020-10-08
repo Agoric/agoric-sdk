@@ -38,5 +38,5 @@ rest-server)
 esac
 
 exec docker run -i $FLAGS --entrypoint="$ENTRY" \
-  --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
+  --volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos \
   --rm "$IMAGE"$ARGS ${1+"$@"}

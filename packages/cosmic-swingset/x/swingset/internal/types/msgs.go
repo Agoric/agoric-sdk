@@ -4,23 +4,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	chanTypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
+	chanTypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
 )
 
 const RouterKey = ModuleName // this was defined in your key.go file
 
-// MsgDeliverInbound defines a DeliverInbound message
-type MsgDeliverInbound struct {
-	Messages  []string
-	Nums      []int
-	Ack       int
-	Submitter sdk.AccAddress
-}
+var _, _, _ sdk.Msg = &MsgDeliverInbound{}, &MsgProvision{}, &MsgSendPacket{}
 
-var _ sdk.Msg = &MsgDeliverInbound{}
-
-func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) MsgDeliverInbound {
-	return MsgDeliverInbound{
+func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
+	return &MsgDeliverInbound{
 		Messages:  msgs.Messages,
 		Nums:      msgs.Nums,
 		Ack:       msgs.Ack,
@@ -37,7 +29,7 @@ func (msg MsgDeliverInbound) Type() string { return "eventualSend" }
 // ValidateBasic runs stateless checks on the message
 func (msg MsgDeliverInbound) ValidateBasic() error {
 	if msg.Submitter.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter.String())
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if len(msg.Messages) != len(msg.Nums) {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
@@ -63,9 +55,9 @@ func (msg MsgDeliverInbound) GetSignBytes() []byte {
 		msg.Messages = []string{}
 	}
 	if msg.Nums == nil {
-		msg.Nums = []int{}
+		msg.Nums = []uint64{}
 	}
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required
@@ -73,17 +65,9 @@ func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
 }
 
-// MsgSendPacket sends an outgoing IBC packet
-type MsgSendPacket struct {
-	Packet chanTypes.Packet `json:"packet" yaml:"packet"`
-	Sender sdk.AccAddress   `json:"sender" yaml:"sender"`
-}
-
-var _ sdk.Msg = MsgSendPacket{}
-
 // NewMsgSendPacket returns a new send request
-func NewMsgSendPacket(packet chanTypes.Packet, sender sdk.AccAddress) MsgSendPacket {
-	return MsgSendPacket{
+func NewMsgSendPacket(packet chanTypes.Packet, sender sdk.AccAddress) *MsgSendPacket {
+	return &MsgSendPacket{
 		Packet: packet,
 		Sender: sender,
 	}
@@ -103,7 +87,7 @@ func (msg MsgSendPacket) ValidateBasic() error {
 
 // GetSignBytes implements sdk.Msg
 func (msg MsgSendPacket) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners implements sdk.Msg
@@ -116,18 +100,8 @@ func (msg MsgSendPacket) Type() string {
 	return "sendpacket"
 }
 
-// MsgProvision defines a Provision message
-type MsgProvision struct {
-	Nickname   string         `json:"nickname" yaml:"nickname"`
-	Address    sdk.AccAddress `json:"address" yaml:"address"`
-	PowerFlags []string       `json:"powerFlags" yaml:"powerFlags"`
-	Submitter  sdk.AccAddress `json:"submitter" yaml:"submitter"`
-}
-
-var _ sdk.Msg = &MsgProvision{}
-
-func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) MsgProvision {
-	return MsgProvision{
+func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) *MsgProvision {
+	return &MsgProvision{
 		Nickname:   nickname,
 		Address:    addr,
 		PowerFlags: powerFlags,
@@ -144,10 +118,10 @@ func (msg MsgProvision) Type() string { return "provision" }
 // ValidateBasic runs stateless checks on the message
 func (msg MsgProvision) ValidateBasic() error {
 	if msg.Submitter.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter.String())
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if msg.Address.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Address.String())
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Peer address cannot be empty")
 	}
 	if len(msg.Nickname) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
@@ -163,7 +137,7 @@ func (msg MsgProvision) GetSignBytes() []byte {
 	if msg.PowerFlags == nil {
 		msg.PowerFlags = []string{}
 	}
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required

@@ -41,14 +41,14 @@ npm install
 npm run build
 ```
 
-Make symbolic links somewhere in your `$PATH` (such as `/usr/local/bin`) as below: 
+Make a symbolic link somewhere in your `$PATH` (such as `/usr/local/bin`) as below: 
 
 ```sh
 ln -s $PWD/bin/ag-chain-cosmos /usr/local/bin/
 ln -s $GOPATH/bin/ag-cosmos-helper /usr/local/bin/
 ```
 
-Test that the links work with:
+Test that the link works with:
 
 ```sh
 ag-chain-cosmos --help

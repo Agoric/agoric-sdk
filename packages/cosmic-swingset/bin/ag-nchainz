@@ -69,8 +69,8 @@ testnet)
 		$SOLO init $solo --webport=$port
     addr=$(cat $solo/ag-cosmos-helper-address)
 		$DAEMON add-genesis-account --home=$n0d \
-      --home-client=$solo/$CLI-statedir --keyring-backend=test \
-      ag-solo 1000uag,1provisionpass
+      $($CLI --home=$solo/$CLI-statedir --keyring-backend=test keys show -a ag-solo) \
+      1000uag,1provisionpass
     # Generate powerful SwingSet egresses.
     egresses="$egresses$sep{\"nickname\":\"$solo\",\"peer\":\"$addr\",\"powerFlags\":$POWER_FLAGS}"
     sep=,

@@ -116,7 +116,6 @@ export async function connectToChain(
       const fullArgs = [
         ...args,
         `--chain-id=${chainID}`,
-        '--output=json',
         `--node=tcp://${rpcAddr}`,
         `--home=${helperDir}`,
       ];
@@ -244,7 +243,7 @@ export async function connectToChain(
     queuedHelper(
       'getMailbox',
       1, // Only one helper running at a time.
-      ['query', 'swingset', 'mailbox', myAddr],
+      ['query', 'swingset', 'mailbox', myAddr, '-ojson'],
       // eslint-disable-next-line consistent-return
       ret => {
         const { stdout, stderr } = ret;
@@ -332,7 +331,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
       // Open the WebSocket.
       const ws = new WebSocket(`ws://${rpcAddr}/websocket`);
       ws.addEventListener('error', e => {
-        log.error('WebSocket error', e);
+        log.debug('WebSocket error', e);
       });
 
       // This magic identifier just distinguishes our subscription
@@ -466,7 +465,6 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
         '--gas=auto',
         '--gas-adjustment=1.2',
         '--from=ag-solo',
-        '-ojson',
         '--broadcast-mode=block', // Don't return until committed.
         '--yes',
       ];

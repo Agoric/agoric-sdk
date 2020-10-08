@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -9,17 +8,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 
 	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 )
 
-func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
+func GetTxCmd(storeKey string) *cobra.Command {
 	swingsetTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "SwingSet transaction subcommands",
@@ -28,26 +24,27 @@ func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	swingsetTxCmd.AddCommand(flags.PostCommands(
-		GetCmdDeliver(cdc),
-		GetCmdProvisionOne(cdc),
-	)...)
+	swingsetTxCmd.AddCommand(
+		GetCmdDeliver(),
+		GetCmdProvisionOne(),
+	)
 
 	return swingsetTxCmd
 }
 
 // GetCmdDeliver is the CLI command for sending a DeliverInbound transaction
-func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func GetCmdDeliver() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "deliver [json string]",
 		Short: "deliver inbound messages",
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
+			cctx := client.GetClientContextFromCmd(cmd)
+			cctx, err := client.ReadTxCommandFlags(cctx, cmd.Flags())
+			if err != nil {
+				return err
+			}
 
 			jsonIn := args[0]
 			if jsonIn[0] == '@' {
@@ -70,28 +67,31 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgDeliverInbound(msgs, cliCtx.GetFromAddress())
+			msg := types.NewMsgDeliverInbound(msgs, cctx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+			return tx.GenerateOrBroadcastTxCLI(cctx, cmd.Flags(), msg)
 		},
 	}
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
 }
 
 // GetCmdProvision is the CLI command for sending a Provision transaction
-func GetCmdProvisionOne(cdc *codec.Codec) *cobra.Command {
-	return &cobra.Command{
+func GetCmdProvisionOne() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "provision-one [nickname] [address] [power-flags]",
 		Short: "provision a single address",
 		Args:  cobra.RangeArgs(2, 3),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inBuf := bufio.NewReader(cmd.InOrStdin())
-			cliCtx := context.NewCLIContext().WithCodec(cdc)
-
-			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
+			cctx := client.GetClientContextFromCmd(cmd)
+			cctx, err := client.ReadTxCommandFlags(cctx, cmd.Flags())
+			if err != nil {
+				return err
+			}
 
 			addr, err := sdk.AccAddressFromBech32(args[1])
 			if err != nil {
@@ -103,12 +103,15 @@ func GetCmdProvisionOne(cdc *codec.Codec) *cobra.Command {
 				powerFlags = strings.Split(args[2], ",")
 			}
 
-			msg := types.NewMsgProvision(args[0], addr, powerFlags, cliCtx.GetFromAddress())
+			msg := types.NewMsgProvision(args[0], addr, powerFlags, cctx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
 
-			return authclient.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+			return tx.GenerateOrBroadcastTxCLI(cctx, cmd.Flags(), msg)
 		},
 	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
 }

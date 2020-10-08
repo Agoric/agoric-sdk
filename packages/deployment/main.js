@@ -260,49 +260,25 @@ show-config      display the client connection parameters
 
     case 'bump-chain-version': {
       await inited();
-      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        string: ['tag'],
-      });
-
+      const subArgs = args.slice(1);
       const versionFile = `chain-version.txt`;
 
-      let major = 0;
-      let minor = 0;
-      let revision = 0;
-      let tag = '';
+      let epoch = '0';
       if (await exists(versionFile)) {
         const vstr = await trimReadFile(versionFile);
-        const match = vstr.match(/^(\d+)\.(\d+)\.(\d+)(.*)$/);
-        if (match) {
-          [major, minor, revision, tag] = match.slice(1);
-        } else {
-          tag = vstr;
-        }
+        const match = vstr.match(/^(\d+)/);
+        epoch = match[1] || '0';
       }
 
       let versionKind = subArgs[0];
-      if (subOpts.tag !== undefined) {
-        tag = subOpts.tag;
-      } else if (subArgs[0] === undefined || String(subArgs[0]) === 'true') {
+      if (subArgs[0] === undefined || String(subArgs[0]) === 'true') {
         // Default bump.
-        versionKind = 'patch';
+        versionKind = 'epoch';
       }
 
       switch (versionKind) {
-        case 'major':
-          major = Number(major) + 1;
-          minor = '0';
-          revision = '0';
-          break;
-
-        case 'minor':
-          minor = Number(minor) + 1;
-          revision = '0';
-          break;
-
-        case 'revision':
-        case 'patch':
-          revision = Number(revision) + 1;
+        case 'epoch':
+          epoch = Number(epoch) + 1;
           break;
 
         case 'none':
@@ -311,13 +287,11 @@ show-config      display the client connection parameters
 
         default:
           if (!versionKind.match(/^[1-9]/)) {
-            throw Error(
-              `${versionKind} is not one of "major", "minor", "revision", or 1.2.3`,
-            );
+            throw Error(`${versionKind} is not one of "epoch", or NNN`);
           }
       }
 
-      let vstr = `${major}.${minor}.${revision}${tag}`;
+      let vstr = `${epoch}`;
       if (versionKind.match(/^[1-9]/)) {
         vstr = versionKind;
       }

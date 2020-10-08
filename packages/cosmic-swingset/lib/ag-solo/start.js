@@ -32,9 +32,6 @@ import { makeWithQueue } from './vats/queue';
 import { connectToChain } from './chain-cosmos-sdk';
 import { connectToFakeChain } from './fake-chain';
 
-// import { makeChainFollower } from './follower';
-// import { makeDeliverator } from './deliver-with-ag-cosmos-helper';
-
 const log = anylogger('start');
 
 let swingSetRunning = false;

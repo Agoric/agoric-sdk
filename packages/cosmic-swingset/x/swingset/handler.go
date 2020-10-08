@@ -19,7 +19,7 @@ type deliverInboundAction struct {
 	Type        string          `json:"type"`
 	Peer        string          `json:"peer"`
 	Messages    [][]interface{} `json:"messages"`
-	Ack         int             `json:"ack"`
+	Ack         uint64          `json:"ack"`
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
@@ -39,13 +39,13 @@ func NewHandler(keeper Keeper) sdk.Handler {
 		switch msg := msg.(type) {
 		// Legacy deliver inbound.
 		// TODO: Sometime merge with IBC?
-		case MsgDeliverInbound:
+		case *MsgDeliverInbound:
 			return handleMsgDeliverInbound(ctx, keeper, msg)
 
-		case MsgSendPacket:
+		case *MsgSendPacket:
 			return handleMsgSendPacket(ctx, keeper, msg)
 
-		case MsgProvision:
+		case *MsgProvision:
 			return handleMsgProvision(ctx, keeper, msg)
 
 		default:
@@ -63,7 +63,7 @@ func mailboxPeer(key string) (string, error) {
 	return path[1], nil
 }
 
-func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbound) (*sdk.Result, error) {
+func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg *MsgDeliverInbound) (*sdk.Result, error) {
 	messages := make([][]interface{}, len(msg.Messages))
 	for i, message := range msg.Messages {
 		messages[i] = make([]interface{}, 2)
@@ -97,14 +97,14 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 }
 
 type sendPacketAction struct {
-	MsgSendPacket
+	*MsgSendPacket
 	Type        string `json:"type"`  // IBC_EVENT
 	Event       string `json:"event"` // sendPacket
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
 }
 
-func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sdk.Result, error) {
+func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*sdk.Result, error) {
 	onePass := sdk.NewInt64Coin("sendpacketpass", 1)
 	balance := keeper.GetBalance(ctx, msg.Sender, onePass.Denom)
 	if balance.IsLT(onePass) {
@@ -138,13 +138,13 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sd
 }
 
 type provisionAction struct {
-	MsgProvision
+	*MsgProvision
 	Type        string `json:"type"` // IBC_EVENT
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
 }
 
-func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg MsgProvision) (*sdk.Result, error) {
+func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg *MsgProvision) (*sdk.Result, error) {
 	onePass := sdk.NewInt64Coin("provisionpass", 1)
 	balance := keeper.GetBalance(ctx, msg.Submitter, onePass.Denom)
 	if balance.IsLT(onePass) {
