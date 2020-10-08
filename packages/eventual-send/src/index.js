@@ -362,7 +362,7 @@ export function makeHandledPromise() {
         if (!(t instanceof Function)) {
           const ftype = typeof t;
           throw TypeError(
-            `method name was undefined. (target's type is "${ftype}")`,
+            `Cannot invoke target as a function, the type is ${ftype}`,
           );
         }
         return t(...args);

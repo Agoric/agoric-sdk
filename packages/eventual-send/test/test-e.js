@@ -59,6 +59,17 @@ test('E call missing method', async t => {
   });
 });
 
+test('E call undefined method', async t => {
+  const x = {
+    double(n) {
+      return 2 * n;
+    },
+  };
+  await t.throwsAsync(() => E(x)(6), {
+    message: 'Cannot invoke target as a function, the type is object',
+  });
+});
+
 test('E invoke a non-method', async t => {
   const x = { double: 24 };
   await t.throwsAsync(() => E(x).double(6), {
