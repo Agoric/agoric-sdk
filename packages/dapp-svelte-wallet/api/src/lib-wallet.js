@@ -401,11 +401,7 @@ export async function makeWallet({
       keywords.map((keyword, i) => [keyword, payments[i]]),
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const seat = await E(zoe).offer(
+    const seat = E(zoe).offer(
       invite,
       harden(proposal),
       harden(paymentKeywordRecord),
