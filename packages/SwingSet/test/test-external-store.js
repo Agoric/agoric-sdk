@@ -18,7 +18,7 @@ const runTests = (t, mf) => {
 
 test('original sources', t => {
   // This is the original source code.
-  const { make: makeFoo } = makeExternalStore((msg = 'Hello') => {
+  const { make: makeFoo } = makeCollection((msg = 'Hello') => {
     let startCount = 24;
     startCount += 1;
     let invocationCount = startCount;
@@ -54,9 +54,9 @@ test('rewritten code', t => {
    *
    * Declarations are not considered side-effects.
    */
-  const store = makeSwingSetKernelStore({
-    adaptArguments: (msg = 'Hello') => ({ msg }),
-    makeHydrate: $hinit => $hdata => {
+  const store = makeSwingSetCollection(
+    (msg = 'Hello') => ({ msg }),
+    $hinit => $hdata => {
       let startCount = $hinit && 24;
       $hinit && (startCount += 1);
       $hinit && ($hdata.invocationCount = startCount);
@@ -72,20 +72,23 @@ test('rewritten code', t => {
       $hinit && obj.hello('init');
       return obj;
     },
-  });
+  );
 
   const h = runTests(t, store.make);
   const key = store.getKey(h);
   t.is(key, '1');
   const h2 = store.load(key);
 
-  // FIXME: We get a different representative.
+  // We get a different representative, which shares the key.
   t.not(h2, h);
+  t.is(store.getKey(h2), `1`);
+
+  // The methods are there now, too.
   const last = h.getCount();
   t.deepEqual(h2.getCount(), last);
   h2.hello('restored');
 
-  // FIXME: Note that the explicitly-loaded object state evolves independently.
+  // Note that the explicitly-loaded object state evolves independently.
   const next = h2.getCount();
   t.deepEqual(next, {
     ...last,
@@ -100,16 +103,15 @@ test('rewritten code', t => {
  * @typedef {(...args: any[]) => Record<string, any>} AdaptArguments
  * @typedef {(data: Record<string, any>) => any} Hydrate
  * @typedef {(init: boolean) => Hydrate} MakeHydrate when init is falsy, prevent
- * hydrate from having any side-effects
  */
 
 /**
- * @typedef {Object} Store
- * @property {(key: string, value: any) => void} set
- * @property {(key: string, value: any) => void} init
- * @property {(key: string) => any} get
+ * @typedef {Object} StringStore
+ * @property {(key: string, value: string) => void} set
+ * @property {(key: string, value: string) => void} init
+ * @property {(key: string) => string} get
  *
- * @typedef {Object} ExternalStore
+ * @typedef {Object} Collection
  * @property {(...args: Array<any>) => any} make
  * @property {(value: any) => string} getKey
  * @property {(key: string) => any} load
@@ -117,35 +119,36 @@ test('rewritten code', t => {
 
 /**
  * @param {(...args: Array<any>) => any} maker
- * @returns {ExternalStore}
+ * @returns {Collection}
  */
-function makeExternalStore(maker) {
+const makeCollection = maker => {
   // The default store has no query ability.
   return harden({
-    load(_key) {
-      throw Error('unimplemented');
-    },
     make(...args) {
       return maker(...args);
     },
+    load(_key) {
+      throw Error('unimplemented');
+    },
     getKey(_obj) {
-      throw Error('unimelpmented');
+      throw Error('unimplemented');
     },
   });
-}
+};
 
 /**
- * @param {object} param0
- * @param {AdaptArguments} param0.adaptArguments
- * @param {MakeHydrate} param0.makeHydrate
- * @returns {ExternalStore}
+ * @param {AdaptArguments} adaptArguments
+ * @param {MakeHydrate} makeHydrate
+ * @returns {Collection}
  */
-function makeSwingSetKernelStore({ adaptArguments, makeHydrate }) {
+function makeSwingSetCollection(adaptArguments, makeHydrate) {
   const serialize = JSON.stringify;
   const unserialize = JSON.parse;
 
+  /** @type {WeakMap<any, string>} */
   const valueToKey = new WeakMap();
   let lastEntryKey = 0;
+  /** @type {import('@agoric/store').Store<string, string>} */
   const store = makeStore('entryKey');
 
   /**
