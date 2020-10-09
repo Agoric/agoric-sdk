@@ -347,7 +347,7 @@ export async function makeWallet({
    * There's a new offer. Ask Zoe to notify us when the offer is complete.
    *
    * @param {string} id
-   * @param {UserSeat} seat
+   * @param {UserSeat | Promise<UserSeat>} seat
    */
   async function subscribeToNotifier(id, seat) {
     E(seat)
