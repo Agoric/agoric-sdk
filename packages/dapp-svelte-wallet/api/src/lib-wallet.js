@@ -410,23 +410,28 @@ export async function makeWallet({
       .then(payoutObj => {
         const payoutIndexToKeyword = [];
         return Promise.all(
-          Object.entries(payoutObj).map(([keyword, payoutP], i) => {
-            // keyword may be an index for zoeKind === 'indexed', but we can still treat it
-            // as the keyword name for looking up purses and payouts (just happens to
-            // be an integer).
-            payoutIndexToKeyword[i] = keyword;
-            return payoutP;
-          }).map((payoutP, payoutIndex) => {
-            const keyword = payoutIndexToKeyword[payoutIndex];
-            const purse = purseKeywordRecord[keyword];
-            if (purse && payoutP) {
-              // eslint-disable-next-line no-use-before-define
-              return addPayment(payoutP, purse);
+          Object.entries(payoutObj).map(
+            ([keyword, payoutP], i) => {
+              // keyword may be an index for zoeKind === 'indexed', but we can still treat it
+              // as the keyword name for looking up purses and payouts (just happens to
+              // be an integer).
+              payoutIndexToKeyword[i] = keyword;
+              return payoutP;
             }
-            return undefined;
-          })
+          ).map(
+            (payoutP, payoutIndex) => {
+              const keyword = payoutIndexToKeyword[payoutIndex];
+              const purse = purseKeywordRecord[keyword];
+              if (purse && payoutP) {
+                // eslint-disable-next-line no-use-before-define
+                return addPayment(payoutP, purse);
+              }
+              return undefined;
+            }
+          )
         );
-      });
+      }
+    );
 
     return { depositedP, seat };
   }
