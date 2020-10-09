@@ -60,6 +60,7 @@
   },
   "files": [
     "bin/vat",
+    "exported.js",
     "src/**/*.js"
   ],
   "repository": {
