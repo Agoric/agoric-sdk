@@ -3,7 +3,7 @@
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import makeWeakStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 import { makeAmountMath } from '@agoric/ertp';
 
 import '../exported';

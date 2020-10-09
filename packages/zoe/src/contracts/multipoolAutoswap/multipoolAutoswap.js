@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
-import makeWeakStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool';

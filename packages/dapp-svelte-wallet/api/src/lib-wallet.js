@@ -1,8 +1,7 @@
 // @ts-check
 
 import { assert, details, q } from '@agoric/assert';
-import makeStore from '@agoric/store';
-import makeWeakStore from '@agoric/weak-store';
+import { makeStore, makeWeakStore } from '@agoric/store';
 import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
 import { E } from '@agoric/eventual-send';
