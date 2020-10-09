@@ -255,7 +255,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             acceptingOffers = false;
             zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
           },
-          // TODO(1834): plumb this through to ZCF
           stopAcceptingOffers: () => (acceptingOffers = false),
         };
       };
@@ -330,6 +329,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         },
+        stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
       };
 
       // At this point, the contract will start executing. All must be ready

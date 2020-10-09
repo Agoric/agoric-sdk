@@ -1234,3 +1234,31 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
   t.is(vatAdminState.getExitMessage(), `And don't come back`);
   t.truthy(vatAdminState.getExitWithFailure());
 });
+
+test(`zcf.stopAcceptingOffers`, async t => {
+  const { zoe, zcf } = await setupZCFTest({});
+  const invitation1 = await zcf.makeInvitation(() => {}, 'seat');
+  const invitation2 = await zcf.makeInvitation(() => {}, 'seat');
+
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  t.truthy(await E(invitationIssuer).isLive(invitation1));
+  t.truthy(await E(invitationIssuer).isLive(invitation2));
+  const seat = E(zoe).offer(invitation1);
+  const offerResult = await E(seat).getOfferResult();
+  t.is(offerResult, undefined);
+
+  t.falsy(await E(invitationIssuer).isLive(invitation1));
+  await zcf.stopAcceptingOffers();
+  t.truthy(await E(invitationIssuer).isLive(invitation2));
+  await t.throwsAsync(
+    () => E(zoe).offer(invitation2),
+    { message: 'No further offers are accepted' },
+    `can't make further offers`,
+  );
+
+  t.deepEqual(
+    await E(seat).getCurrentAllocation(),
+    {},
+    'can still query live seat',
+  );
+});
