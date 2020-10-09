@@ -417,15 +417,14 @@ export async function makeWallet({
             payoutIndexToKeyword[i] = keyword;
             return payoutP;
           }).map((payoutP, payoutIndex) => {
-              const keyword = payoutIndexToKeyword[payoutIndex];
-              const purse = purseKeywordRecord[keyword];
-              if (purse && payoutP) {
-                // eslint-disable-next-line no-use-before-define
-                return addPayment(payoutP, purse);
-              }
-              return undefined;
-            }),
-          ),
+            const keyword = payoutIndexToKeyword[payoutIndex];
+            const purse = purseKeywordRecord[keyword];
+            if (purse && payoutP) {
+              // eslint-disable-next-line no-use-before-define
+              return addPayment(payoutP, purse);
+            }
+            return undefined;
+          })
         );
       });
 
