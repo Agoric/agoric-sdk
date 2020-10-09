@@ -410,16 +410,15 @@ export async function makeWallet({
       .then(payoutObj => {
         const payoutIndexToKeyword = [];
         return Promise.all(
-          Object.entries(payoutObj).map(
-            ([keyword, payoutP], i) => {
+          Object.entries(payoutObj)
+            .map(([keyword, payoutP], i) => {
               // keyword may be an index for zoeKind === 'indexed', but we can still treat it
               // as the keyword name for looking up purses and payouts (just happens to
               // be an integer).
               payoutIndexToKeyword[i] = keyword;
               return payoutP;
-            }
-          ).map(
-            (payoutP, payoutIndex) => {
+            })
+            .map((payoutP, payoutIndex) => {
               const keyword = payoutIndexToKeyword[payoutIndex];
               const purse = purseKeywordRecord[keyword];
               if (purse && payoutP) {
@@ -427,11 +426,9 @@ export async function makeWallet({
                 return addPayment(payoutP, purse);
               }
               return undefined;
-            }
-          )
+            })
         );
-      }
-    );
+      });
 
     return { depositedP, seat };
   }
