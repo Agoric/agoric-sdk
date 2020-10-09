@@ -232,10 +232,6 @@ jobs:
       run: cd packages/transform-metering && yarn test
       env:
         ESM_DISABLE_CACHE: true
-    - name: yarn test (weak-store)
-      run: cd packages/weak-store && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
 
 ##############
 # Long-running tests are executed individually.

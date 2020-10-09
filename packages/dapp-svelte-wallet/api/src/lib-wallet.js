@@ -13,6 +13,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
+import '@agoric/store/exported';
 import '@agoric/zoe/exported';
 import './types';
 
@@ -58,6 +59,7 @@ export async function makeWallet({
   const installationMapping = makeMapping('installation');
 
   const brandTable = makeIssuerTable();
+  /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeWeakStore('issuer');
 
   /** @type {WeakStore<Purse, Brand>} */
