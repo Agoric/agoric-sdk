@@ -1,30 +1,49 @@
 /* global HandledPromise */
+// @ts-check
 import { importBundle } from '@agoric/import-bundle';
+import { asMessage } from '@agoric/swingset-vat';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 // TODO? import anylogger from 'anylogger';
 import { makeLiveSlots } from '@agoric/swingset-vat/src/kernel/liveSlots';
 
+/** @type { (first: string, ...args: unknown[]) => void } */
 function workerLog(first, ...args) {
   console.log(`---worker: ${first}`, ...args);
 }
 
+/** @type { (ok: unknown, whynot: string) => void } */
 function assert(ok, whynot) {
   if (!ok) {
     throw new Error(whynot);
   }
 }
 
+/**
+ * @param { string } _tag
+ * @returns { Logger }
+ *
+ * @typedef { (...things: unknown[]) => void } LoggF
+ * @typedef {{ debug: LoggF, log: LoggF, info: LoggF, warn: LoggF, error: LoggF }} Logger
+ */
 function makeConsole(_tag) {
   const log = console; // TODO? anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
+  const cons = {
+    debug: log.debug,
+    log: log.log,
+    info: log.info,
+    warn: log.warn,
+    error: log.error,
+  };
   return harden(cons);
 }
 
 // see also: detecting an empty vat promise queue (end of "crank")
 // https://github.com/Agoric/agoric-sdk/issues/45
+/**
+ *
+ * @param {typeof setImmediate} setImmediate
+ * @returns { Promise<unknown> }
+ */
 function waitUntilQuiescent(setImmediate) {
   return new Promise((resolve, _reject) => {
     setImmediate(() => {
@@ -34,6 +53,11 @@ function waitUntilQuiescent(setImmediate) {
   });
 }
 
+/**
+ * @param {(it: unknown) => Promise<any>} f
+ * @param {string} errmsg
+ * @param {typeof setImmediate } setImmediate
+ */
 function runAndWait(f, errmsg, setImmediate) {
   Promise.resolve()
     .then(f)
@@ -41,12 +65,23 @@ function runAndWait(f, errmsg, setImmediate) {
   return waitUntilQuiescent(setImmediate);
 }
 
+/**
+ *
+ * @param {{
+ *   readMessage: (eof: Error) => string,
+ *   writeMessage: (msg: string) => void,
+ * }} io
+ * @param { typeof setImmediate } setImmediate
+ *
+ * @typedef {Readonly<['ok'] | ['error', string]>} WorkerResult
+ */
 function makeWorker(io, setImmediate) {
+  /** @type {{[method: string]: (...args: unknown[]) => Promise<unknown> }} */
   let dispatch;
 
+  /** @type {(d: [string, ...unknown[]], errmsg: string) => Promise<WorkerResult> } */
   async function doProcess(dispatchRecord, errmsg) {
-    const dispatchOp = dispatchRecord[0];
-    const dispatchArgs = dispatchRecord.slice(1);
+    const [dispatchOp, ...dispatchArgs] = dispatchRecord;
     workerLog(`runAndWait`);
     await runAndWait(
       () => dispatch[dispatchOp](...dispatchArgs),
@@ -55,9 +90,15 @@ function makeWorker(io, setImmediate) {
     );
     workerLog(`doProcess done`);
     const vatDeliveryResults = harden(['ok']);
+    // @ts-ignore not sure why tsc doesn't grok here
     return vatDeliveryResults;
   }
 
+  /**
+   * @param {string} targetSlot
+   * @param {Message} msg
+   * @returns {Promise<WorkerResult>}
+   */
   function doMessage(targetSlot, msg) {
     const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
     return doProcess(
@@ -66,11 +107,17 @@ function makeWorker(io, setImmediate) {
     );
   }
 
+  /**
+   *
+   * @param {PromiseReference} vpid
+   * @param {Resolution} vp
+   */
   function doNotify(vpid, vp) {
     const errmsg = `vat.promise[${vpid}] ${vp.state} failed`;
     switch (vp.state) {
       case 'fulfilledToPresence':
         return doProcess(['notifyFulfillToPresence', vpid, vp.slot], errmsg);
+      // @ts-ignore
       case 'redirected':
         throw new Error('not implemented yet');
       case 'fulfilledToData':
@@ -78,10 +125,30 @@ function makeWorker(io, setImmediate) {
       case 'rejected':
         return doProcess(['notifyReject', vpid, vp.data], errmsg);
       default:
+        // @ts-ignore
         throw Error(`unknown promise state '${vp.state}'`);
     }
   }
 
+  /**
+   * @param {VatWorkerReply} msg
+   *
+   * @typedef {
+   *   ['dispatchReady'] | ['gotStart'] | ['gotBundle'] |
+   *   ['syscall', ...VatSyscall] |
+   *   ['testLog', ...unknown[]]
+   * } VatWorkerReply
+   *
+   * TODO: move VatSyscall where other stuff from vat-worker.md are defined
+   * @typedef {Readonly<
+   *   ['send', Reference, Message] |
+   *   ['callNow', Reference, string, CapData] |
+   *   ['subscribe', PromiseReference] |
+   *   ['fulfillToPresence', PromiseReference, Reference] |
+   *   ['fulfillToData', PromiseReference, unknown] |
+   *   ['reject', PromiseReference, unknown]
+   * >} VatSyscall
+   */
   function sendUplink(msg) {
     assert(msg instanceof Array, `msg must be an Array`);
     io.writeMessage(JSON.stringify(msg));
@@ -92,7 +159,12 @@ function makeWorker(io, setImmediate) {
   //  toParent.write('child ack');
   // });
 
-  const handle = harden(async ([type, ...margs]) => {
+  /** @type { (msg: unknown) => Promise<string | undefined> } */
+  const handle = harden(async msg => {
+    const type = Array.isArray(msg) && msg.length >= 1 ? msg[0] : typeof msg;
+    /** @type {unknown[]} */
+    const margs = Array.isArray(msg) ? msg.slice(1) : [];
+
     workerLog(`received`, type);
     if (type === 'start') {
       // TODO: parent should send ['start', vatID]
@@ -103,6 +175,7 @@ function makeWorker(io, setImmediate) {
       const endowments = {
         console: makeConsole(`SwingSet:vatWorker`),
         assert,
+        // @ts-ignore  TODO: how to get type of HandledPromise?
         HandledPromise,
       };
       // ISSUE: this draft code is contorted because it started
@@ -113,24 +186,33 @@ function makeWorker(io, setImmediate) {
         workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
         sendUplink(['gotBundle']);
 
+        /** @type { (vatSysCall: VatSyscall) => void } */
         function doSyscall(vatSyscallObject) {
           sendUplink(['syscall', ...vatSyscallObject]);
         }
         const syscall = harden({
-          send: (...args) => doSyscall(['send', ...args]),
-          callNow: (..._args) => {
+          /** @type { (target: Reference, msg: Message) => void } */
+          send: (target, smsg) => doSyscall(['send', target, smsg]),
+          /** @type { (target: Reference, method: string, args: CapData) => void } */
+          callNow: (_target, _method, _args) => {
             throw Error(`nodeWorker cannot syscall.callNow`);
           },
-          subscribe: (...args) => doSyscall(['subscribe', ...args]),
-          fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
-          fulfillToPresence: (...args) =>
-            doSyscall(['fulfillToPresence', ...args]),
-          reject: (...args) => doSyscall(['reject', ...args]),
+          /** @type { (vpd: PromiseReference) => void } */
+          subscribe: vpid => doSyscall(['subscribe', vpid]),
+          /** @type { (vpid: PromiseReference, data: unknown) => void } */
+          fulfillToData: (vpid, data) =>
+            doSyscall(['fulfillToData', vpid, data]),
+          /** @type { (vpid: PromiseReference, slot: Reference) => void } */
+          fulfillToPresence: (vpid, slot) =>
+            doSyscall(['fulfillToPresence', vpid, slot]),
+          /** @type { (vpid: PromiseReference, data: unknown) => void } */
+          reject: (vpid, data) => doSyscall(['reject', vpid, data]),
         });
 
-        function testLog(...args) {
+        function testLog(/** @type {unknown[]} */ ...args) {
           sendUplink(['testLog', ...args]);
         }
+        /** @type { unknown } */
         const state = null;
         const vatID = 'demo-vatID';
         // todo: maybe add transformTildot, makeGetMeter/transformMetering to
@@ -162,12 +244,15 @@ function makeWorker(io, setImmediate) {
         return undefined;
       }
       const [dtype, ...dargs] = margs;
-      if (dtype === 'message') {
-        await doMessage(...dargs).then(res =>
+      if (dtype === 'message' && typeof dargs[0] === 'string') {
+        await doMessage(dargs[0], asMessage(dargs[1])).then(res =>
           sendUplink(['deliverDone', ...res]),
         );
-      } else if (dtype === 'notify') {
-        await doNotify(...dargs).then(res =>
+      } else if (dtype === 'notify' && typeof dargs[0] === 'string') {
+        /** @type { Resolution } */
+        // @ts-ignore  WARNING: assuming type of input data
+        const resolution = dargs[1];
+        await doNotify(dargs[0], resolution).then(res =>
           sendUplink(['deliverDone', ...res]),
         );
       } else {
@@ -182,6 +267,14 @@ function makeWorker(io, setImmediate) {
   return harden({ handle });
 }
 
+/**
+ *
+ * @param {{
+ *   readMessage: (eof: Error) => string,
+ *   writeMessage: (msg: string) => void,
+ *   setImmediate: typeof setImmediate,
+ * }} io
+ */
 export async function main({ readMessage, writeMessage, setImmediate }) {
   workerLog(`supervisor started`);
 
@@ -189,9 +282,9 @@ export async function main({ readMessage, writeMessage, setImmediate }) {
   const EOF = new Error('EOF');
 
   for (;;) {
+    /** @type { unknown } */
     let message;
     try {
-      // eslint-disable-next-line no-await-in-loop
       message = JSON.parse(readMessage(EOF));
     } catch (noMessage) {
       if (noMessage === EOF) {
