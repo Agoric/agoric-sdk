@@ -5,6 +5,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { toBytes } from './bytes';
 
+import '@agoric/store/exported';
 import './types';
 import './internal-types';
 

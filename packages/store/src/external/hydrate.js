@@ -16,7 +16,7 @@ import { makeStore } from '../store';
  * the Closure interface that the rewriter targets.
  *
  * @template {Array<any>} A
- * @template {Instance} T
+ * @template {ExternalInstance} T
  * @param {MakeBackingStore} makeBackingStore
  * @returns {MakeHydrateExternalStore<A, T>}
  */

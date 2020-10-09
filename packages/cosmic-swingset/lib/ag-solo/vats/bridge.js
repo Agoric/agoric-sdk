@@ -1,6 +1,7 @@
 // @ts-check
 
 import makeStore from '@agoric/store';
+import '@agoric/store/exported';
 
 /**
  * @template T
@@ -36,7 +37,7 @@ import makeStore from '@agoric/store';
 /* eslint-enable jsdoc/valid-types */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
-   * @type {import('@agoric/store').Store<string, BridgeHandler>}
+   * @type {Store<string, BridgeHandler>}
    */
   const srcHandlers = makeStore('srcID');
 

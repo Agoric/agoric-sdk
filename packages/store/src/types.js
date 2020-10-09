@@ -1,5 +1,5 @@
 /**
- * @typedef {Record<string, Function>} Instance
+ * @typedef {Record<string, Function>} ExternalInstance
  */
 
 /**
@@ -42,7 +42,7 @@
 /**
  * An external store for a given constructor.
  *
- * @template {(...args: Array<any>) => Instance} C
+ * @template {(...args: Array<any>) => ExternalInstance} C
  * @typedef {Object} ExternalStore
  * @property {C} makeInstance
  * @property {MakeWeakStore<ReturnType<C>, any>} makeWeakStore
@@ -64,7 +64,7 @@
  * "representative" instance.
  *
  * @template {Array<any>} A
- * @template {Instance} T
+ * @template {ExternalInstance} T
  * @callback MakeHydrateExternalStore
  * @param {string} instanceKind
  * @param {(...args: A) => HydrateData} adaptArguments
@@ -73,11 +73,11 @@
  */
 
 /**
- * @typedef {Store<string, string> & { makeWeakStore: () => WeakStore<any, any> }}} InstanceStore
+ * @typedef {Store<string, string> & { makeWeakStore: () => WeakStore<any, any> }}} ExternalInstanceStore
  */
 
 /**
  * @typedef {Object} BackingStore
- * @property {(storeId: string, instanceKind: string) => InstanceStore} makeStore
- * @property {(storeId: string) => InstanceStore} findStore
+ * @property {(storeId: string, instanceKind: string) => ExternalInstanceStore} makeStore
+ * @property {(storeId: string) => ExternalInstanceStore} findStore
  */

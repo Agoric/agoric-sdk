@@ -8,6 +8,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  */
 import '@agoric/ertp/exported';
+import '@agoric/store/exported';
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import '../../exported';

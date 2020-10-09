@@ -3,3 +3,4 @@ import './src/zoeService/types';
 import './src/contractSupport/types';
 import './src/types';
 import '@agoric/ertp/exported';
+import '@agoric/store/exported';

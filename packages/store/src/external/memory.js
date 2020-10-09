@@ -9,7 +9,7 @@ import '../types';
  * garbage-collected in the usual way, but it will not page out any objects to
  * secondary storage.
  *
- * @template {(...args: any[]) => Instance} M
+ * @template {(...args: any[]) => ExternalInstance} M
  * @param {string} instanceName
  * @param {M} maker
  * @returns {ExternalStore<M>}
