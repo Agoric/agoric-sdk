@@ -3,7 +3,7 @@
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
-import makeStore from '@agoric/weak-store';
+import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Remotable } from '@agoric/marshal';
 import { isPromise } from '@agoric/promise-kit';
@@ -37,8 +37,20 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
 
   const amountMath = makeAmountMath(brand, amountMathKind);
 
-  const paymentLedger = makeStore('payment');
-  const purseLedger = makeStore('purse');
+  const {
+    makeInstance: makePayment,
+    makeWeakStore: makePaymentWeakStore,
+  } = makeExternalStore('payment', () =>
+    Remotable(makeInterface(allegedName, ERTPKind.PAYMENT), undefined, {
+      getAllegedBrand: () => brand,
+    }),
+  );
+
+  /** @type {WeakStore<Payment, Amount>} */
+  const paymentLedger = makePaymentWeakStore();
+
+  /** @type {WeakStore<Purse, Amount>} */
+  let purseLedger;
 
   function assertKnownPayment(payment) {
     assert(
@@ -46,11 +58,6 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       details`payment not found for ${allegedName}`,
     );
   }
-
-  const makePayment = () =>
-    Remotable(makeInterface(allegedName, ERTPKind.PAYMENT), undefined, {
-      getAllegedBrand: () => brand,
-    });
 
   // Methods like deposit() have an optional second parameter `amount`
   // which, if present, is supposed to be equal to the balance of the
@@ -67,7 +74,10 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   /**
    * @returns {Purse}
    */
-  const makePurse = () => {
+  const {
+    makeInstance: makePurse,
+    makeWeakStore: makePurseWeakStore,
+  } = makeExternalStore('purse', () => {
     /** @type {Purse} */
     const purse = Remotable(
       makeInterface(allegedName, ERTPKind.PURSE),
@@ -129,7 +139,9 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
     );
 
     return purse;
-  };
+  });
+
+  purseLedger = makePurseWeakStore();
 
   const { add } = amountMath;
   const empty = amountMath.getEmpty();
