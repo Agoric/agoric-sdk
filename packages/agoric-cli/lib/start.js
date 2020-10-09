@@ -463,9 +463,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         // eslint-disable-next-line no-await-in-loop
         exitStatus = await capret[0];
         if (!exitStatus) {
-          const ret = JSON.parse(capret[1]);
-          if (ret.code !== 0) {
-            exitStatus = 2;
+          try {
+            const ret = JSON.parse(capret[1]);
+            if (ret.code !== 0) {
+              exitStatus = 2;
+            }
+          } catch (e) {
+            console.error(`Cannot parse JSON:`, e, capret[1]);
+            exitStatus = 99;
           }
         }
       }
