@@ -465,6 +465,161 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
   };
 
+  const doHappyTermination = async () => {
+    log(`=> alice.doHappyTermination called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`happy termination saw "${reason}"`);
+        },
+        e => log(`happy termination saw reject "${e}"`),
+      );
+
+    E(publicFacet).zcfShutdown('Success');
+  };
+
+  // contract attempts a clean shutdown, but there are outstanding seats
+  const doHappyTerminationWithOffers = async () => {
+    log(`=> alice.doHappyTerminationWOffers called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    // wait for the contract to finish.
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`happy termination saw "${reason}"`);
+        },
+        e => log(`happy termination saw reject "${e}"`),
+      );
+
+    // Alice submits an offer. The contract will be terminated before resolution
+    const swapProposal = harden({
+      give: { Asset: moola(5) },
+      want: { Price: simoleans(12) },
+      exit: { onDemand: null },
+    });
+    const aliceSwapPayments = { Asset: moolaPayment };
+    const swapInvitation = await E(publicFacet).makeSwapInvitation();
+    const seat = await E(zoe).offer(
+      swapInvitation,
+      swapProposal,
+      aliceSwapPayments,
+    );
+    E(seat)
+      .getOfferResult()
+      .then(
+        o => log(`Swap outcome resolves to an invitation: ${o}`),
+        e => log(`Swap outcome rejected before fulfillment: "${e}"`),
+      );
+
+    // contract asks for clean termination
+    E(publicFacet).zcfShutdown('Success');
+    log(`seat has been exited: ${E(seat).hasExited()}`);
+
+    const moolaSwapRefund = await E(seat).getPayout('Asset');
+    const simoleanSwapPayout = await E(seat).getPayout('Price');
+
+    const moolaPurse2P = E(moolaIssuer).makeEmptyPurse();
+    const simoleanPurse2P = E(simoleanIssuer).makeEmptyPurse();
+    await E(moolaPurse2P).deposit(moolaSwapRefund);
+    await E(simoleanPurse2P).deposit(simoleanSwapPayout);
+    await showPurseBalance(moolaPurse2P, 'second moolaPurse', log);
+    await showPurseBalance(simoleanPurse2P, 'second simoleanPurse', log);
+  };
+
+  const doHappyTerminationRefusesContact = async () => {
+    log(`=> alice.doHappyTerminationWOffers called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    // wait for the contract to finish.
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`happy termination saw "${reason}"`);
+        },
+        e => log(`happy termination saw reject "${e}"`),
+      );
+
+    // Alice submits an offer. The contract will be terminated before resolution
+    const swapProposal = harden({
+      give: { Asset: moola(5) },
+      want: { Price: simoleans(12) },
+      exit: { onDemand: null },
+    });
+    const aliceSwapPayments = { Asset: moolaPayment };
+    const swapInvitation = await E(publicFacet).makeSwapInvitation();
+
+    // contract asks for clean termination
+    await E(publicFacet).zcfShutdown('Success');
+
+    await E(zoe)
+      .offer(swapInvitation, swapProposal, aliceSwapPayments)
+      .then(
+        () => log(`fail: expected offer to be refused`),
+        e => log(`offer correctly refused: "${e}"`),
+      );
+    E(publicFacet)
+      .makeSwapInvitation()
+      .catch(e => log(`can't make more invitations because "${e}"`));
+  };
+
+  const doSadTermination = async () => {
+    log(`=> alice.doSadTermination called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`sad termination saw "${reason}"`);
+        },
+        e => log(`sad termination saw reject "${e}"`),
+      );
+
+    E(publicFacet).zcfShutdownWithFailure('Sadness');
+  };
+
   return harden({
     startTest: async testName => {
       switch (testName) {
@@ -488,6 +643,18 @@ const build = async (log, zoe, issuers, payments, installations) => {
         }
         case 'meterInMakeContract': {
           return doMeterExceptionInMakeContract();
+        }
+        case 'happyTermination': {
+          return doHappyTermination();
+        }
+        case 'happyTerminationWOffers': {
+          return doHappyTerminationWithOffers();
+        }
+        case 'doHappyTerminationRefusesContact': {
+          return doHappyTerminationRefusesContact();
+        }
+        case 'sadTermination': {
+          return doSadTermination();
         }
         default: {
           throw new Error(`testName ${testName} not recognized`);

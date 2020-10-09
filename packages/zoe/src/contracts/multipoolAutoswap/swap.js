@@ -149,7 +149,7 @@ export const makeMakeSwapInvitation = (
 
       const brandInAmountMath = getPool(brandIn).getAmountMath();
       if (!brandInAmountMath.isGTE(offeredAmountIn, amountIn)) {
-        seat.kickOut();
+        seat.fail();
         return `insufficient funds offered`;
       }
 

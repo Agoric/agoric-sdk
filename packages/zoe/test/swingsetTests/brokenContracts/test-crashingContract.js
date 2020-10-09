@@ -150,3 +150,53 @@ test('throw in makeContract call', async t => {
   const dump = await main(['throwInMakeContract', [3, 0, 0]]);
   t.deepEqual(dump.log, thrownExceptionInMakeContractILog);
 });
+
+const happyTerminationLog = [
+  '=> alice is set up',
+  '=> alice.doHappyTermination called',
+  'happy termination saw "Success"',
+];
+
+test('happy termination path', async t => {
+  const dump = await main(['happyTermination', [3, 0, 0]]);
+  t.deepEqual(dump.log, happyTerminationLog);
+});
+
+const happyTerminationWOffersLog = [
+  '=> alice is set up',
+  '=> alice.doHappyTerminationWOffers called',
+  'seat has been exited: [object Promise]',
+  'Swap outcome rejected before fulfillment: "Error: vat terminated"',
+  'happy termination saw "Success"',
+  'second moolaPurse: balance {"brand":{},"value":5}',
+  'second simoleanPurse: balance {"brand":{},"value":0}',
+];
+
+test('happy termination with offers path', async t => {
+  const dump = await main(['happyTerminationWOffers', [5, 0, 0]]);
+  t.deepEqual(dump.log, happyTerminationWOffersLog);
+});
+
+const doHappyTerminationRefusesContactLog = [
+  '=> alice is set up',
+  '=> alice.doHappyTerminationWOffers called',
+  'offer correctly refused: "Error: No further offers are accepted"',
+  'happy termination saw "Success"',
+  'can\'t make more invitations because "Error: vat terminated"',
+];
+
+test('happy termination refuses contact path', async t => {
+  const dump = await main(['doHappyTerminationRefusesContact', [5, 0, 0]]);
+  t.deepEqual(dump.log, doHappyTerminationRefusesContactLog);
+});
+
+const sadTerminationLog = [
+  '=> alice is set up',
+  '=> alice.doSadTermination called',
+  'sad termination saw reject "Sadness"',
+];
+
+test('sad termination path', async t => {
+  const dump = await main(['sadTermination', [3, 0, 0]]);
+  t.deepEqual(dump.log, sadTerminationLog);
+});

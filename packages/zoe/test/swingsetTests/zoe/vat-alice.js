@@ -52,9 +52,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       UnderlyingAsset: moolaIssuer,
       StrikePrice: simoleanIssuer,
     });
-    const { creatorInvitation: writeCallInvitation } = await E(
+    const { creatorInvitation: writeCallInvitation, adminFacet } = await E(
       zoe,
     ).startInstance(installation, issuerKeywordRecord);
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        completion => log(`covered call was shut down due to "${completion}"`),
+        reason => log(`covered call failed due to "${reason}"`),
+      );
 
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },

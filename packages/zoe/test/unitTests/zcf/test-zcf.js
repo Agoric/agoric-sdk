@@ -614,19 +614,20 @@ test(`zcf.makeEmptySeatKit`, async t => {
 test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
   const expectedMethods = [
     'exit',
-    'kickOut',
-    'getNotifier',
-    'hasExited',
-    'getProposal',
+    'fail',
     'getAmountAllocated',
     'getCurrentAllocation',
+    'getNotifier',
+    'getProposal',
+    'hasExited',
     'isOfferSafe',
+    'kickOut', // Deprecated. Remove when we drop kickOut().
     'stage',
   ];
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(Object.keys(seat), expectedMethods);
+  t.deepEqual(Object.getOwnPropertyNames(seat).sort(), expectedMethods);
 });
 
 test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
@@ -652,7 +653,20 @@ test(`zcfSeat.hasExited, exit from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getPayouts(), {});
 });
 
-test(`zcfSeat.hasExited, kickOut from zcf.makeEmptySeatKit`, async t => {
+test(`zcfSeat.hasExited, fail from zcf.makeEmptySeatKit`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  t.falsy(zcfSeat.hasExited());
+  const msg = `this is the error message`;
+  const err = zcfSeat.fail(Error(msg));
+  t.is(err.message, msg);
+  t.truthy(zcfSeat.hasExited());
+  t.truthy(await E(userSeat).hasExited());
+  t.deepEqual(await E(userSeat).getPayouts(), {});
+});
+
+// TODO(1837): remove deprecated kickOut
+test(`zcfSeat.kickOut, fail from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   t.falsy(zcfSeat.hasExited());
@@ -1184,7 +1198,7 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
 test(`zcf.shutdown - userSeat exits`, async t => {
   const { zoe, zcf } = await setupZCFTest({});
   const { userSeat } = await makeOffer(zoe, zcf);
-  zcf.shutdown();
+  zcf.shutdown('so long');
   t.deepEqual(await E(userSeat).getPayouts(), {});
   t.truthy(await E(userSeat).hasExited());
 });
@@ -1193,17 +1207,58 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
   const { zoe, zcf } = await setupZCFTest({});
   const { zcfSeat, userSeat } = await makeOffer(zoe, zcf);
   t.falsy(zcfSeat.hasExited());
-  t.falsy(await E(userSeat).hasExited());
-  zcf.shutdown();
+  await t.falsy(await E(userSeat).hasExited());
+  zcf.shutdown('done');
   t.truthy(zcfSeat.hasExited());
   t.truthy(await E(userSeat).hasExited());
 });
 
 test(`zcf.shutdown - no further offers accepted`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
-  zcf.shutdown();
+  zcf.shutdown('sayonara');
   await t.throwsAsync(() => E(zoe).offer(invitation), {
     message: 'No further offers are accepted',
   });
+  t.is(vatAdminState.getExitMessage(), 'sayonara');
+  t.falsy(vatAdminState.getExitWithFailure());
+});
+
+test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
+  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const invitation = await zcf.makeInvitation(() => {}, 'seat');
+  zcf.shutdownWithFailure(`And don't come back`);
+  await t.throwsAsync(() => E(zoe).offer(invitation), {
+    message: 'No further offers are accepted',
+  });
+  t.is(vatAdminState.getExitMessage(), `And don't come back`);
+  t.truthy(vatAdminState.getExitWithFailure());
+});
+
+test(`zcf.stopAcceptingOffers`, async t => {
+  const { zoe, zcf } = await setupZCFTest({});
+  const invitation1 = await zcf.makeInvitation(() => {}, 'seat');
+  const invitation2 = await zcf.makeInvitation(() => {}, 'seat');
+
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  t.truthy(await E(invitationIssuer).isLive(invitation1));
+  t.truthy(await E(invitationIssuer).isLive(invitation2));
+  const seat = E(zoe).offer(invitation1);
+  const offerResult = await E(seat).getOfferResult();
+  t.is(offerResult, undefined);
+
+  t.falsy(await E(invitationIssuer).isLive(invitation1));
+  await zcf.stopAcceptingOffers();
+  t.truthy(await E(invitationIssuer).isLive(invitation2));
+  await t.throwsAsync(
+    () => E(zoe).offer(invitation2),
+    { message: 'No further offers are accepted' },
+    `can't make further offers`,
+  );
+
+  t.deepEqual(
+    await E(seat).getCurrentAllocation(),
+    {},
+    'can still query live seat',
+  );
 });

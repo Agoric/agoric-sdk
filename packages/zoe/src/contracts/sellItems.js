@@ -75,7 +75,7 @@ const start = zcf => {
     // Check that the wanted items are still for sale.
     if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
-      throw buyerSeat.kickOut(new Error(rejectMsg));
+      throw buyerSeat.fail(new Error(rejectMsg));
     }
 
     // All items are the same price.
@@ -103,7 +103,7 @@ const start = zcf => {
     buyerSeat.exit();
 
     if (itemsMath.isEmpty(publicFacet.getAvailableItems())) {
-      zcf.shutdown();
+      zcf.shutdown('All items sold.');
     }
     return defaultAcceptanceMsg;
   };

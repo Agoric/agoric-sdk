@@ -55,12 +55,21 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const result = await E(zoe).startInstance(installation);
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(result, {
-    creatorFacet: {},
-    creatorInvitation: undefined,
-    instance: result.instance,
-    publicFacet: {},
-  });
+  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
+    'adminFacet',
+    'creatorFacet',
+    'creatorInvitation',
+    'instance',
+    'publicFacet',
+  ]);
+  t.deepEqual(result.creatorFacet, {});
+  t.deepEqual(result.creatorInvitation, undefined);
+  t.deepEqual(result.instance, result.instance);
+  t.deepEqual(result.publicFacet, {});
+  t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
+    'getVatShutdownPromise',
+    'getVatStats',
+  ]);
 });
 
 test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
