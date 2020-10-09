@@ -426,7 +426,7 @@ export async function makeWallet({
                 return addPayment(payoutP, purse);
               }
               return undefined;
-            })
+            }),
         );
       });
 
