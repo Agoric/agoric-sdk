@@ -71,9 +71,18 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
     }
   };
 
-  /**
-   * @returns {Purse}
-   */
+  const { makeInstance: makeDepositFacet } = makeExternalStore(
+    'depositFacet',
+    /**
+     * @param {Purse} purse
+     * @returns {DepositFacet}
+     */
+    purse =>
+      Remotable(makeInterface(allegedName, ERTPKind.DEPOSIT_FACET), undefined, {
+        receive: purse.deposit,
+      }),
+  );
+
   const {
     makeInstance: makePurse,
     makeWeakStore: makePurseWeakStore,
@@ -132,12 +141,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       },
     );
 
-    const depositFacet = Remotable(
-      makeInterface(allegedName, ERTPKind.DEPOSIT_FACET),
-      undefined,
-      { receive: purse.deposit },
-    );
-
+    const depositFacet = makeDepositFacet(purse);
     return purse;
   });
 
