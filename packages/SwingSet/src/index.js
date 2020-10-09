@@ -12,3 +12,5 @@ export { buildTimer } from './devices/timer';
 export { buildBridge } from './devices/bridge';
 export { default as buildCommand } from './devices/command';
 export { buildPlugin } from './devices/plugin';
+
+export { asMessage } from './message';
