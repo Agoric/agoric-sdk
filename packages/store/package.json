@@ -2,13 +2,13 @@
   "name": "@agoric/store",
   "version": "0.2.3-dev.2",
   "description": "Wrapper for JavaScript map",
-  "main": "src/store.js",
+  "main": "src/index.js",
   "engines": {
     "node": ">=11.0"
   },
   "scripts": {
     "build": "exit 0",
-    "test": "exit 0",
+    "test": "ava",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && eslint '**/*.js'",
@@ -48,6 +48,9 @@
     ],
     "env": {
       "es6": true
+    },
+    "globals": {
+      "harden": "readonly"
     },
     "rules": {
       "implicit-arrow-linebreak": "off",
