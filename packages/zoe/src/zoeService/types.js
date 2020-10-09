@@ -113,11 +113,18 @@
  */
 
 /**
+ * @typedef {Object} AdminFacet
+ * @property {() => Promise<Completion>} getVatShutdownPromise
+ * @property {() => any} getVatStats
+ */
+
+/**
  * @typedef {Object} StartInstanceResult
  * @property {any} creatorFacet
  * @property {any} publicFacet
  * @property {Instance} instance
  * @property {Payment | undefined} creatorInvitation
+ * @property {AdminFacet} adminFacet
  */
 
 /**

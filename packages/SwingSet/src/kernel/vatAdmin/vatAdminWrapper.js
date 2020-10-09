@@ -26,8 +26,8 @@ export function buildRootObject(vatPowers) {
     doneP.catch(() => {}); // shut up false whine about unhandled rejection
 
     const adminNode = harden({
-      terminate(reason) {
-        D(vatAdminNode).terminate(vatID, reason);
+      terminateWithFailure(reason) {
+        D(vatAdminNode).terminateWithFailure(vatID, reason);
       },
       adminData() {
         return D(vatAdminNode).adminStats(vatID);

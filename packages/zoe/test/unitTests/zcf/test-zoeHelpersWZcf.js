@@ -400,7 +400,7 @@ test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
     message:
       'The reallocation failed to conserve rights. Please check the log for more information',
   });
-  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  t.truthy(zcfSeatA.hasExited(), 'fail right');
   assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0));
   assertPayoutAmount(
     t,
@@ -408,7 +408,7 @@ test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
     await userSeatA.getPayout('B'),
     simoleans(10),
   );
-  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  t.truthy(zcfSeatB.hasExited(), 'fail right');
   assertPayoutAmount(
     t,
     simoleanIssuer,
@@ -447,7 +447,7 @@ test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
     message:
       'The reallocation failed to conserve rights. Please check the log for more information',
   });
-  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  t.truthy(zcfSeatA.hasExited(), 'fail right');
   assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0));
   assertPayoutAmount(
     t,
@@ -455,7 +455,7 @@ test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
     await userSeatA.getPayout('B'),
     simoleans(10),
   );
-  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  t.truthy(zcfSeatB.hasExited(), 'fail right');
   assertPayoutAmount(
     t,
     simoleanIssuer,
@@ -494,14 +494,14 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
     message:
       'The reallocation failed to conserve rights. Please check the log for more information',
   });
-  t.truthy(zcfSeatA.hasExited(), 'kickout right');
+  t.truthy(zcfSeatA.hasExited(), 'fail right');
   assertPayoutAmount(
     t,
     simoleanIssuer,
     await userSeatA.getPayout('B'),
     simoleans(10),
   );
-  t.truthy(zcfSeatB.hasExited(), 'kickout right');
+  t.truthy(zcfSeatB.hasExited(), 'fail right');
   assertPayoutAmount(
     t,
     simoleanIssuer,

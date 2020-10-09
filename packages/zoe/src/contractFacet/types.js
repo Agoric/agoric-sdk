@@ -2,6 +2,15 @@
 /// <reference types="ses"/>
 
 /**
+ * @typedef {any} Completion
+ * Any passable non-thenable. Often an explanatory string.
+ *
+ * @typedef {Error|any} TerminationReason
+ * Something provided as an explanation to a termination request. Usually an
+ * Error but not required to be so.
+ */
+
+/**
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -18,7 +27,8 @@
  * and get the amountMath and brand synchronously accessible after
  * saving
  * @property {MakeInvitation} makeInvitation
- * @property {() => void} shutdown
+ * @property {(completion: Completion) => void} shutdown
+ * @property {(reason: TerminationReason) => void} shutdownWithFailure
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => Terms} getTerms
@@ -28,6 +38,7 @@
  * @property {MakeZCFMint} makeZCFMint
  * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
+ * @property {() => void} stopAcceptingOffers
  */
 
 /**
@@ -138,8 +149,11 @@
 /**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(reason: Error=) => Error} kickOut called with the reason this
- * seat is being kicked out, where reason is normally an instanceof Error.
+ * @property {(reason: Error=) => Error} fail called with the reason for this
+ * failure, where reason is normally an instanceof Error.
+ * @property {(reason: Error=) => Error} kickOut called with the reason for
+ * this failure, where reason is normally an instanceof Error. This method
+ * is deprecated as of 0.9.1-dev.3 in favor of fail().
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal

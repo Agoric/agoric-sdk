@@ -15,13 +15,14 @@ import '../../../exported';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
-test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
+test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
   let testJig;
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = makeZoe(makeFakeVatAdmin(setJig));
+  const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
+  const zoe = makeZoe(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
@@ -52,13 +53,13 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
     return 'ok';
   };
 
-  const kickOutSeat = secondSeat => {
-    firstSeat.kickOut(new Error('kicked out first'));
-    throw secondSeat.kickOut(new Error('kicked out second'));
+  const failSeat = secondSeat => {
+    firstSeat.fail(new Error('first seat failed'));
+    throw secondSeat.fail(new Error('second seat failed'));
   };
 
   const invitation1 = await zcf.makeInvitation(grabSeat, 'seat1');
-  const invitation2 = await zcf.makeInvitation(kickOutSeat, 'seat2');
+  const invitation2 = await zcf.makeInvitation(failSeat, 'seat2');
 
   const userSeat1 = await E(zoe).offer(invitation1);
   const userSeat2 = await E(zoe).offer(invitation2);
@@ -67,8 +68,11 @@ test(`zoe - zcfSeat.kickOut() doesn't throw`, async t => {
 
   t.deepEqual(await E(userSeat2).getPayouts(), {});
 
-  await t.throwsAsync(E(userSeat2).getOfferResult());
+  await t.throwsAsync(E(userSeat2).getOfferResult(), {
+    message: 'second seat failed',
+  });
   await t.throwsAsync(() => E(userSeat1).tryExit(), {
     message: 'seat has been exited',
   });
+  t.falsy(vatAdminState.getHasExited());
 });

@@ -14,7 +14,8 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     zcf = jig.zcf;
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
-  const zoe = makeZoe(makeFakeVatAdmin(setZCF));
+  const fakeVatAdmin = makeFakeVatAdmin(setZCF);
+  const zoe = makeZoe(fakeVatAdmin.admin);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(
@@ -22,5 +23,6 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     issuerKeywordRecord,
     terms,
   );
-  return { zoe, zcf, instance, installation, creatorFacet };
+  const { vatAdminState } = fakeVatAdmin;
+  return { zoe, zcf, instance, installation, creatorFacet, vatAdminState };
 };

@@ -51,7 +51,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       // .. but it will be killed ..
       switch (mode) {
         case 'kill':
-          E(dude.adminNode).terminate(mode);
+          E(dude.adminNode).terminateWithFailure(mode);
           break;
         case 'happy':
           E(dude.root).dieHappy(mode);
@@ -86,7 +86,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       // then we try to kill the vat again, which should be idempotent
       if (mode === 'kill') {
-        E(dude.adminNode).terminate('because we said so');
+        E(dude.adminNode).terminateWithFailure('because we said so');
       }
 
       // the run-queue should now look like:

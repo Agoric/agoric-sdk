@@ -221,7 +221,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const makeInstanceAdmin = () => {
         /** @type {Set<ZoeSeatAdmin>} */
         const zoeSeatAdmins = new Set();
-        let hasShutdown = false;
+        let acceptingOffers = true;
 
         /** @type {InstanceAdmin} */
         return {
@@ -244,27 +244,32 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           getIssuers: () => instanceRecord.terms.issuers,
           getBrands: () => instanceRecord.terms.brands,
           getInstance: () => instance,
-          hasShutdown: () => hasShutdown,
-          shutdown: () => {
-            hasShutdown = true;
-            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit());
+          acceptingOffers: () => acceptingOffers,
+          exitAllSeats: completion => {
+            acceptingOffers = false;
+            zoeSeatAdmins.forEach(zoeSeatAdmin =>
+              zoeSeatAdmin.exit(completion),
+            );
           },
+          failAllSeats: reason => {
+            acceptingOffers = false;
+            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
+          },
+          stopAcceptingOffers: () => (acceptingOffers = false),
         };
       };
 
       const instanceAdmin = makeInstanceAdmin();
-
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       E(adminNode)
         .done()
         .then(
-          () => instanceAdmin.shutdown(),
-          () => instanceAdmin.shutdown(),
+          completion => instanceAdmin.exitAllSeats(completion),
+          reason => instanceAdmin.failAllSeats(reason),
         );
 
       // Unpack the invitationKit.
-
       const {
         issuer: invitationIssuer,
         mint: invitationMint,
@@ -315,10 +320,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
-        shutdown: () => {
-          instanceAdmin.shutdown();
-          E(adminNode).terminate();
-        },
+        exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
+        failAllSeats: reason => instanceAdmin.failAllSeats(reason),
         makeZoeMint,
         replaceAllocations: seatHandleAllocations => {
           seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
@@ -326,6 +329,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         },
+        stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
       };
 
       // At this point, the contract will start executing. All must be ready
@@ -362,12 +366,18 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             details`The contract did not correctly return a creatorInvitation`,
           );
         }
+        const adminFacet = harden({
+          getVatShutdownPromise: () => E(adminNode).done(),
+          getVatStats: () => E(adminNode).adminData(),
+        });
+
         // Actually returned to the user.
         return {
           creatorFacet,
           creatorInvitation,
           instance,
           publicFacet,
+          adminFacet,
         };
       });
     },
@@ -387,7 +397,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           } = invitationAmount;
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
           assert(
-            !instanceAdmin.hasShutdown(),
+            instanceAdmin.acceptingOffers(),
             `No further offers are accepted`,
           );
 

@@ -131,7 +131,7 @@ test('dispatches to the dead do not harm kernel', async t => {
       `w: I ate'nt dead`,
       'b: p1b = I so resolve',
       'b: p2b fails Error: vat terminated',
-      'done: arbitrary reason',
+      'done: Error: arbitrary reason',
     ]);
   }
   const state1 = getAllState(storage1);
@@ -154,7 +154,7 @@ test('dispatches to the dead do not harm kernel', async t => {
     t.deepEqual(c2.dump().log, [
       'b: p1b = I so resolve',
       'b: p2b fails Error: vat terminated',
-      'done: arbitrary reason',
+      'done: Error: arbitrary reason',
       'm: live 2 failed: Error: vat terminated',
     ]);
   }

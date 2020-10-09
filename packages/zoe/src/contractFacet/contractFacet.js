@@ -31,7 +31,7 @@ import { makeHandle } from '../makeHandle';
 import '../../exported';
 import '../internal-types';
 
-export function buildRootObject(_powers, _params, testJigSetter = undefined) {
+export function buildRootObject(powers, _params, testJigSetter = undefined) {
   /** @type {ExecuteContract} */
   const executeContract = async (
     bundle,
@@ -364,14 +364,25 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
         return invitationP;
       },
       // Shutdown the entire vat and give payouts
-      shutdown: () => {
-        E(zoeInstanceAdmin).shutdown();
+      shutdown: completion => {
+        E(zoeInstanceAdmin).exitAllSeats(completion);
         zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
           if (!zcfSeat.hasExited()) {
             zcfSeatAdmin.updateHasExited();
           }
         });
+        powers.exitVat(completion);
       },
+      shutdownWithFailure: reason => {
+        E(zoeInstanceAdmin).failAllSeats(reason);
+        zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
+          if (!zcfSeat.hasExited()) {
+            zcfSeatAdmin.updateHasExited();
+          }
+        });
+        powers.exitVatWithFailure(reason);
+      },
+      stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
       makeZCFMint,
       makeEmptySeatKit,
 
@@ -423,7 +434,7 @@ export function buildRootObject(_powers, _params, testJigSetter = undefined) {
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          throw zcfSeat.kickOut(reason);
+          throw zcfSeat.fail(reason);
         });
         const exitObj = makeExitObj(
           seatData.proposal,

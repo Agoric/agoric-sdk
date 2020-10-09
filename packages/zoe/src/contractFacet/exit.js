@@ -39,7 +39,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
         );
         console.error(reason);
         zcfSeatAdmin.updateHasExited();
-        E(zoeSeatAdmin).kickOut(reason);
+        E(zoeSeatAdmin).fail(reason);
         throw reason;
       });
   } else if (exitKind === 'onDemand') {
