@@ -119,6 +119,11 @@ export function makeNodeSubprocessFactory(tools) {
       toChild.write(msg);
     }
 
+    /**
+     * @typedef { import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord<T>
+     * @template T
+     */
+
     /** @type { PromiseRecord<void>} */
     const {
       promise: dispatchReadyP,
