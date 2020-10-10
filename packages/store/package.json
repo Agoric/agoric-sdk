@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.3.2-dev.2",
+    "@babel/core": "^7.5.0",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"
