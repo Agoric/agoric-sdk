@@ -2,6 +2,7 @@ export function makeExternalStoreTransformer(
   babelCore,
   {
     overrideParser = undefined,
+    overrideRequireStorePathSuffix = '/store/src/external/default.js',
     overrideExternalStoreModuleId = '@agoric/store',
     overrideMakeExternalStoreId = 'makeExternalStore',
     overrideMakeSystemExternalStoreId = 'makeSystemExternalStore',
@@ -10,21 +11,23 @@ export function makeExternalStoreTransformer(
   const parser = overrideParser
     ? overrideParser.parse || overrideParser
     : babelCore.parseSync;
+  const requireStorePathSuffix = overrideRequireStorePathSuffix;
   const externalStoreModuleId = overrideExternalStoreModuleId;
   const makeExternalStoreId = overrideMakeExternalStoreId;
   const makeSystemExternalStoreId = overrideMakeSystemExternalStoreId;
 
   const externalStorePlugin = ({ types: t }) => {
+    const requireStoreBindings = new WeakSet();
     const importBindings = new WeakSet();
     /** @type {WeakMap<any, { init: any, data: any }>} */
     const makerBodiesToIdents = new WeakMap();
 
-    const deoptWarn = (path, msg) => {
+    const unimplemented = (path, msg) => {
       if (path) {
         const err = path.buildCodeFrameError(msg);
         msg = err.message;
       }
-      console.warn(`Deoptimizing unimplemented ${makeExternalStoreId}: ${msg}`);
+      console.warn(`Unimplemented ${makeExternalStoreId}: ${msg}`);
     };
 
     const replaceMakerBody = path => {
@@ -61,6 +64,7 @@ export function makeExternalStoreTransformer(
 
     const visitor = {
       ImportSpecifier(path) {
+        // Look for the binding of: import { makeExternalStore as foo } from '@agoric/store';
         if (path.parent.source.value !== externalStoreModuleId) {
           return;
         }
@@ -77,15 +81,63 @@ export function makeExternalStoreTransformer(
         exit: replaceMakerBody,
       },
       CallExpression(path) {
-        if (path.node.callee.type !== 'Identifier') {
-          return;
+        if (
+          requireStorePathSuffix &&
+          path.node.callee.type === 'Identifier' &&
+          path.node.callee.name === 'require'
+        ) {
+          // All this cruft is to manage:
+          // var _default = require('../store/src/external/default.js');
+          const args = path.node.arguments;
+          if (
+            args.length === 1 &&
+            args[0].type === 'StringLiteral' &&
+            args[0].value.endsWith(requireStorePathSuffix)
+          ) {
+            if (path.parent.type === 'VariableDeclarator') {
+              const binding = path.scope.getBinding(path.parent.id.name);
+              requireStoreBindings.add(binding);
+            }
+            return;
+          }
         }
-        const calleeBinding = path.scope.getBinding(path.node.callee.name);
-        if (!importBindings.has(calleeBinding)) {
-          return;
+
+        const callee = path.node.callee;
+        switch (callee.type) {
+          case 'Identifier': {
+            const calleeBinding = path.scope.getBinding(callee.name);
+            if (!importBindings.has(calleeBinding)) {
+              return;
+            }
+            break;
+          }
+          case 'MemberExpression': {
+            // Look for: _foo.makeExternalStore(...) where
+            // _foo is require('.../store/src/external/default.js');
+            if (
+              callee.computed ||
+              callee.object.type !== 'Identifier' ||
+              callee.property.type !== 'Identifier'
+            ) {
+              return;
+            }
+            if (callee.property.name !== makeExternalStoreId) {
+              return;
+            }
+            const calleeObjectBinding = path.scope.getBinding(
+              callee.object.name,
+            );
+            if (!requireStoreBindings.has(calleeObjectBinding)) {
+              return;
+            }
+            break;
+          }
+          default: {
+            return;
+          }
         }
         if (path.node.arguments.length !== 2) {
-          deoptWarn(
+          unimplemented(
             path,
             `call to ${makeExternalStoreId} requires 2 arguments`,
           );
@@ -97,7 +149,7 @@ export function makeExternalStoreTransformer(
           maker.type !== 'ArrowFunctionExpression' &&
           maker.type !== 'FunctionExpression'
         ) {
-          deoptWarn(
+          unimplemented(
             path,
             `maker must be a function expression, not ${maker.type}`,
           );
@@ -105,7 +157,7 @@ export function makeExternalStoreTransformer(
         }
 
         if (maker.body.type === 'BlockStatement') {
-          deoptWarn(path, `maker function body must be an expression`);
+          unimplemented(path, `maker function body must be an expression`);
           return;
         }
 
@@ -160,7 +212,7 @@ export function makeExternalStoreTransformer(
         try {
           maker.params.forEach(expandProperties);
         } catch (e) {
-          deoptWarn(null, e.message);
+          unimplemented(null, e.message);
           return;
         }
 
@@ -182,28 +234,20 @@ export function makeExternalStoreTransformer(
     return { visitor };
   };
 
-  const externalStoreTransform = {
-    rewrite(ss) {
-      const { src: source } = ss;
+  const externalStoreTransform = source => {
+    // Do the actual transform.
+    const ast = parser(source, { sourceType: 'module' });
+    const output = babelCore.transformFromAstSync(ast, source, {
+      generatorOpts: {
+        retainLines: true,
+        compact: false,
+      },
+      plugins: [externalStorePlugin],
+      ast: true,
+      code: true,
+    });
 
-      // Do the actual transform.
-      const ast = parser(source);
-      const output = babelCore.transformFromAstSync(ast, source, {
-        generatorOpts: {
-          retainLines: true,
-        },
-        plugins: [externalStorePlugin],
-        ast: true,
-        code: true,
-      });
-
-      const actualSource = output.code;
-      return {
-        ...ss,
-        ast,
-        src: actualSource,
-      };
-    },
+    return output.code;
   };
 
   return externalStoreTransform;

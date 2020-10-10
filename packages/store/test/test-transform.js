@@ -4,17 +4,10 @@ import test from 'ava';
 import * as babelCore from '@babel/core';
 import fs from 'fs';
 
-import { makeExternalStoreTransformer } from '../src/index';
+import { makeExternalStoreTransformer } from '../src/external/transform';
 
 test('external store transform', async t => {
   const externalStoreTransform = makeExternalStoreTransformer(babelCore);
-  const rewrite = source => {
-    const ss = externalStoreTransform.rewrite({
-      src: source,
-      sourceType: 'script',
-    });
-    return ss.src;
-  };
 
   const base = `${__dirname}/../testdata`;
   const tests = await fs.promises.readdir(base);
@@ -23,7 +16,7 @@ test('external store transform', async t => {
       `${base}/${testDir}/source.js`,
       'utf8',
     );
-    const transformed = rewrite(src.trimRight(), testDir);
+    const transformed = externalStoreTransform(src.trimRight());
     t.snapshot(transformed, { id: testDir });
   }
 });

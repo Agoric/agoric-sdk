@@ -84,9 +84,9 @@
 /**
  * @typedef {Object} HydrateStore The store needed to save closed-over
  * per-instance data
- * @property {(id: number, data: HydrateData) => void} init
- * @property {(id: number) => HydrateData} get
- * @property {(id: number, data: HydrateData) => void} set
+ * @property {(instanceId: number, data: HydrateData) => void} init
+ * @property {(instanceId: number) => HydrateData} get
+ * @property {(instanceId: number, data: HydrateData) => void} set
  * @property {() => WeakStore<ExternalInstance, any>} makeWeakStore
  */
 
