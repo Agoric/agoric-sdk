@@ -5,7 +5,7 @@ import fs from 'fs';
 
 import { makeExternalStoreTransformer } from '../src/external/transform';
 
-test('meter transform', async t => {
+test('external store transform', async t => {
   const externalStoreTransform = makeExternalStoreTransformer(babelCore);
   const rewrite = source => {
     const ss = externalStoreTransform.rewrite({

@@ -163,7 +163,10 @@ export function makeExternalStoreTransformer(
           maker.params.forEach(expandProperties);
         } catch (e) {
           unimplemented(null, e.message);
+          return;
         }
+
+        // We are ready to mutate the node.
         const adaptArgumentsBody = t.ObjectExpression(properties);
         const adaptArguments = t.ArrowFunctionExpression(
           maker.params,
