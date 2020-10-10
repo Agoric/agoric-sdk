@@ -183,6 +183,7 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
       const output = babelCore.transformFromAstSync(ast, source, {
         generatorOpts: {
           retainLines: true,
+          compact: false,
         },
         plugins: [meteringPlugin(regexpList)],
         ast: true,
