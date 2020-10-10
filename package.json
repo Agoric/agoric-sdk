@@ -10,7 +10,6 @@
     "packages/sparse-ints",
     "packages/registrar",
     "packages/store",
-    "packages/weak-store",
     "packages/acorn-eventual-send",
     "packages/bundle-source",
     "packages/import-bundle",

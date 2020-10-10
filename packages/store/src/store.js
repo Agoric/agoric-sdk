@@ -1,23 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache license 2.0
 
-/* global harden */
 // @ts-check
 
 import { assert, details, q } from '@agoric/assert';
-
-/**
- * @template K,V
- * @typedef {Object} Store - A safety wrapper around a Map
- * @property {(key: K) => boolean} has - Check if a key exists
- * @property {(key: K, value: V) => void} init - Initialize the key only if it doesn't already exist
- * @property {(key: K) => V} get - Return a value for the key. Throws
- * if not found.
- * @property {(key: K, value: V) => void} set - Set the key. Throws if not found.
- * @property {(key: K) => void} delete - Remove the key. Throws if not found.
- * @property {() => K[]} keys - Return an array of keys
- * @property {() => V[]} values - Return an array of values
- * @property {() => [K, V][]} entries - Return an array of entries
- */
 
 /**
  * Distinguishes between adding a new key (init) and updating or
@@ -29,7 +14,7 @@ import { assert, details, q } from '@agoric/assert';
  * @param  {string} [keyName='key'] - the column name for the key
  * @returns {Store<K,V>}
  */
-function makeStore(keyName = 'key') {
+export function makeStore(keyName = 'key') {
   const store = new Map();
   const assertKeyDoesNotExist = key =>
     assert(!store.has(key), details`${q(keyName)} already registered: ${key}`);
@@ -59,4 +44,3 @@ function makeStore(keyName = 'key') {
   });
 }
 harden(makeStore);
-export default makeStore;

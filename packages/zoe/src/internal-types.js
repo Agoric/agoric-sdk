@@ -4,16 +4,6 @@
  */
 
 /**
- * @template K,V
- * @typedef {import('@agoric/store').Store<K, V>} Store
- */
-
-/**
- * @template K,V
- * @typedef {import('@agoric/weak-store').WeakStore<K, V>} WeakStore
- */
-
-/**
  * @template T
  * @typedef {import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord
  */

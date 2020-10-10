@@ -3,7 +3,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import makeStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 import { makeIssuerKit } from '@agoric/ertp';
 import { assertRightsConserved } from '../../src/contractFacet/rightsConservation';
 
@@ -14,7 +14,7 @@ const setupAmountMaths = () => {
 
   const all = [moolaIssuerResults, simoleanIssuerResults, bucksIssuerResults];
   const amountMathArray = all.map(objs => objs.amountMath);
-  const brandToAmountMath = makeStore('brand');
+  const brandToAmountMath = makeWeakStore('brand');
   all.forEach(bundle =>
     brandToAmountMath.init(bundle.brand, bundle.amountMath),
   );

@@ -4,6 +4,7 @@ import { E as defaultE } from '@agoric/eventual-send';
 import makeStore from '@agoric/store';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network';
 
+import '@agoric/store/exported';
 import './types';
 import './internal-types';
 

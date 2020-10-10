@@ -2,7 +2,7 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import makeStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
@@ -10,7 +10,7 @@ import buildManualTimer from '../../tools/manualTimer';
 test('cleanProposal test', t => {
   const { simoleanR, moolaR, bucksR, moola, simoleans } = setup();
 
-  const brandToAmountMath = makeStore('brand');
+  const brandToAmountMath = makeWeakStore('brand');
   brandToAmountMath.init(moolaR.brand, moolaR.amountMath);
   brandToAmountMath.init(simoleanR.brand, simoleanR.amountMath);
   brandToAmountMath.init(bucksR.brand, bucksR.amountMath);
@@ -36,7 +36,7 @@ test('cleanProposal test', t => {
 test('cleanProposal - all empty', t => {
   const { simoleanR, moolaR, bucksR } = setup();
 
-  const brandToAmountMath = makeStore('brand');
+  const brandToAmountMath = makeWeakStore('brand');
   brandToAmountMath.init(moolaR.brand, moolaR.amountMath);
   brandToAmountMath.init(simoleanR.brand, simoleanR.amountMath);
   brandToAmountMath.init(bucksR.brand, bucksR.amountMath);
@@ -63,7 +63,7 @@ test('cleanProposal - repeated brands', t => {
   t.plan(3);
   const { simoleanR, moolaR, bucksR, moola, simoleans } = setup();
 
-  const brandToAmountMath = makeStore('brand');
+  const brandToAmountMath = makeWeakStore('brand');
   brandToAmountMath.init(moolaR.brand, moolaR.amountMath);
   brandToAmountMath.init(simoleanR.brand, simoleanR.amountMath);
   brandToAmountMath.init(bucksR.brand, bucksR.amountMath);
