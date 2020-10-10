@@ -149,6 +149,30 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['exit', vatID, !!isFailure, kernelInfo]);
   }
 
+  function insistValidVatstoreKey(key) {
+    assert.typeof(key, 'string');
+    assert(key.match(/^\w+$/));
+  }
+
+  function translateVatstoreGet(key) {
+    insistValidVatstoreKey(key);
+    kdebug(`syscall[${vatID}].vatstoreGet(${key})`);
+    return harden(['vatstoreGet', vatID, key]);
+  }
+
+  function translateVatstoreSet(key, value) {
+    insistValidVatstoreKey(key);
+    assert.typeof(value, 'string');
+    kdebug(`syscall[${vatID}].vatstoreSet(${key},${value})`);
+    return harden(['vatstoreSet', vatID, key, value]);
+  }
+
+  function translateVatstoreDelete(key) {
+    insistValidVatstoreKey(key);
+    kdebug(`syscall[${vatID}].vatstoreDelete(${key})`);
+    return harden(['vatstoreDelete', vatID, key]);
+  }
+
   function translateCallNow(target, method, args) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
@@ -240,6 +264,12 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateReject(...args);
       case 'exit':
         return translateExit(...args);
+      case 'vatstoreGet':
+        return translateVatstoreGet(...args);
+      case 'vatstoreSet':
+        return translateVatstoreSet(...args);
+      case 'vatstoreDelete':
+        return translateVatstoreDelete(...args);
       default:
         throw Error(`unknown vatSyscall type ${type}`);
     }
@@ -260,19 +290,34 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
 
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
-  // Most syscalls return ['ok', null], but callNow() returns ['ok',
-  // capdata]. KernelSyscallResult is never ['error', reason] because errors
+  // Most syscalls return ['ok', null], but callNow() returns ['ok', capdata]
+  // and vatstoreGet() returns ['ok', string] or ['ok',
+  // undefined]. KernelSyscallResult is never ['error', reason] because errors
   // (which are kernel-fatal) are signalled with exceptions.
-  function kernelSyscallResultToVatSyscallResult(kres) {
-    const [successFlag, kdata] = kres;
+  function kernelSyscallResultToVatSyscallResult(type, kres) {
+    const [successFlag, resultData] = kres;
     assert(successFlag === 'ok', 'unexpected KSR error');
-    if (kdata) {
-      const slots = kdata.slots.map(slot => mapKernelSlotToVatSlot(slot));
-      const vdata = { ...kdata, slots };
-      const vres = harden(['ok', vdata]);
-      return vres;
+    switch (type) {
+      case 'invoke': {
+        insistCapData(resultData);
+        // prettier-ignore
+        const slots =
+          resultData.slots.map(slot => mapKernelSlotToVatSlot(slot));
+        const vdata = { ...resultData, slots };
+        const vres = harden(['ok', vdata]);
+        return vres;
+      }
+      case 'vatstoreGet':
+        if (resultData) {
+          assert.typeof(resultData, 'string');
+          return harden(['ok', resultData]);
+        } else {
+          return harden(['ok', undefined]);
+        }
+      default:
+        assert(resultData === null);
+        return harden(['ok', null]);
     }
-    return harden(['ok', null]);
   }
 
   return kernelSyscallResultToVatSyscallResult;
