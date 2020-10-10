@@ -1,3 +1,4 @@
 .envrc
 build/
 compartmap.json
+build-xsnap/output/

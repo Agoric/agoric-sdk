@@ -47,6 +47,8 @@
     "@agoric/marshal": "^0.2.6-dev.2",
     "@agoric/promise-kit": "^0.1.6-dev.2",
     "@agoric/swingset-vat": "^0.8.1-dev.2",
+    "@rollup/plugin-commonjs": "^15.1.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5"
   },
