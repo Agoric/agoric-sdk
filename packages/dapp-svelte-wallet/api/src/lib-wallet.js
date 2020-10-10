@@ -412,9 +412,6 @@ export async function makeWallet({
         return Promise.all(
           Object.entries(payoutObj)
             .map(([keyword, payoutP], i) => {
-              // keyword may be an index for zoeKind === 'indexed', but we can still treat it
-              // as the keyword name for looking up purses and payouts (just happens to
-              // be an integer).
               payoutIndexToKeyword[i] = keyword;
               return payoutP;
             })
