@@ -67,6 +67,7 @@ Static vats currently receive the following objects in their `buildRootObject()`
 * `getInterfaceOf`
 * `makeGetMeter`
 * `transformMetering`
+* `transformExternalStore`
 * `transformTildot`
 * `exitVat`
 * `exitVatWithFailure`

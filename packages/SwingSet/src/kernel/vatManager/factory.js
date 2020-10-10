@@ -10,6 +10,7 @@ export function makeVatManagerFactory({
   vatEndowments,
   meterManager,
   transformMetering,
+  transformExternalStore,
   waitUntilQuiescent,
   makeNodeWorker,
   startSubprocessWorkerNode,
@@ -21,6 +22,7 @@ export function makeVatManagerFactory({
     vatEndowments,
     meterManager,
     transformMetering,
+    transformExternalStore,
     waitUntilQuiescent,
   });
 

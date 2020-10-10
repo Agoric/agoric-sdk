@@ -1,9 +1,11 @@
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
+
 import { makeLiveSlots } from '../liveSlots';
 import { createSyscall } from './syscall';
 import { makeDeliver } from './deliver';
 import { makeTranscriptManager } from './transcript';
+import { makeVatExternalStoreMaker } from './externalStore';
 
 export function makeLocalVatManagerFactory(tools) {
   const {
@@ -12,6 +14,7 @@ export function makeLocalVatManagerFactory(tools) {
     vatEndowments,
     meterManager,
     transformMetering,
+    transformExternalStore,
     waitUntilQuiescent,
   } = tools;
 
@@ -21,6 +24,7 @@ export function makeLocalVatManagerFactory(tools) {
     getInterfaceOf: allVatPowers.getInterfaceOf,
     makeMarshal: allVatPowers.makeMarshal,
     transformTildot: allVatPowers.transformTildot,
+    transformExternalStore: allVatPowers.transformExternalStore,
   };
   const internalMeteringVP = {
     makeGetMeter: allVatPowers.makeGetMeter,
@@ -91,6 +95,7 @@ export function makeLocalVatManagerFactory(tools) {
       metered = false,
       enableSetup = false,
       enableInternalMetering = false,
+      enableSystemExternalStore = true,
       vatParameters = {},
       vatConsole,
     } = managerOptions;
@@ -111,6 +116,15 @@ export function makeLocalVatManagerFactory(tools) {
 
     const inescapableTransforms = [];
     const inescapableGlobalLexicals = {};
+
+    if (enableSystemExternalStore) {
+      inescapableTransforms.push(transformExternalStore);
+      // TODO: Don't put this in the global lexicals, it should go in plain
+      // globals.
+      // TODO: Pass any parameters that the vat external store needs.
+      inescapableGlobalLexicals.makeSystemExternalStore = makeVatExternalStoreMaker();
+    }
+
     if (metered) {
       const getMeter = meterRecord.getMeter;
       inescapableTransforms.push(src => transformMetering(src, getMeter));

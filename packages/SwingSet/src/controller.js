@@ -14,6 +14,7 @@ import { assert } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
+import { makeExternalStoreTransformer } from '@agoric/store/src/external/transform';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
 import { locateWorkerBin } from '@agoric/xs-vat-worker';
@@ -113,6 +114,10 @@ export async function makeSwingsetController(
   // the same is true for the tildot transform
   const transformTildot = harden(makeTransform(babelParser, babelGenerate));
 
+  // And same for the makeExternalStore() transform
+  const transformExternalStore = makeExternalStoreTransformer(babelCore);
+  harden(transformExternalStore);
+
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({
     // re2 is a RegExp work-a-like that disables backtracking expressions for
@@ -179,6 +184,7 @@ export async function makeSwingsetController(
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
+    transformExternalStore,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startSubprocessWorkerXS,

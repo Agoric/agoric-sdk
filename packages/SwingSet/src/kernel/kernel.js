@@ -95,6 +95,7 @@ export default function buildKernel(
     replaceGlobalMeter,
     transformMetering,
     transformTildot,
+    transformExternalStore,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startSubprocessWorkerXS,
@@ -184,6 +185,8 @@ export default function buildKernel(
       meterManager.runWithoutGlobalMeter(transformMetering, ...args),
     transformTildot: (...args) =>
       meterManager.runWithoutGlobalMeter(transformTildot, ...args),
+    transformExternalStore: (...args) =>
+      meterManager.runWithoutGlobalMeter(transformExternalStore, ...args),
     testLog,
   });
 
@@ -535,6 +538,7 @@ export default function buildKernel(
     meterManager,
     testLog,
     transformMetering,
+    transformExternalStore,
     waitUntilQuiescent,
     makeNodeWorker,
     startSubprocessWorkerNode,

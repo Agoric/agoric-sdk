@@ -1,7 +1,7 @@
 import { importBundle } from '@agoric/import-bundle';
 
 export function buildRootObject(vatPowers) {
-  const { makeGetMeter, transformMetering } = vatPowers;
+  const { makeGetMeter, transformMetering, transformExternalStore } = vatPowers;
   const log = vatPowers.testLog;
   const {
     getMeter,
@@ -29,7 +29,10 @@ export function buildRootObject(vatPowers) {
       log('importing');
       const ns = await importBundle(bundle, {
         endowments,
-        transforms: [src => transformMetering(src, getMeter)],
+        transforms: [
+          transformExternalStore,
+          src => transformMetering(src, getMeter),
+        ],
       });
       // console.log('ns', ns);
       meterMe = ns.meterMe;
