@@ -19,14 +19,12 @@ export function makeExternalStoreTransformer(
     /** @type {WeakMap<any, { init: any, data: any }>} */
     const makerBodiesToIdents = new WeakMap();
 
-    const unimplemented = (path, msg) => {
+    const deoptWarn = (path, msg) => {
       if (path) {
         const err = path.buildCodeFrameError(msg);
         msg = err.message;
       }
-      console.warn(
-        `WARNING: Unimplemented ${makeExternalStoreId} transform; ${msg}`,
-      );
+      console.warn(`Deoptimizing unimplemented ${makeExternalStoreId}: ${msg}`);
     };
 
     const replaceMakerBody = path => {
@@ -87,7 +85,7 @@ export function makeExternalStoreTransformer(
           return;
         }
         if (path.node.arguments.length !== 2) {
-          unimplemented(
+          deoptWarn(
             path,
             `call to ${makeExternalStoreId} requires 2 arguments`,
           );
@@ -99,7 +97,7 @@ export function makeExternalStoreTransformer(
           maker.type !== 'ArrowFunctionExpression' &&
           maker.type !== 'FunctionExpression'
         ) {
-          unimplemented(
+          deoptWarn(
             path,
             `maker must be a function expression, not ${maker.type}`,
           );
@@ -107,7 +105,7 @@ export function makeExternalStoreTransformer(
         }
 
         if (maker.body.type === 'BlockStatement') {
-          unimplemented(path, `maker function body must be an expression`);
+          deoptWarn(path, `maker function body must be an expression`);
           return;
         }
 
@@ -162,7 +160,7 @@ export function makeExternalStoreTransformer(
         try {
           maker.params.forEach(expandProperties);
         } catch (e) {
-          unimplemented(null, e.message);
+          deoptWarn(null, e.message);
           return;
         }
 

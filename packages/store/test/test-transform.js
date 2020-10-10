@@ -1,9 +1,10 @@
 /* eslint-disable no-await-in-loop */
+import '@agoric/install-ses';
 import test from 'ava';
 import * as babelCore from '@babel/core';
 import fs from 'fs';
 
-import { makeExternalStoreTransformer } from '../src/external/transform';
+import { makeExternalStoreTransformer } from '../src/index';
 
 test('external store transform', async t => {
   const externalStoreTransform = makeExternalStoreTransformer(babelCore);
