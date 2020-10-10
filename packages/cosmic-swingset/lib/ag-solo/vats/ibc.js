@@ -9,6 +9,7 @@ import makeStore from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { generateSparseInts } from '@agoric/sparse-ints';
 
+import '@agoric/store/exported';
 import '@agoric/swingset-vat/src/vats/network/types';
 
 import { makeWithQueue } from './queue';
@@ -29,11 +30,6 @@ const FIXME_ALLOW_NAIVE_RELAYS = true;
 /**
  * @template U,V
  * @typedef {import('@agoric/promise-kit').PromiseRecord<U>} PromiseRecord
- */
-
-/**
- * @template K,V
- * @typedef {import('@agoric/store').Store<K, V>} Store
  */
 
 /**

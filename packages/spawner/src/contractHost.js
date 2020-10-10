@@ -3,7 +3,7 @@
 /* global harden */
 
 import { importBundle } from '@agoric/import-bundle';
-import makeStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
 import { makeIssuerKit } from '@agoric/ertp';
@@ -23,11 +23,11 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
   // buildRoot function.
 
   // Maps from seat identity to seats
-  const seats = makeStore('seatIdentity');
+  const seats = makeWeakStore('seatIdentity');
   // from seat identity to invite description.
-  const seatDescriptions = makeStore('seatIdentity');
+  const seatDescriptions = makeWeakStore('seatIdentity');
   // from installation to source code bundle
-  const installationSourceBundles = makeStore('installation');
+  const installationSourceBundles = makeWeakStore('installation');
 
   const {
     mint: inviteMint,

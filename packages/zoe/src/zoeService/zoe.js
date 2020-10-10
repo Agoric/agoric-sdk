@@ -1,5 +1,5 @@
 // @ts-check
-import makeWeakStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -8,6 +8,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  */
 import '@agoric/ertp/exported';
+import '@agoric/store/exported';
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import '../../exported';

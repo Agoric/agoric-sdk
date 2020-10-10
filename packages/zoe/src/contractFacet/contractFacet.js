@@ -9,8 +9,7 @@
 
 import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import makeWeakStore from '@agoric/weak-store';
-import makeStore from '@agoric/store';
+import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { makeAmountMath, MathKind } from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';

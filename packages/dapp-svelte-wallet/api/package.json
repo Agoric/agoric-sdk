@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.11.1-dev.2",
+    "@agoric/store": "^0.2.3-dev.2",
     "esm": "^3.2.5"
   },
   "eslintConfig": {
