@@ -82,7 +82,8 @@
     }
   },
   "eslintIgnore": [
-    "bundle-*.js"
+    "bundle-*.js",
+    "source.js"
   ],
   "prettier": {
     "trailingComma": "all",

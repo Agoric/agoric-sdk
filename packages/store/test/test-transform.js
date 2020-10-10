@@ -22,15 +22,7 @@ test('meter transform', async t => {
       `${base}/${testDir}/source.js`,
       'utf8',
     );
-    const rewritten = await fs.promises
-      .readFile(`${base}/${testDir}/rewrite.js`, 'utf8')
-      // Fix golden files in case they have DOS or MacOS line endings.
-      .then(s => s.replace(/(\r\n|\r)/g, '\n'))
-      .catch(_ => undefined);
     const transformed = rewrite(src.trimRight(), testDir);
-    if (rewritten === undefined) {
-      console.log(transformed);
-    }
-    t.is(transformed, rewritten.trimRight(), `rewrite ${testDir}`);
+    t.snapshot(transformed, { id: testDir });
   }
 });

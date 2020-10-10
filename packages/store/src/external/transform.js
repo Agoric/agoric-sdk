@@ -19,6 +19,16 @@ export function makeExternalStoreTransformer(
     /** @type {WeakMap<any, { init: any, data: any }>} */
     const makerBodiesToIdents = new WeakMap();
 
+    const unimplemented = (path, msg) => {
+      if (path) {
+        const err = path.buildCodeFrameError(msg);
+        msg = err.message;
+      }
+      console.warn(
+        `WARNING: Unimplemented ${makeExternalStoreId} transform; ${msg}`,
+      );
+    };
+
     const replaceMakerBody = path => {
       if (!makerBodiesToIdents.has(path.node.body)) {
         return;
@@ -28,14 +38,18 @@ export function makeExternalStoreTransformer(
 
       if (path.node.body.type === 'BlockStatement') {
         throw path.buildCodeFrameError(
-          `Unexpected maker body type ${path.node.body.type}`,
+          `Unexpected maker function body type ${path.node.body.type}`,
         );
       }
 
       // Indirect all the bindings via the data property.
       Object.values(path.scope.bindings).forEach(binding => {
-        binding.referencePaths.forEach(p => p.replaceWith(t.MemberExpression(data, p.node)));
-        binding.constantViolations.forEach(p => p.node.left = t.MemberExpression(data, p.node.left));
+        binding.referencePaths.forEach(p =>
+          p.replaceWith(t.MemberExpression(data, p.node)),
+        );
+        binding.constantViolations.forEach(
+          p => (p.node.left = t.MemberExpression(data, p.node.left)),
+        );
       });
 
       // Create the makeHydrate function.
@@ -73,20 +87,28 @@ export function makeExternalStoreTransformer(
           return;
         }
         if (path.node.arguments.length !== 2) {
-          throw path.buildCodeFrameError(
-            `Call to ${makeExternalStoreId} requires 2 arguments`,
+          unimplemented(
+            path,
+            `call to ${makeExternalStoreId} requires 2 arguments`,
           );
+          return;
         }
-        path.node.callee = t.Identifier(makeSystemExternalStoreId);
 
         const maker = path.node.arguments[1];
         if (
           maker.type !== 'ArrowFunctionExpression' &&
           maker.type !== 'FunctionExpression'
         ) {
-          throw path.buildCodeFrameError(
-            `Maker argument to ${makeExternalStoreId} must be a function expression, not ${maker.type}`,
+          unimplemented(
+            path,
+            `maker must be a function expression, not ${maker.type}`,
           );
+          return;
+        }
+
+        if (maker.body.type === 'BlockStatement') {
+          unimplemented(path, `maker function body must be an expression`);
+          return;
         }
 
         const properties = [];
@@ -130,14 +152,18 @@ export function makeExternalStoreTransformer(
 
             default: {
               throw path.buildCodeFrameError(
-                `Unrecognized maker parameter type ${node.type}`,
+                `Unimplemented; unrecognized maker parameter type ${node.type}`,
               );
             }
           }
         };
 
         // Create an object expression from the parameter definitions.
-        maker.params.forEach(expandProperties);
+        try {
+          maker.params.forEach(expandProperties);
+        } catch (e) {
+          unimplemented(null, e.message);
+        }
         const adaptArgumentsBody = t.ObjectExpression(properties);
         const adaptArguments = t.ArrowFunctionExpression(
           maker.params,
@@ -148,6 +174,7 @@ export function makeExternalStoreTransformer(
         const data = path.scope.generateUidIdentifier('data');
 
         makerBodiesToIdents.set(maker.body, { init, data });
+        path.node.callee = t.Identifier(makeSystemExternalStoreId);
         path.node.arguments = [path.node.arguments[0], adaptArguments, maker];
       },
     };
