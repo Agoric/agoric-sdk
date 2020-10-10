@@ -347,7 +347,7 @@ export async function makeWallet({
    * There's a new offer. Ask Zoe to notify us when the offer is complete.
    *
    * @param {string} id
-   * @param {UserSeat | Promise<UserSeat>} seat
+   * @param {ERef<UserSeat>} seat
    */
   async function subscribeToNotifier(id, seat) {
     E(seat)
@@ -389,7 +389,7 @@ export async function makeWallet({
     // === AWAITING TURN ===
     // =====================
 
-    // this await is purely to prevent "embarresment" of
+    // this await is purely to prevent "embarrassment" of
     // revealing to zoe that we had insufficient funds/assets
     // for the offer.
     const payments = await Promise.all(paymentPs);
