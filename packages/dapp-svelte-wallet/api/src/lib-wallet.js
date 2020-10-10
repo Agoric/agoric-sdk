@@ -348,7 +348,7 @@ export async function makeWallet({
    * There's a new offer. Ask Zoe to notify us when the offer is complete.
    *
    * @param {string} id
-   * @param {UserSeat} seat
+   * @param {ERef<UserSeat>} seat
    */
   async function subscribeToNotifier(id, seat) {
     E(seat)
@@ -370,12 +370,6 @@ export async function makeWallet({
 
     const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const invite = await inviteP;
-
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
     // Payments are made for the keywords in proposal.give.
     const keywords = [];
@@ -396,18 +390,17 @@ export async function makeWallet({
     // === AWAITING TURN ===
     // =====================
 
+    // this await is purely to prevent "embarrassment" of
+    // revealing to zoe that we had insufficient funds/assets
+    // for the offer.
     const payments = await Promise.all(paymentPs);
 
     const paymentKeywordRecord = Object.fromEntries(
       keywords.map((keyword, i) => [keyword, payments[i]]),
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const seat = await E(zoe).offer(
-      invite,
+    const seat = E(zoe).offer(
+      inviteP,
       harden(proposal),
       harden(paymentKeywordRecord),
     );
@@ -418,26 +411,20 @@ export async function makeWallet({
       .then(payoutObj => {
         const payoutIndexToKeyword = [];
         return Promise.all(
-          Object.entries(payoutObj).map(([keyword, payoutP], i) => {
-            // keyword may be an index for zoeKind === 'indexed', but we can still treat it
-            // as the keyword name for looking up purses and payouts (just happens to
-            // be an integer).
-            payoutIndexToKeyword[i] = keyword;
-            return payoutP;
-          }),
-        ).then(payoutArray =>
-          Promise.all(
-            payoutArray.map(async (payoutP, payoutIndex) => {
+          Object.entries(payoutObj)
+            .map(([keyword, payoutP], i) => {
+              payoutIndexToKeyword[i] = keyword;
+              return payoutP;
+            })
+            .map((payoutP, payoutIndex) => {
               const keyword = payoutIndexToKeyword[payoutIndex];
               const purse = purseKeywordRecord[keyword];
               if (purse && payoutP) {
-                const payout = await payoutP;
                 // eslint-disable-next-line no-use-before-define
-                return addPayment(payout, purse);
+                return addPayment(payoutP, purse);
               }
               return undefined;
             }),
-          ),
         );
       });
 
