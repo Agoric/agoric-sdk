@@ -79,12 +79,12 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
   backing = makeBackingStore(hydrateHook);
 
   /** @type {MakeHydrateExternalStore<A, T>} */
-  function makeHydrateExternalStore(instanceName, adaptArguments, makeHydrate) {
+  function makeHydrateExternalStore(keyName, adaptArguments, makeHydrate) {
     let lastInstanceId = 0;
 
     lastStoreId += 1;
     const storeId = lastStoreId;
-    const hstore = backing.makeHydrateStore(storeId, instanceName);
+    const hstore = backing.makeHydrateStore(storeId, keyName);
 
     const initHydrate = makeHydrate(true);
     storeIdToHydrate.init(storeId, makeHydrate());
