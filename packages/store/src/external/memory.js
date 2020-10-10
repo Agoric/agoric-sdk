@@ -10,15 +10,15 @@ import '../types';
  * secondary storage.
  *
  * @template {(...args: any[]) => ExternalInstance} M
- * @param {string} instanceName
+ * @param {string} keyName
  * @param {M} maker
  * @returns {ExternalStore<M>}
  */
-export function makeMemoryExternalStore(instanceName, maker) {
+export function makeMemoryExternalStore(keyName, maker) {
   return harden({
     makeInstance: maker,
     makeWeakStore() {
-      return makeWeakStore(instanceName);
+      return makeWeakStore(keyName);
     },
   });
 }

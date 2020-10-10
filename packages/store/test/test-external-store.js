@@ -50,23 +50,39 @@ test('original sources', t => {
 
 test('rewritten code', t => {
   /** @type {HydrateHook} */
-  let swingSetHydrateHook;
-  const makeSwingSetCollection = makeHydrateExternalStoreMaker(hydrateHook => {
-    swingSetHydrateHook = hydrateHook;
+  let vatHydrateHook;
+  const makeVatExternalStore = makeHydrateExternalStoreMaker(hydrateHook => {
+    vatHydrateHook = hydrateHook;
+    /** @type {Store<number, HydrateStore>} */
     const idToStore = makeStore('storeId');
     return {
-      findStore(storeId) {
+      getHydrateStore(storeId) {
         return idToStore.get(storeId);
       },
-      makeStore(storeId, instanceKind) {
+      makeHydrateStore(storeId, instanceKind) {
+        // This implementation is totally leaky.
         const store = makeStore(`${instanceKind} ids`);
-        idToStore.init(storeId, store);
-        return {
-          ...store,
+
+        // We use JSON here just as a minimal test.  Real implementations will
+        // want something like @agoric/marshal.
+        /** @type {HydrateStore} */
+        const hstore = {
+          init(id, data) {
+            store.init(id, JSON.stringify(data));
+          },
+          get(id) {
+            return JSON.parse(store.get(id));
+          },
+          set(id, data) {
+            store.set(id, JSON.stringify(data));
+          },
           makeWeakStore() {
             return makeWeakStore(instanceKind);
           },
         };
+        harden(hstore);
+        idToStore.init(storeId, hstore);
+        return hstore;
       },
     };
   });
@@ -86,7 +102,7 @@ test('rewritten code', t => {
    *
    * Declarations are not considered side-effects.
    */
-  const store = makeSwingSetCollection(
+  const store = makeVatExternalStore(
     'Hello instance',
     (msg = 'Hello') => ({ msg }),
     $hinit => $hdata => {
@@ -108,13 +124,13 @@ test('rewritten code', t => {
   );
 
   const h = runTests(t, store.makeInstance);
-  const key = swingSetHydrateHook.getKey(h);
-  t.deepEqual(key, ['1', '1']);
-  const h2 = swingSetHydrateHook.load(key);
+  const key = vatHydrateHook.getKey(h);
+  t.deepEqual(key, [1, 1]);
+  const h2 = vatHydrateHook.load(key);
 
   // We get a different representative, which shares the key.
   t.not(h2, h);
-  t.deepEqual(swingSetHydrateHook.getKey(h2), ['1', '1']);
+  t.deepEqual(vatHydrateHook.getKey(h2), [1, 1]);
 
   // The methods are there now, too.
   const last = h.getCount();

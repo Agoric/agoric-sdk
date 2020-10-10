@@ -21,16 +21,13 @@ import { makeStore } from '../store';
  * @returns {MakeHydrateExternalStore<A, T>}
  */
 export const makeHydrateExternalStoreMaker = makeBackingStore => {
-  const serialize = JSON.stringify;
-  const unserialize = JSON.parse;
-
-  /** @type {WeakStore<T, [string, string]>} */
+  /** @type {WeakStore<T, HydrateKey>} */
   const instanceToKey = makeWeakStore('instance');
 
-  let lastStoreKey = 0;
+  let lastStoreId = 0;
 
-  // This has to be a strong store, since it is indexed by key.
-  const storeKeyToHydrate = makeStore('storeKey');
+  // This has to be a strong store, since it is indexed by ID.
+  const storeIdToHydrate = makeStore('storeId');
 
   /**
    * Create a data object that queues writes to the store.
@@ -54,59 +51,60 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
     return harden(activeData);
   };
 
-  /**
-   * @type {BackingStore}
-   */
+  /** @type {BackingStore} */
   let backing;
+
+  /** @type {HydrateHook} */
   const hydrateHook = {
     getKey(value) {
       return instanceToKey.get(value);
     },
-    load([storeKey, instanceKey]) {
-      const hydrate = storeKeyToHydrate.get(storeKey);
-      const store = backing.findStore(storeKey);
+    load([storeId, instanceId]) {
+      const hydrate = storeIdToHydrate.get(storeId);
+      const store = backing.getHydrateStore(storeId);
 
-      const data = unserialize(store.get(instanceKey));
-      const markDirty = () => store.set(instanceKey, serialize(data));
+      const data = store.get(instanceId);
+      const markDirty = () => store.set(instanceId, data);
 
       const activeData = makeActiveData(data, markDirty);
       const obj = hydrate(activeData);
-      instanceToKey.init(obj, [storeKey, instanceKey]);
+      instanceToKey.init(obj, [storeId, instanceId]);
       return obj;
     },
-    drop(storeKey) {
-      storeKeyToHydrate.delete(storeKey);
+    drop(storeId) {
+      storeIdToHydrate.delete(storeId);
     },
   };
 
   backing = makeBackingStore(hydrateHook);
 
+  /** @type {MakeHydrateExternalStore<A, T>} */
   function makeHydrateExternalStore(instanceName, adaptArguments, makeHydrate) {
-    let lastInstanceKey = 0;
+    let lastInstanceId = 0;
 
-    lastStoreKey += 1;
-    const storeKey = `${lastStoreKey}`;
-    const store = backing.makeStore(storeKey, instanceName);
+    lastStoreId += 1;
+    const storeId = lastStoreId;
+    const hstore = backing.makeHydrateStore(storeId, instanceName);
 
     const initHydrate = makeHydrate(true);
-    storeKeyToHydrate.init(storeKey, makeHydrate(undefined));
+    storeIdToHydrate.init(storeId, makeHydrate());
 
     /** @type {ExternalStore<(...args: A) => T>} */
     const estore = {
       makeInstance(...args) {
         const data = adaptArguments(...args);
         // Create a new object with the above guts.
-        lastInstanceKey += 1;
-        const instanceKey = `${lastInstanceKey}`;
+        lastInstanceId += 1;
+        const instanceId = lastInstanceId;
         initHydrate(data);
 
         // We store and reload it to sanity-check the initial state and also to
         // ensure that the new object has active data.
-        store.init(instanceKey, serialize(data));
-        return hydrateHook.load([storeKey, instanceKey]);
+        hstore.init(instanceId, data);
+        return hydrateHook.load([storeId, instanceId]);
       },
       makeWeakStore() {
-        return store.makeWeakStore();
+        return hstore.makeWeakStore();
       },
     };
     return estore;

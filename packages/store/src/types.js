@@ -6,10 +6,12 @@
  * @template K,V
  * @typedef {Object} Store - A safety wrapper around a Map
  * @property {(key: K) => boolean} has - Check if a key exists
- * @property {(key: K, value: V) => void} init - Initialize the key only if it doesn't already exist
- * @property {(key: K) => V} get - Return a value for the key. Throws
- * if not found.
- * @property {(key: K, value: V) => void} set - Set the key. Throws if not found.
+ * @property {(key: K, value: V) => void} init - Initialize the key only if it
+ * doesn't already exist
+ * @property {(key: K) => V} get - Return a value for the key. Throws if not
+ * found.
+ * @property {(key: K, value: V) => void} set - Set the key. Throws if not
+ * found.
  * @property {(key: K) => void} delete - Remove the key. Throws if not found.
  * @property {() => K[]} keys - Return an array of keys
  * @property {() => V[]} values - Return an array of values
@@ -20,10 +22,12 @@
  * @template K,V
  * @typedef {Object} WeakStore - A safety wrapper around a WeakMap
  * @property {(key: any) => boolean} has - Check if a key exists
- * @property {(key: K, value: V) => void} init - Initialize the key only if it doesn't already exist
- * @property {(key: any) => V} get - Return a value for the key. Throws
- * if not found.
- * @property {(key: K, value: V) => void} set - Set the key. Throws if not found.
+ * @property {(key: K, value: V) => void} init - Initialize the key only if it
+ * doesn't already exist
+ * @property {(key: any) => V} get - Return a value for the key. Throws if not
+ * found.
+ * @property {(key: K, value: V) => void} set - Set the key. Throws if not
+ * found.
  * @property {(key: K) => void} delete - Remove the key. Throws if not found.
  */
 
@@ -40,12 +44,15 @@
  */
 
 /**
- * An external store for a given constructor.
+ * An external store for a given maker function.
+ * TODO: We should provide makers for other kinds of data structures.
+ * Weak sorted lists, weak priority queues, and many others.
  *
- * @template {(...args: Array<any>) => ExternalInstance} C
+ * @template {(...args: Array<any>) => ExternalInstance} M
  * @typedef {Object} ExternalStore
- * @property {C} makeInstance
- * @property {MakeWeakStore<ReturnType<C>, any>} makeWeakStore
+ * @property {M} makeInstance Create a fresh instance
+ * @property {MakeWeakStore<ReturnType<M>, any>} makeWeakStore Create an
+ * external weak store indexed by an instance
  */
 
 /**
@@ -53,10 +60,12 @@
  */
 
 /**
+ * @typedef {[number, number]} HydrateKey
+ * @typedef {true} HydrateInit
  * @typedef {Object} HydrateHook
- * @property {(value: any) => [string, string]} getKey
- * @property {(key: [string, string]) => any} load
- * @property {(storeKey: string) => void} drop
+ * @property {(value: any) => HydrateKey} getKey
+ * @property {(key: HydrateKey) => any} load
+ * @property {(storeId: number) => void} drop
  */
 
 /**
@@ -68,16 +77,21 @@
  * @callback MakeHydrateExternalStore
  * @param {string} instanceKind
  * @param {(...args: A) => HydrateData} adaptArguments
- * @param {(init: boolean | undefined) => (data: HydrateData) => T} makeHydrate
+ * @param {(init?: HydrateInit) => (data: HydrateData) => T} makeHydrate
  * @returns {ExternalStore<(...args: A) => T>}
  */
 
 /**
- * @typedef {Store<string, string> & { makeWeakStore: () => WeakStore<any, any> }}} ExternalInstanceStore
+ * @typedef {Object} HydrateStore The store needed to save closed-over
+ * per-instance data
+ * @property {(id: number, data: HydrateData) => void} init
+ * @property {(id: number) => HydrateData} get
+ * @property {(id: number, data: HydrateData) => void} set
+ * @property {() => WeakStore<ExternalInstance, any>} makeWeakStore
  */
 
 /**
- * @typedef {Object} BackingStore
- * @property {(storeId: string, instanceKind: string) => ExternalInstanceStore} makeStore
- * @property {(storeId: string) => ExternalInstanceStore} findStore
+ * @typedef {Object} BackingStore This is the master store that reifies storeIds
+ * @property {(storeId: number, instanceKind: string) => HydrateStore} makeHydrateStore
+ * @property {(storeId: number) => HydrateStore} getHydrateStore
  */
