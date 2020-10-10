@@ -221,6 +221,7 @@ export default function buildKernel(
 
   const kernelSyscallHandler = makeKernelSyscallHandler({
     kernelKeeper,
+    storage: enhancedCrankBuffer,
     ephemeral,
     // eslint-disable-next-line no-use-before-define
     notify,
@@ -575,14 +576,13 @@ export default function buildKernel(
       try {
         // this can fail if kernel or device code is buggy
         const kres = kernelSyscallHandler.doKernelSyscall(ksc);
-        // kres is a KernelResult ([successFlag, capdata]), but since errors
-        // here are signalled with exceptions, kres is either ['ok', capdata]
-        // or ['ok', null]. Vats (liveslots) record the response in the
-        // transcript (which is why we use 'null' instead of 'undefined',
-        // TODO clean this up), but otherwise most syscalls ignore it. The
-        // one syscall that pays attention is callNow(), which assumes it's
-        // capdata.
-        vres = translators.kernelSyscallResultToVatSyscallResult(kres);
+        // kres is a KernelResult ([successFlag, value]), but since errors
+        // here are signalled with exceptions, kres is ['ok', value]. Vats
+        // (liveslots) record the response in the transcript (which is why we
+        // use 'null' instead of 'undefined', TODO clean this up), but otherwise
+        // most syscalls ignore it. The one syscall that pays attention is
+        // callNow(), which assumes it's capdata.
+        vres = translators.kernelSyscallResultToVatSyscallResult(ksc[0], kres);
         // here, vres is either ['ok', null] or ['ok', capdata]
         finish(kres, vres); // TODO call meaningfully on failure too?
       } catch (err) {

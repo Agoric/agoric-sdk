@@ -26,6 +26,7 @@ export function doSend(kernelKeeper, target, msg) {
 export function makeKernelSyscallHandler(tools) {
   const {
     kernelKeeper,
+    storage,
     ephemeral,
     notify,
     notifySubscribersAndQueue,
@@ -39,6 +40,28 @@ export function makeKernelSyscallHandler(tools) {
 
   function exit(vatID, isFailure, info) {
     setTerminationTrigger(vatID, false, !!isFailure, info);
+    return OKNULL;
+  }
+
+  function vatstoreKeyKey(vatID, key) {
+    return `${vatID}.vs.${key}`;
+  }
+
+  function vatstoreGet(vatID, key) {
+    const actualKey = vatstoreKeyKey(vatID, key);
+    const value = storage.get(actualKey);
+    return harden(['ok', value || null]);
+  }
+
+  function vatstoreSet(vatID, key, value) {
+    const actualKey = vatstoreKeyKey(vatID, key);
+    storage.set(actualKey, value);
+    return OKNULL;
+  }
+
+  function vatstoreDelete(vatID, key) {
+    const actualKey = vatstoreKeyKey(vatID, key);
+    storage.delete(actualKey);
     return OKNULL;
   }
 
@@ -149,6 +172,12 @@ export function makeKernelSyscallHandler(tools) {
         return reject(...args);
       case 'exit':
         return exit(...args);
+      case 'vatstoreGet':
+        return vatstoreGet(...args);
+      case 'vatstoreSet':
+        return vatstoreSet(...args);
+      case 'vatstoreDelete':
+        return vatstoreDelete(...args);
       default:
         throw Error(`unknown vatSyscall type ${type}`);
     }
