@@ -12,6 +12,7 @@ import {
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const CHAIN_ID = 'agoric';
+const BACKOFF_MS = 3000;
 
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
@@ -109,7 +110,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   let agSolo;
-  let agServer;
   if (opts.sdk) {
     agSolo = path.resolve(__dirname, '../../cosmic-swingset/bin/ag-solo');
   } else {
@@ -117,8 +117,15 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
+    const agServer = `_agstate/agoric-servers/${profileName}`;
     const fakeDelay =
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
+
+    if (popts.reset) {
+      log(chalk.green(`removing ${agServer}`));
+      // rm is available on all the unix-likes, so use it for speed.
+      await pspawn('rm', ['-rf', agServer]);
+    }
 
     if (!opts.sdk) {
       if (
@@ -168,6 +175,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startLocalChain(profileName, startArgs, popts) {
+    const agServer = `_agstate/agoric-servers/${profileName}`;
     const IMAGE = `agoric/agoric-sdk`;
 
     const portNum = startArgs[0] === undefined ? CHAIN_PORT : startArgs[0];
@@ -351,7 +359,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       log.error(`Argument to local-solo must be a port number`);
       return 1;
     }
-    const localAgServer = `${agServer}-${portNum}`;
+    const agServer = `_agstate/agoric-servers/${profileName}-${portNum}`;
 
     if (popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', IMAGE]);
@@ -361,9 +369,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (popts.reset) {
-      log(chalk.green(`removing ${localAgServer}`));
+      log(chalk.green(`removing ${agServer}`));
       // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', localAgServer]);
+      await pspawn('rm', ['-rf', agServer]);
     }
 
     let soloSpawn;
@@ -383,7 +391,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--entrypoint=${agSolo}`,
             ...dockerArgs,
             IMAGE,
-            `--home=/usr/src/dapp/${localAgServer}`,
+            `--home=/usr/src/dapp/${agServer}`,
             ...args,
           ],
           spawnOpts,
@@ -391,12 +399,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     // Initialise the solo directory and key.
-    if (!(await exists(localAgServer))) {
+    if (!(await exists(agServer))) {
       const initArgs = [`--webport=${portNum}`];
       if (!opts.sdk) {
         initArgs.push(`--webhost=0.0.0.0`);
       }
-      const exitStatus = await soloSpawn(['init', localAgServer, ...initArgs]);
+      const exitStatus = await soloSpawn(['init', agServer, ...initArgs]);
       if (exitStatus) {
         return exitStatus;
       }
@@ -404,7 +412,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const spawnOpts = {};
     if (popts.sdk) {
-      spawnOpts.cwd = localAgServer;
+      spawnOpts.cwd = agServer;
     }
 
     const rpcAddrs = [`localhost:${CHAIN_PORT}`];
@@ -412,24 +420,25 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       rpcAddrs.push(`host.docker.internal:${CHAIN_PORT}`);
     }
 
-    let exitStatus;
-
-    // Connect to the chain.
     const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
-    const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
-    exitStatus = await soloSpawn(
-      ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, rpcAddrs.join(',')],
-      spawnOpts,
-    );
-    if (exitStatus) {
-      return exitStatus;
-    }
 
-    // Provision the ag-solo, if necessary.
-    const soloAddr = (
-      await fs.readFile(`${localAgServer}/ag-cosmos-helper-address`, 'utf-8')
-    ).trimRight();
-    for (const rpcAddr of rpcAddrs) {
+    let exitStatus = -1;
+    const doConnect = async rpcAddrIndex => {
+      const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
+      exitStatus = await soloSpawn(
+        ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, rpcAddrs.join(',')],
+        spawnOpts,
+      );
+      if (exitStatus) {
+        return exitStatus;
+      }
+
+      const rpcAddr = rpcAddrs[rpcAddrIndex];
+
+      // Provision the ag-solo, if necessary.
+      const soloAddr = (
+        await fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8')
+      ).trimRight();
       // eslint-disable-next-line no-await-in-loop
       const egressNeeded = await keysSpawn([
         'query',
@@ -474,12 +483,21 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           }
         }
       }
-      if (!exitStatus) {
-        break;
-      }
-    }
-    if (exitStatus) {
       return exitStatus;
+    };
+
+    let rpcAddrIndex = -1;
+    while (exitStatus) {
+      if (rpcAddrIndex >= 0) {
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, BACKOFF_MS));
+      }
+      rpcAddrIndex = (rpcAddrIndex + 1) % rpcAddrs.length;
+
+      // eslint-disable-next-line no-await-in-loop
+      await doConnect(rpcAddrIndex).catch(e =>
+        console.error('Trying to connect', e),
+      );
     }
 
     // Now actually start the solo.
@@ -488,12 +506,19 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   async function startTestnetDocker(profileName, startArgs, popts) {
     const IMAGE = `agoric/cosmic-swingset-setup-solo`;
+    const agServer = `_agstate/agoric-servers/${profileName}`;
 
     if (popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', IMAGE]);
       if (exitStatus) {
         return exitStatus;
       }
+    }
+
+    if (popts.reset) {
+      log(chalk.green(`removing ${agServer}`));
+      // rm is available on all the unix-likes, so use it for speed.
+      await pspawn('rm', ['-rf', agServer]);
     }
 
     const setupRun = (...bonusArgs) =>
@@ -521,7 +546,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return setupRun();
   }
 
-  async function startTestnetSdk(_profileName, startArgs) {
+  async function startTestnetSdk(profileName, startArgs, popts) {
+    const agServer = `_agstate/agoric-servers/${profileName}`;
+    if (popts.reset) {
+      log(chalk.green(`removing ${agServer}`));
+      // rm is available on all the unix-likes, so use it for speed.
+      await pspawn('rm', ['-rf', agServer]);
+    }
+
     const setupRun = (...bonusArgs) =>
       pspawn(agSolo, [`--webport=${PORT}`, ...bonusArgs, ...startArgs], {
         env: { ...pspawnEnv, AG_SOLO_BASEDIR: agServer },
@@ -559,14 +591,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         .join(', ')}`,
     );
     return 1;
-  }
-
-  agServer = `_agstate/agoric-servers/${profileName}`;
-
-  if (popts.reset) {
-    log(chalk.green(`removing ${agServer}`));
-    // rm is available on all the unix-likes, so use it for speed.
-    await pspawn('rm', ['-rf', agServer]);
   }
 
   return startFn(profileName, args[0] ? args.slice(1) : args, popts);
