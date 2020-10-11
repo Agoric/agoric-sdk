@@ -24,6 +24,7 @@ else
 fi
 exec docker run \
   --volume=ag-solo-state:/usr/src/app/solo \
+  --volume=$HOME/.agoric:/root/.agoric \
   -eAG_SOLO_BASEDIR="$SOLO_HOME" \
   --rm -it $FLAGS \
   "$IMAGE" ${1+"$@"}

@@ -1,3 +1,5 @@
+---
+
 - name: "Install {{ data | default(service + '/data') }}/genesis.json"
   become_user: root
   become: true
@@ -18,60 +20,58 @@
     group: "{{ service }}"
     mode: 0644
 
-- name: Set addr_book_strict=false
-  lineinfile:
+- name: Set p2p.addr_book_strict=false
+  ini_file:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^addr_book_strict *='
-    line: 'addr_book_strict = false'
+    section: p2p
+    option: addr_book_strict
+    value: "false"
 
-- name: Set index_all_keys=true
-  lineinfile:
+- name: Set tx_index.index_all_keys=true
+  ini_file:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^index_all_keys *='
-    line: 'index_all_keys = true'
-
-- name: Set index_all_keys=true
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^index_all_keys *='
-    line: 'index_all_keys = true'
+    section: tx_index
+    option: index_all_keys
+    value: "true"
 
 - name: "check if prometheus-tendermint.txt exists"
   delegate_to: localhost
   stat:
     path: "{{ SETUP_HOME }}/prometheus-tendermint.txt"
-  register: "prommint"
+  register: prommint
 
 # NOTE: This is protected by the server firewall
 #- name: Set prometheus_listen_addr=127.0.0.1:26660
-#  lineinfile:
+#  ini_file:
 #    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-#    state: present
-#    regexp: '^prometheus_listen_addr *='
-#    line: 'prometheus_listen_addr = "127.0.0.1:26660"'
+#    section: instrumentation
+#    option: prometheus_listen_addr
+#    value: '"127.0.0.1:26660"'
 
-- name: Set prometheus=true
-  lineinfile:
+- name: "Set instrumentation.prometheus={{ prommint.stat.exists }}"
+  ini_file:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^prometheus *='
-    line: 'prometheus = true'
-  when: prommint.stat.exists
-
-- name: Set prometheus=false
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^prometheus *='
-    line: 'prometheus = false'
-  when: not prommint.stat.exists
+    section: instrumentation
+    option: prometheus
+    value: '{{ "true" if prommint.stat.exists else "false" }}'
 
 - name: Listen for public RPC
-  lineinfile:
+  ini_file:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^laddr *= *".*:26657"'
-    line: 'laddr = "tcp://0.0.0.0:26657"'
+    section: rpc
+    option: laddr
+    value: '"tcp://0.0.0.0:26657"'
+
+- name: Turn on API server
+  ini_file:
+    path: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    section: api
+    option: enable
+    value: "true"
+
+- name: Enable Swagger
+  ini_file:
+    path: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    section: api
+    option: swagger
+    value: "true"

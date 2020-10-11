@@ -472,15 +472,13 @@ show-config      display the client connection parameters
         `-eexecline=${shellEscape(execline)}`,
       ]);
 
-      await guardFile(`${DWEB_DIR}/service.stamp`, () =>
-        needReMain([
-          'play',
-          'install',
-          '-eservice=dweb',
-          `-eexecline=/home/dweb/start.sh`,
-          `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
-        ]),
-      );
+      await needReMain([
+        'play',
+        'install',
+        '-eservice=dweb',
+        `-eexecline=/home/dweb/start.sh`,
+        `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
+      ]);
 
       await needReMain(['play', 'start', '-eservice=dweb']);
 
@@ -756,7 +754,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       // We no longer are provisioned or have Cosmos.
-      await needDoRun(['rm', '-rf', COSMOS_DIR, PROVISION_DIR, DWEB_DIR]);
+      await needDoRun(['rm', '-rf', COSMOS_DIR, PROVISION_DIR]);
       break;
     }
 

@@ -180,14 +180,19 @@ func makeNewApp(sender Sender) func(log.Logger, dbm.DB, io.Writer, servertypes.A
 			panic(err)
 		}
 
-		snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-		snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
-		if err != nil {
-			panic(err)
-		}
-		snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
-		if err != nil {
-			panic(err)
+		// FIXME: Actually use the snapshotStore once we have a way to put SwingSet
+		// state into it.
+		var snapshotStore *snapshots.Store
+		if false {
+			snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
+			snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+			if err != nil {
+				panic(err)
+			}
+			snapshotStore, err = snapshots.NewStore(snapshotDB, snapshotDir)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		return gaia.NewAgoricApp(

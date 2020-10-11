@@ -115,7 +115,9 @@ export default function makeBlockManager({
         if (!deepEquals(currentActions, savedActions)) {
           // We only handle the trivial case.
           const restoreHeight = action.blockHeight - 1;
-          if (restoreHeight !== computedHeight) {
+          // We can reset from 0 to anything, since that's what happens
+          // when genesis.initial_height !== "0".
+          if (computedHeight !== 0 && restoreHeight !== computedHeight) {
             // Keep throwing forever.
             decohered = Error(
               // TODO unimplemented
