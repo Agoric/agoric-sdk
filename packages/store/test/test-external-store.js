@@ -5,7 +5,7 @@ import test from 'ava';
 import {
   makeStore,
   makeExternalStore,
-  makeHydrateExternalStoreMaker,
+  makeClosureExternalStoreMaker,
   makeWeakStore,
 } from '../src/index';
 
@@ -49,43 +49,45 @@ test('original sources', t => {
 });
 
 test('rewritten code', t => {
-  /** @type {HydrateHook} */
-  let vatHydrateHook;
-  const makeVatExternalStore = makeHydrateExternalStoreMaker(hydrateHook => {
-    vatHydrateHook = hydrateHook;
-    /** @type {Store<number, HydrateStore>} */
-    const idToStore = makeStore('storeId');
-    return {
-      getHydrateStore(storeId) {
-        return idToStore.get(storeId);
-      },
-      makeHydrateStore(storeId, instanceKind) {
-        // This implementation is totally leaky.
-        const store = makeStore(`${instanceKind} ids`);
+  /** @type {InstanceHook} */
+  let vatInstanceHook;
+  const makeClosureExternalStore = makeClosureExternalStoreMaker(
+    instanceHook => {
+      vatInstanceHook = instanceHook;
+      /** @type {Store<number, InstanceStore>} */
+      const idToStore = makeStore('storeId');
+      return {
+        getInstanceStore(storeId) {
+          return idToStore.get(storeId);
+        },
+        makeInstanceStore(storeId, instanceKind) {
+          // This implementation is totally leaky.
+          const store = makeStore(`${instanceKind} ids`);
 
-        // We use JSON here just as a minimal test.  Real implementations will
-        // want something like @agoric/marshal.
-        /** @type {HydrateStore} */
-        const hstore = {
-          init(id, data) {
-            store.init(id, JSON.stringify(data));
-          },
-          get(id) {
-            return JSON.parse(store.get(id));
-          },
-          set(id, data) {
-            store.set(id, JSON.stringify(data));
-          },
-          makeWeakStore() {
-            return makeWeakStore(instanceKind);
-          },
-        };
-        harden(hstore);
-        idToStore.init(storeId, hstore);
-        return hstore;
-      },
-    };
-  });
+          // We use JSON here just as a minimal test.  Real implementations will
+          // want something like @agoric/marshal.
+          /** @type {InstanceStore} */
+          const istore = {
+            init(id, data) {
+              store.init(id, JSON.stringify(data));
+            },
+            get(id) {
+              return JSON.parse(store.get(id));
+            },
+            set(id, data) {
+              store.set(id, JSON.stringify(data));
+            },
+            makeWeakStore() {
+              return makeWeakStore(instanceKind);
+            },
+          };
+          harden(istore);
+          idToStore.init(storeId, istore);
+          return istore;
+        },
+      };
+    },
+  );
 
   /**
    * This is the rewritten source code, line numbers can be preserved.
@@ -102,7 +104,7 @@ test('rewritten code', t => {
    *
    * Declarations are not considered side-effects.
    */
-  const store = makeVatExternalStore(
+  const store = makeClosureExternalStore(
     'Hello instance',
     (msg = 'Hello') => ({ msg }),
     $hinit => $hdata => {
@@ -124,13 +126,13 @@ test('rewritten code', t => {
   );
 
   const h = runTests(t, store.makeInstance);
-  const key = vatHydrateHook.getKey(h);
+  const key = vatInstanceHook.getKey(h);
   t.deepEqual(key, [1, 1]);
-  const h2 = vatHydrateHook.load(key);
+  const h2 = vatInstanceHook.load(key);
 
   // We get a different representative, which shares the key.
   t.not(h2, h);
-  t.deepEqual(vatHydrateHook.getKey(h2), [1, 1]);
+  t.deepEqual(vatInstanceHook.getKey(h2), [1, 1]);
 
   // The methods are there now, too.
   const last = h.getCount();

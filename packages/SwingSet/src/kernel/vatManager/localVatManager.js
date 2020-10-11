@@ -122,7 +122,9 @@ export function makeLocalVatManagerFactory(tools) {
       // TODO: Don't put this in the global lexicals, it should go in plain
       // globals.
       // TODO: Pass any parameters that the vat external store needs.
-      inescapableGlobalLexicals.makeSystemExternalStore = makeVatExternalStoreMaker();
+      inescapableGlobalLexicals.makeClosureExternalStore = makeVatExternalStoreMaker(
+        vatID,
+      );
     }
 
     if (metered) {

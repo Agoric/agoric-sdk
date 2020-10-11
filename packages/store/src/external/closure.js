@@ -7,7 +7,7 @@ import { makeStore } from '../store';
 
 /**
  * @callback MakeBackingStore
- * @param {HydrateHook} hydrateHook
+ * @param {InstanceHook} instanceHook
  * @returns {BackingStore}
  */
 
@@ -18,10 +18,10 @@ import { makeStore } from '../store';
  * @template {Array<any>} A
  * @template {ExternalInstance} T
  * @param {MakeBackingStore} makeBackingStore
- * @returns {MakeHydrateExternalStore<A, T>}
+ * @returns {MakeClosureExternalStore<A, T>}
  */
-export const makeHydrateExternalStoreMaker = makeBackingStore => {
-  /** @type {WeakStore<T, HydrateKey>} */
+export const makeClosureExternalStoreMaker = makeBackingStore => {
+  /** @type {WeakStore<T, InstanceKey>} */
   const instanceToKey = makeWeakStore('instance');
 
   let lastStoreId = 0;
@@ -32,7 +32,7 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
   /**
    * Create a data object that queues writes to the store.
    *
-   * @param {HydrateData} data
+   * @param {ClosureData} data
    * @param {() => void} markDirty
    */
   const makeActiveData = (data, markDirty) => {
@@ -54,14 +54,14 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
   /** @type {BackingStore} */
   let backing;
 
-  /** @type {HydrateHook} */
-  const hydrateHook = {
+  /** @type {InstanceHook} */
+  const instanceHook = {
     getKey(value) {
       return instanceToKey.get(value);
     },
     load([storeId, instanceId]) {
       const hydrate = storeIdToHydrate.get(storeId);
-      const store = backing.getHydrateStore(storeId);
+      const store = backing.getInstanceStore(storeId);
 
       const data = store.get(instanceId);
       const markDirty = () => store.set(instanceId, data);
@@ -76,15 +76,15 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
     },
   };
 
-  backing = makeBackingStore(hydrateHook);
+  backing = makeBackingStore(instanceHook);
 
-  /** @type {MakeHydrateExternalStore<A, T>} */
-  function makeHydrateExternalStore(keyName, adaptArguments, makeHydrate) {
+  /** @type {MakeClosureExternalStore<A, T>} */
+  function makeClosureExternalStore(keyName, adaptArguments, makeHydrate) {
     let lastInstanceId = 0;
 
     lastStoreId += 1;
     const storeId = lastStoreId;
-    const hstore = backing.makeHydrateStore(storeId, keyName);
+    const istore = backing.makeInstanceStore(storeId, keyName);
 
     const initHydrate = makeHydrate(true);
     storeIdToHydrate.init(storeId, makeHydrate());
@@ -100,14 +100,14 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
 
         // We store and reload it to sanity-check the initial state and also to
         // ensure that the new object has active data.
-        hstore.init(instanceId, data);
-        return hydrateHook.load([storeId, instanceId]);
+        istore.init(instanceId, data);
+        return instanceHook.load([storeId, instanceId]);
       },
       makeWeakStore() {
-        return hstore.makeWeakStore();
+        return istore.makeWeakStore();
       },
     };
     return estore;
   }
-  return harden(makeHydrateExternalStore);
+  return harden(makeClosureExternalStore);
 };

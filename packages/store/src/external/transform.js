@@ -5,7 +5,7 @@ export function makeExternalStoreTransformer(
     overrideRequireStorePathSuffix = '/store/src/external/default.js',
     overrideExternalStoreModuleId = '@agoric/store',
     overrideMakeExternalStoreId = 'makeExternalStore',
-    overrideMakeSystemExternalStoreId = 'makeSystemExternalStore',
+    overrideMakeClosureExternalStoreId = 'makeClosureExternalStore',
   } = {},
 ) {
   const parser = overrideParser
@@ -14,7 +14,7 @@ export function makeExternalStoreTransformer(
   const requireStorePathSuffix = overrideRequireStorePathSuffix;
   const externalStoreModuleId = overrideExternalStoreModuleId;
   const makeExternalStoreId = overrideMakeExternalStoreId;
-  const makeSystemExternalStoreId = overrideMakeSystemExternalStoreId;
+  const makeClosureExternalStoreId = overrideMakeClosureExternalStoreId;
 
   const externalStorePlugin = ({ types: t }) => {
     const requireStoreBindings = new WeakSet();
@@ -227,7 +227,7 @@ export function makeExternalStoreTransformer(
         const data = path.scope.generateUidIdentifier('data');
 
         makerBodiesToIdents.set(maker.body, { init, data });
-        path.node.callee = t.Identifier(makeSystemExternalStoreId);
+        path.node.callee = t.Identifier(makeClosureExternalStoreId);
         path.node.arguments = [path.node.arguments[0], adaptArguments, maker];
       },
     };

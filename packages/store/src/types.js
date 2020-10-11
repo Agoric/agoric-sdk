@@ -56,15 +56,15 @@
  */
 
 /**
- * @typedef {Record<string, any>} HydrateData
+ * @typedef {Record<string, any>} ClosureData
  */
 
 /**
- * @typedef {[number, number]} HydrateKey
+ * @typedef {[number, number]} InstanceKey
  * @typedef {true} HydrateInit
- * @typedef {Object} HydrateHook
- * @property {(value: any) => HydrateKey} getKey
- * @property {(key: HydrateKey) => any} load
+ * @typedef {Object} InstanceHook
+ * @property {(value: any) => InstanceKey} getKey
+ * @property {(key: InstanceKey) => any} load
  * @property {(storeId: number) => void} drop
  */
 
@@ -74,24 +74,24 @@
  *
  * @template {Array<any>} A
  * @template {ExternalInstance} T
- * @callback MakeHydrateExternalStore
+ * @callback MakeClosureExternalStore
  * @param {string} instanceKind
- * @param {(...args: A) => HydrateData} adaptArguments
- * @param {(init?: HydrateInit) => (data: HydrateData) => T} makeHydrate
+ * @param {(...args: A) => ClosureData} adaptArguments
+ * @param {(init?: HydrateInit) => (data: ClosureData) => T} makeHydrate
  * @returns {ExternalStore<(...args: A) => T>}
  */
 
 /**
- * @typedef {Object} HydrateStore The store needed to save closed-over
+ * @typedef {Object} InstanceStore The store needed to save closed-over
  * per-instance data
- * @property {(instanceId: number, data: HydrateData) => void} init
- * @property {(instanceId: number) => HydrateData} get
- * @property {(instanceId: number, data: HydrateData) => void} set
+ * @property {(instanceId: number, data: ClosureData) => void} init
+ * @property {(instanceId: number) => ClosureData} get
+ * @property {(instanceId: number, data: ClosureData) => void} set
  * @property {() => WeakStore<ExternalInstance, any>} makeWeakStore
  */
 
 /**
  * @typedef {Object} BackingStore This is the master store that reifies storeIds
- * @property {(storeId: number, instanceKind: string) => HydrateStore} makeHydrateStore
- * @property {(storeId: number) => HydrateStore} getHydrateStore
+ * @property {(storeId: number, instanceKind: string) => InstanceStore} makeInstanceStore
+ * @property {(storeId: number) => InstanceStore} getInstanceStore
  */
