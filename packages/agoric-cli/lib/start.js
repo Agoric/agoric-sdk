@@ -12,6 +12,7 @@ import {
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const CHAIN_ID = 'agoric';
+const BACKOFF_MS = 3000;
 
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
@@ -119,10 +120,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
+    const agServer = `_agstate/agoric-servers/${profileName}`;
     const fakeDelay =
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
-
-    const agServer = `_agstate/agoric-servers/${profileName}`;
 
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
@@ -354,7 +354,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       log.error(`Argument to local-solo must be a port number`);
       return 1;
     }
-
     const agServer = `_agstate/agoric-servers/${profileName}-${portNum}`;
 
     if (popts.pull) {
@@ -504,6 +503,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           bestRpcAddr = rpcAddr;
           break;
         }
+
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, BACKOFF_MS));
       }
     }
     if (exitStatus) {
