@@ -3,6 +3,70 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.8.1-dev.3...@agoric/sdk@2.9.0) (2020-10-11)
+
+
+### Bug Fixes
+
+* add getBootstrap method to handler object ([bb1f525](https://github.com/Agoric/agoric-sdk/commit/bb1f5256bd6ab49c83cb46aee9e3a6557293f5b6))
+* add netstring encode/decode/stream library ([fd1da9e](https://github.com/Agoric/agoric-sdk/commit/fd1da9e94ff64f941c5f667e124f55ef27d03fb6)), closes [#1797](https://github.com/Agoric/agoric-sdk/issues/1797) [#1807](https://github.com/Agoric/agoric-sdk/issues/1807)
+* allow for genesis.initial_height > 1 ([c37fe33](https://github.com/Agoric/agoric-sdk/commit/c37fe33865a5c6e83b7ea3ca3d7e12cb84b8d50e))
+* be more explicit when provision-one doesn't return JSON ([0f0df62](https://github.com/Agoric/agoric-sdk/commit/0f0df6282a1ae6586f0d19b6be89ce8e05c14e19))
+* change encoders/decoders for kernel-worker protocol endpoints ([8eb13fa](https://github.com/Agoric/agoric-sdk/commit/8eb13fa4940dbd4574e15bbcd14adcc812520b27))
+* clean up some debug log messages for consistency ([56a0763](https://github.com/Agoric/agoric-sdk/commit/56a076320593f23fcb65cd118f0481ef40898a6a))
+* clean up worker subprocess spawning ([afeced8](https://github.com/Agoric/agoric-sdk/commit/afeced85a7f3523aed3655c3d498ecdc9314ef02)), closes [#1777](https://github.com/Agoric/agoric-sdk/issues/1777)
+* disable state-sync by default, until we've implemented it ([fedb533](https://github.com/Agoric/agoric-sdk/commit/fedb533ee3e6a989131b1c1a8992072b562d4fa9))
+* enable external `agoric open` when running under Docker ([57446a5](https://github.com/Agoric/agoric-sdk/commit/57446a5ae3187cd32984c797bf3e69dd2ef88d3d))
+* get deployment to work ([77d2c6b](https://github.com/Agoric/agoric-sdk/commit/77d2c6b47bc18a503b46949e59fc0fe6d5a14225))
+* handle syscallResult and deliveryResult consistently among workers ([9e6e31a](https://github.com/Agoric/agoric-sdk/commit/9e6e31ac55521893b6fdf31785bb901345ed46af)), closes [#1775](https://github.com/Agoric/agoric-sdk/issues/1775)
+* have liveSlots reject Promise arguments in D() invocations ([#1803](https://github.com/Agoric/agoric-sdk/issues/1803)) ([cdcf99d](https://github.com/Agoric/agoric-sdk/commit/cdcf99dd3e510a4f79bf55a823b62c2070038685)), closes [#1358](https://github.com/Agoric/agoric-sdk/issues/1358)
+* improve API to punt serialization to the backing store ([fbfc0e7](https://github.com/Agoric/agoric-sdk/commit/fbfc0e75e910bc2fd36f0d60eac3929735d3fe68))
+* loadVat should accept managerType= in options ([e9838f1](https://github.com/Agoric/agoric-sdk/commit/e9838f13853baa2f1c63d78dde0ca04bba688196))
+* make ag-cosmos-helper's home $HOME/.ag-cosmos-helper again ([1b9ad64](https://github.com/Agoric/agoric-sdk/commit/1b9ad647916d2c8de11b5f884bb88613e95ddcaa))
+* minor fixes for bootstrap and web server ([0829061](https://github.com/Agoric/agoric-sdk/commit/08290617dccb94b565657717cdc022ce462aa237))
+* new 'worker-protocol' module to do Array-to-Buffer conversion ([e23b7bb](https://github.com/Agoric/agoric-sdk/commit/e23b7bb40e20bacf7f64c627333918e7d5137560))
+* pass testLog to all vatWorkers ([29bc81a](https://github.com/Agoric/agoric-sdk/commit/29bc81a46d057532f51c37bed081d850cf7f31db)), closes [#1776](https://github.com/Agoric/agoric-sdk/issues/1776)
+* properly update inbox petnames ([00477b5](https://github.com/Agoric/agoric-sdk/commit/00477b58a0995d1cc1ad11f33312abaf7749fb20))
+* remove obsolete `--home-client` ([f97171a](https://github.com/Agoric/agoric-sdk/commit/f97171a001842e2777cf4e437d1ec8cf086ca1b9))
+* rename netstring exports, clean up object modes ([e2bbaa2](https://github.com/Agoric/agoric-sdk/commit/e2bbaa25c53fd37bc26cd2d5d9f01710b0e06243))
+* stop using netstring-stream ([6ac996c](https://github.com/Agoric/agoric-sdk/commit/6ac996c00b876bac89ba99677bc5b66502506f4b))
+* update @agoric/store types and imports ([9e3493a](https://github.com/Agoric/agoric-sdk/commit/9e3493ad4d8c0a6a9230ad6a4c22a3254a867115))
+* upgrade to latest cosmos-sdk ([876d2c8](https://github.com/Agoric/agoric-sdk/commit/876d2c8318521972a4f600f1307b1b47b6b338f7))
+* use the correct --home for sending provision-one ([98f03d6](https://github.com/Agoric/agoric-sdk/commit/98f03d659fb252c4164bde0d3c84eac7dbbe1669))
+* **ERTP:** use makeExternalStore for ledgers ([20667ce](https://github.com/Agoric/agoric-sdk/commit/20667ce71ae07ddb6ff5d8c52a255e95b65ae70c))
+* **wallet:** propagate offer handler exceptions to the WebSocket ([3965361](https://github.com/Agoric/agoric-sdk/commit/39653616bb45546593ba49cc59a8e6a0d1b515f2))
+* improved error message when eventual send target is undefined ([#1847](https://github.com/Agoric/agoric-sdk/issues/1847)) ([f33d30e](https://github.com/Agoric/agoric-sdk/commit/f33d30e46eeb209f039e81a92350c06611cc45a1))
+* tweaks from review comments ([bccad6b](https://github.com/Agoric/agoric-sdk/commit/bccad6b6ae7997dd60425cbba30c993eb1378666))
+* update swingset runner demos for latest zoe incarnation ([c169ffd](https://github.com/Agoric/agoric-sdk/commit/c169ffd3568d8f4042b10b92da1b8f96fda19a7d))
+* upgrade to our --keyring-dir PR (temporarily) ([38e170d](https://github.com/Agoric/agoric-sdk/commit/38e170d42c2af74a565749d040f365905cd0d3fc))
+* use `gentx --client-home=...` to initialise genesis validators ([54c5a2f](https://github.com/Agoric/agoric-sdk/commit/54c5a2f2e23f7f9df254b35f2657e449d9fb847a))
+* use gentx --home-client flag ([5595b41](https://github.com/Agoric/agoric-sdk/commit/5595b410377116b7a2d20d39a46ec87d2b5ea01f))
+* use gentx --home-server instead of --home-client ([ed634bf](https://github.com/Agoric/agoric-sdk/commit/ed634bfbe976ca48a203b4f44b3eb0d62e1edd82))
+* **cosmic-swingset:** make REPL history numbers more robust ([ed7729a](https://github.com/Agoric/agoric-sdk/commit/ed7729a41226af3ceb99474dcde3015487218927))
+* **eventual-send:** silence unhandled rejection for remote calls ([fb7c247](https://github.com/Agoric/agoric-sdk/commit/fb7c247688eacf09e975ca87ab7ef246cd240136))
+* **swingset:** add 'slogFile' option to write slog to a file ([f97ef41](https://github.com/Agoric/agoric-sdk/commit/f97ef4152dc2074b82823a9ff8595e4b9a04395c))
+* xs-vat-worker: add makeMarshal to vatPowers ([1edd620](https://github.com/Agoric/agoric-sdk/commit/1edd62015e955d99fef8f75d32d2a5f1032aca38)), closes [#1776](https://github.com/Agoric/agoric-sdk/issues/1776)
+
+
+### Features
+
+* expose API server (0.0.0.0:1317) for deployed chain ([d910692](https://github.com/Agoric/agoric-sdk/commit/d9106926fec9250ac48dfe918e73258c0cf2af60))
+* **store:** implement external store machinery ([df4f550](https://github.com/Agoric/agoric-sdk/commit/df4f550270894c75fe25f252ee5db66d4c77e8db))
+* accept 'description' in vat creation options, pass to slog ([cb2d73b](https://github.com/Agoric/agoric-sdk/commit/cb2d73b7b1b5e63d4de611d3fec6dc381e38e3fc))
+* **swingset-runner:** accept '--slog FILE' to write slogfile ([d710582](https://github.com/Agoric/agoric-sdk/commit/d71058289c97b5fee606dc0690f1289b497a5b4f))
+* allow CapTP URL handlers ([b3e1e61](https://github.com/Agoric/agoric-sdk/commit/b3e1e61b2a2dee7bd203bcffa23b2d1d5d1409bd))
+* allow deploy scripts to see the deployment host and port ([7ab7108](https://github.com/Agoric/agoric-sdk/commit/7ab71084c683b06a3c5d840ec618599d4366a905))
+* cleanups and fixes to the wallet ([db525f8](https://github.com/Agoric/agoric-sdk/commit/db525f85a72c578bffcd055c151743fa8176dcd2))
+* implement slip44 HD path coin type ([ed9743a](https://github.com/Agoric/agoric-sdk/commit/ed9743a84ba16dd669a9235ba0ba9d2db76e4e35))
+* overhaul kernel initialization and startup ([23c3f9d](https://github.com/Agoric/agoric-sdk/commit/23c3f9df56940230e21a16b4861f40197192fdea))
+* pass through URL search params via wallet-bridge.html ([643636e](https://github.com/Agoric/agoric-sdk/commit/643636e3a0de564b4574a134368963a569252a96))
+* revamp vat termination API ([aa5b93c](https://github.com/Agoric/agoric-sdk/commit/aa5b93c7ea761bf805206c71bb16e586267db74d))
+* **agoric-cli:** add --no-browser option to open ([fb8607d](https://github.com/Agoric/agoric-sdk/commit/fb8607d7325de5742833af5e24aaf050bf65d67e))
+
+
+
+
+
 ## [2.8.1-dev.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.8.1-dev.2...@agoric/sdk@2.8.1-dev.3) (2020-09-18)
 
 

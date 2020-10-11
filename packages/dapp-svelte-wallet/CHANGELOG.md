@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.3.1-dev.2...@agoric/dapp-svelte-wallet@0.4.0) (2020-10-11)
+
+
+### Bug Fixes
+
+* **wallet:** propagate offer handler exceptions to the WebSocket ([3965361](https://github.com/Agoric/agoric-sdk/commit/39653616bb45546593ba49cc59a8e6a0d1b515f2))
+* add getBootstrap method to handler object ([bb1f525](https://github.com/Agoric/agoric-sdk/commit/bb1f5256bd6ab49c83cb46aee9e3a6557293f5b6))
+* properly update inbox petnames ([00477b5](https://github.com/Agoric/agoric-sdk/commit/00477b58a0995d1cc1ad11f33312abaf7749fb20))
+
+
+### Features
+
+* allow CapTP URL handlers ([b3e1e61](https://github.com/Agoric/agoric-sdk/commit/b3e1e61b2a2dee7bd203bcffa23b2d1d5d1409bd))
+* cleanups and fixes to the wallet ([db525f8](https://github.com/Agoric/agoric-sdk/commit/db525f85a72c578bffcd055c151743fa8176dcd2))
+* pass through URL search params via wallet-bridge.html ([643636e](https://github.com/Agoric/agoric-sdk/commit/643636e3a0de564b4574a134368963a569252a96))
+
+
+
+
+
 ## [0.3.1-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.3.1-dev.1...@agoric/dapp-svelte-wallet@0.3.1-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet

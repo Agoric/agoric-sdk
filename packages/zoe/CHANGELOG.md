@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.9.1-dev.2...@agoric/zoe@0.9.1) (2020-10-11)
+
+
+### Bug Fixes
+
+* improved error message when eventual send target is undefined ([#1847](https://github.com/Agoric/agoric-sdk/issues/1847)) ([f33d30e](https://github.com/Agoric/agoric-sdk/commit/f33d30e46eeb209f039e81a92350c06611cc45a1))
+* update @agoric/store types and imports ([9e3493a](https://github.com/Agoric/agoric-sdk/commit/9e3493ad4d8c0a6a9230ad6a4c22a3254a867115))
+
+
+
+
+
 ## [0.9.1-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.9.1-dev.1...@agoric/zoe@0.9.1-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/zoe

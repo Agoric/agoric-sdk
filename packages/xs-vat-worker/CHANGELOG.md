@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/xs-vat-worker@0.2.3-dev.2...@agoric/xs-vat-worker@0.2.3) (2020-10-11)
+
+
+### Bug Fixes
+
+* handle syscallResult and deliveryResult consistently among workers ([9e6e31a](https://github.com/Agoric/agoric-sdk/commit/9e6e31ac55521893b6fdf31785bb901345ed46af)), closes [#1775](https://github.com/Agoric/agoric-sdk/issues/1775)
+* pass testLog to all vatWorkers ([29bc81a](https://github.com/Agoric/agoric-sdk/commit/29bc81a46d057532f51c37bed081d850cf7f31db)), closes [#1776](https://github.com/Agoric/agoric-sdk/issues/1776)
+* xs-vat-worker: add makeMarshal to vatPowers ([1edd620](https://github.com/Agoric/agoric-sdk/commit/1edd62015e955d99fef8f75d32d2a5f1032aca38)), closes [#1776](https://github.com/Agoric/agoric-sdk/issues/1776)
+
+
+
+
+
 ## [0.2.3-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xs-vat-worker@0.2.3-dev.1...@agoric/xs-vat-worker@0.2.3-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/xs-vat-worker
