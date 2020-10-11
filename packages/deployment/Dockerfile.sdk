@@ -32,5 +32,5 @@ RUN ln -s /usr/src/app/bin/ag-chain-cosmos /usr/local/bin/
 
 # By default, run the daemon with specified arguments.
 WORKDIR /root
-EXPOSE 26657
+EXPOSE 1317 9090 26657
 ENTRYPOINT [ "/usr/src/agoric-sdk/packages/cosmic-swingset/scripts/chain-entry.sh" ]
