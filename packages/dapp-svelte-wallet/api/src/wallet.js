@@ -93,8 +93,8 @@ export function buildRootObject(_vatPowers) {
   }
 
   async function adminOnMessage(obj, meta = { origin: 'unknown' }) {
-    const { type, data, dappOrigin = meta.origin } = obj;
-    switch (type) {
+    const { data, dappOrigin = meta.origin } = obj;
+    switch (obj.type) {
       case 'walletGetPurses': {
         return {
           type: 'walletUpdatePurses',
@@ -304,10 +304,11 @@ export function buildRootObject(_vatPowers) {
       },
       async addOfferInvitation(offer, invitation) {
         await approve();
-        return wallet.addOfferInvitation(offer, invitation, {
+        const p = wallet.addOfferInvitation(offer, invitation, {
           ...meta,
           dappOrigin,
         });
+        return p;
       },
       async getOfferNotifier(status = null) {
         await approve();
@@ -365,7 +366,6 @@ export function buildRootObject(_vatPowers) {
 
           async onMessage(obj, meta) {
             const {
-              type,
               dappOrigin = meta.origin,
               suggestedDappPetname = (meta.query &&
                 meta.query.suggestedDappPetname) ||
@@ -404,7 +404,7 @@ export function buildRootObject(_vatPowers) {
               );
             }
 
-            switch (type) {
+            switch (obj.type) {
               case 'walletRendezvous': {
                 const { dappAddresses } = obj;
                 const addressToWalletPK = makeStore('address');
