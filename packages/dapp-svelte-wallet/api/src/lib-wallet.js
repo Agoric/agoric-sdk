@@ -255,34 +255,42 @@ export async function makeWallet({
     return proposal;
   };
 
+  /**
+   * Create a JSONable offer structure.
+   *
+   * @param {any} offer
+   */
+  function displayOffer(offer) {
+    const { id, instance, installation, proposalTemplate } = offer;
+    const displayedOffer = {
+      ...offer,
+      requestContext: { ...offer.requestContext },
+    };
+
+    if (instance) {
+      displayedOffer.instancePetname = display(instance).petname;
+    }
+    if (installation) {
+      displayedOffer.installationPetname = display(installation).petname;
+    }
+    const alreadyDisplayed =
+      inboxState.has(id) && inboxState.get(id).proposalForDisplay;
+    displayedOffer.proposalForDisplay = displayProposal(
+      alreadyDisplayed || proposalTemplate,
+    );
+
+    return displayedOffer;
+  }
+
   async function updateInboxState(id, offer, doPush = true) {
     // Only sent the uncompiled offer to the client.
-    const { proposalTemplate } = offer;
     const { instance, installation } = idToOffer.get(id);
     if (!instance || !installation) {
       // We haven't yet deciphered the invitation, so don't send
       // this offer.
       return;
     }
-    const instanceDisplay = display(instance);
-    const installationDisplay = display(installation);
-    const alreadyDisplayed =
-      inboxState.has(id) && inboxState.get(id).proposalForDisplay;
-
-    const offerForDisplay = {
-      ...offer,
-      // We cannot store the actions, installation, and instance in the
-      // displayed offer objects because they are presences are presences and we
-      // don't wish to send presences to the frontend.
-      actions: undefined,
-      installation: undefined,
-      instance: undefined,
-      proposalTemplate,
-      instancePetname: instanceDisplay.petname,
-      installationPetname: installationDisplay.petname,
-      proposalForDisplay: displayProposal(alreadyDisplayed || proposalTemplate),
-    };
-
+    const offerForDisplay = displayOffer({ ...offer, ...idToOffer.get(id) });
     inboxState.set(id, offerForDisplay);
     if (doPush) {
       // Only trigger a state change if this was a single update.
@@ -825,7 +833,7 @@ export async function makeWallet({
       await updateInboxState(id, idToOffer.get(id));
       return id;
     });
-    return { offer, invitedP };
+    return { offer: displayOffer(offer), invitedP };
   }
 
   function consummated(offer) {
