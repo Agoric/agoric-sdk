@@ -40,10 +40,17 @@ export function buildRootObject(vatPowers) {
       const channelID = channelHandleToId.get(channelHandle);
       if (channelID) {
         const o = { ...obj, meta: { channelID } };
-        D(commandDevice).sendBroadcast(o);
+        D(commandDevice).sendBroadcast(JSON.parse(JSON.stringify(o)));
       }
     }
   };
+
+  const sendResponse = (count, isException, obj) =>
+    D(commandDevice).sendResponse(
+      count,
+      isException,
+      obj || JSON.parse(JSON.stringify(obj)),
+    );
 
   const registeredURLHandlers = new Map();
 
@@ -182,25 +189,21 @@ export function buildRootObject(vatPowers) {
             const res = await E(urlHandlers[i])[dispatcher](obj, meta);
 
             if (res) {
-              D(commandDevice).sendResponse(count, false, harden(res));
+              sendResponse(count, false, res);
               return;
             }
           }
         }
 
         if (dispatcher === 'onMessage') {
-          D(commandDevice).sendResponse(
-            count,
-            false,
-            harden({ type: 'doesNotUnderstand', obj }),
-          );
+          sendResponse(count, false, { type: 'doesNotUnderstand', obj });
           throw Error(`No handler for ${url} ${type}`);
         }
-        D(commandDevice).sendResponse(count, false, harden(true));
+        sendResponse(count, false, true);
       } catch (rej) {
         console.debug(`Error ${dispatcher}:`, rej);
         const jsonable = (rej && rej.message) || rej;
-        D(commandDevice).sendResponse(count, true, harden(jsonable));
+        sendResponse(count, true, jsonable);
       }
     },
   });
