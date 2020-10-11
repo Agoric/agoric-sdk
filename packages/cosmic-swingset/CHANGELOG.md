@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.21.1-dev.2...@agoric/cosmic-swingset@0.22.0) (2020-10-11)
+
+
+### Bug Fixes
+
+* add getBootstrap method to handler object ([bb1f525](https://github.com/Agoric/agoric-sdk/commit/bb1f5256bd6ab49c83cb46aee9e3a6557293f5b6))
+* allow for genesis.initial_height > 1 ([c37fe33](https://github.com/Agoric/agoric-sdk/commit/c37fe33865a5c6e83b7ea3ca3d7e12cb84b8d50e))
+* disable state-sync by default, until we've implemented it ([fedb533](https://github.com/Agoric/agoric-sdk/commit/fedb533ee3e6a989131b1c1a8992072b562d4fa9))
+* enable external `agoric open` when running under Docker ([57446a5](https://github.com/Agoric/agoric-sdk/commit/57446a5ae3187cd32984c797bf3e69dd2ef88d3d))
+* get deployment to work ([77d2c6b](https://github.com/Agoric/agoric-sdk/commit/77d2c6b47bc18a503b46949e59fc0fe6d5a14225))
+* make ag-cosmos-helper's home $HOME/.ag-cosmos-helper again ([1b9ad64](https://github.com/Agoric/agoric-sdk/commit/1b9ad647916d2c8de11b5f884bb88613e95ddcaa))
+* minor fixes for bootstrap and web server ([0829061](https://github.com/Agoric/agoric-sdk/commit/08290617dccb94b565657717cdc022ce462aa237))
+* remove obsolete `--home-client` ([f97171a](https://github.com/Agoric/agoric-sdk/commit/f97171a001842e2777cf4e437d1ec8cf086ca1b9))
+* update @agoric/store types and imports ([9e3493a](https://github.com/Agoric/agoric-sdk/commit/9e3493ad4d8c0a6a9230ad6a4c22a3254a867115))
+* upgrade to latest cosmos-sdk ([876d2c8](https://github.com/Agoric/agoric-sdk/commit/876d2c8318521972a4f600f1307b1b47b6b338f7))
+* upgrade to our --keyring-dir PR (temporarily) ([38e170d](https://github.com/Agoric/agoric-sdk/commit/38e170d42c2af74a565749d040f365905cd0d3fc))
+* use `gentx --client-home=...` to initialise genesis validators ([54c5a2f](https://github.com/Agoric/agoric-sdk/commit/54c5a2f2e23f7f9df254b35f2657e449d9fb847a))
+* use gentx --home-client flag ([5595b41](https://github.com/Agoric/agoric-sdk/commit/5595b410377116b7a2d20d39a46ec87d2b5ea01f))
+* use gentx --home-server instead of --home-client ([ed634bf](https://github.com/Agoric/agoric-sdk/commit/ed634bfbe976ca48a203b4f44b3eb0d62e1edd82))
+* use the correct --home for sending provision-one ([98f03d6](https://github.com/Agoric/agoric-sdk/commit/98f03d659fb252c4164bde0d3c84eac7dbbe1669))
+* **cosmic-swingset:** make REPL history numbers more robust ([ed7729a](https://github.com/Agoric/agoric-sdk/commit/ed7729a41226af3ceb99474dcde3015487218927))
+
+
+### Features
+
+* allow CapTP URL handlers ([b3e1e61](https://github.com/Agoric/agoric-sdk/commit/b3e1e61b2a2dee7bd203bcffa23b2d1d5d1409bd))
+* cleanups and fixes to the wallet ([db525f8](https://github.com/Agoric/agoric-sdk/commit/db525f85a72c578bffcd055c151743fa8176dcd2))
+* implement slip44 HD path coin type ([ed9743a](https://github.com/Agoric/agoric-sdk/commit/ed9743a84ba16dd669a9235ba0ba9d2db76e4e35))
+* overhaul kernel initialization and startup ([23c3f9d](https://github.com/Agoric/agoric-sdk/commit/23c3f9df56940230e21a16b4861f40197192fdea))
+* pass through URL search params via wallet-bridge.html ([643636e](https://github.com/Agoric/agoric-sdk/commit/643636e3a0de564b4574a134368963a569252a96))
+
+
+
+
+
 ## [0.21.1-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.21.1-dev.1...@agoric/cosmic-swingset@0.21.1-dev.2) (2020-09-18)
 
 

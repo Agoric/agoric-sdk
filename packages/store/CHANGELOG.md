@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.2.3-dev.2...@agoric/store@0.3.0) (2020-10-11)
+
+
+### Bug Fixes
+
+* improve API to punt serialization to the backing store ([fbfc0e7](https://github.com/Agoric/agoric-sdk/commit/fbfc0e75e910bc2fd36f0d60eac3929735d3fe68))
+* update @agoric/store types and imports ([9e3493a](https://github.com/Agoric/agoric-sdk/commit/9e3493ad4d8c0a6a9230ad6a4c22a3254a867115))
+
+
+### Features
+
+* **store:** implement external store machinery ([df4f550](https://github.com/Agoric/agoric-sdk/commit/df4f550270894c75fe25f252ee5db66d4c77e8db))
+
+
+
+
+
 ## [0.2.3-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.2.3-dev.1...@agoric/store@0.2.3-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/store

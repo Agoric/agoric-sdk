@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.7.1-dev.2...@agoric/swingset-runner@0.8.0) (2020-10-11)
+
+
+### Bug Fixes
+
+* update swingset runner demos for latest zoe incarnation ([c169ffd](https://github.com/Agoric/agoric-sdk/commit/c169ffd3568d8f4042b10b92da1b8f96fda19a7d))
+
+
+### Features
+
+* **swingset-runner:** accept '--slog FILE' to write slogfile ([d710582](https://github.com/Agoric/agoric-sdk/commit/d71058289c97b5fee606dc0690f1289b497a5b4f))
+* overhaul kernel initialization and startup ([23c3f9d](https://github.com/Agoric/agoric-sdk/commit/23c3f9df56940230e21a16b4861f40197192fdea))
+* revamp vat termination API ([aa5b93c](https://github.com/Agoric/agoric-sdk/commit/aa5b93c7ea761bf805206c71bb16e586267db74d))
+
+
+
+
+
 ## [0.7.1-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.7.1-dev.1...@agoric/swingset-runner@0.7.1-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/swingset-runner
