@@ -1,5 +1,27 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release 0.21.2 (2020-10-11)
+
+* Upgrade to Cosmos SDK v0.40.0 (Stargate) prerelease branch with local changes
+  to temporarily disable "state-sync".
+
+### BREAKING CHANGES
+
+* The format of `$HOME/.ag-chain-cosmos/config/app.toml` has changed.  When you
+  are going to reinitialize your validator, do the following to upgrade:
+```sh
+# Remove the old app.toml
+rm ~/.ag-chain-cosmos/config/app.toml
+# Initialize the new chain
+ag-chain-cosmos init --overwrite <moniker>
+```
+
+* The `ag-cosmos-helper` default coin type is now `--coin-type=564`.  If you
+  need to recover a key generated before this upgrade from its mnemonic, you
+  will need: `ag-cosmos-helper keys add --coin-type=118 --recover`.  If you
+  generated the key after this point, you don't need to add a special option to
+  recover it.
+
 ## Release v0.14.0 (2020-04-02)
 
 * Beginnings of IBC support, currently just stubbed out.
