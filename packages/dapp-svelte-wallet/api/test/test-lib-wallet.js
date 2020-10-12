@@ -254,7 +254,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   const rawId = '1588645041696';
   const offer = formulateBasicOffer(rawId, inviteHandleBoardId1);
 
-  await wallet.addOffer(offer);
+  const { invitedP } = await wallet.addOffer(offer);
+  await invitedP;
 
   // Deposit a zoe invite in the wallet so that we can see how the
   // invite purse balance is rendered with petnames. We should see
@@ -418,7 +419,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
+      installation: {},
       installationPetname: 'automaticRefund',
+      instance: {},
       proposalForDisplay: { exit: { onDemand: null } },
     },
     `inboxStateChangeLog with names`,
@@ -513,7 +516,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       inviteHandleBoardId: '727995140',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
+      instance: {},
       instancePetname: 'automaticRefund',
+      installation: {},
       installationPetname: 'automaticRefund2',
       proposalForDisplay: { exit: { onDemand: null } },
     },
@@ -571,7 +576,8 @@ test('lib-wallet offer methods', async t => {
   const id = `unknown#${rawId}`;
   const offer = formulateBasicOffer(rawId, inviteHandleBoardId1);
 
-  await wallet.addOffer(offer);
+  const { invitedP } = await wallet.addOffer(offer);
+  await invitedP;
 
   t.deepEqual(
     wallet.getOffers(),
@@ -579,8 +585,8 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645041696',
         inviteHandleBoardId: '727995140',
-        instance,
         installation,
+        instance,
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -617,7 +623,8 @@ test('lib-wallet offer methods', async t => {
   const offer2 = formulateBasicOffer(rawId2, inviteHandleBoardId2);
   await wallet.deposit('Default Zoe invite purse', invite2);
   // `addOffer` withdraws the invite from the Zoe invite purse.
-  await wallet.addOffer(offer2);
+  const { invitedP: invited2P } = await wallet.addOffer(offer2);
+  await invited2P;
   await wallet.declineOffer(id2);
   // TODO: test cancelOffer with a contract that holds offers, like
   // simpleExchange
@@ -672,6 +679,8 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645041696',
         inviteHandleBoardId: '727995140',
+        installation: {},
+        instance,
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -700,6 +709,8 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645230204',
         inviteHandleBoardId: '371571443',
+        installation: {},
+        instance,
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -829,7 +840,8 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     },
   };
 
-  await wallet.addOffer(offer);
+  const { invitedP } = await wallet.addOffer(offer);
+  await invitedP;
 
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
