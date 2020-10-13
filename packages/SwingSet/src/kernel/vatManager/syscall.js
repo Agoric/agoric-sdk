@@ -100,6 +100,9 @@ export function createSyscall(transcriptManager) {
     fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
     reject: (...args) => doSyscall(['reject', ...args]),
     exit: (...args) => doSyscall(['exit', ...args]),
+    vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
+    vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
+    vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
   });
 
   return harden({ syscall, doSyscall, setVatSyscallHandler });

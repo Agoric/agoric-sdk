@@ -110,6 +110,57 @@ test('simple call', async t => {
   });
 });
 
+test('vat store', async t => {
+  const kernel = makeKernel();
+  await kernel.start();
+  const log = [];
+  function setup(syscall, _state, _helpers, _vatPowers) {
+    function deliver(facetID, method, args) {
+      switch (method) {
+        case 'get': {
+          const v = syscall.vatstoreGet('zot');
+          if (v) {
+            log.push(`"${v}"`);
+          } else {
+            log.push(`${v}`);
+          }
+          break;
+        }
+        case 'store':
+          syscall.vatstoreSet('zot', args.body);
+          break;
+        case 'delete':
+          syscall.vatstoreDelete('zot');
+          break;
+        default:
+          throw Error(`this can't happen`);
+      }
+    }
+    return { deliver };
+  }
+  await kernel.createTestVat('vat', setup);
+  const vat = kernel.vatNameToID('vat');
+
+  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
+  kernel.queueToExport(vat, 'o+1', 'store', capdata('first value'));
+  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
+  kernel.queueToExport(vat, 'o+1', 'store', capdata('second value'));
+  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
+  kernel.queueToExport(vat, 'o+1', 'delete', capdata('[]'));
+  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
+  t.deepEqual(log, []);
+  await kernel.run();
+  t.deepEqual(log, [
+    'undefined',
+    '"first value"',
+    '"second value"',
+    'undefined',
+  ]);
+  const data = kernel.dump();
+  // check that we're not sticking an undefined into the transcript
+  t.is(data.vatTables[0].state.transcript[1].syscalls[0].response, null);
+});
+
 test('map inbound', async t => {
   const kernel = makeKernel();
   await kernel.start();
