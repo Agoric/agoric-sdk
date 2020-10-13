@@ -17,7 +17,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
   const existingSubdirs = await Promise.all(
-    ['.', '_agstate/agoric-servers', 'contract', 'api']
+    ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
       .sort()
       .map(async subd => {
         const exists = await fs.stat(`${subd}/package.json`).catch(_ => false);
@@ -57,8 +57,8 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         packages.set(pkg, pj.name);
         versions.set(pj.name, pj.version);
 
-        // eslint-disable-next-line no-constant-condition
-        if (false) {
+        const SUBOPTIMAL = false;
+        if (SUBOPTIMAL) {
           // This use of yarn is noisy and slow.
           return pspawn('yarn', [...linkFlags, 'link'], {
             stdio: 'inherit',
