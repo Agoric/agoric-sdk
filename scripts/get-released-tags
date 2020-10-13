@@ -1,2 +1,17 @@
 #! /bin/sh
-git tag -l | egrep -e '@[0-9]+\.[0-9]+\.[0-9]+$'
+cmd=${1+"$@"}
+sdkTags=
+otherTags=
+if test -z "$cmd"; then
+  cmd=echo
+fi
+for tag in $(git tag -l | egrep -e '@[0-9]+\.[0-9]+\.[0-9]+$'); do
+  case $tag in
+  @agoric/sdk@*) sdkTags="$sdkTags $tag" ;;
+  *) otherTags="$otherTags $tag" ;;
+  esac
+done
+
+# Push the SDK tag separately so that it can trigger CI.
+$cmd$otherTags && $cmd$sdkTags
+exit $?

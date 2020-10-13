@@ -35,7 +35,7 @@ REFERENCES TO YOUR TAGS.
 
 ```sh
 # Publish the released package tags.
-./scripts/get-released-tags | xargs git push origin
+./scripts/get-released-tags git push origin
 ```
 
 ## More subtlety
