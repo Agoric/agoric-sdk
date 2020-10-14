@@ -1,50 +1,56 @@
+// @ts-check
 import '@agoric/install-ses';
 import test from 'ava';
-import { makeRendezvousMaker } from '../../lib/ag-solo/vats/rendezvous';
+import { makeRendezvousNamespace } from '../../lib/ag-solo/vats/rendezvous';
 
 test('rendezvous with self', async t => {
-  const makeRendezvous = makeRendezvousMaker();
+  const makeRendezvous = makeRendezvousNamespace();
   const self = makeRendezvous('self');
-  const { notifier } = self.startRendezvous({
-    [self.getLocalAddress()]: 'initiator',
-  });
-  t.deepEqual(self.rendezvousWith({ other: 'foo' }), {});
-  t.deepEqual(self.rendezvousWith({ self: 'first' }), {
+  const rendezvous = self.startRendezvous(self.getLocalAddress(), 'initiator');
+  const resultP = rendezvous.getResult();
+  const rendezvousFailed = {
+    instanceOf: Error,
+    message: /^Rendezvous with .* not completed/,
+  };
+  t.throws(() => self.rendezvousWith('other', 'foo'), rendezvousFailed);
+  t.deepEqual(self.rendezvousWithMany(['self'], ['first']), {
     self: 'initiator',
   });
-  t.deepEqual(self.rendezvousWith({ self: 'second' }), {});
-  const update0 = await notifier.getUpdateSince();
-  t.deepEqual(update0, { updateCount: undefined, value: { self: 'first' } });
+  t.throws(() => self.rendezvousWith('self', 'second'), rendezvousFailed);
+  t.deepEqual(await resultP, 'first');
 });
 
 test('rendezvous three way', async t => {
-  const makeRendezvous = makeRendezvousMaker();
+  const makeRendezvous = makeRendezvousNamespace();
 
   const solo = makeRendezvous('solo');
   const testnet = makeRendezvous('testnet');
   const mainnet = makeRendezvous('mainnet');
 
-  const { notifier, completer } = solo.startRendezvous({
-    testnet: 'toTestnetFromSolo',
-    mainnet: 'toMainnetFromSolo',
-  });
+  const rendezvousMany = solo.startRendezvousMany(
+    ['testnet', 'mainnet'],
+    ['toTestnetFromSolo', 'toMainnetFromSolo'],
+  );
+  const notifier = rendezvousMany.getNotifier();
 
-  t.deepEqual(testnet.rendezvousWith({ solo: 'toSoloFromTestnet' }), {
-    solo: 'toTestnetFromSolo',
-  });
+  t.deepEqual(
+    testnet.rendezvousWith('solo', 'toSoloFromTestnet'),
+    'toTestnetFromSolo',
+  );
   const update0 = await notifier.getUpdateSince();
   t.deepEqual(update0.value, { testnet: 'toSoloFromTestnet' });
 
-  t.deepEqual(mainnet.rendezvousWith({ solo: 'toSoloFromMainnet' }), {
-    solo: 'toMainnetFromSolo',
-  });
+  t.deepEqual(
+    mainnet.rendezvousWith('solo', 'toSoloFromMainnet'),
+    'toMainnetFromSolo',
+  );
   const update1 = await notifier.getUpdateSince(update0.updateCount);
   t.deepEqual(update1.value, {
     testnet: 'toSoloFromTestnet',
     mainnet: 'toSoloFromMainnet',
   });
 
-  t.throws(() => completer.complete(), {
+  t.throws(() => rendezvousMany.cancel(), {
     message: 'Cannot finish after termination.',
     instanceOf: Error,
   });

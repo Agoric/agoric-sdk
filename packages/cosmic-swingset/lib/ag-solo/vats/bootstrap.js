@@ -10,7 +10,7 @@ import { E } from '@agoric/eventual-send';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
-import { makeRendezvousMaker } from './rendezvous';
+import { makeRendezvousNamespace } from './rendezvous';
 
 const NUM_IBC_PORTS = 3;
 
@@ -77,7 +77,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       ),
     );
 
-    const makeRendezvous = makeRendezvousMaker();
+    const makeRendezvous = makeRendezvousNamespace();
 
     return harden({
       async createUserBundle(_nickname, addr, powerFlags = []) {

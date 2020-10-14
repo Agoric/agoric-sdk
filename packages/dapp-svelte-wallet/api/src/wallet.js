@@ -12,7 +12,8 @@ export function buildRootObject(_vatPowers) {
   let pursesState = JSON.stringify([]);
   let inboxState = JSON.stringify([]);
   let http;
-  let rendezvous;
+  /** @type {import('@agoric/cosmic-swingset/lib/ag-solo/vats/rendezvous').RendezvousPrivateService} */
+  let chainRendezvous;
   const adminHandles = new Set();
   const bridgeHandleToCleanup = makeStore();
   const offerSubscriptions = new Map();
@@ -73,9 +74,9 @@ export function buildRootObject(_vatPowers) {
     },
   });
 
-  async function startup({ zoe, board, rendezvous: chainRendezvous }) {
-    rendezvous = chainRendezvous;
-    walletAddresses = await Promise.all([E(rendezvous).getLocalAddress()]);
+  async function startup({ zoe, board, rendezvous }) {
+    chainRendezvous = rendezvous;
+    walletAddresses = await Promise.all([E(chainRendezvous).getLocalAddress()]);
     wallet = await makeWallet({
       zoe,
       board,
@@ -411,25 +412,27 @@ export function buildRootObject(_vatPowers) {
 
                 // Create a rendezvous from all the dapp addresses to the wallet
                 // bridge facet.
-                const entries = dappAddresses.map(addr => {
+                const walletPs = dappAddresses.map(addr => {
                   const walletPK = makePromiseKit();
                   addressToWalletPK.init(addr, walletPK);
-                  return [addr, walletPK.promise];
+                  return walletPK.promise;
                 });
-                const { notifier, completer } = E.G(
-                  E(rendezvous).startRendezvous(Object.fromEntries(entries)),
+                const rendezvousMany = E(chainRendezvous).startRendezvousMany(
+                  dappAddresses,
+                  walletPs,
                 );
 
                 // If this connection closes, stop listening for addresses.
                 bridgeHandleToCleanup.set(meta.channelHandle, () =>
-                  E(completer).complete(),
+                  E(rendezvousMany).cancel(),
                 );
 
                 // For each address, resolve the associated wallet promise.
+                const rendezvousNotifier = E(rendezvousMany).getNotifier();
                 async function processNextUpdate(lastUpdateCount) {
                   // Get the next update.
                   const { updateCount, value } = await E(
-                    notifier,
+                    rendezvousNotifier,
                   ).getUpdateSince(lastUpdateCount);
 
                   // Process all the negotiated addresses.
