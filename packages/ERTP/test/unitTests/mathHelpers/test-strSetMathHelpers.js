@@ -175,12 +175,14 @@ test('strSetMathHelpers', t => {
     ),
     `overlap between left and right of isEqual is ok`,
   );
-  t.assert(
-    isEqual(
-      harden({ brand: mockBrand, value: ['a', 'b'] }),
-      harden({ brand: mockBrand, value: ['b', 'a'] }),
-    ),
-    `['a', 'b'] equals ['b', 'a']`,
+  t.throws(
+    () =>
+      isEqual(
+        harden({ brand: mockBrand, value: ['a', 'b'] }),
+        harden({ brand: mockBrand, value: ['b', 'a'] }),
+      ),
+    { message: /value not sorted/ },
+    `unsorted list should throw`,
   );
   t.falsy(
     isEqual(

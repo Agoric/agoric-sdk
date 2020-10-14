@@ -5,9 +5,14 @@ import { assert, details } from '@agoric/assert';
 
 const identity = harden([]);
 
-const checkForDupes = list => {
-  const set = new Set(list);
-  assert(set.size === list.length, details`value has duplicates: ${list}`);
+const assertUniqueSorted = list => {
+  const len = list.length;
+  for (let i = 1; i < len; i += 1) {
+    const leftStr = list[i - 1];
+    const rightStr = list[i];
+    assert(leftStr !== rightStr, details`value has duplicates: ${list}`);
+    assert(leftStr < rightStr, details`value not sorted ${list}`);
+  }
 };
 
 /**
@@ -25,42 +30,98 @@ const strSetMathHelpers = harden({
   doCoerce: list => {
     assert(passStyleOf(list) === 'copyArray', 'value must be an array');
     list.forEach(elem => assert.typeof(elem, 'string'));
-    checkForDupes(list);
-    return list;
+    assertUniqueSorted(list);
+    return harden(list);
   },
   doGetEmpty: _ => identity,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
   doIsGTE: (left, right) => {
-    const leftSet = new Set(left);
-    const leftHas = elem => leftSet.has(elem);
-    return right.every(leftHas);
+    let leftI = 0;
+    let rightI = 0;
+    const leftLen = left.length;
+    const rightLen = right.length;
+    while (leftI < leftLen && rightI < rightLen) {
+      const leftStr = left[leftI];
+      const rightStr = right[rightI];
+      if (leftStr < rightStr) {
+        // an element of left not in right. Fine
+        leftI += 1;
+      } else if (leftStr > rightStr) {
+        // an element of right not in left.
+        return false;
+      } else {
+        leftI += 1;
+        rightI += 1;
+      }
+    }
+    // Are there no elements of right remaining?
+    return rightI >= rightLen;
   },
   doIsEqual: (left, right) => {
-    const leftSet = new Set(left);
-    const leftHas = elem => leftSet.has(elem);
-    return left.length === right.length && right.every(leftHas);
+    if (left.length !== right.length) {
+      return false;
+    }
+    return left.every((leftStr, i) => leftStr === right[i]);
   },
   doAdd: (left, right) => {
-    const union = new Set(left);
-    const addToUnion = elem => {
+    const result = [];
+    let leftI = 0;
+    let rightI = 0;
+    const leftLen = left.length;
+    const rightLen = right.length;
+    while (leftI < leftLen && rightI < rightLen) {
+      const leftStr = left[leftI];
+      const rightStr = right[rightI];
       assert(
-        !union.has(elem),
-        details`left and right have same element ${elem}`,
+        leftStr !== rightStr,
+        details`left and right have same element ${leftStr}`,
       );
-      union.add(elem);
-    };
-    right.forEach(addToUnion);
-    return harden(Array.from(union));
+      if (leftStr < rightStr) {
+        result.push(leftStr);
+        leftI += 1;
+      } else {
+        result.push(rightStr);
+        rightI += 1;
+      }
+    }
+    if (leftI < leftLen) {
+      result.push(left[leftI]);
+    } else if (rightI < rightLen) {
+      result.push(right[rightI]);
+    }
+    return harden(result);
   },
   doSubtract: (left, right) => {
-    const leftSet = new Set(left);
-    const remove = elem => leftSet.delete(elem);
-    const allRemovedCorrectly = right.every(remove);
+    const result = [];
+    let leftI = 0;
+    let rightI = 0;
+    const leftLen = left.length;
+    const rightLen = right.length;
+    while (leftI < leftLen && rightI < rightLen) {
+      const leftStr = left[leftI];
+      const rightStr = right[rightI];
+      assert(
+        leftStr <= rightStr,
+        details`element of right not present in left ${rightStr}`,
+      );
+      if (leftStr < rightStr) {
+        // an element of left not in right. Keep.
+        result.push(leftStr);
+        leftI += 1;
+      } else {
+        // element in both. Skip.
+        leftI += 1;
+        rightI += 1;
+      }
+    }
     assert(
-      allRemovedCorrectly,
+      rightI >= rightLen,
       details`some of the elements in right (${right}) were not present in left (${left})`,
     );
-    return harden(Array.from(leftSet));
+    if (leftI < leftLen) {
+      result.push(left[leftI]);
+    }
+    return harden(result);
   },
 });
 

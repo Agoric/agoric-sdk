@@ -6,19 +6,21 @@ import { mustBeComparable } from '@agoric/same-structure';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
-import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
+import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
+import strBagMathHelpers from './mathHelpers/strBagMathHelpers';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
  * Constants for the kinds of amountMath we support.
  *
- * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet' }}
+ * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet' , STRING_BAG: 'strBag' }}
  */
 const MathKind = {
   NAT: 'nat',
   SET: 'set',
   STRING_SET: 'strSet',
+  STRING_BAG: 'strBag',
 };
 harden(MathKind);
 export { MathKind };
@@ -64,7 +66,7 @@ export { MathKind };
  * makeLocalAmountMath(issuer).
  *
  * AmountMath exports MathKind, which contains constants for the kinds:
- * NAT, SET, and STRING_SET.
+ * NAT, SET, STRING_SET, and STRING_BAG.
  *
  * Each issuer of digital assets has an associated brand in a one-to-one
  * mapping. In untrusted contexts, such as in analyzing payments and
@@ -81,8 +83,9 @@ function makeAmountMath(brand, amountMathKind) {
 
   const mathHelpers = {
     nat: natMathHelpers,
-    strSet: strSetMathHelpers,
     set: setMathHelpers,
+    strSet: strSetMathHelpers,
+    strBag: strBagMathHelpers,
   };
   const helpers = mathHelpers[amountMathKind];
   assert(
