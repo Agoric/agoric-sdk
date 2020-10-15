@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { setup } from '../setupBasicMints';
 import { makeZoe } from '../../..';
-import { makeFakeVatAdmin } from '../contracts/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
 import { depositToSeat } from '../../../src/contractSupport/zoeHelpers';
 
 const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
