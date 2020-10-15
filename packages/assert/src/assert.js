@@ -177,6 +177,7 @@ function details(template, ...args) {
 }
 harden(details);
 
+/* eslint-disable jsdoc/require-returns-check */
 /**
  * Fail an assertion, recording details to the console and
  * raising an exception with just type information.
@@ -185,7 +186,9 @@ harden(details);
  * with the nodejs assertion library.
  *
  * @param {Details} [optDetails] The details of what was asserted
+ * @returns {never}
  */
+/* eslint-enable jsdoc/require-returns-check */
 function fail(optDetails = details`Assert failed`) {
   if (typeof optDetails === 'string') {
     // If it is a string, use it as the literal part of the template so

@@ -1,10 +1,8 @@
 // @ts-check
 import makeStore from '@agoric/store';
-import { makeNotifierKit } from '@agoric/notifier';
 
-import '@agoric/notifier/exports';
 import { assert, details } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 /**
  * @typedef {string} PeerAddress the string representation of an Agoric peer's
@@ -14,9 +12,15 @@ import { E } from '@agoric/eventual-send';
  */
 
 /**
- * @typedef {Record<PeerAddress, any>} RendezvousResults a record that maps a
- * peer's address to the value it sent (possibly `undefined`).
+ * @typedef {PeerAddress | Array<PeerAddress>} PeerAddresses one or many peer
+ * addresses
  */
+
+const RENDEZVOUS_ALREADY = harden({
+  toString() {
+    return 'RENDEZVOUS_ALREADY';
+  },
+});
 
 /**
  * @typedef {Object} RendezvousPrivateService A closely-held service associated
@@ -29,22 +33,14 @@ import { E } from '@agoric/eventual-send';
  * necessarily unique.
  * @property {() => PeerAddress} getLocalAddress get the address string for this
  * private service
- * @property {(peerAddress: PeerAddress, sendToPeer: any) => Rendezvous}
+ * @property {(peerAddrs: PeerAddresses, sendToPeer: any) => Rendezvous}
  * startRendezvous create a new rendezvous instance for this local address,
- * sending `sendToPeer`
- * @property {(peerAddresses: Array<PeerAddress>, sendToPeerArray: Array<any> |
- * undefined) => RendezvousMany} startRendezvousMany create a new rendezvous
- * instance for this local address, sending `sendToPeerArray[i]` to each matched
- * `peerAddresses[i]`.  The default `sendToPeer` value causes `undefined` to be
- * sent.
- * @property {(peerAddress: PeerAddress, sendToPeer: any) => any} rendezvousWith
- * receive an object from peerAddress, throwing an exception if the peer did not
- * rendezvous correctly
- * @property {(peerAddresses: Array<PeerAddress>, sendToPeerArray: Array<any> |
- * undefined) => RendezvousResults} rendezvousWithMany synchronously check if
- * any of the `peerAddresses` match an existing rendezvous with our local address.
- * Return a record with keys of the matching `peerAddresses`, and values sent from
- * those peers (possibly undefined).
+ * returning the value from the first matching peerAddress and send it
+ * `sendToPeer`
+ * @property {(peerAddrs: PeerAddresses, sendToPeer: any) =>
+ * any} completeRendezvous receive a value from the first matching peerAddress and
+ * send it `sendToPeer`, throwing an exception if no peer completed the
+ * rendezvous
  */
 
 /**
@@ -55,17 +51,8 @@ import { E } from '@agoric/eventual-send';
  */
 
 /**
- * @typedef {Object} RendezvousMany a per-attempt controller held by the
- * rendezvous initiator
- * @property {() => Notifier<RendezvousResults>} getNotifier notify
- * the current collection of peer addresses matched with values
- * @property {() => void} cancel declare that this rendezvous is
- * finished.  The notifier will be finished with the latest RendezvousResults.
- */
-
-/**
  * @typedef {Object} PeerRecord
- * @property {(theirResult: any) => void} sendTo callback when the peer has
+ * @property {(theirResult: any) => void} complete callback when the peer has
  * been matched with the other side
  * @property {any} receivedFrom the value from this peer to be returned to the
  * rendezvousWith call
@@ -92,48 +79,29 @@ const assertPeerAddress = peerAddress => {
 };
 
 /**
- * Ensure the arguments to startRendezvous and rendezvousWith are legitimate.
+ * Ensure that there are many peerAddresses.
  *
- * @param {Array<string>} peerAddresses
- * @param {Array<any>} sendToPeerArray
+ * @param {Array<PeerAddress>} peerAddresses
  */
-const assertManyArgs = (peerAddresses, sendToPeerArray) => {
+const assertMany = peerAddresses => {
   assert(
     Array.isArray(peerAddresses),
     details`peerAddresses ${peerAddresses} is not an array`,
   );
   peerAddresses.forEach(assertPeerAddress);
-  assert(
-    Array.isArray(sendToPeerArray),
-    details`sendToPeerArray ${sendToPeerArray} is not an array`,
-  );
 };
 
 /**
+ * Convert a single string address to a singleton array, or pass through address
+ * arrays as is.
  *
- * @param {PeerAddress} peerAddress
- * @param {RendezvousResults} results
+ * @param {PeerAddresses} peerAddrs
+ * @throws {Error} if not string-only addresses
  */
-const getSingleResult = (peerAddress, results) => {
-  const entries = Object.entries(results);
-
-  assert(
-    entries.length !== 0,
-    details`Rendezvous with ${peerAddress} not completed`,
-  );
-  assert.equal(
-    entries.length,
-    1,
-    details`Must have only one result, not ${results}`,
-  );
-  const [theirAddress, receivedFromThem] = entries[0];
-  assert.equal(
-    theirAddress,
-    peerAddress,
-    details`Returned address ${theirAddress} does not match ${peerAddress}`,
-  );
-
-  return receivedFromThem;
+const getPeerAddresses = peerAddrs => {
+  const peerAddresses = typeof peerAddrs === 'string' ? [peerAddrs] : peerAddrs;
+  assertMany(peerAddresses);
+  return peerAddresses;
 };
 
 /**
@@ -160,58 +128,29 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
       getLocalAddress() {
         return ourAddress;
       },
-      startRendezvous(peerAddress, sendToPeer = undefined) {
-        assertPeerAddress(peerAddress);
-        const rendezvousMany = service.startRendezvousMany(
-          [peerAddress],
-          [sendToPeer],
-        );
-        const makeResult = async () => {
-          const { updateCount, value } = await E(
-            E(rendezvousMany).getNotifier(),
-          ).getUpdateSince();
-          assert.typeof(
-            updateCount,
-            'undefined',
-            details`Notifier did not finish when expected`,
-          );
-          return getSingleResult(peerAddress, value);
-        };
-        const resultP = makeResult();
-        const rendezvous = {
-          cancel: rendezvousMany.cancel,
-          getResult() {
-            return resultP;
-          },
-        };
-        return harden(rendezvous);
-      },
-      startRendezvousMany(peerAddresses, sendToPeerArray = []) {
-        assertManyArgs(peerAddresses, sendToPeerArray);
+      startRendezvous(peerAddrs, sendToPeer = undefined) {
+        const peerAddresses = getPeerAddresses(peerAddrs);
 
-        /**
-         * @type {Record<PeerAddress, any>}
-         */
-        const matchedState = {};
         let remainingToFind = peerAddresses.length;
-
-        /**
-         * @type {NotifierRecord<RendezvousResults>}
-         */
-        const { updater, notifier } = makeNotifierKit();
+        let already = false;
+        const resultPK = makePromiseKit();
 
         /**
          * @type {Array<() => void>}
          */
         const disposals = [];
 
-        const rendezvousMany = {
-          getNotifier() {
-            return notifier;
+        const rendezvous = {
+          getResult() {
+            return resultPK.promise;
           },
           cancel() {
-            // We want to mark the rendezvous as complete.
-            updater.finish(harden({ ...matchedState }));
+            // We want to mark the rendezvous as failed if not already.
+            if (!already) {
+              resultPK.reject(
+                details`Rendezvous with ${peerAddresses} not completed`.complain(),
+              );
+            }
             // Remove any stale references.
             for (const disposal of disposals) {
               disposal();
@@ -220,7 +159,6 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
         };
 
         for (let i = 0; i < peerAddresses.length; i += 1) {
-          const sentFromUs = sendToPeerArray[i];
           const theirAddress = peerAddresses[i];
 
           /**
@@ -234,20 +172,21 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
             addrToPeerRecordStores.init(theirAddress, addrToPeerRecord);
           }
 
-          const sendToUs = obj => {
+          const complete = obj => {
             remainingToFind -= 1;
-            matchedState[theirAddress] = obj;
+            // Try resolving the result if we're the first match for this rendezvous.
+            if (obj !== RENDEZVOUS_ALREADY) {
+              already = true;
+              resultPK.resolve(obj);
+            }
             if (remainingToFind === 0) {
               // We're done!
-              rendezvousMany.cancel();
-            } else {
-              // We need to keep going, but report the address.
-              updater.updateState(harden({ ...matchedState }));
+              rendezvous.cancel();
             }
           };
           const peerRecord = harden({
-            sendTo: sendToUs,
-            receivedFrom: sentFromUs,
+            complete,
+            receivedFrom: sendToPeer,
           });
           if (addrToPeerRecord.has(ourAddress)) {
             addrToPeerRecord.set(ourAddress, peerRecord);
@@ -265,37 +204,43 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
           });
         }
 
-        return harden(rendezvousMany);
+        return harden(rendezvous);
       },
-      rendezvousWith(peerAddress, sendToPeer = undefined) {
-        assertPeerAddress(peerAddress);
-        const results = service.rendezvousWithMany([peerAddress], [sendToPeer]);
-        return getSingleResult(peerAddress, results);
-      },
-      rendezvousWithMany(peerAddresses, sendToPeer = []) {
-        assertManyArgs(peerAddresses, sendToPeer);
+      // eslint-disable-next-line consistent-return
+      completeRendezvous(peerAddrs, sendToPeer = undefined) {
+        const peerAddresses = getPeerAddresses(peerAddrs);
 
-        /**
-         * @type {RendezvousResults}
-         */
-        const rendezvousResults = {};
+        let already = false;
+        let returned;
+
         // Look up all the records shared between us and the remote address.
+        assert(
+          addrToPeerRecordStores.has(ourAddress),
+          details`Rendezvous with ${peerAddrs} not completed`,
+        );
         const addrToPeerRecord = addrToPeerRecordStores.get(ourAddress);
-        for (let i = 0; i < peerAddresses.length; i += 1) {
-          const sentFromUs = sendToPeer[i];
-          const theirAddress = peerAddresses[i];
+
+        // Try the addresses in preference order.
+        for (const theirAddress of peerAddresses) {
           if (addrToPeerRecord.has(theirAddress)) {
             const {
-              sendTo: sendToThem,
+              complete,
               receivedFrom: receivedFromThem,
             } = addrToPeerRecord.get(theirAddress);
 
-            // Exchange the values.
-            sendToThem(sentFromUs);
-            rendezvousResults[theirAddress] = receivedFromThem;
+            if (already) {
+              // Tell them we already completed the rendezvous.
+              complete(RENDEZVOUS_ALREADY);
+            } else {
+              // Send them our object.
+              already = true;
+              complete(sendToPeer);
+              returned = receivedFromThem;
+            }
           }
         }
-        return harden(rendezvousResults);
+        assert(already, details`Rendezvous with ${peerAddrs} not completed`);
+        return returned;
       },
     };
     return harden(service);
