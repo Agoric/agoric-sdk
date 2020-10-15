@@ -74,8 +74,9 @@ export function buildRootObject(_vatPowers) {
     },
   });
 
-  async function startup({ zoe, board, rendezvous }) {
-    chainRendezvous = rendezvous;
+  async function startup(terms) {
+    const { zoe, board } = terms;
+    chainRendezvous = terms.rendezvous;
     walletAddresses = await Promise.all([E(chainRendezvous).getLocalAddress()]);
     wallet = await makeWallet({
       zoe,
@@ -408,60 +409,31 @@ export function buildRootObject(_vatPowers) {
             switch (obj.type) {
               case 'walletRendezvous': {
                 const { dappAddresses } = obj;
-                const addressToWalletPK = makeStore('address');
 
-                // Create a rendezvous from all the dapp addresses to the wallet
-                // bridge facet.
-                const walletPs = dappAddresses.map(addr => {
-                  const walletPK = makePromiseKit();
-                  addressToWalletPK.init(addr, walletPK);
-                  return walletPK.promise;
-                });
-                const rendezvousMany = E(chainRendezvous).startRendezvousMany(
+                // Create a rendezvous from one of the dapp addresses to the
+                // wallet bridge facet.
+                const walletBridgePK = makePromiseKit();
+                const rendezvous = E(chainRendezvous).startRendezvous(
                   dappAddresses,
-                  walletPs,
+                  walletBridgePK.promise,
                 );
 
                 // If this connection closes, stop listening for addresses.
                 bridgeHandleToCleanup.set(meta.channelHandle, () =>
-                  E(rendezvousMany).cancel(),
+                  E(rendezvous).cancel(),
                 );
 
-                // For each address, resolve the associated wallet promise.
-                const rendezvousNotifier = E(rendezvousMany).getNotifier();
-                async function processNextUpdate(lastUpdateCount) {
-                  // Get the next update.
-                  const { updateCount, value } = await E(
-                    rendezvousNotifier,
-                  ).getUpdateSince(lastUpdateCount);
-
-                  // Process all the negotiated addresses.
-                  for (const [addr, otherSide] of Object.entries(value)) {
-                    if (addressToWalletPK.has(addr)) {
-                      const walletPK = addressToWalletPK.get(addr);
-                      // Construct a custom wallet facet for the other side.
-                      walletPK.resolve(
-                        getBootstrap(otherSide, { ...meta, dappOrigin }),
-                      );
-                    }
-                  }
-
-                  if (updateCount === undefined) {
-                    // We're completed (i.e. our connection closed or got all
-                    // responses), so don't do more work.
-                    return;
-                  }
-
-                  // Go again.
-                  processNextUpdate(updateCount).catch(e =>
-                    console.error('Cannot process update', updateCount, e),
+                // Resolve the wallet bridge promise for our first matched result.
+                E(rendezvous)
+                  .getResult()
+                  .then(otherSide =>
+                    walletBridgePK.resolve(
+                      getBootstrap(otherSide, { ...meta, dappOrigin }),
+                    ),
+                  )
+                  .catch(e =>
+                    console.error('Cannot rendezvous with', dappAddresses, e),
                   );
-                }
-
-                // Prime the pump.
-                processNextUpdate(undefined).catch(e =>
-                  console.error('Cannot process first update', e),
-                );
 
                 // Tell them how to find us.
                 return {
