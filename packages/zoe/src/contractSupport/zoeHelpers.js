@@ -151,10 +151,11 @@ export const trade = (
       left.losses,
     ));
   } catch (err) {
-    console.log(err);
-    throw new Error(
-      `The trade between left ${left} and right ${right} failed. Please check the log for more information`,
+    const newErr = new Error(
+      `The trade between left ${left} and right ${right} failed`,
     );
+    assert.note(newErr, details`due to ${err}`);
+    throw newErr;
   }
 
   // Check whether reallocate would error before calling. If
@@ -187,10 +188,9 @@ export const trade = (
       right.seat.stage(rightAllocation),
     );
   } catch (err) {
-    console.log(err);
-    throw Error(
-      `The reallocation failed to conserve rights. Please check the log for more information`,
-    );
+    const newErr = Error(`The reallocation failed to conserve rights.`);
+    assert.note(newErr, details`due to ${err}`);
+    throw newErr;
   }
 };
 

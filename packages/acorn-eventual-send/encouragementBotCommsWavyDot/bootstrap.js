@@ -43,9 +43,10 @@ export function buildRootObject(vatPowers) {
             console.log(
               `=> the promise given by the call to user.talkToBot resolved to '${r}'`,
             ),
-          err =>
+          reason =>
             console.log(
-              `=> the promise given by the call to user.talkToBot was rejected '${err}''`,
+              '=> the promise given by the call to user.talkToBot was rejected',
+              reason,
             ),
         );
     },

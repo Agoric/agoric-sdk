@@ -249,8 +249,20 @@ const assertTypeof = (specimen, typename, optDetails) => {
   equal(typeof specimen, typename, optDetails);
 };
 
+/**
+ * @param {any} specimen The value to get the typeof
+ * @param {Details} [optDetails] The details to throw
+ */
 const assertString = (specimen, optDetails) =>
   assertTypeof(specimen, 'string', optDetails);
+
+/**
+ * Just a no-op placeholder for the `assert.note` from ses.
+ *
+ * @param {Error} _error
+ * @param {Details} _detailsNote
+ */
+const note = (_error, _detailsNote) => {};
 
 /* eslint-disable jsdoc/valid-types */
 /**
@@ -273,7 +285,7 @@ const assertString = (specimen, optDetails) =>
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
  *
- * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal }}
+ * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal, string: typeof assertString, note: typeof note }}
  */
 /* eslint-enable jsdoc/valid-types */
 const assertCombined = Object.assign(assert, {
@@ -281,7 +293,7 @@ const assertCombined = Object.assign(assert, {
   equal,
   typeof: assertTypeof,
   string: assertString,
-  note: (_error, _detailsNote) => {},
+  note,
 });
 harden(assertCombined);
 
