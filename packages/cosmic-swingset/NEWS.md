@@ -18,7 +18,7 @@ ag-chain-cosmos init --overwrite <moniker>
 
 * The `ag-cosmos-helper` default coin type is now `--coin-type=564`.  If you
   need to recover a key generated before this upgrade from its mnemonic, you
-  will need: `ag-cosmos-helper keys add --coin-type=118 --recover`.  If you
+  will need: `ag-cosmos-helper keys add --coin-type=118 --recover <your-key-name>`.  If you
   generated the key after this point, you don't need to add a special option to
   recover it.
 

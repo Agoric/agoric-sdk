@@ -57,9 +57,13 @@ export function buildRootObject(_vatPowers, vatParameters) {
     },
     async runBenchmarkRound() {
       round += 1;
-      await E(alice).initiateTrade(bob);
-      await E(bob).initiateTrade(alice);
-      return `round ${round} complete`;
+      if (round % 2) {
+        await E(alice).initiateTrade(bob);
+        return `round ${round} (alice->bob) complete`;
+      } else {
+        await E(bob).initiateTrade(alice);
+        return `round ${round} (bob->alice) complete`;
+      }
     },
   });
 }
