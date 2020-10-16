@@ -249,6 +249,9 @@ const assertTypeof = (specimen, typename, optDetails) => {
   equal(typeof specimen, typename, optDetails);
 };
 
+const assertString = (specimen, optDetails) =>
+  assertTypeof(specimen, 'string', optDetails);
+
 /* eslint-disable jsdoc/valid-types */
 /**
  * assert that expr is truthy, with an optional details to describe
@@ -274,9 +277,11 @@ const assertTypeof = (specimen, typename, optDetails) => {
  */
 /* eslint-enable jsdoc/valid-types */
 const assertCombined = Object.assign(assert, {
-  equal,
   fail,
+  equal,
   typeof: assertTypeof,
+  string: assertString,
+  note: (_error, _detailsNote) => {},
 });
 harden(assertCombined);
 
