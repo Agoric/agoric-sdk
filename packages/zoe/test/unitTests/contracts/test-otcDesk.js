@@ -262,8 +262,7 @@ const makeBob = (
       const seat = await zoe.offer(invitation, proposal, payments);
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
-        message:
-          'The reallocation failed to conserve rights. Please check the log for more information',
+        message: 'The reallocation failed to conserve rights.',
       });
 
       await assertPayoutAmount(

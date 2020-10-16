@@ -152,7 +152,7 @@ export const trade = (
     ));
   } catch (err) {
     const newErr = new Error(
-      `The trade between left ${left} and right ${right} failed`,
+      `The trade between left ${left} and right ${right} failed.`,
     );
     assert.note(newErr, details`due to ${err}`);
     throw newErr;
