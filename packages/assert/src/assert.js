@@ -4,6 +4,13 @@
 
 import './types';
 
+/*
+// TODO Somehow, use the `assert` exported by the SES-shim
+import { assert } from 'ses';
+const { details, quote } = assert;
+export { assert, details, quote, quote as q };
+*/
+
 // This module assumes the de-facto standard `console` host object.
 // To the extent that this `console` is considered a resource,
 // this module must be considered a resource module.
@@ -157,9 +164,6 @@ function details(template, ...args) {
       }
       if (interleaved[interleaved.length - 1] === '') {
         interleaved.pop();
-      }
-      if (args.length >= 1) {
-        parts.push('\nSee console for error data.');
       }
       const err = new Error(parts.join(''));
       console.error('LOGGED ERROR:', ...interleaved, err);

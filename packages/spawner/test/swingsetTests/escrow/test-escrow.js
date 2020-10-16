@@ -20,7 +20,7 @@ test.skip('escrow checkUnits w/SES', async t => {
 
 const escrowMismatchGolden = [
   'starting testEscrowServiceCheckMismatches',
-  'expected unsuccessful check Error: Escrow checkUnits: different at top.right.value: ((a string)) vs ((a string))\nSee console for error data.',
+  'expected unsuccessful check Error: Escrow checkUnits: different at top.right.value: ((a string)) vs ((a string))',
 ];
 
 test.skip('escrow check misMatches w/SES', async t => {
@@ -30,7 +30,7 @@ test.skip('escrow check misMatches w/SES', async t => {
 
 const escrowCheckPartialWrongPriceGolden = [
   'starting testEscrowServiceCheckPartial wrong price',
-  'expected wrong price Error: Escrow checkPartialUnits seat: different at top.value: ((a number)) vs ((a number))\nSee console for error data.',
+  'expected wrong price Error: Escrow checkPartialUnits seat: different at top.value: ((a number)) vs ((a number))',
 ];
 
 test.skip('escrow check partial price misMatches w/SES', async t => {
@@ -40,7 +40,7 @@ test.skip('escrow check partial price misMatches w/SES', async t => {
 
 const escrowCheckPartialWrongStockGolden = [
   'starting testEscrowServiceCheckPartial wrong stock',
-  'expected wrong stock Error: Escrow checkPartialUnits seat: different at top.value: ((a string)) vs ((a string))\nSee console for error data.',
+  'expected wrong stock Error: Escrow checkPartialUnits seat: different at top.value: ((a string)) vs ((a string))',
 ];
 
 test.skip('escrow check partial stock misMatches w/SES', async t => {
@@ -50,7 +50,7 @@ test.skip('escrow check partial stock misMatches w/SES', async t => {
 
 const escrowCheckPartialWrongSeatGolden = [
   'starting testEscrowServiceCheckPartial wrong seat',
-  'expected wrong side Error: Escrow checkPartialUnits seat: label not found on right at top: ((an object)) vs ((an object))\nSee console for error data.',
+  'expected wrong side Error: Escrow checkPartialUnits seat: label not found on right at top: ((an object)) vs ((an object))',
 ];
 
 test.skip('escrow check partial wrong seat w/SES', async t => {

@@ -135,7 +135,7 @@ test(`zcf assertUsesNatMath - brand not registered`, async t => {
   const { zcf } = await setupZCFTest();
   const { brand } = makeIssuerKit('gelt');
   t.throws(() => assertUsesNatMath(zcf, brand), {
-    message: '"brand" not found: (an object)\nSee console for error data.',
+    message: '"brand" not found: (an object)',
   });
 });
 
@@ -196,14 +196,14 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
   t.throws(
     () => zcf.getBrandForIssuer(pIssuer),
     {
-      message: '"issuer" not found: (an object)\nSee console for error data.',
+      message: '"issuer" not found: (an object)',
     },
     'issuer should not be found',
   );
 
   t.notThrows(() => assertUsesNatMath(zcf, pandaBrand), 'default');
   t.throws(() => assertUsesNatMath(zcf, pBrand), {
-    message: '"brand" not found: (an object)\nSee console for error data.',
+    message: '"brand" not found: (an object)',
   });
 });
 
@@ -228,32 +228,28 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.throws(
     () => assertIssuerKeywords(zcf, []),
     {
-      message:
-        'keywords: (an object) were not as expected: (an object)\nSee console for error data.',
+      message: 'keywords: (an object) were not as expected: (an object)',
     },
     'empty keywordRecord does not match',
   );
   t.throws(
     () => assertIssuerKeywords(zcf, ['A']),
     {
-      message:
-        'keywords: (an object) were not as expected: (an object)\nSee console for error data.',
+      message: 'keywords: (an object) were not as expected: (an object)',
     },
     'missing keyword from keywordRecord does not match',
   );
   t.throws(
     () => assertIssuerKeywords(zcf, ['A', 'b']),
     {
-      message:
-        'keywords: (an object) were not as expected: (an object)\nSee console for error data.',
+      message: 'keywords: (an object) were not as expected: (an object)',
     },
     'wrong keyword in keywordRecord does not match',
   );
   t.throws(
     () => assertIssuerKeywords(zcf, ['A', 'B', 'C']),
     {
-      message:
-        'keywords: (an object) were not as expected: (an object)\nSee console for error data.',
+      message: 'keywords: (an object) were not as expected: (an object)',
     },
     'extra keywords in keywordRecord does not match',
   );
@@ -292,8 +288,7 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
   t.throws(
     () => assertProposalShape(zcfSeat, { want: { C: null } }),
     {
-      message:
-        'actual (an object) did not match expected (an object)\nSee console for error data.',
+      message: 'actual (an object) did not match expected (an object)',
     },
     'empty keywordRecord does not match',
   );
@@ -302,16 +297,14 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
   t.throws(
     () => assertProposalShape(zcfSeat, { give: { c: null } }),
     {
-      message:
-        'actual (an object) did not match expected (an object)\nSee console for error data.',
+      message: 'actual (an object) did not match expected (an object)',
     },
     'wrong key in keywordRecord does not match',
   );
   t.throws(
     () => assertProposalShape(zcfSeat, { exit: { onDemaind: null } }),
     {
-      message:
-        'actual (an object) did not match expected (an object)\nSee console for error data.',
+      message: 'actual (an object) did not match expected (an object)',
     },
     'missing exit rule',
   );
@@ -530,6 +523,6 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
   );
 
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3) } }), {
-    message: `The value of the expected record must be null but was (an object)\nSee console for error data.`,
+    message: `The value of the expected record must be null but was (an object)`,
   });
 });
