@@ -25,7 +25,6 @@
     if (typeof outcome !== 'string') {
       outcome = 'Offer was accepted.';
     }
-    alert(outcome);
   }
 
   function formatDateNow(stamp) {
