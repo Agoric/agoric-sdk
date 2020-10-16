@@ -10,7 +10,7 @@ import { makeZoe } from '../../../src/zoeService/zoe';
 import buildManualTimer from '../../../tools/manualTimer';
 import { setup } from '../setupBasicMints';
 import { setupMixed } from '../setupMixedMints';
-import fakeVatAdmin from './fakeVatAdmin';
+import fakeVatAdmin from '../../../src/contractFacet/fakeVatAdmin';
 
 const secondPriceAuctionRoot = `${__dirname}/../../../src/contracts/auction/secondPriceAuction`;
 
