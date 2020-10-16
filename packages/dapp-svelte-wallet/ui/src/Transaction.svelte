@@ -12,21 +12,6 @@
   export let summaryLine = 0;
   export let details = true;
 
-  // Show the outcome if it is a string, otherwise a default message.
-  function showOutcome(obj) {
-    if (!obj) {
-      return;
-    }
-    let { dappContext, outcome } = obj;
-    if (dappContext) {
-      // They have opted-in to handling the outcome.
-      return;
-    }
-    if (typeof outcome !== 'string') {
-      outcome = 'Offer was accepted.';
-    }
-  }
-
   function formatDateNow(stamp) {
     if (!stamp) {
       return "unknown time";
