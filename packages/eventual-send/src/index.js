@@ -233,7 +233,6 @@ export function makeHandledPromise() {
         // Sanity checks.
         validateHandler(presenceHandler);
 
-        // ---
         const { proxy: proxyOpts, resultCallback } = options;
         let result;
         let presence;
@@ -261,7 +260,6 @@ export function makeHandledPromise() {
         if (resultCallback) {
           resultCallback(result);
         }
-        // ---
 
         // Validate and install our mapped target (i.e. presence).
         resolvedTarget = presence;
