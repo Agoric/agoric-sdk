@@ -245,7 +245,7 @@ export function makeHandledPromise() {
           } = proxyOpts;
           if (revocable) {
             // Create a proxy and its revoke function.
-            result = Proxy.revocable(...args);
+            result = Proxy.revocable(proxyTarget, proxyHandler);
             presence = result.proxy;
           } else {
             result = new Proxy(proxyTarget, proxyHandler);
