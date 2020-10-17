@@ -48,6 +48,26 @@ test('E method calls', async t => {
   t.is(await d, 12, 'method call works');
 });
 
+test('E sendOnly method calls', async t => {
+  let testIncrDoneResolve;
+  const testIncrDone = new Promise(resolve => {
+    testIncrDoneResolve = resolve;
+  });
+
+  let count = 0;
+  const counter = {
+    incr(n) {
+      count += n;
+      testIncrDoneResolve(); // only here for the test.
+      return count;
+    },
+  };
+  const result = E.sendOnly(counter).incr(42);
+  t.is(typeof result, 'undefined', 'return is undefined as expected');
+  await testIncrDone;
+  t.is(count, 42, 'sendOnly method call variant works');
+});
+
 test('E call missing method', async t => {
   const x = {
     double(n) {
@@ -57,6 +77,32 @@ test('E call missing method', async t => {
   await t.throwsAsync(() => E(x).triple(6), {
     message: 'target has no method "triple", has [double]',
   });
+});
+
+test.skip('E sendOnly call missing method', async t => {
+  let testDecrDoneResolve;
+  const testDecrDone = new Promise(resolve => {
+    testDecrDoneResolve = resolve;
+  });
+
+  let count = 279;
+  const counter = {
+    incr(n) {
+      count += n;
+      testDecrDoneResolve(); // only here for the test
+      return count;
+    },
+  };
+
+  t.throwsAsync(
+    async () => {
+      E.sendOnly(counter).decr(210);
+      await testDecrDone;
+    },
+    {
+      message: 'target has no method "decr", has [incr]',
+    },
+  );
 });
 
 test('E call undefined method', async t => {

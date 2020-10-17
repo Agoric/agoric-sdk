@@ -48,6 +48,36 @@ function EProxyHandler(x, HandledPromise) {
   });
 }
 
+/**
+ * A Proxy handler for E.sendOnly(x)
+ * For now it is just a variant on the E(x) Proxy handler.
+ *
+ * @param {*} x Any value passed to E.sendOnly(x)
+ * @returns {ProxyHandler} the Proxy handler
+ */
+function EsendOnlyProxyHandler(x, HandledPromise) {
+  return harden({
+    ...readOnlyProxyHandler,
+    get(_target, p, _receiver) {
+      if (`${p}` !== p) {
+        return undefined;
+      }
+      return (...args) => {
+        HandledPromise.applyMethod(x, p, args);
+        return undefined;
+      };
+    },
+    apply(_target, _thisArg, argsArray = []) {
+      HandledPromise.applyFunction(x, argsArray);
+      return undefined;
+    },
+    has(_target, _p) {
+      // We just pretend that every thing exists.
+      return true;
+    },
+  });
+}
+
 export default function makeE(HandledPromise) {
   function E(x) {
     const handler = EProxyHandler(x, HandledPromise);
@@ -67,6 +97,10 @@ export default function makeE(HandledPromise) {
 
   E.G = makeEGetterProxy;
   E.resolve = HandledPromise.resolve;
+  E.sendOnly = x => {
+    const handler = EsendOnlyProxyHandler(x, HandledPromise);
+    return harden(new Proxy(() => {}, handler));
+  };
 
   E.when = (x, onfulfilled = undefined, onrejected = undefined) =>
     HandledPromise.resolve(x).then(onfulfilled, onrejected);
