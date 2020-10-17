@@ -238,7 +238,11 @@ export function makeHandledPromise() {
         let result;
         let presence;
         if (proxyOpts) {
-          const { args, revocable } = proxyOpts;
+          const {
+            handler: proxyHandler,
+            target: proxyTarget,
+            revocable,
+          } = proxyOpts;
           if (revocable) {
             // Create a proxy and its revoke function.
             result = Proxy.revocable(...args);
