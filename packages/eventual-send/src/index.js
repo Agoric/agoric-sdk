@@ -236,6 +236,7 @@ export function makeHandledPromise() {
         // ---
         const { proxy: proxyOpts, resultCallback } = options;
         let result;
+        let presence;
         if (proxyOpts) {
           const { args, revocable } = proxyOpts;
           if (revocable) {
@@ -259,7 +260,7 @@ export function makeHandledPromise() {
         // ---
 
         // Validate and install our mapped target (i.e. presence).
-        resolvedTarget = Object.create(null);
+        resolvedTarget = presence;
 
         // Create table entries for the presence mapped to the
         // fulfilledHandler.
