@@ -248,7 +248,7 @@ export function makeHandledPromise() {
             result = Proxy.revocable(...args);
             presence = result.proxy;
           } else {
-            result = new Proxy(...args);
+            result = new Proxy(proxyTarget, proxyHandler);
             presence = result;
           }
         } else {
