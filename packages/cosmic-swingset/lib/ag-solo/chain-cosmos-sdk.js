@@ -12,8 +12,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 const log = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
-const SUPPORT_ADDRESS =
-  '@agoric.support#testnet on Keybase (https://keybase.io)';
+const FAUCET_ADDRESS = '#faucet channel on Discord (https://discord.gg/9nKvca)';
 
 const adviseEgress = myAddr =>
   `\
@@ -21,9 +20,9 @@ const adviseEgress = myAddr =>
 
 Send:
 
-  !faucet add-egress ${myAddr}
+  !faucet solo ${myAddr}
 
-to ${SUPPORT_ADDRESS}`;
+to ${FAUCET_ADDRESS}`;
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 
