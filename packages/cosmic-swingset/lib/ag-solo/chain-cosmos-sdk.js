@@ -20,7 +20,7 @@ const adviseEgress = myAddr =>
 
 Send:
 
-  !faucet solo ${myAddr}
+  !faucet client ${myAddr}
 
 to ${FAUCET_ADDRESS}`;
 
