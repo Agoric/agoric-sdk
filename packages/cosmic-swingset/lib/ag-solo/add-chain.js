@@ -1,4 +1,6 @@
 import fetch from 'node-fetch';
+import crypto from 'crypto';
+import djson from 'deterministic-json';
 import path from 'path';
 import fs from 'fs';
 
@@ -22,11 +24,46 @@ async function addChain(basedir, chainConfig, force = false) {
     }
   }
 
-  console.log('downloading netconfig from', actualConfig);
-  const r = await fetch(actualConfig);
-  const netconf = await r.json();
+  const url = new URL(actualConfig, `file://${process.cwd()}`);
+  console.log('downloading netconfig from', url.href);
+  let netconf;
+  if (url.protocol === 'file:') {
+    const f = fs.readFileSync(url.pathname, 'utf-8');
+    netconf = JSON.parse(f);
+  } else {
+    const r = await fetch(url.href);
+    netconf = await r.json();
+  }
+  const gciUrl = new URL(netconf.gci, 'hex://');
+  if (gciUrl.protocol !== 'hex:') {
+    const g = await fetch(gciUrl.href);
+    const resp = await g.json();
+    let genesis = resp;
+    if (resp.jsonrpc === '2.0') {
+      // JSON-RPC embedded genesis.
+      genesis = resp.result.genesis;
+    }
+
+    if (!genesis.genesis_time) {
+      throw Error(
+        `Malformed JSON genesis response from ${gciUrl.href}: ${JSON.stringify(
+          resp,
+          null,
+          2,
+        )}`,
+      );
+    }
+    const s = djson.stringify(resp.result);
+    const gci = crypto
+      .createHash('sha256')
+      .update(s)
+      .digest('hex');
+
+    netconf.gci = gci;
+  }
+
   if (!netconf.gci) {
-    throw Error(`${actualConfig} does not contain a "gci" entry`);
+    throw Error(`${url.href} does not contain a "gci" entry`);
   }
 
   const connFile = path.join(basedir, 'connections.json');
