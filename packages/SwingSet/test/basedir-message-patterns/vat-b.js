@@ -11,10 +11,10 @@ export function buildRootObject(vatPowers) {
 
   const root = harden({
     init() {
-      const { setB, objB } = buildPatterns(vatPowers.testLog);
-      const b = harden({ bob: objB, bert, bill });
+      const { setB, objB: bob } = buildPatterns(vatPowers.testLog);
+      const b = harden({ bob, bert, bill });
       setB(b);
-      return harden({ bob: objB, bert });
+      return harden({ bob, bert });
     },
   });
   return root;

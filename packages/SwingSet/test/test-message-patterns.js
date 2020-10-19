@@ -22,6 +22,8 @@ import { buildPatterns } from './message-patterns';
 // 'yarn test test/test-message-patterns.js -m "test pattern a72 local"'
 // or '-m "*a72 local"'
 
+// See message-patterns.js for details.
+
 // eslint-disable-next-line no-unused-vars
 async function runWithTrace(c) {
   let count = 0;
@@ -78,10 +80,10 @@ test.before(async t => {
       bootstrap: { bundle: bundleComms },
       a: { bundle: bundleA },
       b: { bundle: bundleB },
-      leftcomms: moreComms,
-      rightcomms: moreComms,
-      leftvattp: moreVatTP,
-      rightvattp: moreVatTP,
+      commsA: moreComms,
+      commsB: moreComms,
+      vattpA: moreVatTP,
+      vattpB: moreVatTP,
     },
   };
 
