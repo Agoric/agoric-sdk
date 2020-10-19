@@ -47,7 +47,7 @@ export function getBestSwingStore(tempdir) {
       initSwingStore: initSwingStoreLMDB,
     };
   } catch (e) {
-    console.log(`LMDB does not work, falling back to Simple DB`);
+    console.log(`LMDB does not work, falling back to Simple DB`, e);
     // see https://github.com/Agoric/agoric-sdk/issues/950 for details
     return {
       openSwingStore: openSwingStoreSimple,

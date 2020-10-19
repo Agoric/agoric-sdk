@@ -47,7 +47,7 @@ test(`zoe.startInstance bad installation`, async t => {
   const { zoe } = setup();
   // @ts-ignore
   await t.throwsAsync(() => E(zoe).startInstance(), {
-    message: `(an undefined) was not a valid installation\nSee console for error data.`,
+    message: `(an undefined) was not a valid installation`,
   });
 });
 
@@ -84,7 +84,7 @@ test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
         { Moola: moolaKit.issuer },
       ),
     {
-      message: `keyword "something" must be ascii and must start with a capital letter.\nSee console for error data.`,
+      message: `keyword "something" must be ascii and must start with a capital letter.`,
     },
   );
 });
@@ -99,7 +99,7 @@ test(`zoe.offer`, async t => {
 test(`zoe.offer - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   await t.throwsAsync(() => E(zoe).offer(), {
-    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)`,
   });
 });
 
@@ -118,7 +118,7 @@ test(`zoe.getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
   // @ts-ignore
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
-    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+    message: `"instance" not found: (an undefined)`,
   });
 });
 
@@ -146,7 +146,7 @@ test(`zoe.getIssuers - no instance`, async t => {
   const { zoe } = setup();
   // @ts-ignore
   await t.throwsAsync(() => E(zoe).getIssuers(), {
-    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+    message: `"instance" not found: (an undefined)`,
   });
 });
 
@@ -174,7 +174,7 @@ test(`zoe.getBrands - no instance`, async t => {
   const { zoe } = setup();
   // @ts-ignore
   await t.throwsAsync(() => E(zoe).getBrands(), {
-    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+    message: `"instance" not found: (an undefined)`,
   });
 });
 
@@ -231,7 +231,7 @@ test(`zoe.getTerms - no instance`, async t => {
   const { zoe } = setup();
   // @ts-ignore
   await t.throwsAsync(() => E(zoe).getTerms(), {
-    message: `"instance" not found: (an undefined)\nSee console for error data.`,
+    message: `"instance" not found: (an undefined)`,
   });
 });
 
@@ -245,7 +245,7 @@ test(`zoe.getInstance`, async t => {
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   await t.throwsAsync(() => E(zoe).getInstance(), {
-    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)`,
   });
 });
 
@@ -259,7 +259,7 @@ test(`zoe.getInstallation`, async t => {
 test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   await t.throwsAsync(() => E(zoe).getInstallation(), {
-    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)`,
   });
 });
 
@@ -278,6 +278,6 @@ test(`zoe.getInvitationDetails`, async t => {
 test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
-    message: `A Zoe invitation is required, not (an undefined)\nSee console for error data.`,
+    message: `A Zoe invitation is required, not (an undefined)`,
   });
 });

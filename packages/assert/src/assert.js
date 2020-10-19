@@ -4,6 +4,13 @@
 
 import './types';
 
+/*
+// TODO Somehow, use the `assert` exported by the SES-shim
+import { assert } from 'ses';
+const { details, quote } = assert;
+export { assert, details, quote, quote as q };
+*/
+
 // This module assumes the de-facto standard `console` host object.
 // To the extent that this `console` is considered a resource,
 // this module must be considered a resource module.
@@ -158,9 +165,6 @@ function details(template, ...args) {
       if (interleaved[interleaved.length - 1] === '') {
         interleaved.pop();
       }
-      if (args.length >= 1) {
-        parts.push('\nSee console for error data.');
-      }
       const err = new Error(parts.join(''));
       console.error('LOGGED ERROR:', ...interleaved, err);
       // eslint-disable-next-line no-debugger
@@ -245,6 +249,21 @@ const assertTypeof = (specimen, typename, optDetails) => {
   equal(typeof specimen, typename, optDetails);
 };
 
+/**
+ * @param {any} specimen The value to get the typeof
+ * @param {Details} [optDetails] The details to throw
+ */
+const assertString = (specimen, optDetails) =>
+  assertTypeof(specimen, 'string', optDetails);
+
+/**
+ * Just a no-op placeholder for the `assert.note` from ses.
+ *
+ * @param {Error} _error
+ * @param {Details} _detailsNote
+ */
+const note = (_error, _detailsNote) => {};
+
 /* eslint-disable jsdoc/valid-types */
 /**
  * assert that expr is truthy, with an optional details to describe
@@ -266,13 +285,15 @@ const assertTypeof = (specimen, typename, optDetails) => {
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
  *
- * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal }}
+ * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal, string: typeof assertString, note: typeof note }}
  */
 /* eslint-enable jsdoc/valid-types */
 const assertCombined = Object.assign(assert, {
-  equal,
   fail,
+  equal,
   typeof: assertTypeof,
+  string: assertString,
+  note,
 });
 harden(assertCombined);
 
