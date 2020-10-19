@@ -6,7 +6,7 @@ import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from './fakeVatAdmin';
+import fakeVatAdmin from '../../../src/contractFacet/fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';

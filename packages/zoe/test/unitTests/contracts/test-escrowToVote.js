@@ -7,7 +7,7 @@ import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import fakeVatAdmin from './fakeVatAdmin';
+import fakeVatAdmin from '../../../src/contractFacet/fakeVatAdmin';
 
 const contractRoot = `${__dirname}/escrowToVote`;
 

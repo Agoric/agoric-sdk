@@ -6,7 +6,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
 
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
 import { makeRegistrar } from '@agoric/registrar';
 
 import { assert } from '@agoric/assert';
