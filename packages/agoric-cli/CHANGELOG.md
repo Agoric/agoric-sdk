@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.10.0...agoric@0.10.1-dev.0) (2020-10-19)
+
+
+### Bug Fixes
+
+* **agoric-cli:** correct missing installation of ui subdirectory ([4b073c2](https://github.com/Agoric/agoric-sdk/commit/4b073c2aa1b9d0a7a43028978775bd2273b359c8))
+
+
+
+
+
 # [0.10.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.9.1-dev.2...agoric@0.10.0) (2020-10-11)
 
 

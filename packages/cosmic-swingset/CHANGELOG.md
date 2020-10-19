@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.22.0...@agoric/cosmic-swingset@0.22.1-dev.0) (2020-10-19)
+
+
+### Bug Fixes
+
+* **ag-solo:** remove stale call to ackWallet ([148957a](https://github.com/Agoric/agoric-sdk/commit/148957a722d4c935025eab8a5e3481ab42d43736))
+
+
+
+
+
 # [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.21.1-dev.2...@agoric/cosmic-swingset@0.22.0) (2020-10-11)
 
 
