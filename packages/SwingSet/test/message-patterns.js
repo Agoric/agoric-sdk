@@ -804,6 +804,38 @@ export function buildPatterns(log) {
   out.a87 = ['true', 'three'];
   test('a87');
 
+  // 90-series: test third-party references
+
+  // A: c!c90_one(bert)
+  // C: bert!log_bert()
+  {
+    objA.a90 = async () => {
+      await E(c.carol).c90_one(b.bert);
+    };
+    objC.c90_one = bert => {
+      log('carol got bert');
+      E(bert).log_bert('hi bert');
+    };
+  }
+  out.a90 = ['carol got bert', 'hi bert'];
+  test('a90');
+
+  // A: c!c91_one(Pbert)
+  // C: Pbert!log_bert()
+  {
+    objA.a91 = async () => {
+      const { promise: Pbert, resolve } = makePromiseKit();
+      await E(c.carol).c91_one(Pbert);
+      resolve(b.bert);
+    };
+    objC.c91_one = Pbert => {
+      log('carol got Pbert');
+      E(Pbert).log_bert('hi bert');
+    };
+  }
+  out.a91 = ['carol got Pbert', 'hi bert'];
+  test('a91');
+
   // TODO: kernel-allocated promise, either comms or kernel resolves it,
   // comms needs to send into kernel again
 
