@@ -39,6 +39,11 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
+"@agoric/transform-eventual-send@^1.3.0":
+  version "1.3.4"
+  resolved "https://registry.yarnpkg.com/@agoric/transform-eventual-send/-/transform-eventual-send-1.3.4.tgz#43d90ac1f85809d87bf02df6a65238fce3678a2a"
+  integrity sha512-bnLBYL8Zooy0vMmHjIffcOgxd6whBCFxAlJlKcnM3V3TJ05YyuycCJ5QKLVq3KWT2Io9szfs5EzM9LgPIPr/Sg==
+
 "@agoric/transform-module@^0.3.0":
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/@agoric/transform-module/-/transform-module-0.3.0.tgz#da0c4ba3b200e270db32ac5d8a56d4f5c955b89d"
