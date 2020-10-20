@@ -74,10 +74,6 @@ jobs:
     - name: Agoric install in documentation
       run: agoric install
       working-directory: ./documentation
-
-    - name: yarn build in documentation
-      run: yarn build
-      working-directory: ./documentation
     
     - name: yarn test in documentation
       run: yarn test
