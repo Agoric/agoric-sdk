@@ -3,8 +3,13 @@ import { E } from '@agoric/eventual-send';
 export function buildRootObject(_vatPowers, vatParameters) {
   return harden({
     async bootstrap(vats, _devices) {
-      const b = await E(vats.b).init();
-      await E(vats.a).init(b.bob, b.bert);
+      // initialize B, to get the object that we'll export to A
+      const { bob, bert } = await E(vats.b).init();
+      // initialize C, to get the object that we'll export to A
+      const { carol } = await E(vats.c).init();
+
+      // initialize A, and give it objects from B and C
+      await E(vats.a).init(bob, bert, carol);
 
       const which = vatParameters.argv[0];
       await E(vats.a).run(which);
