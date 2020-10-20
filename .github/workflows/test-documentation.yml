@@ -1,0 +1,84 @@
+name: Test Documentation
+
+# run CI on pushes to master, and on all PRs (even the ones that target other
+# branches)
+
+on:
+ push:
+   branches: [master]
+ pull_request:
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x']
+    steps:
+
+    - name: Checkout agoric-sdk
+      uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    # Select a branch on documentation to test against by adding text to the body of the
+    # pull request. For example: #documentation-branch: zoe-release-0.7.0
+    # The default is 'master'
+    - name: Get the appropriate documentation branch
+      id: get-branch
+      uses: actions/github-script@0.9.0
+      with:
+        result-encoding: string
+        script: |
+          let branch = 'master';
+          if (context.payload.pull_request) {
+            const { body } = context.payload.pull_request;
+            const regex = /.*\#documentation-branch:\s+(\S+)/;
+            const result = regex.exec(body);
+            if (result) {
+              branch = result[1];
+            }
+          }
+          console.log(branch);
+          return branch;
+
+    - name: yarn install
+      run: yarn install
+    - name: check dependencies
+      run: yarn check-dependencies
+    # 'yarn build' loops over all workspaces
+    - name: yarn build
+      run: yarn build
+    - name: yarn link
+      run: |
+        yarn link-cli ~/bin/agoric
+        echo "::add-path::/home/runner/bin"
+
+    - name: Check out documentation
+      uses: actions/checkout@v2
+      with:
+        repository: Agoric/documentation
+        path: documentation
+        ref: ${{steps.get-branch.outputs.result}}
+
+    - name: Agoric install in documentation
+      run: agoric install
+      working-directory: ./documentation
+
+    - name: yarn build in documentation
+      run: yarn build
+      working-directory: ./documentation
+    
+    - name: yarn test in documentation
+      run: yarn test
+      working-directory: ./documentation
