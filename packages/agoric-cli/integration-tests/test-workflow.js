@@ -158,15 +158,6 @@ test('workflow', async t => {
     }
 
     // ==============
-    // cd ui && yarn install
-    const instRet = await pspawnStdout(`yarn`, ['install'], {
-      stdio: ['ignore', 'pipe', 'inherit'],
-      cwd: 'ui',
-      detached: true,
-    });
-    t.is(instRet, 0, `cd ui && yarn install succeeded`);
-
-    // ==============
     // cd ui && yarn start
     const uiStartP = pspawn(`yarn`, ['start'], {
       stdio: ['ignore', 'inherit', 'inherit'],

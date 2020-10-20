@@ -1,7 +1,7 @@
 {
-  "name": "@agoric/dapp-encouragement-agservers",
+  "name": "@agoric/dapp-svelte-wallet-agservers",
   "version": "0.0.1",
-  "description": "Agoric server instances for dapp-encouragement",
+  "description": "Agoric server instances for dapp-svelte-wallet",
   "private": true,
   "scripts": {
     "build": "exit 0",
