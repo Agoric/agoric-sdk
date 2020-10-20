@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0-dev.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.4.0...@agoric/dapp-svelte-wallet-api@0.5.0-dev.0) (2020-10-19)
+
+
+### Features
+
+* **zoe:** export src/contractFacet/fakeVatAdmin for dapps ([ea8568f](https://github.com/Agoric/agoric/commit/ea8568f7d2b67b10507d911c6585b1728ad3d011))
+
+
+
+
+
 # [0.4.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.3.1-dev.2...@agoric/dapp-svelte-wallet-api@0.4.0) (2020-10-11)
 
 
