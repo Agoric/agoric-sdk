@@ -83,46 +83,48 @@ parentPort.on('message', ([type, ...margs]) => {
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
     const [bundle, vatParameters] = margs;
+
+    function testLog(...args) {
+      sendUplink(['testLog', ...args]);
+    }
+
+    function doSyscall(vatSyscallObject) {
+      sendUplink(['syscall', ...vatSyscallObject]);
+    }
+    const syscall = harden({
+      send: (...args) => doSyscall(['send', ...args]),
+      callNow: (..._args) => {
+        throw Error(`nodeWorker cannot syscall.callNow`);
+      },
+      subscribe: (...args) => doSyscall(['subscribe', ...args]),
+      fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
+      fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
+      reject: (...args) => doSyscall(['reject', ...args]),
+    });
+
+    const vatID = 'demo-vatID';
+    // todo: maybe add transformTildot, makeGetMeter/transformMetering to
+    // vatPowers, but only if options tell us they're wanted. Maybe
+    // transformTildot should be async and outsourced to the kernel
+    // process/thread.
+    const vatPowers = {
+      Remotable,
+      getInterfaceOf,
+      makeMarshal,
+      testLog,
+    };
+    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+
     const endowments = {
+      ...ls.vatGlobals,
       console: makeConsole(`SwingSet:vatWorker`),
     };
+
     importBundle(bundle, { endowments }).then(vatNS => {
       workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
       sendUplink(['gotBundle']);
-
-      function doSyscall(vatSyscallObject) {
-        sendUplink(['syscall', ...vatSyscallObject]);
-      }
-      const syscall = harden({
-        send: (...args) => doSyscall(['send', ...args]),
-        callNow: (..._args) => {
-          throw Error(`nodeWorker cannot syscall.callNow`);
-        },
-        subscribe: (...args) => doSyscall(['subscribe', ...args]),
-        fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
-        fulfillToPresence: (...args) =>
-          doSyscall(['fulfillToPresence', ...args]),
-        reject: (...args) => doSyscall(['reject', ...args]),
-      });
-
-      function testLog(...args) {
-        sendUplink(['testLog', ...args]);
-      }
-
-      const vatID = 'demo-vatID';
-      // todo: maybe add transformTildot, makeGetMeter/transformMetering to
-      // vatPowers, but only if options tell us they're wanted. Maybe
-      // transformTildot should be async and outsourced to the kernel
-      // process/thread.
-      const vatPowers = {
-        Remotable,
-        getInterfaceOf,
-        makeMarshal,
-        testLog,
-      };
-      const r = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
-      r.setBuildRootObject(vatNS.buildRootObject);
-      dispatch = r.dispatch;
+      ls.setBuildRootObject(vatNS.buildRootObject);
+      dispatch = ls.dispatch;
       workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
       sendUplink(['dispatchReady']);
     });

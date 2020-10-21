@@ -1,4 +1,4 @@
-name: Test Dapp Encouragement
+name: Test Documentation
 
 # run CI on pushes to master, and on all PRs (even the ones that target other
 # branches)
@@ -9,11 +9,11 @@ on:
  pull_request:
 
 jobs:
-  dapp-encouragement:
+  documentation:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['12.14.1', '12.x', '14.x']
+        node-version: ['14.x']
     steps:
 
     - name: Checkout agoric-sdk
@@ -31,10 +31,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-yarn-
 
-    # Select a branch on dapp-encouragement to test against by adding text to the body of the
-    # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
+    # Select a branch on documentation to test against by adding text to the body of the
+    # pull request. For example: #documentation-branch: zoe-release-0.7.0
     # The default is 'master'
-    - name: Get the appropriate dapp-encouragement branch
+    - name: Get the appropriate documentation branch
       id: get-branch
       uses: actions/github-script@0.9.0
       with:
@@ -43,7 +43,7 @@ jobs:
           let branch = 'master';
           if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
-            const regex = /.*\#dapp-encouragement-branch:\s+(\S+)/;
+            const regex = /.*\#documentation-branch:\s+(\S+)/;
             const result = regex.exec(body);
             if (result) {
               branch = result[1];
@@ -64,21 +64,17 @@ jobs:
         yarn link-cli ~/bin/agoric
         echo "/home/runner/bin" >> $GITHUB_PATH
 
-    - name: Check out dapp-encouragement
+    - name: Check out documentation
       uses: actions/checkout@v2
       with:
-        repository: Agoric/dapp-encouragement
-        path: dapp-encouragement
+        repository: Agoric/documentation
+        path: documentation
         ref: ${{steps.get-branch.outputs.result}}
 
-    - name: Agoric install in dapp-encouragement
+    - name: Agoric install in documentation
       run: agoric install
-      working-directory: ./dapp-encouragement
-
-    - name: yarn build in dapp-encouragement
-      run: yarn build
-      working-directory: ./dapp-encouragement
+      working-directory: ./documentation
     
-    - name: yarn test in dapp-encouragement
+    - name: yarn test in documentation
       run: yarn test
-      working-directory: ./dapp-encouragement
+      working-directory: ./documentation

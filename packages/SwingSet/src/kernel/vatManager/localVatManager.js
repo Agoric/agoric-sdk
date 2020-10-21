@@ -96,6 +96,19 @@ export function makeLocalVatManagerFactory(tools) {
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
 
+    const { syscall, finish } = prepare(vatID, managerOptions);
+    const imVP = enableInternalMetering ? internalMeteringVP : {};
+    const vatPowers = harden({
+      ...baseVP,
+      ...imVP,
+      vatParameters,
+      testLog: allVatPowers.testLog,
+    });
+
+    // we might or might not use this, depending upon whether the vat exports
+    // 'buildRootObject' or a default 'setup' function
+    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+
     let meterRecord = null;
     if (metered) {
       // fail-stop: we refill the meter after each crank (in vatManager
@@ -109,6 +122,11 @@ export function makeLocalVatManagerFactory(tools) {
       });
     }
 
+    const endowments = harden({
+      ...vatEndowments,
+      ...ls.vatGlobals,
+      console: vatConsole,
+    });
     const inescapableTransforms = [];
     const inescapableGlobalLexicals = {};
     if (metered) {
@@ -119,26 +137,16 @@ export function makeLocalVatManagerFactory(tools) {
 
     const vatNS = await importBundle(bundle, {
       filePrefix: vatID,
-      endowments: harden({ ...vatEndowments, console: vatConsole }),
+      endowments,
       inescapableTransforms,
       inescapableGlobalLexicals,
-    });
-
-    const { syscall, finish } = prepare(vatID, managerOptions);
-    const imVP = enableInternalMetering ? internalMeteringVP : {};
-    const vatPowers = harden({
-      ...baseVP,
-      ...imVP,
-      vatParameters,
-      testLog: allVatPowers.testLog,
     });
 
     let dispatch;
     if (typeof vatNS.buildRootObject === 'function') {
       const { buildRootObject } = vatNS;
-      const r = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
-      r.setBuildRootObject(buildRootObject);
-      dispatch = r.dispatch;
+      ls.setBuildRootObject(buildRootObject);
+      dispatch = ls.dispatch;
     } else if (enableSetup) {
       const setup = vatNS.default;
       assert(setup, `vat source bundle lacks (default) setup() function`);
