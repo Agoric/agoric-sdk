@@ -1,55 +1,67 @@
 import { E } from '@agoric/eventual-send';
 
+// machine names, to link vattp messages and loopbox channels
+const A = 'A';
+const B = 'B';
+const C = 'C';
+
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   return harden({
     async bootstrap(vats, devices) {
-      // setup
-      const LEFT = 'left'; // for vat A
-      const RIGHT = 'right'; // for vat B
+      const { loopbox } = devices;
 
-      D(devices.loopbox).registerInboundHandler(LEFT, vats.leftvattp);
-      const leftsender = D(devices.loopbox).makeSender(LEFT);
-      await E(vats.leftvattp).registerMailboxDevice(leftsender);
+      // machine A can send and receive through the loopbox
+      const { vattpA, commsA } = vats;
+      D(loopbox).registerInboundHandler(A, vattpA);
+      await E(vattpA).registerMailboxDevice(D(loopbox).makeSender(A));
 
-      const {
-        transmitter: txToRightForLeft,
-        setReceiver: setRxFromRightForLeft,
-      } = await E(vats.leftvattp).addRemote(RIGHT);
-      await E(vats.leftcomms).addRemote(
-        RIGHT,
-        txToRightForLeft,
-        setRxFromRightForLeft,
-      );
+      // machine B can send and receive through the loopbox
+      const { vattpB, commsB } = vats;
+      D(loopbox).registerInboundHandler(B, vattpB);
+      await E(vattpB).registerMailboxDevice(D(loopbox).makeSender(B));
 
-      D(devices.loopbox).registerInboundHandler(RIGHT, vats.rightvattp);
-      const rightsender = D(devices.loopbox).makeSender(RIGHT);
-      await E(vats.rightvattp).registerMailboxDevice(rightsender);
+      // machine C can send and receive through the loopbox
+      const { vattpC, commsC } = vats;
+      D(loopbox).registerInboundHandler(C, vattpC);
+      await E(vattpC).registerMailboxDevice(D(loopbox).makeSender(C));
 
-      const {
-        transmitter: txToLeftForRight,
-        setReceiver: setRxFromLeftForRight,
-      } = await E(vats.rightvattp).addRemote(LEFT);
-      await E(vats.rightcomms).addRemote(
-        LEFT,
-        txToLeftForRight,
-        setRxFromLeftForRight,
-      );
+      // A knows about B
+      const AtoB = await E(vattpA).addRemote(B);
+      await E(commsA).addRemote(B, AtoB.transmitter, AtoB.setReceiver);
+      // B knows about A
+      const BtoA = await E(vattpB).addRemote(A);
+      await E(commsB).addRemote(A, BtoA.transmitter, BtoA.setReceiver);
 
-      // get B set up
+      // A knows about C
+      const AtoC = await E(vattpA).addRemote(C);
+      await E(commsA).addRemote(C, AtoC.transmitter, AtoC.setReceiver);
+      // C knows about A
+      const CtoA = await E(vattpC).addRemote(A);
+      await E(commsC).addRemote(A, CtoA.transmitter, CtoA.setReceiver);
+
+      // initialize B, to get the object that we'll export to A
       const { bob, bert } = await E(vats.b).init();
 
+      // export B's objects to A
       const BOB_INDEX = 12;
       const BERT_INDEX = 13;
+      await E(commsB).addEgress(A, BOB_INDEX, bob);
+      const aBob = await E(commsA).addIngress(B, BOB_INDEX);
+      await E(commsB).addEgress(A, BERT_INDEX, bert);
+      const aBert = await E(commsA).addIngress(B, BERT_INDEX);
 
-      await E(vats.rightcomms).addEgress(LEFT, BOB_INDEX, bob);
-      const aBob = await E(vats.leftcomms).addIngress(RIGHT, BOB_INDEX);
+      // initialize C, to get the object that we'll export to A
+      const { carol } = await E(vats.c).init();
 
-      await E(vats.rightcomms).addEgress(LEFT, BERT_INDEX, bert);
-      const aBert = await E(vats.leftcomms).addIngress(RIGHT, BERT_INDEX);
+      // export C's objects to A
+      const CAROL_INDEX = 25;
+      await E(commsC).addEgress(A, CAROL_INDEX, carol);
+      const aCarol = await E(commsA).addIngress(C, CAROL_INDEX);
 
-      // eslint-disable-next-line no-unused-vars
-      const a = await E(vats.a).init(aBob, aBert);
+      // initialize A, and give it objects from B and C
+      await E(vats.a).init(aBob, aBert, aCarol);
+
       const which = vatParameters.argv[0];
       await E(vats.a).run(which);
     },
