@@ -38,6 +38,8 @@ export function buildCommsDispatch(syscall) {
   const controller = makeVatSlot('object', true, 0);
 
   function deliver(target, method, args, result) {
+    console.info(`-- start: deliver ${target} ${method}`);
+    try {
     insistCapData(args);
     if (target === controller) {
       return deliverToController(
@@ -49,7 +51,7 @@ export function buildCommsDispatch(syscall) {
         syscall,
       );
     }
-    // console.debug(`comms.deliver ${target} r=${result}`);
+    // console.info(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
     if (state.objectTable.has(target) || state.promiseTable.has(target)) {
       assert(
@@ -70,11 +72,17 @@ export function buildCommsDispatch(syscall) {
     // TODO: if promise target not in PromiseTable: resolve result to error
     //   this will happen if someone pipelines to our controller/receiver
     throw Error(`unknown target ${target}`);
+      } catch (e) {
+        console.info(`   error: deliver`, e);
+        throw e;
+      }
   }
 
   function notifyFulfillToData(promiseID, data) {
+    console.info(`-- start: fulfillToData ${promiseID} ${data}`);
+    try {
     insistCapData(data);
-    // console.debug(`comms.notifyFulfillToData(${promiseID})`);
+    // console.info(`comms.notifyFulfillToData(${promiseID})`);
     // dumpState(state);
 
     // I *think* we should never get here for local promises, since the
@@ -94,19 +102,35 @@ export function buildCommsDispatch(syscall) {
 
     const resolution = harden({ type: 'data', data });
     resolveFromKernel(promiseID, resolution);
+      } catch (e) {
+        console.info(`   error: fulfillToData`, e);
+        throw e;
+      }
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
-    // console.debug(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
+    console.info(`-- start: fulfillToPresence ${promiseID} ${slot}`);
+    try {
+    // console.info(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
     const resolution = harden({ type: 'object', slot });
     resolveFromKernel(promiseID, resolution);
+      } catch (e) {
+        console.info(`   error: fulfillToPresence`, e);
+        throw e;
+      }
   }
 
   function notifyReject(promiseID, data) {
+    console.info(`-- start: notifyReject ${promiseID} ${data}`);
+    try {
     insistCapData(data);
-    // console.debug(`comms.notifyReject(${promiseID})`);
+    // console.info(`comms.notifyReject(${promiseID})`);
     const resolution = harden({ type: 'reject', data });
     resolveFromKernel(promiseID, resolution);
+      } catch (e) {
+        console.info(`   error: reject`, e);
+        throw e;
+      }
   }
 
   const dispatch = harden({

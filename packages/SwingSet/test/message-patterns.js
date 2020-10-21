@@ -836,6 +836,64 @@ export function buildPatterns(log) {
   out.a91 = ['carol got Pbert', 'hi bert'];
   test('a91');
 
+  // bug #1844
+  // chain is talking to ag-solo1 and ag-solo2
+  //
+  // a promise is created on ag-solo2 (carol), returned to ag-solo1. Later,
+  // the promise is resolved to an object on carol.
+  //
+  // ag-solo1 sends message to ag-solo2 with an argument
+  // when the argument is plain data, it works
+  // chain=A, ag-solo-1=B, ag-solo-2=C
+
+  // A: b~.c92_one(carol)
+  // B: carol~.c92_two(data)
+  {
+    objA.a92 = async () => {
+      await E(b.bob).b92_one(c.carol);
+    };
+    objB.b92_one = carol => {
+      log('bob got carol');
+      E(carol).c92_two('data');
+    };
+    objC.c92_two = data => {
+      log(`carol got ${data}`);
+    };
+  }
+  out.a92 = ['bob got carol', 'carol got data'];
+  test('a92');
+
+  // more bug #1844
+  // when the argument is an object that lives on ag-solo2, it fails
+
+  // A: b~.c93_one(carol, alice)
+  // B: carol~.c93_two(alice)
+  {
+    objA.a93 = async () => {
+      await E(b.bob).b93_one(c.carol, a.amy);
+    };
+    objB.b93_one = async (carol, amy) => {
+      log('bob got carol');
+      const { charlieP } = await E(carol).c93_two();
+      E(charlieP).hello('hi charlie', amy);
+      E(carol).c93_three();
+    };
+    const pk = makePromiseKit();
+    objC.c93_two = () => {
+      return { charlieP: pk.promise };
+    };
+    objC.c93_three = () => {
+      const charlie = harden({
+        hello(data, amy) {
+          log(`charlie got ${data} amy is ${amy}`);
+        },
+      });
+      pk.resolve(charlie); // delay whole crank
+    };
+  }
+  out.a93 = ['bob got carol', 'charlie got hi charlie'];
+  test('a93');
+
   // TODO: kernel-allocated promise, either comms or kernel resolves it,
   // comms needs to send into kernel again
 
