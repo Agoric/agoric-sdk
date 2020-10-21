@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store-simple",
-  "version": "0.2.6",
+  "version": "0.2.7-dev.0",
   "description": "Persistent storage for SwingSet, based on a Map, optionally backed by a simple JSON file",
   "main": "simpleSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",

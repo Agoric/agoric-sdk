@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.8.0...@agoric/swingset-runner@0.9.0-dev.0) (2020-10-19)
+
+
+### Features
+
+* split exchange benchmark rounds in two ([94fdfdc](https://github.com/Agoric/agoric-sdk/commit/94fdfdcc7a06b1645e184d9533f8b87c5a80761f))
+
+
+
+
+
 # [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.7.1-dev.2...@agoric/swingset-runner@0.8.0) (2020-10-11)
 
 

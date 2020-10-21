@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.9.0...@agoric/swingset-vat@0.10.0-dev.0) (2020-10-19)
+
+
+### Features
+
+* add vatstorage syscalls to kernel ([90ef974](https://github.com/Agoric/agoric-sdk/commit/90ef974eed85bcb97126c45652e785ac243b9894))
+
+
+
+
+
 # [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.8.1-dev.2...@agoric/swingset-vat@0.9.0) (2020-10-11)
 
 
