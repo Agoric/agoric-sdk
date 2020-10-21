@@ -124,6 +124,7 @@ export function makeLocalVatManagerFactory(tools) {
 
     const endowments = harden({
       ...vatEndowments,
+      ...ls.vatGlobals,
       console: vatConsole,
     });
     const inescapableTransforms = [];

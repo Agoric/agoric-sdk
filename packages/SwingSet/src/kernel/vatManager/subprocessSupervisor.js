@@ -136,6 +136,7 @@ fromParent.on('data', ([type, ...margs]) => {
     const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
 
     const endowments = {
+      ...ls.vatGlobals,
       console: makeConsole(`SwingSet:vatWorker`),
     };
 
