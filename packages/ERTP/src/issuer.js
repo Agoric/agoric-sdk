@@ -105,7 +105,8 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
             currentBalance,
           );
           // Commit point
-          paymentLedger.delete(srcPayment);
+          // eslint-disable-next-line no-use-before-define
+          reallocate([srcPayment], undefined, currentBalance, newPurseBalance);
           currentBalance = newPurseBalance;
           return srcPaymentBalance;
         },
@@ -113,9 +114,14 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
           amount = amountMath.coerce(amount);
           const newPurseBalance = amountMath.subtract(currentBalance, amount);
           // Commit point
+          // eslint-disable-next-line no-use-before-define
+          const [payment] = reallocate(
+            undefined,
+            [amount],
+            currentBalance,
+            newPurseBalance,
+          );
           currentBalance = newPurseBalance;
-          const payment = makePayment();
-          paymentLedger.init(payment, amount);
           return payment;
         },
         getCurrentAmount: () => currentBalance,
@@ -130,7 +136,12 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
   });
 
   // Amount in circulation remains constant with reallocate.
-  const reallocate = ({ payments = [], newPaymentBalances = [] }) => {
+  const reallocate = (
+    payments = [],
+    newPaymentBalances = [],
+    oldPurseBalance = amountMath.getEmpty(),
+    newPurseBalance = amountMath.getEmpty(),
+  ) => {
     // There may be zero, one, or many payments as input to
     // reallocate. We want to protect against someone passing in
     // what appears to be multiple payments that turn out to actually
@@ -149,9 +160,11 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
       });
     }
 
-    const total = payments.map(paymentLedger.get).reduce(add, empty);
+    const paymentTotal = payments.map(paymentLedger.get).reduce(add, empty);
+    const total = add(paymentTotal, oldPurseBalance);
 
-    const newTotal = newPaymentBalances.reduce(add, empty);
+    const newPaymentTotal = newPaymentBalances.reduce(add, empty);
+    const newTotal = add(newPaymentTotal, newPurseBalance);
 
     // Invariant check
     assert(amountMath.isEqual(total, newTotal), 'rights were not conserved');
@@ -206,12 +219,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
           const srcPaymentBalance = paymentLedger.get(srcPayment);
           assertAmountEqual(srcPaymentBalance, optAmount);
           // Commit point.
-          const [payment] = reallocate(
-            harden({
-              payments: [srcPayment],
-              newPaymentBalances: [srcPaymentBalance],
-            }),
-          );
+          const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
           return payment;
         });
       },
@@ -225,12 +233,9 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
             .reduce(add, empty);
           assertAmountEqual(totalPaymentsBalance, optTotalAmount);
           // Commit point.
-          const [payment] = reallocate(
-            harden({
-              payments: fromPaymentsArray,
-              newPaymentBalances: [totalPaymentsBalance],
-            }),
-          );
+          const [payment] = reallocate(fromPaymentsArray, [
+            totalPaymentsBalance,
+          ]);
           return payment;
         });
       },
@@ -246,10 +251,8 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
           );
           // Commit point
           const newPayments = reallocate(
-            harden({
-              payments: [srcPayment],
-              newPaymentBalances: [paymentAmountA, paymentAmountB],
-            }),
+            [srcPayment],
+            [paymentAmountA, paymentAmountB],
           );
           return newPayments;
         });
@@ -259,12 +262,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
           assertKnownPayment(srcPayment);
           amounts = amounts.map(amountMath.coerce);
           // Commit point
-          const newPayments = reallocate(
-            harden({
-              payments: [srcPayment],
-              newPaymentBalances: amounts,
-            }),
-          );
+          const newPayments = reallocate([srcPayment], amounts);
           return newPayments;
         });
       },
