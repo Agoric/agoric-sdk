@@ -40,7 +40,7 @@ jobs:
       with:
         result-encoding: string
         script: |
-          let branch = 'master';
+          let branch = 'main';
           if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
             const regex = /.*\#[[INSERT_DAPP_NAME]]-branch:\s+(\S+)/;
