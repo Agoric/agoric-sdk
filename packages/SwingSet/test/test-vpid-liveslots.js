@@ -189,6 +189,12 @@ function resolutionOf(vpid, mode, targets) {
   }
 }
 
+function makeDispatch(syscall, build) {
+  const { setBuildRootObject, dispatch } = makeLiveSlots(syscall, 'vatA');
+  setBuildRootObject(build);
+  return dispatch;
+}
+
 async function doVatResolveCase1(t, mode) {
   // case 1
   const { log, syscall } = buildSyscall();
@@ -207,7 +213,7 @@ async function doVatResolveCase1(t, mode) {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const rootA = 'o+0';
@@ -374,7 +380,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const rootA = 'o+0';
@@ -605,7 +611,7 @@ async function doVatResolveCase4(t, mode) {
       four() {},
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const rootA = 'o+0';

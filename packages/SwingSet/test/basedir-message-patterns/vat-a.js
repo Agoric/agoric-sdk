@@ -5,12 +5,13 @@ export function buildRootObject(vatPowers) {
   let alice;
 
   const root = harden({
-    init(bob, bert) {
-      const { setA, setB, objA } = buildPatterns(vatPowers.testLog);
+    init(bob, bert, carol) {
+      const { setA, setB, setC, objA } = buildPatterns(vatPowers.testLog);
       alice = objA;
       const a = harden({ alice, amy });
       setA(a);
       setB(harden({ bob, bert }));
+      setC(harden({ carol }));
       return a;
     },
 

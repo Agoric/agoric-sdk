@@ -132,19 +132,13 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters,
       testLog: allVatPowers.testLog,
     });
-    const state = null; // TODO remove from makeLiveSlots()
 
     let dispatch;
     if (typeof vatNS.buildRootObject === 'function') {
       const { buildRootObject } = vatNS;
-      dispatch = makeLiveSlots(
-        syscall,
-        state,
-        buildRootObject,
-        vatID,
-        vatPowers,
-        vatParameters,
-      );
+      const r = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+      r.setBuildRootObject(buildRootObject);
+      dispatch = r.dispatch;
     } else if (enableSetup) {
       const setup = vatNS.default;
       assert(setup, `vat source bundle lacks (default) setup() function`);
@@ -153,6 +147,7 @@ export function makeLocalVatManagerFactory(tools) {
         `vat source bundle default export is not a function`,
       );
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
+      const state = null; // TODO remove from setup()
       dispatch = setup(syscall, state, helpers, vatPowers);
     } else {
       throw Error(`vat source bundle lacks buildRootObject() function`);

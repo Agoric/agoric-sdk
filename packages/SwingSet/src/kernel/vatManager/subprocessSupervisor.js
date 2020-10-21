@@ -130,7 +130,6 @@ fromParent.on('data', data => {
         sendUplink(['testLog', ...args]);
       }
 
-      const state = null;
       const vatID = 'demo-vatID';
       // todo: maybe add transformTildot, makeGetMeter/transformMetering to
       // vatPowers, but only if options tell us they're wanted. Maybe
@@ -142,14 +141,9 @@ fromParent.on('data', data => {
         makeMarshal,
         testLog,
       };
-      dispatch = makeLiveSlots(
-        syscall,
-        state,
-        vatNS.buildRootObject,
-        vatID,
-        vatPowers,
-        vatParameters,
-      );
+      const r = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+      r.setBuildRootObject(vatNS.buildRootObject);
+      dispatch = r.dispatch;
       workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
       sendUplink(['dispatchReady']);
     });

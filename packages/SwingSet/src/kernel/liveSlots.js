@@ -22,27 +22,26 @@ import { insistCapData } from '../capdata';
  * a new root object and its initial associated object graph, if any.
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} _state  Object to store and retrieve state; not used // TODO fix wart
- * @param {*} buildRootObject  Function that will create a root object for the new vat
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @returns {*} an extended dispatcher object for the new vat
+ * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
+ *
+ * setBuildRootObject should be called, once, with a function that will
+ * create a root object for the new vat The caller provided buildRootObject
+ * function produces and returns the new vat's root object:
+ *
+ *     buildRootObject(vatPowers, vatParameters)
  */
-function build(
-  syscall,
-  _state,
-  buildRootObject,
-  forVatID,
-  vatPowers,
-  vatParameters,
-) {
+function build(syscall, forVatID, vatPowers, vatParameters) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
       console.log(...args);
     }
   }
+
+  let didRoot = false;
 
   const outstandingProxies = new WeakSet();
 
@@ -342,6 +341,7 @@ function build(
   }
 
   function deliver(target, method, argsdata, result) {
+    assert(didRoot);
     insistCapData(argsdata);
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
@@ -472,6 +472,7 @@ function build(
   }
 
   function notifyFulfillToData(promiseID, data) {
+    assert(didRoot);
     insistCapData(data);
     lsdebug(
       `ls.dispatch.notifyFulfillToData(${promiseID}, ${data.body}, ${data.slots})`,
@@ -488,6 +489,7 @@ function build(
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
+    assert(didRoot);
     lsdebug(`ls.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
     insistVatType('promise', promiseID);
     // TODO: insist that we do not have decider authority for promiseID
@@ -506,6 +508,7 @@ function build(
   // TODO: when we add notifyForward, guard against cycles
 
   function notifyReject(promiseID, data) {
+    assert(didRoot);
     insistCapData(data);
     lsdebug(
       `ls.dispatch.notifyReject(${promiseID}, ${data.body}, ${data.slots})`,
@@ -532,25 +535,31 @@ function build(
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
   // (bootstrap, bridge, vat-http), swingset
 
-  // here we finally invoke the vat code, and get back the root object
-  const rootObject = buildRootObject(
-    harden({ D, exitVat, exitVatWithFailure, ...vatPowers }),
-    harden(vatParameters),
-  );
-  mustPassByPresence(rootObject);
+  const vatGlobals = harden({}); // for later use: #1846
 
-  const rootSlot = makeVatSlot('object', true, 0);
-  valToSlot.set(rootObject, rootSlot);
-  slotToVal.set(rootSlot, rootObject);
+  function setBuildRootObject(buildRootObject) {
+    assert(!didRoot);
+    didRoot = true;
 
-  return {
-    m,
+    // here we finally invoke the vat code, and get back the root object
+    const rootObject = buildRootObject(
+      harden({ D, exitVat, exitVatWithFailure, ...vatPowers }),
+      harden(vatParameters),
+    );
+    mustPassByPresence(rootObject);
+
+    const rootSlot = makeVatSlot('object', true, 0);
+    valToSlot.set(rootObject, rootSlot);
+    slotToVal.set(rootSlot, rootObject);
+  }
+
+  const dispatch = harden({
     deliver,
-    // subscribe,
     notifyFulfillToData,
     notifyFulfillToPresence,
     notifyReject,
-  };
+  });
+  return harden({ vatGlobals, setBuildRootObject, dispatch, m });
 }
 
 /**
@@ -558,15 +567,14 @@ function build(
  * a new root object and its initial associated object graph, if any.
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} state  Object to store and retrieve state
- * @param {*} buildRootObject  Function that will create a root object for the new vat
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @returns {*} a dispatcher object for the new vat
+ * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
- * The caller provided buildRootObject function produces and returns the new vat's
- * root object:
+ * setBuildRootObject should be called, once, with a function that will
+ * create a root object for the new vat The caller provided buildRootObject
+ * function produces and returns the new vat's root object:
  *
  *     buildRootObject(vatPowers, vatParameters)
  *
@@ -588,34 +596,18 @@ function build(
  */
 export function makeLiveSlots(
   syscall,
-  state,
-  buildRootObject,
   forVatID = 'unknown',
   vatPowers = harden({}),
   vatParameters = harden({}),
 ) {
-  const {
-    deliver,
-    notifyFulfillToData,
-    notifyFulfillToPresence,
-    notifyReject,
-  } = build(
-    syscall,
-    state,
-    buildRootObject,
-    forVatID,
-    { ...vatPowers, getInterfaceOf, Remotable, makeMarshal },
-    vatParameters,
-  );
-  return harden({
-    deliver,
-    notifyFulfillToData,
-    notifyFulfillToPresence,
-    notifyReject,
-  });
+  const allVatPowers = { ...vatPowers, getInterfaceOf, Remotable, makeMarshal };
+  const r = build(syscall, forVatID, allVatPowers, vatParameters);
+  const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
+  return harden({ vatGlobals, dispatch, setBuildRootObject });
 }
 
 // for tests
 export function makeMarshaller(syscall) {
-  return { m: build(syscall, null, _E => harden({})).m };
+  const { m } = build(syscall);
+  return { m };
 }
