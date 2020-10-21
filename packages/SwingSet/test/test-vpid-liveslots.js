@@ -190,7 +190,7 @@ function resolutionOf(vpid, mode, targets) {
 }
 
 function makeDispatch(syscall, build) {
-  const { setBuildRootObject, dispatch } = makeLiveSlots(syscall, null, 'vatA');
+  const { setBuildRootObject, dispatch } = makeLiveSlots(syscall, 'vatA');
   setBuildRootObject(build);
   return dispatch;
 }
