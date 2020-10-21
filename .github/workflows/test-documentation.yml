@@ -59,7 +59,7 @@ jobs:
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
-    - name: yarn link
+    - name: yarn link-cli
       run: |
         yarn link-cli ~/bin/agoric
         echo "/home/runner/bin" >> $GITHUB_PATH
