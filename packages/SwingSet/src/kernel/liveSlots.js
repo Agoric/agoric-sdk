@@ -567,7 +567,6 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
  * a new root object and its initial associated object graph, if any.
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} state  Object to store and retrieve state
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
