@@ -34,14 +34,14 @@ jobs:
 
     # Select a branch on dapp to test against by adding text to the body of the
     # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
-    # The default is 'master'
+    # The default is 'main'
     - name: Get the appropriate dapp branch
       id: get-branch
       uses: actions/github-script@0.9.0
       with:
         result-encoding: string
         script: |
-          let branch = 'master';
+          let branch = 'main';
           if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
             const regex = /.*\#documentation-branch:\s+(\S+)/;
