@@ -22,7 +22,6 @@ import { insistCapData } from '../capdata';
  * a new root object and its initial associated object graph, if any.
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} _state  Object to store and retrieve state; not used // TODO fix wart
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
@@ -34,7 +33,7 @@ import { insistCapData } from '../capdata';
  *
  *     buildRootObject(vatPowers, vatParameters)
  */
-function build(syscall, _state, forVatID, vatPowers, vatParameters) {
+function build(syscall, forVatID, vatPowers, vatParameters) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -598,13 +597,12 @@ function build(syscall, _state, forVatID, vatPowers, vatParameters) {
  */
 export function makeLiveSlots(
   syscall,
-  state,
   forVatID = 'unknown',
   vatPowers = harden({}),
   vatParameters = harden({}),
 ) {
   const allVatPowers = { ...vatPowers, getInterfaceOf, Remotable, makeMarshal };
-  const r = build(syscall, state, forVatID, allVatPowers, vatParameters);
+  const r = build(syscall, forVatID, allVatPowers, vatParameters);
   const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
   return harden({ vatGlobals, dispatch, setBuildRootObject });
 }
