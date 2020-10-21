@@ -22,6 +22,8 @@ import { buildPatterns } from './message-patterns';
 // 'yarn test test/test-message-patterns.js -m "test pattern a72 local"'
 // or '-m "*a72 local"'
 
+// See message-patterns.js for details.
+
 // eslint-disable-next-line no-unused-vars
 async function runWithTrace(c) {
   let count = 0;
@@ -50,6 +52,7 @@ test.before(async t => {
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const bundleA = await bundleSource(path.resolve(bdir, 'vat-a.js'));
   const bundleB = await bundleSource(path.resolve(bdir, 'vat-b.js'));
+  const bundleC = await bundleSource(path.resolve(bdir, 'vat-c.js'));
 
   const bootstrapLocal = path.resolve(bdir, 'bootstrap-local.js');
   const bundleLocal = await bundleSource(bootstrapLocal);
@@ -59,6 +62,7 @@ test.before(async t => {
       bootstrap: { bundle: bundleLocal },
       a: { bundle: bundleA },
       b: { bundle: bundleB },
+      c: { bundle: bundleC },
     },
   };
 
@@ -78,10 +82,13 @@ test.before(async t => {
       bootstrap: { bundle: bundleComms },
       a: { bundle: bundleA },
       b: { bundle: bundleB },
-      leftcomms: moreComms,
-      rightcomms: moreComms,
-      leftvattp: moreVatTP,
-      rightvattp: moreVatTP,
+      c: { bundle: bundleC },
+      commsA: moreComms,
+      commsB: moreComms,
+      commsC: moreComms,
+      vattpA: moreVatTP,
+      vattpB: moreVatTP,
+      vattpC: moreVatTP,
     },
   };
 

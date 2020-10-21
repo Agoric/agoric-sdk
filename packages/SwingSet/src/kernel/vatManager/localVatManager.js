@@ -137,14 +137,9 @@ export function makeLocalVatManagerFactory(tools) {
     let dispatch;
     if (typeof vatNS.buildRootObject === 'function') {
       const { buildRootObject } = vatNS;
-      dispatch = makeLiveSlots(
-        syscall,
-        state,
-        buildRootObject,
-        vatID,
-        vatPowers,
-        vatParameters,
-      );
+      const r = makeLiveSlots(syscall, state, vatID, vatPowers, vatParameters);
+      r.setBuildRootObject(buildRootObject);
+      dispatch = r.dispatch;
     } else if (enableSetup) {
       const setup = vatNS.default;
       assert(setup, `vat source bundle lacks (default) setup() function`);

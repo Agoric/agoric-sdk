@@ -36,6 +36,12 @@ function buildSyscall() {
   return { log, syscall };
 }
 
+function makeDispatch(syscall, build) {
+  const { setBuildRootObject, dispatch } = makeLiveSlots(syscall, null, 'vatA');
+  setBuildRootObject(build);
+  return dispatch;
+}
+
 test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
@@ -53,7 +59,7 @@ test('calls', async t => {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -113,7 +119,7 @@ test('liveslots pipelines to syscall.send', async t => {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
   const x = 'o-5';
@@ -177,7 +183,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
 
   t.deepEqual(log, []);
 
@@ -258,7 +264,7 @@ async function doOutboundPromise(t, mode) {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
 
   t.deepEqual(log, []);
 
@@ -371,7 +377,7 @@ async function doResultPromise(t, mode) {
       },
     });
   }
-  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const slot0arg = { '@qclass': 'slot', index: 0 };

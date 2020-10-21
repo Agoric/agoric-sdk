@@ -121,14 +121,9 @@ parentPort.on('message', ([type, ...margs]) => {
         makeMarshal,
         testLog,
       };
-      dispatch = makeLiveSlots(
-        syscall,
-        state,
-        vatNS.buildRootObject,
-        vatID,
-        vatPowers,
-        vatParameters,
-      );
+      const r = makeLiveSlots(syscall, state, vatID, vatPowers, vatParameters);
+      r.setBuildRootObject(vatNS.buildRootObject);
+      dispatch = r.dispatch;
       workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
       sendUplink(['dispatchReady']);
     });

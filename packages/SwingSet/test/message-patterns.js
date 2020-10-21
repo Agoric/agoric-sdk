@@ -42,6 +42,7 @@ import { ignore } from './util';
 export function buildPatterns(log) {
   let a;
   let b;
+  let c;
 
   function setA(newA) {
     a = newA;
@@ -49,10 +50,14 @@ export function buildPatterns(log) {
   function setB(newB) {
     b = newB;
   }
+  function setC(newC) {
+    c = newC;
+  }
 
   const patterns = new Map();
   const objA = { toString: () => 'obj-alice' };
   const objB = { toString: () => 'obj-bob' };
+  const objC = { toString: () => 'obj-carol' };
   const out = {};
   const outPipelined = {};
 
@@ -210,7 +215,7 @@ export function buildPatterns(log) {
       return b.bill;
     };
   }
-  out.a42 = ['a42 done, [Alleged: presence o-52] match true'];
+  out.a42 = ['a42 done, [Alleged: presence o-53] match true'];
   test('a42');
 
   // bob!x() -> P(data)
@@ -250,7 +255,7 @@ export function buildPatterns(log) {
     };
   }
   // TODO https://github.com/Agoric/agoric-sdk/issues/1631
-  out.a51 = ['a51 done, got [Alleged: presence o-67], match true true'];
+  out.a51 = ['a51 done, got [Alleged: presence o-74], match true true'];
   test('a51');
 
   // bob!x() -> P(bill) // new reference
@@ -271,7 +276,7 @@ export function buildPatterns(log) {
       return b.bill;
     };
   }
-  out.a52 = ['a52 done, got [Alleged: presence o-52], match true'];
+  out.a52 = ['a52 done, got [Alleged: presence o-53], match true'];
   test('a52');
 
   // bob!x(amy) -> P(amy) // new to bob
@@ -339,7 +344,7 @@ export function buildPatterns(log) {
       p1.resolve(b.bill);
     };
   }
-  out.a62 = ['a62 done, got [Alleged: presence o-52]'];
+  out.a62 = ['a62 done, got [Alleged: presence o-53]'];
   test('a62');
 
   // bob!x(amy) -> P(amy) // resolve after receipt
@@ -799,6 +804,38 @@ export function buildPatterns(log) {
   out.a87 = ['true', 'three'];
   test('a87');
 
+  // 90-series: test third-party references
+
+  // A: c!c90_one(bert)
+  // C: bert!log_bert()
+  {
+    objA.a90 = async () => {
+      await E(c.carol).c90_one(b.bert);
+    };
+    objC.c90_one = bert => {
+      log('carol got bert');
+      E(bert).log_bert('hi bert');
+    };
+  }
+  out.a90 = ['carol got bert', 'hi bert'];
+  test('a90');
+
+  // A: c!c91_one(Pbert)
+  // C: Pbert!log_bert()
+  {
+    objA.a91 = async () => {
+      const { promise: Pbert, resolve } = makePromiseKit();
+      await E(c.carol).c91_one(Pbert);
+      resolve(b.bert);
+    };
+    objC.c91_one = Pbert => {
+      log('carol got Pbert');
+      E(Pbert).log_bert('hi bert');
+    };
+  }
+  out.a91 = ['carol got Pbert', 'hi bert'];
+  test('a91');
+
   // TODO: kernel-allocated promise, either comms or kernel resolves it,
   // comms needs to send into kernel again
 
@@ -808,9 +845,11 @@ export function buildPatterns(log) {
   return harden({
     setA,
     setB,
+    setC,
     patterns,
     objA,
     objB,
+    objC,
     expected: out,
     expected_pipelined: outPipelined,
   });
