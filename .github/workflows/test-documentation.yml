@@ -4,16 +4,17 @@ name: Test Documentation
 # branches)
 
 on:
- push:
-   branches: [master]
- pull_request:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
 
 jobs:
-  documentation:
+  test-dapp:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: ['14.x']
+
     steps:
 
     - name: Checkout agoric-sdk
@@ -31,10 +32,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-yarn-
 
-    # Select a branch on documentation to test against by adding text to the body of the
-    # pull request. For example: #documentation-branch: zoe-release-0.7.0
+    # Select a branch on dapp to test against by adding text to the body of the
+    # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
     # The default is 'master'
-    - name: Get the appropriate documentation branch
+    - name: Get the appropriate dapp branch
       id: get-branch
       uses: actions/github-script@0.9.0
       with:
@@ -54,8 +55,6 @@ jobs:
 
     - name: yarn install
       run: yarn install
-    - name: check dependencies
-      run: yarn check-dependencies
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
@@ -64,17 +63,21 @@ jobs:
         yarn link-cli ~/bin/agoric
         echo "/home/runner/bin" >> $GITHUB_PATH
 
-    - name: Check out documentation
+    - name: Check out dapp
       uses: actions/checkout@v2
       with:
         repository: Agoric/documentation
-        path: documentation
+        path: dapp
         ref: ${{steps.get-branch.outputs.result}}
 
-    - name: Agoric install in documentation
+    - name: Agoric install in dapp
       run: agoric install
-      working-directory: ./documentation
+      working-directory: ./dapp
+
+    - name: yarn build in dapp
+      run: yarn build
+      working-directory: ./dapp
     
-    - name: yarn test in documentation
+    - name: yarn test in dapp
       run: yarn test
-      working-directory: ./documentation
+      working-directory: ./dapp
