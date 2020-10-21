@@ -1,0 +1,61 @@
+name: Test Dapp
+
+# run CI on pushes to master, and on all PRs (even the ones that target other
+# branches)
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+
+jobs:
+  test-dapp:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x']
+
+    steps:
+
+    - name: Checkout agoric-sdk
+      uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    - name: yarn install
+      run: yarn install
+    # 'yarn build' loops over all workspaces
+    - name: yarn build
+      run: yarn build
+    - name: yarn link
+      run: |
+        yarn link-cli ~/bin/agoric
+        echo "::add-path::/home/runner/bin"
+
+    - name: Check out dapp
+      uses: actions/checkout@v2
+      with:
+        repository: Agoric/[[INSERT_DAPP_NAME]]
+        path: dapp
+        ref: ${{steps.get-branch.outputs.result}}
+
+    - name: Agoric install in dapp
+      run: agoric install
+      working-directory: ./dapp
+
+    - name: yarn build in dapp
+      run: yarn build
+      working-directory: ./dapp
+    
+    - name: yarn test in dapp
+      run: yarn test
+      working-directory: ./dapp
