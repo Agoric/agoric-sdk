@@ -1,4 +1,4 @@
-name: Test Documentation
+name: Test Dapp
 
 # run CI on pushes to master, and on all PRs (even the ones that target other
 # branches)
@@ -19,7 +19,6 @@ jobs:
 
     - name: Checkout agoric-sdk
       uses: actions/checkout@v2
-
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -44,7 +43,7 @@ jobs:
           let branch = 'main';
           if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
-            const regex = /.*\#documentation-branch:\s+(\S+)/;
+            const regex = /.*\#[[INSERT_DAPP_NAME]]-branch:\s+(\S+)/;
             const result = regex.exec(body);
             if (result) {
               branch = result[1];
@@ -58,15 +57,15 @@ jobs:
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
-    - name: yarn link-cli
+    - name: yarn link
       run: |
         yarn link-cli ~/bin/agoric
-        echo "/home/runner/bin" >> $GITHUB_PATH
+        echo "::add-path::/home/runner/bin"
 
     - name: Check out dapp
       uses: actions/checkout@v2
       with:
-        repository: Agoric/documentation
+        repository: Agoric/[[INSERT_DAPP_NAME]]
         path: dapp
         ref: ${{steps.get-branch.outputs.result}}
 
