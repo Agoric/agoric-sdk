@@ -25,6 +25,7 @@ import { insistCapData } from '../capdata';
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, vatDecref }
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
@@ -33,7 +34,8 @@ import { insistCapData } from '../capdata';
  *
  *     buildRootObject(vatPowers, vatParameters)
  */
-function build(syscall, forVatID, vatPowers, vatParameters) {
+function build(syscall, forVatID, vatPowers, vatParameters, gcTools) {
+  const { WeakRef, FinalizationRegistry, vatDecref } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -46,18 +48,50 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
   const outstandingProxies = new WeakSet();
 
   /**
-   * Map in-vat object references -> vat slot strings.
+   * Map in-vat object/promise references to/from vat-format slot strings.
    *
-   * Uses a weak map so that vat objects can (in princple) be GC'd.  Note that
-   * they currently can't actually be GC'd because the slotToVal table keeps
-   * them alive, but that will have to be addressed by a different mechanism.
+   * Exports: pass-by-presence objects in the vat are exported as o+NN slots,
+   * as are the upcoming "virtual object" exports. Promises are exported as
+   * p+NN slots. We retain a strong reference to all exports via the
+   * `exported` Set until (TODO) the kernel tells us all external references
+   * have been dropped via a new `dispatch.drop`, or by some
+   * as-yet-uninvented "I am the object and I am done, don't let anyone else
+   * talk to/about me" protocol as executed by the exporting vat).
+   *
+   * Imports: o-NN slots are represented as a Presence. p-NN slots are
+   * represented as an imported Promise, with the resolver held in a table to
+   * handle an incoming resolution message. We retain a weak reference to the
+   * Presence, and use a FinalizationRegistry to learn when the vat has
+   * dropped it, so we can notify the kernel. We retain strong references to
+   * Promises, for now, via the `exported` Set (whose name is not entirely
+   * accurate) until we figure out a better GC approach. When an import is
+   * added, the finalizer is added to `register`.
+   *
+   * slotToVal is like a python WeakValueDict: a `Map` whose values are
+   * WeakRefs. If the entry is present but wr.deref()===undefined (the
+   * weakref is dead), treat that as if the entry was not present. The same
+   * slotToVal table is used for both imports and returning exports. The
+   * subset of those which need to be held strongly (exported objects and
+   * promises, imported promises) are kept alive by `exported`.
+   *
+   * valToSlot is a WeakMap (like WeakKeyDict), and is used for both imports
+   * and exports.
+   *
+   * We use two weak maps plus the strong `exported` set, because it seems
+   * simpler than using four separate maps (import-vs-export times
+   * strong-vs-weak).
    */
-  const valToSlot = new WeakMap();
 
-  /** Map vat slot strings -> in-vat object references. */
-  const slotToVal = new Map();
+  const valToSlot = new WeakMap(); // object -> vref
+  const slotToVal = new Map(); // vref -> WeakRef(object)
+  const exported = new Set(); // objects
+  const importCounts = new WeakMap(); // Presence -> {count}
+  function importDropped(context) {
+    vatDecref(context.slot, context.counter.count);
+  }
+  const registry = new FinalizationRegistry(importDropped);
 
-  const importedPromisesByPromiseID = new Map();
+  const importedPromisesByPromiseID = new Map(); // vpid -> { resolve, reject }
   let nextExportID = 1;
   let nextPromiseID = 5;
 
@@ -228,14 +262,16 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
       }
       parseVatSlot(slot); // assertion
       valToSlot.set(val, slot);
-      slotToVal.set(slot, val);
+      slotToVal.set(slot, new WeakRef(val));
+      exported.add(val); // keep it alive until kernel tells us to release it
     }
     return valToSlot.get(val);
   }
 
   function convertSlotToVal(slot, iface = undefined) {
-    if (!slotToVal.has(slot)) {
-      let val;
+    const wr = slotToVal.get(slot);
+    let val = wr && wr.deref();
+    if (!val) {
       const { type, allocatedByVat } = parseVatSlot(slot);
       assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -257,10 +293,16 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
       } else {
         throw Error(`unrecognized slot type '${type}'`);
       }
-      slotToVal.set(slot, val);
+      slotToVal.set(slot, new WeakRef(val));
+      const counter = { count: 0 }; // 'count' must remain mutable
+      importCounts.set(val, counter);
+      registry.register(val, { slot, counter });
       valToSlot.set(val, slot);
     }
-    return slotToVal.get(slot);
+    if (importCounts.has(val)) {
+      importCounts.get(val).count += 1;
+    }
+    return val;
   }
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal);
@@ -294,7 +336,8 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
     // them, we want the user-level code to get back that Promise, not 'p'.
 
     valToSlot.set(returnedP, resultVPID);
-    slotToVal.set(resultVPID, returnedP);
+    slotToVal.set(resultVPID, new WeakRef(returnedP));
+    exported.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
   }
@@ -346,7 +389,8 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
     );
-    const t = slotToVal.get(target);
+    const wr = slotToVal.get(target);
+    const t = wr && wr.deref();
     if (!t) {
       throw Error(`no target ${target}`);
     }
@@ -400,8 +444,12 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
   function retirePromiseID(promiseID) {
     lsdebug(`Retiring ${forVatID}:${promiseID}`);
     importedPromisesByPromiseID.delete(promiseID);
-    const p = slotToVal.get(promiseID);
-    valToSlot.delete(p);
+    const wr = slotToVal.get(promiseID);
+    const p = wr && wr.deref();
+    if (p) {
+      valToSlot.delete(p);
+      exported.delete(p);
+    }
     slotToVal.delete(promiseID);
   }
 
@@ -550,7 +598,8 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
 
     const rootSlot = makeVatSlot('object', true, 0);
     valToSlot.set(rootObject, rootSlot);
-    slotToVal.set(rootSlot, rootObject);
+    slotToVal.set(rootSlot, new WeakRef(rootObject));
+    exported.add(rootObject);
   }
 
   const dispatch = harden({
@@ -570,6 +619,7 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, vatDecref }
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
@@ -599,15 +649,16 @@ export function makeLiveSlots(
   forVatID = 'unknown',
   vatPowers = harden({}),
   vatParameters = harden({}),
+  gcTools,
 ) {
   const allVatPowers = { ...vatPowers, getInterfaceOf, Remotable, makeMarshal };
-  const r = build(syscall, forVatID, allVatPowers, vatParameters);
+  const r = build(syscall, forVatID, allVatPowers, vatParameters, gcTools);
   const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
   return harden({ vatGlobals, dispatch, setBuildRootObject });
 }
 
 // for tests
-export function makeMarshaller(syscall) {
-  const { m } = build(syscall);
+export function makeMarshaller(syscall, gcTools) {
+  const { m } = build(syscall, 'forVatID', {}, {}, gcTools);
   return { m };
 }
