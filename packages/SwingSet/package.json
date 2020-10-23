@@ -127,6 +127,9 @@
     "require": [
       "esm"
     ],
+    "nodeArguments": [
+      "--expose-gc"
+    ],
     "timeout": "2m"
   }
 }
