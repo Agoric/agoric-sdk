@@ -43,7 +43,7 @@ export const assertSubset = (whole, part) => {
 
 /**
  * @template T, U
- * @template {keyof T} K
+ * @template {string} K
  * @param {Record<K, T>} original
  * @param {(pair: [K, T]) => [K, U]} mapPairFn
  * @returns {Record<K, U>}

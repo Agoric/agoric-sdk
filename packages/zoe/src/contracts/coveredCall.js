@@ -85,7 +85,7 @@ const start = zcf => {
       expirationDate: sellSeat.getProposal().exit.afterDeadline.deadline,
       timeAuthority: sellSeat.getProposal().exit.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
-      strikePrice: sellSeat.getProposal().want,
+      strikePrice: sellSeat.getProposal().want, // TODO
     });
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };

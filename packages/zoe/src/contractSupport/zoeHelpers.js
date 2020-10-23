@@ -1,8 +1,8 @@
 // @ts-check
 import '../../exported';
 
-import { assert, details } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { assert, details, quote as q } from '@agoric/assert';
+import { sameStructure, isGround } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -14,6 +14,12 @@ export const defaultAcceptanceMsg = `The offer has been accepted. Once the contr
 
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
+
+/**
+ * @typedef FromToAllocations
+ * @property {Allocation} from
+ * @property {Allocation} to
+ */
 
 /**
  * Given toGains (an AmountKeywordRecord), and allocations (a pair,
@@ -32,10 +38,6 @@ const getKeysSorted = obj =>
  * toGains. Note that the total amounts should always be equal; it
  * is the keywords that might be different.
  * @returns {FromToAllocations} allocations - new allocations
- *
- * @typedef FromToAllocations
- * @property {Allocation} from
- * @property {Allocation} to
  */
 const calcNewAllocations = (
   zcf,
@@ -152,11 +154,12 @@ export const trade = (
       left.losses,
     ));
   } catch (err) {
-    const newErr = new Error(
-      `The trade between left ${left} and right ${right} failed.`,
+    // TODO consider revising once we can use assert.error
+    throw assert.fail(
+      details`The trade between left ${q(left)} and right ${q(
+        right,
+      )} failed due to ${err}.`,
     );
-    assert.note(newErr, details`due to ${err}`);
-    throw newErr;
   }
 
   // Check whether reallocate would error before calling. If
@@ -178,8 +181,10 @@ export const trade = (
     if (!offerSafeForRight) {
       console.log(`offer not safe for right`);
     }
-    throw new Error(
-      `The trade between left ${left} and right ${right} failed offer safety. Please check the log for more information`,
+    assert.fail(
+      details`The trade between left ${q(left)} and right ${q(
+        right,
+      )} failed offer safety. Please check the log for more information`,
     );
   }
 
@@ -195,6 +200,57 @@ export const trade = (
   }
 };
 
+/**
+ * @param {ContractFacet} zcf
+ * @param {ZCFSeat} fromSeat
+ * @param {ZCFSeat} toSeat
+ * @param {string} fromHasExitedMsg
+ * @param {string} toHasExitedMsg
+ * @returns {AmountKeywordRecord}
+ */
+const findFromOtherSeat = (
+  zcf,
+  fromSeat,
+  toSeat,
+  fromHasExitedMsg,
+  toHasExitedMsg,
+) => {
+  assert(!fromSeat.hasExited(), fromHasExitedMsg);
+  assert(!toSeat.hasExited(), toHasExitedMsg);
+  /** @type {AmountPatternKeywordRecord} */
+  const amountPatternKeywordRecord = toSeat.getProposal().want;
+  /** @type {AmountKeywordRecord} */
+  const fromSeatAmountKeywordRecord = fromSeat.getCurrentAllocation();
+
+  /**
+   * @param {[Keyword, AmountPattern]} pair
+   * @returns {[Keyword, Amount]}
+   */
+  const findAmountPair = pair => {
+    const [keyword, amountPattern] = pair;
+    const fromSeatAmount = fromSeatAmountKeywordRecord[keyword];
+    if (fromSeatAmount === undefined) {
+      assert(
+        isGround(amountPattern),
+        details`Unmatched wants must be ground ${amountPattern}`,
+      );
+      // A ground AmountPattern is a valid Amount
+      return [keyword, amountPattern];
+    }
+    const amountMath = zcf.getAmountMath(amountPattern.brand);
+    const split = amountMath.frugalSplit(amountPattern, fromSeatAmount);
+    // If we are trying to transfer an amount but can't find what
+    // should be transferred, we should throw
+    assert(
+      split !== undefined,
+      details`The trade between fromSeat ${fromSeat} and toSeat ${toSeat} failed because ${amountPattern} was not found.`,
+    );
+    return [keyword, split.matched];
+  };
+
+  return objectMap(amountPatternKeywordRecord, findAmountPair);
+};
+
 /** @type {Swap} */
 export const swap = (
   zcf,
@@ -208,11 +264,23 @@ export const swap = (
       zcf,
       {
         seat: leftSeat,
-        gains: leftSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          rightSeat,
+          leftSeat,
+          rightHasExitedMsg,
+          leftHasExitedMsg,
+        ),
       },
       {
         seat: rightSeat,
-        gains: rightSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          leftSeat,
+          rightSeat,
+          leftHasExitedMsg,
+          rightHasExitedMsg,
+        ),
       },
       leftHasExitedMsg,
       rightHasExitedMsg,
@@ -247,12 +315,24 @@ export const swapExact = (
       zcf,
       {
         seat: leftSeat,
-        gains: leftSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          rightSeat,
+          leftSeat,
+          rightHasExitedMsg,
+          leftHasExitedMsg,
+        ),
         losses: leftSeat.getProposal().give,
       },
       {
         seat: rightSeat,
-        gains: rightSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          leftSeat,
+          rightSeat,
+          leftHasExitedMsg,
+          rightHasExitedMsg,
+        ),
         losses: rightSeat.getProposal().give,
       },
       leftHasExitedMsg,

@@ -88,8 +88,7 @@ test(`withdrawFromSeat - violates offerSafety`, async t => {
   await t.throwsAsync(
     withdrawFromSeat(zcf, zcfSeat, { B: bucks(4) }),
     {
-      message:
-        'The trade between left [object Object] and right [object Object] failed offer safety. Please check the log for more information',
+      message: /The trade between left .* and right .* failed offer safety. Please check the log for more information/,
     },
     `withdrawFrom can't violate offerSafety`,
   );

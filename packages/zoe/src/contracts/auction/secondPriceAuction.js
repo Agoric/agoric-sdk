@@ -70,7 +70,7 @@ const start = zcf => {
 
     const customProperties = harden({
       auctionedAssets: sellSeat.getProposal().give.Asset,
-      minimumBid: sellSeat.getProposal().want.Ask,
+      minimumBid: sellSeat.getProposal().want.Ask, // TODO
       closesAfter,
       timeAuthority,
     });

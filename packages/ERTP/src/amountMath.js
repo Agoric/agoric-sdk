@@ -1,8 +1,14 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as d } from '@agoric/assert';
 
-import { mustBeComparable } from '@agoric/same-structure';
+import {
+  mustBeComparable,
+  patternKindOf,
+  STAR_PATTERN,
+  isGround,
+  matches,
+} from '@agoric/same-structure';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
@@ -87,7 +93,7 @@ function makeAmountMath(brand, amountMathKind) {
   const helpers = mathHelpers[amountMathKind];
   assert(
     helpers !== undefined,
-    details`unrecognized amountMathKind: ${amountMathKind}`,
+    d`unrecognized amountMathKind: ${amountMathKind}`,
   );
 
   // Cache the amount if we can.
@@ -105,6 +111,10 @@ function makeAmountMath(brand, amountMathKind) {
      * @returns {Amount}
      */
     make: allegedValue => {
+      assert(
+        isGround(allegedValue),
+        d`allegedValue ${allegedValue} must not be a non-ground pattern`,
+      );
       const value = helpers.doCoerce(allegedValue);
       const amount = harden({ brand, value });
       cache.add(amount);
@@ -126,11 +136,11 @@ function makeAmountMath(brand, amountMathKind) {
       const { brand: allegedBrand, value } = allegedAmount;
       assert(
         allegedBrand !== undefined,
-        details`The brand in allegedAmount ${allegedAmount} is undefined. Did you pass a value rather than an amount?`,
+        d`The brand in allegedAmount ${allegedAmount} is undefined. Did you pass a value rather than an amount?`,
       );
       assert(
         brand === allegedBrand,
-        details`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the amountMath brand ${brand}.`,
+        d`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the amountMath brand ${brand}.`,
       );
       // Will throw on inappropriate value
       return amountMath.make(value);
@@ -181,11 +191,105 @@ function makeAmountMath(brand, amountMathKind) {
           amountMath.getValue(rightAmount),
         ),
       ),
+
+    /**
+     * TODO explain.
+     *
+     * @param {ValuePattern} valuePattern
+     * @returns {AmountPattern}
+     */
+    makePattern: valuePattern => {
+      mustBeComparable(valuePattern);
+      if (isGround(valuePattern)) {
+        return amountMath.make(valuePattern);
+      }
+      return harden({ brand, value: valuePattern });
+    },
+
+    /**
+     * TODO explain.
+     *
+     * @returns {AmountPattern}
+     */
+    makeStarPattern: () => {
+      return amountMath.makePattern(STAR_PATTERN);
+    },
+
+    /**
+     * TODO explain.
+     *
+     * @param {AmountPattern} allegedAmountPattern
+     * @returns {AmountPattern} or throws if invalid
+     */
+    coercePattern: allegedAmountPattern => {
+      const { brand: allegedBrand, value: valuePattern } = allegedAmountPattern;
+      assert(
+        allegedBrand !== undefined,
+        d`alleged brand is undefined. Did you pass a value pattern rather than an amount pattern?`,
+      );
+      assert(
+        brand === allegedBrand,
+        d`the brand in the allegedAmountPattern in 'coerce' didn't match the amountMath brand`,
+      );
+      // Will throw on inappropriate value
+      return amountMath.makePattern(valuePattern);
+    },
+
+    // TODO explain.
+    getValuePattern: amountPattern =>
+      amountMath.coercePattern(amountPattern).value,
+
+    frugalSplit: (pattern, specimen) => {
+      if (isGround(pattern)) {
+        if (amountMath.isGTE(specimen, pattern)) {
+          return harden({
+            matched: pattern,
+            change: amountMath.subtract(specimen, pattern),
+          });
+        }
+        return undefined;
+      }
+      const patternKind = patternKindOf(pattern);
+      switch (patternKind) {
+        case '*': {
+          return harden({
+            // eslint-disable-next-line no-use-before-define
+            matched: empty,
+            change: specimen,
+          });
+        }
+        default: {
+          const split = helpers.doFrugalSplit(
+            amountMath.getValuePattern(pattern),
+            amountMath.getValue(specimen),
+          );
+          if (split === undefined) {
+            return undefined;
+          }
+          const { matched: valueMatched, change: valueChange } = split;
+          const matched = amountMath.make(valueMatched);
+          const change = amountMath.make(valueChange);
+          assert(
+            matches(pattern, matched),
+            d`Internal: doFrugalSplit algorithm violated matching invariant`,
+          );
+          assert(
+            amountMath.isEqual(amountMath.add(matched, change), specimen),
+            d`Internal: doFrugalSplit algorithm violated conservation invariant`,
+          );
+          return harden({ matched, change });
+        }
+      }
+    },
+    satisfies: (pattern, specimen) => {
+      // TODO should somehow enable individual MathKinds to override for
+      // a more efficient test that gives the same answer.
+      return undefined !== amountMath.frugalSplit(pattern, specimen);
+    },
   });
   const empty = amountMath.make(helpers.doGetEmpty());
   return amountMath;
 }
 
 harden(makeAmountMath);
-
 export { makeAmountMath };

@@ -1,14 +1,76 @@
 // @ts-check
 
 import { passStyleOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details as d, q } from '@agoric/assert';
+import { patternKindOf, matches } from '@agoric/same-structure';
+
+const { entries } = Object;
 
 const identity = harden([]);
 
 const checkForDupes = list => {
   const set = new Set(list);
-  assert(set.size === list.length, details`value has duplicates: ${list}`);
+  assert(set.size === list.length, d`value has duplicates: ${list}`);
 };
+
+/**
+ * If the pattern is an array of patterns, then we define frugal according
+ * to a first-fit rule, where the order of elements in the pattern and the
+ * specimen matter. The most frugal match happens when the pattern is ordered
+ * from most specific to most general. However, this is advice to the caller,
+ * not something we either enforce or normalize to. As a result, a frugalSplit
+ * can fail even if each of the sub patterns could have been matched with
+ * distinct elements.
+ *
+ * For each element of the specimen, from left to right, we see if
+ * it matches a sub pattern of pattern, from left to right. If so,
+ * that sub pattern is satisfied and removed from the sub patterns yet
+ * to be satisfied. The element is moved into matched or change accordingly.
+ *
+ * This algorithm is generic across mathKind values that represent a set
+ * as an array of elements, so that it can be reused by other mathKinds.
+ *
+ * @param {ValuePattern} pattern
+ * @param {Value} specimen
+ * @returns {ValueSplit | undefined}
+ */
+const doFrugalSplit = (pattern, specimen) => {
+  const patternKind = patternKindOf(pattern);
+  switch (patternKind) {
+    case undefined: {
+      if (!Array.isArray(pattern)) {
+        return undefined;
+      }
+      const hungryPatterns = [...pattern];
+      const matched = [];
+      const change = [];
+      for (const element of specimen) {
+        let found = false;
+        for (const [iStr, subPattern] of entries(hungryPatterns)) {
+          if (matches(subPattern, element)) {
+            matched.push(element);
+            hungryPatterns.splice(+iStr, 1);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          change.push(element);
+        }
+      }
+      if (hungryPatterns.length >= 1) {
+        return undefined;
+      }
+      return harden({ matched, change });
+    }
+    default: {
+      throw assert.fail(d`Unexpected patternKind ${q(patternKind)}`);
+    }
+  }
+};
+
+harden(doFrugalSplit);
+export { doFrugalSplit };
 
 /**
  * Operations for arrays with unique string elements. More information
@@ -43,10 +105,7 @@ const strSetMathHelpers = harden({
   doAdd: (left, right) => {
     const union = new Set(left);
     const addToUnion = elem => {
-      assert(
-        !union.has(elem),
-        details`left and right have same element ${elem}`,
-      );
+      assert(!union.has(elem), d`left and right have same element ${elem}`);
       union.add(elem);
     };
     right.forEach(addToUnion);
@@ -58,10 +117,11 @@ const strSetMathHelpers = harden({
     const allRemovedCorrectly = right.every(remove);
     assert(
       allRemovedCorrectly,
-      details`some of the elements in right (${right}) were not present in left (${left})`,
+      d`some of the elements in right (${right}) were not present in left (${left})`,
     );
     return harden(Array.from(leftSet));
   },
+  doFrugalSplit,
 });
 
 harden(strSetMathHelpers);

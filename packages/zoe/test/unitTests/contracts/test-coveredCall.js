@@ -5,7 +5,7 @@ import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { sameStructure } from '@agoric/same-structure';
+import { sameStructure, matches, STAR_PATTERN } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
 import buildManualTimer from '../../../tools/manualTimer';
@@ -337,7 +337,6 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
 test('zoe - coveredCall with swap for invitation', async t => {
-  t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(console.log);
   const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
@@ -426,6 +425,23 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.is(optionDesc.expirationDate, 100);
   t.deepEqual(optionDesc.timeAuthority, timer);
 
+  const optionDescPattern = harden({
+    handle: STAR_PATTERN,
+    instance: STAR_PATTERN,
+    installation: coveredCallInstallation,
+    description: 'exerciseOption',
+    underlyingAssets: { UnderlyingAsset: moola(3) },
+    strikePrice: { StrikePrice: simoleans(7) },
+    expirationDate: 100,
+    timeAuthority: timer,
+  });
+  t.assert(matches(optionDescPattern, optionDesc));
+
+  const optionAmountPattern = invitationAmountMath.makePattern(
+    harden([optionDescPattern]),
+  );
+  t.assert(invitationAmountMath.satisfies(optionAmountPattern, optionAmount));
+
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
   const swapIssuerKeywordRecord = harden({
@@ -491,7 +507,14 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Dave escrows his 1 buck with Zoe and forms his proposal
   const daveSwapProposal = harden({
-    want: { Asset: optionAmount },
+    // We used to say
+    // ```js
+    // want: { Asset: optionAmount },
+    // ```
+    // which is the ground case. Instead we now test with optionAmountPattern
+    // which is a non-ground pattern, much easier for Dave (aka Fred) to
+    // express.
+    want: { Asset: optionAmountPattern },
     give: { Price: bucks(1) },
   });
 

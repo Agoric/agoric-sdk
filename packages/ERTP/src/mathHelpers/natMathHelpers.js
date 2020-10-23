@@ -1,6 +1,7 @@
 // @ts-check
 
 import Nat from '@agoric/nat';
+import { assert, details as d } from '@agoric/assert';
 
 import '../types';
 
@@ -26,6 +27,10 @@ const natMathHelpers = harden({
   doIsEqual: (left, right) => left === right,
   doAdd: (left, right) => Nat(left + right),
   doSubtract: (left, right) => Nat(left - right),
+
+  doFrugalSplit: (pattern, _specimen) => {
+    throw assert.fail(d`Unexpected nat pattern ${pattern}`);
+  },
 });
 
 harden(natMathHelpers);

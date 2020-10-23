@@ -1,7 +1,11 @@
 // @ts-check
 
+// @ts-check
+
 import { sameValueZero, passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 import { assert, details, q } from '@agoric/assert';
+
+import './types';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js

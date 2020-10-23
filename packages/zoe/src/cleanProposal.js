@@ -51,7 +51,7 @@ const cleanKeys = (allowedKeys, record) => {
 export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
-export const coerceAmountKeywordRecord = (
+const coerceAmountKeywordRecord = (
   getAmountMath,
   allegedAmountKeywordRecord,
 ) => {
@@ -67,6 +67,24 @@ export const coerceAmountKeywordRecord = (
 
   // Recreate the amountKeywordRecord with coercedAmounts.
   return arrayToObj(coercedAmounts, keywords);
+};
+
+const coerceAmountPatternKeywordRecord = (
+  getAmountMath,
+  allegedAmountPatternKeywordRecord,
+) => {
+  const keywords = getKeywords(allegedAmountPatternKeywordRecord);
+  keywords.forEach(assertKeywordName);
+
+  const amountPatterns = Object.values(allegedAmountPatternKeywordRecord);
+  // Check that each pattern can be coerced using the amountMath
+  // indicated by brand. `AmountMath.coercePattern` throws if coercion fails.
+  const coercedAmountpatterns = amountPatterns.map(amountPattern =>
+    getAmountMath(amountPattern.brand).coercePattern(amountPattern),
+  );
+
+  // Recreate the amountPatternKeywordRecord with coercedAmountPatterns.
+  return arrayToObj(coercedAmountpatterns, keywords);
 };
 
 export const cleanKeywords = keywordRecord => {
@@ -112,7 +130,7 @@ export const cleanProposal = (getAmountMath, proposal) => {
   let { want = harden({}), give = harden({}) } = proposal;
   const { exit = harden({ onDemand: null }) } = proposal;
 
-  want = coerceAmountKeywordRecord(getAmountMath, want);
+  want = coerceAmountPatternKeywordRecord(getAmountMath, want);
   give = coerceAmountKeywordRecord(getAmountMath, give);
 
   // Check exit

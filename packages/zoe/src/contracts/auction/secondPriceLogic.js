@@ -1,7 +1,7 @@
 export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   const {
     give: { Asset: assetAmount },
-    want: { Ask: minBid },
+    want: { Ask: minBid }, // TODO
   } = sellSeat.getProposal();
   const bidMath = zcf.getAmountMath(minBid.brand);
   const assetMath = zcf.getAmountMath(assetAmount.brand);

@@ -139,7 +139,7 @@ const start = async zcf => {
 
     const {
       give: { In: amountIn },
-      want: { Out: wantedAmountOut },
+      want: { Out: wantedAmountOut }, // TODO
     } = swapSeat.getProposal();
 
     const outputValue = getInputPrice(
@@ -168,7 +168,7 @@ const start = async zcf => {
 
     const {
       give: { In: amountIn },
-      want: { Out: wantedAmountOut },
+      want: { Out: wantedAmountOut }, // TODO
     } = swapSeat.getProposal();
 
     const tradePrice = getOutputPrice(

@@ -6,21 +6,21 @@
  * keyword of giveOrWant?
  *
  * @param {(brand: Brand) => AmountMath} getAmountMath
- * @param {AmountKeywordRecord} giveOrWant
+ * @param {AmountPatternKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
  */
 const satisfiesInternal = (getAmountMath, giveOrWant = {}, allocation) => {
-  const isGTEByKeyword = ([keyword, requiredAmount]) => {
+  const satisfiesByKeyword = ([keyword, requiredAmountPattern]) => {
     // If there is no allocation for a keyword, we know the giveOrWant
     // is not satisfied without checking further.
     if (allocation[keyword] === undefined) {
       return false;
     }
-    const amountMath = getAmountMath(requiredAmount.brand);
+    const amountMath = getAmountMath(requiredAmountPattern.brand);
     const allocationAmount = allocation[keyword];
-    return amountMath.isGTE(allocationAmount, requiredAmount);
+    return amountMath.satisfies(requiredAmountPattern, allocationAmount);
   };
-  return Object.entries(giveOrWant).every(isGTEByKeyword);
+  return Object.entries(giveOrWant).every(satisfiesByKeyword);
 };
 
 /**
