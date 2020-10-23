@@ -5,7 +5,7 @@ import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { sameStructure } from '@agoric/same-structure';
+import { sameStructure, match, STAR_PATTERN } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
 import buildManualTimer from '../../../tools/manualTimer';
@@ -337,7 +337,6 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
 test('zoe - coveredCall with swap for invitation', async t => {
-  t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(console.log);
   const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
@@ -426,6 +425,27 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.is(optionDesc.expirationDate, 100);
   t.deepEqual(optionDesc.timeAuthority, timer);
 
+  const optionDescPattern = harden({
+    handle: STAR_PATTERN,
+    instance: STAR_PATTERN,
+    installation: coveredCallInstallation,
+    description: 'exerciseOption',
+    underlyingAssets: { UnderlyingAsset: moola(3) },
+    strikePrice: { StrikePrice: simoleans(7) },
+    expirationDate: 100,
+    timeAuthority: timer,
+  });
+  t.truthy(match(optionDescPattern, optionDesc));
+
+  const optionAmountPattern = invitationAmountMath.makePattern(
+    harden([optionDescPattern]),
+  );
+  const split = invitationAmountMath.frugalSplit(
+    optionAmountPattern,
+    optionAmount,
+  );
+  t.assert(split !== undefined);
+
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
   const swapIssuerKeywordRecord = harden({
@@ -491,6 +511,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Dave escrows his 1 buck with Zoe and forms his proposal
   const daveSwapProposal = harden({
+    // TODO BUG The commented out line with optionAmountPattern is the
+    // one we want, but atomicSwap calls swap with the want pattern
+    // as the gains, which are assumed to be amounts, not amount patterns.
+    // want: { Asset: optionAmountPattern },
     want: { Asset: optionAmount },
     give: { Price: bucks(1) },
   });

@@ -4,7 +4,7 @@ export const assertBidSeat = (zcf, sellSeat, bidSeat) => {
   const {
     maths: { Ask: bidMath, Asset: assetMath },
   } = zcf.getTerms();
-  const minBid = sellSeat.getProposal().want.Ask;
+  const minBid = sellSeat.getProposal().want.Ask; // TODO
   const bid = bidSeat.getAmountAllocated('Bid', minBid.brand);
   assert(
     bidMath.isGTE(bid, minBid),

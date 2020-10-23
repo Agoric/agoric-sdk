@@ -1,10 +1,12 @@
 // @ts-check
 
 import { passStyleOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { assert, details as d } from '@agoric/assert';
+import { sameStructure, isGround, match } from '@agoric/same-structure';
 
 import '../types';
+
+const { entries } = Object;
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
@@ -43,7 +45,7 @@ const checkForDupes = buckets => {
       for (let j = i + 1; j < maybeMatches.length; j += 1) {
         assert(
           !sameStructure(maybeMatches[i], maybeMatches[j]),
-          details`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
+          d`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
         );
       }
     }
@@ -92,11 +94,43 @@ const setMathHelpers = harden({
     right.forEach(rightElem => {
       assert(
         hasElement(leftBuckets, rightElem),
-        details`right element ${rightElem} was not in left`,
+        d`right element ${rightElem} was not in left`,
       );
     });
     const leftElemNotInRight = leftElem => !hasElement(rightBuckets, leftElem);
     return harden(left.filter(leftElemNotInRight));
+  },
+
+  // Do a case split among easy cases, and error on the rest for now.
+  // TODO Actually implement this correctly.
+  doFrugalSplit: (pattern, specimen) => {
+    if (isGround(pattern)) {
+      if (setMathHelpers.doIsGTE(specimen, pattern)) {
+        return harden({
+          matched: pattern,
+          change: setMathHelpers.doSubtract(specimen, pattern),
+        });
+      }
+      return undefined;
+    }
+    // Check for the special case where the pattern is a singleton array
+    if (Array.isArray(pattern) && pattern.length === 1) {
+      const subPattern = pattern[0];
+      for (const [i, elem] of entries(specimen)) {
+        if (match(subPattern, elem)) {
+          // This just takes the first match, which is rather arbitrary.
+          // At the level of abstraction where these lists represent
+          // unordered sets, this is choice is non-deterministic, which
+          // is inevitable.
+          return harden({
+            matched: [elem],
+            change: [...specimen.slice(0, i), ...specimen.slice(i + 1)],
+          });
+        }
+      }
+      return undefined;
+    }
+    throw assert.fail(d`Only singleton patterns supported for now`);
   },
 });
 

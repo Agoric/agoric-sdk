@@ -13,7 +13,7 @@ import { trade, satisfies } from '../contractSupport';
  * https://agoric.com/documentation/zoe/guide/contracts/barter-exchange.html
  *
  * The Barter Exchange only accepts offers that look like
- * { give: { In: amount }, want: { Out: amount} }
+ * { give: { In: amount }, want: { Out: amount} } // TODO
  * The want amount will be matched, while the give amount is a maximum. Each
  * successful trader gets their `want` and may trade with counter-parties who
  * specify any amount up to their specified `give`.
@@ -105,7 +105,7 @@ const start = zcf => {
   function extractOfferDetails(seat) {
     const {
       give: { In: amountIn },
-      want: { Out: amountOut },
+      want: { Out: amountOut }, // TODO
     } = seat.getProposal();
 
     return {

@@ -69,7 +69,7 @@ const start = zcf => {
     const providedMoney = buyerSeat.getAmountAllocated('Money');
 
     const {
-      want: { Items: wantedItems },
+      want: { Items: wantedItems }, // TODO
     } = buyerSeat.getProposal();
 
     // Check that the wanted items are still for sale.

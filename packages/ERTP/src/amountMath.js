@@ -1,8 +1,12 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as d } from '@agoric/assert';
 
-import { mustBeComparable } from '@agoric/same-structure';
+import {
+  mustBeComparable,
+  patternKindOf,
+  STAR_PATTERN,
+} from '@agoric/same-structure';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
@@ -87,7 +91,7 @@ function makeAmountMath(brand, amountMathKind) {
   const helpers = mathHelpers[amountMathKind];
   assert(
     helpers !== undefined,
-    details`unrecognized amountMathKind: ${amountMathKind}`,
+    d`unrecognized amountMathKind: ${amountMathKind}`,
   );
 
   // Cache the amount if we can.
@@ -126,11 +130,11 @@ function makeAmountMath(brand, amountMathKind) {
       const { brand: allegedBrand, value } = allegedAmount;
       assert(
         allegedBrand !== undefined,
-        details`alleged brand is undefined. Did you pass a value rather than an amount?`,
+        d`alleged brand is undefined. Did you pass a value rather than an amount?`,
       );
       assert(
         brand === allegedBrand,
-        details`the brand in the allegedAmount in 'coerce' didn't match the amountMath brand`,
+        d`the brand in the allegedAmount in 'coerce' didn't match the amountMath brand`,
       );
       // Will throw on inappropriate value
       return amountMath.make(value);
@@ -181,6 +185,69 @@ function makeAmountMath(brand, amountMathKind) {
           amountMath.getValue(rightAmount),
         ),
       ),
+
+    /**
+     * TODO explain.
+     *
+     * @param {ValuePattern} valuePattern
+     * @returns {AmountPattern}
+     */
+    makePattern: valuePattern => {
+      mustBeComparable(valuePattern);
+      const patternKind = patternKindOf(valuePattern);
+      if (patternKind === undefined) {
+        return amountMath.make(valuePattern);
+      }
+      return harden({ brand, value: valuePattern });
+    },
+
+    /**
+     * TODO explain.
+     *
+     * @returns {AmountPattern}
+     */
+    makeStarPattern: () => {
+      return amountMath.makePattern(STAR_PATTERN);
+    },
+
+    /**
+     * TODO explain.
+     *
+     * @param {AmountPattern} allegedAmountPattern
+     * @returns {AmountPattern} or throws if invalid
+     */
+    coercePattern: allegedAmountPattern => {
+      const { brand: allegedBrand, value: valuePattern } = allegedAmountPattern;
+      assert(
+        allegedBrand !== undefined,
+        d`alleged brand is undefined. Did you pass a value rather than an amount?`,
+      );
+      assert(
+        brand === allegedBrand,
+        d`the brand in the allegedAmount in 'coerce' didn't match the amountMath brand`,
+      );
+      // Will throw on inappropriate value
+      return amountMath.makePattern(valuePattern);
+    },
+
+    // TODO explain.
+    getValuePattern: amountPattern =>
+      amountMath.coercePattern(amountPattern).value,
+
+    frugalSplit: (pattern, specimen) => {
+      const split = helpers.doFrugalSplit(
+        amountMath.getValuePattern(pattern),
+        amountMath.getValue(specimen),
+      );
+      if (split === undefined) {
+        return undefined;
+      }
+      const { matched: valueMatched, change: valueChange } = split;
+      return harden({
+        matched: amountMath.make(valueMatched),
+        change: amountMath.make(valueChange),
+      });
+    },
   });
   const empty = amountMath.make(helpers.doGetEmpty());
   return amountMath;

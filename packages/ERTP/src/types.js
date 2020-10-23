@@ -12,7 +12,7 @@
  */
 
 /**
- * @typedef {Object} Amount
+ * @typedef {Ground} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -27,13 +27,26 @@
  */
 
 /**
- * @typedef {any} Value
+ * @typedef {Ground} Value
  * Values describe the value of something that can be owned or shared.
  * Fungible values are normally represented by natural numbers. Other
  * values may be represented as strings naming a particular right, or
  * an arbitrary object that sensibly represents the rights at issue.
  *
- * Value must be Comparable. (Would be nice to type this correctly.)
+ * Value must be Comparable.
+ */
+
+/**
+ * @typedef {Amount & Pattern} AmountPattern
+ * TODO explain
+ *
+ * @property {Brand} brand
+ * @property {ValuePattern} value
+ */
+
+/**
+ * @typedef {Value & Pattern} ValuePattern
+ * TODO explain
  */
 
 /**
@@ -41,13 +54,25 @@
  */
 
 /**
+ * @typedef AmountSplit
+ * @property {Amount} matched
+ * @property {Amount} change
+ */
+
+/**
+ * @typedef ValueSplit
+ * @property {Value} matched
+ * @property {Value} change
+ */
+
+/**
  * @typedef {Object} AmountMath
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
- * by issuers and mints, and represent the goods and currency carried by purses and
- * payments. They can be used to represent things like currency, stock, and the
- * abstract right to participate in a particular exchange.
+ * by issuers and mints, and represent the goods and currency carried by purses
+ * and payments. They can be used to represent things like currency, stock, and
+ * the abstract right to participate in a particular exchange.
  *
  * @property {() => Brand} getBrand Return the brand.
  * @property {() => AmountMathKind} getAmountMathKind
@@ -95,6 +120,25 @@
  * (subtraction results in a negative), throw  an error. Because the
  * left amount must include the right amount, this is NOT equivalent
  * to set subtraction.
+ *
+ *
+ * @property {(valuePattern: ValuePattern) => AmountPattern} makePattern
+ * TODO explain
+ *
+ * @property {() => AmountPattern} makeStarPattern
+ * TODO explain
+ *
+ * @property {(allegedAmountPattern: AmountPattern) => AmountPattern} coercePattern
+ * TODO explain
+ *
+ * @property {(amountPattern: AmountPattern) => ValuePattern} getValuePattern
+ * TODO explain
+ *
+ * @property {(pattern: AmountPattern, specimen: Amount) => AmountSplit|undefined} frugalSplit
+ * Try to find a smallish portion of the specimen that matches the pattern.
+ * The smaller the better. If successful, return an AmountSplit with
+ * the matched portion in `matched` and the remainder in `change`. The
+ * specific deterministic rules will depend on a given MathKind.
  */
 
 /**
@@ -335,6 +379,12 @@
  * @property {(left: Value, right: Value) => Value} doSubtract
  * Return what remains after removing the right from the left. If
  * something in the right was not in the left, we throw an error.
+ *
+ * @property {(pattern: ValuePattern, specimen: Value) => ValueSplit|undefined} doFrugalSplit
+ * Try to find a smallish portion of the specimen that matches the pattern.
+ * The smaller the better. If successful, return a ValueSplit with
+ * the matched portion in `matched` and the remainder in `change`. The
+ * specific deterministic rules will depend on a given MathKind.
  */
 
 /**

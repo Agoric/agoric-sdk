@@ -1,5 +1,6 @@
 import test from 'ava';
 
+import { PATTERN } from '@agoric/same-structure';
 import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
@@ -13,7 +14,7 @@ const mockBrand = harden({
 
 const amountMath = makeAmountMath(mockBrand, MathKind.NAT);
 
-test('natMathHelpers', t => {
+test('natMathHelpers ground', t => {
   const {
     getBrand,
     getAmountMathKind,
@@ -114,4 +115,26 @@ test('natMathHelpers', t => {
 
   // subtract
   t.deepEqual(subtract(make(6), make(1)), make(5), `6 - 1 = 5`);
+});
+
+test('natMathHelpers patterns', t => {
+  const {
+    makePattern,
+    makeStarPattern,
+    // coercePattern, TODO
+    // getValuePattern, TODO
+    // frugalSplit, TODO
+  } = amountMath;
+
+  // makePattern
+  t.deepEqual(makePattern(harden({ [PATTERN]: '*' })), {
+    brand: mockBrand,
+    value: { [PATTERN]: '*' },
+  });
+
+  // makeStarPattern
+  t.deepEqual(makeStarPattern(), {
+    brand: mockBrand,
+    value: { [PATTERN]: '*' },
+  });
 });

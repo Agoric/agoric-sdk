@@ -1,6 +1,8 @@
 // @ts-check
 
 import Nat from '@agoric/nat';
+import { assert, details as d, q } from '@agoric/assert';
+import { patternKindOf } from '@agoric/same-structure';
 
 import '../types';
 
@@ -26,6 +28,31 @@ const natMathHelpers = harden({
   doIsEqual: (left, right) => left === right,
   doAdd: (left, right) => Nat(left + right),
   doSubtract: (left, right) => Nat(left - right),
+
+  doFrugalSplit: (pattern, specimen) => {
+    const patternKind = patternKindOf(pattern);
+    if (patternKind === undefined) {
+      Nat(pattern);
+      if (specimen >= pattern) {
+        return harden({
+          matched: pattern,
+          change: specimen - pattern,
+        });
+      }
+      return undefined;
+    }
+    switch (patternKind) {
+      case '*': {
+        return harden({
+          matched: identity,
+          change: specimen,
+        });
+      }
+      default: {
+        throw assert.fail(d`Unexpected patternKind ${q(patternKind)}`);
+      }
+    }
+  },
 });
 
 harden(natMathHelpers);

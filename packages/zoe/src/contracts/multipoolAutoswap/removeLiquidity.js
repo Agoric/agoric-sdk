@@ -18,7 +18,7 @@ export const makeMakeRemoveLiquidityInvitation = (zcf, getPool) => {
       },
     });
     // Get the brand of the secondary token so we can identify the liquidity pool.
-    const secondaryBrand = seat.getProposal().want.Secondary.brand;
+    const secondaryBrand = seat.getProposal().want.Secondary.brand; // TODO
     const pool = getPool(secondaryBrand);
     return pool.removeLiquidity(seat);
   };

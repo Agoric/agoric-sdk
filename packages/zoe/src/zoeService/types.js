@@ -131,7 +131,7 @@
  * @typedef {Partial<ProposalRecord>} Proposal
  *
  * @typedef {{give: AmountKeywordRecord,
- *            want: AmountKeywordRecord,
+ *            want: AmountPatternKeywordRecord,
  *            exit: ExitRule
  *           }} ProposalRecord
  */
@@ -141,6 +141,13 @@
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
+ */
+
+/**
+ * @typedef {Record<Keyword,AmountPattern>} AmountPatternKeywordRecord
+ *
+ * The keys are keywords, and the values are amount patterns. For example:
+ * { Price: amountMath.makeOpPattern(9, '<=') }
  */
 
 /**

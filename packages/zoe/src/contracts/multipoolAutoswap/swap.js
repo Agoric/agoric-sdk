@@ -22,7 +22,7 @@ export const makeMakeSwapInvitation = (
     });
     const {
       give: { In: amountIn },
-      want: { Out: wantedAmountOut },
+      want: { Out: wantedAmountOut }, // TODO
     } = seat.getProposal();
     const { brand: brandIn, value: inputValue } = amountIn;
     const brandOut = wantedAmountOut.brand;
@@ -135,7 +135,7 @@ export const makeMakeSwapInvitation = (
     // The offer's amountOut is exact; the offeredAmountIn is a max.
     const {
       give: { In: offeredAmountIn },
-      want: { Out: amountOut },
+      want: { Out: amountOut }, // TODO
     } = seat.getProposal();
     const { brand: brandOut, value: outputValue } = amountOut;
     const brandIn = offeredAmountIn.brand;
