@@ -81,3 +81,15 @@ test('no local stalls', async t => {
     'log is golden',
   );
 });
+
+test.skip('resolveWithPresence test nr 1', async t => {
+  const promiseHandler = {
+  };
+  const p = {};
+  p.pr = new HandledPromise((resolve, reject, resolveWithPresence) => {
+    p.resolve = resolve;
+    p.reject = reject;
+    p.resolveWithPresence = resolveWithPresence;
+  }, promiseHandler);
+  t.fail("still fleshing out the test");
+});
