@@ -60,6 +60,7 @@
   },
   "files": [
     "src/",
+    "tools/",
     "contractFacet.js",
     "exported.js",
     "NEWS.md"
