@@ -83,13 +83,12 @@ test('no local stalls', async t => {
 });
 
 test.skip('resolveWithPresence test nr 1', async t => {
-  const promiseHandler = {
-  };
-  const p = {};
-  p.pr = new HandledPromise((resolve, reject, resolveWithPresence) => {
-    p.resolve = resolve;
-    p.reject = reject;
-    p.resolveWithPresence = resolveWithPresence;
-  }, promiseHandler);
-  t.fail("still fleshing out the test");
+  const p0 = {};
+  p0.pr = new HandledPromise((resolve, reject, resolveWithPresence) => {
+    p0.resolve = resolve;
+    p0.reject = reject;
+    p0.resolveWithPresence = resolveWithPresence;
+  });
+  const p1 = HandledPromise.applyMethod(p0.pr, 'aðferð1', [1]);
+  
 });
