@@ -82,13 +82,33 @@ test('no local stalls', async t => {
   );
 });
 
-test.skip('resolveWithPresence test nr 1', async t => {
+test('resolveWithPresence test nr 1', async t => {
+  const log = [];
+  const presenceHandler = {
+    applyMethod: (target, verb, args) => {
+      log.push(['applyMethod', target, verb, args]);
+      return undefined;
+    }
+  };
+  const pr = new HandledPromise((res, rej, rWp) => {
+    const presence = rWp(presenceHandler);
+    return presence;
+  });
+  HandledPromise.applyMethod(pr, 'aðferð', [1]);
+  t.deepEqual(
+    log,
+    [],
+    'log a-ok',
+  );
+});
+
+test.skip('resolveWithPresence test nr 2', async t => {
   const p0 = {};
   p0.pr = new HandledPromise((resolve, reject, resolveWithPresence) => {
     p0.resolve = resolve;
     p0.reject = reject;
     p0.resolveWithPresence = resolveWithPresence;
   });
-  const p1 = HandledPromise.applyMethod(p0.pr, 'aðferð1', [1]);
-  
+  HandledPromise.applyMethod(p0.pr, 'aðferð1', [1]);
+  t.fail();
 });
