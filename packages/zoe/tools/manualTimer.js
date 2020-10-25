@@ -23,10 +23,12 @@ export default function buildManualTimer(log, startValue = 0) {
       ticks += 1;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
-        await Promise.all(schedule.get(ticks).map(h => {
-          log(`&& running a task scheduled for ${ticks}. &&`);
-          return E(h).wake(ticks);
-        }));
+        await Promise.all(
+          schedule.get(ticks).map(h => {
+            log(`&& running a task scheduled for ${ticks}. &&`);
+            return E(h).wake(ticks);
+          }),
+        );
       }
     },
     createRepeater(delaySecs, interval) {
