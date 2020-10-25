@@ -97,7 +97,6 @@ test('resolveWithPresence test nr 1', async t => {
   });
   HandledPromise.applyMethod(pr, 'aðferð', [1]);
   await Promise.resolve();
-  t.log('hmm...', log);
   t.deepEqual(
     log,
     [
@@ -110,10 +109,14 @@ test('resolveWithPresence test nr 1', async t => {
     ],
     'log a-ok',
   );
-  t.fail('stöðva hér');
 });
 
 test.skip('resolveWithPresence test nr 2', async t => {
+  t.log('hmm...', log);
+  t.fail('stöðva hér');
+});
+
+test.skip('resolveWithPresence test nr 3', async t => {
   const p0 = {};
   p0.pr = new HandledPromise((resolve, reject, resolveWithPresence) => {
     p0.resolve = resolve;
