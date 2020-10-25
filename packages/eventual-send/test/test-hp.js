@@ -135,5 +135,19 @@ test('resolveWithPresence test nr 2', async t => {
 });
 
 test.skip('resolveWithPresence test nr 3', async t => {
-  t.log('ekkert hér í bili');
+  const log = [];
+  const presenceHandler = {
+    applyMethod(target, verb, args) {
+      log.push(['applyMethod', target, verb, args]);
+      return undefined;
+    },
+  };
+  let presence;
+  const vow = new HandledPromise((resolve, reject, resolveWithPresence) => {
+    presence = resolveWithPresence(presenceHandler);
+  });
+  const p = await vow;
+  t.equal(presence, p);
+  t.fail('stöðva hér');
+  t.log('log: ', log);
 });
