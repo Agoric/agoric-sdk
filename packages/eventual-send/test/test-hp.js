@@ -135,10 +135,8 @@ test('resolveWithPresence test nr 2', async t => {
 });
 
 test('resolveWithPresence test nr 3', async t => {
-  const log = [];
   const presenceHandler = {
     applyMethod(target, verb, args) {
-      log.push(['applyMethod', target, verb, args]);
       return undefined;
     },
   };
@@ -148,6 +146,4 @@ test('resolveWithPresence test nr 3', async t => {
   });
   const p = await vow;
   t.is(presence, p);
-  t.fail('stöðva hér');
-  t.log('log: ', log);
 });
