@@ -151,3 +151,7 @@ test('resolveWithPresence test nr 3', async t => {
   const p = await vow;
   t.is(presence, p);
 });
+
+test.skip('resolveWithPresence test nr 4', async t => {
+  t.log('');
+});
