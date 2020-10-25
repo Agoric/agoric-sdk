@@ -8,17 +8,24 @@ import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
 import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
+import makeDecimalMathHelpers from './mathHelpers/decimalMathHelpers';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
  * Constants for the kinds of amountMath we support.
  *
- * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet' }}
+ * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet', DECIMAL: (places:
+ * number) => string }}
  */
 const MathKind = {
   NAT: 'nat',
   SET: 'set',
   STRING_SET: 'strSet',
+  DECIMAL(places = 0) {
+    assert.typeof(places, 'number');
+    const natPlaces = natMathHelpers.doCoerce(places);
+    return `decimal.${natPlaces}`;
+  },
 };
 harden(MathKind);
 export { MathKind };
@@ -83,8 +90,14 @@ function makeAmountMath(brand, amountMathKind) {
     nat: natMathHelpers,
     strSet: strSetMathHelpers,
     set: setMathHelpers,
+    decimal: makeDecimalMathHelpers(0),
   };
-  const helpers = mathHelpers[amountMathKind];
+  /** @type {MathHelpers} */
+  let helpers = mathHelpers[amountMathKind];
+  if (helpers === undefined && amountMathKind.startsWith('decimal.')) {
+    const places = parseInt(amountMathKind.slice('decimal.'.length), 10);
+    helpers = makeDecimalMathHelpers(places);
+  }
   assert(
     helpers !== undefined,
     details`unrecognized amountMathKind: ${amountMathKind}`,
