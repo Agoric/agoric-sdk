@@ -85,7 +85,7 @@ test('no local stalls', async t => {
 test('resolveWithPresence test nr 1', async t => {
   const log = [];
   const presenceHandler = {
-    applyMethod: (target, verb, args) => {
+    applyMethod(target, verb, args) {
       log.push(['applyMethod', target, verb, args]);
       return undefined;
     }
@@ -95,7 +95,7 @@ test('resolveWithPresence test nr 1', async t => {
     return presence;
   });
   HandledPromise.applyMethod(pr, 'aðferð', [1]);
-  t.fail('til að finna þennan prufu fjanda');
+  t.fail('log:'.concat(log));
   t.deepEqual(
     log,
     [],
