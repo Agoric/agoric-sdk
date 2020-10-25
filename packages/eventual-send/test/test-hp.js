@@ -100,9 +100,34 @@ test('resolveWithPresence test nr 1', async t => {
   t.deepEqual(log, [['applyMethod', presence, 'aðferð', [1]]], 'log a-ok');
 });
 
-test.skip('resolveWithPresence test nr 2', async t => {
-  const log = [];
-  t.log('hmm...', log);
+test('resolveWithPresence test nr 2', async t => {
+  const logA = [];
+  const unresolvedHandler = {
+    applyMethod(target, verb, args) {
+      logA.push(['applyMethod', target, verb, args]);
+      return undefined;
+    },
+  };
+  const logB = [];
+  const presenceHandler = {
+    applyMethod(target, verb, args) {
+      logB.push(['applyMethod', target, verb, args]);
+      return undefined;
+    },
+  };
+  const p0 = {};
+  const p0.promise = new HandledPromise((resolve, reject, resolveWithPresence) => {
+    p0.resolve = resolve;
+    p0.reject  = reject;
+    p0.resolveWithPresence = resolveWithPresence;
+  }, unresolvedHandler);
+  HandledPromise.applyMethod(p0.promise, 'óðaÖnn', [1]);
+  const p1 = p0.resolveWithPresence(presenceHandler);
+  HandledPromise.applyMethod(p0.promise, 'aðferð', [2]);
+  await Promise.resolve();
+  t.log('logA:', logA);
+  t.log('logB:', logB);
+  t.log('p1:', p1);
   t.fail('stöðva hér');
 });
 
