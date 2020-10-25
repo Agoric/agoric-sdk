@@ -122,6 +122,7 @@ test('resolveWithPresence test nr 2', async t => {
     p0.resolveWithPresence = resolveWithPresence;
   }, unresolvedHandler);
   HandledPromise.applyMethod(p0.promise, 'óðaÖnn', [1]);
+  await Promise.resolve();
   const p1 = p0.resolveWithPresence(presenceHandler);
   HandledPromise.applyMethod(p0.promise, 'aðferð', [2]);
   await Promise.resolve();
@@ -129,15 +130,4 @@ test('resolveWithPresence test nr 2', async t => {
   t.log('logB:', logB);
   t.log('p1:', p1);
   t.fail('stöðva hér');
-});
-
-test.skip('resolveWithPresence test nr 3', async t => {
-  const p0 = {};
-  p0.pr = new HandledPromise((resolve, reject, resolveWithPresence) => {
-    p0.resolve = resolve;
-    p0.reject = reject;
-    p0.resolveWithPresence = resolveWithPresence;
-  });
-  HandledPromise.applyMethod(p0.pr, 'aðferð1', [1]);
-  t.fail();
 });
