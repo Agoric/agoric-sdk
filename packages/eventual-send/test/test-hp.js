@@ -172,5 +172,8 @@ test.skip('resolveWithPresence test nr 4', async t => {
     construct(target, args, newTarget) {
       return {};
     },
+    defineProperty(target, property, descriptor) {
+      return false;
+    },
   };
 });
