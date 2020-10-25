@@ -88,7 +88,7 @@ test('resolveWithPresence test nr 1', async t => {
     applyMethod(target, verb, args) {
       log.push(['applyMethod', target, verb, args]);
       return undefined;
-    }
+    },
   };
   let presence;
   const pr = new HandledPromise((res, rej, rWp) => {
@@ -99,14 +99,7 @@ test('resolveWithPresence test nr 1', async t => {
   await Promise.resolve();
   t.deepEqual(
     log,
-    [
-      [
-        'applyMethod',
-        presence,
-        'aðferð',
-        [1],
-      ],
-    ],
+    [['applyMethod', presence, 'aðferð', [1]]],
     'log a-ok',
   );
 });
