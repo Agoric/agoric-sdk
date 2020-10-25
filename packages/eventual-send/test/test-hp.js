@@ -169,5 +169,8 @@ test.skip('resolveWithPresence test nr 4', async t => {
     apply(target, thisArg, args) {
       return undefined;
     },
+    construct(target, args, newTarget) {
+      return {};
+    },
   };
 });
