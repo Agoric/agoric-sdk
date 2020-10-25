@@ -147,7 +147,7 @@ test('resolveWithPresence test nr 3', async t => {
     presence = resolveWithPresence(presenceHandler);
   });
   const p = await vow;
-  t.equal(presence, p);
+  t.is(presence, p);
   t.fail('stöðva hér');
   t.log('log: ', log);
 });
