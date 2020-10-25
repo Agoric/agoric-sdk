@@ -153,5 +153,12 @@ test('resolveWithPresence test nr 3', async t => {
 });
 
 test.skip('resolveWithPresence test nr 4', async t => {
-  t.log('');
+  t.log('proxy support being now tested');
+  const log = [];
+  const presenceEventualHandler = {
+    applyMethod(target, verb, args) {
+      log.push(['applyMethod', target, verb, args]);
+      return undefined;
+    },
+  };
 });
