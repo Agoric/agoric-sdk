@@ -97,14 +97,11 @@ test('resolveWithPresence test nr 1', async t => {
   });
   HandledPromise.applyMethod(pr, 'aðferð', [1]);
   await Promise.resolve();
-  t.deepEqual(
-    log,
-    [['applyMethod', presence, 'aðferð', [1]]],
-    'log a-ok',
-  );
+  t.deepEqual(log, [['applyMethod', presence, 'aðferð', [1]]], 'log a-ok');
 });
 
 test.skip('resolveWithPresence test nr 2', async t => {
+  const log = [];
   t.log('hmm...', log);
   t.fail('stöðva hér');
 });
