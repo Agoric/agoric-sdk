@@ -126,8 +126,10 @@ test('resolveWithPresence test nr 2', async t => {
   const p1 = p0.resolveWithPresence(presenceHandler);
   HandledPromise.applyMethod(p0.promise, 'aðferð', [2]);
   await Promise.resolve();
-  t.log('logA:', logA);
-  t.log('logB:', logB);
-  t.log('p1:', p1);
-  t.fail('stöðva hér');
+  // t.log('logA:', logA);
+  // t.log('logB:', logB);
+  // t.log('p1:', p1);
+  t.deepEqual(logA, [['applyMethod', p0.promise, 'óðaÖnn', [1]]], 'logA ok');
+  t.deepEqual(logB, [['applyMethod', p1, 'aðferð', [2]]], 'logB ok');
+  // t.fail('stöðva hér');
 });
