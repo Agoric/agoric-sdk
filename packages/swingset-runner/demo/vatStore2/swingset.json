@@ -1,0 +1,20 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "alice": {
+      "sourceSpec": "thingHolder.js",
+      "parameters": {
+        "name": "Alice"
+      }
+    },
+    "bob": {
+      "sourceSpec": "thingHolder.js",
+      "parameters": {
+        "name": "Bob"
+      }
+    },
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    }
+  }
+}

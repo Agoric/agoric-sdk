@@ -59,8 +59,22 @@ export function parseVatSlot(s) {
     throw new Error(`invalid vatSlot ${s}`);
   }
 
-  const id = Nat(Number(idSuffix));
-  return { type, allocatedByVat, id };
+  const delim = idSuffix.indexOf('/');
+  let id;
+  let subid;
+  let virtual = false;
+  if (delim > 0) {
+    if (type !== 'object' || !allocatedByVat) {
+      throw new Error(`invalid vatSlot ${s}`);
+    }
+    virtual = true;
+    id = Nat(Number(idSuffix.substr(0, delim)));
+    subid = Nat(Number(idSuffix.slice(delim + 1)));
+  } else {
+    id = Nat(Number(idSuffix));
+  }
+
+  return { type, allocatedByVat, virtual, id, subid };
 }
 
 /**

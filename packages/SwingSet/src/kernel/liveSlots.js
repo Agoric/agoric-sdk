@@ -11,6 +11,9 @@ import { assert, details } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
+import { makeVirtualObjectManager } from './virtualObjectManager';
+
+const VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -204,6 +207,22 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
     return makeVatSlot('object', true, exportID);
   }
 
+  // eslint-disable-next-line no-use-before-define
+  const m = makeMarshal(convertValToSlot, convertSlotToVal);
+
+  const {
+    makeVirtualObjectRepresentative,
+    makeWeakStore,
+    makeKind,
+    flushCache,
+  } = makeVirtualObjectManager(
+    syscall,
+    allocateExportID,
+    valToSlot,
+    m,
+    VIRTUAL_OBJECT_CACHE_SIZE,
+  );
+
   function convertValToSlot(val) {
     // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
@@ -234,9 +253,22 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
   }
 
   function convertSlotToVal(slot, iface = undefined) {
-    if (!slotToVal.has(slot)) {
-      let val;
-      const { type, allocatedByVat } = parseVatSlot(slot);
+    let val = slotToVal.get(slot);
+    if (val) {
+      return val;
+    }
+    const { type, allocatedByVat, virtual } = parseVatSlot(slot);
+    if (virtual) {
+      // Virtual objects should never be put in the slotToVal table, as their
+      // entire raison d'etre is to be absent from memory when they're not being
+      // used.  They *do* get put in the valToSlot table, which is OK because
+      // it's a WeakMap, but they don't get put there here.  Instead, they are
+      // put there by makeVirtualObjectRepresentative, who already has to do
+      // this anyway in the cases of creating virtual objects in the first place
+      // and swapping them in from disk.
+      assert.equal(type, 'object');
+      val = makeVirtualObjectRepresentative(slot);
+    } else {
       assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
         // this is a new import value
@@ -260,10 +292,8 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
       slotToVal.set(slot, val);
       valToSlot.set(val, slot);
     }
-    return slotToVal.get(slot);
+    return val;
   }
-
-  const m = makeMarshal(convertValToSlot, convertSlotToVal);
 
   function queueMessage(targetSlot, prop, args, returnedP) {
     const serArgs = m.serialize(harden(args));
@@ -346,7 +376,7 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
     );
-    const t = slotToVal.get(target);
+    const t = convertSlotToVal(target);
     if (!t) {
       throw Error(`no target ${target}`);
     }
@@ -535,7 +565,11 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
   // (bootstrap, bridge, vat-http), swingset
 
-  const vatGlobals = harden({}); // for later use: #1846
+  const vatGlobals = harden({
+    makeWeakStore,
+    makeKind,
+    flushCache,
+  });
 
   function setBuildRootObject(buildRootObject) {
     assert(!didRoot);
