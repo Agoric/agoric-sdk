@@ -116,7 +116,7 @@ test('resolveWithPresence test nr 2', async t => {
     },
   };
   const p0 = {};
-  const p0.promise = new HandledPromise((resolve, reject, resolveWithPresence) => {
+  p0.promise = new HandledPromise((resolve, reject, resolveWithPresence) => {
     p0.resolve = resolve;
     p0.reject  = reject;
     p0.resolveWithPresence = resolveWithPresence;
