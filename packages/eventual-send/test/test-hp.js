@@ -95,6 +95,7 @@ test('resolveWithPresence test nr 1', async t => {
     return presence;
   });
   HandledPromise.applyMethod(pr, 'aðferð', [1]);
+  await Promise.resolve();
   t.log('hmm...', log);
   t.fail('stöðva hér');
   t.deepEqual(
