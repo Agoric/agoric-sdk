@@ -137,6 +137,10 @@ test('resolveWithPresence test nr 2', async t => {
 test('resolveWithPresence test nr 3', async t => {
   const presenceHandler = {
     applyMethod(target, verb, args) {
+      const muffler = [];
+      muffler.push(target);
+      muffler.push(verb);
+      muffler.push(args);
       return undefined;
     },
   };
