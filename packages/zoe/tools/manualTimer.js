@@ -23,7 +23,7 @@ export default function buildManualTimer(log, startValue = 0) {
       ticks += 1;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
-        await Promise.all(
+        await Promise.allSettled(
           schedule.get(ticks).map(h => {
             log(`&& running a task scheduled for ${ticks}. &&`);
             return E(h).wake(ticks);
@@ -48,7 +48,7 @@ export default function buildManualTimer(log, startValue = 0) {
             return;
           }
           timer.setWakeup(ticks + interval, repeaterHandler);
-          await Promise.all(handlers.map(h => E(h).wake(timestamp)));
+          await Promise.allSettled(handlers.map(h => E(h).wake(timestamp)));
         },
       };
       timer.setWakeup(ticks + delaySecs, repeaterHandler);
