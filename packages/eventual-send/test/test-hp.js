@@ -103,7 +103,7 @@ test('resolveWithPresence test nr 1', async t => {
     [
       [
         'applyMethod',
-        pr,
+        presence,
         'aðferð',
         [1],
       ],
