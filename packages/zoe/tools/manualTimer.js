@@ -19,14 +19,14 @@ export default function buildManualTimer(log, startValue = 0) {
       return deadline;
     },
     // This function will only be called in testing code to advance the clock.
-    tick(msg) {
+    async tick(msg) {
       ticks += 1;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
-        for (const h of schedule.get(ticks)) {
+        await Promise.all(schedule.get(ticks).map(h => {
           log(`&& running a task scheduled for ${ticks}. &&`);
-          E(h).wake(ticks);
-        }
+          return E(h).wake(ticks);
+        }));
       }
     },
     createRepeater(delaySecs, interval) {
@@ -41,14 +41,12 @@ export default function buildManualTimer(log, startValue = 0) {
       };
       harden(repeater);
       const repeaterHandler = {
-        wake(timestamp) {
+        async wake(timestamp) {
           if (handlers === undefined) {
             return;
           }
           timer.setWakeup(ticks + interval, repeaterHandler);
-          for (const h of handlers) {
-            E(h).wake(timestamp);
-          }
+          await Promise.all(handlers.map(h => E(h).wake(timestamp)));
         },
       };
       timer.setWakeup(ticks + delaySecs, repeaterHandler);
