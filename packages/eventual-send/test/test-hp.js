@@ -134,7 +134,7 @@ test('resolveWithPresence test nr 2', async t => {
   // t.fail('stöðva hér');
 });
 
-test.skip('resolveWithPresence test nr 3', async t => {
+test('resolveWithPresence test nr 3', async t => {
   const log = [];
   const presenceHandler = {
     applyMethod(target, verb, args) {
