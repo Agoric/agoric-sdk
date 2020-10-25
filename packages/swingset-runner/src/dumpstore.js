@@ -128,6 +128,9 @@ export function dumpStore(store, outfile, rawMode) {
       const val = popt(key);
       popt(`${v}.c.${val}`);
     }
+    for (const key of groupKeys(`${v}.vs`)) {
+      popt(key);
+    }
     for (const key of groupKeys(`${v}.t.`)) {
       transcript.push([key, state.get(key)]);
       state.delete(key);
