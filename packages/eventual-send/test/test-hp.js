@@ -90,19 +90,27 @@ test('resolveWithPresence test nr 1', async t => {
       return undefined;
     }
   };
+  let presence;
   const pr = new HandledPromise((res, rej, rWp) => {
-    const presence = rWp(presenceHandler);
+    presence = rWp(presenceHandler);
     return presence;
   });
   HandledPromise.applyMethod(pr, 'aðferð', [1]);
   await Promise.resolve();
   t.log('hmm...', log);
-  t.fail('stöðva hér');
   t.deepEqual(
     log,
-    [],
+    [
+      [
+        'applyMethod',
+        pr,
+        'aðferð',
+        [1],
+      ],
+    ],
     'log a-ok',
   );
+  t.fail('stöðva hér');
 });
 
 test.skip('resolveWithPresence test nr 2', async t => {
