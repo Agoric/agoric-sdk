@@ -191,7 +191,8 @@ function resolutionOf(vpid, mode, targets) {
 }
 
 function makeDispatch(syscall, build) {
-  const gcTools = harden({ WeakRef, FinalizationRegistry });
+  function vatDecref() {}
+  const gcTools = harden({ WeakRef, FinalizationRegistry, vatDecref });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
     'vatA',
