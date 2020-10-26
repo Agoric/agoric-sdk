@@ -13,6 +13,7 @@ export function makeLocalVatManagerFactory(tools) {
     meterManager,
     transformMetering,
     waitUntilQuiescent,
+    gcTools,
   } = tools;
 
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
@@ -107,7 +108,7 @@ export function makeLocalVatManagerFactory(tools) {
 
     // we might or might not use this, depending upon whether the vat exports
     // 'buildRootObject' or a default 'setup' function
-    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters, gcTools);
 
     let meterRecord = null;
     if (metered) {

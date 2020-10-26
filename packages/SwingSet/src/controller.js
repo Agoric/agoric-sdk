@@ -18,6 +18,7 @@ import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
 import { locateWorkerBin } from '@agoric/xs-vat-worker';
 
+import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
@@ -183,6 +184,8 @@ export async function makeSwingsetController(
     startSubprocessWorkerNode,
     startSubprocessWorkerXS,
     writeSlogObject,
+    WeakRef,
+    FinalizationRegistry,
   };
 
   const kernelOptions = { verbose };

@@ -99,6 +99,8 @@ export default function buildKernel(
     startSubprocessWorkerNode,
     startSubprocessWorkerXS,
     writeSlogObject,
+    WeakRef,
+    FinalizationRegistry,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
   const { verbose } = kernelOptions;
@@ -529,6 +531,7 @@ export default function buildKernel(
     }
   }
 
+  const gcTools = harden({ WeakRef, FinalizationRegistry });
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
@@ -540,6 +543,7 @@ export default function buildKernel(
     makeNodeWorker,
     startSubprocessWorkerNode,
     startSubprocessWorkerXS,
+    gcTools,
   });
 
   function buildVatSyscallHandler(vatID, translators) {
