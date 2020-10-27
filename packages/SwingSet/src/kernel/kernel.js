@@ -146,11 +146,13 @@ export default function buildKernel(
 
   const pendingDecrefs = [];
   function decref(vatID, vref, count) {
-    assert(ephemeral.vats.has(vatID), `unknown vatID ${vatID}`);
+    if (!ephemeral.vats.has(vatID)) {
+      return; // vat was deleted already
+    }
     assert(count > 0, `bad count ${count}`);
     // TODO: decrement the clist import counter by 'count', then GC if zero
     if (testTrackDecref) {
-      console.log(`kernel decref [${vatID}].${vref} -= ${count}`);
+      // console.log(`kernel decref [${vatID}].${vref} -= ${count}`);
       pendingDecrefs.push({ vatID, vref, count });
     }
   }
