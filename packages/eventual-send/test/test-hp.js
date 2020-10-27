@@ -166,33 +166,37 @@ test.skip('resolveWithPresence test nr 4', async t => {
     },
   };
   const presenceImmediateHandler = {
-    apply(target, thisArg, args) {
+    apply: function(target, thisArg, args) {
       log.push(['apply', target, thisArg, args]);
       return undefined;
     },
-    construct(target, args, newTarget) {
+    construct: function(target, args, newTarget) {
       log.push(['construct', target, args, newTarget]);
       return {};
     },
-    defineProperty(target, property, descriptor) {
+    defineProperty: function (target, property, descriptor) {
       log.push(['defineProperty', target, property, descriptor]);
       return false;
     },
-    deleteProperty(target, property) {
+    deleteProperty: function (target, property) {
       log.push(['deleteProperty', target, property]);
       return false;
     },
-    get(target, property, receiver) {
+    get: function (target, property, receiver) {
       log.push(['get', target, property, receiver]);
       return undefined;
     },
-    getOwnPropertyDescriptor(target, property) {
+    getOwnPropertyDescriptor: function (target, property) {
       log.push(['getOwnPropertyDescriptor', target, property]);
       return undefined;
     },
-    getPrototypeOf(target) {
+    getPrototypeOf: function(target) {
       log.push(['getPrototypeOf', target]);
       return null;
+    },
+    has: function(target, property) {
+      log.push(['has', target, property]);
+      return false;
     },
   };
 });
