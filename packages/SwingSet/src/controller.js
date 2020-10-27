@@ -46,7 +46,12 @@ export async function makeSwingsetController(
   insistStorageAPI(hostStorage);
 
   // build console early so we can add console.log to diagnose early problems
-  const { verbose, debugPrefix = '', slogFile } = runtimeOptions;
+  const {
+    verbose,
+    debugPrefix = '',
+    slogFile,
+    testTrackDecref,
+  } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
   }
@@ -188,7 +193,7 @@ export async function makeSwingsetController(
     FinalizationRegistry,
   };
 
-  const kernelOptions = { verbose };
+  const kernelOptions = { verbose, testTrackDecref };
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -280,8 +285,9 @@ export async function buildVatController(
     verbose,
     kernelBundles,
     debugPrefix,
+    testTrackDecref,
   } = runtimeOptions;
-  const actualRuntimeOptions = { verbose, debugPrefix };
+  const actualRuntimeOptions = { verbose, debugPrefix, testTrackDecref };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
   if (!swingsetIsInitialized(hostStorage)) {
