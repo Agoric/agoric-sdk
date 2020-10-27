@@ -198,5 +198,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['has', target, property]);
       return false;
     },
+    isExtensible: function(target) {
+      log.push(['isExtensible', target]);
+      return false;
+    },
   };
 });
