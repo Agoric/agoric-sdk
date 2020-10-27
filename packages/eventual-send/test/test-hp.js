@@ -206,5 +206,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['ownKeys', target]);
       return [];
     },
+    preventExtensions: function(target) {
+      log.push(['preventExtensions', target]);
+      return false;
+    },
   };
 });
