@@ -210,5 +210,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['preventExtensions', target]);
       return false;
     },
+    set: function(target, property, value, receiver) {
+      log.push(['set', target, property, value, receiver]);
+      return false;
+    },
   };
 });
