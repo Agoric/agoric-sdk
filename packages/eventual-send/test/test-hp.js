@@ -182,5 +182,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['deleteProperty', target, property]);
       return false;
     },
+    get(target, property, receiver) {
+      log.push(['get', target, property, receiver]);
+      return undefined;
+    },
   };
 });
