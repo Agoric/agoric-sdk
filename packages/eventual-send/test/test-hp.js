@@ -157,22 +157,25 @@ test.skip('resolveWithPresence test nr 4', async t => {
   const log = [];
   const presenceEventualHandler = {
     applyMethod(target, verb, args) {
-      log.push(['applyMethod', target, verb, args]);
+      log.push(['eventualSend', target, verb, args]);
       return undefined;
     },
     apply(target, args) {
-      log.push(['apply', target, args]);
+      log.push(['eventualApply', target, args]);
       return undefined;
     },
   };
   const presenceImmediateHandler = {
     apply(target, thisArg, args) {
+      log.push(['apply', target, thisArg, args]);
       return undefined;
     },
     construct(target, args, newTarget) {
+      log.push(['construct', target, args, newTarget]);
       return {};
     },
     defineProperty(target, property, descriptor) {
+      log.push(['defineProperty', target, property, descriptor]);
       return false;
     },
   };
