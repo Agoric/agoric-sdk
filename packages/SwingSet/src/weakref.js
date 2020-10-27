@@ -1,5 +1,9 @@
 /* global globalThis */
 
+import { assert, details as d } from '@agoric/assert';
+
+const { defineProperties } = Object;
+
 /*
  * We retain a measure of compatibility with Node.js v12, which does not
  * expose WeakRef or FinalizationRegistry (there is a --flag for it, but it's
@@ -14,25 +18,102 @@
  *
  */
 
-function FakeWeakRef(obj) {
-  const wr = Object.create({
-    deref: () => obj,
-  });
-  delete wr.constructor;
-  return wr;
-}
+// TODO We need to migrate this into a ses-level tame-weakref.js, to happen
+// as part of `lockdown`. In anticipation, this uses some of the patterns
+// followed by the other tamings there.
 
-function FakeFinalizationRegistry(_callback) {
-  const fr = Object.create({
-    register: (_obj, _handle) => undefined,
-    unregister: _handle => undefined,
-  });
-  delete fr.constructor;
-  return fr;
-}
+// Emulate the internal [[WeakRefTarget]] slot. Despite the term "Weak" in the
+// "WeakMap" used in the emulation, this map holds the target strongly. The only
+// weakness here is that the weakref,target pair can go away together if the
+// weakref is not reachable.
+const weakRefTarget = new WeakMap();
 
-const WR = globalThis.WeakRef || FakeWeakRef;
-const FR = globalThis.FinalizationRegistry || FakeFinalizationRegistry;
+const FakeWeakRef = function WeakRef(target) {
+  assert(
+    new.target !== undefined,
+    d`WeakRef Constructor requires 'new'`,
+    TypeError,
+  );
+  assert.equal(
+    Object(target),
+    target,
+    d`WeakRef target must be an object`,
+    TypeError,
+  );
+  weakRefTarget.set(this, target);
+};
 
-export const WeakRef = WR;
-export const FinalizationRegistry = FR;
+const InertWeakRef = function WeakRef(_target) {
+  throw new TypeError('Not available');
+};
+
+const FakeWeakRefPrototype = {
+  deref() {
+    return weakRefTarget.get(this);
+  },
+  [Symbol.toStringTag]: 'WeakRef',
+};
+
+defineProperties(FakeWeakRef, {
+  prototype: { value: FakeWeakRefPrototype },
+});
+
+const WeakRef = globalThis.WeakRef || FakeWeakRef;
+
+// If there is a real WeakRef constructor, we still make it safe before
+// exporting it. Unlike https://github.com/tc39/ecma262/issues/2214
+// rather than deleting the `constructor` property, we follow the other
+// taming patterns and point it at a throw-only inert one.
+defineProperties(WeakRef.prototype, {
+  constructor: { value: InertWeakRef },
+});
+
+harden(WeakRef);
+
+export { WeakRef };
+
+// /////////////////////////////////////////////////////////////////////////////
+
+const FakeFinalizationRegistry = function FinalizationRegistry(
+  cleanupCallback,
+) {
+  assert(
+    new.target !== undefined,
+    d`FinalizationRegistry Constructor requires 'new'`,
+    TypeError,
+  );
+  assert.typeof(
+    cleanupCallback,
+    'function',
+    d`cleanupCallback must be an object`,
+  );
+  // fall off the end with an empty instance
+};
+
+const InertFinalizationRegistry = function FinalizationRegistry(_target) {
+  throw new TypeError('Not available');
+};
+
+const FakeFinalizationRegistryPrototype = {
+  register() {},
+  unregister() {},
+  [Symbol.toStringTag]: 'FinalizationRegistry',
+};
+
+defineProperties(FakeFinalizationRegistry, {
+  prototype: { value: FakeFinalizationRegistryPrototype },
+});
+
+const FinalizationRegistry =
+  globalThis.FinalizationRegistry || FakeFinalizationRegistry;
+
+// If there is a real FinalizationRegistry constructor, we still make it safe
+// before exporting it. Rather than deleting the `constructor` property, we
+// follow the other taming patterns and point it at a throw-only inert one.
+defineProperties(FinalizationRegistry.prototype, {
+  constructor: { value: InertFinalizationRegistry },
+});
+
+harden(FinalizationRegistry);
+
+export { FinalizationRegistry };
