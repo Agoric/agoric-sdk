@@ -1,6 +1,96 @@
 import { assert, details, q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
 
+/**
+ * Make a simple LRU cache of virtual object inner selves.
+ *
+ * @param {number} size  Maximum number of entries to keep in the cache before
+ *    starting to throw them away.
+ * @param {(instanceKey: string) => Object} fetch  Function to retrieve an
+ *    object's raw state from the store by its instanceKey
+ * @param {(instanceKey: string, rawData: Object) => void} store  Function to
+ *   store raw object state by its instanceKey
+ *
+ * @returns {Object}  An LRU cache of (up to) the given size
+ */
+function makeCache(size, fetch, store) {
+  let lruHead;
+  let lruTail;
+  let count = 0;
+  const liveTable = new Map();
+
+  const cache = {
+    makeRoom() {
+      while (count > size && lruTail) {
+        liveTable.delete(lruTail.instanceKey);
+        store(lruTail.instanceKey, lruTail.rawData);
+        lruTail.rawData = null;
+        if (lruTail.prev) {
+          lruTail.prev.next = undefined;
+        } else {
+          lruHead = undefined;
+        }
+        lruTail = lruTail.prev;
+        count -= 1;
+      }
+    },
+    flush() {
+      const saveSize = size;
+      size = 0;
+      cache.makeRoom();
+      size = saveSize;
+    },
+    remember(innerObj) {
+      if (liveTable.has(innerObj.instanceKey)) {
+        return;
+      }
+      liveTable.set(innerObj.instanceKey, innerObj);
+      innerObj.prev = undefined;
+      cache.makeRoom();
+      innerObj.next = lruHead;
+      if (lruHead) {
+        lruHead.prev = innerObj;
+      }
+      lruHead = innerObj;
+      if (!lruTail) {
+        lruTail = innerObj;
+      }
+      count += 1;
+    },
+    refresh(innerObj) {
+      if (innerObj !== lruHead) {
+        const oldPrev = innerObj.prev;
+        const oldNext = innerObj.next;
+        if (oldPrev) {
+          oldPrev.next = oldNext;
+        } else {
+          lruHead = oldNext;
+        }
+        if (oldNext) {
+          oldNext.prev = oldPrev;
+        } else {
+          lruTail = oldPrev;
+        }
+        innerObj.prev = undefined;
+        innerObj.next = lruHead;
+        lruHead.prev = innerObj;
+        lruHead = innerObj;
+      }
+    },
+    lookup(instanceKey) {
+      let innerObj = liveTable.get(instanceKey);
+      if (innerObj) {
+        cache.refresh(innerObj);
+      } else {
+        innerObj = { instanceKey, rawData: fetch(instanceKey) };
+        cache.remember(innerObj);
+      }
+      return innerObj;
+    },
+  };
+  return cache;
+}
+
 export function makeVirtualObjectManager(
   syscall,
   allocateExportID,
@@ -9,82 +99,29 @@ export function makeVirtualObjectManager(
   cacheSize,
 ) {
   /**
-   * Make a simple LRU cache of virtual object inner selves.
+   * Fetch an object's state from secondary storage.
    *
-   * @param {number} size  Maximum number of entries to keep in the cache before
-   *    starting to throw them away.
+   * @param {string} instanceKey  The instance ID of the object whose state is
+   *    being fetched.
+   *
+   * @returns {*} an object representing the object's stored state.
    */
-  function makeCache(size) {
-    let lruHead;
-    let lruTail;
-    let count = 0;
-    const liveTable = new Map();
-
-    const cache = {
-      makeRoom() {
-        while (count > size && lruTail) {
-          liveTable.delete(lruTail.instanceKey);
-          lruTail.dropData();
-          if (lruTail.prev) {
-            lruTail.prev.next = undefined;
-          } else {
-            lruHead = undefined;
-          }
-          lruTail = lruTail.prev;
-          count -= 1;
-        }
-      },
-      flush() {
-        const saveSize = size;
-        size = 0;
-        cache.makeRoom();
-        size = saveSize;
-      },
-      remember(innerObj) {
-        if (liveTable.has(innerObj.instanceKey)) {
-          return;
-        }
-        liveTable.set(innerObj.instanceKey, innerObj);
-        innerObj.prev = undefined;
-        cache.makeRoom();
-        innerObj.next = lruHead;
-        if (lruHead) {
-          lruHead.prev = innerObj;
-        }
-        lruHead = innerObj;
-        if (!lruTail) {
-          lruTail = innerObj;
-        }
-        count += 1;
-      },
-      refresh(innerObj) {
-        if (innerObj !== lruHead) {
-          const oldPrev = innerObj.prev;
-          const oldNext = innerObj.next;
-          if (oldPrev) {
-            oldPrev.next = oldNext;
-          } else {
-            lruHead = oldNext;
-          }
-          if (oldNext) {
-            oldNext.prev = oldPrev;
-          } else {
-            lruTail = oldPrev;
-          }
-          innerObj.prev = undefined;
-          innerObj.next = lruHead;
-          lruHead.prev = innerObj;
-          lruHead = innerObj;
-        }
-      },
-      lookup(instanceKey) {
-        return liveTable.get(instanceKey);
-      },
-    };
-    return cache;
+  function fetch(instanceKey) {
+    return JSON.parse(syscall.vatstoreGet(instanceKey));
   }
 
-  const cache = makeCache(cacheSize);
+  /**
+   * Write an object's state to secondary storage.
+   *
+   * @param {string} instanceKey  The instance ID of the object whose state is
+   *    being stored.
+   * @param {*} rawData  A data object representing the state to be written.
+   */
+  function store(instanceKey, rawData) {
+    syscall.vatstoreSet(instanceKey, JSON.stringify(rawData));
+  }
+
+  const cache = makeCache(cacheSize, fetch, store);
 
   /**
    * Map from virtual object kind IDs to reanimator functions for the
@@ -97,7 +134,7 @@ export function makeVirtualObjectManager(
    *
    * @param {string} vref  The instanceID of the object being dereferenced
    *
-   * @returns {*}  A representative of the object identified by `vref`
+   * @returns {Object}  A representative of the object identified by `vref`
    */
   function makeVirtualObjectRepresentative(vref) {
     const { id } = parseVatSlot(vref);
@@ -213,29 +250,6 @@ export function makeVirtualObjectManager(
   }
 
   /**
-   * Fetch an object's state from secondary storage.
-   *
-   * @param {string} instanceKey  The instance ID of the object whose state is
-   *    being fetched.
-   *
-   * @returns {*} an object representing the object's stored state.
-   */
-  function fetch(instanceKey) {
-    return JSON.parse(syscall.vatstoreGet(instanceKey));
-  }
-
-  /**
-   * Write an object's state to secondary storage.
-   *
-   * @param {string} instanceKey  The instance ID of the object whose state is
-   *    being stored.
-   * @param {*} rawData  A data object representing the state to be written.
-   */
-  function store(instanceKey, rawData) {
-    syscall.vatstoreSet(instanceKey, JSON.stringify(rawData));
-  }
-
-  /**
    * Make a new kind of virtual object.
    *
    * @param {*} instanceMaker  A function of the form `instanceMaker(state)` that
@@ -250,37 +264,17 @@ export function makeVirtualObjectManager(
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
 
-    function makeInnerSelf(instanceKey, rawData) {
-      const innerSelf = {
-        prev: undefined,
-        next: undefined,
-        instanceKey,
-        rawData,
-        dropData() {
-          store(instanceKey, innerSelf.rawData);
-          innerSelf.rawData = null;
-        },
-      };
-      return innerSelf;
-    }
-
-    function makeRepresentative(innerSelf, initArgs) {
+    function makeRepresentative(innerSelf) {
       function ensureState() {
         if (!innerSelf.rawData) {
-          const instanceKey = innerSelf.instanceKey;
-          innerSelf = cache.lookup(instanceKey);
-          if (!innerSelf) {
-            innerSelf = makeInnerSelf(instanceKey, fetch(instanceKey));
-            cache.remember(innerSelf);
-          }
+          innerSelf = cache.lookup(innerSelf.instanceKey);
         }
-        cache.refresh(innerSelf);
       }
 
       function wrapData() {
-        innerSelf.activeData = {};
+        const activeData = {};
         for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
-          Object.defineProperty(innerSelf.activeData, prop, {
+          Object.defineProperty(activeData, prop, {
             get: () => {
               ensureState();
               return m.unserialize(innerSelf.rawData[prop]);
@@ -291,34 +285,19 @@ export function makeVirtualObjectManager(
             },
           });
         }
-        return harden(innerSelf.activeData);
+        return harden(activeData);
       }
 
-      if (!innerSelf.rawData && initArgs) {
-        innerSelf.rawData = {};
-        const tempInstance = instanceMaker(innerSelf.rawData);
-        tempInstance.initialize(...initArgs);
-        for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
-          innerSelf.rawData[prop] = m.serialize(innerSelf.rawData[prop]);
-        }
-      }
-      if (!innerSelf.activeData) {
-        wrapData();
-      }
-      const rawRepresentative = instanceMaker(innerSelf.activeData);
-      delete rawRepresentative.initialize;
-      const representative = harden(rawRepresentative);
+      const representative = instanceMaker(wrapData());
+      delete representative.initialize;
+      harden(representative);
       cache.remember(innerSelf);
       valToSlotTable.set(representative, innerSelf.instanceKey);
       return representative;
     }
 
     function reanimate(instanceKey) {
-      let innerSelf = cache.lookup(instanceKey);
-      if (!innerSelf) {
-        innerSelf = makeInnerSelf(instanceKey, fetch(instanceKey));
-      }
-      return makeRepresentative(innerSelf);
+      return makeRepresentative(cache.lookup(instanceKey));
     }
     kindTable.set(kindID, reanimate);
 
@@ -326,8 +305,15 @@ export function makeVirtualObjectManager(
       const instanceKey = `o+${kindID}/${nextInstanceID}`;
       nextInstanceID += 1;
 
-      const innerSelf = makeInnerSelf(instanceKey, null);
-      return makeRepresentative(innerSelf, args);
+      const initializationData = {};
+      const tempInstance = instanceMaker(initializationData);
+      tempInstance.initialize(...args);
+      const rawData = {};
+      for (const prop of Object.getOwnPropertyNames(initializationData)) {
+        rawData[prop] = m.serialize(initializationData[prop]);
+      }
+      const innerSelf = { instanceKey, rawData };
+      return makeRepresentative(innerSelf);
     }
 
     return makeNewInstance;

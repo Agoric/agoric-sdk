@@ -73,6 +73,7 @@ export function makeVatLoader(stuff) {
     'vatParameters',
     'enableSetup',
     'enablePipelining',
+    'virtualObjectCacheSize',
   ];
 
   const allowedStaticOptions = [
@@ -81,6 +82,7 @@ export function makeVatLoader(stuff) {
     'managerType',
     'enableSetup',
     'enablePipelining',
+    'virtualObjectCacheSize',
   ];
 
   /**
@@ -146,6 +148,7 @@ export function makeVatLoader(stuff) {
       vatParameters = {},
       enableSetup = false,
       enablePipelining = false,
+      virtualObjectCacheSize,
     } = options;
     let terminated = false;
 
@@ -196,6 +199,7 @@ export function makeVatLoader(stuff) {
         notifyTermination,
         vatConsole: makeVatConsole(vatID),
         vatParameters,
+        virtualObjectCacheSize,
       };
       // TODO: We need to support within-vat metering (for the Spawner) until
       // #1343 is fixed, after which we can remove

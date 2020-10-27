@@ -60,6 +60,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'managerType',
         'enableSetup',
         'enableInternalMetering',
+        'virtualObjectCacheSize',
       ]);
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
