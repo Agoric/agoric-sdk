@@ -2,9 +2,12 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { makeMarshaller } from '../src/kernel/liveSlots';
 
 import { buildVatController } from '../src/index';
+
+const gcTools = harden({ WeakRef, FinalizationRegistry });
 
 async function prep() {
   const config = {};
@@ -13,7 +16,7 @@ async function prep() {
 }
 
 test('serialize exports', t => {
-  const { m } = makeMarshaller();
+  const { m } = makeMarshaller(undefined, gcTools);
   const ser = val => m.serialize(val);
   const o1 = harden({});
   const o2 = harden({
@@ -38,7 +41,7 @@ test('serialize exports', t => {
 
 test('deserialize imports', async t => {
   await prep();
-  const { m } = makeMarshaller();
+  const { m } = makeMarshaller(undefined, gcTools);
   const a = m.unserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['o-1'],
@@ -63,7 +66,7 @@ test('deserialize imports', async t => {
 });
 
 test('deserialize exports', t => {
-  const { m } = makeMarshaller();
+  const { m } = makeMarshaller(undefined, gcTools);
   const o1 = harden({});
   m.serialize(o1); // allocates slot=1
   const a = m.unserialize({
@@ -75,7 +78,7 @@ test('deserialize exports', t => {
 
 test('serialize imports', async t => {
   await prep();
-  const { m } = makeMarshaller();
+  const { m } = makeMarshaller(undefined, gcTools);
   const a = m.unserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['o-1'],
@@ -94,7 +97,7 @@ test('serialize promise', async t => {
     },
   };
 
-  const { m } = makeMarshaller(syscall);
+  const { m } = makeMarshaller(syscall, gcTools);
   const { promise, resolve } = makePromiseKit();
   t.deepEqual(m.serialize(promise), {
     body: '{"@qclass":"slot","index":0}',
@@ -130,7 +133,7 @@ test('unserialize promise', async t => {
     },
   };
 
-  const { m } = makeMarshaller(syscall);
+  const { m } = makeMarshaller(syscall, gcTools);
   const p = m.unserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['p-1'],

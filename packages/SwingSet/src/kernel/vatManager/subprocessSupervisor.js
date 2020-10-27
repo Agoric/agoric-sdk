@@ -7,6 +7,7 @@ import fs from 'fs';
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
+import { WeakRef, FinalizationRegistry } from '../../weakref';
 import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
 import {
   netstringEncoderStream,
@@ -133,7 +134,8 @@ fromParent.on('data', ([type, ...margs]) => {
       makeMarshal,
       testLog,
     };
-    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+    const gcTools = harden({ WeakRef, FinalizationRegistry });
+    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters, gcTools);
 
     const endowments = {
       ...ls.vatGlobals,

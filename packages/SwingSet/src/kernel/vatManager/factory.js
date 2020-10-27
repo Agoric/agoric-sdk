@@ -14,6 +14,7 @@ export function makeVatManagerFactory({
   makeNodeWorker,
   startSubprocessWorkerNode,
   startSubprocessWorkerXS,
+  gcTools,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -22,6 +23,7 @@ export function makeVatManagerFactory({
     meterManager,
     transformMetering,
     waitUntilQuiescent,
+    gcTools,
   });
 
   const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({

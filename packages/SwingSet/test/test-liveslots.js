@@ -1,6 +1,7 @@
 import '@agoric/install-ses';
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
+import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
@@ -37,7 +38,14 @@ function buildSyscall() {
 }
 
 function makeDispatch(syscall, build) {
-  const { setBuildRootObject, dispatch } = makeLiveSlots(syscall, 'vatA');
+  const gcTools = harden({ WeakRef, FinalizationRegistry });
+  const { setBuildRootObject, dispatch } = makeLiveSlots(
+    syscall,
+    'vatA',
+    {},
+    {},
+    gcTools,
+  );
   setBuildRootObject(build);
   return dispatch;
 }

@@ -6,6 +6,7 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 const RETIRE_VPIDS = true;
@@ -190,7 +191,14 @@ function resolutionOf(vpid, mode, targets) {
 }
 
 function makeDispatch(syscall, build) {
-  const { setBuildRootObject, dispatch } = makeLiveSlots(syscall, 'vatA');
+  const gcTools = harden({ WeakRef, FinalizationRegistry });
+  const { setBuildRootObject, dispatch } = makeLiveSlots(
+    syscall,
+    'vatA',
+    {},
+    {},
+    gcTools,
+  );
   setBuildRootObject(build);
   return dispatch;
 }
