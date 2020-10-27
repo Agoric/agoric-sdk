@@ -190,5 +190,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['getOwnPropertyDescriptor', target, property]);
       return undefined;
     },
+    getPrototypeOf(target) {
+      log.push(['getPrototypeOf', target]);
+      return null;
+    },
   };
 });
