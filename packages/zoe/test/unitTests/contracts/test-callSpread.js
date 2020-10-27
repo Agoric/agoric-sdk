@@ -5,6 +5,7 @@ import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import '../../../exported';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
 import { setup } from '../setupBasicMints';
@@ -15,11 +16,17 @@ const callSpread = `${__dirname}/../../../src/contracts/callSpread`;
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 function makeFakePriceAuthority(
-  timer,
+  // timer,
   underlyingAmountMath,
   strikeAmountMath,
   priceSchedule,
 ) {
+  const {
+    mint: quoteMint,
+    issuer: quoteIssuer,
+    amountMath: quote,
+  } = makeIssuerKit('quote', MathKind.SET);
+
   function priceFromSchedule(strikeTime) {
     let freshestPrice = 0;
     let freshestTime = -1;
@@ -32,25 +39,40 @@ function makeFakePriceAuthority(
     return freshestPrice;
   }
 
+  function getRecentPrice(timer, desiredPriceBrand, underlyingAmount) {
+    const underlyingValue = underlyingAmountMath.getValue(underlyingAmount);
+    return E(timer)
+      .getCurrentTimestamp()
+      .then(now => {
+        const price = priceFromSchedule(now);
+        const strikePrice = strikeAmountMath.make(price * underlyingValue);
+        return quoteMint.mintPayment(
+          quote.make(
+            harden([
+              {
+                Asset: underlyingAmount,
+                Price: strikePrice,
+                timer,
+                timestamp: now,
+              },
+            ]),
+          ),
+        );
+      });
+  }
+
   const priceAuthority = {
-    getCurrentPrice: underlyingAmount => {
-      const underlyingValue = underlyingAmountMath.getValue(underlyingAmount);
-      return E(timer)
-        .getCurrentTimestamp()
-        .then(now => {
-          const price = priceFromSchedule(now);
-          return strikeAmountMath.make(price * underlyingValue);
-        });
-    },
-    priceAtTime: (timeStamp, underlyingAmount) => {
+    getQuoteIssuer: () => quoteIssuer,
+    priceAtTime: (timer, timeStamp, underlyingAmount, strikeBrand) => {
       const { promise, resolve } = makePromiseKit();
 
-      underlyingAmountMath.getValue(underlyingAmount);
       E(timer).setWakeup(
         timeStamp,
         harden({
           wake: () => {
-            return resolve(priceAuthority.getCurrentPrice(underlyingAmount));
+            return resolve(
+              getRecentPrice(timer, strikeBrand, underlyingAmount),
+            );
           },
         }),
       );
@@ -89,17 +111,8 @@ test('callSpread below Strike1', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  // Alice creates a callSpread instance
-  const issuerKeywordRecord = harden({
-    Underlying: simoleanIssuer,
-    Collateral: bucksIssuer,
-    Strike: moolaIssuer,
-    Options: invitationIssuer,
-  });
-
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    manualTimer,
     amountMaths.get('simoleans'),
     amountMaths.get('moola'),
     [
@@ -117,6 +130,16 @@ test('callSpread below Strike1', async t => {
     strikePrice1: moola(60),
     strikePrice2: moola(100),
     settlementAmount: bucks(300),
+    timer: manualTimer,
+  });
+
+  // Alice creates a callSpread instance
+  const issuerKeywordRecord = harden({
+    Underlying: simoleanIssuer,
+    Collateral: bucksIssuer,
+    Strike: moolaIssuer,
+    Options: invitationIssuer,
+    Quote: priceAuthority.getQuoteIssuer(),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -191,17 +214,8 @@ test('callSpread above Strike2', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  // Alice creates a callSpread instance
-  const issuerKeywordRecord = harden({
-    Underlying: simoleanIssuer,
-    Collateral: bucksIssuer,
-    Strike: moolaIssuer,
-    Options: invitationIssuer,
-  });
-
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    manualTimer,
     amountMaths.get('simoleans'),
     amountMaths.get('moola'),
     [
@@ -217,6 +231,16 @@ test('callSpread above Strike2', async t => {
     strikePrice1: moola(60),
     strikePrice2: moola(100),
     settlementAmount: bucks(300),
+    timer: manualTimer,
+  });
+
+  // Alice creates a callSpread instance
+  const issuerKeywordRecord = harden({
+    Underlying: simoleanIssuer,
+    Collateral: bucksIssuer,
+    Strike: moolaIssuer,
+    Options: invitationIssuer,
+    Quote: priceAuthority.getQuoteIssuer(),
   });
 
   const { creatorInvitation } = await zoe.startInstance(
@@ -297,17 +321,8 @@ test('callSpread, mid-strike', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  // Alice creates a callSpread instance
-  const issuerKeywordRecord = harden({
-    Underlying: simoleanIssuer,
-    Collateral: bucksIssuer,
-    Strike: moolaIssuer,
-    Options: invitationIssuer,
-  });
-
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    manualTimer,
     amountMaths.get('simoleans'),
     amountMaths.get('moola'),
     [
@@ -323,7 +338,17 @@ test('callSpread, mid-strike', async t => {
     strikePrice1: moola(60),
     strikePrice2: moola(100),
     settlementAmount: bucks(300),
+    timer: manualTimer,
   });
+  // Alice creates a callSpread instance
+  const issuerKeywordRecord = harden({
+    Underlying: simoleanIssuer,
+    Collateral: bucksIssuer,
+    Strike: moolaIssuer,
+    Options: invitationIssuer,
+    Quote: priceAuthority.getQuoteIssuer(),
+  });
+
   const { creatorInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
@@ -402,17 +427,8 @@ test('callSpread, late exercise', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  // Alice creates a callSpread instance
-  const issuerKeywordRecord = harden({
-    Underlying: simoleanIssuer,
-    Collateral: bucksIssuer,
-    Strike: moolaIssuer,
-    Options: invitationIssuer,
-  });
-
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    manualTimer,
     amountMaths.get('simoleans'),
     amountMaths.get('moola'),
     [
@@ -428,6 +444,16 @@ test('callSpread, late exercise', async t => {
     strikePrice1: moola(60),
     strikePrice2: moola(100),
     settlementAmount: bucks(300),
+    timer: manualTimer,
+  });
+
+  // Alice creates a callSpread instance
+  const issuerKeywordRecord = harden({
+    Underlying: simoleanIssuer,
+    Collateral: bucksIssuer,
+    Strike: moolaIssuer,
+    Options: invitationIssuer,
+    Quote: priceAuthority.getQuoteIssuer(),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -508,17 +534,8 @@ test('callSpread, sell options', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(100));
 
-  // Alice creates a callSpread instance
-  const issuerKeywordRecord = harden({
-    Underlying: simoleanIssuer,
-    Collateral: bucksIssuer,
-    Strike: moolaIssuer,
-    Options: invitationIssuer,
-  });
-
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    manualTimer,
     amountMaths.get('simoleans'),
     amountMaths.get('moola'),
     [
@@ -534,6 +551,16 @@ test('callSpread, sell options', async t => {
     strikePrice1: moola(60),
     strikePrice2: moola(100),
     settlementAmount: bucks(300),
+    timer: manualTimer,
+  });
+
+  // Alice creates a callSpread instance
+  const issuerKeywordRecord = harden({
+    Underlying: simoleanIssuer,
+    Collateral: bucksIssuer,
+    Strike: moolaIssuer,
+    Options: invitationIssuer,
+    Quote: priceAuthority.getQuoteIssuer(),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,

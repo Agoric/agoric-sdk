@@ -71,7 +71,9 @@ const start = zcf => {
 
   const terms = zcf.getTerms();
   const {
-    maths: { Collateral: collateralMath, Strike: strikeMath },
+    maths: { Collateral: collateralMath, Strike: strikeMath, Quote: quoteMath },
+    brands: { Strike: strikeBrand },
+    issuers: { Quote: quoteIssuer },
   } = terms;
   assertUsesNatMath(zcf, collateralMath.getBrand());
   assertUsesNatMath(zcf, strikeMath.getBrand());
@@ -133,17 +135,24 @@ const start = zcf => {
     return floorDivide(multiply(PERCENT_BASE, numerator), denominator);
   }
 
-  function payoffOptions(price) {
-    // either offer might be exercised late, so we pay the two seats separately.
+  function payoffOptions(priceQuoteAmount) {
+    const { Price: price } = quoteMath.getValue(priceQuoteAmount)[0];
     const longShare = calculateLongShare(price);
+    // either offer might be exercised late, so we pay the two seats separately.
     reallocateToSeat(Position.LONG, longShare);
     reallocateToSeat(Position.SHORT, inverse(longShare));
   }
 
   function schedulePayoffs() {
-    terms.priceAuthority
-      .priceAtTime(terms.expiration, terms.underlyingAmount)
-      .then(price => payoffOptions(price));
+    E(terms.priceAuthority)
+      .priceAtTime(
+        terms.timer,
+        terms.expiration,
+        terms.underlyingAmount,
+        strikeBrand,
+      )
+      .then(quoteIssuer.getAmountOf)
+      .then(priceQuoteAmount => payoffOptions(priceQuoteAmount));
   }
 
   function makeOptionInvitation(dir) {
