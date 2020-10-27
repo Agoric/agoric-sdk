@@ -168,6 +168,15 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['eventualGet', target, property]);
       return undefined;
     },
+    set(target, property, value, receiver) {
+      // this trap should never run, but it does the default hardcoded behaviour
+      presenceEventualHandler.setOnly(target, property, value, receiver);
+      return value;
+    },
+    setOnly(target, property, value, receiver) {
+      log.push(['eventualSetOnly', target, property, value, receiver]);
+      return undefined; // traps return value is always ignored
+    },
   };
   const presenceImmediateHandler = {
     apply: function(target, thisArg, args) {
