@@ -13,7 +13,7 @@ import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { makeVirtualObjectManager } from './virtualObjectManager';
 
-const VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
+const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -26,6 +26,7 @@ const VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force ch
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
+ * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
@@ -36,7 +37,7 @@ const VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force ch
  *
  *     buildRootObject(vatPowers, vatParameters)
  */
-function build(syscall, forVatID, vatPowers, vatParameters) {
+function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -220,7 +221,7 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
     allocateExportID,
     valToSlot,
     m,
-    VIRTUAL_OBJECT_CACHE_SIZE,
+    cacheSize,
   );
 
   function convertValToSlot(val) {
@@ -604,6 +605,7 @@ function build(syscall, forVatID, vatPowers, vatParameters) {
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {*} vatParameters
+ * @param {number} cacheSize  Upper bound on virtual object cache size
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
@@ -633,9 +635,10 @@ export function makeLiveSlots(
   forVatID = 'unknown',
   vatPowers = harden({}),
   vatParameters = harden({}),
+  cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
 ) {
   const allVatPowers = { ...vatPowers, getInterfaceOf, Remotable, makeMarshal };
-  const r = build(syscall, forVatID, allVatPowers, vatParameters);
+  const r = build(syscall, forVatID, cacheSize, allVatPowers, vatParameters);
   const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
   return harden({ vatGlobals, dispatch, setBuildRootObject });
 }

@@ -26,7 +26,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
   const { makeNodeWorker, kernelKeeper, testLog, decref } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
-    const { vatParameters } = managerOptions;
+    const { vatParameters, virtualObjectCacheSize } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
     if (managerOptions.enableInternalMetering) {
@@ -124,7 +124,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     gotWorker(worker);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker(['setBundle', bundle, vatParameters]);
+    sendToWorker(['setBundle', bundle, vatParameters, virtualObjectCacheSize]);
 
     function deliver(delivery) {
       parentLog(`sending delivery`, delivery);

@@ -27,7 +27,7 @@ export function makeNodeSubprocessFactory(tools) {
   const { startSubprocessWorker, kernelKeeper, testLog, decref } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
-    const { vatParameters } = managerOptions;
+    const { vatParameters, virtualObjectCacheSize } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
     if (managerOptions.enableInternalMetering) {
@@ -124,7 +124,7 @@ export function makeNodeSubprocessFactory(tools) {
     fromChild.on('data', handleUpstream);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker(['setBundle', bundle, vatParameters]);
+    sendToWorker(['setBundle', bundle, vatParameters, virtualObjectCacheSize]);
 
     function deliver(delivery) {
       parentLog(`sending delivery`, delivery);

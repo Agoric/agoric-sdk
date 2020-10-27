@@ -151,7 +151,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
 
   function insistValidVatstoreKey(key) {
     assert.typeof(key, 'string');
-    assert(key.match(/^(\w|[.+/])+$/));
+    assert(key.match(/^[\w.+/]+$/));
   }
 
   function translateVatstoreGet(key) {
