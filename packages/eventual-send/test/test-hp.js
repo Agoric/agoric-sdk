@@ -164,6 +164,10 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['eventualApply', target, args]);
       return undefined;
     },
+    get(target, property) {
+      log.push(['eventualGet', target, property]);
+      return undefined;
+    },
   };
   const presenceImmediateHandler = {
     apply: function(target, thisArg, args) {
