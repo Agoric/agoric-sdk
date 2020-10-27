@@ -90,7 +90,9 @@ const FakeFinalizationRegistry = function FinalizationRegistry(
   // fall off the end with an empty instance
 };
 
-const InertFinalizationRegistry = function FinalizationRegistry(_target) {
+const InertFinalizationRegistry = function FinalizationRegistry(
+  _cleanupCallback,
+) {
   throw new TypeError('Not available');
 };
 
