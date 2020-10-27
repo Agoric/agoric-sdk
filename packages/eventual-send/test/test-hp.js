@@ -214,5 +214,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['set', target, property, value, receiver]);
       return false;
     },
+    setPrototypeOf: function(target, prototype) {
+      log.push(['setPrototypeOf', target, prototype]);
+      return false;
+    },
   };
 });
