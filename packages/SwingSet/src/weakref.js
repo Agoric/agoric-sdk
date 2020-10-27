@@ -85,7 +85,7 @@ const FakeFinalizationRegistry = function FinalizationRegistry(
   assert.typeof(
     cleanupCallback,
     'function',
-    d`cleanupCallback must be an object`,
+    d`cleanupCallback must be a function`,
   );
   // fall off the end with an empty instance
 };
