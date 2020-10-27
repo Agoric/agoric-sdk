@@ -202,5 +202,9 @@ test.skip('resolveWithPresence test nr 4', async t => {
       log.push(['isExtensible', target]);
       return false;
     },
+    ownKeys: function(target) {
+      log.push(['ownKeys', target]);
+      return [];
+    },
   };
 });
