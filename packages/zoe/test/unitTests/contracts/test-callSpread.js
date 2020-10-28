@@ -16,7 +16,6 @@ const callSpread = `${__dirname}/../../../src/contracts/callSpread`;
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 function makeFakePriceAuthority(
-  // timer,
   underlyingAmountMath,
   strikeAmountMath,
   priceSchedule,
@@ -39,40 +38,36 @@ function makeFakePriceAuthority(
     return freshestPrice;
   }
 
-  function getRecentPrice(timer, desiredPriceBrand, underlyingAmount) {
+  function priceQuote(timer, currentTime, underlyingAmount) {
     const underlyingValue = underlyingAmountMath.getValue(underlyingAmount);
-    return E(timer)
-      .getCurrentTimestamp()
-      .then(now => {
-        const price = priceFromSchedule(now);
-        const strikePrice = strikeAmountMath.make(price * underlyingValue);
-        return quoteMint.mintPayment(
-          quote.make(
-            harden([
-              {
-                Asset: underlyingAmount,
-                Price: strikePrice,
-                timer,
-                timestamp: now,
-              },
-            ]),
-          ),
-        );
-      });
+    const price = priceFromSchedule(currentTime);
+    const strikePrice = strikeAmountMath.make(price * underlyingValue);
+    const quoteAmount = quote.make(
+      harden([
+        {
+          assetAmount: underlyingAmount,
+          price: strikePrice,
+          timer,
+          timestamp: currentTime,
+        },
+      ]),
+    );
+    return harden({
+      quotePament: quoteMint.mintPayment(quoteAmount),
+      quoteAmount,
+    });
   }
 
   const priceAuthority = {
     getQuoteIssuer: () => quoteIssuer,
-    priceAtTime: (timer, timeStamp, underlyingAmount, strikeBrand) => {
+    priceAtTime: (timer, timeStamp, underlyingAmount) => {
       const { promise, resolve } = makePromiseKit();
 
       E(timer).setWakeup(
         timeStamp,
         harden({
-          wake: () => {
-            return resolve(
-              getRecentPrice(timer, strikeBrand, underlyingAmount),
-            );
+          wake: time => {
+            return resolve(priceQuote(timer, time, underlyingAmount));
           },
         }),
       );
@@ -147,9 +142,9 @@ test('callSpread below Strike1', async t => {
     terms,
   );
 
-  const optionAmount = await invitationIssuer.getAmountOf(creatorInvitation);
-  const longOptionAmount = optionAmount.value[0].LongOption;
-  const shortOptionAmount = optionAmount.value[0].ShortOption;
+  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
+  const longOptionAmount = invitationDetail.LongOption;
+  const shortOptionAmount = invitationDetail.ShortOption;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },

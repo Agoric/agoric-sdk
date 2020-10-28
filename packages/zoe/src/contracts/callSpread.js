@@ -30,7 +30,7 @@ const inverse = percent => subtract(PERCENT_BASE, percent);
 /**
  * This contract implements a fully collateralized call spread. This is a
  * combination of a call option bought at one strike price and a second call
- * option sold at a higher price. The contracts are sold in pairs, and the
+ * option sold at a higher price. The invitations are produced in pairs, and the
  * purchaser pays the entire amount that will be paid out. The individual
  * options are ERTP invitations that are suitable for resale.
  *
@@ -49,10 +49,10 @@ const inverse = percent => subtract(PERCENT_BASE, percent);
  * be an NFT or a fungible amount. strikePrice2 must be greater than
  * strikePrice1. settlementAmount uses Collateral.
  *
- * The creatorInvitation has terms that include the amounts of the two options
- * as longOption and shortOption. When the creatorInvitation is exercised, the
- * payout includes the two option positions, which are themselves invitations
- * which can be exercised for free, and provide the option payouts.
+ * The creatorInvitation has customProperties that include the amounts of the
+ * two options as longOption and shortOption. When the creatorInvitation is
+ * exercised, the payout includes the two option positions, which are themselves
+ * invitations which can be exercised for free, and provide the option payouts.
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
@@ -73,7 +73,6 @@ const start = zcf => {
   const {
     maths: { Collateral: collateralMath, Strike: strikeMath, Quote: quoteMath },
     brands: { Strike: strikeBrand },
-    issuers: { Quote: quoteIssuer },
   } = terms;
   assertUsesNatMath(zcf, collateralMath.getBrand());
   assertUsesNatMath(zcf, strikeMath.getBrand());
@@ -136,7 +135,7 @@ const start = zcf => {
   }
 
   function payoffOptions(priceQuoteAmount) {
-    const { Price: price } = quoteMath.getValue(priceQuoteAmount)[0];
+    const { price } = quoteMath.getValue(priceQuoteAmount)[0];
     const longShare = calculateLongShare(price);
     // either offer might be exercised late, so we pay the two seats separately.
     reallocateToSeat(Position.LONG, longShare);
@@ -151,8 +150,9 @@ const start = zcf => {
         terms.underlyingAmount,
         strikeBrand,
       )
-      .then(quoteIssuer.getAmountOf)
-      .then(priceQuoteAmount => payoffOptions(priceQuoteAmount));
+      .then(priceQuote => {
+        payoffOptions(priceQuote.quoteAmount);
+      });
   }
 
   function makeOptionInvitation(dir) {
@@ -211,12 +211,12 @@ const start = zcf => {
       longSeat.exit();
     };
 
-    const longTerms = harden({
+    const custom = harden({
       ...terms,
       LongOption: longAmount,
       ShortOption: shortAmount,
     });
-    return zcf.makeInvitation(pairBuyerPosition, `call spread pair`, longTerms);
+    return zcf.makeInvitation(pairBuyerPosition, `call spread pair`, custom);
   }
 
   return harden({ creatorInvitation: makeInvitationToBuy() });
