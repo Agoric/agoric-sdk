@@ -13,7 +13,7 @@ import { parseVatSlot } from '../parseVatSlots';
  *
  * @returns {Object}  An LRU cache of (up to) the given size
  */
-function makeCache(size, fetch, store) {
+export function makeCache(size, fetch, store) {
   let lruHead;
   let lruTail;
   let count = 0;
@@ -310,7 +310,7 @@ export function makeVirtualObjectManager(
       tempInstance.initialize(...args);
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initializationData)) {
-        rawData[prop] = m.serialize(initializationData[prop]);
+        console.error(`state property ${prop} is not serializable`);
       }
       const innerSelf = { instanceKey, rawData };
       return makeRepresentative(innerSelf);
