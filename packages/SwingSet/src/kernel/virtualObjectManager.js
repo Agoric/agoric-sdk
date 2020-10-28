@@ -12,6 +12,9 @@ import { parseVatSlot } from '../parseVatSlots';
  *   store raw object state by its instanceKey
  *
  * @returns {Object}  An LRU cache of (up to) the given size
+ *
+ * This cache is part of the virtual object manager and is not intended to be
+ * used independently; it is exported only for the benefit of test code.
  */
 export function makeCache(size, fetch, store) {
   let lruHead;
@@ -242,8 +245,21 @@ export function makeVirtualObjectManager(
           );
           syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(harden(value))));
         } else {
-          assertKeyExists(vkey);
+          assertKeyExists(key);
           backingMap.set(key, value);
+        }
+      },
+      delete(key) {
+        const vkey = virtualObjectKey(key);
+        if (vkey) {
+          assert(
+            syscall.vatstoreGet(vkey),
+            details`${q(keyName)} not found: ${key}`,
+          );
+          syscall.vatstoreSet(vkey, undefined);
+        } else {
+          assertKeyExists(key);
+          backingMap.delete(key);
         }
       },
     });
@@ -310,7 +326,11 @@ export function makeVirtualObjectManager(
       tempInstance.initialize(...args);
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initializationData)) {
-        console.error(`state property ${prop} is not serializable`);
+        try {
+          rawData[prop] = m.serialize(initializationData[prop]);
+        } catch (e) {
+          console.error(`state property ${prop} is not serializable`);
+        }
       }
       const innerSelf = { instanceKey, rawData };
       return makeRepresentative(innerSelf);
