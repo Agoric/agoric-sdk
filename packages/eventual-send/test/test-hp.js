@@ -217,6 +217,18 @@ test.skip('resolveWithPresence test nr 4', async t => {
             } catch (problem) { }
           }
         }
+        if('there' === property) {
+          const there = nomad => {
+            if (typeof(nomad) === 'function') {
+              try {
+                return Promise.resolve(there());
+              } catch (problem) {
+                return Promise.reject(problem);
+              }
+            }
+          };
+          return there;
+        }
       }
       return undefined;
     },
