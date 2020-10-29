@@ -207,7 +207,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
                 // Return the bootstrap object for this plugin.
                 console.info(`Loading plugin ${JSON.stringify(pluginFile)}`);
                 return E.G(E(pluginManager).load(pluginName, pluginOpts))
-                  .bootstrap;
+                  .pluginRoot;
               } catch (e) {
                 throw Error(
                   `Cannot install unsafe plugin: ${(e && e.stack) || e}`,
