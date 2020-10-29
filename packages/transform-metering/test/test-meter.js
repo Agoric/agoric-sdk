@@ -1,3 +1,4 @@
+/* globals BigInt */
 /* eslint-disable no-await-in-loop */
 import test from 'ava';
 
@@ -111,4 +112,11 @@ test('getBalance', async t => {
   t.is(refillFacet.getComputeBalance(), 7);
   t.is(refillFacet.getAllocateBalance(), c.DEFAULT_COMBINED_METER);
   t.is(refillFacet.getCombinedBalance(), c.DEFAULT_COMBINED_METER);
+});
+
+test('BigInt', async t => {
+  const { meter, refillFacet } = makeMeter({ budgetAllocate: 10 });
+  t.is(refillFacet.getAllocateBalance(), 10);
+  meter[c.METER_ALLOCATE](BigInt('1234567890123456789012345678901234567890'));
+  t.is(refillFacet.getAllocateBalance(), 6);
 });

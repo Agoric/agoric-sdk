@@ -7,7 +7,7 @@ const { ceil } = Math;
 const ObjectConstructor = Object;
 
 // eslint-disable-next-line no-bitwise
-const bigIntWord = typeof BigInt !== 'undefined' && BigInt(1 << 32);
+const bigIntWord = typeof BigInt !== 'undefined' && BigInt(2) ** BigInt(64);
 const bigIntZero = bigIntWord && BigInt(0);
 
 // Stop deducting when we reach a negative number.
@@ -99,7 +99,6 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
               remaining = -remaining;
             }
             while (remaining > bigIntZero) {
-              meter[c.METER_COMPUTE](undefined, throwForever);
               remaining /= bigIntWord;
               cost += 1;
             }
