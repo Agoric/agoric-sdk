@@ -13,17 +13,18 @@ export const assertPayoutAmount = async (
   t.deepEqual(amount, expectedAmount, `${label} payout was ${amount.value}`);
 };
 
+// Returns a promise that can be awaited in tests to ensure the check completes.
 export const assertPayoutDeposit = (t, payout, purse, amount) => {
-  payout.then(payment => {
+  return payout.then(payment => {
     E(purse)
       .deposit(payment)
-      .then(payoutAmount => {
+      .then(payoutAmount =>
         t.deepEqual(
           payoutAmount,
           amount,
           `payout was ${payoutAmount.value}, expected ${amount}.value`,
-        );
-      });
+        ),
+      );
   });
 };
 
