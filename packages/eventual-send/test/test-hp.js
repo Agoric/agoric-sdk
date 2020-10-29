@@ -166,6 +166,25 @@ test.skip('resolveWithPresence test nr 4', async t => {
     },
     get(target, property) {
       log.push(['eventualGet', target, property]);
+      if ('then' === property) {
+        return (callback, errback) => {
+          try {
+            return Promise.resolve(callback(target));
+          } catch (problem) {
+            return Promise.reject(proplem);
+          }
+        }
+      }
+      if ('catch' === property) {
+        return errback => Promise.resolve(target);
+      }
+      if ('finally' === property) {
+        return callback => {
+          try {
+            callback();
+          } catch (problem) { }
+        }
+      }
       return undefined;
     },
     set(target, property, value, receiver) {
