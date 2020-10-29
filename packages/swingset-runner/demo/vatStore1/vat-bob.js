@@ -1,4 +1,4 @@
-/* global makeKind flushCache */
+/* global makeKind */
 const p = console.log;
 
 function makeThingInstance(state) {
@@ -118,11 +118,6 @@ export function buildRootObject(_vatPowers) {
           zot4.printInfo();
           thing3.inc();
           p(`${thing4.describe()}`);
-          break;
-        case 4:
-          p('phase 4: flush test');
-          thing1.inc();
-          flushCache();
           break;
         default:
           // because otherwise eslint complains

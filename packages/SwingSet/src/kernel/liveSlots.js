@@ -215,7 +215,6 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
-    flushCache,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
@@ -569,7 +568,6 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   const vatGlobals = harden({
     makeWeakStore,
     makeKind,
-    flushCache,
   });
 
   function setBuildRootObject(buildRootObject) {

@@ -10,7 +10,7 @@ function capdata(body, slots = []) {
 }
 const s = JSON.stringify;
 
-test('virtual objects', t => {
+function makeAllTheStuff(cacheSize) {
   const fakeStore = new Map();
 
   function dumpStore() {
@@ -49,7 +49,7 @@ test('virtual objects', t => {
     fakeAllocateExportID,
     valToSlot,
     fakeMarshal,
-    3,
+    cacheSize,
   );
 
   function fakeConvertValToSlot(val) {
@@ -66,60 +66,70 @@ test('virtual objects', t => {
     return makeVirtualObjectRepresentative(slot);
   }
 
-  function makeThingInstance(state) {
-    return {
-      initialize(label = 'thing', counter = 0) {
-        state.counter = counter;
-        state.label = label;
-        state.resetCounter = 0;
-      },
-      inc() {
-        state.counter += 1;
-        return state.counter;
-      },
-      reset(newStart) {
-        state.counter = newStart;
-        state.resetCounter += 1;
-        return state.resetCounter;
-      },
-      relabel(newLabel) {
-        state.label = newLabel;
-      },
-      get() {
-        return state.counter;
-      },
-      describe() {
-        return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
-      },
-    };
-  }
+  return {
+    makeWeakStore,
+    makeKind,
+    flushCache,
+    dumpStore,
+  };
+}
+
+function makeThingInstance(state) {
+  return {
+    initialize(label = 'thing', counter = 0) {
+      state.counter = counter;
+      state.label = label;
+      state.resetCounter = 0;
+    },
+    inc() {
+      state.counter += 1;
+      return state.counter;
+    },
+    reset(newStart) {
+      state.counter = newStart;
+      state.resetCounter += 1;
+      return state.resetCounter;
+    },
+    relabel(newLabel) {
+      state.label = newLabel;
+    },
+    get() {
+      return state.counter;
+    },
+    describe() {
+      return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+    },
+  };
+}
+
+function makeZotInstance(state) {
+  return {
+    initialize(arbitrary = 47, name = 'Bob', tag = 'say what?') {
+      state.arbitrary = arbitrary;
+      state.name = name;
+      state.tag = tag;
+      state.count = 0;
+    },
+    sayHello(msg) {
+      state.count += 1;
+      return `${msg} ${state.name}`;
+    },
+    rename(newName) {
+      state.name = newName;
+      state.count += 1;
+      return state.name;
+    },
+    getInfo() {
+      state.count += 1;
+      return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
+    },
+  };
+}
+
+test('virtual object operations', t => {
+  const { makeKind, flushCache, dumpStore } = makeAllTheStuff(3);
 
   const thingMaker = makeKind(makeThingInstance);
-
-  function makeZotInstance(state) {
-    return {
-      initialize(arbitrary = 47, name = 'Bob', tag = 'say what?') {
-        state.arbitrary = arbitrary;
-        state.name = name;
-        state.tag = tag;
-        state.count = 0;
-      },
-      sayHello(msg) {
-        state.count += 1;
-        return `${msg} ${state.name}`;
-      },
-      rename(newName) {
-        state.name = newName;
-        state.count += 1;
-        return state.name;
-      },
-      getInfo() {
-        state.count += 1;
-        return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
-      },
-    };
-  }
-
   const zotMaker = makeKind(makeZotInstance);
 
   // phase 0: start
@@ -135,6 +145,7 @@ test('virtual objects', t => {
   const zot2 = zotMaker(29, 'Bob', 'what are you saying?');
   const zot3 = zotMaker(47, 'Carol', 'as if...');
   const zot4 = zotMaker(66, 'Dave', 'you and what army?');
+
   // prettier-ignore
   t.deepEqual(dumpStore(), [
     ['o+1/1', s({counter:capdata('0'),label:capdata('"thing-1"'),resetCounter:capdata('0')})],
@@ -212,8 +223,22 @@ test('virtual objects', t => {
     ['o+2/3', s({arbitrary:capdata('47'),name:capdata('"Chester"'),tag:capdata('"as if..."'),count:capdata('3')})],
     ['o+2/4', s({arbitrary:capdata('66'),name:capdata('"Dave"'),tag:capdata('"you and what army?"'),count:capdata('2')})],
   ]);
+});
 
-  // phase 5: test weakStore
+test('weak store operations', t => {
+  const { makeWeakStore, makeKind } = makeAllTheStuff(3);
+
+  const thingMaker = makeKind(makeThingInstance);
+  const zotMaker = makeKind(makeZotInstance);
+
+  const thing1 = thingMaker('t1');
+  const thing2 = thingMaker('t2');
+
+  const zot1 = zotMaker(1, 'z1');
+  const zot2 = zotMaker(2, 'z2');
+  const zot3 = zotMaker(3, 'z3');
+  const zot4 = zotMaker(4, 'z4');
+
   const ws1 = makeWeakStore();
   const ws2 = makeWeakStore();
   const nv1 = {};
