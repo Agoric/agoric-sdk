@@ -1,37 +1,77 @@
-import { E } from '@agoric/eventual-send';
+// @ts-check
 
-// A fake clock that also logs progress in tests.
+import { E } from '@agoric/eventual-send';
+import { makeStore } from '@agoric/store';
+
+import './types';
+
+/**
+ * @typedef {Object} ManualTimerAdmin
+ * @property {(msg: string | undefined) => Promise<void>} tick
+ */
+
+/**
+ * @typedef {ManualTimerAdmin & TimerService} ManualTimer
+ */
+
+/**
+ * A fake clock that also logs progress.
+ *
+ * @param {(...args: any[]) => void} log
+ * @param {Timestamp} [startValue=0]
+ * @returns {ManualTimer}
+ */
 export default function buildManualTimer(log, startValue = 0) {
   let ticks = startValue;
-  const schedule = new Map();
+
+  /** @type {Store<Timestamp, Array<TimerServiceHandler>>} */
+  const schedule = makeStore('Timestamp');
+
+  /** @type {ManualTimer} */
   const timer = {
-    setWakeup(deadline, handler) {
-      if (deadline <= ticks) {
-        log(`&& task was past its deadline when scheduled: ${deadline} &&`);
-        handler.wake(ticks);
-        return undefined;
-      }
-      log(`@@ schedule task for:${deadline}, currently: ${ticks} @@`);
-      if (!schedule.has(deadline)) {
-        schedule.set(deadline, []);
-      }
-      schedule.get(deadline).push(handler);
-      return deadline;
-    },
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
       ticks += 1;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
+        const handlers = schedule.get(ticks);
+        schedule.delete(ticks);
         await Promise.allSettled(
-          schedule.get(ticks).map(h => {
+          handlers.map(h => {
             log(`&& running a task scheduled for ${ticks}. &&`);
             return E(h).wake(ticks);
           }),
         );
       }
     },
-    createRepeater(delaySecs, interval) {
+    getCurrentTimestamp() {
+      return ticks;
+    },
+    setWakeup(baseTime, handler) {
+      if (baseTime <= ticks) {
+        log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
+        handler.wake(ticks);
+        return undefined;
+      }
+      log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
+      if (!schedule.has(baseTime)) {
+        schedule.init(baseTime, []);
+      }
+      schedule.get(baseTime).push(handler);
+      return baseTime;
+    },
+    removeWakeup(handler) {
+      const baseTimes = [];
+      for (const [baseTime, handlers] of schedule.entries()) {
+        const index = handlers.indexOf(handler);
+        if (index >= 0) {
+          handlers.splice(index, 1);
+          baseTimes.push(baseTime);
+        }
+      }
+      return baseTimes;
+    },
+    createRepeater(baseTime, interval) {
       let handlers = [];
       const repeater = {
         schedule(h) {
@@ -51,11 +91,8 @@ export default function buildManualTimer(log, startValue = 0) {
           await Promise.allSettled(handlers.map(h => E(h).wake(timestamp)));
         },
       };
-      timer.setWakeup(ticks + delaySecs, repeaterHandler);
+      timer.setWakeup(ticks + baseTime, repeaterHandler);
       return repeater;
-    },
-    getCurrentTimestamp() {
-      return ticks;
     },
   };
   harden(timer);

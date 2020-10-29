@@ -13,9 +13,9 @@ import '../exported';
 
 /**
  * @typedef {Object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>, assetBrand: Brand, priceBrand: Brand)
+ * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand)
  * => Deleter} registerPriceAuthority Add a unique price authority for a given
- * asset/price pair
+ * pair
  */
 
 /**
@@ -37,15 +37,15 @@ export const makePriceAuthorityRegistry = () => {
    */
 
   /** @type {Store<Brand, Store<Brand, PriceAuthorityRecord>>} */
-  const assetToPriceStore = makeStore('assetBrand');
+  const assetToPriceStore = makeStore('brandIn');
 
   /**
-   * @param {Brand} assetBrand
-   * @param {Brand} priceBrand
+   * @param {Brand} brandIn
+   * @param {Brand} brandOut
    */
-  const lookup = (assetBrand, priceBrand) => {
-    const priceStore = assetToPriceStore.get(assetBrand);
-    return priceStore.get(priceBrand);
+  const lookup = (brandIn, brandOut) => {
+    const priceStore = assetToPriceStore.get(brandIn);
+    return priceStore.get(brandOut);
   };
 
   /**
@@ -55,59 +55,59 @@ export const makePriceAuthorityRegistry = () => {
    * @type {PriceAuthority}
    */
   const priceAuthority = {
-    async getQuoteIssuer(assetBrand, priceBrand) {
-      const record = lookup(assetBrand, priceBrand);
-      return E(record.priceAuthority).getQuoteIssuer(assetBrand, priceBrand);
+    async getQuoteIssuer(brandIn, brandOut) {
+      const record = lookup(brandIn, brandOut);
+      return E(record.priceAuthority).getQuoteIssuer(brandIn, brandOut);
     },
-    async getInputPrice(amountIn, brandOut) {
+    async getAmountInQuote(amountIn, brandOut) {
       const record = lookup(amountIn.brand, brandOut);
-      return E(record.priceAuthority).getInputPrice(amountIn, brandOut);
+      return E(record.priceAuthority).getAmountInQuote(amountIn, brandOut);
     },
-    async getOutputPrice(amountOut, brandIn) {
+    async getAmountOutQuote(brandIn, amountOut) {
       const record = lookup(brandIn, amountOut.brand);
-      return E(record.priceAuthority).getOutputPrice(amountOut, brandIn);
+      return E(record.priceAuthority).getAmountOutQuote(brandIn, amountOut);
     },
-    async getPriceNotifier(assetBrand, priceBrand) {
-      const record = lookup(assetBrand, priceBrand);
-      return E(record.priceAuthority).getPriceNotifier(assetBrand, priceBrand);
+    async getPriceNotifier(brandIn, brandOut) {
+      const record = lookup(brandIn, brandOut);
+      return E(record.priceAuthority).getPriceNotifier(brandIn, brandOut);
     },
-    async priceAtTime(timer, deadline, assetAmount, priceBrand) {
-      const record = lookup(assetAmount.brand, priceBrand);
-      return E(record.priceAuthority).priceAtTime(
+    async quoteAtTime(timer, deadline, amountIn, brandOut) {
+      const record = lookup(amountIn.brand, brandOut);
+      return E(record.priceAuthority).quoteAtTime(
         timer,
         deadline,
-        assetAmount,
-        priceBrand,
+        amountIn,
+        brandOut,
       );
     },
-    async priceWhenLT(assetAmount, priceLimit) {
-      const record = lookup(assetAmount.brand, priceLimit.brand);
-      return E(record.priceAuthority).priceWhenLT(assetAmount, priceLimit);
+    async quoteWhenLT(amountIn, amountOutLimit) {
+      const record = lookup(amountIn.brand, amountOutLimit.brand);
+      return E(record.priceAuthority).quoteWhenLT(amountIn, amountOutLimit);
     },
-    async priceWhenLTE(assetAmount, priceLimit) {
-      const record = lookup(assetAmount.brand, priceLimit.brand);
-      return E(record.priceAuthority).priceWhenLTE(assetAmount, priceLimit);
+    async quoteWhenLTE(amountIn, amountOutLimit) {
+      const record = lookup(amountIn.brand, amountOutLimit.brand);
+      return E(record.priceAuthority).quoteWhenLTE(amountIn, amountOutLimit);
     },
-    async priceWhenGTE(assetAmount, priceLimit) {
-      const record = lookup(assetAmount.brand, priceLimit.brand);
-      return E(record.priceAuthority).priceWhenGT(assetAmount, priceLimit);
+    async quoteWhenGTE(amountIn, amountOutLimit) {
+      const record = lookup(amountIn.brand, amountOutLimit.brand);
+      return E(record.priceAuthority).quoteWhenGT(amountIn, amountOutLimit);
     },
-    async priceWhenGT(assetAmount, priceLimit) {
-      const record = lookup(assetAmount.brand, priceLimit.brand);
-      return E(record.priceAuthority).priceWhenGT(assetAmount, priceLimit);
+    async quoteWhenGT(amountIn, amountOutLimit) {
+      const record = lookup(amountIn.brand, amountOutLimit.brand);
+      return E(record.priceAuthority).quoteWhenGT(amountIn, amountOutLimit);
     },
   };
 
   /** @type {PriceAuthorityRegistryAdmin} */
   const adminFacet = {
-    registerPriceAuthority(pa, assetBrand, priceBrand) {
+    registerPriceAuthority(pa, brandIn, brandOut) {
       /** @type {Store<Brand, PriceAuthorityRecord>} */
       let priceStore;
-      if (assetToPriceStore.has(assetBrand)) {
-        priceStore = assetToPriceStore.get(assetBrand);
+      if (assetToPriceStore.has(brandIn)) {
+        priceStore = assetToPriceStore.get(brandIn);
       } else {
-        priceStore = makeStore('priceBrand');
-        assetToPriceStore.init(assetBrand, priceStore);
+        priceStore = makeStore('brandOut');
+        assetToPriceStore.init(brandIn, priceStore);
       }
 
       // Put a box around the authority so that we can be ensured the deleter
@@ -117,16 +117,16 @@ export const makePriceAuthorityRegistry = () => {
       };
 
       // Set up the record.
-      priceStore.init(priceBrand, harden(record));
+      priceStore.init(brandOut, harden(record));
 
       return harden({
         delete() {
           assert.equal(
-            priceStore.has(priceBrand) && priceStore.get(priceBrand),
+            priceStore.has(brandOut) && priceStore.get(brandOut),
             record,
             details`Price authority already dropped`,
           );
-          priceStore.delete(priceBrand);
+          priceStore.delete(brandOut);
         },
       });
     },
