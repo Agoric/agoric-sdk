@@ -15,6 +15,42 @@ import {
 const { subtract, multiply, floorDivide } = natSafeMath;
 
 /**
+ * This contract implements a fully collateralized call spread. This is a
+ * combination of a call option bought at one strike price and a second call
+ * option sold at a higher price. The invitations are produced in pairs, and the
+ * purchaser pays the entire amount that will be paid out. The individual
+ * options are ERTP invitations that are suitable for resale.
+ *
+ * This option is settled financially. There is no requirement that the original
+ * purchaser have ownership of the underlying asset at the start, and the
+ * beneficiaries shouldn't expect to take delivery at closing.
+ *
+ * The issuerKeywordRecord specifies the issuers for four keywords: Underlying,
+ * Strike, and Collateral. The payout is in Collateral. Strike amounts are used
+ * for the price oracle's quotes as to the value of the Underlying, as well as
+ * the strike prices in the terms. The terms include { timer, underlyingAmount,
+ * expiration, priceAuthority, strikePrice1, strikePrice2, settlementAmount }.
+ * The timer must be recognized by the priceAuthority. expiration is a time
+ * recognized by the timer. underlyingAmount is passed to the priceAuthority,
+ * so it could be an NFT or a fungible amount. strikePrice2 must be greater than
+ * strikePrice1. settlementAmount uses Collateral.
+ *
+ * The creatorInvitation has customProperties that include the amounts of the
+ * two options as longAmount and shortAmount. When the creatorInvitation is
+ * exercised, the payout includes the two option positions, which are themselves
+ * invitations which can be exercised for free, and provide the option payouts
+ * with the keyword Collateral.
+ *
+ * Future enhancements:
+ * + issue multiple option pairs with the same expiration from a single instance
+ * + create separate invitations to purchase the pieces of the option pair.
+ *   (This would remove the current requirement that an intermediary have the
+ *   total collateral available before the option descriptions have been
+ *   created.)
+ * + increase the precision of the calculations. (change PERCENT_BASE to 10000)
+ */
+
+/**
  * Constants for long and short positions.
  *
  * @type {{ LONG: 'long', SHORT: 'short' }}
@@ -28,46 +64,38 @@ const PERCENT_BASE = 100;
 const inverse = percent => subtract(PERCENT_BASE, percent);
 
 /**
- * This contract implements a fully collateralized call spread. This is a
- * combination of a call option bought at one strike price and a second call
- * option sold at a higher price. The invitations are produced in pairs, and the
- * purchaser pays the entire amount that will be paid out. The individual
- * options are ERTP invitations that are suitable for resale.
+ * calculate the portion (as a percentage) of the collateral that should be
+ * allocated to the long side.
  *
- * This option is settled financially. There is no requirement that the original
- * purchaser have ownership of the underlying asset at the start, and the
- * beneficiaries shouldn't expect to take delivery at closing.
+ * @param strikeMath AmountMath the math to use
+ * @param price Amount the value of the underlying asset at closing that
+ * determines the payouts to the parties
+ * @param strikePrice1 Amount the lower strike price
+ * @param strikePrice2 Amount the upper strike price
  *
- * The issuerKeywordRecord specifies the issuers for four keywords: Underlying,
- * Strike, Collateral and Options. The payout is in Collateral. Strike amounts
- * are used for the price oracle's quotes as to the value of the Underlying, as
- * well as the strike prices in the terms. Options indicates the
- * invitationIssuer, which is part of the amounts of the options. The terms
- * include { expiration, underlyingAmount, priceAuthority, strikePrice1,
- * strikePrice2, settlementAmount }. expiration is a time recognized by the
- * priceAuthority. underlyingAmount is passed to the priceAuthority, so it could
- * be an NFT or a fungible amount. strikePrice2 must be greater than
- * strikePrice1. settlementAmount uses Collateral.
- *
- * The creatorInvitation has customProperties that include the amounts of the
- * two options as longOption and shortOption. When the creatorInvitation is
- * exercised, the payout includes the two option positions, which are themselves
- * invitations which can be exercised for free, and provide the option payouts.
- *
- * Future enhancements:
- * + issue multiple option pairs with the same expiration from a single instance
- * + create separate invitations to purchase the pieces of the option pair.
- *   (This would remove the current requirement that an intermediary have the
- *   total collateral available before the option descriptions have been
- *   created.)
- * + exit the contract when both seats have been paid.
- * + increase the precision of the calcluations. (change PERCENT_BASE to 10000)
- *
+ * if price <= strikePrice1, return 0
+ * if price >= strikePrice2, return 100.
+ * Otherwise return a number between 1 and 99 reflecting the position of price
+ * in the range from strikePrice1 to strikePrice2.
+ */
+function calculateLongShare(strikeMath, price, strikePrice1, strikePrice2) {
+  if (strikeMath.isGTE(strikePrice1, price)) {
+    return 0;
+  } else if (strikeMath.isGTE(price, strikePrice2)) {
+    return PERCENT_BASE;
+  }
+
+  const denominator = strikeMath.subtract(strikePrice2, strikePrice1).value;
+  const numerator = strikeMath.subtract(price, strikePrice1).value;
+  return floorDivide(multiply(PERCENT_BASE, numerator), denominator);
+}
+
+/**
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  // terms: underlyingAmount, priceAuthority, strike1, strike2,
-  //    settlementAmount, expiration
+  // terms: underlyingAmount, priceAuthority, strikePrice1, strikePrice2,
+  //    settlementAmount, expiration, timer
 
   const terms = zcf.getTerms();
   const {
@@ -83,6 +111,8 @@ const start = zcf => {
     details`strikePrice2 must be greater than strikePrice1`,
   );
 
+  zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
+
   // Create the two options immediately and allocate them to this seat.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
@@ -94,49 +124,35 @@ const start = zcf => {
 
   seatPromiseKits[Position.LONG] = makePromiseKit();
   seatPromiseKits[Position.SHORT] = makePromiseKit();
+  let seatsExited = 0;
 
   function reallocateToSeat(position, sharePercent) {
     seatPromiseKits[position].promise.then(seat => {
-      const currentCollateral = collateralSeat.getCurrentAllocation()
-        .Collateral;
       const totalCollateral = terms.settlementAmount;
       const collateralShare = floorDivide(
         multiply(totalCollateral.value, sharePercent),
         PERCENT_BASE,
       );
       const seatPortion = collateralMath.make(collateralShare);
-      const collateralRemainder = collateralMath.subtract(
-        currentCollateral,
-        seatPortion,
-      );
-      zcf.reallocate(
-        seat.stage({ Collateral: seatPortion }),
-        collateralSeat.stage({ Collateral: collateralRemainder }),
+      trade(
+        zcf,
+        { seat, gains: { Collateral: seatPortion } },
+        { seat: collateralSeat, gains: {} },
       );
       seat.exit();
+      seatsExited += 1;
+      const remainder = collateralSeat.getAmountAllocated('Collateral');
+      if (collateralMath.isEmpty(remainder) && seatsExited === 2) {
+        zcf.shutdown('contract has been settled');
+      }
     });
-  }
-
-  // calculate the portion (as a percentage) of the collateral that should be
-  // allocated to the long side.
-  function calculateLongShare(price) {
-    if (strikeMath.isGTE(terms.strikePrice1, price)) {
-      return 0;
-    } else if (strikeMath.isGTE(price, terms.strikePrice2)) {
-      return PERCENT_BASE;
-    }
-
-    const denominator = strikeMath.subtract(
-      terms.strikePrice2,
-      terms.strikePrice1,
-    ).value;
-    const numerator = strikeMath.subtract(price, terms.strikePrice1).value;
-    return floorDivide(multiply(PERCENT_BASE, numerator), denominator);
   }
 
   function payoffOptions(priceQuoteAmount) {
     const { price } = quoteMath.getValue(priceQuoteAmount)[0];
-    const longShare = calculateLongShare(price);
+    const strike1 = terms.strikePrice1;
+    const strike2 = terms.strikePrice2;
+    const longShare = calculateLongShare(strikeMath, price, strike1, strike2);
     // either offer might be exercised late, so we pay the two seats separately.
     reallocateToSeat(Position.LONG, longShare);
     reallocateToSeat(Position.SHORT, inverse(longShare));
@@ -150,48 +166,34 @@ const start = zcf => {
         terms.underlyingAmount,
         strikeBrand,
       )
-      .then(priceQuote => {
-        payoffOptions(priceQuote.quoteAmount);
-      });
+      .then(priceQuote => payoffOptions(priceQuote.quoteAmount));
   }
 
   function makeOptionInvitation(dir) {
-    const optionsTerms = harden({
-      ...terms,
-      position: dir,
-    });
     // All we do at time of exercise is resolve the promise.
     return zcf.makeInvitation(
       seat => seatPromiseKits[dir].resolve(seat),
       `collect ${dir} payout`,
-      optionsTerms,
+      { position: dir },
     );
   }
 
-  async function makeOptionPair() {
-    return {
-      longInvitation: makeOptionInvitation(Position.LONG),
-      shortInvitation: makeOptionInvitation(Position.SHORT),
+  async function makeCreatorInvitation() {
+    const pair = {
+      LongOption: makeOptionInvitation(Position.LONG),
+      ShortOption: makeOptionInvitation(Position.SHORT),
     };
-  }
-
-  async function makeInvitationToBuy() {
-    const { longInvitation, shortInvitation } = await makeOptionPair();
     const invitationIssuer = zcf.getInvitationIssuer();
-    const longAmount = await E(invitationIssuer).getAmountOf(longInvitation);
-    const shortAmount = await E(invitationIssuer).getAmountOf(shortInvitation);
-    depositToSeat(
-      zcf,
-      collateralSeat,
-      { LongOption: longAmount, ShortOption: shortAmount },
-      { LongOption: longInvitation, ShortOption: shortInvitation },
-    );
+    const longAmount = await E(invitationIssuer).getAmountOf(pair.LongOption);
+    const shortAmount = await E(invitationIssuer).getAmountOf(pair.ShortOption);
+    const amounts = { LongOption: longAmount, ShortOption: shortAmount };
+    await depositToSeat(zcf, collateralSeat, amounts, pair);
 
-    // transfer collateral from longSeat to collateralSeat, then return a pair
-    // of callSpread invitations
+    // transfer collateral from creator to collateralSeat, then return a pair
+    // of callSpread options
     /** @type {OfferHandler} */
-    const pairBuyerPosition = longSeat => {
-      assertProposalShape(longSeat, {
+    const createOptionsHandler = creatorSeat => {
+      assertProposalShape(creatorSeat, {
         give: { Collateral: null },
         want: { LongOption: null, ShortOption: null },
       });
@@ -203,24 +205,23 @@ const start = zcf => {
           gains: { Collateral: terms.settlementAmount },
         },
         {
-          seat: longSeat,
+          seat: creatorSeat,
           gains: { LongOption: longAmount, ShortOption: shortAmount },
         },
       );
       schedulePayoffs();
-      longSeat.exit();
+      creatorSeat.exit();
     };
 
     const custom = harden({
-      ...terms,
-      LongOption: longAmount,
-      ShortOption: shortAmount,
+      longAmount,
+      shortAmount,
     });
-    return zcf.makeInvitation(pairBuyerPosition, `call spread pair`, custom);
+    return zcf.makeInvitation(createOptionsHandler, `call spread pair`, custom);
   }
 
-  return harden({ creatorInvitation: makeInvitationToBuy() });
+  return harden({ creatorInvitation: makeCreatorInvitation() });
 };
 
 harden(start);
-export { start };
+export { start, calculateLongShare };

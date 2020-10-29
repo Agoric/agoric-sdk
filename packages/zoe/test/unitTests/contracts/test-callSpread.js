@@ -93,7 +93,6 @@ test('callSpread below Strike1', async t => {
     amountMaths,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -133,7 +132,6 @@ test('callSpread below Strike1', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Options: invitationIssuer,
     Quote: priceAuthority.getQuoteIssuer(),
   });
   const { creatorInvitation } = await zoe.startInstance(
@@ -143,8 +141,8 @@ test('callSpread below Strike1', async t => {
   );
 
   const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.LongOption;
-  const shortOptionAmount = invitationDetail.ShortOption;
+  const longOptionAmount = invitationDetail.longAmount;
+  const shortOptionAmount = invitationDetail.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -156,8 +154,6 @@ test('callSpread below Strike1', async t => {
     aliceProposal,
     alicePayments,
   );
-  const aliceOption = await aliceSeat.getOfferResult();
-  t.truthy(invitationIssuer.isLive(aliceOption));
   const {
     LongOption: bobLongOption,
     ShortOption: carolShortOption,
@@ -196,7 +192,6 @@ test('callSpread above Strike2', async t => {
     amountMaths,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -234,7 +229,6 @@ test('callSpread above Strike2', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Options: invitationIssuer,
     Quote: priceAuthority.getQuoteIssuer(),
   });
 
@@ -244,9 +238,9 @@ test('callSpread above Strike2', async t => {
     terms,
   );
 
-  const optionAmount = await invitationIssuer.getAmountOf(creatorInvitation);
-  const longOptionAmount = optionAmount.value[0].LongOption;
-  const shortOptionAmount = optionAmount.value[0].ShortOption;
+  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
+  const longOptionAmount = invitationDetail.longAmount;
+  const shortOptionAmount = invitationDetail.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -258,8 +252,6 @@ test('callSpread above Strike2', async t => {
     aliceProposal,
     alicePayments,
   );
-  const aliceOption = await aliceSeat.getOfferResult();
-  t.truthy(invitationIssuer.isLive(aliceOption));
   const {
     LongOption: bobLongOption,
     ShortOption: carolShortOption,
@@ -303,7 +295,6 @@ test('callSpread, mid-strike', async t => {
     amountMaths,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -340,7 +331,6 @@ test('callSpread, mid-strike', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Options: invitationIssuer,
     Quote: priceAuthority.getQuoteIssuer(),
   });
 
@@ -350,9 +340,9 @@ test('callSpread, mid-strike', async t => {
     terms,
   );
 
-  const optionAmount = await invitationIssuer.getAmountOf(creatorInvitation);
-  const longOptionAmount = optionAmount.value[0].LongOption;
-  const shortOptionAmount = optionAmount.value[0].ShortOption;
+  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
+  const longOptionAmount = invitationDetail.longAmount;
+  const shortOptionAmount = invitationDetail.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -364,8 +354,6 @@ test('callSpread, mid-strike', async t => {
     aliceProposal,
     alicePayments,
   );
-  const aliceOption = await aliceSeat.getOfferResult();
-  t.truthy(invitationIssuer.isLive(aliceOption));
   const {
     LongOption: bobLongOption,
     ShortOption: carolShortOption,
@@ -409,7 +397,6 @@ test('callSpread, late exercise', async t => {
     amountMaths,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -447,7 +434,6 @@ test('callSpread, late exercise', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Options: invitationIssuer,
     Quote: priceAuthority.getQuoteIssuer(),
   });
   const { creatorInvitation } = await zoe.startInstance(
@@ -456,12 +442,14 @@ test('callSpread, late exercise', async t => {
     terms,
   );
 
-  const optionAmount = await invitationIssuer.getAmountOf(creatorInvitation);
-  const longOptionAmount = optionAmount.value[0].LongOption;
-  const shortOptionAmount = optionAmount.value[0].ShortOption;
-
+  const invitationDetails = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
   const aliceProposal = harden({
-    want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
+    want: {
+      LongOption: invitationDetails.longAmount,
+      ShortOption: invitationDetails.shortAmount,
+    },
     give: { Collateral: bucks(300) },
   });
   const alicePayments = { Collateral: aliceBucksPayment };
@@ -470,8 +458,6 @@ test('callSpread, late exercise', async t => {
     aliceProposal,
     alicePayments,
   );
-  const aliceOption = await aliceSeat.getOfferResult();
-  t.truthy(invitationIssuer.isLive(aliceOption));
   const {
     LongOption: bobLongOption,
     ShortOption: carolShortOption,
@@ -554,7 +540,6 @@ test('callSpread, sell options', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Options: invitationIssuer,
     Quote: priceAuthority.getQuoteIssuer(),
   });
   const { creatorInvitation } = await zoe.startInstance(
@@ -563,9 +548,9 @@ test('callSpread, sell options', async t => {
     terms,
   );
 
-  const optionAmount = await invitationIssuer.getAmountOf(creatorInvitation);
-  const longOptionAmount = optionAmount.value[0].LongOption;
-  const shortOptionAmount = optionAmount.value[0].ShortOption;
+  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
+  const longOptionAmount = invitationDetail.longAmount;
+  const shortOptionAmount = invitationDetail.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -577,8 +562,6 @@ test('callSpread, sell options', async t => {
     aliceProposal,
     alicePayments,
   );
-  const aliceOption = await aliceSeat.getOfferResult();
-  t.truthy(invitationIssuer.isLive(aliceOption));
   const {
     LongOption: longOption,
     ShortOption: shortOption,
@@ -655,7 +638,7 @@ test('callSpread, sell options', async t => {
     bucks(225),
   );
 
-  // Bob buys the Short invitation
+  // Carol buys the Short invitation
   const carolShortInvitation = E(exchangePublic).makeInvitation();
   const carolProposal = harden({
     give: { Price: bucks(100) },
