@@ -236,6 +236,19 @@ test.skip('resolveWithPresence test nr 4', async t => {
                   const t3 = t1 ? a : b ;
                   return t2.map((aItem, idx) => minOf(aItem, t3[idx]));
                 } else {
+                  const t4 = Object.entries(a);
+                  const t5 = Object.entries(b);
+                  const t6 = (t4.length < t5.length);
+                  const t7 = t6 ? t5 : t4 ;
+                  const t8 = t6 ? t4 : t5 ;
+                  const t9 = t6 ? a : b ;
+                  return Object.fromEntries(
+                    t7.map((item, idx) => {
+                      const [name, valueA] = item;
+                      const valueB = t9[name];
+                      return [name, minOf(valueA, valueB)];
+                    }),
+                  );
                 }
             }
           }
