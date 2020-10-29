@@ -221,6 +221,23 @@ test.skip('resolveWithPresence test nr 4', async t => {
           const minOf = (a, b) => {
             if (b === undefined) { return a; }
             if (a === undefined) { return b; }
+            if (b === null) { return a; }
+            if (a === null) { return b; }
+            switch (typeof(a)) {
+              case 'number': // fallthrough
+              case 'bigint': return (BigInt(a) < BigInt(b)) ? a : b ;
+              case 'object':
+                if (typeof(b) !== 'object') {
+                  throw new Error('minOf got two mutually incompareable objects');
+                }
+                if (Array.isArray(a) && Array.isArray(b)) {
+                  const t1 = (a.length < b.length);
+                  const t2 = t1 ? b : a ;
+                  const t3 = t1 ? a : b ;
+                  return t2.map((aItem, idx) => minOf(aItem, t3[idx]));
+                } else {
+                }
+            }
           }
           const there = nomad => {
             if (typeof(nomad) === 'function') {
