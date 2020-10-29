@@ -23,7 +23,7 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeWorkerVatManagerFactory(tools) {
-  const { makeNodeWorker, kernelKeeper, testLog } = tools;
+  const { makeNodeWorker, kernelKeeper, testLog, decref } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
@@ -68,6 +68,10 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       doSyscall(vatSyscallObject);
     }
 
+    function vatDecref(vref, count) {
+      decref(vatID, vref, count);
+    }
+
     // start the worker and establish a connection
 
     const { promise: workerP, resolve: gotWorker } = makePromiseKit();
@@ -107,6 +111,9 @@ export function makeNodeWorkerVatManagerFactory(tools) {
           const deliveryResult = args;
           resolve(deliveryResult);
         }
+      } else if (type === 'decref') {
+        const [vref, count] = args;
+        vatDecref(vref, count);
       } else {
         parentLog(`unrecognized uplink message ${type}`);
       }

@@ -14,6 +14,7 @@ export function makeVatManagerFactory({
   makeNodeWorker,
   startSubprocessWorkerNode,
   startSubprocessWorkerXS,
+  gcTools,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -22,24 +23,28 @@ export function makeVatManagerFactory({
     meterManager,
     transformMetering,
     waitUntilQuiescent,
+    gcTools,
   });
 
   const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({
     makeNodeWorker,
     kernelKeeper,
     testLog: allVatPowers.testLog,
+    decref: gcTools.decref,
   });
 
   const nodeSubprocessFactory = makeNodeSubprocessFactory({
     startSubprocessWorker: startSubprocessWorkerNode,
     kernelKeeper,
     testLog: allVatPowers.testLog,
+    decref: gcTools.decref,
   });
 
   const xsWorkerFactory = makeNodeSubprocessFactory({
     startSubprocessWorker: startSubprocessWorkerXS,
     kernelKeeper,
     testLog: allVatPowers.testLog,
+    decref: gcTools.decref,
   });
 
   function validateManagerOptions(managerOptions) {

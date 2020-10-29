@@ -7,6 +7,7 @@ import anylogger from 'anylogger';
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
+import { WeakRef, FinalizationRegistry } from '../../weakref';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 
@@ -113,7 +114,8 @@ parentPort.on('message', ([type, ...margs]) => {
       makeMarshal,
       testLog,
     };
-    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+    const gcTools = harden({ WeakRef, FinalizationRegistry });
+    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters, gcTools);
 
     const endowments = {
       ...ls.vatGlobals,

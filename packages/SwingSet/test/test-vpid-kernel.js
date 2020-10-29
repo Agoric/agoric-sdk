@@ -1,9 +1,8 @@
-// eslint-disable-next-line no-redeclare
-
 import '@agoric/install-ses';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
+import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
 import buildKernel from '../src/kernel/index';
@@ -36,6 +35,8 @@ function makeEndowments() {
     hostStorage: initSwingStore().storage,
     runEndOfCrank: () => {},
     makeConsole,
+    WeakRef,
+    FinalizationRegistry,
   };
 }
 

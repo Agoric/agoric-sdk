@@ -13,9 +13,11 @@ export function makeLocalVatManagerFactory(tools) {
     meterManager,
     transformMetering,
     waitUntilQuiescent,
+    gcTools,
   } = tools;
 
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
+  const { WeakRef, FinalizationRegistry } = gcTools;
   const baseVP = {
     Remotable: allVatPowers.Remotable,
     getInterfaceOf: allVatPowers.getInterfaceOf,
@@ -104,10 +106,14 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters,
       testLog: allVatPowers.testLog,
     });
+    function vatDecref(vref, count) {
+      gcTools.decref(vatID, vref, count);
+    }
+    const lsgc = harden({ WeakRef, FinalizationRegistry, vatDecref });
 
     // we might or might not use this, depending upon whether the vat exports
     // 'buildRootObject' or a default 'setup' function
-    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters);
+    const ls = makeLiveSlots(syscall, vatID, vatPowers, vatParameters, lsgc);
 
     let meterRecord = null;
     if (metered) {

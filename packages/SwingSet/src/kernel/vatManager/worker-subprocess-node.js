@@ -24,7 +24,7 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeSubprocessFactory(tools) {
-  const { startSubprocessWorker, kernelKeeper, testLog } = tools;
+  const { startSubprocessWorker, kernelKeeper, testLog, decref } = tools;
 
   function createFromBundle(vatID, bundle, managerOptions) {
     const { vatParameters } = managerOptions;
@@ -71,6 +71,10 @@ export function makeNodeSubprocessFactory(tools) {
       doSyscall(vatSyscallObject);
     }
 
+    function vatDecref(vref, count) {
+      decref(vatID, vref, count);
+    }
+
     // start the worker and establish a connection
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();
 
@@ -109,6 +113,9 @@ export function makeNodeSubprocessFactory(tools) {
           const deliveryResult = args;
           resolve(deliveryResult);
         }
+      } else if (type === 'decref') {
+        const [vref, count] = args;
+        vatDecref(vref, count);
       } else {
         parentLog(`unrecognized uplink message ${type}`);
       }

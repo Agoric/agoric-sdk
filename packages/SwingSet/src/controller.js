@@ -18,6 +18,7 @@ import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
 import { locateWorkerBin } from '@agoric/xs-vat-worker';
 
+import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
@@ -45,7 +46,12 @@ export async function makeSwingsetController(
   insistStorageAPI(hostStorage);
 
   // build console early so we can add console.log to diagnose early problems
-  const { verbose, debugPrefix = '', slogFile } = runtimeOptions;
+  const {
+    verbose,
+    debugPrefix = '',
+    slogFile,
+    testTrackDecref,
+  } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
   }
@@ -183,9 +189,11 @@ export async function makeSwingsetController(
     startSubprocessWorkerNode,
     startSubprocessWorkerXS,
     writeSlogObject,
+    WeakRef,
+    FinalizationRegistry,
   };
 
-  const kernelOptions = { verbose };
+  const kernelOptions = { verbose, testTrackDecref };
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -277,8 +285,9 @@ export async function buildVatController(
     verbose,
     kernelBundles,
     debugPrefix,
+    testTrackDecref,
   } = runtimeOptions;
-  const actualRuntimeOptions = { verbose, debugPrefix };
+  const actualRuntimeOptions = { verbose, debugPrefix, testTrackDecref };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
   if (!swingsetIsInitialized(hostStorage)) {
