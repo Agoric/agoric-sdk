@@ -218,6 +218,10 @@ test.skip('resolveWithPresence test nr 4', async t => {
           }
         }
         if('there' === property) {
+          const minOf = (a, b) => {
+            if (b === undefined) { return a; }
+            if (a === undefined) { return b; }
+          }
           const there = nomad => {
             if (typeof(nomad) === 'function') {
               try {
@@ -225,6 +229,36 @@ test.skip('resolveWithPresence test nr 4', async t => {
               } catch (problem) {
                 return Promise.reject(problem);
               }
+            } else if (typeof(nomad) === 'string') {
+              // global safeEval
+              try {
+                return there(safeEval(nomad, undefined, { maxSteps: 1024, maxAlloc: 4096 }));
+              } catch (problem) {
+                return Promise.reject(problem);
+              }
+            } else if (typeof(nomad) === 'object') {
+              if (nomad === null) {
+                return Promise.reject(new Error('null nomad received!'));
+              }
+              if (Array.isArray(nomad)) {
+                const [code, bindings, requestedResources] = nomad;
+                const resources = minOf(
+                  { maxSteps: 1024, maxAlloc: 4096 },
+                  requestedResources,
+                );
+                try {
+                  return there(safeEval(code, bindings, resources));
+                } catch (problem) {
+                  return Promise.reject(problem);
+                }
+              }
+              try {
+                return Promise.resolve(nomad());
+              } catch (problem) {
+                return Promise.reject(problem);
+              }
+            } else {
+              return Promise.reject(new Error('tbi, until then, unhelpfull'));
             }
           };
           return there;
