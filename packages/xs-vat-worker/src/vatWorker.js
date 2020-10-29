@@ -99,7 +99,7 @@ function makeWorker(io, setImmediate) {
       workerLog(`got start`);
       sendUplink(['gotStart']);
     } else if (type === 'setBundle') {
-      const [bundle, vatParameters] = margs;
+      const [bundle, vatParameters, virtualObjectCacheSize] = margs;
       const endowments = {
         console: makeConsole(`SwingSet:vatWorker`),
         HandledPromise,
@@ -149,6 +149,7 @@ function makeWorker(io, setImmediate) {
           vatID,
           vatPowers,
           vatParameters,
+          virtualObjectCacheSize,
         );
         workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
         sendUplink(['dispatchReady']);

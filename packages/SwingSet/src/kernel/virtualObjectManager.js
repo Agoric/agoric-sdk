@@ -19,12 +19,11 @@ import { parseVatSlot } from '../parseVatSlots';
 export function makeCache(size, fetch, store) {
   let lruHead;
   let lruTail;
-  let count = 0;
   const liveTable = new Map();
 
   const cache = {
     makeRoom() {
-      while (count > size && lruTail) {
+      while (liveTable.size > size && lruTail) {
         liveTable.delete(lruTail.instanceKey);
         store(lruTail.instanceKey, lruTail.rawData);
         lruTail.rawData = null;
@@ -34,7 +33,6 @@ export function makeCache(size, fetch, store) {
           lruHead = undefined;
         }
         lruTail = lruTail.prev;
-        count -= 1;
       }
     },
     flush() {
@@ -47,9 +45,9 @@ export function makeCache(size, fetch, store) {
       if (liveTable.has(innerObj.instanceKey)) {
         return;
       }
+      cache.makeRoom();
       liveTable.set(innerObj.instanceKey, innerObj);
       innerObj.prev = undefined;
-      cache.makeRoom();
       innerObj.next = lruHead;
       if (lruHead) {
         lruHead.prev = innerObj;
@@ -58,7 +56,6 @@ export function makeCache(size, fetch, store) {
       if (!lruTail) {
         lruTail = innerObj;
       }
-      count += 1;
     },
     refresh(innerObj) {
       if (innerObj !== lruHead) {
@@ -280,40 +277,49 @@ export function makeVirtualObjectManager(
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
 
-    function makeRepresentative(innerSelf) {
+    function makeRepresentative(innerSelf, initializing) {
       function ensureState() {
         if (!innerSelf.rawData) {
           innerSelf = cache.lookup(innerSelf.instanceKey);
         }
       }
 
-      function wrapData() {
-        const activeData = {};
+      function wrapData(target) {
         for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
-          Object.defineProperty(activeData, prop, {
+          Object.defineProperty(target, prop, {
             get: () => {
-              ensureState();
+              ensureState(innerSelf);
               return m.unserialize(innerSelf.rawData[prop]);
             },
             set: value => {
-              ensureState();
-              innerSelf.rawData[prop] = m.serialize(value);
+              const serializedValue = m.serialize(value);
+              ensureState(innerSelf);
+              innerSelf.rawData[prop] = serializedValue;
             },
           });
         }
-        return harden(activeData);
+        innerSelf.wrapData = undefined;
+        harden(target);
       }
 
-      const representative = instanceMaker(wrapData());
-      delete representative.initialize;
-      harden(representative);
+      let representative;
+      if (initializing) {
+        innerSelf.wrapData = wrapData;
+        representative = instanceMaker(innerSelf.rawData);
+      } else {
+        const activeData = {};
+        wrapData(activeData);
+        representative = instanceMaker(activeData);
+        delete representative.initialize;
+        harden(representative);
+      }
       cache.remember(innerSelf);
       valToSlotTable.set(representative, innerSelf.instanceKey);
       return representative;
     }
 
     function reanimate(instanceKey) {
-      return makeRepresentative(cache.lookup(instanceKey));
+      return makeRepresentative(cache.lookup(instanceKey), false);
     }
     kindTable.set(kindID, reanimate);
 
@@ -321,19 +327,22 @@ export function makeVirtualObjectManager(
       const instanceKey = `o+${kindID}/${nextInstanceID}`;
       nextInstanceID += 1;
 
-      const initializationData = {};
-      const tempInstance = instanceMaker(initializationData);
-      tempInstance.initialize(...args);
+      const initialData = {};
+      const innerSelf = { instanceKey, rawData: initialData };
+      const initialRepresentative = makeRepresentative(innerSelf, true);
+      initialRepresentative.initialize(...args);
       const rawData = {};
-      for (const prop of Object.getOwnPropertyNames(initializationData)) {
+      for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
-          rawData[prop] = m.serialize(initializationData[prop]);
+          rawData[prop] = m.serialize(initialData[prop]);
         } catch (e) {
           console.error(`state property ${prop} is not serializable`);
+          throw e;
         }
       }
-      const innerSelf = { instanceKey, rawData };
-      return makeRepresentative(innerSelf);
+      innerSelf.rawData = rawData;
+      innerSelf.wrapData(initialData);
+      return initialRepresentative;
     }
 
     return makeNewInstance;
