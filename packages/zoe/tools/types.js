@@ -68,16 +68,19 @@
  * @typedef {Object} PriceAuthority An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer>} getQuoteIssuer
- * Get the ERTP issuer of PriceQuotes
+ * Get the ERTP issuer of PriceQuotes for a given brandIn/brandOut pair
+ * @property {(brandIn: Brand, brandOut: Brand) => ERef<TimerService>}
+ * getTimerService get the timer used in PriceQuotes for a given
+ * brandIn/brandOut pair
  * @property {(amountIn: Amount, brandOut: Brand) => Promise<PriceQuote>}
  * getAmountInQuote get a quote corresponding to the specified amountIn
  * @property {(brandIn: Brand, amountOut: Amount) => Promise<PriceQuote>}
  * getAmountOutQuote get a quote corresponding to the specified amountOut
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Notifier<PriceQuote>>}
  * getPriceNotifier
- * @property {(timer: TimerService, deadline: number, amountIn: Amount,
- * brandOut: Brand) => Promise<PriceQuote>} quoteAtTime Resolves after
- * `deadline` passes on `timer` with the price quote of `amountIn` at that time
+ * @property {(deadline: number, amountIn: Amount, brandOut: Brand) =>
+ * Promise<PriceQuote>} quoteAtTime Resolves after `deadline` passes on the
+ * priceAuthority's timerService with the price quote of `amountIn` at that time
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenGT Resolve when a price quote of `amountIn` exceeds `amountOutLimit`
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
