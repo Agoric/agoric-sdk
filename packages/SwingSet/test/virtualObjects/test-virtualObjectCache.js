@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { makeCache } from '../src/kernel/virtualObjectManager';
+import { makeCache } from '../../src/kernel/virtualObjectManager';
 
 function makeFakeStore() {
   const backing = new Map();

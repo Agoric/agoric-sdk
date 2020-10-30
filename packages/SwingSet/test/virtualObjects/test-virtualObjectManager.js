@@ -2,8 +2,8 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { makeMarshal } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../src/parseVatSlots';
-import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager';
+import { parseVatSlot } from '../../src/parseVatSlots';
+import { makeVirtualObjectManager } from '../../src/kernel/virtualObjectManager';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
