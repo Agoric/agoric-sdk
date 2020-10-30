@@ -220,7 +220,7 @@ test.skip('resolveWithPresence test nr 4', async t => {
             }
           };
         }
-        if(property === 'there') {
+        if (property === 'there') {
           return nomad => {
             if (typeof nomad === 'function') {
               try {
