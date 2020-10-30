@@ -215,6 +215,8 @@ test.skip('resolveWithPresence test nr 4', async t => {
           return callback => {
             try {
               callback();
+            } catch (problem) {
+              // es-lint ignore-empty-block
             }
           };
         }
