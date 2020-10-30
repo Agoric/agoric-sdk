@@ -215,12 +215,12 @@ test.skip('resolveWithPresence test nr 4', async t => {
           return callback => {
             try {
               callback();
-            } catch (problem) { }
-          }
+            }
+          };
         }
         if(property === 'there') {
           return nomad => {
-            if ((typeof nomad) === 'function') {
+            if (typeof nomad === 'function') {
               try {
                 return Promise.resolve(nomad());
               } catch (problem) {
