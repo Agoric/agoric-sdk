@@ -179,31 +179,32 @@ test.skip('resolveWithPresence test nr 4', async t => {
     },
   };
   const presenceImmediateHandler = {
-    apply: function(target, thisArg, args) {
+    apply(target, thisArg, args) {
       log.push(['apply', target, thisArg, args]);
       return undefined;
     },
-    construct: function(target, args, newTarget) {
+    construct(target, args, newTarget) {
       log.push(['construct', target, args, newTarget]);
       return {};
     },
-    defineProperty: function (target, property, descriptor) {
+    defineProperty(target, property, descriptor) {
       log.push(['defineProperty', target, property, descriptor]);
       return false;
     },
-    deleteProperty: function (target, property) {
+    deleteProperty(target, property) {
       log.push(['deleteProperty', target, property]);
       return false;
     },
-    get: function (target, property, receiver) {
+    get(target, property, receiver) {
       log.push(['get', target, property, receiver]);
       if (target === receiver) {
         if ('then' === property) {
           return (callback, errback) => {
+            log.push(['then', callback, errback]);
             try {
               return Promise.resolve(callback(target));
             } catch (problem) {
-              return Promise.reject(proplem);
+              return Promise.reject(problem);
             }
           }
         }
@@ -270,35 +271,35 @@ test.skip('resolveWithPresence test nr 4', async t => {
       }
       return undefined;
     },
-    getOwnPropertyDescriptor: function (target, property) {
+    getOwnPropertyDescriptor(target, property) {
       log.push(['getOwnPropertyDescriptor', target, property]);
       return undefined;
     },
-    getPrototypeOf: function(target) {
+    getPrototypeOf(target) {
       log.push(['getPrototypeOf', target]);
       return null;
     },
-    has: function(target, property) {
+    has(target, property) {
       log.push(['has', target, property]);
       return false;
     },
-    isExtensible: function(target) {
+    isExtensible(target) {
       log.push(['isExtensible', target]);
       return false;
     },
-    ownKeys: function(target) {
+    ownKeys(target) {
       log.push(['ownKeys', target]);
       return [];
     },
-    preventExtensions: function(target) {
+    preventExtensions(target) {
       log.push(['preventExtensions', target]);
       return false;
     },
-    set: function(target, property, value, receiver) {
+    set(target, property, value, receiver) {
       log.push(['set', target, property, value, receiver]);
       return false;
     },
-    setPrototypeOf: function(target, prototype) {
+    setPrototypeOf(target, prototype) {
       log.push(['setPrototypeOf', target, prototype]);
       return false;
     },
