@@ -51,7 +51,8 @@
  */
 
 /**
- * @typedef {Array<PriceDescription>} PriceQuoteValue A set of PriceDescriptions
+ * @typedef {[PriceDescription]} PriceQuoteValue A single-valued set of
+ * PriceDescriptions
  */
 
 /**
@@ -67,28 +68,39 @@
 /**
  * @typedef {Object} PriceAuthority An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
+ *
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer>} getQuoteIssuer
  * Get the ERTP issuer of PriceQuotes for a given brandIn/brandOut pair
+ *
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<TimerService>}
  * getTimerService get the timer used in PriceQuotes for a given
  * brandIn/brandOut pair
+ *
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Notifier<PriceQuote>>}
  * getPriceNotifier
+ *
  * @property {(deadline: Timestamp, amountIn: Amount, brandOut: Brand) =>
- * Promise<PriceQuote>} quoteAtTime Resolves after `deadline` passes on the
+ * Promise<PriceQuote>}
+ * quoteAtTime Resolves after `deadline` passes on the
  * priceAuthority's timerService with the price quote of `amountIn` at that time
+ *
  * @property {(amountIn: Amount, brandOut: Brand) => Promise<PriceQuote>}
  * quoteGiven get a quote corresponding to the specified amountIn
+ *
  * @property {(brandIn: Brand, amountOut: Amount) => Promise<PriceQuote>}
  * quoteWanted get a quote corresponding to the specified amountOut
+ *
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenGT Resolve when a price quote of `amountIn` exceeds `amountOutLimit`
+ *
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenGTE Resolve when a price quote of `amountIn` reaches or exceeds
  * `amountOutLimit`
+ *
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenLTE Resolve when a price quote of `amountIn` reaches or drops below
  * `amountOutLimit`
+ *
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenLT Resolve when the price quote of `amountIn` drops below
  * `amountOutLimit`

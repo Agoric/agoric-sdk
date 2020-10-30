@@ -63,7 +63,8 @@ export function buildRootObject(vatPowers, vatParameters) {
       ),
     );
 
-    // TODO: Create priceAuthority pairs for
+    // TODO: Create priceAuthority pairs for moola-simolean based on the
+    // FakePriceAuthority.
 
     // Register the moola and simolean issuers
     const issuerInfo = await Promise.all(
