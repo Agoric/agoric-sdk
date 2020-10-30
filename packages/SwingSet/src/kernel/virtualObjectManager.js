@@ -1,6 +1,8 @@
 import { assert, details, q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
 
+const initializationInProgress = Symbol('initializing');
+
 /**
  * Make a simple LRU cache of virtual object inner selves.
  *
@@ -24,6 +26,16 @@ export function makeCache(size, fetch, store) {
   const cache = {
     makeRoom() {
       while (liveTable.size > size && lruTail) {
+        if (lruTail.rawData[initializationInProgress]) {
+          let refreshCount = 1;
+          while (lruTail.rawData[initializationInProgress]) {
+            if (refreshCount > size) {
+              throw Error(`cache overflowed with objects being initialized`);
+            }
+            cache.refresh(lruTail);
+            refreshCount += 1;
+          }
+        }
         liveTable.delete(lruTail.instanceKey);
         store(lruTail.instanceKey, lruTail.rawData);
         lruTail.rawData = null;
@@ -285,6 +297,10 @@ export function makeVirtualObjectManager(
       }
 
       function wrapData(target) {
+        assert(
+          !target[initializationInProgress],
+          `object is still being initialized`,
+        );
         for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
           Object.defineProperty(target, prop, {
             get: () => {
@@ -328,9 +344,20 @@ export function makeVirtualObjectManager(
       nextInstanceID += 1;
 
       const initialData = {};
+      Object.defineProperty(initialData, initializationInProgress, {
+        configurable: true,
+        enumerable: false,
+        writeable: false,
+        value: true,
+      });
       const innerSelf = { instanceKey, rawData: initialData };
       const initialRepresentative = makeRepresentative(innerSelf, true);
-      initialRepresentative.initialize(...args);
+      const initialize = initialRepresentative.initialize;
+      if (initialize) {
+        delete initialRepresentative.initialize;
+        initialize(...args);
+      }
+      delete initialData[initializationInProgress];
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
