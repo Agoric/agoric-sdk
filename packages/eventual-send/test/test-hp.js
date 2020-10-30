@@ -308,5 +308,8 @@ test.skip('resolveWithPresence test nr 4', async t => {
     pr = { ...pr, resolve, reject, resolveWithPresence };
   });
   await Promise.resolve();
-  pr.resolveWithPresence(presenceEventualHandler, {});
+  pr.resolveWithPresence(
+    presenceEventualHandler,
+    { proxy: { handler: presenceImmediateHandler, target: {} },
+  );
 });
