@@ -7,7 +7,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import './types';
 
-const makeAsyncIteratable = startP => {
+const makeAsyncIterable = startP => {
   return harden({
     // eslint-disable-next-line no-use-before-define
     [Symbol.asyncIterator]: () => makeAsyncIterator(startP),
@@ -23,18 +23,18 @@ const makeAsyncIteratable = startP => {
     getEventualList: () => startP,
   });
 };
-harden(makeAsyncIteratable);
-export { makeAsyncIteratable };
+harden(makeAsyncIterable);
+export { makeAsyncIterable };
 
 // To understand the implementation, start with
 // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-const makeAsyncIterator = startP => {
+const makeAsyncIterator = tailP => {
   return harden({
-    snapshot: () => makeAsyncIteratable(startP),
-    [Symbol.asyncIterator]: () => makeAsyncIterator(startP),
+    snapshot: () => makeAsyncIterable(tailP),
+    [Symbol.asyncIterator]: () => makeAsyncIterator(tailP),
     next: () => {
-      const resultP = E.G(startP).head;
-      startP = E.G(startP).tail;
+      const resultP = E.G(tailP).head;
+      tailP = E.G(tailP).tail;
       return resultP;
     },
   });
@@ -63,7 +63,7 @@ const makeAsyncIterator = startP => {
  */
 const makeAsyncIteratableKit = () => {
   let rear;
-  const asyncIteratable = makeAsyncIteratable(
+  const asyncIteratable = makeAsyncIterable(
     new HandledPromise(r => (rear = r)),
   );
 
@@ -94,7 +94,7 @@ const makeAsyncIteratableKit = () => {
       rear = undefined;
     },
   });
-  return harden({ asyncIteratable, updater });
+  return harden({ updater, asyncIteratable });
 };
 harden(makeAsyncIteratableKit);
 export { makeAsyncIteratableKit };
