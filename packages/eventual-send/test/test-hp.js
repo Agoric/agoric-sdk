@@ -271,7 +271,7 @@ test('resolveWithPresence test nr 4', async t => {
   };
   const pr = {};
   pr.promise = new HandledPromise((resolve, reject, resolveWithPresence) => {
-    pr.resolve = resolbe;
+    pr.resolve = resolve;
     pr.reject = reject;
     pr.resolveWithPresence = resolveWithPresence;
   });
