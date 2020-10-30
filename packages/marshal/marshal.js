@@ -520,7 +520,7 @@ export function makeMarshal(
           switch (val) {
             case Symbol.asyncIterator: {
               return harden({
-                [QCLASS]: 'asyncIterable',
+                [QCLASS]: '@@asyncIterator',
               });
             }
             default: {
@@ -661,6 +661,9 @@ export function makeMarshal(
             }
             /* eslint-disable-next-line no-undef */
             return BigInt(rawTree.digits);
+          }
+          case '@@asyncIterator': {
+            return Symbol.asyncIterator;
           }
 
           case 'ibid': {

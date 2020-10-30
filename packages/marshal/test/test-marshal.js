@@ -43,8 +43,13 @@ test('serialize static data', t => {
   t.throws(() => ser(Symbol.for('sym1')), { message: /Unsupported symbol/ });
   // unregistered symbols
   t.throws(() => ser(Symbol('sym2')), { message: /Unsupported symbol/ });
-  // well known symbols
+  // well known unsupported symbols
   t.throws(() => ser(Symbol.iterator), { message: /Unsupported symbol/ });
+  // well known supported symbols
+  t.deepEqual(ser(Symbol.asyncIterator), {
+    body: '{"@qclass":"@@asyncIterator"}',
+    slots: [],
+  });
   let bn;
   try {
     bn = BigInt(4);
@@ -99,6 +104,7 @@ test('unserialize static data', t => {
   t.truthy(Object.is(uns('{"@qclass":"NaN"}'), NaN));
   t.deepEqual(uns('{"@qclass":"Infinity"}'), Infinity);
   t.deepEqual(uns('{"@qclass":"-Infinity"}'), -Infinity);
+  t.deepEqual(uns('{"@qclass":"@@asyncIterator"}'), Symbol.asyncIterator);
 
   // Normal json reviver cannot make properties with undefined values
   t.deepEqual(uns('[{"@qclass":"undefined"}]'), [undefined]);
