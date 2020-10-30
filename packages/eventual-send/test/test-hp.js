@@ -152,7 +152,7 @@ test('resolveWithPresence test nr 3', async t => {
   t.is(presence, p);
 });
 
-test.skip('resolveWithPresence test nr 4', async t => {
+test('resolveWithPresence test nr 4', async t => {
   t.log('proxy support being now tested');
   const log = [];
   const presenceEventualHandler = {
@@ -277,4 +277,11 @@ test.skip('resolveWithPresence test nr 4', async t => {
   pr.resolveWithPresence(presenceEventualHandler, {
     proxy: { handler: presenceImmediateHandler, target: {} },
   });
+  pr.promise.then((presence) => {
+    presence.there(() => {
+      log.push(['doing stuff there']);
+    });
+  });
+  t.log('log: ', log);
+  t.fail('stöðva prufun hér');
 });
