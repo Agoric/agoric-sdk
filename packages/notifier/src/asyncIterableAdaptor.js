@@ -100,9 +100,6 @@ export const makeAsyncIterableFromNotifier = notifierP => {
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @returns {Promise<undefined>}
  */
-// See https://github.com/Agoric/agoric-sdk/issues/1345 for why
-// `updateFromIterable` currently needs a local `asyncIterable` rather than
-// a possibly remote `asyncIterableP`.
 export const updateFromIterable = (updater, asyncIterableP) => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
   return new Promise(ack => {

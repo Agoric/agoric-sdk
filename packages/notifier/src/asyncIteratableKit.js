@@ -7,6 +7,39 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import './types';
 
+const makeAsyncIteratable = startP => {
+  return harden({
+    // eslint-disable-next-line no-use-before-define
+    [Symbol.asyncIterator]: () => makeAsyncIterator(startP),
+    /**
+     * To manually create a local representative of a
+     * this kind of remote async interable, do
+     * ```js
+     * localIterable = makeAsyncIterable(E(remoteIterable).getEventualList());
+     * ```
+     * The resulting localIterable also support such remote use, and
+     * will return access to the same representation.
+     */
+    getEventualList: () => startP,
+  });
+};
+harden(makeAsyncIteratable);
+export { makeAsyncIteratable };
+
+// To understand the implementation, start with
+// https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
+const makeAsyncIterator = startP => {
+  return harden({
+    snapshot: () => makeAsyncIteratable(startP),
+    [Symbol.asyncIterator]: () => makeAsyncIterator(startP),
+    next: () => {
+      const resultP = E.G(startP).head;
+      startP = E.G(startP).tail;
+      return resultP;
+    },
+  });
+};
+
 /**
  * This makes a pair of an `updater` and an initial `asyncIteratable`. The
  * `updater` API is the same as the Notifier's `updater`. In both cases,  calls
@@ -28,26 +61,7 @@ import './types';
  * The internal representation ensure that eements that are no longer
  * observable are unreachable and can be gc'ed.
  */
-export const makeAsyncIteratableKit = () => {
-  const makeAsyncIteratable = startE => {
-    return harden({
-      // eslint-disable-next-line no-use-before-define
-      [Symbol.asyncIterator]: () => makeAsyncIterator(startE),
-    });
-  };
-  // To understand the implementation, start with
-  // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  const makeAsyncIterator = startE => {
-    return harden({
-      snapshot: () => makeAsyncIteratable(startE),
-      [Symbol.asyncIterator]: () => makeAsyncIterator(startE),
-      next: () => {
-        const resultE = E.G(startE).head;
-        startE = E.G(startE).tail;
-        return resultE;
-      },
-    });
-  };
+const makeAsyncIteratableKit = () => {
   let rear;
   const asyncIteratable = makeAsyncIteratable(
     new HandledPromise(r => (rear = r)),
@@ -82,3 +96,5 @@ export const makeAsyncIteratableKit = () => {
   });
   return harden({ asyncIteratable, updater });
 };
+harden(makeAsyncIteratableKit);
+export { makeAsyncIteratableKit };
