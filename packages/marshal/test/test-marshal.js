@@ -40,11 +40,11 @@ test('serialize static data', t => {
     slots: [],
   });
   // registered symbols
-  t.throws(() => ser(Symbol.for('sym1')), { message: /Cannot pass symbols/ });
+  t.throws(() => ser(Symbol.for('sym1')), { message: /Unsupported symbol/ });
   // unregistered symbols
-  t.throws(() => ser(Symbol('sym2')), { message: /Cannot pass symbols/ });
+  t.throws(() => ser(Symbol('sym2')), { message: /Unsupported symbol/ });
   // well known symbols
-  t.throws(() => ser(Symbol.iterator), { message: /Cannot pass symbols/ });
+  t.throws(() => ser(Symbol.iterator), { message: /Unsupported symbol/ });
   let bn;
   try {
     bn = BigInt(4);
