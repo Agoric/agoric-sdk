@@ -269,9 +269,11 @@ test('resolveWithPresence test nr 4', async t => {
       return false;
     },
   };
-  let pr = {};
+  const pr = {};
   pr.promise = new HandledPromise((resolve, reject, resolveWithPresence) => {
-    pr = { ...pr, resolve, reject, resolveWithPresence };
+    pr.resolve = resolbe;
+    pr.reject = reject;
+    pr.resolveWithPresence = resolveWithPresence;
   });
   await Promise.resolve();
   pr.resolveWithPresence(presenceEventualHandler, {
