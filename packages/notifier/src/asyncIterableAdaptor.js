@@ -88,7 +88,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
 };
 
 /**
- * This reads from `asyncIteratable` updating `updater` with each successive
+ * This reads from `asyncIteratableP` updating `updater` with each successive
  * value. The `updater` the same API as the `updater` of a notifier kit,
  * but can simply be an observer to react to these updates. As an observer,
  * the `updater` may only be interested in certain occurrences (`updateState`,
