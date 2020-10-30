@@ -303,4 +303,10 @@ test.skip('resolveWithPresence test nr 4', async t => {
       return false;
     },
   };
+  let pr = {};
+  pr.promise = HandledPromise((resolve, reject, resolveWithPresence) => {
+    pr = { ...pr, resolve, reject, resolveWithPresence };
+  });
+  await Promise.resolve();
+  pr.resolveWithPresence(presenceEventualHandler, {});
 });
