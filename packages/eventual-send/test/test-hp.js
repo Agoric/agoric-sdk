@@ -270,7 +270,7 @@ test('resolveWithPresence test nr 4', async t => {
     },
   };
   let pr = {};
-  pr.promise = HandledPromise((resolve, reject, resolveWithPresence) => {
+  pr.promise = new HandledPromise((resolve, reject, resolveWithPresence) => {
     pr = { ...pr, resolve, reject, resolveWithPresence };
   });
   await Promise.resolve();
