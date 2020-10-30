@@ -206,10 +206,10 @@ test.skip('resolveWithPresence test nr 4', async t => {
             } catch (problem) {
               return Promise.reject(problem);
             }
-          }
+          };
         }
         if (property === 'catch') {
-          return errback => Promise.resolve(target);
+          return _ => Promise.resolve(target);
         }
         if (property === 'finally') {
           return callback => {
@@ -219,10 +219,10 @@ test.skip('resolveWithPresence test nr 4', async t => {
           }
         }
         if(property === 'there') {
-          const there = nomad => {
-            if (typeof(nomad) === 'function') {
+          return nomad => {
+            if ((typeof nomad) === 'function') {
               try {
-                return Promise.resolve(there());
+                return Promise.resolve(nomad());
               } catch (problem) {
                 return Promise.reject(problem);
               }
@@ -230,7 +230,6 @@ test.skip('resolveWithPresence test nr 4', async t => {
               return Promise.reject(new Error('tbi, until then, unhelpfull'));
             }
           };
-          return there;
         }
       }
       return undefined;
