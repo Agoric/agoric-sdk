@@ -63,13 +63,13 @@ export const makePriceAuthorityRegistry = () => {
       const record = lookup(brandIn, brandOut);
       return E(record.priceAuthority).getTimerService(brandIn, brandOut);
     },
-    async getAmountInQuote(amountIn, brandOut) {
+    async quoteGiven(amountIn, brandOut) {
       const record = lookup(amountIn.brand, brandOut);
-      return E(record.priceAuthority).getAmountInQuote(amountIn, brandOut);
+      return E(record.priceAuthority).quoteGiven(amountIn, brandOut);
     },
-    async getAmountOutQuote(brandIn, amountOut) {
+    async quoteWanted(brandIn, amountOut) {
       const record = lookup(brandIn, amountOut.brand);
-      return E(record.priceAuthority).getAmountOutQuote(brandIn, amountOut);
+      return E(record.priceAuthority).quoteWanted(brandIn, amountOut);
     },
     async getPriceNotifier(brandIn, brandOut) {
       const record = lookup(brandIn, brandOut);

@@ -44,6 +44,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       chainTimerService,
       zoe,
       contractHost,
+      { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
       E(vats.sharing).getSharingService(),
       E(vats.registrar).getSharedRegistrar(),
@@ -51,6 +52,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.timer).createTimerService(timerDevice),
       E(vats.zoe).buildZoe(vatAdminSvc),
       E(vats.host).makeHost(),
+      E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
     // Make the other demo mints
@@ -60,6 +62,8 @@ export function buildRootObject(vatPowers, vatParameters) {
         E(vats.mints).makeMintAndIssuer(issuerName),
       ),
     );
+
+    // TODO: Create priceAuthority pairs for
 
     // Register the moola and simolean issuers
     const issuerInfo = await Promise.all(
@@ -85,6 +89,9 @@ export function buildRootObject(vatPowers, vatParameters) {
         if (powerFlags && powerFlags.includes('agoric.vattp')) {
           // Give the authority to create a new host for vattp to share objects with.
           additionalPowers.vattp = makeVattpFrom(vats);
+        }
+        if (powerFlags && powerFlags.includes('agoric.priceAuthorityAdmin')) {
+          additionalPowers.priceAuthorityAdmin = priceAuthorityAdmin;
         }
 
         const pursePetnames = {
@@ -121,6 +128,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           contractHost,
           faucet,
           ibcport,
+          priceAuthority,
           registrar: registry,
           registry,
           board,
@@ -365,6 +373,7 @@ export function buildRootObject(vatPowers, vatParameters) {
                 // to give capabilities to all clients (since we are running
                 // locally with the `--give-me-all-the-agoric-powers` flag).
                 return chainBundler.createUserBundle(nickname, [
+                  'agoric.priceAuthorityAdmin',
                   'agoric.vattp',
                 ]);
               }
