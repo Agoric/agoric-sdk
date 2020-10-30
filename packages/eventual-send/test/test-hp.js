@@ -277,7 +277,7 @@ test('resolveWithPresence test nr 4', async t => {
   pr.resolveWithPresence(presenceEventualHandler, {
     proxy: { handler: presenceImmediateHandler, target: {} },
   });
-  pr.promise.then((presence) => {
+  pr.promise.then(presence => {
     presence.there(() => {
       log.push(['doing stuff there']);
     });
