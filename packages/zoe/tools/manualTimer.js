@@ -4,17 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 
 import './types';
-
-/* eslint-disable jsdoc/valid-types */
-/**
- * @typedef {Object} ManualTimerAdmin
- * @property {(msg?: string) => Promise<void>} tick
- */
-/* eslint-enable jsdoc/valid-types */
-
-/**
- * @typedef {ManualTimerAdmin & TimerService} ManualTimer
- */
+import './internal-types';
 
 /**
  * A fake clock that also logs progress.
@@ -26,7 +16,7 @@ import './types';
 export default function buildManualTimer(log, startValue = 0) {
   let ticks = startValue;
 
-  /** @type {Store<Timestamp, Array<TimerServiceHandler>>} */
+  /** @type {Store<Timestamp, Array<Waker>>} */
   const schedule = makeStore('Timestamp');
 
   /** @type {ManualTimer} */
@@ -36,12 +26,12 @@ export default function buildManualTimer(log, startValue = 0) {
       ticks += 1;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
-        const handlers = schedule.get(ticks);
+        const wakers = schedule.get(ticks);
         schedule.delete(ticks);
         await Promise.allSettled(
-          handlers.map(h => {
+          wakers.map(waker => {
             log(`&& running a task scheduled for ${ticks}. &&`);
-            return E(h).wake(ticks);
+            return E(waker).wake(ticks);
           }),
         );
       }
@@ -49,51 +39,67 @@ export default function buildManualTimer(log, startValue = 0) {
     getCurrentTimestamp() {
       return ticks;
     },
-    setWakeup(baseTime, handler) {
+    setWakeup(baseTime, waker) {
       if (baseTime <= ticks) {
         log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
-        handler.wake(ticks);
+        E(waker).wake(ticks);
         return undefined;
       }
       log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
       if (!schedule.has(baseTime)) {
         schedule.init(baseTime, []);
       }
-      schedule.get(baseTime).push(handler);
+      schedule.get(baseTime).push(waker);
       return baseTime;
     },
-    removeWakeup(handler) {
+    removeWakeup(waker) {
+      /** @type {Array<Timestamp>} */
       const baseTimes = [];
-      for (const [baseTime, handlers] of schedule.entries()) {
-        const index = handlers.indexOf(handler);
-        if (index >= 0) {
-          handlers.splice(index, 1);
+      for (const [baseTime, wakers] of schedule.entries()) {
+        if (wakers.includes(waker)) {
           baseTimes.push(baseTime);
+          const remainingWakers = wakers.filter(w => waker !== w);
+
+          if (remainingWakers.length) {
+            // Cull the wakers for this time.
+            schedule.set(baseTime, remainingWakers);
+          } else {
+            // There are no more wakers for this time.
+            schedule.delete(baseTime);
+          }
         }
       }
-      return baseTimes;
+      return harden(baseTimes);
     },
-    createRepeater(baseTime, interval) {
-      let handlers = [];
+    createRepeater(delay, interval) {
+      /** @type {Array<Waker> | null} */
+      let wakers = [];
+
+      /** @type {Waker} */
+      const repeaterWaker = {
+        async wake(timestamp) {
+          if (!wakers) {
+            return;
+          }
+          timer.setWakeup(ticks + interval, repeaterWaker);
+          await Promise.allSettled(
+            wakers.map(waker => E(waker).wake(timestamp)),
+          );
+        },
+      };
+
+      /** @type {TimerRepeater} */
       const repeater = {
-        schedule(h) {
-          handlers.push(h);
+        schedule(waker) {
+          wakers.push(waker);
         },
         disable() {
-          handlers = undefined;
+          wakers = null;
+          timer.removeWakeup(repeaterWaker);
         },
       };
       harden(repeater);
-      const repeaterHandler = {
-        async wake(timestamp) {
-          if (handlers === undefined) {
-            return;
-          }
-          timer.setWakeup(ticks + interval, repeaterHandler);
-          await Promise.allSettled(handlers.map(h => E(h).wake(timestamp)));
-        },
-      };
-      timer.setWakeup(ticks + baseTime, repeaterHandler);
+      timer.setWakeup(ticks + delay, repeaterWaker);
       return repeater;
     },
   };

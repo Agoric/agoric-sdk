@@ -3,18 +3,17 @@
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
  * @property {() => Timestamp} getCurrentTimestamp Retrieve the latest timestamp
- * @property {(baseTime: Timestamp, handler: TimerServiceHandler) => Timestamp}
- * setWakeup Return value is the time at which the call is scheduled to take
- * place
- * @property {(handler: TimerServiceHandler) => Array<Timestamp>} removeWakeup Remove
- * the handler from all its scheduled wakeup, whether produced by
- * `timer.setWakeup(h)` or `repeater.schedule(h)`.
- * @property {(baseTime: Timestamp, interval: RelativeTime) => TimerRepeater}
+ * @property {(baseTime: Timestamp, waker: Waker) => Timestamp} setWakeup Return
+ * value is the time at which the call is scheduled to take place
+ * @property {(waker: Waker) => Array<Timestamp>} removeWakeup Remove the waker
+ * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
+ * `repeater.schedule(h)`.
+ * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater}
  * createRepeater Create and return a repeater that will schedule `wake()` calls
- * repeatedly at times that are a multiple of interval following baseTime.
- * Interval is the delay between successive times at which wake will be called.
- * When `schedule(h)` is called, `h.wake()` will be scheduled to be called after
- * the next multiple of interval from the base. Since times can be
+ * repeatedly at times that are a multiple of interval following delay.
+ * Interval is the difference between successive times at which wake will be
+ * called.  When `schedule(w)` is called, `w.wake()` will be scheduled to be
+ * called after the next multiple of interval from the base. Since times can be
  * coarse-grained, the actual call may occur later, but this won't change when
  * the next event will be called.
  */
@@ -29,19 +28,19 @@
  */
 
 /**
- * @typedef {Object} TimerServiceHandler
+ * @typedef {Object} Waker
  * @property {(timestamp: Timestamp) => void} wake The timestamp passed to
  * `wake()` is the time that the call was scheduled to occur.
  */
 
 /**
  * @typedef {Object} TimerRepeater
- * @property {(handler: TimerServiceHandler) => void} schedule Returns the time
- * scheduled for the first call on handler.  The handler will continue to be
- * scheduled for a `wake()` call every interval until the repeater is disabled.
- * @property {() => void} disable Disable this repeater, so `schedule()` can't
- * be called, and handlers already scheduled with this repeater won't be
- * rescheduled again after `wake()` is next called on them.
+ * @property {(waker: Waker) => void} schedule Returns the time scheduled for
+ * the first call to `E(waker).wake()`.  The waker will continue to be scheduled
+ * every interval until the repeater is disabled.
+ * @property {() => void} disable Disable this repeater, so `schedule(w)` can't
+ * be called, and wakers already scheduled with this repeater won't be
+ * rescheduled again after `E(waker).wake()` is next called on them.
  */
 
 /**
@@ -52,7 +51,8 @@
 
 /**
  * @typedef {[PriceDescription]} PriceQuoteValue A single-valued set of
- * PriceDescriptions
+ * PriceDescriptions.  This is the `value` in PriceQuote.quoteAmount (`{ brand,
+ * value: PriceQuoteValue }`).
  */
 
 /**
