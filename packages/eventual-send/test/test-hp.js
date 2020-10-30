@@ -198,7 +198,7 @@ test.skip('resolveWithPresence test nr 4', async t => {
     get(target, property, receiver) {
       log.push(['get', target, property, receiver]);
       if (target === receiver) {
-        if ('then' === property) {
+        if (property === 'then') {
           return (callback, errback) => {
             log.push(['then', callback, errback]);
             try {
@@ -208,53 +208,17 @@ test.skip('resolveWithPresence test nr 4', async t => {
             }
           }
         }
-        if ('catch' === property) {
+        if (property === 'catch') {
           return errback => Promise.resolve(target);
         }
-        if ('finally' === property) {
+        if (property === 'finally') {
           return callback => {
             try {
               callback();
             } catch (problem) { }
           }
         }
-        if('there' === property) {
-          /*
-          const minOf = (a, b) => {
-            if (b === undefined) { return a; }
-            if (a === undefined) { return b; }
-            if (b === null) { return a; }
-            if (a === null) { return b; }
-            switch (typeof(a)) {
-              case 'number': // fallthrough
-              case 'bigint': return (BigInt(a) < BigInt(b)) ? a : b ;
-              case 'object':
-                if (typeof(b) !== 'object') {
-                  throw new Error('minOf got two mutually incompareable objects');
-                }
-                if (Array.isArray(a) && Array.isArray(b)) {
-                  const t1 = (a.length < b.length);
-                  const t2 = t1 ? b : a ;
-                  const t3 = t1 ? a : b ;
-                  return t2.map((aItem, idx) => minOf(aItem, t3[idx]));
-                } else {
-                  const t4 = Object.entries(a);
-                  const t5 = Object.entries(b);
-                  const t6 = (t4.length < t5.length);
-                  const t7 = t6 ? t5 : t4 ;
-                  const t8 = t6 ? t4 : t5 ;
-                  const t9 = t6 ? a : b ;
-                  return Object.fromEntries(
-                    t7.map((item, idx) => {
-                      const [name, valueA] = item;
-                      const valueB = t9[name];
-                      return [name, minOf(valueA, valueB)];
-                    }),
-                  );
-                }
-            }
-          }
-          */
+        if(property === 'there') {
           const there = nomad => {
             if (typeof(nomad) === 'function') {
               try {
@@ -309,8 +273,7 @@ test.skip('resolveWithPresence test nr 4', async t => {
     pr = { ...pr, resolve, reject, resolveWithPresence };
   });
   await Promise.resolve();
-  pr.resolveWithPresence(
-    presenceEventualHandler,
-    { proxy: { handler: presenceImmediateHandler, target: {} } },
-  );
+  pr.resolveWithPresence(presenceEventualHandler, {
+    proxy: { handler: presenceImmediateHandler, target: {} },
+  });
 });
