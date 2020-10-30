@@ -3,9 +3,9 @@
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
  * @property {() => Timestamp} getCurrentTimestamp Retrieve the latest timestamp
- * @property {(baseTime: Timestamp, waker: Waker) => Timestamp} setWakeup Return
+ * @property {(baseTime: Timestamp, waker: TimerWaker) => Timestamp} setWakeup Return
  * value is the time at which the call is scheduled to take place
- * @property {(waker: Waker) => Array<Timestamp>} removeWakeup Remove the waker
+ * @property {(waker: TimerWaker) => Array<Timestamp>} removeWakeup Remove the waker
  * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
  * `repeater.schedule(h)`.
  * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater}
@@ -28,14 +28,14 @@
  */
 
 /**
- * @typedef {Object} Waker
+ * @typedef {Object} TimerWaker
  * @property {(timestamp: Timestamp) => void} wake The timestamp passed to
  * `wake()` is the time that the call was scheduled to occur.
  */
 
 /**
  * @typedef {Object} TimerRepeater
- * @property {(waker: Waker) => void} schedule Returns the time scheduled for
+ * @property {(waker: TimerWaker) => void} schedule Returns the time scheduled for
  * the first call to `E(waker).wake()`.  The waker will continue to be scheduled
  * every interval until the repeater is disabled.
  * @property {() => void} disable Disable this repeater, so `schedule(w)` can't

@@ -16,7 +16,7 @@ import './internal-types';
 export default function buildManualTimer(log, startValue = 0) {
   let ticks = startValue;
 
-  /** @type {Store<Timestamp, Array<Waker>>} */
+  /** @type {Store<Timestamp, Array<TimerWaker>>} */
   const schedule = makeStore('Timestamp');
 
   /** @type {ManualTimer} */
@@ -43,7 +43,7 @@ export default function buildManualTimer(log, startValue = 0) {
       if (baseTime <= ticks) {
         log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
         E(waker).wake(ticks);
-        return undefined;
+        return baseTime;
       }
       log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
       if (!schedule.has(baseTime)) {
@@ -72,10 +72,10 @@ export default function buildManualTimer(log, startValue = 0) {
       return harden(baseTimes);
     },
     createRepeater(delay, interval) {
-      /** @type {Array<Waker> | null} */
+      /** @type {Array<TimerWaker> | null} */
       let wakers = [];
 
-      /** @type {Waker} */
+      /** @type {TimerWaker} */
       const repeaterWaker = {
         async wake(timestamp) {
           if (!wakers) {
@@ -91,6 +91,9 @@ export default function buildManualTimer(log, startValue = 0) {
       /** @type {TimerRepeater} */
       const repeater = {
         schedule(waker) {
+          if (!wakers) {
+            throw Error(`Cannot schedule on a disabled repeater`);
+          }
           wakers.push(waker);
         },
         disable() {
