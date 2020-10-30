@@ -5,10 +5,12 @@ import { makeStore } from '@agoric/store';
 
 import './types';
 
+/* eslint-disable jsdoc/valid-types */
 /**
  * @typedef {Object} ManualTimerAdmin
- * @property {(msg: string | undefined) => Promise<void>} tick
+ * @property {(msg?: string) => Promise<void>} tick
  */
+/* eslint-enable jsdoc/valid-types */
 
 /**
  * @typedef {ManualTimerAdmin & TimerService} ManualTimer

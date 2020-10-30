@@ -36,7 +36,7 @@
 
 /**
  * @typedef {Object} TimerRepeater
- * @property {(handler: TimerHandler) => void} schedule Returns the time
+ * @property {(handler: TimerServiceHandler) => void} schedule Returns the time
  * scheduled for the first call on handler.  The handler will continue to be
  * scheduled for a `wake()` call every interval until the repeater is disabled.
  * @property {() => void} disable Disable this repeater, so `schedule()` can't
@@ -72,15 +72,15 @@
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<TimerService>}
  * getTimerService get the timer used in PriceQuotes for a given
  * brandIn/brandOut pair
- * @property {(amountIn: Amount, brandOut: Brand) => Promise<PriceQuote>}
- * getAmountInQuote get a quote corresponding to the specified amountIn
- * @property {(brandIn: Brand, amountOut: Amount) => Promise<PriceQuote>}
- * getAmountOutQuote get a quote corresponding to the specified amountOut
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Notifier<PriceQuote>>}
  * getPriceNotifier
- * @property {(deadline: number, amountIn: Amount, brandOut: Brand) =>
+ * @property {(deadline: Timestamp, amountIn: Amount, brandOut: Brand) =>
  * Promise<PriceQuote>} quoteAtTime Resolves after `deadline` passes on the
  * priceAuthority's timerService with the price quote of `amountIn` at that time
+ * @property {(amountIn: Amount, brandOut: Brand) => Promise<PriceQuote>}
+ * quoteGiven get a quote corresponding to the specified amountIn
+ * @property {(brandIn: Brand, amountOut: Amount) => Promise<PriceQuote>}
+ * quoteWanted get a quote corresponding to the specified amountOut
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenGT Resolve when a price quote of `amountIn` exceeds `amountOutLimit`
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
