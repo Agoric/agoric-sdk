@@ -65,8 +65,16 @@
 /**
  * @template T
  * @typedef {Object} NotifierRecord<T> the produced notifier/updater pair
- * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  * @property {Updater<T>} updater the (closely-held) notifier producer
+ * @property {Notifier<T>} notifier the (widely-held) notifier consumer
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef MulticastInternals Purposely opaque. Will be shared between
+ * machines, so it must be same to expose. But other software should avoid
+ * depending on its internal structure.
  */
 
 /**
@@ -94,6 +102,13 @@
  * @typedef {AsyncIterator<T> & AsyncIterable<T>} MulticastIterator<T>
  * an AsyncIterator supporting distributed and multicast usage.
  *
- * @property {() => MulticastIterable} snapshot
+ * @property {() => MulticastIterable<T>} snapshot
  *
+ */
+
+/**
+ * @template T
+ * @typedef {Object} MulticastIteratorRecord<T>
+ * @property {Updater<T>} updater
+ * @property {MulticastIterable<T>} multicastIterable
  */
