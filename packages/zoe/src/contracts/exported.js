@@ -140,21 +140,20 @@
 /**
  * @typedef {Object} OraclePublicFacet the public methods accessible from the
  * contract instance
- * @property {(query: any) => ERef<Invitation>} makeQueryInvitation create an
- * invitation for a paid oracle query
  * @property {(query: any) => ERef<any>} query make an unpaid query
- * @property {() => string} getDescription describe this oracle
  */
 
 /**
  * @typedef {Object} OracleCreatorFacet the private methods accessible from the
  * contract instance
- * @property {(issuerP: ERef<Issuer>) => Promise<void>} addFeeIssuer add an
- * issuer to collect fees for the oracle
  * @property {() => AmountKeywordRecord} getCurrentFees get the current
  * fee amounts
  * @property {(total: boolean=) => ERef<Invitation>}
  * makeWithdrawInvitation create an invitation to withdraw fees
+ * @property {() => Promise<Invitation>} makeShutdownInvitation
+ *   Make an invitation to withdraw all fees and shutdown
+ * @property {(query: any) => ERef<Invitation>} makeQueryInvitation create an
+ * invitation for an oracle query
  */
 
 /**
