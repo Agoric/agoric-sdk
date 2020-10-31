@@ -86,7 +86,6 @@ test.before(
         oracleHandler,
       });
 
-      t.is(await E(startResult.publicFacet).getDescription(), 'myOracle');
       return harden({
         ...startResult,
         creatorFacet,

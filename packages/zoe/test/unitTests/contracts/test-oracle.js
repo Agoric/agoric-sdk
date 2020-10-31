@@ -84,7 +84,6 @@ test.before(
         oracleHandler,
       });
 
-      t.is(await E(startResult.publicFacet).getDescription(), 'myOracle');
       return harden({
         ...startResult,
         creatorFacet,
@@ -104,29 +103,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   // Get the Zoe invitation issuer from Zoe.
   const invitationIssuer = E(zoe).getInvitationIssuer();
 
-  const {
-    publicFacet,
-    creatorFacet: pingCreator,
-    creatorInvitation: pingRevoke,
-  } = await makePingOracle(t);
-
-  const revokeOffer = E(zoe).offer(pingRevoke);
-
-  E(revokeOffer)
-    .getPayouts()
-    .then(payouts =>
-      Promise.all(
-        Object.entries(payouts).map(async ([keyword, payment]) => {
-          const amount = await link.issuer.getAmountOf(payment);
-          return [keyword, amount];
-        }),
-      ),
-    )
-    .then(kvals => {
-      t.deepEqual(kvals, [['Fee', link.amountMath.make(799)]]);
-    });
-
-  const completeObj = E(revokeOffer).getOfferResult();
+  const { creatorFacet: pingCreator, publicFacet } = await makePingOracle(t);
 
   const query1 = { kind: 'Free', data: 'foo' };
   const query2 = { kind: 'Paid', data: 'bar' };
@@ -134,10 +111,10 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   const query4 = { kind: 'Paid', data: 'bot' };
 
   const freeReply = E(publicFacet).query({ hello: 'World' });
-  const invitation1 = E(publicFacet).makeQueryInvitation(query1);
-  const invitation2 = E(publicFacet).makeQueryInvitation(query2);
-  const invitation3 = E(publicFacet).makeQueryInvitation(query3);
-  const invitation4 = E(publicFacet).makeQueryInvitation(query4);
+  const invitation1 = E(pingCreator).makeQueryInvitation(query1);
+  const invitation2 = E(pingCreator).makeQueryInvitation(query2);
+  const invitation3 = E(pingCreator).makeQueryInvitation(query3);
+  const invitation4 = E(pingCreator).makeQueryInvitation(query4);
 
   // Ensure all three are real Zoe invitations.
   t.truthy(await E(invitationIssuer).isLive(invitation1));
@@ -165,7 +142,6 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   const offer = E(zoe).offer(invitation1);
 
   // Ensure our oracle handles $LINK.
-  await E(pingCreator).addFeeIssuer(link.issuer);
   const overAmount = link.amountMath.add(feeAmount, link.amountMath.make(799));
   const offer3 = E(zoe).offer(
     invitation3,
@@ -220,22 +196,39 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
       want: { Fee: link.amountMath.make(201) },
     }),
   );
-  t.is(await E(withdrawOffer).getOfferResult(), 'liquidated');
+  t.is(await E(withdrawOffer).getOfferResult(), 'Successfully withdrawn');
 
-  const badInvitation = E(publicFacet).makeQueryInvitation({
+  const shutdownInvitation = E(pingCreator).makeShutdownInvitation();
+  const shutdownSeat = E(zoe).offer(shutdownInvitation);
+
+  await E(shutdownSeat)
+    .getPayouts()
+    .then(payouts =>
+      Promise.all(
+        Object.entries(payouts).map(async ([keyword, payment]) => {
+          const amount = await link.issuer.getAmountOf(payment);
+          return [keyword, amount];
+        }),
+      ),
+    )
+    .then(kvals => {
+      t.deepEqual(kvals, [['Fee', link.amountMath.make(799)]]);
+    });
+
+  const badInvitation = E(pingCreator).makeQueryInvitation({
     hello: 'nomore',
   });
-  t.is(await E(completeObj).exit(), 'liquidated');
   const badOffer = E(zoe).offer(badInvitation);
 
   // Ensure the oracle no longer functions after revocation.
   await t.throwsAsync(() => E(badOffer).getOfferResult(), {
     instanceOf: Error,
-    message: /^Oracle .* revoked$/,
+    message: `No further offers are accepted`,
   });
+
   await t.throwsAsync(() => E(publicFacet).query({ hello: 'not again' }), {
     instanceOf: Error,
-    message: /^Oracle .* revoked$/,
+    message: `Oracle revoked`,
   });
 
   t.deepEqual(
