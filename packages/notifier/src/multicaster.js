@@ -10,9 +10,9 @@ import './types';
 /**
  * @template T
  * @param {MulticastInternals} startP
- * @returns {MulticastIterable<T>}
+ * @returns {Multicaster<T>}
  */
-const makeMulticastIterable = startP => {
+const makeMulticaster = startP => {
   return harden({
     // eslint-disable-next-line no-use-before-define
     [Symbol.asyncIterator]: () => makeMulticastIterator(startP),
@@ -22,8 +22,8 @@ const makeMulticastIterable = startP => {
     getSharableInternals: () => startP,
   });
 };
-harden(makeMulticastIterable);
-export { makeMulticastIterable };
+harden(makeMulticaster);
+export { makeMulticaster };
 
 /**
  * @template T
@@ -34,7 +34,7 @@ const makeMulticastIterator = tailP => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return harden({
-    snapshot: () => makeMulticastIterable(tailP),
+    snapshot: () => makeMulticaster(tailP),
     [Symbol.asyncIterator]: () => makeMulticastIterator(tailP),
     next: () => {
       const resultP = E.G(tailP).head;
@@ -45,15 +45,15 @@ const makeMulticastIterator = tailP => {
 };
 
 /**
- * `makeMulticastIterableKit()` makes an entanged `{updater, multicastIterable}`
+ * `makeMulticasterKit()` makes an entanged `{updater, multicaster}`
  * pair which purposely resembles `makeNotifierKit` making an entangled
  * `{updater, notifier}` pair.
  *
  * Both `updater`s have the same API with the same meaning --- to push a
  * sequence of non-final values, terminated with either a final successful
  * completion value or failure reason. In both cases, the other side of the
- * pair---the `multicastIterable` or `notifier`---implements the JavaScript
- * standard async iterator API, and so may be read using a JavaScript
+ * pair---the `multicaster` or `notifier`---implements the JavaScript
+ * standard async iteratable API, and so may be read using a JavaScript
  * `for-await-of` loop.
  *
  * In both cases, all the non-final values read will be non-final values pushed
@@ -67,29 +67,29 @@ const makeMulticastIterator = tailP => {
  * `multicastIterator` returned here provides lossless access to the entire
  * stream of non-final values. (Both losslessly report termination.)
  *
- * Of the `{updater, multicastIterable}` pair returned by `makeIterableKit()`,
- * this initial `multicastIterable` represents the stream starting with the
- * first update to the `updater`. Each multicast iterable makes any number of
+ * Of the `{updater, multicaster}` pair returned by `makeMulticasterKit()`,
+ * this initial `multicaster` represents the stream starting with the
+ * first update to the `updater`. Each multicaster makes any number of
  * multicast iterators, each of which advance independently starting at that
  * iterable's starting point. These multicast iterators also have a
- * `snapshot()` method which will create a new multicast iterable capturing the
+ * `snapshot()` method which will create a new multicaster capturing the
  * iterator's current position as the new iterable's starting point.
  *
- * As is conventional, the multicast iterator is also an multicast iterable that
- * produces an multicast iterator. In this case, it produces a new multicast
- * iterator that advances independently starting from the current position.
+ * As is conventional, the iterator is itself also an iterable.
+ * Here this means the multicast iterator is also a multicaster
+ * (a kind of iterable) that produces a multicast iterator. In this case,
+ * it produces a new multicast iterator that advances independently starting
+ * from the current position.
  *
- * The internal representation ensure that elements that are no longer
+ * The internal representation ensures that elements that are no longer
  * observable are unreachable and can be gc'ed.
  *
  * @template T
- * @returns {MulticastIteratorRecord<T>}
+ * @returns {MulticasterRecord<T>}
  */
-const makeMulticastIteratableKit = () => {
+const makeMulticasterKit = () => {
   let rear;
-  const multicastIterable = makeMulticastIterable(
-    new HandledPromise(r => (rear = r)),
-  );
+  const multicaster = makeMulticaster(new HandledPromise(r => (rear = r)));
 
   const updater = harden({
     updateState: value => {
@@ -118,7 +118,7 @@ const makeMulticastIteratableKit = () => {
       rear = undefined;
     },
   });
-  return harden({ updater, multicastIterable });
+  return harden({ updater, multicaster });
 };
-harden(makeMulticastIteratableKit);
-export { makeMulticastIteratableKit };
+harden(makeMulticasterKit);
+export { makeMulticasterKit };
