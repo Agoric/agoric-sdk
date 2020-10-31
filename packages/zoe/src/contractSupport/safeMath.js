@@ -8,4 +8,5 @@ export const natSafeMath = harden({
   subtract: (x, y) => Nat(x - y),
   multiply: (x, y) => Nat(x * y),
   floorDivide: (x, y) => Nat(Math.floor(x / y)),
+  ceilDivide: (x, y) => Nat(Math.ceil(x / y)),
 });
