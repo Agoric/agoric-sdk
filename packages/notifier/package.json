@@ -44,6 +44,7 @@
   },
   "files": [
     "src/",
+    "exported.js",
     "NEWS.md"
   ],
   "eslintConfig": {
