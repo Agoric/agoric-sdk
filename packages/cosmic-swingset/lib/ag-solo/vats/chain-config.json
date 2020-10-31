@@ -21,6 +21,9 @@
     "network": {
       "sourceSpec": "vat-network.js"
     },
+    "priceAuthority": {
+      "sourceSpec": "vat-priceAuthority.js"
+    },
     "provisioning": {
       "sourceSpec": "vat-provisioning.js"
     },
