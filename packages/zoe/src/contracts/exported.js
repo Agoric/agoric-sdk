@@ -140,6 +140,8 @@
 /**
  * @typedef {Object} OraclePublicFacet the public methods accessible from the
  * contract instance
+ * @property {(query: any) => ERef<Invitation>} makeQueryInvitation create an
+ * invitation for an oracle query
  * @property {(query: any) => ERef<any>} query make an unpaid query
  */
 
@@ -152,8 +154,6 @@
  * makeWithdrawInvitation create an invitation to withdraw fees
  * @property {() => Promise<Invitation>} makeShutdownInvitation
  *   Make an invitation to withdraw all fees and shutdown
- * @property {(query: any) => ERef<Invitation>} makeQueryInvitation create an
- * invitation for an oracle query
  */
 
 /**

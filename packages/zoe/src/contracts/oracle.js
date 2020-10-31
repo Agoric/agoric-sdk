@@ -51,29 +51,6 @@ const start = async zcf => {
       };
       return zcf.makeInvitation(shutdown, 'shutdown');
     },
-    async makeQueryInvitation(query) {
-      /** @type {OfferHandler} */
-      const doQuery = async querySeat => {
-        try {
-          const fee = querySeat.getAmountAllocated('Fee', feeBrand);
-          const { requiredFee, reply } = await E(handler).onQuery(query, fee);
-          if (requiredFee) {
-            trade(
-              zcf,
-              { seat: querySeat, gains: {} },
-              { seat: feeSeat, gains: { Fee: requiredFee } },
-            );
-          }
-          querySeat.exit();
-          E(handler).onReply(query, reply, requiredFee);
-          return reply;
-        } catch (e) {
-          E(handler).onError(query, e);
-          throw e;
-        }
-      };
-      return zcf.makeInvitation(doQuery, 'oracle query', { query });
-    },
   };
 
   const creatorFacet = {
@@ -98,6 +75,29 @@ const start = async zcf => {
         E(handler).onError(query, e);
         throw e;
       }
+    },
+    async makeQueryInvitation(query) {
+      /** @type {OfferHandler} */
+      const doQuery = async querySeat => {
+        try {
+          const fee = querySeat.getAmountAllocated('Fee', feeBrand);
+          const { requiredFee, reply } = await E(handler).onQuery(query, fee);
+          if (requiredFee) {
+            trade(
+              zcf,
+              { seat: querySeat, gains: {} },
+              { seat: feeSeat, gains: { Fee: requiredFee } },
+            );
+          }
+          querySeat.exit();
+          E(handler).onReply(query, reply, requiredFee);
+          return reply;
+        } catch (e) {
+          E(handler).onError(query, e);
+          throw e;
+        }
+      };
+      return zcf.makeInvitation(doQuery, 'oracle query', { query });
     },
   };
 

@@ -48,10 +48,10 @@ test.before(
 
     const feeAmount = link.amountMath.make(1000);
     /**
-     * @param {ExecutionContext} t
+     * @param {ExecutionContext} _t
      * @returns {Promise<OracleKit>}
      */
-    const makePingOracle = async t => {
+    const makePingOracle = async _t => {
       /** @type {OracleHandler} */
       const oracleHandler = harden({
         async onQuery(query, fee) {
@@ -111,10 +111,10 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   const query4 = { kind: 'Paid', data: 'bot' };
 
   const freeReply = E(publicFacet).query({ hello: 'World' });
-  const invitation1 = E(pingCreator).makeQueryInvitation(query1);
-  const invitation2 = E(pingCreator).makeQueryInvitation(query2);
-  const invitation3 = E(pingCreator).makeQueryInvitation(query3);
-  const invitation4 = E(pingCreator).makeQueryInvitation(query4);
+  const invitation1 = E(publicFacet).makeQueryInvitation(query1);
+  const invitation2 = E(publicFacet).makeQueryInvitation(query2);
+  const invitation3 = E(publicFacet).makeQueryInvitation(query3);
+  const invitation4 = E(publicFacet).makeQueryInvitation(query4);
 
   // Ensure all three are real Zoe invitations.
   t.truthy(await E(invitationIssuer).isLive(invitation1));
@@ -215,7 +215,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
       t.deepEqual(kvals, [['Fee', link.amountMath.make(799)]]);
     });
 
-  const badInvitation = E(pingCreator).makeQueryInvitation({
+  const badInvitation = E(publicFacet).makeQueryInvitation({
     hello: 'nomore',
   });
   const badOffer = E(zoe).offer(badInvitation);
