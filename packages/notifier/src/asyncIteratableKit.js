@@ -12,15 +12,9 @@ const makeAsyncIterable = startP => {
     // eslint-disable-next-line no-use-before-define
     [Symbol.asyncIterator]: () => makeAsyncIterator(startP),
     /**
-     * To manually create a local representative of a
-     * this kind of remote async interable, do
-     * ```js
-     * localIterable = makeAsyncIterable(E(remoteIterable).getEventualList());
-     * ```
-     * The resulting localIterable also support such remote use, and
-     * will return access to the same representation.
+     * 
      */
-    getEventualList: () => startP,
+    getSharableInternals: () => startP,
   });
 };
 harden(makeAsyncIterable);
@@ -41,24 +35,41 @@ const makeAsyncIterator = tailP => {
 };
 
 /**
- * This makes a pair of an `updater` and an initial `asyncIteratable`. The
- * `updater` API is the same as the Notifier's `updater`. In both cases,  calls
- * to the `updater` produce a stream of non-final values terminated with
- * either a final success value or a final failure reason. The purpose of the
- * notifier is to be lossy over the non-final values. The purpose of the
- * asyncIterableKit is to consume such streams losslessly.
+ * `makeIterableKit()` makes an entanged `{updater, asyncIterable}` pair
+ * which purposely resembles `makeNotifier` making an entangled
+ * `{updater, notifier}` pair.
  *
- * The initial `asyncIteratable` represents the stream starting with the first
- * update to the `updater`. It makes async iterators each of which advance
- * independently starting at that starting point. An async iterator has a
- * `snapshot()` method which will create a new async iterable capturing the
- * iterator's current position as its starting point.
+ * Both `updater`s have the same API with the same meaning --- to push a
+ * sequence of non-final values, terminated with either a final successful
+ * completion value or failure reason. In both cases, the other side of the
+ * pair---the `asyncIterable` or `notifier`---implements the JavaScript
+ * standard async iterator API, and so may be read using a JavaScript
+ * `for-await-of` loop.
+ *
+ * In both cases, all the non-final values read will be non-final values pushed
+ * into their `updater` and in the same order. Both will terminate according to
+ * the termination signal pushed into their `updater`. Both support efficient
+ * distributed multicast operation.
+ *
+ * However, they serve different purposes and admit different optimizations.
+ * The `notifier` is lossy on non-final values, under the assumption that the
+ * consumers are only ever interested in the most recent value. The
+ * `asyncIterator` returned here provides lossless access to the entire stream
+ * of non-final values. (Both losslessly report termination.)
+ *
+ * Of the `{updater, asyncIterable}` pair returned by `makeIterableKit()`,
+ * this initial `asyncIteratable` represents the stream starting with the first
+ * update to the `updater`. Each iterable makes any number of async iterators
+ * each of which advance independently starting at that iterable's starting
+ * point. These async iterators also have a `snapshot()` method which will
+ * create a new async iterable capturing the iterator's current position as
+ * the new iterable's starting point.
  *
  * As is conventional, the async iterator is also an async iterable that
- * produces an async iterator. In this case, it is a new async iterator that
- * advances independently starting from the current position.
+ * produces an async iterator. In this case, it produces a new async iterator
+ * that advances independently starting from the current position.
  *
- * The internal representation ensure that eements that are no longer
+ * The internal representation ensure that elements that are no longer
  * observable are unreachable and can be gc'ed.
  */
 const makeAsyncIteratableKit = () => {

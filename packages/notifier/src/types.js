@@ -68,3 +68,32 @@
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  * @property {Updater<T>} updater the (closely-held) notifier producer
  */
+
+/**
+ * @template T
+ * @typedef {AsyncIterable<T>} MulticastIterable<T> A form of AsyncIterable
+ * supporting distributed and multicast usage.
+ *
+ * TODO How do I declare a symbol-named property in the JSDoc type syntax?
+ * -property {() => MulticastIterator<T>} Symbol.asyncIterator returns a
+ * MulticastIterator, which is an AsyncIterator supporting distributed and
+ * multicast usage.
+ *
+ * @property {() => MulticastInternals} getSharableInternals Used to replicate
+ * the multicast values at other sites. To manually create a local
+ * representative of a MulticastIterable, do
+ * ```js
+ * localIterable = makeAsyncIterable(E(remoteIterable).getSharableInternals());
+ * ```
+ * The resulting `localIterable` also supports such remote use, and
+ * will return access to the same representation.
+ */
+
+/**
+ * @template T
+ * @typedef {AsyncIterator<T> & AsyncIterable<T>} MulticastIterator<T>
+ * an AsyncIterator supporting distributed and multicast usage.
+ *
+ * @property {() => MulticastIterable} snapshot
+ *
+ */
