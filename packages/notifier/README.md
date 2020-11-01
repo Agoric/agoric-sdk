@@ -56,7 +56,7 @@ The publisher has published an interation with the non-final sequence
 
 Alice the subscriber consumes using the `for-of-await` loop
 ```js
-async consume(subscription) {
+const consume = async subscription => {
   try {
     for await (const val of subscription) {
       console.log('non-final', val);
@@ -65,7 +65,7 @@ async consume(subscription) {
   } catch (reason) {
     console.log('failed', reason);
   }
-}
+};
 consume(subscription);
 // eventually prints
 // non-final a
@@ -85,7 +85,7 @@ Bob the consumer consumes using the
 const observer = harden({
   updateState: val => console.log('non-final', val),
   finish: completion => console.log('finished', completion),
-  fail: reason => console.log('failed', reason);
+  fail: reason => console.log('failed', reason),
 });
 observeIteration(subscription, observer);
 // eventually prints

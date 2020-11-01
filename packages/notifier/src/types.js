@@ -79,13 +79,8 @@
 
 /**
  * @template T
- * @typedef {AsyncIterable<T>} Subscription<T> A form of AsyncIterable
+ * @typedef {Object} BaseSubscription<T> A form of AsyncIterable
  * supporting distributed and multicast usage.
- *
- * TODO How do I declare a symbol-named property in the JSDoc type syntax?
- * -property {() => SubscriptionIterator<T>} Symbol.asyncIterator returns a
- * SubscriptionIterator, which is an AsyncIterator supporting distributed and
- * multicast usage.
  *
  * @property {() => SubscriptionInternals} getSharableSubscriptionInternals Used to
  * replicate the multicast values at other sites. To manually create a local
@@ -96,6 +91,11 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
+ */
+
+/**
+ * @template T
+ * @typedef {BaseSubscription<T> & AsyncIterable<T>} Subscription<T>
  */
 
 /**

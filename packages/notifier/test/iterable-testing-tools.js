@@ -1,6 +1,7 @@
 // @ts-check
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
+import { observeIteration } from '../src/index';
 
 const obj = harden({});
 const unresP = new Promise(_ => {});
@@ -157,4 +158,39 @@ export const makeTestUpdater = (t, lossy, fails) => {
       t.is(reason, refReason);
     },
   });
+};
+
+// See the Paula example code in the README
+export const paula = iterationObserver => {
+  // Paula the publisher says
+  iterationObserver.updateState('a');
+  iterationObserver.updateState('b');
+  iterationObserver.finish('done');
+};
+
+// See the Alice example code in the README
+export const alice = async asyncIterable => {
+  const log = [];
+
+  try {
+    for await (const val of asyncIterable) {
+      log.push(['non-final', val]);
+    }
+    log.push(['finished']);
+  } catch (reason) {
+    log.push(['failed', reason]);
+  }
+  return log;
+};
+
+// See the Bob example code in the README
+export const bob = async asyncIterableP => {
+  const log = [];
+  const observer = harden({
+    updateState: val => log.push(['non-final', val]),
+    finish: completion => log.push(['finished', completion]),
+    fail: reason => log.push(['failed', reason]),
+  });
+  await observeIteration(asyncIterableP, observer);
+  return log;
 };

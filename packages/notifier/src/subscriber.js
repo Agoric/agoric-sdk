@@ -69,6 +69,7 @@ const makeSubscriptionKit = () => {
       const readComplaint = HandledPromise.reject(
         new Error('cannot read past end of iteration'),
       );
+      readComplaint.catch(_ => {}); // suppress unhandled rejection error
       rear({ head: { value: finalValue, done: true }, tail: readComplaint });
       rear = undefined;
     },
