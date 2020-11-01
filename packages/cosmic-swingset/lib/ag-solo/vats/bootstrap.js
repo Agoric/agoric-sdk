@@ -10,7 +10,6 @@ import { E } from '@agoric/eventual-send';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
-import { makeRendezvousNamespace } from './rendezvous';
 
 const NUM_IBC_PORTS = 3;
 
@@ -77,8 +76,6 @@ export function buildRootObject(vatPowers, vatParameters) {
       ),
     );
 
-    const makeRendezvous = makeRendezvousNamespace();
-
     return harden({
       async createUserBundle(_nickname, addr, powerFlags = []) {
         // Bind to some fresh ports (unspecified name) on the IBC implementation
@@ -125,7 +122,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         };
 
-        const rendezvous = makeRendezvous(addr);
+        const rendezvous = await E(vats.rendezvous).rendezvousServiceFor(addr);
         const bundle = harden({
           ...additionalPowers,
           chainTimerService,
