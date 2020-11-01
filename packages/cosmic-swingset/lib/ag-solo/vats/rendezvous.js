@@ -59,12 +59,12 @@ const RENDEZVOUS_ALREADY = harden({
  */
 
 /**
- * @typedef {Object} RendezvousNamespace
- * @property {(ourAddress: PeerAddress) => RendezvousPrivateService}
- * rendezvousServiceFor Create a private rendezvous service for a given peer
- * address.  `ourAddress` is a string that must somehow strongly identify the
- * peer that has access to the private service, such as an identifier that is
- * unique for the rendezvous namespace.
+ * @callback RendezvousPrivateServiceFactory Create a private rendezvous service
+ * for a given peer address.
+ * @param {PeerAddress} ourAddress a string that must somehow strongly identify
+ * the peer that has access to the private service, such as a cryptographic
+ * identifier.
+ * @returns {RendezvousPrivateService}
  */
 
 /**
@@ -110,7 +110,7 @@ const getPeerAddresses = peerAddrs => {
  *
  * @param {string} [namespaceName='Agoric'] the name of this rendezvous
  * namespace (doesn't have to be unique)
- * @returns {RendezvousNamespace}
+ * @returns {RendezvousPrivateServiceFactory}
  */
 export function makeRendezvousNamespace(namespaceName = 'Agoric') {
   /**
@@ -118,134 +118,130 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
    */
   const addrToPeerRecordStores = makeStore('localAddress');
 
-  /** @type {RendezvousNamespace} */
-  const rendezvousMaker = {
-    rendezvousServiceFor(ourAddress) {
-      /** @type {RendezvousPrivateService} */
-      const service = {
-        getNamespaceName() {
-          return namespaceName;
-        },
-        getLocalAddress() {
-          return ourAddress;
-        },
-        startRendezvous(peerAddrs, sendToPeer = undefined) {
-          const peerAddresses = getPeerAddresses(peerAddrs);
+  // Return a rendezvous maker.
+  return ourAddress => {
+    /** @type {RendezvousPrivateService} */
+    const service = {
+      getNamespaceName() {
+        return namespaceName;
+      },
+      getLocalAddress() {
+        return ourAddress;
+      },
+      startRendezvous(peerAddrs, sendToPeer = undefined) {
+        const peerAddresses = getPeerAddresses(peerAddrs);
 
-          let remainingToFind = peerAddresses.length;
-          let already = false;
-          const resultPK = makePromiseKit();
+        let remainingToFind = peerAddresses.length;
+        let already = false;
+        const resultPK = makePromiseKit();
+
+        /**
+         * @type {Array<() => void>}
+         */
+        const disposals = [];
+
+        const rendezvous = {
+          getResult() {
+            return resultPK.promise;
+          },
+          cancel() {
+            // We want to mark the rendezvous as failed if not already.
+            if (!already) {
+              resultPK.reject(
+                details`Rendezvous with ${peerAddresses} not completed`.complain(),
+              );
+            }
+            // Remove any stale references.
+            for (const disposal of disposals) {
+              disposal();
+            }
+          },
+        };
+
+        for (let i = 0; i < peerAddresses.length; i += 1) {
+          const theirAddress = peerAddresses[i];
 
           /**
-           * @type {Array<() => void>}
+           * @type {Store<PeerAddress, PeerRecord>}
            */
-          const disposals = [];
+          let addrToPeerRecord;
+          if (addrToPeerRecordStores.has(theirAddress)) {
+            addrToPeerRecord = addrToPeerRecordStores.get(theirAddress);
+          } else {
+            addrToPeerRecord = makeStore('localAddress');
+            addrToPeerRecordStores.init(theirAddress, addrToPeerRecord);
+          }
 
-          const rendezvous = {
-            getResult() {
-              return resultPK.promise;
-            },
-            cancel() {
-              // We want to mark the rendezvous as failed if not already.
-              if (!already) {
-                resultPK.reject(
-                  details`Rendezvous with ${peerAddresses} not completed`.complain(),
-                );
-              }
-              // Remove any stale references.
-              for (const disposal of disposals) {
-                disposal();
-              }
-            },
+          const complete = obj => {
+            remainingToFind -= 1;
+            // Try resolving the result if we're the first match for this rendezvous.
+            if (obj !== RENDEZVOUS_ALREADY) {
+              already = true;
+              resultPK.resolve(obj);
+            }
+            if (remainingToFind === 0) {
+              // We're done!
+              rendezvous.cancel();
+            }
           };
-
-          for (let i = 0; i < peerAddresses.length; i += 1) {
-            const theirAddress = peerAddresses[i];
-
-            /**
-             * @type {Store<PeerAddress, PeerRecord>}
-             */
-            let addrToPeerRecord;
-            if (addrToPeerRecordStores.has(theirAddress)) {
-              addrToPeerRecord = addrToPeerRecordStores.get(theirAddress);
-            } else {
-              addrToPeerRecord = makeStore('localAddress');
-              addrToPeerRecordStores.init(theirAddress, addrToPeerRecord);
+          const peerRecord = harden({
+            complete,
+            receivedFrom: sendToPeer,
+          });
+          if (addrToPeerRecord.has(ourAddress)) {
+            addrToPeerRecord.set(ourAddress, peerRecord);
+          } else {
+            addrToPeerRecord.init(ourAddress, peerRecord);
+          }
+          disposals.push(() => {
+            if (
+              addrToPeerRecord.has(ourAddress) &&
+              addrToPeerRecord.get(ourAddress) === peerRecord
+            ) {
+              // Remove the record for us.
+              addrToPeerRecord.delete(ourAddress);
             }
+          });
+        }
 
-            const complete = obj => {
-              remainingToFind -= 1;
-              // Try resolving the result if we're the first match for this rendezvous.
-              if (obj !== RENDEZVOUS_ALREADY) {
-                already = true;
-                resultPK.resolve(obj);
-              }
-              if (remainingToFind === 0) {
-                // We're done!
-                rendezvous.cancel();
-              }
-            };
-            const peerRecord = harden({
+        return harden(rendezvous);
+      },
+      completeRendezvous(peerAddrs, sendToPeer = undefined) {
+        const peerAddresses = getPeerAddresses(peerAddrs);
+
+        let already = false;
+        let returned;
+
+        // Look up all the records shared between us and the remote address.
+        assert(
+          addrToPeerRecordStores.has(ourAddress),
+          details`Rendezvous with ${peerAddrs} not completed`,
+        );
+        const addrToPeerRecord = addrToPeerRecordStores.get(ourAddress);
+
+        // Try the addresses in preference order.
+        for (const theirAddress of peerAddresses) {
+          if (addrToPeerRecord.has(theirAddress)) {
+            const {
               complete,
-              receivedFrom: sendToPeer,
-            });
-            if (addrToPeerRecord.has(ourAddress)) {
-              addrToPeerRecord.set(ourAddress, peerRecord);
+              receivedFrom: receivedFromThem,
+            } = addrToPeerRecord.get(theirAddress);
+
+            if (already) {
+              // Tell them we already completed the rendezvous.
+              complete(RENDEZVOUS_ALREADY);
             } else {
-              addrToPeerRecord.init(ourAddress, peerRecord);
-            }
-            disposals.push(() => {
-              if (
-                addrToPeerRecord.has(ourAddress) &&
-                addrToPeerRecord.get(ourAddress) === peerRecord
-              ) {
-                // Remove the record for us.
-                addrToPeerRecord.delete(ourAddress);
-              }
-            });
-          }
-
-          return harden(rendezvous);
-        },
-        completeRendezvous(peerAddrs, sendToPeer = undefined) {
-          const peerAddresses = getPeerAddresses(peerAddrs);
-
-          let already = false;
-          let returned;
-
-          // Look up all the records shared between us and the remote address.
-          assert(
-            addrToPeerRecordStores.has(ourAddress),
-            details`Rendezvous with ${peerAddrs} not completed`,
-          );
-          const addrToPeerRecord = addrToPeerRecordStores.get(ourAddress);
-
-          // Try the addresses in preference order.
-          for (const theirAddress of peerAddresses) {
-            if (addrToPeerRecord.has(theirAddress)) {
-              const {
-                complete,
-                receivedFrom: receivedFromThem,
-              } = addrToPeerRecord.get(theirAddress);
-
-              if (already) {
-                // Tell them we already completed the rendezvous.
-                complete(RENDEZVOUS_ALREADY);
-              } else {
-                // Send them our object.
-                already = true;
-                complete(sendToPeer);
-                returned = receivedFromThem;
-              }
+              // Send them our object.
+              already = true;
+              complete(sendToPeer);
+              returned = receivedFromThem;
             }
           }
-          assert(already, details`Rendezvous with ${peerAddrs} not completed`);
-          return returned;
-        },
-      };
-      return harden(service);
-    },
+        }
+        assert(already, details`Rendezvous with ${peerAddrs} not completed`);
+        return returned;
+      },
+    };
+    return harden(service);
   };
-
-  return harden(rendezvousMaker);
 }
