@@ -134,12 +134,39 @@ about these differences.
 
 Although Bob's code is correct, it is sub-optimal. Its distributed systems
 properties are not terrible, but Bob can do better using the
-`getSharableInternals()` method provided by both NotifierKit and
+`getSharableSubsciptionInternals()` method provided by both NotifierKit and
 SubscriptionKit. This enables consumer Bob to make a local AsyncIterable that
 coordinates better with producer Paula's IterationObserver. Alice's code is
 less forgiving. She's using JavaScript's `for-await-of` loop which requires a
-local AsyncIterator. It cannot handle a remote reference to an AsyncIterator at
-Paula's site.
+local AsyncIterable. It cannot handle a remote reference to an AsyncIterable
+at
+Paula's site. Alice has no choice but to make an AsyncIterable at her site.
+Using `getSharableSubsciptionInternals()` is the best way for her to do so. She
+can replace her last line, the call to `consume(subscription)` with
+
+```js
+import { makeSubscription } from '@agoric/notifier';
+
+const localSubscription =
+  makeSubscription(E(subscription).getSharableSubsciptionInternals());
+consume(localSubscription);
+```
+
+For NotifierKits there is a similar pair of a `getSharableNotifierInternals`
+method and a `makeNotifier`. However, the technique requires Alice to know what
+kind of possibly-remote AsyncIterable she has, and to have the required making
+function code locally available. Alternatively, Alice can generically mirror
+any possibly remote AsyncIterable by making a new local pair and plugging them
+together with `observeIteration`.
+```js
+const { publication: p, subscription: s } = makeSubscriptionKit();
+observeIteration(subscription, p);
+consume(s);
+```
+This will work for `subscription` being a reference to any AsyncIterable. If
+Alice only needs to consume in a lossy manner, she can use `makeNotifierKit()`
+instead, which will still work independent of what kind of AsyncIteratable
+`subscription` is a reference to.
 
 # NotifierKit
 

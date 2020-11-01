@@ -1,3 +1,3 @@
 export * from './notifier';
-export * from './multicaster';
+export * from './subscriber';
 export * from './asyncIterableAdaptor';

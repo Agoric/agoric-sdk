@@ -35,8 +35,8 @@
 
 /**
  * @template T
- * @typedef {Object} BaseNotifier<T> an object that can be used to get the current
- * state or updates
+ * @typedef {Object} BaseNotifier<T> an object that can be used to get the
+ * current state or updates
  * @property {GetUpdateSince<T>} getUpdateSince return update record as of an
  * update count.
  */
@@ -72,26 +72,27 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
- * @typedef MulticastInternals Purposely opaque. Will be shared between
+ * @typedef SubscriptionInternals Purposely opaque. Will be shared between
  * machines, so it must be same to expose. But other software should avoid
  * depending on its internal structure.
  */
 
 /**
  * @template T
- * @typedef {AsyncIterable<T>} Multicaster<T> A form of AsyncIterable
+ * @typedef {AsyncIterable<T>} Subscription<T> A form of AsyncIterable
  * supporting distributed and multicast usage.
  *
  * TODO How do I declare a symbol-named property in the JSDoc type syntax?
- * -property {() => MulticastIterator<T>} Symbol.asyncIterator returns a
- * MulticastIterator, which is an AsyncIterator supporting distributed and
+ * -property {() => SubscriptionIterator<T>} Symbol.asyncIterator returns a
+ * SubscriptionIterator, which is an AsyncIterator supporting distributed and
  * multicast usage.
  *
- * @property {() => MulticastInternals} getSharableInternals Used to replicate
- * the multicast values at other sites. To manually create a local
- * representative of a Multicaster, do
+ * @property {() => SubscriptionInternals} getSharableSubscriptionInternals Used to
+ * replicate the multicast values at other sites. To manually create a local
+ * representative of a Subscription, do
  * ```js
- * localIterable = makeAsyncIterable(E(remoteIterable).getSharableInternals());
+ * localIterable =
+ *   makeAsyncIterable(E(remoteIterable).getSharableSubscriptionInternals());
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
@@ -99,16 +100,16 @@
 
 /**
  * @template T
- * @typedef {AsyncIterator<T> & AsyncIterable<T>} MulticastIterator<T>
+ * @typedef {AsyncIterator<T> & AsyncIterable<T>} SubscriptionIterator<T>
  * an AsyncIterator supporting distributed and multicast usage.
  *
- * @property {() => Multicaster<T>} snapshot
+ * @property {() => Subscription<T>} snapshot
  *
  */
 
 /**
  * @template T
- * @typedef {Object} MulticasterRecord<T>
- * @property {Updater<T>} updater
- * @property {Multicaster<T>} multicaster
+ * @typedef {Object} SubscriptionRecord<T>
+ * @property {Updater<T>} publication
+ * @property {Subscription<T>} subscription
  */

@@ -88,19 +88,19 @@ export const makeAsyncIterableFromNotifier = notifierP => {
 };
 
 /**
- * This reads from `asyncIteratableP` updating `updater` with each successive
+ * This reads from `asyncIterableP` updating `updater` with each successive
  * value. The `updater` the same API as the `updater` of a notifier kit,
  * but can simply be an observer to react to these updates. As an observer,
  * the `updater` may only be interested in certain occurrences (`updateState`,
- * `finish`, `fail`), so for convenience, `updateFromIterable` feature
+ * `finish`, `fail`), so for convenience, `observeIteration` feature
  * tests for those methods before calling them.
  *
  * @template T
- * @param {Partial<Updater<T>>} updater
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
+ * @param {Partial<Updater<T>>} updater
  * @returns {Promise<undefined>}
  */
-export const updateFromIterable = (updater, asyncIterableP) => {
+export const observeIteration = (asyncIterableP, updater) => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
   return new Promise(ack => {
     const recur = () => {
@@ -126,6 +126,16 @@ export const updateFromIterable = (updater, asyncIterableP) => {
 };
 
 /**
+ * @deprecated Use `observeIteration` instead
+ * @template T
+ * @param {Partial<Updater<T>>} updater
+ * @param {ERef<AsyncIterable<T>>} asyncIterableP
+ * @returns {Promise<undefined>}
+ */
+export const updateFromIterable = (updater, asyncIterableP) =>
+  observeIteration(asyncIterableP, updater);
+
+/**
  * As updates come in from the possibly remote `notifierP`, update
  * the local `updater`. Since the updates come from a notifier, they
  * are lossy, i.e., once a more recent state can be reported, less recent
@@ -137,4 +147,4 @@ export const updateFromIterable = (updater, asyncIterableP) => {
  * @returns {Promise<undefined>}
  */
 export const updateFromNotifier = (updater, notifierP) =>
-  updateFromIterable(updater, makeAsyncIterableFromNotifier(notifierP));
+  observeIteration(makeAsyncIterableFromNotifier(notifierP), updater);

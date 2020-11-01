@@ -4,7 +4,7 @@ import test from 'ava';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,
-  updateFromIterable,
+  observeIteration,
   updateFromNotifier,
 } from '../src/index';
 import {
@@ -66,12 +66,12 @@ test('notifier adaptor - for await fails', async t => {
 
 test('notifier adaptor - update from iterator finishes', t => {
   const u = makeTestUpdater(t, false, false);
-  return updateFromIterable(u, finiteStream);
+  return observeIteration(finiteStream, u);
 });
 
 test('notifier adaptor - update from iterator fails', t => {
   const u = makeTestUpdater(t, false, true);
-  return updateFromIterable(u, explodingStream);
+  return observeIteration(explodingStream, u);
 });
 
 test('notifier adaptor - update from notifier finishes', t => {

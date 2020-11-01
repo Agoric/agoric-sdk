@@ -2,7 +2,7 @@
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
 import test from 'ava';
-import { updateFromIterable } from '../src/index';
+import { observeIteration } from '../src/index';
 
 const obj = harden({});
 const unresP = new Promise(_ => {});
@@ -132,7 +132,7 @@ test('async iterator - for await fails', async t => {
   return testEnding(t, p, true);
 });
 
-test('multicaster adaptor - update from iterator finishes', t => {
+test('subscription adaptor - update from iterator finishes', t => {
   const u = makeTestUpdater(t, false);
-  return updateFromIterable(u, finiteStream);
+  return observeIteration(finiteStream, u);
 });

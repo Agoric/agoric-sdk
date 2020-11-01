@@ -6,7 +6,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { assert } from '@agoric/assert';
 import {
   makeAsyncIterableFromNotifier,
-  updateFromIterable,
+  observeIteration,
 } from './asyncIterableAdaptor';
 
 import './types';
@@ -132,6 +132,6 @@ export const makeNotifierKit = (...args) => {
  */
 export const makeNotifierFromAsyncIterable = asyncIterable => {
   const { notifier, updater } = makeNotifierKit();
-  updateFromIterable(updater, asyncIterable);
+  observeIteration(asyncIterable, updater);
   return notifier;
 };
