@@ -441,11 +441,9 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
 
-  await E(price1300Admin).delete();
-
   // Below trigger has not yet fired.
   t.falsy(belowPriceQuote);
-  await E(oracleTimer).tick();
+  await E(price1300Admin).delete();
 
   // The below trigger should fire here.
   await quoteWhenLTE;
@@ -463,7 +461,7 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
     },
   ] = await E(quoteMath).getValue(belowQuote);
   t.is(belowTimer, oracleTimer);
-  t.is(belowTimestamp, 7);
+  t.is(belowTimestamp, 6);
   t.is(await E(mathIn).getValue(belowIn), 29);
   t.is((await E(mathOut).getValue(belowOut)) / 29, 960);
 });

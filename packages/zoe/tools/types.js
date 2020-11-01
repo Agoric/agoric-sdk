@@ -66,6 +66,28 @@
  */
 
 /**
+ * @callback PriceQuoteCreate
+ * @param {PriceQuoteCreator} priceQuoteCreator
+ * @returns {ERef<PriceQuote> | undefined}
+ */
+
+/**
+ * @callback PriceQuoteTrigger
+ * @param {PriceQuoteCreate} createQuote
+ */
+
+/**
+ * @typedef {Object} PriceAuthorityAdmin
+ * @property {(createQuote: PriceQuoteCreate) => Promise<void>} fireTriggers
+ */
+
+/**
+ * @typedef {Object} PriceAuthorityKit
+ * @property {PriceAuthority} priceAuthority
+ * @property {PriceAuthorityAdmin} adminFacet
+ */
+
+/**
  * @typedef {Object} PriceAuthority An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  *
@@ -104,4 +126,15 @@
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenLT Resolve when the price quote of `amountIn` drops below
  * `amountOutLimit`
+ */
+
+/**
+ * @typedef {(amount: Amount) => Amount} PriceCalculator
+ */
+
+/**
+ * @callback PriceQuoteCreator
+ * @param {PriceCalculator} calcAmountIn
+ * @param {PriceCalculator} calcAmountOut
+ * @returns {{ amountIn: Amount, amountOut: Amount, timestamp?: Timestamp }=}
  */
