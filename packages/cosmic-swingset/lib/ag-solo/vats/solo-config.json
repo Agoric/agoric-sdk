@@ -10,6 +10,9 @@
     "network": {
       "sourceSpec": "vat-network.js"
     },
+    "plugin": {
+      "sourceSpec": "vat-plugin.js"
+    },
     "uploads": {
       "sourceSpec": "vat-uploads.js"
     },

@@ -9,6 +9,9 @@
     "board": {
       "sourceSpec": "vat-board.js"
     },
+    "bridge": {
+      "sourceSpec": "vat-bridge.js"
+    },
     "host": {
       "sourceSpec": "vat-host.js"
     },

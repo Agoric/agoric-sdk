@@ -1,15 +1,9 @@
 import { allComparable } from '@agoric/same-structure';
-import {
-  makeLoopbackProtocolHandler,
-  makeEchoConnectionHandler,
-} from '@agoric/swingset-vat/src/vats/network';
 import { E } from '@agoric/eventual-send';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
-import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { GCI } from './gci';
-import { makeBridgeManager } from './bridge';
 
 const NUM_IBC_PORTS = 3;
 
@@ -149,14 +143,14 @@ export function buildRootObject(vatPowers, vatParameters) {
     ps.push(
       E(vats.network).registerProtocolHandler(
         ['/local'],
-        makeLoopbackProtocolHandler(),
+        E(vats.network).makeLoopbackProtocolHandler(),
       ),
     );
     if (bridgeMgr) {
       // We have access to the bridge, and therefore IBC.
       const callbacks = harden({
         downcall(method, obj) {
-          return bridgeMgr.toBridge('dibc', {
+          return E(bridgeMgr).toBridge('dibc', {
             ...obj,
             type: 'IBC_METHOD',
             method,
@@ -164,7 +158,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         },
       });
       const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-      bridgeMgr.register('dibc', ibcHandler);
+      E(bridgeMgr).register('dibc', ibcHandler);
       ps.push(
         E(vats.network).registerProtocolHandler(
           ['/ibc-port', '/ibc-hop'],
@@ -172,7 +166,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         ),
       );
     } else {
-      const loHandler = makeLoopbackProtocolHandler(E);
+      const loHandler = E(vats.network).makeLoopbackProtocolHandler();
       ps.push(
         E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler),
       );
@@ -182,13 +176,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     if (bridgeMgr) {
       // Add an echo listener on our ibc-port network.
       const port = await E(vats.network).bind('/ibc-port/echo');
-      E(port).addListener(
-        harden({
-          async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-            return harden(makeEchoConnectionHandler());
-          },
-        }),
-      );
+      E(port).addListener(E(vats.network).makeEchoListener());
     }
 
     if (bridgeMgr) {
@@ -212,7 +200,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           }
         },
       });
-      bridgeMgr.register('provision', handler);
+      E(bridgeMgr).register('provision', handler);
     }
   }
 
@@ -230,7 +218,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     // Only create the plugin manager if the device exists.
     let plugin;
     if (devices.plugin) {
-      plugin = makePluginManager(devices.plugin, vatPowers);
+      plugin = E(vats.plugin).makePluginManager(devices.plugin);
     }
 
     // This will allow dApp developers to register in their api/deploy.js
@@ -277,7 +265,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   return harden({
     async bootstrap(vats, devices) {
       const bridgeManager =
-        devices.bridge && makeBridgeManager(E, D, devices.bridge);
+        devices.bridge && E(vats.bridge).makeBridgeManager(devices.bridge);
       const {
         ROLE,
         giveMeAllTheAgoricPowers,

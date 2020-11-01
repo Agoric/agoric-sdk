@@ -61,7 +61,7 @@ export default function makeRouter() {
   });
 }
 /**
- * @typedef {Protocol} RouterProtocol
+ * @typedef {Object} RouterProtocol
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
@@ -70,7 +70,7 @@ export default function makeRouter() {
  * Create a router that behaves like a Protocol.
  *
  * @param {typeof defaultE} [E=defaultE] Eventual sender
- * @returns {RouterProtocol} The new delegated protocol
+ * @returns {RouterProtocol & Protocol} The new delegated protocol
  */
 export function makeRouterProtocol(E = defaultE) {
   const router = makeRouter();
