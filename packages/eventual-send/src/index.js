@@ -367,7 +367,7 @@ export function makeHandledPromise() {
         }
         return t(...args);
       }
-      if (!t) {
+      if (t !== Object(t)) {
         const ftype = typeof t;
         throw TypeError(
           `Cannot deliver ${q(method)} to target; typeof target is "${ftype}"`,
