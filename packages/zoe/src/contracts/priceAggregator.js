@@ -12,7 +12,7 @@ import {
 import '../../exported';
 import './exported';
 
-const { add, multiply, floorDivide, ceilDivide } = natSafeMath;
+const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /**
  * This contract aggregates price values from a set of oracles and provides a
@@ -163,7 +163,7 @@ const start = async zcf => {
   const updateQuote = async (samples, timestamp) => {
     const median = calculateMedian(
       samples.filter(sample => sample > 0 && Number.isSafeInteger(sample)),
-      { add, divide: floorDivide },
+      { add, divide: floorDivide, isGTE },
     );
 
     // console.error('found median', median, 'of', samples);

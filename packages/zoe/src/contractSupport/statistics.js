@@ -3,6 +3,7 @@
  * @typedef {Object} TypedMath
  * @property {(a: T, b: T) => T} add
  * @property {(a: T, b: T) => T} divide
+ * @property {(a: T, b: T) => boolean} isGTE
  */
 
 /**
@@ -15,12 +16,12 @@
  */
 export const calculateMedian = (samples, math) => {
   const sorted = samples.sort((a, b) => {
-    if (a < b) {
+    if (!math.isGTE(a, b)) {
       return -1;
-    } else if (a === b) {
-      return 0;
+    } else if (!math.isGTE(b, a)) {
+      return 1;
     }
-    return 1;
+    return 0;
   });
 
   if (sorted.length === 0) {

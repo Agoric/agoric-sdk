@@ -10,4 +10,5 @@ export const natSafeMath = harden({
   multiply: (x, y) => Nat(x * y),
   floorDivide: (x, y) => Nat(Math.floor(x / y)),
   ceilDivide: (x, y) => Nat(Math.ceil(x / y)),
+  isGTE: (x, y) => x >= y,
 });
