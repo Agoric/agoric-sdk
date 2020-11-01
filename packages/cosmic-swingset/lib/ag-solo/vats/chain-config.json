@@ -30,6 +30,9 @@
     "registrar": {
       "sourceSpec": "vat-registrar.js"
     },
+    "rendezvous": {
+      "sourceSpec": "vat-rendezvous.js"
+    },
     "sharing": {
       "sourceSpec": "vat-sharing.js"
     },
