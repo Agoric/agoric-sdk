@@ -25,7 +25,7 @@ values with the following structure:
      in fact be any JavaScript value.
 
 The call `makeNotifierKit()` makes an `{updater, notifier}` pair.
-The call `makeSupscriptionKit()` for makes a similar
+The call `makeSubscriptionKit()` for makes a similar
 `{publication, subscription}` pair. The first element of each pair (`updator`,
 `publication`) is used to produce the async iteration which can then be
 consumed using the second element of each pair (`notifier`,`subscription`).
