@@ -42,9 +42,25 @@
  */
 
 /**
+ * @typedef NotifierInternals Purposely opaque. Will be shared between
+ * machines, so it must be same to expose. But other software should avoid
+ * depending on its internal structure.
+ */
+
+/**
  * @template T
  * @typedef {BaseNotifier<T> & AsyncIterable<T>} Notifier<T> an object that can
  * be used to get the current state or updates
+ *
+ * @property {() => NotifierInternals} getSharableNotifierInternals
+ * Used to replicate the multicast values at other sites. To manually create a
+ * local representative of a Notification, do
+ * ```js
+ * localIterable =
+ *   makeNotifier(E(remoteIterable).getSharableNotifierInternals());
+ * ```
+ * The resulting `localIterable` also supports such remote use, and
+ * will return access to the same representation.
  */
 
 /**
@@ -71,6 +87,12 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
+// eslint-disable-next-line jsdoc/require-property
+/**
+ * @template T
+ * @typedef {Object} BaseSubscription<T>
+ */
+
 /**
  * @typedef SubscriptionInternals Purposely opaque. Will be shared between
  * machines, so it must be same to expose. But other software should avoid
@@ -79,23 +101,18 @@
 
 /**
  * @template T
- * @typedef {Object} BaseSubscription<T> A form of AsyncIterable
- * supporting distributed and multicast usage.
+ * @typedef {BaseSubscription<T> & AsyncIterable<T>} Subscription<T>
+ * A form of AsyncIterable supporting distributed and multicast usage.
  *
- * @property {() => SubscriptionInternals} getSharableSubscriptionInternals Used to
- * replicate the multicast values at other sites. To manually create a local
- * representative of a Subscription, do
+ * @property {() => SubscriptionInternals} getSharableSubscriptionInternals
+ * Used to replicate the multicast values at other sites. To manually create a
+ * local representative of a Subscription, do
  * ```js
  * localIterable =
  *   makeAsyncIterable(E(remoteIterable).getSharableSubscriptionInternals());
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
- */
-
-/**
- * @template T
- * @typedef {BaseSubscription<T> & AsyncIterable<T>} Subscription<T>
  */
 
 /**

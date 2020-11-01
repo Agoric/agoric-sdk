@@ -1,11 +1,8 @@
 // @ts-check
 import '@agoric/install-ses';
-// import { E } from '@agoric/eventual-send';
+import { E } from '@agoric/eventual-send';
 import test from 'ava';
-import {
-  observeIteration,
-  makeNotifierKit /* makeNotifier */,
-} from '../src/index';
+import { observeIteration, makeNotifierKit, makeNotifier } from '../src/index';
 import { paula, alice, bob } from './iterable-testing-tools';
 
 import '../src/types';
@@ -49,7 +46,6 @@ test('notifier observeIteration can eat promise', async t => {
   t.deepEqual(last(log), ['finished', 'done']);
 });
 
-/*
 test('notifier for-await-of on local representative', async t => {
   const { updater, notifier } = makeNotifierKit();
   paula(updater);
@@ -69,7 +65,6 @@ test('notifier observeIteration on local representative', async t => {
 
   t.deepEqual(last(log), ['finished', 'done']);
 });
-*/
 
 test('notifier for-await-of on generic representative', async t => {
   const { updater, notifier } = makeNotifierKit();
