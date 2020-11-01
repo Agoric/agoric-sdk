@@ -67,7 +67,7 @@
 
 /**
  * @callback PriceQuoteCreate
- * @param {PriceQuoteCreator} priceQuoteCreator
+ * @param {PriceQuery} priceQuery
  * @returns {ERef<PriceQuote> | undefined}
  */
 
@@ -133,7 +133,7 @@
  */
 
 /**
- * @callback PriceQuoteCreator
+ * @callback PriceQuery
  * @param {PriceCalculator} calcAmountIn
  * @param {PriceCalculator} calcAmountOut
  * @returns {{ amountIn: Amount, amountOut: Amount, timestamp?: Timestamp }=}

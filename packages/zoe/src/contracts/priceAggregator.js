@@ -19,7 +19,6 @@ const { add, multiply, floorDivide, ceilDivide } = natSafeMath;
  * PriceAuthority for their median.
  *
  * @type {ContractStartFn}
- *
  */
 const start = async zcf => {
   const {
