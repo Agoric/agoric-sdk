@@ -143,11 +143,6 @@ Paula's site.
 
 # NotifierKit
 
-```js
-const {updater, notifier} = makeNotifierKit();
-
-```
-
 The NotifierKit producer produces iteration values with the `unpdater` using
 the `IterationObserver` API. The consumer consumes iteration values with the
 `notifier` using the `AsyncIterable` API.
