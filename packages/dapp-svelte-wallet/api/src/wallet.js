@@ -435,7 +435,8 @@ export function buildRootObject(_vatPowers) {
                     console.error('Cannot rendezvous with', dappAddresses, e),
                   );
 
-                // Tell them how to find us.
+                // Tell them how to find us, once the rendezvous is initiated.
+                await rendezvous;
                 return {
                   type: 'walletRendezvousResponse',
                   data: { walletAddresses },
