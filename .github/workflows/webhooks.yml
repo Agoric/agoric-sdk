@@ -1,0 +1,21 @@
+name: Webhooks
+
+on:
+  push:
+    branches: [ $default-branch ]
+
+jobs:
+  test-agoric-sdk:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TEST_REPOS format: [ <ORG>/<REPO>, ... ]
+        repo: ${{ secrets.TEST_REPOS }}
+
+    steps:
+    - name: Repository Dispatch
+      uses: peter-evans/repository-dispatch@v1
+      with:
+        token: ${{ secrets.TEST_REPO_TOKEN }}
+        repository: ${{ matrix.repo }}
+        event_type: test-agoric-sdk
