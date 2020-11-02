@@ -1,7 +1,11 @@
 // Disclaimer: At the present time this file has not been tested at all.
 // It is an experiment in response to
 // https://github.com/Agoric/agoric-sdk/pull/1949#issuecomment-720121505
-// If it works out, it or something like it may move from test/ to src/
+// This experiment proposes that the answer to @michaelfig's question is
+// to nest lossless delta subscriptions inside lossy snapshot notifiers.
+//
+// If this experiment works out, it or something like it may eventually move
+// from test/ to src/
 
 // @ts-check
 import { assert, details as d, q } from '@agoric/assert';
