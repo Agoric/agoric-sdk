@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TEST_REPOS format: [ <ORG>/<REPO>, ... ]
-        owner_repo: ${{ secrets.TEST_REPOS }}
+        owner_repo:
+        - agoric-labs/dapp-token-economy
 
     steps:
     # Trigger the
@@ -43,6 +43,6 @@ jobs:
         ref: main # can be commit SHA or tag too
         owner: ${{ steps.split.outputs.owner }}
         repo: ${{ steps.split.outputs.repo }}
-        check-name: build # name of the existing check
-        repo-token: ${{ secrets.TEST_REPO_TOKEN }}
-        wait-interval: 20 # seconds
+        checkName: build # name of the existing check
+        token: ${{ secrets.TEST_REPO_TOKEN }}
+        intervalSeconds: 20 # seconds
