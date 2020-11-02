@@ -27,6 +27,36 @@ const RENDEZVOUS_ALREADY = harden({
  * with a specific Agoric peer.  It allows you to exchange values (possibly
  * ocaps) with another peer, given a third-party that can exchange the other
  * side's address strings between you.
+ *
+ * Consider the Agoric chain, A, and two ag-solos attached to the chain: B and
+ * C.  Given a Dapp UI, D, that can speak pure data (not ocaps) to both B and C,
+ * you have the following architecture:
+ *
+ * ```
+ *             A Agoric chain
+ *           // \\
+ *  ag-solo B     C ag-solo
+ *           \   /
+ *             D Dapp UI
+ * ```
+ * where the double-slashes indicate the ocap connections and the single-slashes
+ * indicate the pure data connections.  If B and C are willing, D can get B's
+ * rendezvous address, then tell C to initiate a rendezvous to B's address.  C
+ * will return its own rendezvous address to D, who then tells B to complete the
+ * rendezvous to C's address.
+ *
+ * The on-chain rendezvous namespace matches the two addresses to each other,
+ * sending B's specified object to C and C's specified object to B.  That
+ * effectively creates a connection between B and C, exposing only the methods
+ * that they choose, and (if the rendezvous addresses are assigned by A and
+ * globally unique, such as public keys signing their connection to A),
+ * guaranteeing that only B and C have initial access to those objects and that
+ * they know D introduced them.
+ *
+ * A strength of the system is that the rendezvous will fail if B and C are
+ * *not* connected to the same chain.  This helps D ensure that B and C have the
+ * same specific on-chain services, such as a common Zoe.
+ *
  * @property {() => string} getNamespaceName get the name of the rendezvous
  * namespace.  This will typically be the chain identifier, like `testnet-4` for
  * the Agoric testnet, or `mySim` for the simulated chain.  It is not
@@ -37,10 +67,10 @@ const RENDEZVOUS_ALREADY = harden({
  * startRendezvous create a new rendezvous instance for this local address,
  * returning the value from the first matching peerAddress and send it
  * `sendToPeer`
- * @property {(peerAddrs: PeerAddresses, sendToPeer: any) =>
- * any} completeRendezvous receive a value from the first matching peerAddress and
- * send it `sendToPeer`, throwing an exception if no peer completed the
- * rendezvous
+ * @property {(peerAddrs: PeerAddresses, sendToPeer: any) => any}
+ * completeRendezvous returns the value sent by the first matching peerAddress
+ * and sends `sendToPeer` to that peer, throwing an exception if no peer
+ * completed the rendezvous
  */
 
 /**
