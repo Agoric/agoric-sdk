@@ -1,3 +1,9 @@
+// Disclaimer: At the present time this file has not been tested at all.
+// It is an experiment in response to
+// https://github.com/Agoric/agoric-sdk/pull/1949#issuecomment-720121505
+// If it works out, it or something like it may move from test/ to src/
+
+// @ts-check
 import { assert, details as d, q } from '@agoric/assert';
 import {
   makeNotifierKit,
