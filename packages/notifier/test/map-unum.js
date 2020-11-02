@@ -28,6 +28,7 @@ export const makeMapLeader = initialEntries => {
       snapshot();
     } else {
       deltaPublication.updateState(delta);
+      deltaCount += 1;
     }
   };
 

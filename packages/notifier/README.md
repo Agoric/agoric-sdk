@@ -26,7 +26,7 @@ values with the following structure:
 
 The call `makeNotifierKit()` makes an `{updater, notifier}` pair.
 The call `makeSubscriptionKit()` for makes a similar
-`{publication, subscription}` pair. The first element of each pair (`updator`,
+`{publication, subscription}` pair. The first element of each pair (`updater`,
 `publication`) is used to produce the async iteration which can then be
 consumed using the second element of each pair (`notifier`,`subscription`).
 These have much API in common. The `notifier` and `subscription` both implement
@@ -115,9 +115,9 @@ multicast manner with good distributed systems properties, where there is only
 one producing site but any number of consuming sites. The producer is not
 vulnerable to the consumers and the consumers are not vulnerable to each other.
 For distributed operation, all the iteration values---non-final values,
-successful completion value, failure reason---must be `Passable`, i.e., must be
-values that can somehow be passed betwen vats. The rest of this page assumes all
-these values are Passable.
+successful completion value, failure reason---must be `Passable`, that is, they
+must be values that can somehow be passed betwen vats. The rest of this page
+assumes all these values are Passable.
 
 The maker is used to make the pair on the producer's site. As a result, both
 the iterationObserver and the initial asyncIterable are on the producer's site.
@@ -125,7 +125,7 @@ If Paula the producer sends Bob the asyncIterable, Bob receives a possibly
 remote reference to the async iterable Bob's code above is still correct if he
 uses this
 reference directly, since `observeIteration` only needs its first argument to
-be an `ERef<AsyncIterable<Passable>>`, i.e., a reference of some sort to an
+be an `ERef<AsyncIterable<Passable>>`, that is, a reference of some sort to an
 AsyncIterable conveying Passable values. This reference may be a local
 AsyncIterable, a remote presence of an AsyncIterable, or a local or remote
 promise for an AsyncIterable. `observeIteration` only sends it eventual
@@ -159,9 +159,12 @@ function code locally available. Alternatively, Alice can generically mirror
 any possibly remote AsyncIterable by making a new local pair and plugging them
 together with `observeIteration`.
 ```js
-const { publication: p, subscription: s } = makeSubscriptionKit();
-observeIteration(subscription, p);
-consume(s);
+const {
+  publication: adapterPublication,
+  subscription: adapterSubscription
+} = makeSubscriptionKit();
+observeIteration(subscription, adapterPublication);
+consume(adapterSubscription);
 ```
 This will work for `subscription` being a reference to any AsyncIterable. If
 Alice only needs to consume in a lossy manner, she can use `makeNotifierKit()`
@@ -179,7 +182,7 @@ iteration into another.
      order. The sampling subset has the same termination as the original.
      Once  a value is available on the original iteration, either that value or
      a later value will become available on each sampling subset *promptly*,
-     i.e., eventually and without waiting on any other manual steps.
+     that is, eventually and without waiting on any other manual steps.
    * A *suffix subset* of an iteration is defined by its *starting point* in
      the original iteration. This starting point may be a non-final value or
      a termination. The suffix subset has exactly the members of the original
