@@ -88,38 +88,33 @@ export const makeAsyncIterableFromNotifier = notifierP => {
 };
 
 /**
- * This reads from `asyncIteratable` updating `updater` with each successive
- * value. The `updater` the same API as the `updater` of a notifier kit,
- * but can simply be an observer to react to these updates. As an observer,
- * the `updater` may only be interested in certain occurrences (`updateState`,
- * `finish`, `fail`), so for convenience, `updateFromIterable` feature
- * tests for those methods before calling them.
+ * This advances `asyncIteratorP` updating `iterationObserver` with each
+ * successive value. The `iterationObserver` may only be interested in certain
+ * occurrences (`updateState`, `finish`, `fail`), so for convenience,
+ * `observeIterator` feature tests for those methods before calling them.
  *
  * @template T
- * @param {Partial<Updater<T>>} updater
- * @param {AsyncIterable<T>} asyncIterable
+ * @param {ERef<AsyncIterator<T>>} asyncIteratorP
+ * @param {Partial<IterationObserver<T>>} iterationObserver
  * @returns {Promise<undefined>}
  */
-// See https://github.com/Agoric/agoric-sdk/issues/1345 for why
-// `updateFromIterable` currently needs a local `asyncIterable` rather than
-// a possibly remote `asyncIterableP`.
-export const updateFromIterable = (updater, asyncIterable) => {
-  const iterator = asyncIterable[Symbol.asyncIterator]();
+export const observeIterator = (asyncIteratorP, iterationObserver) => {
   return new Promise(ack => {
     const recur = () => {
       E.when(
-        iterator.next(),
+        E(asyncIteratorP).next(),
         ({ value, done }) => {
           if (done) {
-            updater.finish && updater.finish(value);
+            iterationObserver.finish && iterationObserver.finish(value);
             ack();
           } else {
-            updater.updateState && updater.updateState(value);
+            iterationObserver.updateState &&
+              iterationObserver.updateState(value);
             recur();
           }
         },
         reason => {
-          updater.fail && updater.fail(reason);
+          iterationObserver.fail && iterationObserver.fail(reason);
           ack();
         },
       );
@@ -129,15 +124,41 @@ export const updateFromIterable = (updater, asyncIterable) => {
 };
 
 /**
+ * This reads from `asyncIterableP` updating `iterationObserver` with each
+ * successive value. The `iterationObserver` may only be interested in certain
+ * occurrences (`updateState`, `finish`, `fail`), so for convenience,
+ * `observeIteration` feature tests for those methods before calling them.
+ *
+ * @template T
+ * @param {ERef<AsyncIterable<T>>} asyncIterableP
+ * @param {Partial<IterationObserver<T>>} iterationObserver
+ * @returns {Promise<undefined>}
+ */
+export const observeIteration = (asyncIterableP, iterationObserver) => {
+  const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
+  return observeIterator(iteratorP, iterationObserver);
+};
+
+/**
+ * @deprecated Use `observeIteration` instead
+ * @template T
+ * @param {Partial<IterationObserver<T>>} iterationObserver
+ * @param {ERef<AsyncIterable<T>>} asyncIterableP
+ * @returns {Promise<undefined>}
+ */
+export const updateFromIterable = (iterationObserver, asyncIterableP) =>
+  observeIteration(asyncIterableP, iterationObserver);
+
+/**
  * As updates come in from the possibly remote `notifierP`, update
  * the local `updater`. Since the updates come from a notifier, they
  * are lossy, i.e., once a more recent state can be reported, less recent
  * states are assumed irrelevant and dropped.
  *
  * @template T
- * @param {Partial<Updater<T>>} updater
+ * @param {Partial<IterationObserver<T>>} iterationObserver
  * @param {ERef<Notifier<T>>} notifierP
  * @returns {Promise<undefined>}
  */
-export const updateFromNotifier = (updater, notifierP) =>
-  updateFromIterable(updater, makeAsyncIterableFromNotifier(notifierP));
+export const updateFromNotifier = (iterationObserver, notifierP) =>
+  observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);

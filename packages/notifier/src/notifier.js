@@ -6,10 +6,19 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { assert } from '@agoric/assert';
 import {
   makeAsyncIterableFromNotifier,
-  updateFromIterable,
+  observeIteration,
 } from './asyncIterableAdaptor';
 
 import './types';
+
+export const makeNotifier = baseNotifierP => {
+  const asyncIterable = makeAsyncIterableFromNotifier(baseNotifierP);
+
+  return harden({
+    ...asyncIterable,
+    getSharableNotifierInternals: () => baseNotifierP,
+  });
+};
 
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
@@ -59,11 +68,10 @@ export const makeNotifierKit = (...args) => {
     },
   });
 
-  const asyncIterable = makeAsyncIterableFromNotifier(baseNotifier);
-
   const notifier = harden({
+    ...makeNotifier(baseNotifier),
+    // TODO stop exposing baseNotifier methods directly
     ...baseNotifier,
-    ...asyncIterable,
   });
 
   const updater = harden({
@@ -132,6 +140,6 @@ export const makeNotifierKit = (...args) => {
  */
 export const makeNotifierFromAsyncIterable = asyncIterable => {
   const { notifier, updater } = makeNotifierKit();
-  updateFromIterable(updater, asyncIterable);
+  observeIteration(asyncIterable, updater);
   return notifier;
 };
