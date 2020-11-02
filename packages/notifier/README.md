@@ -168,15 +168,36 @@ Alice only needs to consume in a lossy manner, she can use `makeNotifierKit()`
 instead, which will still work independent of what kind of AsyncIteratable
 `subscription` is a reference to.
 
-# NotifierKit
+## NotifierKit *vs* SubscriptionKit
 
-The NotifierKit producer produces iteration values with the `unpdater` using
-the `IterationObserver` API. The consumer consumes iteration values with the
-`notifier` using the `AsyncIterable` API.
+A subset of an iteration may itself be a valid iteration. NotifierKit and
+SubscriptionKit are each organized around a different way of subsetting one
+iteration into another.
+   * A *sampling subset* of an iteration omits some of the non-final values of
+     the original iteration. Each of the non-final values in the sampling
+     subset is also non-final values of the original in the same
+     order. The sampling subset has the same termination as the original.
+     Once  a value is available on the original iteration, either that value or
+     a later value will become available on each sampling subset *promptly*,
+     i.e., eventually and without waiting on any other manual steps.
+   * A *suffix subset* of an iteration is defined by its *starting point* in
+     the original iteration. This starting point may be a non-final value or
+     a termination. The suffix subset has exactly the members of the original
+     iteration from that starting point onward. A suffix subset therefore has
+     the same termination as the original. Once a value becomes available on
+     the original iteration, that value will *promptly* become available on
+     every suffix subset whose starting point is not later than that value.
+
+A NotifierKit *producer* produces iteration values with the `unpdater` using
+the `IterationObserver` API. The *consumers* consume iteration values with the
+`notifier` using the `AsyncIterable` API. The iteration seen by each NotifierKit
+consumer is a sampling subset of the iteration produced by the NotifierKit
+producer. Different consumers may see different sampling subsets.
+
 The NotifierKit should be used only when the consumer would only be interested
 in more recent non-final values. This is often appropriate when the
 iteration represents a changing quantity, like a purse balance, and a consumer
-updating a UI that doesn't care to hear about any older non-values values, as
+updating a UI that doesn't care to hear about any older non-final values, as
 they are more stale. NotifierKit is appropriate even when this quantity changes
 quickly, as it will only communicate non-final values at the rate they're being
 consumed, bounded by the network round-trip time. All other non-final values
@@ -184,9 +205,23 @@ are never communicated. The NotifierKit's lossy nature enables this
 optimization.
 
 The SubscriptionKit should be used for pub-sub operations, where every
-subscriber should see each published value. The producer can be described as
+subscriber should see each published value starting with the starting point of
+their subscription. The producer can be described as
 the *publisher* and publishes iteration values with the `publication` using the
 `IterationObserver` API. The consumers can be described as *subscribers* and
-consumes the published iteration values with the `subscription` using the
+consume the published iteration values with the `subscription` using the
 `AsyncIterable` API. Since each published value will be sent to all
-subscribers, avoid using the SubscriptionKit with rapidly produced values.
+subscribers, the SubscriptionKit should generally not be used with rapidly
+produced values.
+
+The values published using the publication define the original iteration. Each
+subscription has a starting point in that iteration and provides access to a
+suffix subset of that iteration starting at that starting point. The initial
+subscription created by the `makeSubscriptionKit()` call provides the entire
+iteration. Each subscription is a kind of `AsyncIterable` which produces any
+number of `AsyncIterators`, each of which advance independently starting with
+that subscription's starting point. These `AsyncIterators` are
+`SubsciptionIterators` which also have a `subscribe()` method. Calling a
+SubscriptionIterator's `subscribe()` method produces a Subscription whose
+starting point is that SubscriptionIterator's current position at that time.
+

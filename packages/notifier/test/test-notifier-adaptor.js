@@ -13,8 +13,10 @@ import {
   testEnding,
   testManualConsumer,
   testAutoConsumer,
-  makeTestUpdater,
+  makeTestIterationObserver,
 } from './iterable-testing-tools';
+
+// /////////////// Self test the testing tools for consistency /////////////////
 
 test('async iterator - manual finishes', async t => {
   const p = testManualConsumer(t, finiteStream, false);
@@ -35,6 +37,18 @@ test('async iterator - for await fails', async t => {
   const p = testAutoConsumer(t, explodingStream, false);
   return testEnding(t, p, true);
 });
+
+test('observeIteration - update from iterator finishes', t => {
+  const u = makeTestIterationObserver(t, false, false);
+  return observeIteration(finiteStream, u);
+});
+
+test('observeIteration - update from iterator fails', t => {
+  const u = makeTestIterationObserver(t, false, true);
+  return observeIteration(explodingStream, u);
+});
+
+// /////////////////////////////// NotifierKit /////////////////////////////////
 
 test('notifier adaptor - manual finishes', async t => {
   const n = makeNotifierFromAsyncIterable(finiteStream);
@@ -64,24 +78,14 @@ test('notifier adaptor - for await fails', async t => {
   return testEnding(t, p, true);
 });
 
-test('notifier adaptor - update from iterator finishes', t => {
-  const u = makeTestUpdater(t, false, false);
-  return observeIteration(finiteStream, u);
-});
-
-test('notifier adaptor - update from iterator fails', t => {
-  const u = makeTestUpdater(t, false, true);
-  return observeIteration(explodingStream, u);
-});
-
 test('notifier adaptor - update from notifier finishes', t => {
-  const u = makeTestUpdater(t, true, false);
+  const u = makeTestIterationObserver(t, true, false);
   const n = makeNotifierFromAsyncIterable(finiteStream);
   return updateFromNotifier(u, n);
 });
 
 test('notifier adaptor - update from notifier fails', t => {
-  const u = makeTestUpdater(t, true, true);
+  const u = makeTestIterationObserver(t, true, true);
   const n = makeNotifierFromAsyncIterable(explodingStream);
   return updateFromNotifier(u, n);
 });

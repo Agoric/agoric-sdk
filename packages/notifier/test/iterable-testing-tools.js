@@ -9,14 +9,6 @@ const rejP = Promise.reject(new Error('foo'));
 rejP.catch(_ => {}); // Suppress Node UnhandledPromiseRejectionWarning
 
 /**
- * @typedef {*} Passable
- * A value that can be passed between vats.
- * TODO This type should be exported by `@agoric/marshal` and imported here.
- * TODO For these tools to be used for distributed operation, we need a less
- * precise comparison than `t.is` when testing that these values have arrived.
- */
-
-/**
  * The non-final test values to be produced and tested for.
  *
  * @type {Passable[]}
@@ -72,6 +64,16 @@ const makeTestIterable = fails => {
 export const finiteStream = makeTestIterable(false);
 export const explodingStream = makeTestIterable(true);
 
+/**
+ * For testing a promise for the terminal value of the kind of test iteration
+ * made by `makeTestIterable`. The `fails` parameter says whether we expect
+ * this promise to succeed with the canonical `refResult` successful
+ * completion, or to fail with the canonical `refReason` reason for failure.
+ *
+ * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {ERef<Passable>} p
+ * @param {boolean} fails
+ */
 export const testEnding = (t, p, fails) => {
   return E.when(
     p,
@@ -86,6 +88,17 @@ export const testEnding = (t, p, fails) => {
   );
 };
 
+/**
+ * The tests below use `skip` so that they can correctly test that the non-final
+ * iteration values they see are a sampling subset of the canonical testing
+ * iteration if they're supposed to be. If lossy is false, then those tests
+ * still test for exact conformance.
+ *
+ * @param {number} i
+ * @param {Passable} value
+ * @param {boolean} lossy
+ * @returns {number}
+ */
 const skip = (i, value, lossy) => {
   if (!lossy) {
     return i;
@@ -96,6 +109,18 @@ const skip = (i, value, lossy) => {
   return i;
 };
 
+/**
+ * This tests whether `iterable` contains the non-final iteration values from
+ * the canonical test iteration. It returns a promise for the termination to be
+ * tested with `testEnding`. If `lossy` is true, then it only checks that these
+ * non-final values are from a sampliing subset of the canonical test
+ * iteration. Otherwise it checks for exact conformance.
+ *
+ * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {AsyncIterable<Passable>} iterable
+ * @param {boolean} lossy
+ * @returns {Promise<Passable>}
+ */
 export const testManualConsumer = (t, iterable, lossy = false) => {
   const iterator = iterable[Symbol.asyncIterator]();
   const testLoop = i => {
@@ -120,6 +145,20 @@ export const testManualConsumer = (t, iterable, lossy = false) => {
   return testLoop(0);
 };
 
+/**
+ * `testAutoConsumer` does essentially the same job as `testManualConsumer`,
+ * except `testAutoConsumer` consumes using the JavaScript `for-await-of`
+ * syntax. However, the `for-await-of` loop cannot observe the final value of
+ * an iteration, so this test consumer cannot report what it actually was.
+ * However, it can tell whether the iteration finished successfully. In that
+ * case, `testAutoConsumer` fulfills the returned promise with the canonical
+ * `refResult` completion value, which is what `testEnding` expects.
+ *
+ * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {AsyncIterable<Passable>} iterable
+ * @param {boolean} lossy
+ * @returns {Promise<Passable>}
+ */
 export const testAutoConsumer = async (t, iterable, lossy = false) => {
   let i = 0;
   try {
@@ -133,13 +172,21 @@ export const testAutoConsumer = async (t, iterable, lossy = false) => {
   } finally {
     t.truthy(i <= payloads.length);
   }
-  // The for-await-of loop cannot observe the final value of the iterator
-  // so this consumer cannot test what that was. Just return what testEnding
-  // expects.
   return refResult;
 };
 
-export const makeTestUpdater = (t, lossy, fails) => {
+/**
+ * Makes an IterationObserver which will test iteration reported to it against
+ * the canonical test iteration.
+ *
+ * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {boolean} lossy Are we checking every non-final value or only a
+ * sampling subset?
+ * @param {boolean} fails Do we expect termination with the canonical successful
+ * completion or the canonical failure reason?
+ * @returns {IterationObserver<Passable>}
+ */
+export const makeTestIterationObserver = (t, lossy, fails) => {
   let i = 0;
   return harden({
     updateState(newState) {
@@ -160,7 +207,12 @@ export const makeTestUpdater = (t, lossy, fails) => {
   });
 };
 
-// See the Paula example code in the README
+/**
+ * See the Paula example in the README
+ *
+ * @param {IterationObserver<Passable>} iterationObserver
+ * @returns {void}
+ */
 export const paula = iterationObserver => {
   // Paula the publisher says
   iterationObserver.updateState('a');
@@ -168,7 +220,12 @@ export const paula = iterationObserver => {
   iterationObserver.finish('done');
 };
 
-// See the Alice example code in the README
+/**
+ * See the Alice example  in the README
+ *
+ * @param {AsyncIterable<Passable>} asyncIterable
+ * @returns {Promise<Passable[]>}
+ */
 export const alice = async asyncIterable => {
   const log = [];
 
@@ -183,7 +240,12 @@ export const alice = async asyncIterable => {
   return log;
 };
 
-// See the Bob example code in the README
+/**
+ * See the Bob example in the README
+ *
+ * @param {ERef<AsyncIterable<Passable>>} asyncIterableP
+ * @returns {Promise<Passable[]>}
+ */
 export const bob = async asyncIterableP => {
   const log = [];
   const observer = harden({

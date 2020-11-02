@@ -9,6 +9,31 @@
  */
 
 /**
+ * @typedef {*} Passable
+ * A value that can be passed between vats.
+ * TODO This type should be exported by `@agoric/marshal` and imported here.
+ * TODO For these tools to be used for distributed operation, we need a less
+ * precise comparison than `t.is` when testing that these values have arrived.
+ */
+
+/**
+ * @template T
+ * @typedef {Object} IterationObserver<T>
+ * A valid sequence of calls to the methods of an `IterationObserver`
+ * represents an iteration. A valid sequence consists of any number of calls
+ * to `updateState` with the successive non-final values, followed by a
+ * final call to either `finish` with a successful `completion` value
+ * or `fail` with the alleged `reason` for failure. After at most one
+ * terminating calls, no further calls to these methods are valid and must be
+ * rejected.
+ * @property {(nonFinalValue: T) => void} updateState
+ * @property {(completion: T) => void} finish
+ * @property {(reason: any) => void} fail
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
+/**
  * @typedef {number | undefined} UpdateCount a value used to mark the position
  * in the update stream. For the last state, the updateCount is undefined.
  */
@@ -65,23 +90,8 @@
 
 /**
  * @template T
- * @typedef {Object} Updater<T> an object that should be closely held, as
- * anyone with access to
- * it can provide updates
- * @property {(state: T) => void} updateState sets the new state, and resolves
- * the outstanding promise to send an update
- * @property {(finalState: T) => void} finish sets the final state, sends a
- * final update, and freezes the
- * updater
- * @property {(reason: any) => void} fail the stream becomes erroneously
- * terminated, allegedly for the stated reason, which is normally an
- * instanceof `Error`.
- */
-
-/**
- * @template T
  * @typedef {Object} NotifierRecord<T> the produced notifier/updater pair
- * @property {Updater<T>} updater the (closely-held) notifier producer
+ * @property {IterationObserver<T>} updater the (closely-held) notifier producer
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */
 
@@ -120,13 +130,14 @@
  * @typedef {AsyncIterator<T> & AsyncIterable<T>} SubscriptionIterator<T>
  * an AsyncIterator supporting distributed and multicast usage.
  *
- * @property {() => Subscription<T>} snapshot
- *
+ * @property {() => Subscription<T>} subscribe
+ * Get a new subscription whose starting position is this iterator's current
+ * position.
  */
 
 /**
  * @template T
  * @typedef {Object} SubscriptionRecord<T>
- * @property {Updater<T>} publication
+ * @property {IterationObserver<T>} publication
  * @property {Subscription<T>} subscription
  */

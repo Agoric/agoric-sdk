@@ -34,7 +34,7 @@ const makeSubscriptionIterator = tailP => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return harden({
-    snapshot: () => makeSubscription(tailP),
+    subscribe: () => makeSubscription(tailP),
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(tailP),
     next: () => {
       const resultP = E.G(tailP).head;
