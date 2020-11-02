@@ -27,22 +27,24 @@ jobs:
         event-type: test-agoric-sdk
         client-payload: '{"ref": "${{ github.ref }}"}'
 
-    - id: split
-      uses: actions/github-script@0.9.0
-      with:
-        script: |
-          const [owner, repo] = '${{ matrix.owner_repo }}'.split('/');
-          core.setOutput('owner', owner);
-          core.setOutput('repo', repo);
+    # # FIXME: It would be nice to wait for the test to complete, but I couldn't
+    # # get it to work.
+    # - id: split
+    #   uses: actions/github-script@0.9.0
+    #   with:
+    #     script: |
+    #       const [owner, repo] = '${{ matrix.owner_repo }}'.split('/');
+    #       core.setOutput('owner', owner);
+    #       core.setOutput('repo', repo);
 
-    # This step will retry until required check passes
-    # and will fail the whole workflow if the check conclusion is not a success
-    - name: Wait on build (14.x)
-      uses: fountainhead/action-wait-for-check@v1.0.0
-      with:
-        ref: main # can be commit SHA or tag too
-        owner: ${{ steps.split.outputs.owner }}
-        repo: ${{ steps.split.outputs.repo }}
-        checkName: "build (14.x)" # name of the existing check
-        token: ${{ secrets.TEST_REPO_TOKEN }}
-        intervalSeconds: 20 # seconds
+    # # This step will retry until required check passes
+    # # and will fail the whole workflow if the check conclusion is not a success
+    # - name: Wait on build (14.x)
+    #   uses: fountainhead/action-wait-for-check@v1.0.0
+    #   with:
+    #     ref: main # can be commit SHA or tag too
+    #     owner: ${{ steps.split.outputs.owner }}
+    #     repo: ${{ steps.split.outputs.repo }}
+    #     checkName: "build (14.x)" # name of the existing check
+    #     token: ${{ secrets.TEST_REPO_TOKEN }}
+    #     intervalSeconds: 20 # seconds
