@@ -35,7 +35,7 @@ function makeThing(n) {
   // for testing purposes, all we create is the inner self; there's no actual
   // object above it
   return {
-    instanceKey: `t${n}`,
+    vobjID: `t${n}`,
     rawData: `thing #${n}`,
   };
 }
