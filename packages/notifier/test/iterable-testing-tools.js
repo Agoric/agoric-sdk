@@ -1,7 +1,10 @@
 // @ts-check
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
-import { observeIteration } from '../src/index';
+import { makePromiseKit } from '@agoric/promise-kit';
+import { observeIteration, observeIterator } from '../src/index';
+
+import '../src/types';
 
 const obj = harden({});
 const unresP = new Promise(_ => {});
@@ -255,4 +258,41 @@ export const bob = async asyncIterableP => {
   });
   await observeIteration(asyncIterableP, observer);
   return log;
+};
+
+/**
+ * See the Carol example in the README. The Alice and Bob code above have
+ * been abstracted from the code in the README to apply to any IterationObserver
+ * and AsyncIterable. By contrast, the Carol code is inherently specific to
+ * subscriptions.
+ *
+ * @param {ERef<Subscription<Passable>>} subscriptionP
+ * @returns {Promise<Passable[]>}
+ */
+export const carol = async subscriptionP => {
+  const subscriptionIteratorP = E(subscriptionP)[Symbol.asyncIterator]();
+  const { promise: afterA, resolve: afterAResolve } = makePromiseKit();
+
+  const makeObserver = log =>
+    harden({
+      updateState: val => {
+        if (val === 'a') {
+          afterAResolve(E(subscriptionIteratorP).subscribe());
+        }
+        log.push(['non-final', val]);
+      },
+      finish: completion => log.push(['finished', completion]),
+      fail: reason => log.push(['failed', reason]),
+    });
+
+  const log1 = [];
+  const observer1 = makeObserver(log1);
+  const log2 = [];
+  const observer2 = makeObserver(log2);
+
+  const p1 = observeIterator(subscriptionIteratorP, observer1);
+  // afterA is an ERef<Subscription> so we use observeIteration on it.
+  const p2 = observeIteration(afterA, observer2);
+  await Promise.all([p1, p2]);
+  return [log1, log2];
 };

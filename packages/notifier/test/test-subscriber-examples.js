@@ -7,7 +7,7 @@ import {
   makeSubscriptionKit,
   makeSubscription,
 } from '../src/index';
-import { paula, alice, bob } from './iterable-testing-tools';
+import { paula, alice, bob, carol } from './iterable-testing-tools';
 
 import '../src/types';
 
@@ -35,6 +35,8 @@ test('subscription for-await-of cannot eat promise', async t => {
   const { publication, subscription } = makeSubscriptionKit();
   paula(publication);
   const subP = Promise.resolve(subscription);
+  // @ts-ignore because this test demonstrates the failure that results from
+  // giving Alice a promise for a subscription.
   const log = await alice(subP);
 
   // This TypeError is thrown by JavaScript when a for-await-in loop
@@ -103,5 +105,27 @@ test('subscription observeIteration on generic representative', async t => {
     ['non-final', 'a'],
     ['non-final', 'b'],
     ['finished', 'done'],
+  ]);
+});
+
+// /////////////////////////////////////////////////////////////////////////////
+// Carol is specific to subscription, so there is nothing analogous to the
+// following in test-notifier-examples
+
+test('subscribe to subscriptionIterator success example', async t => {
+  const { publication, subscription } = makeSubscriptionKit();
+  paula(publication);
+  const log = await carol(subscription);
+
+  t.deepEqual(log, [
+    [
+      ['non-final', 'a'],
+      ['non-final', 'b'],
+      ['finished', 'done'],
+    ],
+    [
+      ['non-final', 'b'],
+      ['finished', 'done'],
+    ],
   ]);
 });
