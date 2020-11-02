@@ -3,6 +3,7 @@ name: Webhooks
 on:
   push:
     branches: [ $default-branch ]
+  pull_request:
 
 jobs:
   test-agoric-sdk:
@@ -10,12 +11,38 @@ jobs:
     strategy:
       matrix:
         # TEST_REPOS format: [ <ORG>/<REPO>, ... ]
-        repo: ${{ secrets.TEST_REPOS }}
+        owner_repo: ${{ secrets.TEST_REPOS }}
 
     steps:
+    # Trigger the
+    # on:
+    #  repository_dispatch:
+    #    types: [test-agoric-sdk]
+    # actions.
     - name: Repository Dispatch
       uses: peter-evans/repository-dispatch@v1
       with:
         token: ${{ secrets.TEST_REPO_TOKEN }}
-        repository: ${{ matrix.repo }}
-        event_type: test-agoric-sdk
+        repository: ${{ matrix.owner_repo }}
+        event-type: test-agoric-sdk
+        client-payload: '{"ref": "${{ github.ref }}"}'
+
+    - id: split
+      uses: actions/github-script@0.9.0
+      with:
+        script: |
+          const [owner, repo] = '${{ matrix.owner_repo }}'.split('/');
+          core.setOutput('owner', owner);
+          core.setOutput('repo', repo);
+
+    # This step will retry until required check passes
+    # and will fail the whole workflow if the check conclusion is not a success
+    - name: Wait on build
+      uses: fountainhead/action-wait-for-check@v1.0.0
+      with:
+        ref: main # can be commit SHA or tag too
+        owner: ${{ steps.split.outputs.owner }}
+        repo: ${{ steps.split.outputs.repo }}
+        check-name: build # name of the existing check
+        repo-token: ${{ secrets.TEST_REPO_TOKEN }}
+        wait-interval: 20 # seconds
