@@ -37,12 +37,12 @@ jobs:
 
     # This step will retry until required check passes
     # and will fail the whole workflow if the check conclusion is not a success
-    - name: Wait on build
+    - name: Wait on build (14.x)
       uses: fountainhead/action-wait-for-check@v1.0.0
       with:
         ref: main # can be commit SHA or tag too
         owner: ${{ steps.split.outputs.owner }}
         repo: ${{ steps.split.outputs.repo }}
-        checkName: build # name of the existing check
+        checkName: "build (14.x)" # name of the existing check
         token: ${{ secrets.TEST_REPO_TOKEN }}
         intervalSeconds: 20 # seconds
