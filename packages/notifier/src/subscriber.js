@@ -16,8 +16,14 @@ const makeSubscription = startP => {
   return harden({
     // eslint-disable-next-line no-use-before-define
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(startP),
+
     /**
+     * Use this to distribute a Subscription efficiently over the network,
+     * by obtaining this from the Subscription to me replicated, and applying
+     * `makeSubscription` to it at the new site to get an equivalent local
+     * Subscription at that site.
      *
+     * @returns {SubscriptionInternals}
      */
     getSharableSubscriptionInternals: () => startP,
   });
@@ -45,6 +51,8 @@ const makeSubscriptionIterator = tailP => {
 };
 
 /**
+ * Makes a `{ publicaction, subscription }` for doing lossless efficient
+ * distributed pub/sub.
  *
  * @template T
  * @returns {SubscriptionRecord<T>}
