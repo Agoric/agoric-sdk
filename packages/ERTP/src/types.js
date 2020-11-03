@@ -112,6 +112,12 @@
  * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer Should be used with
  * `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
+ * @property {() => number} decimals
+ *  Give information to UI on how to display the amount.
+ *  Fungible digital assets should be represented in integers, in
+ *  the smallest unit (i.e. USD might be represented in mill,
+ *  a thousandth of a dollar. In that case, `decimals` would be 3).
+ *  Should not be used for nonfungible digital assets.
  */
 
 /**
@@ -188,7 +194,8 @@
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
- * @param {AmountMathKind=} amountMathKind
+ * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
+ * @param {number} [decimals=undefined]
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The
@@ -199,6 +206,12 @@
  * The amountMathKind will be used to import a specific mathHelpers
  * from the mathHelpers library. For example, natMathHelpers, the
  * default, is used for basic fungible tokens.
+ *
+ *  `decimals` gives information to UI on how to display the amount.
+ *  Fungible digital assets should be represented in integers, in
+ *  the smallest unit (i.e. USD might be represented in mill,
+ *  a thousandth of a dollar. In that case, `decimals` would be 3).
+ *  `decimals` should not be used for nonfungible digital assets.
  *
  * @typedef {Object} IssuerKit
  * The return value of makeIssuerKit
