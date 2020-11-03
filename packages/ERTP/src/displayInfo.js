@@ -1,5 +1,9 @@
 import { assert, details, q } from '@agoric/assert';
 
+// TODO: assertSubset and assertKeysAllowed are copied from Zoe. Move
+// this code to a location where it can be used by ERTP and Zoe
+// easily. Perhaps another package.
+
 /**
  * Assert all values from `part` appear in `whole`.
  *
