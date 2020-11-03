@@ -14,11 +14,13 @@ import { makeInterface, ERTPKind } from './interfaces';
 import './types';
 
 /**
- * @param {string} allegedName
- * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
- * @returns {IssuerKit}
+ * @type {MakeIssuerKit}
  */
-function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
+function makeIssuerKit(
+  allegedName,
+  amountMathKind = MathKind.NAT,
+  decimals = undefined,
+) {
   assert.typeof(allegedName, 'string');
 
   const brand = Remotable(
@@ -32,6 +34,12 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
         });
       },
       getAllegedName: () => allegedName,
+
+      // Give information to UI on how to display the amount.
+      // Fungible digital assets should be represented in integers, in
+      // the smallest unit (i.e. USD might be represented in mill,
+      // a thousandth of a dollar. In that case, `decimals` would be 3).
+      decimals: () => decimals,
     },
   );
 
