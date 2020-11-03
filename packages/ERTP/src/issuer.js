@@ -10,7 +10,7 @@ import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
 import { makeInterface, ERTPKind } from './interfaces';
-import { assertDisplayInfo } from './displayInfo';
+import { coerceDisplayInfo } from './displayInfo';
 
 import './types';
 
@@ -23,7 +23,7 @@ function makeIssuerKit(
   displayInfo = undefined,
 ) {
   assert.typeof(allegedName, 'string');
-  assertDisplayInfo(displayInfo);
+  displayInfo = coerceDisplayInfo(displayInfo);
 
   const brand = Remotable(
     makeInterface(allegedName, ERTPKind.BRAND),

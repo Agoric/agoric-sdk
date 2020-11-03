@@ -99,13 +99,14 @@
 
 /**
  * @typedef {Object} DisplayInfo
- * @property {number} decimalPlaces
+ * @property {number=} decimalPlaces
  *   Tells the display software how many decimal places to move the
  *   decimal over to the left, or in other words, which position corresponds to whole
  *   numbers. We require fungible digital assets to be represented in
  *   integers, in the smallest unit (i.e. USD might be represented in mill,
  *   a thousandth of a dollar. In that case, `decimalPlaces` would be 3.)
- *   For non-fungible digital assets, this should be left as undefined.
+ *   This property is optional, and for non-fungible digital assets,
+ *   should not be specified.
  *   The decimalPlaces property should be used for *display purposes only*. Any
  *   other use is an anti-pattern.
  */
