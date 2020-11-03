@@ -5,25 +5,25 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import '../../exported';
 
 /**
- * @callback AmountRelation
+ * @callback CompareAmount
  * @param {AmountMath} math
  * @param {Amount} amount
  * @param {Amount} amountLimit
  * @returns {boolean}
  */
 
-/** @type {AmountRelation} */
-const whenLT = (math, amountOut, amountLimit) =>
+/** @type {CompareAmount} */
+const isLT = (math, amountOut, amountLimit) =>
   !math.isGTE(amountOut, amountLimit);
 
-/** @type {AmountRelation} */
-const whenLTE = (math, amount, amountLimit) => math.isGTE(amountLimit, amount);
+/** @type {CompareAmount} */
+const isLTE = (math, amount, amountLimit) => math.isGTE(amountLimit, amount);
 
-/** @type {AmountRelation} */
-const whenGTE = (math, amount, amountLimit) => math.isGTE(amount, amountLimit);
+/** @type {CompareAmount} */
+const isGTE = (math, amount, amountLimit) => math.isGTE(amount, amountLimit);
 
-/** @type {AmountRelation} */
-const whenGT = (math, amount, amountLimit) => !math.isGTE(amountLimit, amount);
+/** @type {CompareAmount} */
+const isGT = (math, amount, amountLimit) => !math.isGTE(amountLimit, amount);
 
 /**
  * @typedef {Object} OnewayPriceAuthorityOptions
@@ -73,9 +73,9 @@ export function makeOnewayPriceAuthorityKit(opts) {
   /**
    * Create a quoteWhen* function.
    *
-   * @param {AmountRelation} amountRelation
+   * @param {CompareAmount} compareAmount
    */
-  const makeQuoteWhenOutTrigger = amountRelation =>
+  const makeQuoteWhenOut = compareAmount =>
     /**
      * Return a quote when triggerWhen is true of the arguments.
      *
@@ -100,7 +100,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
             }
             const amountOut = calcAmountOut(amountIn);
 
-            if (!amountRelation(mathOut, amountOut, amountOutLimit)) {
+            if (!compareAmount(mathOut, amountOut, amountOutLimit)) {
               // Don't fire the trigger yet.
               return undefined;
             }
@@ -222,10 +222,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
       // Wait until the wakeup passes.
       return quotePK.promise;
     },
-    quoteWhenLT: makeQuoteWhenOutTrigger(whenLT),
-    quoteWhenLTE: makeQuoteWhenOutTrigger(whenLTE),
-    quoteWhenGTE: makeQuoteWhenOutTrigger(whenGTE),
-    quoteWhenGT: makeQuoteWhenOutTrigger(whenGT),
+    quoteWhenLT: makeQuoteWhenOut(isLT),
+    quoteWhenLTE: makeQuoteWhenOut(isLTE),
+    quoteWhenGTE: makeQuoteWhenOut(isGTE),
+    quoteWhenGT: makeQuoteWhenOut(isGT),
   };
   harden(priceAuthority);
 

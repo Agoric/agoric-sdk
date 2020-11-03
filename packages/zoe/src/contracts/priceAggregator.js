@@ -43,7 +43,7 @@ const start = async zcf => {
   let priceAuthorityAdmin;
 
   /** @type {number} */
-  let publishedBaseValueOut;
+  let lastValueOutForBaseValueIn;
 
   /**
    *
@@ -91,21 +91,22 @@ const start = async zcf => {
 
   /**
    * @param {Object} param0
-   * @param {number} [param0.overrideBaseValueOut]
+   * @param {number} [param0.overrideValueOut]
    * @param {Timestamp} [param0.timestamp]
    */
-  const makeCreateQuote = ({ overrideBaseValueOut, timestamp } = {}) =>
+  const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
     /**
      * @param {PriceQuery} priceQuery
      * @returns {ERef<PriceQuote>=}
      */
     function createQuote(priceQuery) {
       // Sniff the current baseValueOut.
-      const baseValueOut =
-        overrideBaseValueOut === undefined
-          ? publishedBaseValueOut
-          : overrideBaseValueOut;
-      if (baseValueOut === undefined) {
+      const valueOutForBaseValueIn =
+        overrideValueOut === undefined
+          ? lastValueOutForBaseValueIn // Use the latest value.
+          : overrideValueOut; // Override the value.
+      if (valueOutForBaseValueIn === undefined) {
+        // We don't have a quote, so abort.
         return undefined;
       }
 
@@ -116,7 +117,7 @@ const start = async zcf => {
       const calcAmountOut = amountIn => {
         const valueIn = mathIn.getValue(amountIn);
         return mathOut.make(
-          floorDivide(multiply(valueIn, baseValueOut), baseValueIn),
+          floorDivide(multiply(valueIn, valueOutForBaseValueIn), baseValueIn),
         );
       };
 
@@ -127,7 +128,7 @@ const start = async zcf => {
       const calcAmountIn = amountOut => {
         const valueOut = mathOut.getValue(amountOut);
         return mathIn.make(
-          ceilDivide(multiply(valueOut, baseValueIn), baseValueOut),
+          ceilDivide(multiply(valueOut, baseValueIn), valueOutForBaseValueIn),
         );
       };
 
@@ -187,7 +188,7 @@ const start = async zcf => {
     // Fire any triggers now; we don't care if the timestamp is fully ordered,
     // only if the limit has ever been met.
     await priceAuthorityAdmin.fireTriggers(
-      makeCreateQuote({ overrideBaseValueOut: median, timestamp }),
+      makeCreateQuote({ overrideValueOut: median, timestamp }),
     );
 
     if (timestamp < publishedTimestamp) {
@@ -197,7 +198,7 @@ const start = async zcf => {
 
     // Publish a new authenticated quote.
     publishedTimestamp = timestamp;
-    publishedBaseValueOut = median;
+    lastValueOutForBaseValueIn = median;
     updater.updateState(authenticatedQuote);
   };
 

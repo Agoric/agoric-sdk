@@ -116,7 +116,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   const invitation3 = E(publicFacet).makeQueryInvitation(query3);
   const invitation4 = E(publicFacet).makeQueryInvitation(query4);
 
-  // Ensure all three are real Zoe invitations.
+  // Ensure all the invitations actually are real Zoe invitations.
   t.truthy(await E(invitationIssuer).isLive(invitation1));
   t.truthy(await E(invitationIssuer).isLive(invitation2));
   t.truthy(await E(invitationIssuer).isLive(invitation3));
