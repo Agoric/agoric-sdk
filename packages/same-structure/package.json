@@ -2,7 +2,7 @@
   "name": "@agoric/same-structure",
   "version": "0.0.12-dev.0",
   "description": "Deep equals",
-  "main": "src/sameStructure.js",
+  "main": "index.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -39,6 +39,7 @@
   },
   "files": [
     "src/",
+    "*.js",
     "NEWS.md"
   ],
   "eslintConfig": {
