@@ -9,9 +9,9 @@ Each of these is accessed via a global made available to vat code.
 
 ## Virtual Objects
 
-A virtual object is an object with a durable identity whose state is state is automatically and transparently backed up in secondary storage.  This means that when a given virtual object is not in active use, it need not occupy any memory within the executing vat.  Thus a vat can manage an arbitrarilly large number of such objects without concern about running out of memory.
+A virtual object is an object with a durable identity whose state is automatically and transparently backed up in secondary storage.  This means that when a given virtual object is not in active use, it need not occupy any memory within the executing vat.  Thus a vat can manage an arbitrarily large number of such objects without concern about running out of memory.
 
-A virtual object has a "kind", which defines what sort of behavior and state it will possess.  You can think of a kind somewhat like a data type, but without direct linguistic support.
+A virtual object has a "kind", which defines what sort of behavior and state it will possess.  A kind is not exactly a data type, since it comes with a concrete implementation, but it indicates a family of objects that share a set of common behaviors and a common state template.
 
 A vat can define new kinds of virtual object by calling the `makeKind` function provided as a vat global:
 
@@ -80,7 +80,11 @@ Additional important details:
 
 - The set of state properties is determined by the `initialize` method.  The properties that exist when `initialize` returns _are_ the properties of the object.  State properties cannot thereafter be added or removed.
 
-- The values a state property may take are limited to things that are serializable and which may be hardened and made immutable (and, in fact, _are_ hardened and made immutable the moment they are assigned).  That is, you can replace what value a state property _has_, but you cannot modify a state property's value in place.  In other words, you can do things like:
+- The values a state property may take are limited to things that are
+  serializable and which may be hardened (and, in fact, _are_ hardened and
+  serialized the moment they are assigned).  That is, you can replace what value
+  a state property _has_, but you cannot modify a state property's value in
+  place.  In other words, you can do things like:
 
   ```state.zot = [1, 2, 3];```
 
@@ -93,6 +97,24 @@ Additional important details:
 - A virtual object's state may include references to other virtual objects.
 
 - The in-memory manifestations of a virtual object (which we call its "representatives") are not necessarily (or even usually) `===` to each other, even when they represent the same object, since a new representative is created for each act of deserialization.  They do, however, all operate on the same state, so changes to the state made by a method call to one representative will be visible to the other representatives.  A soon-to-arrive future version of the virtual object system will add a `sameKey` predicate that will allow you to compare two virtual object representatives to determine if they refer to the same virtual object instance.
+
+- The object returned by the `bodyMaker` function _is_ the representative, so you can capture it inside any of the body methods (including `initialize`) in order to pass the virtual object to somebody else.  So you can write things like the following:
+
+```javascript
+  function thingBody(state) {
+    const self = {
+      initialize(someParam) {
+        otherObject.doSomethingWithMe(self, someParam);
+        state.foo = 47;
+      },
+      sendMeTo(somebodyElse) {
+        somebodyElse.hereIAm(self);
+      },
+      ... // and so on
+    };
+    return self;
+  }
+```
 
 ## Persistent Weak Stores
 
