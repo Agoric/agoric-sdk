@@ -2,7 +2,7 @@
   "name": "@agoric/marshal",
   "version": "0.2.7-dev.0",
   "description": "marshal",
-  "main": "marshal.js",
+  "main": "index.js",
   "directories": {
     "test": "test"
   },
