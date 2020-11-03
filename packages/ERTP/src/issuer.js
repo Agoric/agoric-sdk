@@ -10,14 +10,20 @@ import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
 import { makeInterface, ERTPKind } from './interfaces';
+import { assertDisplayInfo } from './displayInfo';
 
 import './types';
 
 /**
  * @type {MakeIssuerKit}
  */
-function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT, decimals) {
+function makeIssuerKit(
+  allegedName,
+  amountMathKind = MathKind.NAT,
+  displayInfo = undefined,
+) {
   assert.typeof(allegedName, 'string');
+  assertDisplayInfo(displayInfo);
 
   const brand = Remotable(
     makeInterface(allegedName, ERTPKind.BRAND),
@@ -32,10 +38,7 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT, decimals) {
       getAllegedName: () => allegedName,
 
       // Give information to UI on how to display the amount.
-      // Fungible digital assets should be represented in integers, in
-      // the smallest unit (i.e. USD might be represented in mill,
-      // a thousandth of a dollar. In that case, `decimals` would be 3).
-      decimals: () => decimals,
+      getDisplayInfo: () => displayInfo,
     },
   );
 
