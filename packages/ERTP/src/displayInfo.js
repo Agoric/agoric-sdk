@@ -1,4 +1,5 @@
 import { assert, details, q } from '@agoric/assert';
+import { pureCopy, passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 
 // TODO: assertSubset and assertKeysAllowed are copied from Zoe. Move
 // this code to a location where it can be used by ERTP and Zoe
@@ -39,4 +40,13 @@ export const assertDisplayInfo = allegedDisplayInfo => {
   }
   const displayInfoKeys = harden(['decimalPlaces']);
   assertKeysAllowed(displayInfoKeys, allegedDisplayInfo);
+};
+
+export const coerceDisplayInfo = allegedDisplayInfo => {
+  if (passStyleOf(allegedDisplayInfo) === REMOTE_STYLE) {
+    return harden({});
+  }
+  allegedDisplayInfo = pureCopy(allegedDisplayInfo);
+  assertDisplayInfo(allegedDisplayInfo);
+  return allegedDisplayInfo;
 };

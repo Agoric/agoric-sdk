@@ -20,7 +20,7 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
 test('brand.getDisplayInfo()', t => {
   const displayInfo = harden({ decimalPlaces: 3 });
   const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
-  t.is(brand.getDisplayInfo(), displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), displayInfo);
   const display = amount => {
     const { brand: myBrand, value } = amount;
     const { decimalPlaces } = myBrand.getDisplayInfo();
@@ -37,10 +37,17 @@ test('brand.getDisplayInfo()', t => {
 
 test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
+  // @ts-ignore
   t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
     message:
       'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces"]',
   });
+});
+
+test('empty display info', t => {
+  const displayInfo = harden({});
+  const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), displayInfo);
 });
 
 test('amountMath from makeIssuerKit', async t => {
