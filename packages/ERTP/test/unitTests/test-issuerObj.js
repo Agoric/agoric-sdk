@@ -14,24 +14,33 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   );
   t.is(issuer.getAllegedName(), myBrand.getAllegedName());
   t.is(issuer.getAllegedName(), 'fungible');
-  t.is(brand.decimals(), undefined);
+  t.is(brand.getDisplayInfo(), undefined);
 });
 
-test('brand decimals', t => {
-  const { brand } = makeIssuerKit('fungible', MathKind.NAT, 3);
-  t.is(brand.decimals(), 3);
+test('brand.getDisplayInfo()', t => {
+  const displayInfo = harden({ decimalPlaces: 3 });
+  const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
+  t.is(brand.getDisplayInfo(), displayInfo);
   const display = amount => {
     const { brand: myBrand, value } = amount;
-    const decimals = myBrand.decimals();
+    const { decimalPlaces } = myBrand.getDisplayInfo();
     const valueDisplay = value.toString();
     const length = valueDisplay.length;
     return [
-      valueDisplay.slice(0, length - decimals),
+      valueDisplay.slice(0, length - decimalPlaces),
       '.',
-      valueDisplay.slice(length - decimals),
+      valueDisplay.slice(length - decimalPlaces),
     ].join('');
   };
   t.is(display({ brand, value: 3000 }), '3.000');
+});
+
+test('bad display info', t => {
+  const displayInfo = harden({ somethingUnexpected: 3 });
+  t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
+    message:
+      'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces"]',
+  });
 });
 
 test('amountMath from makeIssuerKit', async t => {
