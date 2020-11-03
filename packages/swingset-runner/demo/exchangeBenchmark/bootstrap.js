@@ -8,8 +8,20 @@ export function buildRootObject(_vatPowers, vatParameters) {
   let alice;
   let bob;
   let round = 0;
+  let quiet = false;
+
   return harden({
     async bootstrap(vats, devices) {
+      let primeContracts = false;
+      console.log(`@@ params = ${JSON.stringify(vatParameters)}`);
+      for (const arg of vatParameters.argv) {
+        if (arg === '--prime') {
+          primeContracts = true;
+        } else if (arg === '--quiet') {
+          quiet = true;
+        }
+      }
+
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
@@ -50,18 +62,18 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
       // Zoe appears to do some one-time setup the first time it's used, so this
       // is an optional, sacrifical benchmark round to prime the pump.
-      if (vatParameters.argv[0] === '--prime') {
-        await E(alice).initiateTrade(bob);
-        await E(bob).initiateTrade(alice);
+      if (primeContracts) {
+        await E(alice).initiateTrade(bob, quiet);
+        await E(bob).initiateTrade(alice, quiet);
       }
     },
     async runBenchmarkRound() {
       round += 1;
       if (round % 2) {
-        await E(alice).initiateTrade(bob);
+        await E(alice).initiateTrade(bob, quiet);
         return `round ${round} (alice->bob) complete`;
       } else {
-        await E(bob).initiateTrade(alice);
+        await E(bob).initiateTrade(alice, quiet);
         return `round ${round} (bob->alice) complete`;
       }
     },
