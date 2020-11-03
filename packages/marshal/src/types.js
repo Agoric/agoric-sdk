@@ -1,5 +1,5 @@
 /**
- * @typedef {"bigint" | "boolean" | "null" | "number" | "string" | "undefined" | "copyArray" | "copyRecord" | "copyError" | "promise" | "presence" } PassStyle
+ * @typedef {"bigint" | "boolean" | "null" | "number" | "string" | "symbol" | "undefined" | "copyArray" | "copyRecord" | "copyError" | "promise" | "presence" } PassStyle
  * TODO "presence" above should indirect through REMOTE_STYLE to prepare
  * for changing it to "remotable"
  */
