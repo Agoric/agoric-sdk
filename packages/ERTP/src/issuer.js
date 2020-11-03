@@ -16,11 +16,7 @@ import './types';
 /**
  * @type {MakeIssuerKit}
  */
-function makeIssuerKit(
-  allegedName,
-  amountMathKind = MathKind.NAT,
-  decimals = undefined,
-) {
+function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT, decimals) {
   assert.typeof(allegedName, 'string');
 
   const brand = Remotable(
