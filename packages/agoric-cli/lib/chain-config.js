@@ -79,7 +79,9 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
     genesis.consensus_params = exported.consensus_params;
   }
 
-  // This is necessary until https://github.com/cosmos/cosmos-sdk/issues/6446 is closed.
-  genesis.consensus_params.block.time_iota_ms = '1000';
+  // Should be equal to the block cadence in milliseconds, according to @melekes
+  // on Discord.
+  genesis.consensus_params.block.time_iota_ms = `${BLOCK_CADENCE_S * 1000}`;
+
   return djson.stringify(genesis);
 }
