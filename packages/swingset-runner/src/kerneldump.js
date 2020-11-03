@@ -7,7 +7,7 @@ import { openSwingStore as openSimpleSwingStore } from '@agoric/swing-store-simp
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
-import { printStats } from './printStats';
+import { organizeMainStats, printMainStats } from './printStats';
 
 function usage() {
   console.log(`
@@ -130,9 +130,9 @@ export function main() {
       fail(`invalid database mode ${dbMode}`, true);
   }
   if (justStats) {
-    const stats = JSON.parse(store.storage.get('kernelStats'));
+    const rawStats = JSON.parse(store.storage.get('kernelStats'));
     const cranks = Number(store.storage.get('crankNumber'));
-    printStats(stats, cranks);
+    printMainStats(organizeMainStats(rawStats, cranks));
   } else {
     if (doDump) {
       dumpStore(store.storage, outfile, rawMode);
