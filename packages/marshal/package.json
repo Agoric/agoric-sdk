@@ -43,6 +43,11 @@
     "esm": "^3.2.25",
     "nyc": "^15.1.0"
   },
+  "files": [
+    "src/",
+    "*.js",
+    "NEWS.md"
+  ],
   "eslintConfig": {
     "extends": [
       "airbnb-base",

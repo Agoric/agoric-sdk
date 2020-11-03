@@ -55,8 +55,8 @@
  */
 
 /**
- * @typedef Remotable
- * Might be an object explicitly deemed to be `Remotable`, and object inferred
+ * @typedef {SOMETHING} Remotable
+ * Might be an object explicitly deemed to be `Remotable`, an object inferred
  * to be Remotable, or a remote presence of a Remotable.
  */
 
