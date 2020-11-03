@@ -329,7 +329,7 @@ show-config      display the client connection parameters
       }
 
       // Make sure the version file exists.
-      await guardFile(`chain-version.txt`, makeFile => makeFile('0.0.0'));
+      await guardFile(`chain-version.txt`, makeFile => makeFile('1'));
 
       // Assign the chain name.
       const networkName = await trimReadFile('network.txt');
@@ -451,8 +451,8 @@ show-config      display the client connection parameters
 
       let execline = `npx http-server ./public`;
       let dwebHost;
-      const cert = `${networkName}.crt`;
-      const key = `${networkName}.key`;
+      const cert = `dweb.crt`;
+      const key = `dweb.key`;
       if ((await exists(cert)) && (await exists(key))) {
         execline += ` --port=443 --ssl`;
         execline += ` --cert=${shellEscape(cert)}`;
@@ -770,7 +770,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         await needDoRun(['terraform', 'init']);
       }
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
-      await needDoRun(['rm', '-rf', PROVISION_DIR]);
+      await needDoRun(['rm', '-f', `${PROVISION_DIR}/*.stamp`]);
       break;
     }
 
