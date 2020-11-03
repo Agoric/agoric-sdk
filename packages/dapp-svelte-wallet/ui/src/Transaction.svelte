@@ -114,7 +114,7 @@
     {/if}
     {#if status === 'proposed'}
     <div class="flex flex-row">
-    <Chip on:click={() => E(walletP).acceptOffer(offerId).then(showOutcome)}
+    <Chip on:click={() => E(walletP).acceptOffer(offerId)}
       selected icon="check" color="success"
     >Accept</Chip> <Chip on:click={() => E(walletP).declineOffer(offerId)}
       selected icon="clear" color="error"
