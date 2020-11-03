@@ -37,6 +37,7 @@ function makeThing(n) {
   return {
     vobjID: `t${n}`,
     rawData: `thing #${n}`,
+    dirty: true,
   };
 }
 
@@ -71,6 +72,7 @@ test('cache overflow and refresh', t => {
 
   // lookup that has no effect
   things[0] = cache.lookup('t0'); // cache: t0, t2, t5, t4
+  things[0].dirty = true; // pretend we changed it
   t.is(things[0].rawData, 'thing #0');
   t.is(things[3].rawData, null);
   t.deepEqual(store.getLog(), [
@@ -100,7 +102,6 @@ test('cache overflow and refresh', t => {
     ['store', 't2', 'thing #2'],
     ['store', 't0', 'thing #0'],
     ['store', 't4', 'thing #4'],
-    ['store', 't1', 'thing #1'],
   ]);
   t.deepEqual(store.dump(), [
     ['t0', 'thing #0'],
@@ -114,16 +115,22 @@ test('cache overflow and refresh', t => {
   // verify that changes get written
   things[0] = cache.lookup('t0'); // cache: t0
   things[0].rawData = 'new thing #0';
+  things[0].dirty = true;
   things[1] = cache.lookup('t1'); // cache: t1, t0
   things[1].rawData = 'new thing #1';
+  things[1].dirty = true;
   things[2] = cache.lookup('t2'); // cache: t2, t1, t0
   things[2].rawData = 'new thing #2';
+  things[2].dirty = true;
   things[3] = cache.lookup('t3'); // cache: t3, t2, t1, t0
   things[3].rawData = 'new thing #3';
+  things[3].dirty = true;
   things[4] = cache.lookup('t4'); // cache: t4, t3, t2, t1
   things[4].rawData = 'new thing #4';
+  things[4].dirty = true;
   things[5] = cache.lookup('t5'); // cache: t5, t4, t3, t2
   things[5].rawData = 'new thing #5';
+  things[5].dirty = true;
   t.is(things[0].rawData, null);
   t.is(things[5].rawData, 'new thing #5');
   t.deepEqual(store.getLog(), [

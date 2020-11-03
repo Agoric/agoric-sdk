@@ -37,7 +37,10 @@ export function makeCache(size, fetch, store) {
           }
         }
         liveTable.delete(lruTail.vobjID);
-        store(lruTail.vobjID, lruTail.rawData);
+        if (lruTail.dirty) {
+          store(lruTail.vobjID, lruTail.rawData);
+          lruTail.dirty = false;
+        }
         lruTail.rawData = null;
         if (lruTail.prev) {
           lruTail.prev.next = undefined;
@@ -115,7 +118,7 @@ export function makeCache(size, fetch, store) {
  * @param {*} m The vat's marshaler.
  * @param {number} cacheSize How many virtual objects this manager should cache
  *   in memory.
- * @returns {*} a new virtual object manager.
+ * @returns {Object} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides four
@@ -395,6 +398,7 @@ export function makeVirtualObjectManager(
               const serializedValue = m.serialize(value);
               ensureState(innerSelf);
               innerSelf.rawData[prop] = serializedValue;
+              innerSelf.dirty = true;
             },
           });
         }
@@ -437,8 +441,9 @@ export function makeVirtualObjectManager(
       const innerSelf = { vobjID, rawData: initialData };
       const initialRepresentative = makeRepresentative(innerSelf, true);
       const initialize = initialRepresentative.initialize;
+      delete initialRepresentative.initialize;
+      harden(initialRepresentative);
       if (initialize) {
-        delete initialRepresentative.initialize;
         initialize(...args);
       }
       delete initialData[initializationInProgress];
@@ -453,6 +458,7 @@ export function makeVirtualObjectManager(
       }
       innerSelf.rawData = rawData;
       innerSelf.wrapData(initialData);
+      innerSelf.dirty = true;
       return initialRepresentative;
     }
 
