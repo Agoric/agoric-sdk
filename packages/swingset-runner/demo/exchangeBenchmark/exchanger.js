@@ -25,14 +25,16 @@ async function build(name, zoe, issuers, payments, publicFacet) {
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-  async function preReport() {
-    await showPurseBalance(moolaPurseP, `${name} moola before`, log);
-    await showPurseBalance(simoleanPurseP, `${name} simoleans before`, log);
+  async function preReport(quiet) {
+    const useLog = quiet ? () => {} : log;
+    await showPurseBalance(moolaPurseP, `${name} moola before`, useLog);
+    await showPurseBalance(simoleanPurseP, `${name} simoleans before`, useLog);
   }
 
-  async function postReport() {
-    await showPurseBalance(moolaPurseP, `${name} moola after`, log);
-    await showPurseBalance(simoleanPurseP, `${name} simoleans after`, log);
+  async function postReport(quiet) {
+    const useLog = quiet ? () => {} : log;
+    await showPurseBalance(moolaPurseP, `${name} moola after`, useLog);
+    await showPurseBalance(simoleanPurseP, `${name} simoleans after`, useLog);
   }
 
   async function receivePayout(payoutP) {
@@ -44,8 +46,8 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await E(simoleanPurseP).deposit(simoleanPayout);
   }
 
-  async function initiateTrade(otherP) {
-    await preReport();
+  async function initiateTrade(otherP, quiet) {
+    await preReport(quiet);
 
     const buyOrderInvitation = await E(publicFacet).makeInvitation();
 
@@ -65,14 +67,14 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     const payoutP = E(seat).getPayouts();
 
     const invitationP = E(publicFacet).makeInvitation();
-    await E(otherP).respondToTrade(invitationP);
+    await E(otherP).respondToTrade(invitationP, quiet);
 
     await receivePayout(payoutP);
-    await postReport();
+    await postReport(quiet);
   }
 
-  async function respondToTrade(invitationP) {
-    await preReport();
+  async function respondToTrade(invitationP, quiet) {
+    await preReport(quiet);
 
     const invitation = await invitationP;
     const exclInvitation = await E(invitationIssuer).claim(invitation);
@@ -94,7 +96,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     const payoutP = E(seatP).getPayouts();
 
     await receivePayout(payoutP);
-    await postReport();
+    await postReport(quiet);
   }
 
   return harden({

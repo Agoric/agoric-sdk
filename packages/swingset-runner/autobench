@@ -1,0 +1,2 @@
+#!/bin/sh
+bin/runner --init --benchmark 100 --statsfile benchstats.json --config demo/exchangeBenchmark/swingset.json run -- --quiet --prime
