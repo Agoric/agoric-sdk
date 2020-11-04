@@ -240,6 +240,8 @@ test('resolveWithPresence test nr 4', async t => {
             }
           };
         }
+      } else {
+        t.log('presenceImmediateHandler: receiver and target not the same');
       }
       return undefined;
     },
