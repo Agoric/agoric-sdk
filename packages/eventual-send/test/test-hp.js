@@ -178,6 +178,7 @@ test('resolveWithPresence test nr 4', async t => {
       return undefined; // traps return value is always ignored
     },
   };
+  const proxyTarget = {};
   const presenceImmediateHandler = {
     apply(target, thisArg, args) {
       log.push(['apply', target, thisArg, args]);
@@ -242,6 +243,8 @@ test('resolveWithPresence test nr 4', async t => {
         }
       } else {
         t.log('presenceImmediateHandler: receiver and target not the same');
+        t.log('target is proxyTarget? ', (target === proxyTarget));
+        t.log('receiver is proxyTarget? ', (receiver === proxyTarget));
       }
       return undefined;
     },
@@ -286,7 +289,7 @@ test('resolveWithPresence test nr 4', async t => {
   });
   await Promise.resolve();
   pr.resolveWithPresence(presenceEventualHandler, {
-    proxy: { handler: presenceImmediateHandler, target: {} },
+    proxy: { handler: presenceImmediateHandler, target: proxyTarget },
   });
   pr.promise.then(presence => {
     t.log('þrep .then ákallað');
