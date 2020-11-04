@@ -15,7 +15,8 @@
     "test": "ava",
     "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint-check": "eslint '**/*.js'",
+    "ci:autobench": "autobench"
   },
   "dependencies": {
     "@agoric/assert": "^0.2.0",
