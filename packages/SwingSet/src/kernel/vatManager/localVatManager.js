@@ -140,6 +140,7 @@ export function makeLocalVatManagerFactory(tools) {
       ...vatEndowments,
       ...ls.vatGlobals,
       console: vatConsole,
+      assert,
     });
     const inescapableTransforms = [];
     const inescapableGlobalLexicals = {};

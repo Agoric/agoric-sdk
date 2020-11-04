@@ -1,6 +1,7 @@
 // @ts-check
 
 import { importBundle } from '@agoric/import-bundle';
+import { assert } from '@agoric/assert';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {
   // Make the console more verbose.
@@ -11,6 +12,7 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
 
   const defaultEndowments = {
     console: louderConsole,
+    assert,
   };
 
   const fullEndowments = Object.create(null, {

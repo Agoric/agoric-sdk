@@ -88,6 +88,7 @@ export async function makeSwingsetController(
     filePrefix: 'kernel',
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
+      assert,
       require: kernelRequire,
     },
   });

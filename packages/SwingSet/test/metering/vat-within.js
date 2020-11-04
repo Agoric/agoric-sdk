@@ -1,3 +1,4 @@
+import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 
 export function buildRootObject(vatPowers) {
@@ -24,7 +25,7 @@ export function buildRootObject(vatPowers) {
     async start(bundle) {
       // console.log(`vatPowers`, vatPowers);
       // console.log('bundle', bundle);
-      const endowments = { console, getMeter };
+      const endowments = { console, assert, getMeter };
       // console.log('doing importBundle');
       log('importing');
       const ns = await importBundle(bundle, {

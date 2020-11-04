@@ -127,6 +127,7 @@ parentPort.on('message', ([type, ...margs]) => {
     const endowments = {
       ...ls.vatGlobals,
       console: makeConsole(`SwingSet:vatWorker`),
+      assert,
     };
 
     importBundle(bundle, { endowments }).then(vatNS => {

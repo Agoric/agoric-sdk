@@ -6,6 +6,9 @@
 // thems the breaks with Typescript 4.0.
 /* eslint-disable jsdoc/valid-types */
 /**
+ * @typedef {'bigint' | 'boolean' | 'function' | 'number' | 'object' |
+ *   'string' | 'symbol' | 'undefined'} TypeName
+ *
  * @callback AssertTypeofBigint
  * @param {any} specimen
  * @param {'bigint'} typename
@@ -57,5 +60,8 @@
 /* eslint-enable jsdoc/valid-types */
 
 /**
- * @typedef {AssertTypeofBigint & AssertTypeofBoolean & AssertTypeofFunction & AssertTypeofNumber & AssertTypeofObject & AssertTypeofString & AssertTypeofSymbol & AssertTypeofUndefined} AssertTypeof
+ * @typedef {AssertTypeofBigint & AssertTypeofBoolean & AssertTypeofFunction &
+ *   AssertTypeofNumber & AssertTypeofObject & AssertTypeofString &
+ *   AssertTypeofSymbol & AssertTypeofUndefined
+ * } AssertTypeof
  */
