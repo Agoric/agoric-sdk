@@ -1,24 +1,48 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
-
+/* global globalThis */
 // @ts-check
+
+// This module assumes the existence of a non-standard `assert` host object.
+// SES version 0.11.0 introduces this global object and entangles it
+// with the `console` host object in scope when it initializes,
+// allowing errors, particularly assertion errors, to hide their "details"
+// from callers that might catch those errors, then reveal them to the
+// underlying console.
+// To the extent that this `console` is considered a resource,
+// this module must be considered a resource module.
 
 import './types';
 
-/*
-// TODO Somehow, use the `assert` exported by the SES-shim
-import { assert } from 'ses';
-const { details, quote } = assert;
-export { assert, details, quote, quote as q };
-*/
+const globalAssert = globalThis.assert;
 
-// This module assumes the de-facto standard `console` host object.
-// To the extent that this `console` is considered a resource,
-// this module must be considered a resource module.
+if (globalAssert === undefined) {
+  throw new Error(
+    `Cannot initialize @agoric/assert, missing globalThis.assert`,
+  );
+}
+
+const missing = [
+  'fail',
+  'equal',
+  'typeof',
+  'string',
+  'note',
+  'details',
+  'quote',
+].filter(name => globalAssert[name] === undefined);
+if (missing.length > 0) {
+  throw new Error(
+    `Cannot initialize @agoric/assert, missing globalThis.assert methods ${missing.join(
+      ', ',
+    )}`,
+  );
+}
 
 /**
  * Prepend the correct indefinite article onto a noun, typically a typeof result
  * e.g., "an Object" vs. "a Number"
  *
+ * @deprecated
  * @param {string} str The noun to prepend
  * @returns {string} The noun prepended with a/an
  */
@@ -30,36 +54,6 @@ function an(str) {
   return `a ${str}`;
 }
 harden(an);
-
-/**
- * Like `JSON.stringify` but does not blow up if given a cycle. This is not
- * intended to be a serialization to support any useful unserialization,
- * or any programmatic use of the resulting string. The string is intended
- * only for showing a human, in order to be informative enough for some
- * logging purposes. As such, this `cycleTolerantStringify` has an
- * imprecise specification and may change over time.
- *
- * The current `cycleTolerantStringify` possibly emits too many "seen"
- * markings: Not only for cycles, but also for repeated subtrees by
- * object identity.
- *
- * @param {any} payload
- */
-function cycleTolerantStringify(payload) {
-  const seenSet = new Set();
-  const replacer = (_, val) => {
-    if (typeof val === 'object' && val !== null) {
-      if (seenSet.has(val)) {
-        return '<**seen**>';
-      }
-      seenSet.add(val);
-    }
-    return val;
-  };
-  return JSON.stringify(payload, replacer);
-}
-
-const declassifiers = new WeakMap();
 
 /**
  * To "declassify" and quote a substitution value used in a
@@ -86,15 +80,10 @@ const declassifiers = new WeakMap();
  * @param {*} payload What to declassify
  * @returns {StringablePayload} The declassified payload
  */
-function q(payload) {
-  // Don't harden the payload
-  const result = Object.freeze({
-    toString: Object.freeze(() => cycleTolerantStringify(payload)),
-  });
-  declassifiers.set(result, payload);
-  return result;
+function quote(payload) {
+  return globalAssert.quote(payload);
 }
-harden(q);
+harden(quote);
 
 /**
  * Use the `details` function as a template literal tag to create
@@ -135,45 +124,7 @@ harden(q);
  * @returns {Complainer} The complainer for these details
  */
 function details(template, ...args) {
-  // const complainer = harden({  // remove harden per above discussion
-  const complainer = {
-    complain() {
-      const interleaved = [template[0]];
-      const parts = [template[0]];
-      for (let i = 0; i < args.length; i += 1) {
-        let arg = args[i];
-        let argStr;
-        if (declassifiers.has(arg)) {
-          argStr = `${arg}`;
-          arg = declassifiers.get(arg);
-        } else {
-          argStr = `(${an(typeof arg)})`;
-        }
-
-        // Remove the extra spaces (since console.error puts them
-        // between each interleaved).
-        const priorWithoutSpace = (interleaved.pop() || '').replace(/ $/, '');
-        if (priorWithoutSpace !== '') {
-          interleaved.push(priorWithoutSpace);
-        }
-
-        const nextWithoutSpace = template[i + 1].replace(/^ /, '');
-        interleaved.push(arg, nextWithoutSpace);
-
-        parts.push(argStr, template[i + 1]);
-      }
-      if (interleaved[interleaved.length - 1] === '') {
-        interleaved.pop();
-      }
-      const err = new Error(parts.join(''));
-      console.error('LOGGED ERROR:', ...interleaved, err);
-      // eslint-disable-next-line no-debugger
-      debugger;
-      return err;
-    },
-  };
-  // });
-  return complainer;
+  return globalAssert.details(template, ...args);
 }
 harden(details);
 
@@ -187,13 +138,9 @@ harden(details);
  * @param {Details} [optDetails] The details of what was asserted
  */
 function fail(optDetails = details`Assert failed`) {
-  if (typeof optDetails === 'string') {
-    // If it is a string, use it as the literal part of the template so
-    // it doesn't get quoted.
-    optDetails = details([optDetails]);
-  }
-  throw optDetails.complain();
+  return globalAssert.fail(optDetails);
 }
+// hardened under combinedAssert
 
 /* eslint-disable jsdoc/require-returns-check,jsdoc/valid-types */
 /**
@@ -203,16 +150,16 @@ function fail(optDetails = details`Assert failed`) {
  */
 /* eslint-enable jsdoc/require-returns-check,jsdoc/valid-types */
 function assert(flag, optDetails = details`Check failed`) {
-  if (!flag) {
-    throw fail(optDetails);
-  }
+  globalAssert(flag, optDetails);
 }
+// hardened under combinedAssert
 
 /**
  * Assert that two values must be `Object.is`.
  *
- * @param {*} actual The value we received
- * @param {*} expected What we wanted
+ * @template T
+ * @param {T} actual The value we received
+ * @param {T} expected What we wanted
  * @param {Details} [optDetails] The details to throw
  * @returns {void}
  */
@@ -221,48 +168,40 @@ function equal(
   expected,
   optDetails = details`Expected ${actual} is same as ${expected}`,
 ) {
-  assert(Object.is(actual, expected), optDetails);
+  globalAssert.equal(actual, expected, optDetails);
 }
+// hardened under combinedAssert
 
 /**
  * Assert an expected typeof result.
  *
  * @type {AssertTypeof}
  * @param {any} specimen The value to get the typeof
- * @param {string} typename The expected name
+ * @param {TypeName} typeName The expected name
  * @param {Details} [optDetails] The details to throw
  */
-const assertTypeof = (specimen, typename, optDetails) => {
-  assert(
-    typeof typename === 'string',
-    details`${q(typename)} must be a string`,
-  );
-  if (optDetails === undefined) {
-    // Like
-    // ```js
-    // optDetails = details`${specimen} must be ${q(an(typename))}`;
-    // ```
-    // except it puts the typename into the literal part of the template
-    // so it doesn't get quoted.
-    optDetails = details(['', ` must be ${an(typename)}`], specimen);
-  }
-  equal(typeof specimen, typename, optDetails);
-};
+const assertTypeof = (specimen, typeName, optDetails) =>
+  /** @type {function(any, TypeName, Details): void} */
+  globalAssert.typeof(specimen, typeName, optDetails);
+// hardened under combinedAssert
 
 /**
  * @param {any} specimen The value to get the typeof
  * @param {Details} [optDetails] The details to throw
  */
-const assertString = (specimen, optDetails) =>
+const string = (specimen, optDetails) =>
   assertTypeof(specimen, 'string', optDetails);
+// hardened under combinedAssert
 
 /**
- * Just a no-op placeholder for the `assert.note` from ses.
+ * Adds debugger details to an error that will be inaccessible to any stack
+ * that catches the error but will be revealed to the console.
  *
- * @param {Error} _error
- * @param {Details} _detailsNote
+ * @param {Error} error
+ * @param {Details} detailsNote
  */
-const note = (_error, _detailsNote) => {};
+const note = (error, detailsNote) => globalAssert.note(error, detailsNote);
+// hardened under combinedAssert
 
 /* eslint-disable jsdoc/valid-types */
 /**
@@ -285,16 +224,34 @@ const note = (_error, _detailsNote) => {};
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
  *
- * @type {typeof assert & { typeof: AssertTypeof, fail: typeof fail, equal: typeof equal, string: typeof assertString, note: typeof note }}
+ * @type {typeof assert & {
+ *   typeof: AssertTypeof,
+ *   fail: typeof fail,
+ *   equal: typeof equal,
+ *   string: typeof string,
+ *   note: typeof note,
+ *   details: typeof details,
+ *   quote: typeof quote
+ * }}
  */
 /* eslint-enable jsdoc/valid-types */
-const assertCombined = Object.assign(assert, {
+const combinedAssert = Object.assign(assert, {
   fail,
   equal,
   typeof: assertTypeof,
-  string: assertString,
+  string,
   note,
+  details,
+  quote,
 });
-harden(assertCombined);
+harden(combinedAssert);
 
-export { assertCombined as assert, details, q, an };
+export { combinedAssert as assert, details, an, quote };
+
+// DEPRECATED: Going forward we encourage the pattern over importing the
+// abbreviation 'q' for quote.
+//
+// ```js
+// import { quote as q, details as d } from '@agoric/assert';
+// ```
+export { quote as q };
