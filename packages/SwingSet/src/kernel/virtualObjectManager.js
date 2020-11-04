@@ -1,7 +1,7 @@
 import { assert, details as d, quote as q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
 
-const initializationInProgress = Symbol('initializing');
+const initializationsInProgress = new WeakSet();
 
 /**
  * Make a simple LRU cache of virtual object inner selves.
@@ -26,9 +26,9 @@ export function makeCache(size, fetch, store) {
   const cache = {
     makeRoom() {
       while (liveTable.size > size && lruTail) {
-        if (lruTail.rawData[initializationInProgress]) {
+        if (initializationsInProgress.has(lruTail.rawData)) {
           let refreshCount = 1;
-          while (lruTail.rawData[initializationInProgress]) {
+          while (initializationsInProgress.has(lruTail.rawData)) {
             if (refreshCount > size) {
               throw Error(`cache overflowed with objects being initialized`);
             }
@@ -385,7 +385,7 @@ export function makeVirtualObjectManager(
 
       function wrapData(target) {
         assert(
-          !target[initializationInProgress],
+          !initializationsInProgress.has(target),
           `object is still being initialized`,
         );
         for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
@@ -432,12 +432,7 @@ export function makeVirtualObjectManager(
       nextInstanceID += 1;
 
       const initialData = {};
-      Object.defineProperty(initialData, initializationInProgress, {
-        configurable: true,
-        enumerable: false,
-        writeable: false,
-        value: true,
-      });
+      initializationsInProgress.add(initialData);
       const innerSelf = { vobjID, rawData: initialData };
       const initialRepresentative = makeRepresentative(innerSelf, true);
       const initialize = initialRepresentative.initialize;
@@ -446,7 +441,7 @@ export function makeVirtualObjectManager(
       if (initialize) {
         initialize(...args);
       }
-      delete initialData[initializationInProgress];
+      initializationsInProgress.delete(initialData);
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
