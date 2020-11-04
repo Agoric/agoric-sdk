@@ -222,6 +222,7 @@ test('resolveWithPresence test nr 4', async t => {
         }
         if (property === 'there') {
           return nomad => {
+            log.push(['thereInvocation', nomad]);
             if (typeof nomad === 'function') {
               try {
                 return Promise.resolve(nomad());
