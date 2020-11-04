@@ -288,11 +288,12 @@ test('resolveWithPresence test nr 4', async t => {
   });
   pr.promise.then(presence => {
     t.log('þrep .then ákallað');
+    t.log('presence.there: ', presence.there);
     presence.there(() => {
       t.log('þrep nomad ákallað');
       log.push(['doing stuff there']);
     });
-  });
+  }).catch((problem) => t.log('.then callback got problem:', problem));
   await Promise.resolve();
   t.log('log: ', log);
   t.fail('stöðva prufun hér');
