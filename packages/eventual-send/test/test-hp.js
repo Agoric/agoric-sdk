@@ -198,7 +198,7 @@ test('resolveWithPresence test nr 4', async t => {
     },
     get(target, property, receiver) {
       log.push(['get', target, property, receiver]);
-      if (target === receiver) {
+      // if (target === receiver) {
         if (property === 'then') {
           t.log('þrep .then sótt');
           return (callback, errback) => {
@@ -241,11 +241,7 @@ test('resolveWithPresence test nr 4', async t => {
             }
           };
         }
-      } else {
-        t.log('presenceImmediateHandler: receiver and target not the same');
-        t.log('target is proxyTarget? ', (target === proxyTarget));
-        t.log('receiver is proxyTarget? ', (receiver === proxyTarget));
-      }
+      // }
       return undefined;
     },
     getOwnPropertyDescriptor(target, property) {
