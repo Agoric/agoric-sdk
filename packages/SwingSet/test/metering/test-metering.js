@@ -91,7 +91,7 @@ async function meteredImportBundle(bundle, endowments) {
 test('metering a single bundle', async function testSingleBundle(t) {
   const bundle = await bundleSource(require.resolve('./metered-code.js'));
   harden(Object.getPrototypeOf(console));
-  const endowments = { console };
+  const endowments = { console, assert };
   const {
     ns,
     runBundleThunkUnderMeter,

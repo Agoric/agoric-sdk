@@ -810,7 +810,7 @@ export default function buildKernel(
       // eslint-disable-next-line no-await-in-loop
       const NS = await importBundle(source.bundle, {
         filePrefix: `dev-${name}`,
-        endowments: harden({ ...vatEndowments, console: devConsole }),
+        endowments: harden({ ...vatEndowments, console: devConsole, assert }),
       });
       assert(
         typeof NS.buildRootDeviceNode === 'function',

@@ -1,4 +1,4 @@
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as d, quote as q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
 
 const initializationInProgress = Symbol('initializing');
@@ -106,17 +106,16 @@ export function makeCache(size, fetch, store) {
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
  *
- * @param {*} syscall  Vat's syscall object, used to access the `vatstoreGet` and
- *    `vatstoreSet` operations.
+ * @param {*} syscall  Vat's syscall object, used to access the `vatstoreGet`
+ *   and `vatstoreSet` operations.
  * @param {() => number} allocateExportID  Function to allocate the next object
- *    export ID for the enclosing vat.
- * @param valToSlotTable {*}  The vat's table that maps object identities to their
- *    corresponding export IDs
- * @param m {*}  The vat's marshaler.
- * @param cacheSize {number}  How many virtual objects this manager should cache
+ *   export ID for the enclosing vat.
+ * @param {*} valToSlotTable  The vat's table that maps object identities to
+ *   their corresponding export IDs
+ * @param {*} m The vat's marshaler.
+ * @param {number} cacheSize How many virtual objects this manager should cache
  *   in memory.
- *
- * @returns a new virtual object manager.
+ * @returns {*} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides four
@@ -155,7 +154,6 @@ export function makeVirtualObjectManager(
    *
    * @param {string} vobjID  The virtual object ID of the object whose state is
    *    being fetched.
-   *
    * @returns {*} an object representing the object's stored state.
    */
   function fetch(vobjID) {
@@ -229,14 +227,11 @@ export function makeVirtualObjectManager(
     nextWeakStoreID += 1;
 
     function assertKeyDoesNotExist(key) {
-      assert(
-        !backingMap.has(key),
-        details`${q(keyName)} already registered: ${key}`,
-      );
+      assert(!backingMap.has(key), d`${q(keyName)} already registered: ${key}`);
     }
 
     function assertKeyExists(key) {
-      assert(backingMap.has(key), details`${q(keyName)} not found: ${key}`);
+      assert(backingMap.has(key), d`${q(keyName)} not found: ${key}`);
     }
 
     function virtualObjectKey(key) {
@@ -267,7 +262,7 @@ export function makeVirtualObjectManager(
         if (vkey) {
           assert(
             !syscall.vatstoreGet(vkey),
-            details`${q(keyName)} already registered: ${key}`,
+            d`${q(keyName)} already registered: ${key}`,
           );
           syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(value)));
         } else {
@@ -279,7 +274,7 @@ export function makeVirtualObjectManager(
         const vkey = virtualObjectKey(key);
         if (vkey) {
           const rawValue = syscall.vatstoreGet(vkey);
-          assert(rawValue, details`${q(keyName)} not found: ${key}`);
+          assert(rawValue, d`${q(keyName)} not found: ${key}`);
           return m.unserialize(JSON.parse(rawValue));
         } else {
           assertKeyExists(key);
@@ -289,10 +284,7 @@ export function makeVirtualObjectManager(
       set(key, value) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
-          assert(
-            syscall.vatstoreGet(vkey),
-            details`${q(keyName)} not found: ${key}`,
-          );
+          assert(syscall.vatstoreGet(vkey), d`${q(keyName)} not found: ${key}`);
           syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(harden(value))));
         } else {
           assertKeyExists(key);
@@ -302,10 +294,7 @@ export function makeVirtualObjectManager(
       delete(key) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
-          assert(
-            syscall.vatstoreGet(vkey),
-            details`${q(keyName)} not found: ${key}`,
-          );
+          assert(syscall.vatstoreGet(vkey), d`${q(keyName)} not found: ${key}`);
           syscall.vatstoreSet(vkey, undefined);
         } else {
           assertKeyExists(key);

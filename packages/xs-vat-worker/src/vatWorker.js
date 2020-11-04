@@ -102,6 +102,7 @@ function makeWorker(io, setImmediate) {
       const [bundle, vatParameters, virtualObjectCacheSize] = margs;
       const endowments = {
         console: makeConsole(`SwingSet:vatWorker`),
+        assert,
         HandledPromise,
       };
       // ISSUE: this draft code is contorted because it started

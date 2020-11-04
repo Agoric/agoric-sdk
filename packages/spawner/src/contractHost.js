@@ -47,6 +47,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
 
   const defaultEndowments = {
     console,
+    assert,
   };
 
   // note: support for check functions was removed during warner's
