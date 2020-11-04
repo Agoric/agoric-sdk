@@ -106,5 +106,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "ses": "^0.11.0"
   }
 }
