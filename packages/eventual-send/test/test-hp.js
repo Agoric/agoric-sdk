@@ -284,6 +284,7 @@ test('resolveWithPresence test nr 4', async t => {
       log.push(['doing stuff there']);
     });
   });
+  await Promise.resolve();
   t.log('log: ', log);
   t.fail('stöðva prufun hér');
 });
