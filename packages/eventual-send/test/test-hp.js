@@ -199,9 +199,12 @@ test('resolveWithPresence test nr 4', async t => {
       log.push(['get', target, property, receiver]);
       if (target === receiver) {
         if (property === 'then') {
+          t.log('þrep .then sótt');
           return (callback, errback) => {
+            t.log('þrep .then höndlar ákall');
             log.push(['then', callback, errback]);
             try {
+              t.log('þrep callback gefið .then ákallað');
               return Promise.resolve(callback(target));
             } catch (problem) {
               return Promise.reject(problem);
@@ -221,10 +224,13 @@ test('resolveWithPresence test nr 4', async t => {
           };
         }
         if (property === 'there') {
+          t.log('þrep .there sótt');
           return nomad => {
+            t.log('þrep .there höndlar ákall');
             log.push(['thereInvocation', nomad]);
             if (typeof nomad === 'function') {
               try {
+                t.log('þrep nomad gefið .there ákallað');
                 return Promise.resolve(nomad());
               } catch (problem) {
                 return Promise.reject(problem);
@@ -281,7 +287,9 @@ test('resolveWithPresence test nr 4', async t => {
     proxy: { handler: presenceImmediateHandler, target: {} },
   });
   pr.promise.then(presence => {
+    t.log('þrep .then ákallað');
     presence.there(() => {
+      t.log('þrep nomad ákallað');
       log.push(['doing stuff there']);
     });
   });
