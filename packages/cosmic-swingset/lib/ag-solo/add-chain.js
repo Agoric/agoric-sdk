@@ -34,8 +34,8 @@ async function addChain(basedir, chainConfig, force = false) {
     const r = await fetch(url.href);
     netconf = await r.json();
   }
-  const gciUrl = new URL(netconf.gci, 'hex://');
-  if (gciUrl.protocol !== 'hex:') {
+  const gciUrl = new URL(netconf.gci, 'unspecified://');
+  if (gciUrl.protocol !== 'unspecified:') {
     const g = await fetch(gciUrl.href);
     const resp = await g.json();
     let genesis = resp;
