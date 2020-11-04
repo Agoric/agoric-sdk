@@ -149,10 +149,15 @@ const start = zcf => {
   }
 
   function payoffOptions(priceQuoteAmount) {
-    const { price } = quoteMath.getValue(priceQuoteAmount)[0];
+    const { amountOut } = quoteMath.getValue(priceQuoteAmount)[0];
     const strike1 = terms.strikePrice1;
     const strike2 = terms.strikePrice2;
-    const longShare = calculateLongShare(strikeMath, price, strike1, strike2);
+    const longShare = calculateLongShare(
+      strikeMath,
+      amountOut,
+      strike1,
+      strike2,
+    );
     // either offer might be exercised late, so we pay the two seats separately.
     reallocateToSeat(Position.LONG, longShare);
     reallocateToSeat(Position.SHORT, inverse(longShare));
@@ -160,12 +165,7 @@ const start = zcf => {
 
   function schedulePayoffs() {
     E(terms.priceAuthority)
-      .priceAtTime(
-        terms.timer,
-        terms.expiration,
-        terms.underlyingAmount,
-        strikeBrand,
-      )
+      .quoteAtTime(terms.expiration, terms.underlyingAmount, strikeBrand)
       .then(priceQuote => payoffOptions(priceQuote.quoteAmount));
   }
 

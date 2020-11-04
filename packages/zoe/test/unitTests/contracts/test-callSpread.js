@@ -4,78 +4,15 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import '../../../exported';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
 import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers';
+import { makeFakePriceAuthority } from '../../fakePriceAuthority';
 
 const callSpread = `${__dirname}/../../../src/contracts/callSpread`;
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
-
-function makeFakePriceAuthority(
-  underlyingAmountMath,
-  strikeAmountMath,
-  priceSchedule,
-) {
-  const {
-    mint: quoteMint,
-    issuer: quoteIssuer,
-    amountMath: quote,
-  } = makeIssuerKit('quote', MathKind.SET);
-
-  function priceFromSchedule(strikeTime) {
-    let freshestPrice = 0;
-    let freshestTime = -1;
-    for (const tick of priceSchedule) {
-      if (tick.time > freshestTime && tick.time <= strikeTime) {
-        freshestTime = tick.time;
-        freshestPrice = tick.price;
-      }
-    }
-    return freshestPrice;
-  }
-
-  function priceQuote(timer, currentTime, underlyingAmount) {
-    const underlyingValue = underlyingAmountMath.getValue(underlyingAmount);
-    const price = priceFromSchedule(currentTime);
-    const strikePrice = strikeAmountMath.make(price * underlyingValue);
-    const quoteAmount = quote.make(
-      harden([
-        {
-          assetAmount: underlyingAmount,
-          price: strikePrice,
-          timer,
-          timestamp: currentTime,
-        },
-      ]),
-    );
-    return harden({
-      quotePament: quoteMint.mintPayment(quoteAmount),
-      quoteAmount,
-    });
-  }
-
-  const priceAuthority = {
-    getQuoteIssuer: () => quoteIssuer,
-    priceAtTime: (timer, timeStamp, underlyingAmount) => {
-      const { promise, resolve } = makePromiseKit();
-
-      E(timer).setWakeup(
-        timeStamp,
-        harden({
-          wake: time => {
-            return resolve(priceQuote(timer, time, underlyingAmount));
-          },
-        }),
-      );
-      return promise;
-    },
-  };
-  return priceAuthority;
-}
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
 // Value is in Moola. The price oracle takes an amount in Underlying, and
@@ -107,14 +44,14 @@ test('callSpread below Strike1', async t => {
 
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    amountMaths.get('simoleans'),
-    amountMaths.get('moola'),
+    amountMaths,
     [
       { time: 0, price: 20 },
       { time: 1, price: 35 },
       { time: 2, price: 15 },
       { time: 3, price: 28 },
     ],
+    manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -172,8 +109,8 @@ test('callSpread below Strike1', async t => {
     bucks(300),
   );
 
-  manualTimer.tick();
-  manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -206,12 +143,12 @@ test('callSpread above Strike2', async t => {
 
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    amountMaths.get('simoleans'),
-    amountMaths.get('moola'),
+    amountMaths,
     [
       { time: 0, price: 20 },
       { time: 3, price: 55 },
     ],
+    manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -275,8 +212,8 @@ test('callSpread above Strike2', async t => {
     bucks(0),
   );
 
-  manualTimer.tick();
-  manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -309,12 +246,12 @@ test('callSpread, mid-strike', async t => {
 
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    amountMaths.get('simoleans'),
-    amountMaths.get('moola'),
+    amountMaths,
     [
       { time: 0, price: 20 },
       { time: 3, price: 45 },
     ],
+    manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -377,8 +314,8 @@ test('callSpread, mid-strike', async t => {
     bucks(75),
   );
 
-  manualTimer.tick();
-  manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -411,12 +348,12 @@ test('callSpread, late exercise', async t => {
 
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    amountMaths.get('simoleans'),
-    amountMaths.get('moola'),
+    amountMaths,
     [
       { time: 0, price: 20 },
       { time: 3, price: 45 },
     ],
+    manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -472,8 +409,8 @@ test('callSpread, late exercise', async t => {
     bucks(225),
   );
 
-  manualTimer.tick();
-  manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
 
   const carolOptionSeat = await zoe.offer(carolShortOption);
   const carolPayout = await carolOptionSeat.getPayout('Collateral');
@@ -517,12 +454,12 @@ test('callSpread, sell options', async t => {
 
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
-    amountMaths.get('simoleans'),
-    amountMaths.get('moola'),
+    amountMaths,
     [
       { time: 0, price: 20 },
       { time: 3, price: 45 },
     ],
+    manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -663,7 +600,7 @@ test('callSpread, sell options', async t => {
     bucks(75),
   );
 
-  manualTimer.tick();
-  manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
   await Promise.all([aliceLong, aliceShort, bobDeposit, carolDeposit]);
 });
