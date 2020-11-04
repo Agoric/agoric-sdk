@@ -312,15 +312,14 @@ show-config      display the client connection parameters
       const importFlags = [];
       const importFrom = subOpts['import-from'];
       if (importFrom) {
-        console.error(
-          chalk.redBright('FIXME: --import-from is not yet supported!'),
-        );
-        return 1;
+        if (importFrom.startsWith('node') && !importFrom.endsWith('/')) {
+          // Export from all nodes.
+          await needReMain(['play', 'export-genesis']);
+        }
+
         // Add the exported prefix if not absolute.
-        /*
         const absImportFrom = resolve(`${SETUP_HOME}/exported`, importFrom);
         importFlags.push(`--import-from=${absImportFrom}`);
-        */
       }
 
       if (subOpts.bump) {
@@ -329,7 +328,7 @@ show-config      display the client connection parameters
       }
 
       // Make sure the version file exists.
-      await guardFile(`chain-version.txt`, makeFile => makeFile('0.0.0'));
+      await guardFile(`chain-version.txt`, makeFile => makeFile('1'));
 
       // Assign the chain name.
       const networkName = await trimReadFile('network.txt');
@@ -422,9 +421,11 @@ show-config      display the client connection parameters
       await needReMain(['wait-for-any']);
 
       // Add the bootstrap validators.
-      await guardFile(`${COSMOS_DIR}/validators.stamp`, () =>
-        needReMain(['play', 'cosmos-validators']),
-      );
+      if (!importFrom) {
+        await guardFile(`${COSMOS_DIR}/validators.stamp`, () =>
+          needReMain(['play', 'cosmos-validators']),
+        );
+      }
 
       console.error(
         chalk.black.bgGreenBright.bold(
@@ -437,7 +438,6 @@ show-config      display the client connection parameters
 
     case 'dweb': {
       await inited();
-      const networkName = await trimReadFile('network.txt');
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
       process.stdout.write(`${chalk.yellow(cfg)}\n`);
 
@@ -451,8 +451,8 @@ show-config      display the client connection parameters
 
       let execline = `npx http-server ./public`;
       let dwebHost;
-      const cert = `${networkName}.crt`;
-      const key = `${networkName}.key`;
+      const cert = `dweb.crt`;
+      const key = `dweb.key`;
       if ((await exists(cert)) && (await exists(key))) {
         execline += ` --port=443 --ssl`;
         execline += ` --cert=${shellEscape(cert)}`;
@@ -770,7 +770,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         await needDoRun(['terraform', 'init']);
       }
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
-      await needDoRun(['rm', '-rf', PROVISION_DIR]);
+      await needDoRun(['rm', '-f', `${PROVISION_DIR}/*.stamp`]);
       break;
     }
 

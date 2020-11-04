@@ -31,6 +31,10 @@ docker-build-solo:
 docker-build-deployment:
 	docker build -t agoric/deployment:latest --file=Dockerfile.deployment ./docker
 
+# Just push $(TAG)
+docker-push-only:
+	$(MAKE) docker-push DONT_PUSH_LATEST=: TAG=$(TAG)
+
 docker-push: docker-push-base docker-push-solo docker-push-setup \
 	docker-push-ibc-alpha docker-push-deployment
 

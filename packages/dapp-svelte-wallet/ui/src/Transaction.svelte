@@ -24,6 +24,12 @@
     return `${match[1]} ${match[2]}`;
   }
 
+  const makeRejected = context => 
+    function rejected(e) {
+      // TODO: Do something less blatant.
+      alert(`${context}: ${e}`);
+    };
+
   const statusText = {
     decline: "Declined",
     rejected: "Rejected",
@@ -108,15 +114,18 @@
   </div> 
   <div class="actions">
     {#if status === 'pending'}
-    <Chip on:click={() => E(walletP).cancelOffer(offerId)}
+    <Chip on:click={() =>
+      E(walletP).cancelOffer(offerId).catch(makeRejected('Cannot cancel'))}
       selected icon="clear" color="alert"
     >Cancel</Chip>
     {/if}
     {#if status === 'proposed'}
     <div class="flex flex-row">
-    <Chip on:click={() => E(walletP).acceptOffer(offerId).then(showOutcome)}
+    <Chip on:click={() =>
+      E(walletP).acceptOffer(offerId).catch(makeRejected('Cannot accept'))}
       selected icon="check" color="success"
-    >Accept</Chip> <Chip on:click={() => E(walletP).declineOffer(offerId)}
+    >Accept</Chip> <Chip on:click={() =>
+      E(walletP).declineOffer(offerId).catch(makeRejected('Cannot decline'))}
       selected icon="clear" color="error"
     >Decline</Chip>
     </div>
