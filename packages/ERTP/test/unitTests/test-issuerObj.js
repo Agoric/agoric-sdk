@@ -14,6 +14,40 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   );
   t.is(issuer.getAllegedName(), myBrand.getAllegedName());
   t.is(issuer.getAllegedName(), 'fungible');
+  t.is(brand.getDisplayInfo(), undefined);
+});
+
+test('brand.getDisplayInfo()', t => {
+  const displayInfo = harden({ decimalPlaces: 3 });
+  const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), displayInfo);
+  const display = amount => {
+    const { brand: myBrand, value } = amount;
+    const { decimalPlaces } = myBrand.getDisplayInfo();
+    const valueDisplay = value.toString();
+    const length = valueDisplay.length;
+    return [
+      valueDisplay.slice(0, length - decimalPlaces),
+      '.',
+      valueDisplay.slice(length - decimalPlaces),
+    ].join('');
+  };
+  t.is(display({ brand, value: 3000 }), '3.000');
+});
+
+test('bad display info', t => {
+  const displayInfo = harden({ somethingUnexpected: 3 });
+  // @ts-ignore
+  t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
+    message:
+      'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces"]',
+  });
+});
+
+test('empty display info', t => {
+  const displayInfo = harden({});
+  const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), displayInfo);
 });
 
 test('amountMath from makeIssuerKit', async t => {
@@ -117,7 +151,7 @@ test('purse.deposit', async t => {
     .then(checkDeposit(fungible17, fungibleSum));
 });
 
-test('purse.deposit promise', t => {
+test('purse.deposit promise', async t => {
   t.plan(1);
   const { issuer, mint, amountMath } = makeIssuerKit('fungible');
   const fungible25 = amountMath.make(25);
@@ -126,7 +160,8 @@ test('purse.deposit promise', t => {
   const payment = mint.mintPayment(fungible25);
   const exclusivePaymentP = E(issuer).claim(payment);
 
-  return t.throwsAsync(
+  await t.throwsAsync(
+    // @ts-ignore
     () => E(purse).deposit(exclusivePaymentP, fungible25),
     { message: /deposit does not accept promises/ },
     'failed to reject a promise for a payment',
@@ -198,11 +233,11 @@ test('issuer.claim', async t => {
     });
 });
 
-test('issuer.splitMany bad amount', t => {
+test('issuer.splitMany bad amount', async t => {
   const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const payment = mint.mintPayment(amountMath.make(1000));
   const badAmounts = Array(2).fill(amountMath.make(10));
-  return t.throwsAsync(
+  await t.throwsAsync(
     _ => E(issuer).splitMany(payment, badAmounts),
     { message: /rights were not conserved/ },
     'successfully throw if rights are not conserved in proposed new payments',
@@ -238,11 +273,11 @@ test('issuer.splitMany good amount', async t => {
     .then(checkPayments);
 });
 
-test('issuer.split bad amount', t => {
+test('issuer.split bad amount', async t => {
   const { mint, issuer, amountMath } = makeIssuerKit('fungible');
   const { amountMath: otherUnitOps } = makeIssuerKit('other fungible');
   const payment = mint.mintPayment(amountMath.make(1000));
-  return t.throwsAsync(
+  await t.throwsAsync(
     _ => E(issuer).split(payment, otherUnitOps.make(10)),
     {
       message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
@@ -343,7 +378,7 @@ test('issuer.combine bad payments', async t => {
   const otherPayment = otherMint.mintPayment(otherAmountMath.make(10));
   payments.push(otherPayment);
 
-  return t.throwsAsync(
+  await t.throwsAsync(
     () => E(issuer).combine(payments),
     { message: /"payment" not found/ },
     'payment from other mint is not found',

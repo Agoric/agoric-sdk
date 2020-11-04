@@ -213,7 +213,8 @@ test(`zcf.saveIssuer - bad issuer`, async t => {
   await t.throwsAsync(() => zcf.saveIssuer(moolaKit.brand, 'A'), {
     // TODO: improve error message
     // https://github.com/Agoric/agoric-sdk/issues/1701
-    message: 'target has no method "getBrand", has [getAllegedName,isMyIssuer]',
+    message:
+      'target has no method "getBrand", has [getAllegedName,getDisplayInfo,isMyIssuer]',
   });
 });
 

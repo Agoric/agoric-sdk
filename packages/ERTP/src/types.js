@@ -98,6 +98,20 @@
  */
 
 /**
+ * @typedef {Object} DisplayInfo
+ * @property {number=} decimalPlaces
+ *   Tells the display software how many decimal places to move the
+ *   decimal over to the left, or in other words, which position corresponds to whole
+ *   numbers. We require fungible digital assets to be represented in
+ *   integers, in the smallest unit (i.e. USD might be represented in mill,
+ *   a thousandth of a dollar. In that case, `decimalPlaces` would be 3.)
+ *   This property is optional, and for non-fungible digital assets,
+ *   should not be specified.
+ *   The decimalPlaces property should be used for *display purposes only*. Any
+ *   other use is an anti-pattern.
+ */
+
+/**
  * @typedef {Object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
@@ -112,6 +126,8 @@
  * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer Should be used with
  * `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
+ * @property {() => DisplayInfo} getDisplayInfo
+ *  Give information to UI on how to display the amount.
  */
 
 /**
@@ -188,7 +204,8 @@
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
- * @param {AmountMathKind=} amountMathKind
+ * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
+ * @param {DisplayInfo=} [displayInfo=undefined]
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The
@@ -199,6 +216,8 @@
  * The amountMathKind will be used to import a specific mathHelpers
  * from the mathHelpers library. For example, natMathHelpers, the
  * default, is used for basic fungible tokens.
+ *
+ *  `displayInfo` gives information to UI on how to display the amount.
  *
  * @typedef {Object} IssuerKit
  * The return value of makeIssuerKit

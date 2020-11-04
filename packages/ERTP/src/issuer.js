@@ -10,16 +10,20 @@ import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
 import { makeInterface, ERTPKind } from './interfaces';
+import { coerceDisplayInfo } from './displayInfo';
 
 import './types';
 
 /**
- * @param {string} allegedName
- * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
- * @returns {IssuerKit}
+ * @type {MakeIssuerKit}
  */
-function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
+function makeIssuerKit(
+  allegedName,
+  amountMathKind = MathKind.NAT,
+  displayInfo = undefined,
+) {
   assert.typeof(allegedName, 'string');
+  displayInfo = coerceDisplayInfo(displayInfo);
 
   const brand = Remotable(
     makeInterface(allegedName, ERTPKind.BRAND),
@@ -32,6 +36,9 @@ function makeIssuerKit(allegedName, amountMathKind = MathKind.NAT) {
         });
       },
       getAllegedName: () => allegedName,
+
+      // Give information to UI on how to display the amount.
+      getDisplayInfo: () => displayInfo,
     },
   );
 
