@@ -13,7 +13,7 @@ value or the failure reason. The terminal value is also called the *final value*
 
 For NotifierKit user documentation see 
 [here](https://agoric.com/documentation/distributed-programming.html#notifiers).
-This doc more precisely describes the semantics of the Notifier and the Subscription, their distributed
+The following doc more precisely describes the semantics of the Notifier and the Subscription, their distributed
 system properties, and what this means for when to use each one. 
 
 # Distributed Asynchronous Iteration
@@ -29,7 +29,7 @@ The sequence may continue indefinitely or may terminate in one of two ways:
 
   * *Finish*: The async iteration successfully completes and reports a final *completion value*, 
     Which can be any JavaScript value.
-  * *Fail*: The async iteration fails and reports an alleged final *reason*. This should be an error  
+  * *Fail*: The async iteration fails and a gives a reported final *reason*. This should be an error  
      object, but can be any JavaScript value.
    
 `makeNotifierKit()` makes an `{updater, notifier}` pair, while `makeSubscriptionKit()` makes a 
@@ -46,7 +46,8 @@ this package (JavaScript has no standard for producing iterations). For both pai
 ## Example
 
 Let’s look at an example using `makeSubscriptionKit()` There are three “characters”; Paula the 
-publisher, and Alice and Bob, who both want to consume the information but use different tools to do so.  
+publisher, and Alice and Bob, who are both subscribers but use different tools to consume the
+iteration.  
 
 You can use the JavaScript `AsyncIterable` API directly, but it is more convenient to either use:
 the JavaScript `for-await-of` syntax or
@@ -63,11 +64,11 @@ publication.updateState('b');
 publication.finish('done');
 ```
 
-Alice, the subscriber, consumes the iteration using the `for-of-await` loop. She can see the 
+Alice, the subscriber, consumes the iteration using the `for-await-of` loop. She can see the 
 non-final values and whether the iteration completes or fails. She can see a failure reason, 
 but the `for-await-of` syntax does not let her see the completion value `'done'`. While she 
 can write code that only executes after the loop finishes, the code won’t know if the completion 
-value was “done”, “finished”, or something else. This is a limitation of JavaScript's iteration, 
+value was “done”, “completed”, or something else. This is a limitation of JavaScript's iteration, 
 whether asynchronous or synchronous (as consumed by a `for-of` loop).
 
 ```js
@@ -76,9 +77,9 @@ const consume = async subscription => {
     for await (const val of subscription) {
       console.log('non-final', val);
     }
-    console.log('finished');
+    console.log('the iteration finished');
   } catch (reason) {
-    console.log('failed', reason);
+    console.log('the iteration failed', reason);
   }
 };
 consume(subscription);
@@ -102,9 +103,8 @@ observeIteration(subscription, observer);
 // finished done
 ```
 
-Note that SubscriptionKit is a *lossless conveyor* of non-final values. It conveys all of 
-an async iteration’s non-final values, as well as the termination (if not necessarily the 
-actual final value).
+Note that SubscriptionKit is a *lossless conveyor* of values. It conveys all of 
+an async iteration’s non-final values, as well as the final value. 
 
 On the other hand, NotifierKit is a *lossy conveyor* of non-final values, but does also 
 losslessly convey termination. Had the example above started with the following instead 
@@ -112,10 +112,9 @@ of using `makeSubscriberKit()`,
 ```js
 const { updater, notifier } = makeNotifierKit();
 ```
-...and had the different variables (`updater` and `notifier` replacing `publication` 
-and `subscription`) renamed through the rest of the code, the code is still correct. However, 
-Alice and Bob may each have missed either or both of the non-final values due to NotifierKit’s 
-lossy conveyor nature.
+The code is still correct (assuming we also rename `publication` to `updater` 
+and `subscription` to `notifier` in the rest of the code). However, Alice and Bob may 
+each have missed either or both of the non-final values due to NotifierKit’s lossy nature.
 
 ## Distributed Operation
 
@@ -142,7 +141,7 @@ local or remote promise for an AsyncIterable. `observeIteration` only sends it e
 using `E` (equivalent to the tildot syntax `~.`), and so doesn't care about these differences.
 
 While correct, Bob’s code is sub-optimal. Its distributed systems properties are not terrible, but 
-Bob does better using `getSharableSubscriptionInternals()` (provided by both NotifierKit and 
+Bob does better using `getSharableSubscriptionInternals()` (provided by
 SubscriptionKit). This lets Bob make a local AsyncIterable that coordinates better with producer 
 Paula's IterationObserver. 
 
@@ -173,7 +172,7 @@ const {
 observeIteration(subscription, adapterPublication);
 consume(adapterSubscription);
 ```
-This works when `subscription` is a reference to an AsyncIterable. If Alice only needs to 
+This works when `subscription` is a reference to any AsyncIterable. If Alice only needs to 
 consume in a lossy manner, she can use `makeNotifierKit()` instead, which still works 
 independently of what kind of AsyncIteratable `subscription` is a reference to.
 
@@ -196,23 +195,27 @@ An iteration’s *sampling subset*:
    * Once an original iteration value is available, either that value or a later one will 
       become available on each sampling subset *promptly*, i.e. eventually and without waiting   
       on any other manual steps. In other words, If a value 'a' is introduced on the producer end,  
-      then all clients either promptly see 'a', or won't see 'a', but will promptly see a successor. So 
-      if two values are added in quick succession, the first might not be visible to all consumers. 
-      But if a value is added and nothing follows quickly, then that value must be distributed 
+      then all clients either promptly see 'a', or won't see 'a' but will promptly see a successor. So 
+      if two values are added in succession, the first might not be visible to all consumers. 
+      But if a value is added and nothing follows for a while, then that value must be distributed 
       promptly to the consumers.
 
-If the most common, or your expected, consumer, only cares about the current state, then use a Notifier. 
-If some important consumers need to see all the values, a Subscription serves their needs. This is often
+If your consumers only care about more recent states, then use a NotifierKit. 
+To support consumers that need to see all the values, use a SubscriptionKit. This is often
 appropriate when the iteration represents a changing quantity, like a purse balance, and a consumer 
 updating a UI that doesn't care to hear about any older non-final values, as they are more stale. A 
 Notifier is appropriate even when this quantity changes quickly, as it only communicates non-final values
 at the rate they're being consumed, bounded by the network round-trip time. All other non-final values 
-are never communicated. The Notifier's lossy nature enables this optimization.
+are never communicated. The NotifierKit's lossy nature enables this optimization.
 
 ### SubscriptionKit
 
-Use the SubscriptionKit for pub-sub operations, where subscribers should see each published value starting with the starting point of their subscription. The producer can be described as the *publisher* and publishes iteration values with the `publication` using the
-`IterationObserver` API. The consumers can be described as *subscribers* and consume the published iteration values with the `subscription` using the `AsyncIterable` API. Since each published value will be sent to all subscribers, the SubscriptionKit should generally not be used with rapidly produced values.
+Use the SubscriptionKit for pub-sub operations, where subscribers should see each published value
+starting with the starting point of their subscription. The producer can be described as 
+the *publisher* and publishes iteration values with the `publication` using the
+`IterationObserver` API. The consumers can be described as *subscribers* and consume the published
+iteration values with the `subscription` using the `AsyncIterable` API. Since each published value
+will be sent to all subscribers, the SubscriptionKit should generally not be used with rapidly produced values.
 
 An iteration’s  *suffix subset* is defined by its *starting point* in the original iteration. 
   * A starting  point may be a non-final value or a termination. 
@@ -269,9 +272,9 @@ observeIteration(afterA, observer);
 ```
 ## Summary
 
-Data producers have to decide whether to publish losslessly or lossily. If the most common, or your expected, consumer,
-only cares about the current state, then use a Notifier. If some important consumers need to see all the values, a 
-Subscription serves their needs. This is often appropriate when the iteration represents a changing quantity
+Data producers have to decide whether to publish losslessly or lossily. If your consumers only care about more recent states,
+then use a NotifierKit. This is often appropriate when the iteration represents a changing quantity. If you want to support consumers
+that need to see all the values, then use a SubscriptionKit.
 
 Consumers can choose different ways of processing the data. In all cases, the publisher doesn't have to know the 
 consumers, and the consumers can't interfere with the producer or each other.
