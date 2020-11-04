@@ -13,7 +13,6 @@ export function buildRootObject(_vatPowers, vatParameters) {
   return harden({
     async bootstrap(vats, devices) {
       let primeContracts = false;
-      console.log(`@@ params = ${JSON.stringify(vatParameters)}`);
       for (const arg of vatParameters.argv) {
         if (arg === '--prime') {
           primeContracts = true;

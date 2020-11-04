@@ -1,2 +1,2 @@
 #!/bin/sh
-bin/runner --init --benchmark 100 --statsfile benchstats.json --config demo/exchangeBenchmark/swingset.json run -- --quiet --prime
+node --expose-gc -r esm bin/runner --init --benchmark 100 --statsfile benchstats.json --config demo/exchangeBenchmark/swingset.json run -- --quiet --prime
