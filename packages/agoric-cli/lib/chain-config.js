@@ -41,6 +41,18 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   const genesis = JSON.parse(genesisJson);
   const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
+  // We upgrade from export data.
+  const { app_state: exportedAppState } = exported;
+  if (exportedAppState) {
+    genesis.app_state = exportedAppState;
+  }
+
+  // Remove IBC and capability state.
+  // TODO: This needs much more support to preserve contract state
+  // between exports in order to be able to carry forward IBC conns.
+  delete genesis.app_state.capability;
+  delete genesis.app_state.ibc;
+
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
 
   // We scale this parameter according to our own block cadence, so
@@ -62,21 +74,14 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
 
-  // We upgrade from export data.
-  const { app_state: exportedAppState = {} } = exported;
-  for (const state of Object.keys(exportedAppState)) {
-    genesis.app_state[state] = exportedAppState[state];
-  }
-
-  // Remove IBC and capability state.
-  // TODO: This needs much more support to preserve contract state
-  // between exports in order to be able to carry forward IBC conns.
-  delete genesis.app_state.capability;
-  delete genesis.app_state.ibc;
-
   // Use the same consensus_params.
   if ('consensus_params' in exported) {
     genesis.consensus_params = exported.consensus_params;
+  }
+
+  // Give some continuity between chains.
+  if ('initial_height' in exported) {
+    genesis.initial_height = exported.initial_height;
   }
 
   // Should be equal to the block cadence in milliseconds, according to @melekes

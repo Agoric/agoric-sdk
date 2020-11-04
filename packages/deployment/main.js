@@ -312,15 +312,14 @@ show-config      display the client connection parameters
       const importFlags = [];
       const importFrom = subOpts['import-from'];
       if (importFrom) {
-        console.error(
-          chalk.redBright('FIXME: --import-from is not yet supported!'),
-        );
-        return 1;
+        if (importFrom.startsWith('node') && !importFrom.endsWith('/')) {
+          // Export from all nodes.
+          await needReMain(['play', 'export-genesis']);
+        }
+
         // Add the exported prefix if not absolute.
-        /*
         const absImportFrom = resolve(`${SETUP_HOME}/exported`, importFrom);
         importFlags.push(`--import-from=${absImportFrom}`);
-        */
       }
 
       if (subOpts.bump) {
@@ -422,9 +421,11 @@ show-config      display the client connection parameters
       await needReMain(['wait-for-any']);
 
       // Add the bootstrap validators.
-      await guardFile(`${COSMOS_DIR}/validators.stamp`, () =>
-        needReMain(['play', 'cosmos-validators']),
-      );
+      if (!importFrom) {
+        await guardFile(`${COSMOS_DIR}/validators.stamp`, () =>
+          needReMain(['play', 'cosmos-validators']),
+        );
+      }
 
       console.error(
         chalk.black.bgGreenBright.bold(
@@ -437,7 +438,6 @@ show-config      display the client connection parameters
 
     case 'dweb': {
       await inited();
-      const networkName = await trimReadFile('network.txt');
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
       process.stdout.write(`${chalk.yellow(cfg)}\n`);
 
