@@ -8,7 +8,7 @@ import './types';
 
 /**
  *
- * @param {AmonutMath} mathIn
+ * @param {AmountMath} mathIn
  * @param {AmountMath} mathOut
  * @param {Array<number>} priceList
  * @param {TimerService} timer
