@@ -42,7 +42,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // doesn't have a `want`.
 
     // Transfer the collateral to the repaySeat and remove the
-    // required Loan tokens. Any excess Loan tokens are kept by the repaySeat.
+    // required Loan amount. Any excess Loan amount is kept by the repaySeat.
     trade(
       zcf,
       {
@@ -60,7 +60,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
       },
     );
 
-    // Transfer the repaid loan tokens to the lender
+    // Transfer the repaid loan amount to the lender
     trade(
       zcf,
       {

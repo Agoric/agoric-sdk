@@ -4,7 +4,7 @@ import '../../../exported';
 import { assertProposalShape } from '../../contractSupport';
 import { makeBorrowInvitation } from './borrow';
 
-// The lender puts up the tokens to be loaned to the borrower, but has
+// The lender puts up the amount to be loaned to the borrower, but has
 // no further actions. The loan is ongoing until it is paid back
 // entirely or liquidated, at which point the lender receives a
 // payout. This means that the payout for the lender will be in
@@ -26,7 +26,7 @@ export const makeLendInvitation = (zcf, config) => {
 
     // If the exit rule was `waived`, a borrower would be able to hold
     // on to their invitation and effectively lock up the lender's
-    // Loan tokens forever. Thus, the lender must be able to exit on
+    // Loan forever. Thus, the lender must be able to exit on
     // demand until the borrowing occurs. When the borrowing occurs,
     // the collateral is moved to a special collateral seat to prevent
     // the lender from being able to exit with collateral before the

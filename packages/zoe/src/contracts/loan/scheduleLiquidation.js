@@ -6,13 +6,14 @@ import { E } from '@agoric/eventual-send';
 
 import { natSafeMath } from '../../contractSupport';
 
+import { liquidate } from './liquidate';
+
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {
   const {
     collateralSeat,
     lenderSeat,
     priceAuthority,
-    liquidate,
     liquidationPromiseKit,
     getDebt,
     mmr,
