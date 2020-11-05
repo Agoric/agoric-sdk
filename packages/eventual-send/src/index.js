@@ -1,5 +1,7 @@
 /* global harden */
 
+import { trackTurns } from './track-turns';
+
 const {
   defineProperties,
   getOwnPropertyDescriptors,

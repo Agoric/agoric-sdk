@@ -13,6 +13,8 @@
 
 import './types';
 
+const { freeze } = Object;
+
 /** @type {Assert} */
 const globalAssert = globalThis.assert;
 
@@ -66,5 +68,5 @@ function an(str) {
   }
   return `a ${str}`;
 }
-harden(an);
+freeze(an);
 export { an };
