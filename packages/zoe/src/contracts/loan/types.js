@@ -55,7 +55,7 @@
 /**
  * @typedef {LoanTerms & LenderSeatProperty} LoanConfigWithLender
  *
- * The loan now has a lenderSeat, which is added to the config.
+ * After the lender exercises their invitation, the lenderSeat is added to the config.
  */
 
 /**
