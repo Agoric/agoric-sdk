@@ -447,57 +447,55 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8')
     ).trimRight();
     let bestRpcAddr;
-    while (!bestRpcAddr) {
-      for (const rpcAddr of rpcAddrs) {
+    for (const rpcAddr of rpcAddrs) {
+      // eslint-disable-next-line no-await-in-loop
+      exitStatus = await keysSpawn([
+        'query',
+        'swingset',
+        'egress',
+        soloAddr,
+        `--chain-id=${CHAIN_ID}`,
+        `--node=tcp://${rpcAddr}`,
+      ]);
+      if (exitStatus) {
+        // We need to provision our address.
+        const capret = capture(
+          keysSpawn,
+          [
+            'tx',
+            'swingset',
+            'provision-one',
+            '--keyring-backend=test',
+            '--from=provision',
+            '--gas=auto',
+            '--gas-adjustment=1.2',
+            '--broadcast-mode=block',
+            '--yes',
+            `--chain-id=${CHAIN_ID}`,
+            `--node=tcp://${rpcAddr}`,
+            `local-solo-${portNum}`,
+            soloAddr,
+          ],
+          true,
+        );
         // eslint-disable-next-line no-await-in-loop
-        exitStatus = await keysSpawn([
-          'query',
-          'swingset',
-          'egress',
-          soloAddr,
-          `--chain-id=${CHAIN_ID}`,
-          `--node=tcp://${rpcAddr}`,
-        ]);
-        if (exitStatus) {
-          // We need to provision our address.
-          const capret = capture(
-            keysSpawn,
-            [
-              'tx',
-              'swingset',
-              'provision-one',
-              '--keyring-backend=test',
-              '--from=provision',
-              '--gas=auto',
-              '--gas-adjustment=1.2',
-              '--broadcast-mode=block',
-              '--yes',
-              `--chain-id=${CHAIN_ID}`,
-              `--node=tcp://${rpcAddr}`,
-              `local-solo-${portNum}`,
-              soloAddr,
-            ],
-            true,
-          );
-          // eslint-disable-next-line no-await-in-loop
-          exitStatus = await capret[0];
-          if (!exitStatus) {
-            const json = capret[1].replace(/^gas estimate: \d+$/m, '');
-            try {
-              const ret = JSON.parse(json);
-              if (ret.code !== 0) {
-                exitStatus = 2;
-              }
-            } catch (e) {
-              console.error(`Cannot parse JSON:`, e, json);
-              exitStatus = 99;
+        exitStatus = await capret[0];
+        if (!exitStatus) {
+          const json = capret[1].replace(/^gas estimate: \d+$/m, '');
+          try {
+            const ret = JSON.parse(json);
+            if (ret.code !== 0) {
+              exitStatus = 2;
             }
+          } catch (e) {
+            console.error(`Cannot parse JSON:`, e, json);
+            exitStatus = 99;
           }
         }
-        if (!exitStatus) {
-          bestRpcAddr = rpcAddr;
-          break;
-        }
+      }
+      if (!exitStatus) {
+        bestRpcAddr = rpcAddr;
+        break;
       }
     }
     if (exitStatus) {

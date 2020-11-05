@@ -107,29 +107,16 @@ export async function makeFakePriceAuthority(options) {
   /**
    * @param {Brand} brandIn
    * @param {Amount} amountOut
-   * @param {Timestamp} currentTime
+   * @param {Timestamp} quoteTime
    * @returns {PriceQuote}
    */
-  function priceOutQuote(brandIn, amountOut, currentTime) {
+  function priceOutQuote(brandIn, amountOut, quoteTime) {
     assertBrands(brandIn, amountOut.brand);
     const desiredValue = mathOut.getValue(amountOut);
     const price = currentPrice();
-    const quoteAmount = quoteMath.make(
-      harden([
-        {
-          amountIn: mathIn.make(natSafeMath.floorDivide(desiredValue, price)),
-          amountOut,
-          timer,
-          timestamp: currentTime,
-        },
-      ]),
-    );
-    const quote = harden({
-      quotePayment: E(quoteMint).mintPayment(quoteAmount),
-      quoteAmount,
-    });
-    updater.updateState(quote);
-    return quote;
+    // FIXME: Use natSafeMath.ceilDivide to calculate valueIn.
+    const valueIn = Math.ceil((desiredValue * unitValueIn) / price);
+    return priceInQuote(mathIn.make(valueIn), amountOut.brand, quoteTime);
   }
 
   function startTimer() {
