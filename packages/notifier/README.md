@@ -173,7 +173,7 @@ consume(adapterSubscription);
 ```
 This works when `subscription` is a reference to any AsyncIterable. If Alice only needs to 
 consume in a lossy manner, she can use `makeNotifierKit()` instead, which still works 
-independently of what kind of AsyncIteratable `subscription` is a reference to.
+independently of what kind of AsyncIterable `subscription` is a reference to.
 
 ## NotifierKit *vs* SubscriptionKit
 
@@ -232,7 +232,7 @@ point in that iteration and provides access to a suffix subset of that iteration
 point. The initial subscription created by the `makeSubscriptionKit()` call provides the entire iteration.
 Each subscription is a kind of `AsyncIterable` which produces any number of `AsyncIterators`, each of which
 advance independently starting with that subscription's starting point. These `AsyncIterators` 
-are `SubsciptionIterators` which also have a `subscribe()` method. Calling a SubscriptionIterator's `subscribe()` 
+are `SubsciptionIterators` which also have a `subscribe()` method. Calling a `SubscriptionIterator`'s `subscribe()` 
 method makes a `Subscription` whose starting point is that `SubscriptionIterator`'s current position at that time.
 
 Neither Alice nor Bob are good starting points to construct an example of `subscribe()` since their code uses
