@@ -308,15 +308,20 @@ export function makeVirtualObjectManager(
   }
 
   /**
-   * Make a new kind of virtual object.
+   * Define a new kind of virtual object.
    *
-   * @param {*} instanceMaker  A function of the form `instanceMaker(state)` that
-   *    will return a representative instance wrapped around the given state.
+   * @param {*} instanceKitMaker A function of the form
+   *    `instanceKitMaker(state)` that will return an "instance kit" describing
+   *    the parts of a new instance of the virtual object kind being defined.
+   *    The instance kit is an object with two properties: `init`, a function
+   *    that will initialize the state of the new instance, and `self`, an
+   *    object with methods implementing the new virtual object's behavior,
+   *    which will become the new virtual object instance's initial
+   *    representative.
    *
    * @returns {*} a maker function that can be called to manufacture new
    *    instance of this kind of object.  The parameters of the maker function
-   *    are those of the `initialize` method implemented in the representative
-   *    produced by the `instanceMaker` parameter.
+   *    are those of the `init` method provided by the `instanceKitMaker` function.
    *
    * Notes on theory of operation:
    *
@@ -372,7 +377,7 @@ export function makeVirtualObjectManager(
    * to the state is nulled out and the object holding the state becomes garbage
    * collectable.
    */
-  function makeKind(instanceMaker) {
+  function makeKind(instanceKitMaker) {
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
 
@@ -409,11 +414,11 @@ export function makeVirtualObjectManager(
       let instanceKit;
       if (initializing) {
         innerSelf.wrapData = wrapData;
-        instanceKit = harden(instanceMaker(innerSelf.rawData));
+        instanceKit = harden(instanceKitMaker(innerSelf.rawData));
       } else {
         const activeData = {};
         wrapData(activeData);
-        instanceKit = harden(instanceMaker(activeData));
+        instanceKit = harden(instanceKitMaker(activeData));
       }
       cache.remember(innerSelf);
       valToSlotTable.set(instanceKit.self, innerSelf.vobjID);
