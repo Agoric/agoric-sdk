@@ -15,7 +15,7 @@ A virtual object has a "kind", which defines what sort of behavior and state it 
 
 A vat can define new kinds of virtual object by calling the `makeKind` function provided as a vat global:
 
-`  makeKind(instanceKitMaker)`
+  `makeKind(instanceKitMaker)`
 
 The return value from `makeKind` is a maker function which the vat can use to create instances of the newly defined object kind.
 
@@ -62,7 +62,7 @@ This function defines a simple counter object with two properties in its state, 
 
 You'd define the corresponding virtual object kind with:
 
-`  const counterMaker = makeKind(counterKitMaker);`
+  `const counterMaker = makeKind(counterKitMaker);`
 
 and then use it like this:
 
@@ -94,7 +94,7 @@ Additional important details:
 
 - A virtual object's state may include references to other virtual objects. The latter objects will be persisted separately and only deserialized as needed, so "swapping in" a virtual object that references other virtual objects does not entail swapping in the entire associated object graph.
 
-- The in-memory manifestations of a virtual object (which we call its "representatives") are not necessarily (or even usually) `===` to each other, even when they represent the same object, since a new representative is created for each act of deserialization.  They do, however, all operate on the same state, so changes to the state made by a method call to one representative will be visible to the other representatives.
+- The in-memory manifestations of a virtual object (which we call its "representatives") are not necessarily (or even usually) `===` to each other, even when they represent the same object, since a new representative is created for each act of deserialization.  (Note: future implementations may remove this limitation by having at most one representative in memory for any given virtual object, at which point object identity, i.e., `===`, _will_ be usable for comparison.)  All representatives for a given object do, however, operate on the same underlying state, so changes to the state made by a method call to one representative will be visible to the other representatives.
 
 - The `self` object returned by the `instanceKitMaker` function _is_ the representative, so you can capture it inside any of the body methods (as well as the `init` function) in order to pass the virtual object to somebody else.  So you can write things like the following:
 
@@ -106,7 +106,7 @@ Additional important details:
       },
       ... // and so on
     };
-    function initialize(someParam) {
+    function init(someParam) {
       otherObject.doSomethingWithMe(self, someParam);
       state.foo = 47;
     },
@@ -118,7 +118,7 @@ Additional important details:
 
 The vat secondary storage system also includes a `makeWeakStore` function, which is identical in API to the `makeWeakStore` function provided by the `@agoric/store` package.  I.e., you call:
 
-`  const ws = makeWeakStore();`
+  `const ws = makeWeakStore();`
 
 to obtain a new weak store instance, which you can then access using the `has`, `init`, `set`, `get`, and `delete` methods just as you would if you had imported `makeWeakStore` from `@agoric/store`.
 
@@ -127,5 +127,7 @@ However, the vat secondary storage system's `makeWeakStore` augments the one pro
 - Weak store operations may use virtual object representatives as keys, and if you do this the corresponding underlying virtual object instance identities will be used for indexing rather than the object identities of the representative objects (i.e., two different representives for the same underlying virtual object will operate on the same weak store entry).
 
 - The values set for weak store entries will be saved persistently to secondary storage.  This means that such weak stores can grow to be very large without impacting the vat's memory footprint.
+
+Since weak store values are saved persistently, they must be serializable and will be hardened as soon as they are set.
 
 An important caveat is that the latter entries are currently not actually weak, in the sense that if a virtual object becomes unreferenced, any corresponding weak store entries will not go away.  This is not semantically visible to vat code, but does impact the disk storage footprint of the vat.  Since virtual object representatives may come and go depending on the working state of the vat, there is no graceful way to garbage collect the underlying objects or corresponding weak store entries; a future system which can do robust distributed garbage collection should eventually rectify this, but for now you should not rely on any such garbage collection happening.
