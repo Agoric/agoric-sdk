@@ -1,3 +1,7 @@
+// This file does not start with "test-" because it is useful as an
+// automated test. Rather, its purpose is just to run it to see what a
+// deep stack looks like.
+
 import '@agoric/install-ses';
 import test from 'ava';
 import { assert } from '@agoric/assert';
