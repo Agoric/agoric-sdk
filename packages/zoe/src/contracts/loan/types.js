@@ -178,6 +178,6 @@
  *
  * @property {() => Notifier<Amount>} getDebtNotifier
  *
- * Get notified when the current debt (an Amount in the Loan Brand) changes. This will
- * increase as interest is added.
+ * Get a Notifier that will be updated when the current debt (an Amount with the Loan
+ * Brand) changes. This will increase as interest is added.
  */
