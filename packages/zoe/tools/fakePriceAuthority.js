@@ -1,34 +1,46 @@
-// ts-check
-
-import '../exported';
-
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+// @ts-check
+import { makeIssuerKit, MathKind, makeLocalAmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
+
 import { natSafeMath } from '../src/contractSupport';
 
 import './types';
+import '../exported';
+
+/**
+ * @typedef {Object} FakePriceAuthorityOptions
+ * @property {AmountMath} mathIn
+ * @property {AmountMath} mathOut
+ * @property {Array<number>} priceList
+ * @property {ERef<TimerService>} timer
+ * @property {RelativeTime} [quoteInterval]
+ * @property {ERef<Mint>} [quoteMint]
+ * @property {Amount} [unitAmountIn]
+ */
 
 /**
  * TODO: multiple price Schedules for different goods, or for moving the price
  * in different directions?
  *
- * @param {AmountMath} mathIn
- * @param {AmountMath} mathOut
- * @param {Array<number>} priceList
- * @param {TimerService} timer
- * @param {RelativeTime} quoteInterval
+ * @param {FakePriceAuthorityOptions} options
+ * @returns {Promise<PriceAuthority>}
  */
-export function makeFakePriceAuthority(
-  mathIn,
-  mathOut,
-  priceList,
-  timer,
-  quoteInterval = 1,
-) {
+export async function makeFakePriceAuthority(options) {
+  const {
+    mathIn,
+    mathOut,
+    priceList,
+    timer,
+    unitAmountIn = mathIn.make(1),
+    quoteInterval = 1,
+    quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
+  } = options;
+
+  const unitValueIn = mathIn.getValue(unitAmountIn);
+
   const comparisonQueue = [];
 
   let currentPriceIndex = 0;
@@ -36,15 +48,6 @@ export function makeFakePriceAuthority(
   function currentPrice() {
     return priceList[currentPriceIndex % priceList.length];
   }
-
-  function* nextPrice() {
-    while (true) {
-      const result = currentPrice();
-      currentPriceIndex += 1;
-      yield result;
-    }
-  }
-  const nextPriceGenerator = nextPrice();
 
   /**
    * @param {Brand} brandIn
@@ -63,46 +66,55 @@ export function makeFakePriceAuthority(
     );
   };
 
-  const {
-    mint: quoteMint,
-    issuer: quoteIssuer,
-    amountMath: quote,
-  } = makeIssuerKit('quote', MathKind.SET);
+  const quoteIssuer = E(quoteMint).getIssuer();
+  const quoteMath = await makeLocalAmountMath(quoteIssuer);
+
+  /** @type {NotifierRecord<PriceQuote>} */
+  const { notifier, updater } = makeNotifierKit();
 
   /**
    *
    * @param {Amount} amountIn
    * @param {Brand} brandOut
    * @param {Timestamp} quoteTime
+   * @returns {PriceQuote}
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
     assertBrands(amountIn.brand, brandOut);
-    const quoteAmount = quote.make(
+    const quoteAmount = quoteMath.make(
       harden([
         {
           amountIn,
-          amountOut: mathOut.make(currentPrice() * amountIn.value),
+          amountOut: mathOut.make(
+            natSafeMath.floorDivide(
+              currentPrice() * amountIn.value,
+              unitValueIn,
+            ),
+          ),
           timer,
           timestamp: quoteTime,
         },
       ]),
     );
-    return harden({
-      quotePayment: quoteMint.mintPayment(quoteAmount),
+    const quote = harden({
+      quotePayment: E(quoteMint).mintPayment(quoteAmount),
       quoteAmount,
     });
+    updater.updateState(quote);
+    return quote;
   }
 
   /**
    * @param {Brand} brandIn
    * @param {Amount} amountOut
    * @param {Timestamp} currentTime
+   * @returns {PriceQuote}
    */
   function priceOutQuote(brandIn, amountOut, currentTime) {
     assertBrands(brandIn, amountOut.brand);
     const desiredValue = mathOut.getValue(amountOut);
     const price = currentPrice();
-    const quoteAmount = quote.make(
+    const quoteAmount = quoteMath.make(
       harden([
         {
           amountIn: mathIn.make(natSafeMath.floorDivide(desiredValue, price)),
@@ -112,17 +124,25 @@ export function makeFakePriceAuthority(
         },
       ]),
     );
-    return harden({
-      quotePayment: quoteMint.mintPayment(quoteAmount),
+    const quote = harden({
+      quotePayment: E(quoteMint).mintPayment(quoteAmount),
       quoteAmount,
     });
+    updater.updateState(quote);
+    return quote;
   }
 
   function startTimer() {
+    let firstTime = true;
     const handler = harden({
       wake: async t => {
-        nextPriceGenerator.next();
+        if (firstTime) {
+          firstTime = false;
+        } else {
+          currentPriceIndex += 1;
+        }
         for (const req of comparisonQueue) {
+          // eslint-disable-next-line no-await-in-loop
           const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
           const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
           if (req.operator(req.math, quotedOut)) {
@@ -160,7 +180,10 @@ export function makeFakePriceAuthority(
       assertBrands(brandIn, brandOut);
       return timer;
     },
-    // TODO(hibbert): getPriceNotifier
+    getPriceNotifier: async (brandIn, brandOut) => {
+      assertBrands(brandIn, brandOut);
+      return notifier;
+    },
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
       assertBrands(amountIn.brand, brandOut);
       const { promise, resolve } = makePromiseKit();
@@ -199,11 +222,6 @@ export function makeFakePriceAuthority(
     quoteWhenLT: (amountIn, amountOutLimit) => {
       const compareLT = (math, amount) => !math.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
-    },
-    // TODO: implement
-    getPriceNotifier: () => {
-      const { notifier } = makeNotifierKit();
-      return notifier;
     },
   };
   return priceAuthority;
