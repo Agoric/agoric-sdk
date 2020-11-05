@@ -18,6 +18,7 @@
  * @property {Petname} brandPetname
  * @property {Petname} pursePetname
  * @property {any} displayInfo
+ * @property {AmountMathKind} amountMathKind
  * @property {any} value
  * @property {any} currentAmountSlots
  * @property {any} currentAmount

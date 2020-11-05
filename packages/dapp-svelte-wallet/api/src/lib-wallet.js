@@ -177,38 +177,6 @@ export async function makeWallet({
         purse,
         brand,
         actions: {
-          parseValue(str) {
-            const { amountMath, displayInfo } = brandTable.getByBrand(brand);
-            assert.typeof(
-              str,
-              'string',
-              details`stringValue ${str} is not a string`,
-            );
-
-            if (amountMath.getAmountMathKind() !== MathKind.NAT) {
-              // Punt to JSON5 parsing.
-              return JSON5.parse(str);
-            }
-
-            // Parse the string as a number.
-            const { decimalPlaces = 0 } = displayInfo || {};
-
-            const match = str.match(/^0*(\d+)(\.(\d*[1-9])?0*)?$/);
-            assert(
-              match,
-              details`${str} must be a non-negative decimal number`,
-            );
-
-            const unitstr = match[1];
-            const dec0str = match[3] || '';
-            const dec0str0 = dec0str.padEnd(decimalPlaces, '0');
-            assert(
-              dec0str0.length <= decimalPlaces,
-              details`${str} exceeds ${decimalPlaces} decimal places`,
-            );
-
-            return parseInt(`${unitstr}${dec0str0}`, 10);
-          },
           // Send a value from this purse.
           async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
@@ -634,7 +602,11 @@ export async function makeWallet({
             const purse = getPurse(pursePetname);
             purseKeywordRecord[keyword] = purse;
             const brand = purseToBrand.get(purse);
-            const amount = { brand, value };
+            const amount = {
+              brand,
+              value,
+              displayInfo: brandTable.getByBrand(brand).displayInfo,
+            };
             return [keyword, amount];
           },
         ),

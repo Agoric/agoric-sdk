@@ -8,12 +8,13 @@
   import Button from "smelte/src/components/Button";
   import Dialog from "smelte/src/components/Dialog";
   import TextField from 'smelte/src/components/TextField';
+  import { RadioButton } from "smelte/src/components/RadioButton";
+  import Select from 'smelte/src/components/Select';
 
   import { contacts, purses } from './store';
   import DefaultButton from "../lib/DefaultButton.svelte";
   import CancelButton from "../lib/CancelButton.svelte";
-  import { RadioButton } from "smelte/src/components/RadioButton";
-  import Select from 'smelte/src/components/Select';
+  import { parseValue } from './display';
 
   export let source;
 
@@ -27,7 +28,7 @@
 
   const send = async destination => {
     try {
-      const parsed = await E(source.actions).parseValue(valueStr);
+      const parsed = parseValue(valueStr, source.displayInfo);
       showModal = false;
       await E(source.actions).send(destination.actions, parsed);
     } catch (e) {
