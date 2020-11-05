@@ -6,9 +6,13 @@ export {
   calcSecondaryRequired,
 } from './bondingCurves';
 
+export * from './priceAuthority';
+
 export { natSafeMath } from './safeMath';
 
 export { makeStateMachine } from './stateMachine';
+
+export * from './statistics';
 
 export {
   defaultAcceptanceMsg,
