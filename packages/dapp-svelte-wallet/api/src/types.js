@@ -17,6 +17,7 @@
  * @property {string=} depositBoardId
  * @property {Petname} brandPetname
  * @property {Petname} pursePetname
+ * @property {any} displayInfo
  * @property {any} value
  * @property {any} currentAmountSlots
  * @property {any} currentAmount

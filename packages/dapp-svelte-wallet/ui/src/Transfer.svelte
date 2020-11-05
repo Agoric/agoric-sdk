@@ -15,23 +15,21 @@
   import { RadioButton } from "smelte/src/components/RadioButton";
   import Select from 'smelte/src/components/Select';
 
-  import { selfContact } from './store';
-
   export let source;
 
   const name = `xfer-${Math.random()}`;
   const title = `Transfer from ${source.pursePetname}`;
   let showModal = false;
   let ownPurse = true;
-  let valueJSON = "0";
+  let valueStr = "0";
   let toPurse = source;
   let toContact = undefined;
 
   const send = async destination => {
     try {
-      const value = JSON.parse(valueJSON);
+      const parsed = await E(source.actions).parseValue(valueStr);
       showModal = false;
-      await E(source.actions).send(destination.actions, value);
+      await E(source.actions).send(destination.actions, parsed);
     } catch (e) {
       alert(`Cannot send: ${e}`);
     }
@@ -48,8 +46,8 @@
 </div>
 <Dialog bind:value={showModal}>
   <h2 slot="title">{title}</h2>
-  Current balance: <Amount amount={source.currentAmount} />
-  <TextField bind:value={valueJSON} label="Send amount" />
+  Current balance: <Amount amount={source.currentAmount} displayInfo={source.displayInfo} />
+  <TextField bind:value={valueStr} label="Send amount" />
 
   <table>
     <tr>

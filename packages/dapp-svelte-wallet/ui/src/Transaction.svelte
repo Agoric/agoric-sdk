@@ -99,16 +99,16 @@
 	<Debug title="Offer Detail" target={item} />
   </div>
   <div>
-    {#each Object.entries(give) as [role, { amount, pursePetname }], i}
+    {#each Object.entries(give) as [role, { amount, displayInfo, pursePetname }], i}
       <div>
         <h6>Give</h6>
-        <Amount {amount} /> from <Petname name={pursePetname} />
+        <Amount {amount} /> from <Petname name={pursePetname} {displayInfo} />
       </div>
     {/each}
-    {#each Object.entries(want) as [role, { amount, pursePetname }], i}
+    {#each Object.entries(want) as [role, { amount, displayInfo, pursePetname }], i}
       <div>
         <h6>Want</h6>
-        <Amount {amount} /> into <Petname name={pursePetname} />
+        <Amount {amount} /> into <Petname name={pursePetname} {displayInfo} />
       </div>
     {/each}
   </div> 

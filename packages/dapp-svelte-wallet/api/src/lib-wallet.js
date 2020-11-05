@@ -1,5 +1,7 @@
 // @ts-check
 
+import JSON5 from 'json5';
+
 import { assert, details, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
 import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
@@ -10,6 +12,7 @@ import { makeMarshal } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { MathKind } from '@agoric/ertp';
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
@@ -150,6 +153,8 @@ export async function makeWallet({
       // We have a depositId for the purse.
       depositBoardId = brandToDepositFacetId.get(brand);
     }
+
+    const issuerRecord = brandTable.getByBrand(brand);
     /**
      * @type {PursesJSONState}
      */
@@ -158,11 +163,13 @@ export async function makeWallet({
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
       pursePetname,
+      displayInfo: (issuerRecord && issuerRecord.displayInfo),
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
     };
     pursesState.set(purseKey, jstate);
+
     pursesFullState.set(
       purse,
       harden({
@@ -170,9 +177,42 @@ export async function makeWallet({
         purse,
         brand,
         actions: {
-          async send(receiverP, valueToSend) {
+          parseValue(str) {
+            const { amountMath, displayInfo } = brandTable.getByBrand(brand);
+            assert.typeof(
+              str,
+              'string',
+              details`stringValue ${str} is not a string`,
+            );
+
+            if (amountMath.getAmountMathKind() !== MathKind.NAT) {
+              // Punt to JSON5 parsing.
+              return JSON5.parse(str);
+            }
+
+            // Parse the string as a number.
+            const { decimalPlaces = 0 } = displayInfo || {};
+
+            const match = str.match(/^0*(\d+)(\.(\d*[1-9])?0*)?$/);
+            assert(
+              match,
+              details`${str} must be a non-negative decimal number`,
+            );
+
+            const unitstr = match[1];
+            const dec0str = match[3] || '';
+            const dec0str0 = dec0str.padEnd(decimalPlaces, '0');
+            assert(
+              dec0str0.length <= decimalPlaces,
+              details`${str} exceeds ${decimalPlaces} decimal places`,
+            );
+
+            return parseInt(`${unitstr}${dec0str0}`, 10);
+          },
+          // Send a value from this purse.
+          async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
-            const amount = amountMath.make(valueToSend);
+            const amount = amountMath.make(sendValue);
             const payment = await E(purse).withdraw(amount);
             try {
               await E(receiverP).receive(payment);
@@ -984,8 +1024,10 @@ export async function makeWallet({
           } else {
             purse = purseOrPetname;
           }
+          const brandRecord = brandTable.getByBrand(brand);
           paymentRecord = {
             ...paymentRecord,
+            ...brandRecord,
             status: 'pending',
           };
           updatePaymentRecord(paymentRecord);
@@ -995,6 +1037,7 @@ export async function makeWallet({
             ...paymentRecord,
             status: 'deposited',
             depositedAmount,
+            ...brandRecord,
           };
           updatePaymentRecord(paymentRecord);
           depositedPK.resolve(depositedAmount);

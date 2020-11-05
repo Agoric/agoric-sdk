@@ -33,7 +33,7 @@ export let details = true;
       <Petname name={item.pursePetname} />
     {/if}
     {#if !summaryLine || summaryLine === 2}
-      <Amount amount={item.currentAmount} />
+      <Amount amount={item.currentAmount} displayInfo={item.displayInfo} />
     {/if}
   </div>
   {/if}
