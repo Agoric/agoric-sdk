@@ -8,7 +8,7 @@ import { makeLendInvitation } from './lend';
 
 /**
  * Add collateral of a particular brand and get a loan of another
- * brand. Collateral (as known as margin) must be greater than the
+ * brand. Collateral (also known as margin) must be greater than the
  * loan value, at an amount set by the Maintenance Margin Requirement
  * (mmr) in the terms of the contract. The loan does not have a
  * distinct end time. Rather, if the value of the collateral changes
