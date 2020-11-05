@@ -22,8 +22,11 @@ export function buildRootObject(_vatPowers) {
     getMint: name => mintsAndMath.get(name).mint,
     getMints: issuerNames => issuerNames.map(api.getMint),
     // For example, issuerNameSingular might be 'moola', or 'simolean'
-    makeMintAndIssuer: issuerNameSingular => {
-      const { mint, issuer, amountMath } = makeIssuerKit(issuerNameSingular);
+    makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {
+      const { mint, issuer, amountMath } = makeIssuerKit(
+        issuerNameSingular,
+        ...issuerArgs,
+      );
       mintsAndMath.init(issuerNameSingular, { mint, amountMath });
       return issuer;
     },
