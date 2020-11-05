@@ -1,7 +1,5 @@
 // @ts-check
 
-import JSON5 from 'json5';
-
 import { assert, details, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
 import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
@@ -12,7 +10,6 @@ import { makeMarshal } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { MathKind } from '@agoric/ertp';
 import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
