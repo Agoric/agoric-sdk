@@ -12,7 +12,7 @@
     if (Array.isArray(v)) {
       return `${v.length}`;
     }
-    const { decimalPlaces = 0, significantDecimals = 0 } = displayInfo || {};
+    const { decimalPlaces = 0, conventionalDecimalPlaces = 0 } = displayInfo || {};
 
     const bScale = BigInt(10) ** BigInt(decimalPlaces);
     const bValue = BigInt(value);
@@ -23,7 +23,7 @@
     const dec0str0 = `${bDecimals}`.padStart(decimalPlaces, '0');
     const dec0str = dec0str0.replace(/0+$/, '');
 
-    const decstr = dec0str.padEnd(significantDecimals, '0');
+    const decstr = dec0str.padEnd(conventionalDecimalPlaces, '0');
     const unitstr = `${bUnits}`;
     if (!decstr) {
       // No decimals to display.

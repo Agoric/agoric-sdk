@@ -70,7 +70,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             issuerArgs: [
               undefined,
-              { decimalPlaces: 3, significantDecimals: 2 },
+              { decimalPlaces: 3, conventionalDecimalPlaces: 2 },
             ],
             mintValue: 20000,
             pursePetname: 'Local currency',

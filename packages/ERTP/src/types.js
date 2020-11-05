@@ -109,10 +109,13 @@
  *   should not be specified.
  *   The decimalPlaces property should be used for *display purposes only*. Any
  *   other use is an anti-pattern.
- * @property {number=} significantDecimals
+ * @property {number=} conventionalDecimalPlaces
  *   Tells the display software how many decimal places should be conventionally
- *   shown.  So, if `significantDecimals` is 2, and the rendered value according to
- *   `decimalPlaces` is '1.200', then this says to trim it to '1.20'.
+ *   shown.  So, if `conventionalDecimalPlaces` is 2, and the rendered value
+ *   according to `decimalPlaces` is '1.2000000', then this says for the display
+ *   software to prefer trimming it to '1.20'.  This doesn't necessarily imply
+ *   rounding, since somebody who has `1.199` may still need to be displayed
+ *   accurately as `1.199`.
  */
 
 /**

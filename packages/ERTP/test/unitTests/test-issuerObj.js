@@ -40,7 +40,7 @@ test('bad display info', t => {
   // @ts-ignore
   t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
     message:
-      'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces"]',
+      'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces","conventionalDecimalPlaces"]',
   });
 });
 
