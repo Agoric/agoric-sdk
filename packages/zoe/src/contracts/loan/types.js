@@ -155,7 +155,7 @@
  *
  * @property {PeriodAsyncIterable} periodAsyncIterable
  *
- *   The AsyncIterable to notify when a period has occurred
+ *   Used to tell the contract when a period has occurred
  *
  * @property {number} interestRate
  */
