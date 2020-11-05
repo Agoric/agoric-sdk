@@ -45,7 +45,8 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       const amountIn = quoteAmount.value[0].amountIn;
       // Only liquidate if this trigger is still pertinent.  Check
       // that the quote is for exactly the current amount of
-      // collateral
+      // collateral. If the amount is wrong, we will have already
+      // scheduled another liquidation for the right amount.
       const currentCollateral = collateralSeat.getAmountAllocated('Collateral');
       if (collateralMath.isEqual(amountIn, currentCollateral)) {
         liquidationPromiseKit.resolve(priceQuote);
