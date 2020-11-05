@@ -43,7 +43,7 @@ export const assertDisplayInfo = allegedDisplayInfo => {
   if (allegedDisplayInfo === undefined) {
     return;
   }
-  const displayInfoKeys = harden(['decimalPlaces']);
+  const displayInfoKeys = harden(['decimalPlaces', 'significantDecimals']);
   assertKeysAllowed(displayInfoKeys, allegedDisplayInfo);
 };
 
