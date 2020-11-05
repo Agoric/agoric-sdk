@@ -6,13 +6,15 @@
   export let amount;
   export let displayInfo;
 
+  const CONVENTIONAL_DECIMAL_PLACES = 2;
+
   // The amount gets updated. Make this dynamic
   $: ({ brand, value } = amount);
   const decimate = v => {
     if (Array.isArray(v)) {
       return `${v.length}`;
     }
-    const { decimalPlaces = 0, conventionalDecimalPlaces = 0 } = displayInfo || {};
+    const { decimalPlaces = 0 } = displayInfo || {};
 
     const bScale = BigInt(10) ** BigInt(decimalPlaces);
     const bValue = BigInt(value);
@@ -23,7 +25,7 @@
     const dec0str0 = `${bDecimals}`.padStart(decimalPlaces, '0');
     const dec0str = dec0str0.replace(/0+$/, '');
 
-    const decstr = dec0str.padEnd(conventionalDecimalPlaces, '0');
+    const decstr = dec0str.padEnd(CONVENTIONAL_DECIMAL_PLACES, '0');
     const unitstr = `${bUnits}`;
     if (!decstr) {
       // No decimals to display.

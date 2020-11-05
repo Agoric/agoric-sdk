@@ -68,10 +68,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         [
           'Testnet.$USD',
           {
-            issuerArgs: [
-              undefined,
-              { decimalPlaces: 3, conventionalDecimalPlaces: 2 },
-            ],
+            issuerArgs: [undefined, { decimalPlaces: 3 }],
             mintValue: 20000,
             pursePetname: 'Local currency',
           },
