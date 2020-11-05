@@ -8,11 +8,19 @@ import buildManualTimer from '../../tools/manualTimer';
 import { setup } from './setupBasicMints';
 import { makeFakePriceAuthority } from '../../tools/fakePriceAuthority';
 
+const makeTestPriceAuthority = (amountMaths, priceList, timer) =>
+  makeFakePriceAuthority(
+    amountMaths.get('moola'),
+    amountMaths.get('bucks'),
+    priceList,
+    timer,
+  );
+
 test('priceAuthority quoteAtTime', async t => {
   const { moola, bucks, amountMaths, brands } = setup();
   const bucksBrand = brands.get('bucks');
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 55],
     manualTimer,
@@ -41,7 +49,7 @@ test('priceAuthority quoteGiven', async t => {
   const { moola, amountMaths, brands, bucks } = setup();
   const bucksBrand = brands.get('bucks');
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 55],
     manualTimer,
@@ -58,7 +66,7 @@ test('priceAuthority quoteWanted', async t => {
   const { moola, bucks, amountMaths, brands } = setup();
   const moolaBrand = brands.get('moola');
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 55],
     manualTimer,
@@ -77,7 +85,7 @@ test('priceAuthority paired quotes', async t => {
   const moolaBrand = brands.get('moola');
   const bucksBrand = brands.get('bucks');
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 55],
     manualTimer,
@@ -101,7 +109,7 @@ test('priceAuthority paired quotes', async t => {
 test('priceAuthority quoteWhenGTE', async t => {
   const { moola, bucks, amountMaths } = setup();
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 30, 25, 40],
     manualTimer,
@@ -127,7 +135,7 @@ test('priceAuthority quoteWhenGTE', async t => {
 test('priceAuthority quoteWhenLT', async t => {
   const { moola, bucks, amountMaths } = setup();
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [40, 30, 29],
     manualTimer,
@@ -152,7 +160,7 @@ test('priceAuthority quoteWhenLT', async t => {
 test('priceAuthority quoteWhenGT', async t => {
   const { moola, bucks, amountMaths } = setup();
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [40, 30, 41],
     manualTimer,
@@ -177,7 +185,7 @@ test('priceAuthority quoteWhenGT', async t => {
 test('priceAuthority quoteWhenLTE', async t => {
   const { moola, bucks, amountMaths } = setup();
   const manualTimer = buildManualTimer(console.log, 0);
-  const priceAuthority = makeFakePriceAuthority(
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [40, 26, 50, 25],
     manualTimer,
