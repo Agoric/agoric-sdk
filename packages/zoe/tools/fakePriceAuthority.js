@@ -1,11 +1,27 @@
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { assert, details } from '@agoric/assert';
 import { natSafeMath } from '../src/contractSupport';
 
-export function makeFakePriceAuthority(amountMaths, priceList, timer) {
+import './types';
+
+/**
+ *
+ * @param {AmonutMath} mathIn
+ * @param {AmountMath} mathOut
+ * @param {Array<number>} priceList
+ * @param {TimerService} timer
+ * @param {RelativeTime} quoteInterval
+ */
+export function makeFakePriceAuthority(
+  mathIn,
+  mathOut,
+  priceList,
+  timer,
+  quoteInterval = 1,
+) {
   const comparisonQueue = [];
-  let comparisonQueueScheduled;
 
   let currentPriceIndex = 0;
 
@@ -22,18 +38,37 @@ export function makeFakePriceAuthority(amountMaths, priceList, timer) {
   }
   const nextPriceGenerator = nextPrice();
 
+  /**
+   * @param {Brand} brandIn
+   * @param {Brand} brandOut
+   */
+  const assertBrands = (brandIn, brandOut) => {
+    assert.equal(
+      brandIn,
+      mathIn.getBrand(),
+      details`${brandIn} is not an expected input brand`,
+    );
+    assert.equal(
+      brandOut,
+      mathOut.getBrand(),
+      details`${brandOut} is not an expected output brand`,
+    );
+  };
+
   const {
     mint: quoteMint,
     issuer: quoteIssuer,
     amountMath: quote,
   } = makeIssuerKit('quote', MathKind.SET);
 
-  function priceInQuote(
-    amountIn,
-    brandOut,
-    quoteTime = timer.getCurrentTimestamp(),
-  ) {
-    const mathOut = amountMaths.get(brandOut.getAllegedName());
+  /**
+   *
+   * @param {Amount} amountIn
+   * @param {Brand} brandOut
+   * @param {Timestamp} quoteTime
+   */
+  function priceInQuote(amountIn, brandOut, quoteTime) {
+    assertBrands(amountIn.brand, brandOut);
     const quoteAmount = quote.make(
       harden([
         {
@@ -50,9 +85,13 @@ export function makeFakePriceAuthority(amountMaths, priceList, timer) {
     });
   }
 
-  function priceOutQuote(currentTime, brandIn, amountOut) {
-    const mathIn = amountMaths.get(brandIn.getAllegedName());
-    const mathOut = amountMaths.get(amountOut.brand.getAllegedName());
+  /**
+   * @param {Brand} brandIn
+   * @param {Amount} amountOut
+   * @param {Timestamp} currentTime
+   */
+  function priceOutQuote(brandIn, amountOut, currentTime) {
+    assertBrands(brandIn, amountOut.brand);
     const desiredValue = mathOut.getValue(amountOut);
     const price = currentPrice();
     const quoteAmount = quote.make(
@@ -73,7 +112,7 @@ export function makeFakePriceAuthority(amountMaths, priceList, timer) {
 
   function startTimer() {
     const handler = harden({
-      wake: t => {
+      wake: async t => {
         nextPriceGenerator.next();
         for (const req of comparisonQueue) {
           const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
@@ -85,16 +124,17 @@ export function makeFakePriceAuthority(amountMaths, priceList, timer) {
         }
       },
     });
-    const repeater = E(timer).createRepeater(0, 1);
+    const repeater = E(timer).createRepeater(0, quoteInterval);
     E(repeater).schedule(handler);
   }
   startTimer();
 
   function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
+    assertBrands(amountIn.brand, amountOutLimit.brand);
     const promiseKit = makePromiseKit();
     comparisonQueue.push({
       operator,
-      math: amountMaths.get(amountOutLimit.brand.getAllegedName()),
+      math: mathOut,
       amountIn,
       brandOut: amountOutLimit.brand,
       resolve: promiseKit.resolve,
@@ -104,10 +144,17 @@ export function makeFakePriceAuthority(amountMaths, priceList, timer) {
 
   /** @type {PriceAuthority} */
   const priceAuthority = {
-    getQuoteIssuer: () => quoteIssuer,
-    getTimerService: () => timer,
+    getQuoteIssuer: (brandIn, brandOut) => {
+      assertBrands(brandIn, brandOut);
+      return quoteIssuer;
+    },
+    getTimerService: (brandIn, brandOut) => {
+      assertBrands(brandIn, brandOut);
+      return timer;
+    },
     // TODO(hibbert): getPriceNotifier
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
+      assertBrands(amountIn.brand, brandOut);
       const { promise, resolve } = makePromiseKit();
       E(timer).setWakeup(
         timeStamp,
@@ -119,9 +166,16 @@ export function makeFakePriceAuthority(amountMaths, priceList, timer) {
       );
       return promise;
     },
-    quoteGiven: (amountIn, brandOut) => priceInQuote(amountIn, brandOut),
-    quoteWanted: (brandIn, amountOut) =>
-      priceOutQuote(timer.getCurrentTimestamp(), brandIn, amountOut),
+    quoteGiven: async (amountIn, brandOut) => {
+      assertBrands(amountIn.brand, brandOut);
+      const timestamp = await E(timer).getCurrentTimestamp();
+      return priceInQuote(amountIn, brandOut, timestamp);
+    },
+    quoteWanted: async (brandIn, amountOut) => {
+      assertBrands(brandIn, amountOut.brand);
+      const timestamp = await E(timer).getCurrentTimestamp();
+      return priceOutQuote(brandIn, amountOut, timestamp);
+    },
     quoteWhenGTE: (amountIn, amountOutLimit) => {
       const compareGTE = (math, amount) => math.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareGTE, amountIn, amountOutLimit);
