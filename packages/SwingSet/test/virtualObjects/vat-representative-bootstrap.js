@@ -4,11 +4,12 @@ const stuff = makeWeakStore();
 let initialSelf;
 
 function makeThingInstance(state) {
+  function init(name) {
+    state.name = name;
+    // eslint-disable-next-line no-use-before-define
+    initialSelf = self;
+  }
   const self = {
-    initialize(name) {
-      state.name = name;
-      initialSelf = self;
-    },
     getName() {
       return state.name;
     },
@@ -19,24 +20,24 @@ function makeThingInstance(state) {
       return self;
     },
   };
-  return self;
+  return { init, self };
 }
 
 const thingMaker = makeKind(makeThingInstance);
 
 function makeZotInstance(state) {
+  function init(name, forceOverflow) {
+    state.name = name;
+    // enough instances to push me out of the cache
+    for (let i = 0; i < 5; i += 1) {
+      stuff.init(thingMaker(`${name}-subthing${i}`, 29));
+    }
+    if (forceOverflow) {
+      // eslint-disable-next-line no-use-before-define
+      zotMaker('recur', true);
+    }
+  }
   const self = {
-    initialize(name, forceOverflow) {
-      state.name = name;
-      // enough instances to push me out of the cache
-      for (let i = 0; i < 5; i += 1) {
-        stuff.init(thingMaker(`${name}-subthing${i}`, 29));
-      }
-      if (forceOverflow) {
-        // eslint-disable-next-line no-use-before-define
-        zotMaker('recur', true);
-      }
-    },
     getName() {
       return state.name;
     },
@@ -44,7 +45,7 @@ function makeZotInstance(state) {
       state.name = newName;
     },
   };
-  return self;
+  return { init, self };
 }
 
 const zotMaker = makeKind(makeZotInstance);

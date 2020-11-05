@@ -406,24 +406,22 @@ export function makeVirtualObjectManager(
         harden(target);
       }
 
-      let representative;
+      let instanceKit;
       if (initializing) {
         innerSelf.wrapData = wrapData;
-        representative = instanceMaker(innerSelf.rawData);
+        instanceKit = harden(instanceMaker(innerSelf.rawData));
       } else {
         const activeData = {};
         wrapData(activeData);
-        representative = instanceMaker(activeData);
-        delete representative.initialize;
-        harden(representative);
+        instanceKit = harden(instanceMaker(activeData));
       }
       cache.remember(innerSelf);
-      valToSlotTable.set(representative, innerSelf.vobjID);
-      return representative;
+      valToSlotTable.set(instanceKit.self, innerSelf.vobjID);
+      return instanceKit;
     }
 
     function reanimate(vobjID) {
-      return makeRepresentative(cache.lookup(vobjID), false);
+      return makeRepresentative(cache.lookup(vobjID), false).self;
     }
     kindTable.set(kindID, reanimate);
 
@@ -434,12 +432,11 @@ export function makeVirtualObjectManager(
       const initialData = {};
       initializationsInProgress.add(initialData);
       const innerSelf = { vobjID, rawData: initialData };
-      const initialRepresentative = makeRepresentative(innerSelf, true);
-      const initialize = initialRepresentative.initialize;
-      delete initialRepresentative.initialize;
-      harden(initialRepresentative);
-      if (initialize) {
-        initialize(...args);
+      // prettier-ignore
+      const { self: initialRepresentative, init } =
+        makeRepresentative(innerSelf, true);
+      if (init) {
+        init(...args);
       }
       initializationsInProgress.delete(initialData);
       const rawData = {};
