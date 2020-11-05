@@ -16,7 +16,7 @@ import './types';
  * TODO: multiple price Schedules for different goods, or for moving the price
  * in different directions?
  *
- * @param {AmonutMath} mathIn
+ * @param {AmountMath} mathIn
  * @param {AmountMath} mathOut
  * @param {Array<number>} priceList
  * @param {TimerService} timer
