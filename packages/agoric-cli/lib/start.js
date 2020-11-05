@@ -393,6 +393,31 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         );
     }
 
+    const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
+    process.stdout.write(`Waiting for local-chain-${CHAIN_PORT} to start...`);
+    let hasGci = false;
+    while (!hasGci) {
+      process.stdout.write('.');
+
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve, reject) => {
+        fs.stat(gciFile).then(
+          _ => {
+            hasGci = true;
+            resolve(true);
+          },
+          e => {
+            if (!e || e.code !== 'ENOENT') {
+              reject(e);
+            } else {
+              setTimeout(resolve, 3000);
+            }
+          },
+        );
+      });
+    }
+    process.stdout.write('\n');
+
     // Initialise the solo directory and key.
     if (!(await exists(agServer))) {
       const initArgs = [`--webport=${portNum}`];
@@ -422,55 +447,57 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8')
     ).trimRight();
     let bestRpcAddr;
-    for (const rpcAddr of rpcAddrs) {
-      // eslint-disable-next-line no-await-in-loop
-      exitStatus = await keysSpawn([
-        'query',
-        'swingset',
-        'egress',
-        soloAddr,
-        `--chain-id=${CHAIN_ID}`,
-        `--node=tcp://${rpcAddr}`,
-      ]);
-      if (exitStatus) {
-        // We need to provision our address.
-        const capret = capture(
-          keysSpawn,
-          [
-            'tx',
-            'swingset',
-            'provision-one',
-            '--keyring-backend=test',
-            '--from=provision',
-            '--gas=auto',
-            '--gas-adjustment=1.2',
-            '--broadcast-mode=block',
-            '--yes',
-            `--chain-id=${CHAIN_ID}`,
-            `--node=tcp://${rpcAddr}`,
-            `local-solo-${portNum}`,
-            soloAddr,
-          ],
-          true,
-        );
+    while (!bestRpcAddr) {
+      for (const rpcAddr of rpcAddrs) {
         // eslint-disable-next-line no-await-in-loop
-        exitStatus = await capret[0];
-        if (!exitStatus) {
-          const json = capret[1].replace(/^gas estimate: \d+$/m, '');
-          try {
-            const ret = JSON.parse(json);
-            if (ret.code !== 0) {
-              exitStatus = 2;
+        exitStatus = await keysSpawn([
+          'query',
+          'swingset',
+          'egress',
+          soloAddr,
+          `--chain-id=${CHAIN_ID}`,
+          `--node=tcp://${rpcAddr}`,
+        ]);
+        if (exitStatus) {
+          // We need to provision our address.
+          const capret = capture(
+            keysSpawn,
+            [
+              'tx',
+              'swingset',
+              'provision-one',
+              '--keyring-backend=test',
+              '--from=provision',
+              '--gas=auto',
+              '--gas-adjustment=1.2',
+              '--broadcast-mode=block',
+              '--yes',
+              `--chain-id=${CHAIN_ID}`,
+              `--node=tcp://${rpcAddr}`,
+              `local-solo-${portNum}`,
+              soloAddr,
+            ],
+            true,
+          );
+          // eslint-disable-next-line no-await-in-loop
+          exitStatus = await capret[0];
+          if (!exitStatus) {
+            const json = capret[1].replace(/^gas estimate: \d+$/m, '');
+            try {
+              const ret = JSON.parse(json);
+              if (ret.code !== 0) {
+                exitStatus = 2;
+              }
+            } catch (e) {
+              console.error(`Cannot parse JSON:`, e, json);
+              exitStatus = 99;
             }
-          } catch (e) {
-            console.error(`Cannot parse JSON:`, e, json);
-            exitStatus = 99;
           }
         }
-      }
-      if (!exitStatus) {
-        bestRpcAddr = rpcAddr;
-        break;
+        if (!exitStatus) {
+          bestRpcAddr = rpcAddr;
+          break;
+        }
       }
     }
     if (exitStatus) {
@@ -478,7 +505,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     // Connect to the chain.
-    const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
     const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
     exitStatus = await soloSpawn(
       ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, bestRpcAddr],
