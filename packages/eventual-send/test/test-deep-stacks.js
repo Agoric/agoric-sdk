@@ -9,6 +9,7 @@ test('deep-stacks when', t => {
   const q = E.when(p, v1 => E.when(v1 + 1, v2 => assert.equal(v2, 22)));
   r(33);
   return q.catch(reason => {
+    t.assert(reason instanceof Error);
     console.log('expected failure', reason);
   });
 });

@@ -1,24 +1,28 @@
-import test from 'tape';
-import '../../ses.js';
-import { E } from '../../src/error/deep-stacks.js';
+/** global harden */
 
-lockdown();
+import '@agoric/install-ses';
+import test from 'ava';
+import { assert } from '@agoric/assert';
+import { E } from './get-hp';
 
-const carol = harden({
+const { freeze } = Object;
+
+const carol = freeze({
   bar: () => assert.fail('Wut?'),
 });
 
-const bob = harden({
+const bob = freeze({
   foo: carolP => E(carolP).bar(),
 });
 
-const alice = harden({
+const alice = freeze({
   test: () => E(bob).foo(carol),
 });
 
 test('deep-stacks E', t => {
   const q = alice.test();
   return q.catch(reason => {
+    t.assert(reason instanceof Error);
     console.log('expected failure', reason);
   });
 });
