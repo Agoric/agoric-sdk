@@ -191,13 +191,7 @@ An iteration’s *sampling subset*:
    * May omit some of the original iteration’s non-final values. 
    * All sampling subset non-final values are in the original’s non-final values in the same order. 
    * The original and the subset both have the same termination. 
-   * Once an original iteration value is available, either that value or a later one will 
-      become available on each sampling subset *promptly*, i.e. eventually and without waiting   
-      on any other manual steps. In other words, If a value 'a' is introduced on the producer end,  
-      then all clients either promptly see 'a', or won't see 'a' but will promptly see a successor. So 
-      if two values are added in succession, the first might not be visible to all consumers. 
-      But if a value is added and nothing follows for a while, then that value must be distributed 
-      promptly to the consumers.
+   * Once an original iteration value is available, either that value or a later one will become available on each sampling subset *promptly*, i.e. eventually and without waiting on any other manual steps. In other words, If a value 'a' is introduced on the producer end, then all clients either promptly see 'a', or won't see 'a' but will promptly see a successor. So if two values are added in succession, the first might not be visible to all consumers. But if a value is added and nothing follows for a while, then that value must be distributed promptly to the consumers.
 
 If your consumers only care about more recent states, then use a NotifierKit. 
 To support consumers that need to see all the values, use a SubscriptionKit. This is often
