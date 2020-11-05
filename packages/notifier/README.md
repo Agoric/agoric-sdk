@@ -1,4 +1,4 @@
-# Notifiers and Subscriptions
+# NotifierKits and SubscriptionKits
 
 This package provides two similar abstractions for producing and consuming asynchronous value 
 sequences, the *NotifierKit* and the *SubscriptionKit*. Both let a service notify clients of state changes.
@@ -7,23 +7,18 @@ In JavaScript, async iterations are manipulated by `AsyncGenerators`, `AsyncIter
 For an introduction to these concepts and implementations, 
 see [here](https://javascript.info/async-iterators-generators).
 
-**Important**: In this doc, a *non-final value* is **not** a reference to JavaScript’s `final` keyword. 
-It means a value in a sequence *prior to* the terminal value, i.e., before the successful completion 
-value or the failure reason. The terminal value is also called the *final value*.
-
 For NotifierKit user documentation see 
 [here](https://agoric.com/documentation/distributed-programming.html#notifiers).
-The following doc more precisely describes the semantics of the Notifier and the Subscription, their distributed
-system properties, and what this means for when to use each one. 
+The following doc more precisely describes the semantics of the NotifierKit and the 
+SubscriptionKit, their distributed system properties, and what this means for when to use each one. 
 
 # Distributed Asynchronous Iteration
 
-An *async iteration* is an abstract sequence of values. It consists of any number of *non-final values* 
-in a fully ordered sequence revealed asynchronously over time. In other words, the values are fully 
-ordered compared to the time when they were provided to the publishing mechanism. In the case of 
-more than one publisher supplying values to the same sequence, the order is determined by when the 
-sequence receives the values. The point is that all consumers see the whole sequence, or a subset of 
-it, in the same order. 
+JavaScript's *async iterations* are manipulated by `AsyncGenerators`, `AsyncIterables`, and
+`AsyncIterators`.  An async iteration is an abstract sequence of values. It consists of any number
+of *non-final values* in a fully ordered sequence revealed asynchronously over time. In other words,
+the values have a full ordering, and all consumers see the whole sequence, or a subset of it, in the
+same order.
 
 The sequence may continue indefinitely or may terminate in one of two ways:
 
@@ -31,6 +26,10 @@ The sequence may continue indefinitely or may terminate in one of two ways:
     Which can be any JavaScript value.
   * *Fail*: The async iteration fails and a gives a reported final *reason*. This should be an error  
      object, but can be any JavaScript value.
+     
+Finish and Fail are *final values*. To avoid possible confusion, for iteration values in this doc,
+"final" and "non-final" just refer to position in an iteration, and not "final" in the sense of 
+the Java keyword or similar. 
    
 `makeNotifierKit()` makes an `{updater, notifier}` pair, while `makeSubscriptionKit()` makes a 
 similar `{publication, subscription}` pair. Each pair’s first element (`updater` or `publication`) 
@@ -75,11 +74,11 @@ whether asynchronous or synchronous (as consumed by a `for-of` loop).
 const consume = async subscription => {
   try {
     for await (const val of subscription) {
-      console.log('non-final', val);
+      console.log('non-final ', val);
     }
     console.log('the iteration finished');
   } catch (reason) {
-    console.log('the iteration failed', reason);
+    console.log('the iteration failed ', reason);
   }
 };
 consume(subscription);
