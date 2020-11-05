@@ -74,11 +74,11 @@ whether asynchronous or synchronous (as consumed by a `for-of` loop).
 const consume = async subscription => {
   try {
     for await (const val of subscription) {
-      console.log('non-final ', val);
+      console.log('non-final', val);
     }
     console.log('the iteration finished');
   } catch (reason) {
-    console.log('the iteration failed ', reason);
+    console.log('the iteration failed', reason);
   }
 };
 consume(subscription);
