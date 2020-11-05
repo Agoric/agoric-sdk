@@ -38,18 +38,21 @@ const makeIssuerTable = () => {
     initIssuer: async issuerP => {
       const brandP = E(issuerP).getBrand();
       const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
+      const displayInfoP = E(brandP).getDisplayInfo();
       const amountMathKindP = E(issuerP).getAmountMathKind();
-      /** @type {[Issuer,Brand,boolean,AmountMathKind]} */
+      /** @type {[Issuer,Brand,boolean,AmountMathKind,any]} */
       const [
         issuer,
         brand,
         brandIssuerMatch,
         amountMathKind,
+        displayInfo,
       ] = await Promise.all([
         issuerP,
         brandP,
         brandIssuerMatchP,
         amountMathKindP,
+        displayInfoP,
       ]);
       // AWAIT /////
 
@@ -61,7 +64,12 @@ const makeIssuerTable = () => {
         `issuer was using a brand which was not its own`,
       );
       const amountMath = makeAmountMath(brand, amountMathKind);
-      issuerTable.initIssuerByRecord({ brand, issuer, amountMath });
+      issuerTable.initIssuerByRecord({
+        brand,
+        issuer,
+        amountMath,
+        displayInfo,
+      });
       return issuerTable.getByBrand(brand);
     },
     initIssuerByRecord: issuerRecord => {
