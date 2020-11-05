@@ -3,11 +3,24 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import { natSafeMath } from '../src/contractSupport';
 
-// TODO: multiple price Schedules for different goods, or for moving the price
-// in different directions?
-export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
+export function makeFakePriceAuthority(amountMaths, priceList, timer) {
   const comparisonQueue = [];
   let comparisonQueueScheduled;
+
+  let currentPriceIndex = 0;
+
+  function currentPrice() {
+    return priceList[currentPriceIndex % priceList.length];
+  }
+
+  function* nextPrice() {
+    while (true) {
+      const result = currentPrice();
+      currentPriceIndex += 1;
+      yield result;
+    }
+  }
+  const nextPriceGenerator = nextPrice();
 
   const {
     mint: quoteMint,
@@ -15,28 +28,19 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
     amountMath: quote,
   } = makeIssuerKit('quote', MathKind.SET);
 
-  function priceFromSchedule(targetTime) {
-    let freshestPrice = 0;
-    let freshestTime = -1;
-    for (const tick of priceSchedule) {
-      if (tick.time > freshestTime && tick.time <= targetTime) {
-        freshestTime = tick.time;
-        freshestPrice = tick.price;
-      }
-    }
-    return freshestPrice;
-  }
-
-  function priceInQuote(currentTime, amountIn, brandOut) {
+  function priceInQuote(
+    amountIn,
+    brandOut,
+    quoteTime = timer.getCurrentTimestamp(),
+  ) {
     const mathOut = amountMaths.get(brandOut.getAllegedName());
-    const price = priceFromSchedule(currentTime);
     const quoteAmount = quote.make(
       harden([
         {
           amountIn,
-          amountOut: mathOut.make(price * amountIn.value),
+          amountOut: mathOut.make(currentPrice() * amountIn.value),
           timer,
-          timestamp: currentTime,
+          timestamp: quoteTime,
         },
       ]),
     );
@@ -50,7 +54,7 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
     const mathIn = amountMaths.get(brandIn.getAllegedName());
     const mathOut = amountMaths.get(amountOut.brand.getAllegedName());
     const desiredValue = mathOut.getValue(amountOut);
-    const price = priceFromSchedule(currentTime);
+    const price = currentPrice();
     const quoteAmount = quote.make(
       harden([
         {
@@ -68,16 +72,11 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
   }
 
   function startTimer() {
-    if (comparisonQueueScheduled) {
-      return;
-    }
-
-    comparisonQueueScheduled = true;
-    const repeater = E(timer).createRepeater(0, 1);
     const handler = harden({
       wake: t => {
+        nextPriceGenerator.next();
         for (const req of comparisonQueue) {
-          const priceQuote = priceInQuote(t, req.amountIn, req.brandOut);
+          const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
           const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
           if (req.operator(req.math, quotedOut)) {
             req.resolve(priceQuote);
@@ -86,12 +85,13 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
         }
       },
     });
+    const repeater = E(timer).createRepeater(0, 1);
     E(repeater).schedule(handler);
   }
+  startTimer();
 
   function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
     const promiseKit = makePromiseKit();
-    startTimer();
     comparisonQueue.push({
       operator,
       math: amountMaths.get(amountOutLimit.brand.getAllegedName()),
@@ -113,14 +113,13 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
         timeStamp,
         harden({
           wake: time => {
-            return resolve(priceInQuote(time, amountIn, brandOut));
+            return resolve(priceInQuote(amountIn, brandOut, time));
           },
         }),
       );
       return promise;
     },
-    quoteGiven: (amountIn, brandOut) =>
-      priceInQuote(timer.getCurrentTimestamp(), amountIn, brandOut),
+    quoteGiven: (amountIn, brandOut) => priceInQuote(amountIn, brandOut),
     quoteWanted: (brandIn, amountOut) =>
       priceOutQuote(timer.getCurrentTimestamp(), brandIn, amountOut),
     quoteWhenGTE: (amountIn, amountOutLimit) => {

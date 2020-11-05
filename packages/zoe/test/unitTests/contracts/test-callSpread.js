@@ -9,7 +9,7 @@ import buildManualTimer from '../../../tools/manualTimer';
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
 import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers';
-import { makeFakePriceAuthority } from '../../fakePriceAuthority';
+import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority';
 
 const callSpread = `${__dirname}/../../../src/contracts/callSpread`;
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
@@ -45,12 +45,7 @@ test('callSpread below Strike1', async t => {
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 1, price: 35 },
-      { time: 2, price: 15 },
-      { time: 3, price: 28 },
-    ],
+    [54, 20, 35, 15, 28],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -109,8 +104,8 @@ test('callSpread below Strike1', async t => {
     bucks(300),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -144,10 +139,7 @@ test('callSpread above Strike2', async t => {
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 55 },
-    ],
+    [20, 55],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -212,8 +204,8 @@ test('callSpread above Strike2', async t => {
     bucks(0),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -247,10 +239,7 @@ test('callSpread, mid-strike', async t => {
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 45 },
-    ],
+    [20, 45],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -314,8 +303,8 @@ test('callSpread, mid-strike', async t => {
     bucks(75),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -349,10 +338,7 @@ test('callSpread, late exercise', async t => {
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 45 },
-    ],
+    [20, 45],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -409,8 +395,8 @@ test('callSpread, late exercise', async t => {
     bucks(225),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
 
   const carolOptionSeat = await zoe.offer(carolShortOption);
   const carolPayout = await carolOptionSeat.getPayout('Collateral');
@@ -455,10 +441,7 @@ test('callSpread, sell options', async t => {
   const manualTimer = buildManualTimer(console.log, 1);
   const priceAuthority = makeFakePriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 45 },
-    ],
+    [20, 45],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -600,7 +583,7 @@ test('callSpread, sell options', async t => {
     bucks(75),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([aliceLong, aliceShort, bobDeposit, carolDeposit]);
 });
