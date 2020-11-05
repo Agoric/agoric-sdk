@@ -121,7 +121,7 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
     brands: { In: brandIn, Out: brandOut },
     issuers: { Quote: quoteIssuer },
     maths: { In: mathIn, Out: mathOut, Quote: quoteMath },
-    baseAmountIn = mathIn.make(1),
+    unitAmountIn = mathIn.make(1),
   } = await E(zoe).getTerms(aggregator.instance);
 
   const price1000 = await makeFakePriceOracle(t, 1000);
@@ -147,11 +147,11 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
     t.is(timer, oracleTimer);
     const valueOut = mathOut.getValue(amountOut);
 
-    t.deepEqual(amountIn, baseAmountIn);
+    t.deepEqual(amountIn, unitAmountIn);
 
     // Validate that we can get a recent amountOut explicitly as well.
     const { quotePayment: recentG } = await E(pa).quoteGiven(
-      baseAmountIn,
+      unitAmountIn,
       brandOut,
     );
     const recentGQ = await E(quoteIssuer).getAmountOf(recentG);

@@ -25,10 +25,10 @@ const start = async zcf => {
     timer: rawTimer,
     POLL_INTERVAL,
     maths: { In: mathIn, Out: mathOut },
-    baseAmountIn = mathIn.make(1),
+    unitAmountIn = mathIn.make(1),
   } = zcf.getTerms();
 
-  const baseValueIn = mathIn.getValue(baseAmountIn);
+  const unitIn = mathIn.getValue(unitAmountIn);
 
   /** @type {TimerService} */
   const timer = rawTimer;
@@ -43,7 +43,7 @@ const start = async zcf => {
   let priceAuthorityAdmin;
 
   /** @type {number} */
-  let lastValueOutForBaseValueIn;
+  let lastValueOutForUnitIn;
 
   /**
    *
@@ -101,11 +101,11 @@ const start = async zcf => {
      */
     function createQuote(priceQuery) {
       // Sniff the current baseValueOut.
-      const valueOutForBaseValueIn =
+      const valueOutForUnitIn =
         overrideValueOut === undefined
-          ? lastValueOutForBaseValueIn // Use the latest value.
+          ? lastValueOutForUnitIn // Use the latest value.
           : overrideValueOut; // Override the value.
-      if (valueOutForBaseValueIn === undefined) {
+      if (valueOutForUnitIn === undefined) {
         // We don't have a quote, so abort.
         return undefined;
       }
@@ -117,7 +117,7 @@ const start = async zcf => {
       const calcAmountOut = amountIn => {
         const valueIn = mathIn.getValue(amountIn);
         return mathOut.make(
-          floorDivide(multiply(valueIn, valueOutForBaseValueIn), baseValueIn),
+          floorDivide(multiply(valueIn, valueOutForUnitIn), unitIn),
         );
       };
 
@@ -128,7 +128,7 @@ const start = async zcf => {
       const calcAmountIn = amountOut => {
         const valueOut = mathOut.getValue(amountOut);
         return mathIn.make(
-          ceilDivide(multiply(valueOut, baseValueIn), valueOutForBaseValueIn),
+          ceilDivide(multiply(valueOut, unitIn), valueOutForUnitIn),
         );
       };
 
@@ -176,7 +176,7 @@ const start = async zcf => {
 
     /** @type {PriceDescription} */
     const quote = {
-      amountIn: baseAmountIn,
+      amountIn: unitAmountIn,
       amountOut,
       timer,
       timestamp,
@@ -198,7 +198,7 @@ const start = async zcf => {
 
     // Publish a new authenticated quote.
     publishedTimestamp = timestamp;
-    lastValueOutForBaseValueIn = median;
+    lastValueOutForUnitIn = median;
     updater.updateState(authenticatedQuote);
   };
 
