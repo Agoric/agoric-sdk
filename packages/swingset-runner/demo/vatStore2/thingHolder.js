@@ -6,32 +6,34 @@ const p = console.log;
 function build(name) {
   function makeThingInstance(state) {
     return {
-      initialize(label, companion, companionName) {
+      init(label, companion, companionName) {
         p(`${name}'s thing ${label}: initialize ${companionName}`);
         state.label = label;
         state.companion = companion;
         state.companionName = companionName;
         state.count = 0;
       },
-      echo(message) {
-        state.count += 1;
-        E(state.companion).say(message);
-      },
-      async changePartner(newCompanion) {
-        state.count += 1;
-        state.companion = newCompanion;
-        const companionName = await E(newCompanion).getName();
-        state.companionName = companionName;
-        p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
-      },
-      getLabel() {
-        const label = state.label;
-        p(`${name}'s thing ${label}: getLabel`);
-        state.count += 1;
-        return label;
-      },
-      report() {
-        p(`${name}'s thing ${state.label} invoked ${state.count} times`);
+      self: {
+        echo(message) {
+          state.count += 1;
+          E(state.companion).say(message);
+        },
+        async changePartner(newCompanion) {
+          state.count += 1;
+          state.companion = newCompanion;
+          const companionName = await E(newCompanion).getName();
+          state.companionName = companionName;
+          p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
+        },
+        getLabel() {
+          const label = state.label;
+          p(`${name}'s thing ${label}: getLabel`);
+          state.count += 1;
+          return label;
+        },
+        report() {
+          p(`${name}'s thing ${state.label} invoked ${state.count} times`);
+        },
       },
     };
   }

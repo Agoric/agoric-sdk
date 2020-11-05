@@ -76,52 +76,56 @@ function makeAllTheStuff(cacheSize) {
 
 function makeThingInstance(state) {
   return {
-    initialize(label = 'thing', counter = 0) {
+    init(label = 'thing', counter = 0) {
       state.counter = counter;
       state.label = label;
       state.resetCounter = 0;
     },
-    inc() {
-      state.counter += 1;
-      return state.counter;
-    },
-    reset(newStart) {
-      state.counter = newStart;
-      state.resetCounter += 1;
-      return state.resetCounter;
-    },
-    relabel(newLabel) {
-      state.label = newLabel;
-    },
-    get() {
-      return state.counter;
-    },
-    describe() {
-      return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+    self: {
+      inc() {
+        state.counter += 1;
+        return state.counter;
+      },
+      reset(newStart) {
+        state.counter = newStart;
+        state.resetCounter += 1;
+        return state.resetCounter;
+      },
+      relabel(newLabel) {
+        state.label = newLabel;
+      },
+      get() {
+        return state.counter;
+      },
+      describe() {
+        return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+      },
     },
   };
 }
 
 function makeZotInstance(state) {
   return {
-    initialize(arbitrary = 47, name = 'Bob', tag = 'say what?') {
+    init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
       state.arbitrary = arbitrary;
       state.name = name;
       state.tag = tag;
       state.count = 0;
     },
-    sayHello(msg) {
-      state.count += 1;
-      return `${msg} ${state.name}`;
-    },
-    rename(newName) {
-      state.name = newName;
-      state.count += 1;
-      return state.name;
-    },
-    getInfo() {
-      state.count += 1;
-      return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
+    self: {
+      sayHello(msg) {
+        state.count += 1;
+        return `${msg} ${state.name}`;
+      },
+      rename(newName) {
+        state.name = newName;
+        state.count += 1;
+        return state.name;
+      },
+      getInfo() {
+        state.count += 1;
+        return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
+      },
     },
   };
 }
