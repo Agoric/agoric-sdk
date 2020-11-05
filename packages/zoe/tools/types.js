@@ -46,7 +46,7 @@
 /**
  * @typedef {Object} PriceQuote
  * @property {Amount} quoteAmount Amount whose value is a PriceQuoteValue
- * @property {Payment} quotePayment The `quoteAmount` wrapped as a payment
+ * @property {ERef<Payment>} quotePayment The `quoteAmount` wrapped as a payment
  */
 
 /**
@@ -77,7 +77,11 @@
  * brandIn/brandOut pair
  *
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Notifier<PriceQuote>>}
- * getPriceNotifier
+ * getPriceNotifier be notified of the latest PriceQuotes for a given
+ * brandIn/brandOut pair.  Note that these are raw quotes, and not for a
+ * standardized amountIn or amountOut.  The fact that they are not scaled means
+ * that a PriceAuthority can implement quotes for both fungible and non-fungible
+ * brands.
  *
  * @property {(deadline: Timestamp, amountIn: Amount, brandOut: Brand) =>
  * Promise<PriceQuote>}
