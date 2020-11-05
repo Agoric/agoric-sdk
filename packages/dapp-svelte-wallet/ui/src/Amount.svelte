@@ -1,13 +1,14 @@
 <script>
   import Petname from "./Petname.svelte";
-  import Debug from "../lib/Debug.svelte";
   import Tooltip from "smelte/src/components/Tooltip";
+  import { stringifyValue } from './display';
 
   export let amount;
+  export let displayInfo;
 
   // The amount gets updated. Make this dynamic
   $: ({ brand, value } = amount);
-  const cardinality = v => typeof v === 'number' ? v : v.length;
+  const stringify = v => stringifyValue(v, displayInfo);
 </script>
 
 <style>
@@ -23,7 +24,7 @@
       <div slot="activator">
         <b class="dotted-underline">
           {value.length}
-          <Petname name={brand.petname} plural={value.length !== 1} />
+          <Petname name={brand.petname} />
         </b>
       </div>
       {#if brand.petname === 'zoe invite'}
@@ -37,8 +38,8 @@
     </Tooltip>
   {:else}
     <b>
-      {cardinality(value)}
-      <Petname name={brand.petname} plural={cardinality(value) !== 1} />
+      {stringify(value)}
+      <Petname name={brand.petname} />
     </b>
   {/if}
 

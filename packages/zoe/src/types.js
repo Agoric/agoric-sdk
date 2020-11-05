@@ -37,6 +37,7 @@
  * @property {Brand} brand
  * @property {Issuer} issuer
  * @property {AmountMath} amountMath
+ * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation
  * @typedef {Record<Keyword,AmountMath>} AmountMathKeywordRecord

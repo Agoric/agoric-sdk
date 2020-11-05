@@ -150,6 +150,8 @@ export async function makeWallet({
       // We have a depositId for the purse.
       depositBoardId = brandToDepositFacetId.get(brand);
     }
+
+    const issuerRecord = brandTable.getByBrand(brand);
     /**
      * @type {PursesJSONState}
      */
@@ -158,11 +160,13 @@ export async function makeWallet({
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
       pursePetname,
+      displayInfo: (issuerRecord && issuerRecord.displayInfo),
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
     };
     pursesState.set(purseKey, jstate);
+
     pursesFullState.set(
       purse,
       harden({
@@ -170,9 +174,10 @@ export async function makeWallet({
         purse,
         brand,
         actions: {
-          async send(receiverP, valueToSend) {
+          // Send a value from this purse.
+          async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
-            const amount = amountMath.make(valueToSend);
+            const amount = amountMath.make(sendValue);
             const payment = await E(purse).withdraw(amount);
             try {
               await E(receiverP).receive(payment);
@@ -594,7 +599,11 @@ export async function makeWallet({
             const purse = getPurse(pursePetname);
             purseKeywordRecord[keyword] = purse;
             const brand = purseToBrand.get(purse);
-            const amount = { brand, value };
+            const amount = {
+              brand,
+              value,
+              displayInfo: brandTable.getByBrand(brand).displayInfo,
+            };
             return [keyword, amount];
           },
         ),
@@ -984,8 +993,10 @@ export async function makeWallet({
           } else {
             purse = purseOrPetname;
           }
+          const brandRecord = brandTable.getByBrand(brand);
           paymentRecord = {
             ...paymentRecord,
+            ...brandRecord,
             status: 'pending',
           };
           updatePaymentRecord(paymentRecord);
@@ -995,6 +1006,7 @@ export async function makeWallet({
             ...paymentRecord,
             status: 'deposited',
             depositedAmount,
+            ...brandRecord,
           };
           updatePaymentRecord(paymentRecord);
           depositedPK.resolve(depositedAmount);

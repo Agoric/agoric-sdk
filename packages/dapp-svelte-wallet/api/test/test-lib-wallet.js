@@ -169,6 +169,9 @@ test('lib-wallet issuer and purse methods', async t => {
       {
         brandBoardId: '1667979430',
         depositBoardId: '604346717',
+        displayInfo: {
+          amountMathKind: 'set',
+        },
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [],
@@ -185,6 +188,9 @@ test('lib-wallet issuer and purse methods', async t => {
       {
         brandBoardId: '727995140',
         brandPetname: 'moola',
+        displayInfo: {
+          amountMathKind: 'nat',
+        },
         pursePetname: 'fun money',
         value: 0,
         currentAmountSlots: {
@@ -290,6 +296,10 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
+      displayInfo: {
+        amountMathKind: 'set',
+      },
+
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
       value: [
@@ -369,6 +379,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
+      displayInfo: {
+        amountMathKind: 'set',
+      },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
       value: [
@@ -424,7 +437,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     `inboxStateChangeLog with names`,
   );
 
-  console.log('EXPECTED ERROR ->>> "petname" not found');
   t.throws(
     () => wallet.getInstallation('whatever'),
     { message: /"petname" not found/ },
@@ -466,6 +478,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
+      displayInfo: {
+        amountMathKind: 'set',
+      },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
       value: [
@@ -632,6 +647,9 @@ test('lib-wallet offer methods', async t => {
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       brandPetname: 'zoe invite',
+      displayInfo: {
+        amountMathKind: 'set',
+      },
       pursePetname: 'Default Zoe invite purse',
       value: [],
       currentAmountSlots: {
@@ -651,6 +669,9 @@ test('lib-wallet offer methods', async t => {
     {
       brandBoardId: '1532665031',
       brandPetname: 'moola',
+      displayInfo: {
+        amountMathKind: 'nat',
+      },
       pursePetname: 'Fun budget',
       value: 100,
       currentAmountSlots: {

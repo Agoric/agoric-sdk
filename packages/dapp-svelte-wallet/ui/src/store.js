@@ -7,12 +7,14 @@ import { makeCapTPConnection } from './captp';
 
 // Fetch the access token from the window's URL.
 const accessTokenParams = `?${window.location.hash.slice(1)}`;
-// Now that we've captured it, clear out the access token from the URL bar.
-window.location.hash = '';
-window.addEventListener('hashchange', _ev => {
-  // Keep it clear.
+if (isProduction) {
+  // Now that we've captured it, clear out the access token from the URL bar.
   window.location.hash = '';
-});
+  window.addEventListener('hashchange', _ev => {
+    // Keep it clear.
+    window.location.hash = '';
+  });
+}
 const hasAccessToken = new URLSearchParams(accessTokenParams).has(
   'accessToken',
 );
