@@ -16,11 +16,9 @@ test('makeDehydrator', async t => {
   instanceHandleMapping.addPetname('simpleExchange', handle1);
   instanceHandleMapping.addPetname('atomicSwap', handle2);
   instanceHandleMapping.addPetname('automaticRefund', handle3);
-  console.log(`ERROR EXPECTED 'already has a petname' >>>>`);
   t.throws(() => instanceHandleMapping.addPetname('simpleExchange2', handle1), {
     message: /val \(an object\) already has a petname/,
   });
-  console.log(`ERROR EXPECTED 'petname simpleExchange is already in use' >>>>`);
   t.throws(
     () => instanceHandleMapping.addPetname('simpleExchange', harden({})),
     { message: /petname \(a string\) is already in use/ },
@@ -37,9 +35,6 @@ test('makeDehydrator', async t => {
     instanceHandleMapping.petnameToVal.get('whatever'),
     handle1,
     `renaming is successful going from val to petname`,
-  );
-  console.log(
-    `ERROR EXPECTED 'has not been previously named, would you like to add it instead?' >>>>`,
   );
   t.throws(
     () => instanceHandleMapping.renamePetname('new value', harden({})),
@@ -75,7 +70,6 @@ test('makeDehydrator', async t => {
     `'to be deleted' present going from val to petname`,
   );
   instanceHandleMapping.deletePetname('to be deleted');
-  console.log(`ERROR EXPECTED '"petname" not found' >>>>`);
   t.throws(
     () => instanceHandleMapping.petnameToVal.get('to be deleted'),
     { message: /"petname" not found/ },
