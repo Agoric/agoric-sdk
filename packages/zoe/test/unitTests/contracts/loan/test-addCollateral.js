@@ -8,7 +8,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
-import { makeFakePriceAuthority } from '../../../fakePriceAuthority';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
 import buildManualTimer from '../../../../tools/manualTimer';
 
 import {
@@ -35,21 +35,14 @@ test('makeAddCollateralInvitation', async t => {
 
   const { zcfSeat: lenderSeat } = await zcf.makeEmptySeatKit();
 
-  const amountMaths = new Map();
-  amountMaths.set(
-    collateralKit.brand.getAllegedName(),
-    collateralKit.amountMath,
-  );
-  amountMaths.set(loanKit.brand.getAllegedName(), loanKit.amountMath);
-
-  const priceSchedule = {};
   const timer = buildManualTimer(console.log);
 
-  const priceAuthority = makeFakePriceAuthority(
-    amountMaths,
-    priceSchedule,
+  const priceAuthority = makeFakePriceAuthority({
+    mathIn: collateralKit.amountMath,
+    mathOut: loanKit.amountMath,
+    priceList: [],
     timer,
-  );
+  });
 
   const autoswapInstance = {};
   const getDebt = () => loanKit.amountMath.make(100);

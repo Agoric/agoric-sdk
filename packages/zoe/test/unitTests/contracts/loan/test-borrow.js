@@ -41,10 +41,7 @@ const setupBorrow = async (maxLoanValue = 100) => {
   );
   const mmr = 150;
 
-  const priceList = [
-    2,
-    1,
-  ];
+  const priceList = [2, 1, 1, 1];
   const timer = buildManualTimer(console.log);
 
   const priceAuthority = await makeFakePriceAuthority({
@@ -269,7 +266,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: loanKit.amountMath.make(103),
           timer,
-          timestamp: 2,
+          timestamp: 3,
         },
       ]),
     ),
