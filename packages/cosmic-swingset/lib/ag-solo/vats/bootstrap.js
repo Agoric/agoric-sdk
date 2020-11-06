@@ -164,12 +164,18 @@ export function buildRootObject(vatPowers, vatParameters) {
       issuers.map(async (issuer, i) => {
         // Create priceAuthority pairs for centralIssuerIndex based on the
         // FakePriceAuthority.
-        console.error(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
+        console.debug(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
         const { tradesGivenCentral } = issuerNameToRecord.get(issuerNames[i]);
-        const tradesGivenThis = tradesGivenCentral.map(([a, b]) => [b, a]);
-        return Promise.all([
+        const tradesGivenOther =
+          centralIssuer !== issuer &&
+          tradesGivenCentral.map(([valueCentral, valueOther]) => [
+            valueOther,
+            valueCentral,
+          ]);
+        await Promise.all([
           makeFakePriceAuthority(centralIssuer, issuer, tradesGivenCentral),
-          makeFakePriceAuthority(issuer, centralIssuer, tradesGivenThis),
+          tradesGivenOther &&
+            makeFakePriceAuthority(issuer, centralIssuer, tradesGivenOther),
         ]);
       }),
     );
