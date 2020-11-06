@@ -41,7 +41,10 @@ export async function makeFakePriceAuthority(options) {
     quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
   } = options;
 
-  assert(tradeList || priceList, details`One of priceList or tradeList must be specified`);
+  assert(
+    tradeList || priceList,
+    details`One of priceList or tradeList must be specified`,
+  );
 
   const unitValueIn = mathIn.getValue(unitAmountIn);
 
@@ -91,7 +94,8 @@ export async function makeFakePriceAuthority(options) {
     mathIn.coerce(amountIn);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueOut = natSafeMath.floorDivide(
-      natSafeMath.multiply(amountIn.value, tradeValueOut), tradeValueIn
+      natSafeMath.multiply(amountIn.value, tradeValueOut),
+      tradeValueIn,
     );
     const quoteAmount = quoteMath.make(
       harden([
@@ -121,7 +125,10 @@ export async function makeFakePriceAuthority(options) {
     assertBrands(brandIn, amountOut.brand);
     const valueOut = mathOut.getValue(amountOut);
     const [tradeValueIn, tradeValueOut] = currentTrade();
-    const valueIn = natSafeMath.ceilDivide(natSafeMath.multiply(valueOut, tradeValueIn), tradeValueOut);
+    const valueIn = natSafeMath.ceilDivide(
+      natSafeMath.multiply(valueOut, tradeValueIn),
+      tradeValueOut,
+    );
     return priceInQuote(mathIn.make(valueIn), amountOut.brand, quoteTime);
   }
 

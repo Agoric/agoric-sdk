@@ -13,7 +13,8 @@ import '../exported';
 
 /**
  * @typedef {Object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand, force?: boolean)
+ * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand, force:
+ * boolean | undefined)
  * => Deleter} registerPriceAuthority Add a unique price authority for a given
  * pair
  */
