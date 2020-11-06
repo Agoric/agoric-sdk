@@ -17,6 +17,9 @@ import {
   checkDetails,
   performAddCollateral,
   checkDescription,
+  checkNoNewOffers,
+  checkPayouts,
+  makeAutoswapInstance,
 } from './helpers';
 
 import { makeFakePriceAuthority } from '../../../fakePriceAuthority';
@@ -28,7 +31,7 @@ import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
 
 const setupBorrow = async (maxLoanValue = 100) => {
   const setup = await setupLoanUnitTest();
-  const { zcf, loanKit, collateralKit } = setup;
+  const { zcf, loanKit, collateralKit, zoe } = setup;
   // Set up the lender seat
   const maxLoan = loanKit.amountMath.make(maxLoanValue);
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
@@ -57,10 +60,17 @@ const setupBorrow = async (maxLoanValue = 100) => {
     timer,
   );
 
-  const autoswapInstance = harden({});
+  const initialLiquidityKeywordRecord = {
+    Central: loanKit.amountMath.make(10000),
+    Secondary: collateralKit.amountMath.make(10000),
+  };
 
-  let liquidated = false;
-  const liquidate = (_zcf, _config, _expectedValue) => (liquidated = true);
+  const autoswapInstance = await makeAutoswapInstance(
+    zoe,
+    collateralKit,
+    loanKit,
+    initialLiquidityKeywordRecord,
+  );
 
   const {
     publication: periodUpdater,
@@ -74,7 +84,6 @@ const setupBorrow = async (maxLoanValue = 100) => {
     mmr,
     autoswapInstance,
     priceAuthority,
-    liquidate,
     makeCloseLoanInvitation,
     makeAddCollateralInvitation,
     periodAsyncIterable: periodSubscription,
@@ -87,7 +96,6 @@ const setupBorrow = async (maxLoanValue = 100) => {
     borrowInvitation,
     maxLoan,
     lenderUserSeat,
-    liquidated,
     periodUpdater,
     periodAsyncIterable: periodSubscription,
     timer,
@@ -218,12 +226,13 @@ test('borrow getLiquidationPromise', async t => {
 test('borrow, then addCollateral, then getLiquidationPromise', async t => {
   const {
     borrowFacet,
+    lenderUserSeat,
     collateralKit,
     loanKit,
     zoe,
-    liquidated,
     priceAuthority,
     timer,
+    zcf,
   } = await setupBorrowFacet(100);
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
@@ -270,8 +279,16 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
       ]),
     ),
   );
-
-  t.falsy(liquidated);
+  await checkPayouts(
+    t,
+    lenderUserSeat,
+    { Collateral: collateralKit, Loan: loanKit },
+    {
+      Collateral: collateralKit.amountMath.getEmpty(),
+      Loan: loanKit.amountMath.make(101),
+    },
+  );
+  await checkNoNewOffers(t, zcf);
 });
 
 test('getDebtNotifier with interest', async t => {
@@ -290,6 +307,7 @@ test('getDebtNotifier with interest', async t => {
   ).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
+  // @ts-ignore
   periodUpdater.updateState();
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
@@ -297,6 +315,7 @@ test('getDebtNotifier with interest', async t => {
   ).getUpdateSince(updateCount);
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
 
+  // @ts-ignore
   periodUpdater.updateState();
 
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(

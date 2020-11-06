@@ -77,13 +77,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     makeSwapInInvitation: () => zcf.makeInvitation(swapHandler, 'swap'),
   });
 
-  await doLiquidation(
-    zcf,
-    collateralSeat,
-    autoswapPublicFacetP,
-    lenderSeat,
-    price,
-  );
+  await doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat);
 
   // Ensure collateralSeat exited
   t.truthy(collateralSeat.hasExited());

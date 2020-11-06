@@ -12,6 +12,7 @@ export const doLiquidation = async (
   lenderSeat,
 ) => {
   const zoeService = zcf.getZoeService();
+  const loanMath = zcf.getTerms().maths.Loan;
 
   const allCollateral = collateralSeat.getAmountAllocated('Collateral');
 
@@ -25,11 +26,13 @@ export const doLiquidation = async (
 
   const proposal = harden({
     give: { In: allCollateral },
+    want: { Out: loanMath.getEmpty() },
   });
 
   const payments = harden({ In: collateralPayment });
 
   const swapInvitation = E(autoswapPublicFacetP).makeSwapInInvitation();
+
   const autoswapUserSeat = E(zoeService).offer(
     swapInvitation,
     proposal,

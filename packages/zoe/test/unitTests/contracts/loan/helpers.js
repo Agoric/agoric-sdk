@@ -4,7 +4,11 @@ import '../../../../exported';
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
 
+import bundleSource from '@agoric/bundle-source';
+
+import { makeLocalAmountMath } from '@agoric/ertp';
 import { setup } from '../../setupBasicMints';
+
 import { setupZCFTest } from '../../zcf/setupZcfTest';
 
 /**
@@ -72,6 +76,7 @@ export const checkPayouts = async (
     const kit = kitKeywordRecord[keyword];
     const amount = await kit.issuer.getAmountOf(paymentP);
     const expected = expectedKeywordRecord[keyword];
+    t.deepEqual(amount, expected);
     t.truthy(
       kit.amountMath.isEqual(amount, expected),
       `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
@@ -174,4 +179,48 @@ export const performAddCollateral = async (
     },
     'addCollateralSeat',
   );
+};
+
+export const makeAutoswapInstance = async (
+  zoe,
+  collateralKit,
+  loanKit,
+  initialLiquidityKeywordRecord,
+) => {
+  const autoswapRoot = `${__dirname}/../../../../src/contracts/autoswap`;
+
+  // Create autoswap installation and instance
+  const autoswapBundle = await bundleSource(autoswapRoot);
+  const autoswapInstallation = await E(zoe).install(autoswapBundle);
+
+  const { instance: autoswapInstance, publicFacet } = await E(
+    zoe,
+  ).startInstance(
+    autoswapInstallation,
+    harden({ Central: loanKit.issuer, Secondary: collateralKit.issuer }),
+  );
+
+  const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
+  const liquidityMath = await makeLocalAmountMath(liquidityIssuer);
+
+  const proposal = harden({
+    give: initialLiquidityKeywordRecord,
+    want: { Liquidity: liquidityMath.getEmpty() },
+  });
+  const payment = harden({
+    Central: loanKit.mint.mintPayment(initialLiquidityKeywordRecord.Central),
+    Secondary: collateralKit.mint.mintPayment(
+      initialLiquidityKeywordRecord.Secondary,
+    ),
+  });
+
+  const seat = await zoe.offer(
+    E(publicFacet).makeAddLiquidityInvitation(),
+    proposal,
+    payment,
+  );
+
+  await E(seat).getOfferResult();
+
+  return autoswapInstance;
 };
