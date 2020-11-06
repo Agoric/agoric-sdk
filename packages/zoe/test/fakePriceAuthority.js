@@ -1,10 +1,17 @@
+// ts-check
+
+import '../exported';
+
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { makeNotifierKit } from '@agoric/notifier';
+
 import { E } from '@agoric/eventual-send';
 import { natSafeMath } from '../src/contractSupport';
 
 // TODO: multiple price Schedules for different goods, or for moving the price
 // in different directions?
+
 export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
   const comparisonQueue = [];
   let comparisonQueueScheduled;
@@ -119,9 +126,9 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
       );
       return promise;
     },
-    quoteGiven: (amountIn, brandOut) =>
+    quoteGiven: async (amountIn, brandOut) =>
       priceInQuote(timer.getCurrentTimestamp(), amountIn, brandOut),
-    quoteWanted: (brandIn, amountOut) =>
+    quoteWanted: async (brandIn, amountOut) =>
       priceOutQuote(timer.getCurrentTimestamp(), brandIn, amountOut),
     quoteWhenGTE: (amountIn, amountOutLimit) => {
       const compareGTE = (math, amount) => math.isGTE(amount, amountOutLimit);
@@ -138,6 +145,11 @@ export function makeFakePriceAuthority(amountMaths, priceSchedule, timer) {
     quoteWhenLT: (amountIn, amountOutLimit) => {
       const compareLT = (math, amount) => !math.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
+    },
+    // TODO: implement
+    getPriceNotifier: () => {
+      const { notifier } = makeNotifierKit();
+      return notifier;
     },
   };
   return priceAuthority;
