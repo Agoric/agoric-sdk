@@ -151,7 +151,7 @@ export async function makeWallet({
       depositBoardId = brandToDepositFacetId.get(brand);
     }
 
-    const issuerRecord = brandTable.getByBrand(brand);
+    const issuerRecord = brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
     /**
      * @type {PursesJSONState}
      */
@@ -213,7 +213,7 @@ export async function makeWallet({
 
   const displayProposal = proposalTemplate => {
     const { want, give, exit = { onDemand: null } } = proposalTemplate;
-    const compile = pursePetnameValueKeywordRecord => {
+    const displayRecord = pursePetnameValueKeywordRecord => {
       if (pursePetnameValueKeywordRecord === undefined) {
         return undefined;
       }
@@ -228,7 +228,9 @@ export async function makeWallet({
               pursePetname = purseMapping.valToPetname.get(purse);
             }
 
-            amount = harden({ ...amount, brand: purseToBrand.get(purse) });
+            const brand = purseToBrand.get(purse);
+            const issuerRecord = brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
+            amount = harden({ ...amount, brand, displayInfo: issuerRecord && issuerRecord.displayInfo });
             const displayAmount = display(amount);
             return [
               keyword,
@@ -242,12 +244,12 @@ export async function makeWallet({
         ),
       );
     };
-    const proposal = {
-      want: compile(want),
-      give: compile(give),
+    const proposalForDisplay = {
+      want: displayRecord(want),
+      give: displayRecord(give),
       exit,
     };
-    return proposal;
+    return proposalForDisplay;
   };
 
   async function updateInboxState(id, offer, doPush = true) {
@@ -431,7 +433,16 @@ export async function makeWallet({
               return undefined;
             }),
         );
-      });
+      })
+      .finally(() =>
+        // Try reclaiming any payments that were left on the table.
+        keywords.map((keyword, i) => {
+          const purse = purseKeywordRecord[keyword];
+          if (purse && payments[i]) {
+            return addPayment(payments[i], purse);
+          }
+        })
+      );
 
     return { depositedP, seat };
   }
@@ -602,7 +613,6 @@ export async function makeWallet({
             const amount = {
               brand,
               value,
-              displayInfo: brandTable.getByBrand(brand).displayInfo,
             };
             return [keyword, amount];
           },
@@ -924,7 +934,6 @@ export async function makeWallet({
         })
         .catch(rejected);
     } catch (e) {
-      console.error('Have error', e);
       if (offer.actions) {
         E(offer.actions).error(offer, e);
       }
@@ -968,6 +977,17 @@ export async function makeWallet({
     const brand = await E(payment).getAllegedBrand();
     const depositedPK = makePromiseKit();
 
+    /** @type {ERef<boolean>} */
+    let isAliveP = true;
+    if (brandTable.hasByBrand(brand)) {
+      isAliveP = E(brandTable.getByBrand(brand).issuer).isLive(payment);
+    }
+    const isAlive = await isAliveP;
+    if (!isAlive) {
+      // Nothing to do.
+      return;
+    }
+
     /** @type {PaymentRecord} */
     let paymentRecord = {
       payment,
@@ -993,7 +1013,7 @@ export async function makeWallet({
           } else {
             purse = purseOrPetname;
           }
-          const brandRecord = brandTable.getByBrand(brand);
+          const brandRecord = brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
           paymentRecord = {
             ...paymentRecord,
             ...brandRecord,
