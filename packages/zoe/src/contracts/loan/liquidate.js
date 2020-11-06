@@ -57,9 +57,24 @@ export const doLiquidation = async (
       Loan: loanPayout,
     });
     await depositToSeat(zcf, lenderSeat, amounts, payoutPayments);
-    lenderSeat.exit();
-    collateralSeat.exit();
-    zcf.shutdown('your loan had to be liquidated');
+
+    const closeSuccessfully = () => {
+      console.log('close successful');
+      lenderSeat.exit();
+      collateralSeat.exit();
+      zcf.shutdown('your loan had to be liquidated');
+    };
+
+    const closeWithFailure = err => {
+      console.log('close failure');
+      lenderSeat.kickOut(err);
+      collateralSeat.kickOut(err);
+      zcf.shutdownWithFailure(err);
+    };
+
+    await E(autoswapUserSeat)
+      .getOfferResult()
+      .then(closeSuccessfully, closeWithFailure);
   };
 
   return E(autoswapUserSeat)

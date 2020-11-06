@@ -107,4 +107,66 @@ test('test doLiquidation with mocked autoswap', async t => {
   await checkNoNewOffers(t, zcf);
 });
 
-test.todo('test liquidate with real autoswap');
+test('test with malfunctioning autoswap', async t => {
+  const { zcf, collateralKit, loanKit } = await setupLoanUnitTest();
+  // Set up the lender seat. At this point the lender has nothing.
+  const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
+    zcf,
+    { give: {} },
+    {},
+  );
+
+  const collateral = collateralKit.amountMath.make(10);
+  const {
+    zcfSeat: collateralSeat,
+    userSeat: collateralUserSeat,
+  } = await makeSeatKit(
+    zcf,
+    { give: { Collateral: collateral } },
+    { Collateral: collateralKit.mint.mintPayment(collateral) },
+  );
+
+  // Create non-functioning autoswap.
+
+  // using the swapInvitation throws with message: 'Pool not
+  // initialized'
+  const swapHandler = _seat => {
+    throw Error('Pool not initialized');
+  };
+
+  const autoswapPublicFacetP = Promise.resolve({
+    makeSwapInInvitation: () => zcf.makeInvitation(swapHandler, 'swap'),
+  });
+
+  await doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat);
+
+  // Ensure collateralSeat exited
+  t.truthy(collateralSeat.hasExited());
+
+  // Ensure lender got payout of the collateral
+  await checkPayouts(
+    t,
+    lenderUserSeat,
+    { Loan: loanKit, Collateral: collateralKit },
+    {
+      Loan: loanKit.amountMath.getEmpty(),
+      Collateral: collateral,
+    },
+    'lenderSeat',
+  );
+
+  // Ensure nothing was left on collateralSeat
+  await checkPayouts(
+    t,
+    collateralUserSeat,
+    { Loan: loanKit, Collateral: collateralKit },
+    {
+      Loan: loanKit.amountMath.getEmpty(),
+      Collateral: collateralKit.amountMath.getEmpty(),
+    },
+    'collateralSeat',
+  );
+
+  // Ensure no further offers accepted
+  await checkNoNewOffers(t, zcf);
+});
