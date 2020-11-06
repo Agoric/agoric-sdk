@@ -1,4 +1,4 @@
-// ts-check
+// @ts-check
 
 import '../../../../exported';
 
@@ -22,7 +22,7 @@ import {
   makeAutoswapInstance,
 } from './helpers';
 
-import { makeFakePriceAuthority } from '../../../fakePriceAuthority';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
 import buildManualTimer from '../../../../tools/manualTimer';
 
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow';
@@ -41,24 +41,16 @@ const setupBorrow = async (maxLoanValue = 100) => {
   );
   const mmr = 150;
 
-  const amountMaths = new Map();
-  amountMaths.set(
-    collateralKit.brand.getAllegedName(),
-    collateralKit.amountMath,
-  );
-  amountMaths.set(loanKit.brand.getAllegedName(), loanKit.amountMath);
-
-  const priceSchedule = [
-    { time: 0, price: 2 },
-    { time: 1, price: 1 },
-  ];
+  const priceList = [2, 1, 1, 1];
   const timer = buildManualTimer(console.log);
 
-  const priceAuthority = makeFakePriceAuthority(
-    amountMaths,
-    priceSchedule,
+  const priceAuthority = await makeFakePriceAuthority({
+    mathIn: collateralKit.amountMath,
+    mathOut: loanKit.amountMath,
+    priceList,
     timer,
-  );
+  });
+  await timer.tick();
 
   const initialLiquidityKeywordRecord = {
     Central: loanKit.amountMath.make(10000),
@@ -192,7 +184,7 @@ test('borrow getLiquidationPromise', async t => {
 
   const collateralGiven = collateralKit.amountMath.make(100);
 
-  const quoteIssuer = await E(priceAuthority).getQuoteIssuer(
+  const quoteIssuer = E(priceAuthority).getQuoteIssuer(
     collateralKit.brand,
     loanKit.brand,
   );
@@ -214,7 +206,7 @@ test('borrow getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: loanKit.amountMath.make(100),
           timer,
-          timestamp: 1,
+          timestamp: 2,
         },
       ]),
     ),
@@ -274,7 +266,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: loanKit.amountMath.make(103),
           timer,
-          timestamp: 2,
+          timestamp: 3,
         },
       ]),
     ),

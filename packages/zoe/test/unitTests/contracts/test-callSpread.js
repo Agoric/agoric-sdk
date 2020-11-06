@@ -9,10 +9,18 @@ import buildManualTimer from '../../../tools/manualTimer';
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
 import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers';
-import { makeFakePriceAuthority } from '../../fakePriceAuthority';
+import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority';
 
 const callSpread = `${__dirname}/../../../src/contracts/callSpread`;
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
+
+const makeTestPriceAuthority = (amountMaths, priceList, timer) =>
+  makeFakePriceAuthority({
+    mathIn: amountMaths.get('simoleans'),
+    mathOut: amountMaths.get('moola'),
+    priceList,
+    timer,
+  });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
 // Value is in Moola. The price oracle takes an amount in Underlying, and
@@ -28,6 +36,7 @@ test('callSpread below Strike1', async t => {
     bucks,
     zoe,
     amountMaths,
+    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
 
@@ -42,15 +51,10 @@ test('callSpread below Strike1', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 1);
-  const priceAuthority = makeFakePriceAuthority(
+  const manualTimer = buildManualTimer(console.log, 0);
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 1, price: 35 },
-      { time: 2, price: 15 },
-      { time: 3, price: 28 },
-    ],
+    [54, 20, 35, 15, 28],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -69,7 +73,10 @@ test('callSpread below Strike1', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: priceAuthority.getQuoteIssuer(),
+    Quote: await E(priceAuthority).getQuoteIssuer(
+      brands.get('simoleans'),
+      brands.get('moola'),
+    ),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -109,8 +116,9 @@ test('callSpread below Strike1', async t => {
     bucks(300),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -127,6 +135,7 @@ test('callSpread above Strike2', async t => {
     bucks,
     zoe,
     amountMaths,
+    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
 
@@ -141,13 +150,10 @@ test('callSpread above Strike2', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 1);
-  const priceAuthority = makeFakePriceAuthority(
+  const manualTimer = buildManualTimer(console.log, 0);
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 55 },
-    ],
+    [20, 55],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -166,7 +172,10 @@ test('callSpread above Strike2', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: priceAuthority.getQuoteIssuer(),
+    Quote: await E(priceAuthority).getQuoteIssuer(
+      brands.get('simoleans'),
+      brands.get('moola'),
+    ),
   });
 
   const { creatorInvitation } = await zoe.startInstance(
@@ -212,8 +221,9 @@ test('callSpread above Strike2', async t => {
     bucks(0),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -230,6 +240,7 @@ test('callSpread, mid-strike', async t => {
     bucks,
     zoe,
     amountMaths,
+    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
 
@@ -244,13 +255,10 @@ test('callSpread, mid-strike', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 1);
-  const priceAuthority = makeFakePriceAuthority(
+  const manualTimer = buildManualTimer(console.log, 0);
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 45 },
-    ],
+    [20, 45],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -268,7 +276,10 @@ test('callSpread, mid-strike', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: priceAuthority.getQuoteIssuer(),
+    Quote: await E(priceAuthority).getQuoteIssuer(
+      brands.get('simoleans'),
+      brands.get('moola'),
+    ),
   });
 
   const { creatorInvitation } = await zoe.startInstance(
@@ -314,8 +325,9 @@ test('callSpread, mid-strike', async t => {
     bucks(75),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([bobDeposit, carolDeposit]);
 });
 
@@ -332,6 +344,7 @@ test('callSpread, late exercise', async t => {
     bucks,
     zoe,
     amountMaths,
+    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
 
@@ -346,13 +359,10 @@ test('callSpread, late exercise', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 1);
-  const priceAuthority = makeFakePriceAuthority(
+  const manualTimer = buildManualTimer(console.log, 0);
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 45 },
-    ],
+    [20, 45],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -371,7 +381,10 @@ test('callSpread, late exercise', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: priceAuthority.getQuoteIssuer(),
+    Quote: await E(priceAuthority).getQuoteIssuer(
+      brands.get('simoleans'),
+      brands.get('moola'),
+    ),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -409,8 +422,9 @@ test('callSpread, late exercise', async t => {
     bucks(225),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
 
   const carolOptionSeat = await zoe.offer(carolShortOption);
   const carolPayout = await carolOptionSeat.getPayout('Collateral');
@@ -434,6 +448,7 @@ test('callSpread, sell options', async t => {
     bucks,
     zoe,
     amountMaths,
+    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, callSpread);
   const invitationIssuer = await E(zoe).getInvitationIssuer();
@@ -452,13 +467,10 @@ test('callSpread, sell options', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(100));
 
-  const manualTimer = buildManualTimer(console.log, 1);
-  const priceAuthority = makeFakePriceAuthority(
+  const manualTimer = buildManualTimer(console.log, 0);
+  const priceAuthority = makeTestPriceAuthority(
     amountMaths,
-    [
-      { time: 0, price: 20 },
-      { time: 3, price: 45 },
-    ],
+    [20, 45],
     manualTimer,
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
@@ -477,7 +489,10 @@ test('callSpread, sell options', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: priceAuthority.getQuoteIssuer(),
+    Quote: await E(priceAuthority).getQuoteIssuer(
+      brands.get('simoleans'),
+      brands.get('moola'),
+    ),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -600,7 +615,8 @@ test('callSpread, sell options', async t => {
     bucks(75),
   );
 
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
+  await E(manualTimer).tick();
   await Promise.all([aliceLong, aliceShort, bobDeposit, carolDeposit]);
 });

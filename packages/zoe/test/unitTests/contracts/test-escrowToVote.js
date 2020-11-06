@@ -73,7 +73,6 @@ test('zoe - escrowToVote', async t => {
       `voter1 gets everything she escrowed back`,
     );
 
-    console.log('EXPECTED ERROR ->>>');
     t.throws(
       () => voter.vote('NO'),
       { message: /the voter seat has exited/ },
@@ -96,7 +95,6 @@ test('zoe - escrowToVote', async t => {
     const seat = await E(zoe).offer(invitation, proposal, payments);
 
     const voter = await E(seat).getOfferResult();
-    console.log('EXPECTED ERROR ->>>');
     await t.throwsAsync(
       () => E(voter).vote('NOT A VALID ANSWER'),
       { message: /the answer "NOT A VALID ANSWER" was not 'YES' or 'NO'/ },
@@ -120,7 +118,6 @@ test('zoe - escrowToVote', async t => {
       `voter2 gets everything she escrowed back`,
     );
 
-    console.log('EXPECTED ERROR ->>>');
     t.throws(
       () => voter.vote('NO'),
       { message: /the voter seat has exited/ },
@@ -163,7 +160,6 @@ test('zoe - escrowToVote', async t => {
       `voter3 gets everything she escrowed back`,
     );
 
-    console.log('EXPECTED ERROR ->>>');
     t.throws(
       () => voter.vote('NO'),
       { message: /the voter seat has exited/ },

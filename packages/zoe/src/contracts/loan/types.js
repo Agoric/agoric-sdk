@@ -158,6 +158,21 @@
  *   Used to tell the contract when a period has occurred
  *
  * @property {number} interestRate
+ *
+ * @property {ContractFacet} zcf
+ * @property {ConfigMinusGetDebt} configMinusGetDebt
+ */
+
+/**
+ * @typedef {Object} ConfigMinusGetDebt
+ * @property {ZCFSeat} collateralSeat
+ * @property {PromiseRecord<any>} liquidationPromiseKit
+ * @property {number} [mmr]
+ * @property {InstanceHandle} autoswapInstance
+ * @property {PriceAuthority} priceAuthority
+ * @property {AsyncIterable<undefined>} periodAsyncIterable
+ * @property {number} interestRate
+ * @property {ZCFSeat} lenderSeat
  */
 
 /**

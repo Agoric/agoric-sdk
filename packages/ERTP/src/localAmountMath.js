@@ -2,7 +2,7 @@ import { E } from '@agoric/eventual-send';
 import { makeAmountMath } from './amountMath';
 
 /**
- * @param {Issuer} issuer
+ * @param {ERef<Issuer>} issuer
  * @returns {Promise<AmountMath>}
  */
 const makeLocalAmountMath = async issuer => {

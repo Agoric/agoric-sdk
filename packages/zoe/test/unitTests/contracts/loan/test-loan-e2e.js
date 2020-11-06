@@ -12,7 +12,7 @@ import { makeSubscriptionKit } from '@agoric/notifier';
 
 import { checkDetails, checkPayout } from './helpers';
 import { setup } from '../../setupBasicMints';
-import { makeFakePriceAuthority } from '../../../fakePriceAuthority';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
 import buildManualTimer from '../../../../tools/manualTimer';
 
 const loanRoot = `${__dirname}/../../../../src/contracts/loan/`;
@@ -47,21 +47,14 @@ test('loan - lend - exit before borrow', async t => {
     Loan: loanKit.issuer,
   });
 
-  const amountMaths = new Map();
-  amountMaths.set(
-    collateralKit.brand.getAllegedName(),
-    collateralKit.amountMath,
-  );
-  amountMaths.set(loanKit.brand.getAllegedName(), loanKit.amountMath);
-
-  const priceSchedule = {};
   const timer = buildManualTimer(console.log);
 
-  const priceAuthority = makeFakePriceAuthority(
-    amountMaths,
-    priceSchedule,
+  const priceAuthority = makeFakePriceAuthority({
+    mathIn: collateralKit.amountMath,
+    mathOut: loanKit.amountMath,
+    priceList: [],
     timer,
-  );
+  });
 
   const { subscription: periodAsyncIterable } = makeSubscriptionKit();
 
