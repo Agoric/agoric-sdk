@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.7.3-dev.0...@agoric/ertp@0.8.0) (2020-11-06)
+
+
+### Bug Fixes
+
+* lexical balance simplifies issuer code ([#1889](https://github.com/Agoric/agoric-sdk/issues/1889)) ([224b39a](https://github.com/Agoric/agoric-sdk/commit/224b39add05ae3c10c1b1dc18b4ec71f9117e8ea))
+* somewhat tighter test for plain empty object ([#1981](https://github.com/Agoric/agoric-sdk/issues/1981)) ([eff15a4](https://github.com/Agoric/agoric-sdk/commit/eff15a4056d27623c1e9bce0f53dc4022bf78345))
+
+
+### Features
+
+* add a decimals parameter, and decimals method to brand ([241d0aa](https://github.com/Agoric/agoric-sdk/commit/241d0aa6fa20bd2618f362e6f1781f5c92a844b5))
+* convert the fakePriceAuthority to a PlayerPiano model ([#1985](https://github.com/Agoric/agoric-sdk/issues/1985)) ([cd7ebd8](https://github.com/Agoric/agoric-sdk/commit/cd7ebd86b1f37655b9213786ab6828dd6c7c098a))
+
+
+
+
+
 ## [0.7.3-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.7.2...@agoric/ertp@0.7.3-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/ertp
