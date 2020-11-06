@@ -158,7 +158,7 @@
  *   Used to tell the contract when a period has occurred
  *
  * @property {number} interestRate
- * 
+ *
  * @property {ContractFacet} zcf
  * @property {ConfigMinusGetDebt} configMinusGetDebt
  */
