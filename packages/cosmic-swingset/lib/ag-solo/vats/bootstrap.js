@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { allComparable } from '@agoric/same-structure';
 import {
   makeLoopbackProtocolHandler,
@@ -12,6 +13,8 @@ import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 
 const NUM_IBC_PORTS = 3;
+const CENTRAL_ISSUER_NAME = 'Testnet.$USD';
+const QUOTE_INTERVAL = 30;
 
 console.debug(`loading bootstrap.js`);
 
@@ -60,17 +63,19 @@ export function buildRootObject(vatPowers, vatParameters) {
      * @typedef {Object} IssuerRecord
      * @property {Array<any>} [issuerArgs]
      * @property {string} pursePetname
-     * @property {any} mintValue
+     * @property {number} mintValue
+     * @property {Array<[number, number]>} [fakeTradesGivenCentral]
      */
     /** @type {Map<string, IssuerRecord>} */
     const issuerNameToRecord = new Map(
       harden([
         [
-          'Testnet.$USD',
+          CENTRAL_ISSUER_NAME,
           {
             issuerArgs: [undefined, { decimalPlaces: 3 }],
             mintValue: 20000,
             pursePetname: 'Local currency',
+            fakeTradesGivenCentral: [[1, 1]],
           },
         ],
         [
@@ -79,6 +84,11 @@ export function buildRootObject(vatPowers, vatParameters) {
             issuerArgs: [undefined, { decimalPlaces: 6 }],
             mintValue: 7 * 10 ** 6,
             pursePetname: 'Oracle fee',
+            fakeTradesGivenCentral: [
+              [1000, 3000000],
+              [1000, 2500000],
+              [1000, 2750000],
+            ],
           },
         ],
         [
@@ -86,6 +96,13 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             mintValue: 1900,
             pursePetname: 'Fun budget',
+            fakeTradesGivenCentral: [
+              [10, 1],
+              [13, 1],
+              [12, 1],
+              [18, 1],
+              [15, 1],
+            ],
           },
         ],
         [
@@ -93,11 +110,22 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             mintValue: 1900,
             pursePetname: 'Nest egg',
+            fakeTradesGivenCentral: [
+              [2135, 50],
+              [2172, 50],
+              [2124, 50],
+            ],
           },
         ],
       ]),
     );
     const issuerNames = [...issuerNameToRecord.keys()];
+    const centralIssuerIndex = issuerNames.findIndex(
+      issuerName => issuerName === CENTRAL_ISSUER_NAME,
+    );
+    if (centralIssuerIndex < 0) {
+      throw Error(`Cannot find issuer ${CENTRAL_ISSUER_NAME}`);
+    }
     const issuers = await Promise.all(
       issuerNames.map(issuerName =>
         E(vats.mints).makeMintAndIssuer(
@@ -107,8 +135,55 @@ export function buildRootObject(vatPowers, vatParameters) {
       ),
     );
 
-    // TODO: Create priceAuthority pairs for moola-simolean based on the
-    // FakePriceAuthority.
+    const centralIssuer = issuers[centralIssuerIndex];
+
+    /**
+     * @param {ERef<Issuer>} issuerIn
+     * @param {ERef<Issuer>} issuerOut
+     * @param {Array<[number, number]>} tradeList
+     */
+    const makeFakePriceAuthority = async (issuerIn, issuerOut, tradeList) => {
+      const [brandIn, brandOut, pa] = await Promise.all([
+        E(issuerIn).getBrand(),
+        E(issuerOut).getBrand(),
+        E(vats.priceAuthority).makeFakePriceAuthority({
+          issuerIn,
+          issuerOut,
+          tradeList,
+          timer: chainTimerService,
+          quoteInterval: QUOTE_INTERVAL,
+        }),
+      ]);
+      return E(priceAuthorityAdmin).registerPriceAuthority(
+        pa,
+        brandIn,
+        brandOut,
+      );
+    };
+    await Promise.all(
+      issuers.map(async (issuer, i) => {
+        // Create priceAuthority pairs for centralIssuerIndex based on the
+        // FakePriceAuthority.
+        console.debug(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
+        const { fakeTradesGivenCentral } = issuerNameToRecord.get(
+          issuerNames[i],
+        );
+        if (!fakeTradesGivenCentral) {
+          return;
+        }
+        const fakeTradesGivenOther =
+          centralIssuer !== issuer &&
+          fakeTradesGivenCentral.map(([valueCentral, valueOther]) => [
+            valueOther,
+            valueCentral,
+          ]);
+        await Promise.all([
+          makeFakePriceAuthority(centralIssuer, issuer, fakeTradesGivenCentral),
+          fakeTradesGivenOther &&
+            makeFakePriceAuthority(issuer, centralIssuer, fakeTradesGivenOther),
+        ]);
+      }),
+    );
 
     return harden({
       async createUserBundle(_nickname, powerFlags = []) {

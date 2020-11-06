@@ -13,7 +13,8 @@ import '../exported';
 
 /**
  * @typedef {Object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand)
+ * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand, force:
+ * boolean | undefined)
  * => Deleter} registerPriceAuthority Add a unique price authority for a given
  * pair
  */
@@ -109,7 +110,7 @@ export const makePriceAuthorityRegistry = () => {
 
   /** @type {PriceAuthorityRegistryAdmin} */
   const adminFacet = {
-    registerPriceAuthority(pa, brandIn, brandOut) {
+    registerPriceAuthority(pa, brandIn, brandOut, force = false) {
       /** @type {Store<Brand, PriceAuthorityRecord>} */
       let priceStore;
       if (assetToPriceStore.has(brandIn)) {
@@ -126,7 +127,11 @@ export const makePriceAuthorityRegistry = () => {
       };
 
       // Set up the record.
-      priceStore.init(brandOut, harden(record));
+      if (force && priceStore.has(brandOut)) {
+        priceStore.set(brandOut, harden(record));
+      } else {
+        priceStore.init(brandOut, harden(record));
+      }
 
       return harden({
         delete() {
