@@ -14,7 +14,8 @@ import '../exported';
  * @typedef {Object} FakePriceAuthorityOptions
  * @property {AmountMath} mathIn
  * @property {AmountMath} mathOut
- * @property {Array<number>} priceList
+ * @property {Array<number>} [priceList]
+ * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
  * @property {RelativeTime} [quoteInterval]
  * @property {ERef<Mint>} [quoteMint]
@@ -33,11 +34,14 @@ export async function makeFakePriceAuthority(options) {
     mathIn,
     mathOut,
     priceList,
+    tradeList,
     timer,
     unitAmountIn = mathIn.make(1),
     quoteInterval = 1,
     quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
   } = options;
+
+  assert(tradeList || priceList, details`One of priceList or tradeList must be specified`);
 
   const unitValueIn = mathIn.getValue(unitAmountIn);
 
@@ -45,8 +49,11 @@ export async function makeFakePriceAuthority(options) {
 
   let currentPriceIndex = 0;
 
-  function currentPrice() {
-    return priceList[currentPriceIndex % priceList.length];
+  function currentTrade() {
+    if (tradeList) {
+      return tradeList[currentPriceIndex % tradeList.length];
+    }
+    return [unitValueIn, priceList[currentPriceIndex % priceList.length]];
   }
 
   /**
@@ -81,16 +88,16 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
     assertBrands(amountIn.brand, brandOut);
+    mathIn.coerce(amountIn);
+    const [tradeValueIn, tradeValueOut] = currentTrade();
+    const valueOut = natSafeMath.floorDivide(
+      natSafeMath.multiply(amountIn.value, tradeValueOut), tradeValueIn
+    );
     const quoteAmount = quoteMath.make(
       harden([
         {
           amountIn,
-          amountOut: mathOut.make(
-            natSafeMath.floorDivide(
-              currentPrice() * amountIn.value,
-              unitValueIn,
-            ),
-          ),
+          amountOut: mathOut.make(valueOut),
           timer,
           timestamp: quoteTime,
         },
@@ -112,10 +119,9 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
     assertBrands(brandIn, amountOut.brand);
-    const desiredValue = mathOut.getValue(amountOut);
-    const price = currentPrice();
-    // FIXME: Use natSafeMath.ceilDivide to calculate valueIn.
-    const valueIn = Math.ceil((desiredValue * unitValueIn) / price);
+    const valueOut = mathOut.getValue(amountOut);
+    const [tradeValueIn, tradeValueOut] = currentTrade();
+    const valueIn = natSafeMath.ceilDivide(natSafeMath.multiply(valueOut, tradeValueIn), tradeValueOut);
     return priceInQuote(mathIn.make(valueIn), amountOut.brand, quoteTime);
   }
 

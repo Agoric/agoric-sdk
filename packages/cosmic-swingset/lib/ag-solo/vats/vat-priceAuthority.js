@@ -5,24 +5,13 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 export function buildRootObject(_vatPowers) {
   return harden({
     makePriceAuthority: makePriceAuthorityRegistry,
-    async makeFakePriceAuthority(
-      issuerIn,
-      issuerOut,
-      priceList,
-      timer,
-      quoteInterval = undefined,
-    ) {
+    async makeFakePriceAuthority(options) {
+      const { issuerIn, issuerOut } = options;
       const [mathIn, mathOut] = await Promise.all([
         makeLocalAmountMath(issuerIn),
         makeLocalAmountMath(issuerOut),
       ]);
-      return makeFakePriceAuthority(
-        mathIn,
-        mathOut,
-        priceList,
-        timer,
-        quoteInterval,
-      );
+      return makeFakePriceAuthority({ ...options, mathIn, mathOut });
     },
   });
 }
