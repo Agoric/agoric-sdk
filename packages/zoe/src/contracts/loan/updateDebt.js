@@ -4,6 +4,7 @@ import '../../../exported';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 
 import { natSafeMath } from '../../contractSupport';
+import { scheduleLiquidation } from './scheduleLiquidation';
 
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodAsyncIterable
@@ -31,6 +32,8 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     loanMath,
     periodAsyncIterable,
     interestRate,
+    zcf,
+    configMinusGetDebt,
   } = debtCalculatorConfig;
   let debt = originalDebt;
 
@@ -39,10 +42,15 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     notifier: debtNotifier,
   } = makeNotifierKit();
 
+  const getDebt = () => debt;
+
+  const config = { ...configMinusGetDebt, getDebt };
+
   const updateDebt = _state => {
     const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
     debt = loanMath.add(debt, interest);
     debtNotifierUpdater.updateState(debt);
+    scheduleLiquidation(zcf, config);
   };
 
   /** @type {IterationObserver<undefined>} */
@@ -63,7 +71,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   debtNotifierUpdater.updateState(debt);
 
   return harden({
-    getDebt: () => debt,
+    getDebt,
     getDebtNotifier: () => debtNotifier,
   });
 };

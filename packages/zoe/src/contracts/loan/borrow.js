@@ -108,6 +108,8 @@ export const makeBorrowInvitation = (zcf, config) => {
     // that will let them continue to interact with the contract.
     borrowerSeat.exit();
 
+    const liquidationPromiseKit = makePromiseKit();
+
     /** @type {DebtCalculatorConfig} */
     const debtCalculatorConfig = {
       calcInterestFn: calculateInterest,
@@ -115,12 +117,16 @@ export const makeBorrowInvitation = (zcf, config) => {
       loanMath,
       periodAsyncIterable,
       interestRate,
+      zcf,
+      configMinusGetDebt: {
+        ...config,
+        collateralSeat,
+        liquidationPromiseKit,
+      },
     };
     const { getDebt, getDebtNotifier } = makeDebtCalculator(
       harden(debtCalculatorConfig),
     );
-
-    const liquidationPromiseKit = makePromiseKit();
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {

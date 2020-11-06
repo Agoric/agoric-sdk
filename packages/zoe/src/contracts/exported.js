@@ -270,9 +270,28 @@
  */
 
 /**
+ * @typedef BorrowerConfigPropertiesMinusDebt
+ *
+ * @property {ZCFSeat} collateralSeat
+ *
+ *   The ZCFSeat holding the collateral in escrow after the borrower
+ *   escrows it
+ *
+ * @property {PromiseKit} liquidationPromiseKit
+ *
+ *   PromiseKit that includes a promise that resolves to a PriceQuote
+ *   when liquidation is triggered
+ */
+
+/**
  * @typedef {LoanConfigWithLender & BorrowerConfigProperties } LoanConfigWithBorrower
  *
  * The loan has a lender, a borrower, and collateral escrowed.
+ */
+
+/**
+ * @typedef {LoanConfigWithLender & BorrowerConfigPropertiesMinusDebt
+ * } LoanConfigWithBorrowerMinusDebt
  */
 
 /**
@@ -351,6 +370,10 @@
  *   The AsyncIterable to notify when a period has occurred
  *
  * @property {number} interestRate
+ *
+ * @property {ContractFacet} zcf
+ *
+ * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
  */
 
 /**
