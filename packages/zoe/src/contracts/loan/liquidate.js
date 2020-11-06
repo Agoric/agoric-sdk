@@ -59,14 +59,12 @@ export const doLiquidation = async (
     await depositToSeat(zcf, lenderSeat, amounts, payoutPayments);
 
     const closeSuccessfully = () => {
-      console.log('close successful');
       lenderSeat.exit();
       collateralSeat.exit();
       zcf.shutdown('your loan had to be liquidated');
     };
 
     const closeWithFailure = err => {
-      console.log('close failure');
       lenderSeat.kickOut(err);
       collateralSeat.kickOut(err);
       zcf.shutdownWithFailure(err);
