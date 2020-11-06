@@ -712,6 +712,9 @@ test('lib-wallet offer methods', async t => {
                   petname: 'moola',
                 },
                 value: 1,
+                displayInfo: {
+                  amountMathKind: 'nat',
+                },
               },
             },
           },
@@ -740,6 +743,9 @@ test('lib-wallet offer methods', async t => {
                   petname: 'moola',
                 },
                 value: 1,
+                displayInfo: {
+                  amountMathKind: 'nat',
+                },
               },
             },
           },
