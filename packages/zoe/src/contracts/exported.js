@@ -390,7 +390,10 @@
  *
  * @property {() => Promise<PriceQuote>} getLiquidationPromise
  *
- * Get a promise that will resolve if liquidation occurs
+ * Get a promise for a priceQuote that will resolve if liquidation
+ * occurs. The priceQuote is for the value of the collateral that
+ * triggered the liquidation. This may be lower than expected if the
+ * price is moving quickly.
  *
  * @property {() => Notifier<Amount>} getDebtNotifier
  *
