@@ -64,7 +64,7 @@ export function buildRootObject(vatPowers, vatParameters) {
      * @property {Array<any>} [issuerArgs]
      * @property {string} pursePetname
      * @property {number} mintValue
-     * @property {Array<[number, number]>} tradesGivenCentral
+     * @property {Array<[number, number]>} [fakeTradesGivenCentral]
      */
     /** @type {Map<string, IssuerRecord>} */
     const issuerNameToRecord = new Map(
@@ -75,7 +75,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             issuerArgs: [undefined, { decimalPlaces: 3 }],
             mintValue: 20000,
             pursePetname: 'Local currency',
-            tradesGivenCentral: [[1, 1]],
+            fakeTradesGivenCentral: [[1, 1]],
           },
         ],
         [
@@ -84,7 +84,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             issuerArgs: [undefined, { decimalPlaces: 6 }],
             mintValue: 7 * 10 ** 6,
             pursePetname: 'Oracle fee',
-            tradesGivenCentral: [
+            fakeTradesGivenCentral: [
               [1000, 3000000],
               [1000, 2500000],
               [1000, 2750000],
@@ -96,7 +96,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             mintValue: 1900,
             pursePetname: 'Fun budget',
-            tradesGivenCentral: [
+            fakeTradesGivenCentral: [
               [10, 1],
               [13, 1],
               [12, 1],
@@ -110,7 +110,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             mintValue: 1900,
             pursePetname: 'Nest egg',
-            tradesGivenCentral: [
+            fakeTradesGivenCentral: [
               [2135, 50],
               [2172, 50],
               [2124, 50],
@@ -165,17 +165,22 @@ export function buildRootObject(vatPowers, vatParameters) {
         // Create priceAuthority pairs for centralIssuerIndex based on the
         // FakePriceAuthority.
         console.debug(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
-        const { tradesGivenCentral } = issuerNameToRecord.get(issuerNames[i]);
-        const tradesGivenOther =
+        const { fakeTradesGivenCentral } = issuerNameToRecord.get(
+          issuerNames[i],
+        );
+        if (!fakeTradesGivenCentral) {
+          return;
+        }
+        const fakeTradesGivenOther =
           centralIssuer !== issuer &&
-          tradesGivenCentral.map(([valueCentral, valueOther]) => [
+          fakeTradesGivenCentral.map(([valueCentral, valueOther]) => [
             valueOther,
             valueCentral,
           ]);
         await Promise.all([
-          makeFakePriceAuthority(centralIssuer, issuer, tradesGivenCentral),
-          tradesGivenOther &&
-            makeFakePriceAuthority(issuer, centralIssuer, tradesGivenOther),
+          makeFakePriceAuthority(centralIssuer, issuer, fakeTradesGivenCentral),
+          fakeTradesGivenOther &&
+            makeFakePriceAuthority(issuer, centralIssuer, fakeTradesGivenOther),
         ]);
       }),
     );
