@@ -151,7 +151,8 @@ export async function makeWallet({
       depositBoardId = brandToDepositFacetId.get(brand);
     }
 
-    const issuerRecord = brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
+    const issuerRecord =
+      brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
     /**
      * @type {PursesJSONState}
      */
@@ -229,8 +230,13 @@ export async function makeWallet({
             }
 
             const brand = purseToBrand.get(purse);
-            const issuerRecord = brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
-            amount = harden({ ...amount, brand, displayInfo: issuerRecord && issuerRecord.displayInfo });
+            const issuerRecord =
+              brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
+            amount = harden({
+              ...amount,
+              brand,
+              displayInfo: issuerRecord && issuerRecord.displayInfo,
+            });
             const displayAmount = display(amount);
             return [
               keyword,
@@ -436,12 +442,13 @@ export async function makeWallet({
       })
       .finally(() =>
         // Try reclaiming any payments that were left on the table.
-        keywords.map((keyword, i) => {
+        keywords.forEach((keyword, i) => {
           const purse = purseKeywordRecord[keyword];
           if (purse && payments[i]) {
-            return addPayment(payments[i], purse);
+            // eslint-disable-next-line no-use-before-define
+            addPayment(payments[i], purse);
           }
-        })
+        }),
       );
 
     return { depositedP, seat };
@@ -1013,7 +1020,8 @@ export async function makeWallet({
           } else {
             purse = purseOrPetname;
           }
-          const brandRecord = brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
+          const brandRecord =
+            brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
           paymentRecord = {
             ...paymentRecord,
             ...brandRecord,
@@ -1075,7 +1083,7 @@ export async function makeWallet({
     }
 
     // Try an automatic deposit.
-    return paymentRecord.actions.deposit(depositTo);
+    await paymentRecord.actions.deposit(depositTo);
   };
 
   // Allow people to send us payments.
