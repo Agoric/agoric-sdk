@@ -38,6 +38,9 @@ exec ${cli} \$opts \${1+"\$@"}
 `;
 
   console.log(`creating ${script}`);
+  if (fs.existsSync(script)) {
+    throw Error(`${script} must not already exist; you should use a fresh path.`);
+  }
   try {
     // Unlink the old version in case it's a symlink.
     fs.unlinkSync(script);
