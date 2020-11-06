@@ -1,7 +1,7 @@
 import { assert, details as d, quote as q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
 
-const initializationInProgress = Symbol('initializing');
+const initializationsInProgress = new WeakSet();
 
 /**
  * Make a simple LRU cache of virtual object inner selves.
@@ -26,9 +26,9 @@ export function makeCache(size, fetch, store) {
   const cache = {
     makeRoom() {
       while (liveTable.size > size && lruTail) {
-        if (lruTail.rawData[initializationInProgress]) {
+        if (initializationsInProgress.has(lruTail.rawData)) {
           let refreshCount = 1;
-          while (lruTail.rawData[initializationInProgress]) {
+          while (initializationsInProgress.has(lruTail.rawData)) {
             if (refreshCount > size) {
               throw Error(`cache overflowed with objects being initialized`);
             }
@@ -37,7 +37,10 @@ export function makeCache(size, fetch, store) {
           }
         }
         liveTable.delete(lruTail.vobjID);
-        store(lruTail.vobjID, lruTail.rawData);
+        if (lruTail.dirty) {
+          store(lruTail.vobjID, lruTail.rawData);
+          lruTail.dirty = false;
+        }
         lruTail.rawData = null;
         if (lruTail.prev) {
           lruTail.prev.next = undefined;
@@ -115,7 +118,7 @@ export function makeCache(size, fetch, store) {
  * @param {*} m The vat's marshaler.
  * @param {number} cacheSize How many virtual objects this manager should cache
  *   in memory.
- * @returns {*} a new virtual object manager.
+ * @returns {Object} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides four
@@ -305,15 +308,20 @@ export function makeVirtualObjectManager(
   }
 
   /**
-   * Make a new kind of virtual object.
+   * Define a new kind of virtual object.
    *
-   * @param {*} instanceMaker  A function of the form `instanceMaker(state)` that
-   *    will return a representative instance wrapped around the given state.
+   * @param {*} instanceKitMaker A function of the form
+   *    `instanceKitMaker(state)` that will return an "instance kit" describing
+   *    the parts of a new instance of the virtual object kind being defined.
+   *    The instance kit is an object with two properties: `init`, a function
+   *    that will initialize the state of the new instance, and `self`, an
+   *    object with methods implementing the new virtual object's behavior,
+   *    which will become the new virtual object instance's initial
+   *    representative.
    *
    * @returns {*} a maker function that can be called to manufacture new
    *    instance of this kind of object.  The parameters of the maker function
-   *    are those of the `initialize` method implemented in the representative
-   *    produced by the `instanceMaker` parameter.
+   *    are those of the `init` method provided by the `instanceKitMaker` function.
    *
    * Notes on theory of operation:
    *
@@ -369,7 +377,7 @@ export function makeVirtualObjectManager(
    * to the state is nulled out and the object holding the state becomes garbage
    * collectable.
    */
-  function makeKind(instanceMaker) {
+  function makeKind(instanceKitMaker) {
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
 
@@ -382,7 +390,7 @@ export function makeVirtualObjectManager(
 
       function wrapData(target) {
         assert(
-          !target[initializationInProgress],
+          !initializationsInProgress.has(target),
           `object is still being initialized`,
         );
         for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
@@ -395,6 +403,7 @@ export function makeVirtualObjectManager(
               const serializedValue = m.serialize(value);
               ensureState(innerSelf);
               innerSelf.rawData[prop] = serializedValue;
+              innerSelf.dirty = true;
             },
           });
         }
@@ -402,24 +411,22 @@ export function makeVirtualObjectManager(
         harden(target);
       }
 
-      let representative;
+      let instanceKit;
       if (initializing) {
         innerSelf.wrapData = wrapData;
-        representative = instanceMaker(innerSelf.rawData);
+        instanceKit = harden(instanceKitMaker(innerSelf.rawData));
       } else {
         const activeData = {};
         wrapData(activeData);
-        representative = instanceMaker(activeData);
-        delete representative.initialize;
-        harden(representative);
+        instanceKit = harden(instanceKitMaker(activeData));
       }
       cache.remember(innerSelf);
-      valToSlotTable.set(representative, innerSelf.vobjID);
-      return representative;
+      valToSlotTable.set(instanceKit.self, innerSelf.vobjID);
+      return instanceKit;
     }
 
     function reanimate(vobjID) {
-      return makeRepresentative(cache.lookup(vobjID), false);
+      return makeRepresentative(cache.lookup(vobjID), false).self;
     }
     kindTable.set(kindID, reanimate);
 
@@ -428,20 +435,15 @@ export function makeVirtualObjectManager(
       nextInstanceID += 1;
 
       const initialData = {};
-      Object.defineProperty(initialData, initializationInProgress, {
-        configurable: true,
-        enumerable: false,
-        writeable: false,
-        value: true,
-      });
+      initializationsInProgress.add(initialData);
       const innerSelf = { vobjID, rawData: initialData };
-      const initialRepresentative = makeRepresentative(innerSelf, true);
-      const initialize = initialRepresentative.initialize;
-      if (initialize) {
-        delete initialRepresentative.initialize;
-        initialize(...args);
+      // prettier-ignore
+      const { self: initialRepresentative, init } =
+        makeRepresentative(innerSelf, true);
+      if (init) {
+        init(...args);
       }
-      delete initialData[initializationInProgress];
+      initializationsInProgress.delete(initialData);
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
@@ -453,6 +455,7 @@ export function makeVirtualObjectManager(
       }
       innerSelf.rawData = rawData;
       innerSelf.wrapData(initialData);
+      innerSelf.dirty = true;
       return initialRepresentative;
     }
 

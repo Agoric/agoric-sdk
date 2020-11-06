@@ -32,8 +32,16 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
     abort = ctpAbort;
     dispatch = ctpDispatch;
 
-    // Wait for the other side to finish loading.
-    await E.G(getBootstrap()).LOADING;
+    // Wait for the wallet to finish loading.
+    let lastUpdateCount;
+    while (true) {
+      const update = await E(E.G(getBootstrap()).loadingNotifier).getUpdateSince(lastUpdateCount);
+      console.log('waiting for wallet');
+      lastUpdateCount = update.updateCount;
+      if (!update.value.includes('wallet')) {
+        break;
+      }
+    }
 
     // Begin the flow of messages to our wallet, which
     // we refetch from the new, loaded, bootstrap promise.

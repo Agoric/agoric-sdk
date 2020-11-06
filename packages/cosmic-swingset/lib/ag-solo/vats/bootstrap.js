@@ -56,25 +56,59 @@ export function buildRootObject(vatPowers, vatParameters) {
     ]);
 
     // Make the other demo mints
-    const issuerNames = ['moola', 'simolean'];
+    /**
+     * @typedef {Object} IssuerRecord
+     * @property {Array<any>} [issuerArgs]
+     * @property {string} pursePetname
+     * @property {any} mintValue
+     */
+    /** @type {Map<string, IssuerRecord>} */
+    const issuerNameToRecord = new Map(
+      harden([
+        [
+          'Testnet.$USD',
+          {
+            issuerArgs: [undefined, { decimalPlaces: 3 }],
+            mintValue: 20000,
+            pursePetname: 'Local currency',
+          },
+        ],
+        [
+          'Testnet.$LINK',
+          {
+            issuerArgs: [undefined, { decimalPlaces: 6 }],
+            mintValue: 7 * 10 ** 6,
+            pursePetname: 'Oracle fee',
+          },
+        ],
+        [
+          'moola',
+          {
+            mintValue: 1900,
+            pursePetname: 'Fun budget',
+          },
+        ],
+        [
+          'simolean',
+          {
+            mintValue: 1900,
+            pursePetname: 'Nest egg',
+          },
+        ],
+      ]),
+    );
+    const issuerNames = [...issuerNameToRecord.keys()];
     const issuers = await Promise.all(
       issuerNames.map(issuerName =>
-        E(vats.mints).makeMintAndIssuer(issuerName),
+        E(vats.mints).makeMintAndIssuer(
+          issuerName,
+          ...(issuerNameToRecord.get(issuerName).issuerArgs || []),
+        ),
       ),
     );
 
     // TODO: Create priceAuthority pairs for moola-simolean based on the
     // FakePriceAuthority.
-
-    // Register the moola and simolean issuers
-    const issuerInfo = await Promise.all(
-      issuerNames.map(async (issuerName, i) =>
-        harden({
-          issuer: issuers[i],
-          petname: issuerName,
-        }),
-      ),
-    );
 
     return harden({
       async createUserBundle(_nickname, powerFlags = []) {
@@ -95,25 +129,19 @@ export function buildRootObject(vatPowers, vatParameters) {
           additionalPowers.priceAuthorityAdmin = priceAuthorityAdmin;
         }
 
-        const pursePetnames = {
-          moola: 'Fun budget',
-          simolean: 'Nest egg',
-        };
-
         const payments = await E(vats.mints).mintInitialPayments(
           issuerNames,
-          harden([1900, 1900]),
+          issuerNames.map(
+            issuerName => issuerNameToRecord.get(issuerName).mintValue,
+          ),
         );
 
-        const paymentInfo = issuerInfo.map(
-          ({ petname: issuerPetname, issuer }, i) => ({
-            issuerPetname,
-            issuer,
-            payment: payments[i],
-            pursePetname:
-              pursePetnames[issuerPetname] || `${issuerPetname} purse`,
-          }),
-        );
+        const paymentInfo = issuerNames.map((issuerName, i) => ({
+          issuer: issuers[i],
+          issuerPetname: issuerName,
+          payment: payments[i],
+          pursePetname: issuerNameToRecord.get(issuerName).pursePetname,
+        }));
 
         const faucet = {
           // A method to reap the spoils of our on-chain provisioning.

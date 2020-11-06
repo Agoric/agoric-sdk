@@ -31,7 +31,7 @@ import Select from "smelte/src/components/Select/Select.svelte";
   <div>
     {#if item.status === 'deposited'}
       {#if summary}
-        Deposited <Amount amount={item.displayPayment.depositedAmount} />
+        Deposited <Amount amount={item.displayPayment.depositedAmount} displayInfo={item.displayPayment.displayInfo} />
       {/if}
     {:else if item.issuer}
       {#if summary}
@@ -39,7 +39,7 @@ import Select from "smelte/src/components/Select/Select.svelte";
         Payment amount
         {/if}
         {#if item.lastAmount && (!summaryLine || summaryLine === 2)}
-          <Amount amount={item.displayPayment.lastAmount} />
+          <Amount amount={item.displayPayment.lastAmount} displayInfo={item.displayPayment.displayInfo}  />
         {/if}
       {/if}
     

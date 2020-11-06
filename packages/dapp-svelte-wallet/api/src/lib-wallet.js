@@ -150,6 +150,9 @@ export async function makeWallet({
       // We have a depositId for the purse.
       depositBoardId = brandToDepositFacetId.get(brand);
     }
+
+    const issuerRecord =
+      brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
     /**
      * @type {PursesJSONState}
      */
@@ -158,11 +161,13 @@ export async function makeWallet({
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
       pursePetname,
+      displayInfo: (issuerRecord && issuerRecord.displayInfo),
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
     };
     pursesState.set(purseKey, jstate);
+
     pursesFullState.set(
       purse,
       harden({
@@ -170,9 +175,10 @@ export async function makeWallet({
         purse,
         brand,
         actions: {
-          async send(receiverP, valueToSend) {
+          // Send a value from this purse.
+          async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
-            const amount = amountMath.make(valueToSend);
+            const amount = amountMath.make(sendValue);
             const payment = await E(purse).withdraw(amount);
             try {
               await E(receiverP).receive(payment);
@@ -208,7 +214,7 @@ export async function makeWallet({
 
   const displayProposal = proposalTemplate => {
     const { want, give, exit = { onDemand: null } } = proposalTemplate;
-    const compile = pursePetnameValueKeywordRecord => {
+    const displayRecord = pursePetnameValueKeywordRecord => {
       if (pursePetnameValueKeywordRecord === undefined) {
         return undefined;
       }
@@ -223,7 +229,14 @@ export async function makeWallet({
               pursePetname = purseMapping.valToPetname.get(purse);
             }
 
-            amount = harden({ ...amount, brand: purseToBrand.get(purse) });
+            const brand = purseToBrand.get(purse);
+            const issuerRecord =
+              brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
+            amount = harden({
+              ...amount,
+              brand,
+              displayInfo: issuerRecord && issuerRecord.displayInfo,
+            });
             const displayAmount = display(amount);
             return [
               keyword,
@@ -237,12 +250,12 @@ export async function makeWallet({
         ),
       );
     };
-    const proposal = {
-      want: compile(want),
-      give: compile(give),
+    const proposalForDisplay = {
+      want: displayRecord(want),
+      give: displayRecord(give),
       exit,
     };
-    return proposal;
+    return proposalForDisplay;
   };
 
   async function updateInboxState(id, offer, doPush = true) {
@@ -426,7 +439,17 @@ export async function makeWallet({
               return undefined;
             }),
         );
-      });
+      })
+      .finally(() =>
+        // Try reclaiming any payments that were left on the table.
+        keywords.forEach((keyword, i) => {
+          const purse = purseKeywordRecord[keyword];
+          if (purse && payments[i]) {
+            // eslint-disable-next-line no-use-before-define
+            addPayment(payments[i], purse);
+          }
+        }),
+      );
 
     return { depositedP, seat };
   }
@@ -594,7 +617,10 @@ export async function makeWallet({
             const purse = getPurse(pursePetname);
             purseKeywordRecord[keyword] = purse;
             const brand = purseToBrand.get(purse);
-            const amount = { brand, value };
+            const amount = {
+              brand,
+              value,
+            };
             return [keyword, amount];
           },
         ),
@@ -915,7 +941,6 @@ export async function makeWallet({
         })
         .catch(rejected);
     } catch (e) {
-      console.error('Have error', e);
       if (offer.actions) {
         E(offer.actions).error(offer, e);
       }
@@ -959,6 +984,17 @@ export async function makeWallet({
     const brand = await E(payment).getAllegedBrand();
     const depositedPK = makePromiseKit();
 
+    /** @type {ERef<boolean>} */
+    let isAliveP = true;
+    if (brandTable.hasByBrand(brand)) {
+      isAliveP = E(brandTable.getByBrand(brand).issuer).isLive(payment);
+    }
+    const isAlive = await isAliveP;
+    if (!isAlive) {
+      // Nothing to do.
+      return;
+    }
+
     /** @type {PaymentRecord} */
     let paymentRecord = {
       payment,
@@ -984,8 +1020,11 @@ export async function makeWallet({
           } else {
             purse = purseOrPetname;
           }
+          const brandRecord =
+            brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
           paymentRecord = {
             ...paymentRecord,
+            ...brandRecord,
             status: 'pending',
           };
           updatePaymentRecord(paymentRecord);
@@ -995,6 +1034,7 @@ export async function makeWallet({
             ...paymentRecord,
             status: 'deposited',
             depositedAmount,
+            ...brandRecord,
           };
           updatePaymentRecord(paymentRecord);
           depositedPK.resolve(depositedAmount);
@@ -1043,7 +1083,7 @@ export async function makeWallet({
     }
 
     // Try an automatic deposit.
-    return paymentRecord.actions.deposit(depositTo);
+    await paymentRecord.actions.deposit(depositTo);
   };
 
   // Allow people to send us payments.

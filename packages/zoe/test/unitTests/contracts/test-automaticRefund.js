@@ -339,7 +339,6 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
   await E(aliceSeat).getOfferResult();
 
-  console.log('EXPECTED ERROR: seat has been exited >>>');
   await t.throwsAsync(() => E(aliceSeat).tryExit(), {
     message: /seat has been exited/,
   });

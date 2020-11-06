@@ -26,8 +26,8 @@
 
   const makeRejected = context => 
     function rejected(e) {
-      // TODO: Do something less blatant.
-      alert(`${context}: ${e}`);
+      // We expect our caller to see this result, so just log an error.
+      console.error(context, e);
     };
 
   const statusText = {
@@ -102,13 +102,13 @@
     {#each Object.entries(give) as [role, { amount, pursePetname }], i}
       <div>
         <h6>Give</h6>
-        <Amount {amount} /> from <Petname name={pursePetname} />
+        <Amount {amount} displayInfo={amount.displayInfo} /> from <Petname name={pursePetname} />
       </div>
     {/each}
-    {#each Object.entries(want) as [role, { amount, pursePetname }], i}
+    {#each Object.entries(want) as [role, { amount, displayInfo, pursePetname }], i}
       <div>
         <h6>Want</h6>
-        <Amount {amount} /> into <Petname name={pursePetname} />
+        <Amount {amount} displayInfo={amount.displayInfo} /> into <Petname name={pursePetname} />
       </div>
     {/each}
   </div> 
