@@ -307,9 +307,6 @@ test(`mint and sell opera tickets`, async t => {
       }),
     );
 
-    console.log(
-      'EXPECTED ERROR: Some of the wanted items were not available for sale >>>',
-    );
     await t.throwsAsync(
       seat.getOfferResult(),
       { message: /Some of the wanted items were not available for sale/ },
@@ -381,9 +378,6 @@ test(`mint and sell opera tickets`, async t => {
       }),
     );
 
-    console.log(
-      'EXPECTED ERROR: More money is required to buy these items >>> ',
-    );
     await t.throwsAsync(
       seat.getOfferResult(),
       { message: /More money.*is required to buy these items/ },

@@ -99,15 +99,14 @@
  * brandIn/brandOut pair
  *
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Notifier<PriceQuote>>}
- * getPriceNotifier be notified of the latest PriceQuotes for a given
- * brandIn/brandOut pair.  Note that these are raw quotes, and not for a
- * standardized amountIn or amountOut.  The fact that they are not scaled means
- * that a PriceAuthority can implement quotes for both fungible and non-fungible
- * brands.
+ * getQuoteNotifier be notified of the latest PriceQuotes for a given
+ * brandIn/brandOut pair.  Note that these are not necessarily all for a
+ * constant amountIn (or amountOut), though some authorities may do that.  The
+ * fact that they are raw quotes means that a PriceAuthority can implement
+ * quotes for both fungible and non-fungible brands.
  *
  * @property {(deadline: Timestamp, amountIn: Amount, brandOut: Brand) =>
- * Promise<PriceQuote>}
- * quoteAtTime Resolves after `deadline` passes on the
+ * Promise<PriceQuote>} quoteAtTime Resolves after `deadline` passes on the
  * priceAuthority's timerService with the price quote of `amountIn` at that time
  *
  * @property {(amountIn: Amount, brandOut: Brand) => Promise<PriceQuote>}

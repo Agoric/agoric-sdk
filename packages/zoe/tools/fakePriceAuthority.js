@@ -119,7 +119,7 @@ export async function makeFakePriceAuthority(options) {
     return priceInQuote(mathIn.make(valueIn), amountOut.brand, quoteTime);
   }
 
-  function startTimer() {
+  async function startTimer() {
     let firstTime = true;
     const handler = harden({
       wake: async t => {
@@ -140,9 +140,9 @@ export async function makeFakePriceAuthority(options) {
       },
     });
     const repeater = E(timer).createRepeater(0, quoteInterval);
-    E(repeater).schedule(handler);
+    return E(repeater).schedule(handler);
   }
-  startTimer();
+  await startTimer();
 
   function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
     assertBrands(amountIn.brand, amountOutLimit.brand);
@@ -167,7 +167,7 @@ export async function makeFakePriceAuthority(options) {
       assertBrands(brandIn, brandOut);
       return timer;
     },
-    getPriceNotifier: async (brandIn, brandOut) => {
+    getQuoteNotifier: async (brandIn, brandOut) => {
       assertBrands(brandIn, brandOut);
       return notifier;
     },

@@ -91,8 +91,8 @@ export const makePriceAuthorityRegistry = () => {
     async quoteWanted(brandIn, amountOut) {
       return E(paFor(brandIn, amountOut.brand)).quoteWanted(brandIn, amountOut);
     },
-    async getPriceNotifier(brandIn, brandOut) {
-      return E(paFor(brandIn, brandOut)).getPriceNotifier(brandIn, brandOut);
+    async getQuoteNotifier(brandIn, brandOut) {
+      return E(paFor(brandIn, brandOut)).getQuoteNotifier(brandIn, brandOut);
     },
     async quoteAtTime(deadline, amountIn, brandOut) {
       return E(paFor(amountIn.brand, brandOut)).quoteAtTime(

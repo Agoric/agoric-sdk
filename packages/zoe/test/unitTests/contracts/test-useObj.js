@@ -64,7 +64,6 @@ test('zoe - useObj', async t => {
     `alice gets everything she escrowed back`,
   );
 
-  console.log('EXPECTED ERROR ->>>');
   t.throws(
     () => useObj.colorPixels('purple'),
     { message: /the escrowing offer is no longer active/ },
