@@ -84,7 +84,11 @@ export function buildRootObject(vatPowers, vatParameters) {
             issuerArgs: [undefined, { decimalPlaces: 6 }],
             mintValue: 7 * 10 ** 6,
             pursePetname: 'Oracle fee',
-            tradesGivenCentral: [[1000, 3000000], [1000, 2500000], [1000, 2750000]],
+            tradesGivenCentral: [
+              [1000, 3000000],
+              [1000, 2500000],
+              [1000, 2750000],
+            ],
           },
         ],
         [
@@ -92,7 +96,13 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             mintValue: 1900,
             pursePetname: 'Fun budget',
-            tradesGivenCentral: [[10, 1], [13, 1], [12, 1], [18, 1], [15, 1]],
+            tradesGivenCentral: [
+              [10, 1],
+              [13, 1],
+              [12, 1],
+              [18, 1],
+              [15, 1],
+            ],
           },
         ],
         [
@@ -100,13 +110,19 @@ export function buildRootObject(vatPowers, vatParameters) {
           {
             mintValue: 1900,
             pursePetname: 'Nest egg',
-            tradesGivenCentral: [[2135, 50], [2172, 50], [2124, 50]],
+            tradesGivenCentral: [
+              [2135, 50],
+              [2172, 50],
+              [2124, 50],
+            ],
           },
         ],
       ]),
     );
     const issuerNames = [...issuerNameToRecord.keys()];
-    const centralIssuerIndex = issuerNames.findIndex(issuerName => issuerName === CENTRAL_ISSUER_NAME);
+    const centralIssuerIndex = issuerNames.findIndex(
+      issuerName => issuerName === CENTRAL_ISSUER_NAME,
+    );
     if (centralIssuerIndex < 0) {
       throw Error(`Cannot find issuer ${CENTRAL_ISSUER_NAME}`);
     }
@@ -120,10 +136,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
 
     const centralIssuer = issuers[centralIssuerIndex];
-    
+
     /**
-     * @param {ERef<Issuer>} issuerIn 
-     * @param {ERef<Issuer>} issuerOut 
+     * @param {ERef<Issuer>} issuerIn
+     * @param {ERef<Issuer>} issuerOut
      * @param {Array<[number, number]>} tradeList
      */
     const makeFakePriceAuthority = async (issuerIn, issuerOut, tradeList) => {
@@ -138,25 +154,25 @@ export function buildRootObject(vatPowers, vatParameters) {
           quoteInterval: QUOTE_INTERVAL,
         }),
       ]);
-      return E(priceAuthorityAdmin).registerPriceAuthority(pa, brandIn, brandOut);
+      return E(priceAuthorityAdmin).registerPriceAuthority(
+        pa,
+        brandIn,
+        brandOut,
+      );
     };
-    await Promise.all(issuers.map(async (issuer, i) => {
-      // Create priceAuthority pairs for centralIssuerIndex based on the
-      // FakePriceAuthority.
-      if (issuer === centralIssuer) {
-        return;
-      }
-      console.error(`Creating ${issuerNames[i]}-${issuerNames[centralIssuerIndex]}`);
-      const { tradesGivenCentral } = issuerNameToRecord.get(issuerNames[i]);
-      const tradesGivenThis = tradesGivenCentral.map(([a, b]) => [b, a]);
-      return Promise.all([
-        makeFakePriceAuthority(centralIssuer, issuer, tradesGivenCentral),
-        makeFakePriceAuthority(issuer, centralIssuer, tradesGivenThis),
-      ]);
-    }));
-
-    for (const issuerpetname of issuerNameToRecord)
-    
+    await Promise.all(
+      issuers.map(async (issuer, i) => {
+        // Create priceAuthority pairs for centralIssuerIndex based on the
+        // FakePriceAuthority.
+        console.error(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
+        const { tradesGivenCentral } = issuerNameToRecord.get(issuerNames[i]);
+        const tradesGivenThis = tradesGivenCentral.map(([a, b]) => [b, a]);
+        return Promise.all([
+          makeFakePriceAuthority(centralIssuer, issuer, tradesGivenCentral),
+          makeFakePriceAuthority(issuer, centralIssuer, tradesGivenThis),
+        ]);
+      }),
+    );
 
     return harden({
       async createUserBundle(_nickname, powerFlags = []) {
