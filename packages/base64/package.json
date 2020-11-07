@@ -9,13 +9,16 @@
   "module": "./src/main.js",
   "browser": "./dist/base64.umd.js",
   "unpkg": "./dist/base64.umd.js",
+  "types": "./types/main.d.ts",
   "exports": {
     "import": "./src/main.js",
     "require": "./dist/base64.cjs",
     "browser": "./dist/base64.umd.js"
   },
   "scripts": {
-    "build": "rollup --config rollup.config.js",
+    "build": "yarn build:types && yarn build:dist",
+    "build:dist": "rollup --config rollup.config.js",
+    "build:types": "tsc src/*.js --declaration --allowJs --emitDeclarationOnly --outDir types",
     "clean": "rm -rf dist",
     "lint": "yarn lint-check",
     "lint-check": "eslint '**/*.js'",
@@ -38,11 +41,13 @@
     "nyc": "^15.1.0",
     "prettier": "^1.19.1",
     "rollup": "1.31.0",
-    "rollup-plugin-terser": "^5.1.3"
+    "rollup-plugin-terser": "^5.1.3",
+    "typescript": "^4.0.5"
   },
   "files": [
     "LICENSE*",
     "dist",
+    "types",
     "src"
   ],
   "publishConfig": {
