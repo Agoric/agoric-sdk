@@ -1,5 +1,17 @@
 import test from 'ava';
-import { dataToBase64, base64ToBytes } from '../src/main.js';
+import { encodeBase64, decodeBase64 } from '../src/main.js';
+
+function stringToBytes(string) {
+  const data = new Uint8Array(string.length);
+  for (let i = 0; i < string.length; i += 1) {
+    data[i] = string.charCodeAt(i);
+  }
+  return data;
+}
+
+function bytesToString(data) {
+  return String.fromCharCode(...data);
+}
 
 test('bytes conversions', t => {
   const insouts = [
@@ -12,8 +24,8 @@ test('bytes conversions', t => {
     ['foobar', 'Zm9vYmFy'],
   ];
   for (const [inp, outp] of insouts) {
-    t.is(dataToBase64(inp), outp, `${inp} encodes`);
-    t.is(base64ToBytes(outp), inp, `${outp} decodes`);
+    t.is(encodeBase64(stringToBytes(inp)), outp, `${inp} encodes`);
+    t.is(bytesToString(decodeBase64(outp)), inp, `${outp} decodes`);
   }
   const inputs = [
     'a',
@@ -24,6 +36,10 @@ test('bytes conversions', t => {
     'other--+iadtedata',
   ];
   for (const str of inputs) {
-    t.is(base64ToBytes(dataToBase64(str)), str, `${str} round trips`);
+    t.is(
+      bytesToString(decodeBase64(encodeBase64(stringToBytes(str)))),
+      str,
+      `${str} round trips`,
+    );
   }
 });

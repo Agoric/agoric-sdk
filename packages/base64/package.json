@@ -1,7 +1,7 @@
 {
   "name": "@agoric/base64",
   "version": "0.0.0+1-dev",
-  "description": "Description forthcoming.",
+  "description": "Transcodes base64",
   "author": "Agoric",
   "license": "Apache-2.0",
   "type": "module",
