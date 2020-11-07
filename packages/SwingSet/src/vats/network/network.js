@@ -85,7 +85,7 @@ export const makeConnection = (
         .then(
           ack => {
             pendingAcks.delete(ackDeferred);
-            ackDeferred.resolve(toBytes(ack));
+            ackDeferred.resolve(toBytes(String(ack)));
           },
           err => {
             pendingAcks.delete(ackDeferred);
