@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.3.1-dev.0...@agoric/store@0.3.1) (2020-11-07)
+
+
+### Bug Fixes
+
+* export `@agoric/store/exported` ([4dee52b](https://github.com/Agoric/agoric-sdk/commit/4dee52ba250564781150df2c24ec22006968ca1a))
+
+
+
+
+
 ## [0.3.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.3.0...@agoric/store@0.3.1-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/store
