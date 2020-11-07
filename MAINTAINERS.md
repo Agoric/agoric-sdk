@@ -18,14 +18,17 @@ git push -u origin release-$now
 scripts/have-news HEAD^ > have-news.md
 ```
 
-Then, create a release PR, pasting `have-news.md` into the body.
-
-Then, once tests pass, you can run the following:
+Create a release PR, pasting `have-news.md` into the body.  Then build the SDK:
 
 ```sh
 # Build all package generated files.
 yarn install
 yarn build
+```
+
+Once tests pass, you can publish to NPM with the following:
+
+```sh
 # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
 yarn lerna publish from-package
 ```

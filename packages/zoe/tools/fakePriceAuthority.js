@@ -111,7 +111,6 @@ export async function makeFakePriceAuthority(options) {
       quotePayment: E(quoteMint).mintPayment(quoteAmount),
       quoteAmount,
     });
-    updater.updateState(quote);
     return quote;
   }
 
@@ -141,6 +140,13 @@ export async function makeFakePriceAuthority(options) {
         } else {
           currentPriceIndex += 1;
         }
+        const [tradeValueIn] = currentTrade();
+        const rawQuote = priceInQuote(
+          mathIn.make(tradeValueIn),
+          mathOut.getBrand(),
+          t,
+        );
+        updater.updateState(rawQuote);
         for (const req of comparisonQueue) {
           // eslint-disable-next-line no-await-in-loop
           const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
