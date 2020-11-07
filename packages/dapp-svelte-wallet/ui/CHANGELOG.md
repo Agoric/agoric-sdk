@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.3.1-dev.0...@agoric/dapp-svelte-wallet-ui@1.4.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* excise `conventionalDecimalPlaces` for now ([0e7c896](https://github.com/Agoric/agoric-sdk/commit/0e7c896ed0ea261aa76b07f3d9c5df640c42699e))
+* make wallet more robust, and handle decimals fully ([9c29e10](https://github.com/Agoric/agoric-sdk/commit/9c29e10225c3aef0717661674a7bdbdb2318231f))
+* properly display rejected offer manipulation ([420a524](https://github.com/Agoric/agoric-sdk/commit/420a524d92c21fd572db9f06637019170336e82c))
+* put all parsing and stringification into the wallet ui ([58ff9a3](https://github.com/Agoric/agoric-sdk/commit/58ff9a32f10778e76e379d8a81cabf655c26c580))
+* remove unreferenced variable ([d908153](https://github.com/Agoric/agoric-sdk/commit/d9081532d0a50f82e2ac0d2f25655b607d012c84))
+
+
+### Features
+
+* update wallet for decimals ([898ce50](https://github.com/Agoric/agoric-sdk/commit/898ce50978bfeae94b5d342d94a0188b9a060a47))
+* **assert:** Thread stack traces to console, add entangled assert ([#1884](https://github.com/Agoric/agoric-sdk/issues/1884)) ([5d4f35f](https://github.com/Agoric/agoric-sdk/commit/5d4f35f901f2ca40a2a4d66dab980a5fe8e575f4))
+
+
+
+
+
 ## [1.3.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.3.0...@agoric/dapp-svelte-wallet-ui@1.3.1-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui

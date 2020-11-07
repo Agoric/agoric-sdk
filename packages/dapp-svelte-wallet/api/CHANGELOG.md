@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.0-dev.0...@agoric/dapp-svelte-wallet-api@0.5.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* make wallet more robust, and handle decimals fully ([9c29e10](https://github.com/Agoric/agoric/commit/9c29e10225c3aef0717661674a7bdbdb2318231f))
+* put all parsing and stringification into the wallet ui ([58ff9a3](https://github.com/Agoric/agoric/commit/58ff9a32f10778e76e379d8a81cabf655c26c580))
+
+
+### Features
+
+* update wallet for decimals ([898ce50](https://github.com/Agoric/agoric/commit/898ce50978bfeae94b5d342d94a0188b9a060a47))
+
+
+
+
+
 # [0.5.0-dev.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.4.0...@agoric/dapp-svelte-wallet-api@0.5.0-dev.0) (2020-10-19)
 
 

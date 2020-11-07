@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.22.1-dev.0...@agoric/cosmic-swingset@0.23.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* allow priceRegistry to force-override an entry ([dceafd6](https://github.com/Agoric/agoric-sdk/commit/dceafd6073b8ba6d43acbefafec68797eb365729))
+* count the outbound dataful trips to a given target ([e0b5040](https://github.com/Agoric/agoric-sdk/commit/e0b5040eaed659dc3debd4136a13947f5a26776b))
+* don't create duplicate central price authority ([a7ec3d1](https://github.com/Agoric/agoric-sdk/commit/a7ec3d1f775c764fe09cf45fb67130f24d3a35cf))
+* don't ever display a 404 for the wallet ([4fb3d48](https://github.com/Agoric/agoric-sdk/commit/4fb3d480530059f58fb4559744384d5f3c1c8adf))
+* excise `conventionalDecimalPlaces` for now ([0e7c896](https://github.com/Agoric/agoric-sdk/commit/0e7c896ed0ea261aa76b07f3d9c5df640c42699e))
+* rename solo back to client ([3b77445](https://github.com/Agoric/agoric-sdk/commit/3b77445de8ac355a7f494beb96964fe2b9dbd8ab))
+
+
+### Features
+
+* add `agoric.priceAuthority` via priceAuthorityRegistry ([c602d14](https://github.com/Agoric/agoric-sdk/commit/c602d1446e7b6b37016fafd1e013da2c28cacc76))
+* add Testnet.$USD and Testnet.$LINK ([eac7af9](https://github.com/Agoric/agoric-sdk/commit/eac7af9b3cb6662503e8fc20acd2932cdc8dfbc8))
+* allow network-config.gci to specify a URL to genesis ([d15a26e](https://github.com/Agoric/agoric-sdk/commit/d15a26e759899f286d2ee0045ab93926d7fc337f))
+* convert the fakePriceAuthority to a PlayerPiano model ([#1985](https://github.com/Agoric/agoric-sdk/issues/1985)) ([cd7ebd8](https://github.com/Agoric/agoric-sdk/commit/cd7ebd86b1f37655b9213786ab6828dd6c7c098a))
+* simple volatile priceAuthority ([af76585](https://github.com/Agoric/agoric-sdk/commit/af7658576f00b6ebaae3bd91aebc6d9fc983fa71))
+
+
+
+
+
 ## [0.22.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.22.0...@agoric/cosmic-swingset@0.22.1-dev.0) (2020-10-19)
 
 

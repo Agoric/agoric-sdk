@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.0.12-dev.0...@agoric/assert@0.1.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* coordinate assert typing with SES-shim ([#1972](https://github.com/Agoric/agoric-sdk/issues/1972)) ([ce56e24](https://github.com/Agoric/agoric-sdk/commit/ce56e24eb950f8bdede4e82207b339c3d2e4af58))
+
+
+### Features
+
+* **assert:** Thread stack traces to console, add entangled assert ([#1884](https://github.com/Agoric/agoric-sdk/issues/1884)) ([5d4f35f](https://github.com/Agoric/agoric-sdk/commit/5d4f35f901f2ca40a2a4d66dab980a5fe8e575f4))
+
+
+
+
+
 ## [0.0.12-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.0.11...@agoric/assert@0.0.12-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/assert

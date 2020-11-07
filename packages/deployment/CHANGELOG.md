@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.22.1-dev.0...@agoric/deployment@1.23.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* prepare for --import-from=node0 ([7300c3a](https://github.com/Agoric/agoric-sdk/commit/7300c3a4cde46963802f10ae8d0eb3d4134ecdeb))
+* tweak the deployment process ([6606a67](https://github.com/Agoric/agoric-sdk/commit/6606a679c6ce4c2cedee54e39d3777b4e59bff65))
+
+
+### Features
+
+* update bigdipper scripts and services ([2be854d](https://github.com/Agoric/agoric-sdk/commit/2be854debb1c45ab702fd5cfabccbfe479e7eff6))
+
+
+
+
+
 ## [1.22.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.22.0...@agoric/deployment@1.22.1-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/deployment

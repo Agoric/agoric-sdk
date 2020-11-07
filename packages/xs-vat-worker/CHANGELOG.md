@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xs-vat-worker@0.2.4-dev.0...@agoric/xs-vat-worker@0.3.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* further cleanup based on reviews ([2e74cc7](https://github.com/Agoric/agoric-sdk/commit/2e74cc72ce1c898b24c1a2613d7864d97fe383c2))
+
+
+### Features
+
+* **assert:** Thread stack traces to console, add entangled assert ([#1884](https://github.com/Agoric/agoric-sdk/issues/1884)) ([5d4f35f](https://github.com/Agoric/agoric-sdk/commit/5d4f35f901f2ca40a2a4d66dab980a5fe8e575f4))
+
+
+
+
+
 ## [0.2.4-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xs-vat-worker@0.2.3...@agoric/xs-vat-worker@0.2.4-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/xs-vat-worker

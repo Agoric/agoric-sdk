@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.3.4-dev.0...@agoric/transform-metering@1.3.4) (2020-11-07)
+
+
+### Bug Fixes
+
+* prevent infinite loop when metering BigInt values ([3b76f82](https://github.com/Agoric/agoric-sdk/commit/3b76f829d970b1998e35149ad0e21f0a8f54e2f0))
+
+
+
+
+
 ## [1.3.4-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.3.3...@agoric/transform-metering@1.3.4-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/transform-metering

@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.9.0-dev.0...@agoric/swingset-runner@0.9.0) (2020-11-07)
+
+
+### Bug Fixes
+
+* further cleanup based on reviews ([2e74cc7](https://github.com/Agoric/agoric-sdk/commit/2e74cc72ce1c898b24c1a2613d7864d97fe383c2))
+* rework virtual objects implementation to use revised API design ([4c4c1c9](https://github.com/Agoric/agoric-sdk/commit/4c4c1c93f862b3aea990c7c7d556b7c6b949448d))
+
+
+### Features
+
+* implement virtual objects kept in vat secondary storage ([9f4ae1a](https://github.com/Agoric/agoric-sdk/commit/9f4ae1a4ecda4245291f846149bab6c95c96634c))
+
+
+
+
+
 # [0.9.0-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.8.0...@agoric/swingset-runner@0.9.0-dev.0) (2020-10-19)
 
 
