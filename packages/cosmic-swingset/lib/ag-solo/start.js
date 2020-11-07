@@ -297,6 +297,26 @@ export default async function start(basedir, argv) {
     resetOutdatedState,
   } = d;
 
+  // Remove wallet traces.
+  await unlink('html/wallet').catch(_ => {});
+
+  const { wallet } = JSON.parse(fs.readFileSync('options.json', 'utf-8'));
+
+  // Symlink the wallet.
+  const pjs = require.resolve(`${wallet}/package.json`);
+  const {
+    'agoric-wallet': {
+      htmlBasedir = 'ui/build',
+      deploy = ['contract/deploy.js', 'api/deploy.js'],
+    } = {},
+  } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
+
+  const agWallet = path.dirname(pjs);
+  const agWalletHtml = path.resolve(agWallet, htmlBasedir);
+  symlink(agWalletHtml, 'html/wallet').catch(e => {
+    console.error('Cannot link html/wallet:', e);
+  });
+
   let hostport;
   await Promise.all(
     connections.map(async c => {
@@ -351,9 +371,6 @@ export default async function start(basedir, argv) {
   startTimer(1200);
   resetOutdatedState();
 
-  // Remove wallet traces.
-  await unlink('html/wallet').catch(_ => {});
-
   log.info(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
@@ -361,20 +378,6 @@ export default async function start(basedir, argv) {
   if (!hostport) {
     return;
   }
-
-  const { wallet } = JSON.parse(fs.readFileSync('options.json', 'utf-8'));
-
-  // Symlink the wallet.
-  const pjs = require.resolve(`${wallet}/package.json`);
-  const {
-    'agoric-wallet': {
-      htmlBasedir = 'ui/build',
-      deploy = ['contract/deploy.js', 'api/deploy.js'],
-    } = {},
-  } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
-
-  const agWallet = path.dirname(pjs);
-  const agWalletHtml = path.resolve(agWallet, htmlBasedir);
 
   const deploys = typeof deploy === 'string' ? [deploy] : deploy;
   // TODO: Shell-quote the deploy list.
@@ -396,10 +399,6 @@ export default async function start(basedir, argv) {
         // Report the error.
         process.stderr.write(stderr);
       }
-      // Now that the deploy is done, link the wallet!
-      symlink(agWalletHtml, 'html/wallet').catch(e => {
-        console.error('Cannot link html/wallet:', e);
-      });
     },
   );
 }
