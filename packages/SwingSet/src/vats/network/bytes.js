@@ -1,6 +1,7 @@
 // @ts-check
 
 import './types';
+import { encodeBase64, decodeBase64 } from '@agoric/base64';
 
 /* eslint-disable no-bitwise */
 /**
@@ -21,4 +22,44 @@ export function toBytes(data) {
   // the String's representation.
   const buf = new Uint8Array(bytes);
   return String.fromCharCode.apply(null, buf);
+}
+
+/**
+ * Convert bytes to a String.
+ *
+ * @param {Bytes} bytes
+ * @returns {string}
+ */
+export function bytesToString(bytes) {
+  return bytes;
+}
+
+/**
+ * Base64, as specified in https://tools.ietf.org/html/rfc4648#section-4
+ *
+ * @param {Data} data
+ * @returns {string} base64 encoding
+ */
+export function dataToBase64(data) {
+  /** @type {Uint8Array?} */
+  let bytes;
+  if (typeof data === 'string') {
+    bytes = new Uint8Array(data.length);
+    for (let i = 0; i < data.length; i += 1) {
+      bytes[i] = data.charCodeAt(i);
+    }
+  } else {
+    bytes = new Uint8Array(data);
+  }
+  return encodeBase64(bytes);
+}
+
+/**
+ * Decodes a string into base64.
+ *
+ * @param {string} string Base64-encoded string
+ * @returns {Bytes} decoded bytes
+ */
+export function base64ToBytes(string) {
+  return toBytes(decodeBase64(string));
 }
