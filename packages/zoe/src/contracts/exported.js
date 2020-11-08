@@ -187,7 +187,7 @@
  * @property {(query: any, fee: Amount) => Promise<{ reply:
  * any, requiredFee: Amount | undefined }>} onQuery callback to reply to a query
  * @property {(query: any, reason: any) => void} onError notice an error
- * @property {(query: any, reply: any, requiredFee: Amount) => void} onReply
+ * @property {(query: any, reply: any, requiredFee: Amount | undefined) => void} onReply
  * notice a successful reply
  */
 
