@@ -34,7 +34,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     cargs,
     { stdio = 'inherit', env = pspawnEnv, ...rest } = {},
   ) => {
-    log.debug(chalk.blueBright(cmd, ...cargs));
+    log(chalk.blueBright(cmd, ...cargs));
     const cp = spawn(cmd, cargs, { stdio, env, ...rest });
     const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);
@@ -56,7 +56,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           'run',
           `--volume=${process.cwd()}:/usr/src/dapp`,
           `--rm`,
-          `-it`,
+          // `-it`,
           `--entrypoint=ag-cosmos-helper`,
           'agoric/agoric-sdk',
           `--home=/usr/src/dapp/_agstate/keys`,
@@ -211,7 +211,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--volume=${process.cwd()}:/usr/src/dapp`,
             `--rm`,
             ...dockerArgs,
-            `-it`,
+            // `-it`,
             SDK_IMAGE,
             ...args,
             `--home=/usr/src/dapp/${agServer}`,
@@ -298,7 +298,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (exitStatus) {
         return exitStatus;
       }
-      exitStatus = await fs.writeFile(`${genesisFile}.stamp`, Date.now());
+      exitStatus = await fs.writeFile(`${genesisFile}.stamp`, `${Date.now()}`);
       if (exitStatus) {
         return exitStatus;
       }
@@ -383,7 +383,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--volume=${process.env.HOME}/.agoric:/root/.agoric`,
             `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
             `--rm`,
-            `-it`,
+            // `-it`,
             `--entrypoint=/usr/src/app/bin/ag-solo`,
             ...dockerArgs,
             SOLO_IMAGE,
