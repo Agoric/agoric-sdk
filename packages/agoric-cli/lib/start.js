@@ -9,9 +9,6 @@ import {
   finishCosmosGenesis,
 } from './chain-config';
 
-const SDK_IMAGE = `agoric/agoric-sdk:${process.env.TAG || 'latest'}`;
-const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${process.env.TAG || 'latest'}`;
-
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const CHAIN_ID = 'agoric';
@@ -27,6 +24,9 @@ const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:start');
+
+  const SDK_IMAGE = `agoric/agoric-sdk:${opts.dockerTag}`;
+  const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${opts.dockerTag}`;
 
   const pspawnEnv = { ...process.env };
   const pspawn = (
