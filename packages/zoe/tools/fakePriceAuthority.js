@@ -1,7 +1,10 @@
 // @ts-check
 import { makeIssuerKit, MathKind, makeLocalAmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeNotifierFromAsyncIterable,
+} from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 
@@ -79,7 +82,7 @@ export async function makeFakePriceAuthority(options) {
   const quoteIssuer = E(quoteMint).getIssuer();
   const quoteMath = await makeLocalAmountMath(quoteIssuer);
 
-  /** @type {NotifierRecord<PriceQuote>} */
+  /** @type {NotifierRecord<undefined>} */
   const { notifier, updater } = makeNotifierKit();
 
   /**
@@ -140,13 +143,7 @@ export async function makeFakePriceAuthority(options) {
         } else {
           currentPriceIndex += 1;
         }
-        const [tradeValueIn] = currentTrade();
-        const rawQuote = priceInQuote(
-          mathIn.make(tradeValueIn),
-          mathOut.getBrand(),
-          t,
-        );
-        updater.updateState(rawQuote);
+        updater.updateState(undefined);
         for (const req of comparisonQueue) {
           // eslint-disable-next-line no-await-in-loop
           const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
@@ -176,6 +173,17 @@ export async function makeFakePriceAuthority(options) {
     return promiseKit.promise;
   }
 
+  async function* generateQuotes(amountIn, brandOut) {
+    let record = await notifier.getUpdateSince();
+    while (record.updateCount) {
+      // eslint-disable-next-line no-await-in-loop
+      const timestamp = await E(timer).getCurrentTimestamp();
+      yield priceInQuote(amountIn, brandOut, timestamp);
+      // eslint-disable-next-line no-await-in-loop
+      record = await notifier.getUpdateSince(record.updateCount);
+    }
+  }
+
   /** @type {PriceAuthority} */
   const priceAuthority = {
     getQuoteIssuer: (brandIn, brandOut) => {
@@ -186,9 +194,9 @@ export async function makeFakePriceAuthority(options) {
       assertBrands(brandIn, brandOut);
       return timer;
     },
-    getQuoteNotifier: async (brandIn, brandOut) => {
-      assertBrands(brandIn, brandOut);
-      return notifier;
+    makeQuoteNotifier: async (amountIn, brandOut) => {
+      assertBrands(amountIn.brand, brandOut);
+      return makeNotifierFromAsyncIterable(generateQuotes(amountIn, brandOut));
     },
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
       assertBrands(amountIn.brand, brandOut);
