@@ -46,7 +46,7 @@
 /**
  * @typedef {Object} PriceQuote
  * @property {Amount} quoteAmount Amount whose value is a PriceQuoteValue
- * @property {ERef<Payment>} quotePayment The `quoteAmount` wrapped as a payment
+ * @property {ERef<Payment> | null} quotePayment The `quoteAmount` wrapped as a payment
  */
 
 /**
