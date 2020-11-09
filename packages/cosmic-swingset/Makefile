@@ -29,12 +29,12 @@ comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
 # process linker flags
-
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
-		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-chain-cosmos \
-		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
+		-X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-server \
+		-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+		-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+		-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
+
 gcflags =
 
 ifneq ($(GO_DEBUG),)
@@ -42,7 +42,11 @@ ldflags += -compressdwarf=false
 gcflags += -N -l
 endif
 
+
+ldflags_helper = $(ldflags) \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-helper
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
+BUILD_FLAGS_HELPER :=  -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags_helper)'
 
 include Makefile.ledger
 all: build-cosmos install
@@ -145,7 +149,7 @@ docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
 compile-go: go.sum
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/ag-cosmos-helper
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 

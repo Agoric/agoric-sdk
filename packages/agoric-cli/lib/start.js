@@ -349,6 +349,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   async function startLocalSolo(profileName, startArgs, popts) {
     const portNum = startArgs[0] === undefined ? PORT : startArgs[0];
+    const provisionPowers = startArgs[1] === undefined ? [] : [startArgs[1]];
     if (`${portNum}` !== `${Number(portNum)}`) {
       log.error(`Argument to local-solo must be a port number`);
       return 1;
@@ -424,7 +425,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (!opts.sdk) {
         initArgs.push(`--webhost=0.0.0.0`);
       }
-      const exitStatus = await soloSpawn(['init', ...initArgs]);
+      const exitStatus = await soloSpawn(['init', agServer, ...initArgs]);
       if (exitStatus) {
         return exitStatus;
       }
@@ -476,6 +477,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
               `--node=tcp://${rpcAddr}`,
               `local-solo-${portNum}`,
               soloAddr,
+              ...provisionPowers,
             ],
             true,
           );
