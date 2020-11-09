@@ -51,6 +51,7 @@ export METEOR_SETTINGS=`sed -e "s/@GTM@/$GTM/; s/@CHAIN_NAME@/$cn/; s!@NETWORK_U
   while $ping > /dev/null; do
     sleep 30
   done
+  sleep 20
   kill $$
 } &
 

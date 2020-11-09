@@ -9,8 +9,8 @@ import {
   finishCosmosGenesis,
 } from './chain-config';
 
-const SDK_IMAGE = `agoric/agoric-sdk`;
-const SOLO_IMAGE = `agoric/cosmic-swingset-solo`;
+const SDK_IMAGE = `agoric/agoric-sdk:${process.env.TAG || 'latest'}`;
+const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${process.env.TAG || 'latest'}`;
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -58,7 +58,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           `--rm`,
           // `-it`,
           `--entrypoint=ag-cosmos-helper`,
-          'agoric/agoric-sdk',
+          SDK_IMAGE,
           `--home=/usr/src/dapp/_agstate/keys`,
           ...args,
         ],
@@ -425,7 +425,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (!opts.sdk) {
         initArgs.push(`--webhost=0.0.0.0`);
       }
-      const exitStatus = await soloSpawn(['init', agServer, ...initArgs]);
+      const exitStatus = await soloSpawn(
+        ['init', agServer, ...initArgs],
+        undefined,
+        [`--workdir=/usr/src/dapp`],
+      );
       if (exitStatus) {
         return exitStatus;
       }
@@ -530,7 +534,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       }
     }
 
-    const agServer = `_agstate/agoric-servers/${profileName}`;
+    const port = startArgs[0] || PORT;
+    const netconfig =
+      startArgs[1] || 'https://testnet.agoric.com/network-config';
+    const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
 
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
@@ -541,23 +548,25 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const setupRun = (...bonusArgs) =>
       pspawn('docker', [
         'run',
-        `-p127.0.0.1:${HOST_PORT}:${PORT}`,
+        `-p127.0.0.1:${HOST_PORT}:${port}`,
         `--volume=${process.cwd()}:/usr/src/dapp`,
         `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
         `--rm`,
         `-it`,
         SOLO_IMAGE,
-        `--webport=${PORT}`,
+        `--webport=${port}`,
         `--webhost=0.0.0.0`,
         ...bonusArgs,
-        ...startArgs,
       ]);
 
-    return setupRun('setup');
+    return setupRun('setup', `--netconfig=${netconfig}`);
   }
 
   async function startTestnetSdk(profileName, startArgs, popts) {
-    const agServer = `_agstate/agoric-servers/${profileName}`;
+    const port = startArgs[0] || PORT;
+    const netconfig =
+      startArgs[1] || 'https://testnet.agoric.com/network-config';
+    const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
 
     if (popts.reset) {
       log(chalk.green(`removing ${agServer}`));
@@ -566,11 +575,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const setupRun = (...bonusArgs) =>
-      pspawn(agSolo, [`--webport=${PORT}`, ...bonusArgs, ...startArgs], {
+      pspawn(agSolo, [`--webport=${port}`, ...bonusArgs], {
         env: { ...pspawnEnv, AG_SOLO_BASEDIR: agServer },
       });
 
-    return setupRun('setup');
+    return setupRun('setup', `--netconfig=${netconfig}`);
   }
 
   const profiles = {
