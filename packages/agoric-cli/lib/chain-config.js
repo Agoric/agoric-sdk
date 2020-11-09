@@ -28,6 +28,7 @@ export function finishCosmosConfig({
   config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
   config.p2p.persistent_peers = persistentPeers;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
+  config.rpc.max_body_bytes = 15 * 10 ** 6;
 
   // Needed for IBC.
   config.tx_index.index_all_keys = true;
