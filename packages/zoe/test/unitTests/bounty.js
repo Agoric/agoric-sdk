@@ -2,8 +2,11 @@ import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 
 /**
- * This contract Lets a funder endow a bounty that will pay out if an Oracle
- * reports an event at a deadline.
+ * This contract lets a funder endow a bounty that will pay out if an Oracle
+ * reports an event at a deadline. To make a simple contract for a test the
+ * contract only pays attention to the event that occurs at the requested
+ * deadline. A realistic contract might look more than once, or might accept any
+ * positive response before the deadline.
  *
  * @type {ContractStartFn}
  */
