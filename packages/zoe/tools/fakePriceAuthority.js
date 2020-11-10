@@ -1,7 +1,10 @@
 // @ts-check
 import { makeIssuerKit, MathKind, makeLocalAmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeNotifierFromAsyncIterable,
+} from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 
@@ -79,8 +82,21 @@ export async function makeFakePriceAuthority(options) {
   const quoteIssuer = E(quoteMint).getIssuer();
   const quoteMath = await makeLocalAmountMath(quoteIssuer);
 
-  /** @type {NotifierRecord<PriceQuote>} */
-  const { notifier, updater } = makeNotifierKit();
+  /**
+   * @type {NotifierRecord<Timestamp>} We need to have a notifier driven by the
+   * TimerService because if the timer pushes updates to individual
+   * QuoteNotifiers, we have a dependency inversion and the timer can never know
+   * when the QuoteNotifier goes away.  (Don't even mention WeakRefs... they're
+   * not exposed to userspace under Swingset because they're nondeterministic.)
+   *
+   * TODO It would be desirable to add a timestamp notifier interface to the
+   * TimerService https://github.com/Agoric/agoric-sdk/issues/2002
+   *
+   * Caveat: even if we had a timestamp notifier, we can't use it for triggers
+   * yet unless we rewrite our manualTimer tests not to depend on when exactly a
+   * trigger has been fired for a given tick.
+   */
+  const { notifier: ticker, updater: tickUpdater } = makeNotifierKit();
 
   /**
    *
@@ -140,13 +156,7 @@ export async function makeFakePriceAuthority(options) {
         } else {
           currentPriceIndex += 1;
         }
-        const [tradeValueIn] = currentTrade();
-        const rawQuote = priceInQuote(
-          mathIn.make(tradeValueIn),
-          mathOut.getBrand(),
-          t,
-        );
-        updater.updateState(rawQuote);
+        tickUpdater.updateState(t);
         for (const req of comparisonQueue) {
           // eslint-disable-next-line no-await-in-loop
           const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
@@ -176,6 +186,17 @@ export async function makeFakePriceAuthority(options) {
     return promiseKit.promise;
   }
 
+  async function* generateQuotes(amountIn, brandOut) {
+    let record = await ticker.getUpdateSince();
+    while (record.updateCount) {
+      // eslint-disable-next-line no-await-in-loop
+      const { value: timestamp } = record; // = await E(timer).getCurrentTimestamp();
+      yield priceInQuote(amountIn, brandOut, timestamp);
+      // eslint-disable-next-line no-await-in-loop
+      record = await ticker.getUpdateSince(record.updateCount);
+    }
+  }
+
   /** @type {PriceAuthority} */
   const priceAuthority = {
     getQuoteIssuer: (brandIn, brandOut) => {
@@ -186,9 +207,9 @@ export async function makeFakePriceAuthority(options) {
       assertBrands(brandIn, brandOut);
       return timer;
     },
-    getQuoteNotifier: async (brandIn, brandOut) => {
-      assertBrands(brandIn, brandOut);
-      return notifier;
+    makeQuoteNotifier: async (amountIn, brandOut) => {
+      assertBrands(amountIn.brand, brandOut);
+      return makeNotifierFromAsyncIterable(generateQuotes(amountIn, brandOut));
     },
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
       assertBrands(amountIn.brand, brandOut);
