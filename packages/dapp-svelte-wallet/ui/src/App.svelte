@@ -218,7 +218,7 @@
           Instances
           Installations -->
       <div class="dapps">
-        <Dapps />
+        <Dapps expandDefault={false} />
       </div>
       <div class="issuers">
         <Issuers />
