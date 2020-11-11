@@ -2,7 +2,7 @@
   import ListItems from "../lib/ListItems.svelte";
   import Amount from "./Amount.svelte";
   import Payment from './Payment.svelte';
-  
+
   import { payments } from './store';
 import ListCard from "../lib/ListCard.svelte";
 import Card from "smelte/src/components/Card";
@@ -10,7 +10,7 @@ import Card from "smelte/src/components/Card";
 $: paymentItems = $payments.filter(pmt => pmt.status !== 'deposited');
 </script>
 
-<ListCard items={paymentItems}>
+<ListCard items={paymentItems} expandDefault={true}>
   <div slot="title">
     <Card.Title title="Incoming Payments" />
   </div>

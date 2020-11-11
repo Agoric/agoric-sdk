@@ -6,7 +6,7 @@
   import { dapps } from './store';
 </script>
 
-<ListCard items={$dapps}>
+<ListCard items={$dapps} expandDefault={true}>
   <div slot="title">
     <Card.Title title="Dapps" />
   </div>

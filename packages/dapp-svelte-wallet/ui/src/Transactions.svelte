@@ -7,7 +7,7 @@
 </script>
 
 <!-- filter out the history -->
-<ListCard items={($inbox || []).filter(({ status }) => status === undefined || status === 'pending')}>
+<ListCard items={($inbox || []).filter(({ status }) => status === undefined || status === 'pending')} expandDefault={true}>
   <div slot="title">
     <Card.Title title="Offers" />
   </div>
