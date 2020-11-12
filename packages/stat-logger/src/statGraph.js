@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import * as vega from 'vega';
 
 function scanMax(filePath, fields) {

@@ -5,6 +5,8 @@ packages/cosmic-swingset/ve[0-9]
 packages/cosmic-swingset/t[0-9]
 packages/cosmic-swingset/lib/lib*.h
 packages/cosmic-swingset/lib/lib*.so
+packages/swingset-runner
+packages/stat-logger
 **/*.log
 **/dist
 **/build
