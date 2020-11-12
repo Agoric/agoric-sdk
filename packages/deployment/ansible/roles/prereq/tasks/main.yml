@@ -25,11 +25,10 @@
     path: /dev/sda
   register: sda
 
-- name: Resize /dev/sda with XFS
+- name: Create /dev/sda with XFS
   filesystem:
     fstype: xfs
     dev: /dev/sda
-    resizefs: yes
   when: sda.stat.exists
 
 - name: Mount /dev/sda
@@ -38,4 +37,8 @@
     src: /dev/sda
     fstype: auto
     state: mounted
+  when: sda.stat.exists
+
+- name: Resize /home with XFS
+  shell: "xfs_growfs -n /home"
   when: sda.stat.exists

@@ -1,6 +1,5 @@
 #! /bin/bash
 # bigdipper.sh - Run Agoric Big Dipper Explorer
-set -e
 
 # Kill off all our children on exit.
 trap 'kill $(jobs -p) 2>/dev/null' EXIT
@@ -10,6 +9,9 @@ ncf=`curl -Ss "$NETWORK_URL/network-config"`
 cn=`echo "$ncf" | jq -r '.chainName'`
 
 origRpcAddrs=( $(echo $ncf | jq -r '.rpcAddrs | join(" ")' ) )
+
+# Begin detecting errors.
+set -e
 
 rpcAddrs=(${origRpcAddrs[@]})
 rp=
@@ -45,15 +47,19 @@ test -d "portal-$cn" && ln -sfT "portal-$cn" "portal-$nn"
 cd "portal-$nn"
 export METEOR_SETTINGS=`sed -e "s/@GTM@/$GTM/; s/@CHAIN_NAME@/$cn/; s!@NETWORK_URL@!$NETWORK_URL!; s/@RPC@/$rp/; s/@API@/$api/;" settings.json`
 
+/usr/bin/node main.js &
+
 # Kill this script if the ping fails.
 # Systemd restarts us and we refresh our parameters.
 {
   while $ping > /dev/null; do
+    newcn=`curl -Ss "$NETWORK_URL/network-config" | jq -r .chainName`
+    test "$cn" == "$newcn" || break
     sleep 30
   done
   sleep 20
   kill $$
 } &
 
-/usr/bin/node main.js
+wait
 exit $?
