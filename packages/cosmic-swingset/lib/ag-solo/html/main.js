@@ -1,20 +1,32 @@
-/* global WebSocket fetch document window walletFrame */
+/* global WebSocket fetch document window walletFrame localStorage */
 const RECONNECT_BACKOFF_SECONDS = 3;
 // Functions to run to reset the HTML state to what it was.
 const resetFns = [];
 let inpBackground;
 
-// Clear out the hash for privacy.
-const accessTokenParams = `?${window.location.hash.slice(1)}`;
-const accessTokenHash = window.location.hash;
+// Fetch the access token from the window's URL.
+let accessTokenParams = `?${window.location.hash.slice(1)}`;
+let hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
+
+try {
+  if (hasAccessToken) {
+    // Store the access token for later use.
+    localStorage.setItem('accessTokenParams', accessTokenParams);
+  } else {
+    // Try reviving it from localStorage.
+    accessTokenParams = localStorage.getItem('accessTokenParams') || '?';
+    hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
+  }
+} catch (e) {
+  console.log('Error fetching accessTokenParams', e);
+}
+
+// Now that we've captured it, clear out the access token from the URL bar.
 window.location.hash = '';
 window.addEventListener('hashchange', _ev => {
   // Keep it clear.
   window.location.hash = '';
 });
-const hasAccessToken = new URLSearchParams(accessTokenParams).has(
-  'accessToken',
-);
 
 if (!hasAccessToken) {
   // This is friendly advice to the user who doesn't know.
