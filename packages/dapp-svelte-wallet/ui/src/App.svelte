@@ -1,6 +1,7 @@
 <script>
   import 'smelte/src/tailwind.css';
   import { E } from '@agoric/eventual-send';
+  import { afterUpdate, onMount } from 'svelte';
 
   import Button from 'smelte/src/components/Button';
   import Dapps from './Dapps.svelte';
@@ -30,12 +31,25 @@
   $: connectStatus = $connected ? 'Connected' : 'Disconnected';
   $: connectLabel = $connected ? 'Disconnect' : 'Connect';
   $: connectAction = $connected ? connected.disconnect : connected.connect;
+
+  // Compute the banner height from actual rendering.
+  const calculateBannerHeight = () => {
+    const headerHeight = document.querySelector('header.topmost').clientHeight;
+    document.documentElement.style.setProperty('--banner-height', `${headerHeight}px`);
+  };
+  onMount(() => {
+    window.addEventListener('resize', calculateBannerHeight);
+    return () => {
+      window.removeEventListener('resize', calculateBannerHeight);
+    };
+  });
+  afterUpdate(calculateBannerHeight);
 </script>
 
 <style>
   :global(html) {
     --text-color-normal: green;
-    --text-color-light: #8cabd9;
+    --text-color-light: #273242;
     color: var(--theme-text);
     --agoric-bg: #ab2328;
     --banner-height: 70px;
@@ -64,7 +78,7 @@
     left: 0;
     background-color: var(--agoric-bg);
     width: 100%;
-    /* height: var(--banner-height); */
+    height: var(--banner-height);
     z-index: 25;
     border-bottom: 1px solid var(--color-primary-700);
   }
@@ -81,7 +95,7 @@
 
   header {
     z-index: 30;
-    min-height: var(--banner-height);
+    min-height: 70px; /* var(--banner-height); */
     max-width: var(--content-width);
     margin: auto;
     color: #f1f1f1;
@@ -167,9 +181,9 @@
 
 <ThemeWrapper>
   <div class="header-wrapper">
-    <header>
+    <header class="topmost">
       <a href="https://agoric.com" class="flex items-center">
-        <img src="logo.png" alt="Agoric" width="200" />
+        <img src="logo.png" alt="Agoric" width="200" height="43" />
       </a>
       <!-- <h4>Wallet</h4> -->
       <nav>
@@ -218,7 +232,7 @@
           Instances
           Installations -->
       <div class="dapps">
-        <Dapps expandDefault={false} />
+        <Dapps />
       </div>
       <div class="issuers">
         <Issuers />
