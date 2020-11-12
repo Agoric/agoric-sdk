@@ -333,7 +333,7 @@ if (
         throw Error(`status ${resp.status}`);
       }
       walletFrame.style.display = 'block';
-      walletFrame.src = `wallet/${accessTokenHash}`;
+      walletFrame.src = `wallet/#${accessTokenParams.slice(1)}`;
     })
     .catch(e => {
       console.log('Cannot fetch wallet/', e);
