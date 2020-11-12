@@ -22,7 +22,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
     // Throw away our state.
     bootPK = makePromiseKit();
     onReset(bootPK.promise.then(_ => true));
-    abort();
+    abort && abort();
   }
 
   // Stable identity for the connection handler.

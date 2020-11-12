@@ -10,7 +10,7 @@ import Card from "smelte/src/components/Card";
 $: paymentItems = $payments.filter(pmt => pmt.status !== 'deposited');
 </script>
 
-<ListCard items={paymentItems} expandDefault={true}>
+<ListCard items={paymentItems} storeKey="payments.true" expandDefault={true}>
   <div slot="title">
     <Card.Title title="Incoming Payments" />
   </div>

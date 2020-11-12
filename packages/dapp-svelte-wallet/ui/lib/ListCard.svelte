@@ -14,7 +14,9 @@
   // true iff new items should start expanded
   export let expandDefault = false;
 
-  let expandState = [];
+  export let storeKey = '';
+
+  let expandState = storeKey ? JSON.parse(localStorage.getItem(`ListCard.${storeKey}`) || '[]') : [];
 
   $: isExpanded = id => expandState.includes(id) !== expandDefault;
 
@@ -24,6 +26,9 @@
       expandState = expandState.filter(it => id !== it);
     } else {
       expandState = [...expandState, id];
+    }
+    if (storeKey) {
+      localStorage.setItem(`ListCard.${storeKey}`, JSON.stringify(expandState));
     }
   };
 </script>

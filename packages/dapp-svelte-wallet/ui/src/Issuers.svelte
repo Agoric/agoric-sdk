@@ -9,7 +9,7 @@
   import { issuers, walletP } from './store';
 </script>
 
-<ListCard items={$issuers}>
+<ListCard items={$issuers} storeKey="issuers">
   <div slot="title">
     <Card.Title
       title="Issuers"

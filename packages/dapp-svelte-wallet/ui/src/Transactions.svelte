@@ -7,7 +7,11 @@
 </script>
 
 <!-- filter out the history -->
-<ListCard items={($inbox || []).filter(({ status }) => status === undefined || status === 'pending')} expandDefault={true}>
+<ListCard
+  items={($inbox || []).filter(({ status }) => status === undefined || status === 'pending')}
+  storeKey="inbox"
+  expandDefault={true}
+>
   <div slot="title">
     <Card.Title title="Offers" />
   </div>

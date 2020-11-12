@@ -8,7 +8,7 @@
   export let expandDefault = true;
 </script>
 
-<ListCard items={$dapps} expandDefault={expandDefault}>
+<ListCard items={$dapps} storeKey="dapps-{expandDefault}" {expandDefault}>
   <div slot="title">
     <Card.Title title="Dapps" />
   </div>
