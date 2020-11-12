@@ -6,7 +6,7 @@
   import { purses } from './store';
 </script>
 
-<ListCard items={$purses}>
+<ListCard items={$purses} storeKey="purses">
   <div slot="title">
     <Card.Title title="Purses" />
   </div>

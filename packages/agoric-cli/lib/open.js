@@ -65,7 +65,7 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
     case 'false':
     case false:
     case undefined:
-      suffix = '/wallet';
+      suffix = '/wallet/';
       break;
     case 'only':
       suffix = '?w=0';

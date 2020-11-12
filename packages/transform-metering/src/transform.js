@@ -183,6 +183,10 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
       const output = babelCore.transformFromAstSync(ast, source, {
         generatorOpts: {
           retainLines: true,
+          // Specify `compact: false` to silence:
+          // [BABEL] Note: The code generator has deoptimised the styling of
+          // undefined as it exceeds the max of 500KB.
+          compact: false,
         },
         plugins: [meteringPlugin(regexpList)],
         ast: true,

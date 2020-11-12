@@ -6,18 +6,29 @@ import { makeWebSocket } from './websocket';
 import { makeCapTPConnection } from './captp';
 
 // Fetch the access token from the window's URL.
-const accessTokenParams = `?${window.location.hash.slice(1)}`;
-if (isProduction) {
-  // Now that we've captured it, clear out the access token from the URL bar.
-  window.location.hash = '';
-  window.addEventListener('hashchange', _ev => {
-    // Keep it clear.
-    window.location.hash = '';
-  });
-}
-const hasAccessToken = new URLSearchParams(accessTokenParams).has(
+let accessTokenParams = `?${window.location.hash.slice(1)}`;
+let hasAccessToken = new URLSearchParams(accessTokenParams).get(
   'accessToken',
 );
+try {
+  if (hasAccessToken) {
+    // Store the access token for later use.
+    localStorage.setItem('accessTokenParams', accessTokenParams);
+  } else {
+    // Try reviving it from localStorage.
+    accessTokenParams = localStorage.getItem('accessTokenParams') || '?';
+    hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
+  }
+} catch (e) {
+  console.log('Error fetching accessTokenParams', e);
+}
+
+// Now that we've captured it, clear out the access token from the URL bar.
+window.location.hash = '';
+window.addEventListener('hashchange', _ev => {
+  // Keep it clear.
+  window.location.hash = '';
+});
 
 if (!hasAccessToken) {
   // This is friendly advice to the user who doesn't know.

@@ -11,14 +11,24 @@
 
   export let expandIcon = 'arrow_right';
 
-  let expanded = [];
+  // true iff new items should start expanded
+  export let expandDefault = false;
 
-  const toggle = item => {
-    // console.log('toggle', item);
-    if (expanded.includes(item)) {
-      expanded = expanded.filter(it => item !== it);
+  export let storeKey = '';
+
+  let expandState = storeKey ? JSON.parse(localStorage.getItem(`ListCard.${storeKey}`) || '[]') : [];
+
+  $: isExpanded = id => expandState.includes(id) !== expandDefault;
+
+  const toggle = id => {
+    console.log('toggle', id, expandState.includes(id));
+    if (expandState.includes(id)) {
+      expandState = expandState.filter(it => id !== it);
     } else {
-      expanded = [...expanded, item];
+      expandState = [...expandState, id];
+    }
+    if (storeKey) {
+      localStorage.setItem(`ListCard.${storeKey}`, JSON.stringify(expandState));
     }
   };
 </script>
@@ -43,7 +53,7 @@
         <div class="fullwidth px-1">
           <ListItem dense selectedClasses="bg-primary-trans" {item} {...item} on:click={() => toggle(item.id)}>
             <div class="flex items-center">
-              <Icon tip={expanded.includes(item.id)}>{expandIcon}</Icon>
+              <Icon tip={isExpanded(item.id)}>{expandIcon}</Icon>
               <slot name="item-header" {item}><span>{item.text}</span></slot>
             </div>
           </ListItem>
@@ -52,7 +62,7 @@
             <slot name="item-header-rest" {item}></slot>
           </div>
 
-          {#if expanded.includes(item.id)}
+          {#if isExpanded(item.id)}
             <div in:slide class="ml-10">
               <slot name="item-details" {item}></slot>
             </div>

@@ -4,9 +4,11 @@
   import Dapp from "./Dapp.svelte";
 
   import { dapps } from './store';
+
+  export let expandDefault = true;
 </script>
 
-<ListCard items={$dapps}>
+<ListCard items={$dapps} storeKey="dapps-{expandDefault}" {expandDefault}>
   <div slot="title">
     <Card.Title title="Dapps" />
   </div>
