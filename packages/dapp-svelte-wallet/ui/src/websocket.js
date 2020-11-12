@@ -20,9 +20,10 @@ export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
   }
 
   const RECONNECT_BACKOFF_SECONDS = 3;
+  let reopenTimeout;
   function reopen() {
     console.log(`Reconnecting in ${RECONNECT_BACKOFF_SECONDS} seconds`);
-    setTimeout(openSocket, RECONNECT_BACKOFF_SECONDS * 1000);
+    reopenTimeout = setTimeout(openSocket, RECONNECT_BACKOFF_SECONDS * 1000);
   }
 
   let socket = null;
@@ -31,6 +32,7 @@ export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
     if (socket) {
       return;
     }
+    clearTimeout(reopenTimeout);
     socket = new WebSocket(`${wsurl}`);
     retryStrategy = reopen;
 
