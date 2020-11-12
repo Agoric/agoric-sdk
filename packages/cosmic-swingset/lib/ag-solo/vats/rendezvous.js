@@ -178,7 +178,7 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
             // We want to mark the rendezvous as failed if not already.
             if (!already) {
               resultPK.reject(
-                details`Rendezvous with ${peerAddresses} not completed`.complain(),
+                Error(`Rendezvous with ${peerAddresses} not completed`),
               );
             }
             // Remove any stale references.
