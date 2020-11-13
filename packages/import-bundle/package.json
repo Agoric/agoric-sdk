@@ -20,7 +20,7 @@
   "dependencies": {
     "@agoric/base64": "^0.0.0+1-dev",
     "@agoric/assert": "^0.1.0",
-    "@agoric/compartment-mapper": "0.2.3"
+    "@agoric/compartment-mapper": "^0.2.3"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.1.10",

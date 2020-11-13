@@ -12,7 +12,7 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-standalone/-/babel-standalone-7.9.5.tgz#1ca0c17844924199d31e49d6b67e8b2a629b8599"
   integrity sha512-1Aa23oPuRi4kywUyZODo8zey9Gq2NpD2xUnNvgJLoT8orMQRlVOtvbG3JeHq5sjJERlF/q6csg4/P8t8/5IABA==
 
-"@agoric/compartment-mapper@0.2.3":
+"@agoric/compartment-mapper@^0.2.3":
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/@agoric/compartment-mapper/-/compartment-mapper-0.2.3.tgz#f0f9d048528a98d99329c593ff813952c9e7de29"
   integrity sha512-2xTFCMLhbT1aiClD3GpEDcPilczM5je2sSyAZPqrguciIXgdQVb/qF6uLFj/L9gVL2LS2yrPV4ZC8B+xRn7YpQ==
