@@ -81,7 +81,10 @@ export const makeConnection = (
       pendingAcks.add(ackDeferred);
       E(handler)
         .onReceive(connection, bytes, handler)
-        .catch(err => rethrowUnlessMissing(err) || '')
+        .catch(err => {
+          rethrowUnlessMissing(err);
+          return '';
+        })
         .then(
           ack => {
             pendingAcks.delete(ackDeferred);

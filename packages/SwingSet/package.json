@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.1.0",
+    "@agoric/base64": "^0.0.0+1-dev",
     "@agoric/babel-parser": "^7.6.4",
     "@agoric/bundle-source": "^1.1.10",
     "@agoric/captp": "^1.6.0",
