@@ -11,6 +11,8 @@ export function makeDummySlogger(makeConsole) {
     startup: () => () => 0, // returns nop finish() function
     delivery: () => () => 0,
     syscall: () => () => 0,
+    changeCList: () => () => 0,
+    terminateVat: () => () => 0,
   });
 }
 
@@ -85,14 +87,38 @@ export function makeSlogger(writeObj) {
       }
       return harden(finish);
     }
-    return harden({ vatConsole, startup, delivery, syscall });
+
+    // mode: 'import' | 'export' | 'drop'
+    function changeCList(crank, mode, kobj, vobj) {
+      write({ type: 'clist', crankNum: crank, mode, vatID, kobj, vobj });
+    }
+
+    function terminateVat(shouldReject, info) {
+      write({ type: 'terminate', vatID, shouldReject, info });
+    }
+
+    return harden({
+      vatConsole,
+      startup,
+      delivery,
+      syscall,
+      changeCList,
+      terminateVat,
+    });
   }
 
-  function addVat(vatID, dynamic, description, vatSourceBundle) {
+  function addVat(vatID, dynamic, description, name, vatSourceBundle) {
     assert(!vatSlogs.has(vatID), `already have slog for ${vatID}`);
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
-    write({ type: 'create-vat', vatID, dynamic, description, vatSourceBundle });
+    write({
+      type: 'create-vat',
+      vatID,
+      dynamic,
+      description,
+      name,
+      vatSourceBundle,
+    });
     return vatSlog;
   }
 
@@ -106,5 +132,7 @@ export function makeSlogger(writeObj) {
     startup: (vatID, ...args) => vatSlogs.get(vatID).startup(...args),
     delivery: (vatID, ...args) => vatSlogs.get(vatID).delivery(...args),
     syscall: (vatID, ...args) => vatSlogs.get(vatID).syscall(...args),
+    changeCList: (vatID, ...args) => vatSlogs.get(vatID).changeCList(...args),
+    terminateVat: (vatID, ...args) => vatSlogs.get(vatID).terminateVat(...args),
   });
 }

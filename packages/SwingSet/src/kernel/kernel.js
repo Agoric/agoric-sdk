@@ -115,7 +115,7 @@ export default function buildKernel(
     ? makeSlogger(writeSlogObject)
     : makeDummySlogger(makeConsole);
 
-  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
+  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer, kernelSlog);
 
   const meterManager = makeMeterManager(replaceGlobalMeter);
 
@@ -529,6 +529,7 @@ export default function buildKernel(
           didAbort = true;
         }
         terminateVat(vatID, shouldReject, info);
+        kernelSlog.terminateVat(vatID, shouldReject, info);
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
       }
       if (!didAbort) {

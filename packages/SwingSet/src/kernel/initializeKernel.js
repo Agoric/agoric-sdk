@@ -64,6 +64,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       ]);
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
+      creationOptions.name = name;
 
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);

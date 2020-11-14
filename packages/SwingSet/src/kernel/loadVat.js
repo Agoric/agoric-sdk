@@ -78,6 +78,7 @@ export function makeVatLoader(stuff) {
 
   const allowedStaticOptions = [
     'description',
+    'name',
     'vatParameters',
     'managerType',
     'enableSetup',
@@ -149,14 +150,15 @@ export function makeVatLoader(stuff) {
       enableSetup = false,
       enablePipelining = false,
       virtualObjectCacheSize,
+      name,
     } = options;
     let terminated = false;
 
     // TODO: maybe hash the bundle object somehow for the description
     const sourceDesc = source.bundle
-      ? '(from source bundle)'
-      : `(from bundleName: ${source.bundleName})`;
-    const description = `${options.description || ''} ${sourceDesc}`;
+      ? 'from source bundle'
+      : `from bundleName: ${source.bundleName}`;
+    const description = `${options.description || ''} (${sourceDesc})`.trim();
 
     function notifyTermination(shouldReject, info) {
       insistCapData(info);
@@ -189,7 +191,7 @@ export function makeVatLoader(stuff) {
         throw Error(`vat creation requires a bundle, not a plain string`);
       }
 
-      kernelSlog.addVat(vatID, isDynamic, description, vatSourceBundle);
+      kernelSlog.addVat(vatID, isDynamic, description, name, vatSourceBundle);
       const managerOptions = {
         bundle: vatSourceBundle,
         metered,
