@@ -12,14 +12,14 @@ function evaluate(src, endowments) {
 }
 
 test('endoZipBase64', async t => {
-  const { source } = await bundleSource(
+  const { endoZipBase64 } = await bundleSource(
     `${__dirname}/../demo/dir1/encourage.js`,
     'endoZipBase64',
   );
 
-  const bytes = decodeBase64(source);
+  const bytes = decodeBase64(endoZipBase64);
   const archive = await parseArchive(bytes);
-  const { namespace } = await archive.import('.');
+  const { namespace } = await archive['import']('.');
   const { message, encourage } = namespace;
 
   t.is(message, `You're great!`);

@@ -50,9 +50,8 @@ export default async function bundleSource(
     // individual package.jsons and driven by the compartment mapper.
     const entry = new URL(startFilename, base).toString();
     const bytes = await makeArchive(read, entry);
-    const source = encodeBase64(bytes);
-    let sourceMap;
-    return { source, sourceMap, moduleFormat };
+    const endoZipBase64 = encodeBase64(bytes);
+    return { endoZipBase64, moduleFormat };
   }
 
   const {
