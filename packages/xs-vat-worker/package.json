@@ -2,6 +2,9 @@
   "name": "@agoric/xs-vat-worker",
   "version": "0.3.0",
   "description": "swingset-vat worker for XS js runtime",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {

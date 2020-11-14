@@ -2,6 +2,9 @@
   "name": "@agoric/tame-metering",
   "version": "1.2.7",
   "description": "tame-metering",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
