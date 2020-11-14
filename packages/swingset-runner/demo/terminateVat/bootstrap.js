@@ -22,7 +22,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
       switch (mode) {
         case 'kill':
-          await E(dude.adminNode).terminate('with extreme prejudice');
+          await E(dude.adminNode).terminateWithFailure('with prejudice');
           break;
         case 'happy':
           await E(dude.root).dieHappy('I got everything I ever wanted');

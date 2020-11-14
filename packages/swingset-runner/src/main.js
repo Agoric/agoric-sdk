@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
@@ -359,6 +360,15 @@ export async function main() {
   }
   if (slogFile) {
     runtimeOptions.slogFile = slogFile;
+    if (forceReset) {
+      try {
+        fs.unlinkSync(slogFile);
+      } catch (e) {
+        if (e.code !== 'ENOENT') {
+          fail(`${e}`);
+        }
+      }
+    }
   }
   let bootstrapResult;
   if (forceReset) {

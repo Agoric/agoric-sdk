@@ -35,6 +35,7 @@ export function initializeVatState(storage, vatID) {
  * Produce a vat keeper for a vat.
  *
  * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
  * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
  * mapping tables.
@@ -44,10 +45,12 @@ export function initializeVatState(storage, vatID) {
  * @param {*} decrementRefCount
  * @param {*} incStat
  * @param {*} decStat
+ * @param {*} getCrankNumber
  * @returns {*} an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
   storage,
+  kernelSlog,
   vatID,
   addKernelObject,
   addKernelPromiseForVat,
@@ -55,6 +58,7 @@ export function makeVatKeeper(
   decrementRefCount,
   incStat,
   decStat,
+  getCrankNumber,
 ) {
   insistVatID(vatID);
 
@@ -105,6 +109,14 @@ export function makeVatKeeper(
         incStat('clistEntries');
         storage.set(kernelKey, vatSlot);
         storage.set(vatKey, kernelSlot);
+        kernelSlog &&
+          kernelSlog.changeCList(
+            vatID,
+            getCrankNumber(),
+            'export',
+            kernelSlot,
+            vatSlot,
+          );
         kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
@@ -153,6 +165,14 @@ export function makeVatKeeper(
       incStat('clistEntries');
       storage.set(vatKey, kernelSlot);
       storage.set(kernelKey, vatSlot);
+      kernelSlog &&
+        kernelSlog.changeCList(
+          vatID,
+          getCrankNumber(),
+          'import',
+          kernelSlot,
+          vatSlot,
+        );
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
@@ -171,6 +191,14 @@ export function makeVatKeeper(
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const vatKey = `${vatID}.c.${vatSlot}`;
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
+    kernelSlog &&
+      kernelSlog.changeCList(
+        vatID,
+        getCrankNumber(),
+        'drop',
+        kernelSlot,
+        vatSlot,
+      );
     if (storage.has(kernelKey)) {
       decrementRefCount(kernelSlot, `${vatID}|del|clist`);
       decStat('clistEntries');

@@ -26,7 +26,10 @@
     "@agoric/swing-store-simple": "^0.2.7",
     "@agoric/swingset-vat": "^0.10.0",
     "@agoric/tame-metering": "^1.2.7",
-    "@agoric/zoe": "^0.10.0"
+    "@agoric/zoe": "^0.10.0",
+    "@agoric/zoe": "^0.10.0-dev.0",
+    "n-readlines": "^1.0.1",
+    "yargs": "^16.1.0"
   },
   "devDependencies": {
     "ava": "^3.12.1",

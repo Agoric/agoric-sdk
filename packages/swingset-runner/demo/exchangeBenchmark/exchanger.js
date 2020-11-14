@@ -47,7 +47,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
   async function initiateTrade(otherP) {
     await preReport();
 
-    const addOrderInvitation = await E(publicFacet).makeInvitation();
+    const buyOrderInvitation = await E(publicFacet).makeInvitation();
 
     const mySellOrderProposal = harden({
       give: { Asset: moola(1) },
@@ -58,7 +58,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
       Asset: await E(moolaPurseP).withdraw(moola(1)),
     };
     const seat = await E(zoe).offer(
-      addOrderInvitation,
+      buyOrderInvitation,
       mySellOrderProposal,
       paymentKeywordRecord,
     );

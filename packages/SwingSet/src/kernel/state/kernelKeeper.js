@@ -100,7 +100,7 @@ const FIRST_OBJECT_ID = 20;
 const FIRST_DEVNODE_ID = 30;
 const FIRST_PROMISE_ID = 40;
 
-export default function makeKernelKeeper(storage) {
+export default function makeKernelKeeper(storage, kernelSlog) {
   insistEnhancedStorageAPI(storage);
 
   function getRequired(key) {
@@ -736,6 +736,7 @@ export default function makeKernelKeeper(storage) {
     );
     const vk = makeVatKeeper(
       storage,
+      kernelSlog,
       vatID,
       addKernelObject,
       addKernelPromiseForVat,
@@ -743,6 +744,7 @@ export default function makeKernelKeeper(storage) {
       decrementRefCount,
       incStat,
       decStat,
+      getCrankNumber,
     );
     ephemeral.vatKeepers.set(vatID, vk);
     return vk;
