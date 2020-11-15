@@ -1,0 +1,26 @@
+name: Is patches/esm+3.2.25 still relevant?
+
+# run CI on pushes to master, and on all PRs (even the ones that target other
+# branches)
+on:
+ push:
+   branches: [master]
+ pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+    - name: Fail if you should yarn upgrade esm
+      run: |
+        npm info esm@^3.2.26 | grep '^dist-tags:' || exit 0
+        cat <<\EOF
+        You should:
+          yarn upgrade esm
+          git rm patches/esm+* .github/workflows/detect-new-resm.yml
+        and commit the results
+        EOF
+        exit 1
