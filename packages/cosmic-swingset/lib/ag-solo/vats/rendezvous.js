@@ -16,11 +16,41 @@ import { makePromiseKit } from '@agoric/promise-kit';
  * addresses
  */
 
+/**
+ * @typedef {string | number | boolean | null} RendezvousSelector a
+ * primitive value to help choose between the specific rendezvous instances
+ */
+
 const RENDEZVOUS_ALREADY = harden({
   toString() {
     return 'RENDEZVOUS_ALREADY';
   },
 });
+
+/** @type {RendezvousSelector} */
+const DEFAULT_SELECTOR = null;
+
+/**
+ * @callback StartRendezvous
+ * @param {PeerAddresses} peerAddrs the list of peer addresses to rendezvous
+ * with
+ * @param {any} [sendToPeer] the object or other value to return to the first
+ * matching peer
+ * @param {RendezvousSelector} [selector=DEFAULT_SELECTOR] a value that the rendezvous
+ * completer must match.  If supplied, this allows multiple pending rendezvous
+ * per address pair.
+ * @returns {Rendezvous}
+ */
+
+/**
+ * @callback CompleteRendezvous
+ * @param {PeerAddresses} peerAddrs the list of peer addresses
+ * @param {any} [sendToPeer] the object or other value to return to the first
+ * matching peer
+ * @param {RendezvousSelector} [selector=DEFAULT_SELECTOR] a value to choose between
+ * multiple started rendezvous instances
+ * @returns {any}
+ */
 
 /**
  * @typedef {Object} RendezvousPrivateService A closely-held service associated
@@ -63,14 +93,12 @@ const RENDEZVOUS_ALREADY = harden({
  * necessarily unique.
  * @property {() => PeerAddress} getLocalAddress get the address string for this
  * private service
- * @property {(peerAddrs: PeerAddresses, sendToPeer: any) => Rendezvous}
- * startRendezvous create a new rendezvous instance for this local address,
- * returning the value from the first matching peerAddress and send it
- * `sendToPeer`
- * @property {(peerAddrs: PeerAddresses, sendToPeer: any) => any}
- * completeRendezvous returns the value sent by the first matching peerAddress
- * and sends `sendToPeer` to that peer, throwing an exception if no peer
- * completed the rendezvous
+ * @property {StartRendezvous} startRendezvous create a new rendezvous instance
+ * for this local address, returning the value from the first matching
+ * peerAddress and send it `sendToPeer`
+ * @property {CompleteRendezvous} completeRendezvous returns the value sent by
+ * the first matching peerAddress and sends `sendToPeer` to that peer, throwing
+ * an exception if no peer completed the rendezvous
  */
 
 /**
@@ -144,9 +172,9 @@ const getPeerAddresses = peerAddrs => {
  */
 export function makeRendezvousNamespace(namespaceName = 'Agoric') {
   /**
-   * @type {Store<string, Store<string, PeerRecord>>}
+   * @type {Store<PeerAddress, Store<PeerAddress, Store<RendezvousSelector, PeerRecord>>>}
    */
-  const addrToPeerRecordStores = makeStore('localAddress');
+  const addrToMatchingSelectorStores = makeStore('localAddress');
 
   // Return a rendezvous maker.
   return ourAddress => {
@@ -158,7 +186,11 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
       getLocalAddress() {
         return ourAddress;
       },
-      startRendezvous(peerAddrs, sendToPeer = undefined) {
+      startRendezvous(
+        peerAddrs,
+        sendToPeer = undefined,
+        selector = DEFAULT_SELECTOR,
+      ) {
         const peerAddresses = getPeerAddresses(peerAddrs);
 
         let remainingToFind = peerAddresses.length;
@@ -192,15 +224,34 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
           const theirAddress = peerAddresses[i];
 
           /**
-           * @type {Store<PeerAddress, PeerRecord>}
+           * @type {Store<PeerAddress, Store<RendezvousSelector, PeerRecord>>}
            */
-          let addrToPeerRecord;
-          if (addrToPeerRecordStores.has(theirAddress)) {
-            addrToPeerRecord = addrToPeerRecordStores.get(theirAddress);
+          let matchToSelectorStore;
+          if (addrToMatchingSelectorStores.has(theirAddress)) {
+            matchToSelectorStore = addrToMatchingSelectorStores.get(
+              theirAddress,
+            );
           } else {
-            addrToPeerRecord = makeStore('localAddress');
-            addrToPeerRecordStores.init(theirAddress, addrToPeerRecord);
+            matchToSelectorStore = makeStore('localAddress');
+            addrToMatchingSelectorStores.init(
+              theirAddress,
+              matchToSelectorStore,
+            );
           }
+
+          /** @type {Store<RendezvousSelector, PeerRecord>} */
+          let selectorStore;
+          if (matchToSelectorStore.has(ourAddress)) {
+            selectorStore = matchToSelectorStore.get(ourAddress);
+          } else {
+            selectorStore = makeStore(`${ourAddress} selector`);
+            matchToSelectorStore.init(ourAddress, selectorStore);
+          }
+
+          assert(
+            !selectorStore.has(selector),
+            details`${ourAddress} selector ${selector} must not already exist`,
+          );
 
           const complete = obj => {
             remainingToFind -= 1;
@@ -209,34 +260,37 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
               already = true;
               resultPK.resolve(obj);
             }
-            if (remainingToFind === 0) {
+            if (remainingToFind <= 0) {
               // We're done!
               rendezvous.cancel();
+              if (selectorStore.keys().length === 0) {
+                matchToSelectorStore.delete(ourAddress);
+              }
             }
           };
           const peerRecord = harden({
             complete,
             receivedFrom: sendToPeer,
           });
-          if (addrToPeerRecord.has(ourAddress)) {
-            addrToPeerRecord.set(ourAddress, peerRecord);
-          } else {
-            addrToPeerRecord.init(ourAddress, peerRecord);
-          }
+          selectorStore.init(selector, peerRecord);
           disposals.push(() => {
             if (
-              addrToPeerRecord.has(ourAddress) &&
-              addrToPeerRecord.get(ourAddress) === peerRecord
+              selectorStore.has(selector) &&
+              selectorStore.get(selector) === peerRecord
             ) {
               // Remove the record for us.
-              addrToPeerRecord.delete(ourAddress);
+              selectorStore.delete(selector);
             }
           });
         }
 
         return harden(rendezvous);
       },
-      completeRendezvous(peerAddrs, sendToPeer = undefined) {
+      completeRendezvous(
+        peerAddrs,
+        sendToPeer = undefined,
+        selector = DEFAULT_SELECTOR,
+      ) {
         const peerAddresses = getPeerAddresses(peerAddrs);
 
         let already = false;
@@ -244,28 +298,37 @@ export function makeRendezvousNamespace(namespaceName = 'Agoric') {
 
         // Look up all the records shared between us and the remote address.
         assert(
-          addrToPeerRecordStores.has(ourAddress),
+          addrToMatchingSelectorStores.has(ourAddress),
           details`Rendezvous with ${peerAddrs} not completed`,
         );
-        const addrToPeerRecord = addrToPeerRecordStores.get(ourAddress);
+        const matchToSelectorStore = addrToMatchingSelectorStores.get(
+          ourAddress,
+        );
 
         // Try the addresses in preference order.
         for (const theirAddress of peerAddresses) {
-          if (addrToPeerRecord.has(theirAddress)) {
-            const {
-              complete,
-              receivedFrom: receivedFromThem,
-            } = addrToPeerRecord.get(theirAddress);
+          if (!matchToSelectorStore.has(theirAddress)) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+          const selectorStore = matchToSelectorStore.get(theirAddress);
+          if (!selectorStore.has(selector)) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+          const {
+            complete,
+            receivedFrom: receivedFromThem,
+          } = selectorStore.get(selector);
 
-            if (already) {
-              // Tell them we already completed the rendezvous.
-              complete(RENDEZVOUS_ALREADY);
-            } else {
-              // Send them our object.
-              already = true;
-              complete(sendToPeer);
-              returned = receivedFromThem;
-            }
+          if (already) {
+            // Tell them we already completed the rendezvous.
+            complete(RENDEZVOUS_ALREADY);
+          } else {
+            // Send them our object.
+            already = true;
+            complete(sendToPeer);
+            returned = receivedFromThem;
           }
         }
         assert(already, details`Rendezvous with ${peerAddrs} not completed`);

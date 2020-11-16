@@ -408,7 +408,7 @@ export function buildRootObject(_vatPowers) {
 
             switch (obj.type) {
               case 'walletRendezvous': {
-                const { dappAddresses } = obj;
+                const { dappAddresses, selector } = obj;
 
                 // Create a rendezvous from one of the dapp addresses to the
                 // wallet bridge facet.
@@ -416,6 +416,7 @@ export function buildRootObject(_vatPowers) {
                 const rendezvous = E(chainRendezvous).startRendezvous(
                   dappAddresses,
                   walletBridgePK.promise,
+                  selector,
                 );
 
                 // If this connection closes, stop listening for addresses.

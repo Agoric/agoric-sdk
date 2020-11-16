@@ -108,3 +108,60 @@ test('rendezvous race three way', async t => {
     rendezvousFailed,
   );
 });
+
+test('multiple pending rendezvous', async t => {
+  const makeRendezvous = makeRendezvousNamespace();
+
+  const solo = makeRendezvous('solo');
+  const testnet = makeRendezvous('testnet');
+  const mainnet = makeRendezvous('mainnet');
+
+  const rendezvous1 = solo.startRendezvous(
+    'testnet',
+    makeObj('fromSolo1'),
+    'rdv1',
+  );
+  const rendezvous2 = solo.startRendezvous(
+    'testnet',
+    makeObj('fromSolo2'),
+    'rdv2',
+  );
+
+  t.is(
+    testnet
+      .completeRendezvous('solo', makeObj('toSoloFromTestnet2'), 'rdv2')
+      .getName(),
+    'fromSolo2',
+  );
+
+  t.is(
+    testnet
+      .completeRendezvous('solo', makeObj('toSoloFromTestnet1'), 'rdv1')
+      .getName(),
+    'fromSolo1',
+  );
+
+  t.is(await E(rendezvous1.getResult()).getName(), 'toSoloFromTestnet1');
+  t.is(await E(rendezvous2.getResult()).getName(), 'toSoloFromTestnet2');
+
+  t.throws(
+    () =>
+      mainnet.completeRendezvous('solo', makeObj('toSoloFromMainnet'), 'rdv1'),
+    rendezvousFailed,
+  );
+  t.throws(
+    () =>
+      mainnet.completeRendezvous('solo', makeObj('toSoloFromMainnet'), 'rdv2'),
+    rendezvousFailed,
+  );
+  t.throws(
+    () =>
+      testnet.completeRendezvous('solo', makeObj('toSoloFromTestnet'), 'rdv1'),
+    rendezvousFailed,
+  );
+  t.throws(
+    () =>
+      testnet.completeRendezvous('solo', makeObj('toSoloFromTestnet'), 'rdv2'),
+    rendezvousFailed,
+  );
+});
