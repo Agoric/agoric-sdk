@@ -136,7 +136,6 @@ test('fundedCallSpread above Strike2', async t => {
     bucks,
     zoe,
     amountMaths,
-    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, fundedCallSpread);
 
@@ -173,10 +172,6 @@ test('fundedCallSpread above Strike2', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: await E(priceAuthority).getQuoteIssuer(
-      brands.get('simoleans'),
-      brands.get('moola'),
-    ),
   });
 
   const { creatorInvitation } = await zoe.startInstance(
@@ -241,7 +236,6 @@ test('fundedCallSpread, mid-strike', async t => {
     bucks,
     zoe,
     amountMaths,
-    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, fundedCallSpread);
 
@@ -277,10 +271,6 @@ test('fundedCallSpread, mid-strike', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: await E(priceAuthority).getQuoteIssuer(
-      brands.get('simoleans'),
-      brands.get('moola'),
-    ),
   });
 
   const { creatorInvitation } = await zoe.startInstance(
@@ -345,7 +335,6 @@ test('fundedCallSpread, late exercise', async t => {
     bucks,
     zoe,
     amountMaths,
-    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, fundedCallSpread);
 
@@ -382,10 +371,6 @@ test('fundedCallSpread, late exercise', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: await E(priceAuthority).getQuoteIssuer(
-      brands.get('simoleans'),
-      brands.get('moola'),
-    ),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -449,7 +434,6 @@ test('fundedCallSpread, sell options', async t => {
     bucks,
     zoe,
     amountMaths,
-    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, fundedCallSpread);
   const invitationIssuer = await E(zoe).getInvitationIssuer();
@@ -490,10 +474,6 @@ test('fundedCallSpread, sell options', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: await E(priceAuthority).getQuoteIssuer(
-      brands.get('simoleans'),
-      brands.get('moola'),
-    ),
   });
   const { creatorInvitation } = await zoe.startInstance(
     installation,
@@ -633,7 +613,6 @@ test('pricedCallSpread, mid-strike', async t => {
     bucks,
     zoe,
     amountMaths,
-    brands,
   } = setup();
   const installation = await installationPFromSource(zoe, pricedCallSpread);
 
@@ -670,10 +649,6 @@ test('pricedCallSpread, mid-strike', async t => {
     Underlying: simoleanIssuer,
     Collateral: bucksIssuer,
     Strike: moolaIssuer,
-    Quote: await E(priceAuthority).getQuoteIssuer(
-      brands.get('simoleans'),
-      brands.get('moola'),
-    ),
   });
   const { creatorFacet } = await zoe.startInstance(
     installation,
