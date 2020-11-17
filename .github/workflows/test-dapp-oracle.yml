@@ -60,7 +60,7 @@ jobs:
     - name: yarn link
       run: |
         yarn link-cli ~/bin/agoric
-        echo "/home/runner/bin >> $GITHUB_PATH
+        echo "/home/runner/bin" >> $GITHUB_PATH
 
     - name: Check out dapp
       uses: actions/checkout@v2
