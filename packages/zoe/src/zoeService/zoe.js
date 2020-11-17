@@ -213,11 +213,17 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      addSeatObjPromiseKit.promise.catch(_ => {});
+      addSeatObjPromiseKit.promise.catch(err => {
+        console.error(err);
+        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+        throw err;
+      });
       const publicFacetPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      publicFacetPromiseKit.promise.catch(_ => {});
+      publicFacetPromiseKit.promise.catch(err => {
+        console.error(err);
+        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+        throw err;
+      });
 
       const makeInstanceAdmin = () => {
         /** @type {Set<ZoeSeatAdmin>} */
@@ -333,7 +339,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
       };
 
-      // At this point, the contract will start executing. All must be ready
+      // At this point, the contract will start executing. All must be
+      // ready
 
       const {
         creatorFacet = {},
@@ -431,11 +438,17 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             );
 
             const offerResultPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-            offerResultPromiseKit.promise.catch(_ => {});
+            offerResultPromiseKit.promise.catch(err => {
+              console.log('An offerHandler has errored.');
+              console.error(err);
+              // Error suppressed to not trigger Node.js's UnhandledPromiseRejectionWarning
+            });
             const exitObjPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-            exitObjPromiseKit.promise.catch(_ => {});
+            exitObjPromiseKit.promise.catch(err => {
+              console.error(err);
+              // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+              throw err;
+            });
             const seatHandle = makeHandle('SeatHandle');
 
             const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
@@ -464,7 +477,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
                 exitObjPromiseKit.resolve(exitObj);
               })
               .catch(err => {
-                console.log(err);
+                console.error(err);
+                // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+                throw err;
               });
 
             return userSeat;
