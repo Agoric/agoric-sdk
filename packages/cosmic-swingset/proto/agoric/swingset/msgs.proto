@@ -6,6 +6,12 @@ import "ibc/core/channel/v1/channel.proto";
 
 option go_package = "github.com/Agoric/cosmic-swingset/x/swingset/internal/types";
 
+service Msg {
+  rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
+  rpc SendPacket(MsgSendPacket) returns (MsgSendPacketResponse);
+  rpc Provision(MsgProvision) returns (MsgProvisionResponse);
+}
+
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
 message MsgDeliverInbound {
     option (gogoproto.equal) = false;
@@ -29,6 +35,8 @@ message MsgDeliverInbound {
     ];
 }
 
+message MsgDeliverInboundResponse {}
+
 // MsgSendPacket is an SDK message for sending an outgoing IBC packet
 message MsgSendPacket {
     option (gogoproto.equal) = false;
@@ -44,6 +52,9 @@ message MsgSendPacket {
         (gogoproto.moretags)   = "yaml:\"submitter\""
     ];
 }
+
+message MsgSendPacketResponse {}
+
 // MsgProvision defines an SDK message for provisioning a client to the chain
 message MsgProvision {
     option (gogoproto.equal) = false;
@@ -68,3 +79,5 @@ message MsgProvision {
         (gogoproto.moretags)   = "yaml:\"submitter\""
     ];
 }
+
+message MsgProvisionResponse {}
