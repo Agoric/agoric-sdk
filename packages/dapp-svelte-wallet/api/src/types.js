@@ -22,83 +22,41 @@
  * @property {any} currentAmountSlots
  * @property {any} currentAmount
  */
+
 /**
- * @typedef {Object} PursesAddedState
- * @property {Purse} purse
- * @property {Brand} brand
- * @property {PurseActions} actions
+ * @typedef {Object} WalletBridge The wallet methods available within the
+ * context of a Dapp.
+ * @property {(offer: OfferState) => Promise<void>} addOffer
+ * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
+ * @property {() => Promise<Notifier<Array<[string, PursesJSONState]>>>}
+ * getPursesNotifier
+ * @property {() => Promise<Notifier<Array<[string, OfferJSONState]>>>}
+ * getOfferNotifier
+ * @property {(petname: Petname, issuerBoardId: string) => Promise<void>}
+ * suggestIssuer
+ * @property {(petname: Petname, installationBoardId: string) => Promise<void>}
+ * suggestInstallation
+ * @property {(petname: Petname, instanceBoardId: string) => Promise<void>}
+ * suggestInstance
  */
 
 /**
- * @typedef {PursesJSONState & PursesAddedState} PursesFullState
+ * @typedef {Object} WalletTodo
+ * @property {(offer: OfferState, invitation: ERef<Payment>) => Promise<string>}
+ * addOfferInvitation add an invitation to the specified offer
  */
 
 /**
- * @typedef {Object} PurseActions
- * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: Value) => Promise<void>} send
- * @property {(payment: Payment) => Promise<Value>} receive
- * @property {(payment: Payment, amount: Amount=) => Promise<Value>} deposit
- */
-
-/**
- * @typedef {Object} BrandRecord
- * @property {Brand} brand
- * @property {Issuer} issuer
- * @property {string} issuerBoardId
- * @property {AmountMath} amountMath
- */
-
-/**
- * @typedef {Object} Contact
- * @property {string=} depositBoardId
- */
-
-/**
- * @typedef {Object} DappRecord
- * @property {Promise<void>=} approvalP
- * @property {Petname} suggestedPetname
- * @property {Petname} petname
- * @property {boolean} enable
- * @property {string} origin
- * @property {DappActions} actions
- */
-
-/**
- * @typedef {Object} DappActions
- * @property {(petname: Petname) => DappActions} setPetname
- * @property {() => DappActions} enable
- * @property {(reason: any) => DappActions} disable
- */
-
-/**
- * @template T
- * @typedef {Object} Mapping
- * @property {(petname: Petname) => string} implode
- * @property {(str: string) => Petname} explode
- * @property {WeakStore<T, Petname>} valToPetname
- * @property {WeakStore<T, string[][]>} valToPaths
- * @property {Store<Petname, T>} petnameToVal
- * @property {(petname: Petname, val: T) => void} addPetname
- * @property {(path: string[], val: T) => void} addPath
- * @property {(petname: Petname, val: T) => void} renamePetname
- * @property {(petname: Petname) => void} deletePetname
- * @property {(petname: Petname, val: T) => void} suggestPetname
- * @property {string} kind
- */
-
-/**
- * @typedef {Object} PaymentRecord
- * @property {Issuer=} issuer
- * @property {Payment} payment
- * @property {Brand} brand
- * @property {'pending'|'deposited'|undefined} status
- * @property {PaymentActions} actions
- * @property {Amount=} lastAmount
- * @property {Amount=} depositedAmount
- * @property {string=} issuerBoardId
- *
- * @typedef {Object} PaymentActions
- * @property {(purseOrPetname: (Purse | Petname)=) => Promise<Value>} deposit
- * @property {() => Promise<boolean>} refresh
- * @property {() => Promise<boolean>} getAmountOf
+ * @typedef {Object} WalletUser the presence exposed as `local.wallet` (or
+ * `home.wallet`)
+ * @property {() => Promise<WalletBridge>} getAnonymousBridge return the wallet
+ * bridge not bound to a given Dapp
+ * @property {() => Promise<any>} getInternals return the specialized backend
+ * for the wallet UI frontend
+ * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
+ * @property {() => Promise<Array<[Petname, Issuer]>>} getIssuers
+ * @property {(petname: Petname) => Issuer} getIssuer
+ * @property {() => Promise<Array<[Petname, Purse]>>} getPurses
+ * @property {(petname: Petname) => Purse} getPurse
+ * @property {(payment: ERef<Payment>) => Promise<void>} addPayment
  */

@@ -18,6 +18,8 @@ import { makeDehydrator } from './lib-dehydrate';
 
 import '@agoric/store/exported';
 import '@agoric/zoe/exported';
+
+import './internal-types';
 import './types';
 
 // does nothing

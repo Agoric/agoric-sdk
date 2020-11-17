@@ -54,7 +54,7 @@ const { connected, makeStableForwarder } = makeCapTPConnection(
 export { connected };
 
 // Get some properties of the bootstrap object as stable identites.
-export const walletP = makeStableForwarder(bootP => E.G(bootP).wallet);
+export const walletP = makeStableForwarder(bootP => E(E.G(bootP).wallet).getInternals());
 export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
 
 const resetAlls = [];
@@ -90,12 +90,11 @@ function onReset(readyP) {
   E(walletP).getSelfContact().then(sc => setSelfContact({ contactPetname: 'Self', ...kv('Self', sc) }));
   // Set up our subscriptions.
   updateFromNotifier({
-    updateState(ijs) {
-      const state = JSON.parse(ijs);
+    updateState(state) {
       setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`}))
         .sort((a, b) => cmp(b.id, a.id)));
     },
-  }, E(walletP).getInboxJSONNotifier());
+  }, E(walletP).getInboxNotifier());
   updateFromNotifier({
     updateState(state) {
       setPurses(state.map(purse => kv({ pursePetname: purse.pursePetname }, purse))

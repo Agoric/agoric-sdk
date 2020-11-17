@@ -1,23 +1,24 @@
+// @ts-check
 import { E } from '@agoric/eventual-send';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
 export function buildRootObject(_vatPowers) {
-  let wallet;
-  let pursesState = JSON.stringify([]);
-  let inboxState = JSON.stringify([]);
+  let walletInternals;
+  /** @type {Array<[string, any]>} */
+  let pursesState = [];
+  /** @type {Array<[string, any]>} */
+  let inboxState = [];
   let http;
-  const adminHandles = new Set();
   const bridgeHandles = new Set();
   const offerSubscriptions = new Map();
 
   const httpSend = (obj, channelHandles) =>
     E(http).send(JSON.parse(JSON.stringify(obj)), channelHandles);
 
-  const pushOfferSubscriptions = (channelHandle, offersStr) => {
-    const offers = JSON.parse(offersStr);
+  const pushOfferSubscriptions = (channelHandle, offers) => {
     const subs = offerSubscriptions.get(channelHandle);
     (subs || []).forEach(({ origin, status }) => {
       // Filter by optional status and origin.
@@ -49,28 +50,20 @@ export function buildRootObject(_vatPowers) {
     pushOfferSubscriptions(channelHandle, inboxState);
   };
 
-  const {
-    updater: pursesJSONUpdater,
-    notifier: pursesJSONNotifier,
-  } = makeNotifierKit(pursesState);
-  const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
-  const {
-    updater: inboxJSONUpdater,
-    notifier: inboxJSONNotifier,
-  } = makeNotifierKit(inboxState);
+  const { publish: pursesPublish, subscribe: pursesSubscribe } = pubsub(E);
+  const { updater: inboxUpdater, notifier: inboxNotifier } = makeNotifierKit(
+    inboxState,
+  );
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({
-    getInboxJSONNotifier() {
-      return inboxJSONNotifier;
-    },
-    getPursesJSONNotifier() {
-      return pursesJSONNotifier;
+    getInboxNotifier() {
+      return inboxNotifier;
     },
   });
 
   async function startup({ zoe, board }) {
-    wallet = await makeWallet({
+    walletInternals = await makeWallet({
       zoe,
       board,
       pursesStateChangeHandler: pursesPublish,
@@ -78,138 +71,129 @@ export function buildRootObject(_vatPowers) {
     });
   }
 
+  const makeBridge = (approve, dappOrigin, meta = {}) => {
+    async function* makeApprovedNotifier(sourceNotifier) {
+      await approve();
+      for await (const state of sourceNotifier) {
+        await approve();
+        yield state;
+      }
+    }
+
+    /** @type {WalletBridge} */
+    const bridge = {
+      async getPursesNotifier() {
+        await approve();
+        const pursesNotifier = walletInternals.getPursesNotifier();
+        const { notifier, updater } = makeNotifierKit(pursesState);
+        observeIteration(makeApprovedNotifier(pursesNotifier), updater);
+        return notifier;
+      },
+      async addOffer(offer) {
+        await approve();
+        return walletInternals.addOffer(offer, { ...meta, dappOrigin });
+      },
+      async getOfferNotifier(status = null) {
+        await approve();
+        const { notifier, updater } = makeNotifierKit(inboxState);
+        const filter = offer =>
+          (status === null || offer.status === status) &&
+          offer.requestContext &&
+          offer.requestContext.origin === dappOrigin;
+
+        observeIteration(makeApprovedNotifier(inboxNotifier), {
+          updateState(offers) {
+            updater.updateState(offers.filter(filter));
+          },
+          finish(offers) {
+            updater.finish(offers.filter(filter));
+          },
+          fail(e) {
+            updater.fail(e);
+          },
+        });
+        return notifier;
+      },
+      async getDepositFacetId(brandBoardId) {
+        await approve();
+        return walletInternals.getDepositFacetId(brandBoardId);
+      },
+      async suggestIssuer(petname, boardId) {
+        await approve();
+        return walletInternals.suggestIssuer(petname, boardId, dappOrigin);
+      },
+      async suggestInstallation(petname, boardId) {
+        await approve();
+        return walletInternals.suggestInstallation(
+          petname,
+          boardId,
+          dappOrigin,
+        );
+      },
+      async suggestInstance(petname, boardId) {
+        await approve();
+        return walletInternals.suggestInstance(petname, boardId, dappOrigin);
+      },
+    };
+    return harden(bridge);
+  };
+
+  /** @type {WalletBridge} */
+  const anonymousBridge = {
+    addOffer(offer) {
+      return walletInternals.addOffer(offer);
+    },
+    getDepositFacetId(brandBoardId) {
+      return walletInternals.getDepositFacetId(brandBoardId);
+    },
+    async getOfferNotifier() {
+      return inboxNotifier;
+    },
+    getPursesNotifier() {
+      return walletInternals.getPursesNotifier();
+    },
+    suggestInstallation(petname, installationBoardId) {
+      return walletInternals.suggestInstallation(petname, installationBoardId);
+    },
+    suggestInstance(petname, instanceBoardId) {
+      return walletInternals.suggestInstance(petname, instanceBoardId);
+    },
+    suggestIssuer(petname, issuerBoardId) {
+      return walletInternals.suggestIssuer(petname, issuerBoardId);
+    },
+  };
+  harden(anonymousBridge);
+
   async function getWallet() {
-    return harden({ ...wallet, ...notifiers });
+    /** @type {WalletUser} */
+    const wallet = {
+      addPayment: walletInternals.addPayment,
+      async getAnonymousBridge() {
+        return anonymousBridge;
+      },
+      getDepositFacetId: walletInternals.getDepositFacetId,
+      async getInternals() {
+        return harden({ ...walletInternals, ...notifiers });
+      },
+      getIssuer: walletInternals.getIssuer,
+      getIssuers: walletInternals.getIssuers,
+      getPurse: walletInternals.getPurse,
+      getPurses: walletInternals.getPurses,
+    };
+    return harden(wallet);
   }
 
   function setHTTPObject(o, _ROLES) {
     http = o;
   }
 
-  async function adminOnMessage(obj, meta = { origin: 'unknown' }) {
-    const { type, data, dappOrigin = meta.origin } = obj;
-    switch (type) {
-      case 'walletGetPurses': {
-        return {
-          type: 'walletUpdatePurses',
-          data: pursesState || {},
-        };
-      }
-      case 'walletGetInbox': {
-        return {
-          type: 'walletUpdateInbox',
-          data: inboxState || {},
-        };
-      }
-      case 'walletAddOffer': {
-        let handled = false;
-        const actions = harden({
-          result(offer, outcome) {
-            httpSend(
-              {
-                type: 'walletOfferResult',
-                data: {
-                  id: offer.id,
-                  dappContext: offer.dappContext,
-                  outcome,
-                },
-              },
-              [meta.channelHandle],
-            );
-          },
-          error(offer, reason) {
-            httpSend(
-              {
-                type: 'walletOfferResult',
-                data: {
-                  id: offer.id,
-                  dappContext: offer.dappContext,
-                  error: `${(reason && reason.stack) || reason}`,
-                },
-              },
-              [meta.channelHandle],
-            );
-          },
-          handled(offer) {
-            if (handled) {
-              return;
-            }
-            handled = true;
-            httpSend(
-              {
-                type: 'walletOfferHandled',
-                data: offer.id,
-              },
-              [meta.channelHandle],
-            );
-          },
-        });
-        return {
-          type: 'walletOfferAdded',
-          data: await wallet.addOffer(
-            { ...data, actions },
-            { ...meta, dappOrigin },
-          ),
-        };
-      }
-      case 'walletDeclineOffer': {
-        return {
-          type: 'walletDeclineOfferResponse',
-          data: await wallet.declineOffer(data),
-        };
-      }
-      case 'walletCancelOffer': {
-        return {
-          type: 'walletCancelOfferResponse',
-          data: await wallet.cancelOffer(data),
-        };
-      }
-      case 'walletAcceptOffer': {
-        const { outcome } = await wallet.acceptOffer(data);
-        // We return the outcome only if it is a string. Otherwise we
-        // return a default message.
-        const result =
-          typeof outcome === 'string'
-            ? { outcome }
-            : { outcome: 'Offer was made.' };
-        return {
-          type: 'walletAcceptOfferResponse',
-          data: result,
-        };
-      }
-
-      case 'walletGetOffers':
-      case 'walletGetOfferDescriptions': {
-        const result = await wallet.getOffers({ origin: dappOrigin });
-        return {
-          type: 'walletOfferDescriptions',
-          data: result,
-        };
-      }
-
-      default: {
-        return false;
-      }
-    }
-  }
-
   function startSubscriptions() {
     // console.debug(`subscribing to walletPurseState`);
     // This provokes an immediate update
-    purseSubscribe(
+    pursesSubscribe(
       harden({
         notify(m) {
-          pursesState = m;
-          pursesJSONUpdater.updateState(pursesState);
-          if (http) {
-            httpSend(
-              {
-                type: 'walletUpdatePurses',
-                data: pursesState,
-              },
-              [...adminHandles.keys(), ...bridgeHandles.keys()],
-            );
-          }
+          pursesState = JSON.parse(m);
         },
       }),
     );
@@ -219,17 +203,9 @@ export function buildRootObject(_vatPowers) {
     inboxSubscribe(
       harden({
         notify(m) {
-          inboxState = m;
-          inboxJSONUpdater.updateState(inboxState);
+          inboxState = JSON.parse(m);
+          inboxUpdater.updateState(inboxState);
           if (http) {
-            httpSend(
-              {
-                type: 'walletUpdateInbox',
-                data: inboxState,
-              },
-              [...adminHandles.keys()],
-            );
-
             // Get subscribed offers, too.
             for (const channelHandle of offerSubscriptions.keys()) {
               pushOfferSubscriptions(channelHandle, inboxState);
@@ -238,20 +214,6 @@ export function buildRootObject(_vatPowers) {
         },
       }),
     );
-  }
-
-  function getCommandHandler() {
-    return harden({
-      onOpen(_obj, meta) {
-        console.debug('Adding adminHandle', meta);
-        adminHandles.add(meta.channelHandle);
-      },
-      onClose(_obj, meta) {
-        console.debug('Removing adminHandle', meta);
-        adminHandles.delete(meta.channelHandle);
-      },
-      onMessage: adminOnMessage,
-    });
   }
 
   function getBridgeURLHandler() {
@@ -267,7 +229,7 @@ export function buildRootObject(_vatPowers) {
 
         const approve = async () => {
           let needApproval = false;
-          await wallet.waitForDappApproval(
+          await walletInternals.waitForDappApproval(
             suggestedDappPetname,
             dappOrigin,
             () => {
@@ -282,58 +244,7 @@ export function buildRootObject(_vatPowers) {
           }
         };
 
-        return harden({
-          async getPurseNotifier() {
-            await approve();
-            return harden({
-              async getUpdateSince(count = undefined) {
-                await approve();
-                const pursesJSON = await pursesJSONNotifier.getUpdateSince(
-                  count,
-                );
-                return JSON.parse(pursesJSON);
-              },
-            });
-          },
-          async addOffer(offer) {
-            await approve();
-            return wallet.addOffer(offer, { ...meta, dappOrigin });
-          },
-          async getOfferNotifier(status = null) {
-            await approve();
-            return harden({
-              async getUpdateSince(count = undefined) {
-                await approve();
-                const update = await inboxJSONNotifier.getUpdateSince(count);
-                const offers = JSON.parse(update.value);
-                return harden(
-                  offers.filter(
-                    offer =>
-                      (status === null || offer.status === status) &&
-                      offer.requestContext &&
-                      offer.requestContext.origin === dappOrigin,
-                  ),
-                );
-              },
-            });
-          },
-          async getDepositFacetId(brandBoardId) {
-            await approve();
-            return wallet.getDepositFacetId(brandBoardId);
-          },
-          async suggestIssuer(petname, boardId) {
-            await approve();
-            return wallet.suggestIssuer(petname, boardId, dappOrigin);
-          },
-          async suggestInstallation(petname, boardId) {
-            await approve();
-            return wallet.suggestInstallation(petname, boardId, dappOrigin);
-          },
-          async suggestInstance(petname, boardId) {
-            await approve();
-            return wallet.suggestInstance(petname, boardId, dappOrigin);
-          },
-        });
+        return makeBridge(approve, dappOrigin, meta);
       },
 
       // The legacy HTTP/WebSocket handler.
@@ -359,7 +270,7 @@ export function buildRootObject(_vatPowers) {
 
             // When we haven't been enabled, tell our caller.
             let needApproval = false;
-            await wallet.waitForDappApproval(
+            await walletInternals.waitForDappApproval(
               suggestedDappPetname,
               dappOrigin,
               () => {
@@ -389,9 +300,63 @@ export function buildRootObject(_vatPowers) {
             }
 
             switch (type) {
-              case 'walletGetPurses':
-              case 'walletAddOffer':
-                return adminOnMessage(obj, meta);
+              case 'walletGetPurses': {
+                return {
+                  type: 'walletUpdatePurses',
+                  data: JSON.stringify(pursesState),
+                };
+              }
+              case 'walletAddOffer': {
+                let handled = false;
+                const actions = harden({
+                  result(offer, outcome) {
+                    httpSend(
+                      {
+                        type: 'walletOfferResult',
+                        data: {
+                          id: offer.id,
+                          dappContext: offer.dappContext,
+                          outcome,
+                        },
+                      },
+                      [meta.channelHandle],
+                    );
+                  },
+                  error(offer, reason) {
+                    httpSend(
+                      {
+                        type: 'walletOfferResult',
+                        data: {
+                          id: offer.id,
+                          dappContext: offer.dappContext,
+                          error: `${(reason && reason.stack) || reason}`,
+                        },
+                      },
+                      [meta.channelHandle],
+                    );
+                  },
+                  handled(offer) {
+                    if (handled) {
+                      return;
+                    }
+                    handled = true;
+                    httpSend(
+                      {
+                        type: 'walletOfferHandled',
+                        data: offer.id,
+                      },
+                      [meta.channelHandle],
+                    );
+                  },
+                });
+                return {
+                  type: 'walletOfferAdded',
+                  data: await walletInternals.addOffer(
+                    { ...obj.data, actions },
+                    { ...meta, dappOrigin },
+                  ),
+                };
+              }
 
               case 'walletSubscribeOffers': {
                 const { status = null } = obj;
@@ -419,7 +384,9 @@ export function buildRootObject(_vatPowers) {
                 const { status = null } = obj;
 
                 // Override the origin since we got it from the bridge.
-                let result = await wallet.getOffers({ origin: dappOrigin });
+                let result = await walletInternals.getOffers({
+                  origin: dappOrigin,
+                });
                 if (status !== null) {
                   // Filter by status.
                   result = harden(
@@ -435,7 +402,9 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletGetDepositFacetId': {
                 const { brandBoardId } = obj;
-                const result = await wallet.getDepositFacetId(brandBoardId);
+                const result = await walletInternals.getDepositFacetId(
+                  brandBoardId,
+                );
                 return {
                   type: 'walletDepositFacetIdResponse',
                   data: result,
@@ -444,7 +413,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestIssuer(
+                const result = await walletInternals.suggestIssuer(
                   petname,
                   boardId,
                   dappOrigin,
@@ -457,7 +426,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestInstance(
+                const result = await walletInternals.suggestInstance(
                   petname,
                   boardId,
                   dappOrigin,
@@ -470,7 +439,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestInstallation(
+                const result = await walletInternals.suggestInstallation(
                   petname,
                   boardId,
                   dappOrigin,
@@ -496,7 +465,6 @@ export function buildRootObject(_vatPowers) {
     startup,
     getWallet,
     setHTTPObject,
-    getCommandHandler,
     getBridgeURLHandler,
   });
 }
