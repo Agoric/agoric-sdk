@@ -1,3 +1,4 @@
+// @ts-check
 import '../../../exported';
 import './types';
 
@@ -29,7 +30,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   } = terms;
   let seatsExited = 0;
 
-  /** @type {(PositionKind) => Promise<Payment>} */
+  /** @type {(positionKind: PositionKind) => Promise<Payment>} */
   function makeOptionInvitation(dir) {
     return zcf.makeInvitation(
       // All we do at the time of exercise is resolve the promise.

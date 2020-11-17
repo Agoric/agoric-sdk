@@ -1,3 +1,4 @@
+// @ts-check
 import '../../../exported';
 import './types';
 
@@ -53,7 +54,7 @@ import { Position } from './position';
  */
 
 /** @type {ContractStartFn} */
-const start = zcf => {
+const start = async zcf => {
   const terms = zcf.getTerms();
   const {
     maths: { Collateral: collateralMath, Strike: strikeMath },
@@ -67,7 +68,7 @@ const start = zcf => {
     details`strikePrice2 must be greater than strikePrice1`,
   );
 
-  zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
+  await zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
 
   // We will create the two options early and allocate them to this seat.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
@@ -77,9 +78,10 @@ const start = zcf => {
   // seats at the time of creation of the options, so we use Promises, and
   // allocate the payouts when those promises resolve.
   /** @type {Record<PositionKind,PromiseRecord<ZCFSeat>>} */
-  const seatPromiseKits = {};
-  seatPromiseKits[Position.LONG] = makePromiseKit();
-  seatPromiseKits[Position.SHORT] = makePromiseKit();
+  const seatPromiseKits = {
+    [Position.LONG]: makePromiseKit(),
+    [Position.SHORT]: makePromiseKit(),
+  };
 
   /** @type {PayoffHandler} */
   const payoffHandler = makePayoffHandler(zcf, seatPromiseKits, collateralSeat);
@@ -90,18 +92,10 @@ const start = zcf => {
       ShortOption: payoffHandler.makeOptionInvitation(Position.SHORT),
     };
     const invitationIssuer = zcf.getInvitationIssuer();
-    const longAmount = await E(invitationIssuer).getAmountOf(pair.LongOption);
-    // AWAIT ////
-    const shortAmount = await E(invitationIssuer).getAmountOf(pair.ShortOption);
-    // AWAIT ////
-
-    // TODO(hibbert): I ought to be able to get rid of the double await above,
-    // but the following doesn't produce the same result.
-
-    // const [longAmount, shortAmount] = await Promise.all([
-    //   E(invitationIssuer).getAmountOf(pair.LongOption),
-    //   E(invitationIssuer).getAmountOf(pair.ShortOption),
-    // ]);
+    const [longAmount, shortAmount] = await Promise.all([
+      E(invitationIssuer).getAmountOf(pair.LongOption),
+      E(invitationIssuer).getAmountOf(pair.ShortOption),
+    ]);
     const amounts = { LongOption: longAmount, ShortOption: shortAmount };
     await depositToSeat(zcf, collateralSeat, amounts, pair);
     // AWAIT ////

@@ -1,3 +1,4 @@
+// @ts-check
 import '../../../exported';
 import './types';
 
@@ -80,9 +81,10 @@ const start = zcf => {
   // seats at the time of creation of the options, so we use Promises, and
   // allocate the payouts when those promises resolve.
   /** @type {Record<PositionKind,PromiseRecord<ZCFSeat>>} */
-  const seatPromiseKits = {};
-  seatPromiseKits[Position.LONG] = makePromiseKit();
-  seatPromiseKits[Position.SHORT] = makePromiseKit();
+  const seatPromiseKits = {
+    [Position.LONG]: makePromiseKit(),
+    [Position.SHORT]: makePromiseKit(),
+  };
 
   /** @type {PayoffHandler} */
   const payoffHandler = makePayoffHandler(zcf, seatPromiseKits, collateralSeat);

@@ -1,5 +1,3 @@
-import '../../../exported';
-
 /**
  * @typedef {'long' | 'short'} PositionKind
  */
@@ -7,10 +5,10 @@ import '../../../exported';
 /**
  * @typedef {Object} PayoffHandler
  * @property {() => void} schedulePayoffs
- * @property {(PositionKind) => Promise<Payment>} makeOptionInvitation
+ * @property {(positionKind: PositionKind) => Promise<Payment>} makeOptionInvitation
  */
 
 /**
- * @typedef {(ContractFacet, Record<PositionKind,PromiseRecord<ZCFSeat>>,ZCFSeat)
+ * @typedef {(zcf: ContractFacet, seatPromiseKits: Record<PositionKind,PromiseRecord<ZCFSeat>>, collateralSeat: ZCFSeat)
  *   => PayoffHandler} MakePayoffHandler
  */
