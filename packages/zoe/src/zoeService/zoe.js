@@ -436,9 +436,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             );
 
             const offerResultPromiseKit = makePromiseKit();
-            offerResultPromiseKit.promise.catch(err => {
-              console.log('An offerHandler has errored.');
-              console.error(err);
+            offerResultPromiseKit.promise.catch(_err => {
               // Error suppressed to not trigger Node.js's UnhandledPromiseRejectionWarning
             });
             const exitObjPromiseKit = makePromiseKit();
