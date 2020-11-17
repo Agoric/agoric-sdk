@@ -12,7 +12,7 @@ import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers';
 import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority';
 
 const fundedCallSpread = `${__dirname}/../../../src/contracts/callSpread/fundedCallSpread`;
-const pricedCallSpread = `${__dirname}/../../../src/contracts/callSpread/pricedCallSpreads`;
+const pricedCallSpread = `${__dirname}/../../../src/contracts/callSpread/pricedCallSpread`;
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 const makeTestPriceAuthority = (amountMaths, priceList, timer) =>
@@ -669,7 +669,7 @@ test('pricedCallSpread, mid-strike', async t => {
   // Bob makes an offer for the long option
   const bobProposal = harden({
     want: { Option: longOption },
-    give: { Collateral: bucks(225) },
+    give: { Collateral: bucks(longOptionValue.collateral) },
   });
   const bobPurchaseSeat = await zoe.offer(await longInvitation, bobProposal, {
     Collateral: bobBucksPayment,
@@ -693,7 +693,7 @@ test('pricedCallSpread, mid-strike', async t => {
   // carol makes an offer for the short option
   const carolProposal = harden({
     want: { Option: shortOption },
-    give: { Collateral: bucks(75) },
+    give: { Collateral: bucks(shortOptionValue.collateral) },
   });
   const carolPurchaseSeat = await zoe.offer(
     await shortInvitation,

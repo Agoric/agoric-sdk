@@ -101,6 +101,13 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
+    const numerator =
+      (dir === Position.LONG) ? buyPercent : inverse(buyPercent);
+    const required = floorDivide(
+      multiply(terms.settlementAmount.value, numerator),
+      100,
+    );
+
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
       assertProposalShape(depositSeat, {
@@ -115,12 +122,6 @@ const start = zcf => {
       } = depositSeat.getProposal();
 
       // assert that this buyer offered the amount required
-      const numerator =
-        (dir === Position.LONG) ? buyPercent : inverse(buyPercent);
-      const required = floorDivide(
-        multiply(terms.settlementAmount.value, numerator),
-        100,
-      );
       assert(
         collateralMath.isEqual(newCollateral, collateralMath.make(required)),
         details`Collateral required: ${required}`,
@@ -147,6 +148,7 @@ const start = zcf => {
 
     return zcf.makeInvitation(optionPosition, `call spread ${dir}`, {
       position: dir,
+      collateral: required,
       option: spreadAmount.Option,
     });
   }
