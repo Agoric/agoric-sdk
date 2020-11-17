@@ -39,7 +39,6 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
           done: () => {
             const kit = makePromiseKit();
             kit.promise.catch(err => {
-              console.error(err);
               // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
               throw err;
             });

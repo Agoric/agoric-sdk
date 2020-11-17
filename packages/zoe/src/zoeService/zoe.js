@@ -214,13 +214,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
       addSeatObjPromiseKit.promise.catch(err => {
-        console.error(err);
         // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
         throw err;
       });
       const publicFacetPromiseKit = makePromiseKit();
       publicFacetPromiseKit.promise.catch(err => {
-        console.error(err);
         // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
         throw err;
       });
@@ -445,7 +443,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             });
             const exitObjPromiseKit = makePromiseKit();
             exitObjPromiseKit.promise.catch(err => {
-              console.error(err);
               // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
               throw err;
             });
@@ -477,7 +474,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
                 exitObjPromiseKit.resolve(exitObj);
               })
               .catch(err => {
-                console.error(err);
                 // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
                 throw err;
               });

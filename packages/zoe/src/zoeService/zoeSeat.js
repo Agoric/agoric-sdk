@@ -32,7 +32,6 @@ export const makeZoeSeatAdminKit = (
 ) => {
   const payoutPromiseKit = makePromiseKit();
   payoutPromiseKit.promise.catch(err => {
-    console.error(err);
     // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
     throw err;
   });

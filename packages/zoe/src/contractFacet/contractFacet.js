@@ -152,13 +152,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
       zoeSeatAdminPromiseKit.promise.catch(err => {
-        console.error(err);
         // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
         throw err;
       });
       const userSeatPromiseKit = makePromiseKit();
       userSeatPromiseKit.promise.catch(err => {
-        console.error(err);
         // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
         throw err;
       });
@@ -455,7 +453,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
     contractCode.catch(err => {
-      console.error(err);
       // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
       throw err;
     });
