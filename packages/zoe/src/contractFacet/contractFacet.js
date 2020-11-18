@@ -151,15 +151,13 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
-      zoeSeatAdminPromiseKit.promise.catch(err => {
-        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-        throw err;
-      });
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
+      zoeSeatAdminPromiseKit.promise.catch(_ => {});
       const userSeatPromiseKit = makePromiseKit();
-      userSeatPromiseKit.promise.catch(err => {
-        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-        throw err;
-      });
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
+      userSeatPromiseKit.promise.catch(_ => {});
       const seatHandle = makeHandle('SeatHandle');
 
       const seatData = harden({
@@ -452,23 +450,26 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
-    contractCode.catch(err => {
-      // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-      throw err;
-    });
+    // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+    // This does not suppress any error messages.
+    contractCode.catch(() => {});
 
     // Next, execute the contract code, passing in zcf
-    const { creatorFacet, publicFacet, creatorInvitation } = await E(
-      contractCode,
-    ).start(zcf);
-
     /** @type {Promise<ExecuteContractResult>} */
-    return harden({
-      creatorFacet,
-      publicFacet,
-      creatorInvitation,
-      addSeatObj,
-    });
+    const result = E(contractCode)
+      .start(zcf)
+      .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
+        return harden({
+          creatorFacet,
+          publicFacet,
+          creatorInvitation,
+          addSeatObj,
+        });
+      });
+    // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+    // This does not suppress any error messages.
+    result.catch(() => {});
+    return result;
   };
 
   return harden({ executeContract });

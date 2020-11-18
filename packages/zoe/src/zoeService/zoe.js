@@ -213,15 +213,13 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
-      addSeatObjPromiseKit.promise.catch(err => {
-        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-        throw err;
-      });
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
+      addSeatObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
-      publicFacetPromiseKit.promise.catch(err => {
-        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-        throw err;
-      });
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
+      publicFacetPromiseKit.promise.catch(_ => {});
 
       const makeInstanceAdmin = () => {
         /** @type {Set<ZoeSeatAdmin>} */
@@ -436,14 +434,13 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             );
 
             const offerResultPromiseKit = makePromiseKit();
-            offerResultPromiseKit.promise.catch(_err => {
-              // Error suppressed to not trigger Node.js's UnhandledPromiseRejectionWarning
-            });
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+            // This does not suppress any error messages.
+            offerResultPromiseKit.promise.catch(_ => {});
             const exitObjPromiseKit = makePromiseKit();
-            exitObjPromiseKit.promise.catch(err => {
-              // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-              throw err;
-            });
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+            // This does not suppress any error messages.
+            exitObjPromiseKit.promise.catch(_ => {});
             const seatHandle = makeHandle('SeatHandle');
 
             const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
@@ -471,10 +468,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
                 offerResultPromiseKit.resolve(offerResultP);
                 exitObjPromiseKit.resolve(exitObj);
               })
-              .catch(err => {
-                // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
-                throw err;
-              });
+              // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+              // This does not suppress any error messages.
+              .catch(() => {});
 
             return userSeat;
           });
