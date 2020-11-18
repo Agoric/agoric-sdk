@@ -481,6 +481,10 @@ export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
   convertSlotToVal = defaultSlotToValFn,
 ) {
+  // Ascenting numbers identifying the sending of errors relative to this
+  // marshal instance (serialize,unserialize pair)
+  let errorCount = 0;
+
   /**
    * @template Slot
    * @param {Passable} val
@@ -592,10 +596,21 @@ export function makeMarshal(
               // summary. If we do that, we could allocate some random
               // identifier and include it in the message, to help
               // with the correlation.
+
+              errorCount += 1;
+              // TODO in order to reliably correlate sent and received errors
+              // we will need something more globally identufying than the count
+              // relative to this marshal instance.
+              const errorId = `${errorCount}`;
+              assert.note(val, d`sent as error#${errorId}`);
+              // TODO we need to instead log to somewhere hidden
+              // to be revealed when correlating with the received error.
+              console.error('Temporary logging of sent error', val);
               return harden({
                 [QCLASS]: 'error',
                 name: `${val.name}`,
                 message: `${val.message}`,
+                errorId,
               });
             }
             case REMOTE_STYLE: {
@@ -720,7 +735,12 @@ export function makeMarshal(
               );
             }
             const EC = getErrorConstructor(`${rawTree.name}`) || Error;
-            return ibidTable.register(harden(new EC(`${rawTree.message}`)));
+            const error = harden(new EC(`${rawTree.message}`));
+            ibidTable.register(error);
+            if (typeof rawTree.errorId === 'string') {
+              assert.note(error, d`received as error#${rawTree.errorId}`);
+            }
+            return error;
           }
 
           case 'slot': {
