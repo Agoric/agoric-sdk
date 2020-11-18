@@ -21,7 +21,6 @@ const HTML_COMMENT_START_RE = new RegExp(`${'<'}!--`, 'g');
 const HTML_COMMENT_END_RE = new RegExp(`--${'>'}`, 'g');
 
 const read = async location => fs.promises.readFile(new URL(location).pathname);
-const base = new URL(`file://${__filename}`).toString();
 
 export function tildotPlugin() {
   const transformer = makeTransform(babelParser, babelGenerate);
@@ -48,6 +47,7 @@ export default async function bundleSource(
     // Compartment Mapper does not yet reveal a pre-archive transform facility.
     // Such a facility might be better served by a transform specified in
     // individual package.jsons and driven by the compartment mapper.
+    const base = new URL(`file://${process.cwd()}`).toString();
     const entry = new URL(startFilename, base).toString();
     const bytes = await makeArchive(read, entry);
     const endoZipBase64 = encodeBase64(bytes);
