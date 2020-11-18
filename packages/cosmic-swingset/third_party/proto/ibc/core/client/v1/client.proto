@@ -48,62 +48,6 @@ message ClientUpdateProposal {
   google.protobuf.Any header = 4;
 }
 
-// MsgCreateClient defines a message to create an IBC client
-message MsgCreateClient {
-  option (gogoproto.equal)           = false;
-  option (gogoproto.goproto_getters) = false;
-
-  // client unique identifier
-  string client_id = 1 [(gogoproto.moretags) = "yaml:\"client_id\""];
-  // light client state
-  google.protobuf.Any client_state = 2 [(gogoproto.moretags) = "yaml:\"client_state\""];
-  // consensus state associated with the client that corresponds to a given
-  // height.
-  google.protobuf.Any consensus_state = 3 [(gogoproto.moretags) = "yaml:\"consensus_state\""];
-  // signer address
-  string signer = 4;
-}
-
-// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
-// the given header.
-message MsgUpdateClient {
-  option (gogoproto.equal)           = false;
-  option (gogoproto.goproto_getters) = false;
-
-  // client unique identifier
-  string client_id = 1 [(gogoproto.moretags) = "yaml:\"client_id\""];
-  // header to update the light client
-  google.protobuf.Any header = 2;
-  // signer address
-  string signer = 3;
-}
-
-// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client state
-message MsgUpgradeClient {
-  // client unique identifier
-  string client_id = 1 [(gogoproto.moretags) = "yaml:\"client_id\""];
-  // upgraded client state
-  google.protobuf.Any client_state = 2 [(gogoproto.moretags) = "yaml:\"client_state\""];
-  // proof that old chain committed to new client
-  bytes proof_upgrade = 3 [(gogoproto.moretags) = "yaml:\"proof_upgrade\""];
-  // signer address
-  string signer = 4;
-}
-
-// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
-// light client misbehaviour.
-message MsgSubmitMisbehaviour {
-  option (gogoproto.equal)           = false;
-  option (gogoproto.goproto_getters) = false;
-
-  // client unique identifier
-  string client_id = 1 [(gogoproto.moretags) = "yaml:\"client_id\""];
-  // misbehaviour used for freezing the light client
-  google.protobuf.Any misbehaviour = 2;
-  // signer address
-  string signer = 3;
-}
-
 // Height is a monotonically increasing data type
 // that can be compared against another Height for the purposes of updating and
 // freezing clients
@@ -121,4 +65,10 @@ message Height {
   uint64 version_number = 1 [(gogoproto.moretags) = "yaml:\"version_number\""];
   // the height within the given version
   uint64 version_height = 2 [(gogoproto.moretags) = "yaml:\"version_height\""];
+}
+
+// Params defines the set of IBC light client parameters.
+message Params {
+  // allowed_clients defines the list of allowed client state types.
+  repeated string allowed_clients = 1 [(gogoproto.moretags) = "yaml:\"allowed_clients\""];
 }

@@ -19,9 +19,8 @@ func ValidateGenesis(data *types.GenesisState) error {
 }
 
 func DefaultGenesisState() *types.GenesisState {
-	return &types.GenesisState{
-		Storage: make(map[string]string),
-	}
+	gs := NewGenesisState()
+	return gs
 }
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
