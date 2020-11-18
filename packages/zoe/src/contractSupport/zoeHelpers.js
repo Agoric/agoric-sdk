@@ -8,6 +8,8 @@ import { E } from '@agoric/eventual-send';
 import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
+import { makeZcfSeatAdminKit } from '../contractFacet/seat';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -421,3 +423,49 @@ export async function saveAllIssuers(zcf, issuerKeywordRecord = {}) {
   );
   return Promise.all(issuersPSaved);
 }
+
+export const alienatePayout = (
+  zcf,
+  oldSeat,
+  newInvitationDescription = 'sellable',
+) => {
+  const { zcfSeat: tempSeat } = zcf.makeEmptySeatKit();
+
+  // Move everything off the oldSeat immediately
+  zcf.reallocate(
+    tempSeat.stage(oldSeat.getCurrentAllocation()),
+    oldSeat.stage({}),
+  );
+
+  // The oldSeat is exited, giving the user a payout of nothing for
+  // that seat
+  oldSeat.exit();
+
+  const newZCFSeatPromiseKit = makePromiseKit();
+
+  const alienate = newSeat => {
+    // Move everything from the tempSeat to the newSeat
+    zcf.reallocate(
+      newSeat.stage(tempSeat.getCurrentAllocation()),
+      tempSeat.stage({}),
+    );
+    newZCFSeatPromiseKit.resolve(newSeat);
+  };
+
+  // When this invitation is exercised, take the current allocation
+  // away from the tempSeat
+  const newInvitation = zcf.makeInvitation(alienate, newInvitationDescription);
+  return harden({
+    newZCFSeatPromise: newZCFSeatPromiseKit.promise,
+    newInvitation,
+  });
+};
+
+export const getSeatPromise = offerHandler => {
+  const seatPromiseKit = makePromiseKit();
+  const wrapper = seat => {
+    seatPromiseKit.resolve(seat);
+    return offerHandler(seat);
+  };
+  return { offerHandler: wrapper, seatPromise: seatPromiseKit.promise };
+};
