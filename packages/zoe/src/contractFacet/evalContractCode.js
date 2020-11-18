@@ -26,8 +26,10 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const installation = importBundle(bundle, {
     endowments: fullEndowments,
   });
-  // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-  installation.catch(() => {});
+  installation.catch(err => {
+    // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+    throw err;
+  });
   return installation;
 };
 

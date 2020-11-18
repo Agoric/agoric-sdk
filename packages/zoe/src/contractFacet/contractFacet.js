@@ -151,11 +151,15 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      zoeSeatAdminPromiseKit.promise.catch(_ => {});
+      zoeSeatAdminPromiseKit.promise.catch(err => {
+        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+        throw err;
+      });
       const userSeatPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      userSeatPromiseKit.promise.catch(_ => {});
+      userSeatPromiseKit.promise.catch(err => {
+        // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+        throw err;
+      });
       const seatHandle = makeHandle('SeatHandle');
 
       const seatData = harden({
@@ -448,23 +452,23 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
-    // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-    contractCode.catch(() => {});
+    contractCode.catch(err => {
+      // Remove to suppress Node.js's UnhandledPromiseRejectionWarning
+      throw err;
+    });
 
     // Next, execute the contract code, passing in zcf
+    const { creatorFacet, publicFacet, creatorInvitation } = await E(
+      contractCode,
+    ).start(zcf);
+
     /** @type {Promise<ExecuteContractResult>} */
-    const result = E(contractCode)
-      .start(zcf)
-      .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
-        return harden({
-          creatorFacet,
-          publicFacet,
-          creatorInvitation,
-          addSeatObj,
-        });
-      });
-    result.catch(() => {}); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-    return result;
+    return harden({
+      creatorFacet,
+      publicFacet,
+      creatorInvitation,
+      addSeatObj,
+    });
   };
 
   return harden({ executeContract });
