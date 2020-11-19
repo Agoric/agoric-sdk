@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { makePspawn } from './helpers';
 
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {
@@ -26,12 +27,7 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
   // Run the Git commands.
   log.info(`initializing ${DIR} from ${dappURL}`);
 
-  const pspawn = (...psargs) =>
-    new Promise((resolve, _reject) => {
-      const cp = spawn(...psargs);
-      cp.on('exit', resolve);
-      cp.on('error', () => resolve(-1));
-    });
+  const pspawn = makePspawn({ log, chalk, spawn });
 
   if (
     await pspawn('git', ['clone', '--origin=upstream', dappURL, DIR], {
