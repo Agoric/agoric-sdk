@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { makePspawn } from './helpers';
 
 export default async function cosmosMain(progname, rawArgs, powers, opts) {
   const IMAGE = `agoric/agoric-sdk`;
@@ -16,20 +17,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
     pspawnEnv.DEBUG = '';
   }
 
-  const pspawn = (
-    cmd,
-    cargs,
-    { stdio = 'inherit', env = pspawnEnv, ...rest } = {},
-  ) => {
-    log.debug(chalk.blueBright(cmd, ...cargs));
-    const cp = spawn(cmd, cargs, { stdio, env, ...rest });
-    const pr = new Promise((resolve, _reject) => {
-      cp.on('exit', resolve);
-      cp.on('error', () => resolve(-1));
-    });
-    pr.cp = cp;
-    return pr;
-  };
+  const pspawn = makePspawn({ env: pspawnEnv, log, spawn, chalk });
 
   function helper(args, hopts = undefined) {
     if (opts.sdk) {

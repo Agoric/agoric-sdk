@@ -8,6 +8,8 @@ import { request } from 'http';
 
 import { spawn } from 'child_process';
 
+import { makePspawn } from '../lib/helpers';
+
 // To keep in sync with https://agoric.com/documentation/getting-started/
 
 // Note that we currently only test:
@@ -23,15 +25,7 @@ test('workflow', async t => {
   const PORT = '7999';
   process.env.PORT = PORT;
 
-  const pspawn = (...args) => {
-    const cp = spawn(...args);
-    const pr = new Promise((resolve, _reject) => {
-      cp.on('exit', resolve);
-      cp.on('error', () => resolve(-1));
-    });
-    pr.cp = cp;
-    return pr;
-  };
+  const pspawn = makePspawn({ spawn });
 
   // Kill an entire process group.
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
@@ -39,7 +33,7 @@ test('workflow', async t => {
   function pspawnStdout(...args) {
     let output = '';
     const ps = pspawn(...args);
-    ps.cp.stdout.on('data', chunk => {
+    ps.childProcess.stdout.on('data', chunk => {
       output += chunk.toString('utf-8');
     });
     ps.then(ret => {
@@ -104,11 +98,11 @@ test('workflow', async t => {
 
     // TODO: Allow this to work even if the port is already used.
     const startP = myMain(['start', '--reset']);
-    finalizers.push(() => pkill(startP.cp, 'SIGINT'));
+    finalizers.push(() => pkill(startP.childProcess, 'SIGINT'));
 
     let stdoutStr = '';
-    if (startP.cp.stdout) {
-      startP.cp.stdout.on('data', chunk => {
+    if (startP.childProcess.stdout) {
+      startP.childProcess.stdout.on('data', chunk => {
         // console.log('stdout:', chunk.toString());
         stdoutStr += chunk.toString();
         if (stdoutStr.match(/(^|:\s+)swingset running$/m)) {
@@ -130,7 +124,7 @@ test('workflow', async t => {
       './contract/deploy.js',
       './api/deploy.js',
     ]);
-    finalizers.push(() => pkill(deployP.cp, 'SIGINT'));
+    finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
 
     timeout = setTimeout(deployResult.resolve, 60000, 'timeout');
     const done = await Promise.race([deployResult.promise, deployP]);
@@ -165,7 +159,7 @@ test('workflow', async t => {
       env: { ...process.env, PORT: '3000' },
       detached: true,
     });
-    finalizers.push(() => pkill(uiStartP.cp, 'SIGINT'));
+    finalizers.push(() => pkill(uiStartP.childProcess, 'SIGINT'));
     const uiListening = makePromiseKit();
     let retries = 0;
     const ival = setInterval(() => {

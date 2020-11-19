@@ -1,5 +1,6 @@
 import path from 'path';
 import chalk from 'chalk';
+import { makePspawn } from './helpers';
 
 export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
@@ -8,12 +9,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   // Notify the preinstall guard that we are running.
   process.env.AGORIC_INSTALL = 'true';
 
-  const pspawn = (...args) =>
-    new Promise((resolve, _reject) => {
-      const cp = spawn(...args);
-      cp.on('exit', resolve);
-      cp.on('error', () => resolve(-1));
-    });
+  const pspawn = makePspawn({ log, spawn, chalk });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
   const existingSubdirs = await Promise.all(
