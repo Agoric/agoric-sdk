@@ -1,3 +1,4 @@
+import 'ses';
 import fs from 'fs';
 import process from 'process';
 import bundleSource from '@agoric/bundle-source';

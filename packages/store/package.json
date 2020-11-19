@@ -2,6 +2,9 @@
   "name": "@agoric/store",
   "version": "0.3.1",
   "description": "Wrapper for JavaScript map",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/index.js",
   "engines": {
     "node": ">=11.0"

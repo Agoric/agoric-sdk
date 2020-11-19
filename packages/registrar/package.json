@@ -2,6 +2,9 @@
   "name": "@agoric/registrar",
   "version": "0.1.7",
   "description": "Register objects for public use",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/registrar.js",
   "engines": {
     "node": ">=11.0"

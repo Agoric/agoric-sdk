@@ -8,7 +8,7 @@
     "dev": "rollup -c -w",
     "start": "sirv public",
     "lint-check": "yarn lint",
-    "lint-fix": "yarn lint --fix",
+    "lint-fix": "exit 0",
     "lint": "exit 0",
     "test": "exit 0"
   },

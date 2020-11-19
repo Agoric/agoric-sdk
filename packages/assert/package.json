@@ -2,6 +2,9 @@
   "name": "@agoric/assert",
   "version": "0.1.0",
   "description": "Assert expression support that protects sensitive data",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/assert.js",
   "engines": {
     "node": ">=11.0"

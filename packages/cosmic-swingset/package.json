@@ -2,6 +2,9 @@
   "name": "@agoric/cosmic-swingset",
   "version": "0.23.0",
   "description": "Agoric's Cosmos blockchain integration",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "lib/ag-solo/main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {

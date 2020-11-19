@@ -2,6 +2,9 @@
   "name": "@agoric/swingset-vat",
   "version": "0.10.0",
   "description": "Vat/Container Launcher",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/main.js",
   "module": "src/index.js",
   "engines": {
@@ -29,8 +32,8 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.1.0",
-    "@agoric/base64": "^0.0.0+1-dev",
     "@agoric/babel-parser": "^7.6.4",
+    "@agoric/base64": "^0.0.0+1-dev",
     "@agoric/bundle-source": "^1.1.10",
     "@agoric/captp": "^1.6.0",
     "@agoric/eventual-send": "^0.12.0",

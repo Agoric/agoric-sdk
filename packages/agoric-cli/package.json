@@ -2,6 +2,9 @@
   "name": "agoric",
   "version": "0.10.1",
   "description": "Manage the Agoric Javascript smart contract platform",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "lib/main.js",
   "bin": "bin/agoric",
   "files": [

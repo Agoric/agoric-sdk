@@ -2,6 +2,9 @@
   "name": "@agoric/spawner",
   "version": "0.3.0",
   "description": "Wrapper for JavaScript map",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/contractHost.js",
   "engines": {
     "node": ">=11.0"
