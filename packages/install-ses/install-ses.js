@@ -19,7 +19,5 @@ lockdown({ errorTaming: 'unsafe' });
 // this assignment is not rejected, even if it does nothing.
 Error.stackTraceLimit = Infinity;
 
-harden(TextEncoder.prototype);
 harden(TextEncoder);
-harden(TextDecoder.prototype);
 harden(TextDecoder);
