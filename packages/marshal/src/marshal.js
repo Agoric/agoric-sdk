@@ -601,8 +601,8 @@ export function makeMarshal(
               // TODO in order to reliably correlate sent and received errors
               // we will need something more globally identufying than the count
               // relative to this marshal instance.
-              const errorId = `${errorCount}`;
-              assert.note(val, d`sent as error#${errorId}`);
+              const errorId = `error#${errorCount}`;
+              assert.note(val, d`Sent as ${errorId}`);
               // TODO we need to instead log to somewhere hidden
               // to be revealed when correlating with the received error.
               console.error('Temporary logging of sent error', val);
@@ -738,7 +738,8 @@ export function makeMarshal(
             const error = harden(new EC(`${rawTree.message}`));
             ibidTable.register(error);
             if (typeof rawTree.errorId === 'string') {
-              assert.note(error, d`received as error#${rawTree.errorId}`);
+              // errorId is a late addition so be tolerant of its absence.
+              assert.note(error, d`Received as ${rawTree.errorId}`);
             }
             return error;
           }
