@@ -15,12 +15,13 @@ export const makeZcfSeatAdminKit = (
   seatData,
   getAmountMath,
 ) => {
-  // The proposal and notifier are not reassigned.
-  const { proposal, notifier } = seatData;
+  // The notifier is not reassigned.
+  const { notifier } = seatData;
 
-  // The currentAllocation and exited may be reassigned.
+  // The proposal, currentAllocation and exited may be reassigned.
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
+  let { proposal } = seatData;
 
   const assertExitedFalse = () =>
     assert(!exited, details`seat has been exited`);
@@ -41,6 +42,7 @@ export const makeZcfSeatAdminKit = (
       assertExitedFalse();
       exited = true;
     },
+    updateProposal: newProposal => (proposal = newProposal),
   });
 
   /** @type {ZCFSeat} */

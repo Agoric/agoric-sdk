@@ -37,6 +37,7 @@
  * @property {GetAmountMath} getAmountMath
  * @property {MakeZCFMint} makeZCFMint
  * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
+ * @property {MakeInvitationWithSeat} makeInvitationWithSeat
  * @property {SetTestJig} setTestJig
  * @property {() => void} stopAcceptingOffers
  */
@@ -96,6 +97,35 @@
  * @param {string} description
  * @param {Object=} customProperties
  * @returns {Promise<Invitation>}
+ */
+
+/**
+ * @typedef {Object} InvitationWithSeat
+ * @property {Promise<Invitation>} invitation
+ * @property {ZCFSeat} zcfSeat
+ * @property  {ERef<UserSeat>} userSeat
+ */
+
+/**
+ * @callback MakeInvitationWithSeat
+ *
+ * Make an invitation and a seat at the same time. The seat is created before
+ * the offer so that the contract can allocate to it or assign results early.
+ * Make a credible Zoe invitation for a particular smart contract
+ * indicated by the `instance` in the extent of the invitation. Zoe
+ * also puts the `installation` and a unique `handle` in the extent of
+ * the invitation. The contract must provide a `description` for the
+ * invitation and should include whatever information is
+ * necessary for a potential buyer of the invitation to know what they are
+ * getting in the `customProperties`. `customProperties` will be
+ * placed in the extent of the invitation.
+ *
+ * @param {OfferHandler=} offerHandler - a contract specific function
+ * that handles the offer, such as saving it or performing a trade
+ * @param {string} description
+ * @param {Object=} customProperties
+ * @param {ExitRule=} exit
+ * @returns {InvitationWithSeat}
  */
 
 /**

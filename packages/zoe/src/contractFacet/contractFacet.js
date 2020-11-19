@@ -43,12 +43,16 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
-    const invitationHandleToHandler = makeWeakStore('invitationHandle');
+    /** @type {WeakStore<InvitationHandle,OfferHandler>} */
+    const invitationHandleToHandler = makeWeakStore('InvitationHandle');
 
     /** @type {Store<ZCFSeat,ZCFSeatAdmin>} */
     const zcfSeatToZCFSeatAdmin = makeStore('zcfSeat');
     /** @type {WeakStore<ZCFSeat,SeatHandle>} */
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+
+    /** @type {WeakStore<InvitationHandle, ZcfSeatPack>} */
+    const invitationHandleToZcfSeatKit = makeWeakStore('invitationHandle');
 
     const keywords = Object.keys(instanceRecord.terms.issuers);
     const issuers = Object.values(instanceRecord.terms.issuers);
@@ -145,8 +149,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     };
 
-    const makeEmptySeatKit = (exit = undefined) => {
-      const initialAllocation = harden({});
+    function initializeEmptySeatData(exit) {
       const proposal = cleanProposal(getAmountMath, harden({ exit }));
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
@@ -162,7 +165,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
       const seatData = harden({
         proposal,
-        initialAllocation,
+        initialAllocation: {},
         notifier,
       });
       const { zcfSeat, zcfSeatAdmin } = makeZcfSeatAdminKit(
@@ -174,14 +177,34 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
       zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
 
+      return {
+        proposal,
+        updater,
+        zoeSeatAdminPromiseKit,
+        userSeatPromiseKit,
+        seatHandle,
+        zcfSeat,
+      };
+    }
+
+    const makeEmptySeatKit = (exit = undefined) => {
+      const {
+        proposal,
+        updater,
+        zoeSeatAdminPromiseKit,
+        userSeatPromiseKit,
+        seatHandle,
+        zcfSeat,
+      } = initializeEmptySeatData(exit);
+
       const exitObj = makeExitObj(
-        seatData.proposal,
+        proposal,
         zoeSeatAdminPromiseKit.promise,
-        zcfSeatAdmin,
+        zcfSeatToZCFSeatAdmin.get(zcfSeat),
       );
 
       E(zoeInstanceAdmin)
-        .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
+        .makeNoEscrowSeat(harden({}), proposal, exitObj, seatHandle)
         .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
           updateFromNotifier(updater, zoeNotifier);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
@@ -189,6 +212,69 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         });
 
       return { zcfSeat, userSeat: userSeatPromiseKit.promise };
+    };
+
+    /** @type {MakeInvitation} */
+    const makeInvitation = (
+      offerHandler = () => {},
+      description,
+      customProperties = {},
+    ) => {
+      assert.typeof(
+        description,
+        'string',
+        details`invitations must have a description string: ${description}`,
+      );
+
+      const invitationHandle = makeHandle('InvitationHandle');
+      invitationHandleToHandler.init(invitationHandle, offerHandler);
+      /** @type {Promise<Payment>} */
+      const invitation = E(zoeInstanceAdmin).makeInvitation(
+        invitationHandle,
+        description,
+        customProperties,
+      );
+      return invitation;
+    };
+
+    /** @type {MakeInvitationWithSeat} */
+    const makeInvitationWithSeat = async (
+      offerHandler,
+      description,
+      customProperties,
+      exit,
+    ) => {
+      const invitation = makeInvitation(
+        offerHandler,
+        description,
+        customProperties,
+      );
+      const invitationAmount = await invitationIssuer.getAmountOf(invitation);
+      // AWAIT ///
+
+      const {
+        updater,
+        zoeSeatAdminPromiseKit,
+        userSeatPromiseKit,
+        seatHandle,
+        zcfSeat,
+      } = initializeEmptySeatData(exit);
+      const invitationHandle = invitationAmount.value[0].handle;
+      invitationHandleToZcfSeatKit.init(invitationHandle, {
+        zcfSeatAdmin: zcfSeatToZCFSeatAdmin.get(zcfSeat),
+        zcfSeat,
+      });
+
+      await E(zoeInstanceAdmin)
+        .makeLaterEscrowSeat(seatHandle, invitationHandle)
+        .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
+          updateFromNotifier(updater, zoeNotifier);
+          zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
+          userSeatPromiseKit.resolve(userSeat);
+        });
+      // AWAIT ///
+
+      return { invitation, zcfSeat, userSeat: userSeatPromiseKit.promise };
     };
 
     /** @type {MakeZCFMint} */
@@ -343,27 +429,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         // AWAIT ///
         return registerIssuerRecordWithKeyword(keyword, record);
       },
-      makeInvitation: (
-        offerHandler = () => {},
-        description,
-        customProperties = {},
-      ) => {
-        assert.typeof(
-          description,
-          'string',
-          details`invitations must have a description string: ${description}`,
-        );
-
-        const invitationHandle = /** @type {InvitationHandle} */ (harden({}));
-        invitationHandleToHandler.init(invitationHandle, offerHandler);
-        /** @type {Promise<Payment>} */
-        const invitationP = E(zoeInstanceAdmin).makeInvitation(
-          invitationHandle,
-          description,
-          customProperties,
-        );
-        return invitationP;
-      },
+      makeInvitationWithSeat,
+      makeInvitation,
       // Shutdown the entire vat and give payouts
       shutdown: completion => {
         E(zoeInstanceAdmin).exitAllSeats(completion);
@@ -419,8 +486,28 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     };
     harden(zcf);
 
+    const addAllocationToSeat = (zcfSeat, addAllocation) => {
+      const oldAllocation = zcfSeat.getCurrentAllocation();
+      const updates = objectMap(addAllocation, ([seatKeyword, amountToAdd]) => {
+        const amountMath = getAmountMath(amountToAdd.brand);
+        const oldAmount = oldAllocation[seatKeyword];
+        const newAmount = oldAmount
+          ? amountMath.add(oldAmount, amountToAdd)
+          : amountToAdd;
+        return [seatKeyword, newAmount];
+      });
+      const newAllocation = harden({
+        ...oldAllocation,
+        ...updates,
+      });
+      // verifies offer safety
+      const seatStaging = zcfSeat.stage(newAllocation);
+      reallocateInternal([seatStaging]);
+    };
+
     // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
-    // added in offer(). ZCF responds with the exitObj and offerResult.
+    // added in offer(). ZCF responds with the exitObj and offerResult. linkSeat
+    // is used when a seat was already created using makeInvitationWithSeat().
     /** @type {AddSeatObj} */
     const addSeatObj = {
       addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
@@ -442,6 +529,21 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           zoeSeatAdmin,
           zcfSeatAdmin,
         );
+        /** @type {AddSeatResult} */
+        return harden({ offerResultP, exitObj });
+      },
+      linkSeat: (invitationHandle, zoeSeatAdmin, proposal, addAllocation) => {
+        const { zcfSeatAdmin, zcfSeat } = invitationHandleToZcfSeatKit.get(
+          invitationHandle,
+        );
+        const offerHandler = invitationHandleToHandler.get(invitationHandle);
+        // @ts-ignore
+        const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
+          throw zcfSeat.fail(reason);
+        });
+        addAllocationToSeat(zcfSeat, addAllocation);
+        zcfSeatAdmin.updateProposal(proposal);
+        const exitObj = makeExitObj(proposal, zoeSeatAdmin, zcfSeatAdmin);
         /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });
       },

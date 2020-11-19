@@ -9,6 +9,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
  */
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';
+import '@agoric/notifier/exported';
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import '../../exported';
@@ -48,6 +49,15 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
+
+  /** @type {WeakStore<InvitationHandle,ZoeSeatAdmin>} */
+  const invitationToZoeSeatAdmin = makeWeakStore('invitationHandle');
+
+  /** @type {WeakStore<InvitationHandle, (value: any) => void>} */
+  const invitationToOfferResolver = makeWeakStore('invitationHandle');
+
+  /** @type {WeakStore<InvitationHandle, (value: any) => void>} */
+  const invitationToExitResolver = makeWeakStore('invitationHandle');
 
   /**
    * Create an installation by permanently storing the bundle. It will be
@@ -239,6 +249,21 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
               /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
             ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
           },
+          tellZCFToLinkSeat: (
+            invitationHandle,
+            zoeSeatAdmin,
+            proposal,
+            initialAllocation,
+          ) => {
+            return E(
+              /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
+            ).linkSeat(
+              invitationHandle,
+              zoeSeatAdmin,
+              proposal,
+              initialAllocation,
+            );
+          },
           hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
           removeZoeSeatAdmin: zoeSeatAdmin =>
             zoeSeatAdmins.delete(zoeSeatAdmin),
@@ -262,6 +287,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         };
       };
 
+      /** @type {InstanceAdmin} */
       const instanceAdmin = makeInstanceAdmin();
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
@@ -321,6 +347,32 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           );
           instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+          return { userSeat, notifier, zoeSeatAdmin };
+        },
+        makeLaterEscrowSeat: (seatHandle, invitationHandle) => {
+          const initialAllocation = harden({});
+
+          const exitObjPromise = makePromiseKit();
+          const offerResultPromise = makePromiseKit();
+          invitationToExitResolver.init(
+            invitationHandle,
+            exitObjPromise.resolve,
+          );
+          invitationToOfferResolver.init(
+            invitationHandle,
+            offerResultPromise.resolve,
+          );
+          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            initialAllocation,
+            instanceAdmin,
+            cleanProposal(getAmountMath, harden({})),
+            brandToPurse,
+            exitObjPromise.promise,
+            offerResultPromise.promise,
+          );
+          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
+          invitationToZoeSeatAdmin.init(invitationHandle, zoeSeatAdmin);
+          /* ? */ seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
         exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
@@ -427,11 +479,33 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             }
           });
 
-          return Promise.all(paymentDepositedPs).then(amountsArray => {
+          return Promise.all(paymentDepositedPs).then(async amountsArray => {
             const initialAllocation = arrayToObj(
               amountsArray,
               proposalKeywords,
             );
+
+            if (invitationToZoeSeatAdmin.has(invitationHandle)) {
+              // the seat was made earlier
+              const zoeSeatAdmin = invitationToZoeSeatAdmin.get(
+                invitationHandle,
+              );
+              const {
+                offerResultP,
+                exitObj,
+              } = await instanceAdmin.tellZCFToLinkSeat(
+                invitationHandle,
+                zoeSeatAdmin,
+                proposal,
+                initialAllocation,
+              );
+              invitationToExitResolver.get(invitationHandle)(exitObj);
+              invitationToOfferResolver.get(invitationHandle)(offerResultP);
+
+              return zoeSeatAdmin.getUserSeat();
+            }
+
+            // the seat must be made now
 
             const offerResultPromiseKit = makePromiseKit();
             // Don't trigger Node.js's UnhandledPromiseRejectionWarning.

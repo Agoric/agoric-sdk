@@ -37,6 +37,8 @@
  * @property {(reason: TerminationReason) => void} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Allocation} getCurrentAllocation
+ * @property {() => Notifier} getNotifier
+ * @property {() => UserSeat} getUserSeat
  */
 
 /**
@@ -79,6 +81,11 @@
  *             seatData: SeatData,
  *             seatHandle: SeatHandle,
  *            ) => Promise<AddSeatResult>} tellZCFToMakeSeat
+ * @property {(invitationHandle: InvitationHandle,
+ *             zoeSeatAdmin: ZoeSeatAdmin,
+ *             proposal: Proposal,
+ *             initialAllocation: Allocation,
+ *            ) => Promise<AddSeatResult>} tellZCFToLinkSeat
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
@@ -103,6 +110,17 @@
  *             seatData: SeatData,
  *             seatHandle: SeatHandle,
  *            ) => AddSeatResult} addSeat
+ * @property {(invitationHandle: InvitationHandle,
+ *             zoeSeatAdmin: ZoeSeatAdmin,
+ *             Proposal: proposal,
+ *             addAllocation: Allocation,
+ *            ) => AddSeatResult} linkSeat
+ */
+
+/**
+ * @typedef {Object} ZcfSeatPack
+ * @property {ZcfSeatAdmin} zcfSeatAdmin
+ * @property {ZcfSeat} zcfSeat
  */
 
 /**
@@ -116,6 +134,7 @@
  *            ) => Promise<void>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
+ * @property {MakeLaterEscrowSeat} makeLaterEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {(reason: TerminationReason) => void} failAllSeats
@@ -135,6 +154,13 @@
  * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
+ * @returns {ZoeSeatAdminKit}
+ */
+
+/**
+ * @callback MakeLaterEscrowSeat
+ * @param {SeatHandle} seatHandle
+ * @param {InvitationHandle} invitationHandle
  * @returns {ZoeSeatAdminKit}
  */
 

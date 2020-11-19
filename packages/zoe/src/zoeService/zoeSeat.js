@@ -36,6 +36,7 @@ export const makeZoeSeatAdminKit = (
   payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
 
+  updater.updateState(initialAllocation);
   let currentAllocation = initialAllocation;
 
   const doExit = zoeSeatAdmin => {
@@ -80,6 +81,9 @@ export const makeZoeSeatAdminKit = (
       doExit(zoeSeatAdmin);
     },
     getCurrentAllocation: () => currentAllocation,
+    getNotifier: () => notifier,
+    // eslint-disable-next-line no-use-before-define
+    getUserSeat: () => userSeat,
   });
 
   /** @type {UserSeat} */
