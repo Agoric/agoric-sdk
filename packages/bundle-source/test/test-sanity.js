@@ -19,6 +19,8 @@ test('endoZipBase64', async t => {
 
   const bytes = decodeBase64(endoZipBase64);
   const archive = await parseArchive(bytes);
+  // Call import by property to bypass SES censoring for dynamic import.
+  // eslint-disable-next-line dot-notation
   const { namespace } = await archive['import']('.');
   const { message, encourage } = namespace;
 
