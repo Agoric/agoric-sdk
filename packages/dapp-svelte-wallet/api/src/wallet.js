@@ -5,11 +5,14 @@ import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
+import './internal-types';
+
 export function buildRootObject(_vatPowers) {
-  let walletInternals;
-  /** @type {Array<[string, any]>} */
+  /** @type {WalletAdminFacet} */
+  let walletAdmin;
+  /** @type {Array<PursesJSONState>} */
   let pursesState = [];
-  /** @type {Array<[string, any]>} */
+  /** @type {Array<OfferState>} */
   let inboxState = [];
   let http;
   const bridgeHandles = new Set();
@@ -51,24 +54,26 @@ export function buildRootObject(_vatPowers) {
   };
 
   const { publish: pursesPublish, subscribe: pursesSubscribe } = pubsub(E);
-  const { updater: inboxUpdater, notifier: inboxNotifier } = makeNotifierKit(
+  const { updater: inboxUpdater, notifier: offerNotifier } = makeNotifierKit(
     inboxState,
   );
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({
     getInboxNotifier() {
-      return inboxNotifier;
+      return offerNotifier;
     },
   });
 
   async function startup({ zoe, board }) {
-    walletInternals = await makeWallet({
+    const w = makeWallet({
       zoe,
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
     });
+    await w.initialized;
+    walletAdmin = w.admin;
   }
 
   const makeBridge = (approve, dappOrigin, meta = {}) => {
@@ -84,16 +89,20 @@ export function buildRootObject(_vatPowers) {
     const bridge = {
       async getPursesNotifier() {
         await approve();
-        const pursesNotifier = walletInternals.getPursesNotifier();
-        const { notifier, updater } = makeNotifierKit(pursesState);
+        const pursesNotifier = walletAdmin.getPursesNotifier();
+        const { notifier, updater } = makeNotifierKit();
         observeIteration(makeApprovedNotifier(pursesNotifier), updater);
         return notifier;
       },
       async addOffer(offer) {
         await approve();
-        return walletInternals.addOffer(offer, { ...meta, dappOrigin });
+        return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
       },
-      async getOfferNotifier(status = null) {
+      async addOfferInvitation(offer, invitation) {
+        await approve();
+        return walletAdmin.addOfferInvitation(offer, invitation, dappOrigin);
+      },
+      async getOffersNotifier(status = null) {
         await approve();
         const { notifier, updater } = makeNotifierKit(inboxState);
         const filter = offer =>
@@ -101,7 +110,7 @@ export function buildRootObject(_vatPowers) {
           offer.requestContext &&
           offer.requestContext.origin === dappOrigin;
 
-        observeIteration(makeApprovedNotifier(inboxNotifier), {
+        observeIteration(makeApprovedNotifier(offerNotifier), {
           updateState(offers) {
             updater.updateState(offers.filter(filter));
           },
@@ -116,69 +125,82 @@ export function buildRootObject(_vatPowers) {
       },
       async getDepositFacetId(brandBoardId) {
         await approve();
-        return walletInternals.getDepositFacetId(brandBoardId);
+        return walletAdmin.getDepositFacetId(brandBoardId);
       },
       async suggestIssuer(petname, boardId) {
         await approve();
-        return walletInternals.suggestIssuer(petname, boardId, dappOrigin);
+        return walletAdmin.suggestIssuer(petname, boardId, dappOrigin);
       },
       async suggestInstallation(petname, boardId) {
         await approve();
-        return walletInternals.suggestInstallation(
-          petname,
-          boardId,
-          dappOrigin,
-        );
+        return walletAdmin.suggestInstallation(petname, boardId, dappOrigin);
       },
       async suggestInstance(petname, boardId) {
         await approve();
-        return walletInternals.suggestInstance(petname, boardId, dappOrigin);
+        return walletAdmin.suggestInstance(petname, boardId, dappOrigin);
       },
     };
     return harden(bridge);
   };
 
-  /** @type {WalletBridge} */
-  const anonymousBridge = {
+  /**
+   * This bridge doesn't wait for approvals before acting.
+   *
+   * @type {WalletBridge}
+   */
+  const preapprovedBridge = {
     addOffer(offer) {
-      return walletInternals.addOffer(offer);
+      return walletAdmin.addOffer(offer);
+    },
+    addOfferInvitation(offer, invitation) {
+      return walletAdmin.addOfferInvitation(offer, invitation);
     },
     getDepositFacetId(brandBoardId) {
-      return walletInternals.getDepositFacetId(brandBoardId);
+      return walletAdmin.getDepositFacetId(brandBoardId);
     },
-    async getOfferNotifier() {
-      return inboxNotifier;
+    async getOffersNotifier() {
+      return walletAdmin.getOffersNotifier();
     },
-    getPursesNotifier() {
-      return walletInternals.getPursesNotifier();
+    async getPursesNotifier() {
+      return walletAdmin.getPursesNotifier();
     },
     suggestInstallation(petname, installationBoardId) {
-      return walletInternals.suggestInstallation(petname, installationBoardId);
+      return walletAdmin.suggestInstallation(petname, installationBoardId);
     },
     suggestInstance(petname, instanceBoardId) {
-      return walletInternals.suggestInstance(petname, instanceBoardId);
+      return walletAdmin.suggestInstance(petname, instanceBoardId);
     },
     suggestIssuer(petname, issuerBoardId) {
-      return walletInternals.suggestIssuer(petname, issuerBoardId);
+      return walletAdmin.suggestIssuer(petname, issuerBoardId);
     },
   };
-  harden(anonymousBridge);
+  harden(preapprovedBridge);
 
   async function getWallet() {
-    /** @type {WalletUser} */
+    /** @type {WalletUser & { getAdminFacet: () => any }} */
     const wallet = {
-      addPayment: walletInternals.addPayment,
-      async getAnonymousBridge() {
-        return anonymousBridge;
+      addPayment: walletAdmin.addPayment,
+      async getBridge(suggestedDappPetname, dappOrigin) {
+        const approve = async () => {
+          await walletAdmin.waitForDappApproval(
+            suggestedDappPetname,
+            dappOrigin,
+          );
+        };
+
+        return makeBridge(approve, dappOrigin);
       },
-      getDepositFacetId: walletInternals.getDepositFacetId,
-      async getInternals() {
-        return harden({ ...walletInternals, ...notifiers });
+      async getPreapprovedBridge() {
+        return preapprovedBridge;
       },
-      getIssuer: walletInternals.getIssuer,
-      getIssuers: walletInternals.getIssuers,
-      getPurse: walletInternals.getPurse,
-      getPurses: walletInternals.getPurses,
+      getDepositFacetId: walletAdmin.getDepositFacetId,
+      async getAdminFacet() {
+        return harden({ ...walletAdmin, ...notifiers });
+      },
+      getIssuer: walletAdmin.getIssuer,
+      getIssuers: walletAdmin.getIssuers,
+      getPurse: walletAdmin.getPurse,
+      getPurses: walletAdmin.getPurses,
     };
     return harden(wallet);
   }
@@ -229,7 +251,7 @@ export function buildRootObject(_vatPowers) {
 
         const approve = async () => {
           let needApproval = false;
-          await walletInternals.waitForDappApproval(
+          await walletAdmin.waitForDappApproval(
             suggestedDappPetname,
             dappOrigin,
             () => {
@@ -270,7 +292,7 @@ export function buildRootObject(_vatPowers) {
 
             // When we haven't been enabled, tell our caller.
             let needApproval = false;
-            await walletInternals.waitForDappApproval(
+            await walletAdmin.waitForDappApproval(
               suggestedDappPetname,
               dappOrigin,
               () => {
@@ -351,7 +373,7 @@ export function buildRootObject(_vatPowers) {
                 });
                 return {
                   type: 'walletOfferAdded',
-                  data: await walletInternals.addOffer(
+                  data: await walletAdmin.addOffer(
                     { ...obj.data, actions },
                     { ...meta, dappOrigin },
                   ),
@@ -384,7 +406,7 @@ export function buildRootObject(_vatPowers) {
                 const { status = null } = obj;
 
                 // Override the origin since we got it from the bridge.
-                let result = await walletInternals.getOffers({
+                let result = await walletAdmin.getOffers({
                   origin: dappOrigin,
                 });
                 if (status !== null) {
@@ -402,7 +424,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletGetDepositFacetId': {
                 const { brandBoardId } = obj;
-                const result = await walletInternals.getDepositFacetId(
+                const result = await walletAdmin.getDepositFacetId(
                   brandBoardId,
                 );
                 return {
@@ -413,7 +435,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
-                const result = await walletInternals.suggestIssuer(
+                const result = await walletAdmin.suggestIssuer(
                   petname,
                   boardId,
                   dappOrigin,
@@ -426,7 +448,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
-                const result = await walletInternals.suggestInstance(
+                const result = await walletAdmin.suggestInstance(
                   petname,
                   boardId,
                   dappOrigin,
@@ -439,7 +461,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
-                const result = await walletInternals.suggestInstallation(
+                const result = await walletAdmin.suggestInstallation(
                   petname,
                   boardId,
                   dappOrigin,

@@ -21,7 +21,7 @@
   $: isExpanded = id => expandState.includes(id) !== expandDefault;
 
   const toggle = id => {
-    console.log('toggle', id, expandState.includes(id));
+    // console.log('toggle', id, expandState.includes(id));
     if (expandState.includes(id)) {
       expandState = expandState.filter(it => id !== it);
     } else {

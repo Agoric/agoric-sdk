@@ -1,9 +1,13 @@
+// @ts-check
 import { writable } from 'svelte/store';
 import { E } from '@agoric/eventual-send';
 import { updateFromNotifier } from '@agoric/notifier';
 
 import { makeWebSocket } from './websocket';
 import { makeCapTPConnection } from './captp';
+
+import '../../api/src/internal-types';
+import '../../api/src/types';
 
 // Fetch the access token from the window's URL.
 let accessTokenParams = `?${window.location.hash.slice(1)}`;
@@ -54,7 +58,8 @@ const { connected, makeStableForwarder } = makeCapTPConnection(
 export { connected };
 
 // Get some properties of the bootstrap object as stable identites.
-export const walletP = makeStableForwarder(bootP => E(E.G(bootP).wallet).getInternals());
+/** @type {ReturnType<typeof import('../../api/src/lib-wallet').makeWallet>['admin']} */
+export const walletP = makeStableForwarder(bootP => E(E.G(bootP).wallet).getAdminFacet());
 export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
 
 const resetAlls = [];
@@ -66,7 +71,7 @@ const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
 const [payments, setPayments] = makeReadable([]);
 const [contacts, setContacts] = makeReadable([]);
-const [selfContact, setSelfContact] = makeReadable();
+const [selfContact, setSelfContact] = makeReadable(undefined);
 const [issuers, setIssuers] = makeReadable([]);
 
 export { ready, inbox, purses, dapps, payments, issuers, contacts, selfContact };
@@ -94,7 +99,7 @@ function onReset(readyP) {
       setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`}))
         .sort((a, b) => cmp(b.id, a.id)));
     },
-  }, E(walletP).getInboxNotifier());
+  }, E(walletP).getOffersNotifier());
   updateFromNotifier({
     updateState(state) {
       setPurses(state.map(purse => kv({ pursePetname: purse.pursePetname }, purse))
@@ -104,7 +109,7 @@ function onReset(readyP) {
   updateFromNotifier({
     updateState(state) {
       setDapps(state.map(dapp => ({ ...dapp, id: dapp.origin }))
-        .sort((a, b) => cmp(a.dappPetname, b.dappPetname) || cmp(a.id, b.id)));
+        .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id)));
     },
   }, E(walletP).getDappsNotifier());
   updateFromNotifier({
@@ -122,7 +127,14 @@ function onReset(readyP) {
   }, E(walletP).getIssuersNotifier());
 }
 
-// like React useHook, return a store and a setter for it
+/**
+ * Like React useHook, return a store and a setter for it
+ *
+ * @template T
+ * @param {T} value
+ * @param {T} [reset=value]
+ * @returns {[any, (value: T) => void]}
+ */
 function makeReadable(value, reset = value) {
   const store = writable(value);
   resetAlls.push(() => store.set(reset));

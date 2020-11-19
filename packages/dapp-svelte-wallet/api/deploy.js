@@ -64,7 +64,7 @@ export default async function deployWallet(
   const issuerToPetname = new Map();
   const issuerToPursePetnameP = new Map();
   const wallet = await E(walletVat).getWallet();
-  const walletInternals = E(wallet).getInternals();
+  const walletAdmin = E(wallet).getAdminFacet();
   await Promise.all(
     paymentInfo.map(async ({ issuerPetname, issuer }) => {
       // Create some issuer petnames.
@@ -72,7 +72,7 @@ export default async function deployWallet(
         return issuerToPetname.get(issuer);
       }
       issuerToPetname.set(issuer, issuerPetname);
-      await E(walletInternals).addIssuer(issuerPetname, issuer);
+      await E(walletAdmin).addIssuer(issuerPetname, issuer);
       return issuerToPetname.get(issuer);
     }),
   );
@@ -110,7 +110,7 @@ export default async function deployWallet(
       if (!issuerToPursePetnameP.has(issuer)) {
         issuerToPursePetnameP.set(
           issuer,
-          E(walletInternals)
+          E(walletAdmin)
             .makeEmptyPurse(issuerPetname, pursePetname)
             .then(
               _ => pursePetname,
@@ -121,7 +121,7 @@ export default async function deployWallet(
       pursePetname = await issuerToPursePetnameP.get(issuer);
 
       // Deposit payment.
-      await E(walletInternals).deposit(pursePetname, payment);
+      await E(walletAdmin).deposit(pursePetname, payment);
     }),
   );
 

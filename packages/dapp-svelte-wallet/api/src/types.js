@@ -8,7 +8,44 @@
  */
 
 /**
- * @typedef {string | string[]} Petname
+ * @typedef {string | string[]} Petname A petname can either be a plain string
+ * or a path for which the first element (the edgename) is a petname.  We are
+ * migrating away from using plain strings, for consistency.
+ */
+
+/**
+ * @typedef {Object} WalletBridge The wallet methods available within the
+ * context of a Dapp.
+ * @property {(offer: OfferState) => Promise<string>} addOffer
+ * @property {(offer: OfferState, invitation: ERef<Payment>) => Promise<string>}
+ * addOfferInvitation add an invitation to the specified offer
+ * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
+ * @property {() => Promise<Notifier<Array<PursesFullState>>>}
+ * getPursesNotifier
+ * @property {() => Promise<Notifier<Array<OfferState>>>}
+ * getOffersNotifier
+ * @property {(petname: Petname, issuerBoardId: string) => Promise<void>}
+ * suggestIssuer
+ * @property {(petname: Petname, installationBoardId: string) => Promise<void>}
+ * suggestInstallation
+ * @property {(petname: Petname, instanceBoardId: string) => Promise<void>}
+ * suggestInstance
+ */
+
+/**
+ * @typedef {Object} WalletUser the presence exposed as `local.wallet` (or
+ * `home.wallet`)
+ * @property {(suggestedDappPetname: Petname, dappOrigin: string) =>
+ * Promise<WalletBridge>} getBridge return a wallet bridge corresponding to an
+ * origin that must be approved in the wallet UI
+ * @property {() => Promise<WalletBridge>} getPreapprovedBridge return the
+ * wallet bridge that bypasses Dapp-authorization
+ * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
+ * @property {() => Array<[Petname, Issuer]>} getIssuers
+ * @property {(petname: Petname) => Issuer} getIssuer
+ * @property {() => Array<[Petname, Purse]>} getPurses
+ * @property {(petname: Petname) => Purse} getPurse
+ * @property {(payment: ERef<Payment>) => Promise<void>} addPayment
  */
 
 /**
@@ -24,39 +61,7 @@
  */
 
 /**
- * @typedef {Object} WalletBridge The wallet methods available within the
- * context of a Dapp.
- * @property {(offer: OfferState) => Promise<void>} addOffer
- * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
- * @property {() => Promise<Notifier<Array<[string, PursesJSONState]>>>}
- * getPursesNotifier
- * @property {() => Promise<Notifier<Array<[string, OfferJSONState]>>>}
- * getOfferNotifier
- * @property {(petname: Petname, issuerBoardId: string) => Promise<void>}
- * suggestIssuer
- * @property {(petname: Petname, installationBoardId: string) => Promise<void>}
- * suggestInstallation
- * @property {(petname: Petname, instanceBoardId: string) => Promise<void>}
- * suggestInstance
- */
-
-/**
- * @typedef {Object} WalletTodo
- * @property {(offer: OfferState, invitation: ERef<Payment>) => Promise<string>}
- * addOfferInvitation add an invitation to the specified offer
- */
-
-/**
- * @typedef {Object} WalletUser the presence exposed as `local.wallet` (or
- * `home.wallet`)
- * @property {() => Promise<WalletBridge>} getAnonymousBridge return the wallet
- * bridge not bound to a given Dapp
- * @property {() => Promise<any>} getInternals return the specialized backend
- * for the wallet UI frontend
- * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
- * @property {() => Promise<Array<[Petname, Issuer]>>} getIssuers
- * @property {(petname: Petname) => Issuer} getIssuer
- * @property {() => Promise<Array<[Petname, Purse]>>} getPurses
- * @property {(petname: Petname) => Purse} getPurse
- * @property {(payment: ERef<Payment>) => Promise<void>} addPayment
+ * @typedef {Object} OfferState
+ * @property {any} requestContext
+ * @property {string} id
  */

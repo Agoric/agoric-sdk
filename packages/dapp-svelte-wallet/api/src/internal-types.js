@@ -78,3 +78,10 @@
  * @property {() => Promise<boolean>} refresh
  * @property {() => Promise<boolean>} getAmountOf
  */
+
+/* eslint-disable jsdoc/valid-types */
+/**
+ * FIXME: Bit of a hack to extract the actual type exported by makeWallet.
+ *
+ * @typedef {ReturnType<typeof import('./wallet').makeWallet>['admin']} WalletAdminFacet
+ */
