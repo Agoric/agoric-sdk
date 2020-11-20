@@ -605,7 +605,10 @@ export function makeMarshal(
               assert.note(val, d`Sent as ${errorId}`);
               // TODO we need to instead log to somewhere hidden
               // to be revealed when correlating with the received error.
-              console.error('Temporary logging of sent error', val);
+              // By sending this to `console.log`, under swingset this is
+              // enabled by `agoric start --reset -v` and not enabled without
+              // the `-v` flag.
+              console.log('Temporary logging of sent error', val);
               return harden({
                 [QCLASS]: 'error',
                 name: `${val.name}`,
