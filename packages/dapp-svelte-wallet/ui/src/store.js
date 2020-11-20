@@ -58,7 +58,7 @@ const { connected, makeStableForwarder } = makeCapTPConnection(
 export { connected };
 
 // Get some properties of the bootstrap object as stable identites.
-/** @type {ReturnType<typeof import('../../api/src/lib-wallet').makeWallet>['admin']} */
+/** @type {WalletAdminFacet} */
 export const walletP = makeStableForwarder(bootP => E(E.G(bootP).wallet).getAdminFacet());
 export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
 

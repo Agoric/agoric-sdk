@@ -81,7 +81,11 @@
 
 /* eslint-disable jsdoc/valid-types */
 /**
- * FIXME: Bit of a hack to extract the actual type exported by makeWallet.
+ * We obtain the WalletAdminFacet from its implementation.  Ideally this facet
+ * would not be necessary.  Once we have clarified and standardized its APIs we
+ * would make them part of the WalletUser available as `home.wallet` in the
+ * REPL.  Then, the Wallet UI could use that instead.
  *
- * @typedef {ReturnType<typeof import('./wallet').makeWallet>['admin']} WalletAdminFacet
+ * @typedef {ReturnType<typeof import('./lib-wallet').makeWallet>['admin']}
+ * WalletAdminFacet
  */

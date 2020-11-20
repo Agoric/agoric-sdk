@@ -1,5 +1,16 @@
 // @ts-check
 
+/**
+ * This file defines the wallet internals without dependency on the ag-solo on
+ * which it runs.  It could be better factored, as it evolved ex nihilo.
+ *
+ * Ideally, the APIs defined by ./types.js would drive the organization of this
+ * and other implementation files.
+ *
+ * ./wallet.js describes how this implementation is actually exposed to the user
+ * and dapps.
+ */
+
 import { assert, details, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
 import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
