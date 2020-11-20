@@ -28,7 +28,7 @@ note left
 mint invitation payment
 end note
 Zoe --\\ Zcf : <font color=gray><size:12> invitation
-Zcf --\\ Contract : <font color=gray><size:12> invitation
+Zcf --\\ contract : <font color=gray><size:12> invitation
 contract --\\ Zcf : <font color=gray><size:12> {creatorFacet, creatorInvitation, publicFacet }
 Zcf --\\ Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation, addSeatObj}
 Alice //-- Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation}
@@ -43,8 +43,8 @@ note left
 deposit payments
 end note
 Zcf -> Zcf : makeZCFSeat
-Zcf -> Contract : offerHandler(ZCFSeat)
-Contract -> Zcf : <font color=gray><size:12> offerResult
+Zcf -> contract : offerHandler(ZCFSeat)
+contract -> Zcf : <font color=gray><size:12> offerResult
 Zcf --\\ Zoe : <font color=gray><size:12> { offerResult, exitObj }
 
 Zoe --\\ Zoe : <font color=gray><size:12> userSeat promises updated
