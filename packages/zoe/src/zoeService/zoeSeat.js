@@ -31,7 +31,8 @@ export const makeZoeSeatAdminKit = (
   offerResult,
 ) => {
   const payoutPromiseKit = makePromiseKit();
-  // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+  // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+  // This does not suppress any error messages.
   payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
 

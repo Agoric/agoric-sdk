@@ -151,10 +151,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
       zoeSeatAdminPromiseKit.promise.catch(_ => {});
       const userSeatPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
       userSeatPromiseKit.promise.catch(_ => {});
       const seatHandle = makeHandle('SeatHandle');
 
@@ -448,7 +450,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
-    // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+    // This does not suppress any error messages.
     contractCode.catch(() => {});
 
     // Next, execute the contract code, passing in zcf
@@ -463,7 +466,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           addSeatObj,
         });
       });
-    result.catch(() => {}); // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+    // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+    // This does not suppress any error messages.
+    result.catch(() => {});
     return result;
   };
 

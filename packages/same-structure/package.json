@@ -2,6 +2,9 @@
   "name": "@agoric/same-structure",
   "version": "0.0.12",
   "description": "Deep equals",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "index.js",
   "engines": {
     "node": ">=11.0"

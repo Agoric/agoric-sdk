@@ -2,6 +2,9 @@
   "name": "@agoric/sharing-service",
   "version": "0.0.12",
   "description": "Share objects with another party but not publicly",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "src/sharing.js",
   "engines": {
     "node": ">=11.0"

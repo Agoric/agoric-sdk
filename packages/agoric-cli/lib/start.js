@@ -9,6 +9,8 @@ import {
   finishCosmosGenesis,
 } from './chain-config';
 
+import { makePspawn } from './helpers';
+
 const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const CHAIN_ID = 'agoric';
@@ -29,20 +31,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${opts.dockerTag}`;
 
   const pspawnEnv = { ...process.env };
-  const pspawn = (
-    cmd,
-    cargs,
-    { stdio = 'inherit', env = pspawnEnv, ...rest } = {},
-  ) => {
-    log(chalk.blueBright(cmd, ...cargs));
-    const cp = spawn(cmd, cargs, { stdio, env, ...rest });
-    const pr = new Promise((resolve, _reject) => {
-      cp.on('exit', resolve);
-      cp.on('error', () => resolve(-1));
-    });
-    pr.cp = cp;
-    return pr;
-  };
+  const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
 
   let keysSpawn;
   if (opts.sdk) {
@@ -84,7 +73,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       spawner(args, { stdio: ['inherit', 'pipe', 'inherit'] }),
       '',
     ];
-    capret[0].cp.stdout.on('data', chunk => {
+    capret[0].childProcess.stdout.on('data', chunk => {
       if (show) {
         process.stdout.write(chunk);
       }
@@ -173,7 +162,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const ps = pspawn(agSolo, [...debugOpts, 'start'], {
       cwd: agServer,
     });
-    process.on('SIGINT', () => ps.cp.kill('SIGINT'));
+    process.on('SIGINT', () => ps.childProcess.kill('SIGINT'));
     return ps;
   }
 

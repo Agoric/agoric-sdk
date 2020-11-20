@@ -2,6 +2,9 @@
   "name": "@agoric/install-metering-and-ses",
   "version": "0.1.5",
   "description": "tame metering and install SES at import time",
+  "parsers": {
+    "js": "mjs"
+  },
   "main": "install-metering-and-ses.js",
   "scripts": {
     "build": "exit 0",

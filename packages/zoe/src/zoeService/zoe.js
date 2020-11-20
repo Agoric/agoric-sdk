@@ -213,10 +213,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
       addSeatObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
       publicFacetPromiseKit.promise.catch(_ => {});
 
       const makeInstanceAdmin = () => {
@@ -333,7 +335,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
       };
 
-      // At this point, the contract will start executing. All must be ready
+      // At this point, the contract will start executing. All must be
+      // ready
 
       const {
         creatorFacet = {},
@@ -431,10 +434,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             );
 
             const offerResultPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+            // This does not suppress any error messages.
             offerResultPromiseKit.promise.catch(_ => {});
             const exitObjPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+            // This does not suppress any error messages.
             exitObjPromiseKit.promise.catch(_ => {});
             const seatHandle = makeHandle('SeatHandle');
 
@@ -463,9 +468,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
                 offerResultPromiseKit.resolve(offerResultP);
                 exitObjPromiseKit.resolve(exitObj);
               })
-              .catch(err => {
-                console.log(err);
-              });
+              // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+              // This does not suppress any error messages.
+              .catch(() => {});
 
             return userSeat;
           });

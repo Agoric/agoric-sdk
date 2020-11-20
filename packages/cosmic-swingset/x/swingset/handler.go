@@ -139,7 +139,7 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*s
 
 type provisionAction struct {
 	*MsgProvision
-	Type        string `json:"type"` // IBC_EVENT
+	Type        string `json:"type"` // PLEASE_PROVISION
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
 }
