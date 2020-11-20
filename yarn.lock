@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@agoric/assert@^0.0.12-dev.0":
+  version "0.0.12-dev.0"
+  resolved "https://registry.yarnpkg.com/@agoric/assert/-/assert-0.0.12-dev.0.tgz#a05bc582cb54d50a10b22fff2a13bf65028caf2e"
+  integrity sha512-dQtUlZOyoZ0IXb4i2KOIpIvSTpPU9d7hMBqC8I8S2Ky4rWPhWFdsOQc7ARWP6ejSKnkFi8ThZhD1pDI8q27VfQ==
+
 "@agoric/babel-parser@^7.6.4":
   version "7.6.4"
   resolved "https://registry.yarnpkg.com/@agoric/babel-parser/-/babel-parser-7.6.4.tgz#8dd5d36554cc758c29042713b5aa57dc58ee5273"
