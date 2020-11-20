@@ -1,6 +1,8 @@
-// @ts-check
+// @ts-nocheck
+/* global assert globalThis */
 
-import { assert, details as d } from '@agoric/assert';
+// NOTE: We can't import these because they're not in scope before lockdown.
+// import { assert, details as d } from '@agoric/assert';
 
 // WARNING: Global Mutable State!
 // This state is communicated to `assert` that makes it available to the
@@ -34,12 +36,15 @@ let hiddenCurrentEvent = 0;
  * @returns {TurnStarterFn[]}
  */
 export const trackTurns = funcs => {
+  if (!globalThis.assert) {
+    return funcs;
+  }
   hiddenCurrentEvent += 1;
   const sendingError = new Error(
     `_event_ ${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
   );
   if (hiddenPriorError !== undefined) {
-    assert.note(sendingError, d`_caused by_ ${hiddenPriorError}`);
+    assert.note(sendingError, assert.details`_caused by_ ${hiddenPriorError}`);
   }
 
   return funcs.map(
@@ -54,7 +59,7 @@ export const trackTurns = funcs => {
         } catch (err) {
           assert.note(
             err,
-            d`_thrown from_ ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
+            assert.details`_thrown from_ ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
           );
           throw err;
         } finally {
