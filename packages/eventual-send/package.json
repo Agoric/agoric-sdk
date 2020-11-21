@@ -24,8 +24,8 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "dependencies": {},
   "devDependencies": {
+    "@agoric/assert": "^0.0.12-dev.0",
     "@agoric/install-ses": "^0.4.0",
     "ava": "^3.12.1",
     "esm": "^3.2.7",
