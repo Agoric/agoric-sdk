@@ -41,10 +41,10 @@ export const trackTurns = funcs => {
   }
   hiddenCurrentEvent += 1;
   const sendingError = new Error(
-    `_event_ ${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
+    `Event: ${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
   );
   if (hiddenPriorError !== undefined) {
-    assert.note(sendingError, assert.details`_caused by_ ${hiddenPriorError}`);
+    assert.note(sendingError, assert.details`Caused by: ${hiddenPriorError}`);
   }
 
   return funcs.map(
@@ -59,7 +59,7 @@ export const trackTurns = funcs => {
         } catch (err) {
           assert.note(
             err,
-            assert.details`_thrown from_ ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
+            assert.details`Thrown from: ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
           );
           throw err;
         } finally {
