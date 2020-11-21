@@ -36,7 +36,7 @@ let hiddenCurrentEvent = 0;
  * @returns {TurnStarterFn[]}
  */
 export const trackTurns = funcs => {
-  if (!globalThis.assert) {
+  if (typeof globalThis === 'undefined' || !globalThis.assert) {
     return funcs;
   }
   hiddenCurrentEvent += 1;
