@@ -206,7 +206,7 @@ test('resolveWithPresence test nr 4', async t => {
             log.push(['then', callback, errback]);
             try {
               t.log('þrep callback gefið .then ákallað');
-              return Promise.resolve(callback(target));
+              return Promise.resolve(callback(receiver));
             } catch (problem) {
               return Promise.reject(problem);
             }
