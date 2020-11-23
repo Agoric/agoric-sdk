@@ -70,3 +70,7 @@ The consequences of one ADR are very likely to become the context for subsequent
 Developers and project stakeholders can see the ADRs, even as the team composition changes over time.
 
 The motivation behind previous decisions is visible for everyone, present and future. Nobody is left scratching their heads to understand, "What were they thinking?" and the time to change old decisions will be clear from changes in the project's context.
+
+Every requirement of the ADR format comes at the cost of more friction, so
+starting with a simple structure is prudent.  Refinements can be added in future
+ADRs as agreed on by the team.
