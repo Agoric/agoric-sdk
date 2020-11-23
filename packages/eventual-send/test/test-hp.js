@@ -290,6 +290,7 @@ test('resolveWithPresence test nr 4', async t => {
   pr.promise.then(presence => {
     t.log('þrep .then ákallað');
     t.log('presence.there: ', presence.there);
+    t.log('presence == proxyTarget :', (presence == proxyTarget));
     presence.there(() => {
       t.log('þrep nomad ákallað');
       log.push(['doing stuff there']);
