@@ -222,6 +222,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       };
 
       const bundle = installation.getBundle();
+      /** @type {PromiseRecord<AddSeatObj>} */
       const addSeatObjPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
@@ -245,9 +246,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             seatData,
             seatHandle,
           ) => {
-            return E(
-              /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
-            ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
+            return E((addSeatObjPromiseKit.promise)).addSeat(
+              invitationHandle,
+              zoeSeatAdmin,
+              seatData,
+              seatHandle,
+            );
           },
           tellZCFToLinkSeat: (
             invitationHandle,
@@ -255,9 +259,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             proposal,
             initialAllocation,
           ) => {
-            return E(
-              /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
-            ).linkSeat(
+            return E(addSeatObjPromiseKit.promise).linkSeat(
               invitationHandle,
               zoeSeatAdmin,
               proposal,
