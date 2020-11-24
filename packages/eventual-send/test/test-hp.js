@@ -295,6 +295,7 @@ test('resolveWithPresence test nr 4', async t => {
       t.log('þrep nomad ákallað');
       log.push(['doing stuff there']);
     });
+    return 42;
   }).catch((problem) => t.log('.then callback got problem:', problem));
   await Promise.resolve();
   t.log('log: ', log);
