@@ -153,7 +153,8 @@ test('resolveWithPresence test nr 3', async t => {
 });
 
 test('resolveWithPresence test nr 4', async t => {
-  t.log('proxy support being now tested');
+  const l = t.log();
+  l('proxy support being now tested');
   const log = [];
   const presenceEventualHandler = {
     applyMethod(target, verb, args) {
@@ -200,17 +201,17 @@ test('resolveWithPresence test nr 4', async t => {
     get(target, property, receiver) {
       log.push(['get', target, property, receiver]);
       if (property === 'then') {
-        t.log('þrep .then sótt');
+        l('þrep .then sótt');
         if (thenFetched) {
           thenFetched = false;
           return undefined;
         }
         thenFetched = true;
         return (callback, errback) => {
-          t.log('þrep .then höndlar ákall');
+          l('þrep .then höndlar ákall');
           log.push(['then', callback, errback]);
           try {
-            t.log('þrep callback gefið .then ákallað');
+            l('þrep callback sem var gefið .then, ákallað');
             return Promise.resolve(callback(receiver));
           } catch (problem) {
             return Promise.reject(problem);
@@ -230,13 +231,13 @@ test('resolveWithPresence test nr 4', async t => {
         };
       }
       if (property === 'there') {
-        t.log('þrep .there sótt');
+        l('þrep .there sótt');
         return nomad => {
-          t.log('þrep .there höndlar ákall');
+          l('þrep .there höndlar ákall');
           log.push(['thereInvocation', nomad]);
           if (typeof nomad === 'function') {
             try {
-              t.log('þrep nomad gefið .there ákallað');
+              l('þrep nomad gefið .there ákallað');
               return Promise.resolve(nomad());
             } catch (problem) {
               return Promise.reject(problem);
@@ -296,11 +297,11 @@ test('resolveWithPresence test nr 4', async t => {
   });
   pr.promise
     .then(presence => {
-      t.log('þrep .then ákallað');
-      t.log('presence.there: ', presence.there);
-      t.log('presence == proxyTarget :', presence === proxyTarget);
+      l('þrep .then ákallað');
+      l('presence.there: ', presence.there);
+      l('presence == proxyTarget :', presence === proxyTarget);
       presence.there(() => {
-        t.log('þrep nomad ákallað');
+        l('þrep nomad ákallað');
         log.push(['doing stuff there']);
       });
       return 42;
