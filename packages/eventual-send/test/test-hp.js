@@ -290,8 +290,10 @@ test('resolveWithPresence test nr 4', async t => {
   await Promise.resolve();
   pr.resolveWithPresence(presenceEventualHandler,
     {
-      proxy: { handler: presenceImmediateHandler,
-      target: proxyTarget },
+      proxy: {
+        handler: presenceImmediateHandler,
+        target: proxyTarget,
+      },
     },
   );
   pr.promise.then(presence => {
