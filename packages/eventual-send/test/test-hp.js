@@ -154,7 +154,7 @@ test('resolveWithPresence test nr 3', async t => {
 
 test('resolveWithPresence test nr 4', async t => {
   const l = t.log;
-  l('proxy support being now tested');
+  l('proxy support now being tested');
   const log = [];
   const presenceEventualHandler = {
     applyMethod(target, verb, args) {
@@ -307,14 +307,27 @@ test('resolveWithPresence test nr 4', async t => {
     })
     .catch(problem => t.log('.then callback got problem:', problem));
   const presence = await pr.promise;
-  const logSnapshot = log.map(entry => entry.map(item => item));
-  l('log: ', logSnapshot);
-  t.deepEqual(logSnapshot, [
-    ['get', logSnapshot[0][1], 'then', presence],
-    ['then', logSnapshot[1][1], logSnapshot[1][2]],
-    ['get', logSnapshot[2][1], 'then', presence],
-    ['thenCallbackInvoked'],
-    ['get', logSnapshot[3][1], 'there', presence],
-    ['doing stuff there'],
-  ]);
+  l('log: ', log);
+  t.is(log[0][0], 'get');
+  t.is(log[0][1], proxyTarget);
+  t.is(log[0][2], 'then');
+  t.is(log[0][3], presence);
+  //
+  t.is(log[1][0], 'then');
+  t.not(log[1][1], undefined);
+  t.not(log[1][2], undefined);
+  //
+  t.is(log[2][0], 'get');
+  t.is(log[2][1], proxyTarget);
+  t.is(log[2][2], 'then');
+  t.is(log[2][3], presence);
+  //
+  t.is(log[3][0], 'thenCallbackInvoked');
+  //
+  t.is(log[4][0], 'get');
+  t.is(log[4][1], proxyTarget);
+  t.is(log[4][2], 'there');
+  t.is(log[5][3], presence);
+  //
+  t.is(log[6][0], 'doing stuff there');
 });
