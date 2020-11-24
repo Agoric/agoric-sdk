@@ -295,7 +295,7 @@ test('resolveWithPresence test nr 4', async t => {
       target: proxyTarget,
     },
   });
-  pr.promise
+  await pr.promise
     .then(presence => {
       l('þrep .then ákallað');
       l('presence.there: ', presence.there);
@@ -318,5 +318,5 @@ test('resolveWithPresence test nr 4', async t => {
     ['thenCallbackInvoked'],
     ['get', logSnapshot[4][1], 'there', presence]
     ['doing stuff there'],
-   ]);
+  ]);
 });
