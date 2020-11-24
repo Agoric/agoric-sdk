@@ -308,6 +308,11 @@ test('resolveWithPresence test nr 4', async t => {
     })
     .catch(problem => t.log('.then callback got problem:', problem));
   await Promise.resolve();
-  t.log('log: ', log);
+  l('log: ', log);
+  t.deepEqual(log,
+   [
+     ['bla']
+   ],
+  );
   t.fail('stöðva prufun hér');
 });
