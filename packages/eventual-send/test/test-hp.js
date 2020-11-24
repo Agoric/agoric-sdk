@@ -179,6 +179,7 @@ test('resolveWithPresence test nr 4', async t => {
     },
   };
   const proxyTarget = {};
+    let thenFetched = false;
   const presenceImmediateHandler = {
     apply(target, thisArg, args) {
       log.push(['apply', target, thisArg, args]);
@@ -201,12 +202,14 @@ test('resolveWithPresence test nr 4', async t => {
       // if (target === receiver) {
         if (property === 'then') {
           t.log('þrep .then sótt');
+          if (thenFetched) { return undefined; }
+          thenFetched = true;
           return (callback, errback) => {
             t.log('þrep .then höndlar ákall');
             log.push(['then', callback, errback]);
             try {
               t.log('þrep callback gefið .then ákallað');
-              return callback(receiver);
+              return Promise.resolve(callback(receiver));
             } catch (problem) {
               return Promise.reject(problem);
             }
