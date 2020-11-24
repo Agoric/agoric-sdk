@@ -294,7 +294,8 @@ test('resolveWithPresence test nr 4', async t => {
       target: proxyTarget,
     },
   });
-  pr.promise.then(presence => {
+  pr.promise.then(presence =>
+    {
       t.log('þrep .then ákallað');
       t.log('presence.there: ', presence.there);
       t.log('presence == proxyTarget :', presence === proxyTarget);
@@ -303,8 +304,8 @@ test('resolveWithPresence test nr 4', async t => {
         log.push(['doing stuff there']);
       });
       return 42;
-  })
-  .catch(problem => t.log('.then callback got problem:', problem));
+    })
+    .catch(problem => t.log('.then callback got problem:', problem));
   await Promise.resolve();
   t.log('log: ', log);
   t.fail('stöðva prufun hér');
