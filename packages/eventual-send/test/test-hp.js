@@ -309,16 +309,14 @@ test('resolveWithPresence test nr 4', async t => {
     })
     .catch(problem => t.log('.then callback got problem:', problem));
   await Promise.resolve();
-  const logSnapshot = new Array(log);
+  const logSnapshot = log.map(entry => entry.map(item => item));
   l('log: ', logSnapshot);
   t.deepEqual(logSnapshot,
-   [
-     ['get', logSnapshot[0][1], 'then', await pr.promise],
-     ['then', logSnapshot[1][1], logSnapshot[1][2]],
-     ['get', log[2][1], 'then', await pr.promise],
-     ['thenCallbackInvoked'],
-     ['doing stuff there'],
-   ],
-  );
+   [['get', logSnapshot[0][1], 'then', await pr.promise],
+    ['then', logSnapshot[1][1], logSnapshot[1][2]],
+    ['get', log[2][1], 'then', await pr.promise],
+    ['thenCallbackInvoked'],
+    ['doing stuff there'],
+   ]);
   t.fail('stöðva prufun hér');
 });
