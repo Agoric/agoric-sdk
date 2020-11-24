@@ -311,7 +311,7 @@ test('resolveWithPresence test nr 4', async t => {
   l('log: ', log);
   t.deepEqual(log,
    [
-     ['bla']
+     ['get', log[0][1], 'then', log[0][3]],
    ],
   );
   t.fail('stöðva prufun hér');
