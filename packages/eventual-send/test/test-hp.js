@@ -179,7 +179,7 @@ test('resolveWithPresence test nr 4', async t => {
     },
   };
   const proxyTarget = {};
-    let thenFetched = false;
+  let thenFetched = false;
   const presenceImmediateHandler = {
     apply(target, thisArg, args) {
       log.push(['apply', target, thisArg, args]);
@@ -199,55 +199,53 @@ test('resolveWithPresence test nr 4', async t => {
     },
     get(target, property, receiver) {
       log.push(['get', target, property, receiver]);
-      // if (target === receiver) {
-        if (property === 'then') {
-          t.log('þrep .then sótt');
-          if (thenFetched) {
-            thenFetched = false;
-            return undefined;
+      if (property === 'then') {
+        t.log('þrep .then sótt');
+        if (thenFetched) {
+          thenFetched = false;
+          return undefined;
+        }
+        thenFetched = true;
+        return (callback, errback) => {
+          t.log('þrep .then höndlar ákall');
+          log.push(['then', callback, errback]);
+          try {
+            t.log('þrep callback gefið .then ákallað');
+            return Promise.resolve(callback(receiver));
+          } catch (problem) {
+            return Promise.reject(problem);
           }
-          thenFetched = true;
-          return (callback, errback) => {
-            t.log('þrep .then höndlar ákall');
-            log.push(['then', callback, errback]);
+        };
+      }
+      if (property === 'catch') {
+        return _ => Promise.resolve(target);
+      }
+      if (property === 'finally') {
+        return callback => {
+          try {
+            callback();
+          } catch (problem) {
+            // es-lint ignore-empty-block
+          }
+        };
+      }
+      if (property === 'there') {
+        t.log('þrep .there sótt');
+        return nomad => {
+          t.log('þrep .there höndlar ákall');
+          log.push(['thereInvocation', nomad]);
+          if (typeof nomad === 'function') {
             try {
-              t.log('þrep callback gefið .then ákallað');
-              return Promise.resolve(callback(receiver));
+              t.log('þrep nomad gefið .there ákallað');
+              return Promise.resolve(nomad());
             } catch (problem) {
               return Promise.reject(problem);
             }
-          };
-        }
-        if (property === 'catch') {
-          return _ => Promise.resolve(target);
-        }
-        if (property === 'finally') {
-          return callback => {
-            try {
-              callback();
-            } catch (problem) {
-              // es-lint ignore-empty-block
-            }
-          };
-        }
-        if (property === 'there') {
-          t.log('þrep .there sótt');
-          return nomad => {
-            t.log('þrep .there höndlar ákall');
-            log.push(['thereInvocation', nomad]);
-            if (typeof nomad === 'function') {
-              try {
-                t.log('þrep nomad gefið .there ákallað');
-                return Promise.resolve(nomad());
-              } catch (problem) {
-                return Promise.reject(problem);
-              }
-            } else {
-              return Promise.reject(new Error('tbi, until then, unhelpfull'));
-            }
-          };
-        }
-      // }
+          } else {
+            return Promise.reject(new Error('tbi, until then, unhelpfull'));
+          }
+        };
+      }
       return undefined;
     },
     getOwnPropertyDescriptor(target, property) {
@@ -296,15 +294,15 @@ test('resolveWithPresence test nr 4', async t => {
   pr.promise.then(presence => {
     t.log('þrep .then ákallað');
     t.log('presence.there: ', presence.there);
-    t.log('presence == proxyTarget :', (presence == proxyTarget));
+    t.log('presence == proxyTarget :', presence === proxyTarget);
     presence.there(() => {
       t.log('þrep nomad ákallað');
       log.push(['doing stuff there']);
     });
     return 42;
-  }).catch((problem) => t.log('.then callback got problem:', problem));
+  })
+  .catch((problem) => t.log('.then callback got problem:', problem));
   await Promise.resolve();
   t.log('log: ', log);
-  t.like([42, "foo", "bar"], [42, undefined, "bar"]);
   t.fail('stöðva prufun hér');
 });
