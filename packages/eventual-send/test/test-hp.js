@@ -202,7 +202,10 @@ test('resolveWithPresence test nr 4', async t => {
       // if (target === receiver) {
         if (property === 'then') {
           t.log('þrep .then sótt');
-          if (thenFetched) { return undefined; }
+          if (thenFetched) {
+            thenFetched = false;
+            return undefined;
+          }
           thenFetched = true;
           return (callback, errback) => {
             t.log('þrep .then höndlar ákall');
