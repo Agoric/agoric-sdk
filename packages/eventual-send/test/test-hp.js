@@ -300,6 +300,7 @@ test('resolveWithPresence test nr 4', async t => {
       l('þrep .then ákallað');
       l('presence.there: ', presence.there);
       l('presence == proxyTarget :', presence === proxyTarget);
+      log.push(['thenCallbackInvoked']);
       presence.there(() => {
         l('þrep nomad ákallað');
         log.push(['doing stuff there']);
@@ -311,8 +312,11 @@ test('resolveWithPresence test nr 4', async t => {
   l('log: ', log);
   t.deepEqual(log,
    [
-     ['get', log[0][1], 'then', presence],
+     ['get', log[0][1], 'then', await pr.promise],
      ['then', log[1][1], log[1][2]],
+     ['get', log[2][1], 'then', await pr.promise],
+     ['thenCallbackInvoked'],
+     ['doing stuff there'],
    ],
   );
   t.fail('stöðva prufun hér');
