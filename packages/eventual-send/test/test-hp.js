@@ -294,8 +294,8 @@ test('resolveWithPresence test nr 4', async t => {
       target: proxyTarget,
     },
   });
-  pr.promise.then(presence =>
-    {
+  pr.promise
+    .then(presence => {
       t.log('þrep .then ákallað');
       t.log('presence.there: ', presence.there);
       t.log('presence == proxyTarget :', presence === proxyTarget);
