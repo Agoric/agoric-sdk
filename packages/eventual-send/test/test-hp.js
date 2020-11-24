@@ -298,8 +298,6 @@ test('resolveWithPresence test nr 4', async t => {
   await pr.promise
     .then(presence => {
       l('þrep .then ákallað');
-      l('presence.there: ', presence.there);
-      l('presence == proxyTarget :', presence === proxyTarget);
       log.push(['thenCallbackInvoked']);
       presence.there(() => {
         l('þrep nomad ákallað');
@@ -315,8 +313,8 @@ test('resolveWithPresence test nr 4', async t => {
     ['get', logSnapshot[0][1], 'then', presence],
     ['then', logSnapshot[1][1], logSnapshot[1][2]],
     ['get', logSnapshot[2][1], 'then', presence],
+    ['thenCallbackInvoked'],
     ['get', logSnapshot[3][1], 'there', presence],
-    ['thenCallbackInvoked', logSnapshot[4][1]],
     ['doing stuff there'],
   ]);
 });
