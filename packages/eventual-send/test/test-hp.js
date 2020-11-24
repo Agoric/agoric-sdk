@@ -315,8 +315,8 @@ test('resolveWithPresence test nr 4', async t => {
     ['get', logSnapshot[0][1], 'then', presence],
     ['then', logSnapshot[1][1], logSnapshot[1][2]],
     ['get', logSnapshot[2][1], 'then', presence],
-    ['thenCallbackInvoked'],
-    ['get', logSnapshot[4][1], 'there', presence]
+    ['get', logSnapshot[3][1], 'there', presence],
+    ['thenCallbackInvoked', logSnapshot[4][1]],
     ['doing stuff there'],
   ]);
 });
