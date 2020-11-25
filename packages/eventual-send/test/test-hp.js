@@ -153,7 +153,7 @@ test('resolveWithPresence test nr 3', async t => {
 });
 
 test('resolveWithPresence test nr 4', async t => {
-  const l = t.log;
+  const l = t.log; // decomment this line for debug aid
   l('proxy support now being tested');
   const log = [];
   const presenceEventualHandler = {
@@ -201,17 +201,17 @@ test('resolveWithPresence test nr 4', async t => {
     get(target, property, receiver) {
       log.push(['get', target, property, receiver]);
       if (property === 'then') {
-        l('þrep .then sótt');
+        l('step: .then fetched');
         if (thenFetched) {
           thenFetched = false;
           return undefined;
         }
         thenFetched = true;
         return (callback, errback) => {
-          l('þrep .then höndlar ákall');
+          l('step: .then handles invocation');
           log.push(['then', callback, errback]);
           try {
-            l('þrep callback sem var gefið .then, ákallað');
+            l('step: callback which was given to .then, invoked');
             return Promise.resolve(callback(receiver));
           } catch (problem) {
             return Promise.reject(problem);
@@ -231,13 +231,13 @@ test('resolveWithPresence test nr 4', async t => {
         };
       }
       if (property === 'there') {
-        l('þrep .there sótt');
+        l('step: .there fetched');
         return nomad => {
-          l('þrep .there höndlar ákall');
+          l('step: .there handles invocation');
           log.push(['thereInvocation', nomad]);
           if (typeof nomad === 'function') {
             try {
-              l('þrep nomad gefið .there ákallað');
+              l('step: nomad given to .there invoked');
               return Promise.resolve(nomad());
             } catch (problem) {
               return Promise.reject(problem);
@@ -297,10 +297,10 @@ test('resolveWithPresence test nr 4', async t => {
   });
   await pr.promise
     .then(presence => {
-      l('þrep .then ákallað');
+      l('step: .then invoked');
       log.push(['thenCallbackInvoked']);
       presence.there(() => {
-        l('þrep nomad ákallað');
+        l('step: nomad invoked');
         log.push(['doing stuff there']);
       });
       return 42;
@@ -327,7 +327,7 @@ test('resolveWithPresence test nr 4', async t => {
   t.is(log[4][0], 'get');
   t.is(log[4][1], proxyTarget);
   t.is(log[4][2], 'there');
-  t.is(log[5][3], presence);
+  t.is(log[4][3], presence);
   //
-  t.is(log[6][0], 'doing stuff there');
+  t.is(log[5][0], 'doing stuff there');
 });
