@@ -329,5 +329,8 @@ test('resolveWithPresence test nr 4', async t => {
   t.is(log[4][2], 'there');
   t.is(log[4][3], presence);
   //
-  t.is(log[5][0], 'doing stuff there');
+  t.is(log[5][0], 'thereInvocation');
+  t.not(log[5][1], undefined);
+  //
+  t.is(log[6][0], 'doing stuff there');
 });
