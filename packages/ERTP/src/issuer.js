@@ -6,6 +6,7 @@ import { assert, details } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Remotable } from '@agoric/marshal';
+import { makeNotifierKit } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
@@ -91,6 +92,11 @@ function makeIssuerKit(
 
   const { makeInstance: makePurse } = makeExternalStore('purse', () => {
     let currentBalance = amountMath.getEmpty();
+    /** @type {NotifierRecord<Amount>} */
+    const {
+      notifier: balanceNotifier,
+      updater: balanceUpdater,
+    } = makeNotifierKit(currentBalance);
 
     /** @type {Purse} */
     const purse = Remotable(
@@ -116,6 +122,7 @@ function makeIssuerKit(
           // source payment, such that total assets are conserved.
           paymentLedger.delete(srcPayment);
           currentBalance = newPurseBalance;
+          balanceUpdater.updateState(currentBalance);
           return srcPaymentBalance;
         },
         withdraw: amount => {
@@ -126,10 +133,12 @@ function makeIssuerKit(
           // Move the withdrawn assets from this purse into a new payment
           // which is returned. Total assets must remain conserved.
           currentBalance = newPurseBalance;
+          balanceUpdater.updateState(currentBalance);
           paymentLedger.init(payment, amount);
           return payment;
         },
         getCurrentAmount: () => currentBalance,
+        getCurrentAmountNotifier: () => balanceNotifier,
         getAllegedBrand: () => brand,
         // eslint-disable-next-line no-use-before-define
         getDepositFacet: () => depositFacet,

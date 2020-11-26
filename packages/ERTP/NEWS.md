@@ -1,5 +1,10 @@
 User-visible changes in ERTP:
 
+## Next Release
+
+* Purses now support `getCurrentAmountNotifier()` that notifies of balance
+  changes.
+
 ## Release v0.7.0 (21-July-2020)
 
 * Rename `extent` to `value`
