@@ -9,7 +9,7 @@ export function buildRootObject(_vatPowers, options) {
   function waitFor(who, p) {
     p.then(
       answer => {
-        if (0 < count && count < 50) {
+        if (count > 0 && count < 50) {
           log(`Alice: Bob answers with value ${answer[0]}`);
         }
         if (answer[0] < count || count < 0) {

@@ -1,5 +1,4 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
-/* global globalThis */
 // @ts-check
 
 // This module assumes the existence of a non-standard `assert` host object.

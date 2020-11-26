@@ -1,7 +1,5 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden */
-
 // Allows multiple parties to store values for retrieval by others.
 function makeSharedMap(name) {
   const namedEntries = new Map();

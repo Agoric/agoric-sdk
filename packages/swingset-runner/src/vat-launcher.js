@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 
-/**
+/*
  * Vat to launch other vats.
  *
  * This vat is designed to enable a statically configured swingset vat group to

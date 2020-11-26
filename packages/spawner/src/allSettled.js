@@ -1,5 +1,3 @@
-/* global harden */
-
 import { makePromiseKit } from '@agoric/promise-kit';
 
 // TODO Reconcile with spec of Promise.allSettled

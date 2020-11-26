@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden E */
+/* global E */
 
 import { mustBeSameStructure, sameStructure } from '@agoric/same-structure';
 

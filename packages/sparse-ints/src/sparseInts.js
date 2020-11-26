@@ -1,13 +1,13 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden */
-
 /**
  * Generator function to produce a stream of positive integers that are
  * sparsely scattered across the number space. This supports IDs that
  * are guessable, but for example mistyping a correct ID is unlikely to
  * mistakenly match another generated ID.
- * @returns {Generator<number, number, number>}
+ *
+ * @param {number} seed
+ * @yields {number}
  */
 function* generateSparseInts(seed) {
   // This is a linear-feedback shift register with computed startState.

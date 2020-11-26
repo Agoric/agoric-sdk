@@ -1,7 +1,5 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden */
-
 import { importBundle } from '@agoric/import-bundle';
 import { makeWeakStore } from '@agoric/store';
 import { assert, details } from '@agoric/assert';
@@ -10,7 +8,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 
 export { makeCollect } from './makeCollect';
 
-/**
+/*
  * Make a reusable host that can reliably install and execute contracts.
  *
  * @param E eventual-send method proxy

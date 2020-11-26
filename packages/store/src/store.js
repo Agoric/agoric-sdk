@@ -10,6 +10,7 @@ import { assert, details, q } from '@agoric/assert';
  *
  * `init` is only allowed if the key does not already exist. `Get`,
  * `set` and `delete` are only allowed if the key does already exist.
+ *
  * @template K,V
  * @param  {string} [keyName='key'] - the column name for the key
  * @returns {Store<K,V>}

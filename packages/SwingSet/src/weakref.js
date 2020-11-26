@@ -1,5 +1,3 @@
-/* global globalThis */
-
 import { assert, details as d } from '@agoric/assert';
 
 const { defineProperties } = Object;

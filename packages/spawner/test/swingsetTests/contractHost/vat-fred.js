@@ -1,7 +1,6 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
-/* global harden */
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';

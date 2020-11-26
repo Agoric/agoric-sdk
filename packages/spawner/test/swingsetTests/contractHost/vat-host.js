@@ -1,7 +1,5 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
-/* global harden */
-
 import { makeContractHost } from '../../../src/contractHost';
 
 export function buildRootObject(vatPowers) {

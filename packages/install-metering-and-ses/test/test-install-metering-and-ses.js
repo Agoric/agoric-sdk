@@ -1,4 +1,3 @@
-/* global Compartment harden */
 import '../install-metering-and-ses';
 import test from 'ava';
 import { makeMeter } from '@agoric/transform-metering';

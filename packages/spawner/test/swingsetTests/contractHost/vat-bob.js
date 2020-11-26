@@ -1,7 +1,6 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
-/* global harden */
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
@@ -27,7 +26,7 @@ function makeBobMaker(host, log) {
       const stockNeeded = stockMath.make(7);
 
       const bob = harden({
-        /**
+        /*
          * This is not an imperative to Bob to buy something but rather
          * the opposite. It is a request by a client to buy something from
          * Bob, and therefore a request that Bob sell something. OO naming
