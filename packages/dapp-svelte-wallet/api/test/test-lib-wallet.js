@@ -91,6 +91,18 @@ async function setupTest() {
   };
 }
 
+/**
+ * Run a thunk and wait for the notifier to fire.
+ *
+ * @param {ERef<Notifier<any>>} notifier
+ * @param {() => Promise<void>} thunk
+ */
+const waitForUpdate = async (notifier, thunk) => {
+  const { updateCount } = await E(notifier).getUpdateSince();
+  await thunk();
+  return E(notifier).getUpdateSince(updateCount);
+};
+
 test('lib-wallet issuer and purse methods', async t => {
   t.plan(11);
   const {
@@ -156,7 +168,9 @@ test('lib-wallet issuer and purse methods', async t => {
   const moolaPayment = moolaBundle.mint.mintPayment(
     moolaBundle.amountMath.make(100),
   );
-  await wallet.deposit('fun money', moolaPayment);
+  await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
+    wallet.deposit('fun money', moolaPayment),
+  );
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
     moolaBundle.amountMath.make(100),
@@ -192,15 +206,15 @@ test('lib-wallet issuer and purse methods', async t => {
           amountMathKind: 'nat',
         },
         pursePetname: 'fun money',
-        value: 0,
+        value: 100,
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":0}',
+            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
           slots: [{ kind: 'brand', petname: 'moola' }],
         },
         currentAmount: {
           brand: { kind: 'brand', petname: 'moola' },
-          value: 0,
+          value: 100,
         },
       },
     ],
@@ -272,7 +286,10 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   const {
     value: [{ handle: inviteHandle2 }],
   } = await E(inviteIssuer).getAmountOf(invite2);
-  await wallet.deposit('Default Zoe invite purse', invite2);
+
+  await waitForUpdate(E(zoeInvitePurse).getCurrentAmountNotifier(), () =>
+    wallet.deposit('Default Zoe invite purse', invite2),
+  );
 
   const currentAmount = await E(zoeInvitePurse).getCurrentAmount();
   t.deepEqual(
@@ -551,9 +568,13 @@ test('lib-wallet offer methods', async t => {
 
   await wallet.addIssuer('moola', moolaBundle.issuer);
   await wallet.makeEmptyPurse('moola', 'Fun budget');
-  await wallet.deposit(
-    'Fun budget',
-    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
+  const moolaPurse = wallet.getPurse('Fun budget');
+
+  await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
+    wallet.deposit(
+      'Fun budget',
+      moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
+    ),
   );
 
   const inviteIssuer = await E(zoe).getInvitationIssuer();
@@ -614,7 +635,6 @@ test('lib-wallet offer methods', async t => {
   const seats = wallet.getSeats(harden([id]));
   const seat = wallet.getSeat(id);
   t.is(seat, seats[0], `both getSeat(s) methods work`);
-  const moolaPurse = wallet.getPurse('Fun budget');
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
     moolaBundle.amountMath.make(100),

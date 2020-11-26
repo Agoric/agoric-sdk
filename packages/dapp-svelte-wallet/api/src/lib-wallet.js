@@ -7,10 +7,13 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal } from '@agoric/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  observeIteration,
+  makeAsyncIterableFromNotifier,
+} from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import makeObservablePurse from './observable';
 import { makeDehydrator } from './lib-dehydrate';
 
 import '@agoric/store/exported';
@@ -555,22 +558,33 @@ export async function makeWallet({
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
 
-    // IMPORTANT: once wrapped, the original purse should never
-    // be used otherwise the UI state will be out of sync.
-    const doNotUse = await E(issuer).makeEmptyPurse();
-
-    const purse = makeObservablePurse(E, doNotUse, () =>
-      updatePursesState(purseMapping.valToPetname.get(purse), purse),
-    );
+    const purse = await E(issuer).makeEmptyPurse();
 
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
-    updatePursesState(petnameForPurse, purse);
+
+    await updatePursesState(petnameForPurse, purse);
+
+    // Just notice the balance updates for the purse.
+    observeIteration(
+      makeAsyncIterableFromNotifier(E(purse).getCurrentAmountNotifier()),
+      {
+        updateState(_balance) {
+          updatePursesState(
+            purseMapping.valToPetname.get(purse),
+            purse,
+          ).catch(e => console.error('cannot updateState', e));
+        },
+        fail(reason) {
+          console.error(`failed updateState observer`, reason);
+        },
+      },
+    );
   };
 
   async function deposit(pursePetname, payment) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
-    return purse.deposit(payment);
+    return E(purse).deposit(payment);
   }
 
   function getPurses() {
