@@ -6,6 +6,7 @@ import {
   importMailbox,
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox';
+
 import anylogger from 'anylogger';
 
 import { launch } from '../launch-chain';
@@ -14,7 +15,7 @@ import { makeWithQueue } from './vats/queue';
 
 const log = anylogger('fake-chain');
 
-const PRETEND_BLOCK_DELAY = 5;
+const PRETEND_BLOCK_DELAY = 2;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
 
 async function makeMapStorage(file) {

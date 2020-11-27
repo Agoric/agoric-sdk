@@ -95,7 +95,7 @@ async function setupTest() {
  * Run a thunk and wait for the notifier to fire.
  *
  * @param {ERef<Notifier<any>>} notifier
- * @param {() => Promise<void>} thunk
+ * @param {() => Promise<any>} thunk
  */
 const waitForUpdate = async (notifier, thunk) => {
   const { updateCount } = await E(notifier).getUpdateSince();
@@ -176,7 +176,7 @@ test('lib-wallet issuer and purse methods', async t => {
     moolaBundle.amountMath.make(100),
     `deposit successful`,
   );
-  t.is(pursesStateChangeLog.length, 4, `pursesStateChangeLog length`);
+  t.is(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
   t.deepEqual(
     JSON.parse(pursesStateChangeLog[pursesStateChangeLog.length - 1]),
     [
