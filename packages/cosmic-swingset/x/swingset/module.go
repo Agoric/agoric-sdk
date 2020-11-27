@@ -90,7 +90,6 @@ func NewAppModule(k Keeper) AppModule {
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
 	}
-	RegisterPortHandler("dibc", NewIBCChannelHandler(am))
 	return am
 }
 

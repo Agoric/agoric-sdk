@@ -1,4 +1,4 @@
-package swingset
+package dibc
 
 import (
 	"encoding/json"
@@ -12,13 +12,16 @@ import (
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
-type channelHandler struct {
+type portHandler struct {
 	ibcModule porttypes.IBCModule
+	keeper    Keeper
 }
 
-type channelMessage struct { // comes from swingset's IBC handler
+type portMessage struct { // comes from swingset's IBC handler
 	Type            string              `json:"type"` // IBC_METHOD
 	Method          string              `json:"method"`
 	Packet          channeltypes.Packet `json:"packet"`
@@ -57,16 +60,18 @@ type DefaultRouter struct {
 	defaultRoute porttypes.IBCModule
 }
 
-func NewIBCChannelHandler(ibcModule porttypes.IBCModule) channelHandler {
-	return channelHandler{
+func NewPortHandler(ibcModule porttypes.IBCModule, keeper Keeper) portHandler {
+	return portHandler{
 		ibcModule: ibcModule,
+		keeper:    keeper,
 	}
 }
 
-func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string, err error) {
+func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret string, err error) {
 	fmt.Println("ibc.go downcall", str)
+	keeper := ch.keeper
 
-	msg := new(channelMessage)
+	msg := new(portMessage)
 	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
 		return ret, err
@@ -78,7 +83,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 
 	switch msg.Method {
 	case "sendPacket":
-		seq, ok := ctx.Keeper.GetNextSequenceSend(
+		seq, ok := keeper.GetNextSequenceSend(
 			ctx.Context,
 			msg.Packet.SourcePort,
 			msg.Packet.SourceChannel,
@@ -104,7 +109,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
 			absoluteTimeout, 0,
 		)
-		err = ctx.Keeper.SendPacket(ctx.Context, packet)
+		err = keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
 			bytes, err := json.Marshal(&packet)
 			if err == nil {
@@ -113,14 +118,14 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		}
 
 	case "receiveExecuted":
-		err = ctx.Keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
+		err = keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "startChannelOpenInit":
 		/* TODO: Find out what is necessary to wake up a passive relayer.
-		err = ctx.Keeper.ChanOpenInit(
+		err = keeper.ChanOpenInit(
 			ctx.Context, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
@@ -133,7 +138,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		break
 
 	case "continueChannelOpenTry":
-		/* TODO: Call ctx.Keeper.ChanOpenTry.
+		/* TODO: Call keeper.ChanOpenTry.
 		 */
 		if err == nil {
 			ret = "true"
@@ -141,19 +146,19 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		break
 
 	case "channelCloseInit":
-		err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
+		err = keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "bindPort":
-		err = ctx.Keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
+		err = keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "timeoutExecuted":
-		err = ctx.Keeper.TimeoutExecuted(ctx.Context, msg.Packet)
+		err = keeper.TimeoutExecuted(ctx.Context, msg.Packet)
 		if err == nil {
 			ret = "true"
 		}
@@ -197,7 +202,7 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -261,7 +266,7 @@ func (am AppModule) OnChanOpenTry(
 	version,
 	counterpartyVersion string,
 ) error {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -317,7 +322,7 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -358,7 +363,7 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -399,7 +404,7 @@ func (am AppModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -439,7 +444,7 @@ func (am AppModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -477,7 +482,7 @@ func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, []byte, error) {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil, nil
 	} else {
@@ -531,7 +536,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 ) (*sdk.Result, error) {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	} else {
@@ -575,7 +580,7 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
-	if committedHeight == ctx.BlockHeight() {
+	if swingset.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	} else {

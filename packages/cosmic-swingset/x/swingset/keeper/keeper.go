@@ -14,14 +14,6 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
-	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
-	ibcexported "github.com/cosmos/cosmos-sdk/x/ibc/core/exported"
-
 	"github.com/Agoric/cosmic-swingset/x/swingset/types"
 )
 
@@ -32,9 +24,6 @@ type Keeper struct {
 
 	accountKeeper authkeeper.AccountKeeper
 	bankKeeper    bankkeeper.Keeper
-	channelKeeper types.ChannelKeeper
-	portKeeper    types.PortKeeper
-	scopedKeeper  capabilitykeeper.ScopedKeeper
 
 	// CallToController dispatches a message to the controlling process
 	CallToController func(ctx sdk.Context, str string) (string, error)
@@ -43,19 +32,16 @@ type Keeper struct {
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
 	cdc codec.Marshaler, key sdk.StoreKey,
-	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
+	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
 	return Keeper{
-		storeKey:      key,
-		cdc:           cdc,
-		accountKeeper: accountKeeper,
-		bankKeeper:    bankKeeper,
-		channelKeeper: channelKeeper,
-		portKeeper:    portKeeper,
-		scopedKeeper:  scopedKeeper,
+		storeKey:         key,
+		cdc:              cdc,
+		accountKeeper:    accountKeeper,
+		bankKeeper:       bankKeeper,
+		CallToController: callToController,
 	}
 }
 
@@ -221,99 +207,4 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox *types.Storage)
 func (k Keeper) GetPeersIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, nil)
-}
-
-// GetNextSequenceSend defines a wrapper function for the channel Keeper's function
-// in order to expose it to the SwingSet IBC handler.
-func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool) {
-	return k.channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
-}
-
-// ChanOpenInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the SwingSet IBC handler.
-func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
-	portID, channelID, rPortID, rChannelID, version string,
-) error {
-	capName := host.PortPath(portID)
-	portCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
-	}
-	counterparty := channeltypes.Counterparty{
-		ChannelId: rChannelID,
-		PortId:    rPortID,
-	}
-	chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap, counterparty, version)
-	if err != nil {
-		return err
-	}
-	chanCapName := host.ChannelCapabilityPath(portID, channelID)
-	return k.ClaimCapability(ctx, chanCap, chanCapName)
-}
-
-// SendPacket defines a wrapper function for the channel Keeper's function
-// in order to expose it to the SwingSet IBC handler.
-func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
-	portID := packet.GetSourcePort()
-	channelID := packet.GetSourceChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.SendPacket(ctx, chanCap, packet)
-}
-
-// WriteAcknowledgement defines a wrapper function for the channel Keeper's function
-// in order to expose it to the SwingSet IBC handler.
-func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
-	portID := packet.GetSourcePort()
-	channelID := packet.GetSourceChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, acknowledgement)
-}
-
-// ChanCloseInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the SwingSet IBC handler.
-func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
-}
-
-// BindPort defines a wrapper function for the port Keeper's function in
-// order to expose it to the SwingSet IBC handler.
-func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
-}
-
-// TimeoutExecuted defines a wrapper function for the channel Keeper's function
-// in order to expose it to the SwingSet IBC handler.
-func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
-	portID := packet.GetSourcePort()
-	channelID := packet.GetSourceChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.TimeoutExecuted(ctx, chanCap, packet)
-}
-
-// ClaimCapability allows the SwingSet module to claim a capability that IBC module
-// passes to it
-func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capability.Capability, name string) error {
-	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
-}
-
-func (k Keeper) GetCapability(ctx sdk.Context, name string) (*capability.Capability, bool) {
-	return k.scopedKeeper.GetCapability(ctx, name)
 }

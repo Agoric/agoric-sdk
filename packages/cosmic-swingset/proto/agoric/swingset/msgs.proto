@@ -2,13 +2,11 @@ syntax = "proto3";
 package agoric.swingset;
 
 import "gogoproto/gogo.proto";
-import "ibc/core/channel/v1/channel.proto";
 
 option go_package = "github.com/Agoric/cosmic-swingset/x/swingset/types";
 
 service Msg {
   rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
-  rpc SendPacket(MsgSendPacket) returns (MsgSendPacketResponse);
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
 }
 
@@ -36,24 +34,6 @@ message MsgDeliverInbound {
 }
 
 message MsgDeliverInboundResponse {}
-
-// MsgSendPacket is an SDK message for sending an outgoing IBC packet
-message MsgSendPacket {
-    option (gogoproto.equal) = false;
-
-    ibc.core.channel.v1.Packet packet = 1 [
-        (gogoproto.nullable)   = false,
-        (gogoproto.jsontag)    = "packet",
-        (gogoproto.moretags)   = "yaml:\"packet\""
-    ];
-    bytes sender = 2 [
-        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-        (gogoproto.jsontag)    = "submitter",
-        (gogoproto.moretags)   = "yaml:\"submitter\""
-    ];
-}
-
-message MsgSendPacketResponse {}
 
 // MsgProvision defines an SDK message for provisioning a client to the chain
 message MsgProvision {

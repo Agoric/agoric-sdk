@@ -86,6 +86,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	gaiaappparams "github.com/Agoric/cosmic-swingset/app/params"
+	"github.com/Agoric/cosmic-swingset/x/dibc"
 	"github.com/Agoric/cosmic-swingset/x/swingset"
 
 	// unnamed import of statik for swagger UI support
@@ -116,7 +117,8 @@ var (
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		ibc.AppModuleBasic{},
-		swingset.AppModule{},
+		swingset.AppModuleBasic{},
+		dibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
@@ -154,7 +156,7 @@ type GaiaApp struct {
 	appCodec          codec.Marshaler
 	interfaceRegistry types.InterfaceRegistry
 
-	IBCPort int
+	ibcPort int
 
 	invCheckPeriod uint
 
@@ -181,12 +183,13 @@ type GaiaApp struct {
 	EvidenceKeeper   evidencekeeper.Keeper
 	TransferKeeper   ibctransferkeeper.Keeper
 
+	SwingSetKeeper swingset.Keeper
+	DibcKeeper     dibc.Keeper
+
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-
-	SwingSetKeeper       swingset.Keeper
-	ScopedSwingSetKeeper capabilitykeeper.ScopedKeeper
+	ScopedDibcKeeper     capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	mm *module.Manager
@@ -239,7 +242,7 @@ func NewAgoricApp(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey, swingset.StoreKey, capabilitytypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, swingset.StoreKey, dibc.StoreKey, capabilitytypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -263,7 +266,7 @@ func NewAgoricApp(
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedSwingSetKeeper := app.CapabilityKeeper.ScopeToModule(swingset.ModuleName)
+	scopedDibcKeeper := app.CapabilityKeeper.ScopeToModule(dibc.ModuleName)
 
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
@@ -322,29 +325,37 @@ func NewAgoricApp(
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 
+	// This function is tricky to get right, so we build it ourselves.
+	callToController := func(ctx sdk.Context, str string) (string, error) {
+		defer swingset.SetControllerContext(ctx)()
+		return sendToController(true, str)
+	}
+
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	// It handles interactions with the kvstore and IBC.
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec, keys[swingset.StoreKey],
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper,
-		scopedSwingSetKeeper,
+		callToController,
 	)
-	// This function is tricky to get right, so we inject it ourselves.
-	app.SwingSetKeeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
-		defer swingset.SetControllerContext(ctx)()
-		defer swingset.SetControllerKeeper(&app.SwingSetKeeper)()
-		return sendToController(true, str)
-	}
+	swingset.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
 
-	swingsetModule := swingset.NewAppModule(app.SwingSetKeeper)
-	app.IBCPort = swingset.RegisterPortHandler("dibc", swingset.NewIBCChannelHandler(swingsetModule))
+	app.DibcKeeper = dibc.NewKeeper(
+		appCodec, keys[dibc.StoreKey],
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.BankKeeper,
+		scopedDibcKeeper,
+		callToController,
+	)
+
+	dibcModule := dibc.NewAppModule(app.DibcKeeper)
+	app.ibcPort = swingset.RegisterPortHandler("dibc", dibc.NewPortHandler(dibcModule, app.DibcKeeper))
 
 	// Create static IBC router, add transfer route, then set and seal it
 	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
-	ibcRouter.AddRoute(swingset.ModuleName, swingsetModule)
+	ibcRouter.AddRoute(dibc.ModuleName, dibcModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -384,7 +395,8 @@ func NewAgoricApp(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		swingsetModule,
+		swingset.NewAppModule(app.SwingSetKeeper),
+		dibcModule,
 		transferModule,
 	)
 
@@ -466,7 +478,7 @@ func NewAgoricApp(
 		app.CapabilityKeeper.InitializeAndSeal(ctx)
 	}
 	app.ScopedIBCKeeper = scopedIBCKeeper
-	app.ScopedSwingSetKeeper = scopedSwingSetKeeper
+	app.ScopedDibcKeeper = scopedDibcKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	return app
@@ -499,7 +511,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
-		IBCPort:     app.IBCPort,
+		IBCPort:     app.ibcPort,
 		StoragePort: swingset.GetPort("storage"),
 		ChainID:     ctx.ChainID(),
 	}

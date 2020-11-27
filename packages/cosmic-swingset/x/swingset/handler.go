@@ -15,6 +15,11 @@ import (
 
 var committedHeight int64 = 0
 
+// IsSimulation tells if we are simulating the transaction
+func IsSimulation(ctx sdk.Context) bool {
+	return committedHeight == ctx.BlockHeight()
+}
+
 type deliverInboundAction struct {
 	Type        string          `json:"type"`
 	Peer        string          `json:"peer"`
@@ -28,7 +33,7 @@ type deliverInboundAction struct {
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-		if committedHeight == ctx.BlockHeight() {
+		if IsSimulation(ctx) {
 			// We don't support simulation.
 			return &sdk.Result{}, nil
 		} else {
@@ -41,9 +46,6 @@ func NewHandler(keeper Keeper) sdk.Handler {
 		// TODO: Sometime merge with IBC?
 		case *MsgDeliverInbound:
 			return handleMsgDeliverInbound(ctx, keeper, msg)
-
-		case *MsgSendPacket:
-			return handleMsgSendPacket(ctx, keeper, msg)
 
 		case *MsgProvision:
 			return handleMsgProvision(ctx, keeper, msg)
@@ -94,47 +96,6 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg *MsgDeliverInbo
 	return &sdk.Result{}, nil
 	/*		Events: ctx.EventManager().Events().ToABCIEvents(),
 	}, nil */
-}
-
-type sendPacketAction struct {
-	*MsgSendPacket
-	Type        string `json:"type"`  // IBC_EVENT
-	Event       string `json:"event"` // sendPacket
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
-}
-
-func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*sdk.Result, error) {
-	onePass := sdk.NewInt64Coin("sendpacketpass", 1)
-	balance := keeper.GetBalance(ctx, msg.Sender, onePass.Denom)
-	if balance.IsLT(onePass) {
-		return nil, sdkerrors.Wrap(
-			sdkerrors.ErrInsufficientFee,
-			fmt.Sprintf("sender %s needs at least %s", msg.Sender, onePass.String()),
-		)
-	}
-
-	action := &sendPacketAction{
-		MsgSendPacket: msg,
-		Type:          "IBC_EVENT",
-		Event:         "sendPacket",
-		BlockHeight:   ctx.BlockHeight(),
-		BlockTime:     ctx.BlockTime().Unix(),
-	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
-	_, err = keeper.CallToController(ctx, string(b))
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
-	if err != nil {
-		return nil, err
-	}
-	return &sdk.Result{
-		Events: ctx.EventManager().Events().ToABCIEvents(),
-	}, nil
 }
 
 type provisionAction struct {

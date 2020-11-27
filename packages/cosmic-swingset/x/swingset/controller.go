@@ -8,7 +8,6 @@ import (
 )
 
 type ControllerContext struct {
-	Keeper                *Keeper
 	Context               sdk.Context
 	StoragePort           int
 	IBCChannelHandlerPort int
@@ -29,13 +28,6 @@ func SetControllerContext(ctx sdk.Context) func() {
 	controllerContext.Context = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	return func() {
 		controllerContext.Context = sdk.Context{}
-	}
-}
-
-func SetControllerKeeper(keeper *Keeper) func() {
-	controllerContext.Keeper = keeper
-	return func() {
-		controllerContext.Keeper = nil
 	}
 }
 

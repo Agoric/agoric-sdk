@@ -8,7 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type storageHandler struct{}
+type storageHandler struct {
+	keeper Keeper
+}
 
 type storageMessage struct {
 	Method string `json:"method"`
@@ -16,15 +18,12 @@ type storageMessage struct {
 	Value  string `json:"value"`
 }
 
-func init() {
-	RegisterPortHandler("storage", NewStorageHandler())
-}
-
-func NewStorageHandler() storageHandler {
-	return storageHandler{}
+func NewStorageHandler(keeper Keeper) storageHandler {
+	return storageHandler{keeper: keeper}
 }
 
 func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string, err error) {
+	keeper := sh.keeper
 	msg := new(storageMessage)
 	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
@@ -53,11 +52,11 @@ func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string
 		storage := NewStorage()
 		storage.Value = msg.Value
 		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, storage.Value)
-		ctx.Keeper.SetStorage(ctx.Context, msg.Key, storage)
+		keeper.SetStorage(ctx.Context, msg.Key, storage)
 		return "true", nil
 
 	case "get":
-		storage := ctx.Keeper.GetStorage(ctx.Context, msg.Key)
+		storage := keeper.GetStorage(ctx.Context, msg.Key)
 		if storage.Value == "" {
 			return "null", nil
 		}
@@ -69,14 +68,14 @@ func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string
 		return string(s), nil
 
 	case "has":
-		storage := ctx.Keeper.GetStorage(ctx.Context, msg.Key)
+		storage := keeper.GetStorage(ctx.Context, msg.Key)
 		if storage.Value == "" {
 			return "false", nil
 		}
 		return "true", nil
 
 	case "keys":
-		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
+		keys := keeper.GetKeys(ctx.Context, msg.Key)
 		if keys.Keys == nil {
 			return "[]", nil
 		}
@@ -87,12 +86,12 @@ func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string
 		return string(bytes), nil
 
 	case "entries":
-		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
+		keys := keeper.GetKeys(ctx.Context, msg.Key)
 		ents := make([][]string, len(keys.Keys))
 		for i, key := range keys.Keys {
 			ents[i] = make([]string, 2)
 			ents[i][0] = key
-			storage := ctx.Keeper.GetStorage(ctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			storage := keeper.GetStorage(ctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 			ents[i][1] = storage.Value
 		}
 		bytes, err := json.Marshal(ents)
@@ -102,10 +101,10 @@ func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string
 		return string(bytes), nil
 
 	case "values":
-		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
+		keys := keeper.GetKeys(ctx.Context, msg.Key)
 		vals := make([]string, len(keys.Keys))
 		for i, key := range keys.Keys {
-			storage := ctx.Keeper.GetStorage(ctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			storage := keeper.GetStorage(ctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 			vals[i] = storage.Value
 		}
 		bytes, err := json.Marshal(vals)
@@ -115,7 +114,7 @@ func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string
 		return string(bytes), nil
 
 	case "size":
-		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
+		keys := keeper.GetKeys(ctx.Context, msg.Key)
 		if keys.Keys == nil {
 			return "0", nil
 		}
