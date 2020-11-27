@@ -387,10 +387,20 @@ export default async function start(basedir, argv) {
 
   const agoricCli = require.resolve('.bin/agoric');
 
+  // Use the same verbosity as our caller did for us.
+  let verbosity;
+  if (process.env.DEBUG === undefined) {
+    verbosity = '';
+  } else if (process.env.DEBUG.includes('agoric')) {
+    verbosity = ' -vv';
+  } else {
+    verbosity = ' -v';
+  }
+
   // Launch the agoric wallet deploys (if any).
   exec(
-    `${agoricCli} deploy --provide=wallet --hostport=${hostport} ${agWalletDeploy}`,
-    (err, _stdout, stderr) => {
+    `${agoricCli} deploy${verbosity} --provide=wallet --hostport=${hostport} ${agWalletDeploy}`,
+    (err, stdout, stderr) => {
       if (err) {
         console.error(err);
         return;
@@ -398,6 +408,9 @@ export default async function start(basedir, argv) {
       if (stderr) {
         // Report the error.
         process.stderr.write(stderr);
+      }
+      if (stdout) {
+        process.stdout.write(stdout);
       }
     },
   );

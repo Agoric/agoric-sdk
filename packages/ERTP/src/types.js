@@ -264,6 +264,9 @@
  * @property {() => Amount} getCurrentAmount
  * Get the amount contained in this purse.
  *
+ * @property {() => Notifier<Amount>} getCurrentAmountNotifier
+ * Get a lossy notifier for changes to this purse's balance.
+ *
  * @property {(payment: Payment, optAmount: Amount=) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the

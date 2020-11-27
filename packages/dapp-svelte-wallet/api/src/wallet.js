@@ -193,7 +193,7 @@ export function buildRootObject(_vatPowers) {
     }
   }
 
-  function setPresences() {
+  function startSubscriptions() {
     // console.debug(`subscribing to walletPurseState`);
     // This provokes an immediate update
     purseSubscribe(
@@ -490,13 +490,14 @@ export function buildRootObject(_vatPowers) {
     });
   }
 
+  startSubscriptions();
+
   return harden({
     startup,
     getWallet,
     setHTTPObject,
     getCommandHandler,
     getBridgeURLHandler,
-    setPresences,
   });
 }
 

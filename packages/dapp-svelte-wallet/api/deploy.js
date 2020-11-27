@@ -129,6 +129,5 @@ export default async function deployWallet(
   const walletURLHandler = walletVat;
   await E(http).registerWallet(wallet, walletURLHandler, bridgeURLHandler);
   await E(walletVat).setHTTPObject(http);
-  await E(walletVat).setPresences();
   console.log('Deployed Wallet!');
 }

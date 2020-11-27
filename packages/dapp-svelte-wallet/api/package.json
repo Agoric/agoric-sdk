@@ -26,6 +26,9 @@
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.12.0",
+    "@agoric/ertp": "^0.8.0",
+    "@agoric/notifier": "^0.2.3",
+    "@agoric/promise-kit": "^0.1.7",
     "@agoric/store": "^0.3.1",
     "esm": "^3.2.5"
   },
