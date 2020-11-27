@@ -7,13 +7,15 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/Agoric/cosmic-swingset/x/dibc/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
 )
@@ -35,10 +37,12 @@ func (AppModuleBasic) Name() string {
 }
 
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	RegisterCodec(cdc)
 }
 
 // RegisterInterfaces registers the module's interface types
 func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the deployment
@@ -117,6 +121,8 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	tx := &types.UnimplementedMsgServer{}
+	types.RegisterMsgServer(cfg.MsgServer(), tx)
 }
 
 // InitGenesis performs genesis initialization for the ibc-transfer module. It returns
