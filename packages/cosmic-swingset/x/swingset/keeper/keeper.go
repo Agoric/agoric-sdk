@@ -22,7 +22,7 @@ import (
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	ibcexported "github.com/cosmos/cosmos-sdk/x/ibc/core/exported"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine

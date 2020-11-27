@@ -3,7 +3,7 @@ package agoric.swingset;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/Agoric/cosmic-swingset/x/swingset/internal/types";
+option go_package = "github.com/Agoric/cosmic-swingset/x/swingset/types";
 
 message Storage {
     option (gogoproto.equal) = false;

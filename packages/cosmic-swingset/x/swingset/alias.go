@@ -1,8 +1,8 @@
 package swingset
 
 import (
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/keeper"
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/keeper"
+	"github.com/Agoric/cosmic-swingset/x/swingset/types"
 )
 
 const (
