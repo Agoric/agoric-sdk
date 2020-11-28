@@ -212,8 +212,6 @@ function makeWorker(io, setImmediate) {
         function testLog(/** @type {unknown[]} */ ...args) {
           sendUplink(['testLog', ...args]);
         }
-        /** @type { unknown } */
-        const state = null;
         const vatID = 'demo-vatID';
         // todo: maybe add transformTildot, makeGetMeter/transformMetering to
         // vatPowers, but only if options tell us they're wanted. Maybe
@@ -227,7 +225,6 @@ function makeWorker(io, setImmediate) {
         };
         dispatch = makeLiveSlots(
           syscall,
-          state,
           vatNS.buildRootObject,
           vatID,
           vatPowers,
