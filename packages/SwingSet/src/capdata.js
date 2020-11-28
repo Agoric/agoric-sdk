@@ -25,8 +25,9 @@ function asCapData(capdata) {
  * @param {unknown} capdata  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {void}
+ * @returns {asserts capdata is CapData}
  */
 export function insistCapData(capdata) {
   asCapData(capdata);
+  return undefined;
 }

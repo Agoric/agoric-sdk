@@ -38,7 +38,7 @@ export function asMessage(message) {
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @returns {void}
+ * @returns {asserts message is Message}
  */
 export function insistMessage(message) {
   asMessage(message);
