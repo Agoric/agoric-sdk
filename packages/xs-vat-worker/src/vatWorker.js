@@ -223,14 +223,15 @@ function makeWorker(io, setImmediate) {
           makeMarshal,
           testLog,
         };
-        dispatch = makeLiveSlots(
+        const ls = makeLiveSlots(
           syscall,
-          vatNS.buildRootObject,
           vatID,
           vatPowers,
           vatParameters,
           virtualObjectCacheSize,
         );
+        dispatch = ls.dispatch;
+        ls.setBuildRootObject(vatNS.buildRootObject);
         workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
         sendUplink(['dispatchReady']);
         return type;
