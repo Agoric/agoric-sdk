@@ -75,6 +75,7 @@ export function loadMain(compartmap, HandledPromise) {
       });
       return [specifier, pc.importNow(fullSpecifier)];
     }
+    // @ts-ignore TODO: reconcile endo types (extra contents)
     const { contents, modules } = compartmap.compartments[loc];
     /** @type { {[key: string]: FullSpecifier | ModuleNamespace} } */
     const cmap = fromEntries([
