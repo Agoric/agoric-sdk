@@ -36,6 +36,7 @@ function parentLog(first, ...args) {
  *     getVatKeeper: (id: string) => unknown,
  *   },
  *   testLog: (...args: unknown[]) => void,
+ *   decref: (vatID: unknown, vref: unknown, count: number) => void,
  * }} tools
  * @returns {{
  *   createFromBundle: (id: string, b: Bundle, o: ManagerOptions) => Promise<VatManager>
