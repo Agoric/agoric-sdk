@@ -42,7 +42,7 @@ function makeConsole(_tag) {
 /**
  *
  * @param {typeof setImmediate} setImmediate
- * @returns { Promise<unknown> }
+ * @returns { Promise<void> }
  */
 function waitUntilQuiescent(setImmediate) {
   return new Promise((resolve, _reject) => {
