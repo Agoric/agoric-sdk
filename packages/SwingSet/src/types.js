@@ -12,7 +12,7 @@
  * @typedef {{
  *   method: string,
  *   args: CapData,
- *   result: string | null,
+ *   result?: string,
  * }} Message
  */
 
@@ -56,6 +56,7 @@
  *   metered?: boolean,
  *   enableInternalMetering?: boolean,
  *   vatParameters: Serializable,
+ *   virtualObjectCacheSize: number,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
 
