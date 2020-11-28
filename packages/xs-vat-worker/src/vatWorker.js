@@ -193,7 +193,7 @@ function makeWorker(io, setImmediate) {
         const syscall = harden({
           /** @type { (target: Reference, msg: Message) => void } */
           send: (target, smsg) => doSyscall(['send', target, smsg]),
-          /** @type { (target: Reference, method: string, args: CapData) => void } */
+          /** @type { (target: Reference, method: string, args: CapData<string>) => void } */
           callNow: (_target, _method, _args) => {
             throw Error(`nodeWorker cannot syscall.callNow`);
           },
