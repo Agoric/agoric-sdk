@@ -5,7 +5,7 @@ import { assert, details } from '@agoric/assert';
  * @param {unknown} capdata  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {CapData}
+ * @returns {CapData<string>}
  */
 function asCapData(capdata) {
   assert(capdata !== undefined);

@@ -142,7 +142,7 @@ function makeWorker(io, setImmediate) {
    * TODO: move VatSyscall where other stuff from vat-worker.md are defined
    * @typedef {Readonly<
    *   ['send', Reference, Message] |
-   *   ['callNow', Reference, string, CapData] |
+   *   ['callNow', Reference, string, CapData<string>] |
    *   ['subscribe', PromiseReference] |
    *   ['fulfillToPresence', PromiseReference, Reference] |
    *   ['fulfillToData', PromiseReference, unknown] |
