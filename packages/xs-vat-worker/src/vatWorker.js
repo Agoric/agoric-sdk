@@ -228,7 +228,7 @@ function makeWorker(io, setImmediate) {
           vatID,
           vatPowers,
           vatParameters,
-          virtualObjectCacheSize,
+          // TODO: virtualObjectCacheSize,
         );
         dispatch = ls.dispatch;
         ls.setBuildRootObject(vatNS.buildRootObject);
