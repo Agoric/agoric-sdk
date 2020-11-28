@@ -171,7 +171,7 @@ function makeWorker(io, setImmediate) {
       workerLog(`got start`);
       sendUplink(['gotStart']);
     } else if (type === 'setBundle') {
-      const [bundle, vatParameters, virtualObjectCacheSize] = margs;
+      const [bundle, vatParameters] = margs;
       const endowments = {
         console: makeConsole(`SwingSet:vatWorker`),
         assert,
