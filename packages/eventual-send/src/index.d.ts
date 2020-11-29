@@ -34,8 +34,9 @@ type resolveWithPresenceOptionsBag<R> = (
   proxy?: proxyOptionsBag,
 ) => void;
 
+// Zarutian: þarf að gera import https://github.com/microsoft/TypeScript/blob/master/lib/lib.es2015.proxy.d.ts
 type proxyOptionsBag = (
-  handler: proxyHandler<{}>,
+  handler: ProxyHandler<{}>,
   target: unknown,
   revokerCallback?: (revoker: () => void) => void,
 );
