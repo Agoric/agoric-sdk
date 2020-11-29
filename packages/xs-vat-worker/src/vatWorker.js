@@ -1,7 +1,7 @@
 /* global HandledPromise */
 // @ts-check
 import { importBundle } from '@agoric/import-bundle';
-import { asMessage } from '@agoric/swingset-vat';
+import { asMessage } from '@agoric/swingset-vat/src/message';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 // TODO? import anylogger from 'anylogger';
 import { makeLiveSlots } from '@agoric/swingset-vat/src/kernel/liveSlots';
