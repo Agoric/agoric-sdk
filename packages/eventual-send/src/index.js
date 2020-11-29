@@ -233,32 +233,25 @@ export function makeHandledPromise() {
         // Sanity checks.
         validateHandler(presenceHandler);
 
-        const { proxy: proxyOpts, resultCallback } = options;
-        let result;
+        const { proxy: proxyOpts } = options;
         let presence;
         if (proxyOpts) {
           const {
             handler: proxyHandler,
             target: proxyTarget,
-            revocable,
+            revokerCallback,
           } = proxyOpts;
-          if (revocable) {
+          if (revokerCallback) {
             // Create a proxy and its revoke function.
-            result = Proxy.revocable(proxyTarget, proxyHandler);
-            presence = result.proxy;
+            const { proxy, revoke } = Proxy.revocable(proxyTarget, proxyHandler);
+            presence = proxy;
+            revokerCallback(revoke);
           } else {
-            result = new Proxy(proxyTarget, proxyHandler);
-            presence = result;
+            presence = new Proxy(proxyTarget, proxyHandler);
           }
         } else {
           // Default presence.
-          result = Object.create(null);
-          presence = result;
-        }
-
-        // Provide the resulting proxy (or {proxy, revoke} object).
-        if (resultCallback) {
-          resultCallback(result);
+          presence = Object.create(null);
         }
 
         // Validate and install our mapped target (i.e. presence).
