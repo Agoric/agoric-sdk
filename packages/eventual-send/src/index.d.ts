@@ -31,7 +31,14 @@ type HandledExecutor<R> = (
 ) => void;
 
 type resolveWithPresenceOptionsBag<R> = (
+  proxy?: proxyOptionsBag,
 ) => void;
+
+type proxyOptionsBag = (
+  handler: proxyHandler<{}>,
+  target: unknown,
+  revokerCallback?: (revoker: () => void) => void,
+);
 
 declare interface HandledPromiseConstructor extends PromiseConstructor {
   new <R>(
