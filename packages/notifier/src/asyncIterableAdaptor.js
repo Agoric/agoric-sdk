@@ -96,7 +96,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
  * @template T
  * @param {ERef<AsyncIterator<T>>} asyncIteratorP
  * @param {Partial<IterationObserver<T>>} iterationObserver
- * @returns {Promise<undefined>}
+ * @returns {Promise<void>}
  */
 export const observeIterator = (asyncIteratorP, iterationObserver) => {
   return new Promise(ack => {
@@ -132,7 +132,7 @@ export const observeIterator = (asyncIteratorP, iterationObserver) => {
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @param {Partial<IterationObserver<T>>} iterationObserver
- * @returns {Promise<undefined>}
+ * @returns {Promise<void>}
  */
 export const observeIteration = (asyncIterableP, iterationObserver) => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
@@ -144,7 +144,7 @@ export const observeIteration = (asyncIterableP, iterationObserver) => {
  * @template T
  * @param {Partial<IterationObserver<T>>} iterationObserver
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
- * @returns {Promise<undefined>}
+ * @returns {Promise<void>}
  */
 export const updateFromIterable = (iterationObserver, asyncIterableP) =>
   observeIteration(asyncIterableP, iterationObserver);
@@ -158,7 +158,7 @@ export const updateFromIterable = (iterationObserver, asyncIterableP) =>
  * @template T
  * @param {Partial<IterationObserver<T>>} iterationObserver
  * @param {ERef<Notifier<T>>} notifierP
- * @returns {Promise<undefined>}
+ * @returns {Promise<void>}
  */
 export const updateFromNotifier = (iterationObserver, notifierP) =>
   observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);
