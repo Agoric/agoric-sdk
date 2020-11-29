@@ -42,4 +42,5 @@ export function asMessage(message) {
  */
 export function insistMessage(message) {
   asMessage(message);
+  return undefined;
 }
