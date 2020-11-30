@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-/* global harden E makePromiseKit */
+/* global E makePromiseKit */
 
 import { mustBeSameStructure } from '@agoric/same-structure';
 

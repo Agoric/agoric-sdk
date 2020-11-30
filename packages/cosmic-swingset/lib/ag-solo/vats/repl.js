@@ -1,5 +1,3 @@
-/* global Compartment */
-
 import { isPromise } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 

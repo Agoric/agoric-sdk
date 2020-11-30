@@ -1,5 +1,3 @@
-/* global harden */
-
 // @ts-check
 
 import { sameValueZero, passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
@@ -46,10 +44,10 @@ function objectFromEntries(iter) {
  * potentially exponential cost, and cycles cause failure to
  * terminate. We must fix both problems, making all these algorithms
  * graph-aware.
-
+ *
  * We say that a function *reveals* an X when it returns either an X
  * or a promise for an X.
-
+ *
  * Given a passable, reveal a corresponding comparable, where each
  * leaf promise of the passable has been replaced with its
  * corresponding comparable.
@@ -251,6 +249,7 @@ function mustBeSameStructureInternal(left, right, message, path) {
 /**
  * @param {Comparable} left
  * @param {Comparable} right
+ * @param {string} message
  */
 function mustBeSameStructure(left, right, message) {
   mustBeSameStructureInternal(left, right, `${message}`, null);

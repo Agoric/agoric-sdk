@@ -53,7 +53,7 @@ function makeBoard(seed = 0) {
         // Retry until we have a unique id.
         let id;
         do {
-          const num = sparseInts.next().value;
+          const num = /** @type {number} */ (sparseInts.next().value);
           id = `${num}${calcCrc(num)}`;
         } while (idToVal.has(id));
 

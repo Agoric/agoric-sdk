@@ -1,5 +1,3 @@
-/* global harden */
-
 import { allSettled } from './allSettled';
 
 function makeCollect(E, log) {
