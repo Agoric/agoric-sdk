@@ -36,8 +36,15 @@ export const makeZoeSeatAdminKit = (
   payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
 
-  updater.updateState(initialAllocation);
-  let currentAllocation = initialAllocation;
+  // initialAllocation will be undefined for a "later escrow" seat. The initial,
+  // empty allocation should not be reported to the updater.
+  let currentAllocation;
+  if (initialAllocation) {
+    updater.updateState(initialAllocation);
+    currentAllocation = initialAllocation;
+  } else {
+    currentAllocation = harden({});
+  }
 
   const doExit = zoeSeatAdmin => {
     instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);

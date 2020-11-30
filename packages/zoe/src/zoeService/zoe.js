@@ -352,8 +352,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           return { userSeat, notifier, zoeSeatAdmin };
         },
         makeLaterEscrowSeat: (seatHandle, invitationHandle) => {
-          const initialAllocation = harden({});
-
           const exitObjPromise = makePromiseKit();
           const offerResultPromise = makePromiseKit();
           invitationToExitResolver.init(
@@ -365,7 +363,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             offerResultPromise.resolve,
           );
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
+            // the empty allocation is null so it won't be published by notifier
+            undefined,
             instanceAdmin,
             cleanProposal(getAmountMath, harden({})),
             brandToPurse,

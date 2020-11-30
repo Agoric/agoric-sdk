@@ -253,17 +253,6 @@ test(`zcfSeat.makeInvitationWithSeat() notifiers`, async t => {
 
   const zcfNotifier = await E(zcfSeat).getNotifier();
   const zoeNotifier = await E(userSeat).getNotifier();
-  const expected0 = { value: {}, updateCount: 2 };
-  const zcfResult0 = E(zcfNotifier).getUpdateSince();
-  zcfResult0.then(updateRec => {
-    t.deepEqual(expected0, updateRec);
-  });
-
-  const zoeResult0 = E(zoeNotifier).getUpdateSince();
-  zoeResult0.then(updateRec => {
-    t.deepEqual(expected0, updateRec);
-  });
-
   const moola10 = moolaAmountMath.make(10);
   await depositToSeat(
     zcf,
@@ -272,13 +261,13 @@ test(`zcfSeat.makeInvitationWithSeat() notifiers`, async t => {
     { Money: moolaMint.mintPayment(moola10) },
   );
 
-  const expected1 = { value: { Money: moola10 }, updateCount: 3 };
+  const expected0 = { value: { Money: moola10 }, updateCount: 2 };
   const zcfResult1 = E(zcfNotifier).getUpdateSince();
   zcfResult1.then(updateRec => {
-    t.deepEqual(expected1, updateRec);
+    t.deepEqual(expected0, updateRec);
   });
   const zoeResult1 = E(zoeNotifier).getUpdateSince();
-  zoeResult1.then(updateRec => {
-    t.deepEqual(expected1, updateRec);
+  await zoeResult1.then(updateRec => {
+    t.deepEqual(expected0, updateRec);
   });
 });

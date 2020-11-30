@@ -23,7 +23,7 @@
  *
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
- * @param {Allocation} initialAllocation
+ * @param {Allocation|undefined} initialAllocation
  * @param {InstanceAdmin} instanceAdmin
  * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
