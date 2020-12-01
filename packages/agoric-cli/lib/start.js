@@ -23,6 +23,13 @@ const PORT = process.env.PORT || 8000;
 const HOST_PORT = process.env.HOST_PORT || PORT;
 const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 
+/**
+ * Resolve after a delay in milliseconds.
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
+
 export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:start');
@@ -493,6 +500,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           bestRpcAddr = rpcAddr;
           break;
         }
+      }
+      if (!bestRpcAddr) {
+        // eslint-disable-next-line no-await-in-loop
+        await delay(2000);
       }
     }
     if (exitStatus) {

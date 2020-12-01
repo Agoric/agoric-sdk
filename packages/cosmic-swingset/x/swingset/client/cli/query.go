@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/cosmic-swingset/x/swingset/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"

@@ -52,7 +52,11 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   // TODO: This needs much more support to preserve contract state
   // between exports in order to be able to carry forward IBC conns.
   delete genesis.app_state.capability;
-  delete genesis.app_state.ibc;
+  genesis.app_state.ibc = {
+    client_genesis: {
+      create_localhost: true,
+    },
+  };
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
 

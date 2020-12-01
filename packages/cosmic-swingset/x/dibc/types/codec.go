@@ -28,17 +28,13 @@ func init() {
 
 // RegisterCodec registers concrete types on the Amino codec
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgDeliverInbound{}, ModuleName+"/DeliverInbound", nil)
 	cdc.RegisterConcrete(&MsgSendPacket{}, ModuleName+"/SendPacket", nil)
-	cdc.RegisterConcrete(&MsgProvision{}, ModuleName+"/Provision", nil)
 }
 
 // RegisterInterfaces registers the x/swingset interfaces types with the interface registry
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgDeliverInbound{},
 		&MsgSendPacket{},
-		&MsgProvision{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

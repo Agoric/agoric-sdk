@@ -1,17 +1,14 @@
-package swingset
+package dibc
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/client/cli"
-	"github.com/Agoric/cosmic-swingset/x/swingset/client/rest"
-	"github.com/Agoric/cosmic-swingset/x/swingset/keeper"
-	"github.com/Agoric/cosmic-swingset/x/swingset/types"
+	"github.com/Agoric/cosmic-swingset/x/dibc/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -19,11 +16,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
 )
 
 // type check to ensure the interface is properly implemented
 var (
 	_ module.AppModule      = AppModule{}
+	_ porttypes.IBCModule   = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
@@ -47,36 +47,29 @@ func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 
 // DefaultGenesis returns default genesis state as raw bytes for the deployment
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
-	return cdc.MustMarshalJSON(DefaultGenesisState())
+	return nil
 }
 
 // Validation check of the Genesis
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
-	err := cdc.UnmarshalJSON(bz, &data)
-	if err != nil {
-		return err
-	}
-	// Once json successfully marshalled, passes along to genesis.go
-	return ValidateGenesis(&data)
+	return nil
 }
 
 // Register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
-	rest.RegisterRoutes(ctx, rtr, StoreKey)
 }
 
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {
 }
 
-// Get the root query command of this module
-func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd(StoreKey)
+// GetTxCmd implements AppModuleBasic interface
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	return nil
 }
 
-// Get the root tx command of this module
-func (AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.GetTxCmd(StoreKey)
+// GetQueryCmd implements AppModuleBasic interface
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return nil
 }
 
 type AppModule struct {
@@ -97,55 +90,49 @@ func (AppModule) Name() string {
 	return ModuleName
 }
 
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
-
-func (am AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, NewHandler(am.keeper))
-}
-
-func (am AppModule) QuerierRoute() string {
-	return ModuleName
-}
-
-// LegacyQuerierHandler returns the sdk.Querier for deployment module
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return keeper.NewQuerier(am.keeper, legacyQuerierCdc)
-}
-
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	tx := &types.UnimplementedMsgServer{}
-	types.RegisterMsgServer(cfg.MsgServer(), tx)
-	querier := keeper.Querier{Keeper: am.keeper}
-	types.RegisterQueryServer(cfg.QueryServer(), querier)
-}
-
+// BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	err := BeginBlock(ctx, req, am.keeper)
-	if err != nil {
-		fmt.Println("BeginBlock error:", err)
-	}
 }
 
+// EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	valUpdate, err := EndBlock(ctx, req, am.keeper)
-	if err != nil {
-		fmt.Println("EndBlock error:", err)
-	}
-	if valUpdate != nil {
-		return valUpdate
-	}
-
-	// Prevent Cosmos SDK internal errors.
 	return []abci.ValidatorUpdate{}
 }
 
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	return InitGenesis(ctx, am.keeper, &genesisState)
+// RegisterInvariants implements the AppModule interface
+func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+	// TODO
 }
 
+// Route implements the AppModule interface
+func (am AppModule) Route() sdk.Route {
+	return sdk.NewRoute(RouterKey, NewHandler(am.keeper))
+}
+
+// QuerierRoute implements the AppModule interface
+func (AppModule) QuerierRoute() string {
+	return ModuleName
+}
+
+// LegacyQuerierHandler implements the AppModule interface
+func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
+	return nil
+}
+
+// RegisterServices registers module services.
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	tx := &types.UnimplementedMsgServer{}
+	types.RegisterMsgServer(cfg.MsgServer(), tx)
+}
+
+// InitGenesis performs genesis initialization for the ibc-transfer module. It returns
+// no validator updates.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
+	return []abci.ValidatorUpdate{}
+}
+
+// ExportGenesis returns the exported genesis state as raw bytes for the ibc-transfer
+// module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
-	return cdc.MustMarshalJSON(gs)
+	return nil
 }
