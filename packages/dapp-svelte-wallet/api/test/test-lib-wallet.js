@@ -66,12 +66,13 @@ async function setupTest() {
 
   const addLiquidityInvite = await autoswapPublicFacet.makeAddLiquidityInvitation();
 
-  const wallet = await makeWallet({
+  const { admin: wallet, initialized } = makeWallet({
     zoe,
     board,
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
+  await initialized;
   return {
     moolaBundle,
     simoleanBundle,

@@ -1,23 +1,36 @@
+// @ts-check
+
+/**
+ * This file defines the vat launched by the spawner in the ../deploy.js script.
+ * It is hooked into the existing ag-solo by that script.
+ *
+ * Most of the interface defined by this code is only used within this dapp
+ * itself.  The parts that are relied on by other dapps are documented in the
+ * types.js file.
+ */
 import { E } from '@agoric/eventual-send';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
+import './internal-types';
+
 export function buildRootObject(_vatPowers) {
-  let wallet;
-  let pursesState = JSON.stringify([]);
-  let inboxState = JSON.stringify([]);
+  /** @type {WalletAdminFacet} */
+  let walletAdmin;
+  /** @type {Array<PursesJSONState>} */
+  let pursesState = [];
+  /** @type {Array<OfferState>} */
+  let inboxState = [];
   let http;
-  const adminHandles = new Set();
   const bridgeHandles = new Set();
   const offerSubscriptions = new Map();
 
   const httpSend = (obj, channelHandles) =>
     E(http).send(JSON.parse(JSON.stringify(obj)), channelHandles);
 
-  const pushOfferSubscriptions = (channelHandle, offersStr) => {
-    const offers = JSON.parse(offersStr);
+  const pushOfferSubscriptions = (channelHandle, offers) => {
     const subs = offerSubscriptions.get(channelHandle);
     (subs || []).forEach(({ origin, status }) => {
       // Filter by optional status and origin.
@@ -49,167 +62,188 @@ export function buildRootObject(_vatPowers) {
     pushOfferSubscriptions(channelHandle, inboxState);
   };
 
-  const {
-    updater: pursesJSONUpdater,
-    notifier: pursesJSONNotifier,
-  } = makeNotifierKit(pursesState);
-  const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
-  const {
-    updater: inboxJSONUpdater,
-    notifier: inboxJSONNotifier,
-  } = makeNotifierKit(inboxState);
+  const { publish: pursesPublish, subscribe: pursesSubscribe } = pubsub(E);
+  const { updater: inboxUpdater, notifier: offerNotifier } = makeNotifierKit(
+    inboxState,
+  );
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({
-    getInboxJSONNotifier() {
-      return inboxJSONNotifier;
-    },
-    getPursesJSONNotifier() {
-      return pursesJSONNotifier;
+    getInboxNotifier() {
+      return offerNotifier;
     },
   });
 
   async function startup({ zoe, board }) {
-    wallet = await makeWallet({
+    const w = makeWallet({
       zoe,
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
     });
+    await w.initialized;
+    walletAdmin = w.admin;
   }
 
+  /**
+   * Create a bridge that a dapp can use to interact with the wallet without
+   * compromising the wallet's integrity.  This is the preferred way to use the
+   * wallet.
+   *
+   * @param {() => Promise<void>} approve return a promise that resolves only
+   * when the dapp is allowed to interact with the wallet.
+   * @param {string} dappOrigin the Web origin of the connecting dapp
+   * @param {Record<string, any>} meta metadata for this dapp's connection
+   * @returns {WalletBridge} the bridge bound to a specific dapp
+   */
+  const makeBridge = (approve, dappOrigin, meta = {}) => {
+    async function* makeApprovedNotifier(sourceNotifier) {
+      await approve();
+      for await (const state of sourceNotifier) {
+        await approve();
+        yield state;
+      }
+    }
+
+    /** @type {WalletBridge} */
+    const bridge = {
+      async getPursesNotifier() {
+        await approve();
+        const pursesNotifier = walletAdmin.getPursesNotifier();
+        const { notifier, updater } = makeNotifierKit();
+        observeIteration(makeApprovedNotifier(pursesNotifier), updater);
+        return notifier;
+      },
+      async addOffer(offer) {
+        await approve();
+        return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
+      },
+      async addOfferInvitation(offer, invitation) {
+        await approve();
+        return walletAdmin.addOfferInvitation(offer, invitation, dappOrigin);
+      },
+      async getOffersNotifier(status = null) {
+        await approve();
+        const { notifier, updater } = makeNotifierKit(inboxState);
+        const filter = offer =>
+          (status === null || offer.status === status) &&
+          offer.requestContext &&
+          offer.requestContext.origin === dappOrigin;
+
+        observeIteration(makeApprovedNotifier(offerNotifier), {
+          updateState(offers) {
+            updater.updateState(offers.filter(filter));
+          },
+          finish(offers) {
+            updater.finish(offers.filter(filter));
+          },
+          fail(e) {
+            updater.fail(e);
+          },
+        });
+        return notifier;
+      },
+      async getDepositFacetId(brandBoardId) {
+        await approve();
+        return walletAdmin.getDepositFacetId(brandBoardId);
+      },
+      async suggestIssuer(petname, boardId) {
+        await approve();
+        return walletAdmin.suggestIssuer(petname, boardId, dappOrigin);
+      },
+      async suggestInstallation(petname, boardId) {
+        await approve();
+        return walletAdmin.suggestInstallation(petname, boardId, dappOrigin);
+      },
+      async suggestInstance(petname, boardId) {
+        await approve();
+        return walletAdmin.suggestInstance(petname, boardId, dappOrigin);
+      },
+    };
+    return harden(bridge);
+  };
+
+  /**
+   * This bridge doesn't wait for approvals before acting.  This can be obtained
+   * from `home.wallet~.getBridge()` in the REPL as a WalletBridge to grab and
+   * use for testing and exploration without having to think about approvals.
+   *
+   * @type {WalletBridge}
+   */
+  const preapprovedBridge = {
+    addOffer(offer) {
+      return walletAdmin.addOffer(offer);
+    },
+    addOfferInvitation(offer, invitation) {
+      return walletAdmin.addOfferInvitation(offer, invitation);
+    },
+    getDepositFacetId(brandBoardId) {
+      return walletAdmin.getDepositFacetId(brandBoardId);
+    },
+    async getOffersNotifier() {
+      return walletAdmin.getOffersNotifier();
+    },
+    async getPursesNotifier() {
+      return walletAdmin.getPursesNotifier();
+    },
+    suggestInstallation(petname, installationBoardId) {
+      return walletAdmin.suggestInstallation(petname, installationBoardId);
+    },
+    suggestInstance(petname, instanceBoardId) {
+      return walletAdmin.suggestInstance(petname, instanceBoardId);
+    },
+    suggestIssuer(petname, issuerBoardId) {
+      return walletAdmin.suggestIssuer(petname, issuerBoardId);
+    },
+  };
+  harden(preapprovedBridge);
+
   async function getWallet() {
-    return harden({ ...wallet, ...notifiers });
+    /**
+     * This is the complete wallet, including the means to get the
+     * WalletAdminFacet (which is not yet standardized, but necessary for the
+     * operation of the Wallet UI, and useful for the REPL).
+     *
+     * @type {WalletUser & { getAdminFacet: () => WalletAdminFacet }}
+     */
+    const wallet = {
+      addPayment: walletAdmin.addPayment,
+      async getScopedBridge(suggestedDappPetname, dappOrigin) {
+        const approve = async () => {
+          await walletAdmin.waitForDappApproval(
+            suggestedDappPetname,
+            dappOrigin,
+          );
+        };
+
+        return makeBridge(approve, dappOrigin);
+      },
+      async getBridge() {
+        return preapprovedBridge;
+      },
+      getDepositFacetId: walletAdmin.getDepositFacetId,
+      getAdminFacet() {
+        return harden({ ...walletAdmin, ...notifiers });
+      },
+      getIssuer: walletAdmin.getIssuer,
+      getIssuers: walletAdmin.getIssuers,
+      getPurse: walletAdmin.getPurse,
+      getPurses: walletAdmin.getPurses,
+    };
+    return harden(wallet);
   }
 
   function setHTTPObject(o, _ROLES) {
     http = o;
   }
 
-  async function adminOnMessage(obj, meta = { origin: 'unknown' }) {
-    const { type, data, dappOrigin = meta.origin } = obj;
-    switch (type) {
-      case 'walletGetPurses': {
-        return {
-          type: 'walletUpdatePurses',
-          data: pursesState || {},
-        };
-      }
-      case 'walletGetInbox': {
-        return {
-          type: 'walletUpdateInbox',
-          data: inboxState || {},
-        };
-      }
-      case 'walletAddOffer': {
-        let handled = false;
-        const actions = harden({
-          result(offer, outcome) {
-            httpSend(
-              {
-                type: 'walletOfferResult',
-                data: {
-                  id: offer.id,
-                  dappContext: offer.dappContext,
-                  outcome,
-                },
-              },
-              [meta.channelHandle],
-            );
-          },
-          error(offer, reason) {
-            httpSend(
-              {
-                type: 'walletOfferResult',
-                data: {
-                  id: offer.id,
-                  dappContext: offer.dappContext,
-                  error: `${(reason && reason.stack) || reason}`,
-                },
-              },
-              [meta.channelHandle],
-            );
-          },
-          handled(offer) {
-            if (handled) {
-              return;
-            }
-            handled = true;
-            httpSend(
-              {
-                type: 'walletOfferHandled',
-                data: offer.id,
-              },
-              [meta.channelHandle],
-            );
-          },
-        });
-        return {
-          type: 'walletOfferAdded',
-          data: await wallet.addOffer(
-            { ...data, actions },
-            { ...meta, dappOrigin },
-          ),
-        };
-      }
-      case 'walletDeclineOffer': {
-        return {
-          type: 'walletDeclineOfferResponse',
-          data: await wallet.declineOffer(data),
-        };
-      }
-      case 'walletCancelOffer': {
-        return {
-          type: 'walletCancelOfferResponse',
-          data: await wallet.cancelOffer(data),
-        };
-      }
-      case 'walletAcceptOffer': {
-        const { outcome } = await wallet.acceptOffer(data);
-        // We return the outcome only if it is a string. Otherwise we
-        // return a default message.
-        const result =
-          typeof outcome === 'string'
-            ? { outcome }
-            : { outcome: 'Offer was made.' };
-        return {
-          type: 'walletAcceptOfferResponse',
-          data: result,
-        };
-      }
-
-      case 'walletGetOffers':
-      case 'walletGetOfferDescriptions': {
-        const result = await wallet.getOffers({ origin: dappOrigin });
-        return {
-          type: 'walletOfferDescriptions',
-          data: result,
-        };
-      }
-
-      default: {
-        return false;
-      }
-    }
-  }
-
   function startSubscriptions() {
     // console.debug(`subscribing to walletPurseState`);
     // This provokes an immediate update
-    purseSubscribe(
+    pursesSubscribe(
       harden({
         notify(m) {
-          pursesState = m;
-          pursesJSONUpdater.updateState(pursesState);
-          if (http) {
-            httpSend(
-              {
-                type: 'walletUpdatePurses',
-                data: pursesState,
-              },
-              [...adminHandles.keys(), ...bridgeHandles.keys()],
-            );
-          }
+          pursesState = JSON.parse(m);
         },
       }),
     );
@@ -219,17 +253,9 @@ export function buildRootObject(_vatPowers) {
     inboxSubscribe(
       harden({
         notify(m) {
-          inboxState = m;
-          inboxJSONUpdater.updateState(inboxState);
+          inboxState = JSON.parse(m);
+          inboxUpdater.updateState(inboxState);
           if (http) {
-            httpSend(
-              {
-                type: 'walletUpdateInbox',
-                data: inboxState,
-              },
-              [...adminHandles.keys()],
-            );
-
             // Get subscribed offers, too.
             for (const channelHandle of offerSubscriptions.keys()) {
               pushOfferSubscriptions(channelHandle, inboxState);
@@ -240,23 +266,24 @@ export function buildRootObject(_vatPowers) {
     );
   }
 
-  function getCommandHandler() {
-    return harden({
-      onOpen(_obj, meta) {
-        console.debug('Adding adminHandle', meta);
-        adminHandles.add(meta.channelHandle);
-      },
-      onClose(_obj, meta) {
-        console.debug('Removing adminHandle', meta);
-        adminHandles.delete(meta.channelHandle);
-      },
-      onMessage: adminOnMessage,
-    });
-  }
-
   function getBridgeURLHandler() {
     return harden({
-      // Use CapTP to interact with this object.
+      /**
+       * @typedef {Object} WalletOtherSide the callbacks from a CapTP wallet
+       * client.
+       * @property {(dappOrigin: string, suggestedDappPetname: Petname) => void}
+       * needDappApproval let the other side know that this dapp is still
+       * unapproved
+       * @property {(dappOrigin: string) => void} dappApproved let the other
+       * side know that the dapp has been approved
+       */
+
+      /**
+       * Use CapTP over WebSocket for a dapp to interact with the wallet.
+       *
+       * @param {ERef<WalletOtherSide>} otherSide
+       * @param {Record<string, any>} meta
+       */
       async getBootstrap(otherSide, meta) {
         const dappOrigin = meta.origin;
         const suggestedDappPetname = String(
@@ -267,7 +294,7 @@ export function buildRootObject(_vatPowers) {
 
         const approve = async () => {
           let needApproval = false;
-          await wallet.waitForDappApproval(
+          await walletAdmin.waitForDappApproval(
             suggestedDappPetname,
             dappOrigin,
             () => {
@@ -282,61 +309,22 @@ export function buildRootObject(_vatPowers) {
           }
         };
 
-        return harden({
-          async getPurseNotifier() {
-            await approve();
-            return harden({
-              async getUpdateSince(count = undefined) {
-                await approve();
-                const pursesJSON = await pursesJSONNotifier.getUpdateSince(
-                  count,
-                );
-                return JSON.parse(pursesJSON);
-              },
-            });
-          },
-          async addOffer(offer) {
-            await approve();
-            return wallet.addOffer(offer, { ...meta, dappOrigin });
-          },
-          async getOfferNotifier(status = null) {
-            await approve();
-            return harden({
-              async getUpdateSince(count = undefined) {
-                await approve();
-                const update = await inboxJSONNotifier.getUpdateSince(count);
-                const offers = JSON.parse(update.value);
-                return harden(
-                  offers.filter(
-                    offer =>
-                      (status === null || offer.status === status) &&
-                      offer.requestContext &&
-                      offer.requestContext.origin === dappOrigin,
-                  ),
-                );
-              },
-            });
-          },
-          async getDepositFacetId(brandBoardId) {
-            await approve();
-            return wallet.getDepositFacetId(brandBoardId);
-          },
-          async suggestIssuer(petname, boardId) {
-            await approve();
-            return wallet.suggestIssuer(petname, boardId, dappOrigin);
-          },
-          async suggestInstallation(petname, boardId) {
-            await approve();
-            return wallet.suggestInstallation(petname, boardId, dappOrigin);
-          },
-          async suggestInstance(petname, boardId) {
-            await approve();
-            return wallet.suggestInstance(petname, boardId, dappOrigin);
-          },
-        });
+        return makeBridge(approve, dappOrigin, meta);
       },
 
-      // The legacy HTTP/WebSocket handler.
+      /**
+       * This is the legacy WebSocket wrapper for an origin-specific
+       * WalletBridge.  This wrapper is accessible from a dapp UI via the
+       * wallet-bridge.html iframe.
+       *
+       * This custom RPC protocol must maintain compatibility with existing
+       * dapps.  It would be preferable not to add to it either, since that
+       * means more legacy code that must be supported.
+       *
+       * We hope to migrate dapps to use the ocap interfaces (such as
+       * getBootstrap() above) so that they can interact with the WalletBridge
+       * methods directly.  Then we would like to deprecate this handler.
+       */
       getCommandHandler() {
         return harden({
           onOpen(_obj, meta) {
@@ -359,7 +347,7 @@ export function buildRootObject(_vatPowers) {
 
             // When we haven't been enabled, tell our caller.
             let needApproval = false;
-            await wallet.waitForDappApproval(
+            await walletAdmin.waitForDappApproval(
               suggestedDappPetname,
               dappOrigin,
               () => {
@@ -389,9 +377,63 @@ export function buildRootObject(_vatPowers) {
             }
 
             switch (type) {
-              case 'walletGetPurses':
-              case 'walletAddOffer':
-                return adminOnMessage(obj, meta);
+              case 'walletGetPurses': {
+                return {
+                  type: 'walletUpdatePurses',
+                  data: JSON.stringify(pursesState),
+                };
+              }
+              case 'walletAddOffer': {
+                let handled = false;
+                const actions = harden({
+                  result(offer, outcome) {
+                    httpSend(
+                      {
+                        type: 'walletOfferResult',
+                        data: {
+                          id: offer.id,
+                          dappContext: offer.dappContext,
+                          outcome,
+                        },
+                      },
+                      [meta.channelHandle],
+                    );
+                  },
+                  error(offer, reason) {
+                    httpSend(
+                      {
+                        type: 'walletOfferResult',
+                        data: {
+                          id: offer.id,
+                          dappContext: offer.dappContext,
+                          error: `${(reason && reason.stack) || reason}`,
+                        },
+                      },
+                      [meta.channelHandle],
+                    );
+                  },
+                  handled(offer) {
+                    if (handled) {
+                      return;
+                    }
+                    handled = true;
+                    httpSend(
+                      {
+                        type: 'walletOfferHandled',
+                        data: offer.id,
+                      },
+                      [meta.channelHandle],
+                    );
+                  },
+                });
+                return {
+                  type: 'walletOfferAdded',
+                  data: await walletAdmin.addOffer(
+                    { ...obj.data, actions },
+                    { ...meta, dappOrigin },
+                  ),
+                };
+              }
 
               case 'walletSubscribeOffers': {
                 const { status = null } = obj;
@@ -419,7 +461,9 @@ export function buildRootObject(_vatPowers) {
                 const { status = null } = obj;
 
                 // Override the origin since we got it from the bridge.
-                let result = await wallet.getOffers({ origin: dappOrigin });
+                let result = await walletAdmin.getOffers({
+                  origin: dappOrigin,
+                });
                 if (status !== null) {
                   // Filter by status.
                   result = harden(
@@ -435,7 +479,9 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletGetDepositFacetId': {
                 const { brandBoardId } = obj;
-                const result = await wallet.getDepositFacetId(brandBoardId);
+                const result = await walletAdmin.getDepositFacetId(
+                  brandBoardId,
+                );
                 return {
                   type: 'walletDepositFacetIdResponse',
                   data: result,
@@ -444,7 +490,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestIssuer': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestIssuer(
+                const result = await walletAdmin.suggestIssuer(
                   petname,
                   boardId,
                   dappOrigin,
@@ -457,7 +503,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstance': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestInstance(
+                const result = await walletAdmin.suggestInstance(
                   petname,
                   boardId,
                   dappOrigin,
@@ -470,7 +516,7 @@ export function buildRootObject(_vatPowers) {
 
               case 'walletSuggestInstallation': {
                 const { petname, boardId } = obj;
-                const result = await wallet.suggestInstallation(
+                const result = await walletAdmin.suggestInstallation(
                   petname,
                   boardId,
                   dappOrigin,
@@ -496,7 +542,6 @@ export function buildRootObject(_vatPowers) {
     startup,
     getWallet,
     setHTTPObject,
-    getCommandHandler,
     getBridgeURLHandler,
   });
 }
