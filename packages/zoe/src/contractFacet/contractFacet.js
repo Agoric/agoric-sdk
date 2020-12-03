@@ -146,7 +146,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     };
 
     function initializeEmptySeatData() {
-      const proposal = null;
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -160,7 +159,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       const seatHandle = makeHandle('SeatHandle');
 
       const seatData = harden({
-        proposal,
         initialAllocation: {},
         notifier,
       });
@@ -174,7 +172,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
 
       return {
-        proposal,
         updater,
         zoeSeatAdminPromiseKit,
         userSeatPromiseKit,
@@ -185,7 +182,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = { onDemand: null }) => {
       const {
-        proposal,
         updater,
         zoeSeatAdminPromiseKit,
         userSeatPromiseKit,
@@ -200,7 +196,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       );
 
       E(zoeInstanceAdmin)
-        .makeNoEscrowSeat(harden({}), proposal, exitObj, seatHandle)
+        .makeNoEscrowSeat(harden({}), exitObj, seatHandle)
         .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
           updateFromNotifier(updater, zoeNotifier);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
@@ -511,7 +507,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           throw zcfSeat.fail(reason);
         });
         addAllocationToSeat(zcfSeat, addAllocation);
-        zcfSeatAdmin.updateProposal(proposal);
+        zcfSeatAdmin.setProposal(proposal);
         const exitObj = makeExitObj(proposal.exit, zoeSeatAdmin, zcfSeatAdmin);
         /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });

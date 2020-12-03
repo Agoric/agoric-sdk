@@ -25,7 +25,6 @@ import '../internal-types';
 export const makeZoeSeatAdminKit = (
   initialAllocation,
   instanceAdmin,
-  proposal,
   brandToPurse,
   exitObj,
   offerResult,
@@ -35,6 +34,7 @@ export const makeZoeSeatAdminKit = (
   // This does not suppress any error messages.
   payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
+  let proposal;
 
   // initialAllocation will be undefined for a "later escrow" seat. The initial,
   // empty allocation should not be reported to the updater.
@@ -91,6 +91,13 @@ export const makeZoeSeatAdminKit = (
     getNotifier: () => notifier,
     // eslint-disable-next-line no-use-before-define
     getUserSeat: () => userSeat,
+    setProposal: newProposal => {
+      if (!proposal) {
+        proposal = newProposal;
+      } else {
+        throw Error(`Can't set proposal. It has already been set.`);
+      }
+    },
   });
 
   /** @type {UserSeat} */

@@ -23,7 +23,7 @@ export const makeZcfSeatAdminKit = (
   let exited = false; // seat is "active"
   // seats without a proposal don't need to check offer safety. Some of these
   // will eventually get a proposal, others not.
-  let { proposal } = seatData;
+  let proposal;
 
   const assertExitedFalse = () =>
     assert(!exited, details`seat has been exited`);
@@ -44,11 +44,11 @@ export const makeZcfSeatAdminKit = (
       assertExitedFalse();
       exited = true;
     },
-    updateProposal: newProposal => {
+    setProposal: newProposal => {
       if (!proposal) {
         proposal = newProposal;
       } else {
-        throw Error(`Can't update proposal. It has already been set.`);
+        throw Error(`Can't set proposal. It has already been set.`);
       }
     },
   });

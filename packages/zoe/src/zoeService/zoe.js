@@ -246,6 +246,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             proposal,
             initialAllocation,
           ) => {
+            zoeSeatAdmin.setProposal(proposal);
             return E(addSeatObjPromiseKit.promise).addSeat(
               invitationHandle,
               zoeSeatAdmin,
@@ -330,7 +331,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             instanceAdmin,
-            proposal,
             brandToPurse,
             exitObj,
           );
@@ -353,7 +353,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             // the empty allocation is null so it won't be published by notifier
             undefined,
             instanceAdmin,
-            cleanProposal(getAmountMath, harden({})),
             brandToPurse,
             exitObjPromise.promise,
             offerResultPromise.promise,

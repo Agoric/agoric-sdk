@@ -10,7 +10,6 @@
 
 /**
  * @typedef {Object} SeatData
- * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  */
@@ -25,7 +24,6 @@
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation|undefined} initialAllocation
  * @param {InstanceAdmin} instanceAdmin
- * @param {ProposalRecord} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<OfferResult>=} offerResult
@@ -141,7 +139,6 @@
 /**
  * @callback MakeNoEscrowSeat
  * @param {Allocation} initialAllocation
- * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
  * @returns {ZoeSeatAdminKit}

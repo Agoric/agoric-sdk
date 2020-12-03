@@ -7,6 +7,7 @@ import { E } from '@agoric/eventual-send';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+import { makeIssuerKit } from '@agoric/ertp';
 
 import { setupZCFTest } from './zcf/setupZcfTest';
 import { setup } from './setupBasicMints';
@@ -280,4 +281,28 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
+});
+
+test(`zoe seat getProposal`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { mint, amountMath, issuer } = makeIssuerKit('silver');
+
+  const keywords = harden({ Money: issuer });
+  const { creatorInvitation } = await E(zoe).startInstance(
+    installation,
+    keywords,
+  );
+
+  const silver37 = amountMath.make(37);
+  const proposal = harden({
+    want: { Money: silver37 },
+    give: {},
+    exit: { onDemand: null },
+  });
+  const payments = harden({ Money: mint.mintPayment(silver37) });
+  const userSeat = E(zoe).offer(creatorInvitation, proposal, payments);
+  t.deepEqual(await E(userSeat).getProposal(), proposal);
 });
