@@ -26,4 +26,5 @@ export {
   depositToSeat,
   withdrawFromSeat,
   saveAllIssuers,
+  offerTo,
 } from './zoeHelpers';

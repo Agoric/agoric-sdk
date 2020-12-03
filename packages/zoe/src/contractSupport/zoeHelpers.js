@@ -4,6 +4,7 @@ import '../../exported';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
@@ -421,3 +422,70 @@ export async function saveAllIssuers(zcf, issuerKeywordRecord = {}) {
   );
   return Promise.all(issuersPSaved);
 }
+
+/** @type {MapKeywords} */
+export const mapKeywords = (keywordRecord = {}, keywordMapping) => {
+  return Object.fromEntries(
+    Object.entries(keywordRecord).map(([keyword, value]) => {
+      if (keywordMapping[keyword] === undefined) {
+        return [keyword, value];
+      }
+      return [keywordMapping[keyword], value];
+    }),
+  );
+};
+/** @type {Reverse} */
+const reverse = (keywordRecord = {}) => {
+  return Object.fromEntries(
+    Object.entries(keywordRecord).map(([key, value]) => [value, key]),
+  );
+};
+
+/** @type {OfferTo} */
+export const offerTo = async (
+  zcf,
+  invitation,
+  keywordMapping = {},
+  proposal,
+  fromSeat,
+  toSeat,
+) => {
+  const zoe = zcf.getZoeService();
+  const mappingReversed = reverse(keywordMapping);
+
+  // the proposal is in the other contract's keywords, but we want to
+  // use `proposal.give` to withdraw
+  const payments = await withdrawFromSeat(
+    zcf,
+    fromSeat,
+    // `proposal.give` may be undefined
+    mapKeywords(proposal.give, mappingReversed),
+  );
+
+  // Map to the other contract's keywords
+  const paymentsForOtherContract = mapKeywords(payments, keywordMapping);
+
+  const userSeatPromise = E(zoe).offer(
+    invitation,
+    proposal,
+    paymentsForOtherContract,
+  );
+
+  const depositedPromiseKit = makePromiseKit();
+
+  const doDeposit = async payoutPayments => {
+    const amounts = await E(userSeatPromise).getCurrentAllocation();
+
+    // Map back to the original contract's keywords
+    const mappedAmounts = mapKeywords(amounts, mappingReversed);
+    const mappedPayments = mapKeywords(payoutPayments, mappingReversed);
+    await depositToSeat(zcf, toSeat, mappedAmounts, mappedPayments);
+    depositedPromiseKit.resolve(mappedAmounts);
+  };
+
+  E(userSeatPromise)
+    .getPayouts()
+    .then(doDeposit);
+
+  return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });
+};
