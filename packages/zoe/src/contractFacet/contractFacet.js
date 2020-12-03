@@ -501,29 +501,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     // is used when a seat was already created using makeInvitationWithSeat().
     /** @type {AddSeatObj} */
     const addSeatObj = {
-      addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
-        const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
-          allSeatStagings,
-          zoeSeatAdmin,
-          seatData,
-          getAmountMath,
-        );
-        zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
-        zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
-        const offerHandler = invitationHandleToHandler.get(invitationHandle);
-        // @ts-ignore
-        const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          throw zcfSeat.fail(reason);
-        });
-        const exitObj = makeExitObj(
-          seatData.proposal.exit,
-          zoeSeatAdmin,
-          zcfSeatAdmin,
-        );
-        /** @type {AddSeatResult} */
-        return harden({ offerResultP, exitObj });
-      },
-      linkSeat: (invitationHandle, zoeSeatAdmin, proposal, addAllocation) => {
+      addSeat: (invitationHandle, zoeSeatAdmin, proposal, addAllocation) => {
         const { zcfSeatAdmin, zcfSeat } = invitationHandleToZcfSeatKit.get(
           invitationHandle,
         );

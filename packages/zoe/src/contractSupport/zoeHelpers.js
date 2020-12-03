@@ -14,6 +14,20 @@ export const defaultAcceptanceMsg = `The offer has been accepted. Once the contr
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 
+const wantOrEmpty = seat => {
+  if (!seat.getProposal()) {
+    return {};
+  }
+  return seat.getProposal().want;
+};
+
+const giveOrEmpty = seat => {
+  if (!seat.getProposal()) {
+    return {};
+  }
+  return seat.getProposal().give;
+};
+
 /**
  * Given toGains (an AmountKeywordRecord), and allocations (a pair,
  * 'to' and 'from', of Allocations), all the entries in
@@ -170,10 +184,10 @@ export const trade = (
     // show the constraints
 
     if (left.seat.getProposal()) {
-      console.log(`left want`, left.seat.getProposal().want);
+      console.log(`left want`, wantOrEmpty(left.seat));
     }
     if (right.seat.getProposal()) {
-      console.log(`right want`, right.seat.getProposal().want);
+      console.log(`right want`, wantOrEmpty(right.seat));
     }
 
     if (!offerSafeForLeft) {
@@ -212,11 +226,11 @@ export const swap = (
       zcf,
       {
         seat: leftSeat,
-        gains: leftSeat.getProposal().want,
+        gains: wantOrEmpty(leftSeat),
       },
       {
         seat: rightSeat,
-        gains: rightSeat.getProposal().want,
+        gains: wantOrEmpty(rightSeat),
       },
       leftHasExitedMsg,
       rightHasExitedMsg,
@@ -251,13 +265,13 @@ export const swapExact = (
       zcf,
       {
         seat: leftSeat,
-        gains: leftSeat.getProposal().want,
-        losses: leftSeat.getProposal().give,
+        gains: wantOrEmpty(leftSeat),
+        losses: giveOrEmpty(leftSeat),
       },
       {
         seat: rightSeat,
-        gains: rightSeat.getProposal().want,
-        losses: rightSeat.getProposal().give,
+        gains: wantOrEmpty(rightSeat),
+        losses: giveOrEmpty(rightSeat),
       },
       leftHasExitedMsg,
       rightHasExitedMsg,

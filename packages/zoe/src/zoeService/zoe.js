@@ -240,26 +240,13 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         /** @type {InstanceAdmin} */
         return {
           addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
-          tellZCFToMakeSeat: (
-            invitationHandle,
-            zoeSeatAdmin,
-            seatData,
-            seatHandle,
-          ) => {
-            return E((addSeatObjPromiseKit.promise)).addSeat(
-              invitationHandle,
-              zoeSeatAdmin,
-              seatData,
-              seatHandle,
-            );
-          },
-          tellZCFToLinkSeat: (
+          tellZCFToAddSeat: (
             invitationHandle,
             zoeSeatAdmin,
             proposal,
             initialAllocation,
           ) => {
-            return E(addSeatObjPromiseKit.promise).linkSeat(
+            return E(addSeatObjPromiseKit.promise).addSeat(
               invitationHandle,
               zoeSeatAdmin,
               proposal,
@@ -494,7 +481,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             const {
               offerResultP,
               exitObj,
-            } = await instanceAdmin.tellZCFToLinkSeat(
+            } = await instanceAdmin.tellZCFToAddSeat(
               invitationHandle,
               zoeSeatAdmin,
               proposal,

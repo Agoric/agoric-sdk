@@ -78,14 +78,9 @@
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => Set<ZoeSeatAdmin>} addZoeSeatAdmin
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
- *             seatData: SeatData,
- *             seatHandle: SeatHandle,
- *            ) => Promise<AddSeatResult>} tellZCFToMakeSeat
- * @property {(invitationHandle: InvitationHandle,
- *             zoeSeatAdmin: ZoeSeatAdmin,
  *             proposal: Proposal,
  *             initialAllocation: Allocation,
- *            ) => Promise<AddSeatResult>} tellZCFToLinkSeat
+ *            ) => Promise<AddSeatResult>} tellZCFToAddSeat
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
@@ -107,14 +102,9 @@
  * @typedef {Object} AddSeatObj
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
- *             seatData: SeatData,
- *             seatHandle: SeatHandle,
- *            ) => AddSeatResult} addSeat
- * @property {(invitationHandle: InvitationHandle,
- *             zoeSeatAdmin: ZoeSeatAdmin,
  *             Proposal: proposal,
  *             addAllocation: Allocation,
- *            ) => AddSeatResult} linkSeat
+ *            ) => AddSeatResult} addSeat
  */
 
 /**
