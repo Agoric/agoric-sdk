@@ -31,8 +31,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	gaia "github.com/Agoric/cosmic-swingset/app"
-	"github.com/Agoric/cosmic-swingset/app/params"
+	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 )
 
 // Sender is a function that sends a request to the controller.

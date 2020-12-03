@@ -1,8 +1,8 @@
 package dibc
 
 import (
-	"github.com/Agoric/cosmic-swingset/x/dibc/keeper"
-	"github.com/Agoric/cosmic-swingset/x/dibc/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/keeper"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types"
 )
 
 const (

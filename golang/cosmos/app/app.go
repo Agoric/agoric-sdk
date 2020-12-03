@@ -85,9 +85,9 @@ import (
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	gaiaappparams "github.com/Agoric/cosmic-swingset/app/params"
-	"github.com/Agoric/cosmic-swingset/x/dibc"
-	"github.com/Agoric/cosmic-swingset/x/swingset"
+	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"

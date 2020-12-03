@@ -4,7 +4,7 @@ package agoric.dibc;
 import "gogoproto/gogo.proto";
 import "ibc/core/channel/v1/channel.proto";
 
-option go_package = "github.com/Agoric/cosmic-swingset/x/dibc/types";
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types";
 
 service Msg {
   rpc SendPacket(MsgSendPacket) returns (MsgSendPacketResponse);

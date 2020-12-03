@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/Agoric/cosmic-swingset/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/cosmos/cosmos-sdk/std"
 )
 

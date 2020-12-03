@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

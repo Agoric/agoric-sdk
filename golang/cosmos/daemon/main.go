@@ -6,7 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/Agoric/cosmic-swingset/lib/daemon/cmd"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
 )
 
 const (

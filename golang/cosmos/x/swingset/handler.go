@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	// "github.com/Agoric/cosmic-swingset/x/swingset/types"
+	// "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )

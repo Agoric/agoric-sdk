@@ -14,7 +14,7 @@ import (
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
-	"github.com/Agoric/cosmic-swingset/x/dibc/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine

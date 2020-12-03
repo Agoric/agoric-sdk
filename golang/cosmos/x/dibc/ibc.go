@@ -13,7 +13,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 )
 
 type portHandler struct {

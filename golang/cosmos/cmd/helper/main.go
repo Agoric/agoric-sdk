@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Agoric/cosmic-swingset/app"
-	"github.com/Agoric/cosmic-swingset/lib/daemon"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module github.com/Agoric/cosmic-swingset
+module github.com/Agoric/agoric-sdk
 
 go 1.14
 
@@ -29,6 +29,6 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alp
 // replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201011165527-9684bf64c2db
 
 // For testing against a local cosmos-sdk or tendermint
-// replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
+// replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
 
-// replace github.com/tendermint/tendermint => ../../../forks/tendermint
+// replace github.com/tendermint/tendermint => ../forks/tendermint
