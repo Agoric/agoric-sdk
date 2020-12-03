@@ -21,6 +21,8 @@ export const makeZcfSeatAdminKit = (
   // The proposal, currentAllocation and exited may be reassigned.
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
+  // seats without a proposal don't need to check offer safety. Some of these
+  // will eventually get a proposal, others not.
   let { proposal } = seatData;
 
   const assertExitedFalse = () =>
@@ -42,7 +44,13 @@ export const makeZcfSeatAdminKit = (
       assertExitedFalse();
       exited = true;
     },
-    updateProposal: newProposal => (proposal = newProposal),
+    updateProposal: newProposal => {
+      if (!proposal) {
+        proposal = newProposal;
+      } else {
+        throw Error(`Can't update proposal. It has already been set.`);
+      }
+    },
   });
 
   /** @type {ZCFSeat} */
@@ -87,6 +95,10 @@ export const makeZcfSeatAdminKit = (
     },
     isOfferSafe: newAllocation => {
       assertExitedFalse();
+      if (!proposal) {
+        return true;
+      }
+
       const reallocation = harden({
         ...currentAllocation,
         ...newAllocation,
@@ -103,7 +115,7 @@ export const makeZcfSeatAdminKit = (
       });
 
       assert(
-        isOfferSafe(getAmountMath, proposal, allocation),
+        !proposal || isOfferSafe(getAmountMath, proposal, allocation),
         details`The reallocation was not offer safe`,
       );
 

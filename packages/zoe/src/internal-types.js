@@ -209,7 +209,7 @@
 
 /**
  * @callback MakeExitObj
- * @param {ProposalRecord} proposal
+ * @param {ExitRule} exit
  * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
  * @param {ZCFSeatAdmin} zcfSeatAdmin
  * @returns {ExitObj}

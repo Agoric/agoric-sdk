@@ -16,11 +16,7 @@ import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
-import {
-  assertKeywordName,
-  getKeywords,
-  cleanProposal,
-} from '../cleanProposal';
+import { assertKeywordName, getKeywords } from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
@@ -149,8 +145,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     };
 
-    function initializeEmptySeatData(exit) {
-      const proposal = cleanProposal(getAmountMath, harden({ exit }));
+    function initializeEmptySeatData() {
+      const proposal = null;
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -187,7 +183,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       };
     }
 
-    const makeEmptySeatKit = (exit = undefined) => {
+    const makeEmptySeatKit = (exit = { onDemand: null }) => {
       const {
         proposal,
         updater,
@@ -195,10 +191,10 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         userSeatPromiseKit,
         seatHandle,
         zcfSeat,
-      } = initializeEmptySeatData(exit);
+      } = initializeEmptySeatData();
 
       const exitObj = makeExitObj(
-        proposal,
+        exit,
         zoeSeatAdminPromiseKit.promise,
         zcfSeatToZCFSeatAdmin.get(zcfSeat),
       );
@@ -214,18 +210,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return { zcfSeat, userSeat: userSeatPromiseKit.promise };
     };
 
-    /** @type {MakeInvitation} */
-    const makeInvitation = (
-      offerHandler = () => {},
+    const makeInvitationWithSeat = async (
+      offerHandler,
       description,
-      customProperties = {},
+      customProperties,
     ) => {
-      assert.typeof(
-        description,
-        'string',
-        details`invitations must have a description string: ${description}`,
-      );
-
       const invitationHandle = makeHandle('InvitationHandle');
       invitationHandleToHandler.init(invitationHandle, offerHandler);
       /** @type {Promise<Payment>} */
@@ -234,23 +223,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         description,
         customProperties,
       );
-      return invitation;
-    };
-
-    /** @type {MakeInvitationWithSeat} */
-    const makeInvitationWithSeat = async (
-      offerHandler,
-      description,
-      customProperties,
-      exit,
-    ) => {
-      const invitation = makeInvitation(
-        offerHandler,
-        description,
-        customProperties,
-      );
-      const invitationAmount = await invitationIssuer.getAmountOf(invitation);
-      // AWAIT ///
 
       const {
         updater,
@@ -258,8 +230,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         userSeatPromiseKit,
         seatHandle,
         zcfSeat,
-      } = initializeEmptySeatData(exit);
-      const invitationHandle = invitationAmount.value[0].handle;
+      } = initializeEmptySeatData();
       invitationHandleToZcfSeatKit.init(invitationHandle, {
         zcfSeatAdmin: zcfSeatToZCFSeatAdmin.get(zcfSeat),
         zcfSeat,
@@ -272,9 +243,29 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
           userSeatPromiseKit.resolve(userSeat);
         });
-      // AWAIT ///
 
-      return { invitation, zcfSeat, userSeat: userSeatPromiseKit.promise };
+      return { invitation, zcfSeat };
+    };
+
+    /** @type {MakeInvitation} */
+    const makeInvitation = (
+      offerHandler = () => {},
+      description,
+      customProperties = {},
+    ) => {
+      assert.typeof(
+        description,
+        'string',
+        details`invitations must have a description string: ${description}`,
+      );
+
+      const invitationAndSeatP = makeInvitationWithSeat(
+        offerHandler,
+        description,
+        customProperties,
+      );
+
+      return E.G(invitationAndSeatP).invitation;
     };
 
     /** @type {MakeZCFMint} */
@@ -525,7 +516,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           throw zcfSeat.fail(reason);
         });
         const exitObj = makeExitObj(
-          seatData.proposal,
+          seatData.proposal.exit,
           zoeSeatAdmin,
           zcfSeatAdmin,
         );
@@ -543,7 +534,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         });
         addAllocationToSeat(zcfSeat, addAllocation);
         zcfSeatAdmin.updateProposal(proposal);
-        const exitObj = makeExitObj(proposal, zoeSeatAdmin, zcfSeatAdmin);
+        const exitObj = makeExitObj(proposal.exit, zoeSeatAdmin, zcfSeatAdmin);
         /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });
       },

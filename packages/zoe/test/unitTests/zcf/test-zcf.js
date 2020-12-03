@@ -565,7 +565,7 @@ const makeOffer = async (zoe, zcf, proposal, payments) => {
 const similarToNormalZCFSeat = async (t, emptySeat, normalSeat) => {
   // Note: not exhaustive
   t.deepEqual(Object.keys(emptySeat), Object.keys(normalSeat));
-  t.deepEqual(emptySeat.getProposal(), normalSeat.getProposal());
+  t.falsy(emptySeat.getProposal());
   t.deepEqual(
     emptySeat.getCurrentAllocation(),
     normalSeat.getCurrentAllocation(),
@@ -576,7 +576,7 @@ const similarToNormalZCFSeat = async (t, emptySeat, normalSeat) => {
 const similarToNormalUserSeat = async (t, emptySeat, normalSeat) => {
   // Note: not exhaustive
   t.deepEqual(Object.keys(emptySeat), Object.keys(normalSeat));
-  t.deepEqual(await emptySeat.getProposal(), await normalSeat.getProposal());
+  t.falsy(await emptySeat.getProposal());
   t.deepEqual(
     await emptySeat.getCurrentAllocation(),
     await normalSeat.getCurrentAllocation(),
@@ -627,13 +627,7 @@ test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(seat.getProposal(), {
-    exit: {
-      onDemand: null,
-    },
-    give: {},
-    want: {},
-  });
+  t.falsy(seat.getProposal());
 });
 
 test(`zcfSeat.hasExited, exit from zcf.makeEmptySeatKit`, async t => {
@@ -858,13 +852,7 @@ test(`userSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const makeUserSeat = async () => zcf.makeEmptySeatKit().userSeat;
   const userSeat = await makeUserSeat();
-  t.deepEqual(await E(userSeat).getProposal(), {
-    exit: {
-      onDemand: null,
-    },
-    give: {},
-    want: {},
-  });
+  t.falsy(await E(userSeat).getProposal());
 });
 
 test(`userSeat.tryExit from zcf.makeEmptySeatKit - onDemand`, async t => {

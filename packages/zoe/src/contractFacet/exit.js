@@ -7,8 +7,8 @@ import { E } from '@agoric/eventual-send';
  */
 
 /** @type {MakeExitObj} */
-export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
-  const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
+export const makeExitObj = (exit, zoeSeatAdmin, zcfSeatAdmin) => {
+  const [exitKind] = Object.getOwnPropertyNames(exit);
 
   /** @type {ExitObj} */
   let exitObj = harden({
@@ -26,16 +26,16 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
 
   if (exitKind === 'afterDeadline') {
     // Automatically exit the seat after deadline.
-    E(proposal.exit.afterDeadline.timer)
+    E(exit.afterDeadline.timer)
       .setWakeup(
-        proposal.exit.afterDeadline.deadline,
+        exit.afterDeadline.deadline,
         harden({
           wake: exitFn,
         }),
       )
       .catch(reason => {
         console.error(
-          `The seat could not be made with the provided timer ${proposal.exit.afterDeadline.timer} and deadline ${proposal.exit.afterDeadline.deadline}`,
+          `The seat could not be made with the provided timer ${exit.afterDeadline.timer} and deadline ${exit.afterDeadline.deadline}`,
         );
         console.error(reason);
         zcfSeatAdmin.updateHasExited();

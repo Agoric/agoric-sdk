@@ -486,68 +486,24 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
               proposalKeywords,
             );
 
-            if (invitationToZoeSeatAdmin.has(invitationHandle)) {
-              // the seat was made earlier
-              const zoeSeatAdmin = invitationToZoeSeatAdmin.get(
-                invitationHandle,
-              );
-              const {
-                offerResultP,
-                exitObj,
-              } = await instanceAdmin.tellZCFToLinkSeat(
-                invitationHandle,
-                zoeSeatAdmin,
-                proposal,
-                initialAllocation,
-              );
-              invitationToExitResolver.get(invitationHandle)(exitObj);
-              invitationToOfferResolver.get(invitationHandle)(offerResultP);
-
-              return zoeSeatAdmin.getUserSeat();
+            if (!invitationToZoeSeatAdmin.has(invitationHandle)) {
+              throw Error(`All paths should result in a pre-existing seat.`);
             }
 
-            // the seat must be made now
-
-            const offerResultPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            offerResultPromiseKit.promise.catch(_ => {});
-            const exitObjPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            exitObjPromiseKit.promise.catch(_ => {});
-            const seatHandle = makeHandle('SeatHandle');
-
-            const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-              initialAllocation,
-              instanceAdmin,
+            const zoeSeatAdmin = invitationToZoeSeatAdmin.get(invitationHandle);
+            const {
+              offerResultP,
+              exitObj,
+            } = await instanceAdmin.tellZCFToLinkSeat(
+              invitationHandle,
+              zoeSeatAdmin,
               proposal,
-              brandToPurse,
-              exitObjPromiseKit.promise,
-              offerResultPromiseKit.promise,
+              initialAllocation,
             );
+            invitationToExitResolver.get(invitationHandle)(exitObj);
+            invitationToOfferResolver.get(invitationHandle)(offerResultP);
 
-            seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-
-            const seatData = harden({ proposal, initialAllocation, notifier });
-
-            instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
-            instanceAdmin
-              .tellZCFToMakeSeat(
-                invitationHandle,
-                zoeSeatAdmin,
-                seatData,
-                seatHandle,
-              )
-              .then(({ offerResultP, exitObj }) => {
-                offerResultPromiseKit.resolve(offerResultP);
-                exitObjPromiseKit.resolve(exitObj);
-              })
-              // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-              // This does not suppress any error messages.
-              .catch(() => {});
-
-            return userSeat;
+            return zoeSeatAdmin.getUserSeat();
           });
         },
         () => {

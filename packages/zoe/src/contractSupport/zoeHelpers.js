@@ -117,7 +117,7 @@ export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = { ...currentAllocation, ...update };
   const proposal = seat.getProposal();
-  return satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
+  return !proposal || satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
 };
 
 /** @type {Trade} */
@@ -168,8 +168,13 @@ export const trade = (
     console.log(`proposed left reallocation`, leftAllocation);
     console.log(`proposed right reallocation`, rightAllocation);
     // show the constraints
-    console.log(`left want`, left.seat.getProposal().want);
-    console.log(`right want`, right.seat.getProposal().want);
+
+    if (left.seat.getProposal()) {
+      console.log(`left want`, left.seat.getProposal().want);
+    }
+    if (right.seat.getProposal()) {
+      console.log(`right want`, right.seat.getProposal().want);
+    }
 
     if (!offerSafeForLeft) {
       console.log(`offer not safe for left`);

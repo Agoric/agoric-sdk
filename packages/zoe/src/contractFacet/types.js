@@ -103,7 +103,6 @@
  * @typedef {Object} InvitationWithSeat
  * @property {Promise<Invitation>} invitation
  * @property {ZCFSeat} zcfSeat
- * @property  {ERef<UserSeat>} userSeat
  */
 
 /**
@@ -112,7 +111,7 @@
  * Make an invitation and a seat at the same time. The seat is created before
  * the offer so that the contract can allocate to it or assign results early.
  * Make a credible Zoe invitation for a particular smart contract
- * indicated by the `instance` in the extent of the invitation. Zoe
+ * indicated by the `instance` in the invitation details. Zoe
  * also puts the `installation` and a unique `handle` in the extent of
  * the invitation. The contract must provide a `description` for the
  * invitation and should include whatever information is
@@ -125,7 +124,7 @@
  * @param {string} description
  * @param {Object=} customProperties
  * @param {ExitRule=} exit
- * @returns {InvitationWithSeat}
+ * @returns {Promise<InvitationWithSeat>}
  */
 
 /**

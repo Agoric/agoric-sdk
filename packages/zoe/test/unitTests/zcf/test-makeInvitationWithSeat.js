@@ -57,11 +57,7 @@ test(`zcfSeat.makeInvitationWithSeat() basics`, async t => {
   const moolaAmountMath = amountMaths.get('moola');
 
   const handler = _ => {};
-
-  const { zcfSeat, userSeat: userSeatP } = await zcf.makeInvitationWithSeat(
-    handler,
-    'seat1',
-  );
+  const { zcfSeat } = await zcf.makeInvitationWithSeat(handler, 'seat1');
   const moola20 = moolaAmountMath.make(20);
   await depositToSeat(
     zcf,
@@ -69,10 +65,7 @@ test(`zcfSeat.makeInvitationWithSeat() basics`, async t => {
     { Cash: moola20 },
     { Cash: moolaMint.mintPayment(moola20) },
   );
-  const userSeat = await userSeatP;
 
-  const zoeSeatAallocation = await userSeat.getCurrentAllocation();
-  t.deepEqual(moola20, zoeSeatAallocation.Cash);
   const zcfSeatAallocation = await zcfSeat.getCurrentAllocation();
   t.deepEqual(moola20, zcfSeatAallocation.Cash);
 });
@@ -86,13 +79,11 @@ test(`zcfSeat.makeInvitationWithSeat() exercise invitation`, async t => {
 
   const handler = _ => {};
 
-  const {
-    invitation,
-    zcfSeat,
-    userSeat: userSeatP,
-  } = await zcf.makeInvitationWithSeat(handler, 'seat1');
+  const { invitation, zcfSeat } = await zcf.makeInvitationWithSeat(
+    handler,
+    'seat1',
+  );
   const moola20 = moolaAmountMath.make(20);
-  const userSeatEarly = await userSeatP;
 
   const proposal = harden({
     want: { Goods: bucksAmountMath.make(1000) },
@@ -103,7 +94,6 @@ test(`zcfSeat.makeInvitationWithSeat() exercise invitation`, async t => {
   });
   const payments = harden({ Money: moolaMint.mintPayment(moola20) });
   const userSeatLate = await zoe.offer(await invitation, proposal, payments);
-  t.is(userSeatEarly, await userSeatLate);
 
   const userSeatAllocation = await userSeatLate.getCurrentAllocation();
   t.deepEqual(moola20, userSeatAllocation.Money);
@@ -241,18 +231,18 @@ test(`zcfSeat.makeInvitationWithSeat() offer safety`, async t => {
 test(`zcfSeat.makeInvitationWithSeat() notifiers`, async t => {
   const setupMints = setup();
   const { amountMaths, moolaMint } = setupMints;
-  const { zcf } = await setupZcf(setupMints);
+  const { zcf, zoe } = await setupZcf(setupMints);
   const moolaAmountMath = amountMaths.get('moola');
+  const bucksAmountMath = amountMaths.get('bucks');
 
   const handler = _ => {};
 
-  const { userSeat, zcfSeat } = await zcf.makeInvitationWithSeat(
+  const { invitation, zcfSeat } = await zcf.makeInvitationWithSeat(
     handler,
     'seat1',
   );
 
   const zcfNotifier = await E(zcfSeat).getNotifier();
-  const zoeNotifier = await E(userSeat).getNotifier();
   const moola10 = moolaAmountMath.make(10);
   await depositToSeat(
     zcf,
@@ -266,8 +256,28 @@ test(`zcfSeat.makeInvitationWithSeat() notifiers`, async t => {
   zcfResult1.then(updateRec => {
     t.deepEqual(expected0, updateRec);
   });
+
+  const moola20 = moolaAmountMath.make(20);
+
+  const proposal = harden({
+    want: { Goods: bucksAmountMath.make(1000) },
+    give: { Money: moola20 },
+    exit: {
+      onDemand: null,
+    },
+  });
+  const payments = harden({ Money: moolaMint.mintPayment(moola20) });
+  const zoeSeat = await zoe.offer(await invitation, proposal, payments);
+  const zoeNotifier = await E(zoeSeat).getNotifier();
+
+  const bucks0 = bucksAmountMath.getEmpty();
+  const moola30 = moolaAmountMath.make(30);
+  const expectedZoe0 = {
+    value: { Goods: bucks0, Money: moola30 },
+    updateCount: 3,
+  };
   const zoeResult1 = E(zoeNotifier).getUpdateSince();
   await zoeResult1.then(updateRec => {
-    t.deepEqual(expected0, updateRec);
+    t.deepEqual(expectedZoe0, updateRec);
   });
 });
