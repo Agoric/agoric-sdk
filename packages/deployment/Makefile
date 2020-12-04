@@ -1,10 +1,16 @@
 REPOSITORY = agoric/cosmic-swingset
 REPOSITORY_SDK = agoric/agoric-sdk
 SS := ../cosmic-swingset/
-TAG := $(shell test ! -f ../../package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' ../../package.json)
+VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 2>/dev/null)
+
+TAG := $(if $(VERSION),$(VERSION),latest)
 
 # Don't push alpha tags as ":$(TAG)".
+ifeq ($(TAG),latest)
+DONT_PUSH_LATEST := :
+else
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
+endif
 
 docker-show-fat:
 	date > show-fat-bust-cache.stamp
