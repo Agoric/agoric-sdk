@@ -1288,6 +1288,25 @@ export function makeWallet({
     return installationMapping.petnameToVal.get(petname);
   }
 
+  function getInstallations() {
+    return installationMapping.petnameToVal.entries();
+  }
+
+  const installationManager = harden({
+    rename: async (petname, thing) => {
+      instanceMapping.renamePetname(petname, thing);
+      await updateAllState();
+      return `instance ${q(petname)} successfully renamed in wallet`;
+    },
+    get: petname => installationMapping.petnameToVal.get(petname),
+    getAll: () => installationMapping.petnameToVal.entries(),
+    add: (petname, thing) => addInstallation(petname, thing),
+  });
+
+  function getInstallationManager() {
+    return installationManager;
+  }
+
   const wallet = harden({
     waitForDappApproval,
     getDappsNotifier() {
@@ -1306,12 +1325,14 @@ export function makeWallet({
     publishIssuer,
     addInstance,
     addInstallation,
+    getInstallationManager,
     renameIssuer,
     renameInstance,
     renameInstallation,
     getSelfContact,
     getInstance,
     getInstallation,
+    getInstallations,
     makeEmptyPurse,
     deposit,
     getIssuer,
