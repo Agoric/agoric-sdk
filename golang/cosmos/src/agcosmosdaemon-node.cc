@@ -1,7 +1,7 @@
 #include <napi.h>
 #include <napi-thread-safe-callback.hpp>
 #include <iostream>
-#include "libagcosmosdaemon.h"
+#include "../build/libagcosmosdaemon.h"
 
 namespace ss {
 
