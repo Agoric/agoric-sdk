@@ -196,7 +196,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       );
 
       E(zoeInstanceAdmin)
-        .makeNoEscrowSeat(harden({}), exitObj, seatHandle)
+        .makeNoEscrowSeat(exitObj, seatHandle)
         .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
           updateFromNotifier(updater, zoeNotifier);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);

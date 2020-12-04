@@ -696,15 +696,11 @@ test(`zcfSeat.getNotifier`, async t => {
   const notifier = zcfSeat.getNotifier();
   // These are different notifiers
   t.not(notifier, await E(userSeat).getNotifier());
-  t.deepEqual(await notifier.getUpdateSince(), {
-    updateCount: 2,
-    value: {},
-  });
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
-  t.deepEqual(await notifier.getUpdateSince(2), {
-    updateCount: 3,
+  t.deepEqual(await notifier.getUpdateSince(1), {
+    updateCount: 2,
     value: {
       A: {
         brand: brand1,
@@ -714,8 +710,8 @@ test(`zcfSeat.getNotifier`, async t => {
   });
 
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
-  t.deepEqual(await notifier.getUpdateSince(3), {
-    updateCount: 4,
+  t.deepEqual(await notifier.getUpdateSince(2), {
+    updateCount: 3,
     value: {
       A: {
         brand: brand1,
@@ -730,7 +726,7 @@ test(`zcfSeat.getNotifier`, async t => {
 
   zcfSeat.exit();
 
-  t.deepEqual(await notifier.getUpdateSince(4), {
+  t.deepEqual(await notifier.getUpdateSince(3), {
     updateCount: undefined,
     value: undefined,
   });
@@ -949,14 +945,10 @@ test(`userSeat.getNotifier`, async t => {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   const notifier = await E(userSeat).getNotifier();
 
-  t.deepEqual(await notifier.getUpdateSince(), {
-    updateCount: 2,
-    value: {},
-  });
-  // Mint some gains to change the allocation.
+  // // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
   t.deepEqual(await notifier.getUpdateSince(), {
-    updateCount: 3,
+    updateCount: 2,
     value: {
       A: {
         brand: brand1,
@@ -966,8 +958,8 @@ test(`userSeat.getNotifier`, async t => {
   });
 
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
-  t.deepEqual(await notifier.getUpdateSince(3), {
-    updateCount: 4,
+  t.deepEqual(await notifier.getUpdateSince(2), {
+    updateCount: 3,
     value: {
       A: {
         brand: brand1,
@@ -982,7 +974,7 @@ test(`userSeat.getNotifier`, async t => {
 
   zcfSeat.exit();
 
-  t.deepEqual(await notifier.getUpdateSince(4), {
+  t.deepEqual(await notifier.getUpdateSince(3), {
     updateCount: undefined,
     value: undefined,
   });

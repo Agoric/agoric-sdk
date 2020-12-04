@@ -22,7 +22,6 @@
  *
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
- * @param {Allocation|undefined} initialAllocation
  * @param {InstanceAdmin} instanceAdmin
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
  * @param {ERef<ExitObj>} exitObj
@@ -138,7 +137,6 @@
 
 /**
  * @callback MakeNoEscrowSeat
- * @param {Allocation} initialAllocation
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
  * @returns {ZoeSeatAdminKit}

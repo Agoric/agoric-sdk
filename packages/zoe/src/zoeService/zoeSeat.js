@@ -23,7 +23,6 @@ import '../internal-types';
  */
 /** @type {MakeZoeSeatAdminKit} */
 export const makeZoeSeatAdminKit = (
-  initialAllocation,
   instanceAdmin,
   brandToPurse,
   exitObj,
@@ -35,16 +34,7 @@ export const makeZoeSeatAdminKit = (
   payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
   let proposal;
-
-  // initialAllocation will be undefined for a "later escrow" seat. The initial,
-  // empty allocation should not be reported to the updater.
-  let currentAllocation;
-  if (initialAllocation) {
-    updater.updateState(initialAllocation);
-    currentAllocation = initialAllocation;
-  } else {
-    currentAllocation = harden({});
-  }
+  let currentAllocation = harden({});
 
   const doExit = zoeSeatAdmin => {
     instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);

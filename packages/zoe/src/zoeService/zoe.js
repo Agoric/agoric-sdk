@@ -322,14 +322,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             return undefined;
           })),
         // A Seat requested by the contract without any payments to escrow
-        makeNoEscrowSeat: (
-          initialAllocation,
-          proposal,
-          exitObj,
-          seatHandle,
-        ) => {
+        makeNoEscrowSeat: (exitObj, seatHandle) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
             instanceAdmin,
             brandToPurse,
             exitObj,
@@ -350,8 +344,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             offerResultPromise.resolve,
           );
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            // the empty allocation is null so it won't be published by notifier
-            undefined,
             instanceAdmin,
             brandToPurse,
             exitObjPromise.promise,
