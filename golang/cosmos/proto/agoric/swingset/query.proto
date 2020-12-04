@@ -1,0 +1,79 @@
+syntax = "proto3";
+package agoric.swingset;
+
+import "gogoproto/gogo.proto";
+import "agoric/swingset/storage.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
+
+// Query provides defines the gRPC querier service
+service Query {
+  // Egress queries a provisioned egress.
+  rpc Egress(QueryEgressRequest) returns (agoric.swingset.Egress) {
+    option (google.api.http).get = "/agoric/swingset/v1beta1/egress/{peer}";
+  }
+
+  rpc Mailbox(QueryMailboxRequest) returns (QueryStorageResponse) {
+    option (google.api.http).get = "/agoric/swingset/v1beta1/mailbox/{peer}";
+  }
+
+  rpc Storage(QueryStorageRequest) returns (QueryStorageResponse) {
+    option (google.api.http).get = "/agoric/swingset/v1beta1/storage/data/{path}";
+  }
+
+  rpc Keys(QueryStorageKeysRequest)
+    returns (QueryStorageKeysResponse) {
+      option (google.api.http).get = "/agoric/swingset/v1beta1/storage/keys/{path}";
+  }
+}
+
+// QueryEgressRequest is the request type for the Query/Egress RPC method
+message QueryEgressRequest {
+  bytes peer = 1 [
+    (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)    = "peer",
+    (gogoproto.moretags)   = "yaml:\"peer\""
+  ];
+}
+
+message QueryMailboxRequest {
+  bytes peer = 1 [
+    (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+    (gogoproto.jsontag)    = "peer",
+    (gogoproto.moretags)   = "yaml:\"peer\""
+  ];
+}
+
+message QueryStorageRequest {
+  repeated string path = 1 [
+    (gogoproto.jsontag)    = "path",
+    (gogoproto.moretags)   = "yaml:\"path\""
+  ];
+}
+
+message QueryStorageResponse {
+  string value = 1 [
+    (gogoproto.jsontag)    = "value",
+    (gogoproto.moretags)   = "yaml:\"value\""
+  ];
+}
+
+message QueryStorageKeysRequest {
+  repeated string path = 1 [
+    (gogoproto.jsontag)    = "path",
+    (gogoproto.moretags)   = "yaml:\"path\""
+  ];
+
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryStorageKeysResponse {
+  repeated string keys = 1 [
+    (gogoproto.jsontag)    = "keys",
+    (gogoproto.moretags)   = "yaml:\"keys\""
+  ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

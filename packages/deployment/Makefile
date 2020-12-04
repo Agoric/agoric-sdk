@@ -1,29 +1,32 @@
 REPOSITORY = agoric/cosmic-swingset
 REPOSITORY_SDK = agoric/agoric-sdk
 SS := ../cosmic-swingset/
-TAG := $(shell test ! -f ../../package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' ../../package.json)
+VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 2>/dev/null)
+
+TAG := $(if $(VERSION),$(VERSION),latest)
 
 # Don't push alpha tags as ":$(TAG)".
+ifeq ($(TAG),latest)
+DONT_PUSH_LATEST := :
+else
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
+endif
 
 docker-show-fat:
 	date > show-fat-bust-cache.stamp
 	docker build --file=Dockerfile.show-fat ../..
 
-docker-build: docker-build-base docker-build-sdk docker-build-solo \
+docker-build: docker-build-sdk docker-build-solo \
 	docker-build-setup docker-build-deployment
 
 docker-build-sdk:
-	docker build --build-arg=SWINGSET_TAG=$(TAG) -t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
+	hash=`git rev-parse --short HEAD`; \
+	  dirty=`git diff --quiet || echo -dirty`; \
+	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt && \
+		docker build -t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 
 docker-build-setup:
 	docker build -t $(REPOSITORY)-setup:$(TAG) .
-
-docker-build-base:
-	hash=`git rev-parse --short HEAD`; \
-	  dirty=`git diff --quiet || echo -dirty`; \
-	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
-	docker build -t $(REPOSITORY):$(TAG) $(SS)
 
 docker-build-solo:
 	docker build -t $(REPOSITORY)-solo:$(TAG) $(SS)lib/ag-solo

@@ -1,0 +1,63 @@
+syntax = "proto3";
+package agoric.swingset;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
+
+service Msg {
+  rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
+  rpc Provision(MsgProvision) returns (MsgProvisionResponse);
+}
+
+// MsgDeliverInbound defines an SDK message for delivering an eventual send
+message MsgDeliverInbound {
+    option (gogoproto.equal) = false;
+
+    repeated string messages = 1 [
+        (gogoproto.jsontag)    = "messages",
+        (gogoproto.moretags)   = "yaml:\"messages\""
+    ];
+    repeated uint64 nums = 2 [
+        (gogoproto.jsontag)    = "nums",
+        (gogoproto.moretags)   = "yaml:\"nums\""
+    ];
+    uint64 ack = 3 [
+        (gogoproto.jsontag)    = "ack",
+        (gogoproto.moretags)   = "yaml:\"ack\""
+    ];
+    bytes submitter = 4 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "submitter",
+        (gogoproto.moretags)   = "yaml:\"submitter\""
+    ];
+}
+
+message MsgDeliverInboundResponse {}
+
+// MsgProvision defines an SDK message for provisioning a client to the chain
+message MsgProvision {
+    option (gogoproto.equal) = false;
+
+    string nickname = 1 [
+        (gogoproto.jsontag)    = "nickname",
+        (gogoproto.moretags)   = "yaml:\"nickname\""
+    ];
+    bytes address = 2 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "address",
+        (gogoproto.moretags)   = "yaml:\"address\""
+    ];
+    repeated string power_flags = 3 [
+        (gogoproto.customname) = "PowerFlags",
+        (gogoproto.jsontag)    = "powerFlags",
+        (gogoproto.moretags)   = "yaml:\"powerFlags\""
+    ];
+    bytes submitter = 4 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "submitter",
+        (gogoproto.moretags)   = "yaml:\"submitter\""
+    ];
+}
+
+message MsgProvisionResponse {}

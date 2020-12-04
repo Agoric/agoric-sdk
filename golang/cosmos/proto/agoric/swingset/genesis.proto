@@ -1,0 +1,15 @@
+syntax = "proto3";
+package agoric.swingset;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
+
+message GenesisState {
+    option (gogoproto.equal) = false;
+
+    map<string, string> storage = 1 [
+        (gogoproto.jsontag)    = "storage",
+        (gogoproto.moretags)   = "yaml:\"storage\""
+    ];
+}

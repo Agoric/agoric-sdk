@@ -1,0 +1,58 @@
+{
+  "name": "@agoric/cosmos",
+  "version": "0.23.0",
+  "description": "Connect JS to the Cosmos blockchain SDK",
+  "private": true,
+  "parsers": {
+    "js": "mjs"
+  },
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "engines": {
+    "node": ">=10.15.1"
+  },
+  "scripts": {
+    "test": "exit 0",
+    "build:gyp": "make compile-gyp",
+    "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
+    "test:nyc": "nyc ava",
+    "build": "exit 0",
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
+  },
+  "dependencies": {
+    "bindings": "^1.2.1"
+  },
+  "devDependencies": {
+    "esm": "^3.2.5",
+    "napi-thread-safe-callback": "0.0.6",
+    "node-addon-api": "^1.7.1"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk/packages/connector-cosmos",
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
+  }
+}

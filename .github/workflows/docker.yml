@@ -6,30 +6,13 @@ on:
       - "@agoric/sdk@*"
 
 jobs:
-  docker-godeps:
+  docker-sdk:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
     - name: Save Git revision
-      run: git log -1 --format='%H' > packages/cosmic-swingset/lib/git-revision.txt
-    - name: Build Go dependencies image
-      uses: elgohr/Publish-Docker-Github-Action@master
-      with:
-        name: agoric/cosmic-swingset
-        dockerfile: packages/cosmic-swingset/Dockerfile
-        context: packages/cosmic-swingset
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        snapshot: true
-        tags: latest
-  
-  docker-sdk:
-    needs: docker-godeps
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
+      run: git rev-parse HEAD > packages/cosmic-swingset/lib/git-revision.txt
     - name: Build SDK image
-      # needs agoric/cosmic-swingset:latest
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: agoric/agoric-sdk
