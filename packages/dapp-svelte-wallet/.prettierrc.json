@@ -1,9 +1,0 @@
-{
-  "trailingComma": "all",
-  "singleQuote": true,
-  "overrides": [
-    {
-      "files": ["*.js", "*.cjs", "*.mjs"]
-    }
-  ]
-}
