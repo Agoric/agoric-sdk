@@ -17,13 +17,11 @@ INSPECT_ADDRESS = 127.0.0.1
 BREAK_CHAIN = false
 NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
 
-NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
-VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
-COMMIT := $(shell git log -1 --format='%H' 2>/dev/null || cat lib/git-revision.txt)
-
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
-all: build-cosmos install
+all: build-chain install install-helper
+
+client: build-helper install install-helper
 
 scenario0-setup:
 	mkdir -p t9
@@ -122,24 +120,14 @@ docker-pull:
 docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
-compile-go:
-	$(MAKE) -C $(GOSRC) all LIBDAEMON=`pwd`/lib/libagcosmosdaemon.so NAME=$(NAME) VERSION=$(VERSION) COMMIT=$(COMMIT)
+build-chain:
+	$(MAKE) -C $(GOSRC) all
 
-build-cosmos: compile-go node-compile-gyp install
+build-helper:
+	$(MAKE) -C $(GOSRC) compile-helper
 
-# We need this so that node-gyp can be found.
-node-compile-gyp:
-	if yarn -v >/dev/null 2>&1; then \
-		yarn build:gyp; \
-	else \
-		npm run build:gyp; \
-	fi
-
-# Only run from the package.json build:gyp script.
-compile-gyp:
-	cp binding.gyp.in binding.gyp
-	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
-	rm -f binding.gyp
+install-helper:
+	install -c $(GOSRC)/build/ag-cosmos-helper "$(BIN)/ag-cosmos-helper"
 
 install:
 	mkdir -p "$(BIN)"

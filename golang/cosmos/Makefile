@@ -1,11 +1,12 @@
-NAME := unknown
-VERSION := unknown
-COMMIT = $(shell git log -1 --format='%H' 2>/dev/null)
+NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
+VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
+COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
+
+default: all
 
 MOD_READONLY = # -mod=readonly
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
-LIBDAEMON := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/lib})/libdaemon.so
 
 whitespace :=
 whitespace += $(whitespace)
@@ -26,7 +27,6 @@ ldflags += -compressdwarf=false
 gcflags += -N -l
 endif
 
-
 ldflags_helper = $(ldflags) \
 		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-helper
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
@@ -34,10 +34,33 @@ BUILD_FLAGS_HELPER :=  -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(l
 
 include Makefile.ledger
 
-all: ../../go.sum
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/helper
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o $(LIBDAEMON) ./cmd/libdaemon/main.go
-	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id $(LIBDAEMON) $(LIBDAEMON)
+all: compile-helper compile-daemon
+compile-go: compile-helper compile-libdaemon
+compile-node: node-compile-gyp
+
+
+compile-daemon: compile-libdaemon node-compile-gyp
+
+# We need this so that node-gyp can be found.
+node-compile-gyp:
+	if yarn -v >/dev/null 2>&1; then \
+		yarn build:gyp; \
+	else \
+		npm run build:gyp; \
+	fi
+
+# Only run from the package.json build:gyp script.
+compile-gyp:
+	cp binding.gyp.in binding.gyp
+	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
+	rm -f binding.gyp
+
+compile-helper: ../../go.sum
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/ag-cosmos-helper ./cmd/helper
+
+compile-libdaemon: ../../go.sum
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
+	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id $$PWD/build/libagcosmosdaemon.so build/libagcosmosdaemon.so
 
 go-mod-cache: ../../go.sum
 	@echo "--> Download go modules to local cache"

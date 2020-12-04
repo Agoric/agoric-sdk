@@ -1,6 +1,15 @@
-ARG SWINGSET_TAG=latest
-ARG REPO=agoric/cosmic-swingset
-FROM $REPO:$SWINGSET_TAG as cosmic-swingset-go
+###########################
+# The golang build container
+FROM golang:1.14-buster as cosmos-go
+
+WORKDIR /usr/src/agoric-sdk/golang/cosmos
+COPY go.mod go.sum ../../
+RUN go mod download
+
+COPY golang/cosmos ./
+
+COPY packages/cosmic-swingset/lib/*.txt ./
+RUN make MOD_READONLY= compile-go
 
 ###############################
 # The js build container
@@ -8,13 +17,16 @@ FROM node:12-buster AS build-js
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
-COPY --from=cosmic-swingset-go /usr/src/app/lib/ packages/cosmic-swingset/lib/
 RUN ln -s agoric-sdk/packages/cosmic-swingset ../app
 
 RUN yarn install --frozen-lockfile --ignore-scripts
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
-RUN cd packages/cosmic-swingset && yarn build:gyp
+COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
+RUN cd golang/cosmos && yarn build:gyp
+
+# Install the entry points in the path.
+RUN cd packages/cosmic-swingset && make install install-helper
 
 RUN yarn build
 
@@ -33,7 +45,7 @@ WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 RUN ln -s agoric-sdk/packages/cosmic-swingset app
 
-COPY --from=cosmic-swingset-go /go/bin/ag-cosmos-helper /usr/local/bin/
+COPY --from=build-js /root/go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s /usr/src/app/bin/ag-chain-cosmos /usr/local/bin/
 
 # By default, run the daemon with specified arguments.

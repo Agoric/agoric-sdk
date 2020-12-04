@@ -4,6 +4,7 @@
   "private": true,
   "useWorkspaces": true,
   "workspaces": [
+    "golang/cosmos",
     "packages/eslint-config",
     "packages/assert",
     "packages/base64",

@@ -9,8 +9,6 @@
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
-    "build:gyp": "make compile-gyp",
-    "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test": "ava",
     "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
@@ -29,6 +27,7 @@
     "@agoric/babel-parser": "^7.6.4",
     "@agoric/bundle-source": "^1.1.10",
     "@agoric/captp": "^1.6.0",
+    "@agoric/cosmos": "^0.23.0",
     "@agoric/dapp-svelte-wallet": "^0.5.0",
     "@agoric/ertp": "^0.8.0",
     "@agoric/eventual-send": "^0.12.0",
@@ -54,7 +53,6 @@
     "@iarna/toml": "^2.2.3",
     "agoric": "^0.10.1",
     "anylogger": "^0.21.0",
-    "bindings": "^1.2.1",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "esm": "^3.2.25",
@@ -72,8 +70,6 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "napi-thread-safe-callback": "0.0.6",
-    "node-addon-api": "^1.7.1",
     "nyc": "^15.1.0"
   },
   "eslintConfig": {

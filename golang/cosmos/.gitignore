@@ -88,3 +88,4 @@ typings/
 lib/git-revision.txt
 /binding.gyp
 *-stamp
+build/

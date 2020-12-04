@@ -5,7 +5,7 @@ const esmRequire = require('esm')(module);
 // import node-lmdb early to work around SES incompatibility
 require('node-lmdb');
 
-const agcc = require('bindings')('agcosmosdaemon.node');
+const agcc = require('@agoric/cosmos');
 
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)

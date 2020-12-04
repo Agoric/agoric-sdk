@@ -10,20 +10,17 @@ docker-show-fat:
 	date > show-fat-bust-cache.stamp
 	docker build --file=Dockerfile.show-fat ../..
 
-docker-build: docker-build-base docker-build-sdk docker-build-solo \
+docker-build: docker-build-sdk docker-build-solo \
 	docker-build-setup docker-build-deployment
 
 docker-build-sdk:
-	docker build --build-arg=SWINGSET_TAG=$(TAG) -t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
+	hash=`git rev-parse --short HEAD`; \
+	  dirty=`git diff --quiet || echo -dirty`; \
+	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt && \
+		docker build -t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 
 docker-build-setup:
 	docker build -t $(REPOSITORY)-setup:$(TAG) .
-
-docker-build-base:
-	hash=`git rev-parse --short HEAD`; \
-	  dirty=`git diff --quiet || echo -dirty`; \
-	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
-	docker build -t $(REPOSITORY):$(TAG) $(SS)
 
 docker-build-solo:
 	docker build -t $(REPOSITORY)-solo:$(TAG) $(SS)lib/ag-solo
