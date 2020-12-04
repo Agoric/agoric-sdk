@@ -77,6 +77,10 @@
       "@agoric"
     ]
   },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
   "publishConfig": {
     "access": "public"
   },

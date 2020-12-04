@@ -14,15 +14,7 @@
     ]
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb": "^18.0.1",
-    "eslint-config-airbnb-base": "^14.0.0",
-    "eslint-config-jessie": "^0.0.6",
-    "eslint-config-prettier": "^6.9.0",
-    "eslint-plugin-import": "^2.20.0",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-prettier": "^3.1.2",
-    "prettier": "^1.18.2"
+    "@agoric/eslint-config": "^0.1.0"
   },
   "scripts": {
     "lint-fix": "exit 0",
@@ -43,5 +35,9 @@
     "extends": [
       "@agoric"
     ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
   }
 }

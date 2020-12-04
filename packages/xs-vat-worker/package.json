@@ -74,5 +74,9 @@
     "extends": [
       "@agoric"
     ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
   }
 }

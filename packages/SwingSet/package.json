@@ -80,9 +80,6 @@
       "@agoric"
     ]
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "ava": {
     "files": [
       "test/**/test-*.js"
@@ -91,5 +88,12 @@
       "esm"
     ],
     "timeout": "2m"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
