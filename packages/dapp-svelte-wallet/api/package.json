@@ -15,69 +15,32 @@
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
   "devDependencies": {
-    "ava": "^3.12.1",
-    "eslint": "^6.1.0",
-    "eslint-config-airbnb-base": "^14.0.0",
-    "eslint-config-jessie": "0.0.3",
-    "eslint-config-prettier": "^6.0.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-prettier": "^3.1.0",
-    "prettier": "^1.18.2"
+    "@agoric/bundle-source": "^1.1.10",
+    "@agoric/cosmic-swingset": "^0.23.0",
+    "@agoric/eslint-config": "^0.1.0",
+    "@agoric/install-ses": "^0.4.0",
+    "@agoric/registrar": "^0.1.7",
+    "ava": "^3.12.1"
   },
   "dependencies": {
+    "@agoric/assert": "^0.1.0",
     "@agoric/eventual-send": "^0.12.0",
     "@agoric/ertp": "^0.8.0",
+    "@agoric/marshal": "^0.2.7",
     "@agoric/notifier": "^0.2.3",
     "@agoric/promise-kit": "^0.1.7",
     "@agoric/store": "^0.3.1",
+    "@agoric/zoe": "^0.10.0",
     "esm": "^3.2.5"
   },
   "eslintConfig": {
     "extends": [
-      "airbnb-base",
-      "plugin:prettier/recommended",
-      "plugin:jsdoc/recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "env": {
-      "es6": true
-    },
-    "globals": {
-      "harden": "readonly"
-    },
-    "rules": {
-      "implicit-arrow-linebreak": "off",
-      "function-paren-newline": "off",
-      "arrow-parens": "off",
-      "strict": "off",
-      "prefer-destructuring": "off",
-      "no-else-return": "off",
-      "no-console": "off",
-      "no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
-        }
-      ],
-      "no-return-assign": "off",
-      "no-param-reassign": "off",
-      "no-restricted-syntax": [
-        "off",
-        "ForOfStatement"
-      ],
-      "no-unused-expressions": "off",
-      "no-loop-func": "off",
-      "no-inner-declarations": "off",
-      "import/prefer-default-export": "off",
-      "import/no-extraneous-dependencies": "off",
-      "jsdoc/no-undefined-types": "off",
-      "jsdoc/require-jsdoc": "off",
-      "jsdoc/require-property-description": "off",
-      "jsdoc/require-param-description": "off",
-      "jsdoc/require-returns": "off",
-      "jsdoc/require-returns-description": "off"
-    }
+      "@agoric"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
   },
   "keywords": [],
   "repository": {

@@ -43,6 +43,10 @@
       "@agoric"
     ]
   },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
   "eslintIgnore": [
     "bundle-*.js"
   ],
