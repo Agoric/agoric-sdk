@@ -450,6 +450,8 @@ export const offerTo = async (
   fromSeat,
   toSeat,
 ) => {
+  const definedToSeat = toSeat !== undefined ? toSeat : fromSeat;
+
   const zoe = zcf.getZoeService();
   const mappingReversed = reverse(keywordMapping);
 
@@ -479,7 +481,7 @@ export const offerTo = async (
     // Map back to the original contract's keywords
     const mappedAmounts = mapKeywords(amounts, mappingReversed);
     const mappedPayments = mapKeywords(payoutPayments, mappingReversed);
-    await depositToSeat(zcf, toSeat, mappedAmounts, mappedPayments);
+    await depositToSeat(zcf, definedToSeat, mappedAmounts, mappedPayments);
     depositedPromiseKit.resolve(mappedAmounts);
   };
 

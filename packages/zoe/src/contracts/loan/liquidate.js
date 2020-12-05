@@ -52,7 +52,7 @@ export const doLiquidation = async (
 
   const offerResultP = E(autoswapUserSeat).getOfferResult();
   await deposited;
-  offerResultP.then(closeSuccessfully, closeWithFailure);
+  await offerResultP.then(closeSuccessfully, closeWithFailure);
 };
 
 /**

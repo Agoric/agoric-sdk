@@ -44,13 +44,13 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   // Create TWO instances of the zcfTesterContract which have
   // different keywords
   const issuerKeywordRecord1 = harden({
-    TokenA: moolaIssuer,
-    TokenB: bucksIssuer,
+    TokenJ: moolaIssuer,
+    TokenK: bucksIssuer,
   });
 
   const issuerKeywordRecord2 = harden({
-    TokenC: moolaIssuer,
-    TokenD: bucksIssuer,
+    TokenL: moolaIssuer,
+    TokenM: bucksIssuer,
   });
 
   // contract instance A
@@ -91,13 +91,13 @@ test(`offerTo - basic usage`, async t => {
   // contract A, and deposit the winnings in a different seat on contract A.
 
   // Create a fromSeat on contract instance A that starts with 5 bucks
-  // under keyword TokenB
+  // under keyword TokenK
 
   const { zcfSeat: fromSeatContractA } = await makeOffer(
     zoe,
     zcfA,
-    harden({ want: {}, give: { TokenB: bucks(5) } }),
-    harden({ TokenB: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: {}, give: { TokenK: bucks(5) } }),
+    harden({ TokenK: bucksMint.mintPayment(bucks(5)) }),
   );
 
   // Create a seat in contract instance B to exchange with.
@@ -105,8 +105,8 @@ test(`offerTo - basic usage`, async t => {
   const { zcfSeat: contractBCollateralSeat } = await makeOffer(
     zoe,
     zcfB,
-    harden({ want: { TokenD: bucks(5) }, give: { TokenC: moola(10) } }),
-    harden({ TokenC: moolaMint.mintPayment(moola(10)) }),
+    harden({ want: { TokenM: bucks(5) }, give: { TokenL: moola(10) } }),
+    harden({ TokenL: moolaMint.mintPayment(moola(10)) }),
   );
 
   // create an invitation for contract instance B. This offer will
@@ -117,10 +117,10 @@ test(`offerTo - basic usage`, async t => {
   const offerHandler = seat => {
     assertProposalShape(seat, {
       give: {
-        TokenD: null,
+        TokenM: null,
       },
       want: {
-        TokenC: null,
+        TokenL: null,
       },
       exit: {
         onDemand: null,
@@ -137,16 +137,16 @@ test(`offerTo - basic usage`, async t => {
 
   // Map the keywords in contract A to the keywords in contract B
   const keywordMapping = harden({
-    TokenA: 'TokenC',
-    TokenB: 'TokenD',
+    TokenJ: 'TokenL',
+    TokenK: 'TokenM',
   });
 
   const proposal = harden({
     give: {
-      TokenD: bucks(5),
+      TokenM: bucks(5),
     },
     want: {
-      TokenC: moola(10),
+      TokenL: moola(10),
     },
   });
 
@@ -166,8 +166,8 @@ test(`offerTo - basic usage`, async t => {
   // The toSeat successfully got the payout from the offer to Contract
   // Instance B
   t.deepEqual(toSeatContractA.getCurrentAllocation(), {
-    TokenA: moola(10),
-    TokenB: bucks(0),
+    TokenJ: moola(10),
+    TokenK: bucks(0),
   });
 
   // The offerResult is as expected
@@ -188,14 +188,14 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
   // contract A, and deposit the winnings in a different seat on contract A.
 
   // Create a fromSeat on contract instance A that starts with 5 bucks
-  // under keyword TokenB
+  // under keyword TokenK
 
   const { zcfSeat: fromSeatContractA } = await makeOffer(
     zoe,
     zcfA,
     // Actually enforce offer safety
-    harden({ want: { TokenA: moola(3) }, give: { TokenB: bucks(5) } }),
-    harden({ TokenB: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { TokenJ: moola(3) }, give: { TokenK: bucks(5) } }),
+    harden({ TokenK: bucksMint.mintPayment(bucks(5)) }),
   );
 
   const offerHandler = () => {};
@@ -206,16 +206,16 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
 
   // Map the keywords in contract A to the keywords in contract B
   const keywordMapping = harden({
-    TokenA: 'TokenC',
-    TokenB: 'TokenD',
+    TokenJ: 'TokenL',
+    TokenK: 'TokenM',
   });
 
   const proposal = harden({
     give: {
-      TokenD: bucks(5),
+      TokenM: bucks(5),
     },
     want: {
-      TokenC: moola(10),
+      TokenL: moola(10),
     },
   });
 
@@ -239,8 +239,8 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
   );
 
   t.deepEqual(fromSeatContractA.getCurrentAllocation(), {
-    TokenA: moola(0),
-    TokenB: bucks(5),
+    TokenJ: moola(0),
+    TokenK: bucks(5),
   });
   t.falsy(fromSeatContractA.hasExited());
 });
