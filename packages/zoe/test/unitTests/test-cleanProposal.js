@@ -3,7 +3,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { makeWeakStore } from '@agoric/store';
-import { cleanProposal } from '../../src/cleanProposal';
+import { cleanProposal, cleanExit } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
 
@@ -89,4 +89,64 @@ test('cleanProposal - repeated brands', t => {
   t.deepEqual(actual.want, expected.want);
   t.deepEqual(actual.give, expected.give);
   t.deepEqual(actual.exit, expected.exit);
+});
+
+test('cleanExit - unspecified throws', t => {
+  t.throws(() => cleanExit(), {
+    message: `Cannot convert undefined or null to object`,
+  });
+});
+
+test('cleanExit - onDemand Null', t => {
+  const draft = { onDemand: null };
+  const cleaned = cleanExit(draft);
+  t.deepEqual({ onDemand: null }, cleaned);
+});
+
+test('cleanExit - onDemand non-Null', t => {
+  const draft = { onDemand: 3 };
+  t.throws(() => cleanExit(draft), {
+    message: `exit value must be null for key onDemand`,
+  });
+});
+
+test('cleanExit - waived Null', t => {
+  const draft = { waived: null };
+  const cleaned = cleanExit(draft);
+  t.deepEqual({ waived: null }, cleaned);
+});
+
+test('cleanExit - waived non-Null', t => {
+  const draft = { waived: true };
+  t.throws(() => cleanExit(draft), {
+    message: `exit value must be null for key waived`,
+  });
+});
+
+test('cleanExit - extra keyword', t => {
+  const draft = { waived: null, refused: null };
+  t.throws(() => cleanExit(draft), {
+    message: `exit (an object) should only have one key`,
+  });
+});
+
+test('cleanExit - afterDeadline incomplete', t => {
+  const draft = { afterDeadline: 3 };
+  t.throws(() => cleanExit(draft), {
+    message: `timer must be defined`,
+  });
+});
+
+test('cleanExit - afterDeadline no timer', t => {
+  const draft = { afterDeadline: { deadline: 4 } };
+  t.throws(() => cleanExit(draft), {
+    message: `timer must be defined`,
+  });
+});
+
+test('cleanExit - afterDeadline no deadline', t => {
+  const draft = { afterDeadline: { timer: 4 } };
+  t.throws(() => cleanExit(draft), {
+    message: `deadline must be defined`,
+  });
 });

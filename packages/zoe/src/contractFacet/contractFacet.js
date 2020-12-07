@@ -16,7 +16,7 @@ import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
-import { assertKeywordName, getKeywords } from '../cleanProposal';
+import { assertKeywordName, getKeywords, cleanExit } from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
@@ -190,7 +190,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       } = initializeEmptySeatData();
 
       const exitObj = makeExitObj(
-        exit,
+        cleanExit(exit),
         zoeSeatAdminPromiseKit.promise,
         zcfSeatToZCFSeatAdmin.get(zcfSeat),
       );

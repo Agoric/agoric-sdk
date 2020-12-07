@@ -123,7 +123,6 @@
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
  * @param {Object=} customProperties
- * @param {ExitRule=} exit
  * @returns {Promise<InvitationWithSeat>}
  */
 
