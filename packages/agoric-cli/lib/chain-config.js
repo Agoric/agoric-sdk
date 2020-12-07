@@ -4,7 +4,12 @@ import TOML from '@iarna/toml';
 export const MINT_DENOM = 'uag';
 export const STAKING_DENOM = 'uagstake';
 export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
-export const BLOCK_CADENCE_S = 2;
+
+// Can't beat the speed of light, we need 600ms round trip time for the other
+// side of Earth, and multiple round trips per block.
+//
+// 5 seconds is about as fast as we can go without penalising validators.
+export const BLOCK_CADENCE_S = 5;
 
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
@@ -88,10 +93,6 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   if ('initial_height' in exported) {
     genesis.initial_height = exported.initial_height;
   }
-
-  // Should be equal to the block cadence in milliseconds, according to @melekes
-  // on Discord.
-  genesis.consensus_params.block.time_iota_ms = `${BLOCK_CADENCE_S * 1000}`;
 
   return djson.stringify(genesis);
 }

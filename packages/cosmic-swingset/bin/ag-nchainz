@@ -60,7 +60,7 @@ testnet)
   portend=$(( $portstart + $NUM_SOLOS - 1 ))
   SOLO_ADDRS=()
   SOLO_NAMES=()
-  POWER_FLAGS='["agoric.vattp"]'
+  POWER_FLAGS='[\"agoric.vattp\"]'
   egresses=
   sep=''
   for port in `seq $portstart $portend`; do
@@ -72,7 +72,7 @@ testnet)
       $($CLI --home=$solo/$CLI-statedir --keyring-backend=test keys show -a ag-solo) \
       1000uag,1provisionpass
     # Generate powerful SwingSet egresses.
-    egresses="$egresses$sep{\"nickname\":\"$solo\",\"peer\":\"$addr\",\"powerFlags\":$POWER_FLAGS}"
+    egresses="$egresses$sep\"egress.$addr\":\"{\\\"nickname\\\":\\\"$solo\\\",\\\"peer\\\":\\\"$addr\\\",\\\"powerFlags\\\":$POWER_FLAGS}\""
     sep=,
 	done
   for node in `ls -d $chainid/n* 2>/dev/null || true`; do
@@ -80,7 +80,7 @@ testnet)
 	  "$thisdir/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos $node/$DAEMON/config
     cp "$node/$DAEMON/config/genesis.json" "$node/$DAEMON/config/genesis-orig.json"
     # Append the egresses to the genesis and reset bond_denom.
-    jq ".*{app_state:{staking:{params:{bond_denom:\"stake\"}},swingset:{egresses:(.app_state.swingset.egresses+[$egresses])}}}" \
+    jq ".*{app_state:{staking:{params:{bond_denom:\"stake\"}},swingset:{storage:{$egresses}}}}" \
       "$node/$DAEMON/config/genesis-orig.json" > "$node/$DAEMON/config/genesis.json"
   done
   exit 0
@@ -93,9 +93,9 @@ start-daemon)
   BASEDIR=$1
   shift
   for solo in `ls -d $BASEDIR/ag-solo-* 2>&1`; do
-    cp -r "$BASEDIR/n0/$CLI/config" "$solo/$CLI-statedir/"
+    cp -r "$BASEDIR/n0/$DAEMON/config" "$solo/$CLI-statedir/"
   done
-  # "$($CLI --home "$BASEDIR/n0/$CLI" keys show n0 --keyring-backend=test | jq -r .address)"
+  # "$($CLI --home "$BASEDIR/n0/$DAEMON" keys show n0 --keyring-backend=test | jq -r .address)"
   echo "Starting $DAEMON ${1+"$@"}"
   if [[ $debug == yes ]]; then
     DEBUG=agoric ROLE=two_chain node --inspect-brk $(which $DAEMON) ${1+"$@"}
@@ -120,15 +120,16 @@ start-solos)
       cd "$solo"
       n0d=../n0/$DAEMON
 
+      rpcport=`$thisdir/../calc-rpcport.js $n0d/config/config.toml`
+
       addr=$(cat ag-cosmos-helper-address)
       $CLI --home=./$CLI-statedir tx swingset provision-one \
         "$solo" "$addr" agoric.vattp \
+        --node="tcp://$rpcport" --chain-id="$chainid" \
         --keyring-backend=test --from=ag-solo --yes
 
       # Now wire into the chain.
       gci=`$thisdir/../calc-gci.js $n0d/config/genesis.json`
-      rpcport=`$thisdir/../calc-rpcport.js $n0d/config/config.toml`
-
       $SOLO set-gci-ingress --chainID="$chainid" "$gci" "$rpcport"
 
       DEBUG=agoric $SOLO start
