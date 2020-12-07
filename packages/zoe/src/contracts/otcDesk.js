@@ -4,8 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
 import {
   trade,
-  depositToSeat,
-  withdrawFromSeat,
+  offerTo,
   saveAllIssuers,
   assertProposalShape,
 } from '../contractSupport';
@@ -84,21 +83,16 @@ const start = zcf => {
       },
     });
 
-    const payments = await withdrawFromSeat(zcf, marketMakerSeat, assets);
-    const sellerUserSeat = await E(zoe).offer(
+    const { userSeatPromise: coveredCallUserSeat } = await offerTo(
+      zcf,
       creatorInvitation,
+      undefined,
       proposal,
-      payments,
+      marketMakerSeat,
+      marketMakerSeat,
     );
 
-    E(sellerUserSeat)
-      .getPayouts()
-      .then(async payoutPayments => {
-        const amounts = await E(sellerUserSeat).getCurrentAllocation();
-        await depositToSeat(zcf, marketMakerSeat, amounts, payoutPayments);
-      });
-
-    const option = E(sellerUserSeat).getOfferResult();
+    const option = E(coveredCallUserSeat).getOfferResult();
     return option;
   };
 

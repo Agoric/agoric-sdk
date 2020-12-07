@@ -3,7 +3,7 @@ import '../../../exported';
 
 import { E } from '@agoric/eventual-send';
 
-import { depositToSeat, withdrawFromSeat } from '../../contractSupport';
+import { offerTo } from '../../contractSupport/zoeHelpers';
 
 export const doLiquidation = async (
   zcf,
@@ -11,73 +11,48 @@ export const doLiquidation = async (
   autoswapPublicFacetP,
   lenderSeat,
 ) => {
-  const zoeService = zcf.getZoeService();
   const loanMath = zcf.getTerms().maths.Loan;
 
   const allCollateral = collateralSeat.getAmountAllocated('Collateral');
 
-  const { Collateral: collateralPayment } = await withdrawFromSeat(
-    zcf,
-    collateralSeat,
-    {
-      Collateral: allCollateral,
-    },
-  );
+  const swapInvitation = E(autoswapPublicFacetP).makeSwapInInvitation();
+
+  const toAmounts = harden({ In: allCollateral });
 
   const proposal = harden({
-    give: { In: allCollateral },
+    give: toAmounts,
     want: { Out: loanMath.getEmpty() },
   });
 
-  const payments = harden({ In: collateralPayment });
+  const keywordMapping = harden({
+    Collateral: 'In',
+    Loan: 'Out',
+  });
 
-  const swapInvitation = E(autoswapPublicFacetP).makeSwapInInvitation();
-
-  const autoswapUserSeat = E(zoeService).offer(
+  const { userSeatPromise: autoswapUserSeat, deposited } = await offerTo(
+    zcf,
     swapInvitation,
+    keywordMapping,
     proposal,
-    payments,
+    collateralSeat,
+    lenderSeat,
   );
 
-  /**
-   * @param {{ Out: Promise<Payment>; In: Promise<Payment>; }} payouts
-   */
-  const handlePayoutsAndShutdown = async payouts => {
-    const { Out: loanPayout, In: collateralPayout } = payouts;
-    const { Out: loanAmount, In: collateralAmount } = await E(
-      autoswapUserSeat,
-    ).getCurrentAllocation();
-    // AWAIT ///
-    const amounts = harden({
-      Collateral: collateralAmount,
-      Loan: loanAmount,
-    });
-    const payoutPayments = harden({
-      Collateral: collateralPayout,
-      Loan: loanPayout,
-    });
-    await depositToSeat(zcf, lenderSeat, amounts, payoutPayments);
-
-    const closeSuccessfully = () => {
-      lenderSeat.exit();
-      collateralSeat.exit();
-      zcf.shutdown('your loan had to be liquidated');
-    };
-
-    const closeWithFailure = err => {
-      lenderSeat.kickOut(err);
-      collateralSeat.kickOut(err);
-      zcf.shutdownWithFailure(err);
-    };
-
-    await E(autoswapUserSeat)
-      .getOfferResult()
-      .then(closeSuccessfully, closeWithFailure);
+  const closeSuccessfully = () => {
+    lenderSeat.exit();
+    collateralSeat.exit();
+    zcf.shutdown('your loan had to be liquidated');
   };
 
-  return E(autoswapUserSeat)
-    .getPayouts()
-    .then(handlePayoutsAndShutdown);
+  const closeWithFailure = err => {
+    lenderSeat.fail(err);
+    collateralSeat.fail(err);
+    zcf.shutdownWithFailure(err);
+  };
+
+  const offerResultP = E(autoswapUserSeat).getOfferResult();
+  await deposited;
+  await offerResultP.then(closeSuccessfully, closeWithFailure);
 };
 
 /**
