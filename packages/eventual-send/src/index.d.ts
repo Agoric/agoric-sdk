@@ -34,7 +34,9 @@ type resolveWithPresenceOptionsBag<R> = (
   proxy?: proxyOptionsBag,
 ) => void;
 
-// Zarutian: þarf að gera import https://github.com/microsoft/TypeScript/blob/master/lib/lib.es2015.proxy.d.ts
+/*
+ * @typedef { import("https://github.com/microsoft/TypeScript/blob/master/lib/lib.es2015.proxy.d.ts").ProxyHandler } ProxyHandler
+ */
 type proxyOptionsBag = (
   handler: ProxyHandler<{}>,
   target: unknown,
