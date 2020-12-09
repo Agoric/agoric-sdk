@@ -23,7 +23,9 @@ import '../internal-types';
  */
 /** @type {MakeZoeSeatAdminKit} */
 export const makeZoeSeatAdminKit = (
+  initialAllocation,
   instanceAdmin,
+  proposal,
   brandToPurse,
   exitObj,
   offerResult,
@@ -33,7 +35,16 @@ export const makeZoeSeatAdminKit = (
   // This does not suppress any error messages.
   payoutPromiseKit.promise.catch(_ => {});
   const { notifier, updater } = makeNotifierKit();
-  let proposal;
+  let actualProposal;
+  let proposalSupplied;
+  if (!proposal) {
+    proposalSupplied = false;
+    // enough to mollify typescript. uses should be guarded by !proposalSupplied
+    actualProposal = { give: null, want: null, exit: null };
+  } else {
+    proposalSupplied = true;
+    actualProposal = proposal;
+  }
   let currentAllocation = harden({});
 
   const doExit = zoeSeatAdmin => {
@@ -82,8 +93,9 @@ export const makeZoeSeatAdminKit = (
     // eslint-disable-next-line no-use-before-define
     getUserSeat: () => userSeat,
     setProposal: newProposal => {
-      if (!proposal) {
-        proposal = newProposal;
+      if (!proposalSupplied) {
+        actualProposal = newProposal;
+        proposalSupplied = true;
       } else {
         throw Error(`Can't set proposal. It has already been set.`);
       }
@@ -93,7 +105,11 @@ export const makeZoeSeatAdminKit = (
   /** @type {UserSeat} */
   const userSeat = harden({
     getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
-    getProposal: async () => proposal,
+    getProposal: async () => {
+      assert(proposalSupplied);
+      return actualProposal;
+    },
+    hasProposal: async () => proposalSupplied,
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword => {
       assert(keyword, 'A keyword must be provided');

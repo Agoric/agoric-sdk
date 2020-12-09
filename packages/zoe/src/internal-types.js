@@ -10,6 +10,7 @@
 
 /**
  * @typedef {Object} SeatData
+ * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  */
@@ -19,13 +20,24 @@
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
  * @property {Notifier} notifier
- *
+ */
+
+/**
+ * @typedef {Object} LaterEscrowSeatKit
+ * @property {ZoeSeatAdmin} zoeSeatAdmin
+ * @property {Notifier} notifier
+ */
+
+/**
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
+ * @param {Allocation} initialAllocation
  * @param {InstanceAdmin} instanceAdmin
+ * @param {ProposalRecord=} proposal
  * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
  * @param {ERef<ExitObj>} exitObj
- * @param {ERef<OfferResult>=} offerResult
+ * @param {ERef<OfferResult>=} offerResult - offerResult is null for an
+ * emptySeat, which has no handler to return a result.
  * @returns {ZoeSeatAdminKit}
  *
  * @typedef {Object} ZoeSeatAdmin
@@ -61,7 +73,7 @@
  */
 
 /**
- * @typedef {Object} AddSeatResult
+ * @typedef {Object} OfferAddedResult
  * @property {Promise<any>} offerResultP
  * @property {Object} exitObj
  */
@@ -77,7 +89,7 @@
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             proposal: Proposal,
  *             initialAllocation: Allocation,
- *            ) => Promise<AddSeatResult>} tellZCFToAddSeat
+ *            ) => Promise<OfferAddedResult>} tellZCFOfferAdded
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
  * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
  * @property {() => Instance} getInstance
@@ -96,15 +108,18 @@
  * depending on whether the seat comes from a normal offer or a
  * request by the contract for an "empty" seat.
  *
- * @typedef {Object} AddSeatObj
+ * @typedef {Object} OfferUpdater
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             Proposal: proposal,
  *             addAllocation: Allocation,
- *            ) => AddSeatResult} addSeat
+ *            ) => OfferAddedResult} offerAdded
  */
 
 /**
+ * There's already a ZcfSeatKit, and it's user-visible, so we'll choose a
+ * different name for this internal-only type.
+ *
  * @typedef {Object} ZcfSeatPack
  * @property {ZcfSeatAdmin} zcfSeatAdmin
  * @property {ZcfSeat} zcfSeat
@@ -137,6 +152,8 @@
 
 /**
  * @callback MakeNoEscrowSeat
+ * @param {Allocation} initialAllocation
+ * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
  * @returns {ZoeSeatAdminKit}
@@ -146,7 +163,7 @@
  * @callback MakeLaterEscrowSeat
  * @param {SeatHandle} seatHandle
  * @param {InvitationHandle} invitationHandle
- * @returns {ZoeSeatAdminKit}
+ * @returns {LaterEscrowSeatKit}
  */
 
 /**
@@ -179,7 +196,7 @@
  * @property {Object} creatorFacet
  * @property {Promise<Invitation>} creatorInvitation
  * @property {Object} publicFacet
- * @property {AddSeatObj} addSeatObj
+ * @property {OfferUpdater} offerUpdater
  *
  *
  * @callback ExecuteContract

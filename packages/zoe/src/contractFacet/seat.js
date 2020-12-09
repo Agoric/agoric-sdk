@@ -21,9 +21,18 @@ export const makeZcfSeatAdminKit = (
   // The proposal, currentAllocation and exited may be reassigned.
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
-  // seats without a proposal don't need to check offer safety. Some of these
-  // will eventually get a proposal, others not.
+
+  // seats without a proposal shouldn't check offer safety.
   let proposal;
+  let proposalSupplied;
+  if (seatData.proposal) {
+    proposalSupplied = true;
+    proposal = seatData.proposal;
+  } else {
+    proposalSupplied = false;
+    // enough to mollify typescript. uses should be guarded by !proposalSupplied
+    proposal = { give: null, want: null, exit: null };
+  }
 
   const assertExitedFalse = () =>
     assert(!exited, details`seat has been exited`);
@@ -45,7 +54,8 @@ export const makeZcfSeatAdminKit = (
       exited = true;
     },
     setProposal: newProposal => {
-      if (!proposal) {
+      if (!proposalSupplied) {
+        proposalSupplied = true;
         proposal = newProposal;
       } else {
         throw Error(`Can't set proposal. It has already been set.`);
@@ -74,11 +84,14 @@ export const makeZcfSeatAdminKit = (
     // TODO(1837) remove deprecated method before Beta release.
     // deprecated as of 0.9.1-dev.3. Use fail() instead.
     kickOut: reason => zcfSeat.fail(reason),
+    // deprecated as of 0.10.1. The notifier can be retrieved directly from Zoe.
     getNotifier: () => {
       return notifier;
     },
     hasExited: () => exited,
+    hasProposal: () => proposalSupplied,
     getProposal: () => {
+      assert(proposalSupplied);
       return proposal;
     },
     getAmountAllocated: (keyword, brand) => {
@@ -95,7 +108,7 @@ export const makeZcfSeatAdminKit = (
     },
     isOfferSafe: newAllocation => {
       assertExitedFalse();
-      if (!proposal) {
+      if (!proposalSupplied) {
         return true;
       }
 
@@ -114,10 +127,12 @@ export const makeZcfSeatAdminKit = (
         ...newAllocation,
       });
 
-      assert(
-        !proposal || isOfferSafe(getAmountMath, proposal, allocation),
-        details`The reallocation was not offer safe`,
-      );
+      if (proposalSupplied) {
+        assert(
+          isOfferSafe(getAmountMath, proposal, allocation),
+          details`The reallocation was not offer safe`,
+        );
+      }
 
       const seatStaging = {
         getSeat: () => zcfSeat,

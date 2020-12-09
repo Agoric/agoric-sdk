@@ -16,7 +16,11 @@ import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
-import { assertKeywordName, getKeywords, cleanExit } from '../cleanProposal';
+import {
+  assertKeywordName,
+  getKeywords,
+  cleanProposal,
+} from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
@@ -145,21 +149,18 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     };
 
-    function initializeEmptySeatData() {
+    function initializeEmptySeatData(proposal, initialAllocation = harden({})) {
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
       zoeSeatAdminPromiseKit.promise.catch(_ => {});
-      const userSeatPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-      // This does not suppress any error messages.
-      userSeatPromiseKit.promise.catch(_ => {});
       const seatHandle = makeHandle('SeatHandle');
 
       const seatData = harden({
-        initialAllocation: {},
+        initialAllocation,
+        proposal,
         notifier,
       });
       const { zcfSeat, zcfSeatAdmin } = makeZcfSeatAdminKit(
@@ -174,29 +175,33 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return {
         updater,
         zoeSeatAdminPromiseKit,
-        userSeatPromiseKit,
         seatHandle,
         zcfSeat,
       };
     }
 
     const makeEmptySeatKit = (exit = { onDemand: null }) => {
+      const proposal = cleanProposal(getAmountMath, harden({ exit }));
       const {
         updater,
         zoeSeatAdminPromiseKit,
-        userSeatPromiseKit,
         seatHandle,
         zcfSeat,
-      } = initializeEmptySeatData();
+      } = initializeEmptySeatData(proposal);
 
       const exitObj = makeExitObj(
-        cleanExit(exit),
+        proposal.exit,
         zoeSeatAdminPromiseKit.promise,
         zcfSeatToZCFSeatAdmin.get(zcfSeat),
       );
 
+      const userSeatPromiseKit = makePromiseKit();
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+      // This does not suppress any error messages.
+      userSeatPromiseKit.promise.catch(_ => {});
+
       E(zoeInstanceAdmin)
-        .makeNoEscrowSeat(exitObj, seatHandle)
+        .makeNoEscrowSeat({}, proposal, exitObj, seatHandle)
         .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
           updateFromNotifier(updater, zoeNotifier);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
@@ -206,8 +211,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return { zcfSeat, userSeat: userSeatPromiseKit.promise };
     };
 
+    /** @type {MakeInvitationWithSeat} */
     const makeInvitationWithSeat = async (
-      offerHandler,
+      offerHandler = () => {},
       description,
       customProperties,
     ) => {
@@ -223,7 +229,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       const {
         updater,
         zoeSeatAdminPromiseKit,
-        userSeatPromiseKit,
         seatHandle,
         zcfSeat,
       } = initializeEmptySeatData();
@@ -234,10 +239,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
       await E(zoeInstanceAdmin)
         .makeLaterEscrowSeat(seatHandle, invitationHandle)
-        .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
+        .then(({ zoeSeatAdmin, notifier: zoeNotifier }) => {
           updateFromNotifier(updater, zoeNotifier);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
-          userSeatPromiseKit.resolve(userSeat);
         });
 
       return { invitation, zcfSeat };
@@ -492,12 +496,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       reallocateInternal([seatStaging]);
     };
 
-    // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
-    // added in offer(). ZCF responds with the exitObj and offerResult. linkSeat
-    // is used when a seat was already created using makeInvitationWithSeat().
-    /** @type {AddSeatObj} */
-    const addSeatObj = {
-      addSeat: (invitationHandle, zoeSeatAdmin, proposal, addAllocation) => {
+    // offerUpdater gives Zoe the ability to notify ZCF when offer() has been
+    // called, adding a proposal to a seat. ZCF responds with the exitObj and
+    // offerResult.
+    /** @type {OfferUpdater} */
+    const offerUpdater = {
+      offerAdded: (invitationHandle, zoeSeatAdmin, proposal, addAllocation) => {
         const { zcfSeatAdmin, zcfSeat } = invitationHandleToZcfSeatKit.get(
           invitationHandle,
         );
@@ -509,11 +513,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         addAllocationToSeat(zcfSeat, addAllocation);
         zcfSeatAdmin.setProposal(proposal);
         const exitObj = makeExitObj(proposal.exit, zoeSeatAdmin, zcfSeatAdmin);
-        /** @type {AddSeatResult} */
+        /** @type {OfferAddedResult} */
         return harden({ offerResultP, exitObj });
       },
     };
-    harden(addSeatObj);
+    harden(offerUpdater);
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
@@ -530,7 +534,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           creatorFacet,
           publicFacet,
           creatorInvitation,
-          addSeatObj,
+          offerUpdater,
         });
       });
     // Don't trigger Node.js's UnhandledPromiseRejectionWarning.

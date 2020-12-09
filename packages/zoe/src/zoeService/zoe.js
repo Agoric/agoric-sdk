@@ -222,11 +222,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       };
 
       const bundle = installation.getBundle();
-      /** @type {PromiseRecord<AddSeatObj>} */
-      const addSeatObjPromiseKit = makePromiseKit();
+      /** @type {PromiseRecord<OfferUpdater>} */
+      const offerUpdaterPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
-      addSeatObjPromiseKit.promise.catch(_ => {});
+      offerUpdaterPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
@@ -240,14 +240,14 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         /** @type {InstanceAdmin} */
         return {
           addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
-          tellZCFToAddSeat: (
+          tellZCFOfferAdded: (
             invitationHandle,
             zoeSeatAdmin,
             proposal,
             initialAllocation,
           ) => {
             zoeSeatAdmin.setProposal(proposal);
-            return E(addSeatObjPromiseKit.promise).addSeat(
+            return E(offerUpdaterPromiseKit.promise).offerAdded(
               invitationHandle,
               zoeSeatAdmin,
               proposal,
@@ -322,11 +322,19 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             return undefined;
           })),
         // A Seat requested by the contract without any payments to escrow
-        makeNoEscrowSeat: (exitObj, seatHandle) => {
+        makeNoEscrowSeat: (
+          initialAllocation,
+          proposal,
+          exitObj,
+          seatHandle,
+        ) => {
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            initialAllocation,
             instanceAdmin,
+            proposal,
             brandToPurse,
             exitObj,
+            /* offerResultPromise */
           );
           instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
@@ -343,16 +351,18 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             invitationHandle,
             offerResultPromise.resolve,
           );
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+          const { notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            harden({}),
             instanceAdmin,
+            undefined,
             brandToPurse,
             exitObjPromise.promise,
             offerResultPromise.promise,
           );
           instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
           invitationToZoeSeatAdmin.init(invitationHandle, zoeSeatAdmin);
-          /* ? */ seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-          return { userSeat, notifier, zoeSeatAdmin };
+          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+          return { notifier, zoeSeatAdmin };
         },
         exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
         failAllSeats: reason => instanceAdmin.failAllSeats(reason),
@@ -373,7 +383,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         creatorFacet = {},
         publicFacet = {},
         creatorInvitation: creatorInvitationP,
-        addSeatObj,
+        offerUpdater,
       } = await E(zcfRoot).executeContract(
         bundle,
         zoeService,
@@ -382,7 +392,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         harden({ ...instanceRecord }),
       );
 
-      addSeatObjPromiseKit.resolve(addSeatObj);
+      offerUpdaterPromiseKit.resolve(offerUpdater);
       publicFacetPromiseKit.resolve(publicFacet);
 
       // creatorInvitation can be undefined, but if it is defined,
@@ -472,7 +482,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             const {
               offerResultP,
               exitObj,
-            } = await instanceAdmin.tellZCFToAddSeat(
+            } = await instanceAdmin.tellZCFOfferAdded(
               invitationHandle,
               zoeSeatAdmin,
               proposal,

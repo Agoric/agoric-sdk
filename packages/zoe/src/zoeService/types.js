@@ -100,6 +100,7 @@
  * @typedef {Object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * @property {() => Promise<ProposalRecord>} getProposal
+ * @property {() => Promise<boolean>} hasProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OfferResult>} getOfferResult
