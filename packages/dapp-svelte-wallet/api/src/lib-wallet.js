@@ -1303,8 +1303,36 @@ export function makeWallet({
     add: (petname, thing) => addInstallation(petname, thing),
   });
 
+  const instanceManager = harden({
+    rename: async (petname, instance) => { 
+      instanceMapping.renamePetname(petname, instance);
+      await updateAllState();
+      return `instance ${q(petname)} successfully renamed in wallet`;
+    },
+    get: petname => instanceMapping.petnameToVal.get(petname),
+    getAll: () => instanceMapping.petnameToVal.entries(),
+    add: (petname, instanceHandle) => {
+      // We currently just add the petname mapped to the instanceHandle
+      // value, but we could have a list of known instances for
+      // possible display in the wallet.
+      petname = instanceMapping.suggestPetname(petname, instanceHandle);
+      // We don't wait for the update before returning.
+      updateAllState();
+      return `instance ${q(petname)} successfully added to wallet`;
+    },
+  });
+
   function getInstallationManager() {
     return installationManager;
+  }
+
+  function getInstanceManager() {
+    return instanceManager;
+  }
+
+  function getAmountMath(issuerPetname) {
+    const brand = brandMapping.petnameToVal.get(issuerPetname);
+    return brandTable.getByBrand(brand).amountMath;
   }
 
   const wallet = harden({
@@ -1326,6 +1354,7 @@ export function makeWallet({
     addInstance,
     addInstallation,
     getInstallationManager,
+    getInstanceManager,
     renameIssuer,
     renameInstance,
     renameInstallation,
@@ -1341,6 +1370,7 @@ export function makeWallet({
     getPurse,
     getPurseIssuer,
     addOffer,
+    getAmountMath,
     async addOfferInvitation(_offer, _invitation, _dappOrigin = undefined) {
       // Will be part of the Rendezvous system, when landed.
       // TODO unimplemented
