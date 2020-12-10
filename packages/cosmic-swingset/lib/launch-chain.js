@@ -56,7 +56,9 @@ async function buildSwingset(
     await initializeSwingset(config, argv, storage, { debugPrefix });
   }
   const controller = await makeSwingsetController(storage, deviceEndowments);
-  await controller.run();
+
+  // We DON'T want to run the kernel yet, only when we're in the scheduler at
+  // endBlock!
 
   const bridgeInbound = bd.deliverInbound;
   return { controller, mb, bridgeInbound, timer };
@@ -90,6 +92,12 @@ export async function launch(
     debugName,
   );
 
+  // ////////////////////////////
+  // TODO: This is where we would add the scheduler.
+  async function endBlock(_blockHeight, _blockTime) {
+    await controller.run();
+  }
+
   async function saveChainState() {
     // Save the mailbox state.
     await mailboxStorage.commit();
@@ -111,7 +119,6 @@ export async function launch(
       return;
     }
     log.debug(`mboxDeliver:   ADDED messages`);
-    await controller.run();
   }
 
   async function doBridgeInbound(source, body) {
@@ -119,7 +126,6 @@ export async function launch(
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
     bridgeInbound(source, body);
-    await controller.run();
   }
 
   async function beginBlock(blockHeight, blockTime) {
@@ -128,10 +134,6 @@ export async function launch(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,
     );
-    if (!addedToQueue) {
-      return;
-    }
-    await controller.run();
   }
 
   const [savedHeight, savedActions, savedChainSends] = JSON.parse(
@@ -142,6 +144,7 @@ export async function launch(
     doBridgeInbound,
     // bridgeOutbound,
     beginBlock,
+    endBlock,
     saveChainState,
     saveOutsideState,
     savedHeight,

@@ -13,6 +13,7 @@ export default function makeBlockManager({
   deliverInbound,
   doBridgeInbound,
   beginBlock,
+  endBlock,
   flushChainSends,
   saveChainState,
   saveOutsideState,
@@ -58,7 +59,7 @@ export default function makeBlockManager({
       }
 
       case END_BLOCK:
-        p = Promise.resolve();
+        p = endBlock(action.blockHeight, action.blockTime);
         break;
 
       default:
