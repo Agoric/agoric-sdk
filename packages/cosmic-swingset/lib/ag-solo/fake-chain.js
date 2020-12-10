@@ -147,6 +147,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     }
   }
 
+  // We need to finish booting the kernel on the first block.
+  await simulateBlock();
+
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
   return deliver;

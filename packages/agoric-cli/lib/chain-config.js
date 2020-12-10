@@ -49,19 +49,15 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // We upgrade from export data.
   const { app_state: exportedAppState } = exported;
+  const { ...initState } = genesis.app_state;
   if (exportedAppState) {
     genesis.app_state = exportedAppState;
   }
 
-  // Remove IBC and capability state.
+  // Remove IBC state.
   // TODO: This needs much more support to preserve contract state
   // between exports in order to be able to carry forward IBC conns.
-  delete genesis.app_state.capability;
-  genesis.app_state.ibc = {
-    client_genesis: {
-      create_localhost: true,
-    },
-  };
+  genesis.app_state.ibc = initState.ibc;
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
 

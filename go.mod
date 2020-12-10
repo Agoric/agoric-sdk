@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
-	github.com/cosmos/cosmos-sdk v0.40.0-rc3
+	github.com/cosmos/cosmos-sdk v0.40.0-rc4
 	github.com/ethereum/go-ethereum v1.9.22
 	github.com/gogo/protobuf v1.3.1
 	github.com/gorilla/mux v1.8.0
@@ -30,5 +30,4 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alp
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
-
 // replace github.com/tendermint/tendermint => ../forks/tendermint

@@ -332,7 +332,6 @@ func NewAgoricApp(
 	}
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
-	// It handles interactions with the kvstore and IBC.
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec, keys[swingset.StoreKey],
 		app.AccountKeeper, app.BankKeeper,
