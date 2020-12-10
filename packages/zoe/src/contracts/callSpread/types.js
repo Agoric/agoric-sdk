@@ -23,6 +23,34 @@
  */
 
 /**
+ * @callback Scale
+ * @param {AmountMath} amountMath
+ * @param {Amount} amount
+ * @returns {Amount}
+ */
+
+/**
+ * @callback MakePercent
+ * @param {number} value
+ * @param {number} base
+ * @returns {Percent}
+ */
+
+/**
+ * @callback CalculatePercent
+ * @param {Amount} numerator
+ * @param {Amount} denominator
+ * @param {number=} base
+ * @returns {Percent}
+ */
+
+/**
+ * @typedef {Object} Percent
+ * @property {Scale} scale
+ * @property {() => Percent} complement
+ */
+
+/**
  * @typedef {Object} CalculateSharesReturn
  * Return value from calculateShares, which represents the portions assigned to
  * the long and short side of a transaction. These will be two non-negative
