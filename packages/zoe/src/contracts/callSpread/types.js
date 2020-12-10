@@ -9,17 +9,31 @@
  */
 
 /**
+ * @callback SchedulePayoffs
+ * @param {ContractFacet} zcf
+ * @param {Partial<Record<PositionKind,PromiseRecord<ZCFSeat>>>} payoffSeats
+ * @param {ZCFSeat} collateralSeat
+ * @returns {void}
+ */
+
+/**
  * @typedef {Object} PayoffHandler
- * @property {() => void} schedulePayoffs
+ * @property {SchedulePayoffs} schedulePayoffs
  * @property  {MakeOptionInvitation} makeOptionInvitation
  */
 
 /**
- * @callback MakePayoffHandler
- * @param {ContractFacet} zcf
- * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
- * @param {ZCFSeat} collateralSeat
- * @returns {PayoffHandler}
+ * @callback Scale
+ * @param {AmountMath} amountMath
+ * @param {Amount} amount
+ * @param {number} precision
+ * @returns {Amount}
+ */
+
+/**
+ * @typedef {Object} Percent
+ * @property {Scale} scale
+ * @property {() => Percent} inverse
  */
 
 /**
@@ -55,8 +69,8 @@
  * Return value from calculateShares, which represents the portions assigned to
  * the long and short side of a transaction. These will be two non-negative
  * integers that sum to 100.
- * @property {number} longShare
- * @property {number} shortShare
+ * @property {Percent} longShare
+ * @property {Percent} shortShare
  */
 
 /**

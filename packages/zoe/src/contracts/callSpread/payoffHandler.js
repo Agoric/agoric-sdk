@@ -3,21 +3,20 @@ import '../../../exported';
 import './types';
 
 import { E } from '@agoric/eventual-send';
-import { trade, natSafeMath } from '../../contractSupport';
+import { trade } from '../../contractSupport';
 import { Position } from './position';
 import { calculateShares } from './calculateShares';
 
-const { multiply, floorDivide } = natSafeMath;
-
-const PERCENT_BASE = 100;
-
 /**
- * makePayoffHandler returns an object with methods that are useful for
- * callSpread contracts.
+ * Schedule payoffs from a call-spread contract. Looks up the terms from zcf,
+ * and uses the priceAuthority to schedule a quote at the closing time. It then
+ * reallocates the collateral to the payoffSeats. After the payoffs have been
+ * made and the invitations exercised (which might happen before or after the
+ * closing), the contract is shut down.
  *
- * @type {MakePayoffHandler}
+ * @type {SchedulePayoffs}
  */
-function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
+function schedulePayoffs(zcf, payoffSeats, collateralSeat) {
   const terms = zcf.getTerms();
   const {
     maths: { Collateral: collateralMath, Strike: strikeMath },
@@ -25,38 +24,48 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   } = terms;
   let seatsExited = 0;
 
-  /** @type {MakeOptionInvitation} */
-  function makeOptionInvitation(dir) {
-    return zcf.makeInvitation(
-      // All we do at the time of exercise is resolve the promise.
-      seat => seatPromiseKits[dir].resolve(seat),
-      `collect ${dir} payout`,
-      {
-        position: dir,
-      },
-    );
-  }
-
-  function reallocateToSeat(seatPromise, sharePercent) {
-    seatPromise.then(seat => {
-      const totalCollateral = terms.settlementAmount;
-      const collateralShare = floorDivide(
-        multiply(totalCollateral.value, sharePercent),
-        PERCENT_BASE,
-      );
-      const seatPortion = collateralMath.make(collateralShare);
-      trade(
-        zcf,
-        { seat, gains: { Collateral: seatPortion } },
-        { seat: collateralSeat, gains: {} },
-      );
+  function reallocateToSeat(seat, sharePercent) {
+    // we want to shut down the contract instance vat when everyone has been
+    // paid, but the options might not be exercised promptly.
+    function exitSeatAndShutdownVatIfDone() {
       seat.exit();
       seatsExited += 1;
       const remainder = collateralSeat.getAmountAllocated('Collateral');
       if (collateralMath.isEmpty(remainder) && seatsExited === 2) {
         zcf.shutdown('contract has been settled');
       }
-    });
+    }
+
+    // don't count a seat as complete until the payout has been made and the
+    // invitation has been exercised. When the invite is exercised, the proposal
+    // is set for the first time, and the notifier is updated.
+    function waitForProposal(updateCount = NaN) {
+      console.log(`Notified: ${seat.hasProposal()}, ${updateCount}`);
+      const notifier = seat.getNotifier();
+      return notifier.getUpdateSince(updateCount).then(nextState => {
+        if (seat.hasProposal()) {
+          exitSeatAndShutdownVatIfDone();
+        } else {
+          waitForProposal(nextState.updateCount);
+        }
+      });
+    }
+
+    const totalCollateral = terms.settlementAmount;
+    const seatPortion = sharePercent.scale(collateralMath, totalCollateral);
+    trade(
+      zcf,
+      { seat, gains: { Collateral: seatPortion } },
+      { seat: collateralSeat, gains: {} },
+    );
+
+    if (seat.hasProposal()) {
+      console.log(`has proposal`);
+      exitSeatAndShutdownVatIfDone();
+    } else {
+      // if the invitation hasn't been exercised, we have to wait
+      waitForProposal();
+    }
   }
 
   function payoffOptions(quoteAmount) {
@@ -69,25 +78,16 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
       strike2,
     );
     // either offer might be exercised late, so we pay the two seats separately.
-    reallocateToSeat(seatPromiseKits[Position.LONG].promise, longShare);
-    reallocateToSeat(seatPromiseKits[Position.SHORT].promise, shortShare);
+    reallocateToSeat(payoffSeats[Position.LONG], longShare);
+    reallocateToSeat(payoffSeats[Position.SHORT], shortShare);
   }
 
-  function schedulePayoffs() {
-    E(terms.priceAuthority)
-      .quoteAtTime(terms.expiration, terms.underlyingAmount, strikeBrand)
-      .then(priceQuote =>
-        payoffOptions(priceQuote.quoteAmount.value[0].amountOut),
-      );
-  }
-
-  /** @type {PayoffHandler} */
-  const handler = harden({
-    schedulePayoffs,
-    makeOptionInvitation,
-  });
-  return handler;
+  E(terms.priceAuthority)
+    .quoteAtTime(terms.expiration, terms.underlyingAmount, strikeBrand)
+    .then(priceQuote =>
+      payoffOptions(priceQuote.quoteAmount.value[0].amountOut),
+    );
 }
 
-harden(makePayoffHandler);
-export { makePayoffHandler };
+harden(schedulePayoffs);
+export { schedulePayoffs };

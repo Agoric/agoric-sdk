@@ -3,7 +3,6 @@ import '../../../exported';
 import './types';
 
 import { assert, details } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
@@ -11,7 +10,7 @@ import {
   trade,
   assertUsesNatMath,
 } from '../../contractSupport';
-import { makePayoffHandler } from './payoffHandler';
+import { schedulePayoffs } from './payoffHandler';
 import { Position } from './position';
 
 /**
@@ -73,24 +72,29 @@ const start = async zcf => {
   // We will create the two options early and allocate them to this seat.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-  // Since the seats for the payout of the settlement aren't created until the
-  // invitations for the options themselves are exercised, we don't have those
-  // seats at the time of creation of the options, so we use Promises, and
-  // allocate the payouts when those promises resolve.
-  /** @type {Record<PositionKind,PromiseRecord<ZCFSeat>>} */
-  const seatPromiseKits = {
-    [Position.LONG]: makePromiseKit(),
-    [Position.SHORT]: makePromiseKit(),
-  };
+  // These seats will be created (using makeInvitationWithSeat) before the
+  // payoffHandler needs to access them.
+  /** @type {Partial<Record<PositionKind,PromiseRecord<ZCFSeat>>>} */
+  const payoffSeats = {};
 
-  /** @type {PayoffHandler} */
-  const payoffHandler = makePayoffHandler(zcf, seatPromiseKits, collateralSeat);
+  async function makeOptionInvitation(dir) {
+    const { invitation: option, zcfSeat } = await zcf.makeInvitationWithSeat(
+      _ => {},
+      `collect ${dir} payout`,
+      {
+        position: dir,
+      },
+    );
+    payoffSeats[dir] = zcfSeat;
+    return option;
+  }
 
   async function makeFundedPairInvitation() {
     const pair = {
-      LongOption: payoffHandler.makeOptionInvitation(Position.LONG),
-      ShortOption: payoffHandler.makeOptionInvitation(Position.SHORT),
+      LongOption: makeOptionInvitation(Position.LONG),
+      ShortOption: makeOptionInvitation(Position.SHORT),
     };
+
     const invitationIssuer = zcf.getInvitationIssuer();
     const [longAmount, shortAmount] = await Promise.all([
       E(invitationIssuer).getAmountOf(pair.LongOption),
@@ -118,7 +122,7 @@ const start = async zcf => {
           gains: { LongOption: longAmount, ShortOption: shortAmount },
         },
       );
-      payoffHandler.schedulePayoffs();
+      schedulePayoffs(zcf, payoffSeats, collateralSeat);
       creatorSeat.exit();
     };
 

@@ -3,19 +3,16 @@ import '../../../exported';
 import './types';
 
 import { assert, details } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
   depositToSeat,
   trade,
   assertUsesNatMath,
-  natSafeMath,
 } from '../../contractSupport';
-import { makePayoffHandler } from './payoffHandler';
+import { schedulePayoffs } from './payoffHandler';
 import { Position } from './position';
-
-const { subtract, multiply, floorDivide } = natSafeMath;
+import { makePercent } from '../../contractSupport/percentMath';
 
 /**
  * This contract implements a fully collateralized call spread. This is a
@@ -54,9 +51,6 @@ const { subtract, multiply, floorDivide } = natSafeMath;
  * + increase the precision of the calculations. (change PERCENT_BASE to 10000)
  */
 
-const PERCENT_BASE = 100;
-const complement = percent => subtract(PERCENT_BASE, percent);
-
 /** @type {ContractStartFn} */
 const start = zcf => {
   const terms = zcf.getTerms();
@@ -77,21 +71,21 @@ const start = zcf => {
   // We will create the two options early and allocate them to this seat.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-  // Since the seats for the payout of the settlement aren't created until the
-  // invitations for the options themselves are exercised, we don't have those
-  // seats at the time of creation of the options, so we use Promises, and
-  // allocate the payouts when those promises resolve.
-  /** @type {Record<PositionKind,PromiseRecord<ZCFSeat>>} */
-  const seatPromiseKits = {
-    [Position.LONG]: makePromiseKit(),
-    [Position.SHORT]: makePromiseKit(),
-  };
+  // These seats will be created (using makeInvitationWithSeat) before the
+  // payoffHandler needs to access them.
+  /** @type {Partial<Record<PositionKind,PromiseRecord<ZCFSeat>>>} */
+  const payoffSeats = {};
 
-  /** @type {PayoffHandler} */
-  const payoffHandler = makePayoffHandler(zcf, seatPromiseKits, collateralSeat);
+  async function makeOptionInvitation(dir, share) {
+    const { invitation: option, zcfSeat } = await zcf.makeInvitationWithSeat(
+      _ => {},
+      `collect ${dir} payout`,
+      {
+        position: dir,
+      },
+    );
+    payoffSeats[dir] = zcfSeat;
 
-  async function makeOptionInvitation(dir, longShare) {
-    const option = payoffHandler.makeOptionInvitation(dir);
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
     const spreadAmount = harden({
@@ -102,12 +96,7 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
-    const numerator =
-      (dir === Position.LONG) ? longShare : complement(longShare);
-    const required = floorDivide(
-      multiply(terms.settlementAmount.value, numerator),
-      100,
-    );
+    const required = share.scale(collateralMath, terms.settlementAmount);
 
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
@@ -124,8 +113,8 @@ const start = zcf => {
 
       // assert that the allocation includes the amount of collateral required
       assert(
-        collateralMath.isEqual(newCollateral, collateralMath.make(required)),
-        details`Collateral required: ${required}`,
+        collateralMath.isEqual(newCollateral, required),
+        details`Collateral required: ${required.value}`,
       );
 
       // assert that the requested option was the right one.
@@ -149,27 +138,20 @@ const start = zcf => {
 
     return zcf.makeInvitation(optionPosition, `call spread ${dir}`, {
       position: dir,
-      collateral: required,
+      collateral: required.value,
       option: spreadAmount.Option,
     });
   }
 
   function makeInvitationPair(longCollateralShare) {
-    assert(
-      longCollateralShare >= 0 && longCollateralShare <= 100,
-      'percentages must be between 0 and 100.',
-    );
+    const longPercent = makePercent(longCollateralShare);
 
-    const longInvitation = makeOptionInvitation(
-      Position.LONG,
-      longCollateralShare,
-    );
+    const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
     const shortInvitation = makeOptionInvitation(
       Position.SHORT,
-      longCollateralShare,
+      longPercent.inverse(),
     );
-    // TODO: don't schedule maturity until both options are exercised
-    payoffHandler.schedulePayoffs();
+    schedulePayoffs(zcf, payoffSeats, collateralSeat);
     return { longInvitation, shortInvitation };
   }
 
