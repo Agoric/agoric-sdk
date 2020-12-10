@@ -44,7 +44,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
     /** @type {WeakStore<InvitationHandle,OfferHandler>} */
-    const invitationHandleToHandler = makeWeakStore('InvitationHandle');
+    const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
     /** @type {Store<ZCFSeat,ZCFSeatAdmin>} */
     const zcfSeatToZCFSeatAdmin = makeStore('zcfSeat');

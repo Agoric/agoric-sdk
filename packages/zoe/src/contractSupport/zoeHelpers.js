@@ -15,14 +15,14 @@ const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 
 const wantOrEmpty = seat => {
-  if (!seat.getProposal()) {
+  if (!seat.hasProposal()) {
     return {};
   }
   return seat.getProposal().want;
 };
 
 const giveOrEmpty = seat => {
-  if (!seat.getProposal()) {
+  if (!seat.hasProposal()) {
     return {};
   }
   return seat.getProposal().give;
@@ -111,6 +111,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
 /**
  * @typedef {Object} ZcfSeatPartial
  * @property {() => ProposalRecord} getProposal
+ * @property {() => boolean} hasProposal
  * @property {() => Allocation} getCurrentAllocation
  */
 
@@ -130,8 +131,10 @@ export const assertIssuerKeywords = (zcf, expected) => {
 export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = { ...currentAllocation, ...update };
-  const proposal = seat.getProposal();
-  return !proposal || satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
+  return (
+    !seat.hasProposal() ||
+    satisfiesWant(zcf.getAmountMath, seat.getProposal(), newAllocation)
+  );
 };
 
 /** @type {Trade} */
@@ -183,10 +186,10 @@ export const trade = (
     console.log(`proposed right reallocation`, rightAllocation);
     // show the constraints
 
-    if (left.seat.getProposal()) {
+    if (left.seat.hasProposal()) {
       console.log(`left want`, wantOrEmpty(left.seat));
     }
-    if (right.seat.getProposal()) {
+    if (right.seat.hasProposal()) {
       console.log(`right want`, wantOrEmpty(right.seat));
     }
 

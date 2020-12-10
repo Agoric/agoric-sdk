@@ -707,7 +707,7 @@ test(`zcfSeat.getNotifier`, async t => {
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
-  t.deepEqual(await notifier.getUpdateSince(1), {
+  t.deepEqual(await notifier.getUpdateSince(), {
     updateCount: 2,
     value: {
       A: {
@@ -960,7 +960,7 @@ test(`userSeat.getNotifier`, async t => {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   const notifier = await E(userSeat).getNotifier();
 
-  // // Mint some gains to change the allocation.
+  // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
   t.deepEqual(await notifier.getUpdateSince(), {
     updateCount: 2,
