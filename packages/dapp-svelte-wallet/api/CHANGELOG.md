@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.0...@agoric/dapp-svelte-wallet-api@0.5.1) (2020-12-10)
+
+
+### Bug Fixes
+
+* add more types and refactor naming of facets ([8f81091](https://github.com/Agoric/agoric/commit/8f810917e63aa8a2b78a523213310285abd49f8a))
+* minor fixes while debugging purse notifiers ([bc4992a](https://github.com/Agoric/agoric/commit/bc4992ac65bba9007d44d242d6f0144072bf717b))
+* replace "observable purse" with getCurrentAmountNotifier ([bdebc9e](https://github.com/Agoric/agoric/commit/bdebc9eedcb283ab6d12d40b1b3258cd1919d2fa))
+
+
+
+
+
 # [0.5.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.0-dev.0...@agoric/dapp-svelte-wallet-api@0.5.0) (2020-11-07)
 
 

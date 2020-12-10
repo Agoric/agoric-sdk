@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.23.0...@agoric/cosmic-swingset@0.24.0) (2020-12-10)
+
+
+### Bug Fixes
+
+* add interfaces and codec ([57db476](https://github.com/Agoric/agoric-sdk/commit/57db476926d53c4ae40dbd7f4ec2e1a71d4761a9))
+* minor fixes while debugging purse notifiers ([bc4992a](https://github.com/Agoric/agoric-sdk/commit/bc4992ac65bba9007d44d242d6f0144072bf717b))
+* more support for hacktheorb ([b58e5cd](https://github.com/Agoric/agoric-sdk/commit/b58e5cd1c8b16467565967edbe4140a0749274d7))
+* only run the kernel at the end of each block ([a11fd5b](https://github.com/Agoric/agoric-sdk/commit/a11fd5b5c98e197d04967a34568db1a782926c1b))
+* properly forward tokens to REPL ([647b999](https://github.com/Agoric/agoric-sdk/commit/647b9990a281cd086de0dc37ccb9ce04d81c3c34))
+* update Docker build steps ([7c7379d](https://github.com/Agoric/agoric-sdk/commit/7c7379db95f9b09151ad17533c9fa0c5c864c54c))
+* update paths and make rules ([f9982a3](https://github.com/Agoric/agoric-sdk/commit/f9982a39deb4ba1b94b83dc0decf0ce8d9a575e9))
+* update to IBC relayer v1.0.0-rc1 ([bea1021](https://github.com/Agoric/agoric-sdk/commit/bea10217f1647a31cb2771a620d749725163cbe7))
+* upgrade the proto definitions ([30c7b70](https://github.com/Agoric/agoric-sdk/commit/30c7b70532f5a379d1b8ca45e11cbf80cfe3e1e5))
+* upgrade to Cosmos-SDK v0.40.0-rc3 ([ad82894](https://github.com/Agoric/agoric-sdk/commit/ad82894016c851ba5b5f65509f06abea679dbd89))
+
+
+### Features
+
+* **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
+* stash the accessToken in localStorage ([a8ce36c](https://github.com/Agoric/agoric-sdk/commit/a8ce36c7ef3ffe94b07629f2108206c6187dc675))
+
+
+
+
+
 # [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.22.1-dev.0...@agoric/cosmic-swingset@0.23.0) (2020-11-07)
 
 

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-simple@0.2.7...@agoric/swing-store-simple@0.3.0) (2020-12-10)
+
+
+### Features
+
+* **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
+
+
+
+
+
 ## [0.2.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-simple@0.2.7-dev.0...@agoric/swing-store-simple@0.2.7) (2020-11-07)
 
 **Note:** Version bump only for package @agoric/swing-store-simple

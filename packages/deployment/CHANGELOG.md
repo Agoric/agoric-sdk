@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.23.0...@agoric/deployment@1.24.0) (2020-12-10)
+
+
+### Bug Fixes
+
+* clear up all the paths through `agoric start` ([1b89571](https://github.com/Agoric/agoric-sdk/commit/1b89571734e9c7fd4748b1cf7b6d5a985f045ef3))
+* complete the migration to dweb.crt and dweb.key ([9f2383e](https://github.com/Agoric/agoric-sdk/commit/9f2383e7d761e5f91743b3ceaffaad9f253e51cc))
+* make bigdipper.sh even more robust ([00b76a3](https://github.com/Agoric/agoric-sdk/commit/00b76a3c6d06d946219e4ac65ee8b9ad089ac55c))
+* more support for hacktheorb ([b58e5cd](https://github.com/Agoric/agoric-sdk/commit/b58e5cd1c8b16467565967edbe4140a0749274d7))
+* trim 300MB off of the Docker image size, and speed up builds ([01c4fc1](https://github.com/Agoric/agoric-sdk/commit/01c4fc13c764e30ebc2d8fa95b457569f524c09d))
+* update Docker build steps ([7c7379d](https://github.com/Agoric/agoric-sdk/commit/7c7379db95f9b09151ad17533c9fa0c5c864c54c))
+* use nodejs instead of sed for parsing package.json ([f58df9c](https://github.com/Agoric/agoric-sdk/commit/f58df9c1ca9e94747e7f1f9fd9509b4ee0858984))
+
+
+### Features
+
+* **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
+
+
+
+
+
 # [1.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.22.1-dev.0...@agoric/deployment@1.23.0) (2020-11-07)
 
 
