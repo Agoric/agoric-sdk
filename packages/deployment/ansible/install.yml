@@ -11,7 +11,4 @@
     - chdir: "/home/{{ user }}"
     - NETWORK_NAME: "{{ lookup('file', SETUP_HOME + '/network.txt') }}"
   roles:
-    - stat-tls-keys
     - install
-  
-
