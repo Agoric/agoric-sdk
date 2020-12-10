@@ -1,5 +1,15 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release 0.24.0 (2020-12-10)
+
+* Upgrade to Cosmos SDK v0.40.0-rc4 (Stargate).
+
+### BREAKING CHANGES
+
+* The default block time (`commit_timeout`) has changed from `"2s"` back to
+  `"5s"`, in the interest of ensuring globally-dispersed validators can
+  participate without downtime.
+
 ## Release 0.21.2 (2020-10-11)
 
 * Upgrade to Cosmos SDK v0.40.0 (Stargate) prerelease branch with local changes
