@@ -55,8 +55,8 @@
  * Return value from calculateShares, which represents the portions assigned to
  * the long and short side of a transaction. These will be two non-negative
  * integers that sum to 100.
- * @property {number} longShare
- * @property {number} shortShare
+ * @property {Percent} longShare
+ * @property {Percent} shortShare
  */
 
 /**
@@ -65,8 +65,8 @@
  * allocated to the long side of a call spread contract. price gives the value
  * of the underlying asset at closing that determines the payouts to the parties
  *
- * if price <= strikePrice1, return 0
- * if price >= strikePrice2, return 100.
+ * if price <= strikePrice1, return Percent.NONE
+ * if price >= strikePrice2, return Percent.ALL.
  * Otherwise return a number between 1 and 99 reflecting the position of price
  * in the range from strikePrice1 to strikePrice2.
  * @param {AmountMath} strikeMath

@@ -2,11 +2,7 @@
 import '../../../exported';
 import './types';
 
-import { natSafeMath } from '../../contractSupport';
-
-const { subtract, multiply, floorDivide } = natSafeMath;
-
-const PERCENT_BASE = 100;
+import { ALL, NONE, calculatePercent } from '../../contractSupport/percentMath';
 
 /**
  * Calculate the portion (as a percentage) of the collateral that should be
@@ -16,15 +12,15 @@ const PERCENT_BASE = 100;
  * @type {CalculateShares} */
 function calculateShares(strikeMath, price, strikePrice1, strikePrice2) {
   if (strikeMath.isGTE(strikePrice1, price)) {
-    return { longShare: 0, shortShare: PERCENT_BASE };
+    return { longShare: NONE, shortShare: ALL };
   } else if (strikeMath.isGTE(price, strikePrice2)) {
-    return { longShare: PERCENT_BASE, shortShare: 0 };
+    return { longShare: ALL, shortShare: NONE };
   }
 
-  const denominator = strikeMath.subtract(strikePrice2, strikePrice1).value;
-  const numerator = strikeMath.subtract(price, strikePrice1).value;
-  const longShare = floorDivide(multiply(PERCENT_BASE, numerator), denominator);
-  return { longShare, shortShare: subtract(PERCENT_BASE, longShare) };
+  const denominator = strikeMath.subtract(strikePrice2, strikePrice1);
+  const numerator = strikeMath.subtract(price, strikePrice1);
+  const longShare = calculatePercent(numerator, denominator);
+  return { longShare, shortShare: longShare.complement() };
 }
 
 harden(calculateShares);
