@@ -3,6 +3,64 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.10.0...@agoric/sdk@2.11.0) (2020-12-10)
+
+
+### Bug Fixes
+
+* add interfaces and codec ([57db476](https://github.com/Agoric/agoric-sdk/commit/57db476926d53c4ae40dbd7f4ec2e1a71d4761a9))
+* add more types and refactor naming of facets ([8f81091](https://github.com/Agoric/agoric-sdk/commit/8f810917e63aa8a2b78a523213310285abd49f8a))
+* add-path is deprecated ([#2024](https://github.com/Agoric/agoric-sdk/issues/2024)) ([d3a40ef](https://github.com/Agoric/agoric-sdk/commit/d3a40ef93731117d927925c926af7515f113b528))
+* allow the priceAuthority to supply a null quotePayment ([9b038eb](https://github.com/Agoric/agoric-sdk/commit/9b038ebcf00d60fa41873d04010d5c600e8f59a7))
+* back off retrying to provision to prevent excessive load ([422b4da](https://github.com/Agoric/agoric-sdk/commit/422b4da4bd4caee0fe0aedb2e615e02180e28c37))
+* build wallet URL with a trailing slash ([f76ad22](https://github.com/Agoric/agoric-sdk/commit/f76ad22a7fffda81425651731f47977ab0fcbd8c))
+* clear up all the paths through `agoric start` ([1b89571](https://github.com/Agoric/agoric-sdk/commit/1b89571734e9c7fd4748b1cf7b6d5a985f045ef3))
+* complete the migration to dweb.crt and dweb.key ([9f2383e](https://github.com/Agoric/agoric-sdk/commit/9f2383e7d761e5f91743b3ceaffaad9f253e51cc))
+* Dependency checker yarn argument order ([#2051](https://github.com/Agoric/agoric-sdk/issues/2051)) ([c90fb61](https://github.com/Agoric/agoric-sdk/commit/c90fb610782d21d0111f9d2c7e03fd982786b8f7))
+* don't reset x/capability state on new chains; it's sensitive ([6ba739e](https://github.com/Agoric/agoric-sdk/commit/6ba739e01abc01f32ef9449f78e3bb11ab29b7ff))
+* don't stack up reopeners ([be3f146](https://github.com/Agoric/agoric-sdk/commit/be3f146852eb482b07c0e9e153db66637a57381c))
+* localhost IBC client wishful thinking ([0653c03](https://github.com/Agoric/agoric-sdk/commit/0653c03faa51494e49de0458a3d586b04fcc09d2))
+* make bigdipper.sh even more robust ([00b76a3](https://github.com/Agoric/agoric-sdk/commit/00b76a3c6d06d946219e4ac65ee8b9ad089ac55c))
+* minor fixes while debugging purse notifiers ([bc4992a](https://github.com/Agoric/agoric-sdk/commit/bc4992ac65bba9007d44d242d6f0144072bf717b))
+* minor tweaks for dapp-oracle ([b8169c1](https://github.com/Agoric/agoric-sdk/commit/b8169c1f39bc0c0d7c07099df2ac23ee7df05733))
+* more support for hacktheorb ([b58e5cd](https://github.com/Agoric/agoric-sdk/commit/b58e5cd1c8b16467565967edbe4140a0749274d7))
+* only run the kernel at the end of each block ([a11fd5b](https://github.com/Agoric/agoric-sdk/commit/a11fd5b5c98e197d04967a34568db1a782926c1b))
+* patch -r esm to handle cached NPM downloads correctly ([fa79f5f](https://github.com/Agoric/agoric-sdk/commit/fa79f5f77d0e927ea6d0509ed1d52efd21cb687a))
+* properly forward tokens to REPL ([647b999](https://github.com/Agoric/agoric-sdk/commit/647b9990a281cd086de0dc37ccb9ce04d81c3c34))
+* properly generate a quote for every timer tick ([0c18aae](https://github.com/Agoric/agoric-sdk/commit/0c18aaee67d4e1c530d632c3b69edbcca6ce8fb7))
+* replace "observable purse" with getCurrentAmountNotifier ([bdebc9e](https://github.com/Agoric/agoric-sdk/commit/bdebc9eedcb283ab6d12d40b1b3258cd1919d2fa))
+* report when there is a spawn error from the Agoric cli ([9073526](https://github.com/Agoric/agoric-sdk/commit/9073526e45c0df34820edad2de52220e634f76fa))
+* store the current state of the ListCard in localStorage ([ed6d7c1](https://github.com/Agoric/agoric-sdk/commit/ed6d7c1fbb71bca410e6688acbf4556cb8601b87))
+* suppress auto-expand in setup page ([875af56](https://github.com/Agoric/agoric-sdk/commit/875af56419d8e6559eabff9518ca4b3614e36128))
+* trim 300MB off of the Docker image size, and speed up builds ([01c4fc1](https://github.com/Agoric/agoric-sdk/commit/01c4fc13c764e30ebc2d8fa95b457569f524c09d))
+* update Docker build steps ([7c7379d](https://github.com/Agoric/agoric-sdk/commit/7c7379db95f9b09151ad17533c9fa0c5c864c54c))
+* update paths and make rules ([f9982a3](https://github.com/Agoric/agoric-sdk/commit/f9982a39deb4ba1b94b83dc0decf0ce8d9a575e9))
+* update to IBC relayer v1.0.0-rc1 ([bea1021](https://github.com/Agoric/agoric-sdk/commit/bea10217f1647a31cb2771a620d749725163cbe7))
+* upgrade to Cosmos-SDK v0.40.0-rc3 ([ad82894](https://github.com/Agoric/agoric-sdk/commit/ad82894016c851ba5b5f65509f06abea679dbd89))
+* upgrade to stargate rc4 ([2a549e4](https://github.com/Agoric/agoric-sdk/commit/2a549e4fd28411bce61ddc16f131cbfcb7e3e8f7))
+* **chain-params:** 5s blocks to account for global round-trip time ([6fac324](https://github.com/Agoric/agoric-sdk/commit/6fac324dc619ec452ffd33f40f24ef6496f732f3))
+* upgrade the proto definitions ([30c7b70](https://github.com/Agoric/agoric-sdk/commit/30c7b70532f5a379d1b8ca45e11cbf80cfe3e1e5))
+* use `.dockerignore` to omit swingset-runner and stat-logger ([84d12d4](https://github.com/Agoric/agoric-sdk/commit/84d12d49b9bc8e29090a8919aa8e8c2e44c2d942))
+* use nodejs instead of sed for parsing package.json ([f58df9c](https://github.com/Agoric/agoric-sdk/commit/f58df9c1ca9e94747e7f1f9fd9509b4ee0858984))
+* use the actual header height for the disconnect overlay ([e13a9d9](https://github.com/Agoric/agoric-sdk/commit/e13a9d9127a2d8d4220e2f9d159f18b154702649))
+* **transform-metering:** suppress a size warning by not compacting ([af1648b](https://github.com/Agoric/agoric-sdk/commit/af1648b259feb50f2de9d111a1f83de0d559f47b))
+
+
+### Features
+
+* **ertp:** add purse.getCurrentAmountNotifier ([a060b5f](https://github.com/Agoric/agoric-sdk/commit/a060b5f5e760ea010aac68a300f9fadd12e1393b))
+* 2 parties can buy callSpread positions separately ([#2019](https://github.com/Agoric/agoric-sdk/issues/2019)) ([2b19988](https://github.com/Agoric/agoric-sdk/commit/2b1998804f8534db933e38f902b7b69bf3bad3cc))
+* **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
+* implement agoric --docker-tag=TAG ([afac575](https://github.com/Agoric/agoric-sdk/commit/afac575fbcfcce0e91b5f0b108eca46c77197f9a))
+* implement makeQuoteNotifier(amountIn, brandOut) ([3035203](https://github.com/Agoric/agoric-sdk/commit/3035203c4d9a8972f999690976822965cc9fc6bd))
+* make wallet elements start out expanded ([40bfda1](https://github.com/Agoric/agoric-sdk/commit/40bfda1e9ee716a6104c05feb6bff6e953a239ce))
+* stash the accessToken in localStorage ([a8ce36c](https://github.com/Agoric/agoric-sdk/commit/a8ce36c7ef3ffe94b07629f2108206c6187dc675))
+* The Slogulator Mk I ([42c5fdc](https://github.com/Agoric/agoric-sdk/commit/42c5fdcb78aa058a72db96adce19e8b8e1b7eba7))
+
+
+
+
+
 # [2.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.10.0-dev.0...@agoric/sdk@2.10.0) (2020-11-07)
 
 

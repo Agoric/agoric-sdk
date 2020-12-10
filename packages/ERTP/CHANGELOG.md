@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.8.0...@agoric/ertp@0.9.0) (2020-12-10)
+
+
+### Features
+
+* **ertp:** add purse.getCurrentAmountNotifier ([a060b5f](https://github.com/Agoric/agoric-sdk/commit/a060b5f5e760ea010aac68a300f9fadd12e1393b))
+* **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
+
+
+
+
+
 # [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.7.3-dev.0...@agoric/ertp@0.8.0) (2020-11-07)
 
 

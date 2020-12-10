@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.3.4...@agoric/transform-metering@1.4.0) (2020-12-10)
+
+
+### Bug Fixes
+
+* **transform-metering:** suppress a size warning by not compacting ([af1648b](https://github.com/Agoric/agoric-sdk/commit/af1648b259feb50f2de9d111a1f83de0d559f47b))
+
+
+### Features
+
+* **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
+
+
+
+
+
 ## [1.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.3.4-dev.0...@agoric/transform-metering@1.3.4) (2020-11-07)
 
 
