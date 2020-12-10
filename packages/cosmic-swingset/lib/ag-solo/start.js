@@ -398,20 +398,15 @@ export default async function start(basedir, argv) {
   }
 
   // Launch the agoric wallet deploys (if any).
-  exec(
+  const cp = exec(
     `${agoricCli} deploy${verbosity} --provide=wallet --hostport=${hostport} ${agWalletDeploy}`,
-    (err, stdout, stderr) => {
+    err => {
       if (err) {
         console.error(err);
-        return;
-      }
-      if (stderr) {
-        // Report the error.
-        process.stderr.write(stderr);
-      }
-      if (stdout) {
-        process.stdout.write(stdout);
       }
     },
   );
+
+  cp.stderr.pipe(process.stderr);
+  cp.stdout.pipe(process.stdout);
 }

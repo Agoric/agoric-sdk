@@ -37,11 +37,8 @@ export function deliver(mbs) {
     // console.debug(` ${newMessages.length} new messages`);
     const acknum = data[target].inboundAck;
     if (newMessages.length || acknum !== t.highestAck) {
-      if (newMessages.length) {
-        t.trips += 1;
-      }
       log(
-        `invoking deliverator; ${newMessages.length} new messages for ${target} (trips=${t.trips})`,
+        `invoking deliverator; ${newMessages.length} new messages for ${target}`,
       );
       t.deliverator(newMessages, acknum);
       if (newMessages.length) {
@@ -57,6 +54,6 @@ export function addDeliveryTarget(target, deliverator) {
     throw new Error(`target ${target} already added`);
   }
   /** @type {TargetRecord} */
-  const targetRecord = { deliverator, highestSent: 0, highestAck: 0, trips: 0 };
+  const targetRecord = { deliverator, highestSent: 0, highestAck: 0 };
   knownTargets.set(target, targetRecord);
 }

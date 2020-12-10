@@ -54,16 +54,17 @@ export default async function deployWallet(
     );
   };
 
-  const importedPaymentInfo = await walletToPaymentInfo(oldWallet);
-
   // Get the payments that were given to us by the chain.
-  const tapPaymentInfo = await E(faucet).tapFaucet();
+  const [importedPaymentInfo, tapPaymentInfo] = await Promise.all([
+    walletToPaymentInfo(oldWallet),
+    E(faucet).tapFaucet(),
+  ]);
   const paymentInfo = [...importedPaymentInfo, ...tapPaymentInfo];
 
   // Claim the payments.
   const issuerToPetname = new Map();
   const issuerToPursePetnameP = new Map();
-  const wallet = await E(walletVat).getWallet();
+  const wallet = E(walletVat).getWallet();
   const walletAdmin = E(wallet).getAdminFacet();
   await Promise.all(
     paymentInfo.map(async ({ issuerPetname, issuer }) => {
@@ -81,32 +82,13 @@ export default async function deployWallet(
     paymentInfo.map(async ({ pursePetname, issuer, payment, purse }) => {
       const issuerPetname = issuerToPetname.get(issuer);
 
-      let paymentP;
-
       if (!payment && purse) {
         // Withdraw the payment from the purse.
-        paymentP = E(purse)
+        payment = E(purse)
           .getCurrentAmount()
           .then(amount => E(purse).withdraw(amount));
-      } else {
-        paymentP = E(issuer)
-          .isLive(payment)
-          .then(isLive => isLive && payment);
       }
 
-      payment = await paymentP;
-      if (!payment) {
-        return;
-      }
-      const amount = await E(issuer).getAmountOf(payment);
-
-      // TODO: Use AmountMath.
-      const isEmpty =
-        amount.value === 0 ||
-        (Array.isArray(amount.value) && !amount.value.length);
-      if (isEmpty) {
-        return;
-      }
       if (!issuerToPursePetnameP.has(issuer)) {
         issuerToPursePetnameP.set(
           issuer,

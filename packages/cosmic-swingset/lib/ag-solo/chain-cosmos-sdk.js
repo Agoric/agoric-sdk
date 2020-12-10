@@ -9,6 +9,8 @@ import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { makeBatchedDeliver } from './batched-deliver';
+
 const log = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
@@ -412,10 +414,17 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
   // Begin the block consumer.
   recurseEachNewBlock();
 
+  let totalDeliveries = 0;
   async function deliver(newMessages, acknum) {
     let tmpInfo;
     try {
-      log(`delivering to chain`, GCI, newMessages, acknum);
+      totalDeliveries += 1;
+      log(
+        `delivering to chain (trips=${totalDeliveries})`,
+        GCI,
+        newMessages,
+        acknum,
+      );
 
       // Peer and submitter are combined in the message format (i.e. we removed
       // the extra 'myAddr' after 'tx swingset deliver'). All messages from
@@ -504,5 +513,5 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
-  return deliver;
+  return makeBatchedDeliver(deliver);
 }

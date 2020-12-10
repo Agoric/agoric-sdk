@@ -12,10 +12,11 @@ import anylogger from 'anylogger';
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
 import { makeWithQueue } from './vats/queue';
+import { makeBatchedDeliver } from './batched-deliver';
 
 const log = anylogger('fake-chain');
 
-const PRETEND_BLOCK_DELAY = 2;
+const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
 
 async function makeMapStorage(file) {
@@ -139,7 +140,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     inbound(GCI, outbox, ack);
   });
 
+  let totalDeliveries = 0;
   async function deliver(newMessages, acknum) {
+    totalDeliveries += 1;
+    console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
+
     intoChain.push([newMessages, acknum]);
     if (!delay) {
       clearTimeout(nextBlockTimeout);
@@ -152,5 +157,5 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
-  return deliver;
+  return makeBatchedDeliver(deliver);
 }
