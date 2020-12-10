@@ -48,6 +48,7 @@ test('ZoeHelpers satisfies blank proposal', t => {
   const fakeZcfSeat = harden({
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
     getProposal: () => harden({}),
+    hasProposal: () => true,
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
   mockZCFBuilder.addBrand(moolaR);
@@ -63,6 +64,7 @@ test('ZoeHelpers satisfies simple proposal', t => {
   const fakeZcfSeat = harden({
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
     getProposal: () => harden({ want: { Desire: moola(30) } }),
+    hasProposal: () => true,
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
   mockZCFBuilder.addBrand(moolaR);
@@ -95,6 +97,7 @@ test('ZoeHelpers satisfies() with give', t => {
     getCurrentAllocation: () => harden({ Charge: moola(30) }),
     getProposal: () =>
       harden({ give: { Charge: moola(30) }, want: { Desire: bucks(5) } }),
+    hasProposal: () => true,
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
   mockZCFBuilder.addBrand(moolaR);
