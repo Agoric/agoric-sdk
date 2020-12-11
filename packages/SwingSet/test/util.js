@@ -44,22 +44,8 @@ export function buildDispatch(onDispatchCallback = undefined) {
         onDispatchCallback(d);
       }
     },
-    notifyFulfillToPresence(promiseID, slot) {
-      const d = { type: 'notifyFulfillToPresence', promiseID, slot };
-      log.push(d);
-      if (onDispatchCallback) {
-        onDispatchCallback(d);
-      }
-    },
-    notifyFulfillToData(promiseID, data) {
-      const d = { type: 'notifyFulfillToData', promiseID, data };
-      log.push(d);
-      if (onDispatchCallback) {
-        onDispatchCallback(d);
-      }
-    },
-    notifyReject(promiseID, data) {
-      const d = { type: 'notifyReject', promiseID, data };
+    notify(promiseID, rejected, data) {
+      const d = { type: 'notify', promiseID, rejected, data };
       log.push(d);
       if (onDispatchCallback) {
         onDispatchCallback(d);

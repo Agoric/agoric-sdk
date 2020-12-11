@@ -291,7 +291,7 @@ for (const mode of modes) {
 // about this act of resolution.
 
 // In the current code, the kernel then echoes the resolution back into the
-// vat (by delivering a `dispatch.notifyFulfillTo..` message in a subsequent
+// vat (by delivering a `dispatch.notify` message in a subsequent
 // crank). In the upcoming retire-promiseid branch, the kernel does not, and
 // liveslots must notice that we're also subscribed to this promise, and
 // exercise the resolver/rejector that would normally be waiting for a
@@ -480,7 +480,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // remote subscribers that p1 has been resolved. Since the vat is also a
   // subscriber, thenResolve's callback must also invoke p1's resolver (which
   // was stashed in importedPromisesByPromiseID), as if the kernel had call
-  // the vat's dispatch.notifyFulfillToPresence. This causes the p1.then
+  // the vat's dispatch.notify. This causes the p1.then
   // callback to be pushed to the back of the promise queue, which will set
   // resolutionOfP1 after all the syscalls have been made.
 
@@ -664,17 +664,17 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log, []);
 
   if (mode === 'presence') {
-    dispatch.notifyFulfillToPresence(p1, target2);
+    dispatch.notify(p1, false, capargs(slot0arg, [target2]));
   } else if (mode === 'local-object') {
-    dispatch.notifyFulfillToPresence(p1, rootA);
+    dispatch.notify(p1, false, capargs(slot0arg, [rootA]));
   } else if (mode === 'data') {
-    dispatch.notifyFulfillToData(p1, capargs(4, []));
+    dispatch.notify(p1, false, capargs(4, []));
   } else if (mode === 'promise-data') {
-    dispatch.notifyFulfillToData(p1, capargs([slot0arg], [p1]));
+    dispatch.notify(p1, false, capargs([slot0arg], [p1]));
   } else if (mode === 'reject') {
-    dispatch.notifyReject(p1, capargs('error', []));
+    dispatch.notify(p1, true, capargs('error', []));
   } else if (mode === 'promise-reject') {
-    dispatch.notifyReject(p1, capargs([slot0arg], [p1]));
+    dispatch.notify(p1, true, capargs([slot0arg], [p1]));
   } else {
     throw Error(`unknown mode ${mode}`);
   }

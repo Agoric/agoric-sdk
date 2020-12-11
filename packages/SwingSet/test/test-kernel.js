@@ -724,10 +724,10 @@ test('promise resolveToData', async t => {
   function setupA(s) {
     syscallA = s;
     function deliver() {}
-    function notifyFulfillToData(promiseID, data) {
-      log.push(['notify', promiseID, data]);
+    function notify(promiseID, rejected, data) {
+      log.push(['notify', promiseID, rejected, data]);
     }
-    return { deliver, notifyFulfillToData };
+    return { deliver, notify };
   }
   await kernel.createTestVat('vatA', setupA);
 
@@ -765,7 +765,7 @@ test('promise resolveToData', async t => {
   ]);
 
   syscallB.fulfillToData(pForB, capdata('args', [aliceForA]));
-  // this causes a notifyFulfillToData message to be queued
+  // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -777,7 +777,7 @@ test('promise resolveToData', async t => {
 
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
-  t.deepEqual(log.shift(), ['notify', pForA, capdata('args', ['o-50'])]);
+  t.deepEqual(log.shift(), ['notify', pForA, false, capdata('args', ['o-50'])]);
   t.deepEqual(log, []); // no other dispatch calls
   if (!RETIRE_KPIDS) {
     t.deepEqual(kernel.dump().promises, [
@@ -801,10 +801,10 @@ test('promise resolveToPresence', async t => {
   function setupA(s) {
     syscallA = s;
     function deliver() {}
-    function notifyFulfillToPresence(promiseID, slot) {
-      log.push(['notify', promiseID, slot]);
+    function notify(promiseID, rejected, data) {
+      log.push(['notify', promiseID, rejected, data]);
     }
-    return { deliver, notifyFulfillToPresence };
+    return { deliver, notify };
   }
   await kernel.createTestVat('vatA', setupA);
 
@@ -858,7 +858,15 @@ test('promise resolveToPresence', async t => {
   ]);
 
   await kernel.step();
-  t.deepEqual(log.shift(), ['notify', pForA, bobForA]);
+  t.deepEqual(log.shift(), [
+    'notify',
+    pForA,
+    false,
+    {
+      body: '{"@qclass":"slot","index":0}',
+      slots: [bobForA],
+    },
+  ]);
   t.deepEqual(log, []); // no other dispatch calls
   if (!RETIRE_KPIDS) {
     t.deepEqual(kernel.dump().promises, [
@@ -882,10 +890,10 @@ test('promise reject', async t => {
   function setupA(s) {
     syscallA = s;
     function deliver() {}
-    function notifyReject(promiseID, rejectData) {
-      log.push(['notify', promiseID, rejectData]);
+    function notify(promiseID, rejected, rejectData) {
+      log.push(['notify', promiseID, rejected, rejectData]);
     }
-    return { deliver, notifyReject };
+    return { deliver, notify };
   }
   await kernel.createTestVat('vatA', setupA);
 
@@ -923,7 +931,7 @@ test('promise reject', async t => {
   ]);
 
   syscallB.reject(pForB, capdata('args', [aliceForA]));
-  // this causes a notifyFulfillToData message to be queued
+  // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -935,7 +943,7 @@ test('promise reject', async t => {
 
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
-  t.deepEqual(log.shift(), ['notify', pForA, capdata('args', ['o-50'])]);
+  t.deepEqual(log.shift(), ['notify', pForA, true, capdata('args', ['o-50'])]);
   t.deepEqual(log, []); // no other dispatch calls
   if (!RETIRE_KPIDS) {
     t.deepEqual(kernel.dump().promises, [

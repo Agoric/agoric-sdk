@@ -130,38 +130,44 @@ function resolutionOf(vpid, mode, targets) {
   switch (mode) {
     case 'presence':
       return {
-        type: 'notifyFulfillToPresence',
+        type: 'notify',
         promiseID: vpid,
-        slot: targets.target2,
+        rejected: false,
+        data: capargs(slot0arg, [targets.target2]),
       };
     case 'local-object':
       return {
-        type: 'notifyFulfillToPresence',
+        type: 'notify',
         promiseID: vpid,
-        slot: targets.localTarget,
+        rejected: false,
+        data: capargs(slot0arg, [targets.localTarget]),
       };
     case 'data':
       return {
-        type: 'notifyFulfillToData',
+        type: 'notify',
         promiseID: vpid,
+        rejected: false,
         data: capargs(4, []),
       };
     case 'promise-data':
       return {
-        type: 'notifyFulfillToData',
+        type: 'notify',
         promiseID: vpid,
+        rejected: false,
         data: capargs([slot0arg], [targets.p1]),
       };
     case 'reject':
       return {
-        type: 'notifyReject',
+        type: 'notify',
         promiseID: vpid,
+        rejected: true,
         data: capargs('error', []),
       };
     case 'promise-reject':
       return {
-        type: 'notifyReject',
+        type: 'notify',
         promiseID: vpid,
+        rejected: true,
         data: capargs([slot0arg], [targets.p1]),
       };
     default:
@@ -535,7 +541,7 @@ async function doTest4567(t, which, mode) {
 
   // Now bob resolves it. We want to examine the kernel's c-lists at the
   // moment the notification is delivered to Alice. We only expect one
-  // dispatch: Alice.notifyFulfillToPresence()
+  // dispatch: Alice.notify()
   const targetsA = {
     target2: rootAvatA,
     localTarget: localTargetA,

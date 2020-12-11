@@ -59,21 +59,15 @@ function doMessage(targetSlot, msg) {
   );
 }
 
-function doNotify(vpid, vp) {
-  const errmsg = `vat.promise[${vpid}] ${vp.state} failed`;
-  switch (vp.state) {
-    case 'fulfilledToPresence':
-      return doProcess(['notifyFulfillToPresence', vpid, vp.slot], errmsg);
-    case 'redirected':
-      // TODO unimplemented
-      throw new Error('not implemented yet');
-    case 'fulfilledToData':
-      return doProcess(['notifyFulfillToData', vpid, vp.data], errmsg);
-    case 'rejected':
-      return doProcess(['notifyReject', vpid, vp.data], errmsg);
-    default:
-      throw Error(`unknown promise state '${vp.state}'`);
+function doNotify(primaryVpid, resolutions) {
+  for (const vpid of Object.keys(resolutions)) {
+    // XXX return inside loop is wrong once `resolutions` has more than 1 element
+    const vp = resolutions[vpid];
+    const errmsg = `vat.promise[${vpid}] ${vp.rejected} failed`;
+    return doProcess(['notify', vpid, vp.rejected, vp.data], errmsg);
   }
+  // XXX placeholder to make lint shut up until we're done implementing things
+  return ['error', 'incomplete code, this should never happen'];
 }
 
 parentPort.on('message', ([type, ...margs]) => {

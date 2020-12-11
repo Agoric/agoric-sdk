@@ -123,11 +123,11 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     insistVatType('promise', vpid);
     lsdebug(`makeImportedPromise(${vpid})`);
 
-    // The Promise will we associated with a handler that converts p~.foo()
-    // into a syscall.send() that targets the vpid. When the Promise is
-    // resolved (during receipt of a dispatch.notifyFulfill* or
-    // notifyReject), this Promise's handler will be replaced by the handler
-    // of the resolution, which might be a Presence or a local object.
+    // The Promise will we associated with a handler that converts p~.foo() into
+    // a syscall.send() that targets the vpid. When the Promise is resolved
+    // (during receipt of a dispatch.notify), this Promise's handler will be
+    // replaced by the handler of the resolution, which might be a Presence or a
+    // local object.
 
     // for safety as we shake out bugs in HandledPromise, we guard against
     // this handler being used after it was supposed to be resolved
@@ -382,7 +382,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     }
     // TODO: if we acquire new decision-making authority over a promise that
     // we already knew about ('result' is already in slotToVal), we should no
-    // longer accept dispatch.notifyFulfill from the kernel. We currently use
+    // longer accept dispatch.notify from the kernel. We currently use
     // importedPromisesByPromiseID to track a combination of "we care about
     // when this promise resolves" and "we are listening for the kernel to
     // resolve it". We should split that into two tables or something. And we
@@ -435,14 +435,18 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     slotToVal.delete(promiseID);
   }
 
+  const ENABLE_PROMISE_ANALYSIS = true;
+
   function retirePromiseIDIfEasy(promiseID, data) {
-    for (const slot of data.slots) {
-      const { type } = parseVatSlot(slot);
-      if (type === 'promise') {
-        lsdebug(
-          `Unable to retire ${promiseID} because slot ${slot} is a promise`,
-        );
-        return;
+    if (ENABLE_PROMISE_ANALYSIS) {
+      for (const slot of data.slots) {
+        const { type } = parseVatSlot(slot);
+        if (type === 'promise') {
+          lsdebug(
+            `Unable to retire ${promiseID} because slot ${slot} is a promise`,
+          );
+          return;
+        }
       }
     }
     retirePromiseID(promiseID);
@@ -501,11 +505,11 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     };
   }
 
-  function notifyFulfillToData(promiseID, data) {
+  function notify(promiseID, rejected, data) {
     assert(didRoot);
     insistCapData(data);
     lsdebug(
-      `ls.dispatch.notifyFulfillToData(${promiseID}, ${data.body}, ${data.slots})`,
+      `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
     );
     insistVatType('promise', promiseID);
     // TODO: insist that we do not have decider authority for promiseID
@@ -514,45 +518,15 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     }
     const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
-    pRec.resolve(val);
-    retirePromiseIDIfEasy(promiseID, data);
-  }
-
-  function notifyFulfillToPresence(promiseID, slot) {
-    assert(didRoot);
-    lsdebug(`ls.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
-    insistVatType('promise', promiseID);
-    // TODO: insist that we do not have decider authority for promiseID
-    insistVatType('object', slot);
-    if (!importedPromisesByPromiseID.has(promiseID)) {
-      throw new Error(`unknown promiseID '${promiseID}'`);
+    if (rejected) {
+      pRec.reject(val);
+    } else {
+      pRec.resolve(val);
     }
-    const pRec = importedPromisesByPromiseID.get(promiseID);
-    const val = convertSlotToVal(slot);
-    // val is either a local pass-by-presence object, or a Presence (which
-    // points at some remote pass-by-presence object).
-    pRec.resolve(val);
-    retirePromiseID(promiseID);
+    retirePromiseIDIfEasy(promiseID, data);
   }
 
   // TODO: when we add notifyForward, guard against cycles
-
-  function notifyReject(promiseID, data) {
-    assert(didRoot);
-    insistCapData(data);
-    lsdebug(
-      `ls.dispatch.notifyReject(${promiseID}, ${data.body}, ${data.slots})`,
-    );
-    insistVatType('promise', promiseID);
-    // TODO: insist that we do not have decider authority for promiseID
-    if (!importedPromisesByPromiseID.has(promiseID)) {
-      throw new Error(`unknown promiseID '${promiseID}'`);
-    }
-    const pRec = importedPromisesByPromiseID.get(promiseID);
-    const val = m.unserialize(data);
-    pRec.reject(val);
-    retirePromiseIDIfEasy(promiseID, data);
-  }
 
   function exitVat(completion) {
     syscall.exit(false, m.serialize(harden(completion)));
@@ -586,12 +560,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     slotToVal.set(rootSlot, rootObject);
   }
 
-  const dispatch = harden({
-    deliver,
-    notifyFulfillToData,
-    notifyFulfillToPresence,
-    notifyReject,
-  });
+  const dispatch = harden({ deliver, notify });
   return harden({ vatGlobals, setBuildRootObject, dispatch, m });
 }
 

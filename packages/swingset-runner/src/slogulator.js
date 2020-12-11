@@ -29,7 +29,10 @@ export function main() {
     .boolean('vatspace')
     .describe('vatspace', "Show object refs in their vat's namespace")
     .boolean('kernelspace')
-    .describe('kernelspace', 'Show object refs in the kernel namespace (default)')
+    .describe(
+      'kernelspace',
+      'Show object refs in the kernel namespace (default)',
+    )
     .conflicts('vatspace', 'kernelspace')
     .boolean('crankbreaks')
     .default('crankbreaks', true)
@@ -38,7 +41,10 @@ export function main() {
     .default('clist', true)
     .describe('clist', 'Show C-list change events')
     .boolean('usesloggertags')
-    .describe('usesloggertags', 'Display slogger events using full slogger tags')
+    .describe(
+      'usesloggertags',
+      'Display slogger events using full slogger tags',
+    )
     .number('bigwidth')
     .default('bigwidth', 200)
     .describe('bigwidth', 'Width above which large values display as <BIG>')
