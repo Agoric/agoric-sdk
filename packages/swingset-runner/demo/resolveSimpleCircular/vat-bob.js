@@ -1,0 +1,21 @@
+function makePR() {
+  let r;
+  const p = new Promise((resolve, _reject) => {
+    r = resolve;
+  });
+  return [p, r];
+}
+
+export function buildRootObject(_vatPowers) {
+  let p;
+  let r;
+  return harden({
+    genPromise() {
+      [p, r] = makePR();
+      return p;
+    },
+    usePromise(pa) {
+      r(pa);
+    },
+  });
+}

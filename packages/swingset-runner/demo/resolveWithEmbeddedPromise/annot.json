@@ -1,0 +1,18 @@
+{
+  "kernelRefs": {
+    "ko20": "bobRoot",
+    "ko21": "bootstrapRoot",
+    "ko22": "commsRoot",
+    "ko23": "timerRoot",
+    "ko24": "vatAdminRoot",
+    "ko25": "vattpRoot",
+
+    "kd30": "vatAdminDevice",
+
+    "kp40": "bootstrap/rp",
+    "kp41": "first/rp",
+    "kp42": "second/rp",
+    "kp43": "third/rp",
+    "kp44": "secondArr/p"
+  }
+}

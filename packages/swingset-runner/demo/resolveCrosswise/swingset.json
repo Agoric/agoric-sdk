@@ -1,0 +1,14 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "alice": {
+      "sourceSpec": "vat-body.js"
+    },
+    "bob": {
+      "sourceSpec": "vat-body.js"
+    },
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    }
+  }
+}

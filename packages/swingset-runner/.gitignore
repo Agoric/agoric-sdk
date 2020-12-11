@@ -1,3 +1,8 @@
 # swingset persistence data
 *.mdb
 *.jsonlines
+*.naive
+slog
+vslog
+vlog
+vdump
