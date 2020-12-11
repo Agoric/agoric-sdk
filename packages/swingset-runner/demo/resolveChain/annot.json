@@ -1,0 +1,23 @@
+{
+  "kernelRefs": {
+    "ko20": "bobRoot",
+    "ko21": "aliceRoot",
+    "ko22": "commsRoot",
+    "ko23": "timerRoot",
+    "ko24": "vatAdminRoot",
+    "ko25": "vattpRoot",
+
+    "kd30": "vatAdminDevice",
+
+    "kp40": "bootstrap/rp",
+    "kp41": "init/rp",
+    "kp42": "gen0/rp",
+    "kp43": "arr0/p",
+    "kp44": "gen1/rp",
+    "kp45": "arr1/p",
+    "kp46": "gen2/rp",
+    "kp47": "arr2/p",
+    "kp48": "gen3/rp",
+    "kp49": "arr3/p"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "kernelRefs": {
+    "ko20": "bobRoot",
+    "ko21": "bootstrapRoot",
+    "ko22": "commsRoot",
+    "ko23": "timerRoot",
+    "ko24": "vatAdminRoot",
+    "ko25": "vattpRoot",
+
+    "kd30": "vatAdminDevice",
+
+    "kp40": "bootstrap/rp",
+    "kp41": "genPromise1/rp",
+    "kp42": "genPromise2/rp",
+    "kp43": "usePromise/rp"
+  }
+}

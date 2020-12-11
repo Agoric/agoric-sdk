@@ -1,0 +1,19 @@
+{
+  "kernelRefs": {
+    "ko20": "aliceRoot",
+    "ko21": "bobRoot",
+    "ko22": "bootstrapRoot",
+    "ko23": "commsRoot",
+    "ko24": "timerRoot",
+    "ko25": "vatAdminRoot",
+    "ko26": "vattpRoot",
+
+    "kd30": "vatAdminDevice",
+
+    "kp40": "bootstrap/rp",
+    "kp41": "alice.genPromise/rp",
+    "kp42": "bob.genPromise/rp",
+    "kp43": "alice.usePromise/rp",
+    "kp44": "bob.usePromise/rp"
+  }
+}

@@ -72,8 +72,10 @@ function rundemo {
 for demo in demo/*; do
   hadconf=0
   for conf in ${demo}/*.json; do
-    rundemo $demo "--config $conf run"
-    hadconf=1
+    if [ "$conf" != "${demo}/annot.json" ]; then
+      rundemo $demo "--config $conf run"
+      hadconf=1
+    fi
   done
   if [ "$hadconf" == "0" ]; then
     rundemo $demo "run $demo"
