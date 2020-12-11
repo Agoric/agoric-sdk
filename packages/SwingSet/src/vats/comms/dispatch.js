@@ -1,5 +1,6 @@
 import { assert, details } from '@agoric/assert';
-import { makeVatSlot } from '../../parseVatSlots';
+import { QCLASS } from '@agoric/marshal';
+import { insistVatType, makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
 import { makeState, makeStateKit } from './state';
 import { deliverToController } from './controller';
@@ -72,9 +73,9 @@ export function buildCommsDispatch(syscall) {
     throw Error(`unknown target ${target}`);
   }
 
-  function notifyFulfillToData(promiseID, data) {
+  function notify(promiseID, rejected, data) {
     insistCapData(data);
-    // console.debug(`comms.notifyFulfillToData(${promiseID})`);
+    // console.debug(`comms.notify(${promiseID}, ${rejected}, ${data})`);
     // dumpState(state);
 
     // I *think* we should never get here for local promises, since the
@@ -89,32 +90,35 @@ export function buildCommsDispatch(syscall) {
     // hear about it. If we then get the authority back again, we no longer
     // want to hear about its resolution (since we're the ones doing the
     // resolving), but the kernel still thinks of us as subscribing, so we'll
-    // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
+    // get a bogus dispatch.notify. Currently we throw an error, which
     // is currently ignored but might prompt a vat shutdown in the future.
 
-    const resolution = harden({ type: 'data', data });
+    // TODO: The following goofiness, namely taking apart the capdata object and
+    // looking at it to see if it's a single presence reference and then
+    // treating it in a special way if it is, is a consequence of an impedance
+    // mismatch that has grown up between the comms protocol and the
+    // evolutionary path that the kernel/vat interface has taken.  In the future
+    // we should clean this up and unify presences and data in the comms
+    // protocol the way the kernel/vat interface has.
+    const unser = JSON.parse(data.body);
+    let resolution;
+    if (rejected) {
+      resolution = harden({ type: 'reject', data });
+    } else if (
+      Object(unser) === unser &&
+      QCLASS in unser &&
+      unser[QCLASS] === 'slot'
+    ) {
+      const slot = data.slots[unser.index];
+      insistVatType('object', slot);
+      resolution = harden({ type: 'object', slot });
+    } else {
+      resolution = harden({ type: 'data', data });
+    }
     resolveFromKernel(promiseID, resolution);
   }
 
-  function notifyFulfillToPresence(promiseID, slot) {
-    // console.debug(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
-    const resolution = harden({ type: 'object', slot });
-    resolveFromKernel(promiseID, resolution);
-  }
-
-  function notifyReject(promiseID, data) {
-    insistCapData(data);
-    // console.debug(`comms.notifyReject(${promiseID})`);
-    const resolution = harden({ type: 'reject', data });
-    resolveFromKernel(promiseID, resolution);
-  }
-
-  const dispatch = harden({
-    deliver,
-    notifyFulfillToData,
-    notifyFulfillToPresence,
-    notifyReject,
-  });
+  const dispatch = harden({ deliver, notify });
   debugState.set(dispatch, { state, clistKit });
 
   return dispatch;

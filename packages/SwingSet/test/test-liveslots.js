@@ -89,7 +89,7 @@ test('calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch.notifyFulfillToData('p-1', capargs('result'));
+  dispatch.notify('p-1', false, capargs('result'));
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), ['res', 'result']);
 
@@ -107,7 +107,7 @@ test('calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch.notifyReject('p-2', capargs('rejection'));
+  dispatch.notify('p-2', true, capargs('rejection'));
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), ['rej', 'rejection']);
 
@@ -218,8 +218,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log, []);
 
   // now we tell it the promise has resolved, to object 'o2'
-  // function notifyFulfillToPresence(promiseID, slot) {
-  dispatch.notifyFulfillToPresence(p1, o2);
+  dispatch.notify(p1, false, capargs(slot0arg, [o2]));
   await waitUntilQuiescent();
   // this allows E(o2).nonpipe2() to go out, which was not pipelined
   t.deepEqual(log.shift(), {
@@ -427,11 +426,11 @@ async function doResultPromise(t, mode) {
   // resolve p1 first. The one() call was already pipelined, so this
   // should not trigger any new syscalls.
   if (mode === 'to presence') {
-    dispatch.notifyFulfillToPresence(expectedP1, target2);
+    dispatch.notify(expectedP1, false, capargs(slot0arg, [target2]));
   } else if (mode === 'to data') {
-    dispatch.notifyFulfillToData(expectedP1, capargs(4, []));
+    dispatch.notify(expectedP1, false, capargs(4, []));
   } else if (mode === 'reject') {
-    dispatch.notifyReject(expectedP1, capargs('error', []));
+    dispatch.notify(expectedP1, true, capargs('error', []));
   } else {
     throw Error(`unknown mode ${mode}`);
   }
@@ -439,7 +438,7 @@ async function doResultPromise(t, mode) {
   t.deepEqual(log, []);
 
   // Now we resolve p2, allowing the second two() to proceed
-  dispatch.notifyFulfillToData(expectedP2, capargs(4, []));
+  dispatch.notify(expectedP2, false, capargs(4, []));
   await waitUntilQuiescent();
 
   if (mode === 'to presence') {

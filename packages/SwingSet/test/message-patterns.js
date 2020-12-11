@@ -218,6 +218,42 @@ export function buildPatterns(log) {
   out.a42 = ['a42 done, [Alleged: presence o-53] match true'];
   test('a42');
 
+  // bob!x() -> <nada> // rejection
+  {
+    objA.a43 = async () => {
+      try {
+        const ret = await E(b.bob).b43();
+        log(`a43 unexpectedly resolved to ${ret}`);
+      } catch (e) {
+        log(`a43 rejected with ${e}`);
+      }
+    };
+    objB.b43 = async () => {
+      throw Error('nope');
+    };
+  }
+  out.a43 = ['a43 rejected with Error: nope'];
+  test('a43');
+
+  // bob!x() -> [<nada>] // rejection in result
+  {
+    objA.a44 = async () => {
+      try {
+        const ret = await E(b.bob).b44();
+        log(`a44 got ret`);
+        const ret2 = await ret[0];
+        log(`a44 ret[0] unexpectedly resolved to ${ret2}`);
+      } catch (e) {
+        log(`a44 ret[0] rejected with ${e}`);
+      }
+    };
+    objB.b44 = async () => {
+      return harden([Promise.reject(Error('nope'))]);
+    };
+  }
+  out.a44 = ['a44 got ret', 'a44 ret[0] rejected with Error: nope'];
+  test('a44');
+
   // bob!x() -> P(data)
   {
     // bob returns a (wrapped) promise, then resolves it to data. We wrap it
@@ -410,6 +446,29 @@ export function buildPatterns(log) {
   }
   out.a64 = ['true', 'true', 'true', 'true'];
   test('a64');
+
+  // bob!x() -> P(bill) // reject after receipt
+  {
+    objA.a65 = async () => {
+      const p2 = await E(b.bob).b65_1();
+      E(b.bob).b65_2();
+      try {
+        const bill = await p2.promise;
+        log(`a65 unexpectedly resolved to ${bill}`);
+      } catch (e) {
+        log(`a65 rejected with ${e}`);
+      }
+    };
+    const p1 = makePromiseKit();
+    objB.b65_1 = async () => {
+      return { promise: p1.promise };
+    };
+    objB.b65_2 = async () => {
+      p1.reject(Error('nope'));
+    };
+  }
+  out.a65 = ['a65 rejected with Error: nope'];
+  test('a65');
 
   // bob!pipe1()!pipe2()!pipe3() // pipelining
   {

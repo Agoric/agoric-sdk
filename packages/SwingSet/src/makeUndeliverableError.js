@@ -2,7 +2,7 @@
 // objects and non-callable data. Attempting to send a message to data will
 // throw an error. This function provides a consistent definition of this
 // error message, for the use of the kernel and the comms vat. The capdata it
-// returns can be used in a `notifyReject` on the result promise.
+// returns can be used in a `notify` on the rejection promise.
 
 // Within a vat, the native JavaScript behavior (e.g. `const obj = {};
 // obj.foo()`) would be TypeError with a message like "obj.foo is not a

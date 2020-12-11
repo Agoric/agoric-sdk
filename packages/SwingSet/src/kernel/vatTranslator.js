@@ -52,26 +52,38 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return vatDelivery;
   }
 
-  function translateNotify(kpid, kp) {
-    assert(kp.state !== 'unresolved', details`spurious notification ${kpid}`);
-    const vpid = mapKernelSlotToVatSlot(kpid);
-    const vp = { state: kp.state };
+  function translatePromiseDescriptor(kp) {
     if (kp.state === 'fulfilledToPresence') {
-      vp.slot = mapKernelSlotToVatSlot(kp.slot);
-      vatKeeper.deleteCListEntry(kpid, vpid);
+      return {
+        rejected: false,
+        data: {
+          body: '{"@qclass":"slot","index":0}',
+          slots: [mapKernelSlotToVatSlot(kp.slot)],
+        },
+      };
+    } else if (kp.state === 'fulfilledToData' || kp.state === 'rejected') {
+      return {
+        rejected: kp.state === 'rejected',
+        data: {
+          ...kp.data,
+          slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
+        },
+      };
     } else if (kp.state === 'redirected') {
       // TODO unimplemented
       throw new Error('not implemented yet');
-    } else if (kp.state === 'fulfilledToData' || kp.state === 'rejected') {
-      vp.data = {
-        ...kp.data,
-        slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
-      };
-      deleteCListEntryIfEasy(vatID, vatKeeper, kpid, vpid, kp.data);
     } else {
       throw new Error(`unknown kernelPromise state '${kp.state}'`);
     }
-    const vatDelivery = harden(['notify', vpid, vp]);
+  }
+
+  function translateNotify(kpid, kp) {
+    assert(kp.state !== 'unresolved', details`spurious notification ${kpid}`);
+    const vpid = mapKernelSlotToVatSlot(kpid);
+    const resolutions = {};
+    resolutions[vpid] = translatePromiseDescriptor(kp);
+    deleteCListEntryIfEasy(vatID, vatKeeper, kernelKeeper, kpid, vpid, kp.data);
+    const vatDelivery = harden(['notify', vpid, resolutions]);
     return vatDelivery;
   }
 
@@ -225,7 +237,14 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         data.body
       } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    deleteCListEntryIfEasy(vatID, vatKeeper, kpid, vpid, kernelData);
+    deleteCListEntryIfEasy(
+      vatID,
+      vatKeeper,
+      kernelKeeper,
+      kpid,
+      vpid,
+      kernelData,
+    );
     return harden(['fulfillToData', vatID, kpid, kernelData]);
   }
 
@@ -240,7 +259,14 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         data.body
       } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    deleteCListEntryIfEasy(vatID, vatKeeper, kpid, vpid, kernelData);
+    deleteCListEntryIfEasy(
+      vatID,
+      vatKeeper,
+      kernelKeeper,
+      kpid,
+      vpid,
+      kernelData,
+    );
     return harden(['reject', vatID, kpid, kernelData]);
   }
 

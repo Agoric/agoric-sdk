@@ -127,7 +127,7 @@ export function makeOutbound(state, stateKit) {
     // hear about it. If we then get the authority back again, we no longer
     // want to hear about its resolution (since we're the ones doing the
     // resolving), but the kernel still thinks of us as subscribing, so we'll
-    // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
+    // get a bogus dispatch.notify. Currently we throw an error, which
     // is currently ignored but might prompt a vat shutdown in the future.
 
     return rpid;

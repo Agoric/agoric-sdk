@@ -157,8 +157,7 @@ export default function buildKernel(
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
-  // * notifyFulfillToData/notifyFulfillToPresence/notifyReject:
-  //   kernelPromiseID
+  // * notify: kernelPromiseID
 
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
@@ -454,7 +453,7 @@ export default function buildKernel(
       case 'fulfilledToData':
         return 'dispatchNotifyFulfillToData';
       case 'rejected':
-        return 'dispatchReject';
+        return 'dispatchNotifyReject';
       default:
         throw Error(`unknown promise state ${state}`);
     }

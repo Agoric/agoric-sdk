@@ -45,10 +45,10 @@ export function buildRootObject(vatPowers) {
     return 1;
   }
 
-  // two: dispatch.notifyFulfillToPresence(pD, callbackObj)
-  // three: dispatch.notifyReject(pE, Error('four'))
+  // two: dispatch.notify(pD, false, callbackObj)
+  // three: dispatch.notify(pE, true, Error('four'))
 
-  // four: dispatch.notifyFulfillToData(pF, ['data', callbackObj])
+  // four: dispatch.notify(pF, false, ['data', callbackObj])
 
   const target = harden({
     zero,
