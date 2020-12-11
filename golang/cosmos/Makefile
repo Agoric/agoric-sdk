@@ -1,5 +1,5 @@
-NAME := $(shell node -e 'console.log(require("./package.json").name)')
-VERSION := $(shell node -e 'console.log(require("./package.json").version)')
+NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
+VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
 
 default: all
