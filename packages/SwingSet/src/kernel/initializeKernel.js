@@ -176,7 +176,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       throw Error('bootstrap got unexpected pass-by-presence');
     }
 
-    const m = makeMarshal(convertValToSlot);
+    const m = makeMarshal(convertValToSlot, undefined, {
+      marshalName: 'kernel:bootstrap',
+    });
     const args = harden([vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootSlot = makeVatRootObjectSlot();
