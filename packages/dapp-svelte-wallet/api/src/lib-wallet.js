@@ -133,7 +133,9 @@ export function makeWallet({
   // Instead of { body, slots }, fill the slots. This is useful for
   // display but not for data processing, since the special identifier
   // @qclass is lost.
-  const { unserialize: fillInSlots } = makeMarshal(noOp, identitySlotToValFn);
+  const { unserialize: fillInSlots } = makeMarshal(noOp, identitySlotToValFn, {
+    marshalName: 'wallet',
+  });
 
   /** @type {NotifierRecord<OfferState[]>} */
   const {
@@ -1304,7 +1306,7 @@ export function makeWallet({
   });
 
   const instanceManager = harden({
-    rename: async (petname, instance) => { 
+    rename: async (petname, instance) => {
       instanceMapping.renamePetname(petname, instance);
       await updateAllState();
       return `instance ${q(petname)} successfully renamed in wallet`;

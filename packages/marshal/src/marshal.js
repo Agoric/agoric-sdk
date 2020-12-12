@@ -480,10 +480,17 @@ const defaultSlotToValFn = (x, _) => x;
 export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
   convertSlotToVal = defaultSlotToValFn,
+  // Messages are the medium
+  { marshalName = 'McLuhan' } = {},
 ) {
-  // Ascenting numbers identifying the sending of errors relative to this
-  // marshal instance (serialize,unserialize pair)
+  assert.typeof(marshalName, 'string');
+  // Ascending numbers identifying the sending of errors relative to this
+  // marshal instance.
   let errorCount = 0;
+  const nextErrorId = () => {
+    errorCount += 1;
+    return `error:${marshalName}#${errorCount}`;
+  };
 
   /**
    * @template Slot
@@ -597,11 +604,7 @@ export function makeMarshal(
               // identifier and include it in the message, to help
               // with the correlation.
 
-              errorCount += 1;
-              // TODO in order to reliably correlate sent and received errors
-              // we will need something more globally identufying than the count
-              // relative to this marshal instance.
-              const errorId = `error#${errorCount}`;
+              const errorId = nextErrorId();
               assert.note(val, d`Sent as ${errorId}`);
               // TODO we need to instead log to somewhere hidden
               // to be revealed when correlating with the received error.

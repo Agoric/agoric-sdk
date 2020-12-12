@@ -209,7 +209,9 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   }
 
   // eslint-disable-next-line no-use-before-define
-  const m = makeMarshal(convertValToSlot, convertSlotToVal);
+  const m = makeMarshal(convertValToSlot, convertSlotToVal, {
+    marshalName: `liveSlots:${forVatID}`,
+  });
 
   const {
     makeVirtualObjectRepresentative,

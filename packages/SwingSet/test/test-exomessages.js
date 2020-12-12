@@ -58,14 +58,14 @@ async function testFailure(t) {
     failureHappened = true;
     t.is(
       e.message,
-      'kernel panic kp40.policy panic: rejection {"body":"{\\"@qclass\\":\\"error\\",\\"name\\":\\"Error\\",\\"message\\":\\"gratuitous error\\",\\"errorId\\":\\"error#1\\"}","slots":[]}',
+      'kernel panic kp40.policy panic: rejection {"body":"{\\"@qclass\\":\\"error\\",\\"name\\":\\"Error\\",\\"message\\":\\"gratuitous error\\",\\"errorId\\":\\"error:liveSlots:v1#1\\"}","slots":[]}',
     );
   }
   t.truthy(failureHappened);
   t.is(controller.kpStatus(controller.bootstrapResult), 'rejected');
   t.deepEqual(controller.kpResolution(controller.bootstrapResult), {
     body:
-      '{"@qclass":"error","name":"Error","message":"gratuitous error","errorId":"error#1"}',
+      '{"@qclass":"error","name":"Error","message":"gratuitous error","errorId":"error:liveSlots:v1#1"}',
     slots: [],
   });
 }
@@ -123,7 +123,7 @@ test('extra message rejects', async t => {
     t,
     'reject',
     'rejected',
-    '{"@qclass":"error","name":"Error","message":"gratuitous error","errorId":"error#1"}',
+    '{"@qclass":"error","name":"Error","message":"gratuitous error","errorId":"error:liveSlots:v1#1"}',
     [],
   );
 });

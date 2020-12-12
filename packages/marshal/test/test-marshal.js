@@ -70,7 +70,8 @@ test('serialize static data', t => {
     emptyem = harden(e);
   }
   t.deepEqual(ser(emptyem), {
-    body: '{"@qclass":"error","name":"Error","message":"","errorId":"error#1"}',
+    body:
+      '{"@qclass":"error","name":"Error","message":"","errorId":"error:McLuhan#1"}',
     slots: [],
   });
 
@@ -82,7 +83,7 @@ test('serialize static data', t => {
   }
   t.deepEqual(ser(em), {
     body:
-      '{"@qclass":"error","name":"ReferenceError","message":"msg","errorId":"error#2"}',
+      '{"@qclass":"error","name":"ReferenceError","message":"msg","errorId":"error:McLuhan#2"}',
     slots: [],
   });
 
