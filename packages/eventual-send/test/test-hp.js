@@ -472,10 +472,12 @@ test('resolveWithPresence test nr 5', async t => {
     pr.resolveWithPresence = resolveWithPresence;
   });
   await Promise.resolve();
+  let revoker = () => {};
   pr.resolveWithPresence(presenceEventualHandler, {
     proxy: {
       handler: presenceImmediateHandler,
       target: proxyTarget,
+      revokerCallback: r => { revoker = r; },
     },
   });
   await pr.promise
