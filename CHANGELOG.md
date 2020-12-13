@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.11.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.11.0...@agoric/sdk@2.11.1) (2020-12-13)
+
+
+### Bug Fixes
+
+* ensure that the "os" keyring version.Name is alphanumeric ([46447a9](https://github.com/Agoric/agoric-sdk/commit/46447a93148f59907983f7a26d52ba49a0bb471d))
+
+
+
+
+
 # [2.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.10.0...@agoric/sdk@2.11.0) (2020-12-10)
 
 
