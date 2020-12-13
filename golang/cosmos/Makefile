@@ -13,8 +13,12 @@ whitespace += $(whitespace)
 comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
+# Note that the version.Name must be alphanumeric only.
+# Otherwise, generated "os" keyrings on Ubuntu 20.04 can't be read.
+VersionName := $(shell echo "$(NAME)" | sed -e 's/[^A-Za-z0-9]//g')
+
 # process linker flags
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
 		-X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-server \
 		-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
