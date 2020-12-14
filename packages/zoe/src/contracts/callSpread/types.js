@@ -31,19 +31,6 @@
  */
 
 /**
- * @typedef {Object} Percent
- * @property {Scale} scale
- * @property {() => Percent} inverse
- */
-
-/**
- * @callback Scale
- * @param {AmountMath} amountMath
- * @param {Amount} amount
- * @returns {Amount}
- */
-
-/**
  * @callback MakePercent
  * @param {number} value
  * @param {number} base

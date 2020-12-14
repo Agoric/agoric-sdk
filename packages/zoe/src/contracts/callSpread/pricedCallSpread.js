@@ -149,7 +149,7 @@ const start = zcf => {
     const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
     const shortInvitation = makeOptionInvitation(
       Position.SHORT,
-      longPercent.inverse(),
+      longPercent.complement(),
     );
     schedulePayoffs(zcf, payoffSeats, collateralSeat);
     return { longInvitation, shortInvitation };

@@ -20,7 +20,7 @@ function calculateShares(strikeMath, price, strikePrice1, strikePrice2) {
   const denominator = strikeMath.subtract(strikePrice2, strikePrice1);
   const numerator = strikeMath.subtract(price, strikePrice1);
   const longShare = calculatePercent(numerator, denominator);
-  return { longShare, shortShare: longShare.inverse() };
+  return { longShare, shortShare: longShare.complement() };
 }
 
 harden(calculateShares);
