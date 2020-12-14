@@ -42,7 +42,7 @@ test('percentMath - brand mismatch', t => {
 
   const oneThirdDefault = calculatePercent(moe(1), moe(3));
   t.throws(() => calculatePercent(moe(1), astAmountMath.make(3), 10000), {
-    message: `use calculatePercentAmounts() when brands don't match`,
+    message: `Dividing amounts of different brands doesn't produce a percent.`,
   });
 
   t.throws(() => oneThirdDefault.scale(astAmountMath, moe(100000)), {
@@ -64,14 +64,14 @@ test('percentMath - NONE', t => {
   t.deepEqual(amountMath.getEmpty(), NONE.scale(amountMath, moe(100000)));
 });
 
-test('percentMath - inverse', t => {
+test('percentMath - complement', t => {
   const { amountMath } = makeIssuerKit('moe');
   const moe = amountMath.make;
 
   const oneThirdDefault = calculatePercent(moe(1), moe(3));
-  const twoThirdsDefault = oneThirdDefault.inverse();
+  const twoThirdsDefault = oneThirdDefault.complement();
   const oneThirdPrecise = calculatePercent(moe(1), moe(3), 10000);
-  const twoThirdsPrecise = oneThirdPrecise.inverse();
+  const twoThirdsPrecise = oneThirdPrecise.complement();
 
   t.deepEqual(moe(33000), oneThirdDefault.scale(amountMath, moe(100000)));
   t.deepEqual(moe(67000), twoThirdsDefault.scale(amountMath, moe(100000)));

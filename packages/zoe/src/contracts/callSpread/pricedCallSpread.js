@@ -55,7 +55,7 @@ const { subtract, multiply, floorDivide } = natSafeMath;
  */
 
 const PERCENT_BASE = 100;
-const inverse = percent => subtract(PERCENT_BASE, percent);
+const complement = percent => subtract(PERCENT_BASE, percent);
 
 /** @type {ContractStartFn} */
 const start = zcf => {
@@ -102,7 +102,8 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
-    const numerator = (dir === Position.LONG) ? longShare : inverse(longShare);
+    const numerator =
+      (dir === Position.LONG) ? longShare : complement(longShare);
     const required = floorDivide(
       multiply(terms.settlementAmount.value, numerator),
       100,

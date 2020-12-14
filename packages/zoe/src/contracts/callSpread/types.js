@@ -45,17 +45,9 @@
  */
 
 /**
- * @callback CalculatePercentAmounts
- * @param {Amount} numerator
- * @param {Amount} denominator
- * @param {number=} base
- * @returns {Percent}
- */
-
-/**
  * @typedef {Object} Percent
  * @property {Scale} scale
- * @property {() => Percent} inverse
+ * @property {() => Percent} complement
  */
 
 /**
