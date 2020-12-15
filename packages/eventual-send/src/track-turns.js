@@ -60,16 +60,20 @@ export const trackTurns = funcs => {
           try {
             result = func(...args);
           } catch (err) {
-            assert.note(
-              err,
-              d`Thrown from: ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
-            );
+            if (err instanceof Error) {
+              assert.note(
+                err,
+                d`Thrown from: ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
+              );
+            }
             throw err;
           }
           // Must capture this now, not when the catch triggers.
           const detailsNote = d`Rejection from: ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`;
           Promise.resolve(result).catch(reason => {
-            assert.note(reason, detailsNote);
+            if (reason instanceof Error) {
+              assert.note(reason, detailsNote);
+            }
           });
           return result;
         } finally {
