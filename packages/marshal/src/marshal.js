@@ -480,8 +480,7 @@ const defaultSlotToValFn = (x, _) => x;
 export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
   convertSlotToVal = defaultSlotToValFn,
-  // Messages are the medium
-  { marshalName = 'McLuhan' } = {},
+  { marshalName = 'anon-marshal' } = {},
 ) {
   assert.typeof(marshalName, 'string');
   // Ascending numbers identifying the sending of errors relative to this
