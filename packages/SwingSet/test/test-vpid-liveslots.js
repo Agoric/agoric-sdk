@@ -664,17 +664,47 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log, []);
 
   if (mode === 'presence') {
-    dispatch.notify(p1, false, capargs(slot0arg, [target2]));
+    dispatch.notify(p1, {
+      [p1]: {
+        rejected: false,
+        data: capargs(slot0arg, [target2]),
+      },
+    });
   } else if (mode === 'local-object') {
-    dispatch.notify(p1, false, capargs(slot0arg, [rootA]));
+    dispatch.notify(p1, {
+      [p1]: {
+        rejected: false,
+        data: capargs(slot0arg, [rootA]),
+      },
+    });
   } else if (mode === 'data') {
-    dispatch.notify(p1, false, capargs(4, []));
+    dispatch.notify(p1, {
+      [p1]: {
+        rejected: false,
+        data: capargs(4, []),
+      },
+    });
   } else if (mode === 'promise-data') {
-    dispatch.notify(p1, false, capargs([slot0arg], [p1]));
+    dispatch.notify(p1, {
+      [p1]: {
+        rejected: false,
+        data: capargs([slot0arg], [p1]),
+      },
+    });
   } else if (mode === 'reject') {
-    dispatch.notify(p1, true, capargs('error', []));
+    dispatch.notify(p1, {
+      [p1]: {
+        rejected: true,
+        data: capargs('error', []),
+      },
+    });
   } else if (mode === 'promise-reject') {
-    dispatch.notify(p1, true, capargs([slot0arg], [p1]));
+    dispatch.notify(p1, {
+      [p1]: {
+        rejected: true,
+        data: capargs([slot0arg], [p1]),
+      },
+    });
   } else {
     throw Error(`unknown mode ${mode}`);
   }

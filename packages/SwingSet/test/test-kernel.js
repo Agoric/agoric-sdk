@@ -724,8 +724,8 @@ test('promise resolveToData', async t => {
   function setupA(s) {
     syscallA = s;
     function deliver() {}
-    function notify(promiseID, rejected, data) {
-      log.push(['notify', promiseID, rejected, data]);
+    function notify(promiseID, resolutions) {
+      log.push(['notify', promiseID, resolutions]);
     }
     return { deliver, notify };
   }
@@ -777,7 +777,16 @@ test('promise resolveToData', async t => {
 
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
-  t.deepEqual(log.shift(), ['notify', pForA, false, capdata('args', ['o-50'])]);
+  t.deepEqual(log.shift(), [
+    'notify',
+    pForA,
+    {
+      [pForA]: {
+        rejected: false,
+        data: capdata('args', ['o-50']),
+      },
+    },
+  ]);
   t.deepEqual(log, []); // no other dispatch calls
   if (!RETIRE_KPIDS) {
     t.deepEqual(kernel.dump().promises, [
@@ -801,8 +810,8 @@ test('promise resolveToPresence', async t => {
   function setupA(s) {
     syscallA = s;
     function deliver() {}
-    function notify(promiseID, rejected, data) {
-      log.push(['notify', promiseID, rejected, data]);
+    function notify(promiseID, resolutions) {
+      log.push(['notify', promiseID, resolutions]);
     }
     return { deliver, notify };
   }
@@ -861,10 +870,14 @@ test('promise resolveToPresence', async t => {
   t.deepEqual(log.shift(), [
     'notify',
     pForA,
-    false,
     {
-      body: '{"@qclass":"slot","index":0}',
-      slots: [bobForA],
+      [pForA]: {
+        rejected: false,
+        data: {
+          body: '{"@qclass":"slot","index":0}',
+          slots: [bobForA],
+        },
+      },
     },
   ]);
   t.deepEqual(log, []); // no other dispatch calls
@@ -890,8 +903,8 @@ test('promise reject', async t => {
   function setupA(s) {
     syscallA = s;
     function deliver() {}
-    function notify(promiseID, rejected, rejectData) {
-      log.push(['notify', promiseID, rejected, rejectData]);
+    function notify(promiseID, resolutions) {
+      log.push(['notify', promiseID, resolutions]);
     }
     return { deliver, notify };
   }
@@ -943,7 +956,16 @@ test('promise reject', async t => {
 
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
-  t.deepEqual(log.shift(), ['notify', pForA, true, capdata('args', ['o-50'])]);
+  t.deepEqual(log.shift(), [
+    'notify',
+    pForA,
+    {
+      [pForA]: {
+        rejected: true,
+        data: capdata('args', ['o-50']),
+      },
+    },
+  ]);
   t.deepEqual(log, []); // no other dispatch calls
   if (!RETIRE_KPIDS) {
     t.deepEqual(kernel.dump().promises, [

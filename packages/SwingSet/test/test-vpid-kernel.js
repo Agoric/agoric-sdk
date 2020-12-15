@@ -131,44 +131,68 @@ function resolutionOf(vpid, mode, targets) {
     case 'presence':
       return {
         type: 'notify',
-        promiseID: vpid,
-        rejected: false,
-        data: capargs(slot0arg, [targets.target2]),
+        primaryPromiseID: vpid,
+        resolutions: {
+          [vpid]: {
+            rejected: false,
+            data: capargs(slot0arg, [targets.target2]),
+          },
+        },
       };
     case 'local-object':
       return {
         type: 'notify',
-        promiseID: vpid,
-        rejected: false,
-        data: capargs(slot0arg, [targets.localTarget]),
+        primaryPromiseID: vpid,
+        resolutions: {
+          [vpid]: {
+            rejected: false,
+            data: capargs(slot0arg, [targets.localTarget]),
+          },
+        },
       };
     case 'data':
       return {
         type: 'notify',
-        promiseID: vpid,
-        rejected: false,
-        data: capargs(4, []),
+        primaryPromiseID: vpid,
+        resolutions: {
+          [vpid]: {
+            rejected: false,
+            data: capargs(4, []),
+          },
+        },
       };
     case 'promise-data':
       return {
         type: 'notify',
-        promiseID: vpid,
-        rejected: false,
-        data: capargs([slot0arg], [targets.p1]),
+        primaryPromiseID: vpid,
+        resolutions: {
+          [vpid]: {
+            rejected: false,
+            data: capargs([slot0arg], [targets.p1]),
+          },
+        },
       };
     case 'reject':
       return {
         type: 'notify',
-        promiseID: vpid,
-        rejected: true,
-        data: capargs('error', []),
+        primaryPromiseID: vpid,
+        resolutions: {
+          [vpid]: {
+            rejected: true,
+            data: capargs('error', []),
+          },
+        },
       };
     case 'promise-reject':
       return {
         type: 'notify',
-        promiseID: vpid,
-        rejected: true,
-        data: capargs([slot0arg], [targets.p1]),
+        primaryPromiseID: vpid,
+        resolutions: {
+          [vpid]: {
+            rejected: true,
+            data: capargs([slot0arg], [targets.p1]),
+          },
+        },
       };
     default:
       throw Error(`unknown mode ${mode}`);
@@ -355,7 +379,9 @@ async function doTest123(t, which, mode) {
     localTarget: localTargetB,
     p1: dataPromiseB,
   };
-  t.deepEqual(logB.shift(), resolutionOf(p1VatB, mode, targetsB));
+  const got = logB.shift();
+  const wanted = resolutionOf(p1VatB, mode, targetsB);
+  t.deepEqual(got, wanted);
   t.deepEqual(logB, []);
 
   if (expectRetirement) {

@@ -60,14 +60,8 @@ function doMessage(targetSlot, msg) {
 }
 
 function doNotify(primaryVpid, resolutions) {
-  for (const vpid of Object.keys(resolutions)) {
-    // XXX return inside loop is wrong once `resolutions` has more than 1 element
-    const vp = resolutions[vpid];
-    const errmsg = `vat.promise[${vpid}] ${vp.rejected} failed`;
-    return doProcess(['notify', vpid, vp.rejected, vp.data], errmsg);
-  }
-  // XXX placeholder to make lint shut up until we're done implementing things
-  return ['error', 'incomplete code, this should never happen'];
+  const errmsg = `vat.promise[${primaryVpid}] failed`;
+  return doProcess(['notify', primaryVpid, resolutions], errmsg);
 }
 
 const toParent = arrayEncoderStream();
