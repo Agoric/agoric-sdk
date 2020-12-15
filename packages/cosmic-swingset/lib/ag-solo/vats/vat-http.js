@@ -40,7 +40,7 @@ export function buildRootObject(vatPowers) {
       const channelID = channelHandleToId.get(channelHandle);
       if (channelID) {
         const o = { ...obj, meta: { channelID } };
-        D(commandDevice).sendBroadcast(JSON.parse(JSON.stringify(o)));
+        D(commandDevice).sendBroadcast(o);
       }
     }
   };
@@ -143,6 +143,7 @@ export function buildRootObject(vatPowers) {
     async inbound(count, rawObj) {
       // Launder the data, since the command device tends to pass device nodes
       // when there are empty objects, which screw things up for us.
+      // Analysis is in https://github.com/Agoric/agoric-sdk/pull/1956
       const obj = JSON.parse(JSON.stringify(rawObj));
       console.debug(
         `vat-http.inbound (from browser) ${count}`,
