@@ -89,7 +89,12 @@ test('calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch.notify('p-1', false, capargs('result'));
+  dispatch.notify('p-1', {
+    'p-1': {
+      rejected: false,
+      data: capargs('result'),
+    },
+  });
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), ['res', 'result']);
 
@@ -107,7 +112,12 @@ test('calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch.notify('p-2', true, capargs('rejection'));
+  dispatch.notify('p-2', {
+    'p-2': {
+      rejected: true,
+      data: capargs('rejection'),
+    },
+  });
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), ['rej', 'rejection']);
 
@@ -218,7 +228,12 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log, []);
 
   // now we tell it the promise has resolved, to object 'o2'
-  dispatch.notify(p1, false, capargs(slot0arg, [o2]));
+  dispatch.notify(p1, {
+    [p1]: {
+      rejected: false,
+      data: capargs(slot0arg, [o2]),
+    },
+  });
   await waitUntilQuiescent();
   // this allows E(o2).nonpipe2() to go out, which was not pipelined
   t.deepEqual(log.shift(), {
@@ -426,11 +441,26 @@ async function doResultPromise(t, mode) {
   // resolve p1 first. The one() call was already pipelined, so this
   // should not trigger any new syscalls.
   if (mode === 'to presence') {
-    dispatch.notify(expectedP1, false, capargs(slot0arg, [target2]));
+    dispatch.notify(expectedP1, {
+      [expectedP1]: {
+        rejected: false,
+        data: capargs(slot0arg, [target2]),
+      },
+    });
   } else if (mode === 'to data') {
-    dispatch.notify(expectedP1, false, capargs(4, []));
+    dispatch.notify(expectedP1, {
+      [expectedP1]: {
+        rejected: false,
+        data: capargs(4, []),
+      },
+    });
   } else if (mode === 'reject') {
-    dispatch.notify(expectedP1, true, capargs('error', []));
+    dispatch.notify(expectedP1, {
+      [expectedP1]: {
+        rejected: true,
+        data: capargs('error', []),
+      },
+    });
   } else {
     throw Error(`unknown mode ${mode}`);
   }
@@ -438,7 +468,12 @@ async function doResultPromise(t, mode) {
   t.deepEqual(log, []);
 
   // Now we resolve p2, allowing the second two() to proceed
-  dispatch.notify(expectedP2, false, capargs(4, []));
+  dispatch.notify(expectedP2, {
+    [expectedP2]: {
+      rejected: false,
+      data: capargs(4, []),
+    },
+  });
   await waitUntilQuiescent();
 
   if (mode === 'to presence') {
