@@ -45,7 +45,15 @@ export function buildRootObject(vatPowers) {
     }
   };
 
-  const registeredURLHandlers = new Map();
+  const sendResponse = (count, isException, obj) =>
+    D(commandDevice).sendResponse(
+      count,
+      isException,
+      obj || JSON.parse(JSON.stringify(obj)),
+    );
+
+  // Map an URL only to its latest handler.
+  const urlToHandler = new Map();
 
   async function registerURLHandler(handler, url) {
     const fallback = await E(handler)
@@ -59,12 +67,7 @@ export function buildRootObject(vatPowers) {
           .catch(_e => undefined),
       fallback,
     );
-    let reg = registeredURLHandlers.get(url);
-    if (!reg) {
-      reg = [];
-      registeredURLHandlers.set(url, reg);
-    }
-    reg.push(commandHandler);
+    urlToHandler.set(url, commandHandler);
   }
 
   return harden({
@@ -138,12 +141,16 @@ export function buildRootObject(vatPowers) {
     // devices.command invokes our inbound() because we passed to
     // registerInboundHandler()
     async inbound(count, rawObj) {
+      // Launder the data, since the command device tends to pass device nodes
+      // when there are empty objects, which screw things up for us.
+      // Analysis is in https://github.com/Agoric/agoric-sdk/pull/1956
+      const obj = JSON.parse(JSON.stringify(rawObj));
       console.debug(
         `vat-http.inbound (from browser) ${count}`,
-        JSON.stringify(rawObj, undefined, 2),
+        JSON.stringify(obj, undefined, 2),
       );
 
-      const { type, meta: rawMeta = {} } = rawObj || {};
+      const { type, meta: rawMeta = {} } = obj || {};
       const {
         url = '/private/repl',
         channelID: rawChannelID,
@@ -161,9 +168,6 @@ export function buildRootObject(vatPowers) {
           channelHandleToId.delete(channelHandle);
         }
 
-        const obj = {
-          ...rawObj,
-        };
         delete obj.meta;
 
         const meta = {
@@ -172,35 +176,24 @@ export function buildRootObject(vatPowers) {
         };
         delete meta.channelID;
 
-        const urlHandlers = registeredURLHandlers.get(url);
-        if (urlHandlers) {
-          // todo fixme avoid the loop
-          // For now, go from the end to beginning so that handlers
-          // override.
-          for (let i = urlHandlers.length - 1; i >= 0; i -= 1) {
-            // eslint-disable-next-line no-await-in-loop
-            const res = await E(urlHandlers[i])[dispatcher](obj, meta);
-
-            if (res) {
-              D(commandDevice).sendResponse(count, false, harden(res));
-              return;
-            }
+        const urlHandler = urlToHandler.get(url);
+        if (urlHandler) {
+          const res = await E(urlHandler)[dispatcher](obj, meta);
+          if (res) {
+            sendResponse(count, false, res);
+            return;
           }
         }
 
         if (dispatcher === 'onMessage') {
-          D(commandDevice).sendResponse(
-            count,
-            false,
-            harden({ type: 'doesNotUnderstand', obj }),
-          );
+          sendResponse(count, false, { type: 'doesNotUnderstand', obj });
           throw Error(`No handler for ${url} ${type}`);
         }
-        D(commandDevice).sendResponse(count, false, harden(true));
+        sendResponse(count, false, true);
       } catch (rej) {
         console.debug(`Error ${dispatcher}:`, rej);
         const jsonable = (rej && rej.message) || rej;
-        D(commandDevice).sendResponse(count, true, harden(jsonable));
+        sendResponse(count, true, jsonable);
       }
     },
   });
