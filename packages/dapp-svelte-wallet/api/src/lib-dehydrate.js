@@ -344,6 +344,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const { serialize: dehydrate, unserialize: hydrate } = makeMarshal(
     convertValToName,
     convertNameToVal,
+    {
+      marshalName: 'hydration',
+    },
   );
   return harden({
     hydrate,

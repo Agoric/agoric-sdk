@@ -139,7 +139,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           }
           if (!needsProvide) {
             console.info(`Don't need our provides: ${notNeeded.join(', ')}`);
-            return;
+            process.exit(0);
           }
 
           const nextLoading = [];

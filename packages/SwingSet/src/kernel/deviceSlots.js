@@ -97,7 +97,9 @@ export function makeDeviceSlots(
     return slotToVal.get(slot);
   }
 
-  const m = makeMarshal(convertValToSlot, convertSlotToVal);
+  const m = makeMarshal(convertValToSlot, convertSlotToVal, {
+    marshalName: `device:${forDeviceName}`,
+  });
 
   function PresenceHandler(importSlot) {
     return {
