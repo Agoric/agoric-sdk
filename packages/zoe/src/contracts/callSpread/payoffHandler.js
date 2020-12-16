@@ -3,13 +3,9 @@ import '../../../exported';
 import './types';
 
 import { E } from '@agoric/eventual-send';
-import { trade, natSafeMath } from '../../contractSupport';
+import { trade } from '../../contractSupport';
 import { Position } from './position';
 import { calculateShares } from './calculateShares';
-
-const { multiply, floorDivide } = natSafeMath;
-
-const PERCENT_BASE = 100;
 
 /**
  * makePayoffHandler returns an object with methods that are useful for
@@ -26,13 +22,13 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   let seatsExited = 0;
 
   /** @type {MakeOptionInvitation} */
-  function makeOptionInvitation(dir) {
+  function makeOptionInvitation(position) {
     return zcf.makeInvitation(
       // All we do at the time of exercise is resolve the promise.
-      seat => seatPromiseKits[dir].resolve(seat),
-      `collect ${dir} payout`,
+      seat => seatPromiseKits[position].resolve(seat),
+      `collect ${position} payout`,
       {
-        position: dir,
+        position,
       },
     );
   }
@@ -40,11 +36,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   function reallocateToSeat(seatPromise, sharePercent) {
     seatPromise.then(seat => {
       const totalCollateral = terms.settlementAmount;
-      const collateralShare = floorDivide(
-        multiply(totalCollateral.value, sharePercent),
-        PERCENT_BASE,
-      );
-      const seatPortion = collateralMath.make(collateralShare);
+      const seatPortion = sharePercent.scale(collateralMath, totalCollateral);
       trade(
         zcf,
         { seat, gains: { Collateral: seatPortion } },

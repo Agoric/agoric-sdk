@@ -10,12 +10,10 @@ import {
   depositToSeat,
   trade,
   assertUsesNatMath,
-  natSafeMath,
 } from '../../contractSupport';
 import { makePayoffHandler } from './payoffHandler';
 import { Position } from './position';
-
-const { subtract, multiply, floorDivide } = natSafeMath;
+import { makePercent } from '../../contractSupport/percentMath';
 
 /**
  * This contract implements a fully collateralized call spread. This is a
@@ -23,10 +21,11 @@ const { subtract, multiply, floorDivide } = natSafeMath;
  * option sold at a higher price. The invitations are produced in pairs. The
  * creatorFacet has a method makeInvitationPair(longCollateralShare) whose
  * argument must be a number between 0 and 100. makeInvitationPair() returns two
- * invitations which require depositing longCollateralShare and
- * (100 - longCollateralShare) to exercise the respective options/invitations.
- * (They are returned under the Keyword 'Option'.) The
- * options are ERTP invitations that are suitable for resale.
+ * invitations which require depositing amounts summing to the settlement amount
+ * in the proportions longCollateralShare and (100 - longCollateralShare) to
+ * redeem the respective options/invitations. (They are returned under the
+ * Keyword 'Option'.) The options are ERTP invitations that are suitable for
+ * resale.
  *
  * This option contract is settled financially. There is no requirement that the
  * creator have ownership of the underlying asset at the start, and
@@ -51,11 +50,8 @@ const { subtract, multiply, floorDivide } = natSafeMath;
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
- * + increase the precision of the calculations. (change PERCENT_BASE to 10000)
+ * + increase the precision of the calculations. (use Percents with base=10000)
  */
-
-const PERCENT_BASE = 100;
-const inverse = percent => subtract(PERCENT_BASE, percent);
 
 /** @type {ContractStartFn} */
 const start = zcf => {
@@ -90,8 +86,8 @@ const start = zcf => {
   /** @type {PayoffHandler} */
   const payoffHandler = makePayoffHandler(zcf, seatPromiseKits, collateralSeat);
 
-  async function makeOptionInvitation(dir, longShare) {
-    const option = payoffHandler.makeOptionInvitation(dir);
+  async function makeOptionInvitation(position, share) {
+    const option = payoffHandler.makeOptionInvitation(position);
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
     const spreadAmount = harden({
@@ -102,11 +98,7 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
-    const numerator = (dir === Position.LONG) ? longShare : inverse(longShare);
-    const required = floorDivide(
-      multiply(terms.settlementAmount.value, numerator),
-      100,
-    );
+    const required = share.scale(collateralMath, terms.settlementAmount);
 
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
@@ -123,8 +115,8 @@ const start = zcf => {
 
       // assert that the allocation includes the amount of collateral required
       assert(
-        collateralMath.isEqual(newCollateral, collateralMath.make(required)),
-        details`Collateral required: ${required}`,
+        collateralMath.isEqual(newCollateral, required),
+        details`Collateral required: ${required.value}`,
       );
 
       // assert that the requested option was the right one.
@@ -146,28 +138,21 @@ const start = zcf => {
       depositSeat.exit();
     };
 
-    return zcf.makeInvitation(optionPosition, `call spread ${dir}`, {
-      position: dir,
-      collateral: required,
+    return zcf.makeInvitation(optionPosition, `call spread ${position}`, {
+      position,
+      collateral: required.value,
       option: spreadAmount.Option,
     });
   }
 
   function makeInvitationPair(longCollateralShare) {
-    assert(
-      longCollateralShare >= 0 && longCollateralShare <= 100,
-      'percentages must be between 0 and 100.',
-    );
+    const longPercent = makePercent(longCollateralShare);
 
-    const longInvitation = makeOptionInvitation(
-      Position.LONG,
-      longCollateralShare,
-    );
+    const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
     const shortInvitation = makeOptionInvitation(
       Position.SHORT,
-      longCollateralShare,
+      longPercent.complement(),
     );
-    // TODO: don't schedule maturity until both options are exercised
     payoffHandler.schedulePayoffs();
     return { longInvitation, shortInvitation };
   }
