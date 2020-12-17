@@ -47,7 +47,7 @@ export function legibilizeValue(val, slots) {
         if (result.length !== 1) {
           result += ', ';
         }
-        result += `${prop}: ${legibilizeValue(val[prop], slots)}`;
+        result += `${String(prop)}: ${legibilizeValue(val[prop], slots)}`;
       }
       result += '}';
       return result;

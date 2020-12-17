@@ -449,7 +449,7 @@ export function makeVirtualObjectManager(
         try {
           rawData[prop] = m.serialize(initialData[prop]);
         } catch (e) {
-          console.error(`state property ${prop} is not serializable`);
+          console.error(`state property ${String(prop)} is not serializable`);
           throw e;
         }
       }

@@ -104,8 +104,8 @@ export function makeDeviceSlots(
   function PresenceHandler(importSlot) {
     return {
       get(target, prop) {
-        lsdebug(`PreH proxy.get(${prop})`);
-        if (prop !== `${prop}`) {
+        lsdebug(`PreH proxy.get(${String(prop)})`);
+        if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }
         const p = (...args) => {
