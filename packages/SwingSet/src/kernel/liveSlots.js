@@ -307,7 +307,9 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     const p = makeImportedPromise(resultVPID);
 
     lsdebug(
-      `ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${resultVPID}`,
+      `ls.qm send(${JSON.stringify(targetSlot)}, ${String(
+        prop,
+      )}) -> ${resultVPID}`,
     );
     syscall.send(targetSlot, prop, serArgs, resultVPID);
 
@@ -342,7 +344,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   function DeviceHandler(slot) {
     return {
       get(target, prop) {
-        if (prop !== `${prop}`) {
+        if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }
         return (...args) => {
