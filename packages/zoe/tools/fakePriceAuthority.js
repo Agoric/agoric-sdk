@@ -59,6 +59,7 @@ export async function makeFakePriceAuthority(options) {
     if (tradeList) {
       return tradeList[currentPriceIndex % tradeList.length];
     }
+    assert(priceList);
     return [unitValueIn, priceList[currentPriceIndex % priceList.length]];
   }
 

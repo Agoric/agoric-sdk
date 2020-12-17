@@ -2080,15 +2080,6 @@ axobject-query@^2.0.2:
   dependencies:
     ast-types-flow "0.0.7"
 
-babel-eslint@>=11.0.0-beta.2:
-  version "11.0.0-beta.2"
-  resolved "https://registry.yarnpkg.com/babel-eslint/-/babel-eslint-11.0.0-beta.2.tgz#de1f06795aa0d8cedcf6ac943e63056f5b4a7048"
-  integrity sha512-D2tunrOu04XloEdU2XVUminUu25FILlGruZmffqH5OSnLDhCheKNvUoM1ihrexdUvhizlix8bjqRnsss4V/UIQ==
-  dependencies:
-    eslint-scope "5.0.0"
-    eslint-visitor-keys "^1.1.0"
-    semver "^6.3.0"
-
 babel-eslint@^10.0.3:
   version "10.1.0"
   resolved "https://registry.yarnpkg.com/babel-eslint/-/babel-eslint-10.1.0.tgz#6968e568a910b78fb3779cdd8b6ac2f479943232"
@@ -3964,15 +3955,6 @@ eslint-config-airbnb-base@^14.0.0:
     object.assign "^4.1.0"
     object.entries "^1.1.0"
 
-eslint-config-airbnb@^18.0.1:
-  version "18.0.1"
-  resolved "https://registry.yarnpkg.com/eslint-config-airbnb/-/eslint-config-airbnb-18.0.1.tgz#a3a74cc29b46413b6096965025381df8fb908559"
-  integrity sha512-hLb/ccvW4grVhvd6CT83bECacc+s4Z3/AEyWQdIT2KeTsG9dR7nx1gs7Iw4tDmGKozCNHFn4yZmRm3Tgy+XxyQ==
-  dependencies:
-    eslint-config-airbnb-base "^14.0.0"
-    object.assign "^4.1.0"
-    object.entries "^1.1.0"
-
 eslint-config-jessie@^0.0.4:
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/eslint-config-jessie/-/eslint-config-jessie-0.0.4.tgz#00845c81f8bc1c1d1c2386d5fda3f165532ed8ae"
@@ -4119,7 +4101,7 @@ eslint-plugin-react@^7.21.5:
     resolve "^1.18.1"
     string.prototype.matchall "^4.0.2"
 
-eslint-scope@5.0.0, eslint-scope@^5.0.0:
+eslint-scope@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/eslint-scope/-/eslint-scope-5.0.0.tgz#e87c8887c73e8d1ec84f1ca591645c358bfc8fb9"
   integrity sha512-oYrhJW7S0bxAFDvWqzvMPRm6pcgcnWc4QnofCAqRTRfQC0JcwenzGglTtsLyIuuWFfkqDG9vz67cnttSd53djw==
@@ -10443,7 +10425,7 @@ typescript@^3.0.3:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.7.tgz#98d600a5ebdc38f40cb277522f12dc800e9e25fa"
   integrity sha512-BLbiRkiBzAwsjut4x/dsibSTB6yWpwT5qWmC2OfuCg3GgVQCSgMs4vEctYPhsaGtd0AeuuHMkjZ2h2WG8MSzRw==
 
-typescript@^4.0.5:
+typescript@^4.0.5, typescript@~4.0.0:
   version "4.0.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.0.5.tgz#ae9dddfd1069f1cb5beb3ef3b2170dd7c1332389"
   integrity sha512-ywmr/VrTVCmNTJ6iV2LwIrfG1P+lv6luD8sUJs+2eI9NLGigaN+nUQc13iHqisq7bra9lnmUSYqbJvegraBOPQ==
