@@ -242,10 +242,7 @@ export function tameMetering() {
         try {
           defineProperty(o, p, newDesc);
         } catch (e) {
-          // Ignore: TypeError: Cannot redefine property: Symbol(Symbol.hasInstance)
-          if (typeof p !== 'symbol' || !(e instanceof TypeError)) {
-            throw e;
-          }
+          // Ignore: TypeError: Cannot redefine property: ...
         }
       }
     };
