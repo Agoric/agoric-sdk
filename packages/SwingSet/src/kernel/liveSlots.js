@@ -307,7 +307,9 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     const p = makeImportedPromise(resultVPID);
 
     lsdebug(
-      `ls.qm send(${JSON.stringify(targetSlot)}, ${String(prop)}) -> ${resultVPID}`,
+      `ls.qm send(${JSON.stringify(targetSlot)}, ${String(
+        prop,
+      )}) -> ${resultVPID}`,
     );
     syscall.send(targetSlot, prop, serArgs, resultVPID);
 
