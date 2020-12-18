@@ -73,54 +73,58 @@ export function buildCommsDispatch(syscall) {
     throw Error(`unknown target ${target}`);
   }
 
-  function notify(primaryPromiseID, resolutions) {
+  function notifyOnePromise(promiseID, rejected, data) {
+    insistCapData(data);
+    // console.debug(`comms.notifyOnePromise(${promiseID}, ${rejected}, ${data})`);
     // dumpState(state);
-    for (const vpid of Object.keys(resolutions)) {
-      const vp = resolutions[vpid];
-      insistCapData(vp.data);
-      // console.debug(`comms.notify(${primaryPromiseID}, ${vpid} ${vp.rejected}, ${vp.data})`);
 
-      // I *think* we should never get here for local promises, since the
-      // controller only does sendOnly. But if we change that, we need to catch
-      // locally-generated promises and deal with them.
-      // if (vpid in localPromises) {
-      //  resolveLocal(vpid, { type: 'data', vp.data });
-      // }
+    // I *think* we should never get here for local promises, since the
+    // controller only does sendOnly. But if we change that, we need to catch
+    // locally-generated promises and deal with them.
+    // if (promiseID in localPromises) {
+    //  resolveLocal(promiseID, { type: 'data', data });
+    // }
 
-      // todo: if we previously held resolution authority for this promise, then
-      // transferred it to some local vat, we'll have subscribed to the kernel
-      // to hear about it. If we then get the authority back again, we no longer
-      // want to hear about its resolution (since we're the ones doing the
-      // resolving), but the kernel still thinks of us as subscribing, so we'll
-      // get a bogus dispatch.notify. Currently we throw an error, which is
-      // currently ignored but might prompt a vat shutdown in the future.
+    // todo: if we previously held resolution authority for this promise, then
+    // transferred it to some local vat, we'll have subscribed to the kernel
+    // to hear about it. If we then get the authority back again, we no longer
+    // want to hear about its resolution (since we're the ones doing the
+    // resolving), but the kernel still thinks of us as subscribing, so we'll
+    // get a bogus dispatch.notify. Currently we throw an error, which is
+    // currently ignored but might prompt a vat shutdown in the future.
 
-      // TODO: The following goofiness, namely taking apart the capdata object
-      // and looking at it to see if it's a single presence reference and then
-      // treating it in a special way if it is, is a consequence of an impedance
-      // mismatch that has grown up between the comms protocol and the
-      // evolutionary path that the kernel/vat interface has taken.  In the
-      // future we should clean this up and unify presences and data in the
-      // comms protocol the way the kernel/vat interface has.
-      const unser = JSON.parse(vp.data.body);
-      let resolution;
-      if (vp.rejected) {
-        resolution = harden({ type: 'reject', data: vp.data });
-      } else if (
-        Object(unser) === unser &&
-        QCLASS in unser &&
-        unser[QCLASS] === 'slot'
-      ) {
-        const slot = vp.data.slots[unser.index];
-        insistVatType('object', slot);
-        resolution = harden({ type: 'object', slot });
-      } else {
-        resolution = harden({ type: 'data', data: vp.data });
-      }
-      resolveFromKernel(vpid, resolution);
+    // TODO: The following goofiness, namely taking apart the capdata object
+    // and looking at it to see if it's a single presence reference and then
+    // treating it in a special way if it is, is a consequence of an impedance
+    // mismatch that has grown up between the comms protocol and the
+    // evolutionary path that the kernel/vat interface has taken.  In the
+    // future we should clean this up and unify presences and data in the
+    // comms protocol the way the kernel/vat interface has.
+    const unser = JSON.parse(data.body);
+    let resolution;
+    if (rejected) {
+      resolution = harden({ type: 'reject', data });
+    } else if (
+      Object(unser) === unser &&
+      QCLASS in unser &&
+      unser[QCLASS] === 'slot'
+    ) {
+      const slot = data.slots[unser.index];
+      insistVatType('object', slot);
+      resolution = harden({ type: 'object', slot });
+    } else {
+      resolution = harden({ type: 'data', data });
     }
+    resolveFromKernel(promiseID, resolution);
     // XXX question: do we need to call retirePromiseIDIfEasy (or some special
     // comms vat version of it) here?
+  }
+
+  function notify(resolutions) {
+    for (const vpid of Object.keys(resolutions)) {
+      const vp = resolutions[vpid];
+      notifyOnePromise(vpid, vp.rejected, vp.data);
+    }
   }
 
   const dispatch = harden({ deliver, notify });

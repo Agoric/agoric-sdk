@@ -472,7 +472,16 @@ export default function buildKernel(
       kernelKeeper.incStat(statNameForNotify(p.state));
       const kd = harden(['notify', kpid, p]);
       const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
-      await deliverAndLogToVat(vatID, kd, vd);
+      if (vd) {
+        await deliverAndLogToVat(vatID, kd, vd);
+
+        const resolutions = vd[1];
+        const vatKeeper = kernelKeeper.getVatKeeper(vatID);
+        for (const vpid of Object.keys(resolutions)) {
+          const kpidToDelete = vatKeeper.mapVatSlotToKernelSlot(vpid);
+          vatKeeper.deleteCListEntry(kpidToDelete, vpid);
+        }
+      }
     }
   }
 

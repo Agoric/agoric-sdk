@@ -4,7 +4,7 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
-import { deleteCListEntryIfEasy } from './cleanup';
+import { deleteCListEntryIfEasy, getKpidsToRetire } from './cleanup';
 
 /*
  * Return a function that converts KernelDelivery objects into VatDelivery
@@ -79,12 +79,27 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   function translateNotify(kpid, kp) {
     assert(kp.state !== 'unresolved', details`spurious notification ${kpid}`);
-    const vpid = mapKernelSlotToVatSlot(kpid);
     const resolutions = {};
-    resolutions[vpid] = translatePromiseDescriptor(kp);
-    deleteCListEntryIfEasy(vatID, vatKeeper, kernelKeeper, kpid, vpid, kp.data);
-    const vatDelivery = harden(['notify', vpid, resolutions]);
-    return vatDelivery;
+    kdebug(`notify ${kpid} ${JSON.stringify(kp)}`);
+    const targets = getKpidsToRetire(
+      vatID,
+      vatKeeper,
+      kernelKeeper,
+      kpid,
+      kp.data,
+    );
+    if (targets.length > 0) {
+      for (const toResolve of targets) {
+        const p = kernelKeeper.getKernelPromise(toResolve);
+        const vpid = mapKernelSlotToVatSlot(toResolve);
+        resolutions[vpid] = translatePromiseDescriptor(p);
+      }
+      const vatDelivery = harden(['notify', resolutions]);
+      return vatDelivery;
+    } else {
+      kdebug(`skipping notify of ${kpid} because it's already been done`);
+      return null;
+    }
   }
 
   function kernelDeliveryToVatDelivery(kd) {
@@ -97,7 +112,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       default:
         throw Error(`unknown kernelDelivery.type ${type}`);
     }
-    // returns ['message', target, msg] or ['notify', vpid, vp]
+    // returns ['message', target, msg] or ['notify', resolutions] or null
   }
 
   return kernelDeliveryToVatDelivery;

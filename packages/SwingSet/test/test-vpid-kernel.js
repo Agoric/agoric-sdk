@@ -20,6 +20,10 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function oneResolution(promiseID, rejected, data) {
+  return { [promiseID]: { rejected, data } };
+}
+
 function makeConsole(tag) {
   const log = anylogger(tag);
   const cons = {};
@@ -131,68 +135,48 @@ function resolutionOf(vpid, mode, targets) {
     case 'presence':
       return {
         type: 'notify',
-        primaryPromiseID: vpid,
-        resolutions: {
-          [vpid]: {
-            rejected: false,
-            data: capargs(slot0arg, [targets.target2]),
-          },
-        },
+        resolutions: oneResolution(
+          vpid,
+          false,
+          capargs(slot0arg, [targets.target2]),
+        ),
       };
     case 'local-object':
       return {
         type: 'notify',
-        primaryPromiseID: vpid,
-        resolutions: {
-          [vpid]: {
-            rejected: false,
-            data: capargs(slot0arg, [targets.localTarget]),
-          },
-        },
+        resolutions: oneResolution(
+          vpid,
+          false,
+          capargs(slot0arg, [targets.localTarget]),
+        ),
       };
     case 'data':
       return {
         type: 'notify',
-        primaryPromiseID: vpid,
-        resolutions: {
-          [vpid]: {
-            rejected: false,
-            data: capargs(4, []),
-          },
-        },
+        resolutions: oneResolution(vpid, false, capargs(4, [])),
       };
     case 'promise-data':
       return {
         type: 'notify',
-        primaryPromiseID: vpid,
-        resolutions: {
-          [vpid]: {
-            rejected: false,
-            data: capargs([slot0arg], [targets.p1]),
-          },
-        },
+        resolutions: oneResolution(
+          vpid,
+          false,
+          capargs([slot0arg], [targets.p1]),
+        ),
       };
     case 'reject':
       return {
         type: 'notify',
-        primaryPromiseID: vpid,
-        resolutions: {
-          [vpid]: {
-            rejected: true,
-            data: capargs('error', []),
-          },
-        },
+        resolutions: oneResolution(vpid, true, capargs('error', [])),
       };
     case 'promise-reject':
       return {
         type: 'notify',
-        primaryPromiseID: vpid,
-        resolutions: {
-          [vpid]: {
-            rejected: true,
-            data: capargs([slot0arg], [targets.p1]),
-          },
-        },
+        resolutions: oneResolution(
+          vpid,
+          true,
+          capargs([slot0arg], [targets.p1]),
+        ),
       };
     default:
       throw Error(`unknown mode ${mode}`);
@@ -456,8 +440,7 @@ async function doTest4567(t, which, mode) {
   let p1VatA;
   let p1VatB;
 
-  const expectRetirement =
-    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
+  const expectRetirement = RETIRE_VPIDS;
 
   if (which === 4) {
     // 4: Alice receives a promise from Bob, which is then resolved
@@ -575,7 +558,7 @@ async function doTest4567(t, which, mode) {
   };
   onDispatchCallback = function odc1(d) {
     t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), !expectRetirement);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), expectRetirement);
   };
   const targetsB = {
     target2: rootAvatB,
@@ -595,7 +578,7 @@ async function doTest4567(t, which, mode) {
     t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
     t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
   } else {
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), true);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
     t.is(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
     t.is(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
   }
