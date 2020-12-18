@@ -20,6 +20,10 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function oneResolution(promiseID, rejected, data) {
+  return { [promiseID]: { rejected, data } };
+}
+
 function buildSyscall() {
   const log = [];
 
@@ -665,77 +669,38 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log, []);
 
   if (mode === 'presence') {
-    dispatch.notify(p1, {
-      [p1]: {
-        rejected: false,
-        data: capargs(slot0arg, [target2]),
-      },
-    });
+    dispatch.notify(oneResolution(p1, false, capargs(slot0arg, [target2])));
   } else if (mode === 'local-object') {
-    dispatch.notify(p1, {
-      [p1]: {
-        rejected: false,
-        data: capargs(slot0arg, [rootA]),
-      },
-    });
+    dispatch.notify(oneResolution(p1, false, capargs(slot0arg, [rootA])));
   } else if (mode === 'data') {
-    dispatch.notify(p1, {
-      [p1]: {
-        rejected: false,
-        data: capargs(4, []),
-      },
-    });
+    dispatch.notify(oneResolution(p1, false, capargs(4, [])));
   } else if (mode === 'promise-data') {
-    dispatch.notify(p1, {
-      [p1]: {
-        rejected: false,
-        data: capargs([slot0arg], [p1]),
-      },
-    });
+    dispatch.notify(oneResolution(p1, false, capargs([slot0arg], [p1])));
   } else if (mode === 'reject') {
-    dispatch.notify(p1, {
-      [p1]: {
-        rejected: true,
-        data: capargs('error', []),
-      },
-    });
+    dispatch.notify(oneResolution(p1, true, capargs('error', [])));
   } else if (mode === 'promise-reject') {
-    dispatch.notify(p1, {
-      [p1]: {
-        rejected: true,
-        data: capargs([slot0arg], [p1]),
-      },
-    });
+    dispatch.notify(oneResolution(p1, true, capargs([slot0arg], [p1])));
   } else {
     throw Error(`unknown mode ${mode}`);
   }
   await endOfCrank();
   t.deepEqual(log, []);
 
-  const expectRetirement =
-    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
-
   dispatch.deliver(rootA, 'second', capargs([slot0arg], [target1]));
   await endOfCrank();
 
   const expectedP4 = nextP();
   const expectedP5 = nextP();
-  let expectedThreeArg = p1;
-  let expectedResultOfThree = expectedP4;
-  if (expectRetirement) {
-    expectedThreeArg = expectedP4;
-    expectedResultOfThree = expectedP5;
-  }
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     method: 'three',
-    args: capargs([slot0arg], [expectedThreeArg]),
-    resultSlot: expectedResultOfThree,
+    args: capargs([slot0arg], [expectedP4]),
+    resultSlot: expectedP5,
   });
   t.deepEqual(log.shift(), {
     type: 'subscribe',
-    target: expectedResultOfThree,
+    target: expectedP5,
   });
 
   if (mode === 'presence') {
@@ -749,10 +714,9 @@ async function doVatResolveCase4(t, mode) {
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
   }
-  if (expectRetirement) {
-    const targets = { target2, localTarget: rootA, p1 };
-    t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
-  }
+
+  const targets = { target2, localTarget: rootA, p1: expectedP4 };
+  t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
 
   // if p1 rejects or resolves to data, the kernel never hears about four()
   t.deepEqual(log, []);

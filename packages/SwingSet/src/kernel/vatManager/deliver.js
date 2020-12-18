@@ -81,9 +81,9 @@ export function makeDeliver(tools, dispatch) {
     );
   }
 
-  async function deliverOneNotification(primaryVpid, resolutions) {
-    const errmsg = `vat[${vatID}].promise[${primaryVpid}] failed`;
-    return doProcess(['notify', primaryVpid, resolutions], errmsg);
+  async function deliverOneNotification(resolutions) {
+    const errmsg = `vat[${vatID}].notify failed`;
+    return doProcess(['notify', resolutions], errmsg);
   }
 
   // vatDeliverObject is:

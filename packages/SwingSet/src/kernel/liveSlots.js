@@ -510,30 +510,33 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     };
   }
 
-  function notify(primaryPromiseID, resolutions) {
+  function notifyOnePromise(promiseID, rejected, data) {
+    insistCapData(data);
+    lsdebug(
+      `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
+    );
+    insistVatType('promise', promiseID);
+    // TODO: insist that we do not have decider authority for promiseID
+    if (!importedPromisesByPromiseID.has(promiseID)) {
+      throw new Error(`unknown promiseID '${promiseID}'`);
+    }
+    const pRec = importedPromisesByPromiseID.get(promiseID);
+    const val = m.unserialize(data);
+    if (rejected) {
+      pRec.reject(val);
+    } else {
+      pRec.resolve(val);
+    }
+  }
+
+  function notify(resolutions) {
     assert(didRoot);
     for (const vpid of Object.keys(resolutions)) {
       const vp = resolutions[vpid];
-      insistCapData(vp.data);
-      lsdebug(
-        `ls.dispatch.notify(${primaryPromiseID} ${vpid}, ${vp.rejected}, ${vp.data.body}, [${vp.data.slots}])`,
-      );
-      insistVatType('promise', vpid);
-      // TODO: insist that we do not have decider authority for promiseID
-      if (!importedPromisesByPromiseID.has(vpid)) {
-        throw new Error(`unknown promiseID '${vpid}'`);
-      }
-      const pRec = importedPromisesByPromiseID.get(vpid);
-      const val = m.unserialize(vp.data);
-      if (vp.rejected) {
-        pRec.reject(val);
-      } else {
-        pRec.resolve(val);
-      }
+      notifyOnePromise(vpid, vp.rejected, vp.data);
     }
     for (const vpid of Object.keys(resolutions)) {
-      const vp = resolutions[vpid];
-      retirePromiseIDIfEasy(vpid, vp.data);
+      retirePromiseID(vpid);
     }
   }
 

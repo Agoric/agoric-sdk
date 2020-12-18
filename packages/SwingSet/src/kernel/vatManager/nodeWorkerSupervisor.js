@@ -59,9 +59,9 @@ function doMessage(targetSlot, msg) {
   );
 }
 
-function doNotify(primaryVpid, resolutions) {
-  const errmsg = `vat.promise[${primaryVpid}] failed`;
-  return doProcess(['notify', primaryVpid, resolutions], errmsg);
+function doNotify(resolutions) {
+  const errmsg = `vat.notify failed`;
+  return doProcess(['notify', resolutions], errmsg);
 }
 
 parentPort.on('message', ([type, ...margs]) => {

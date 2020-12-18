@@ -180,6 +180,17 @@ export function makeVatKeeper(
   }
 
   /**
+   * Test if there's a c-list entry for some slot.
+   *
+   * @param {string} slot  The slot of interest
+   *
+   * @returns {boolean} true iff this vat has a c-list entry mapping for `slot`.
+   */
+  function hasCListEntry(slot) {
+    return storage.has(`${vatID}.c.${slot}`);
+  }
+
+  /**
    * Remove an entry from the vat's c-list.
    *
    * @param {string} kernelSlot  The kernel slot being removed
@@ -271,6 +282,7 @@ export function makeVatKeeper(
     getSourceAndOptions,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
+    hasCListEntry,
     deleteCListEntry,
     getTranscript,
     addToTranscript,

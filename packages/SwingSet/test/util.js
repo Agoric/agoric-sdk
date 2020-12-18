@@ -44,8 +44,8 @@ export function buildDispatch(onDispatchCallback = undefined) {
         onDispatchCallback(d);
       }
     },
-    notify(primaryPromiseID, resolutions) {
-      const d = { type: 'notify', primaryPromiseID, resolutions };
+    notify(resolutions) {
+      const d = { type: 'notify', resolutions };
       log.push(d);
       if (onDispatchCallback) {
         onDispatchCallback(d);
