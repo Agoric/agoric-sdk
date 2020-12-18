@@ -37,6 +37,7 @@ export function tameMetering() {
   const FunctionPrototype = Function.prototype;
 
   let globalMeter = null;
+  const definePropertyFailures = new Set();
   const wrapped = new WeakMap();
   const setWrapped = (...args) => apply(wmSet, wrapped, args);
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
@@ -63,8 +64,9 @@ export function tameMetering() {
   const wrapDescriptor = (desc, pname = undefined) => {
     const newDesc = {};
     for (const [k, v] of entries(desc)) {
+      const path = pname && (k === 'value' ? pname : `${pname}.${k}`);
       // eslint-disable-next-line no-use-before-define
-      newDesc[k] = wrap(v, pname && `${pname}.${k}`);
+      newDesc[k] = wrap(v, path);
     }
     return newDesc;
   };
@@ -243,6 +245,12 @@ export function tameMetering() {
           defineProperty(o, p, newDesc);
         } catch (e) {
           // Ignore: TypeError: Cannot redefine property: ...
+          const path = pname ? `${pname}.${String(p)}` : '*unknown*';
+          if (!definePropertyFailures.has(path)) {
+            definePropertyFailures.add(path);
+            // This is an intentional use of console.log, not a debugging vestige.
+            console.log(`Cannot meter ${path}`);
+          }
         }
       }
     };
@@ -261,7 +269,7 @@ export function tameMetering() {
 
   // Override the globals and anonymous intrinsics with wrappers.
   const wrapRoot = {
-    globalThis,
+    Function,
     async AsyncFunction() {
       await Promise.resolve(123);
       return 456;
@@ -272,7 +280,12 @@ export function tameMetering() {
     async *AsyncGeneratorFunction() {
       yield 123;
     },
+    globalThis,
   };
+
+  // Clear out the prototype of the wrapRoot so that we iterate only
+  // on the explicit properties.
+  Object.setPrototypeOf(wrapRoot, null);
   wrap(wrapRoot, '#');
 
   // Provide a way to set the meter.
