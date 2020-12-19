@@ -37,6 +37,8 @@ export function tameMetering() {
   const FunctionPrototype = Function.prototype;
 
   let globalMeter = null;
+  const definePropertyFailures = new Set();
+  const frozenPaths = new Set();
   const wrapped = new WeakMap();
   const setWrapped = (...args) => apply(wmSet, wrapped, args);
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
@@ -63,8 +65,9 @@ export function tameMetering() {
   const wrapDescriptor = (desc, pname = undefined) => {
     const newDesc = {};
     for (const [k, v] of entries(desc)) {
+      const path = pname && (k === 'value' ? pname : `${pname}.${k}`);
       // eslint-disable-next-line no-use-before-define
-      newDesc[k] = wrap(v, pname && `${pname}.${k}`);
+      newDesc[k] = wrap(v, path);
     }
     return newDesc;
   };
@@ -226,7 +229,7 @@ export function tameMetering() {
       wrap(getPrototypeOf(target), pname && `${pname}.__proto__`),
     );
 
-    const assignToTarget = (p, desc) => {
+    const assignToWrapper = (p, desc) => {
       let newDesc;
       if (constructor && p === 'constructor') {
         newDesc = {
@@ -238,14 +241,24 @@ export function tameMetering() {
       } else {
         newDesc = wrapDescriptor(desc, pname && `${pname}.${String(p)}`);
       }
-      for (const o of [wrapper, target]) {
-        try {
-          defineProperty(o, p, newDesc);
-        } catch (e) {
-          // Ignore: TypeError: Cannot redefine property: Symbol(Symbol.hasInstance)
-          if (typeof p !== 'symbol' || !(e instanceof TypeError)) {
-            throw e;
-          }
+
+      if (Object.isFrozen(wrapper)) {
+        if (!frozenPaths.has(pname)) {
+          frozenPaths.add(pname);
+          console.log(`Cannot meter frozen ${pname}`);
+        }
+        return;
+      }
+
+      try {
+        defineProperty(wrapper, p, newDesc);
+      } catch (e) {
+        // Ignore: TypeError: Cannot redefine property: ...
+        const path = pname ? `${pname}.${String(p)}` : '*unknown*';
+        if (!definePropertyFailures.has(path)) {
+          definePropertyFailures.add(path);
+          // This is an intentional use of console.log, not a debugging vestige.
+          console.log(`Cannot meter defined ${path}`);
         }
       }
     };
@@ -253,10 +266,10 @@ export function tameMetering() {
     // Assign the wrapped descriptors to the target.
     const tdescs = getOwnPropertyDescriptors(target);
     Object.getOwnPropertyNames(tdescs).forEach(p =>
-      assignToTarget(p, tdescs[p]),
+      assignToWrapper(p, tdescs[p]),
     );
     Object.getOwnPropertySymbols(tdescs).forEach(p =>
-      assignToTarget(p, tdescs[p]),
+      assignToWrapper(p, tdescs[p]),
     );
 
     return wrapper;
@@ -264,7 +277,7 @@ export function tameMetering() {
 
   // Override the globals and anonymous intrinsics with wrappers.
   const wrapRoot = {
-    globalThis,
+    Function,
     async AsyncFunction() {
       await Promise.resolve(123);
       return 456;
@@ -275,7 +288,12 @@ export function tameMetering() {
     async *AsyncGeneratorFunction() {
       yield 123;
     },
+    globalThis,
   };
+
+  // Clear out the prototype of the wrapRoot so that we iterate only
+  // on the explicit properties.
+  Object.setPrototypeOf(wrapRoot, null);
   wrap(wrapRoot, '#');
 
   // Provide a way to set the meter.
