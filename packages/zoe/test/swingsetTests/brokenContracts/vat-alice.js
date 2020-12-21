@@ -124,7 +124,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
         showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
         showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
         E(moolaPurseP)
-          .getCurrentAmount()
+          .getRecentAmount()
           .then(amount => log(`swap value, ${amount.value}`));
       });
 
@@ -166,7 +166,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
         showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
         showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
         E(moolaPurseP)
-          .getCurrentAmount()
+          .getRecentAmount()
           .then(amount => log(`refund value, ${amount.value}`));
       });
 

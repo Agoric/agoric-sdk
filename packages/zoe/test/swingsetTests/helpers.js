@@ -3,7 +3,7 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 
 export const showPurseBalance = async (purseP, name, log) => {
   try {
-    const amount = await E(purseP).getCurrentAmount();
+    const amount = await E(purseP).getRecentAmount();
     log(name, ': balance ', amount);
   } catch (err) {
     console.error(err);

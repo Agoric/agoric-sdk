@@ -212,10 +212,10 @@ test('zoe with automaticRefund', async t => {
   // Assert that the correct refund was achieved.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 3);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 17);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 3);
+  t.is((await aliceSimoleanPurse.getRecentAmount()).value, 0);
+  t.is((await bobMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await bobSimoleanPurse.getRecentAmount()).value, 17);
 });
 
 test('multiple instances of automaticRefund for the same Zoe', async t => {
@@ -361,8 +361,8 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
   // Assert that the correct refund was achieved.
   // Alice had 3 moola and 0 simoleans.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 3);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 3);
+  t.is((await aliceSimoleanPurse.getRecentAmount()).value, 0);
 });
 
 test('zoe - automaticRefund non-fungible', async t => {

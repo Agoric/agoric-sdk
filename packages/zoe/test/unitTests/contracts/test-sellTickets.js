@@ -487,7 +487,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const moneyPayment = await E(sellItemsCreatorSeat).getPayout('Money');
     await E(operaPurse).deposit(moneyPayment);
-    const currentPurseBalance = await E(operaPurse).getCurrentAmount();
+    const currentPurseBalance = await E(operaPurse).getRecentAmount();
 
     t.is(
       currentPurseBalance.value,

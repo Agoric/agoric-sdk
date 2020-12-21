@@ -261,10 +261,21 @@
  *
  * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
  *
- * @property {() => Amount} getCurrentAmount
- * Get the amount contained in this purse.
+ * @property {() => Promise<Amount>} getCurrentAmount
+ * at-deprecated Use `getRecentAmount` instead.
+ * TODO How to I tell jsdoc something in this position is deprecated?
  *
  * @property {() => Notifier<Amount>} getCurrentAmountNotifier
+ * at-deprecated Use `getRecentAmountNotifier` instead.
+ * TODO How to I tell jsdoc something in this position is deprecated?
+ *
+ * @property {() => Promise<Amount>} getRecentAmount
+ * Get an amount that was recent contained in this purse. If asked repeatedly
+ * the answer should be eventually consistent. Under quiescence it should eventually
+ * converge on the correct amount. Any amount reported should have been a correct
+ * amount at some point in the past.
+ *
+ * @property {() => Notifier<Amount>} getRecentAmountNotifier
  * Get a lossy notifier for changes to this purse's balance.
  *
  * @property {(payment: Payment, optAmount: Amount=) => Amount} deposit

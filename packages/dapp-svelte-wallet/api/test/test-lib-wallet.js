@@ -149,7 +149,7 @@ test('lib-wallet issuer and purse methods', async t => {
   await wallet.makeEmptyPurse('moola', 'fun money');
   const moolaPurse = wallet.getPurse('fun money');
   t.deepEqual(
-    await moolaPurse.getCurrentAmount(),
+    await moolaPurse.getRecentAmount(),
     moolaBundle.amountMath.getEmpty(),
     `empty purse is empty`,
   );
@@ -169,11 +169,11 @@ test('lib-wallet issuer and purse methods', async t => {
   const moolaPayment = moolaBundle.mint.mintPayment(
     moolaBundle.amountMath.make(100),
   );
-  await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
+  await waitForUpdate(E(moolaPurse).getRecentAmountNotifier(), () =>
     wallet.deposit('fun money', moolaPayment),
   );
   t.deepEqual(
-    await moolaPurse.getCurrentAmount(),
+    await moolaPurse.getRecentAmount(),
     moolaBundle.amountMath.make(100),
     `deposit successful`,
   );
@@ -190,12 +190,12 @@ test('lib-wallet issuer and purse methods', async t => {
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [],
-        currentAmountSlots: {
+        recentAmountSlots: {
           body:
             '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
           slots: [{ kind: 'brand', petname: 'zoe invite' }],
         },
-        currentAmount: {
+        recentAmount: {
           brand: { kind: 'brand', petname: 'zoe invite' },
           value: [],
         },
@@ -208,12 +208,12 @@ test('lib-wallet issuer and purse methods', async t => {
         },
         pursePetname: 'fun money',
         value: 100,
-        currentAmountSlots: {
+        recentAmountSlots: {
           body:
             '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
           slots: [{ kind: 'brand', petname: 'moola' }],
         },
-        currentAmount: {
+        recentAmount: {
           brand: { kind: 'brand', petname: 'moola' },
           value: 100,
         },
@@ -288,13 +288,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     value: [{ handle: inviteHandle2 }],
   } = await E(inviteIssuer).getAmountOf(invite2);
 
-  await waitForUpdate(E(zoeInvitePurse).getCurrentAmountNotifier(), () =>
+  await waitForUpdate(E(zoeInvitePurse).getRecentAmountNotifier(), () =>
     wallet.deposit('Default Zoe invite purse', invite2),
   );
 
-  const currentAmount = await E(zoeInvitePurse).getCurrentAmount();
+  const recentAmount = await E(zoeInvitePurse).getRecentAmount();
   t.deepEqual(
-    currentAmount.value,
+    recentAmount.value,
     [
       {
         description: 'getRefund',
@@ -328,7 +328,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           installation: {},
         },
       ],
-      currentAmountSlots: {
+      recentAmountSlots: {
         body:
           '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
         slots: [
@@ -338,7 +338,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           { kind: 'unnamed', petname: 'unnamed-3' },
         ],
       },
-      currentAmount: {
+      recentAmount: {
         brand: { kind: 'brand', petname: 'zoe invite' },
         value: [
           {
@@ -410,7 +410,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           installation: {},
         },
       ],
-      currentAmountSlots: {
+      recentAmountSlots: {
         body:
           '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
         slots: [
@@ -420,7 +420,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           { kind: 'installation', petname: 'automaticRefund' },
         ],
       },
-      currentAmount: {
+      recentAmount: {
         brand: { kind: 'brand', petname: 'zoe invite' },
         value: [
           {
@@ -473,9 +473,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
   // We need this await for the pursesStateChangeLog to be updated
   // by the time we check it.
-  const currentAmount2 = await E(zoeInvitePurse).getCurrentAmount();
+  const recentAmount2 = await E(zoeInvitePurse).getRecentAmount();
   t.deepEqual(
-    currentAmount2.value,
+    recentAmount2.value,
     [
       {
         description: 'getRefund',
@@ -509,7 +509,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           installation: {},
         },
       ],
-      currentAmountSlots: {
+      recentAmountSlots: {
         body:
           '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","index":2},"installation":{"@qclass":"slot","index":3}}]}',
         slots: [
@@ -519,7 +519,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           { kind: 'installation', petname: 'automaticRefund2' },
         ],
       },
-      currentAmount: {
+      recentAmount: {
         brand: { kind: 'brand', petname: 'zoe invite' },
         value: [
           {
@@ -571,7 +571,7 @@ test('lib-wallet offer methods', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   const moolaPurse = wallet.getPurse('Fun budget');
 
-  await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
+  await waitForUpdate(E(moolaPurse).getRecentAmountNotifier(), () =>
     wallet.deposit(
       'Fun budget',
       moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
@@ -636,7 +636,7 @@ test('lib-wallet offer methods', async t => {
   const seat = wallet.getSeat(id);
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
-    await moolaPurse.getCurrentAmount(),
+    await moolaPurse.getRecentAmount(),
     moolaBundle.amountMath.make(100),
     `moolaPurse balance`,
   );
@@ -657,7 +657,7 @@ test('lib-wallet offer methods', async t => {
   // TODO: test cancelOffer with a contract that holds offers, like
   // simpleExchange
   const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
-  const zoePurseAmount = await E(zoeInvitePurse).getCurrentAmount();
+  const zoePurseAmount = await E(zoeInvitePurse).getRecentAmount();
   t.deepEqual(zoePurseAmount.value, [], `zoeInvitePurse balance`);
   const lastPurseState = JSON.parse(pursesStateChangeLog.pop());
   const [zoeInvitePurseState, moolaPurseState] = lastPurseState;
@@ -672,12 +672,12 @@ test('lib-wallet offer methods', async t => {
       },
       pursePetname: 'Default Zoe invite purse',
       value: [],
-      currentAmountSlots: {
+      recentAmountSlots: {
         body:
           '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
         slots: [{ kind: 'brand', petname: 'zoe invite' }],
       },
-      currentAmount: {
+      recentAmount: {
         brand: { kind: 'brand', petname: 'zoe invite' },
         value: [],
       },
@@ -694,12 +694,12 @@ test('lib-wallet offer methods', async t => {
       },
       pursePetname: 'Fun budget',
       value: 100,
-      currentAmountSlots: {
+      recentAmountSlots: {
         body:
           '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
         slots: [{ kind: 'brand', petname: 'moola' }],
       },
-      currentAmount: {
+      recentAmount: {
         brand: { kind: 'brand', petname: 'moola' },
         value: 100,
       },
@@ -890,12 +890,12 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   const seat = wallet.getSeat(id);
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
-    await moolaPurse.getCurrentAmount(),
+    await moolaPurse.getRecentAmount(),
     moolaBundle.amountMath.make(70),
     `moola purse balance`,
   );
   t.deepEqual(
-    await simoleanPurse.getCurrentAmount(),
+    await simoleanPurse.getRecentAmount(),
     simoleanBundle.amountMath.make(516),
     `simolean purse balance`,
   );

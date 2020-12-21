@@ -326,10 +326,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // Assert that the correct outcome was achieved.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.deepEqual(aliceMoolaPurse.getCurrentAmount(), moola(3));
-  t.deepEqual(aliceSimoleanPurse.getCurrentAmount(), simoleans(0));
-  t.deepEqual(bobMoolaPurse.getCurrentAmount(), moola(0));
-  t.deepEqual(bobSimoleanPurse.getCurrentAmount(), simoleans(7));
+  t.deepEqual(await aliceMoolaPurse.getRecentAmount(), moola(3));
+  t.deepEqual(await aliceSimoleanPurse.getRecentAmount(), simoleans(0));
+  t.deepEqual(await bobMoolaPurse.getRecentAmount(), moola(0));
+  t.deepEqual(await bobSimoleanPurse.getRecentAmount(), simoleans(7));
 });
 
 // Alice makes a covered call and escrows. She shares the invitation to
@@ -572,16 +572,16 @@ test('zoe - coveredCall with swap for invitation', async t => {
   await daveSimoleanPurse.deposit(daveSimoleanPayout);
   await daveBucksPurse.deposit(daveBucksPayout);
 
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 0);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 7);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await aliceSimoleanPurse.getRecentAmount()).value, 7);
 
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(bobBucksPurse.getCurrentAmount().value, 1);
+  t.is((await bobMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await bobSimoleanPurse.getRecentAmount()).value, 0);
+  t.is((await bobBucksPurse.getRecentAmount()).value, 1);
 
-  t.is(daveMoolaPurse.getCurrentAmount().value, 3);
-  t.is(daveSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(daveBucksPurse.getCurrentAmount().value, 0);
+  t.is((await daveMoolaPurse.getRecentAmount()).value, 3);
+  t.is((await daveSimoleanPurse.getRecentAmount()).value, 0);
+  t.is((await daveBucksPurse.getRecentAmount()).value, 0);
 });
 
 // Alice makes a covered call and escrows. She shares the invitation to
@@ -846,16 +846,16 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   await daveSimoleanPurse.deposit(daveSimoleanPayout);
   await daveBucksPurse.deposit(daveBucksPayout);
 
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 0);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 7);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await aliceSimoleanPurse.getRecentAmount()).value, 7);
 
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(bobBucksPurse.getCurrentAmount().value, 1);
+  t.is((await bobMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await bobSimoleanPurse.getRecentAmount()).value, 0);
+  t.is((await bobBucksPurse.getRecentAmount()).value, 1);
 
-  t.is(daveMoolaPurse.getCurrentAmount().value, 3);
-  t.is(daveSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(daveBucksPurse.getCurrentAmount().value, 0);
+  t.is((await daveMoolaPurse.getRecentAmount()).value, 3);
+  t.is((await daveSimoleanPurse.getRecentAmount()).value, 0);
+  t.is((await daveBucksPurse.getRecentAmount()).value, 0);
 });
 
 // Alice uses a covered call to sell a cryptoCat to Bob for the
@@ -993,8 +993,8 @@ test('zoe - coveredCall non-fungible', async t => {
   // Assert that the correct payouts were received.
   // Alice had growlTiger and no RPG tokens.
   // Bob had an empty CryptoCat purse and the Glorious Shield.
-  t.deepEqual(aliceCcPurse.getCurrentAmount().value, []);
-  t.deepEqual(aliceRpgPurse.getCurrentAmount().value, aGloriousShield);
-  t.deepEqual(bobCcPurse.getCurrentAmount().value, ['GrowlTiger']);
-  t.deepEqual(bobRpgPurse.getCurrentAmount().value, []);
+  t.deepEqual((await aliceCcPurse.getRecentAmount()).value, []);
+  t.deepEqual((await aliceRpgPurse.getRecentAmount()).value, aGloriousShield);
+  t.deepEqual((await bobCcPurse.getRecentAmount()).value, ['GrowlTiger']);
+  t.deepEqual((await bobRpgPurse.getRecentAmount()).value, []);
 });

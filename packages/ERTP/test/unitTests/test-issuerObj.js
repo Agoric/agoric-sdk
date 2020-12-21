@@ -76,20 +76,20 @@ test('issuer.makeEmptyPurse', async t => {
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(amountMath.make(837));
 
-  const notifier = purse.getCurrentAmountNotifier();
+  const notifier = purse.getRecentAmountNotifier();
   let nextUpdate = notifier.getUpdateSince();
 
   const checkNotifier = async () => {
     const { value: balance, updateCount } = await nextUpdate;
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), balance),
+      amountMath.isEqual(await purse.getRecentAmount(), balance),
       `the notifier balance is the same as the purse`,
     );
     nextUpdate = notifier.getUpdateSince(updateCount);
   };
 
   t.assert(
-    amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
+    amountMath.isEqual(await purse.getRecentAmount(), amountMath.getEmpty()),
     `empty purse is empty`,
   );
   await checkNotifier();
@@ -102,7 +102,7 @@ test('issuer.makeEmptyPurse', async t => {
       `the balance returned is the purse balance`,
     );
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), fungible837),
+      amountMath.isEqual(await purse.getRecentAmount(), fungible837),
       `the new purse balance is the payment's old balance`,
     );
     await checkNotifier();
@@ -118,7 +118,7 @@ test('issuer.makeEmptyPurse', async t => {
       );
     });
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
+      amountMath.isEqual(await purse.getRecentAmount(), amountMath.getEmpty()),
       `the purse is empty again`,
     );
     await checkNotifier();
@@ -140,7 +140,7 @@ test('purse.deposit', async t => {
   const fungibleSum = amountMath.add(fungible17, fungible25);
 
   const purse = issuer.makeEmptyPurse();
-  const notifier = purse.getCurrentAmountNotifier();
+  const notifier = purse.getRecentAmountNotifier();
   const payment17 = mint.mintPayment(fungible17);
   const payment25 = mint.mintPayment(fungible25);
 
@@ -149,7 +149,7 @@ test('purse.deposit', async t => {
   const checkNotifier = async () => {
     const { value: balance, updateCount } = await nextUpdate;
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), balance),
+      amountMath.isEqual(await purse.getRecentAmount(), balance),
       `the notifier balance is the same as the purse`,
     );
     nextUpdate = notifier.getUpdateSince(updateCount);
@@ -165,7 +165,7 @@ test('purse.deposit', async t => {
       `the balance changes by the deposited amount: ${delta.value}`,
     );
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
+      amountMath.isEqual(await purse.getRecentAmount(), expectedNewBalance),
       `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
     );
     await checkNotifier();
@@ -204,14 +204,14 @@ test('purse.getDepositFacet', async t => {
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
-  const notifier = purse.getCurrentAmountNotifier();
+  const notifier = purse.getRecentAmountNotifier();
 
   let nextUpdate = notifier.getUpdateSince();
   const checkNotifier = async () => {
     const { value: balance, updateCount } = await nextUpdate;
     nextUpdate = notifier.getUpdateSince(updateCount);
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), balance),
+      amountMath.isEqual(await purse.getRecentAmount(), balance),
       `the notifier balance is the same as the purse's`,
     );
   };
@@ -222,7 +222,7 @@ test('purse.getDepositFacet', async t => {
       `the balance returned is the purse balance`,
     );
     t.assert(
-      amountMath.isEqual(purse.getCurrentAmount(), fungible25),
+      amountMath.isEqual(await purse.getRecentAmount(), fungible25),
       `the new purse balance is the payment's old balance`,
     );
     await checkNotifier();

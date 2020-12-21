@@ -137,8 +137,10 @@ function makeIssuerKit(
           paymentLedger.init(payment, amount);
           return payment;
         },
-        getCurrentAmount: () => currentBalance,
+        getCurrentAmount: async () => currentBalance,
         getCurrentAmountNotifier: () => balanceNotifier,
+        getRecentAmount: async () => currentBalance,
+        getRecentAmountNotifier: () => balanceNotifier,
         getAllegedBrand: () => brand,
         // eslint-disable-next-line no-use-before-define
         getDepositFacet: () => depositFacet,

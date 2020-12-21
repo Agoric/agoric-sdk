@@ -440,6 +440,6 @@ test('zoe - atomicSwap like-for-like', async t => {
   // Assert that the correct payouts were received.
   // Alice had 3 moola from Asset and 0 from Price.
   // Bob had 0 moola from Asset and 7 from Price.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 7);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 3);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 7);
+  t.is((await bobMoolaPurse.getRecentAmount()).value, 3);
 });

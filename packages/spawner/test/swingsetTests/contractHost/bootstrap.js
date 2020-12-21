@@ -27,7 +27,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   function showPurseBalances(name, purseP) {
     return Promise.all([
       E(purseP)
-        .getCurrentAmount()
+        .getRecentAmount()
         .then(amount => log(name, ' balance ', amount))
         .catch(err => console.log(err)),
     ]);

@@ -94,8 +94,8 @@
  * @property {Petname} pursePetname the petname for this purse
  * @property {any} displayInfo the brand's displayInfo
  * @property {any} value the purse's current balance
- * @property {any} currentAmountSlots
- * @property {any} currentAmount
+ * @property {any} recentAmountSlots TODO do we also need a deprecated currentAmountSlots?
+ * @property {any} recentAmount TODO do we also need a deprecated currentAmount?
  */
 
 /**

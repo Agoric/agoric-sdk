@@ -85,7 +85,7 @@ export default async function deployWallet(
       if (!payment && purse) {
         // Withdraw the payment from the purse.
         payment = E(purse)
-          .getCurrentAmount()
+          .getRecentAmount()
           .then(amount => E(purse).withdraw(amount));
       }
 

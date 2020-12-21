@@ -379,10 +379,10 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   );
 
   // Assert that the correct refunds were received.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 0);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 8);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 11);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await aliceSimoleanPurse.getRecentAmount()).value, 8);
+  t.is((await bobMoolaPurse.getRecentAmount()).value, 0);
+  t.is((await bobSimoleanPurse.getRecentAmount()).value, 11);
 });
 
 // Three bidders with (fungible) moola bid for a CryptoCat
@@ -665,12 +665,12 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Bob: the CryptoCat and 4 moola
   // Carol: an empty CryptoCat purse and 7 moola
   // Dave: an empty CryptoCat purse and 5 moola
-  t.deepEqual(aliceCcPurse.getCurrentAmount().value, []);
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 7);
-  t.deepEqual(bobCcPurse.getCurrentAmount().value, ['Felix']);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 4);
-  t.deepEqual(carolCcPurse.getCurrentAmount().value, []);
-  t.is(carolMoolaPurse.getCurrentAmount().value, 7);
-  t.deepEqual(daveCcPurse.getCurrentAmount().value, []);
-  t.is(daveMoolaPurse.getCurrentAmount().value, 5);
+  t.deepEqual((await aliceCcPurse.getRecentAmount()).value, []);
+  t.is((await aliceMoolaPurse.getRecentAmount()).value, 7);
+  t.deepEqual((await bobCcPurse.getRecentAmount()).value, ['Felix']);
+  t.is((await bobMoolaPurse.getRecentAmount()).value, 4);
+  t.deepEqual((await carolCcPurse.getRecentAmount()).value, []);
+  t.is((await carolMoolaPurse.getRecentAmount()).value, 7);
+  t.deepEqual((await daveCcPurse.getRecentAmount()).value, []);
+  t.is((await daveMoolaPurse.getRecentAmount()).value, 5);
 });

@@ -413,7 +413,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     const moneyPayment = await E(sellItemsCreatorSeat).getPayout('Money');
     await E(moolaPurseP).deposit(moneyPayment);
-    const currentPurseBalance = await E(moolaPurseP).getCurrentAmount();
+    const currentPurseBalance = await E(moolaPurseP).getRecentAmount();
 
     log('alice earned: ', currentPurseBalance);
   };

@@ -172,10 +172,10 @@ export function makeWallet({
         pursesState.delete(key);
       }
     }
-    const currentAmount = await E(purse).getCurrentAmount();
-    const { value, brand } = currentAmount;
+    const recentAmount = await E(purse).getRecentAmount();
+    const { value, brand } = recentAmount;
     const brandPetname = brandMapping.valToPetname.get(brand);
-    const dehydratedCurrentAmount = dehydrate(currentAmount);
+    const dehydratedRecentAmount = dehydrate(recentAmount);
     const brandBoardId = await E(board).getId(brand);
 
     let depositBoardId;
@@ -200,8 +200,8 @@ export function makeWallet({
       pursePetname,
       displayInfo: (issuerRecord && issuerRecord.displayInfo),
       value,
-      currentAmountSlots: dehydratedCurrentAmount,
-      currentAmount: fillInSlots(dehydratedCurrentAmount),
+      recentAmountSlots: dehydratedRecentAmount,
+      recentAmount: fillInSlots(dehydratedRecentAmount),
     };
     pursesState.set(purseKey, jstate);
 
@@ -593,7 +593,7 @@ export function makeWallet({
 
     // Just notice the balance updates for the purse.
     observeIteration(
-      makeAsyncIterableFromNotifier(E(purse).getCurrentAmountNotifier()),
+      makeAsyncIterableFromNotifier(E(purse).getRecentAmountNotifier()),
       {
         updateState(_balance) {
           updatePursesState(

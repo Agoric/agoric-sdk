@@ -94,7 +94,7 @@ test.serial('home.wallet - receive zoe invite', async t => {
   await E(depositFacet).receive(invite);
 
   // The invite was successfully received in the user's wallet.
-  const invitePurseBalance = await E(invitePurse).getCurrentAmount();
+  const invitePurseBalance = await E(invitePurse).getRecentAmount();
   t.is(
     invitePurseBalance.value[0].description,
     'getRefund',
