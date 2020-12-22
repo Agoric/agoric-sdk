@@ -157,6 +157,8 @@ export const makeBorrowInvitation = (zcf, config) => {
         makeAddCollateralInvitation(zcf, configWithBorrower),
       getLiquidationPromise: () => liquidationPromiseKit.promise,
       getDebtNotifier,
+      getRecentCollateralAmount: () =>
+        collateralSeat.getAmountAllocated('Collateral'),
     };
 
     return harden(borrowFacet);
