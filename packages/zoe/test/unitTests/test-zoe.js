@@ -65,7 +65,6 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   ]);
   t.deepEqual(result.creatorFacet, {});
   t.deepEqual(result.creatorInvitation, undefined);
-  t.deepEqual(result.instance, result.instance);
   t.deepEqual(result.publicFacet, {});
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
@@ -94,7 +93,6 @@ test(`zoe.startInstance promise for installation`, async t => {
   ]);
   t.deepEqual(result.creatorFacet, {});
   t.deepEqual(result.creatorInvitation, undefined);
-  t.deepEqual(result.instance, result.instance);
   t.deepEqual(result.publicFacet, {});
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
