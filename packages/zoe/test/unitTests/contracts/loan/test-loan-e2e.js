@@ -8,7 +8,7 @@ import test from 'ava';
 import { E } from '@agoric/eventual-send';
 
 import bundleSource from '@agoric/bundle-source';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import { checkDetails, checkPayout } from './helpers';
 import { setup } from '../../setupBasicMints';
@@ -56,13 +56,13 @@ test('loan - lend - exit before borrow', async t => {
     timer,
   });
 
-  const { subscription: periodAsyncIterable } = makeSubscriptionKit();
+  const { notifier: periodNotifier } = makeNotifierKit();
 
   const terms = {
     mmr: 150,
     autoswapInstance,
     priceAuthority,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate: 5,
   };
 
