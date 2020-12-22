@@ -4,6 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
@@ -54,6 +55,35 @@ test(`zoe.startInstance bad installation`, async t => {
 test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const result = await E(zoe).startInstance(installation);
+  // Note that deepEqual treats all empty objects (handles) as interchangeable.
+  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
+    'adminFacet',
+    'creatorFacet',
+    'creatorInvitation',
+    'instance',
+    'publicFacet',
+  ]);
+  t.deepEqual(result.creatorFacet, {});
+  t.deepEqual(result.creatorInvitation, undefined);
+  t.deepEqual(result.instance, result.instance);
+  t.deepEqual(result.publicFacet, {});
+  t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
+    'getVatShutdownPromise',
+    'getVatStats',
+  ]);
+});
+
+test(`zoe.startInstance promise for installation`, async t => {
+  const { zoe, installation } = await setupZCFTest();
+  const {
+    promise: installationP,
+    resolve: installationPResolve,
+  } = makePromiseKit();
+
+  const resultP = E(zoe).startInstance(installationP);
+  installationPResolve(installation);
+
+  const result = await resultP;
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
   t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
     'adminFacet',

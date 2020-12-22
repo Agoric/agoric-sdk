@@ -94,13 +94,15 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       return getAmountOfInvitationThen(invitation, onFulfilled);
     },
     startInstance: async (
-      installation,
+      installationP,
       uncleanIssuerKeywordRecord = harden({}),
       customTerms = harden({}),
     ) => {
       /** @param {Issuer[]} issuers */
       const initIssuers = issuers =>
         Promise.all(issuers.map(issuerTable.initIssuer));
+
+      const installation = await Promise.resolve(installationP);
       assert(
         installations.has(installation),
         details`${installation} was not a valid installation`,
