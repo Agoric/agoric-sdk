@@ -222,7 +222,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     });
     const { simpleExchange } = installations;
     const { publicFacet } = await E(zoe).startInstance(
-      simpleExchange,
+      // Either installations or promises for installations can be used
+      Promise.resolve(simpleExchange),
       issuerKeywordRecord,
     );
 

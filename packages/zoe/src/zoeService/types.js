@@ -67,7 +67,7 @@
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  *
- * @param {Installation} installation
+ * @param {ERef<Installation>} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
  * @returns {Promise<StartInstanceResult>}
