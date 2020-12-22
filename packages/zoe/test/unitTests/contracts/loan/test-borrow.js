@@ -113,6 +113,7 @@ const setupBorrowFacet = async (collateralValue = 1000, maxLoanValue = 100) => {
 
   return {
     ...setup,
+    collateral,
     borrowSeat,
     borrowFacet,
   };
@@ -170,6 +171,12 @@ test('borrow getDebtNotifier', async t => {
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
   const state = await debtNotifier.getUpdateSince();
   t.deepEqual(state.value, maxLoan);
+});
+
+test('borrow getRecentCollateralAmount', async t => {
+  const { borrowFacet, collateral } = await setupBorrowFacet();
+  const collateralAmount = await E(borrowFacet).getRecentCollateralAmount();
+  t.deepEqual(collateralAmount, collateral);
 });
 
 test('borrow getLiquidationPromise', async t => {
@@ -289,7 +296,6 @@ test('getDebtNotifier with interest', async t => {
     maxLoan,
     periodUpdater,
     zoe,
-    collateralKit,
     loanKit,
   } = await setupBorrowFacet(100000, 40000);
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -318,9 +324,11 @@ test('getDebtNotifier with interest', async t => {
   const closeLoanInvitation = E(borrowFacet).makeCloseLoanInvitation();
   await checkDescription(t, zoe, closeLoanInvitation, 'repayAndClose');
 
+  const collateral = await E(borrowFacet).getRecentCollateralAmount();
+
   const proposal = harden({
     give: { Loan: loanKit.amountMath.make(40000) },
-    want: { Collateral: collateralKit.amountMath.make(10) },
+    want: { Collateral: collateral },
   });
 
   const payments = harden({
