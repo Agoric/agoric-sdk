@@ -399,4 +399,8 @@
  *
  * Get notified when the current debt (an Amount in the Loan Brand) changes. This will
  * increase as interest is added.
+ *
+ * @property {() => Amount} getRecentCollateralAmount
+ *
+ * Get a recent report of the amount of collateral in the loan
  */
