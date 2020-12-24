@@ -54,8 +54,7 @@
     "@agoric/promise-kit": "^0.2.0",
     "@agoric/same-structure": "^0.1.0",
     "@agoric/store": "^0.4.0",
-    "@agoric/zoe": "^0.11.0",
-    "@agoric/agoric": "^0.11.0"
+    "@agoric/zoe": "^0.11.0"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.0",
