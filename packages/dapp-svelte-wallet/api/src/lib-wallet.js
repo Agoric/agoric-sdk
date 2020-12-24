@@ -109,6 +109,9 @@ export function makeWallet({
    */
   let zoeInvitePurse;
 
+  const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
+  const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
   function getSortedValues(map) {
     const entries = [...map.entries()];
     // Sort for determinism.
@@ -987,14 +990,6 @@ export function makeWallet({
     return ret;
   }
 
-  /** @returns {[Petname, Issuer][]} */
-  function getIssuers() {
-    return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
-      const { issuer } = brandTable.getByBrand(brand);
-      return [petname, issuer];
-    });
-  }
-
   /** @type {Store<Payment, PaymentRecord>} */
   const payments = makeStore('payment');
   const {
@@ -1250,47 +1245,129 @@ export function makeWallet({
     );
   }
 
-  async function renameIssuer(petname, issuer) {
-    assert(
-      brandTable.hasByIssuer(issuer),
-      `issuer has not been previously added`,
-    );
-    const brandRecord = brandTable.getByIssuer(issuer);
-    brandMapping.renamePetname(petname, brandRecord.brand);
-    await updateAllState();
-    return `issuer ${q(petname)} successfully renamed in wallet`;
-  }
-
-  async function renameInstance(petname, instance) {
-    instanceMapping.renamePetname(petname, instance);
-    await updateAllState();
-    return `instance ${q(petname)} successfully renamed in wallet`;
-  }
-
-  async function renameInstallation(petname, installation) {
-    installationMapping.renamePetname(petname, installation);
-    await updateAllState();
-    return `installation ${q(petname)} successfully renamed in wallet`;
-  }
-
-  function getIssuer(petname) {
+  function getBrand(petname) {
     const brand = brandMapping.petnameToVal.get(petname);
-    return brandTable.getByBrand(brand).issuer;
+    return brand;
   }
 
   function getSelfContact() {
     return selfContact;
   }
 
-  function getInstance(petname) {
-    return instanceMapping.petnameToVal.get(petname);
+  const installationManager = harden({
+    rename: (petname, thing) => {
+      installationMapping.renamePetname(petname, thing);
+      updateAllState();
+    },
+    get: petname => installationMapping.petnameToVal.get(petname),
+    getAll: () => installationMapping.petnameToVal.entries(),
+    add: (petname, thing) => addInstallation(petname, thing),
+  });
+
+  const instanceManager = harden({
+    rename: (petname, instance) => {
+      instanceMapping.renamePetname(petname, instance);
+      // We don't wait for the update before returning.
+      updateAllState();
+    },
+    get: petname => instanceMapping.petnameToVal.get(petname),
+    getAll: () => instanceMapping.petnameToVal.entries(),
+    add: (petname, instance) => {
+      // We currently just add the petname mapped to the instance
+      // value, but we could have a list of known instances for
+      // possible display in the wallet.
+      petname = instanceMapping.suggestPetname(petname, instance);
+      // We don't wait for the update before returning.
+      updateAllState();
+    },
+  });
+
+  const issuerManager = harden({
+    rename: (petname, issuer) => {
+      assert(
+        brandTable.hasByIssuer(issuer),
+        `issuer has not been previously added`,
+      );
+      const brandRecord = brandTable.getByIssuer(issuer);
+      brandMapping.renamePetname(petname, brandRecord.brand);
+      updateAllState();
+    },
+    get: petname => {
+      const brand = brandMapping.petnameToVal.get(petname);
+      return brandTable.getByBrand(brand).issuer;
+    },
+    getAll: () => {
+      // TODO: what is the return value?
+      return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
+        const { issuer } = brandTable.getByBrand(brand);
+        return [petname, issuer];
+      });
+    },
+    add: async (petname, issuerP) => {
+      const { brand, issuer } = await brandTable.initIssuer(issuerP);
+      if (!issuerToBoardId.has(issuer)) {
+        const issuerBoardId = await E(board).getId(issuer);
+        issuerToBoardId.init(issuer, issuerBoardId);
+      }
+      brandMapping.suggestPetname(petname, brand);
+      updateAllIssuersState();
+      return issuer;
+    },
+  });
+
+  function getInstallationManager() {
+    return installationManager;
   }
 
-  function getInstallation(petname) {
-    return installationMapping.petnameToVal.get(petname);
+  function getInstanceManager() {
+    return instanceManager;
+  }
+
+  function getIssuerManager() {
+    return issuerManager;
+  }
+
+  async function findAllInvitationAmount(invitationDetailsCriteria) {
+    const zoeInvitationPurse = getPurse(ZOE_INVITE_PURSE_PETNAME);
+    const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();
+
+    // TODO: Improve efficiency
+    // For every key and value in invitationDetailsCriteria, return an amount
+    // with any matches for those exact keys and values. Keys not in
+    // invitationDetails count as a match
+    const matches = invitationDetail =>
+      Object.entries(invitationDetailsCriteria).every(
+        ([key, value]) => invitationDetail[key] === value,
+      );
+
+    // Filter rather than find so that we potentially get more than one result
+    const matchingValue = invitationAmount.value.filter(matches);
+
+    const brand = brandMapping.petnameToVal.get(ZOE_INVITE_BRAND_PETNAME);
+    const invitationMath = brandTable.getByBrand(brand).amountMath;
+    return invitationMath.make(harden(matchingValue));
+  }
+
+  async function findInvitationAmount(invitationDetailsCriteria) {
+    const allAmount = await findAllInvitationAmount(invitationDetailsCriteria);
+    const brand = brandMapping.petnameToVal.get(ZOE_INVITE_BRAND_PETNAME);
+    const invitationMath = brandTable.getByBrand(brand).amountMath;
+    return invitationMath.make(harden([allAmount.value[0]]));
+  }
+
+  const offerResultStore = makeWeakStore('invitationHandle');
+
+  async function saveOfferResult(invitationHandle, offerResult) {
+    offerResultStore.init(invitationHandle, offerResult);
+  }
+
+  async function getOfferResult(invitationHandle) {
+    return offerResultStore.get(invitationHandle);
   }
 
   const wallet = harden({
+    saveOfferResult,
+    getOfferResult,
     waitForDappApproval,
     getDappsNotifier() {
       return dappsNotifier;
@@ -1304,20 +1381,38 @@ export function makeWallet({
     getOffersNotifier() {
       return offersNotifier;
     },
-    addIssuer,
+    /** @deprecated use issuerManager.add instead */
+    addIssuer: issuerManager.add,
+    getBrand,
     publishIssuer,
-    addInstance,
-    addInstallation,
-    renameIssuer,
-    renameInstance,
-    renameInstallation,
+    /** @deprecated use instanceManager.add instead */
+    addInstance: instanceManager.add,
+    /** @deprecated use installationManager.add instead */
+    addInstallation: installationManager.add,
+    getInstallationManager,
+    getInstanceManager,
+    getIssuerManager,
+    /** @deprecated use issuerManager.rename instead */
+    renameIssuer: issuerManager.rename,
+    /** @deprecated use instanceManager.rename instead */
+    renameInstance: instanceManager.rename,
+    /** @deprecated use installationManager.rename instead */
+    renameInstallation: installationManager.rename,
+    findInvitationAmount,
+    findAllInvitationAmount,
     getSelfContact,
-    getInstance,
-    getInstallation,
+    /** @deprecated use instanceManager.get instead */
+    getInstance: instanceManager.get,
+    /** @deprecated use installationManager.get instead */
+    getInstallation: installationManager.get,
+    /** @deprecated use installationManager.getAll instead */
+    getInstallations: installationManager.getAll,
     makeEmptyPurse,
     deposit,
-    getIssuer,
-    getIssuers,
+    /** @deprecated use instanceManager.get instead */
+    getIssuer: instanceManager.get,
+    /** @deprecated use issuerManager.getAll instead */
+    getIssuers: issuerManager.getAll,
     getPurses,
     getPurse,
     getPurseIssuer,
@@ -1351,8 +1446,6 @@ export function makeWallet({
 
   const initialize = async () => {
     // Make Zoe invite purse
-    const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
-    const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
     const inviteIssuerP = E(zoe).getInvitationIssuer();
     const addZoeIssuer = issuerP =>
       wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerP);

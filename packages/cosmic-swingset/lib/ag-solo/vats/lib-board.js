@@ -5,6 +5,8 @@ import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import { models as crcmodels } from 'polycrc';
 
+import './types';
+
 const CRC_NUM_DIGITS = 2;
 const ID_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);
 
@@ -25,14 +27,6 @@ const calcCrc = num => {
   );
   return crcStr;
 };
-
-/**
- * @typedef {Object} Board
- * @property {(id: string) => any} getValue
- * @property {(value: any) => string} getId
- * @property {(value: any) => boolean} has
- * @property {() => string[]} ids
- */
 
 /**
  * Create a board to post things on.

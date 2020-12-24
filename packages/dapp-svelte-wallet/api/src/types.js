@@ -95,3 +95,24 @@
  * @property {any} requestContext
  * @property {string} id
  */
+
+/**
+ * @template T
+ * @typedef {Object} PetnameManager
+ * @property {(petname: Petname, object: T) => void} rename
+ * @property {(petname: Petname) => T} get
+ * @property { () => Array<T>} getAll
+ * @property {(petname: Petname, object: T) => void} add
+ */
+
+/**
+ * @typedef {PetnameManager<Installation>} InstallationManager
+ */
+
+/**
+ * @typedef {PetnameManager<Instance>} InstanceManager
+ */
+
+/**
+ * @typedef {PetnameManager<Issuer>} IssuerManager
+ */
