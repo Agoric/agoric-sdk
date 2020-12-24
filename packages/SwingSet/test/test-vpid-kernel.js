@@ -591,3 +591,240 @@ for (const caseNum of [4, 5, 6, 7]) {
     });
   }
 }
+
+test(`kernel vpid handling crossing resolutions`, async t => {
+  const endowments = makeEndowments();
+  initializeKernel({}, endowments.hostStorage);
+  const kernel = buildKernel(endowments, {}, {});
+  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+  // vatX controls the scenario, vatA and vatB are the players
+  let onDispatchCallback;
+  function odc(d) {
+    if (onDispatchCallback) {
+      onDispatchCallback(d);
+    }
+  }
+  const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
+    'vatA',
+    kernel,
+    odc,
+  );
+  const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
+    'vatB',
+    kernel,
+  );
+  const { log: logX, getSyscall: getSyscallX } = await buildRawVat(
+    'vatX',
+    kernel,
+  );
+  const syscallA = getSyscallA();
+  const syscallB = getSyscallB();
+  const syscallX = getSyscallX();
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+  const vatX = kernel.vatNameToID('vatX');
+
+  // X will need references to A and B, to send them anything
+  const rootBvatB = 'o+0';
+  const rootBkernel = kernel.addExport(vatB, rootBvatB);
+  const rootBvatX = kernel.addImport(vatX, rootBkernel);
+
+  const rootAvatA = 'o+0';
+  const rootAkernel = kernel.addExport(vatA, rootAvatA);
+  const rootAvatX = kernel.addImport(vatX, rootAkernel);
+
+  const exportedGenResultAvatX = 'p+1';
+  const importedGenResultAvatX = 'p-60'; // re-export
+  const importedGenResultAvatA = 'p-60';
+  const importedGenResultAvatB = 'p-61';
+  const genResultAkernel = 'kp40';
+
+  const exportedGenResultBvatX = 'p+2';
+  const importedGenResultBvatA = 'p-61';
+  const importedGenResultBvatB = 'p-60';
+  const genResultBkernel = 'kp41';
+
+  const exportedUseResultAvatX = 'p+3';
+  const importedUseResultAvatA = 'p-62';
+
+  const exportedUseResultBvatX = 'p+4';
+
+  const importedUseResultvatB = 'p-62';
+
+  // X is the controlling vat, which orchestrates alice and bob
+  // X: pa=alice~.getPromise()  // alice generates promise pa and returns it
+  // X: pb=bob~.getPromise()    // bob generates promise pb and returns it
+  // X: alice~.usePromise(pb)   // alice resolves promise pa to an array containing pb
+  // X: bob~.usePromise(pa)     // bob resolves promise pb to an array containing pa
+
+  // **** begin Crank 1 (X) ****
+  syscallX.send(
+    rootAvatX,
+    'genPromise',
+    capargs([], []),
+    exportedGenResultAvatX,
+  );
+  syscallX.subscribe(exportedGenResultAvatX);
+  syscallX.send(
+    rootBvatX,
+    'genPromise',
+    capargs([], []),
+    exportedGenResultBvatX,
+  );
+  syscallX.subscribe(exportedGenResultBvatX);
+  syscallX.send(
+    rootAvatX,
+    'usePromise',
+    capargs([slot0arg], [exportedGenResultBvatX]),
+    exportedUseResultAvatX,
+  );
+  syscallX.subscribe(exportedUseResultAvatX);
+  syscallX.send(
+    rootBvatX,
+    'usePromise',
+    capargs([slot0arg], [exportedGenResultAvatX]),
+    exportedUseResultBvatX,
+  );
+  syscallX.subscribe(exportedUseResultBvatX);
+
+  await kernel.run();
+  t.deepEqual(logA.shift(), {
+    // reacted to on Crank 2 (A)
+    type: 'deliver',
+    targetSlot: rootAvatA,
+    method: 'genPromise',
+    args: capargs([], []),
+    resultSlot: importedGenResultAvatA,
+  });
+  t.deepEqual(logB.shift(), {
+    // reacted to on Crank 3 (B)
+    type: 'deliver',
+    targetSlot: rootBvatB,
+    method: 'genPromise',
+    args: capargs([], []),
+    resultSlot: importedGenResultBvatB,
+  });
+  t.deepEqual(logA.shift(), {
+    // reacted to on Crank 4 (A)
+    type: 'deliver',
+    targetSlot: rootAvatA,
+    method: 'usePromise',
+    args: capargs([slot0arg], [importedGenResultBvatA]),
+    resultSlot: importedUseResultAvatA,
+  });
+  t.deepEqual(logB.shift(), {
+    // reacted to on Crank 5 (B)
+    type: 'deliver',
+    targetSlot: rootBvatB,
+    method: 'usePromise',
+    args: capargs([slot0arg], [importedGenResultAvatB]),
+    resultSlot: importedUseResultvatB,
+  });
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
+  t.deepEqual(logX, []);
+
+  t.is(inCList(kernel, vatA, genResultAkernel, importedGenResultAvatA), true);
+  t.is(inCList(kernel, vatB, genResultAkernel, importedGenResultAvatB), true);
+  t.is(inCList(kernel, vatX, genResultAkernel, exportedGenResultAvatX), true);
+
+  t.is(inCList(kernel, vatA, genResultBkernel, importedGenResultBvatA), true);
+  t.is(inCList(kernel, vatB, genResultBkernel, importedGenResultBvatB), true);
+  t.is(inCList(kernel, vatX, genResultBkernel, exportedGenResultBvatX), true);
+  // **** end Crank 1 (X) ****
+
+  // **** begin Crank 2 (A) ****
+  // genPromise delivered to A
+  // **** end Crank 2 (A) ****
+
+  // **** begin Crank 3 (B) ****
+  // genPromise delivered to B
+  // **** end Crank 3 (B) ****
+
+  // **** begin Crank 4 (A) ****
+  // usePromise(b) delivered to A
+  syscallA.subscribe(importedGenResultBvatA);
+  syscallA.fulfillToData(
+    importedGenResultAvatA,
+    capargs([slot0arg], [importedGenResultBvatA]),
+  );
+  await kernel.run();
+  t.deepEqual(logX.shift(), {
+    type: 'notify',
+    resolutions: {
+      [exportedGenResultAvatX]: {
+        rejected: false,
+        data: capargs([slot0arg], [exportedGenResultBvatX]),
+      },
+    },
+  });
+  t.deepEqual(logX, []);
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
+
+  t.is(inCList(kernel, vatX, genResultAkernel, exportedGenResultAvatX), false);
+  t.is(inCList(kernel, vatA, genResultAkernel, importedGenResultAvatA), true);
+  t.is(inCList(kernel, vatB, genResultAkernel, importedGenResultAvatB), true);
+
+  t.is(inCList(kernel, vatA, genResultBkernel, importedGenResultBvatA), true);
+  t.is(inCList(kernel, vatB, genResultBkernel, importedGenResultBvatB), true);
+  t.is(inCList(kernel, vatX, genResultBkernel, exportedGenResultBvatX), true);
+  // **** end Crank 4 (A) ****
+
+  // **** begin Crank 5 (B) ****
+  // usePromise(a) delivered to B
+  syscallB.subscribe(importedGenResultAvatB);
+  syscallB.fulfillToData(
+    importedGenResultBvatB,
+    capargs([slot0arg], [importedGenResultAvatB]),
+  );
+
+  await kernel.run();
+  t.deepEqual(logB.shift(), {
+    type: 'notify',
+    resolutions: {
+      [importedGenResultAvatB]: {
+        rejected: false,
+        data: capargs([slot0arg], [importedGenResultBvatB]),
+      },
+      [importedGenResultBvatB]: {
+        rejected: false,
+        data: capargs([slot0arg], [importedGenResultAvatB]),
+      },
+    },
+  });
+  t.deepEqual(logB, []);
+  t.deepEqual(logX.shift(), {
+    type: 'notify',
+    resolutions: {
+      [exportedGenResultBvatX]: {
+        rejected: false,
+        data: capargs([slot0arg], [importedGenResultAvatX]),
+      },
+    },
+  });
+  t.deepEqual(logX, []);
+  t.deepEqual(logA.shift(), {
+    type: 'notify',
+    resolutions: {
+      [importedGenResultAvatA]: {
+        rejected: false,
+        data: capargs([slot0arg], [importedGenResultBvatA]),
+      },
+      [importedGenResultBvatA]: {
+        rejected: false,
+        data: capargs([slot0arg], [importedGenResultAvatA]),
+      },
+    },
+  });
+  t.deepEqual(logA, []);
+  t.is(inCList(kernel, vatA, genResultAkernel, importedGenResultAvatA), false);
+  t.is(inCList(kernel, vatB, genResultAkernel, importedGenResultAvatB), false);
+  t.is(inCList(kernel, vatX, genResultAkernel, importedGenResultAvatX), true);
+
+  t.is(inCList(kernel, vatA, genResultBkernel, importedGenResultBvatA), false);
+  t.is(inCList(kernel, vatB, genResultBkernel, importedGenResultBvatB), false);
+  t.is(inCList(kernel, vatX, genResultBkernel, exportedGenResultBvatX), false);
+  // **** end Crank 5 (B) ****
+});
