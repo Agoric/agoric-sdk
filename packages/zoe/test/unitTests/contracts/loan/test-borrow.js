@@ -64,9 +64,11 @@ const setupBorrow = async (maxLoanValue = 100) => {
     initialLiquidityKeywordRecord,
   );
 
+  // In the config that the borrow code sees, the periodNotifier has
+  // been adapted to a periodAsyncIterable
   const {
     publication: periodUpdater,
-    subscription: periodSubscription,
+    subscription: periodAsyncIterable,
   } = makeSubscriptionKit();
 
   const interestRate = 5;
@@ -78,7 +80,7 @@ const setupBorrow = async (maxLoanValue = 100) => {
     priceAuthority,
     makeCloseLoanInvitation,
     makeAddCollateralInvitation,
-    periodAsyncIterable: periodSubscription,
+    periodAsyncIterable,
     interestRate,
   };
   // @ts-ignore
@@ -89,7 +91,7 @@ const setupBorrow = async (maxLoanValue = 100) => {
     maxLoan,
     lenderUserSeat,
     periodUpdater,
-    periodAsyncIterable: periodSubscription,
+    periodAsyncIterable,
     timer,
     priceAuthority,
   };

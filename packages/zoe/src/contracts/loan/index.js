@@ -3,6 +3,7 @@ import '../../../exported';
 
 import { assert } from '@agoric/assert';
 
+import { makeAsyncIterableFromNotifier } from '@agoric/notifier';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeLendInvitation } from './lend';
 
@@ -35,9 +36,10 @@ import { makeLendInvitation } from './lend';
  *    or Multipool Autoswap installation. The publicFacet of the
  *    instance is used for producing an invitation to sell the
  *    collateral on liquidation.
- *  * periodAsyncIterable - the asyncIterable used for notifications
+ *  * periodNotifier - the notifier used for notifications
  *    that a period has passed, on which compound interest will be
- *    calculated using the interestRate.
+ *    calculated using the interestRate. Note that this is lossy, and
+ *    therefore could be missing periods. There is a TODO to fix this (https://github.com/Agoric/agoric-sdk/issues/2108)
  *  * interestRate - the rate in basis points that will be multiplied
  *    with the debt on every period to compound interest.
  *
@@ -59,14 +61,18 @@ const start = async zcf => {
     mmr = 150, // Maintenance Margin Requirement
     autoswapInstance,
     priceAuthority,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate,
   } = zcf.getTerms();
 
   assert(autoswapInstance, `autoswapInstance must be provided`);
   assert(priceAuthority, `priceAuthority must be provided`);
-  assert(periodAsyncIterable, `periodAsyncIterable must be provided`);
+  assert(periodNotifier, `periodNotifier must be provided`);
   assert(interestRate, `interestRate must be provided`);
+
+  // TODO: make this non-lossy (notifier is lossy)
+  // https://github.com/Agoric/agoric-sdk/issues/2108
+  const periodAsyncIterable = makeAsyncIterableFromNotifier(periodNotifier);
 
   /** @type {LoanTerms} */
   const config = {
