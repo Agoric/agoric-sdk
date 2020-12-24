@@ -195,12 +195,12 @@ function resolutionOf(vpid, mode, targets) {
   }
 }
 
-function makeDispatch(syscall, build) {
+function makeDispatch(syscall, build, vatID = 'vatA') {
   function vatDecref() {}
   const gcTools = harden({ WeakRef, FinalizationRegistry, vatDecref });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
-    'vatA',
+    vatID,
     {},
     {},
     gcTools,
@@ -730,3 +730,67 @@ for (const mode of modes) {
 
 // TODO unimplemented
 // cases 5 and 6 are not implemented due to #886
+
+function makePR() {
+  let r;
+  const p = new Promise((resolve, _reject) => {
+    r = resolve;
+  });
+  return [p, r];
+}
+
+test('inter-vat circular promise references', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(_vatPowers) {
+    let p;
+    let r;
+    return harden({
+      genPromise() {
+        [p, r] = makePR();
+        return p;
+      },
+      usePromise(pa) {
+        r(pa);
+      },
+    });
+  }
+  const dispatchA = makeDispatch(syscall, build, 'vatA');
+  // const dispatchB = makeDispatch(syscall, build, 'vatB');
+  t.deepEqual(log, []);
+
+  const rootA = 'o+0';
+  // const rootB = 'o+0';
+  const paA = 'p-8';
+  const pbA = 'p-9';
+  // const pbB = 'p-18';
+  // const paB = 'p-19';
+
+  dispatchA.deliver(rootA, 'genPromise', capargs([], []), paA);
+  await endOfCrank();
+  t.deepEqual(log, []);
+
+  // dispatchB.deliver(rootB, 'genPromise', capargs([], []), pbB);
+  // await endOfCrank();
+  // t.deepEqual(log, []);
+
+  dispatchA.deliver(rootA, 'usePromise', capargs([[slot0arg]], [pbA]));
+  await endOfCrank();
+  t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
+  t.deepEqual(log.shift(), {
+    type: 'fulfillToData',
+    promiseID: paA,
+    data: capargs([slot0arg], [pbA]),
+  });
+  t.deepEqual(log, []);
+
+  // dispatchB.deliver(rootB, 'usePromise', capargs([[slot0arg]], [paB]));
+  // await endOfCrank();
+  // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
+  // t.deepEqual(log.shift(), {
+  //   type: 'fulfillToData',
+  //   promiseID: pbB,
+  //   data: capargs([slot0arg], [paB]),
+  // });
+  // t.deepEqual(log, []);
+});
