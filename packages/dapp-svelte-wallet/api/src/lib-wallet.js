@@ -1409,8 +1409,8 @@ export function makeWallet({
     getInstallations: installationManager.getAll,
     makeEmptyPurse,
     deposit,
-    /** @deprecated use instanceManager.get instead */
-    getIssuer: instanceManager.get,
+    /** @deprecated use issuerManager.get instead */
+    getIssuer: issuerManager.get,
     /** @deprecated use issuerManager.getAll instead */
     getIssuers: issuerManager.getAll,
     getPurses,
