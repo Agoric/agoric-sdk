@@ -7,6 +7,7 @@ import {
   MINT_DENOM,
   finishCosmosConfig,
   finishCosmosGenesis,
+  finishCosmosApp,
 } from './chain-config';
 
 import { makePspawn } from './helpers';
@@ -303,15 +304,21 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     // Complete the genesis file and launch the chain.
     log('read ag-chain-cosmos config');
     const configFile = `${agServer}/config/config.toml`;
-    const [genesisJson, configToml] = await Promise.all([
+    const appFile = `${agServer}/config/app.toml`;
+    const [genesisJson, configToml, appToml] = await Promise.all([
       fs.readFile(genesisFile, 'utf-8'),
       fs.readFile(configFile, 'utf-8'),
+      fs.readFile(appFile, 'utf-8'),
     ]);
     const newGenesisJson = finishCosmosGenesis({
       genesisJson,
     });
     const newConfigToml = finishCosmosConfig({
       configToml,
+      portNum,
+    });
+    const newAppToml = finishCosmosApp({
+      appToml,
       portNum,
     });
 
@@ -328,6 +335,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Save all the files to disk.
     await Promise.all([
+      create(appFile, newAppToml),
       create(configFile, newConfigToml),
       create(genesisFile, newGenesisJson),
       create(hashFile, gci),
