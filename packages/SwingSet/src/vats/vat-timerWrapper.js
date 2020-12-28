@@ -55,7 +55,9 @@ export function buildRootObject(vatPowers) {
         const index = D(timerNode).makeRepeater(delaySecs, interval);
         const { notifier, updater } = makeNotifierKit();
         const updateHandler = harden({
-          wake: updater.updateState,
+          wake: timestamp => {
+            updater.updateState(timestamp);
+          },
         });
         D(timerNode).schedule(index, updateHandler);
 
