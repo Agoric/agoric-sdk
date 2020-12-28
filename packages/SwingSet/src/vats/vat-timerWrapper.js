@@ -1,5 +1,6 @@
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
+import { makeNotifierKit } from '@agoric/notifier';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -40,6 +41,29 @@ export function buildRootObject(vatPowers) {
         });
         repeaters.set(index, vatRepeater);
         return vatRepeater;
+      },
+      createNotifier(delaySecs, interval) {
+        assert(
+          Nat(delaySecs) >= 0,
+          details`createNotifier's first parameter must be a non-negative integer. ${delaySecs}`,
+        );
+        assert(
+          Nat(interval),
+          details`createNotifier's second parameter must be an integer, ${interval}`,
+        );
+
+        const index = D(timerNode).createRepeater(delaySecs, interval);
+        console.log(`TIMER: index: ${index}`);
+        const { notifier, updater } = makeNotifierKit();
+        const updateHandler = harden({
+          wake: timestamp => {
+            console.log(`TimerNotifier tick ${timestamp}`);
+            updater.updateState(timestamp);
+          },
+        });
+        D(timerNode).schedule(index, updateHandler);
+
+        return notifier;
       },
     });
   }
