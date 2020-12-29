@@ -1,9 +1,26 @@
 MODDABLE=$(PWD)/moddable
-TOOLS=$(MODDABLE)/build/bin/lin/release/
+TOOLS=$(MODDABLE)/build/bin/lin/release
 NODE_MODULES=$(PWD)/node_modules
 ROOT=$(PWD)/../..
 
+XSNAP=$(HOME)/projects/xs-snap
+PLATFORM=lin
+XSVATTER=$(XSNAP)/xsnap/makefiles/$(PLATFORM)/bin/$(PLATFORM)/debug/xsvatter
+
 .PHONY: all
+
+nextGen: $(TOOLS)/mcconfig $(XSVATTER)
+
+trial: $(XSVATTER) ./dist/bootstrap.js
+	echo 's23:./dist/bootstrap.umd.js,w8:boot.xss,' >,in
+	$(XSVATTER) 3<,in 4>&1
+
+./dist/bootstrap.js: src/*.js
+	npm run build
+
+$(XSVATTER): $(XSNAP)/xsnap/sources/xsvatter.c
+	(cd $(XSNAP)/xsnap/makefiles/$(PLATFORM); $(MAKE) debug)
+
 
 all:
 	$(MAKE) build

@@ -182,7 +182,13 @@ function makeWorker(io, setImmediate) {
   return harden({ handle });
 }
 
-export async function main({ readMessage, writeMessage, setImmediate }) {
+export function main(sysCall) {
+    console.log("@@TODO!");
+    const dispatch = msg => console.log(`got message of ${msg.byteLength} bytes`);
+    return dispatch;
+}
+
+export async function main2({ readMessage, writeMessage, setImmediate }) {
   workerLog(`supervisor started`);
 
   const worker = makeWorker({ readMessage, writeMessage }, setImmediate);

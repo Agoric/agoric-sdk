@@ -1,7 +1,7 @@
 /** console for xs platform */
 const harden = x => Object.freeze(x, true);
 
-const text = it => (typeof it === 'object' ? JSON.stringify(it) : `${it}`);
+const text = it => (typeof it === 'string' ? it : JSON.stringify(it));
 const combine = (...things) => `${things.map(text).join(' ')}\n`;
 
 export function makeConsole(write_) {

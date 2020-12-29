@@ -11,7 +11,7 @@
     "install:xs-lin": "make install-deps",
     "build:xs-lin": "make",
     "test": "ava",
-    "build": "exit 0",
+    "build": "rollup --config rollup.config.js",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
@@ -38,7 +38,8 @@
     "eslint-plugin-prettier": "^3.1.2",
     "filing-cabinet": "^2.5.1",
     "nyc": "^15.1.0",
-    "prettier": "^1.18.2"
+    "prettier": "^1.18.2",
+    "rollup": "^2.35.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.2.0",
