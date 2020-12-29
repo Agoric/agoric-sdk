@@ -1,4 +1,4 @@
-/* global globalThis, print, harden, onMessage, sysCall */
+/* global sysCall */
 
 import './console-shim';
 import './text-shim';
