@@ -1,12 +1,18 @@
 /** console for xs platform */
-const harden = x => Object.freeze(x, true);
 
 const text = it => (typeof it === 'string' ? it : JSON.stringify(it));
 const combine = (...things) => `${things.map(text).join(' ')}\n`;
 
+/**
+ * WARNING: caller is responsible to harden the returned object.
+ *
+ * makeConsole is designed to be called from an environment where
+ * harden() is not yet available, since the SES code that currently
+ * defines refers makes use of the conventional JavaScript console.
+ */
 export function makeConsole(write_) {
   const write = write_;
-  return harden({
+  return {
     log(...things) {
       write(combine(...things));
     },
@@ -18,5 +24,5 @@ export function makeConsole(write_) {
     error(...things) {
       write(combine('ERROR: ', ...things));
     },
-  });
+  };
 }
