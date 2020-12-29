@@ -2,8 +2,8 @@
 import '../../../exported';
 
 import { assert } from '@agoric/assert';
+import Nat from '@agoric/nat';
 
-import { makeAsyncIterableFromNotifier } from '@agoric/notifier';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeLendInvitation } from './lend';
 
@@ -36,12 +36,14 @@ import { makeLendInvitation } from './lend';
  *    or Multipool Autoswap installation. The publicFacet of the
  *    instance is used for producing an invitation to sell the
  *    collateral on liquidation.
- *  * periodNotifier - the notifier used for notifications
- *    that a period has passed, on which compound interest will be
- *    calculated using the interestRate. Note that this is lossy, and
- *    therefore could be missing periods. There is a TODO to fix this (https://github.com/Agoric/agoric-sdk/issues/2108)
+ *  * periodNotifier - the Notifier that provides notifications that
+ *    periods have passed, on which compound interest will be
+ *    calculated using the interestRate. Notifiers don't guarantee
+ *    that clients will see all the changes, so the contract must
+ *    track when interest last accrued.
  *  * interestRate - the rate in basis points that will be multiplied
  *    with the debt on every period to compound interest.
+ *  * interestPeriod - the period at which interest compounds.
  *
  * IssuerKeywordRecord:
  *  * Keyword: 'Collateral' - The issuer for the digital assets to be
@@ -63,24 +65,23 @@ const start = async zcf => {
     priceAuthority,
     periodNotifier,
     interestRate,
+    interestPeriod,
   } = zcf.getTerms();
 
   assert(autoswapInstance, `autoswapInstance must be provided`);
   assert(priceAuthority, `priceAuthority must be provided`);
   assert(periodNotifier, `periodNotifier must be provided`);
-  assert(interestRate, `interestRate must be provided`);
-
-  // TODO: make this non-lossy (notifier is lossy)
-  // https://github.com/Agoric/agoric-sdk/issues/2108
-  const periodAsyncIterable = makeAsyncIterableFromNotifier(periodNotifier);
+  assert(Nat(interestRate), `interestRate must be a positive integer`);
+  assert(Nat(interestPeriod), `interestPeriod must be a positive integer`);
 
   /** @type {LoanTerms} */
   const config = {
     mmr,
     autoswapInstance,
     priceAuthority,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate,
+    interestPeriod,
   };
 
   const creatorInvitation = makeLendInvitation(zcf, harden(config));
