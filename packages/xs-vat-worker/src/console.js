@@ -10,8 +10,7 @@ const combine = (...things) => `${things.map(text).join(' ')}\n`;
  * harden() is not yet available, since the SES code that currently
  * defines refers makes use of the conventional JavaScript console.
  */
-export function makeConsole(write_) {
-  const write = write_;
+export function makeConsole(write) {
   return {
     log(...things) {
       write(combine(...things));
