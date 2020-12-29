@@ -8,7 +8,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import { makeLocalAmountMath } from '@agoric/ertp';
 import {
@@ -68,9 +68,9 @@ const setupBorrow = async (maxLoanValue = 100) => {
   // In the config that the borrow code sees, the periodNotifier has
   // been adapted to a periodAsyncIterable
   const {
-    publication: periodUpdater,
-    subscription: periodAsyncIterable,
-  } = makeSubscriptionKit();
+    updater: periodUpdater,
+    notifier: periodNotifier,
+  } = makeNotifierKit();
 
   const interestRate = 5;
 
@@ -81,8 +81,9 @@ const setupBorrow = async (maxLoanValue = 100) => {
     priceAuthority,
     makeCloseLoanInvitation,
     makeAddCollateralInvitation,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate,
+    interestPeriod: 5,
   };
   // @ts-ignore
   const borrowInvitation = makeBorrowInvitation(zcf, config);
@@ -92,7 +93,7 @@ const setupBorrow = async (maxLoanValue = 100) => {
     maxLoan,
     lenderUserSeat,
     periodUpdater,
-    periodAsyncIterable,
+    periodNotifier,
     timer,
     priceAuthority,
   };
@@ -301,6 +302,9 @@ test('getDebtNotifier with interest', async t => {
     zoe,
     loanKit,
   } = await setupBorrowFacet(100000, 40000);
+  // @ts-ignore
+  periodUpdater.updateState(0);
+
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
   const { value: originalDebt, updateCount } = await E(
@@ -309,7 +313,7 @@ test('getDebtNotifier with interest', async t => {
   t.deepEqual(originalDebt, maxLoan);
 
   // @ts-ignore
-  periodUpdater.updateState();
+  periodUpdater.updateState(5);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
@@ -317,7 +321,7 @@ test('getDebtNotifier with interest', async t => {
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
 
   // @ts-ignore
-  periodUpdater.updateState();
+  periodUpdater.updateState(10);
 
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
     updateCount1,
@@ -357,6 +361,47 @@ test('borrow collateral just too low', async t => {
     message:
       'The required margin is approximately (a number)% but collateral only had value of (a number)',
   });
+});
+
+test('aperiodic interest', async t => {
+  const {
+    borrowFacet,
+    maxLoan,
+    periodUpdater,
+    loanKit,
+  } = await setupBorrowFacet(100000, 40000);
+  // @ts-ignore
+  periodUpdater.updateState(0);
+
+  const debtNotifier = await E(borrowFacet).getDebtNotifier();
+
+  const { value: originalDebt, updateCount } = await E(
+    debtNotifier,
+  ).getUpdateSince();
+  t.deepEqual(originalDebt, maxLoan);
+
+  // @ts-ignore
+  periodUpdater.updateState(5);
+
+  const { value: debtCompounded1, updateCount: updateCount1 } = await E(
+    debtNotifier,
+  ).getUpdateSince(updateCount);
+  t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
+
+  // skip ahead a notification
+  // @ts-ignore
+  periodUpdater.updateState(15);
+
+  // both debt notifications are received
+  const { value: debtCompounded2, updateCount: updateCount2 } = await E(
+    debtNotifier,
+  ).getUpdateSince(updateCount1);
+  t.is(15, await E(borrowFacet).getLastCalculationTimestamp());
+  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40040));
+  const { value: debtCompounded3 } = await E(debtNotifier).getUpdateSince(
+    updateCount2,
+  );
+  t.deepEqual(debtCompounded3, loanKit.amountMath.make(40060));
 });
 
 test.todo('borrow bad proposal');

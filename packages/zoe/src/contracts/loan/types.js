@@ -1,9 +1,11 @@
 /**
- * @typedef {AsyncIterable<undefined>} PeriodAsyncIterable
+ * @typedef {Notifier<Timestamp>} PeriodNotifier
  *
- *  The asyncIterable used for notifications that a period has passed,
- *  on which compound interest will be calculated using the
- *  interestRate.
+ *  The Notifier that provides notifications that periods have passed.
+ *  Since notifiers can't be relied on to produce an output every time
+ *  they should, we'll track the time of last payment, and catch up if
+ *  any times have been missed. Compound interest will be calculated
+ *  using the interestRate.
  */
 
 /**
@@ -41,9 +43,11 @@
  *   Used for getting the current value of collateral and setting
  *   liquidation triggers.
  *
- * @property {PeriodAsyncIterable} periodAsyncIterable
+ * @property {PeriodNotifier} periodNotifier
  *
  * @property {InterestRate} interestRate
+ *
+ * @property {RelativeTime} interestPeriod
  */
 
 /**
@@ -173,15 +177,30 @@
  *
  *   AmountMath for the loan brand
  *
- * @property {PeriodAsyncIterable} periodAsyncIterable
+ * @property {PeriodNotifier} periodNotifier
  *
  *   The AsyncIterable to notify when a period has occurred
  *
  * @property {number} interestRate
+ * @property {RelativeTime} interestPeriod
+ *
+ *  the period at which the outstanding debt increases by the interestRate
  *
  * @property {ContractFacet} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
+ */
+
+/**
+ * @typedef {Object} ConfigMinusGetDebt
+ * @property {ZCFSeat} collateralSeat
+ * @property {PromiseRecord<any>} liquidationPromiseKit
+ * @property {number} [mmr]
+ * @property {InstanceHandle} autoswapInstance
+ * @property {PriceAuthority} priceAuthority
+ * @property {PeriodNotifier} periodNotifier
+ * @property {number} interestRate
+ * @property {ZCFSeat} lenderSeat
  */
 
 /**
@@ -203,10 +222,14 @@
  * triggered the liquidation. This may be lower than expected if the
  * price is moving quickly.
  *
+ * @property {() => Timestamp} getLastCalculationTimestamp
+ *
+ * Get the timestamp at which the debt was most recently recalculated.
+ *
  * @property {() => Notifier<Amount>} getDebtNotifier
  *
- * Get notified when the current debt (an Amount in the Loan Brand) changes. This will
- * increase as interest is added.
+ * Get a Notifier that will be updated when the current debt (an Amount with the Loan
+ * Brand) changes. This will increase as interest is added.
  *
  * @property {() => Amount} getRecentCollateralAmount
  *

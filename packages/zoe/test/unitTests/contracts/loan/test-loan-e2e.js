@@ -65,6 +65,7 @@ test('loan - lend - exit before borrow', async t => {
     priceAuthority,
     periodNotifier,
     interestRate: 5,
+    interestPeriod: 10,
   };
 
   const { creatorInvitation: lendInvitation, instance } = await E(

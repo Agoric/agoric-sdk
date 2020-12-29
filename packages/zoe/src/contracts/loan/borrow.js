@@ -17,8 +17,9 @@ export const makeBorrowInvitation = (zcf, config) => {
   const {
     mmr, // Maintenance Margin Requirement, in percent
     priceAuthority,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate,
+    interestPeriod,
     lenderSeat,
   } = config;
 
@@ -111,8 +112,9 @@ export const makeBorrowInvitation = (zcf, config) => {
       calcInterestFn: calculateInterest,
       originalDebt: loanWanted,
       loanMath,
-      periodAsyncIterable,
+      periodNotifier,
       interestRate,
+      interestPeriod,
       zcf,
       configMinusGetDebt: {
         ...config,
@@ -120,9 +122,11 @@ export const makeBorrowInvitation = (zcf, config) => {
         liquidationPromiseKit,
       },
     };
-    const { getDebt, getDebtNotifier } = makeDebtCalculator(
-      harden(debtCalculatorConfig),
-    );
+    const {
+      getDebt,
+      getDebtNotifier,
+      getLastCalculationTimestamp,
+    } = makeDebtCalculator(harden(debtCalculatorConfig));
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {
@@ -153,6 +157,7 @@ export const makeBorrowInvitation = (zcf, config) => {
         makeAddCollateralInvitation(zcf, configWithBorrower),
       getLiquidationPromise: () => liquidationPromiseKit.promise,
       getDebtNotifier,
+      getLastCalculationTimestamp,
       getRecentCollateralAmount: () =>
         collateralSeat.getAmountAllocated('Collateral'),
     };

@@ -1,13 +1,14 @@
 // @ts-check
 
 import '../../../exported';
-import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
+import { E } from '@agoric/eventual-send';
 
 import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
 
 // Update the debt by adding the new interest on every period, as
-// indicated by the periodAsyncIterable
+// indicated by the periodNotifier
 
 const BASIS_POINT_DENOMINATOR = 10000;
 
@@ -30,12 +31,15 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     calcInterestFn = calculateInterest,
     originalDebt,
     loanMath,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate,
+    interestPeriod,
     zcf,
     configMinusGetDebt,
   } = debtCalculatorConfig;
   let debt = originalDebt;
+
+  let lastCalculationUpdate;
 
   const {
     updater: debtNotifierUpdater,
@@ -44,34 +48,55 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const getDebt = () => debt;
 
-  const config = { ...configMinusGetDebt, getDebt };
+  const config = { ...configMinusGetDebt, getDebt, interestPeriod };
 
-  const updateDebt = _state => {
-    const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
-    debt = loanMath.add(debt, interest);
-    debtNotifierUpdater.updateState(debt);
-    scheduleLiquidation(zcf, config);
+  const updateDebt = state => {
+    let prevUpdateTimestamp = lastCalculationUpdate.value;
+    const { value: newTimestamp } = state;
+    while (prevUpdateTimestamp + interestPeriod <= newTimestamp) {
+      prevUpdateTimestamp += interestPeriod;
+      const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
+      debt = loanMath.add(debt, interest);
+      debtNotifierUpdater.updateState(debt);
+    }
   };
 
-  /** @type {IterationObserver<undefined>} */
-  const debtObserver = {
-    // Debt is updated with interest every time the
-    // periodAsyncIterable pushes another value
-    updateState: updateDebt,
-    finish: updateDebt,
-    fail: reason => {
-      debtNotifierUpdater.fail(reason);
-      throw Error(reason);
-    },
-  };
-  harden(debtObserver);
+  function addToDebtWhenNotified(lastCount) {
+    E(periodNotifier)
+      .getUpdateSince(lastCount)
+      .then(
+        newState => {
+          const { updateCount } = newState;
+          if (updateCount) {
+            updateDebt(newState);
+            scheduleLiquidation(zcf, config);
+            lastCalculationUpdate = newState;
+            addToDebtWhenNotified(updateCount);
+          } else {
+            updateDebt(newState);
+            scheduleLiquidation(zcf, config);
+            lastCalculationUpdate = newState;
+          }
+        },
+        reason => {
+          debtNotifierUpdater.fail(reason);
+          throw Error(reason);
+        },
+      );
+  }
 
   // Initialize
-  observeIteration(periodAsyncIterable, debtObserver);
+  E(periodNotifier)
+    .getUpdateSince()
+    .then(update => {
+      lastCalculationUpdate = update;
+      addToDebtWhenNotified(update.updateCount);
+    });
   debtNotifierUpdater.updateState(debt);
 
   return harden({
     getDebt,
+    getLastCalculationTimestamp: _ => lastCalculationUpdate.value,
     getDebtNotifier: () => debtNotifier,
   });
 };
