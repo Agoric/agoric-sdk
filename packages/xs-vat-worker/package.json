@@ -5,6 +5,7 @@
   "parsers": {
     "js": "mjs"
   },
+  "types": "index.d.ts",
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
