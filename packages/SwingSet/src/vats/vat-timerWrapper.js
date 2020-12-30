@@ -7,6 +7,7 @@ export function buildRootObject(vatPowers) {
   const repeaters = new Map();
 
   async function createTimerService(timerNode) {
+    /* @type {TimerService} */
     return harden({
       getCurrentTimestamp() {
         return Nat(D(timerNode).getLastPolled());
@@ -21,11 +22,11 @@ export function buildRootObject(vatPowers) {
       createRepeater(delaySecs, interval) {
         assert(
           Nat(delaySecs) >= 0,
-          details`createRepeater's first parameter must be a non-negative integer. ${delaySecs}`,
+          details`createRepeater's first parameter must be a non-negative integer: ${delaySecs}`,
         );
         assert(
-          Nat(interval),
-          details`createRepeater's second parameter must be an integer, ${interval}`,
+          Nat(interval) > 0,
+          details`createRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
         const index = D(timerNode).createRepeater(delaySecs, interval);
@@ -45,21 +46,17 @@ export function buildRootObject(vatPowers) {
       createNotifier(delaySecs, interval) {
         assert(
           Nat(delaySecs) >= 0,
-          details`createNotifier's first parameter must be a non-negative integer. ${delaySecs}`,
+          details`createNotifier's first parameter must be a non-negative integer: ${delaySecs}`,
         );
         assert(
-          Nat(interval),
-          details`createNotifier's second parameter must be an integer, ${interval}`,
+          Nat(interval) > 0,
+          details`createNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
         const index = D(timerNode).createRepeater(delaySecs, interval);
-        console.log(`TIMER: index: ${index}`);
         const { notifier, updater } = makeNotifierKit();
         const updateHandler = harden({
-          wake: timestamp => {
-            console.log(`TimerNotifier tick ${timestamp}`);
-            updater.updateState(timestamp);
-          },
+          wake: updater.updateState,
         });
         D(timerNode).schedule(index, updateHandler);
 
