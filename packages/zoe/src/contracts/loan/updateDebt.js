@@ -39,7 +39,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   } = debtCalculatorConfig;
   let debt = originalDebt;
 
-  let lastCalculationUpdate;
+  let lastCalculationTimestamp;
 
   const {
     updater: debtNotifierUpdater,
@@ -48,55 +48,55 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const getDebt = () => debt;
 
-  const config = { ...configMinusGetDebt, getDebt, interestPeriod };
+  const config = { ...configMinusGetDebt, getDebt };
 
-  const updateDebt = state => {
-    let prevUpdateTimestamp = lastCalculationUpdate.value;
-    const { value: newTimestamp } = state;
-    while (prevUpdateTimestamp + interestPeriod <= newTimestamp) {
+  const updateDebt = timestamp => {
+    let prevUpdateTimestamp = lastCalculationTimestamp;
+    while (prevUpdateTimestamp + interestPeriod <= timestamp) {
       prevUpdateTimestamp += interestPeriod;
       const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
       debt = loanMath.add(debt, interest);
       debtNotifierUpdater.updateState(debt);
     }
+    scheduleLiquidation(zcf, config);
+    lastCalculationTimestamp = timestamp;
   };
 
-  function addToDebtWhenNotified(lastCount) {
+  const addToDebtWhenNotified = lastCount => {
+    const finalValue = updateCount => updateCount === undefined;
+    const processUpdate = newState => {
+      const { updateCount, value } = newState;
+      if (finalValue(updateCount)) {
+        const reason = 'PeriodNotifier should not publish a final value';
+        debtNotifierUpdater.fail(reason);
+        throw Error(reason);
+      }
+
+      updateDebt(value);
+      addToDebtWhenNotified(updateCount);
+    };
+    const reject = reason => {
+      debtNotifierUpdater.fail(reason);
+      throw Error(reason);
+    };
+
     E(periodNotifier)
       .getUpdateSince(lastCount)
-      .then(
-        newState => {
-          const { updateCount } = newState;
-          if (updateCount) {
-            updateDebt(newState);
-            scheduleLiquidation(zcf, config);
-            lastCalculationUpdate = newState;
-            addToDebtWhenNotified(updateCount);
-          } else {
-            updateDebt(newState);
-            scheduleLiquidation(zcf, config);
-            lastCalculationUpdate = newState;
-          }
-        },
-        reason => {
-          debtNotifierUpdater.fail(reason);
-          throw Error(reason);
-        },
-      );
-  }
+      .then(processUpdate, reject);
+  };
 
   // Initialize
   E(periodNotifier)
     .getUpdateSince()
-    .then(update => {
-      lastCalculationUpdate = update;
-      addToDebtWhenNotified(update.updateCount);
+    .then(({ value, updateCount }) => {
+      lastCalculationTimestamp = value;
+      addToDebtWhenNotified(updateCount);
     });
   debtNotifierUpdater.updateState(debt);
 
   return harden({
     getDebt,
-    getLastCalculationTimestamp: _ => lastCalculationUpdate.value,
-    getDebtNotifier: () => debtNotifier,
+    getLastCalculationTimestamp: _ => lastCalculationTimestamp,
+    getDebtNotifier: _ => debtNotifier,
   });
 };

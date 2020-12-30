@@ -199,6 +199,7 @@
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {number} interestRate
+ * @property {RelativeTime} interestPeriod
  * @property {ZCFSeat} lenderSeat
  */
 
