@@ -12,7 +12,7 @@ XSVATTER=$(XSNAP)/xsnap/makefiles/$(PLATFORM)/bin/$(PLATFORM)/debug/xsvatter
 nextGen: $(TOOLS)/mcconfig $(XSVATTER)
 
 trial: $(XSVATTER) ./dist/bootstrap.js
-	echo 's23:./dist/bootstrap.umd.js,w8:boot.xss,' >,in
+	echo -n '24:s./dist/bootstrap.umd.js,9:wboot.xss,' >,in
 	$(XSVATTER) 3<,in 4>&1
 
 ./dist/bootstrap.js: src/*.js
