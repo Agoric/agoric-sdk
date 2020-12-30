@@ -8,14 +8,17 @@
  * @property {(waker: TimerWaker) => Array<Timestamp>} removeWakeup Remove the waker
  * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
  * `repeater.schedule(h)`.
- * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater}
- * createRepeater Create and return a repeater that will schedule `wake()` calls
+ * @property {(delaySecs: RelativeTime, interval: RelativeTime) => TimerRepeater} createRepeater
+ * Create and return a repeater that will schedule `wake()` calls
  * repeatedly at times that are a multiple of interval following delay.
  * Interval is the difference between successive times at which wake will be
  * called.  When `schedule(w)` is called, `w.wake()` will be scheduled to be
  * called after the next multiple of interval from the base. Since times can be
  * coarse-grained, the actual call may occur later, but this won't change when
  * the next event will be called.
+ * @property {(delaySecs: RelativeTime, interval: RelativeTime) => Notifier<Timestamp>} createNotifier
+ * Create and return a Notifer that will deliver updates repeatedly at times
+ * that are a multiple of interval following delay.
  */
 
 /**

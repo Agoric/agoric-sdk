@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 
 import './types';
 import './internal-types';
+import { makeNotifierKit } from '@agoric/notifier';
 
 /**
  * A fake clock that also logs progress.
@@ -71,7 +72,7 @@ export default function buildManualTimer(log, startValue = 0) {
       }
       return harden(baseTimes);
     },
-    createRepeater(delay, interval) {
+    createRepeater(delaySecs, interval) {
       /** @type {Array<TimerWaker> | null} */
       let wakers = [];
 
@@ -102,8 +103,20 @@ export default function buildManualTimer(log, startValue = 0) {
         },
       };
       harden(repeater);
-      timer.setWakeup(ticks + delay, repeaterWaker);
+      timer.setWakeup(ticks + delaySecs, repeaterWaker);
       return repeater;
+    },
+    createNotifier(delaySecs, interval) {
+      const { notifier, updater } = makeNotifierKit();
+      /** @type {TimerWaker} */
+      const repeaterWaker = {
+        async wake(timestamp) {
+          updater.updateState(timestamp);
+          timer.setWakeup(ticks + interval, repeaterWaker);
+        },
+      };
+      timer.setWakeup(ticks + delaySecs, repeaterWaker);
+      return notifier;
     },
   };
   harden(timer);
