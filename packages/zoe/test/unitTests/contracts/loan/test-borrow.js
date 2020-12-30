@@ -85,7 +85,6 @@ const setupBorrow = async (maxLoanValue = 100) => {
     interestRate,
     interestPeriod: 5,
   };
-  // @ts-ignore
   const borrowInvitation = makeBorrowInvitation(zcf, config);
   return {
     ...setup,
@@ -302,7 +301,6 @@ test('getDebtNotifier with interest', async t => {
     zoe,
     loanKit,
   } = await setupBorrowFacet(100000, 40000);
-  // @ts-ignore
   periodUpdater.updateState(0);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -312,7 +310,6 @@ test('getDebtNotifier with interest', async t => {
   ).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
-  // @ts-ignore
   periodUpdater.updateState(5);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
@@ -320,7 +317,6 @@ test('getDebtNotifier with interest', async t => {
   ).getUpdateSince(updateCount);
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
 
-  // @ts-ignore
   periodUpdater.updateState(10);
 
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
@@ -370,7 +366,6 @@ test('aperiodic interest', async t => {
     periodUpdater,
     loanKit,
   } = await setupBorrowFacet(100000, 40000);
-  // @ts-ignore
   periodUpdater.updateState(0);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -380,7 +375,6 @@ test('aperiodic interest', async t => {
   ).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
-  // @ts-ignore
   periodUpdater.updateState(5);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
@@ -389,7 +383,6 @@ test('aperiodic interest', async t => {
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
 
   // skip ahead a notification
-  // @ts-ignore
   periodUpdater.updateState(15);
 
   // both debt notifications are received
