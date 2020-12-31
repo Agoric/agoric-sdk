@@ -1,14 +1,19 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import { makeAmountMath, MathKind } from '../../../src';
+import { coerceDisplayInfo } from '../../../src/displayInfo';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
 const mockBrand = harden({
-  isMyIssuer: () => false,
+  isMyIssuer: () => Promise.resolve(false),
   getAllegedName: () => 'mock',
+  getDisplayInfo: () => coerceDisplayInfo(undefined),
 });
 
 const amountMath = makeAmountMath(mockBrand, 'strSet');
@@ -270,5 +275,28 @@ test('strSetMathHelpers', t => {
     ),
     harden({ brand: mockBrand, value: ['b'] }),
     `['a', 'b'] - ['a'] = ['a']`,
+  );
+});
+
+test('strSetMathHelpers find', t => {
+  const { find, make } = amountMath;
+  const makeH = value => make(harden(value));
+  const left = makeH(['abc', 'ab', 'a', 'b', 'c']);
+  t.deepEqual(find(left, makeH(['b'])), makeH(['b']), `only b starts with b`);
+  t.deepEqual(find(left, makeH(['d'])), makeH([]), `d not found`);
+  t.deepEqual(
+    find(left, makeH(['a'])),
+    makeH(['abc', 'ab', 'a']),
+    `a is a prefix of abc, ab, and a`,
+  );
+  t.deepEqual(
+    find(left, makeH(['a', 'ab'])),
+    makeH(['abc', 'ab', 'a']),
+    `a is a prefix of abc, ab, and a. ab is a prefix of abc and ab. No duplicates in results`,
+  );
+  t.deepEqual(
+    find(left, makeH(['ab'])),
+    makeH(['abc', 'ab']),
+    `ab is a prefix of abc and ab`,
   );
 });

@@ -13,7 +13,10 @@ const identity = harden([]);
 // Cut down the number of sameStructure comparisons to only the ones
 // that don't fail basic equality tests
 // TODO: better name?
-const hashBadly = record => {
+
+// Export for testing
+export const hashBadly = record => {
+  assert.typeof(record, 'object');
   const keys = Object.getOwnPropertyNames(record);
   keys.sort();
   const values = Object.values(record).filter(
@@ -23,15 +26,16 @@ const hashBadly = record => {
   return [...keys, ...values].join();
 };
 
-const makeBuckets = list => {
+// Export for testing
+export const makeBuckets = (list, getBucketKey = hashBadly) => {
   const buckets = new Map();
   list.forEach(elem => {
-    const badHash = hashBadly(elem);
-    if (!buckets.has(badHash)) {
-      buckets.set(badHash, []);
+    const bucketKey = getBucketKey(elem);
+    if (!buckets.has(bucketKey)) {
+      buckets.set(bucketKey, []);
     }
-    const soFar = buckets.get(badHash);
-    soFar.push(elem);
+    const bucket = buckets.get(bucketKey);
+    bucket.push(elem);
   });
   return buckets;
 };
@@ -50,6 +54,27 @@ const checkForDupes = buckets => {
   }
 };
 
+// Export for testing
+export const removeDuplicates = buckets => {
+  const deduplicatedArray = [];
+  for (const maybeMatches of buckets.values()) {
+    for (let i = 0; i < maybeMatches.length; i += 1) {
+      let itemIsUnique = true;
+      const item = maybeMatches[i];
+      for (let j = i + 1; j < maybeMatches.length; j += 1) {
+        if (sameStructure(item, maybeMatches[j])) {
+          itemIsUnique = false;
+          break;
+        }
+      }
+      if (itemIsUnique) {
+        deduplicatedArray.push(item);
+      }
+    }
+  }
+  return deduplicatedArray;
+};
+
 const hasElement = (buckets, elem) => {
   const badHash = hashBadly(elem);
   if (!buckets.has(badHash)) {
@@ -57,6 +82,48 @@ const hasElement = (buckets, elem) => {
   }
   const maybeMatches = buckets.get(badHash);
   return maybeMatches.some(maybeMatch => sameStructure(maybeMatch, elem));
+};
+
+// This method must err on the side of giving the same string for
+// values for which sameStructure would return false. It must *never* give different
+// strings for two values for which sameStructure would return true.
+export const makeGetStr = () => {
+  const valueToStr = new Map();
+  const defaultStr = '0';
+  let id = 1;
+  const getStr = value => {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (passStyleOf(value) === 'presence') {
+      if (valueToStr.has(value)) {
+        return valueToStr.get(value);
+      }
+      const str = `${id}`;
+      valueToStr.set(value, str);
+      id += 1;
+      return str;
+    }
+    return defaultStr;
+  };
+  return getStr;
+};
+
+const getStr = makeGetStr();
+
+// Export for testing
+export const makeGetBucketKeyBasedOnSearchRecord = searchRecord => {
+  const searchKeys = Object.getOwnPropertyNames(searchRecord);
+  searchKeys.sort();
+  const getBucketKey = record => {
+    const strings = searchKeys.map(searchKey => {
+      const value = record[searchKey];
+      const valueString = getStr(value);
+      return [searchKey, valueString].join();
+    });
+    return strings.join();
+  };
+  return getBucketKey;
 };
 
 // get a string of string keys and string values as a fuzzy hash for
@@ -97,6 +164,44 @@ const setMathHelpers = harden({
     });
     const leftElemNotInRight = leftElem => !hasElement(rightBuckets, leftElem);
     return harden(left.filter(leftElemNotInRight));
+  },
+  doFind: (left, searchParameters) => {
+    let matchNotFound = false;
+    let arrayOfArrays;
+    try {
+      arrayOfArrays = searchParameters.map(searchRecord => {
+        const getBucketKey = makeGetBucketKeyBasedOnSearchRecord(searchRecord);
+        const leftBuckets = makeBuckets(left, getBucketKey);
+        const bucketKey = getBucketKey(searchRecord);
+        const maybeMatches = leftBuckets.get(bucketKey);
+        if (maybeMatches === undefined) {
+          matchNotFound = true;
+          throw Error('match was not found');
+        }
+        const matches = maybeMatches.filter(maybeMatch =>
+          // for every key that exists in searchRecord, the value for
+          // that key in maybeMatch must be sameStructure
+          Object.entries(searchRecord).every(([key, value]) =>
+            sameStructure(maybeMatch[key], value),
+          ),
+        );
+        if (matches.length <= 0) {
+          matchNotFound = true;
+          throw Error('match was not found');
+        }
+        return matches;
+      });
+    } catch (err) {
+      if (matchNotFound) {
+        // At least one searchRecord had no match
+        return identity;
+      } else {
+        throw err;
+      }
+    }
+    const buckets = makeBuckets(arrayOfArrays.flat());
+    const array = removeDuplicates(buckets);
+    return harden(array);
   },
 });
 

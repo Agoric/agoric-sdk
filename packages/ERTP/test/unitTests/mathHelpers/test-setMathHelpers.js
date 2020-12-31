@@ -1,14 +1,19 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { makeAmountMath, MathKind } from '../../../src';
+import { makeAmountMath, MathKind, makeIssuerKit } from '../../../src';
+import { coerceDisplayInfo } from '../../../src/displayInfo';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
 const mockBrand = harden({
-  isMyIssuer: () => false,
+  isMyIssuer: () => Promise.resolve(false),
   getAllegedName: () => 'mock',
+  getDisplayInfo: () => coerceDisplayInfo(undefined),
 });
 
 const amountMath = makeAmountMath(mockBrand, 'set');
@@ -30,6 +35,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     isEqual,
     add,
     subtract,
+    find,
   } = amountMath;
 
   // getBrand
@@ -58,11 +64,6 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     () => make(harden([a, a])),
     { message: /value has duplicates/ },
     `duplicates in make should throw`,
-  );
-  t.deepEqual(
-    make(harden(['a', 'b'])),
-    { brand: mockBrand, value: ['a', 'b'] },
-    'anything comparable is a valid element',
   );
   t.throws(
     () => make(harden('a')),
@@ -98,11 +99,6 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     { message: /value has duplicates/ },
     `duplicates in coerce should throw`,
   );
-  t.deepEqual(
-    coerce(make(harden(['a', 'b']))),
-    { brand: mockBrand, value: ['a', 'b'] },
-    'anything comparable is a valid element',
-  );
   t.throws(
     () => coerce(harden({ brand: mockBrand, value: 'a' })),
     { message: /list must be an array/ },
@@ -137,16 +133,17 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     { message: /list must be an array/ },
     `isEmpty({}) throws`,
   );
-  t.falsy(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
+  t.throws(
+    () => isEmpty(make(harden(['abc']))),
+    { message: /must be an object/ },
+    `isEmpty(['abc']) is throws because each element must be a record with string properties`,
+  );
   t.falsy(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
   t.throws(
     () => isEmpty(harden({ brand: mockBrand, value: [a, a] })),
     { message: /value has duplicates/ },
     `duplicates in value in isEmpty throw because of coercion`,
   );
-  t.assert(isEmpty(make(harden([]))), `isEmpty([]) is true`);
-  t.falsy(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
-  t.falsy(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
   if (a2 !== undefined) {
     t.throws(
       () => isEmpty(harden({ brand: mockBrand, value: [a, a2] })),
@@ -367,26 +364,49 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     harden({ brand: mockBrand, value: [c] }),
     `b, c - b is c`,
   );
-  if (a2 !== undefined) {
-    t.throws(
-      () =>
-        subtract(
-          harden({ brand: mockBrand, value: [a, a2] }),
-          harden({ brand: mockBrand, value: [b] }),
-        ),
-      { message: /value has duplicates/ },
-      `data identity throws`,
+  t.throws(
+    () =>
+      subtract(
+        harden({ brand: mockBrand, value: [a, a2] }),
+        harden({ brand: mockBrand, value: [b] }),
+      ),
+    { message: /value has duplicates/ },
+    `data identity throws`,
+  );
+
+  // find
+  const makeH = value => make(harden(value));
+  t.deepEqual(find(makeH([a, b, c]), makeH([a])), makeH([a]), `a is found`);
+  t.deepEqual(
+    find(makeH([a, b, c]), makeH([{ name: 'd' }])),
+    makeH([]),
+    `d is not found`,
+  );
+
+  t.deepEqual(
+    find(makeH([a, b, c]), makeH([{ name: 'a' }])),
+    makeH([a]),
+    `a is found by name only`,
+  );
+  t.deepEqual(
+    find(makeH([a, b, c]), makeH([{ name: 'a' }, { name: 'b' }])),
+    makeH([a, b]),
+    `a and b are found by name only`,
+  );
+  if (a.name !== undefined && a.handle !== undefined) {
+    t.deepEqual(
+      find(
+        makeH([a, b, c]),
+        makeH([
+          { name: 'a', handle: a.handle },
+          { name: 'b', instanceHandle: b.instanceHandle },
+        ]),
+      ),
+      makeH([a, b]),
+      `a and b are found by variety of properties`,
     );
   }
 };
-
-test('setMathHelpers with handles', t => {
-  const a = harden({});
-  const b = harden({});
-  const c = harden({});
-
-  runSetMathHelpersTests(t, harden([a, b, c]));
-});
 
 test('setMathHelpers with basic objects', t => {
   const a = harden({ name: 'a' });
@@ -406,4 +426,68 @@ test('setMathHelpers with complex objects', t => {
   const a2 = harden({ ...a });
 
   runSetMathHelpersTests(t, harden([a, b, c]), a2);
+});
+
+test('find with coveredCall Zoe invitations', t => {
+  const { find, make } = amountMath;
+  const mockTimeAuthority = {
+    tick: () => {},
+  };
+  const mockInstallation = {
+    getBundle: () => {},
+  };
+  const { amountMath: moolaAmountMath } = makeIssuerKit('moola');
+  const { amountMath: simoleanAmountMath } = makeIssuerKit('simolean');
+  const underlyingAssets = {
+    UnderlyingAssets: moolaAmountMath.make(3),
+  };
+  const strikePrice = {
+    StrikePrice: simoleanAmountMath.make(7),
+  };
+  const leftAmount = make(
+    harden([
+      {
+        expirationDate: 100,
+        timeAuthority: mockTimeAuthority,
+        underlyingAssets,
+        strikePrice,
+        description: 'exerciseOption',
+        handle: {},
+        instance: {},
+        installation: mockInstallation,
+      },
+    ]),
+  );
+
+  const searchAmount = make(
+    harden([
+      {
+        expirationDate: 100,
+        strikePrice,
+        timeAuthority: mockTimeAuthority,
+        installation: mockInstallation,
+        description: 'exerciseOption',
+      },
+    ]),
+  );
+
+  const foundAmount = find(leftAmount, searchAmount);
+  t.deepEqual(leftAmount, foundAmount);
+  t.truthy(amountMath.isGTE(foundAmount, leftAmount));
+});
+
+test('find with tickets', t => {
+  const { find, make } = amountMath;
+  const leftAmount = make(
+    harden([
+      { number: 1, show: 'Les Mis' },
+      { number: 2, show: 'Les Mis' },
+      { number: 3, show: 'Les Mis' },
+    ]),
+  );
+
+  const searchAmount = make(harden([{ number: 1 }]));
+
+  const foundAmount = find(leftAmount, searchAmount);
+  t.deepEqual(make(harden([{ number: 1, show: 'Les Mis' }])), foundAmount);
 });

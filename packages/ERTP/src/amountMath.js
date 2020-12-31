@@ -94,7 +94,7 @@ function makeAmountMath(brand, amountMathKind) {
   const cache = new WeakSet();
 
   /** @type {AmountMath} */
-  const amountMath = harden({
+  const amountMath = {
     getBrand: () => brand,
     getAmountMathKind: () => amountMathKind,
 
@@ -181,9 +181,21 @@ function makeAmountMath(brand, amountMathKind) {
           amountMath.getValue(rightAmount),
         ),
       ),
-  });
+    // Return the amount included in leftAmount that matches
+    // searchAmount, a potentially partial description of digital
+    // assets. This method is used especially in non-fungible token
+    // cases to find an amount describing digital assets based on a
+    // partial description of the assets.
+    find: (leftAmount, searchAmount) =>
+      amountMath.make(
+        helpers.doFind(
+          amountMath.getValue(leftAmount),
+          amountMath.getValue(searchAmount),
+        ),
+      ),
+  };
   const empty = amountMath.make(helpers.doGetEmpty());
-  return amountMath;
+  return harden(amountMath);
 }
 
 harden(makeAmountMath);

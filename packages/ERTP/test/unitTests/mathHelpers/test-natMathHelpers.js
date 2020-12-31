@@ -1,14 +1,19 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import { makeAmountMath, MathKind } from '../../../src';
+import { coerceDisplayInfo } from '../../../src/displayInfo';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
 const mockBrand = harden({
-  isMyIssuer: () => false,
+  isMyIssuer: () => Promise.resolve(false),
   getAllegedName: () => 'mock',
+  getDisplayInfo: () => coerceDisplayInfo(undefined),
 });
 
 const amountMath = makeAmountMath(mockBrand, MathKind.NAT);
@@ -26,6 +31,7 @@ test('natMathHelpers', t => {
     isEqual,
     add,
     subtract,
+    find,
   } = amountMath;
 
   // getBrand
@@ -58,6 +64,7 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () =>
+      // @ts-ignore
       coerce(harden({ brand: { getAllegedName: () => 'somename' }, value: 4 })),
     {
       message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
@@ -65,6 +72,7 @@ test('natMathHelpers', t => {
     `coerce can't take the wrong brand`,
   );
   t.throws(
+    // @ts-ignore
     () => coerce(3),
     { message: /alleged brand is undefined/ },
     `coerce needs a brand`,
@@ -82,6 +90,7 @@ test('natMathHelpers', t => {
   t.assert(isEmpty(make(0)), `isEmpty(0) is true`);
   t.falsy(isEmpty(make(6)), `isEmpty(6) is false`);
   t.throws(
+    // @ts-ignore
     () => isEmpty('abc'),
     { message: /alleged brand is undefined/ },
     `isEmpty('abc') throws because it cannot be coerced`,
@@ -92,6 +101,7 @@ test('natMathHelpers', t => {
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
+    // @ts-ignore
     () => isEmpty(0),
     { message: /alleged brand is undefined/ },
     `isEmpty(0) throws because it cannot be coerced`,
@@ -114,4 +124,14 @@ test('natMathHelpers', t => {
 
   // subtract
   t.deepEqual(subtract(make(6), make(1)), make(5), `6 - 1 = 5`);
+
+  // find
+  t.deepEqual(find(make(30), make(10)), make(10), `10 is found in 30`);
+  t.deepEqual(
+    find(make(30), make(40)),
+    make(0),
+    `40 is not found in 30 so the identity element is returned`,
+  );
+  t.deepEqual(find(make(30), make(0)), make(0), `0 is found in 30`);
+  t.deepEqual(find(make(30), make(30)), make(30), `30 is found in 30`);
 });

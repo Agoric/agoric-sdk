@@ -18,7 +18,7 @@ const identity = 0;
  *
  * @type {MathHelpers}
  */
-const natMathHelpers = harden({
+const natMathHelpers = {
   doCoerce: Nat,
   doGetEmpty: _ => identity,
   doIsEmpty: nat => nat === identity,
@@ -26,7 +26,14 @@ const natMathHelpers = harden({
   doIsEqual: (left, right) => left === right,
   doAdd: (left, right) => Nat(left + right),
   doSubtract: (left, right) => Nat(left - right),
-});
+  doFind: (left, searchParameters) => {
+    if (natMathHelpers.doIsGTE(left, searchParameters)) {
+      return searchParameters;
+    }
+    // No match found.
+    return identity;
+  },
+};
 
 harden(natMathHelpers);
 export default natMathHelpers;

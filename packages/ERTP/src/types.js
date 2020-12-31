@@ -95,6 +95,16 @@
  * (subtraction results in a negative), throw  an error. Because the
  * left amount must include the right amount, this is NOT equivalent
  * to set subtraction.
+ *
+ * @property {(leftAmount: Amount, searchAmount: Amount) => Amount} find
+ * Returns a new amount that represents the parts of leftAmount that "match" the
+ * value of searchAmount. If nothing matches, the identity element is returned.
+ * Use this method to find an amount in leftAmount using partial descriptions in
+ * searchAmount, such as string prefixes in the case of MathKind.STRING_SET or
+ * keys and values with some keys and values omitted in the case of MathKind.SET.
+ * If searchAmount.value is an array as in the case of MathKind.STRING_SET
+ * and MathKind.SET, every element of the array must have a match or
+ * the identity element is returned.
  */
 
 /**
@@ -335,8 +345,17 @@
  * @property {(left: Value, right: Value) => Value} doSubtract
  * Return what remains after removing the right from the left. If
  * something in the right was not in the left, we throw an error.
- */
-
+ *
+ * @property {(left: Value, searchParameters: Value) => Value} doFind
+ * Return the parts of left that "match" the searchParameters. The
+ * searchParameters must be a Value themselves, but may
+ * represent a partial description of parts of left. For example, a
+ * partial description might be a prefix of a string, or a record with
+ * keys and values where some keys and values are omitted. If
+ * searchParameters is an array as in the case of MathKind.STRING_SET
+ * and MathKind.SET, every element of the array must have a match or
+ * the identity element is returned.
+ 
 /**
  * @typedef {{ISSUER: 'issuer', BRAND: 'brand', PURSE: 'purse', PAYMENT:
  * 'payment', MINT: 'mint', DEPOSIT_FACET: 'depositFacet' }} ERTPKind

@@ -21,7 +21,7 @@ const checkForDupes = list => {
  *
  * @type {MathHelpers}
  */
-const strSetMathHelpers = harden({
+const strSetMathHelpers = {
   doCoerce: list => {
     assert(passStyleOf(list) === 'copyArray', 'value must be an array');
     list.forEach(elem => assert.typeof(elem, 'string'));
@@ -62,7 +62,36 @@ const strSetMathHelpers = harden({
     );
     return harden(Array.from(leftSet));
   },
-});
+  doFind: (left, searchParameters) => {
+    const makeIsPrefix = prefix => {
+      const isPrefix = str => str.startsWith(prefix);
+      return isPrefix;
+    };
+    let matchNotFound = false;
+    let arrayOfArrays;
+    try {
+      arrayOfArrays = searchParameters.map(prefix => {
+        const isPrefix = makeIsPrefix(prefix);
+        const arrayOfMatchingStrs = left.filter(isPrefix);
+        if (arrayOfMatchingStrs.length <= 0) {
+          matchNotFound = true;
+          throw Error('match was not found');
+        }
+        return arrayOfMatchingStrs;
+      });
+    } catch (err) {
+      if (matchNotFound) {
+        // At least one prefix did not have a match
+        return identity;
+      } else {
+        throw err;
+      }
+    }
+    // remove duplicates by using a Set
+    const matchingSet = new Set(arrayOfArrays.flat());
+    return harden(Array.from(matchingSet));
+  },
+};
 
 harden(strSetMathHelpers);
 export default strSetMathHelpers;
