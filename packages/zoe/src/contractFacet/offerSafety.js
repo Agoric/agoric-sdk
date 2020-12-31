@@ -18,7 +18,22 @@ const satisfiesInternal = (getAmountMath, giveOrWant = {}, allocation) => {
     }
     const amountMath = getAmountMath(requiredAmount.brand);
     const allocationAmount = allocation[keyword];
-    return amountMath.isGTE(allocationAmount, requiredAmount);
+
+    // if requiredAmount is empty, it is not a useful searchAmount and
+    // we can return early
+    if (amountMath.isEmpty(requiredAmount)) {
+      return amountMath.isGTE(allocationAmount, requiredAmount);
+    }
+
+    const matchingAmount = amountMath.find(allocationAmount, requiredAmount);
+    // If matchingAmount is empty, no match was found and
+    // requiredAmount is not satisfied
+    if (amountMath.isEmpty(matchingAmount)) {
+      return false;
+    }
+    // A match was found, but allocationAmount needs to be GTE to
+    // matchingAmount for requiredAmount to be satisfied
+    return amountMath.isGTE(allocationAmount, matchingAmount);
   };
   return Object.entries(giveOrWant).every(isGTEByKeyword);
 };

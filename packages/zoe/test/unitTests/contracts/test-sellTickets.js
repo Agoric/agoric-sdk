@@ -222,16 +222,9 @@ test(`mint and sell opera tickets`, async t => {
       `availableTickets contains ticket number 3`,
     );
 
-    // find the value corresponding to ticket #1
-    const ticket1Value = availableTickets.value.find(
-      ticket => ticket.number === 1,
-    );
-    // make the corresponding amount
-    const ticket1Amount = ticketAmountMath.make(harden([ticket1Value]));
-
     const aliceProposal = harden({
       give: { Money: terms.pricePerItem },
-      want: { Items: ticket1Amount },
+      want: { Items: ticketAmountMath.make(harden([{ number: 1 }])) },
     });
 
     const alicePaymentForTicket = alicePurse.withdraw(terms.pricePerItem);
@@ -246,6 +239,10 @@ test(`mint and sell opera tickets`, async t => {
     const aliceTickets = seat.getPayout('Items');
     const aliceBoughtTicketAmount = await E(ticketIssuer).getAmountOf(
       aliceTickets,
+    );
+    t.is(
+      await E(seat).getOfferResult(),
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     t.is(
@@ -282,11 +279,9 @@ test(`mint and sell opera tickets`, async t => {
 
     // Joker does NOT check available tickets and tries to buy the ticket
     // number 1(already bought by Alice, but he doesn't know)
-    const ticket1Amount = ticketAmountMath.make(
+    const ticket1SearchAmount = ticketAmountMath.make(
       harden([
         {
-          show: 'Steven Universe, the Opera',
-          start: 'Wed, March 25th 2020 at 8pm',
           number: 1,
         },
       ]),
@@ -294,7 +289,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const jokerProposal = harden({
       give: { Money: pricePerItem },
-      want: { Items: ticket1Amount },
+      want: { Items: ticket1SearchAmount },
     });
 
     const jokerPaymentForTicket = jokerPurse.withdraw(pricePerItem);
@@ -350,11 +345,9 @@ test(`mint and sell opera tickets`, async t => {
     const jokerPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(jokerPurse).deposit(moola100Payment);
 
-    const ticket2Amount = ticketAmountMath.make(
+    const ticket2SearchAmount = ticketAmountMath.make(
       harden([
         {
-          show: 'Steven Universe, the Opera',
-          start: 'Wed, March 25th 2020 at 8pm',
           number: 2,
         },
       ]),
@@ -363,7 +356,7 @@ test(`mint and sell opera tickets`, async t => {
     const insufficientAmount = moola(1);
     const jokerProposal = harden({
       give: { Money: insufficientAmount },
-      want: { Items: ticket2Amount },
+      want: { Items: ticket2SearchAmount },
     });
 
     const jokerInsufficientPaymentForTicket = jokerPurse.withdraw(
@@ -443,18 +436,15 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     // Bob buys tickets 2 and 3
-    const ticket2and3Amount = ticketAmountMath.make(
-      harden([
-        availableTickets.value.find(ticket => ticket.number === 2),
-        availableTickets.value.find(ticket => ticket.number === 3),
-      ]),
+    const ticket2and3SearchAmount = ticketAmountMath.make(
+      harden([{ number: 2 }, { number: 3 }]),
     );
 
     const totalCost = moola(2 * terms.pricePerItem.value);
 
     const bobProposal = harden({
       give: { Money: totalCost },
-      want: { Items: ticket2and3Amount },
+      want: { Items: ticket2and3SearchAmount },
     });
     const bobPaymentForTicket = await E(bobPurse).withdraw(totalCost);
     const paymentKeywordRecord = harden({

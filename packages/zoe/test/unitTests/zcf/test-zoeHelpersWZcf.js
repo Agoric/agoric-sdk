@@ -92,7 +92,7 @@ test(`zoeHelper with zcf - swap no match`, async t => {
     () => swap(zcf, aZcfSeat, bZcfSeat),
     {
       message:
-        'The trade between left [object Object] and right [object Object] failed.',
+        'The trade between fromSeat (an object) and toSeat (an object) failed because (an object) was not found.',
     },
     'mismatched offers',
   );

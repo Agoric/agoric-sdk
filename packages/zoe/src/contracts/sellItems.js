@@ -69,11 +69,15 @@ const start = zcf => {
     const providedMoney = buyerSeat.getAmountAllocated('Money');
 
     const {
-      want: { Items: wantedItems },
+      want: { Items: wantedSearchAmount },
     } = buyerSeat.getProposal();
 
     // Check that the wanted items are still for sale.
-    if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
+    const wantedItems = itemsMath.find(currentItemsForSale, wantedSearchAmount);
+    if (
+      itemsMath.isEmpty(wantedItems) ||
+      !itemsMath.isGTE(currentItemsForSale, wantedItems)
+    ) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
       throw buyerSeat.fail(new Error(rejectMsg));
     }

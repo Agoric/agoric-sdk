@@ -490,8 +490,20 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // knows this to be true because he knows the swap.
 
   // Dave escrows his 1 buck with Zoe and forms his proposal
+  const searchAmountForOption = invitationAmountMath.make(
+    harden([
+      {
+        installation: coveredCallInstallation,
+        description: 'exerciseOption',
+        underlyingAssets: { UnderlyingAsset: moola(3) },
+        strikePrice: { StrikePrice: simoleans(7) },
+        expirationDate: 100,
+        timeAuthority: timer,
+      },
+    ]),
+  );
   const daveSwapProposal = harden({
-    want: { Asset: optionAmount },
+    want: { Asset: searchAmountForOption },
     give: { Price: bucks(1) },
   });
 
@@ -752,8 +764,19 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   );
 
   // Dave's planned proposal
+  const searchAmount = invitationAmountMath.make(
+    harden([
+      {
+        description: 'exerciseOption',
+        expirationDate: 100,
+        strikePrice: { StrikePrice: simoleans(7) },
+        timeAuthority: timer,
+        installation: coveredCallInstallation,
+      },
+    ]),
+  );
   const daveProposalCoveredCall = harden({
-    want: daveOptionValue.underlyingAssets,
+    want: { UnderlyingAsset: searchAmount },
     give: { StrikePrice: bucks(1) },
   });
 

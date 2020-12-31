@@ -195,6 +195,39 @@ export const trade = (
   }
 };
 
+const findFromOtherSeat = (
+  zcf,
+  fromSeat,
+  toSeat,
+  fromHasExitedMsg,
+  toHasExitedMsg,
+) => {
+  assert(!fromSeat.hasExited(), fromHasExitedMsg);
+  assert(!toSeat.hasExited(), toHasExitedMsg);
+  const searchAmountKeywordRecord = toSeat.getProposal().want;
+  const fromSeatAmountKeywordRecord = fromSeat.getCurrentAllocation();
+
+  const findSearchAmount = ([keyword, searchAmount]) => {
+    const fromSeatAmount = fromSeatAmountKeywordRecord[keyword];
+    if (fromSeatAmount === undefined) {
+      return [keyword, searchAmount];
+    }
+    const amountMath = zcf.getAmountMath(searchAmount.brand);
+    const matchingAmount = amountMath.find(fromSeatAmount, searchAmount);
+    // If we are trying to transfer an amount but can't find what
+    // should be transferred, we should throw
+    assert(
+      !amountMath.isEmpty(matchingAmount),
+      details`The trade between fromSeat ${fromSeat} and toSeat ${toSeat} failed because ${searchAmount} was not found.`,
+    );
+    return [keyword, matchingAmount];
+  };
+
+  return Object.fromEntries(
+    Object.entries(searchAmountKeywordRecord).map(findSearchAmount),
+  );
+};
+
 /** @type {Swap} */
 export const swap = (
   zcf,
@@ -208,11 +241,23 @@ export const swap = (
       zcf,
       {
         seat: leftSeat,
-        gains: leftSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          rightSeat,
+          leftSeat,
+          rightHasExitedMsg,
+          leftHasExitedMsg,
+        ),
       },
       {
         seat: rightSeat,
-        gains: rightSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          leftSeat,
+          rightSeat,
+          leftHasExitedMsg,
+          rightHasExitedMsg,
+        ),
       },
       leftHasExitedMsg,
       rightHasExitedMsg,
@@ -247,12 +292,24 @@ export const swapExact = (
       zcf,
       {
         seat: leftSeat,
-        gains: leftSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          rightSeat,
+          leftSeat,
+          rightHasExitedMsg,
+          leftHasExitedMsg,
+        ),
         losses: leftSeat.getProposal().give,
       },
       {
         seat: rightSeat,
-        gains: rightSeat.getProposal().want,
+        gains: findFromOtherSeat(
+          zcf,
+          leftSeat,
+          rightSeat,
+          leftHasExitedMsg,
+          rightHasExitedMsg,
+        ),
         losses: rightSeat.getProposal().give,
       },
       leftHasExitedMsg,
