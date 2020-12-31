@@ -104,7 +104,10 @@
  * keys and values with some keys and values omitted in the case of MathKind.SET.
  * If searchAmount.value is an array as in the case of MathKind.STRING_SET
  * and MathKind.SET, every element of the array must have a match or
- * the identity element is returned.
+ * the identity element is returned. Additionally, if
+ * searchAmount.value is an array, a separate search is performed for each element
+ * in searchAmount.value and the results are returned in an array with
+ * any duplicates among the searches removed.
  */
 
 /**
