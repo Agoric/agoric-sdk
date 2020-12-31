@@ -14,17 +14,39 @@ export const BLOCK_CADENCE_S = 5;
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 
+export const DEFAULT_GRPC_PORT = 9090;
+export const DEFAULT_RPC_PORT = 26657;
+
+// Rewrite the app.toml.
+export function finishCosmosApp({ appToml, portNum = `${DEFAULT_RPC_PORT}` }) {
+  const rpcPort = Number(portNum);
+  const app = TOML.parse(appToml);
+
+  app.proxy_app = 'kvstore';
+
+  // Offset the GRPC listener from our rpc port.
+  app.grpc.address = `0.0.0.0:${rpcPort +
+    DEFAULT_GRPC_PORT -
+    DEFAULT_RPC_PORT}`;
+
+  // Lengthen the pruning span.
+  app.pruning = 'custom';
+  app['pruning-keep-recent'] = '10000';
+  app['pruning-keep-every'] = '50000';
+  app['pruning-interval'] = '1000';
+  return TOML.stringify(app);
+}
+
 // Rewrite the config.toml.
 export function finishCosmosConfig({
   configToml,
-  portNum = '26657',
+  portNum = `${DEFAULT_RPC_PORT}`,
   persistentPeers = '',
 }) {
   const rpcPort = Number(portNum);
 
   // Adjust the config.toml.
   const config = TOML.parse(configToml);
-  config.proxy_app = 'kvstore';
 
   // Enforce our inter-block delays for this node.
   config.consensus.timeout_commit = `${BLOCK_CADENCE_S}s`;

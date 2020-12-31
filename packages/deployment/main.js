@@ -342,6 +342,7 @@ show-config      display the client connection parameters
         // We don't have matching parameters, so restart the chain.
         // Stop the chain services.
         await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
+        await reMain(['play', 'stop', '-eservice=dweb']);
 
         // Blow away cosmos state.
         await needDoRun(['rm', '-rf', COSMOS_DIR]);
