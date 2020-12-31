@@ -376,3 +376,19 @@
  * @param {string} kind The ERTPKind
  * @returns {InterfaceSpec}
  */
+
+/**
+ * Withdraw a searchAmount from a purse, even if the purse does not
+ * have an amount that matches the searchAmount yet. This method uses
+ * a notifier to be informed of changes to the purse balance, then
+ * uses amountMath.find() to try to find the searchAmount in the
+ * purseBalance. The recursion stops at a parameterized number of
+ * iterations.
+ *
+ * @callback EventualWithdraw
+ * @param {Purse} purse
+ * @param {AmountMath} amountMath
+ * @param {Amount} searchAmount
+ * @param {number=} iterations
+ * @returns {Promise<Payment>}
+ */
