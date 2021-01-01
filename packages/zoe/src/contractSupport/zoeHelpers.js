@@ -179,7 +179,9 @@ export const trade = (
       console.log(`offer not safe for right`);
     }
     assert.fail(
-      details`The trade between left ${q(left)} and right ${q(right)} failed offer safety. Please check the log for more information`,
+      details`The trade between left ${q(left)} and right ${q(
+        right,
+      )} failed offer safety. Please check the log for more information`,
     );
   }
 

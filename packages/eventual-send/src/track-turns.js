@@ -15,7 +15,7 @@ let hiddenCurrentTurn = 0;
 let hiddenCurrentEvent = 0;
 
 // Turn on if you seem to be losing error logging at the top of the event loop
-const VERBOSE = true;
+const VERBOSE = false;
 
 /**
  * @typedef {((...args: any[]) => any) | void} TurnStarterFn

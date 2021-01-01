@@ -8,6 +8,8 @@ import { E } from '@agoric/eventual-send';
 import { sameStructure, match, STAR_PATTERN } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
+import { testWrapper } from '../../../../eventual-send/test/ava-test-wrapper';
+
 import buildManualTimer from '../../../tools/manualTimer';
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
@@ -339,7 +341,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // Bob. Bob tries to sell the invitation to Dave through a swap. Can Bob
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
-test('zoe - coveredCall with swap for invitation', async t => {
+testWrapper('zoe - coveredCall with swap for invitation', async t => {
   // Setup the environment
   const timer = buildManualTimer(console.log);
   const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
