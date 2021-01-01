@@ -147,6 +147,7 @@ export function makeVatLoader(stuff) {
     const {
       metered = isDynamic,
       vatParameters = {},
+      managerType,
       enableSetup = false,
       enablePipelining = false,
       virtualObjectCacheSize,
@@ -193,6 +194,7 @@ export function makeVatLoader(stuff) {
 
       kernelSlog.addVat(vatID, isDynamic, description, name, vatSourceBundle);
       const managerOptions = {
+        managerType,
         bundle: vatSourceBundle,
         metered,
         enableSetup,
