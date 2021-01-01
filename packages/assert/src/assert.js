@@ -12,18 +12,49 @@
 
 import './types';
 
-const { freeze } = Object;
+const { freeze, assign } = Object;
 
-/** @type {Assert} */
-const globalAssert = globalThis.assert;
+const globalAssert1 = globalThis.assert;
 
-if (globalAssert === undefined) {
+if (globalAssert1 === undefined) {
   throw new Error(
     `Cannot initialize @agoric/assert, missing globalThis.assert`,
   );
 }
 
+// In anticipation of https://github.com/Agoric/SES-shim/pull/554
+// we add in an assert.error standin if none is already there.
+// TODO once https://github.com/Agoric/SES-shim/pull/554 is merged and released,
+// and agoric-sdk depends on that release, then these standins can be removed
+// and this file can return to it previous simplicity.
+
+/** @type {AssertMakeError} */
+const makeErrorStandin = (
+  optDetails = undefined,
+  ErrorConstructor = undefined,
+) => {
+  try {
+    throw globalAssert1.fail(optDetails, ErrorConstructor);
+  } catch (err) {
+    return err;
+  }
+};
+
+const baseAssertStandin = (
+  flag,
+  optDetails = undefined,
+  ErrorConstructor = undefined,
+) => globalAssert1(flag, optDetails, ErrorConstructor);
+
+/** @type {Assert} */
+const globalAssert = globalAssert1.error
+  ? globalAssert1
+  : freeze(
+      assign(baseAssertStandin, { ...globalAssert1, error: makeErrorStandin }),
+    );
+
 const missing = [
+  'error',
   'fail',
   'equal',
   'typeof',

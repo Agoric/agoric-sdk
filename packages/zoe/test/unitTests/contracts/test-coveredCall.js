@@ -15,7 +15,10 @@ import { setupNonFungible } from '../setupNonFungibleMints';
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
+debugger;
+
 test('zoe - coveredCall', async t => {
+  debugger;
   t.plan(13);
   const {
     moolaKit,
@@ -514,8 +517,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
     // TODO BUG The commented out line with optionAmountPattern is the
     // one we want, but atomicSwap calls swap with the want pattern
     // as the gains, which are assumed to be amounts, not amount patterns.
-    // want: { Asset: optionAmountPattern },
-    want: { Asset: optionAmount },
+    want: { Asset: optionAmountPattern },
+    // want: { Asset: optionAmount },
     give: { Price: bucks(1) },
   });
 

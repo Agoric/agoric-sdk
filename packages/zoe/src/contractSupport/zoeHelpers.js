@@ -1,7 +1,7 @@
 // @ts-check
 import '../../exported';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details, quote as q } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -152,8 +152,8 @@ export const trade = (
       left.losses,
     ));
   } catch (err) {
-    const newErr = new Error(
-      `The trade between left ${left} and right ${right} failed.`,
+    const newErr = assert.error(
+      details`The trade between left ${q(left)} and right ${q(right)} failed.`,
     );
     assert.note(newErr, details`due to ${err}`);
     throw newErr;
@@ -178,8 +178,8 @@ export const trade = (
     if (!offerSafeForRight) {
       console.log(`offer not safe for right`);
     }
-    throw new Error(
-      `The trade between left ${left} and right ${right} failed offer safety. Please check the log for more information`,
+    assert.fail(
+      details`The trade between left ${q(left)} and right ${q(right)} failed offer safety. Please check the log for more information`,
     );
   }
 
