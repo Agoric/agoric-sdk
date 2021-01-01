@@ -92,10 +92,7 @@ harden(isGround);
  * @returns {Bindings | undefined}
  */
 function match(outerPattern, outerSpecimen) {
-  assert(
-    isGround(outerSpecimen),
-    d`Can only match against ground comparables for now`,
-  );
+  assert(isGround(outerSpecimen), d`Can only match against ground comparables`);
 
   // Although it violates Jessie, don't harden `bindings` yet
   const bindings = { __proto__: null };
@@ -112,6 +109,9 @@ function match(outerPattern, outerSpecimen) {
         case 'bind': {
           const { name } = pattern;
           // binds specimen to bindings[name]
+          // TODO because `name` is used as a computed property name, we
+          // should first `assertKeywordName(name)`. To do so, we must first
+          // move`assertKeywordName` from the zoe package into this one.
           assert.string(name);
           if (name in bindings) {
             // Note: sameStructure rather than match, as both sides came from

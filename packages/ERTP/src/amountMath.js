@@ -220,11 +220,11 @@ function makeAmountMath(brand, amountMathKind) {
       const { brand: allegedBrand, value: valuePattern } = allegedAmountPattern;
       assert(
         allegedBrand !== undefined,
-        d`alleged brand is undefined. Did you pass a value rather than an amount?`,
+        d`alleged brand is undefined. Did you pass a value pattern rather than an amount pattern?`,
       );
       assert(
         brand === allegedBrand,
-        d`the brand in the allegedAmount in 'coerce' didn't match the amountMath brand`,
+        d`the brand in the allegedAmountPattern in 'coerce' didn't match the amountMath brand`,
       );
       // Will throw on inappropriate value
       return amountMath.makePattern(valuePattern);
