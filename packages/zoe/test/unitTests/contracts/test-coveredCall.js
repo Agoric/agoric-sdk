@@ -17,10 +17,7 @@ import { setupNonFungible } from '../setupNonFungibleMints';
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
-debugger;
-
 test('zoe - coveredCall', async t => {
-  debugger;
   t.plan(13);
   const {
     moolaKit,
