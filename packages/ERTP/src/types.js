@@ -12,7 +12,10 @@
  */
 
 /**
- * @typedef {Ground} Amount
+ * TODO Want to say typedef {Object & Ground} Amount, but then Amount seems to
+ * be typed as "any"
+ *
+ * @typedef {Object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -37,7 +40,10 @@
  */
 
 /**
- * @typedef {Amount & Pattern} AmountPattern
+ * TODO Want to say typedef {Object & Pattern} AmountPattern, but then
+ * AmountPattern seems to be typed as "any"
+ *
+ * @typedef {Object} AmountPattern
  * TODO explain
  *
  * @property {Brand} brand
