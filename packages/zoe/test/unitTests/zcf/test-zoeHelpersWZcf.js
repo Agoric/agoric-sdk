@@ -91,7 +91,7 @@ test(`zoeHelper with zcf - swap no match`, async t => {
   t.throws(
     () => swap(zcf, aZcfSeat, bZcfSeat),
     {
-      message: /The trade between fromSeat .* and toSeat .* failed failed because .* was not found/,
+      message: /The trade between fromSeat .* and toSeat .* failed because .* was not found/,
     },
     'mismatched offers',
   );
