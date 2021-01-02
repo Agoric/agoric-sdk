@@ -233,8 +233,7 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
         toSeatContractA,
       ),
     {
-      message:
-        'The trade between left [object Object] and right [object Object] failed offer safety. Please check the log for more information',
+      message: /The trade between left .* and right .* failed offer safety. Please check the log for more information/,
     },
   );
 
