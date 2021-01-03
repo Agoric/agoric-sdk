@@ -27,48 +27,52 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   let packages;
 
   if (opts.sdk) {
-    const sdkPackagesDir = path.resolve(__dirname, '../../../packages');
-    const allPackages = await fs.readdir(sdkPackagesDir);
     packages = new Map();
     const versions = new Map();
     log('removing', linkFolder);
     await rimraf(linkFolder);
     await Promise.all(
-      allPackages.map(async pkg => {
-        const dir = `${sdkPackagesDir}/${pkg}`;
-        const packageJSON = await fs
-          .readFile(`${dir}/package.json`, 'utf-8')
-          .catch(err => log('error reading', `${dir}/package.json`, err));
-        if (!packageJSON) {
-          return undefined;
-        }
+      ['packages', 'golang'].map(async pkgSubdir => {
+        const pkgRoot = path.resolve(__dirname, `../../../${pkgSubdir}`);
+        const allPackages = await fs.readdir(pkgRoot);
+        await Promise.all(
+          allPackages.map(async pkg => {
+            const dir = `${pkgRoot}/${pkg}`;
+            const packageJSON = await fs
+              .readFile(`${dir}/package.json`, 'utf-8')
+              .catch(err => log('error reading', `${dir}/package.json`, err));
+            if (!packageJSON) {
+              return undefined;
+            }
 
-        const pj = JSON.parse(packageJSON);
-        if (pj.private) {
-          log('not linking private package', pj.name);
-          return undefined;
-        }
+            const pj = JSON.parse(packageJSON);
+            if (pj.private) {
+              log('not linking private package', pj.name);
+              return undefined;
+            }
 
-        // Save our metadata.
-        packages.set(pkg, pj.name);
-        versions.set(pj.name, pj.version);
+            // Save our metadata.
+            packages.set(pkg, pj.name);
+            versions.set(pj.name, pj.version);
 
-        const SUBOPTIMAL = false;
-        if (SUBOPTIMAL) {
-          // This use of yarn is noisy and slow.
-          return pspawn('yarn', [...linkFlags, 'link'], {
-            stdio: 'inherit',
-            cwd: dir,
-          });
-        }
+            const SUBOPTIMAL = false;
+            if (SUBOPTIMAL) {
+              // This use of yarn is noisy and slow.
+              return pspawn('yarn', [...linkFlags, 'link'], {
+                stdio: 'inherit',
+                cwd: dir,
+              });
+            }
 
-        // This open-coding of the above yarn command is quiet and fast.
-        const linkName = `${linkFolder}/${pj.name}`;
-        const linkDir = path.dirname(linkName);
-        log('linking', linkName);
-        return fs
-          .mkdir(linkDir, { recursive: true })
-          .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
+            // This open-coding of the above yarn command is quiet and fast.
+            const linkName = `${linkFolder}/${pj.name}`;
+            const linkDir = path.dirname(linkName);
+            log('linking', linkName);
+            return fs
+              .mkdir(linkDir, { recursive: true })
+              .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
+          }),
+        );
       }),
     );
     await Promise.all(
