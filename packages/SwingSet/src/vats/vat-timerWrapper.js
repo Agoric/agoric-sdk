@@ -20,10 +20,7 @@ export function buildRootObject(vatPowers) {
         return D(timerNode).removeWakeup(handler);
       },
       createRepeater(delaySecs, interval) {
-        assert(
-          Nat(delaySecs) >= 0,
-          details`createRepeater's first parameter must be a non-negative integer: ${delaySecs}`,
-        );
+        Nat(delaySecs);
         assert(
           Nat(interval) > 0,
           details`createRepeater's second parameter must be a positive integer: ${interval}`,
@@ -44,10 +41,7 @@ export function buildRootObject(vatPowers) {
         return vatRepeater;
       },
       createNotifier(delaySecs, interval) {
-        assert(
-          Nat(delaySecs) >= 0,
-          details`createNotifier's first parameter must be a non-negative integer: ${delaySecs}`,
-        );
+        Nat(delaySecs);
         assert(
           Nat(interval) > 0,
           details`createNotifier's second parameter must be a positive integer: ${interval}`,
