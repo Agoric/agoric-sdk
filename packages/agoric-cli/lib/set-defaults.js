@@ -1,5 +1,9 @@
 import { basename } from 'path';
-import { finishCosmosConfig, finishCosmosGenesis } from './chain-config';
+import {
+  finishCosmosApp,
+  finishCosmosConfig,
+  finishCosmosGenesis,
+} from './chain-config';
 
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs } = powers;
@@ -11,6 +15,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     throw Error(`<prog> must currently be 'ag-chain-cosmos'`);
   }
 
+  let appFile;
   let configFile;
   let genesisFile;
   const baseName = basename(configDir);
@@ -20,17 +25,31 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
   if (baseName === 'genesis.json') {
     genesisFile = configDir;
   }
+  if (baseName === 'app.toml') {
+    appFile = configDir;
+  }
 
-  if (!configFile && !genesisFile) {
+  if (!configFile && !genesisFile && !appFile) {
     // Default behaviour: rewrite both configs.
     configFile = `${configDir}/config.toml`;
     genesisFile = `${configDir}/genesis.json`;
+    appFile = `${configDir}/app.toml`;
   }
 
   const create = (fileName, contents) => {
     log('create', fileName);
     return fs.writeFile(fileName, contents);
   };
+
+  if (appFile) {
+    log(`read ${appFile}`);
+    const appToml = await fs.readFile(configFile, 'utf-8');
+
+    const newAppToml = finishCosmosApp({
+      appToml,
+    });
+    await create(appFile, newAppToml);
+  }
 
   if (configFile) {
     log(`read ${configFile}`);
