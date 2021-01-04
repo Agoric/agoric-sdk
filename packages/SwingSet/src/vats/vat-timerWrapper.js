@@ -25,13 +25,10 @@ export function buildRootObject(vatPowers) {
         return this.makeRepeater(delaySecs, interval);
       },
       makeRepeater(delaySecs, interval) {
-        assert(
-          Nat(delaySecs) >= 0,
-          details`makeRepeater's second parameter must be a positive integer: ${interval}`,
-        );
+        Nat(delaySecs);
         assert(
           Nat(interval) > 0,
-          details`createRepeater's second parameter must be a positive integer: ${interval}`,
+          details`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
         const index = D(timerNode).makeRepeater(delaySecs, interval);
@@ -49,10 +46,7 @@ export function buildRootObject(vatPowers) {
         return vatRepeater;
       },
       makeNotifier(delaySecs, interval) {
-        assert(
-          Nat(delaySecs) >= 0,
-          details`createNotifier's first parameter must be a non-negative integer: ${delaySecs}`,
-        );
+        Nat(delaySecs);
         assert(
           Nat(interval) > 0,
           details`makeNotifier's second parameter must be a positive integer: ${interval}`,
