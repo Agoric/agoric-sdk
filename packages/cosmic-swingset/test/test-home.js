@@ -102,6 +102,20 @@ test.serial('home.wallet - receive zoe invite', async t => {
   );
 });
 
+test.serial('home.wallet - MOE setup', async t => {
+  const { wallet } = E.G(home);
+
+  // Check that the wallet knows about the MOE issuer.
+  const issuers = await E(wallet).getIssuers();
+  const issuersMap = new Map(issuers);
+  const moeIssuer = issuersMap.get('MOE');
+
+  const moePurse = await E(wallet).getPurse('MOE funds');
+  const brandFromIssuer = await E(moeIssuer).getBrand();
+  const brandFromPurse = await E(moePurse).getAllegedBrand();
+  t.is(brandFromPurse, brandFromIssuer);
+});
+
 // =========================================
 // This runs after all the tests.
 test.after.always('teardown', async t => {

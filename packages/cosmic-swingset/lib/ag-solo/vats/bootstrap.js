@@ -106,6 +106,20 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         ],
         [
+          'MOE',
+          {
+            mintValue: 0,
+            pursePetname: 'MOE funds',
+            fakeTradesGivenCentral: [
+              [10, 15],
+              [13, 9],
+              [12, 13],
+              [18, 15],
+              [15, 17],
+            ],
+          },
+        ],
+        [
           'simolean',
           {
             mintValue: 1900,
