@@ -2,7 +2,6 @@
   "name": "@agoric/cosmos",
   "version": "0.23.0",
   "description": "Connect JS to the Cosmos blockchain SDK",
-  "private": true,
   "parsers": {
     "js": "mjs"
   },
@@ -39,6 +38,18 @@
       "@agoric"
     ]
   },
+  "files": [
+    "Makefile*",
+    "app",
+    "binding.gyp.in",
+    "cmd",
+    "daemon",
+    "proto",
+    "scripts",
+    "src",
+    "third_party",
+    "x"
+  ],
   "prettier": {
     "trailingComma": "all",
     "singleQuote": true

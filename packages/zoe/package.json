@@ -63,6 +63,7 @@
     "ses": "^0.11.0"
   },
   "files": [
+    "bundles/",
     "src/",
     "tools/",
     "contractFacet.js",

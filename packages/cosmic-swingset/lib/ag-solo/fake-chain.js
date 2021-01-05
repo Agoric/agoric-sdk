@@ -157,5 +157,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
-  return makeBatchedDeliver(deliver);
+
+  // Only use 100ms batches for no specified inter-block delay.
+  // This makes for more deliveries but less overall waiting time.
+  const batchDelayMs = delay ? delay * 1000 : 100;
+  return makeBatchedDeliver(deliver, batchDelayMs);
 }
