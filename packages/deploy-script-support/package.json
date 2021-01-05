@@ -1,0 +1,92 @@
+{
+  "name": "@agoric/deploy-script-support",
+  "version": "0.0.1",
+  "description": "Helpers and other support for writing deploy scripts",
+  "parsers": {
+    "js": "mjs"
+  },
+  "main": "src/helpers.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:nyc": "nyc ava",
+    "pretty-fix": "prettier --write '**/*.js'",
+    "pretty-check": "prettier --check '**/*.js'",
+    "lint-fix": "yarn lint --fix",
+    "lint-check": "yarn lint",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:eslint": "eslint '**/*.js'",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "keywords": [
+    "smart",
+    "contract",
+    "cryptocurrency",
+    "exchange",
+    "tokens"
+  ],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/assert": "^0.2.0",
+    "@agoric/bundle-source": "^1.2.0",
+    "@agoric/cosmic-swingset": "^0.24.0",
+    "@agoric/dapp-svelte-wallet-api": "^0.5.1",
+    "@agoric/ertp": "^0.9.0",
+    "@agoric/eventual-send": "^0.13.0",
+    "@agoric/import-manager": "^0.2.0",
+    "@agoric/marshal": "^0.3.0",
+    "@agoric/nat": "^2.0.1",
+    "@agoric/notifier": "^0.3.0",
+    "@agoric/promise-kit": "^0.2.0",
+    "@agoric/same-structure": "^0.1.0",
+    "@agoric/store": "^0.4.0",
+    "@agoric/zoe": "^0.11.0"
+  },
+  "devDependencies": {
+    "@agoric/install-ses": "^0.5.0",
+    "@agoric/swingset-vat": "^0.11.0",
+    "ava": "^3.12.1",
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0"
+  },
+  "files": [
+    "src",
+    "NEWS.md",
+    "exported.js"
+  ],
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm",
+      "@agoric/install-ses"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

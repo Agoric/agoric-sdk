@@ -8,7 +8,8 @@
   "main": "lib/main.js",
   "bin": "bin/agoric",
   "files": [
-    "lib"
+    "lib",
+    "exported.js"
   ],
   "scripts": {
     "build": "exit 0",

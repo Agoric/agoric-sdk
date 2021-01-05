@@ -41,7 +41,8 @@
     "packages/agoric-cli",
     "packages/deployment",
     "packages/notifier",
-    "packages/xs-vat-worker"
+    "packages/xs-vat-worker",
+    "packages/deploy-script-support"
   ],
   "devDependencies": {
     "@typescript-eslint/parser": "^4.1.0",

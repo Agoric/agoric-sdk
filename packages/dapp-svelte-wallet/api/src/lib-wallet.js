@@ -109,6 +109,8 @@ export function makeWallet({
    */
   let zoeInvitePurse;
 
+  const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
+
   function getSortedValues(map) {
     const entries = [...map.entries()];
     // Sort for determinism.
@@ -567,16 +569,6 @@ export function makeWallet({
     return `instance ${q(petname)} successfully added to wallet`;
   };
 
-  const addInstallation = (petname, installationHandle) => {
-    // We currently just add the petname mapped to the installationHandle
-    // value, but we could have a list of known installations for
-    // possible display in the wallet.
-    petname = installationMapping.suggestPetname(petname, installationHandle);
-    // We don't wait for the update before returning.
-    updateAllState();
-    return `installation ${q(petname)} successfully added to wallet`;
-  };
-
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
@@ -987,14 +979,6 @@ export function makeWallet({
     return ret;
   }
 
-  /** @returns {[Petname, Issuer][]} */
-  function getIssuers() {
-    return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
-      const { issuer } = brandTable.getByBrand(brand);
-      return [petname, issuer];
-    });
-  }
-
   /** @type {Store<Payment, PaymentRecord>} */
   const payments = makeStore('payment');
   const {
@@ -1243,54 +1227,103 @@ export function makeWallet({
     // suggestion can be rejected and the suggested petname can be
     // changed
     return acceptPetname(
-      addInstallation,
+      // eslint-disable-next-line no-use-before-define
+      installationManager.add,
       suggestedPetname,
       installationHandleBoardId,
       dappOrigin,
     );
   }
 
-  async function renameIssuer(petname, issuer) {
-    assert(
-      brandTable.hasByIssuer(issuer),
-      `issuer has not been previously added`,
-    );
-    const brandRecord = brandTable.getByIssuer(issuer);
-    brandMapping.renamePetname(petname, brandRecord.brand);
-    await updateAllState();
-    return `issuer ${q(petname)} successfully renamed in wallet`;
-  }
-
-  async function renameInstance(petname, instance) {
-    instanceMapping.renamePetname(petname, instance);
-    await updateAllState();
-    return `instance ${q(petname)} successfully renamed in wallet`;
-  }
-
-  async function renameInstallation(petname, installation) {
-    installationMapping.renamePetname(petname, installation);
-    await updateAllState();
-    return `installation ${q(petname)} successfully renamed in wallet`;
-  }
-
-  function getIssuer(petname) {
+  function getBrand(petname) {
     const brand = brandMapping.petnameToVal.get(petname);
-    return brandTable.getByBrand(brand).issuer;
+    return brand;
   }
 
   function getSelfContact() {
     return selfContact;
   }
 
-  function getInstance(petname) {
-    return instanceMapping.petnameToVal.get(petname);
+  const makeManager = petnameMapping => {
+    const manager = {
+      rename: async (petname, thing) => {
+        petnameMapping.renamePetname(petname, thing);
+        await updateAllState();
+      },
+      get: petnameMapping.petnameToVal.get,
+      getAll: petnameMapping.petnameToVal.entries,
+      add: async (petname, thing) => {
+        petnameMapping.suggestPetname(petname, thing);
+        await updateAllState();
+      },
+    };
+    return harden(manager);
+  };
+
+  /** @type {InstallationManager} */
+  const installationManager = makeManager(installationMapping);
+
+  /** @type {InstanceManager} */
+  const instanceManager = makeManager(instanceMapping);
+
+  /** @type {IssuerManager} */
+  const issuerManager = {
+    rename: async (petname, issuer) => {
+      assert(
+        brandTable.hasByIssuer(issuer),
+        `issuer has not been previously added`,
+      );
+      const brandRecord = brandTable.getByIssuer(issuer);
+      brandMapping.renamePetname(petname, brandRecord.brand);
+      await updateAllState();
+    },
+    get: petname => {
+      const brand = brandMapping.petnameToVal.get(petname);
+      return brandTable.getByBrand(brand).issuer;
+    },
+    getAll: () => {
+      return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
+        const { issuer } = brandTable.getByBrand(brand);
+        return [petname, issuer];
+      });
+    },
+    add: async (petname, issuerP) => {
+      const { brand, issuer } = await brandTable.initIssuer(issuerP);
+      if (!issuerToBoardId.has(issuer)) {
+        const issuerBoardId = await E(board).getId(issuer);
+        issuerToBoardId.init(issuer, issuerBoardId);
+      }
+      brandMapping.suggestPetname(petname, brand);
+      await updateAllIssuersState();
+    },
+  };
+  harden(issuerManager);
+
+  function getInstallationManager() {
+    return installationManager;
   }
 
-  function getInstallation(petname) {
-    return installationMapping.petnameToVal.get(petname);
+  function getInstanceManager() {
+    return instanceManager;
+  }
+
+  function getIssuerManager() {
+    return issuerManager;
+  }
+
+  const offerResultStore = makeWeakStore('invitationHandle');
+
+  async function saveOfferResult(invitationHandle, offerResult) {
+    offerResultStore.init(invitationHandle, offerResult);
+  }
+
+  async function getOfferResult(invitationHandle) {
+    return offerResultStore.get(invitationHandle);
   }
 
   const wallet = harden({
+    saveOfferResult,
+    getOfferResult,
     waitForDappApproval,
     getDappsNotifier() {
       return dappsNotifier;
@@ -1304,20 +1337,36 @@ export function makeWallet({
     getOffersNotifier() {
       return offersNotifier;
     },
-    addIssuer,
+    /** @deprecated use issuerManager.add instead */
+    addIssuer: issuerManager.add,
+    getBrand,
     publishIssuer,
-    addInstance,
-    addInstallation,
-    renameIssuer,
-    renameInstance,
-    renameInstallation,
+    /** @deprecated use instanceManager.add instead */
+    addInstance: instanceManager.add,
+    /** @deprecated use installationManager.add instead */
+    addInstallation: installationManager.add,
+    getInstallationManager,
+    getInstanceManager,
+    getIssuerManager,
+    /** @deprecated use issuerManager.rename instead */
+    renameIssuer: issuerManager.rename,
+    /** @deprecated use instanceManager.rename instead */
+    renameInstance: instanceManager.rename,
+    /** @deprecated use installationManager.rename instead */
+    renameInstallation: installationManager.rename,
     getSelfContact,
-    getInstance,
-    getInstallation,
+    /** @deprecated use instanceManager.get instead */
+    getInstance: instanceManager.get,
+    /** @deprecated use installationManager.get instead */
+    getInstallation: installationManager.get,
+    /** @deprecated use installationManager.getAll instead */
+    getInstallations: installationManager.getAll,
     makeEmptyPurse,
     deposit,
-    getIssuer,
-    getIssuers,
+    /** @deprecated use issuerManager.get instead */
+    getIssuer: issuerManager.get,
+    /** @deprecated use issuerManager.getAll instead */
+    getIssuers: issuerManager.getAll,
     getPurses,
     getPurse,
     getPurseIssuer,
@@ -1351,11 +1400,10 @@ export function makeWallet({
 
   const initialize = async () => {
     // Make Zoe invite purse
-    const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
     const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
     const inviteIssuerP = E(zoe).getInvitationIssuer();
     const addZoeIssuer = issuerP =>
-      wallet.addIssuer(ZOE_INVITE_BRAND_PETNAME, issuerP);
+      issuerManager.add(ZOE_INVITE_BRAND_PETNAME, issuerP);
     const makeInvitePurse = () =>
       wallet.makeEmptyPurse(ZOE_INVITE_BRAND_PETNAME, ZOE_INVITE_PURSE_PETNAME);
     const addInviteDepositFacet = () =>
