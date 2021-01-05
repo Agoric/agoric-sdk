@@ -20,7 +20,7 @@
 /**
  * @callback SaveLocalAmountMaths
  * @param {Array<Petname>} petnames
- * @returns {void[]}
+ * @returns {Promise<void[]>}
  */
 
 /**
@@ -77,6 +77,12 @@
  * @returns {{seat: Promise<UserSeat>, deposited:
  * Promise<Array<Promise<Amount>>>, invitationDetailsPromise:
  * Promise<InvitationDetails>}}
+ */
+
+/**
+ * @callback FindInvitationAmount
+ * @param {Record<string, any>} invitationDetailsCriteria
+ * @returns {Amount} invitationAmount
  */
 
 /**

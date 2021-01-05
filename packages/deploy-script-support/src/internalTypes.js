@@ -38,13 +38,14 @@
  */
 
 /**
- * @callback MakeOfferHelper
+ * @callback MakeOfferAndFindInvitationAmount
  * @param {ERef<WalletAdminFacet>} walletAdmin - an internal type of the
  * wallet, not defined here
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Purse>} zoeInvitationPurse
  * @param {GetLocalAmountMath} getLocalAmountMath
- * @returns {OfferHelper}
+ * @param {AmountMath} invitationMath
+ * @returns {{ offer: OfferHelper, findInvitationAmount: FindInvitationAmount }}
  */
 
 /**

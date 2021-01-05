@@ -99,10 +99,10 @@
 /**
  * @template T
  * @typedef {Object} PetnameManager
- * @property {(petname: Petname, object: T) => void} rename
+ * @property {(petname: Petname, object: T) => Promise<void>} rename
  * @property {(petname: Petname) => T} get
- * @property { () => Array<T>} getAll
- * @property {(petname: Petname, object: T) => void} add
+ * @property { () => Array<[Petname, T]>} getAll
+ * @property {(petname: Petname, object: T) => Promise<void>} add
  */
 
 /**

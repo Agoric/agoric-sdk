@@ -3,13 +3,33 @@
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
 
-/** @type {MakeOfferHelper} */
-export const makeOffer = (
+/** @type {MakeOfferAndFindInvitationAmount} */
+export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
   zoe,
   zoeInvitationPurse,
   getLocalAmountMath,
+  invitationMath,
 ) => {
+  /** @type {FindInvitationAmount} */
+  const findInvitationAmount = async invitationDetailsCriteria => {
+    const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();
+
+    // TODO: use a new AmountMath method instead to improve efficiency
+    // For every key and value in invitationDetailsCriteria, return an amount
+    // with any matches for those exact keys and values. Keys not in
+    // invitationDetails count as a match
+    const matches = invitationDetail =>
+      Object.entries(invitationDetailsCriteria).every(
+        ([key, value]) => invitationDetail[key] === value,
+      );
+
+    const matchingValue = invitationAmount.value.find(matches);
+    const value =
+      matchingValue === undefined ? harden([]) : harden([matchingValue]);
+    return invitationMath.make(value);
+  };
+
   const withdrawPayments = (proposal, paymentsWithPursePetnames) => {
     return Object.fromEntries(
       Object.entries(paymentsWithPursePetnames).map(
@@ -25,9 +45,7 @@ export const makeOffer = (
 
   const withdrawInvitation = async invitationDetails => {
     // Let's go with the first one that fits our requirements
-    const invitationAmount = await E(walletAdmin).findInvitationAmount(
-      invitationDetails,
-    );
+    const invitationAmount = await findInvitationAmount(invitationDetails);
     return E(zoeInvitationPurse).withdraw(invitationAmount);
   };
 
@@ -65,7 +83,6 @@ export const makeOffer = (
       `either an invitation or invitationDetails is required`,
     );
     return withdrawInvitation(invitationDetails);
-    // TODO: handle instancePetname instead of instance
   };
 
   const depositPayouts = (seat, payoutPursePetnames) => {
@@ -123,5 +140,8 @@ export const makeOffer = (
       invitationDetailsPromise: fullInvitationDetailsP,
     };
   };
-  return offer;
+  return {
+    offer,
+    findInvitationAmount,
+  };
 };
