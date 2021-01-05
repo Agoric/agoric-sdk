@@ -7,7 +7,7 @@ import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Remotable } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
-import { isPromise } from '@agoric/promise-kit';
+import { isPromise, makePromiseKit } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
 import { makeInterface, ERTPKind } from './interfaces';
@@ -136,6 +136,41 @@ function makeIssuerKit(
           balanceUpdater.updateState(currentBalance);
           paymentLedger.init(payment, amount);
           return payment;
+        },
+        eventualWithdraw: searchAmount => {
+          const paymentPromiseKit = makePromiseKit();
+          let cancelled = false;
+
+          const tryToFind = async lastUpdateCount => {
+            if (cancelled) {
+              return;
+            }
+            const {
+              value: currentAmount,
+              updateCount,
+            } = await balanceNotifier.getUpdateSince(lastUpdateCount);
+            const foundAmount = amountMath.find(currentAmount, searchAmount);
+
+            if (amountMath.isEmpty(foundAmount)) {
+              // searchAmount was not found, try again
+              tryToFind(updateCount);
+              return;
+            }
+
+            // searchAmount was found! Withdraw a payment
+            paymentPromiseKit.resolve(purse.withdraw(foundAmount));
+          };
+
+          tryToFind();
+          return harden({
+            getPayment: () => paymentPromiseKit.promise,
+            cancel: () => {
+              cancelled = true;
+              paymentPromiseKit.reject(
+                Error('searchAmount could not be withdrawn'),
+              );
+            },
+          });
         },
         getCurrentAmount: () => currentBalance,
         getCurrentAmountNotifier: () => balanceNotifier,
