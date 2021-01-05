@@ -10,6 +10,8 @@ MOD_READONLY = # -mod=readonly
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
+include Makefile.ledger
+
 whitespace :=
 whitespace += $(whitespace)
 comma := ,
@@ -36,9 +38,7 @@ endif
 ldflags_helper = $(ldflags) \
 		  -X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-helper
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
-BUILD_FLAGS_HELPER :=  -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags_helper)'
-
-include Makefile.ledger
+BUILD_FLAGS_HELPER :=  -buildmode=exe -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags_helper)'
 
 all: compile-helper compile-daemon
 compile-go: compile-helper compile-libdaemon
