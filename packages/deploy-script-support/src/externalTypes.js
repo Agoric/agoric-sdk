@@ -32,10 +32,10 @@
 /**
  * @typedef {Object} StartInstanceAndSaveConfig
  * @property {Petname} instancePetname
- * @property {Installation} installation
- * @property {IssuerKeywordRecord} issuerKeywordRecord
- * @property {Record<Keyword,Petname>} issuerPetnameKeywordRecord
- * @property {Object} terms
+ * @property {ERef<Installation>} installation
+ * @property {IssuerKeywordRecord=} issuerKeywordRecord
+ * @property {Record<Keyword,Petname>=} issuerPetnameKeywordRecord
+ * @property {Object=} terms
  */
 
 /**
@@ -64,8 +64,8 @@
 
 /**
  * @typedef {Object} OfferHelperConfig
- * @property {Invitation} invitation
- * @property {Partial<InvitationDetails>} partialInvitationDetails
+ * @property {ERef<Invitation>=} invitation
+ * @property {Partial<InvitationDetails>=} partialInvitationDetails
  * @property {ProposalWithBrandPetnames} proposalWithBrandPetnames
  * @property {Record<Keyword, Petname>} paymentsWithPursePetnames
  * @property {Record<Keyword, Petname>} payoutPursePetnames
@@ -75,8 +75,8 @@
  * @callback OfferHelper
  * @param {OfferHelperConfig} config
  * @returns {{seat: Promise<UserSeat>, deposited:
- * Promise<Array<Promise<Amount>>>, invitationDetailsPromise:
- * Promise<InvitationDetails>}}
+ * Promise<Array<Promise<Amount>>>, invitationDetails:
+ * InvitationDetails}}
  */
 
 /**
@@ -103,5 +103,5 @@
  * @callback AssertOfferResult
  * @param {ERef<UserSeat>} seat
  * @param {string} expectedOfferResult
- * @returns {void}
+ * @returns {Promise<void>}
  */

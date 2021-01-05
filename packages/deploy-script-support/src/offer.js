@@ -86,9 +86,13 @@ export const makeOfferAndFindInvitationAmount = (
   };
 
   const depositPayouts = (seat, payoutPursePetnames) => {
-    const makeDepositInPurse = keyword => payment => {
-      const purse = payoutPursePetnames[keyword];
-      E(purse).deposit(payment);
+    const makeDepositInPurse = keyword => {
+      const deposit = payment => {
+        const pursePetname = payoutPursePetnames[keyword];
+        const purse = E(walletAdmin).getPurse(pursePetname);
+        return E(purse).deposit(payment);
+      };
+      return deposit;
     };
     const handlePayments = paymentsP => {
       const allDepositedP = Promise.all(
@@ -103,17 +107,8 @@ export const makeOfferAndFindInvitationAmount = (
     return paymentsPP.then(handlePayments);
   };
 
-  const makeSaveOfferResult = fullInvitationDetailsP => async offerResult => {
-    // TODO: move entire offer process to wallet
-    const fullInvitationDetails = await fullInvitationDetailsP;
-    await E(walletAdmin).saveOfferResult(
-      fullInvitationDetails.handle,
-      offerResult,
-    );
-  };
-
   /** @type {OfferHelper} */
-  const offer = config => {
+  const offer = async config => {
     const {
       invitation,
       partialInvitationDetails,
@@ -123,7 +118,9 @@ export const makeOfferAndFindInvitationAmount = (
     } = config;
 
     const invitationToUse = getInvitation(invitation, partialInvitationDetails);
-    const fullInvitationDetailsP = E(zoe).getInvitationDetails(invitationToUse);
+    const invitationDetails = await E(zoe).getInvitationDetails(
+      invitationToUse,
+    );
     const proposal = makeProposal(proposalWithBrandPetnames);
     const payments = withdrawPayments(proposal, paymentsWithPursePetnames);
 
@@ -132,12 +129,14 @@ export const makeOfferAndFindInvitationAmount = (
     const deposited = depositPayouts(seat, payoutPursePetnames);
 
     const offerResultP = E(seat).getOfferResult();
-    const saveOfferResult = makeSaveOfferResult(fullInvitationDetailsP);
-    offerResultP.then(saveOfferResult);
+    await E(walletAdmin).saveOfferResult(
+      invitationDetails.handle,
+      offerResultP,
+    );
     return {
       seat,
       deposited,
-      invitationDetailsPromise: fullInvitationDetailsP,
+      invitationDetails,
     };
   };
   return {
