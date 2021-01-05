@@ -34,6 +34,10 @@ export function defer() {
   return { promise, resolve, reject };
 }
 
+/**
+ * @param {AsyncIterable<Uint8Array>} input
+ * @returns {AsyncIterableIterator<Uint8Array>} input
+ */
 export async function *reader(input, name = '<unknown>', capacity = 1024) {
   let length = 0;
   let buffer = new Uint8Array(capacity);
@@ -83,6 +87,11 @@ export async function *reader(input, name = '<unknown>', capacity = 1024) {
   }
 }
 
+/**
+ * @template T
+ * @param {AsyncIterableIterator<T>} generator
+ * @returns {AsyncIterableIterator<T>}
+ */
 function skip(generator) {
   // Generators run from the top the first time next gets called.
   // Skip to the first yield.
@@ -90,6 +99,10 @@ function skip(generator) {
   return generator;
 }
 
+/**
+ * @param {Writer} output
+ * @returns {AsyncIterableIterator<Uint8Array>}
+ */
 export function nodeWriter(output) {
   return skip(nodeWriterGenerator(output));
 }

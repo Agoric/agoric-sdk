@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 // @ts-check
 
+const OK = ".".charCodeAt(0);
+const ERROR = "!".charCodeAt(0);
+const QUERY = "?".charCodeAt(0);
+
 import * as readline from 'readline';
 import { spawn } from 'child_process';
 import { reader, writer, nodeWriter } from './netstring.mjs';
@@ -49,75 +53,121 @@ export function defer() {
 /** @typedef {(event: 'close', handler: () => void) => void} OnClose */
 /** @typedef {{ on: OnData & OnClose }} Readable */
 
-/** @typedef {(data: Uint8Array) => State} State */
+/** @typedef {(data: Uint8Array) => Promise<State>} State */
 
-async function main() {
+/**
+ * @param {(request:Uint8Array) => Promise<Uint8Array>} answerSysCall
+ * @param {string=} snapshot
+ */
+function makeVat(answerSysCall, snapshot = undefined) {
   /** @type{Deferred<boolean>} */
-  let vatExit = defer();
+  const vatExit = defer();
+
+  const args = snapshot ? [ '-r', snapshot ] : [];
+  const vat = spawn(xsnapBin, args, {
+    stdio: ['ignore', 'inherit', 'inherit', 'pipe', 'pipe'],
+  });
+
+  vat.on('close', code => {
+    vatExit.resolve(code === 0);
+  });
+
+  const vatInput = writer(nodeWriter(/** @type{Writable} */(vat.stdio[3])));
+  const vatOutput = reader(/** @type{AsyncIterable} */(vat.stdio[4]));
 
   /** @type {State} */
   let state = (_data) => {
     throw new Error('unexpected message');
   };
 
-  let vat = spawn(xsnapBin, {
-    stdio: ['ignore', 'inherit', 'inherit', 'pipe', 'pipe', 'ipc'],
-  });
-
-  vat.on('close', code => {
-    vatExit.resolve(code === 0);
-    vatExit = defer();
-  });
-
-  const vatInput = writer(nodeWriter(/** @type{Writable} */(vat.stdio[3])));
-  const vatOutput = reader(/** @type{AsyncIterable} */(vat.stdio[4]));
+  async function flush() {
+    const {promise, resolve} = defer();
+    const prior = state;
+    state = async (/** @type{Uint8Array}*/ data) => {
+      if (data.byteLength === 0) {
+        console.error('no!');
+        process.abort(); // TODO handle gracefully.
+      } else if (data[0] === OK) {
+        resolve();
+        return prior;
+      } else if (data[0] === ERROR) {
+        console.error('Uncaught exception!');
+        // TODO carry exception body in trailer.
+        resolve();
+        return prior;
+      } else if (data[0] === QUERY) {
+        await vatInput.next(await answerSysCall(data.subarray(1)));
+        return state;
+      }
+    };
+    return promise;
+  }
 
   const vatEOF = (async function () {
     for await (const chunk of vatOutput) {
-      state = state(chunk);
+      state = await state(chunk);
     }
   })();
+
+  /**
+   * @param {string} code
+   * @returns {Promise<void>}
+   */
+  async function evaluate(code) {
+    await vatInput.next(encoder.encode(`e${code}`));
+    await flush();
+  }
+
+  /**
+   * @param {string} message
+   * @returns {Promise<void>}
+   */
+  async function send(message) {
+    await vatInput.next(encoder.encode(`d${message}`));
+    await flush();
+  }
+
+  /**
+   * @param {string} file
+   * @returns {Promise<void>}
+   */
+  async function writeSnapshot(file) {
+    await vatInput.next(encoder.encode(`w${file}`));
+    await flush();
+  }
+
+  /**
+   * @returns {Promise<boolean>}
+   */
+  async function close() {
+    vat.kill();
+    return (await Promise.all([
+      vatExit.promise,
+      vatEOF,
+    ])).every(Boolean);
+  }
+
+  return { send, flush, close, evaluate, snapshot: writeSnapshot };
+}
+
+async function main() {
+  /**
+   * @param {Uint8Array} message
+   * @returns {Promise<Uint8Array>}
+   */
+  async function answerSysCall(message) {
+    console.log(decoder.decode(message));
+    return new Uint8Array();
+  }
 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
 
-  /**
-   * @param {string} message
-   * @returns {string}
-   */
-  function handle(message) {
-    console.log(message);
-    return '';
-  }
+  let vat = makeVat(answerSysCall);
 
-  /**
-   */
-  async function runLoop() {
-    const {promise, resolve} = defer();
-    state = (prior => (/** @type{Uint8Array}*/ data) => {
-      const text = decoder.decode(data);
-      if (text.startsWith(".")) {
-        // syscall from idle
-        resolve();
-        return prior;
-      } else if (text.startsWith("!")) {
-        console.error('Uncaught exception!');
-        resolve();
-        // TODO Death before confusion?
-        return prior;
-      } else if (text.startsWith("?")) {
-        const request = text.slice(1); // TODO safe parse
-        const response = handle(request);
-        vatInput.next(encoder.encode(response));
-        return state;
-      }
-    })(state);
-    return promise;
-  }
-
-  await vatInput.next(encoder.encode(`e
+  await vat.evaluate(`
     const compartment = new Compartment();
     onMessage = msg => {
       const command = String.fromArrayBuffer(msg);
@@ -127,8 +177,7 @@ async function main() {
       }
       sysCall(ArrayBuffer.fromString(JSON.stringify(result, null, 4)));
     };
-  `));
-  await runLoop();
+  `);
   
   /**
    * @param {string} prompt
@@ -144,19 +193,23 @@ async function main() {
     const answer = await prompt('xs> ');
     if (answer === 'exit' || answer === 'quit') {
       break;
+
+    } else if (answer === 'load') {
+      const file = await prompt('file> ');
+      await vat.close();
+      vat = makeVat(answerSysCall, file);
+
+    } else if (answer === 'save') {
+      const file = await prompt('file> ');
+      await vat.snapshot(file);
+
     } else {
-      await vatInput.next(encoder.encode(`d${answer}`));
-      await runLoop();
+      await vat.send(answer);
     }
   }
 
   rl.close();
-  vat.kill();
-
-  return (await Promise.all([
-    vatExit.promise,
-    vatEOF,
-  ])).every(Boolean);
+  return await vat.close();
 }
 
 main();

@@ -34,6 +34,11 @@ struct sxJob {
 	txNumber interval;
 };
 
+struct sxSnapshotBuffer {
+  char *buffer;
+  size_t length;
+}
+
 static void fxBuildAgent(xsMachine* the);
 static txInteger fxCheckAliases(txMachine* the);
 static void fxCheckAliasesError(txMachine* the, txAliasIDList* list, txFlag flag);
@@ -121,6 +126,16 @@ static int fxSnapshopWrite(void* stream, void* address, size_t size)
 	return (fwrite(address, size, 1, stream) == 1) ? 0 : errno;
 }
 
+static int fxSnapshopBufferRead(void* stream, void* address, size_t size)
+{
+	return 0; // TODO
+}
+
+static int fxSnapshopBufferWrite(void* stream, void* address, size_t size)
+{
+	return 0; // TODO
+}
+
 #define xsBeginMetering(_THE, _CALLBACK, _STEP) \
 	do { \
 		xsJump __HOST_JUMP__; \
@@ -189,6 +204,7 @@ int main(int argc, char* argv[])
 		1993,				/* parserTableModulo */
 	};
 	xsCreation* creation = &_creation;
+
 	txSnapshot snapshot = {
 		"xsvatter 0.1.0",
 		11,
@@ -202,6 +218,7 @@ int main(int argc, char* argv[])
 		NULL,
 		NULL,
 	};
+
 	xsMachine* machine;
 	char *path;
 	char* dot;
@@ -1311,3 +1328,5 @@ static void fx_sysCall(xsMachine *the)
 		xsUnknownError(err);
 	}
 }
+
+// vim: noet ts=4 sw=4
