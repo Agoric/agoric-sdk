@@ -49,7 +49,7 @@ export function xsnap(options) {
   });
 
   const messagesToXsnap = netstring.writer(node.writer(/** @type{NodeJS.WritableStream} */(xsnap.stdio[3])));
-  const messagesFromXsnap = netstring.reader(/** @type{AsyncIterable<Uint8Array>} */(xsnap.stdio[4]))[Symbol.asyncIterator]();
+  const messagesFromXsnap = netstring.reader(/** @type{AsyncIterable<Uint8Array>} */(xsnap.stdio[4]));
 
   /** @type {Promise<Error?>} */
   let baton = Promise.resolve(null);
