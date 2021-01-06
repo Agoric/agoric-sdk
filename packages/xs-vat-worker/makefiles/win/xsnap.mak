@@ -10,7 +10,7 @@ BIN_DIR = $(BUILD_DIR)\bin\win\$(GOAL)
 INC_DIR = $(XS_DIR)\includes
 PLT_DIR = $(XS_DIR)\platforms
 SRC_DIR = $(XS_DIR)\sources
-TLS_DIR = ..\..\sources
+TLS_DIR = ..\..\src
 TMP_DIR = $(BUILD_DIR)\tmp\win\$(GOAL)\$(NAME)
 
 C_OPTIONS = \

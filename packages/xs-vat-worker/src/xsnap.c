@@ -37,7 +37,7 @@ struct sxJob {
 struct sxSnapshotBuffer {
   char *buffer;
   size_t length;
-}
+};
 
 static void fxBuildAgent(xsMachine* the);
 static txInteger fxCheckAliases(txMachine* the);
@@ -206,7 +206,7 @@ int main(int argc, char* argv[])
 	xsCreation* creation = &_creation;
 
 	txSnapshot snapshot = {
-		"xsvatter 0.1.0",
+		"xsnap 0.1.0",
 		11,
 		gxSnapshotCallbacks,
 		mxSnapshotCallbackCount,
@@ -277,7 +277,7 @@ int main(int argc, char* argv[])
 	if (argr) {
 		snapshot.stream = fopen(argv[argr], "rb");
 		if (snapshot.stream) {
-			machine = fxReadSnapshot(&snapshot, "xsvatter", NULL);
+			machine = fxReadSnapshot(&snapshot, "xsnap", NULL);
 			fclose(snapshot.stream);
 		}
 		else
@@ -288,7 +288,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	else {
-		machine = xsCreateMachine(creation, "xsvatter", NULL);
+		machine = xsCreateMachine(creation, "xsnap", NULL);
 		fxBuildAgent(machine);
 		fxPatchBuiltIns(machine);
 	}
@@ -296,7 +296,7 @@ int main(int argc, char* argv[])
 		fxFreezeBuiltIns(machine);
 		fxShareMachine(machine);
 		fxCheckAliases(machine);
-		machine = xsCloneMachine(creation, machine, "xsvatter", NULL);
+		machine = xsCloneMachine(creation, machine, "xsnap", NULL);
 	}
     if (!(fromParent = fdopen(3, "rb"))) {
 		fprintf(stderr, "fdopen(3) from parent failed\n");
@@ -767,7 +767,7 @@ void fxPatchBuiltIns(txMachine* machine)
 
 void fxPrintUsage()
 {
-	printf("xsvatter [-h] [-f] [i <interval] [l <limit] [-m] [-r <snapshot>] [-s] [-v]\n");
+	printf("xsnap [-h] [-f] [i <interval] [l <limit] [-m] [-r <snapshot>] [-s] [-v]\n");
 	printf("\t-f: freeze the XS machine\n");
 	printf("\t-h: print this help message\n");
 	printf("\t-i <interval>: metering interval (default to 1)\n");

@@ -5,22 +5,18 @@ ROOT=$(PWD)/../..
 
 XSNAP=$(HOME)/projects/xs-snap
 PLATFORM=lin
-XSVATTER=$(XSNAP)/xsnap/makefiles/$(PLATFORM)/bin/$(PLATFORM)/debug/xsvatter
+XSNAP=$(XSNAP)/xsnap/makefiles/$(PLATFORM)/bin/$(PLATFORM)/debug/xsnap
 
 .PHONY: all
 
-nextGen: $(TOOLS)/mcconfig $(XSVATTER)
+nextGen: $(TOOLS)/mcconfig $(XSNAP)
 
-trial: $(XSVATTER) ./dist/bootstrap.js
+trial: $(XSNAP) ./dist/bootstrap.js
 	echo -n '24:s./dist/bootstrap.umd.js,9:wboot.xss,' >,in
-	$(XSVATTER) 3<,in 4>&1
+	$(XSNAP) 3<,in 4>&1
 
 ./dist/bootstrap.js: src/*.js
 	npm run build
-
-$(XSVATTER): $(XSNAP)/xsnap/sources/xsvatter.c
-	(cd $(XSNAP)/xsnap/makefiles/$(PLATFORM); $(MAKE) debug)
-
 
 all:
 	$(MAKE) build

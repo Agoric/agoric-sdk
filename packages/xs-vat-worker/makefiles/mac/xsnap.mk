@@ -15,7 +15,7 @@ BIN_DIR = $(BUILD_DIR)/bin/mac/$(GOAL)
 INC_DIR = $(XS_DIR)/includes
 PLT_DIR = $(XS_DIR)/platforms
 SRC_DIR = $(XS_DIR)/sources
-TLS_DIR = ../../sources
+TLS_DIR = ../../src
 TMP_DIR = $(BUILD_DIR)/tmp/mac/$(GOAL)/$(NAME)
 
 # MACOS_ARCH ?= -arch i386
