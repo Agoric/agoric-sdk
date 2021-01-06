@@ -1,44 +1,16 @@
-const COLON = 58;
-const COMMA = 44;
+// @ts-check
+
+const COLON = ':'.charCodeAt(0);
+const COMMA = ','.charCodeAt(0);
 
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 /**
- * @param {boolean} _flag
- * @return {asserts _flag}
- */
-function assert(_flag) { }
-
-/**
- * @template T
- * @typedef {{
- *   resolve(value?: T | Promise<T>): void,
- *   reject(error: Error): void,
- *   promise: Promise<T>
- * }} Deferred
- */
-
-/**
- * @template T
- * @return {Deferred<T>}
- */
-export function defer() {
-  let resolve, reject;
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  assert(resolve !== undefined);
-  assert(reject !== undefined);
-  return { promise, resolve, reject };
-}
-
-/**
  * @param {AsyncIterable<Uint8Array>} input
  * @returns {AsyncIterableIterator<Uint8Array>} input
  */
-export async function *reader(input, name = '<unknown>', capacity = 1024) {
+export async function* reader(input, name = '<unknown>', capacity = 1024) {
   let length = 0;
   let buffer = new Uint8Array(capacity);
   let offset = 0;
@@ -59,13 +31,18 @@ export async function *reader(input, name = '<unknown>', capacity = 1024) {
     while (!drained && length > 0) {
       const colon = buffer.indexOf(COLON);
       if (colon === 0) {
-        throw new Error(`Expected number before colon at offset ${offset} of ${name}`);
+        throw new Error(
+          `Expected number before colon at offset ${offset} of ${name}`,
+        );
       } else if (colon > 0) {
         const prefixBytes = buffer.subarray(0, colon);
         const prefixString = decoder.decode(prefixBytes);
         const contentLength = +prefixString;
-        if (contentLength !== contentLength) { // NaN
-          throw new Error(`Invalid netstring prefix length ${prefixString} at offset ${offset} of ${name}`);
+        if (contentLength !== contentLength) {
+          // NaN
+          throw new Error(
+            `Invalid netstring prefix length ${prefixString} at offset ${offset} of ${name}`,
+          );
         }
         const messageLength = colon + contentLength + 2;
         if (messageLength <= length) {
@@ -83,65 +60,41 @@ export async function *reader(input, name = '<unknown>', capacity = 1024) {
   }
 
   if (length > 0) {
-    throw new Error(`Unexpected dangling message at offset ${offset} of ${name}`);
+    throw new Error(
+      `Unexpected dangling message at offset ${offset} of ${name}`,
+    );
   }
 }
 
 /**
- * @template T
- * @param {AsyncIterableIterator<T>} generator
- * @returns {AsyncIterableIterator<T>}
+ * @param {AsyncIterator<void, void, Uint8Array>} output
+ * @return {AsyncIterator<void, void, Uint8Array>}
  */
-function skip(generator) {
-  // Generators run from the top the first time next gets called.
-  // Skip to the first yield.
-  generator.next();
-  return generator;
-}
-
-/**
- * @param {Writer} output
- * @returns {AsyncIterableIterator<Uint8Array>}
- */
-export function nodeWriter(output) {
-  return skip(nodeWriterGenerator(output));
-}
-
-async function *nodeWriterGenerator(output) {
-  let drained = defer();
-
-  output.on('drain', () => {
-    drained.resolve();
-    drained = defer();
-  });
-
-  try {
-    for (;;) {
-      if (!output.write(yield)) {
-        await drained.promise;
-      }
-    }
-  } finally {
-    output.end();
-  }
-}
-
-export function writer(output) {
-  return skip(writerGenerator(output));
-}
-
-async function *writerGenerator(output) {
+async function* writerGenerator(output) {
   const scratch = new Uint8Array(8);
   let length = 0;
   for (;;) {
     const message = yield;
-    ({written: length} = encoder.encodeInto(`${message.byteLength}`, scratch));
+    ({ written: length } = encoder.encodeInto(
+      `${message.byteLength}`,
+      scratch,
+    ));
     scratch[length] = COLON;
-    await output.next(scratch.subarray(0, length+1));
+    await output.next(scratch.subarray(0, length + 1));
     await output.next(message);
     scratch[0] = COMMA;
     await output.next(scratch.subarray(0, 1));
   }
+}
+
+/**
+ * @param {AsyncIterator<void, void, Uint8Array>} output
+ * @return {AsyncIterator<void, void, Uint8Array>}
+ */
+export function writer(output) {
+  const wrapped = writerGenerator(output);
+  wrapped.next(); // Advance to first yield.
+  return wrapped;
 }
 
 // (async () => {
