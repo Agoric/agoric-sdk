@@ -20,7 +20,7 @@ const encoder = new TextEncoder();
 
 /**
  * @param {Object} options
- * @param {(request:Uint8Array) => Promise<Uint8Array>} options.answerSysCall
+ * @param {(request:ArrayBuffer) => Promise<ArrayBuffer>} options.answerSysCall
  * @param {string=} [options.name]
  * @param {string=} [options.snapshot]
  * @param {'ignore' | 'inherit'} [options.stdout]
@@ -35,7 +35,7 @@ export function xsnap(options) {
     stderr = 'inherit',
   } = options;
 
-  /** @type{Deferred<void>} */
+  /** @type {Deferred<Error?>} */
   const vatExit = defer();
 
   const args = snapshot ? [ '-r', snapshot ] : [];
@@ -44,12 +44,16 @@ export function xsnap(options) {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });
 
-  xsnap.on('close', () => {
-    vatExit.resolve();
+  xsnap.on('exit', code => {
+    if (code === 0 || code === null) {
+      vatExit.resolve(null);
+    } else {
+      vatExit.reject(new Error(`${name} exited with code ${code}`));
+    }
   });
 
   const messagesToXsnap = netstring.writer(node.writer(/** @type{NodeJS.WritableStream} */(xsnap.stdio[3])));
-  const messagesFromXsnap = netstring.reader(/** @type{AsyncIterable<Uint8Array>} */(xsnap.stdio[4]));
+  const messagesFromXsnap = netstring.reader(/** @type{AsyncIterable<ArrayBuffer>} */(xsnap.stdio[4]));
 
   /** @type {Promise<Error?>} */
   let baton = Promise.resolve(null);
@@ -92,7 +96,31 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
       return runToIdle();
     });
-    return baton;
+    return Promise.race([vatExit.promise, baton]);
+  }
+
+  /**
+   * @param {string} fileName
+   * @returns {Promise<Error?>}
+   */
+  async function execute(fileName) {
+    baton = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`s${fileName}`));
+      return runToIdle();
+    });
+    return Promise.race([vatExit.promise, baton]);
+  }
+
+  /**
+   * @param {string} fileName
+   * @returns {Promise<Error?>}
+   */
+  async function importModule(fileName) {
+    baton = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`m${fileName}`));
+      return runToIdle();
+    });
+    return Promise.race([vatExit.promise, baton]);
   }
 
   /**
@@ -104,7 +132,7 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`d${message}`));
       return runToIdle();
     });
-    return baton;
+    return Promise.race([vatExit.promise, baton]);
   }
 
   /**
@@ -116,7 +144,7 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`w${file}`));
       return runToIdle();
     });
-    return baton;
+    return Promise.race([vatExit.promise, baton]);
   }
 
   /**
@@ -129,5 +157,5 @@ export function xsnap(options) {
     return vatExit.promise;
   }
 
-  return { send, close, evaluate, snapshot: writeSnapshot };
+  return { send, close, evaluate, execute, import: importModule, snapshot: writeSnapshot };
 }
