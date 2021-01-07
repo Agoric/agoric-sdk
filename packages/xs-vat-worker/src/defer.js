@@ -1,4 +1,5 @@
 // @ts-check
+
 /**
  * @param {boolean} _flag
  * @return {asserts _flag}

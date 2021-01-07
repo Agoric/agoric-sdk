@@ -1,6 +1,8 @@
 import test from 'ava';
 import { xsnap } from '../src/xsnap.js';
 
+const importMetaUrl = `file://${__filename}`;
+
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
@@ -13,7 +15,7 @@ test('evaluate and sysCall', async t => {
   const vat = xsnap({ answerSysCall });
   await vat.evaluate(`sysCall(ArrayBuffer.fromString("Hello, World!"));`);
   await vat.close();
-  t.deepEqual([ "Hello, World!" ], messages);
+  t.deepEqual(['Hello, World!'], messages);
 });
 
 test('evaluate until idle', async t => {
@@ -29,7 +31,7 @@ test('evaluate until idle', async t => {
     })();
   `);
   await vat.close();
-  t.deepEqual([ "Hello, World!" ], messages);
+  t.deepEqual(['Hello, World!'], messages);
 });
 
 test('run script until idle', async t => {
@@ -39,9 +41,9 @@ test('run script until idle', async t => {
     return new Uint8Array();
   }
   const vat = xsnap({ answerSysCall });
-  await vat.execute(new URL('fixture-xsnap-script.js', import.meta.url).pathname);
+  await vat.execute(new URL('fixture-xsnap-script.js', importMetaUrl).pathname);
   await vat.close();
-  t.deepEqual([ "Hello, World!" ], messages);
+  t.deepEqual(['Hello, World!'], messages);
 });
 
 test('sysCall is synchronous inside, async outside', async t => {
@@ -60,7 +62,7 @@ test('sysCall is synchronous inside, async outside', async t => {
     sysCall(ArrayBuffer.fromString(String(number + 1)));
   `);
   await vat.close();
-  t.deepEqual([ 0, 2 ], messages);
+  t.deepEqual([0, 2], messages);
 });
 
 test('deliver a message', async t => {
@@ -80,10 +82,10 @@ test('deliver a message', async t => {
   await vat.send('1');
   await vat.send('2');
   await vat.close();
-  t.deepEqual([ 1, 2, 3 ], messages);
+  t.deepEqual([1, 2, 3], messages);
 });
 
-function *count(end, start = 0, stride = 1) {
+function* count(end, start = 0, stride = 1) {
   for (; start < end; start += stride) {
     yield start;
   }
@@ -114,7 +116,7 @@ test('write and read snapshot', async t => {
     return new Uint8Array();
   }
 
-  const snapshot = new URL('fixture-snapshot.xss', import.meta.url).pathname;
+  const snapshot = new URL('fixture-snapshot.xss', importMetaUrl).pathname;
 
   const vat0 = xsnap({ answerSysCall });
   await vat0.evaluate(`
@@ -129,5 +131,5 @@ test('write and read snapshot', async t => {
   `);
   await vat1.close();
 
-  t.deepEqual(["Hello, World!"], messages);
+  t.deepEqual(['Hello, World!'], messages);
 });
