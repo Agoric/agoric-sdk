@@ -1,5 +1,5 @@
 import test from 'ava';
-import { xsnap } from '../src/xsnap.js';
+import { xsnap } from '../src/xsnap';
 
 const importMetaUrl = `file://${__filename}`;
 

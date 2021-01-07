@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint no-await-in-loop: ["off"] */
 
 /**
  * @template T
@@ -10,11 +11,13 @@ import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';
 
-const OK = ".".charCodeAt(0);
-const ERROR = "!".charCodeAt(0);
-const QUERY = "?".charCodeAt(0);
+const OK = '.'.charCodeAt(0);
+const ERROR = '!'.charCodeAt(0);
+const QUERY = '?'.charCodeAt(0);
 
-const xsnapBin = new URL('../build/bin/debug/xsnap', import.meta.url).pathname;
+const importMetaUrl = `file://${__filename}`;
+
+const xsnapBin = new URL('../build/bin/debug/xsnap', importMetaUrl).pathname;
 
 const encoder = new TextEncoder();
 
@@ -38,13 +41,13 @@ export function xsnap(options) {
   /** @type {Deferred<Error?>} */
   const vatExit = defer();
 
-  const args = snapshot ? [ '-r', snapshot ] : [];
+  const args = snapshot ? ['-r', snapshot] : [];
 
-  const xsnap = spawn(xsnapBin, args, {
+  const xsnapProcess = spawn(xsnapBin, args, {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });
 
-  xsnap.on('exit', code => {
+  xsnapProcess.on('exit', code => {
     if (code === 0 || code === null) {
       vatExit.resolve(null);
     } else {
@@ -52,8 +55,12 @@ export function xsnap(options) {
     }
   });
 
-  const messagesToXsnap = netstring.writer(node.writer(/** @type{NodeJS.WritableStream} */(xsnap.stdio[3])));
-  const messagesFromXsnap = netstring.reader(/** @type{AsyncIterable<ArrayBuffer>} */(xsnap.stdio[4]));
+  const messagesToXsnap = netstring.writer(
+    node.writer(/** @type{NodeJS.WritableStream} */ (xsnapProcess.stdio[3])),
+  );
+  const messagesFromXsnap = netstring.reader(
+    /** @type{AsyncIterable<ArrayBuffer>} */ (xsnapProcess.stdio[4]),
+  );
 
   /** @type {Promise<Error?>} */
   let baton = Promise.resolve(null);
@@ -63,15 +70,15 @@ export function xsnap(options) {
    */
   async function runToIdle() {
     for (;;) {
-      const {done, value: message} = await messagesFromXsnap.next();
+      const { done, value: message } = await messagesFromXsnap.next();
       if (done) {
-        xsnap.kill();
+        xsnapProcess.kill();
         throw new Error('xsnap protocol error: unexpected end of output');
       }
       if (message.byteLength === 0) {
         // A protocol error kills the xsnap child process and breaks the baton
         // chain with a terminal error.
-        xsnap.kill();
+        xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
         return null;
@@ -151,11 +158,18 @@ export function xsnap(options) {
    * @returns {Promise<void>}
    */
   async function close() {
-    xsnap.kill();
+    xsnapProcess.kill();
     baton = Promise.reject(new Error(`xsnap closed`));
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
   }
 
-  return { send, close, evaluate, execute, import: importModule, snapshot: writeSnapshot };
+  return {
+    send,
+    close,
+    evaluate,
+    execute,
+    import: importModule,
+    snapshot: writeSnapshot,
+  };
 }

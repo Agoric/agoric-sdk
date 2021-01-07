@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
+/* eslint no-await-in-loop: ["off"] */
 
 /**
  * @template T
@@ -68,7 +69,7 @@ async function main() {
   }
 
   rl.close();
-  return await vat.close();
+  return vat.close();
 }
 
 main();

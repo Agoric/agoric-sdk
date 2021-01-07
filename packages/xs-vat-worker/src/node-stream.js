@@ -22,6 +22,7 @@ async function* adaptWriter(output) {
   try {
     for (;;) {
       if (!output.write(yield)) {
+        // eslint-disable-next-line no-await-in-loop
         await drained.promise;
       }
     }

@@ -38,8 +38,7 @@ export async function* reader(input, name = '<unknown>', capacity = 1024) {
         const prefixBytes = buffer.subarray(0, colon);
         const prefixString = decoder.decode(prefixBytes);
         const contentLength = +prefixString;
-        if (contentLength !== contentLength) {
-          // NaN
+        if (Number.isNaN(contentLength)) {
           throw new Error(
             `Invalid netstring prefix length ${prefixString} at offset ${offset} of ${name}`,
           );
@@ -70,46 +69,41 @@ export async function* reader(input, name = '<unknown>', capacity = 1024) {
  * @param {AsyncIterator<void, void, Uint8Array>} output
  * @return {AsyncIterator<void, void, Uint8Array>}
  */
-async function* writerGenerator(output) {
+export function writer(output) {
   const scratch = new Uint8Array(8);
   let length = 0;
-  for (;;) {
-    const message = yield;
-    ({ written: length } = encoder.encodeInto(
-      `${message.byteLength}`,
-      scratch,
-    ));
-    scratch[length] = COLON;
-    await output.next(scratch.subarray(0, length + 1));
-    await output.next(message);
-    scratch[0] = COMMA;
-    await output.next(scratch.subarray(0, 1));
-  }
-}
 
-/**
- * @param {AsyncIterator<void, void, Uint8Array>} output
- * @return {AsyncIterator<void, void, Uint8Array>}
- */
-export function writer(output) {
-  const wrapped = writerGenerator(output);
-  wrapped.next(); // Advance to first yield.
-  return wrapped;
-}
+  return {
+    /**
+     * @param {Uint8Array} message
+     */
+    async next(message) {
+      ({ written: length } = encoder.encodeInto(
+        `${message.byteLength}`,
+        scratch,
+      ));
+      scratch[length] = COLON;
 
-// (async () => {
-//   const w = writer(nodeWriter(process.stdout));
-//   for (let i = 0; i < 20; i++) {
-//     await w.next(new TextEncoder().encode(new Array(Math.floor(Math.random() * 10)).fill('hello').join('')));
-//   }
-//   await w.return();
-//   const r = reader([
-//     encoder.encode('1:A,'),
-//     encoder.encode('5:hello,5:hello,'),
-//     encoder.encode('5:hel'),
-//     encoder.encode('lo,'),
-//   ], '<unknown>', 1);
-//   for await (const chunk of r) {
-//     console.log(decoder.decode(chunk));
-//   }
-// })();
+      const { done: done1 } = await output.next(
+        scratch.subarray(0, length + 1),
+      );
+      if (done1) {
+        return output.return();
+      }
+
+      const { done: done2 } = await output.next(message);
+      if (done2) {
+        return output.return();
+      }
+
+      scratch[0] = COMMA;
+      return output.next(scratch.subarray(0, 1));
+    },
+    async return() {
+      return output.return();
+    },
+    async throw(error) {
+      return output.return(error);
+    },
+  };
+}
