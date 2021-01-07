@@ -13,6 +13,3 @@ release:
 test-cli: debug
 	./bin/lin/debug/xsnap -h
 	./bin/lin/debug/xsnap -v
-
-test: debug
-	PATH=$(PWD)/bin/$(PLATFORM)/debug/:$$PATH sh -c "cd ../../test && bash ./test.sh"
