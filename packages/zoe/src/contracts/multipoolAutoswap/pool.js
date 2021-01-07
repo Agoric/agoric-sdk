@@ -94,6 +94,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         );
         return pool.getCentralAmountMath().make(result);
       },
+      // price in central tokens required to gain outputValue secondary units
       getCentralToSecondaryOutputPrice: outputValue => {
         assertPoolInitialized(pool);
         const result = getOutputPrice(
@@ -101,8 +102,9 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           pool.getCentralAmount().value,
           pool.getSecondaryAmount().value,
         );
-        return pool.getAmountMath().make(result);
+        return pool.getCentralAmountMath().make(result);
       },
+      // price in secondary units required to gain outputValue in central tokens
       getSecondaryToCentralOutputPrice: outputValue => {
         assertPoolInitialized(pool);
         const result = getOutputPrice(
@@ -110,7 +112,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           pool.getSecondaryAmount().value,
           pool.getCentralAmount().value,
         );
-        return pool.getCentralAmountMath().make(result);
+        return pool.getAmountMath().make(result);
       },
       addLiquidity: userSeat => {
         if (liqTokenSupply === 0) {

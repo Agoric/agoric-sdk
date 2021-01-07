@@ -909,7 +909,8 @@ test('multipoolAutoSwap jig - swapOut', async t => {
 
   // trade for central specifying 300 output: moola price 310
   const gain = 300;
-  const mPrice = priceFromTargetOutput(gain, mPoolState.s, mPoolState.c, 30);
+  const mPrice = priceFromTargetOutput(gain, mPoolState.c, mPoolState.s, 30);
+  t.is(mPrice, 310);
 
   const tradeDetailsB = {
     inAmount: moola(500),
@@ -934,9 +935,10 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedB);
 
-  // trade for moola specifying 250 output: central price: 273. don't overpay
+  // trade for moola specifying 250 output: central price: 241. don't overpay
   const gainC = 250;
-  const mPriceC = priceFromTargetOutput(gainC, mPoolState.c, mPoolState.s, 30);
+  const mPriceC = priceFromTargetOutput(gainC, mPoolState.s, mPoolState.c, 30);
+  t.is(mPriceC, 241);
 
   const tradeDetailsC = {
     inAmount: centralTokens(mPriceC),
@@ -961,9 +963,10 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedC);
 
-  // trade simoleans for moola specifying 305 moola output: requires 318 Sim
+  // trade simoleans for moola specifying 305 moola output: requires 311 Sim
   const gainD = 305;
-  const mPriceD = priceFromTargetOutput(gainD, mPoolState.c, mPoolState.s, 30);
+  const mPriceD = priceFromTargetOutput(gainD, mPoolState.s, mPoolState.c, 30);
+  t.is(mPriceD, 311);
 
   const tradeDetailsD = {
     inAmount: centralTokens(mPriceD),
@@ -987,6 +990,188 @@ test('multipoolAutoSwap jig - swapOut', async t => {
     mIssuerKeywordRecord,
   );
   mPoolState = updatePoolState(mPoolState, expectedD);
+});
+
+test('multipoolAutoSwap jig - swapOut uneven', async t => {
+  const { moolaR, moola, simoleanR, simoleans } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = centralR.amountMath.make;
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(centralTokens(30000));
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
+  const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000)));
+
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+  );
+  /** @type {MultipoolAutoswapPublicFacet} */
+  const { publicFacet } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityAmountMath = await makeLocalAmountMath(
+    moolaLiquidityIssuer,
+  );
+  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+    simoleanR.issuer,
+    'Simolean',
+  );
+  const simoleanLiquidityAmountMath = await makeLocalAmountMath(
+    simoleanLiquidityIssuer,
+  );
+
+  const moolaLiquidity = moolaLiquidityAmountMath.make;
+  const simoleanLiquidity = simoleanLiquidityAmountMath.make;
+  const mIssuerKeywordRecord = {
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+    simoleanPurse,
+    simoleanLiquidityIssuer.makeEmptyPurse(),
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let mPoolState = {
+    c: 0,
+    s: 0,
+    l: 0,
+    k: 0,
+  };
+
+  // this test uses twice as much Central as Moola to make the price difference
+  // more visible.
+  const initMoolaLiquidityDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: moola(5000),
+    lAmount: moolaLiquidity(10000),
+  };
+  const initMoolaLiquidityExpected = {
+    c: 10000,
+    s: 5000,
+    l: 10000,
+    k: 50000000,
+    payoutC: 0,
+    payoutS: 0,
+    payoutL: 10000,
+  };
+  await alice.initLiquidityAndCheck(
+    t,
+    mPoolState,
+    initMoolaLiquidityDetails,
+    initMoolaLiquidityExpected,
+    mIssuerKeywordRecord,
+  );
+  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
+
+  let sPoolState = {
+    c: 0,
+    s: 0,
+    l: 0,
+    k: 0,
+  };
+  const initSimoleanLiquidityDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: simoleans(10000),
+    lAmount: simoleanLiquidity(10000),
+  };
+  const initSimLiqExpected = {
+    c: 10000,
+    s: 10000,
+    l: 10000,
+    k: 100000000,
+    payoutC: 0,
+    payoutS: 0,
+    payoutL: 10000,
+  };
+  const sIssuerKeywordRecord = {
+    Secondary: simoleanR.issuer,
+    Liquidity: simoleanLiquidityIssuer,
+  };
+
+  await alice.initLiquidityAndCheck(
+    t,
+    sPoolState,
+    initSimoleanLiquidityDetails,
+    initSimLiqExpected,
+    sIssuerKeywordRecord,
+  );
+  sPoolState = updatePoolState(sPoolState, initSimLiqExpected);
+
+  // trade for central specifying 300 output: moola price 155
+  // Notice that it takes half as much moola as the desired Central
+  const gain = 300;
+  const mPrice = priceFromTargetOutput(gain, mPoolState.c, mPoolState.s, 30);
+
+  const moolaIn = 160;
+  t.is(mPrice, 155);
+  const tradeDetailsB = {
+    inAmount: moola(moolaIn),
+    outAmount: centralTokens(gain),
+  };
+
+  const expectedB = {
+    c: mPoolState.c - gain,
+    s: mPoolState.s + mPrice,
+    l: 10000,
+    k: (mPoolState.c - gain) * (mPoolState.s + mPrice),
+    out: gain,
+    in: moolaIn - mPrice,
+  };
+  await alice.tradeAndCheck(
+    t,
+    false,
+    mPoolState,
+    tradeDetailsB,
+    expectedB,
+    mIssuerKeywordRecord,
+  );
+  mPoolState = updatePoolState(mPoolState, expectedB);
+
+  // trade for moola specifying 250 output: central price: 495, roughly double.
+  const gainC = 250;
+  const mPriceC = priceFromTargetOutput(gainC, mPoolState.s, mPoolState.c, 30);
+  t.is(mPriceC, 495);
+
+  const tradeDetailsC = {
+    inAmount: centralTokens(mPriceC),
+    outAmount: moola(gainC),
+  };
+
+  const expectedC = {
+    c: mPoolState.c + mPriceC,
+    s: mPoolState.s - gainC,
+    l: 10000,
+    k: (mPoolState.c + mPriceC) * (mPoolState.s - gainC),
+    out: gainC, // 250 should be 0??
+    in: 0,
+  };
+  await alice.tradeAndCheck(
+    t,
+    false,
+    mPoolState,
+    tradeDetailsC,
+    expectedC,
+    mIssuerKeywordRecord,
+  );
+  mPoolState = updatePoolState(mPoolState, expectedC);
 });
 
 test('multipoolAutoSwap jig - removeLiquidity', async t => {

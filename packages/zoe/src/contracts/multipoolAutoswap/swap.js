@@ -145,7 +145,7 @@ export const makeMakeSwapInvitation = (
 
     if (isCentral(brandOut) && isSecondary(brandIn)) {
       const pool = getPool(brandIn);
-      const amountIn = pool.getCentralToSecondaryOutputPrice(outputValue);
+      const amountIn = pool.getSecondaryToCentralOutputPrice(outputValue);
 
       const brandInAmountMath = getPool(brandIn).getAmountMath();
       if (!brandInAmountMath.isGTE(offeredAmountIn, amountIn)) {
@@ -172,7 +172,7 @@ export const makeMakeSwapInvitation = (
 
     if (isSecondary(brandOut) && isCentral(brandIn)) {
       const pool = getPool(brandOut);
-      const amountIn = pool.getSecondaryToCentralOutputPrice(outputValue);
+      const amountIn = pool.getCentralToSecondaryOutputPrice(outputValue);
       trade(
         zcf,
         {
