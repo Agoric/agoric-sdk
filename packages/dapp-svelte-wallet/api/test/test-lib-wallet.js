@@ -555,7 +555,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 });
 
 test('lib-wallet offer methods', async t => {
-  t.plan(8);
+  t.plan(7);
   const {
     moolaBundle,
     wallet,
