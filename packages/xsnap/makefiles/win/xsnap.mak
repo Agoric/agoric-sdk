@@ -10,7 +10,7 @@ BIN_DIR = $(BUILD_DIR)\bin\win\$(GOAL)
 INC_DIR = $(XS_DIR)\includes
 PLT_DIR = $(XS_DIR)\platforms
 SRC_DIR = $(XS_DIR)\sources
-TLS_DIR = ..\..\sources
+TLS_DIR = ..\..\src
 TMP_DIR = $(BUILD_DIR)\tmp\win\$(GOAL)\$(NAME)
 
 C_OPTIONS = \
@@ -48,7 +48,7 @@ C_OPTIONS = $(C_OPTIONS) \
 !ENDIF
 
 LIBRARIES = ws2_32.lib advapi32.lib comctl32.lib comdlg32.lib gdi32.lib kernel32.lib user32.lib
-	
+
 LINK_OPTIONS = /incremental:no /machine:I386 /nologo /subsystem:console
 !IF "$(GOAL)"=="debug"
 LINK_OPTIONS = $(LINK_OPTIONS) /debug
@@ -101,7 +101,11 @@ OBJECTS = \
 	$(TMP_DIR)\xsre.o \
 	$(TMP_DIR)\xsnap.o
 
-build : $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)\$(NAME).exe
+build : $(MODDABLE)\README.md $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)\$(NAME).exe
+
+$(MODDABLE)\README.md :
+	git submodule init
+	git submodule update
 
 $(TMP_DIR) :
 	if not exist $(TMP_DIR)\$(NULL) mkdir $(TMP_DIR)
@@ -134,4 +138,3 @@ clean :
 	del /Q $(BUILD_DIR)\bin\win\release\$(NAME).exe
 	del /Q $(BUILD_DIR)\tmp\win\debug\$(NAME)
 	del /Q $(BUILD_DIR)\tmp\win\release\$(NAME)
-

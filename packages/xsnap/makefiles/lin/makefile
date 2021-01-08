@@ -7,4 +7,3 @@ debug:
 
 release:
 	make GOAL=release -f xsnap.mk
-	
