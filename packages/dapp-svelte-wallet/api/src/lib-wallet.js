@@ -17,7 +17,7 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal } from '@agoric/marshal';
+import { makeMarshal, passStyleOf } from '@agoric/marshal';
 import {
   makeNotifierKit,
   observeIteration,
@@ -88,6 +88,11 @@ export function makeWallet({
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore('offerId');
   const idToNotifierP = makeStore('offerId');
+  /** @type {Store<string, any>} */
+  const idToOfferResult = makeStore('id');
+
+  /** @type {WeakStore<Handle<'invitation'>, any>} */
+  const invitationHandleToOfferResult = makeWeakStore('invitationHandle');
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
@@ -809,11 +814,15 @@ export function makeWallet({
     return dappOrigins.get(origin);
   }
 
+  function makeId(dappOrigin, rawId) {
+    return `${dappOrigin}#${rawId}`;
+  }
+
   async function addOffer(rawOffer, requestContext = {}) {
     const dappOrigin =
       requestContext.dappOrigin || requestContext.origin || 'unknown';
     const { id: rawId } = rawOffer;
-    const id = `${dappOrigin}#${rawId}`;
+    const id = makeId(dappOrigin, rawId);
     const offer = harden({
       ...rawOffer,
       id,
@@ -898,7 +907,7 @@ export function makeWallet({
       return undefined;
     }
 
-    /** @type {{ outcome?: any, depositedP?: Promise<any[]>, dappContext?: any }} */
+    /** @type {{ depositedP?: Promise<any[]>, dappContext?: any }} */
     let ret = {};
     let alreadyResolved = false;
     const rejected = e => {
@@ -940,16 +949,10 @@ export function makeWallet({
           }
         });
 
-      // The outcome is most often a string that can be returned, but
-      // it could be an object. We don't do anything currently if it
-      // is an object, but we will store it here for future use.
-      const outcome = await E(seat).getOfferResult();
-      if (offer.actions) {
-        E(offer.actions).result(offer, outcome);
-      }
+      const offerResult = await E(seat).getOfferResult();
+      idToOfferResult.init(id, offerResult);
 
       ret = {
-        outcome,
         depositedP,
         dappContext: offer.dappContext,
       };
@@ -1311,14 +1314,23 @@ export function makeWallet({
     return issuerManager;
   }
 
-  const offerResultStore = makeWeakStore('invitationHandle');
-
   async function saveOfferResult(invitationHandle, offerResult) {
-    offerResultStore.init(invitationHandle, offerResult);
+    invitationHandleToOfferResult.init(invitationHandle, offerResult);
   }
 
   async function getOfferResult(invitationHandle) {
-    return offerResultStore.get(invitationHandle);
+    return invitationHandleToOfferResult.get(invitationHandle);
+  }
+
+  async function getUINotifier(rawId, dappOrigin = 'unknown') {
+    const id = makeId(dappOrigin, rawId);
+    const offerResult = idToOfferResult.get(id);
+    assert(
+      passStyleOf(offerResult) === 'copyRecord',
+      `offerResult must be a record to have a uiNotifier`,
+    );
+    assert(offerResult.uiNotifier);
+    return offerResult.uiNotifier;
   }
 
   const wallet = harden({
@@ -1396,6 +1408,7 @@ export function makeWallet({
     getPaymentsNotifier() {
       return paymentsNotifier;
     },
+    getUINotifier,
   });
 
   const initialize = async () => {
