@@ -6,6 +6,8 @@
  * @template T
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
+import * as childProcess from 'child_process';
+import * as os from 'os';
 import * as readline from 'readline';
 import { xsnap } from './xsnap';
 import { defer } from './defer';
@@ -13,6 +15,11 @@ import { defer } from './defer';
 const decoder = new TextDecoder();
 
 async function main() {
+  const xsnapOptions = {
+    spawn: childProcess.spawn,
+    os: os.type(),
+  };
+
   /**
    * For the purposes of the REPL, the only syscall is effectively `print`.
    *
@@ -25,11 +32,11 @@ async function main() {
   }
 
   const rl = readline.createInterface({
-    input: process.stdin,
+    input: /** @type {NodeJS.ReadableStream} */ (process.stdin),
     output: process.stdout,
   });
 
-  let vat = xsnap({ answerSysCall });
+  let vat = xsnap({ ...xsnapOptions, answerSysCall });
 
   await vat.evaluate(`
     const compartment = new Compartment();
@@ -60,7 +67,7 @@ async function main() {
     } else if (answer === 'load') {
       const file = await ask('file> ');
       await vat.close();
-      vat = xsnap({ answerSysCall, snapshot: file });
+      vat = xsnap({ ...xsnapOptions, answerSysCall, snapshot: file });
     } else if (answer === 'save') {
       const file = await ask('file> ');
       await vat.snapshot(file);

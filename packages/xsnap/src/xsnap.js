@@ -2,12 +2,14 @@
 /* eslint no-await-in-loop: ["off"] */
 
 /**
+ * @typedef {typeof import('child_process').spawn} Spawn
+ */
+
+/**
  * @template T
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { spawn } from 'child_process';
-import { type as getOsType } from 'os';
 import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';
@@ -17,26 +19,6 @@ const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
 
 const importMetaUrl = `file://${__filename}`;
-
-const osType = getOsType();
-const platform = {
-  Linux: 'lin',
-  Darwin: 'mac',
-  Windows_NT: 'win',
-}[osType];
-
-if (platform === undefined) {
-  throw new Error(`xsnap does not support platform ${osType}`);
-}
-
-const xsnapBin = new URL(
-  `../build/bin/${platform}/release/xsnap`,
-  importMetaUrl,
-).pathname;
-const xsnapDebugBin = new URL(
-  `../build/bin/${platform}/debug/xsnap`,
-  importMetaUrl,
-).pathname;
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -51,6 +33,8 @@ function echoSysCall(arg) {
 
 /**
  * @param {Object} options
+ * @param {string} options.os
+ * @param {Spawn} options.spawn
  * @param {(request:Uint8Array) => Promise<Uint8Array>} [options.answerSysCall]
  * @param {string=} [options.name]
  * @param {boolean=} [options.debug]
@@ -60,6 +44,8 @@ function echoSysCall(arg) {
  */
 export function xsnap(options) {
   const {
+    os,
+    spawn,
     name = '<unnamed xsnap worker>',
     answerSysCall = echoSysCall,
     debug = false,
@@ -67,6 +53,25 @@ export function xsnap(options) {
     stdout = 'inherit',
     stderr = 'inherit',
   } = options;
+
+  const platform = {
+    Linux: 'lin',
+    Darwin: 'mac',
+    Windows_NT: 'win',
+  }[os];
+
+  if (platform === undefined) {
+    throw new Error(`xsnap does not support platform ${os}`);
+  }
+
+  const xsnapBin = new URL(
+    `../build/bin/${platform}/release/xsnap`,
+    importMetaUrl,
+  ).pathname;
+  const xsnapDebugBin = new URL(
+    `../build/bin/${platform}/debug/xsnap`,
+    importMetaUrl,
+  ).pathname;
 
   /** @type {Deferred<Error?>} */
   const vatExit = defer();
