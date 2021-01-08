@@ -1,4 +1,4 @@
- : %.c
+% : %.c
 %.o : %.c
 
 GOAL ?= debug

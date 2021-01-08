@@ -3,7 +3,7 @@
 all: debug release
 
 debug:
-	make -f xs-vat-worker.mk
+	make -f xsnap.mk
 
 release:
-	make GOAL=release -f xs-vat-worker.mk
+	make GOAL=release -f xsnap.mk
