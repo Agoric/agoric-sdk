@@ -1,5 +1,5 @@
 import { Remotable, getInterfaceOf } from '@agoric/marshal';
-import { assert } from '@agoric/assert';
+import { assert, details } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatManagerFactory } from './vatManager/factory';
@@ -16,6 +16,7 @@ import { insistDeviceID, insistVatID } from './id';
 import { makeMeterManager } from './metering';
 import { makeKernelSyscallHandler, doSend } from './kernelSyscall';
 import { makeSlogger, makeDummySlogger } from './slogger';
+import { getKpidsToRetire } from './cleanup';
 
 import { makeVatLoader } from './loadVat';
 import { makeVatTranslators } from './vatTranslator';
@@ -470,18 +471,28 @@ export default function buildKernel(
     } else {
       const p = kernelKeeper.getKernelPromise(kpid);
       kernelKeeper.incStat(statNameForNotify(p.state));
-      const kd = harden(['notify', kpid, p]);
-      const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
-      if (vd) {
-        await deliverAndLogToVat(vatID, kd, vd);
+      const vatKeeper = kernelKeeper.getVatKeeper(vatID);
 
-        const resolutions = vd[1];
-        const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-        for (const vpid of Object.keys(resolutions)) {
-          const kpidToDelete = vatKeeper.mapVatSlotToKernelSlot(vpid);
-          vatKeeper.deleteCListEntry(kpidToDelete, vpid);
-        }
+      assert(p.state !== 'unresolved', details`spurious notification ${kpid}`);
+      const resolutions = [];
+      if (!vatKeeper.hasCListEntry(kpid)) {
+        kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
+        kdebug(`skipping notify of ${kpid} because it's already been done`);
+        return;
       }
+      const targets = getKpidsToRetire(kernelKeeper, kpid, p.data);
+      if (targets.length === 0) {
+        kdebug(`no kpids to retire`);
+        kdebug(`skipping notify of ${kpid} because it's already been done`);
+        return;
+      }
+      for (const toResolve of targets) {
+        resolutions.push([toResolve, kernelKeeper.getKernelPromise(toResolve)]);
+      }
+      const kd = harden(['notify', resolutions]);
+      const vd = vat.translators.kernelDeliveryToVatDelivery(kd);
+      vatKeeper.deleteCListEntriesForKernelSlots(targets);
+      await deliverAndLogToVat(vatID, kd, vd);
     }
   }
 
@@ -589,7 +600,8 @@ export default function buildKernel(
         // which is fatal to the vat
         ksc = translators.vatSyscallToKernelSyscall(vatSyscallObject);
       } catch (vaterr) {
-        kdebug(`vat ${vatID} terminated: error during translation: ${vaterr}`);
+        // prettier-ignore
+        kdebug(`vat ${vatID} terminated: error during translation: ${vaterr} ${JSON.stringify(vatSyscallObject)}`);
         const problem = 'clist violation: prepare to die';
         setTerminationTrigger(vatID, true, true, makeError(problem));
         return harden(['error', problem]);

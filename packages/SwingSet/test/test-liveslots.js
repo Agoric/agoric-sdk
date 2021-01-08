@@ -15,7 +15,7 @@ function capargs(args, slots = []) {
 }
 
 function oneResolution(promiseID, rejected, data) {
-  return { [promiseID]: { rejected, data } };
+  return [[promiseID, { rejected, data }]];
 }
 
 function buildSyscall() {
@@ -94,12 +94,7 @@ test('calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch.notify({
-    'p-1': {
-      rejected: false,
-      data: capargs('result'),
-    },
-  });
+  dispatch.notify(oneResolution('p-1', false, capargs('result')));
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), ['res', 'result']);
 
@@ -117,12 +112,7 @@ test('calls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch.notify({
-    'p-2': {
-      rejected: true,
-      data: capargs('rejection'),
-    },
-  });
+  dispatch.notify(oneResolution('p-2', true, capargs('rejection')));
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), ['rej', 'rejection']);
 

@@ -4,7 +4,7 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
-import { deleteCListEntryIfEasy, getKpidsToRetire } from './cleanup';
+import { deleteCListEntryIfEasy } from './cleanup';
 
 /*
  * Return a function that converts KernelDelivery objects into VatDelivery
@@ -77,29 +77,20 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     }
   }
 
-  function translateNotify(kpid, kp) {
-    assert(kp.state !== 'unresolved', details`spurious notification ${kpid}`);
-    const resolutions = {};
-    kdebug(`notify ${kpid} ${JSON.stringify(kp)}`);
-    const targets = getKpidsToRetire(
-      vatID,
-      vatKeeper,
-      kernelKeeper,
-      kpid,
-      kp.data,
-    );
-    if (targets.length > 0) {
-      for (const toResolve of targets) {
-        const p = kernelKeeper.getKernelPromise(toResolve);
-        const vpid = mapKernelSlotToVatSlot(toResolve);
-        resolutions[vpid] = translatePromiseDescriptor(p);
-      }
-      const vatDelivery = harden(['notify', resolutions]);
-      return vatDelivery;
-    } else {
-      kdebug(`skipping notify of ${kpid} because it's already been done`);
-      return null;
+  function translateNotify(kResolutions) {
+    const vResolutions = [];
+    let idx = 0;
+    for (const resolution of kResolutions) {
+      const [kpid, p] = resolution;
+      assert(p.state !== 'unresolved', details`spurious notification ${kpid}`);
+      const vpid = mapKernelSlotToVatSlot(kpid);
+      const vres = translatePromiseDescriptor(p);
+      vResolutions.push([vpid, vres]);
+      kdebug(`notify ${idx} ${kpid}/${vpid} ${JSON.stringify(vres)}`);
+      idx += 1;
     }
+    const vatDelivery = harden(['notify', vResolutions]);
+    return vatDelivery;
   }
 
   function kernelDeliveryToVatDelivery(kd) {

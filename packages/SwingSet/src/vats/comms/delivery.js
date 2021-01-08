@@ -42,9 +42,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     return kernelData;
   }
 
-  function mapDataFromKernel(kdata) {
+  function mapDataFromKernel(kdata, doNotSubscribeSet) {
     insistCapData(kdata);
-    const slots = kdata.slots.map(provideLocalForKernel);
+    const slots = kdata.slots.map(slot =>
+      provideLocalForKernel(slot, doNotSubscribeSet),
+    );
     return harden({ body: kdata.body, slots });
   }
 
@@ -52,33 +54,36 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // remote machine): translate to local, join with handleSend
   function sendFromKernel(target, method, kargs, kresult) {
     const result = provideLocalForKernelResult(kresult);
-    const args = mapDataFromKernel(kargs);
+    const args = mapDataFromKernel(kargs, null);
     const localDelivery = harden({ target, method, result, args });
     handleSend(localDelivery);
   }
 
-  function mapResolutionFromKernel(resolution) {
+  function mapResolutionFromKernel(resolution, doNotSubscribeSet) {
     if (resolution.type === 'object') {
-      const slot = provideLocalForKernel(resolution.slot);
+      const slot = provideLocalForKernel(resolution.slot, null);
       return harden({ ...resolution, slot });
     }
     if (resolution.type === 'data' || resolution.type === 'reject') {
       return harden({
         ...resolution,
-        data: mapDataFromKernel(resolution.data),
+        data: mapDataFromKernel(resolution.data, doNotSubscribeSet),
       });
     }
     throw Error(`unknown resolution type ${resolution.type}`);
   }
 
   // dispatch.notifyResolve* from kernel lands here (local vat resolving some
-  // Promise, we need to notify remove machines): translate to local, join
+  // Promise, we need to notify remote machines): translate to local, join
   // with handleResolution
-  function resolveFromKernel(vpid, resolution) {
+  function resolveFromKernel(vpid, resolution, doNotSubscribeSet) {
     insistPromiseIsUnresolved(vpid);
     insistDeciderIsKernel(vpid);
     changeDeciderFromKernelToComms(vpid);
-    handleResolution(vpid, mapResolutionFromKernel(resolution));
+    handleResolution(
+      vpid,
+      mapResolutionFromKernel(resolution, doNotSubscribeSet),
+    );
   }
 
   // dispatch.deliver with msg from vattp lands here, containing a message

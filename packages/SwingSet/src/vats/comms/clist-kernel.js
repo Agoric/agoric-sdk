@@ -94,7 +94,7 @@ export function makeKernel(state, syscall, stateKit) {
 
   // *-LocalForKernel: kernel sending in to comms vat
 
-  function provideLocalForKernel(kref) {
+  function provideLocalForKernel(kref, doNotSubscribeSet) {
     const { type, allocatedByVat } = parseVatSlot(kref);
     if (type !== 'object' && type !== 'promise') {
       // TODO: reject the message rather than crashing weirdly, we
@@ -125,7 +125,9 @@ export function makeKernel(state, syscall, stateKit) {
           // the kernel is telling us about a new promise, so it's the decider
           trackUnresolvedPromise(vpid);
           changeDeciderToKernel(vpid);
-          syscall.subscribe(vpid);
+          if (!doNotSubscribeSet || !doNotSubscribeSet.has(vpid)) {
+            syscall.subscribe(vpid);
+          }
         }
       }
     }

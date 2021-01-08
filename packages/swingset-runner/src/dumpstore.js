@@ -28,7 +28,20 @@ export function dumpStore(store, outfile, rawMode) {
     gap();
   }
 
-  popt('runQueue');
+  const runQueue = JSON.parse(eat('runQueue'));
+  if (runQueue.length === 0) {
+    p('runQueue :: []');
+  } else {
+    p('runQueue :: [');
+    let idx = 1;
+    for (const entry of runQueue) {
+      const comma = idx === runQueue.length ? '' : ',';
+      idx += 1;
+      p(`  ${JSON.stringify(entry)}${comma}`);
+    }
+    p(']');
+  }
+
   popt('crankNumber');
   popt('kernelStats');
   gap();
@@ -132,8 +145,7 @@ export function dumpStore(store, outfile, rawMode) {
       popt(key);
     }
     for (const key of groupKeys(`${v}.t.`)) {
-      transcript.push([key, state.get(key)]);
-      state.delete(key);
+      transcript.push([key, eat(key)]);
     }
   }
 
@@ -186,8 +198,7 @@ export function dumpStore(store, outfile, rawMode) {
   function pgroup(baseKey) {
     const toSort = [];
     for (const key of groupKeys(baseKey)) {
-      toSort.push([key, state.get(key)]);
-      state.delete(key);
+      toSort.push([key, eat(key)]);
     }
     // sort similar keys by their numeric portions if possible, e.g.,
     // "ko7.owner" should be less than "ko43.owner" even though it would be the
@@ -227,10 +238,9 @@ export function dumpStore(store, outfile, rawMode) {
     }
   }
 
-  function popt(key) {
+  function eat(key) {
     if (state.has(key)) {
       const value = state.get(key);
-      pkv(key, value);
       state.delete(key);
       return value;
     } else {
@@ -238,18 +248,22 @@ export function dumpStore(store, outfile, rawMode) {
     }
   }
 
+  function popt(key) {
+    const value = eat(key);
+    if (value) {
+      pkv(key, value);
+    }
+    return value;
+  }
+
   function poptBig(tag, key) {
-    if (state.has(key)) {
-      const value = state.get(key);
+    const value = eat(key);
+    if (value) {
       if (value.length > 50) {
         pkv(key, `<<${tag} ${value.length}>>`);
       } else {
         pkv(key, value);
       }
-      state.delete(key);
-      return value;
-    } else {
-      return undefined;
     }
   }
 }

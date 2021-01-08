@@ -90,11 +90,15 @@ export function makeDeliver(tools, dispatch) {
   //  ['message', target, msg]
   //   target is vid
   //   msg is: { method, args (capdata), result }
-  //  ['notify', vpid, resolutions]
-  //   vpid is the id of the primary promise being resolved
-  //   resolutions is an object mapping vpid's to the final promise data,
-  //     rendered in vat form, for both the primary promise and any collateral
-  //     promises it references whose resolution has been newly discovered
+  //  ['notify', resolutions]
+  //   resolutions is an array of triplets: [vpid, rejected, value]
+  //    vpid is the id of the primary promise being resolved
+  //    rejected is a boolean flag indicating if vpid is being fulfilled or rejected
+  //    value is capdata describing the value the promise is being resolved to
+  //   The first entry in the resolutions array is the primary promise being
+  //     resolved, while the remainder (if any) are collateral promises it
+  //     references whose resolution was newly discovered at the time the
+  //     notification delivery was being generated
   async function deliver(vatDeliverObject) {
     const [type, ...args] = vatDeliverObject;
     switch (type) {

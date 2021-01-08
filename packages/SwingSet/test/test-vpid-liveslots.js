@@ -21,7 +21,7 @@ function capargs(args, slots = []) {
 }
 
 function oneResolution(promiseID, rejected, data) {
-  return { [promiseID]: { rejected, data } };
+  return [[promiseID, { rejected, data }]];
 }
 
 function buildSyscall() {
