@@ -1,4 +1,5 @@
 # xsnap
+
 Revised: November 10, 2020
 
 Warning: These notes are preliminary. Omissions and errors are likely. If you encounter problems, please ask for assistance.
@@ -16,7 +17,7 @@ When a machine is frozen, all intrinsics become immutable. Similarly to the [XS 
 
 ## Build
 
-### Linux 
+### Linux
 
 	cd ./makefiles/lin
 	make
@@ -24,36 +25,36 @@ When a machine is frozen, all intrinsics become immutable. Similarly to the [XS 
 The debug version is built in `$MODDABLE/build/bin/lin/debug`
 The release version is built in `$MODDABLE/build/bin/lin/release `
 
-### macOS 
+### macOS
 
 	cd ./xs/makefiles/mac
 	make
-	
+
 The debug version is built in `$MODDABLE/build/bin/mac/debug`
 The release version is built in `$MODDABLE/build/bin/mac/release `
-	
-### Windows 
+
+### Windows
 
 	cd .\xs\makefiles\win
 	build
-	
+
 The debug version is built in `$MODDABLE/build/bin/win/debug`
 The release version is built in `$MODDABLE/build/bin/win/release `
 
 ## Usage
 
 	xsnap [-f] [-h] [-v]
-			[-r <snapshot>] [-w <snapshot>] 
+			[-r <snapshot>] [-w <snapshot>]
 			[-i <interval>] [-l <limit>] [-p]
 			[-e] [-m] [-s] strings...
 
 - `-f`: freeze the XS machine
 - `-h`: print this help message
 - `-v`: print XS version
-- `-r <snapshot>`: read snapshot to create the XS machine 
+- `-r <snapshot>`: read snapshot to create the XS machine
 - `-w <snapshot>`: write snapshot of the XS machine at exit
-- `-i <interval>`: metering interval (defaults to 1) 
-- `-l <limit>`: metering limit (defaults to none) 
+- `-i <interval>`: metering interval (defaults to 1)
+- `-l <limit>`: metering limit (defaults to none)
 - `-p`: prefix `print` output with metering index
 - `-e`: eval `strings`
 - `-m`: `strings` are paths to modules
@@ -63,14 +64,14 @@ Without `-e`, `-m`, `-s`, if the extension is `.mjs`, strings are paths to modul
 
 ## Examples
 
-Add the debug or release directory here above to your path. 
+Add the debug or release directory here above to your path.
 
 ### helloworld
 
 	cd ./examples/helloworld
 	xsnap before.js -w snapshot.xsm
 	xsnap -r snapshot.xsm after.js
-	
+
 The simplest example to see if the build was successful...
 
 ### values
@@ -80,7 +81,7 @@ The simplest example to see if the build was successful...
 	xsnap -r snapshot.xsm after.js
 
 Just to test how various JavaScript values survive the snapshot.
-	
+
 ### generators
 
 	cd ./examples/generators
@@ -115,7 +116,7 @@ Just to test how a `Proxy` instance, its target and its handler survive the snap
 
 ### modules
 
-Use the `-m` option for modules 
+Use the `-m` option for modules
 
 	cd ./examples/modules
 	xsnap -m before.js -w snapshot.xsm
@@ -125,7 +126,7 @@ Modules imported before writing the snapshot are available after reading the sna
 
 ### compartments
 
-Use the `-f` option to freeze the machine in order to use compartments. 
+Use the `-f` option to freeze the machine in order to use compartments.
 
 	cd ./examples/compartments
 	xsnap before.js -w snapshot.xsm
@@ -139,11 +140,11 @@ Use the `-f` option to freeze the machine in order to use compartments.
 
 ### metering
 
-Use the `-l` option to limit the number of byte codes that can be executed. 
+Use the `-l` option to limit the number of byte codes that can be executed.
 
 	cd ./examples/metering
 	xsnap test.js -l 10000
-	
+
 The test prints numbers and exits when too many byte codes have been executed.
 
 	...
@@ -164,7 +165,7 @@ There is a performance gain but a precision lost.
 
 ### metering-built-ins
 
-Use the `-p` option to prefix `print` output with the metering index. 
+Use the `-p` option to prefix `print` output with the metering index.
 
 	cd ./examples/metering-built-ins
 	xsnap test.js -p

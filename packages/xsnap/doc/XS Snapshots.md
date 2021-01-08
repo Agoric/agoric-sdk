@@ -6,9 +6,9 @@ Warning: These notes are preliminary. Omissions and errors are likely. If you en
 ## Format
 
 XS snapshots are atom based. Inside the `XS_M` container, there are nine atoms:
-	
-- `VERS`: The version of XS and the architecture. 
-- `SIGN`: The runtime signature. 
+
+- `VERS`: The version of XS and the architecture.
+- `SIGN`: The runtime signature.
 - `CREA`: The parameters to create the machine: block initial and incremental size, heap initial and incremental size, stack size, etc.
 - `BLOC`: The chunks in the blocks.
 - `HEAP`: The slots in the heaps.
@@ -20,7 +20,7 @@ XS snapshots are atom based. Inside the `XS_M` container, there are nine atoms:
 XS snapshots are bound to:
 
 - the major and minor version numbers of XS,
-- the architecture: 32-bit vs 64-bit, big endian vs little endian, 
+- the architecture: 32-bit vs 64-bit, big endian vs little endian,
 - the runtime signature.
 
 ## Programming Interface
@@ -50,7 +50,7 @@ The `xsSnapshot` structure is used to read and write snapshots.
 - `error`: the error that occurred when reading or writing the snapshot.
 - `data`: pointers used internally by XS, must be set to `NULL`.
 
-The `signature` and `callbacks` fields are related. Runtimes must change the `signature` if the `callbacks` become incompatible. 
+The `signature` and `callbacks` fields are related. Runtimes must change the `signature` if the `callbacks` become incompatible.
 
 If the `stream` is a binary `FILE*`, the `read` and `write` functions are trivial:
 
@@ -58,7 +58,7 @@ If the `stream` is a binary `FILE*`, the `read` and `write` functions are trivia
 	{
 		return (fread(ptr, size, 1, stream) == 1) ? 0 : errno;
 	}
-	
+
 	int write(void* stream, void* ptr, size_t size)
 	{
 		return (fwrite(ptr, size, 1, stream) == 1) ? 0 : errno;
@@ -70,14 +70,14 @@ Here is the typical runtime sequence:
 
 - create a new machine,
 - run modules or scripts,
-- wait for all jobs to complete, 
+- wait for all jobs to complete,
 - write the snapshot.
 
 To write the snapshot, fill the `xsSnapshot` structure and call  `xsWriteSnapshot`.
 
 	extern int xsWriteSnapshot(xsMachine* the, xsSnapshot* snapshot);
 
-- `xsWriteSnapshot` must be called outside of XS callbacks and outside of `xsBeginHost` `xsEndHost` blocks. 
+- `xsWriteSnapshot` must be called outside of XS callbacks and outside of `xsBeginHost` `xsEndHost` blocks.
 - There must be no host instances.
 
 `xsWriteSnapshot` returns `1` if successful, otherwise `xsWriteSnapshot` returns `0` and sets the `error` field.
@@ -108,24 +108,24 @@ Interestingly enough snapshots are completely orthogonal to the shared machine p
 
 The only pointers that cannot be avoided are XS callbacks, i.e. pointers to host code.
 
-The major and minor version numbers of XS change when byte codes evolve and when built-ins get new features. New features are always implemented with new callbacks. 
+The major and minor version numbers of XS change when byte codes evolve and when built-ins get new features. New features are always implemented with new callbacks.
 
-Snapshots are obviously bound to major and minor version numbers of XS. For the sake of snapshots, XS maintains an array of callbacks. It is then enough to project XS callbacks into array indexes. 
+Snapshots are obviously bound to major and minor version numbers of XS. For the sake of snapshots, XS maintains an array of callbacks. It is then enough to project XS callbacks into array indexes.
 
 Similarly, thanks to a signature and an array of callbacks, runtimes can add new callbacks that will be projected into array indexes.
 
 ### Strictly Deterministic
 
-If two machines with the same allocations perform the same operations with the same results in the same order, their snapshots will be the same.  
+If two machines with the same allocations perform the same operations with the same results in the same order, their snapshots will be the same.
 
 The XS garbage collector is always complete and introduces no variations.
 
 But asynchronous features can of course alter the order. Then the snapshots will not be the same, even if they are functionally equivalent.
 
 ### Tests
-	
-A lot of tests remain to be done to verify how various built-ins survive the snapshot process.	
-	
+
+A lot of tests remain to be done to verify how various built-ins survive the snapshot process.
+
 
 
 

@@ -1,4 +1,4 @@
-% : %.c
+ : %.c
 %.o : %.c
 
 GOAL ?= debug
@@ -7,14 +7,22 @@ ifneq ($(VERBOSE),1)
 MAKEFLAGS += --silent
 endif
 
+# This Makefile gets invoked as "make" with this directory as the "cwd" using
+# Node.js child_process.spawn. For reasons that remain mysterious to this
+# author, under these circumstances, $(PWD) is two parent directories up
+# from this file. At the shell, (cd makefiles/lin && make) works fine.
+# Regardless, using HERE instead of PWD makes this Makefile work regardless of
+# the working directory.
+HERE = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+MODDABLE = $(HERE)/../../moddable
 XS_DIR = $(MODDABLE)/xs
-BUILD_DIR = $(MODDABLE)/build
+BUILD_DIR = $(HERE)/../../build
 
 BIN_DIR = $(BUILD_DIR)/bin/lin/$(GOAL)
 INC_DIR = $(XS_DIR)/includes
 PLT_DIR = $(XS_DIR)/platforms
 SRC_DIR = $(XS_DIR)/sources
-TLS_DIR = ../../sources
+TLS_DIR = ../../src
 TMP_DIR = $(BUILD_DIR)/tmp/lin/$(GOAL)/$(NAME)
 
 MACOS_ARCH ?= -arch i386
@@ -94,11 +102,15 @@ OBJECTS = \
 	$(TMP_DIR)/xsType.o \
 	$(TMP_DIR)/xsdtoa.o \
 	$(TMP_DIR)/xsre.o \
-	$(TMP_DIR)/xsnap.o
+	$(TMP_DIR)/$(NAME).o
 
 VPATH += $(SRC_DIR) $(TLS_DIR)
 
-build: $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)/$(NAME)
+build: $(MODDABLE)/README.md $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)/$(NAME)
+
+$(MODDABLE)/README.md:
+	git submodule init
+	git submodule update
 
 $(TMP_DIR):
 	mkdir -p $(TMP_DIR)
@@ -109,7 +121,7 @@ $(BIN_DIR):
 $(BIN_DIR)/$(NAME): $(OBJECTS)
 	@echo "#" $(NAME) $(GOAL) ": cc" $(@F)
 	$(CC) $(LINK_OPTIONS) $(OBJECTS) $(LIBRARIES) -o $@
-	
+
 $(OBJECTS): $(TLS_DIR)/xsnap.h
 $(OBJECTS): $(PLT_DIR)/xsPlatform.h
 $(OBJECTS): $(SRC_DIR)/xsCommon.h

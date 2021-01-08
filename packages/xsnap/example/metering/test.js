@@ -4,7 +4,7 @@ try {
 	}
 }
 catch(e) {
-	// never happens 
+	// never happens
 	// too much computation is no exception
 	print(e);
 }

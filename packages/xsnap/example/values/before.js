@@ -6,8 +6,8 @@ Set.prototype.toString = function() {
 }
 
 const values = [
-	false, 
-	true, 
+	false,
+	true,
 	Symbol(),
 	Symbol("description"),
 	new Error("message"),
@@ -18,7 +18,7 @@ const values = [
 	new TypeError("message"),
 	new URIError("message"),
 	new AggregateError([new Error("message")], "message"),
-	1, 
+	1,
 	1n,
 	new Date(),
 	"string",

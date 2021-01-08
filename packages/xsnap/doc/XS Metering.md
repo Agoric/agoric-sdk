@@ -43,7 +43,7 @@ To begin metering use the `xsBeginMetering` macro:
 The macro uses `setjmp` and must be balanced with the `xsEndMetering` macro:
 
 	xsEndMetering(xsMachine* machine)
-	
+
 - `machine`: the metered machine.
 
 The `ask` callback gets the metered machine and the current index. It returns `1` to tell XS to continue, `0` to tell XS to abort.
@@ -53,7 +53,7 @@ The `ask` callback gets the metered machine and the current index. It returns `1
 To fine tune the metering, runtimes can patch built-ins functions.
 
 	xsPatchHostFunction(xsSlot function, xsCallback patch)
-	
+
 - `function`: the function to patch.
 - `patch`: the callback that replaces the original callback of the function.
 
@@ -97,8 +97,8 @@ Here is the typical runtime sequence:
 		}
 		return 1;
 	}
-	
-	int main(int argc, char* argv[]) 
+
+	int main(int argc, char* argv[])
 	{
 		//...
 		xsMachine* machine xsCreateMachine(creation, "main", NULL);
@@ -116,7 +116,7 @@ Here is the typical runtime sequence:
 	}
 
 The fxAbort function has to be supplied by all runtimes based on XS. Here the `xsTooMuchComputationExit` case exits the machine.
-	
+
 	void fxAbort(xsMachine* the, int exit)
 	{
 		if (exit == xsTooMuchComputationExit) {

@@ -10,10 +10,10 @@
 		#define mxExport extern
 		#define mxImport extern
 		#define XS_FUNCTION_NORETURN
-	#else 
+	#else
 		#error unknown Microsoft compiler
 	#endif
-#elif defined(__GNUC__) 
+#elif defined(__GNUC__)
 	#if defined(__i386__) || defined(i386) || defined(intel) || defined(arm) || defined(__arm__) || defined(__k8__) || defined(__x86_64__) || defined(__aarch64__)
 		#undef mxLittleEndian
 		#define mxLittleEndian 1
@@ -27,10 +27,10 @@
 		#define mxExport extern
 		#define mxImport extern
 		#define XS_FUNCTION_NORETURN __attribute__((noreturn))
-	#else 
+	#else
 		#error unknown GNU compiler
 	#endif
-#else 
+#else
 	#error unknown compiler
 #endif
 
@@ -82,3 +82,5 @@
 #define mxUseDefaultSharedChunks 1
 
 #endif /* __XSNAP__ */
+
+// vim: noet ts=4 sw=4
