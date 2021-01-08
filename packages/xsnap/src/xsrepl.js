@@ -21,12 +21,12 @@ async function main() {
   };
 
   /**
-   * For the purposes of the REPL, the only syscall is effectively `print`.
+   * For the purposes of the REPL, the only command is effectively `print`.
    *
    * @param {Uint8Array} message
    * @returns {Promise<Uint8Array>}
    */
-  async function answerSysCall(message) {
+  async function handleCommand(message) {
     console.log(decoder.decode(message));
     return new Uint8Array();
   }
@@ -36,17 +36,17 @@ async function main() {
     output: process.stdout,
   });
 
-  let vat = xsnap({ ...xsnapOptions, answerSysCall });
+  let vat = xsnap({ ...xsnapOptions, handleCommand });
 
   await vat.evaluate(`
     const compartment = new Compartment();
-    function answerSysCall(request) {
+    function handleCommand(request) {
       const command = String.fromArrayBuffer(request);
       let result = compartment.evaluate(command);
       if (result === undefined) {
         result = null;
       }
-      sysCall(ArrayBuffer.fromString(JSON.stringify(result, null, 4)));
+      issueCommand(ArrayBuffer.fromString(JSON.stringify(result, null, 4)));
     }
   `);
 
@@ -67,7 +67,7 @@ async function main() {
     } else if (answer === 'load') {
       const file = await ask('file> ');
       await vat.close();
-      vat = xsnap({ ...xsnapOptions, answerSysCall, snapshot: file });
+      vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: file });
     } else if (answer === 'save') {
       const file = await ask('file> ');
       await vat.snapshot(file);

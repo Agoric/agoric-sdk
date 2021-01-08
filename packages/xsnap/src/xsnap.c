@@ -43,7 +43,7 @@ static void fxFreezeBuiltIns(txMachine* the);
 static void fxPatchBuiltIns(txMachine* the);
 static void fxPrintUsage();
 
-static void fx_sysCall(xsMachine *the);
+static void fx_issueCommand(xsMachine *the);
 static void fx_Array_prototype_meter(xsMachine* the);
 
 // extern void fx_clearTimer(txMachine* the);
@@ -75,7 +75,7 @@ static char* fxWriteNetStringError(int code);
 // upgrade.
 #define mxSnapshotCallbackCount 2
 txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
-	fx_sysCall, // 0
+	fx_issueCommand, // 0
 	fx_Array_prototype_meter, // 1
 	// fx_gc,
 	// fx_evalScript,
@@ -325,7 +325,7 @@ int main(int argc, char* argv[])
 					xsVar(1) = xsArrayBuffer(nsbuf + 1, nslen - 1);
 					xsTry {
 						if (command == '?') {
-							xsVar(2) = xsCall1(xsGlobal, xsID("answerSysCall"), xsVar(1));
+							xsVar(2) = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(1));
 							if (xsTypeOf(xsVar(2)) != xsUndefinedType) {
 								responseLength = fxGetArrayBufferLength(machine, &xsVar(2));
 								response = malloc(responseLength);
@@ -461,7 +461,7 @@ void fxBuildAgent(xsMachine* the)
 	txSlot* slot;
 	mxPush(mxGlobal);
 	slot = fxLastProperty(the, fxToInstance(the, the->stack));
-	slot = fxNextHostFunctionProperty(the, slot, fx_sysCall, 1, xsID("sysCall"), XS_DONT_ENUM_FLAG);
+	slot = fxNextHostFunctionProperty(the, slot, fx_issueCommand, 1, xsID("issueCommand"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_clearTimer, 1, xsID("clearImmediate"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_clearTimer, 1, xsID("clearInterval"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_clearTimer, 1, xsID("clearTimeout"), XS_DONT_ENUM_FLAG);
@@ -1304,7 +1304,7 @@ static char* fxWriteNetStringError(int code)
 	}
 }
 
-static void fx_sysCall(xsMachine *the)
+static void fx_issueCommand(xsMachine *the)
 {
 	int argc = xsToInteger(xsArgc);
 	if (argc < 1) {

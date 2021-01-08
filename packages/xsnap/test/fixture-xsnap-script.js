@@ -1,4 +1,4 @@
-/* global sysCall */
+/* global issueCommand */
 (async () => {
-  sysCall(ArrayBuffer.fromString('Hello, World!'));
+  issueCommand(ArrayBuffer.fromString('Hello, World!'));
 })();

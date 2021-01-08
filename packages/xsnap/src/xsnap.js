@@ -27,7 +27,7 @@ const decoder = new TextDecoder();
  * @param {Uint8Array} arg
  * @returns {Uint8Array}
  */
-function echoSysCall(arg) {
+function echoCommand(arg) {
   return arg;
 }
 
@@ -35,7 +35,7 @@ function echoSysCall(arg) {
  * @param {Object} options
  * @param {string} options.os
  * @param {Spawn} options.spawn
- * @param {(request:Uint8Array) => Promise<Uint8Array>} [options.answerSysCall]
+ * @param {(request:Uint8Array) => Promise<Uint8Array>} [options.handleCommand]
  * @param {string=} [options.name]
  * @param {boolean=} [options.debug]
  * @param {string=} [options.snapshot]
@@ -47,7 +47,7 @@ export function xsnap(options) {
     os,
     spawn,
     name = '<unnamed xsnap worker>',
-    answerSysCall = echoSysCall,
+    handleCommand = echoCommand,
     debug = false,
     snapshot = undefined,
     stdout = 'inherit',
@@ -126,7 +126,7 @@ export function xsnap(options) {
       } else if (message[0] === ERROR) {
         throw new Error(`Uncaught exception in ${name}`);
       } else if (message[0] === QUERY) {
-        await messagesToXsnap.next(await answerSysCall(message.subarray(1)));
+        await messagesToXsnap.next(await handleCommand(message.subarray(1)));
       }
     }
   }
@@ -177,7 +177,7 @@ export function xsnap(options) {
    * @param {Uint8Array} message
    * @returns {Promise<Uint8Array>}
    */
-  async function sysCall(message) {
+  async function issueCommand(message) {
     const result = baton.then(async () => {
       const request = new Uint8Array(message.length + 1);
       request[0] = QUERY;
@@ -196,8 +196,8 @@ export function xsnap(options) {
    * @param {string} message
    * @returns {Promise<string>}
    */
-  async function stringSysCall(message) {
-    return decoder.decode(await sysCall(encoder.encode(message)));
+  async function issueStringCommand(message) {
+    return decoder.decode(await issueCommand(encoder.encode(message)));
   }
 
   /**
@@ -223,8 +223,8 @@ export function xsnap(options) {
   }
 
   return {
-    sysCall,
-    stringSysCall,
+    issueCommand,
+    issueStringCommand,
     close,
     evaluate,
     execute,
