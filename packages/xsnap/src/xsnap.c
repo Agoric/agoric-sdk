@@ -1239,8 +1239,8 @@ void fxSend(txMachine* the, txBoolean more)
 /**
  * @param dest: where to store address of newly allocated buffer,
  *		  which is null-terminated for compatibility with C strings
- * @returns count of bytes read or -1 for error;
- *			caller takes ownership of *dest unless an error occurs
+ * @param len: where to store the length of the read netstring.
+ * @returns error: an error code, 0 for OK.
  */
 static int fxReadNetString(FILE *inStream, char** dest, size_t* len)
 {

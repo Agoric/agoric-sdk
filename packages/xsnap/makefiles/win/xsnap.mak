@@ -101,7 +101,11 @@ OBJECTS = \
 	$(TMP_DIR)\xsre.o \
 	$(TMP_DIR)\xsnap.o
 
-build : $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)\$(NAME).exe
+build : $(MODDABLE)\README.md $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)\$(NAME).exe
+
+$(MODDABLE)\README.md :
+	git submodule init
+	git submodule update
 
 $(TMP_DIR) :
 	if not exist $(TMP_DIR)\$(NULL) mkdir $(TMP_DIR)

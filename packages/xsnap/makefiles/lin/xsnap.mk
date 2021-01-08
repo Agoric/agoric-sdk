@@ -100,7 +100,11 @@ OBJECTS = \
 
 VPATH += $(SRC_DIR) $(TLS_DIR)
 
-build: $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)/$(NAME)
+build: $(MODDABLE)/README.md $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)/$(NAME)
+
+$(MODDABLE)/README.md:
+	git submodule init
+	git submodule update
 
 $(TMP_DIR):
 	mkdir -p $(TMP_DIR)
