@@ -73,7 +73,7 @@ export function buildCommsDispatch(syscall) {
     throw Error(`unknown target ${target}`);
   }
 
-  function notifyOnePromise(promiseID, rejected, data) {
+  function notifyOnePromise(promiseID, rejected, data, doNotSubscribeSet) {
     insistCapData(data);
     // console.debug(`comms.notifyOnePromise(${promiseID}, ${rejected}, ${data})`);
     // dumpState(state);
@@ -115,15 +115,21 @@ export function buildCommsDispatch(syscall) {
     } else {
       resolution = harden({ type: 'data', data });
     }
-    resolveFromKernel(promiseID, resolution);
+    resolveFromKernel(promiseID, resolution, doNotSubscribeSet);
     // XXX question: do we need to call retirePromiseIDIfEasy (or some special
     // comms vat version of it) here?
   }
 
   function notify(resolutions) {
-    for (const vpid of Object.keys(resolutions)) {
-      const vp = resolutions[vpid];
-      notifyOnePromise(vpid, vp.rejected, vp.data);
+    const willBeResolved = new Set();
+    for (const resolution of resolutions) {
+      const [vpid] = resolution;
+      willBeResolved.add(vpid);
+    }
+
+    for (const resolution of resolutions) {
+      const [vpid, vp] = resolution;
+      notifyOnePromise(vpid, vp.rejected, vp.data, willBeResolved);
     }
   }
 

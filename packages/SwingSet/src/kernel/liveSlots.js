@@ -255,6 +255,16 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     return valToSlot.get(val);
   }
 
+  let importedPromises = null;
+  function beginCollectingPromiseImports() {
+    importedPromises = new Set();
+  }
+  function finishCollectingPromiseImports() {
+    const result = importedPromises;
+    importedPromises = null;
+    return result;
+  }
+
   function convertSlotToVal(slot, iface = undefined) {
     let val = slotToVal.get(slot);
     if (val) {
@@ -286,7 +296,11 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
         // but the current Promise API doesn't give us a way to discover
         // this, so we must subscribe right away. If we were using Vows or
         // some other then-able, we could just hook then() to notify us.
-        syscall.subscribe(slot);
+        if (importedPromises) {
+          importedPromises.add(slot);
+        } else {
+          syscall.subscribe(slot);
+        }
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
       } else {
@@ -531,12 +545,20 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
 
   function notify(resolutions) {
     assert(didRoot);
-    for (const vpid of Object.keys(resolutions)) {
-      const vp = resolutions[vpid];
+    beginCollectingPromiseImports();
+    for (const resolution of resolutions) {
+      const [vpid, vp] = resolution;
       notifyOnePromise(vpid, vp.rejected, vp.data);
     }
-    for (const vpid of Object.keys(resolutions)) {
+    for (const resolution of resolutions) {
+      const [vpid] = resolution;
       retirePromiseID(vpid);
+    }
+    const imports = finishCollectingPromiseImports();
+    for (const slot of imports) {
+      if (slotToVal.get(slot)) {
+        syscall.subscribe(slot);
+      }
     }
   }
 

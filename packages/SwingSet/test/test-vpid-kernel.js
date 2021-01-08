@@ -21,7 +21,7 @@ function capargs(args, slots = []) {
 }
 
 function oneResolution(promiseID, rejected, data) {
-  return { [promiseID]: { rejected, data } };
+  return [[promiseID, { rejected, data }]];
 }
 
 function makeConsole(tag) {
@@ -558,7 +558,7 @@ async function doTest4567(t, which, mode) {
   };
   onDispatchCallback = function odc1(d) {
     t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), expectRetirement);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), !expectRetirement);
   };
   const targetsB = {
     target2: rootAvatB,
@@ -752,12 +752,15 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.run();
   t.deepEqual(logX.shift(), {
     type: 'notify',
-    resolutions: {
-      [exportedGenResultAvatX]: {
-        rejected: false,
-        data: capargs([slot0arg], [exportedGenResultBvatX]),
-      },
-    },
+    resolutions: [
+      [
+        exportedGenResultAvatX,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [exportedGenResultBvatX]),
+        },
+      ],
+    ],
   });
   t.deepEqual(logX, []);
   t.deepEqual(logA, []);
@@ -783,45 +786,67 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.run();
   t.deepEqual(logB.shift(), {
     type: 'notify',
-    resolutions: {
-      [importedGenResultAvatB]: {
-        rejected: false,
-        data: capargs([slot0arg], [importedGenResultBvatB]),
-      },
-      [importedGenResultBvatB]: {
-        rejected: false,
-        data: capargs([slot0arg], [importedGenResultAvatB]),
-      },
-    },
+    resolutions: [
+      [
+        importedGenResultAvatB,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultBvatB]),
+        },
+      ],
+      [
+        importedGenResultBvatB,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultAvatB]),
+        },
+      ],
+    ],
   });
   t.deepEqual(logB, []);
   t.deepEqual(logX.shift(), {
     type: 'notify',
-    resolutions: {
-      [exportedGenResultBvatX]: {
-        rejected: false,
-        data: capargs([slot0arg], [importedGenResultAvatX]),
-      },
-    },
+    resolutions: [
+      [
+        exportedGenResultBvatX,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultAvatX]),
+        },
+      ],
+      [
+        importedGenResultAvatX,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [exportedGenResultBvatX]),
+        },
+      ],
+    ],
   });
   t.deepEqual(logX, []);
   t.deepEqual(logA.shift(), {
     type: 'notify',
-    resolutions: {
-      [importedGenResultAvatA]: {
-        rejected: false,
-        data: capargs([slot0arg], [importedGenResultBvatA]),
-      },
-      [importedGenResultBvatA]: {
-        rejected: false,
-        data: capargs([slot0arg], [importedGenResultAvatA]),
-      },
-    },
+    resolutions: [
+      [
+        importedGenResultBvatA,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultAvatA]),
+        },
+      ],
+      [
+        importedGenResultAvatA,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultBvatA]),
+        },
+      ],
+    ],
   });
   t.deepEqual(logA, []);
   t.is(inCList(kernel, vatA, genResultAkernel, importedGenResultAvatA), false);
   t.is(inCList(kernel, vatB, genResultAkernel, importedGenResultAvatB), false);
-  t.is(inCList(kernel, vatX, genResultAkernel, importedGenResultAvatX), true);
+  t.is(inCList(kernel, vatX, genResultAkernel, importedGenResultAvatX), false);
 
   t.is(inCList(kernel, vatA, genResultBkernel, importedGenResultBvatA), false);
   t.is(inCList(kernel, vatB, genResultBkernel, importedGenResultBvatB), false);

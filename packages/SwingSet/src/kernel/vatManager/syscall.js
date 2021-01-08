@@ -85,7 +85,9 @@ export function createSyscall(transcriptManager) {
       // (and we'll be terminated, but the kernel and all other vats will
       // continue). Emit enough of an error message to explain the errors
       // that are about to ensue on our way down.
-      throw Error(`syscall suffered error, shutdown commencing`);
+      throw Error(
+        `syscall ${vatSyscallObject[0]} suffered error, shutdown commencing`,
+      );
     }
     // otherwise vres is ['ok', null] or ['ok', capdata]
     transcriptManager.addSyscall(vatSyscallObject, data);

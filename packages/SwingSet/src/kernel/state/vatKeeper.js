@@ -218,6 +218,13 @@ export function makeVatKeeper(
     }
   }
 
+  function deleteCListEntriesForKernelSlots(kernelSlots) {
+    for (const kernelSlot of kernelSlots) {
+      const vatSlot = mapKernelSlotToVatSlot(kernelSlot);
+      deleteCListEntry(kernelSlot, vatSlot);
+    }
+  }
+
   /**
    * Generator function to return the vat's transcript, one entry at a time.
    */
@@ -284,6 +291,7 @@ export function makeVatKeeper(
     mapKernelSlotToVatSlot,
     hasCListEntry,
     deleteCListEntry,
+    deleteCListEntriesForKernelSlots,
     getTranscript,
     addToTranscript,
     vatStats,

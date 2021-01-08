@@ -289,20 +289,24 @@ export function main() {
   }
 
   function doDeliverNotify(delivery) {
-    const target = delivery[1];
-    const value = delivery[2];
-    const tag = terse ? value.state : `notify ${value.state}`;
-    switch (value.state) {
-      case 'fulfilledToPresence':
-        p(`${tag}: ${pref(target)} := ${pref(value.slot)}`);
-        break;
-      case 'fulfilledToData':
-      case 'rejected':
-        p(`${tag}: ${pref(target)} := ${pdata(value.data)}`);
-        break;
-      default:
-        p(`notify: unknown state "${value.state}"`);
-        break;
+    const resolutions = delivery[1];
+    let idx = 0;
+    for (const resolution of resolutions) {
+      const [target, value] = resolution;
+      const tag = terse ? value.state : `notify ${value.state}`;
+      switch (value.state) {
+        case 'fulfilledToPresence':
+          p(`${tag}: ${idx} ${pref(target)} := ${pref(value.slot)}`);
+          break;
+        case 'fulfilledToData':
+        case 'rejected':
+          p(`${tag}: ${idx} ${pref(target)} := ${pdata(value.data)}`);
+          break;
+        default:
+          p(`notify: unknown state "${value.state}"`);
+          break;
+      }
+      idx += 1;
     }
   }
 
