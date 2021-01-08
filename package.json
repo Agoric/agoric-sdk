@@ -42,6 +42,7 @@
     "packages/deployment",
     "packages/notifier",
     "packages/xs-vat-worker",
+    "packages/xsnap",
     "packages/deploy-script-support"
   ],
   "devDependencies": {
