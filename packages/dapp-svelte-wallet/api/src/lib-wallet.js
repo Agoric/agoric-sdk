@@ -680,6 +680,7 @@ export function makeWallet({
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
     const { amountMath: invitationMath } = brandTable.getByIssuer(zoeIssuer);
     const invitationP = findOrMakeInvitation(
+      idToOfferResult,
       board,
       zoeInvitePurse,
       invitationMath,

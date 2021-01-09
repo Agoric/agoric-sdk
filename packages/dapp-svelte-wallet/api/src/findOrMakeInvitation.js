@@ -75,9 +75,10 @@ const makeFindInvitation = (invitationPurse, invitationMath) => {
   return findInvitation;
 };
 
-const makeFurtherInvitation = (
-  { priorOfferId: rawPriorOfferId, idToOfferResult, description },
+const makeContinuingInvitation = (
+  idToOfferResult,
   dappOrigin,
+  { priorOfferId: rawPriorOfferId, description },
 ) => {
   assertFirstCapASCII(description);
 
@@ -97,6 +98,7 @@ const makeFurtherInvitation = (
 };
 
 export const findOrMakeInvitation = async (
+  idToOfferResult,
   board,
   invitationPurse,
   invitationMath,
@@ -126,8 +128,16 @@ export const findOrMakeInvitation = async (
     return findInvitation(findByKeyValuePairs, offer.invitationQuery);
   }
 
-  if (offer.furtherInvitation) {
-    return makeFurtherInvitation(offer.furtherInvitation);
+  if (offer.continuingInvitation) {
+    const dappOrigin =
+      offer.requestContext && offer.requestContext.dappOrigin
+        ? offer.requestContext.dappOrigin
+        : `unknown`;
+    return makeContinuingInvitation(
+      idToOfferResult,
+      dappOrigin,
+      offer.continuingInvitation,
+    );
   }
 
   throw Error(`no invitation was found or made for this offer ${offer.id}`);
