@@ -32,6 +32,7 @@ import '@agoric/zoe/exported';
 
 import './internal-types';
 import './types';
+import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -671,46 +672,27 @@ export function makeWallet({
   };
 
   const compileOffer = async offer => {
-    const {
-      inviteHandleBoardId, // Keep for backward-compatibility.
-      invitationHandleBoardId = inviteHandleBoardId,
-    } = offer;
-
-    assert.typeof(
-      invitationHandleBoardId,
-      'string',
-      details`invitationHandleBoardId must be a string`,
-    );
     const { proposal, purseKeywordRecord } = compileProposal(
       offer.proposalTemplate,
     );
 
-    // Find invite in wallet and withdraw
-    const { value: inviteValueElems } = await E(
+    // eslint-disable-next-line no-use-before-define
+    const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
+    const { amountMath: invitationMath } = brandTable.getByIssuer(zoeIssuer);
+    const invitationP = findOrMakeInvitation(
+      board,
       zoeInvitePurse,
-    ).getCurrentAmount();
-    const inviteHandle = await E(board).getValue(invitationHandleBoardId);
-    const matchInvite = element => element.handle === inviteHandle;
-    const inviteBrand = purseToBrand.get(zoeInvitePurse);
-    const { amountMath: inviteAmountMath } = brandTable.getByBrand(inviteBrand);
-    const matchingInvite = inviteValueElems.find(matchInvite);
-    assert(
-      matchingInvite,
-      details`Cannot find invite corresponding to ${q(
-        invitationHandleBoardId,
-      )}`,
+      invitationMath,
+      offer,
     );
-    const inviteAmount = inviteAmountMath.make(
-      harden([inviteValueElems.find(matchInvite)]),
-    );
-    const inviteP = E(zoeInvitePurse).withdraw(inviteAmount);
+
     const { installation, instance } = await E(zoe).getInvitationDetails(
-      inviteP,
+      invitationP,
     );
 
     return {
       proposal,
-      inviteP,
+      inviteP: invitationP,
       purseKeywordRecord,
       installation,
       instance,
@@ -812,10 +794,6 @@ export function makeWallet({
     // AWAIT
     // Refetch the origin record.
     return dappOrigins.get(origin);
-  }
-
-  function makeId(dappOrigin, rawId) {
-    return `${dappOrigin}#${rawId}`;
   }
 
   async function addOffer(rawOffer, requestContext = {}) {
