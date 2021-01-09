@@ -61,9 +61,9 @@ export function buildRootObject(vatPowers) {
       .catch(_ => undefined);
     const commandHandler = getCapTPHandler(
       send,
-      (otherSide, meta) =>
+      (otherSide, meta, obj) =>
         E(handler)
-          .getBootstrap(otherSide, meta)
+          .getBootstrap(otherSide, meta, obj)
           .catch(_e => undefined),
       fallback,
     );
