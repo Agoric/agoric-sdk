@@ -1329,7 +1329,7 @@ export function makeWallet({
       passStyleOf(offerResult) === 'copyRecord',
       `offerResult must be a record to have a uiNotifier`,
     );
-    assert(offerResult.uiNotifier);
+    assert(offerResult.uiNotifier, `offerResult does not have a uiNotifier`);
     return offerResult.uiNotifier;
   }
 
