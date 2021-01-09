@@ -25,7 +25,7 @@ export const getCapTPHandler = (
       const { dispatch, abort, getBootstrap: getRemoteBootstrap } = makeCapTP(
         origin,
         sendObj,
-        async () => getLocalBootstrap(getRemoteBootstrap(), meta),
+        async o => getLocalBootstrap(getRemoteBootstrap(), meta, o),
         {
           onReject(err) {
             // Be quieter for sanity's sake.

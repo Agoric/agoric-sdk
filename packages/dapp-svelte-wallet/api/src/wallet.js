@@ -290,9 +290,10 @@ export function buildRootObject(_vatPowers) {
        *
        * @param {ERef<WalletOtherSide>} otherSide
        * @param {Record<string, any>} meta
+       * @param {Record<string, any>} obj
        */
-      async getBootstrap(otherSide, meta) {
-        const dappOrigin = meta.origin;
+      async getBootstrap(otherSide, meta, obj) {
+        const { dappOrigin = meta.origin } = obj;
         const suggestedDappPetname = String(
           (meta.query && meta.query.suggestedDappPetname) ||
             meta.dappOrigin ||
