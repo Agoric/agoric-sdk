@@ -159,6 +159,10 @@ export function buildRootObject(_vatPowers) {
         await approve();
         return walletAdmin.suggestInstance(petname, boardId, dappOrigin);
       },
+      async getUINotifier(rawId) {
+        await approve();
+        return walletAdmin.getUINotifier(rawId, dappOrigin);
+      },
     };
     return harden(bridge);
   };
@@ -194,6 +198,9 @@ export function buildRootObject(_vatPowers) {
     },
     suggestIssuer(petname, issuerBoardId) {
       return walletAdmin.suggestIssuer(petname, issuerBoardId);
+    },
+    getUINotifier(rawId) {
+      return walletAdmin.getUINotifier(rawId);
     },
   };
   harden(preapprovedBridge);
@@ -386,32 +393,6 @@ export function buildRootObject(_vatPowers) {
               case 'walletAddOffer': {
                 let handled = false;
                 const actions = harden({
-                  result(offer, outcome) {
-                    httpSend(
-                      {
-                        type: 'walletOfferResult',
-                        data: {
-                          id: offer.id,
-                          dappContext: offer.dappContext,
-                          outcome,
-                        },
-                      },
-                      [meta.channelHandle],
-                    );
-                  },
-                  error(offer, reason) {
-                    httpSend(
-                      {
-                        type: 'walletOfferResult',
-                        data: {
-                          id: offer.id,
-                          dappContext: offer.dappContext,
-                          error: `${(reason && reason.stack) || reason}`,
-                        },
-                      },
-                      [meta.channelHandle],
-                    );
-                  },
                   handled(offer) {
                     if (handled) {
                       return;

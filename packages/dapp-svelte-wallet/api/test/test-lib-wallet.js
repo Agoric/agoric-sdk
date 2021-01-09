@@ -555,7 +555,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 });
 
 test('lib-wallet offer methods', async t => {
-  t.plan(8);
+  t.plan(7);
   const {
     moolaBundle,
     wallet,
@@ -630,8 +630,7 @@ test('lib-wallet offer methods', async t => {
   );
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
-  const { outcome, depositedP } = accepted;
-  t.is(await outcome, 'The offer was accepted', `offer was accepted`);
+  const { depositedP } = accepted;
   await depositedP;
   const seats = wallet.getSeats(harden([id]));
   const seat = wallet.getSeat(id);
@@ -881,8 +880,11 @@ test('lib-wallet addOffer for autoswap swap', async t => {
 
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
-  const { outcome, depositedP } = accepted;
-  t.is(await outcome, 'Swap successfully completed.', `offer was accepted`);
+  const { depositedP } = accepted;
+  await t.throwsAsync(() => wallet.getUINotifier(rawId, `unknown`), {
+    message: 'offerResult must be a record to have a uiNotifier',
+  });
+
   await depositedP;
   const seats = wallet.getSeats(harden([id]));
   const seat = wallet.getSeat(id);
