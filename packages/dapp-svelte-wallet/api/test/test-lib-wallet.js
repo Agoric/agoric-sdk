@@ -16,6 +16,8 @@ import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
 
+const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
 async function setupTest() {
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
@@ -137,8 +139,6 @@ test('lib-wallet issuer and purse methods', async t => {
     moolaBundle.issuer,
     `can get issuer by issuer petname`,
   );
-
-  const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
   const invitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
   t.deepEqual(
@@ -899,4 +899,203 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     simoleanBundle.amountMath.make(516),
     `simolean purse balance`,
   );
+});
+
+test('addOffer invitationQuery', async t => {
+  const {
+    zoe,
+    moolaBundle,
+    simoleanBundle,
+    wallet,
+    addLiquidityInvite,
+    autoswapInstanceHandle,
+  } = await setupTest();
+
+  const issuerManager = wallet.getIssuerManager();
+  await issuerManager.add('moola', moolaBundle.issuer);
+  await wallet.makeEmptyPurse('moola', 'Fun budget');
+  await wallet.deposit(
+    'Fun budget',
+    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
+  );
+
+  await issuerManager.add('simolean', simoleanBundle.issuer);
+  await wallet.makeEmptyPurse('simolean', 'Nest egg');
+  await wallet.deposit(
+    'Nest egg',
+    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
+  );
+
+  /** @type {{ getLiquidityIssuer: () => Issuer, makeSwapInvitation: () => Invitation }} */
+  const publicAPI = await E(zoe).getPublicFacet(autoswapInstanceHandle);
+  const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+
+  const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
+
+  // Let's add liquidity using our wallet and the addLiquidityInvite
+  // we have.
+  const proposal = harden({
+    give: {
+      Central: moolaBundle.amountMath.make(900),
+      Secondary: simoleanBundle.amountMath.make(500),
+    },
+    want: {
+      Liquidity: liquidityAmountMath.getEmpty(),
+    },
+  });
+
+  const pursesArray = await E(wallet).getPurses();
+  const purses = new Map(pursesArray);
+
+  const moolaPurse = purses.get('Fun budget');
+  const simoleanPurse = purses.get('Nest egg');
+  assert(moolaPurse);
+  assert(simoleanPurse);
+
+  const moolaPayment = await E(moolaPurse).withdraw(proposal.give.Central);
+  const simoleanPayment = await E(simoleanPurse).withdraw(
+    proposal.give.Secondary,
+  );
+
+  const payments = harden({
+    Central: moolaPayment,
+    Secondary: simoleanPayment,
+  });
+  const liqSeat = await E(zoe).offer(addLiquidityInvite, proposal, payments);
+  await E(liqSeat).getOfferResult();
+
+  const swapInvitation = await E(publicAPI).makeSwapInvitation();
+  const zoeInvitePurse = purses.get('Default Zoe invite purse');
+  assert(zoeInvitePurse);
+
+  await E(zoeInvitePurse).deposit(swapInvitation);
+
+  const rawId = '1593482020370';
+  const id = `unknown#${rawId}`;
+
+  const offer = {
+    id: rawId,
+    invitationQuery: {
+      instance: autoswapInstanceHandle,
+      description: 'autoswap swap',
+    },
+    proposalTemplate: {
+      give: {
+        In: {
+          pursePetname: 'Fun budget',
+          value: 30,
+        },
+      },
+      want: {
+        Out: {
+          pursePetname: 'Nest egg',
+          value: 1,
+        },
+      },
+      exit: {
+        onDemand: null,
+      },
+    },
+  };
+
+  await wallet.addOffer(offer);
+
+  const accepted = await wallet.acceptOffer(id);
+  assert(accepted);
+  const { depositedP } = accepted;
+  await t.throwsAsync(() => wallet.getUINotifier(rawId, `unknown`), {
+    message: 'offerResult must be a record to have a uiNotifier',
+  });
+
+  await depositedP;
+  const seats = wallet.getSeats(harden([id]));
+  const seat = wallet.getSeat(id);
+  t.is(seat, seats[0], `both getSeat(s) methods work`);
+  t.deepEqual(
+    await moolaPurse.getCurrentAmount(),
+    moolaBundle.amountMath.make(70),
+    `moola purse balance`,
+  );
+  t.deepEqual(
+    await simoleanPurse.getCurrentAmount(),
+    simoleanBundle.amountMath.make(516),
+    `simolean purse balance`,
+  );
+});
+
+test('addOffer makeContinuingInvitation', async t => {
+  const zoe = makeZoe(fakeVatAdmin);
+  const board = makeBoard();
+
+  // Create ContinuingInvitationExample instance
+  const path = require.resolve('./continuingInvitationExample.js');
+  const bundle = await bundleSource(path);
+  const installation = await zoe.install(bundle);
+  const { creatorInvitation, instance } = await zoe.startInstance(installation);
+  assert(creatorInvitation);
+
+  const pursesStateChangeLog = [];
+  const inboxStateChangeLog = [];
+  const pursesStateChangeHandler = data => {
+    pursesStateChangeLog.push(data);
+  };
+  const inboxStateChangeHandler = data => {
+    inboxStateChangeLog.push(data);
+  };
+
+  const { admin: wallet, initialized } = makeWallet({
+    zoe,
+    board,
+    pursesStateChangeHandler,
+    inboxStateChangeHandler,
+  });
+  await initialized;
+
+  // deposit creatorInvitation
+  const invitationPurse = E(wallet).getPurse(ZOE_INVITE_PURSE_PETNAME);
+  await E(invitationPurse).deposit(creatorInvitation);
+
+  // Make the first offer
+  const rawId = '1593482020370';
+  const id = `unknown#${rawId}`;
+
+  const offer = {
+    id: rawId,
+    invitationQuery: {
+      instance,
+      description: 'FirstThing',
+    },
+    proposalTemplate: {},
+  };
+
+  await wallet.addOffer(offer);
+
+  const accepted = await wallet.acceptOffer(id);
+  assert(accepted);
+
+  const uiNotifier = await wallet.getUINotifier(rawId, `unknown`);
+
+  const update = await E(uiNotifier).getUpdateSince();
+  t.is(update.value, 'first offer made');
+
+  // make the second offer
+  const rawId2 = '1593482020371';
+  const id2 = `unknown#${rawId2}`;
+
+  const offer2 = {
+    id: rawId2,
+    continuingInvitation: {
+      priorOfferId: rawId,
+      description: 'SecondThing',
+    },
+    proposalTemplate: {},
+  };
+
+  await wallet.addOffer(offer2);
+  const accepted2 = await wallet.acceptOffer(id2);
+  assert(accepted2);
+
+  const update2 = await E(uiNotifier).getUpdateSince(update.updateCount);
+
+  t.is(update2.value, 'second offer made');
 });
