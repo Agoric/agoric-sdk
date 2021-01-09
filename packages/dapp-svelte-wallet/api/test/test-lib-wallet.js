@@ -16,6 +16,8 @@ import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
 
+const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
 async function setupTest() {
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
@@ -137,8 +139,6 @@ test('lib-wallet issuer and purse methods', async t => {
     moolaBundle.issuer,
     `can get issuer by issuer petname`,
   );
-
-  const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
   const invitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
   t.deepEqual(
@@ -909,7 +909,6 @@ test('addOffer invitationQuery', async t => {
     wallet,
     addLiquidityInvite,
     autoswapInstanceHandle,
-    board,
   } = await setupTest();
 
   const issuerManager = wallet.getIssuerManager();
@@ -1022,4 +1021,81 @@ test('addOffer invitationQuery', async t => {
     simoleanBundle.amountMath.make(516),
     `simolean purse balance`,
   );
+});
+
+test('addOffer makeContinuingInvitation', async t => {
+  const zoe = makeZoe(fakeVatAdmin);
+  const board = makeBoard();
+
+  // Create ContinuingInvitationExample instance
+  const path = require.resolve('./continuingInvitationExample.js');
+  const bundle = await bundleSource(path);
+  const installation = await zoe.install(bundle);
+  const { creatorInvitation, instance } = await zoe.startInstance(installation);
+  assert(creatorInvitation);
+
+  const pursesStateChangeLog = [];
+  const inboxStateChangeLog = [];
+  const pursesStateChangeHandler = data => {
+    pursesStateChangeLog.push(data);
+  };
+  const inboxStateChangeHandler = data => {
+    inboxStateChangeLog.push(data);
+  };
+
+  const { admin: wallet, initialized } = makeWallet({
+    zoe,
+    board,
+    pursesStateChangeHandler,
+    inboxStateChangeHandler,
+  });
+  await initialized;
+
+  // deposit creatorInvitation
+  const invitationPurse = E(wallet).getPurse(ZOE_INVITE_PURSE_PETNAME);
+  await E(invitationPurse).deposit(creatorInvitation);
+
+  // Make the first offer
+  const rawId = '1593482020370';
+  const id = `unknown#${rawId}`;
+
+  const offer = {
+    id: rawId,
+    invitationQuery: {
+      instance,
+      description: 'FirstThing',
+    },
+    proposalTemplate: {},
+  };
+
+  await wallet.addOffer(offer);
+
+  const accepted = await wallet.acceptOffer(id);
+  assert(accepted);
+
+  const uiNotifier = await wallet.getUINotifier(rawId, `unknown`);
+
+  const update = await E(uiNotifier).getUpdateSince();
+  t.is(update.value, 'first offer made');
+
+  // make the second offer
+  const rawId2 = '1593482020371';
+  const id2 = `unknown#${rawId2}`;
+
+  const offer2 = {
+    id: rawId2,
+    continuingInvitation: {
+      priorOfferId: rawId,
+      description: 'SecondThing',
+    },
+    proposalTemplate: {},
+  };
+
+  await wallet.addOffer(offer2);
+  const accepted2 = await wallet.acceptOffer(id2);
+  assert(accepted2);
+
+  const update2 = await E(uiNotifier).getUpdateSince(update.updateCount);
+
+  t.is(update2.value, 'second offer made');
 });

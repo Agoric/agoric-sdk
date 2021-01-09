@@ -36,9 +36,8 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
     matchingValue,
     details`Cannot find invitation corresponding to ${q(boardId)}`,
   );
-  const value =
-    matchingValue === undefined ? harden([]) : harden([matchingValue]);
-  return value;
+
+  return harden([matchingValue]);
 };
 
 // An invitation matching the query parameters is already expected
@@ -59,9 +58,11 @@ const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
     );
 
   const matchingValue = invitationPurseBalance.value.find(matches);
-  const value =
-    matchingValue === undefined ? harden([]) : harden([matchingValue]);
-  return value;
+  assert(
+    matchingValue,
+    details`Cannot find invitation corresponding to ${q(kvs)}`,
+  );
+  return harden([matchingValue]);
 };
 
 const makeFindInvitation = (invitationPurse, invitationMath) => {
