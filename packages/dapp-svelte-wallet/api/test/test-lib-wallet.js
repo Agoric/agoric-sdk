@@ -1099,3 +1099,22 @@ test('addOffer makeContinuingInvitation', async t => {
 
   t.is(update2.value, 'second offer made');
 });
+
+test('getZoe, getBoard', async t => {
+  const zoe = makeZoe(fakeVatAdmin);
+  const board = makeBoard();
+
+  const pursesStateChangeHandler = _data => {};
+  const inboxStateChangeHandler = _data => {};
+
+  const { admin: wallet, initialized } = makeWallet({
+    zoe,
+    board,
+    pursesStateChangeHandler,
+    inboxStateChangeHandler,
+  });
+  await initialized;
+
+  t.is(await E(wallet).getZoe(), zoe);
+  t.is(await E(wallet).getBoard(), board);
+});
