@@ -164,11 +164,11 @@ export function buildRootObject(_vatPowers) {
         return walletAdmin.getUINotifier(rawId, dappOrigin);
       },
       async getZoe() {
-        // no approval needed
+        await approve();
         return walletAdmin.getZoe();
       },
       async getBoard() {
-        // no approval needed
+        await approve();
         return walletAdmin.getBoard();
       },
     };
