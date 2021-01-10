@@ -1070,12 +1070,12 @@ test('addOffer makeContinuingInvitation', async t => {
 
   await wallet.addOffer(offer);
 
+  const uiNotifierP = wallet.getUINotifier(rawId, `unknown`);
+
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
 
-  const uiNotifier = await wallet.getUINotifier(rawId, `unknown`);
-
-  const update = await E(uiNotifier).getUpdateSince();
+  const update = await E(uiNotifierP).getUpdateSince();
   t.is(update.value, 'first offer made');
 
   // make the second offer
@@ -1095,7 +1095,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const accepted2 = await wallet.acceptOffer(id2);
   assert(accepted2);
 
-  const update2 = await E(uiNotifier).getUpdateSince(update.updateCount);
+  const update2 = await E(uiNotifierP).getUpdateSince(update.updateCount);
 
   t.is(update2.value, 'second offer made');
 });
