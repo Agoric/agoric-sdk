@@ -163,6 +163,14 @@ export function buildRootObject(_vatPowers) {
         await approve();
         return walletAdmin.getUINotifier(rawId, dappOrigin);
       },
+      async getZoe() {
+        // no approval needed
+        return walletAdmin.getZoe();
+      },
+      async getBoard() {
+        // no approval needed
+        return walletAdmin.getBoard();
+      },
     };
     return harden(bridge);
   };
@@ -201,6 +209,12 @@ export function buildRootObject(_vatPowers) {
     },
     getUINotifier(rawId) {
       return walletAdmin.getUINotifier(rawId);
+    },
+    async getZoe() {
+      return walletAdmin.getZoe();
+    },
+    async getBoard() {
+      return walletAdmin.getBoard();
     },
   };
   harden(preapprovedBridge);

@@ -75,9 +75,14 @@
  * @property {(petname: Petname, instanceBoardId: string) => Promise<void>}
  * suggestInstance Introduce a Zoe contract instance to the wallet, with
  * suggested petname.
- * @property {(rawId: string) => Promise<Notifier<any>>} getUINotifier Get the UI notifier from the offerResult
- * for a particular offer, identified by id. This notifier should only
- * contain information that is safe to pass to the dapp UI.
+ * @property {(rawId: string) => Promise<Notifier<any>>} getUINotifier
+ * Get the UI notifier from the offerResult for a particular offer,
+ * identified by id. This notifier should only contain information that
+ * is safe to pass to the dapp UI.
+ * @property {() => Promise<ZoeService>} getZoe
+ * Get the Zoe Service
+ * @property {() => Promise<Board>} getBoard
+ * Get the Board
  */
 
 /**

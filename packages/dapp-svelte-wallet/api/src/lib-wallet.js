@@ -1388,6 +1388,12 @@ export function makeWallet({
       return paymentsNotifier;
     },
     getUINotifier,
+    getZoe() {
+      return zoe;
+    },
+    getBoard() {
+      return board;
+    },
   });
 
   const initialize = async () => {
