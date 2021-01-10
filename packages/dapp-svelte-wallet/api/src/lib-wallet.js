@@ -26,13 +26,18 @@ import {
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeDehydrator } from './lib-dehydrate';
+import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
 
 import '@agoric/store/exported';
 import '@agoric/zoe/exported';
 
 import './internal-types';
 import './types';
-import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
+
+/**
+ * @template T
+ * @typedef {import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord
+ */
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -89,8 +94,8 @@ export function makeWallet({
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore('offerId');
   const idToNotifierP = makeStore('offerId');
-  /** @type {Store<string, any>} */
-  const idToOfferResult = makeStore('id');
+  /** @type {Store<string, PromiseRecord<any>>} */
+  const idToOfferResultPromiseKit = makeStore('id');
 
   /** @type {WeakStore<Handle<'invitation'>, any>} */
   const invitationHandleToOfferResult = makeWeakStore('invitationHandle');
@@ -680,7 +685,7 @@ export function makeWallet({
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
     const { amountMath: invitationMath } = brandTable.getByIssuer(zoeIssuer);
     const invitationP = findOrMakeInvitation(
-      idToOfferResult,
+      idToOfferResultPromiseKit,
       board,
       zoeInvitePurse,
       invitationMath,
@@ -809,6 +814,7 @@ export function makeWallet({
       status: undefined,
     });
     idToOffer.init(id, offer);
+    idToOfferResultPromiseKit.init(id, makePromiseKit());
     await updateInboxState(id, offer);
 
     // Compile the offer
@@ -928,8 +934,8 @@ export function makeWallet({
           }
         });
 
-      const offerResult = await E(seat).getOfferResult();
-      idToOfferResult.init(id, offerResult);
+      const offerResultP = E(seat).getOfferResult();
+      idToOfferResultPromiseKit.get(id).resolve(offerResultP);
 
       ret = {
         depositedP,
@@ -1303,7 +1309,7 @@ export function makeWallet({
 
   async function getUINotifier(rawId, dappOrigin = 'unknown') {
     const id = makeId(dappOrigin, rawId);
-    const offerResult = idToOfferResult.get(id);
+    const offerResult = await idToOfferResultPromiseKit.get(id).promise;
     assert(
       passStyleOf(offerResult) === 'copyRecord',
       `offerResult must be a record to have a uiNotifier`,

@@ -76,15 +76,15 @@ const makeFindInvitation = (invitationPurse, invitationMath) => {
   return findInvitation;
 };
 
-const makeContinuingInvitation = (
-  idToOfferResult,
+const makeContinuingInvitation = async (
+  idToOfferResultPromiseKit,
   dappOrigin,
   { priorOfferId: rawPriorOfferId, description },
 ) => {
   assertFirstCapASCII(description);
 
   const priorOfferId = makeId(dappOrigin, rawPriorOfferId);
-  const offerResult = idToOfferResult.get(priorOfferId);
+  const offerResult = await idToOfferResultPromiseKit.get(priorOfferId).promise;
   assert(
     passStyleOf(offerResult) === 'copyRecord',
     `offerResult must be a record to have an invitationMakers property`,
@@ -99,7 +99,7 @@ const makeContinuingInvitation = (
 };
 
 export const findOrMakeInvitation = async (
-  idToOfferResult,
+  idToOfferResultPromiseKit,
   board,
   invitationPurse,
   invitationMath,
@@ -135,7 +135,7 @@ export const findOrMakeInvitation = async (
         ? offer.requestContext.dappOrigin
         : `unknown`;
     return makeContinuingInvitation(
-      idToOfferResult,
+      idToOfferResultPromiseKit,
       dappOrigin,
       offer.continuingInvitation,
     );
