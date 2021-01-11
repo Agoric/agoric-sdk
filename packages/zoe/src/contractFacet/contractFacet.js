@@ -362,7 +362,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           details`invitations must have a description string: ${description}`,
         );
 
-        const invitationHandle = /** @type {InvitationHandle} */ (harden({}));
+        const invitationHandle = makeHandle('Invitation');
         invitationHandleToHandler.init(invitationHandle, offerHandler);
         /** @type {Promise<Payment>} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(

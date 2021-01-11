@@ -14,6 +14,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import '../../exported';
 import '../internal-types';
 
+import { Remotable } from '@agoric/marshal';
 import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
@@ -57,7 +58,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const install = async bundle => {
     assert(bundle, `a bundle must be provided`);
     /** @type {Installation} */
-    const installation = { getBundle: () => bundle };
+    const installation = Remotable('Alleged: Installation', undefined, {
+      getBundle: () => bundle,
+    });
     harden(installation);
     installations.add(installation);
     return installation;

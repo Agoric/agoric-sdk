@@ -511,15 +511,14 @@ export function makeMarshal(
       slotMap.set(val, slotIndex);
     }
 
-    if (iface !== undefined) {
-      return harden({
-        [QCLASS]: 'slot',
-        iface,
-        index: slotIndex,
-      });
+    if (iface === undefined && passStyleOf(val) === REMOTE_STYLE) {
+      iface = `Alleged: remotable at slot ${slotIndex}`;
+      const err = new Error(`Serialize generates iface ${iface}`);
+      console.info(err);
     }
     return harden({
       [QCLASS]: 'slot',
+      iface,
       index: slotIndex,
     });
   }
