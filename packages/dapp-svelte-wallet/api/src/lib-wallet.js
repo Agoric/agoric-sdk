@@ -1228,6 +1228,10 @@ export function makeWallet({
     return brand;
   }
 
+  function getBrandPetnames(brands) {
+    return brands.map(brandMapping.valToPetname.get);
+  }
+
   function getSelfContact() {
     return selfContact;
   }
@@ -1337,6 +1341,7 @@ export function makeWallet({
     /** @deprecated use issuerManager.add instead */
     addIssuer: issuerManager.add,
     getBrand,
+    getBrandPetnames,
     publishIssuer,
     /** @deprecated use instanceManager.add instead */
     addInstance: instanceManager.add,
