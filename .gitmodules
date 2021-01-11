@@ -2,3 +2,6 @@
 	path = packages/xs-vat-worker/moddable
 	url = https://github.com/agoric-labs/moddable.git
 	branch = ag-linux-cli
+[submodule "packages/xsnap/moddable"]
+	path = packages/xsnap/moddable
+	url = https://github.com/Moddable-OpenSource/moddable.git
