@@ -38,7 +38,12 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   // Make services that are provided on the real or virtual chain side
-  async function makeChainBundler(vats, timerDevice, vatAdminSvc) {
+  async function makeChainBundler(
+    vats,
+    timerDevice,
+    vatAdminSvc,
+    noFakeCurrencies,
+  ) {
     // Create singleton instances.
     const [
       sharingService,
@@ -67,7 +72,7 @@ export function buildRootObject(vatPowers, vatParameters) {
      * @property {Array<[number, number]>} [fakeTradesGivenCentral]
      */
     /** @type {Map<string, IssuerRecord>} */
-    const issuerNameToRecord = new Map(
+    const fakeIssuerNameToRecord = new Map(
       harden([
         [
           CENTRAL_ISSUER_NAME,
@@ -133,13 +138,13 @@ export function buildRootObject(vatPowers, vatParameters) {
         ],
       ]),
     );
+    const issuerNameToRecord = noFakeCurrencies
+      ? new Map()
+      : fakeIssuerNameToRecord;
     const issuerNames = [...issuerNameToRecord.keys()];
     const centralIssuerIndex = issuerNames.findIndex(
       issuerName => issuerName === CENTRAL_ISSUER_NAME,
     );
-    if (centralIssuerIndex < 0) {
-      throw Error(`Cannot find issuer ${CENTRAL_ISSUER_NAME}`);
-    }
     const issuers = await Promise.all(
       issuerNames.map(issuerName =>
         E(vats.mints).makeMintAndIssuer(
@@ -396,6 +401,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       const {
         ROLE,
         giveMeAllTheAgoricPowers,
+        noFakeCurrencies,
         hardcodedClientAddresses,
       } = vatParameters.argv;
 
@@ -424,7 +430,12 @@ export function buildRootObject(vatPowers, vatParameters) {
           // provisioning vat can ask the demo server for bundles, and can
           // register client pubkeys with comms
           await E(vats.provisioning).register(
-            await makeChainBundler(vats, devices.timer, vatAdminSvc),
+            await makeChainBundler(
+              vats,
+              devices.timer,
+              vatAdminSvc,
+              noFakeCurrencies,
+            ),
             vats.comms,
             vats.vattp,
           );
@@ -469,6 +480,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             vats,
             devices.timer,
             vatAdminSvc,
+            noFakeCurrencies,
           );
 
           // Allow manual provisioning requests via `agoric cosmos`.
