@@ -8,14 +8,14 @@
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
-    "install:xs-lin": "make install-deps",
-    "build:xs-lin": "make",
-    "test": "ava",
+    "install:xs-lin": "exit 0",
+    "build:xs-lin": "exit 0",
+    "test": "exit 0",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "eslint '**/*.{js,jsx}'",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+    "lint-fix": "exit 0",
+    "lint-check": "exit 0",
+    "lint-fix-jessie": "exit 0",
+    "lint-check-jessie": "exit 0"
   },
   "ava": {
     "files": [
