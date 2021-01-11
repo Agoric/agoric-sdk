@@ -60,13 +60,13 @@ test('natMathHelpers', t => {
     () =>
       coerce(harden({ brand: { getAllegedName: () => 'somename' }, value: 4 })),
     {
-      message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
+      message: /The brand in the allegedAmount .* in 'coerce' didn't match the amountMath brand/,
     },
     `coerce can't take the wrong brand`,
   );
   t.throws(
     () => coerce(3),
-    { message: /alleged brand is undefined/ },
+    { message: /The brand in allegedAmount .* is undefined/ },
     `coerce needs a brand`,
   );
 
@@ -83,7 +83,7 @@ test('natMathHelpers', t => {
   t.falsy(isEmpty(make(6)), `isEmpty(6) is false`);
   t.throws(
     () => isEmpty('abc'),
-    { message: /alleged brand is undefined/ },
+    { message: /The brand in allegedAmount .* is undefined/ },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
@@ -93,7 +93,7 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () => isEmpty(0),
-    { message: /alleged brand is undefined/ },
+    { message: /The brand in allegedAmount .* is undefined/ },
     `isEmpty(0) throws because it cannot be coerced`,
   );
 
