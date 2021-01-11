@@ -128,14 +128,20 @@ export function buildRootObject(_vatPowers) {
         const filter = offer =>
           (status === null || offer.status === status) &&
           offer.requestContext &&
-          offer.requestContext.origin === dappOrigin;
+          offer.requestContext.dappOrigin === dappOrigin;
+        const filteredOffers = offers => {
+          return offers.filter(filter).map(({ id, ...v }) => ({
+            ...v,
+            id: id.slice(dappOrigin.length + 1),
+          }));
+        };
 
         observeIteration(makeApprovedNotifier(offerNotifier), {
           updateState(offers) {
-            updater.updateState(offers.filter(filter));
+            updater.updateState(filteredOffers(offers));
           },
           finish(offers) {
-            updater.finish(offers.filter(filter));
+            updater.finish(filteredOffers(offers));
           },
           fail(e) {
             updater.fail(e);
