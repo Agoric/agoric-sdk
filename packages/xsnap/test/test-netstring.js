@@ -73,6 +73,14 @@ test('round-trip short messages', async t => {
 
 test('round-trip varying messages', async t => {
   const array = ['', 'A', 'hello'];
+
+  for (let i = 1020; i < 1030; i++) {
+    array.push(new Array(i).fill(':').join(''));
+  }
+  for (let i = 2040; i < 2050; i++) {
+    array.push(new Array(i).fill(':').join(''));
+  }
+
   t.plan(array.length);
 
   const [input, output] = pipe();
