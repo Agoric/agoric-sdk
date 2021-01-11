@@ -322,7 +322,7 @@ test('issuer.split bad amount', async t => {
   await t.throwsAsync(
     _ => E(issuer).split(payment, otherUnitOps.make(10)),
     {
-      message: /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
+      message: /The brand in the allegedAmount .* in 'coerce' didn't match the amountMath brand/,
     },
     'throws for bad amount',
   );
