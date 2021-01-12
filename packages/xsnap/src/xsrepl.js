@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
@@ -72,7 +71,7 @@ async function main() {
       const file = await ask('file> ');
       await vat.snapshot(file);
     } else {
-      await vat.send(answer);
+      await vat.issueStringCommand(answer);
     }
   }
 
