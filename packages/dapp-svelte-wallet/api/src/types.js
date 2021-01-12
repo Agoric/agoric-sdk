@@ -83,6 +83,9 @@
  * Get the Zoe Service
  * @property {() => Promise<Board>} getBoard
  * Get the Board
+ * @property {(brands: Array<Brand>) => Promise<Array<Petname>>}
+ * getBrandPetnames
+ * Get the petnames for the brands that are passed in
  */
 
 /**

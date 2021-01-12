@@ -171,6 +171,10 @@ export function buildRootObject(_vatPowers) {
         await approve();
         return walletAdmin.getBoard();
       },
+      async getBrandPetnames(brands) {
+        await approve();
+        return walletAdmin.getBrandPetnames(brands);
+      },
     };
     return harden(bridge);
   };
@@ -215,6 +219,9 @@ export function buildRootObject(_vatPowers) {
     },
     async getBoard() {
       return walletAdmin.getBoard();
+    },
+    async getBrandPetnames(brands) {
+      return walletAdmin.getBrandPetnames(brands);
     },
   };
   harden(preapprovedBridge);
