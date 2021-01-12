@@ -9,7 +9,7 @@
   },
   "main": "./src/xsnap.js",
   "scripts": {
-    "build": "node -r esm src/build.js",
+    "build": "git submodule update --init && node -r esm src/build.js",
     "clean": "rm -rf build",
     "lint": "yarn lint:js && yarn lint:types",
     "lint:js": "eslint 'src/**/*.js'",
