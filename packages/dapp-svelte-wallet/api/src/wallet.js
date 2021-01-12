@@ -130,9 +130,9 @@ export function buildRootObject(_vatPowers) {
           offer.requestContext &&
           offer.requestContext.dappOrigin === dappOrigin;
         const filteredOffers = offers => {
-          return offers.filter(filter).map(({ id, ...v }) => ({
+          return offers.filter(filter).map(({ rawId, ...v }) => ({
             ...v,
-            id: id.slice(dappOrigin.length + 1),
+            id: rawId,
           }));
         };
 

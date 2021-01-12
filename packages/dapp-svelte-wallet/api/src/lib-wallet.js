@@ -809,6 +809,7 @@ export function makeWallet({
     const id = makeId(dappOrigin, rawId);
     const offer = harden({
       ...rawOffer,
+      rawId,
       id,
       requestContext: { ...requestContext, dappOrigin },
       status: undefined,
@@ -826,7 +827,7 @@ export function makeWallet({
     const { installation, instance } = await compiledOfferP;
 
     if (!idToOffer.has(id)) {
-      return id;
+      return rawId;
     }
     idToOffer.set(
       id,
@@ -837,7 +838,7 @@ export function makeWallet({
       }),
     );
     await updateInboxState(id, idToOffer.get(id));
-    return id;
+    return rawId;
   }
 
   function consummated(offer) {
