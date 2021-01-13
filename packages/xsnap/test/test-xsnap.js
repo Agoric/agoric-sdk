@@ -92,7 +92,7 @@ test('deliver a message', async t => {
   t.deepEqual([1, 2, 3], messages);
 });
 
-test.only('receive a response', async t => {
+test('receive a response', async t => {
   const messages = [];
   async function handleCommand(message) {
     messages.push(+decoder.decode(message));
