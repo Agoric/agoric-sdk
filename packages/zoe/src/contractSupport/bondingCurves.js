@@ -2,7 +2,7 @@ import { assert, details } from '@agoric/assert';
 import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
-const { add, subtract, multiply, floorDivide } = natSafeMath;
+const { multiply, floorDivide } = natSafeMath;
 /**
  * Calculations for constant product markets like Uniswap.
  * https://github.com/runtimeverification/verified-smart-contracts/blob/uniswap/uniswap/x-y-k.pdf
