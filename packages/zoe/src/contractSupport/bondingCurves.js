@@ -1,4 +1,5 @@
 import { assert, details } from '@agoric/assert';
+import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
@@ -65,14 +66,12 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
-  const numerator = multiply(multiply(outputValue, inputReserve), 10000);
-  const denominator = multiply(
-    subtract(outputReserve, outputValue),
-    oneMinusFeeInTenThousandths,
-  );
+  const oneMinusFeeInTenThousandths = 10000n - BigInt(feeBasisPoints);
+  const numerator = BigInt(outputValue) * BigInt(inputReserve) * 10000n;
+  const denominator =
+    (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeInTenThousandths;
 
-  return floorDivide(numerator, denominator);
+  return Nat(Number(numerator / denominator));
 };
 
 function assertDefined(label, value) {
