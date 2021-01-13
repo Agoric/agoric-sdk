@@ -33,12 +33,12 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
-  const inputWithFee = multiply(inputValue, oneMinusFeeInTenThousandths);
-  const numerator = multiply(inputWithFee, outputReserve);
-  const denominator = add(multiply(inputReserve, 10000), inputWithFee);
+  const oneMinusFeeInTenThousandths = BigInt(10000) - BigInt(feeBasisPoints);
+  const inputWithFee = BigInt(inputValue) * oneMinusFeeInTenThousandths;
+  const numerator = inputWithFee * BigInt(outputReserve);
+  const denominator = BigInt(inputReserve) * BigInt(10000) + inputWithFee;
 
-  return floorDivide(numerator, denominator);
+  return Nat(Number(numerator / denominator));
 };
 
 /**
