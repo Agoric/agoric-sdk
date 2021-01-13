@@ -108,6 +108,7 @@
  * @callback MakeZCFMint
  * @param {Keyword} keyword
  * @param {AmountMathKind=} amountMathKind
+ * @param {DisplayInfo=} displayInfo
  * @returns {Promise<ZCFMint>}
  */
 

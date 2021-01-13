@@ -177,7 +177,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       };
 
       /** @type {MakeZoeMint} */
-      const makeZoeMint = (keyword, amountMathKind = MathKind.NAT) => {
+      const makeZoeMint = (
+        keyword,
+        amountMathKind = MathKind.NAT,
+        displayInfo,
+      ) => {
         // Local indicates one that zoe itself makes from vetted code,
         // and so can be assumed correct and fresh by zoe.
         const {
@@ -185,7 +189,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           issuer: localIssuer,
           amountMath: localAmountMath,
           brand: localBrand,
-        } = makeIssuerKit(keyword, amountMathKind);
+        } = makeIssuerKit(keyword, amountMathKind, displayInfo);
         const localIssuerRecord = harden({
           brand: localBrand,
           issuer: localIssuer,
