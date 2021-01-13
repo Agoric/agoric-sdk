@@ -65,14 +65,17 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
-  const numerator = multiply(multiply(outputValue, inputReserve), 10000);
-  const denominator = multiply(
-    subtract(outputReserve, outputValue),
-    oneMinusFeeInTenThousandths,
-  );
+  const oneMinusFeeInTenThousandths = BigInt(10000) - BigInt(feeBasisPoints);
+  const outputValueBigInt = BigInt(outputValue);
+  const inputReserveBigInt = BigInt(inputReserve);
+  const outputReserveBigInt = BigInt(outputReserve);
 
-  return floorDivide(numerator, denominator);
+  const numerator = outputValueBigInt * inputReserveBigInt * BigInt(10000);
+  const denominator =
+    (outputReserveBigInt - outputValueBigInt) * oneMinusFeeInTenThousandths;
+
+  // not floorDivide
+  return parseInt(String(numerator / denominator), 10);
 };
 
 function assertDefined(label, value) {
