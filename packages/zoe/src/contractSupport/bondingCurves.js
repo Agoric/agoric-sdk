@@ -41,7 +41,8 @@ export const getInputPrice = (
   const numerator = inputWithFee * outputReserveBigInt;
   const denominator = inputReserveBigInt * BigInt(10000) + inputWithFee;
 
-  return floorDivide(numerator, denominator);
+  // not floorDivide
+  return parseInt(String(numerator / denominator), 10);
 };
 
 /**
