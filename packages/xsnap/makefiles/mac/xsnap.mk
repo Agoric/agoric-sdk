@@ -7,16 +7,9 @@ ifneq ($(VERBOSE),1)
 MAKEFLAGS += --silent
 endif
 
-# This Makefile gets invoked as "make" with this directory as the "cwd" using
-# Node.js child_process.spawn. For reasons that remain mysterious to this
-# author, under these circumstances, $(PWD) is two parent directories up
-# from this file. At the shell, (cd makefiles/lin && make) works fine.
-# Regardless, using HERE instead of PWD makes this Makefile work regardless of
-# the working directory.
-HERE = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-MODDABLE = $(HERE)/../../moddable
+MODDABLE = $(CURDIR)/../../moddable
 XS_DIR = $(MODDABLE)/xs
-BUILD_DIR = $(HERE)/../../build
+BUILD_DIR = $(CURDIR)/../../build
 
 BIN_DIR = $(BUILD_DIR)/bin/mac/$(GOAL)
 INC_DIR = $(XS_DIR)/includes
@@ -115,11 +108,7 @@ OBJECTS = \
 
 VPATH += $(SRC_DIR) $(TLS_DIR)
 
-build: $(MODDABLE)/README.md $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)/$(NAME)
-
-$(MODDABLE)/README.md:
-	git submodule init
-	git submodule update
+build: $(TMP_DIR) $(BIN_DIR) $(BIN_DIR)/$(NAME)
 
 $(TMP_DIR):
 	mkdir -p $(TMP_DIR)

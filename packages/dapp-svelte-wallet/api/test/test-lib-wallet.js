@@ -445,6 +445,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     inboxState1,
     {
       id: 'unknown#1588645041696',
+      rawId: '1588645041696',
       inviteHandleBoardId: '727995140',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
@@ -543,6 +544,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     inboxState2,
     {
       id: 'unknown#1588645041696',
+      rawId: '1588645041696',
       inviteHandleBoardId: '727995140',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
@@ -615,6 +617,7 @@ test('lib-wallet offer methods', async t => {
     [
       {
         id: 'unknown#1588645041696',
+        rawId: '1588645041696',
         inviteHandleBoardId: '727995140',
         instance,
         installation,
@@ -712,6 +715,7 @@ test('lib-wallet offer methods', async t => {
     [
       {
         id: 'unknown#1588645041696',
+        rawId: '1588645041696',
         inviteHandleBoardId: '727995140',
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
@@ -743,6 +747,7 @@ test('lib-wallet offer methods', async t => {
       },
       {
         id: 'unknown#1588645230204',
+        rawId: '1588645230204',
         inviteHandleBoardId: '371571443',
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },

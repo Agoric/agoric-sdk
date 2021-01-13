@@ -38,3 +38,32 @@ The parent and child communicate using "commands".
   request and receive a response from the XS child.
 - The Node.js parent can implement an asynchronous `handleCommand` function to
   respond to commands from the XS child.
+
+# xsrepl
+
+With `xsnap` comes an `xsrepl` command line tool.
+Use `yarn global add @agoric/xsnap` to add `xsrepl` to your path.
+During development, run `yarn repl`.
+
+The REPL supports special commands `load` and `save` for snapshots, and `quit`
+to quit.
+Load and save don't take arguments; just type the file name on the next prompt.
+
+```sh
+$ xsrepl
+xs> globalThis.x = 42;
+xs> x
+42
+xs> save
+file> temp.xss
+xs> quit
+```
+
+```sh
+xs> load
+file> temp.xss
+$ xsrepl
+xs> x
+42
+xs> quit
+```

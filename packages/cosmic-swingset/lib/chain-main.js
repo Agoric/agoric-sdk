@@ -216,7 +216,10 @@ export default async function main(progname, args, { path, env, agcc }) {
     }
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
-    const argv = { ROLE: 'chain' };
+    const argv = {
+      ROLE: 'chain',
+      noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
+    };
     const s = await launch(
       stateDBDir,
       mailboxStorage,

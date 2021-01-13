@@ -8,8 +8,12 @@
     "js": "mjs"
   },
   "main": "./src/xsnap.js",
+  "bin": {
+    "xsrepl": "./src/xsrepl"
+  },
   "scripts": {
-    "build": "node -r esm src/build.js",
+    "repl": "node -r esm src/xsrepl.js",
+    "build": "git submodule update --init && node -r esm src/build.js",
     "clean": "rm -rf build",
     "lint": "yarn lint:js && yarn lint:types",
     "lint:js": "eslint 'src/**/*.js'",
@@ -19,11 +23,12 @@
     "test": "ava",
     "postinstall": "yarn build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "esm": "^3.2.5"
+  },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^3.12.1",
-    "esm": "^3.2.5",
     "rollup-plugin-terser": "^5.1.3"
   },
   "files": [

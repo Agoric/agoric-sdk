@@ -52,6 +52,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
+    noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
   };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function doOutboundBridge(dstID, _obj) {
