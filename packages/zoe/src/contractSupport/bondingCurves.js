@@ -66,8 +66,8 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = 10000n - BigInt(feeBasisPoints);
-  const numerator = BigInt(outputValue) * BigInt(inputReserve) * 10000n;
+  const oneMinusFeeInTenThousandths = BigInt(10000) - BigInt(feeBasisPoints);
+  const numerator = BigInt(outputValue) * BigInt(inputReserve) * BigInt(10000);
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeInTenThousandths;
 
