@@ -4,6 +4,7 @@ import test from 'ava';
 
 import {
   getInputPrice,
+  getOutputPrice,
   calcLiqValueToMint,
 } from '../../../src/contractSupport';
 
@@ -14,6 +15,15 @@ const testGetPrice = (
 ) => {
   const output = getInputPrice(inputValue, inputReserve, outputReserve);
   t.deepEqual(output, expectedOutput);
+};
+
+const testGetOutputPrice = (
+  t,
+  { inputReserve, outputReserve, outputValue },
+  expectedInput,
+) => {
+  const input = getOutputPrice(outputValue, inputReserve, outputReserve);
+  t.deepEqual(input, expectedInput);
 };
 
 // If these tests of `getInputPrice` fail, it would indicate that we have
@@ -39,18 +49,6 @@ test('getInputPrice ok 2', t => {
 });
 
 test('getInputPrice ok 3', t => {
-  const input = {
-    inputReserve: 8160,
-    outputReserve: 7743,
-    inputValue: 6635,
-  };
-  const expectedOutput = 3466;
-  testGetPrice(t, input, expectedOutput);
-});
-
-test('getInputPrice reverse x and y amounts', t => {
-  // Note: this is now the same test as the one above because we are
-  // only using values
   const input = {
     inputReserve: 8160,
     outputReserve: 7743,
@@ -90,6 +88,46 @@ test('getInputPrice ok 6', t => {
   testGetPrice(t, input, expectedOutput);
 });
 
+test('getInputPrice negative', t => {
+  const input = {
+    outputReserve: 117,
+    inputReserve: 43,
+    inputValue: -7,
+  };
+  const expectedOutput = 0;
+  testGetPrice(t, input, expectedOutput);
+});
+
+test('getInputPrice bad reserve 1', t => {
+  const input = {
+    outputReserve: 0,
+    inputReserve: 43,
+    inputValue: 347,
+  };
+  const expectedOutput = 0;
+  testGetPrice(t, input, expectedOutput);
+});
+
+test('getInputPrice bad reserve 2', t => {
+  const input = {
+    outputReserve: 50,
+    inputReserve: 0,
+    inputValue: 828,
+  };
+  const expectedOutput = 0;
+  testGetPrice(t, input, expectedOutput);
+});
+
+test('getInputPrice zero input', t => {
+  const input = {
+    outputReserve: 50,
+    inputReserve: 320,
+    inputValue: 0,
+  };
+  const expectedOutput = 0;
+  testGetPrice(t, input, expectedOutput);
+});
+
 test('calculate value to mint - positive supply 1', t => {
   const res = calcLiqValueToMint(20, 30, 5);
   t.is(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
@@ -103,4 +141,54 @@ test('calculate value to mint - positive supply 2', t => {
 test('calculate value to mint - no supply', t => {
   const res = calcLiqValueToMint(0, 30, 5);
   t.is(res, 30, 'When the supply is empty, return inputValue');
+});
+
+test('getOutputPrice ok', t => {
+  const input = {
+    outputReserve: 117,
+    inputReserve: 43,
+    outputValue: 37,
+  };
+  const expectedOutput = 19;
+  testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice zero output reserve', t => {
+  const input = {
+    outputReserve: 0,
+    inputReserve: 43,
+    outputValue: 37,
+  };
+  const expectedOutput = 0;
+  testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice zero input reserve', t => {
+  const input = {
+    outputReserve: 92,
+    inputReserve: 0,
+    outputValue: 37,
+  };
+  const expectedOutput = 0;
+  testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice too much output', t => {
+  const input = {
+    outputReserve: 1024,
+    inputReserve: 1132,
+    outputValue: 20923,
+  };
+  const expectedOutput = 0;
+  testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice too much output 2', t => {
+  const input = {
+    outputReserve: 345,
+    inputReserve: 1132,
+    outputValue: 345,
+  };
+  const expectedOutput = 0;
+  testGetOutputPrice(t, input, expectedOutput);
 });

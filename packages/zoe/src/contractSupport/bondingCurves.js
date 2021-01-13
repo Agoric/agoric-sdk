@@ -3,6 +3,8 @@ import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
+const BIG_10000 = BigInt(10000);
+
 /**
  * Calculations for constant product markets like Uniswap.
  * https://github.com/runtimeverification/verified-smart-contracts/blob/uniswap/uniswap/x-y-k.pdf
@@ -33,13 +35,13 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = BigInt(10000) - BigInt(feeBasisPoints);
-  const inputWithFee = BigInt(inputValue) * oneMinusFeeInTenThousandths;
-  const numerator = inputWithFee * BigInt(outputReserve);
-  const denominator = BigInt(inputReserve) * BigInt(10000) + inputWithFee;
-  if (denominator <= BigInt(0)) {
+  if (inputReserve <= 0 || outputReserve <= 0 || inputValue < 0) {
     return 0;
   }
+  const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
+  const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
+  const numerator = inputWithFee * BigInt(outputReserve);
+  const denominator = BigInt(inputReserve) * BIG_10000 + inputWithFee;
   return Nat(Number(numerator / denominator));
 };
 
@@ -68,13 +70,13 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = BigInt(10000) - BigInt(feeBasisPoints);
-  const numerator = BigInt(outputValue) * BigInt(inputReserve) * BigInt(10000);
-  const denominator =
-    (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeInTenThousandths;
-  if (denominator <= BigInt(0)) {
+  if (inputReserve <= 0 || outputReserve <= 0 || outputReserve <= outputValue) {
     return 0;
   }
+  const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
+  const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
+  const denominator =
+    (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
   return Nat(Number(numerator / denominator));
 };
 
