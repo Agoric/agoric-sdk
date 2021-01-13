@@ -70,6 +70,9 @@ export const getOutputPrice = (
   const numerator = BigInt(outputValue) * BigInt(inputReserve) * BigInt(10000);
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeInTenThousandths;
+  if (denominator <= BigInt(0)) {
+    return 0;
+  }
 
   return Nat(Number(numerator / denominator));
 };
