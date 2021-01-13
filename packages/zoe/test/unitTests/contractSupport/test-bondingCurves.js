@@ -128,6 +128,16 @@ test('getInputPrice zero input', t => {
   testGetPrice(t, input, expectedOutput);
 });
 
+test('getInputPrice big product', t => {
+  const input = {
+    outputReserve: 100000000,
+    inputReserve: 100000000,
+    inputValue: 1000,
+  };
+  const expectedOutput = 996;
+  testGetPrice(t, input, expectedOutput);
+});
+
 test('calculate value to mint - positive supply 1', t => {
   const res = calcLiqValueToMint(20, 30, 5);
   t.is(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
@@ -190,5 +200,15 @@ test('getOutputPrice too much output 2', t => {
     outputValue: 345,
   };
   const expectedOutput = 0;
+  testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice big product', t => {
+  const input = {
+    outputReserve: 100000000,
+    inputReserve: 100000000,
+    outputValue: 1000,
+  };
+  const expectedOutput = 1003;
   testGetOutputPrice(t, input, expectedOutput);
 });
