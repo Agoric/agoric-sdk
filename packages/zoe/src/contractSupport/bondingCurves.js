@@ -37,7 +37,9 @@ export const getInputPrice = (
   const inputWithFee = BigInt(inputValue) * oneMinusFeeInTenThousandths;
   const numerator = inputWithFee * BigInt(outputReserve);
   const denominator = BigInt(inputReserve) * BigInt(10000) + inputWithFee;
-
+  if (denominator <= BigInt(0)) {
+    return 0;
+  }
   return Nat(Number(numerator / denominator));
 };
 
@@ -73,7 +75,6 @@ export const getOutputPrice = (
   if (denominator <= BigInt(0)) {
     return 0;
   }
-
   return Nat(Number(numerator / denominator));
 };
 
