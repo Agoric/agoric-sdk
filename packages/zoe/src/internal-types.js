@@ -126,6 +126,7 @@
  * @callback MakeZoeMint
  * @param {Keyword} keyword
  * @param {AmountMathKind=} amountMathKind
+ * @param {DisplayInfo=} displayInfo
  * @returns {ZoeMint}
  */
 

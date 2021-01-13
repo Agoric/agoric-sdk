@@ -393,6 +393,7 @@ test(`zcf.makeZCFMint - NAT`, async t => {
   };
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.NAT);
+  t.is(issuerRecord.brand.getDisplayInfo(), undefined);
 });
 
 test(`zcf.makeZCFMint - STRING_SET`, async t => {
@@ -542,6 +543,25 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   t.throws(() => zcfMint.burnLosses({ A: amountMath.make(1) }, zcfSeat), {
     message: `seat has been exited`,
   });
+});
+
+test(`zcf.makeZCFMint - displayInfo`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint(
+    'A',
+    MathKind.NAT,
+    harden({
+      decimalPlaces: 3,
+    }),
+  );
+  const issuerRecord = zcfMint.getIssuerRecord();
+  const expected = {
+    issuers: { A: issuerRecord.issuer },
+    brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
+  };
+  await testTerms(t, zcf, expected);
+  t.is(issuerRecord.brand.getDisplayInfo().decimalPlaces, 3);
 });
 
 /**

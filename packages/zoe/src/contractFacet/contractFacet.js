@@ -192,13 +192,21 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     };
 
     /** @type {MakeZCFMint} */
-    const makeZCFMint = async (keyword, amountMathKind = MathKind.NAT) => {
+    const makeZCFMint = async (
+      keyword,
+      amountMathKind = MathKind.NAT,
+      displayInfo,
+    ) => {
       assert(
         !(keyword in instanceRecord.terms.issuers),
         details`Keyword ${keyword} already registered`,
       );
 
-      const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(keyword, amountMathKind);
+      const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
+        keyword,
+        amountMathKind,
+        displayInfo,
+      );
       const { brand: mintyBrand, issuer: mintyIssuer } = await E(
         zoeMintP,
       ).getIssuerRecord();
