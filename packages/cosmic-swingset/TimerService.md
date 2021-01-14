@@ -27,7 +27,7 @@ interface TimerService {
   // next multiple of interval from the base. Since block times are coarse-
   // grained, the actual call may occur later, but this won't change when the
   // next event will be called. 
-  createRepeater(delaySecs :integer, interval :integer) -> (Repeater);
+  makeRepeater(delaySecs :integer, interval :integer) -> (Repeater);
 }
 
 interface Repeater {
@@ -72,9 +72,9 @@ command[6]  tl = home.localTimerService
 history[6]  [Presence o-59]  
 command[7]  tc = home.chainTimerService
 history[7]  [Presence o-55]  
-command[8]  rl = tl~.createRepeater(7, 1500)
+command[8]  rl = tl~.makeRepeater(7, 1500)
 history[8]  [Presence o-64]  
-command[9]  rc = tc~.createRepeater(7, 1)
+command[9]  rc = tc~.makeRepeater(7, 1)
 history[9]  [Presence o-65]  
 command[10]  rl~.schedule(h1)
 history[10]  1571783040007

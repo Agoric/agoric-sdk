@@ -8,9 +8,9 @@ import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import buildManualTimer from '../../tools/manualTimer';
 
-test('manualTimer createNotifier', async t => {
+test('manualTimer makeNotifier', async t => {
   const manualTimer = buildManualTimer(console.log, 0);
-  const notifier = await E(manualTimer).createNotifier(1, 1);
+  const notifier = await E(manualTimer).makeNotifier(1, 1);
   await manualTimer.tick();
   const update1 = await E(notifier).getUpdateSince();
   t.is(update1.updateCount, 2);
@@ -37,10 +37,10 @@ function makeHandler() {
   };
 }
 
-test('manualTimer createRepeater', async t => {
+test('manualTimer makeRepeater', async t => {
   const manualTimer = buildManualTimer(console.log, 0);
   const timestamp = await E(manualTimer).getCurrentTimestamp();
-  const repeater = E(manualTimer).createRepeater(1, 1);
+  const repeater = E(manualTimer).makeRepeater(1, 1);
   const handler = makeHandler();
   await E(repeater).schedule(handler);
   await manualTimer.tick();

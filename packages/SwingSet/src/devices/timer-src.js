@@ -4,7 +4,7 @@
  * function can be passed to D(timer).setWakeup(delaySecs, handler) to be woken
  * after delaySecs.
  *
- * The other form r = D(timer).createRepeater(startTime, interval) allows one to
+ * The other form r = D(timer).makeRepeater(startTime, interval) allows one to
  * create a repeater object which can be used to scheduled regular wakeups. Each
  * time D(timer).schedule(r, w) is called, w.wake(r) will be scheduled to be
  * called after the next multiple of interval since startTime. This doesn't
@@ -273,7 +273,7 @@ export function buildRootDeviceNode(tools) {
     // identity of Repeaters using unique indexes. The indexes are exposed
     // directly to the wrapper vat, and we rely on the wrapper vat to manage
     // the authority they represent as capabilities.
-    createRepeater(startTime, interval) {
+    makeRepeater(startTime, interval) {
       const index = nextRepeater;
       repeaters.push({
         startTime: Nat(startTime),
