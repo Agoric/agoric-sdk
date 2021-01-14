@@ -9,8 +9,15 @@ import {
   makeOnewayPriceAuthorityKit,
 } from '../contractSupport';
 
-import '../../exported';
-import './exported';
+// the bulk import style for typescript declarations doesn't seem to work here.
+/**
+ * @typedef {import('../../tools/types').PriceAuthority} PriceAuthority
+ * @typedef {import('../../tools/types').PriceAuthorityAdmin} PriceAuthorityAdmin
+ * @typedef {import('../../tools/types').PriceQuote} PriceQuote
+ * @typedef {import('../../tools/types').PriceQuoteValue} PriceQuoteValue
+ * @typedef {import('../../tools/types').PriceQuery} PriceQuery
+ * @typedef {import('../../tools/types').PriceDescription} PriceDescription
+ */
 
 const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
