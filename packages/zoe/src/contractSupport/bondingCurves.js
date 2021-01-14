@@ -3,6 +3,10 @@ import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
+
+// TODO(2196): use 10000n instead of  BigInt(10000)
+// We use this workaround due to some parser in our toolchain that can't parse
+// bigint literals.
 const BIG_10000 = BigInt(10000);
 
 /**
