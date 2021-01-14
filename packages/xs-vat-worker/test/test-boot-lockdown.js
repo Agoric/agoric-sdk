@@ -27,10 +27,13 @@ test('bootstrap to SES lockdown', async t => {
   await vat.evaluate(bootScript);
   t.deepEqual([], messages);
 
-  const SESinfo = '[typeof harden, typeof Compartment]';
-  const toBytes = expr =>
-    `new TextEncoder().encode(JSON.stringify(${expr})).buffer`;
-  await vat.evaluate(`issueCommand(${toBytes(SESinfo)});`);
+  await vat.evaluate(`
+    const encoder = new TextEncoder();
+    globalThis.send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
+  `);
+  await vat.evaluate(`
+    send([ typeof harden, typeof Compartment ]);
+  `);
   await vat.close();
   t.deepEqual(['["function","function"]'], messages);
 });
