@@ -8,10 +8,8 @@
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
-    "install:xs-lin": "make install-deps",
-    "build:xs-lin": "make",
     "test": "ava",
-    "build": "exit 0",
+    "build": "rollup --config rollup.config.js",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
@@ -27,6 +25,8 @@
     "timeout": "2m"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
     "ava": "^3.12.1",
     "detective-es6": "^2.2.0",
     "eslint": "^6.8.0",
@@ -38,7 +38,8 @@
     "eslint-plugin-prettier": "^3.1.2",
     "filing-cabinet": "^2.5.1",
     "nyc": "^15.1.0",
-    "prettier": "^1.18.2"
+    "prettier": "^1.18.2",
+    "rollup": "^1.23.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.2.0",
@@ -49,8 +50,10 @@
     "@agoric/marshal": "^0.3.0",
     "@agoric/promise-kit": "^0.2.0",
     "@agoric/swingset-vat": "^0.11.0",
+    "@agoric/xsnap": "^0.1.0",
     "anylogger": "^0.21.0",
-    "esm": "^3.2.5"
+    "esm": "^3.2.5",
+    "ses": "^0.11.0"
   },
   "keywords": [],
   "files": [
