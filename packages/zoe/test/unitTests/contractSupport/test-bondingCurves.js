@@ -179,7 +179,7 @@ test('getOutputPrice ok', t => {
     inputReserve: 43,
     outputValue: 37,
   };
-  const expectedOutput = 19;
+  const expectedOutput = 20;
   testGetOutputPrice(t, input, expectedOutput);
 });
 
@@ -231,6 +231,16 @@ test('getOutputPrice big product', t => {
     inputReserve: 100000000,
     outputValue: 1000,
   };
-  const expectedOutput = 1003;
+  const expectedOutput = 1004;
+  testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice minimum price', t => {
+  const input = {
+    outputReserve: 10,
+    inputReserve: 1,
+    outputValue: 1,
+  };
+  const expectedOutput = 1;
   testGetOutputPrice(t, input, expectedOutput);
 });

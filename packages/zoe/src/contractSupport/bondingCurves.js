@@ -98,7 +98,7 @@ export const getOutputPrice = (
   const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
-  return Nat(Number(numerator / denominator));
+  return Nat(Number(numerator / denominator)) + 1;
 };
 
 function assertDefined(label, value) {
