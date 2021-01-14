@@ -322,9 +322,9 @@ int main(int argc, char* argv[])
 				xsBeginHost(machine);
 				{
 					xsVars(3);
-					xsVar(1) = xsArrayBuffer(nsbuf + 1, nslen - 1);
 					xsTry {
 						if (command == '?') {
+							xsVar(1) = xsArrayBuffer(nsbuf + 1, nslen - 1);
 							xsVar(2) = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(1));
 							if (xsTypeOf(xsVar(2)) != xsUndefinedType) {
 								responseLength = fxGetArrayBufferLength(machine, &xsVar(2));
@@ -332,9 +332,8 @@ int main(int argc, char* argv[])
 								fxGetArrayBufferData(machine, &xsVar(2), 0, response, responseLength);
 							}
 						} else {
-							xsVar(0) = xsGet(xsGlobal, xsID("String"));
-							xsVar(2) = xsCall1(xsVar(0), xsID("fromArrayBuffer"), xsVar(1));
-							xsCall1(xsGlobal, xsID("eval"), xsVar(2));
+							xsVar(1) = xsStringBuffer(nsbuf + 1, nslen - 1);
+							xsCall1_noResult(xsGlobal, xsID("eval"), xsVar(1));
 						}
 					}
 					xsCatch {
