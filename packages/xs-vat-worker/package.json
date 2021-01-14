@@ -52,7 +52,7 @@
     "@agoric/marshal": "^0.3.0",
     "@agoric/promise-kit": "^0.2.0",
     "@agoric/swingset-vat": "^0.11.0",
-    "@agoric/xsnap": "^0.0.0",
+    "@agoric/xsnap": "^0.1.0",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5",
     "ses": "^0.11.0"
