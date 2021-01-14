@@ -35,9 +35,16 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  if (inputReserve <= 0 || outputReserve <= 0 || inputValue < 0) {
-    return 0;
-  }
+  assert(inputValue > 0, details`inputValue ${inputValue} must be positive`);
+  assert(
+    inputReserve > 0,
+    details`inputReserve ${inputReserve} must be positive`,
+  );
+  assert(
+    outputReserve > 0,
+    details`outputReserve ${outputReserve} must be positive`,
+  );
+
   const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
   const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
   const numerator = inputWithFee * BigInt(outputReserve);
@@ -70,9 +77,19 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  if (inputReserve <= 0 || outputReserve <= 0 || outputReserve <= outputValue) {
-    return 0;
-  }
+  assert(
+    inputReserve > 0,
+    details`inputReserve ${inputReserve} must be positive`,
+  );
+  assert(
+    outputReserve > 0,
+    details`outputReserve ${outputReserve} must be positive`,
+  );
+  assert(
+    outputReserve > outputValue,
+    details`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
+  );
+
   const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
   const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
   const denominator =

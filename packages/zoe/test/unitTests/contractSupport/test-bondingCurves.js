@@ -17,6 +17,16 @@ const testGetPrice = (
   t.deepEqual(output, expectedOutput);
 };
 
+const getInputPricethrows = (
+  t,
+  { inputReserve, outputReserve, inputValue },
+  message,
+) => {
+  t.throws(_ => getInputPrice(inputValue, inputReserve, outputReserve), {
+    message,
+  });
+};
+
 const testGetOutputPrice = (
   t,
   { inputReserve, outputReserve, outputValue },
@@ -26,16 +36,26 @@ const testGetOutputPrice = (
   t.deepEqual(input, expectedInput);
 };
 
+const getOutputPricethrows = (
+  t,
+  { inputReserve, outputReserve, outputValue },
+  message,
+) => {
+  t.throws(_ => getOutputPrice(outputValue, inputReserve, outputReserve), {
+    message,
+  });
+};
+
 // If these tests of `getInputPrice` fail, it would indicate that we have
 // diverged from the calculation in the Uniswap paper.
-test('getInputPrice ok 1', t => {
+test('getInputPrice no reserves', t => {
   const input = {
     inputReserve: 0,
     outputReserve: 0,
     inputValue: 1,
   };
-  const expectedOutput = 0;
-  testGetPrice(t, input, expectedOutput);
+  const message = 'inputReserve (a number) must be positive';
+  getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice ok 2', t => {
@@ -94,8 +114,8 @@ test('getInputPrice negative', t => {
     inputReserve: 43,
     inputValue: -7,
   };
-  const expectedOutput = 0;
-  testGetPrice(t, input, expectedOutput);
+  const message = 'inputValue (a number) must be positive';
+  getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice bad reserve 1', t => {
@@ -104,8 +124,8 @@ test('getInputPrice bad reserve 1', t => {
     inputReserve: 43,
     inputValue: 347,
   };
-  const expectedOutput = 0;
-  testGetPrice(t, input, expectedOutput);
+  const message = 'outputReserve (a number) must be positive';
+  getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice bad reserve 2', t => {
@@ -114,8 +134,8 @@ test('getInputPrice bad reserve 2', t => {
     inputReserve: 0,
     inputValue: 828,
   };
-  const expectedOutput = 0;
-  testGetPrice(t, input, expectedOutput);
+  const message = 'inputReserve (a number) must be positive';
+  getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice zero input', t => {
@@ -124,8 +144,8 @@ test('getInputPrice zero input', t => {
     inputReserve: 320,
     inputValue: 0,
   };
-  const expectedOutput = 0;
-  testGetPrice(t, input, expectedOutput);
+  const message = 'inputValue (a number) must be positive';
+  getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice big product', t => {
@@ -169,8 +189,8 @@ test('getOutputPrice zero output reserve', t => {
     inputReserve: 43,
     outputValue: 37,
   };
-  const expectedOutput = 0;
-  testGetOutputPrice(t, input, expectedOutput);
+  const message = 'outputReserve (a number) must be positive';
+  getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice zero input reserve', t => {
@@ -179,8 +199,8 @@ test('getOutputPrice zero input reserve', t => {
     inputReserve: 0,
     outputValue: 37,
   };
-  const expectedOutput = 0;
-  testGetOutputPrice(t, input, expectedOutput);
+  const message = 'inputReserve (a number) must be positive';
+  getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice too much output', t => {
@@ -189,8 +209,9 @@ test('getOutputPrice too much output', t => {
     inputReserve: 1132,
     outputValue: 20923,
   };
-  const expectedOutput = 0;
-  testGetOutputPrice(t, input, expectedOutput);
+  const message =
+    'outputReserve (a number) must be greater than outputValue (a number)';
+  getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice too much output 2', t => {
@@ -199,8 +220,9 @@ test('getOutputPrice too much output 2', t => {
     inputReserve: 1132,
     outputValue: 345,
   };
-  const expectedOutput = 0;
-  testGetOutputPrice(t, input, expectedOutput);
+  const message =
+    'outputReserve (a number) must be greater than outputValue (a number)';
+  getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice big product', t => {
