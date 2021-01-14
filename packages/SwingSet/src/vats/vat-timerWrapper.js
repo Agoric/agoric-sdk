@@ -7,8 +7,8 @@ export function buildRootObject(vatPowers) {
   const repeaters = new Map();
 
   async function createTimerService(timerNode) {
-    /* @type {TimerService} */
-    return harden({
+    /** @type {TimerService} */
+    const timerService = {
       getCurrentTimestamp() {
         return Nat(D(timerNode).getLastPolled());
       },
@@ -19,14 +19,19 @@ export function buildRootObject(vatPowers) {
       removeWakeup(handler) {
         return D(timerNode).removeWakeup(handler);
       },
-      createRepeater(delaySecs, interval) {
+      // deprecated in favor of makeRepeater().
+      // TODO(#2164): remove before Beta
+      createRepeater(delay, interval) {
+        return this.makeRepeater(delay, interval);
+      },
+      makeRepeater(delaySecs, interval) {
         Nat(delaySecs);
         assert(
           Nat(interval) > 0,
-          details`createRepeater's second parameter must be a positive integer: ${interval}`,
+          details`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).createRepeater(delaySecs, interval);
+        const index = D(timerNode).makeRepeater(delaySecs, interval);
 
         const vatRepeater = harden({
           schedule(h) {
@@ -40,14 +45,14 @@ export function buildRootObject(vatPowers) {
         repeaters.set(index, vatRepeater);
         return vatRepeater;
       },
-      createNotifier(delaySecs, interval) {
+      makeNotifier(delaySecs, interval) {
         Nat(delaySecs);
         assert(
           Nat(interval) > 0,
-          details`createNotifier's second parameter must be a positive integer: ${interval}`,
+          details`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).createRepeater(delaySecs, interval);
+        const index = D(timerNode).makeRepeater(delaySecs, interval);
         const { notifier, updater } = makeNotifierKit();
         const updateHandler = harden({
           wake: updater.updateState,
@@ -56,7 +61,8 @@ export function buildRootObject(vatPowers) {
 
         return notifier;
       },
-    });
+    };
+    return harden(timerService);
   }
 
   return harden({ createTimerService });

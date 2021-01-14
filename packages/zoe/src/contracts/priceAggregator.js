@@ -73,7 +73,7 @@ const start = async zcf => {
   let publishedTimestamp = await E(timer).getCurrentTimestamp();
 
   // Wake every POLL_INTERVAL and run the queriers.
-  const repeaterP = E(timer).createRepeater(0, POLL_INTERVAL);
+  const repeaterP = E(timer).makeRepeater(0, POLL_INTERVAL);
   /** @type {TimerWaker} */
   const waker = {
     async wake(timestamp) {

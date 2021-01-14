@@ -52,7 +52,7 @@ const willWakeAt = timerService~.setWakeup(60, handler);
 The handler will fire somewhat after 60 seconds from now.
 
 ```
-const repeater = timerService~.createRepeater(20, 60);
+const repeater = timerService~.makeRepeater(20, 60);
 repeater~.schedule(handler);
 ```
 
