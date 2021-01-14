@@ -4,12 +4,6 @@ import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 
-// the bulk import style for typescript declarations doesn't seem to work here.
-/**
- * @typedef {import('./types').PriceAuthority} PriceAuthority
- * @typedef {import('./types').PriceQuote} PriceQuote
- */
-
 /**
  * @typedef {Object} Deleter
  * @property {() => void} delete
