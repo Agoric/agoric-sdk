@@ -1,7 +1,14 @@
 import { assert, details } from '@agoric/assert';
+import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
-const { add, subtract, multiply, floorDivide } = natSafeMath;
+const { multiply, floorDivide } = natSafeMath;
+
+// TODO(2196): use 10000n instead of  BigInt(10000)
+// We use this workaround due to some parser in our toolchain that can't parse
+// bigint literals.
+const BIG_10000 = BigInt(10000);
+
 /**
  * Calculations for constant product markets like Uniswap.
  * https://github.com/runtimeverification/verified-smart-contracts/blob/uniswap/uniswap/x-y-k.pdf
@@ -32,12 +39,21 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
-  const inputWithFee = multiply(inputValue, oneMinusFeeInTenThousandths);
-  const numerator = multiply(inputWithFee, outputReserve);
-  const denominator = add(multiply(inputReserve, 10000), inputWithFee);
+  assert(inputValue > 0, details`inputValue ${inputValue} must be positive`);
+  assert(
+    inputReserve > 0,
+    details`inputReserve ${inputReserve} must be positive`,
+  );
+  assert(
+    outputReserve > 0,
+    details`outputReserve ${outputReserve} must be positive`,
+  );
 
-  return floorDivide(numerator, denominator);
+  const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
+  const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
+  const numerator = inputWithFee * BigInt(outputReserve);
+  const denominator = BigInt(inputReserve) * BIG_10000 + inputWithFee;
+  return Nat(Number(numerator / denominator));
 };
 
 /**
@@ -65,14 +81,24 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
-  const numerator = multiply(multiply(outputValue, inputReserve), 10000);
-  const denominator = multiply(
-    subtract(outputReserve, outputValue),
-    oneMinusFeeInTenThousandths,
+  assert(
+    inputReserve > 0,
+    details`inputReserve ${inputReserve} must be positive`,
+  );
+  assert(
+    outputReserve > 0,
+    details`outputReserve ${outputReserve} must be positive`,
+  );
+  assert(
+    outputReserve > outputValue,
+    details`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
   );
 
-  return floorDivide(numerator, denominator);
+  const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
+  const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
+  const denominator =
+    (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
+  return Nat(Number(numerator / denominator));
 };
 
 function assertDefined(label, value) {
