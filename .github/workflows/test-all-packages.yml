@@ -313,12 +313,6 @@ jobs:
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
 
-    - name: install XS dependencies
-      working-directory: ./packages/xs-vat-worker
-      run: yarn install:xs-lin
-    - name: yarn build XS worker
-      working-directory: ./packages/xs-vat-worker
-      run: yarn build:xs-lin
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
       env:

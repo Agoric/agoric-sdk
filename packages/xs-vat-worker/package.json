@@ -8,8 +8,6 @@
   "main": "src/locate.js",
   "module": "src/locate.js",
   "scripts": {
-    "install:xs-lin": "make install-deps",
-    "build:xs-lin": "make",
     "test": "ava",
     "build": "rollup --config rollup.config.js",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
