@@ -37,10 +37,7 @@ export function makeState() {
     // p+NN/p-NN -> { resolved, decider, subscribers, kernelIsSubscribed }
     // decider is one of: remoteID, 'kernel', 'comms'
     // once resolved, -> { resolved, resolution }
-    // where resolution is one of:
-    // * {type: 'object', slot}
-    // * {type: 'data', data}
-    // * {type: 'reject', data}
+    // where resolution takes the form: {rejected, data}
     nextPromiseIndex: 20,
   };
 
@@ -245,15 +242,7 @@ export function makeStateKit(state) {
     const p = state.promiseTable.get(vpid);
     assert(p, `unknown ${vpid}`);
     assert(!p.resolved);
-    if (resolution.type === 'object') {
-      assert(resolution.slot, `resolution(object) requires .slot`);
-    } else if (resolution.type === 'data') {
-      insistCapData(resolution.data);
-    } else if (resolution.type === 'reject') {
-      insistCapData(resolution.data);
-    } else {
-      throw new Error(`unknown resolution type ${resolution.type}`);
-    }
+    insistCapData(resolution.data);
     p.resolved = true;
     p.resolution = resolution;
     p.decider = undefined;

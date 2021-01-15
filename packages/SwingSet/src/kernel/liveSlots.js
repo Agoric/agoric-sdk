@@ -1,7 +1,6 @@
 /* global HandledPromise */
 
 import {
-  QCLASS,
   Remotable,
   Far,
   getInterfaceOf,
@@ -476,32 +475,8 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     return res => {
       harden(res);
       lsdebug(`ls.thenResolve fired`, res);
-
-      // We need to know if this is resolving to an imported/exported
-      // presence, because then the kernel can deliver queued messages. We
-      // could build a simpler way of doing this.
       const ser = m.serialize(res);
-      lsdebug(` ser ${ser.body} ${JSON.stringify(ser.slots)}`);
-      // find out what resolution category we're using
-      const unser = JSON.parse(ser.body);
-      if (
-        Object(unser) === unser &&
-        QCLASS in unser &&
-        unser[QCLASS] === 'slot'
-      ) {
-        const slot = ser.slots[unser.index];
-        insistVatType('object', slot);
-        syscall.fulfillToPresence(promiseID, slot);
-      } else {
-        // if it resolves to data, .thens fire but kernel-queued messages are
-        // rejected, because you can't send messages to data
-        syscall.fulfillToData(promiseID, ser);
-      }
-
-      // If we were *also* waiting on this promise (perhaps we received it as
-      // an argument, and also as a result=), then we are responsible for
-      // notifying ourselves. The kernel assumes we're a grownup and don't
-      // need to be reminded of something we did ourselves.
+      syscall.resolve(promiseID, false, ser);
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
         pRec.resolve(res);
@@ -515,7 +490,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       harden(rej);
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
-      syscall.reject(promiseID, ser);
+      syscall.resolve(promiseID, true, ser);
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
         pRec.reject(rej);

@@ -60,17 +60,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function mapResolutionFromKernel(resolution, doNotSubscribeSet) {
-    if (resolution.type === 'object') {
-      const slot = provideLocalForKernel(resolution.slot, null);
-      return harden({ ...resolution, slot });
-    }
-    if (resolution.type === 'data' || resolution.type === 'reject') {
-      return harden({
-        ...resolution,
-        data: mapDataFromKernel(resolution.data, doNotSubscribeSet),
-      });
-    }
-    throw Error(`unknown resolution type ${resolution.type}`);
+    return harden({
+      ...resolution,
+      data: mapDataFromKernel(resolution.data, doNotSubscribeSet),
+    });
   }
 
   // dispatch.notifyResolve* from kernel lands here (local vat resolving some
@@ -127,14 +120,13 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   function resolveFromRemote(remoteID, message) {
     const sci = message.indexOf(';');
     assert(sci !== -1, details`missing semicolon in resolve ${message}`);
-    // message is created by resolveToRemote, so one of:
-    // `resolve:object:${target}:${resolutionRef};`
-    // `resolve:data:${target}${rmss};${resolution.body}`
-    // `resolve:reject:${target}${rmss};${resolution.body}`
+    // message is created by resolveToRemote, taking the form:
+    // `resolve:${rejected}:${target}${rmss};${resolution.body}`
 
     const pieces = message.slice(0, sci).split(':');
     // pieces[0] is 'resolve'
-    const type = pieces[1];
+    const rejected = pieces[1] === 'reject';
+    assert(rejected || pieces[1] === 'fulfill');
     const remoteTarget = pieces[2];
     const remoteSlots = pieces.slice(3); // length=1 for resolve:object
     insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
@@ -149,17 +141,28 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const data = harden({ body, slots });
     changeDeciderFromRemoteToComms(vpid, remoteID);
 
-    let resolution;
-    if (type === 'object') {
-      resolution = harden({ type: 'object', slot: slots[0] });
-    } else if (type === 'data') {
-      resolution = harden({ type: 'data', data });
-    } else if (type === 'reject') {
-      resolution = harden({ type: 'reject', data });
-    } else {
-      throw Error(`unknown resolution type ${type} in ${message}`);
+    handleResolution(vpid, harden({ rejected, data }));
+  }
+
+  function extractPresenceIfPresent(data) {
+    insistCapData(data);
+
+    const body = JSON.parse(data.body);
+    if (
+      body &&
+      typeof body === 'object' &&
+      body['@qclass'] === 'slot' &&
+      body.index === 0
+    ) {
+      if (data.slots.length === 1) {
+        const slot = data.slots[0];
+        const { type } = parseVatSlot(slot);
+        if (type === 'object') {
+          return slot;
+        }
+      }
     }
-    handleResolution(vpid, resolution);
+    return null;
   }
 
   // helper function for handleSend(): for each message, either figure out
@@ -187,16 +190,15 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     assert(p);
 
     if (p.resolved) {
-      if (p.resolution.type === 'object') {
-        return resolveTarget(p.resolution.slot, method);
-      }
-      if (p.resolution.type === 'data') {
-        return { reject: makeUndeliverableError(method) };
-      }
-      if (p.resolution.type === 'reject') {
+      if (p.resolution.rejected) {
         return { reject: p.resolution.data };
       }
-      throw Error(`unknown res type ${p.resolution.type}`);
+      const targetPresence = extractPresenceIfPresent(p.resolution.data);
+      if (targetPresence) {
+        return resolveTarget(targetPresence, method);
+      } else {
+        return { reject: makeUndeliverableError(method) };
+      }
     }
 
     // unresolved
@@ -227,7 +229,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       if (!localDelivery.result) {
         return; // sendOnly, nowhere to send the rejection
       }
-      const resolution = harden({ type: 'reject', data: where.reject });
+      const resolution = harden({ rejected: true, data: where.reject });
       handleResolution(localDelivery.result, resolution);
       return;
     }
@@ -274,7 +276,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function handleResolution(vpid, resolution) {
-    // resolution: { type, slot or data }
+    // resolution: { rejected: boolean, data: capdata }
+    insistCapData(resolution.data);
     insistVatType('promise', vpid);
     insistPromiseIsUnresolved(vpid);
     insistDeciderIsComms(vpid);
@@ -316,31 +319,20 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       return ss;
     }
 
-    let msg;
-    if (resolution.type === 'object') {
-      const resolutionRef = provideRemoteForLocal(remoteID, resolution.slot);
-      msg = `resolve:object:${rpid}:${resolutionRef};`;
-    } else if (resolution.type === 'data') {
-      msg = `resolve:data:${rpid}${mapSlots()};${resolution.data.body}`;
-    } else if (resolution.type === 'reject') {
-      msg = `resolve:reject:${rpid}${mapSlots()};${resolution.data.body}`;
-    } else {
-      throw new Error(`unknown resolution type ${resolution.type}`);
-    }
+    const rejected = resolution.rejected ? 'reject' : 'fulfill';
+    // prettier-ignore
+    const msg =
+      `resolve:${rejected}:${rpid}${mapSlots()};${resolution.data.body}`;
 
     transmit(remoteID, msg);
   }
 
   function resolveToKernel(vpid, resolution) {
-    if (resolution.type === 'object') {
-      syscall.fulfillToPresence(vpid, provideKernelForLocal(resolution.slot));
-    } else if (resolution.type === 'data') {
-      syscall.fulfillToData(vpid, mapDataToKernel(resolution.data));
-    } else if (resolution.type === 'reject') {
-      syscall.reject(vpid, mapDataToKernel(resolution.data));
-    } else {
-      throw new Error(`unknown resolution type ${resolution.type}`);
-    }
+    syscall.resolve(
+      vpid,
+      resolution.rejected,
+      mapDataToKernel(resolution.data),
+    );
   }
 
   return harden({

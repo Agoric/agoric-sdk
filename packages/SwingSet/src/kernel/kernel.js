@@ -447,19 +447,6 @@ export default function buildKernel(
     }
   }
 
-  function statNameForNotify(state) {
-    switch (state) {
-      case 'fulfilledToPresence':
-        return 'dispatchNotifyFulfillToPresence';
-      case 'fulfilledToData':
-        return 'dispatchNotifyFulfillToData';
-      case 'rejected':
-        return 'dispatchNotifyReject';
-      default:
-        throw Error(`unknown promise state ${state}`);
-    }
-  }
-
   async function processNotify(message) {
     const { vatID, kpid } = message;
     insistVatID(vatID);
@@ -470,7 +457,7 @@ export default function buildKernel(
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
     } else {
       const p = kernelKeeper.getKernelPromise(kpid);
-      kernelKeeper.incStat(statNameForNotify(p.state));
+      kernelKeeper.incStat('dispatchNotify');
       const vatKeeper = kernelKeeper.getVatKeeper(vatID);
 
       assert(p.state !== 'unresolved', details`spurious notification ${kpid}`);

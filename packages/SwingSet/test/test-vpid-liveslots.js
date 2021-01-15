@@ -34,14 +34,8 @@ function buildSyscall() {
     subscribe(target) {
       log.push({ type: 'subscribe', target });
     },
-    fulfillToPresence(promiseID, slot) {
-      log.push({ type: 'fulfillToPresence', promiseID, slot });
-    },
-    fulfillToData(promiseID, data) {
-      log.push({ type: 'fulfillToData', promiseID, data });
-    },
-    reject(promiseID, data) {
-      log.push({ type: 'reject', promiseID, data });
+    resolve(promiseID, rejected, data) {
+      log.push({ type: 'resolve', promiseID, rejected, data });
     },
   };
 
@@ -153,46 +147,42 @@ const slot0arg = { '@qclass': 'slot', index: 0 };
 const slot1arg = { '@qclass': 'slot', index: 1 };
 
 function resolutionOf(vpid, mode, targets) {
+  const resolution = {
+    type: 'resolve',
+    promiseID: vpid,
+    rejected: false,
+  };
   switch (mode) {
-    case 'presence':
-      return {
-        type: 'fulfillToPresence',
-        promiseID: vpid,
-        slot: targets.target2,
+    case 'presence': {
+      const presenceBody = {
+        '@qclass': 'slot',
+        iface: `Alleged: presence ${targets.target2}`,
+        index: 0,
       };
+      resolution.data = capargs(presenceBody, [targets.target2]);
+      break;
+    }
     case 'local-object':
-      return {
-        type: 'fulfillToPresence',
-        promiseID: vpid,
-        slot: targets.localTarget,
-      };
+      resolution.data = capargs(slot0arg, [targets.localTarget]);
+      break;
     case 'data':
-      return {
-        type: 'fulfillToData',
-        promiseID: vpid,
-        data: capargs(4, []),
-      };
+      resolution.data = capargs(4, []);
+      break;
     case 'promise-data':
-      return {
-        type: 'fulfillToData',
-        promiseID: vpid,
-        data: capargs([slot0arg], [targets.p1]),
-      };
+      resolution.data = capargs([slot0arg], [targets.p1]);
+      break;
     case 'reject':
-      return {
-        type: 'reject',
-        promiseID: vpid,
-        data: capargs('error', []),
-      };
+      resolution.rejected = true;
+      resolution.data = capargs('error', []);
+      break;
     case 'promise-reject':
-      return {
-        type: 'reject',
-        promiseID: vpid,
-        data: capargs([slot0arg], [targets.p1]),
-      };
+      resolution.rejected = true;
+      resolution.data = capargs([slot0arg], [targets.p1]);
+      break;
     default:
       throw Error(`unknown mode ${mode}`);
   }
+  return resolution;
 }
 
 function makeDispatch(syscall, build, vatID = 'vatA') {
@@ -221,7 +211,7 @@ async function doVatResolveCase1(t, mode) {
         E(target1).one(p1);
         resolvePR(pr, mode, { target2, p1 });
         // TODO: this stall shouldn't be necessary, but if I omit it, the
-        // fulfillToPresence happens *after* two() is sent
+        // resolution happens *after* two() is sent
         await Promise.resolve();
         E(target1).two(p1);
       },
@@ -355,7 +345,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // code access to p1. When we resolve the p0 we returned from
         // `result`, liveslots will resolve p1 for us. But remember that p0
         // !== p1 . This resolution will eventually cause a
-        // `syscall.fulfillToData` (or related) call into the kernel, and
+        // `syscall.resolve` call into the kernel, and
         // will eventually cause `p1` to be resolved to something, which may
         // affect both where previously-queued messages (two) wind up, and
         // where subsequently sent messages (four) wind up.
@@ -372,9 +362,9 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
         // If we don't stall here, then all four messages get pipelined out
         // before we tell the kernel about the resolution
-        // (syscall.fulfillToPresence).
+        // (syscall.resolve).
 
-        // If we stall two turns, then the fulfillToPresence goes to the
+        // If we stall two turns, then the resolve goes to the
         // kernel before three() and four(), but our 'p1' is not yet marked
         // as resolved, so four() is sent to a Promise, rather than to
         // target2. This Promise ought to get a new vpid, because we retired
@@ -477,17 +467,16 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // }
   // return t.end();
 
-  // Now liveslots processes the callback ("notifySuccess", mapped to a
-  // function returned by "thenResolve") that got pushed when p0 was
-  // resolved, where p0 is the promise that was returned from rootA~.result()
-  // . This callback sends `syscall.fulfillToPresence(vpid1, stuff)` (or one
-  // of the other fulfill/reject variants) into the kernel, notifying any
-  // remote subscribers that p1 has been resolved. Since the vat is also a
-  // subscriber, thenResolve's callback must also invoke p1's resolver (which
-  // was stashed in importedPromisesByPromiseID), as if the kernel had call
-  // the vat's dispatch.notify. This causes the p1.then
-  // callback to be pushed to the back of the promise queue, which will set
-  // resolutionOfP1 after all the syscalls have been made.
+  // Now liveslots processes the callback ("notifySuccess", mapped to a function
+  // returned by "thenResolve") that got pushed when p0 was resolved, where p0
+  // is the promise that was returned from rootA~.result() . This callback sends
+  // `syscall.resolve(vpid1, stuff)` into the kernel, notifying any remote
+  // subscribers that p1 has been resolved. Since the vat is also a subscriber,
+  // thenResolve's callback must also invoke p1's resolver (which was stashed in
+  // importedPromisesByPromiseID), as if the kernel had call the vat's
+  // dispatch.notify. This causes the p1.then callback to be pushed to the back
+  // of the promise queue, which will set resolutionOfP1 after all the syscalls
+  // have been made.
 
   // Resolving p1 changes the handler of p1, so subsequent messages sent to
   // p1 will instead be sent to its resolution (which will be target2, or a
@@ -778,8 +767,9 @@ test('inter-vat circular promise references', async t => {
   await endOfCrank();
   t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
   t.deepEqual(log.shift(), {
-    type: 'fulfillToData',
+    type: 'resolve',
     promiseID: paA,
+    rejected: false,
     data: capargs([slot0arg], [pbA]),
   });
   t.deepEqual(log, []);
@@ -788,8 +778,9 @@ test('inter-vat circular promise references', async t => {
   // await endOfCrank();
   // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
   // t.deepEqual(log.shift(), {
-  //   type: 'fulfillToData',
+  //   type: 'resolve',
   //   promiseID: pbB,
+  //   rejected: false,
   //   data: capargs([slot0arg], [paB]),
   // });
   // t.deepEqual(log, []);
