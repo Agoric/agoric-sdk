@@ -122,7 +122,7 @@ test('makeDehydrator', async t => {
   t.deepEqual(
     dehydrate(harden({ brand: brand1, value: 40 })),
     harden({
-      body: '{"brand":{"@qclass":"slot","index":0},"value":40}',
+      body: '{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":0},"value":40}',
       slots: [{ kind: 'brand', petname: 'moola' }],
     }),
     `serialize brand with petname`,
