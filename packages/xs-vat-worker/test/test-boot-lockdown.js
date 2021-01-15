@@ -6,7 +6,10 @@ import * as path from 'path';
 import { xsnap } from '@agoric/xsnap';
 
 const dist = async name =>
-  fs.promises.readFile(path.join(__filename, '..', '..', 'dist', name));
+  fs.promises.readFile(
+    path.join(__filename, '..', '..', 'dist', name),
+    'utf-8',
+  );
 
 const decoder = new TextDecoder();
 
@@ -36,4 +39,31 @@ test('bootstrap to SES lockdown', async t => {
   `);
   await vat.close();
   t.deepEqual(['["function","function"]'], messages);
+});
+
+test('child compartment cannot access start powers', async t => {
+  const bootScript = await dist('bootstrap.umd.js');
+  const messages = [];
+  async function handleCommand(message) {
+    messages.push(decoder.decode(message));
+    return new Uint8Array();
+  }
+  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  await vat.evaluate(bootScript);
+
+  const script = await fs.promises.readFile(
+    path.join(__filename, '..', 'escapeCompartment.js'),
+    'utf-8',
+  );
+  await vat.evaluate(script);
+  await vat.close();
+
+  t.deepEqual(messages, [
+    'hello from child',
+    'fo is function Object() { [native code] }',
+    'f is function Function() { [native code] }',
+    'err was TypeError: Not available',
+    'did evaluate',
+    `child compartment saw 'null'`,
+  ]);
 });
