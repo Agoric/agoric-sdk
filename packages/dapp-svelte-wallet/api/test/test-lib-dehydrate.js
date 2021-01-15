@@ -156,7 +156,7 @@ test('makeDehydrator', async t => {
     dehydrate(proposal),
     {
       body:
-        '{"want":{"Asset1":{"brand":{"@qclass":"slot","index":0},"value":60},"Asset2":{"brand":{"@qclass":"slot","index":1},"value":{"instanceHandle":{"@qclass":"slot","index":2}}}},"give":{"Price":{"brand":{"@qclass":"slot","index":3},"value":3}},"exit":{"afterDeadline":{"timer":{"@qclass":"slot","index":4},"deadline":55}}}',
+        '{"want":{"Asset1":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":0},"value":60},"Asset2":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":1},"value":{"instanceHandle":{"@qclass":"slot","index":2}}}},"give":{"Price":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":3},"value":3}},"exit":{"afterDeadline":{"timer":{"@qclass":"slot","index":4},"deadline":55}}}',
       slots: [
         { kind: 'brand', petname: 'moola' },
         { kind: 'brand', petname: 'zoeInvite' },
