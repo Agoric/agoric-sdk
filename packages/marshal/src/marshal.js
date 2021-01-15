@@ -511,10 +511,29 @@ export function makeMarshal(
       slotMap.set(val, slotIndex);
     }
 
+    /*
     if (iface === undefined && passStyleOf(val) === REMOTE_STYLE) {
-      iface = `Alleged: remotable at slot ${slotIndex}`;
-      const err = new Error(`Serialize generates iface ${iface}`);
-      console.info(err);
+      // iface = `Alleged: remotable at slot ${slotIndex}`;
+      if (
+        Object.getPrototypeOf(val) === Object.prototype &&
+        Object.getOwnPropertyNames(val).length === 0
+      ) {
+        // For now, skip the diagnostic if we have a pure empty object
+      } else {
+        try {
+          assert.fail(d`Serialize ${val} generates needs iface`);
+        } catch (err) {
+          console.info(err);
+        }
+      }
+    }
+    */
+
+    if (iface === undefined) {
+      return harden({
+        [QCLASS]: 'slot',
+        index: slotIndex,
+      });
     }
     return harden({
       [QCLASS]: 'slot',
@@ -824,7 +843,9 @@ function Remotable(iface = 'Remotable', props = {}, remotable = {}) {
   // TODO unimplemented
   assert(
     iface === 'Remotable' || iface.startsWith('Alleged: '),
-    d`For now, iface ${iface} must be "Remotable" or begin with "Alleged: "; unimplemented`,
+    d`For now, iface ${q(
+      iface,
+    )} must be "Remotable" or begin with "Alleged: "; unimplemented`,
   );
   iface = pureCopy(harden(iface));
 

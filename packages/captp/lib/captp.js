@@ -411,15 +411,16 @@ export function makeLoopback(ourId) {
   let nextNonce = 0;
   const nonceToRef = new Map();
 
+  // TODO use the correct Remotable, which is not currently in scope here.
   const bootstrap = harden({
-    refGetter: {
+    refGetter: defaultRemotable('Alleged: captp bootstrap', undefined, {
       getRef(nonce) {
         // Find the local ref for the specified nonce.
         const xFar = nonceToRef.get(nonce);
         nonceToRef.delete(nonce);
         return xFar;
       },
-    },
+    }),
   });
 
   // Create the tunnel.

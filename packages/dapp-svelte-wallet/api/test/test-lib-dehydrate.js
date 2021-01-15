@@ -77,7 +77,7 @@ test('makeDehydrator', async t => {
   );
 
   const makeMockBrand = () =>
-    harden({
+    Remotable('Alleged: mock brand', undefined, {
       isMyIssuer: _allegedIssuer => {},
       getAllegedName: () => {},
     });

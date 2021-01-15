@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
+import { Remotable } from '@agoric/marshal';
 
 const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
 export function buildRootObject(_vatPowers) {
-  const target1 = {
+  const target1 = Remotable('Alleged: target1', undefined, {
     one(_p) {
       log(`target1 in one`);
     },
@@ -18,8 +19,8 @@ export function buildRootObject(_vatPowers) {
     four() {
       log(`target1 in four`);
     },
-  };
-  const target2 = {
+  });
+  const target2 = Remotable('Alleged: target2', undefined, {
     one(_p) {
       log(`target2 in one`);
     },
@@ -32,7 +33,7 @@ export function buildRootObject(_vatPowers) {
     four() {
       log(`target2 in four`);
     },
-  };
+  });
   return harden({
     bootstrap(vats) {
       const bob = vats.bob;

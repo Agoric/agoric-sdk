@@ -4,6 +4,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { Remotable } from '@agoric/marshal';
 import { objectMap } from '../objArrayConversion';
 
 import '../types';
@@ -51,7 +52,7 @@ export const makeZoeSeatAdminKit = (
   };
 
   /** @type {ZoeSeatAdmin} */
-  const zoeSeatAdmin = harden({
+  const zoeSeatAdmin = Remotable('Alleged: zoeSeatAdmin', {
     replaceAllocation: replacementAllocation => {
       assert(
         instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
@@ -83,7 +84,7 @@ export const makeZoeSeatAdminKit = (
   });
 
   /** @type {UserSeat} */
-  const userSeat = harden({
+  const userSeat = Remotable('Alleged: userSeat', undefined, {
     getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,

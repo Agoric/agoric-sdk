@@ -12,7 +12,7 @@
 
 /**
  * @typedef {string} Keyword
- * @typedef {Handle<'InvitationHandle'>} InvitationHandle - an opaque handle for an invitation
+ * @typedef {Handle<'Invitation'>} InvitationHandle - an opaque handle for an invitation
  * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
  * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
  */
