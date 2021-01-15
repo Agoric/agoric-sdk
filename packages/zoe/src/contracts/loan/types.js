@@ -55,7 +55,7 @@
 /**
  * @typedef {LoanTerms & LenderSeatProperty} LoanConfigWithLender
  *
- * After the lender exercises their invitation, the lenderSeat is added to the config.
+ * The loan now has a lenderSeat, which is added to the config.
  */
 
 /**
@@ -77,9 +77,28 @@
  */
 
 /**
+ * @typedef BorrowerConfigPropertiesMinusDebt
+ *
+ * @property {ZCFSeat} collateralSeat
+ *
+ *   The ZCFSeat holding the collateral in escrow after the borrower
+ *   escrows it
+ *
+ * @property {PromiseKit} liquidationPromiseKit
+ *
+ *   PromiseKit that includes a promise that resolves to a PriceQuote
+ *   when liquidation is triggered
+ */
+
+/**
  * @typedef {LoanConfigWithLender & BorrowerConfigProperties } LoanConfigWithBorrower
  *
  * The loan has a lender, a borrower, and collateral escrowed.
+ */
+
+/**
+ * @typedef {LoanConfigWithLender & BorrowerConfigPropertiesMinusDebt
+ * } LoanConfigWithBorrowerMinusDebt
  */
 
 /**
@@ -155,24 +174,13 @@
  *
  * @property {PeriodAsyncIterable} periodAsyncIterable
  *
- *   Used to tell the contract when a period has occurred
+ *   The AsyncIterable to notify when a period has occurred
  *
  * @property {number} interestRate
  *
  * @property {ContractFacet} zcf
- * @property {ConfigMinusGetDebt} configMinusGetDebt
- */
-
-/**
- * @typedef {Object} ConfigMinusGetDebt
- * @property {ZCFSeat} collateralSeat
- * @property {PromiseRecord<any>} liquidationPromiseKit
- * @property {number} [mmr]
- * @property {InstanceHandle} autoswapInstance
- * @property {PriceAuthority} priceAuthority
- * @property {AsyncIterable<undefined>} periodAsyncIterable
- * @property {number} interestRate
- * @property {ZCFSeat} lenderSeat
+ *
+ * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
  */
 
 /**
@@ -189,10 +197,17 @@
  *
  * @property {() => Promise<PriceQuote>} getLiquidationPromise
  *
- * Get a promise that will resolve if liquidation occurs
+ * Get a promise for a priceQuote that will resolve if liquidation
+ * occurs. The priceQuote is for the value of the collateral that
+ * triggered the liquidation. This may be lower than expected if the
+ * price is moving quickly.
  *
  * @property {() => Notifier<Amount>} getDebtNotifier
  *
- * Get a Notifier that will be updated when the current debt (an Amount with the Loan
- * Brand) changes. This will increase as interest is added.
+ * Get notified when the current debt (an Amount in the Loan Brand) changes. This will
+ * increase as interest is added.
+ *
+ * @property {() => Amount} getRecentCollateralAmount
+ *
+ * Get a recent report of the amount of collateral in the loan
  */
