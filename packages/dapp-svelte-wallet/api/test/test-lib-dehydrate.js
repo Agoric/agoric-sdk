@@ -1,6 +1,7 @@
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+import { Remotable } from '@agoric/marshal';
 
 import { makeDehydrator } from '../src/lib-dehydrate';
 

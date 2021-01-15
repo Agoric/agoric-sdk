@@ -31,11 +31,13 @@ test('serialize exports', t => {
   });
   // m now remembers that o1 is exported as 1
   t.deepEqual(ser(harden([o1, o1])), {
-    body: '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"ibid","index":1}]',
+    body:
+      '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"ibid","index":1}]',
     slots: ['o+1'],
   });
   t.deepEqual(ser(harden([o2, o1])), {
-    body: '[{"@qclass":"slot","iface":"Alleged: o2","index":0},{"@qclass":"slot","iface":"Alleged: o1","index":1}]',
+    body:
+      '[{"@qclass":"slot","iface":"Alleged: o2","index":0},{"@qclass":"slot","iface":"Alleged: o1","index":1}]',
     slots: ['o+2', 'o+1'],
   });
 });
