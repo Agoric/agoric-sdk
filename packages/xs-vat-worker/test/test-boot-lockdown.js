@@ -5,9 +5,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { xsnap } from '@agoric/xsnap';
 
-const dist = async name =>
+const importModuleUrl = `file://${__filename}`;
+
+const asset = async (...segments) =>
   fs.promises.readFile(
-    path.join(__filename, '..', '..', 'dist', name),
+    path.join(importModuleUrl.replace('file:/', ''), '..', ...segments),
     'utf-8',
   );
 
@@ -19,7 +21,7 @@ const xsnapOptions = {
 };
 
 test('bootstrap to SES lockdown', async t => {
-  const bootScript = await dist('bootstrap.umd.js');
+  const bootScript = await asset('..', 'dist', 'bootstrap.umd.js');
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
@@ -42,7 +44,7 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const bootScript = await dist('bootstrap.umd.js');
+  const bootScript = await asset('..', 'dist', 'bootstrap.umd.js');
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
@@ -51,19 +53,9 @@ test('child compartment cannot access start powers', async t => {
   const vat = xsnap({ ...xsnapOptions, handleCommand });
   await vat.evaluate(bootScript);
 
-  const script = await fs.promises.readFile(
-    path.join(__filename, '..', 'escapeCompartment.js'),
-    'utf-8',
-  );
+  const script = await asset('escapeCompartment.js');
   await vat.evaluate(script);
   await vat.close();
 
-  t.deepEqual(messages, [
-    'hello from child',
-    'fo is function Object() { [native code] }',
-    'f is function Function() { [native code] }',
-    'err was TypeError: Not available',
-    'did evaluate',
-    `child compartment saw 'null'`,
-  ]);
+  t.deepEqual(messages, ['err was TypeError: Not available']);
 });
