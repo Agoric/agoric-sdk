@@ -1,8 +1,8 @@
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../../assertOptions';
-import { makeLocalVatManagerFactory } from './localVatManager';
-import { makeNodeWorkerVatManagerFactory } from './nodeWorker';
-import { makeNodeSubprocessFactory } from './worker-subprocess-node';
+import { makeLocalVatManagerFactory } from './manager-local';
+import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker';
+import { makeNodeSubprocessFactory } from './manager-subprocess-node';
 
 export function makeVatManagerFactory({
   allVatPowers,

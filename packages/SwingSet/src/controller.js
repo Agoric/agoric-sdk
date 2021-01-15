@@ -144,7 +144,7 @@ export async function makeSwingsetController(
     // TODO: after we move away from `-r esm` and use real ES6 modules, point
     // this at nodeWorkerSupervisor.js instead of the CJS intermediate
     const supercode = require.resolve(
-      './kernel/vatManager/nodeWorkerSupervisorCJS.js',
+      './kernel/vatManager/supervisor-nodeworker-cjs.js',
     );
     return new Worker(supercode);
   }
@@ -152,7 +152,7 @@ export async function makeSwingsetController(
   // launch a worker in a subprocess (which runs Node.js)
   function startSubprocessWorkerNode() {
     const supercode = require.resolve(
-      './kernel/vatManager/subprocessSupervisor.js',
+      './kernel/vatManager/supervisor-subprocess-node.js',
     );
     return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
   }
