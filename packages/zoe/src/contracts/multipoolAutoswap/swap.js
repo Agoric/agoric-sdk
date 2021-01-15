@@ -132,7 +132,7 @@ export const makeMakeSwapInvitation = (
       give: { In: null },
       want: { Out: null },
     });
-    // The offer's amountOut is exact; the offeredAmountIn is a max.
+    // The offer's amountOut is a minimum; the offeredAmountIn is a max.
     const {
       give: { In: offeredAmountIn },
       want: { Out: amountOut },
@@ -158,11 +158,11 @@ export const makeMakeSwapInvitation = (
         {
           seat: pool.getPoolSeat(),
           gains: { Secondary: amountIn },
-          losses: { Central: amountOut },
+          losses: { Central: availableAmountOut },
         },
         {
           seat,
-          gains: { Out: amountOut },
+          gains: { Out: availableAmountOut },
           losses: { In: amountIn },
         },
       );
