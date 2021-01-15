@@ -95,7 +95,7 @@ test('serialize imports', async t => {
 test('serialize promise', async t => {
   const log = [];
   const syscall = {
-    fulfillToData(result, data) {
+    resolve(result, rejected, data) {
       log.push({ result, data });
     },
   };

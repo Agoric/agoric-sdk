@@ -106,9 +106,7 @@ fromParent.on('data', ([type, ...margs]) => {
         throw Error(`nodeWorker cannot syscall.callNow`);
       },
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
-      fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
-      fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
-      reject: (...args) => doSyscall(['reject', ...args]),
+      resolve: (...args) => doSyscall(['resolve', ...args]),
     });
 
     const vatID = 'demo-vatID';

@@ -16,6 +16,12 @@ function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
+function capargs(args, slots = []) {
+  return capdata(JSON.stringify(args), slots);
+}
+
+const slot0arg = { '@qclass': 'slot', index: 0 };
+
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, { rejected, data }]];
 }
@@ -768,7 +774,7 @@ test('promise resolveToData', async t => {
     },
   ]);
 
-  syscallB.fulfillToData(pForB, capdata('args', [aliceForA]));
+  syscallB.resolve(pForB, false, capdata('"args"', [aliceForA]));
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
@@ -783,7 +789,7 @@ test('promise resolveToData', async t => {
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
     'notify',
-    oneResolution(pForA, false, capdata('args', ['o-50'])),
+    oneResolution(pForA, false, capdata('"args"', ['o-50'])),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   if (!RETIRE_KPIDS) {
@@ -854,7 +860,7 @@ test('promise resolveToPresence', async t => {
     },
   ]);
 
-  syscallB.fulfillToPresence(pForB, bobForB);
+  syscallB.resolve(pForB, false, capargs(slot0arg, [bobForB]));
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -935,7 +941,7 @@ test('promise reject', async t => {
     },
   ]);
 
-  syscallB.reject(pForB, capdata('args', [aliceForA]));
+  syscallB.resolve(pForB, true, capdata('args', [aliceForA]));
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [

@@ -100,58 +100,56 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
-  function fulfillToPresence(vatID, kpid, targetSlot) {
-    insistVatID(vatID);
-    insistKernelType('promise', kpid);
-    insistKernelType('object', targetSlot);
-    kernelKeeper.incStat('syscalls');
-    kernelKeeper.incStat('syscallFulfillToPresence');
-    const p = kernelKeeper.getResolveablePromise(kpid, vatID);
-    const { subscribers, queue } = p;
-    kernelKeeper.fulfillKernelPromiseToPresence(kpid, targetSlot);
-    notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
-    // todo: some day it'd be nice to delete the promise table entry now. To
-    // do that correctly, we must make sure no vats still hold pointers to
-    // it, which means vats must drop their refs when they get notified about
-    // the resolution ("you knew it was resolved, you shouldn't be sending
-    // any more messages to it, send them to the resolution instead"), and we
-    // must wait for those notifications to be delivered.
-    if (p.policy === 'logAlways') {
-      console.log(`${kpid}.policy logAlways: fulfillToPresence ${targetSlot}`);
+  function extractPresenceIfPresent(data) {
+    const body = JSON.parse(data.body);
+    if (
+      body &&
+      typeof body === 'object' &&
+      body['@qclass'] === 'slot' &&
+      body.index === 0
+    ) {
+      if (data.slots.length === 1) {
+        const slot = data.slots[0];
+        const { type } = parseKernelSlot(slot);
+        if (type === 'object') {
+          return slot;
+        }
+      }
     }
-    return OKNULL;
+    return null;
   }
 
-  function fulfillToData(vatID, kpid, data) {
+  function resolve(vatID, kpid, rejected, data) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     insistCapData(data);
     kernelKeeper.incStat('syscalls');
-    kernelKeeper.incStat('syscallFulfillToData');
-    const p = kernelKeeper.getResolveablePromise(kpid, vatID);
-    const { subscribers, queue } = p;
-    let idx = 0;
-    for (const dataSlot of data.slots) {
-      kernelKeeper.incrementRefCount(dataSlot, `fulfill|s${idx}`);
-      idx += 1;
+    kernelKeeper.incStat('syscallResolve');
+    if (rejected) {
+      resolveToError(kpid, data, vatID);
+    } else {
+      const p = kernelKeeper.getResolveablePromise(kpid, vatID);
+      const { subscribers, queue } = p;
+      let idx = 0;
+      for (const dataSlot of data.slots) {
+        kernelKeeper.incrementRefCount(dataSlot, `resolve|s${idx}`);
+        idx += 1;
+      }
+      const presence = extractPresenceIfPresent(data);
+      if (presence) {
+        kernelKeeper.fulfillKernelPromiseToPresence(kpid, presence);
+      } else if (rejected) {
+        kernelKeeper.rejectKernelPromise(kpid, data);
+      } else {
+        kernelKeeper.fulfillKernelPromiseToData(kpid, data);
+      }
+      notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
+      if (p.policy === 'logAlways') {
+        console.log(
+          `${kpid}.policy logAlways: resolve ${JSON.stringify(data)}`,
+        );
+      }
     }
-    kernelKeeper.fulfillKernelPromiseToData(kpid, data);
-    notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
-    if (p.policy === 'logAlways') {
-      console.log(
-        `${kpid}.policy logAlways: fulfillToData ${JSON.stringify(data)}`,
-      );
-    }
-    return OKNULL;
-  }
-
-  function reject(vatID, kpid, data) {
-    insistVatID(vatID);
-    insistKernelType('promise', kpid);
-    insistCapData(data);
-    kernelKeeper.incStat('syscalls');
-    kernelKeeper.incStat('syscallReject');
-    resolveToError(kpid, data, vatID);
     return OKNULL;
   }
 
@@ -164,12 +162,8 @@ export function makeKernelSyscallHandler(tools) {
         return invoke(...args);
       case 'subscribe':
         return subscribe(...args);
-      case 'fulfillToPresence':
-        return fulfillToPresence(...args);
-      case 'fulfillToData':
-        return fulfillToData(...args);
-      case 'reject':
-        return reject(...args);
+      case 'resolve':
+        return resolve(...args);
       case 'exit':
         return exit(...args);
       case 'vatstoreGet':
@@ -187,9 +181,7 @@ export function makeKernelSyscallHandler(tools) {
     send, // TODO remove these individual ones
     invoke,
     subscribe,
-    fulfillToPresence,
-    fulfillToData,
-    reject,
+    resolve,
     doKernelSyscall,
   });
   return kernelSyscallHandler;

@@ -108,22 +108,22 @@ const slot0arg = { '@qclass': 'slot', index: 0 };
 function doResolveSyscall(syscallA, vpid, mode, targets) {
   switch (mode) {
     case 'presence':
-      syscallA.fulfillToPresence(vpid, targets.target2);
+      syscallA.resolve(vpid, false, capargs(slot0arg, [targets.target2]));
       break;
     case 'local-object':
-      syscallA.fulfillToPresence(vpid, targets.localTarget);
+      syscallA.resolve(vpid, false, capargs(slot0arg, [targets.localTarget]));
       break;
     case 'data':
-      syscallA.fulfillToData(vpid, capargs(4, []));
+      syscallA.resolve(vpid, false, capargs(4, []));
       break;
     case 'promise-data':
-      syscallA.fulfillToData(vpid, capargs([slot0arg], [targets.p1]));
+      syscallA.resolve(vpid, false, capargs([slot0arg], [targets.p1]));
       break;
     case 'reject':
-      syscallA.reject(vpid, capargs('error', []));
+      syscallA.resolve(vpid, true, capargs('error', []));
       break;
     case 'promise-reject':
-      syscallA.reject(vpid, capargs([slot0arg], [targets.p1]));
+      syscallA.resolve(vpid, true, capargs([slot0arg], [targets.p1]));
       break;
     default:
       throw Error(`unknown mode ${mode}`);
@@ -234,9 +234,7 @@ async function doTest123(t, which, mode) {
 
   // send(targetSlot, method, args, resultSlot) {
   // subscribe(target) {
-  // fulfillToPresence(promiseID, slot) {
-  // fulfillToData(promiseID, data) {
-  // reject(promiseID, data) {
+  // resolve(promiseID, rejected, data) {
 
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
@@ -745,8 +743,9 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // **** begin Crank 4 (A) ****
   // usePromise(b) delivered to A
   syscallA.subscribe(importedGenResultBvatA);
-  syscallA.fulfillToData(
+  syscallA.resolve(
     importedGenResultAvatA,
+    false,
     capargs([slot0arg], [importedGenResultBvatA]),
   );
   await kernel.run();
@@ -778,8 +777,9 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // **** begin Crank 5 (B) ****
   // usePromise(a) delivered to B
   syscallB.subscribe(importedGenResultAvatB);
-  syscallB.fulfillToData(
+  syscallB.resolve(
     importedGenResultBvatB,
+    false,
     capargs([slot0arg], [importedGenResultAvatB]),
   );
 
