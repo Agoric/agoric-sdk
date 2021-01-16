@@ -73,7 +73,7 @@ export function xsnap(options) {
     importMetaUrl,
   ).pathname;
 
-  /** @type {Deferred<Error?>} */
+  /** @type {Deferred<void>} */
   const vatExit = defer();
 
   const args = snapshot ? ['-r', snapshot] : [];
@@ -86,7 +86,7 @@ export function xsnap(options) {
 
   xsnapProcess.on('exit', code => {
     if (code === 0 || code === null) {
-      vatExit.resolve(null);
+      vatExit.resolve();
     } else {
       vatExit.reject(new Error(`${name} exited with code ${code}`));
     }
@@ -103,8 +103,8 @@ export function xsnap(options) {
     /** @type {AsyncIterable<Uint8Array>} */ (xsnapProcess.stdio[4]),
   );
 
-  /** @type {Promise<Error?>} */
-  let baton = Promise.resolve(null);
+  /** @type {Promise<void>} */
+  let baton = Promise.resolve();
 
   /**
    * @returns {Promise<Uint8Array>}
@@ -133,43 +133,40 @@ export function xsnap(options) {
 
   /**
    * @param {string} code
-   * @returns {Promise<null>}
+   * @returns {Promise<void>}
    */
   async function evaluate(code) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
       await runToIdle();
-      return null;
     });
-    baton = result.catch(() => null);
+    baton = result.catch(() => {});
     return Promise.race([vatCancelled, result]);
   }
 
   /**
    * @param {string} fileName
-   * @returns {Promise<Error?>}
+   * @returns {Promise<void>}
    */
   async function execute(fileName) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`s${fileName}`));
       await runToIdle();
-      return null;
     });
-    baton = result.catch(() => null);
+    baton = result.catch(() => {});
     return Promise.race([vatCancelled, result]);
   }
 
   /**
    * @param {string} fileName
-   * @returns {Promise<Error?>}
+   * @returns {Promise<void>}
    */
   async function importModule(fileName) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`m${fileName}`));
       await runToIdle();
-      return null;
     });
-    baton = result.catch(() => null);
+    baton = result.catch(() => {});
     return Promise.race([vatCancelled, result]);
   }
 
@@ -187,7 +184,7 @@ export function xsnap(options) {
     });
     baton = result.then(
       () => {},
-      err => err,
+      () => {},
     );
     return Promise.race([vatCancelled, result]);
   }
@@ -202,30 +199,43 @@ export function xsnap(options) {
 
   /**
    * @param {string} file
-   * @returns {Promise<Error?>}
+   * @returns {Promise<void>}
    */
   async function writeSnapshot(file) {
-    baton = baton.then(async () => {
+    const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`w${file}`));
-      return runToIdle().catch(err => err);
+      await runToIdle();
     });
+    baton = result.catch(() => {});
     return Promise.race([vatExit.promise, baton]);
   }
 
   /**
-   * @returns {Promise<Error?>}
+   * @returns {Promise<void>}
    */
   async function close() {
-    xsnapProcess.kill();
+    await messagesToXsnap.return();
     baton = Promise.reject(new Error(`xsnap closed`));
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async function terminate() {
+    xsnapProcess.kill();
+    baton = Promise.reject(new Error(`xsnap closed`));
+    baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
+    // Mute the vatExit exception: it is expected.
+    return vatExit.promise.catch(() => {});
   }
 
   return {
     issueCommand,
     issueStringCommand,
     close,
+    terminate,
     evaluate,
     execute,
     import: importModule,
