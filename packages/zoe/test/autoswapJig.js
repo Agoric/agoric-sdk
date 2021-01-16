@@ -33,16 +33,18 @@ export const outputFromInputPrice = (xPre, yPre, deltaX, fee) => {
   );
 };
 
-// deltaX = beta * xPre / ( (1 - beta) * gamma )
+// deltaX = (beta * xPre / ( (1 - beta) * gamma )) + 1
 // gamma is (10000 - fee) / 10000
 // beta is deltaY / yPre
 // reducing to a single division:
-//    deltaX = deltaY * xPre * 10000 / (yPre - deltaY ) * gammaNum)
+//    deltaX = (deltaY * xPre * 10000 / (yPre - deltaY ) * gammaNum)) + 1
 export const priceFromTargetOutput = (deltaY, yPre, xPre, fee) => {
   const gammaNumerator = 10000 - fee;
-  return floorDivide(
-    multiply(multiply(deltaY, xPre), 10000),
-    multiply(subtract(yPre, deltaY), gammaNumerator),
+  return (
+    floorDivide(
+      multiply(multiply(deltaY, xPre), 10000),
+      multiply(subtract(yPre, deltaY), gammaNumerator),
+    ) + 1
   );
 };
 

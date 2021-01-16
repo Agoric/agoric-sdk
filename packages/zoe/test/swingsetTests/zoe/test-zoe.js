@@ -252,7 +252,7 @@ const expectedAutoswapOkLog = [
   'Swap successfully completed.',
   'bobMoolaPurse: balance {"brand":{},"value":5}',
   'bobSimoleanPurse: balance {"brand":{},"value":5}',
-  'simoleans required {"brand":{},"value":4}',
+  'simoleans required {"brand":{},"value":5}',
   'Liquidity successfully removed.',
   'poolAmounts{"Liquidity":{"brand":{},"value":10},"Central":{"brand":{},"value":0},"Secondary":{"brand":{},"value":0}}',
   'aliceMoolaPurse: balance {"brand":{},"value":8}',
