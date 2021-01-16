@@ -2,6 +2,7 @@
  * Locate the XS vat worker executable.
  *
  * Note: executable is not built by default.
+ *
  * @see the `build:xs-lin` script in package.json
  *
  * @param {{ resolve: (...string) => string }} filesystem path access

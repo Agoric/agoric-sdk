@@ -1,4 +1,4 @@
-/* global issueCommand, Compartment */
+/* global issueCommand */
 
 const encoder = new TextEncoder();
 function send(s) {
