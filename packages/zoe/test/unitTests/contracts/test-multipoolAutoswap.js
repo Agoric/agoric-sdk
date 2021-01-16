@@ -907,10 +907,10 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   );
   sPoolState = updatePoolState(sPoolState, initSimLiqExpected);
 
-  // trade for central specifying 300 output: moola price 310
+  // trade for central specifying 300 output: moola price 311
   const gain = 300;
   const mPrice = priceFromTargetOutput(gain, mPoolState.c, mPoolState.s, 30);
-  t.is(mPrice, 310);
+  t.is(mPrice, 311);
 
   const tradeDetailsB = {
     inAmount: moola(500),
@@ -935,10 +935,10 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedB);
 
-  // trade for moola specifying 250 output: central price: 241. don't overpay
+  // trade for moola specifying 250 output: central price: 242. don't overpay
   const gainC = 250;
   const mPriceC = priceFromTargetOutput(gainC, mPoolState.s, mPoolState.c, 30);
-  t.is(mPriceC, 241);
+  t.is(mPriceC, 242);
 
   const tradeDetailsC = {
     inAmount: centralTokens(mPriceC),
@@ -963,10 +963,10 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedC);
 
-  // trade simoleans for moola specifying 305 moola output: requires 311 Sim
+  // trade simoleans for moola specifying 305 moola output: requires 312 Sim
   const gainD = 305;
   const mPriceD = priceFromTargetOutput(gainD, mPoolState.s, mPoolState.c, 30);
-  t.is(mPriceD, 311);
+  t.is(mPriceD, 312);
 
   const tradeDetailsD = {
     inAmount: centralTokens(mPriceD),
@@ -1115,24 +1115,24 @@ test('multipoolAutoSwap jig - swapOut uneven', async t => {
   );
   sPoolState = updatePoolState(sPoolState, initSimLiqExpected);
 
-  // trade for central specifying 300 output: moola price 155
+  // trade for central specifying 300 output: moola price 156
   // Notice that it takes half as much moola as the desired Central
   const gain = 300;
   const mPrice = priceFromTargetOutput(gain, mPoolState.c, mPoolState.s, 30);
 
   const moolaIn = 160;
-  t.is(mPrice, 155);
+  t.is(mPrice, 156);
   const tradeDetailsB = {
     inAmount: moola(moolaIn),
     outAmount: centralTokens(gain),
   };
 
   const expectedB = {
-    c: mPoolState.c - gain,
+    c: mPoolState.c - gain - 1,
     s: mPoolState.s + mPrice,
     l: 10000,
-    k: (mPoolState.c - gain) * (mPoolState.s + mPrice),
-    out: gain,
+    k: (mPoolState.c - gain - 1) * (mPoolState.s + mPrice),
+    out: gain + 1,
     in: moolaIn - mPrice,
   };
   await alice.tradeAndCheck(
@@ -1145,10 +1145,10 @@ test('multipoolAutoSwap jig - swapOut uneven', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedB);
 
-  // trade for moola specifying 250 output: central price: 495, roughly double.
+  // trade for moola specifying 250 output: central price: 496, roughly double.
   const gainC = 250;
   const mPriceC = priceFromTargetOutput(gainC, mPoolState.s, mPoolState.c, 30);
-  t.is(mPriceC, 495);
+  t.is(mPriceC, 496);
 
   const tradeDetailsC = {
     inAmount: centralTokens(mPriceC),

@@ -80,7 +80,7 @@ const start = zcf => {
   const {
     getOutputForGivenInput,
     getInputForGivenOutput,
-  } = makeGetCurrentPrice(isSecondary, isCentral, getPool);
+  } = makeGetCurrentPrice(isSecondary, isCentral, getPool, centralBrand);
   const {
     makeSwapInInvitation,
     makeSwapOutInvitation,

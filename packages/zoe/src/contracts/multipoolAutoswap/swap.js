@@ -146,11 +146,14 @@ export const makeMakeSwapInvitation = (
     if (isCentral(brandOut) && isSecondary(brandIn)) {
       const pool = getPool(brandIn);
       const amountIn = pool.getSecondaryToCentralOutputPrice(outputValue);
+      const availableAmountOut = pool.getSecondaryToCentralInputPrice(
+        amountIn.value,
+      );
 
       const brandInAmountMath = getPool(brandIn).getAmountMath();
       if (!brandInAmountMath.isGTE(offeredAmountIn, amountIn)) {
         seat.fail();
-        return `insufficient funds offered`;
+        return `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
       }
 
       trade(

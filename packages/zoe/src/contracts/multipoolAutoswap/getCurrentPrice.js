@@ -8,9 +8,15 @@ import '../../../exported';
  * @param {(brand: Brand) => boolean} isSecondary
  * @param {(brand: Brand) => boolean} isCentral
  * @param {(brand: Brand) => Pool} getPool
+ * @param {Brand} centralBrand
  */
 
-export const makeGetCurrentPrice = (isSecondary, isCentral, getPool) => {
+export const makeGetCurrentPrice = (
+  isSecondary,
+  isCentral,
+  getPool,
+  centralBrand,
+) => {
   /**
    * `getOutputForGivenInput` calculates the result of a trade, given a certain
    * amount of digital assets in.
@@ -21,26 +27,29 @@ export const makeGetCurrentPrice = (isSecondary, isCentral, getPool) => {
    * @returns {Amount} the amount that would be paid out at the current price.
    */
   const getOutputForGivenInput = (amountIn, brandOut) => {
-    const { brand: brandIn, value: inputValue } = amountIn;
+    const { brand: brandIn } = amountIn;
 
     if (isCentral(brandIn) && isSecondary(brandOut)) {
-      return getPool(brandOut).getCentralToSecondaryInputPrice(inputValue);
+      return getPool(brandOut).getPriceGivenAvailableInput(amountIn, brandOut)
+        .amountOut;
     }
 
     if (isSecondary(brandIn) && isCentral(brandOut)) {
-      return getPool(brandIn).getSecondaryToCentralInputPrice(inputValue);
+      return getPool(brandIn).getPriceGivenAvailableInput(amountIn, brandOut)
+        .amountOut;
     }
 
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
       // We must do two consecutive calls to get the price: from
       // the brandIn to the central token, then from the central
       // token to the brandOut.
-      const centralTokenAmount = getPool(
+      const { amountOut: centralTokenAmount } = getPool(
         brandIn,
-      ).getSecondaryToCentralInputPrice(inputValue);
-      return getPool(brandOut).getCentralToSecondaryInputPrice(
-        centralTokenAmount.value,
-      );
+      ).getPriceGivenAvailableInput(amountIn, centralBrand);
+      return getPool(brandOut).getPriceGivenAvailableInput(
+        centralTokenAmount,
+        brandOut,
+      ).amountOut;
     }
 
     throw new Error(`brands were not recognized`);
@@ -55,25 +64,28 @@ export const makeGetCurrentPrice = (isSecondary, isCentral, getPool) => {
    * @returns {Amount} The amount required to be paid in order to gain amountOut
    */
   const getInputForGivenOutput = (amountOut, brandIn) => {
-    const { brand: brandOut, value: outputValue } = amountOut;
+    const { brand: brandOut } = amountOut;
 
     if (isCentral(brandIn) && isSecondary(brandOut)) {
-      return getPool(brandOut).getCentralToSecondaryOutputPrice(outputValue);
+      return getPool(brandOut).getPriceGivenRequiredOutput(brandIn, amountOut)
+        .amountIn;
     }
 
     if (isSecondary(brandIn) && isCentral(brandOut)) {
-      return getPool(brandIn).getSecondaryToCentralOutputPrice(outputValue);
+      return getPool(brandIn).getPriceGivenRequiredOutput(brandIn, amountOut)
+        .amountIn;
     }
 
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
       // We must do two consecutive calls to get the price: from
       // the brandIn to the central token, then from the central
       // token to the brandOut.
-      const centralTokenAmount = getPool(
+      const { amountIn: centralTokenAmount } = getPool(
         brandIn,
-      ).getSecondaryToCentralOutputPrice(outputValue);
-      return getPool(brandOut).getCentralToSecondaryOutputPrice(
-        centralTokenAmount.value,
+      ).getPriceGivenRequiredOutput(brandIn, amountOut);
+      return getPool(brandOut).getPriceGivenRequiredOutput(
+        centralBrand,
+        centralTokenAmount,
       );
     }
 
