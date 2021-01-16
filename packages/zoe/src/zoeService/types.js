@@ -172,7 +172,7 @@
  */
 
 /**
- * @typedef {Handle<'InstanceHandle'>} Instance
+ * @typedef {Handle<'Instance'>} Instance
  */
 
 /**

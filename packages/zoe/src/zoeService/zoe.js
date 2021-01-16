@@ -111,7 +111,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         details`${installation} was not a valid installation`,
       );
 
-      const instance = makeHandle('InstanceHandle');
+      const instance = makeHandle('Instance');
 
       const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
 
