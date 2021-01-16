@@ -28,7 +28,6 @@
     "@rollup/plugin-commonjs": "^11.0.2",
     "@rollup/plugin-node-resolve": "^7.1.1",
     "ava": "^3.12.1",
-    "detective-es6": "^2.2.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "^0.0.4",
@@ -36,7 +35,6 @@
     "eslint-plugin-import": "^2.20.0",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-prettier": "^3.1.2",
-    "filing-cabinet": "^2.5.1",
     "nyc": "^15.1.0",
     "prettier": "^1.18.2",
     "rollup": "^1.23.1"
@@ -46,7 +44,6 @@
     "@agoric/bundle-source": "^1.2.0",
     "@agoric/eventual-send": "^0.13.0",
     "@agoric/import-bundle": "^0.2.0",
-    "@agoric/install-ses": "^0.5.0",
     "@agoric/marshal": "^0.3.0",
     "@agoric/promise-kit": "^0.2.0",
     "@agoric/swingset-vat": "^0.11.0",
