@@ -169,7 +169,7 @@ export async function makeFakePriceAuthority(options) {
         }
       },
     });
-    const repeater = E(timer).createRepeater(0, quoteInterval);
+    const repeater = E(timer).makeRepeater(0, quoteInterval);
     return E(repeater).schedule(handler);
   }
   await startTimer();
