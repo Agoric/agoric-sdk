@@ -8,6 +8,7 @@ const { multiply, floorDivide } = natSafeMath;
 // We use this workaround due to some parser in our toolchain that can't parse
 // bigint literals.
 const BIG_10000 = BigInt(10000);
+const BIG_ONE = BigInt(1);
 
 /**
  * Calculations for constant product markets like Uniswap.
@@ -98,7 +99,7 @@ export const getOutputPrice = (
   const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
-  return Nat(Number(numerator / denominator)) + 1;
+  return Nat(Number(numerator / denominator + BIG_ONE));
 };
 
 function assertDefined(label, value) {
