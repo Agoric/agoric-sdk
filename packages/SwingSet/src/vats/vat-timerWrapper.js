@@ -21,8 +21,8 @@ export function buildRootObject(vatPowers) {
       },
       // deprecated in favor of makeRepeater().
       // TODO(#2164): remove before Beta
-      createRepeater(delay, interval) {
-        return this.makeRepeater(delay, interval);
+      createRepeater(delaySecs, interval) {
+        return this.makeRepeater(delaySecs, interval);
       },
       makeRepeater(delaySecs, interval) {
         Nat(delaySecs);
