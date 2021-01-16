@@ -1,12 +1,14 @@
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
+import { makeNotifierKit } from '@agoric/notifier';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
   const repeaters = new Map();
 
   async function createTimerService(timerNode) {
-    return harden({
+    /** @type {TimerService} */
+    const timerService = {
       getCurrentTimestamp() {
         return Nat(D(timerNode).getLastPolled());
       },
@@ -17,17 +19,19 @@ export function buildRootObject(vatPowers) {
       removeWakeup(handler) {
         return D(timerNode).removeWakeup(handler);
       },
+      // deprecated in favor of makeRepeater().
+      // TODO(#2164): remove before Beta
       createRepeater(delaySecs, interval) {
+        return this.makeRepeater(delaySecs, interval);
+      },
+      makeRepeater(delaySecs, interval) {
+        Nat(delaySecs);
         assert(
-          Nat(delaySecs) >= 0,
-          details`createRepeater's first parameter must be a non-negative integer. ${delaySecs}`,
-        );
-        assert(
-          Nat(interval),
-          details`createRepeater's second parameter must be an integer, ${interval}`,
+          Nat(interval) > 0,
+          details`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).createRepeater(delaySecs, interval);
+        const index = D(timerNode).makeRepeater(delaySecs, interval);
 
         const vatRepeater = harden({
           schedule(h) {
@@ -41,7 +45,24 @@ export function buildRootObject(vatPowers) {
         repeaters.set(index, vatRepeater);
         return vatRepeater;
       },
-    });
+      makeNotifier(delaySecs, interval) {
+        Nat(delaySecs);
+        assert(
+          Nat(interval) > 0,
+          details`makeNotifier's second parameter must be a positive integer: ${interval}`,
+        );
+
+        const index = D(timerNode).makeRepeater(delaySecs, interval);
+        const { notifier, updater } = makeNotifierKit();
+        const updateHandler = harden({
+          wake: updater.updateState,
+        });
+        D(timerNode).schedule(index, updateHandler);
+
+        return notifier;
+      },
+    };
+    return harden(timerService);
   }
 
   return harden({ createTimerService });

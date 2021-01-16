@@ -116,6 +116,63 @@ test.serial('home.wallet - MOE setup', async t => {
   t.is(brandFromPurse, brandFromIssuer);
 });
 
+test.serial('home.localTimerService makeNotifier', async t => {
+  const { localTimerService } = E.G(home);
+  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const update1 = await E(notifier).getUpdateSince();
+  t.is(update1.updateCount, 2);
+  const update2 = await E(notifier).getUpdateSince(update1.updateCount);
+  t.is(update2.updateCount, 3);
+
+  // Tests gets an actual localTimerService, which returns actual times. We
+  // can't verify the actual time, so we compare to make sure it's increasing.
+  t.truthy(update2.value > update1.value);
+});
+
+function makeHandler() {
+  let calls = 0;
+  const args = [];
+  return {
+    getCalls() {
+      return calls;
+    },
+    getArgs() {
+      return args;
+    },
+    wake(arg) {
+      args.push(arg);
+      calls += 1;
+    },
+  };
+}
+
+// TODO(2164): createRepeater was replaced by makeRepeater. Remove it pre-Beta
+test.serial('home.localTimerService createRepeater', async t => {
+  const { localTimerService } = E.G(home);
+  const timestamp = await E(localTimerService).getCurrentTimestamp();
+  const repeater = E(localTimerService).createRepeater(1, 1);
+  const handler = makeHandler();
+  await E(repeater).schedule(handler);
+  const notifier = E(localTimerService).makeNotifier(1, 1);
+  await E(notifier).getUpdateSince();
+
+  t.is(1, handler.getCalls());
+  t.truthy(handler.getArgs()[0] > timestamp);
+});
+
+test.serial('home.localTimerService makeRepeater', async t => {
+  const { localTimerService } = E.G(home);
+  const timestamp = await E(localTimerService).getCurrentTimestamp();
+  const repeater = E(localTimerService).makeRepeater(1, 1);
+  const handler = makeHandler();
+  await E(repeater).schedule(handler);
+  const notifier = E(localTimerService).makeNotifier(1, 1);
+  await E(notifier).getUpdateSince();
+
+  t.is(1, handler.getCalls());
+  t.truthy(handler.getArgs()[0] > timestamp);
+});
+
 // =========================================
 // This runs after all the tests.
 test.after.always('teardown', async t => {

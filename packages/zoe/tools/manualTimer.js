@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 
 import './types';
 import './internal-types';
+import { makeNotifierKit } from '@agoric/notifier';
 
 /**
  * A fake clock that also logs progress.
@@ -18,6 +19,39 @@ export default function buildManualTimer(log, startValue = 0) {
 
   /** @type {Store<Timestamp, Array<TimerWaker>>} */
   const schedule = makeStore('Timestamp');
+
+  const makeRepeater = (delaySecs, interval, timer) => {
+    /** @type {Array<TimerWaker> | null} */
+    let wakers = [];
+
+    /** @type {TimerWaker} */
+    const repeaterWaker = {
+      async wake(timestamp) {
+        if (!wakers) {
+          return;
+        }
+        timer.setWakeup(ticks + interval, repeaterWaker);
+        await Promise.allSettled(wakers.map(waker => E(waker).wake(timestamp)));
+      },
+    };
+
+    /** @type {TimerRepeater} */
+    const repeater = {
+      schedule(waker) {
+        if (!wakers) {
+          throw Error(`Cannot schedule on a disabled repeater`);
+        }
+        wakers.push(waker);
+      },
+      disable() {
+        wakers = null;
+        timer.removeWakeup(repeaterWaker);
+      },
+    };
+    harden(repeater);
+    timer.setWakeup(ticks + delaySecs, repeaterWaker);
+    return repeater;
+  };
 
   /** @type {ManualTimer} */
   const timer = {
@@ -72,38 +106,22 @@ export default function buildManualTimer(log, startValue = 0) {
       return harden(baseTimes);
     },
     createRepeater(delay, interval) {
-      /** @type {Array<TimerWaker> | null} */
-      let wakers = [];
-
+      return makeRepeater(delay, interval, timer);
+    },
+    makeRepeater(delaySecs, interval) {
+      return makeRepeater(delaySecs, interval, timer);
+    },
+    makeNotifier(delaySecs, interval) {
+      const { notifier, updater } = makeNotifierKit();
       /** @type {TimerWaker} */
       const repeaterWaker = {
         async wake(timestamp) {
-          if (!wakers) {
-            return;
-          }
+          updater.updateState(timestamp);
           timer.setWakeup(ticks + interval, repeaterWaker);
-          await Promise.allSettled(
-            wakers.map(waker => E(waker).wake(timestamp)),
-          );
         },
       };
-
-      /** @type {TimerRepeater} */
-      const repeater = {
-        schedule(waker) {
-          if (!wakers) {
-            throw Error(`Cannot schedule on a disabled repeater`);
-          }
-          wakers.push(waker);
-        },
-        disable() {
-          wakers = null;
-          timer.removeWakeup(repeaterWaker);
-        },
-      };
-      harden(repeater);
-      timer.setWakeup(ticks + delay, repeaterWaker);
-      return repeater;
+      timer.setWakeup(ticks + delaySecs, repeaterWaker);
+      return notifier;
     },
   };
   harden(timer);
