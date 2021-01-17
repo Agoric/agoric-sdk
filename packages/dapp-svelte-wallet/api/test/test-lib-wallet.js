@@ -505,8 +505,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       value: [
         {
           description: 'getRefund',
-          handle: inviteHandle2,
-          instance,
+
+          // See https://github.com/Agoric/agoric-sdk/issues/2207
+          // handle: inviteHandle2,
+          // instance,
+          handle: {},
+          instance: {},
+
           installation: {},
         },
       ],
