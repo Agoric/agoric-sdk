@@ -1,7 +1,8 @@
 import fs from 'fs';
-import path from 'path';
 import process from 'process';
 import re2 from 're2';
+import { spawn } from 'child_process';
+import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import * as babelCore from '@babel/core';
 import * as babelParser from '@agoric/babel-parser';
@@ -11,10 +12,11 @@ import anylogger from 'anylogger';
 import { assert } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
+import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
-import { locateWorkerBin } from '@agoric/xs-vat-worker';
+import { xsnap } from '@agoric/xsnap';
 
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
@@ -34,6 +36,20 @@ function makeConsole(tag) {
     cons[level] = log[level];
   }
   return harden(cons);
+}
+
+async function buildXsBundles() {
+  const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
+  const { keys, values, fromEntries } = Object;
+  const allValues = async obj =>
+    fromEntries(zip(keys(obj), await Promise.all(values(obj))));
+  const src = rel => bundleSource(require.resolve(rel), 'getExport');
+  return harden(
+    await allValues({
+      lockdown: src('./kernel/vatManager/lockdown-subprocess-xsnap.js'),
+      supervisor: src('./kernel/vatManager/supervisor-subprocess-xsnap.js'),
+    }),
+  );
 }
 
 export async function makeSwingsetController(
@@ -157,11 +173,21 @@ export async function makeSwingsetController(
     return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
   }
 
-  let startSubprocessWorkerXS;
-  const xsWorkerBin = locateWorkerBin({ resolve: path.resolve });
-  if (fs.existsSync(xsWorkerBin)) {
-    startSubprocessWorkerXS = () => startSubprocessWorker(xsWorkerBin);
-  }
+  const { xsnapBundles = await buildXsBundles() } = {}; // @@@ options?
+  const startXSnap = (name, handleCommand) => {
+    console.log('starting xsnap for', name);
+    const worker = xsnap({
+      os: osType(),
+      spawn,
+      handleCommand,
+      name,
+      stdout: 'inherit',
+      stderr: 'inherit',
+      // debug: true,
+    });
+
+    return harden({ worker, bundles: xsnapBundles });
+  };
 
   const slogF =
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
@@ -186,7 +212,7 @@ export async function makeSwingsetController(
     transformTildot,
     makeNodeWorker,
     startSubprocessWorkerNode,
-    startSubprocessWorkerXS,
+    startXSnap,
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,

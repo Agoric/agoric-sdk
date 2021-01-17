@@ -3,6 +3,7 @@ import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './manager-local';
 import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node';
+import { makeXsSubprocessFactory } from './manager-subprocess-xsnap';
 
 export function makeVatManagerFactory({
   allVatPowers,
@@ -13,7 +14,7 @@ export function makeVatManagerFactory({
   waitUntilQuiescent,
   makeNodeWorker,
   startSubprocessWorkerNode,
-  startSubprocessWorkerXS,
+  startXSnap,
   gcTools,
 }) {
   const localFactory = makeLocalVatManagerFactory({
@@ -40,8 +41,8 @@ export function makeVatManagerFactory({
     decref: gcTools.decref,
   });
 
-  const xsWorkerFactory = makeNodeSubprocessFactory({
-    startSubprocessWorker: startSubprocessWorkerXS,
+  const xsWorkerFactory = makeXsSubprocessFactory({
+    startXSnap,
     kernelKeeper,
     testLog: allVatPowers.testLog,
     decref: gcTools.decref,
@@ -98,9 +99,6 @@ export function makeVatManagerFactory({
     }
 
     if (managerType === 'xs-worker') {
-      if (!startSubprocessWorkerXS) {
-        throw new Error('manager type xs-worker not available');
-      }
       return xsWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
     }
 

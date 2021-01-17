@@ -7,8 +7,7 @@ const expected = [['B good', 'C good', 'F good', 'three good'], 'rp3 good'];
 async function makeController(managerType) {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType };
-  const canCallNow = ['local'].indexOf(managerType) !== -1;
-  // const canCallNow = ['local', 'xs-worker'].indexOf(managerType) !== -1;
+  const canCallNow = ['local', 'xs-worker'].indexOf(managerType) !== -1;
   config.vats.target.parameters = { canCallNow };
   config.devices = {
     add: {
@@ -29,11 +28,7 @@ test('local vat manager', async t => {
   t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
 });
 
-// The XS worker is disabled until the xsnap-based approach is ready for
-// testing. Unlike the old approach, I think we'll build xsnap
-// unconditionally, so we won't need the old 'maybeTestXS' conditional.
-
-test.skip('xs vat manager', async t => {
+test('xs vat manager', async t => {
   const c = await makeController('xs-worker');
   t.teardown(c.shutdown);
 
