@@ -24,10 +24,10 @@
   resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.1.tgz#9b887da47aeec6637d9db4f0a92a4e740b8262bb"
   integrity sha512-3emNc+yWJoFK5JMLoEFPs6rCzkntWQKxpR4gt3jaZYLKoUG4LrTmID3XNe8y40B6SJ3k/wLPodKa0ToQGlhrwQ==
 
-"@agoric/nat@2.0.1", "@agoric/nat@^2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
-  integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
+"@agoric/nat@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-3.0.1.tgz#19cfe575e707ae1024f123b49a9c745d88381cbf"
+  integrity sha512-/i5d77UZSAw+9h19nvid4/YrEYO7E8xx4ZPcOKLvjH96mfALSjYR9QU77MRZbbqKOF4PwdS2xLupzo/vg46eKA==
 
 "@agoric/transform-module@^0.4.1":
   version "0.4.1"

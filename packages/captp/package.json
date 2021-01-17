@@ -43,7 +43,7 @@
   "dependencies": {
     "@agoric/eventual-send": "^0.13.0",
     "@agoric/marshal": "^0.3.0",
-    "@agoric/nat": "^2.0.1",
+    "@agoric/nat": "^3.0.1",
     "@agoric/promise-kit": "^0.2.0",
     "esm": "^3.2.5"
   },
