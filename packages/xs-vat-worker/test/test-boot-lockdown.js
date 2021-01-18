@@ -37,10 +37,10 @@ test('bootstrap to SES lockdown', async t => {
     globalThis.send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
   `);
   await vat.evaluate(`
-    send([ typeof harden, typeof Compartment ]);
+    send([ typeof harden, typeof Compartment, typeof HandledPromise ]);
   `);
   await vat.close();
-  t.deepEqual(['["function","function"]'], messages);
+  t.deepEqual(['["function","function","function"]'], messages);
 });
 
 test('child compartment cannot access start powers', async t => {
