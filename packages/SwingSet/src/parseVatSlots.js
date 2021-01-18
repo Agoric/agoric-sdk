@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert } from '@agoric/assert';
+import { assert, details as d } from '@agoric/assert';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
 // called "slots" are references, but the word "slot" suggests something into
@@ -68,10 +68,10 @@ export function parseVatSlot(s) {
       throw new Error(`invalid vatSlot ${s}`);
     }
     virtual = true;
-    id = Nat(Number(idSuffix.substr(0, delim)));
-    subid = Nat(Number(idSuffix.slice(delim + 1)));
+    id = Nat(BigInt(idSuffix.substr(0, delim)));
+    subid = Nat(BigInt(idSuffix.slice(delim + 1)));
   } else {
-    id = Nat(Number(idSuffix));
+    id = Nat(BigInt(idSuffix));
   }
 
   return { type, allocatedByVat, virtual, id, subid };
@@ -91,9 +91,9 @@ export function parseVatSlot(s) {
 export function makeVatSlot(type, allocatedByVat, id) {
   let idSuffix;
   if (allocatedByVat) {
-    idSuffix = `+${Nat(id)}`;
+    idSuffix = `+${Nat(BigInt(id))}`;
   } else {
-    idSuffix = `-${Nat(id)}`;
+    idSuffix = `-${Nat(BigInt(id))}`;
   }
 
   if (type === 'object') {
@@ -126,3 +126,20 @@ export function insistVatType(type, vatSlot) {
     `vatSlot ${vatSlot} is not of type ${type}`,
   );
 }
+
+export const safeBigIntReplacer = (_, value) => {
+  if (typeof value !== 'bigint') {
+    return value;
+  }
+  const result = Number(value);
+  assert(
+    // This is the correct way to do a magnitude equality comparison between a
+    // bigint and a number.
+    // eslint-disable-next-line eqeqeq
+    result == value,
+    d`BigInt ${value} doesn't round trip through Number ${result}`,
+  );
+  return result;
+};
+export const safeBigIntStringify = val =>
+  JSON.stringify(val, safeBigIntReplacer);

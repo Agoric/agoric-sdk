@@ -108,8 +108,8 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
 
       let id;
       if (type === 'object') {
-        id = Nat(Number(storage.get(`${deviceID}.o.nextID`)));
-        storage.set(`${deviceID}.o.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${deviceID}.o.nextID`)));
+        storage.set(`${deviceID}.o.nextID`, `${id + BigInt(1)}`);
       } else if (type === 'device') {
         throw new Error('devices cannot import other device nodes');
       } else if (type === 'promise') {

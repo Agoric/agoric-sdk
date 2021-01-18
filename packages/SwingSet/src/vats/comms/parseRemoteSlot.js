@@ -32,16 +32,16 @@ export function parseRemoteSlot(s) {
     throw new Error(`invalid remoteSlot ${s}`);
   }
 
-  const id = Nat(Number(indexSuffix));
+  const id = Nat(BigInt(indexSuffix));
   return { type, allocatedByRecipient, id };
 }
 
 export function makeRemoteSlot(type, allocatedByRecipient, id) {
   let indexSuffix;
   if (allocatedByRecipient) {
-    indexSuffix = `+${Nat(id)}`;
+    indexSuffix = `+${Nat(BigInt(id))}`;
   } else {
-    indexSuffix = `-${Nat(id)}`;
+    indexSuffix = `-${Nat(BigInt(id))}`;
   }
 
   if (type === 'object') {

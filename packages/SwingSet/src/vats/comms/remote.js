@@ -3,7 +3,7 @@ import { assert, details } from '@agoric/assert';
 import { makeVatSlot, insistVatType } from '../../parseVatSlots';
 
 function makeRemoteID(index) {
-  return `remote${Nat(index)}`;
+  return `remote${Nat(BigInt(index))}`;
 }
 
 export function insistRemoteID(remoteID) {

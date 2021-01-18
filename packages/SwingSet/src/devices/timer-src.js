@@ -257,9 +257,9 @@ export function buildRootDeviceNode(tools) {
   // point will be reached at consistent intervals.
   return harden({
     setWakeup(delaySecs, handler) {
-      deadlines.add(lastPolled + Nat(delaySecs), handler);
+      deadlines.add(lastPolled + Nat(BigInt(delaySecs)), handler);
       saveState();
-      return lastPolled + Nat(delaySecs);
+      return lastPolled + Nat(BigInt(delaySecs));
     },
     removeWakeup(handler) {
       const times = deadlines.remove(handler);
@@ -276,8 +276,8 @@ export function buildRootDeviceNode(tools) {
     makeRepeater(startTime, interval) {
       const index = nextRepeater;
       repeaters.push({
-        startTime: Nat(startTime),
-        interval: Nat(interval),
+        startTime: Nat(BigInt(startTime)),
+        interval: Nat(BigInt(interval)),
       });
       nextRepeater += 1;
       saveState();

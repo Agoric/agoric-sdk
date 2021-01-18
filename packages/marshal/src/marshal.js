@@ -422,10 +422,12 @@ function makeReviverIbidTable(cyclePolicy) {
 
   return harden({
     get(allegedIndex) {
-      const index = Nat(allegedIndex);
+      const index = Nat(BigInt(allegedIndex));
       if (index >= ibids.length) {
         throw new RangeError(`ibid out of range: ${index}`);
       }
+      // @ts-ignore For some reason, TypeScript thinks BigInts are not an
+      // index type. They are. TypeScript is wrong.
       const result = ibids[index];
       if (unfinishedIbids.has(result)) {
         switch (cyclePolicy) {
@@ -750,7 +752,9 @@ export function makeMarshal(
           }
 
           case 'slot': {
-            const slot = slots[Nat(rawTree.index)];
+            // @ts-ignore For some reason, TypeScript thinks BigInts are not an
+            // index type. They are. TypeScript is wrong.
+            const slot = slots[Nat(BigInt(rawTree.index))];
             return ibidTable.register(convertSlotToVal(slot, rawTree.iface));
           }
 

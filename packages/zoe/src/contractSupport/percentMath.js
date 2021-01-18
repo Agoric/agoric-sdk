@@ -17,9 +17,13 @@ const { multiply, floorDivide } = natSafeMath;
 // with the same units. If you divide gallons by miles, the result is not a
 // percentage.
 /** @type {MakePercent} */
-function makePercent(value, base = 100) {
+function makePercent(value, base = BigInt(100)) {
+  // TODO remove these once all callers are converted?
+  value = BigInt(value);
+  base = BigInt(base);
+
   assert(
-    value >= 0 && value <= base,
+    value >= BigInt(0) && value <= base,
     `percentages (${value}) must be between 0 and base (${base})`,
   );
 
@@ -39,7 +43,10 @@ harden(makePercent);
 // calculatePercent is an alternative method of producing a percent object by
 // dividing two amounts of the same brand.
 /** @type {CalculatePercent} */
-function calculatePercent(numerator, denominator, base = 100) {
+function calculatePercent(numerator, denominator, base = BigInt(100)) {
+  // TODO remove once all callers are converted?
+  base = BigInt(base);
+
   assert(
     numerator.brand === denominator.brand,
     `Dividing amounts of different brands doesn't produce a percent.`,
@@ -50,7 +57,7 @@ function calculatePercent(numerator, denominator, base = 100) {
 }
 harden(calculatePercent);
 
-const ALL = harden(makePercent(100));
-const NONE = harden(makePercent(0));
+const ALL = harden(makePercent(BigInt(100)));
+const NONE = harden(makePercent(BigInt(0)));
 
 export { makePercent, calculatePercent, ALL, NONE };

@@ -54,7 +54,7 @@ export const getInputPrice = (
   const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
   const numerator = inputWithFee * BigInt(outputReserve);
   const denominator = BigInt(inputReserve) * BIG_10000 + inputWithFee;
-  return Nat(Number(numerator / denominator));
+  return Nat(BigInt(numerator / denominator));
 };
 
 /**
@@ -99,7 +99,7 @@ export const getOutputPrice = (
   const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
-  return Nat(Number(numerator / denominator + BIG_ONE));
+  return Nat(BigInt(numerator / denominator + BIG_ONE));
 };
 
 function assertDefined(label, value) {
@@ -120,7 +120,10 @@ export const calcLiqValueToMint = (
   assertDefined('inputValue', inputValue);
   assertDefined('inputReserve', inputReserve);
 
-  if (liqTokenSupply === 0) {
+  // `==` is the correct way to compare numbers and bitints for magnitude
+  // equality.
+  // eslint-disable-next-line eqeqeq
+  if (liqTokenSupply == 0) {
     return inputValue;
   }
   return floorDivide(multiply(inputValue, liqTokenSupply), inputReserve);
@@ -147,7 +150,10 @@ export const calcSecondaryRequired = (
   assertDefined('centralIn', centralIn);
   assertDefined('centralPool', centralPool);
   assertDefined('secondaryReserve', secondaryPool);
-  if (centralPool === 0 || secondaryPool === 0) {
+  // `==` is the correct way to compare numbers and bitints for magnitude
+  // equality.
+  // eslint-disable-next-line eqeqeq
+  if (centralPool == 0 || secondaryPool == 0) {
     return secondaryIn;
   }
 

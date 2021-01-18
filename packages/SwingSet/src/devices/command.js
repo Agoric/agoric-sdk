@@ -42,7 +42,7 @@ export default function buildCommand(broadcastCallback) {
   }
 
   function deliverResponse(kCount, kIsReject, kResponseString) {
-    const count = Nat(kCount);
+    const count = Nat(BigInt(kCount));
     const isReject = Boolean(kIsReject);
     let obj;
     // TODO: is this safe against kernel-realm trickery? It's awfully handy

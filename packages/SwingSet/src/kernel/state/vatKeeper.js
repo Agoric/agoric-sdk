@@ -5,16 +5,20 @@
 import Nat from '@agoric/nat';
 import { assert, details } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
+import {
+  makeVatSlot,
+  parseVatSlot,
+  safeBigIntStringify,
+} from '../../parseVatSlots';
 import { insistVatID } from '../id';
 import { kdebug } from '../kdebug';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
 // TODO: tests rely on these numbers and haven't been updated to use names.
-const FIRST_OBJECT_ID = 50;
-const FIRST_PROMISE_ID = 60;
-const FIRST_DEVICE_ID = 70;
+const FIRST_OBJECT_ID = BigInt(50);
+const FIRST_PROMISE_ID = BigInt(60);
+const FIRST_DEVICE_ID = BigInt(70);
 const FIRST_TRANSCRIPT_ID = 0;
 
 /**
@@ -66,8 +70,8 @@ export function makeVatKeeper(
     assert.typeof(source, 'object');
     assert(source.bundle || source.bundleName);
     assert.typeof(options, 'object');
-    storage.set(`${vatID}.source`, JSON.stringify(source));
-    storage.set(`${vatID}.options`, JSON.stringify(options));
+    storage.set(`${vatID}.source`, safeBigIntStringify(source));
+    storage.set(`${vatID}.options`, safeBigIntStringify(options));
   }
 
   function getSourceAndOptions() {
@@ -147,14 +151,14 @@ export function makeVatKeeper(
 
       let id;
       if (type === 'object') {
-        id = Nat(Number(storage.get(`${vatID}.o.nextID`)));
-        storage.set(`${vatID}.o.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${vatID}.o.nextID`)));
+        storage.set(`${vatID}.o.nextID`, `${id + BigInt(1)}`);
       } else if (type === 'device') {
-        id = Nat(Number(storage.get(`${vatID}.d.nextID`)));
-        storage.set(`${vatID}.d.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${vatID}.d.nextID`)));
+        storage.set(`${vatID}.d.nextID`, `${id + BigInt(1)}`);
       } else if (type === 'promise') {
-        id = Nat(Number(storage.get(`${vatID}.p.nextID`)));
-        storage.set(`${vatID}.p.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${vatID}.p.nextID`)));
+        storage.set(`${vatID}.p.nextID`, `${id + BigInt(1)}`);
       } else {
         throw new Error(`unknown type ${type}`);
       }
@@ -222,14 +226,14 @@ export function makeVatKeeper(
    * @param {string} msg  The message to append.
    */
   function addToTranscript(msg) {
-    const id = Nat(Number(storage.get(`${vatID}.t.nextID`)));
-    storage.set(`${vatID}.t.nextID`, `${id + 1}`);
-    storage.set(`${vatID}.t.${id}`, JSON.stringify(msg));
+    const id = Nat(BigInt(storage.get(`${vatID}.t.nextID`)));
+    storage.set(`${vatID}.t.nextID`, `${id + BigInt(1)}`);
+    storage.set(`${vatID}.t.${id}`, safeBigIntStringify(msg));
   }
 
   function vatStats() {
     function getStringAsNat(ostr) {
-      return Nat(Number(storage.get(ostr)));
+      return Nat(BigInt(storage.get(ostr)));
     }
 
     const objectCount = getStringAsNat(`${vatID}.o.nextID`) - FIRST_OBJECT_ID;
@@ -238,10 +242,10 @@ export function makeVatKeeper(
     const transcriptCount =
       storage.get(`${vatID}.t.nextID`) - FIRST_TRANSCRIPT_ID;
     return harden({
-      objectCount: Nat(objectCount),
-      promiseCount: Nat(promiseCount),
-      deviceCount: Nat(deviceCount),
-      transcriptCount: Nat(Number(transcriptCount)),
+      objectCount: Nat(BigInt(objectCount)),
+      promiseCount: Nat(BigInt(promiseCount)),
+      deviceCount: Nat(BigInt(deviceCount)),
+      transcriptCount: Nat(BigInt(transcriptCount)),
     });
   }
 

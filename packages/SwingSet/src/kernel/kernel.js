@@ -8,7 +8,7 @@ import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
 import { kdebug, kdebugEnable, legibilizeMessageArgs } from './kdebug';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
-import { parseVatSlot } from '../parseVatSlots';
+import { parseVatSlot, safeBigIntReplacer } from '../parseVatSlots';
 import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
@@ -21,12 +21,12 @@ import { makeVatLoader } from './loadVat';
 import { makeVatTranslators } from './vatTranslator';
 import { makeDeviceTranslators } from './deviceTranslator';
 
-function abbreviateReviver(_, arg) {
+function abbreviateReplacer(name, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
     // truncate long strings
     return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
   }
-  return arg;
+  return safeBigIntReplacer(name, arg);
 }
 
 function makeError(message, name = 'Error') {
@@ -52,7 +52,7 @@ function doAddExport(kernelKeeper, fromVatID, vatSlot) {
  * @param {string} vatSlot  That vat's ID for the object to deliver to
  * @param {string} method  The message verb
  * @param {*} args  The message arguments
- * @param {string}  policy How the kernel should handle an eventual resolution or
+ * @param {string} policy How the kernel should handle an eventual resolution or
  *    rejection of the message's result promise.  Should be one of 'ignore' (do
  *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure' (log
  *    only rejections), or 'panic' (panic the kernel upon a rejection).
@@ -133,7 +133,7 @@ export default function buildKernel(
   // 'result' value returned by c.queueToExport()
   function testLog(...args) {
     const rendered = args.map(arg =>
-      typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReviver),
+      typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReplacer),
     );
     ephemeral.log.push(rendered.join(''));
   }
@@ -250,7 +250,7 @@ export default function buildKernel(
   let kernelPanic = null;
 
   function panic(problem, err) {
-    console.error(`##### KERNEL PANIC: ${problem} #####`);
+    console.error('##### KERNEL PANIC:', problem, err, '#####');
     kernelPanic = err || new Error(`kernel panic ${problem}`);
   }
 

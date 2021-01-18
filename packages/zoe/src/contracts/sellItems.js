@@ -80,7 +80,7 @@ const start = zcf => {
 
     // All items are the same price.
     const totalCost = moneyMath.make(
-      pricePerItem.value * wantedItems.value.length,
+      pricePerItem.value * BigInt(wantedItems.value.length),
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.

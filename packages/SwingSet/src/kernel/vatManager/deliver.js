@@ -34,7 +34,7 @@ export function makeDeliver(tools, dispatch) {
       .then(f)
       .then(
         undefined,
-        err => console.log(`doProcess: ${errmsg}: ${err.message}`),
+        err => console.log(`doProcess: ${errmsg}:`, err),
       );
     return waitUntilQuiescent();
   }

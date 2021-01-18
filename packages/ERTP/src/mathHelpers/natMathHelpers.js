@@ -4,7 +4,7 @@ import Nat from '@agoric/nat';
 
 import '../types';
 
-const identity = 0;
+const identity = BigInt(0);
 
 /**
  * Fungible digital assets use the natMathHelpers to manage balances -
@@ -19,12 +19,13 @@ const identity = 0;
  * @type {MathHelpers}
  */
 const natMathHelpers = harden({
-  doCoerce: Nat,
+  doCoerce: n => Nat(BigInt(n)),
   doGetEmpty: _ => identity,
   doIsEmpty: nat => nat === identity,
   doIsGTE: (left, right) => left >= right,
   doIsEqual: (left, right) => left === right,
-  doAdd: (left, right) => Nat(left + right),
+  // BigInts don't observably overflow
+  doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
 });
 

@@ -74,7 +74,7 @@ export function deliverToController(
       details`unknown remote name ${remoteName}`,
     );
     const remoteID = state.names.get(remoteName);
-    const remoteRefID = Nat(args[1]);
+    const remoteRefID = Nat(BigInt(args[1]));
     if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
       throw new Error(`unexpected args for addEgress(): ${controllerArgs}`);
     }
@@ -93,7 +93,7 @@ export function deliverToController(
       details`unknown remote name ${remoteName}`,
     );
     const remoteID = state.names.get(remoteName);
-    const remoteRefID = Nat(args[1]);
+    const remoteRefID = Nat(BigInt(args[1]));
     const localRef = addIngress(remoteID, remoteRefID);
     syscall.fulfillToPresence(result, localRef);
   }

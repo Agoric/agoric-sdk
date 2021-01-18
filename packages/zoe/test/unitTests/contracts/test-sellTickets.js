@@ -450,7 +450,7 @@ test(`mint and sell opera tickets`, async t => {
       ]),
     );
 
-    const totalCost = moola(2 * terms.pricePerItem.value);
+    const totalCost = moola(BigInt(2) * terms.pricePerItem.value);
 
     const bobProposal = harden({
       give: { Money: totalCost },
@@ -472,11 +472,15 @@ test(`mint and sell opera tickets`, async t => {
     );
     t.is(bobTicketAmount.value.length, 2, 'Bob should have received 2 tickets');
     t.truthy(
-      bobTicketAmount.value.find(ticket => ticket.number === 2),
+      // Numeric magnitude comparison
+      // eslint-disable-next-line eqeqeq
+      bobTicketAmount.value.find(ticket => ticket.number == 2),
       'Bob should have received tickets #2',
     );
     t.truthy(
-      bobTicketAmount.value.find(ticket => ticket.number === 3),
+      // Numeric magnitude comparison
+      // eslint-disable-next-line eqeqeq
+      bobTicketAmount.value.find(ticket => ticket.number == 3),
       'Bob should have received tickets #3',
     );
   };
@@ -491,8 +495,8 @@ test(`mint and sell opera tickets`, async t => {
 
     t.is(
       currentPurseBalance.value,
-      3 * 22,
-      `The Opera should get ${3 * 22} moolas from ticket sales`,
+      BigInt(3) * BigInt(22),
+      `The Opera should get ${BigInt(3) * BigInt(22)} moolas from ticket sales`,
     );
   };
 

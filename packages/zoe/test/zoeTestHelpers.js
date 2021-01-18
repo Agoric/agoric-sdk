@@ -2,6 +2,8 @@ import { E } from '@agoric/eventual-send';
 
 import '../exported';
 
+const { details: d } = assert;
+
 export const assertPayoutAmount = async (
   t,
   issuer,
@@ -33,7 +35,7 @@ export const assertOfferResult = (t, seat, expected, msg = expected) => {
     .getOfferResult()
     .then(
       result => t.is(result, expected, msg),
-      e => t.fail(`expecting offer result to be ${expected}, ${e}`),
+      e => t.fail(d`expecting offer result to be ${expected}, ${e}`),
     );
 };
 

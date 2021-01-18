@@ -12,8 +12,8 @@ import {
 } from '../../../src/contractSupport/percentMath';
 
 test('percentMath - basic', t => {
-  const halfDefault = makePercent(50);
-  const halfPrecise = makePercent(5000, 10000);
+  const halfDefault = makePercent(BigInt(50));
+  const halfPrecise = makePercent(BigInt(5000), BigInt(10000));
 
   const { amountMath } = makeIssuerKit('moe');
   const moe = amountMath.make;

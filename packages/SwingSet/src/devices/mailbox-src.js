@@ -1,5 +1,7 @@
 import Nat from '@agoric/nat';
 
+const { details: d } = assert;
+
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const highestInboundDelivered = harden(new Map());
@@ -15,7 +17,7 @@ export function buildRootDeviceNode(tools) {
         `mailbox.inboundCallback(${peer}) called before handler was registered`,
       );
     }
-    const ack = Nat(hAck);
+    const ack = Nat(BigInt(hAck));
     let didSomething = false;
 
     let latestMsg = 0;
@@ -25,7 +27,7 @@ export function buildRootDeviceNode(tools) {
     const newMessages = [];
     hMessages.forEach(m => {
       const [hNum, hMsg] = m;
-      const num = Nat(hNum);
+      const num = Nat(BigInt(hNum));
       if (num > latestMsg) {
         newMessages.push([num, `${hMsg}`]);
         latestMsg = num;
@@ -56,7 +58,7 @@ export function buildRootDeviceNode(tools) {
   // console.debug(`mailbox-src build: inboundHandler is`, inboundHandler);
   deliverInboundMessages = (peer, newMessages) => {
     if (!inboundHandler) {
-      throw new Error(`deliverInboundMessages before registerInboundHandler`);
+      assert.fail(d`deliverInboundMessages before registerInboundHandler`);
     }
     try {
       SO(inboundHandler).deliverInboundMessages(peer, newMessages);
@@ -67,7 +69,7 @@ export function buildRootDeviceNode(tools) {
 
   deliverInboundAck = (peer, ack) => {
     if (!inboundHandler) {
-      throw new Error(`deliverInboundAck before registerInboundHandler`);
+      assert.fail(d`deliverInboundAck before registerInboundHandler`);
     }
     try {
       SO(inboundHandler).deliverInboundAck(peer, ack);
@@ -80,7 +82,7 @@ export function buildRootDeviceNode(tools) {
   return harden({
     registerInboundHandler(handler) {
       if (inboundHandler) {
-        throw new Error(`already registered`);
+        assert.fail(d`already registered`);
       }
       inboundHandler = handler;
       setDeviceState(harden({ inboundHandler }));
@@ -88,25 +90,25 @@ export function buildRootDeviceNode(tools) {
 
     add(peer, msgnum, body) {
       try {
-        endowments.add(`${peer}`, Nat(msgnum), `${body}`);
+        endowments.add(`${peer}`, Nat(BigInt(msgnum)), `${body}`);
       } catch (e) {
-        throw new Error(`error in add: ${e}`);
+        assert.fail(d`error in add: ${e}`);
       }
     },
 
     remove(peer, msgnum) {
       try {
-        endowments.remove(`${peer}`, Nat(msgnum));
+        endowments.remove(`${peer}`, Nat(BigInt(msgnum)));
       } catch (e) {
-        throw new Error(`error in remove: ${e}`);
+        assert.fail(d`error in remove: ${e}`);
       }
     },
 
     ackInbound(peer, msgnum) {
       try {
-        endowments.setAcknum(`${peer}`, Nat(msgnum));
+        endowments.setAcknum(`${peer}`, Nat(BigInt(msgnum)));
       } catch (e) {
-        throw new Error(`error in ackInbound: ${e}`);
+        assert.fail(d`error in ackInbound: ${e}`);
       }
     },
   });

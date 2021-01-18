@@ -35,15 +35,15 @@ test('natMathHelpers', t => {
   t.deepEqual(getAmountMathKind(), MathKind.NAT, 'amountMathKind is nat');
 
   // make
-  t.deepEqual(make(4), { brand: mockBrand, value: 4 });
+  t.deepEqual(make(4), { brand: mockBrand, value: BigInt(4) });
   t.throws(
     () => make('abc'),
-    { instanceOf: RangeError, message: 'not a safe integer' },
-    `'abc' is not a nat`,
+    { instanceOf: SyntaxError, message: 'Cannot convert abc to a BigInt' },
+    `Cannot convert abc to a BigInt`,
   );
   t.throws(
     () => make(-1),
-    { instanceOf: RangeError, message: 'negative' },
+    { instanceOf: RangeError, message: '-1 is negative' },
     `- 1 is not a valid Nat`,
   );
 
@@ -52,7 +52,7 @@ test('natMathHelpers', t => {
     coerce(harden({ brand: mockBrand, value: 4 })),
     {
       brand: mockBrand,
-      value: 4,
+      value: BigInt(4),
     },
     `coerce can take an amount`,
   );
@@ -71,7 +71,7 @@ test('natMathHelpers', t => {
   );
 
   // getValue
-  t.is(getValue(make(4)), 4);
+  t.is(getValue(make(4)), BigInt(4));
 
   // getEmpty
   t.deepEqual(getEmpty(), make(0), `empty is 0`);
@@ -88,7 +88,7 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () => isEmpty({ brand: mockBrand, value: 'abc' }),
-    { instanceOf: RangeError, message: 'not a safe integer' },
+    { instanceOf: SyntaxError, message: 'Cannot convert abc to a BigInt' },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(

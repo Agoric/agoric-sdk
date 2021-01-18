@@ -25,9 +25,9 @@ export function buildRootObject(vatPowers) {
         return this.makeRepeater(delaySecs, interval);
       },
       makeRepeater(delaySecs, interval) {
-        Nat(delaySecs);
+        Nat(BigInt(delaySecs));
         assert(
-          Nat(interval) > 0,
+          Nat(BigInt(interval)) > 0,
           details`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
@@ -46,9 +46,9 @@ export function buildRootObject(vatPowers) {
         return vatRepeater;
       },
       makeNotifier(delaySecs, interval) {
-        Nat(delaySecs);
+        Nat(BigInt(delaySecs));
         assert(
-          Nat(interval) > 0,
+          Nat(BigInt(interval)) > 0,
           details`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 

@@ -655,7 +655,7 @@ test('pricedCallSpread, mid-strike', async t => {
     issuerKeywordRecord,
     terms,
   );
-  const invitationPair = await E(creatorFacet).makeInvitationPair(75);
+  const invitationPair = await E(creatorFacet).makeInvitationPair(BigInt(75));
   const { longInvitation, shortInvitation } = invitationPair;
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();

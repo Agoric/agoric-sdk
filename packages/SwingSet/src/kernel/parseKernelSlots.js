@@ -39,7 +39,7 @@ export function parseKernelSlot(s) {
   } else {
     throw new Error(`invalid kernelSlot ${s}`);
   }
-  const id = Nat(Number(idSuffix));
+  const id = Nat(BigInt(idSuffix));
   return { type, id };
 }
 
@@ -55,13 +55,13 @@ export function parseKernelSlot(s) {
  */
 export function makeKernelSlot(type, id) {
   if (type === 'object') {
-    return `ko${Nat(id)}`;
+    return `ko${Nat(BigInt(id))}`;
   }
   if (type === 'device') {
-    return `kd${Nat(id)}`;
+    return `kd${Nat(BigInt(id))}`;
   }
   if (type === 'promise') {
-    return `kp${Nat(id)}`;
+    return `kp${Nat(BigInt(id))}`;
   }
   throw new Error(`unknown type ${type}`);
 }

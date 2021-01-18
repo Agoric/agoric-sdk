@@ -17,7 +17,7 @@ export function buildRootDeviceNode(tools) {
     }
     try {
       const body = JSON.parse(`${bodyString}`);
-      SO(inboundHandler).inbound(Nat(count), body);
+      SO(inboundHandler).inbound(Nat(BigInt(count)), body);
     } catch (e) {
       console.error(`error during inboundCallback:`, e);
       throw new Error(`error during inboundCallback: ${e}`);

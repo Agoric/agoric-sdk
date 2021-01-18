@@ -73,7 +73,7 @@ import Nat from '@agoric/nat';
 export function importMailbox(data, inout = {}) {
   const outbox = new Map();
   data.outbox.forEach(m => {
-    outbox.set(Nat(m[0]), m[1]);
+    outbox.set(Nat(BigInt(m[0]), m[1]));
   });
   inout.ack = data.ack;
   inout.outbox = outbox;
@@ -85,7 +85,7 @@ export function exportMailbox(inout) {
   inout.outbox.forEach((body, msgnum) => {
     messages.push([msgnum, body]);
   });
-  messages.sort((a, b) => a[0] - b[0]);
+  messages.sort((a, b) => Number(a[0] - b[0]));
   return {
     ack: inout.ack,
     outbox: messages,
@@ -105,16 +105,16 @@ export function buildMailboxStateMap(state = harden(new Map())) {
   }
 
   function add(peer, msgnum, body) {
-    getOrCreatePeer(`${peer}`).outbox.set(Nat(msgnum), `${body}`);
+    getOrCreatePeer(`${peer}`).outbox.set(Nat(BigInt(msgnum)), `${body}`);
   }
 
   function remove(peer, msgnum) {
     const messages = getOrCreatePeer(`${peer}`).outbox;
-    messages.delete(Nat(msgnum));
+    messages.delete(Nat(BigInt(msgnum)));
   }
 
   function setAcknum(peer, msgnum) {
-    getOrCreatePeer(`${peer}`).ack = Nat(msgnum);
+    getOrCreatePeer(`${peer}`).ack = Nat(BigInt(msgnum));
   }
 
   function exportToData() {
@@ -166,15 +166,15 @@ export function buildMailbox(state) {
   }
 
   function add(peer, msgnum, body) {
-    state.add(`${peer}`, Nat(msgnum), `${body}`);
+    state.add(`${peer}`, Nat(BigInt(msgnum)), `${body}`);
   }
 
   function remove(peer, msgnum) {
-    state.remove(`${peer}`, Nat(msgnum));
+    state.remove(`${peer}`, Nat(BigInt(msgnum)));
   }
 
   function setAcknum(peer, msgnum) {
-    state.setAcknum(`${peer}`, Nat(msgnum));
+    state.setAcknum(`${peer}`, Nat(BigInt(msgnum)));
   }
 
   // deliverInbound is made available to the host; it is used for inbound
@@ -185,6 +185,13 @@ export function buildMailbox(state) {
     try {
       return Boolean(inboundCallback(peer, messages, ack));
     } catch (e) {
+      // TODO after https://github.com/Agoric/SES-shim/pull/555 is merged,
+      // fix this to
+      // assert.fail(d`error in inboundCallback: ${e}`);
+      // or
+      // assert.note(e, 'error in inboundCallback:');
+      // throw e;
+      console.log('error in inboundCallback:', e);
       throw new Error(`error in inboundCallback: ${e}`);
     }
   }
