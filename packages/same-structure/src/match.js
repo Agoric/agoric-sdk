@@ -157,6 +157,47 @@ function matches(outerPattern, outerSpecimen) {
         // wildcard. matches anything.
         return true;
       }
+      case 'or': {
+        const { subPatterns } = pattern;
+        assert(
+          Array.isArray(subPatterns),
+          d`The "or" pattern ${pattern} needs an array of subPatterns`,
+        );
+        return subPatterns.some(subPattern =>
+          matchesInternal(subPattern, specimen),
+        );
+      }
+      case 'and': {
+        const { subPatterns } = pattern;
+        assert(
+          Array.isArray(subPatterns),
+          d`The "and" pattern ${pattern} needs an array of subPatterns`,
+        );
+        return subPatterns.every(subPattern =>
+          matchesInternal(subPattern, specimen),
+        );
+      }
+      case '>=': {
+        const { rightOperand } = pattern;
+        const rightType = typeof rightOperand;
+        assert(
+          ['number', 'bigint', 'string', 'boolean'].includes(rightType),
+          d`A magnitude comparison pattern ${pattern} needs a primitive comparable rightOperand`,
+        );
+        assert(
+          isGround(rightOperand),
+          d`magnitude comparisons need ground operands, not patterns ${pattern}`,
+        );
+        const leftType = typeof specimen;
+        if (leftType === 'number' || leftType === 'bigint') {
+          if (rightType !== 'number' && rightType !== 'bigint') {
+            return false;
+          }
+        } else if (leftType !== rightType) {
+          return false;
+        }
+        return specimen >= rightOperand;
+      }
       default: {
         throw assert.fail(d`unrecognized pattern kind ${q(patternKind)}`);
       }

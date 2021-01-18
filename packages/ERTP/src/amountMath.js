@@ -258,6 +258,34 @@ function makeAmountMath(brand, amountMathKind) {
             change: specimen,
           });
         }
+        case 'or': {
+          const { subPatterns } = pattern;
+          assert(
+            Array.isArray(subPatterns),
+            d`The "or" pattern ${pattern} needs an array of subPatterns`,
+          );
+          let candidate;
+          for (const subPattern of subPatterns) {
+            const subSplit = amountMath.frugalSplit(subPattern, specimen);
+            if (subSplit === undefined) {
+              // eslint-disable-next-line no-continue
+              continue;
+            }
+            const { matched: subMatched } = subSplit;
+            if (candidate === undefined) {
+              candidate = subMatched;
+            } else if (!amountMath.isGTE(subMatched, candidate)) {
+              candidate = subMatched;
+            }
+          }
+          if (candidate === undefined) {
+            return undefined;
+          }
+          return harden({
+            matched: candidate,
+            change: amountMath.subtract(specimen, candidate),
+          });
+        }
         default: {
           const split = helpers.doFrugalSplit(
             amountMath.getValuePattern(pattern),

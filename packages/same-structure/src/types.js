@@ -1,5 +1,5 @@
 /**
- * @typedef {"*" | string} PatternKind
+ * @typedef {"*" | "or" | "and" | "<" | "<=" | "==" | ">=" | ">" } PatternKind
  */
 
 /**
@@ -10,7 +10,9 @@
  * TODO How do I declare a property whose name is not an indentifier?
  * TODO For each specified PatternKind, we should declare here what that
  * specific pattern record looks like. For example, the `'*'` pattern is
- * otherwise empty.
+ * otherwise empty. `'or'` and `'and'` have a `subPatterns` property, and
+ * the magnitude comparison operators have a ground `rightOperand`
+ * property.
  */
 
 /**
