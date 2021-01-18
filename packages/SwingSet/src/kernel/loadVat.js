@@ -35,7 +35,11 @@ export function makeVatLoader(stuff) {
     const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
     vatKeeper.setSourceAndOptions(source, dynamicOptions);
     // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, dynamicOptions, true, true);
+    create(vatID, source, dynamicOptions, true, true);
+    // we ignore the Promise create() returns: the invoking vat will be
+    // notified via makeSuccessResponse rather than via the return value of
+    // this function
+    return vatID;
   }
 
   /**
@@ -49,7 +53,9 @@ export function makeVatLoader(stuff) {
    */
   function recreateDynamicVat(vatID, source, dynamicOptions) {
     // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, dynamicOptions, false, true);
+    create(vatID, source, dynamicOptions, false, true);
+    // again we ignore create()'s Promise
+    return vatID;
   }
 
   /**
@@ -59,7 +65,8 @@ export function makeVatLoader(stuff) {
    * @param {*} source  The source object implementing the vat
    * @param {*} staticOptions  Options bag governing vat creation
    *
-   * @returns {string}  The vatID of the vat
+   * @returns {Promise<void>} A Promise which fires (with undefined) when the
+   * vat is ready for messages.
    */
   function recreateStaticVat(vatID, source, staticOptions) {
     // eslint-disable-next-line no-use-before-define
@@ -69,7 +76,7 @@ export function makeVatLoader(stuff) {
   const allowedDynamicOptions = [
     'description',
     'metered',
-    'managerType',
+    'managerType', // TODO: not sure we want vats to be able to control this
     'vatParameters',
     'enableSetup',
     'enablePipelining',
@@ -130,7 +137,8 @@ export function makeVatLoader(stuff) {
    *    if false, it's a static vat (these have differences in their allowed
    *    options and some of their option defaults).
    *
-   * @returns {string} the vatID for a newly created vat.
+   * @returns {Promise<void>} A Promise which fires (with undefined) when the
+   * vat is ready for messages.
    */
   function create(vatID, source, options, notifyNewVat, isDynamic) {
     assert(source.bundle || source.bundleName, 'broken source');
@@ -277,9 +285,7 @@ export function makeVatLoader(stuff) {
       p.catch(errorDuringReplay);
     }
 
-    // we return the vatID right away, so the the admin vat can prepare for
-    // the notification
-    return vatID;
+    return p;
   }
 
   async function loadTestVat(vatID, setup, creationOptions) {
