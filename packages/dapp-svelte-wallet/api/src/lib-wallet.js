@@ -171,7 +171,7 @@ export function makeWallet({
     const filter = (state) => state.map(
       // explict whitelist
       /**
-       * @param {PursesJSONState}
+       * @param {PursesFullState} _
        * @returns {PursesJSONState}
        */
       ({
