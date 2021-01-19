@@ -165,7 +165,28 @@ export function makeWallet({
     [],
   );
   {
-    const filter = (state) => state;
+    const filter = (state) => state.map(
+      // explict whitelist
+      {
+        brandBoardId,
+        depositBoardId,
+        brandPetname,
+        pursePetname,
+        displayInfo,
+        value,
+        currentAmountSlots,
+        currentAmount,
+      } => harden({
+        brandBoardId,
+        ...(depositBoardId && { depositBoardId }),
+        brandPetname,
+        pursePetname,
+        ...(displayInfo && { displayInfo }),
+        value,
+        currentAmountSlots,
+        currentAmount,
+      }),
+    );
     observeIteration(pursesNotifier, {
       updateState: (newState) => attenuatedPursesUpdater.updateState(filter(newState)),
       finish:    (finalState) => attenuatedPursesUpdater.finish(filter(finalState)),
