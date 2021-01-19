@@ -17,44 +17,70 @@ const xsnapOptions = {
   debug: true
 };
 
-test('evaluate and issueCommand', async t => {
+function options() {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
     return new Uint8Array();
   }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  return { ...xsnapOptions, handleCommand, messages };
+}
+
+test('evaluate and issueCommand', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
   await vat.evaluate(`issueCommand(ArrayBuffer.fromString("Hello, World!"));`);
   await vat.close();
-  t.deepEqual(['Hello, World!'], messages);
+  t.deepEqual(['Hello, World!'], opts.messages);
 });
 
 test('evaluate until idle', async t => {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const opts = options();
+  const vat = xsnap(opts);
   await vat.evaluate(`
     (async () => {
       issueCommand(ArrayBuffer.fromString("Hello, World!"));
     })();
   `);
   await vat.close();
-  t.deepEqual(['Hello, World!'], messages);
+  t.deepEqual(['Hello, World!'], opts.messages);
+});
+
+test('idle includes setImmediate too', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    setImmediate(() => send("end of crank"));
+    Promise.resolve("turn 2").then(send);
+    send("turn 1");
+  `);
+  await vat.close();
+  t.deepEqual(['turn 1', 'turn 2', 'end of crank'], opts.messages);
+});
+
+test('print - start compartment only', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    print(123);
+    try {
+      (new Compartment()).evalate('print("456")');
+    } catch (_err) {
+      send('no print in Compartment');
+    }
+  `);
+  await vat.close();
+  t.deepEqual(['no print in Compartment'], opts.messages);
 });
 
 test('run script until idle', async t => {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const opts = options();
+  const vat = xsnap(opts);
   await vat.execute(new URL('fixture-xsnap-script.js', importMetaUrl).pathname);
   await vat.close();
-  t.deepEqual(['Hello, World!'], messages);
+  t.deepEqual(['Hello, World!'], opts.messages);
 });
 
 test('issueCommand is synchronous inside, async outside', async t => {
