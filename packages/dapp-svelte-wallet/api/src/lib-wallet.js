@@ -164,8 +164,12 @@ export function makeWallet({
   const { notifier: attenuatedPursesNotifier, updater: attenuatedPursesUpdater } = makeNotifierKit(
     [],
   );
-  observeIteration(pursesNotifier, {
-  });
+  {
+    const filter = (state) => state;
+    observeIteration(pursesNotifier, {
+      updateState: (newState) => attenuatedPursesUpdater.updateState(filter(newState)),
+    });
+  };
 
   /**
    * @param {Petname} pursePetname
