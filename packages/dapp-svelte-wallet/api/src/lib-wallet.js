@@ -168,6 +168,8 @@ export function makeWallet({
     const filter = (state) => state;
     observeIteration(pursesNotifier, {
       updateState: (newState) => attenuatedPursesUpdater.updateState(filter(newState)),
+      finish:    (finalState) => attenuatedPursesUpdater.finish(filter(finalState)),
+      fail:          (reason) => attenuatedPursesUpdater.fail(reason),
     });
   };
 
