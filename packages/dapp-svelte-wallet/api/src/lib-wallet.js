@@ -180,8 +180,8 @@ export function makeWallet({
       value,
       currentAmountSlots,
       currentAmount,
-    }) => harden(
-      {
+    }) => 
+      harden({
         brandBoardId,
         ...(depositBoardId && { depositBoardId }),
         brandPetname,
@@ -190,8 +190,7 @@ export function makeWallet({
         value,
         currentAmountSlots,
         currentAmount,
-      },
-    );
+      });
     const filter = state => state.map(innerFilter);
     observeIteration(pursesNotifier, {
       updateState: newState => attenuatedPursesUpdater.updateState(filter(newState)),
