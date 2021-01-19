@@ -160,6 +160,10 @@ export function makeWallet({
   const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
     [],
   );
+  /** @type {NotifierRecord<PursesJSONState[]>} */
+  const { notifier: attenuatedPursesNotifier, updater: attenuatedPursesUpdater } = makeNotifierKit(
+    [],
+  );
 
   /**
    * @param {Petname} pursePetname
@@ -1332,6 +1336,9 @@ export function makeWallet({
     },
     getPursesNotifier() {
       return pursesNotifier;
+    },
+    getAttenuatedPursesNotifier() {
+      return attenuatedPursesNotifier;
     },
     getIssuersNotifier() {
       return issuersNotifier;
