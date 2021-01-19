@@ -168,7 +168,7 @@ export function makeWallet({
     const filter = (state) => state.map(
       // explict whitelist
       /** @return {PursesJSONState} */
-      {
+      ({
         brandBoardId,
         depositBoardId,
         brandPetname,
@@ -177,7 +177,7 @@ export function makeWallet({
         value,
         currentAmountSlots,
         currentAmount,
-      } => harden({
+      }) => harden({
         brandBoardId,
         ...(depositBoardId && { depositBoardId }),
         brandPetname,
