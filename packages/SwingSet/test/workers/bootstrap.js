@@ -40,22 +40,32 @@ export function buildRootObject() {
     return 'F good';
   }
 
-  function checkA([pB, pC, pF]) {
+  function checkThree(three) {
+    return three === 3 ? 'three good' : `not three, got ${three}`;
+  }
+
+  function checkA([pB, pC, pF, three]) {
     return Promise.all([
       pB.then(checkResB),
       pC.then(checkResC, checkErrC),
       pF.then(checkResF),
+      Promise.resolve(three).then(checkThree),
     ]);
   }
 
   return harden({
-    bootstrap(vats) {
-      const pA = E(vats.target).zero(callbackObj, precD.promise, precE.promise);
+    bootstrap(vats, devices) {
+      const pA = E(vats.target).zero(
+        callbackObj,
+        precD.promise,
+        precE.promise,
+        devices.add,
+      );
       const rp3 = E(vats.target).one();
       precD.resolve(callbackObj); // two
       precE.reject(Error('four')); // three
       const done = Promise.all([pA.then(checkA), rp3]);
-      return done; // expect: [['B good', 'C good', 'F good'], 'rp3 good']
+      return done; // expect: [['B good', 'C good', 'F good', 'three good'], 'rp3 good']
     },
   });
 }

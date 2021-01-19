@@ -12,28 +12,31 @@ function ignore(p) {
 // inbound events ('dispatch'), which will provoke a set of outbound events
 // ('syscall'), that cover the full range of the dispatch/syscall interface
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
   console.log(`vat does buildRootObject`); // make sure console works
   // note: XS doesn't appear to print console.log unless an exception happens
   vatPowers.testLog('testLog works');
 
+  const { canCallNow } = vatParameters;
   const precB = makePromiseKit();
   const precC = makePromiseKit();
   let callbackObj;
 
   // crank 1:
-  //   dispatch.deliver(target, method="zero", result=pA, args=[callbackObj, pD, pE])
+  //   dispatch.deliver(target, method="zero", result=pA, args=[callbackObj, pD, pE, adder])
   //   syscall.subscribe(pD)
   //   syscall.subscribe(pE)
   //   syscall.send(callbackObj, method="callback", result=rp2, args=[11, 12]);
   //   syscall.subscribe(rp2)
-  //   syscall.fulfillToData(pA, [pB, pC]);
-  function zero(obj, pD, pE) {
+  //   syscall.callNow(adder, args=[1, 2]) -> 3
+  //   syscall.fulfillToData(pA, [pB, pC, 3]);
+  function zero(obj, pD, pE, adder) {
     callbackObj = obj;
     const pF = E(callbackObj).callback(11, 12); // syscall.send
     ignore(pD);
     ignore(pE);
-    return [precB.promise, precC.promise, pF]; // syscall.fulfillToData
+    const three = canCallNow ? vatPowers.D(adder).add(1, 2) : 3;
+    return [precB.promise, precC.promise, pF, three]; // syscall.fulfillToData
   }
 
   // crank 2:
