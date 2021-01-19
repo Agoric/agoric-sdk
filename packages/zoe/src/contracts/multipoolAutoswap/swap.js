@@ -3,16 +3,28 @@ import { assertProposalShape, trade } from '../../contractSupport';
 import '../../../exported';
 
 /**
+ * typedef {Object} PriceAmountTriple
+ *
+ * @property {Amount} amountOut
+ * @property {Amount} amountIn
+ * @property {Amount} centralAmount
+ */
+
+/**
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => boolean} isSecondary
  * @param {(brand: Brand) => boolean} isCentral
  * @param {(brand: Brand) => Pool} getPool
+ * @param {(amountIn, brandOut) => PriceAmountTriple} getPriceGivenAvailableInput
+ * @param {(brandIn, amountOut) => PriceAmountTriple} getPriceGivenRequiredOutput
  */
 export const makeMakeSwapInvitation = (
   zcf,
   isSecondary,
   isCentral,
   getPool,
+  getPriceGivenAvailableInput,
+  getPriceGivenRequiredOutput,
 ) => {
   // trade with a stated amountIn.
   const swapIn = seat => {
@@ -76,49 +88,25 @@ export const makeMakeSwapInvitation = (
       seat.exit();
       return `Swap successfully completed.`;
     } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
-      // We must do two consecutive getPriceGivenAvailableInput() calls,
-      // followed by a call to getPriceGivenRequiredOutput().
-      // 1) from amountIn to the central token, which tells us how much central
-      // would be provided for amountIn (centralAmount)
-      // 2) from centralAmount to brandOut, which tells us how much of brandOut
-      // will be provided (amountOut) as well as the minimum price in central
-      // tokens (reducedCentralAmount), then finally
-      // 3) call getPriceGivenRequiredOutput() to see if the same proceeds can
-      // be purchased for less (reducedAmountIn).
+      const {
+        amountIn: reducedAmountIn,
+        amountOut,
+        centralAmount: reducedCentralAmount,
+      } = getPriceGivenAvailableInput(amountIn, brandOut);
 
       const brandInPool = getPool(brandIn);
       const brandOutPool = getPool(brandOut);
-
-      const {
-        brands: { Central: centralBrand },
-      } = zcf.getTerms();
-
-      const {
-        amountOut: centralAmount,
-      } = brandInPool.getPriceGivenAvailableInput(amountIn, centralBrand);
-      const {
-        amountIn: reducedCentralAmount,
-        amountOut,
-      } = brandOutPool.getPriceGivenAvailableInput(centralAmount, brandOut);
-
-      // propogate reduced prices back to the first pool
-      const {
-        amountIn: reducedAmountIn,
-      } = brandInPool.getPriceGivenRequiredOutput(
-        brandIn,
-        reducedCentralAmount,
-      );
-
-      const centralTokenAmountMath = brandInPool.getCentralAmountMath();
       const brandInAmountMath = brandInPool.getAmountMath();
-      const brandOutAmountMath = brandOutPool.getAmountMath();
 
       const seatStaging = seat.stage(
         harden({
-          In: brandInPool.getAmountMath().subtract(amountIn, reducedAmountIn),
+          In: brandInAmountMath.subtract(amountIn, reducedAmountIn),
           Out: amountOut,
         }),
       );
+
+      const centralTokenAmountMath = brandInPool.getCentralAmountMath();
+      const brandOutAmountMath = brandOutPool.getAmountMath();
 
       const poolBrandInStaging = brandInPool.getPoolSeat().stage({
         Secondary: brandInAmountMath.add(
@@ -218,48 +206,24 @@ export const makeMakeSwapInvitation = (
       seat.exit();
       return `Swap successfully completed.`;
     } else if (isSecondary(brandOut) && isSecondary(brandIn)) {
-      // We must do two consecutive getPriceGivenRequiredOutput() calls,
-      // followed by a call to getPriceGivenAvailableInput().
-      // 1) from amountOut to the central token, which tells us how much central
-      // is required to obtain amountOut (centralAmount)
-      // 2) from centralAmount to brandIn, which tells us how much of brandIn
-      // is required (amountIn) as well as the max proceeds in central
-      // tokens (improvedCentralAmount), then finally
-      // 3) call getPriceGivenAvailableInput() to see if improvedCentralAmount
-      // produces a larger amount (improvedAmountOut)
-
-      const brandInPool = getPool(brandOut);
-      const brandOutPool = getPool(brandIn);
-      const {
-        brands: { Central: centralBrand },
-      } = zcf.getTerms();
-
-      const {
-        amountIn: centralAmount,
-      } = brandInPool.getPriceGivenRequiredOutput(centralBrand, amountOut);
       const {
         amountIn,
-        amountOut: improvedCentralAmount,
-      } = brandOutPool.getPriceGivenRequiredOutput(brandIn, centralAmount);
-
-      // propogate improved prices
-      const {
         amountOut: improvedAmountOut,
-      } = brandOutPool.getPriceGivenAvailableInput(
-        improvedCentralAmount,
-        brandOut,
-      );
-
-      const centralAmountMath = brandInPool.getCentralAmountMath();
-      const brandInAmountMath = brandInPool.getAmountMath();
+        centralAmount: improvedCentralAmount,
+      } = getPriceGivenRequiredOutput(brandIn, amountOut);
+      const brandInPool = getPool(brandIn);
+      const brandOutPool = getPool(brandOut);
       const brandOutAmountMath = brandOutPool.getAmountMath();
 
       const seatStaging = seat.stage(
         harden({
-          Out: brandInAmountMath().subtract(improvedAmountOut, amountOut),
           In: amountIn,
+          Out: brandOutAmountMath().subtract(improvedAmountOut, amountOut),
         }),
       );
+
+      const centralAmountMath = brandInPool.getCentralAmountMath();
+      const brandInAmountMath = brandInPool.getAmountMath();
 
       const poolBrandInStaging = brandInPool.getPoolSeat().stage({
         Secondary: brandInAmountMath.add(

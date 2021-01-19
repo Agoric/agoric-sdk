@@ -86,11 +86,107 @@ export const makeGetCurrentPrice = (
       return getPool(brandOut).getPriceGivenRequiredOutput(
         centralBrand,
         centralTokenAmount,
-      );
+      ).amountIn;
     }
 
     throw new Error(`brands were not recognized`);
   };
 
-  return { getOutputForGivenInput, getInputForGivenOutput };
+  const getPriceGivenAvailableInput = (amountIn, brandOut) => {
+    const { brand: brandIn } = amountIn;
+
+    if (isCentral(brandIn) && isSecondary(brandOut)) {
+      return getPool(brandOut).getPriceGivenAvailableInput(amountIn, brandOut);
+    } else if (isSecondary(brandIn) && isCentral(brandOut)) {
+      return getPool(brandIn).getPriceGivenAvailableInput(amountIn, brandOut);
+    } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
+      // We must do two consecutive getPriceGivenAvailableInput() calls,
+      // followed by a call to getPriceGivenRequiredOutput().
+      // 1) from amountIn to the central token, which tells us how much central
+      // would be provided for amountIn (centralAmount)
+      // 2) from centralAmount to brandOut, which tells us how much of brandOut
+      // will be provided (amountOut) as well as the minimum price in central
+      // tokens (reducedCentralAmount), then finally
+      // 3) call getPriceGivenRequiredOutput() to see if the same proceeds can
+      // be purchased for less (reducedAmountIn).
+
+      const brandInPool = getPool(brandIn);
+      const brandOutPool = getPool(brandOut);
+      const {
+        amountOut: centralAmount,
+      } = brandInPool.getPriceGivenAvailableInput(amountIn, centralBrand);
+      const {
+        amountIn: reducedCentralAmount,
+        amountOut,
+      } = brandOutPool.getPriceGivenAvailableInput(centralAmount, brandOut);
+
+      // propagate reduced prices back to the first pool
+      const {
+        amountIn: reducedAmountIn,
+      } = brandInPool.getPriceGivenRequiredOutput(
+        brandIn,
+        reducedCentralAmount,
+      );
+      return {
+        amountIn: reducedAmountIn,
+        amountOut,
+        centralAmount: reducedCentralAmount,
+      };
+    }
+
+    throw new Error(`brands were not recognized`);
+  };
+
+  const getPriceGivenRequiredOutput = (brandIn, amountOut) => {
+    const { brand: brandOut } = amountOut;
+
+    if (isCentral(brandIn) && isSecondary(brandOut)) {
+      return getPool(brandOut).getPriceGivenRequiredOutput(brandIn, amountOut);
+    } else if (isSecondary(brandIn) && isCentral(brandOut)) {
+      return getPool(brandIn).getPriceGivenRequiredOutput(brandIn, amountOut);
+    } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
+      // We must do two consecutive getPriceGivenRequiredOutput() calls,
+      // followed by a call to getPriceGivenAvailableInput().
+      // 1) from amountOut to the central token, which tells us how much central
+      // is required to obtain amountOut (centralAmount)
+      // 2) from centralAmount to brandIn, which tells us how much of brandIn
+      // is required (amountIn) as well as the max proceeds in central
+      // tokens (improvedCentralAmount), then finally
+      // 3) call getPriceGivenAvailableInput() to see if improvedCentralAmount
+      // produces a larger amount (improvedAmountOut)
+
+      const brandInPool = getPool(brandOut);
+      const brandOutPool = getPool(brandIn);
+
+      const {
+        amountIn: centralAmount,
+      } = brandInPool.getPriceGivenRequiredOutput(centralBrand, amountOut);
+      const {
+        amountIn,
+        amountOut: improvedCentralAmount,
+      } = brandOutPool.getPriceGivenRequiredOutput(brandIn, centralAmount);
+
+      // propagate improved prices
+      const {
+        amountOut: improvedAmountOut,
+      } = brandOutPool.getPriceGivenAvailableInput(
+        improvedCentralAmount,
+        brandOut,
+      );
+      return {
+        amountIn,
+        amountOut: improvedAmountOut,
+        centralAmount: improvedCentralAmount,
+      };
+    }
+
+    throw new Error(`brands were not recognized`);
+  };
+
+  return {
+    getOutputForGivenInput,
+    getInputForGivenOutput,
+    getPriceGivenRequiredOutput,
+    getPriceGivenAvailableInput,
+  };
 };

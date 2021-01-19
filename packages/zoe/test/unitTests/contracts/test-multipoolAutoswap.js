@@ -1160,7 +1160,7 @@ test('multipoolAutoSwap jig - swapOut uneven', async t => {
     s: mPoolState.s - gainC,
     l: 10000,
     k: (mPoolState.c + mPriceC) * (mPoolState.s - gainC),
-    out: gainC, // 250 should be 0??
+    out: gainC,
     in: 0,
   };
   await alice.tradeAndCheck(

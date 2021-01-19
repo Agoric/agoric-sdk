@@ -80,11 +80,39 @@ const start = zcf => {
   const {
     getOutputForGivenInput,
     getInputForGivenOutput,
+    getPriceGivenAvailableInput: getInternalPriceGivenAvailableInput,
+    getPriceGivenRequiredOutput: getInternalPriceGivenRequiredOutput,
   } = makeGetCurrentPrice(isSecondary, isCentral, getPool, centralBrand);
+
+  const getPriceGivenRequiredOutput = (brandIn, amountOutInitial) => {
+    const { amountIn, amountOut } = getInternalPriceGivenRequiredOutput(
+      brandIn,
+      amountOutInitial,
+    );
+    // dropping centralAmount from the public method
+    return { amountIn, amountOut };
+  };
+
+  const getPriceGivenAvailableInput = (amountInInitial, brandOut) => {
+    const { amountIn, amountOut } = getInternalPriceGivenAvailableInput(
+      amountInInitial,
+      brandOut,
+    );
+    // dropping centralAmount from the public method
+    return { amountIn, amountOut };
+  };
+
   const {
     makeSwapInInvitation,
     makeSwapOutInvitation,
-  } = makeMakeSwapInvitation(zcf, isSecondary, isCentral, getPool);
+  } = makeMakeSwapInvitation(
+    zcf,
+    isSecondary,
+    isCentral,
+    getPool,
+    getInternalPriceGivenAvailableInput,
+    getInternalPriceGivenRequiredOutput,
+  );
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
     getPool,
@@ -103,6 +131,8 @@ const start = zcf => {
     getLiquiditySupply,
     getInputPrice: getOutputForGivenInput,
     getOutputPrice: getInputForGivenOutput,
+    getPriceGivenRequiredOutput,
+    getPriceGivenAvailableInput,
     makeSwapInvitation: makeSwapInInvitation,
     makeSwapInInvitation,
     makeSwapOutInvitation,
