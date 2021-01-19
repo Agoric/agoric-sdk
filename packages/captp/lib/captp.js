@@ -6,6 +6,7 @@
 // Defects in it are mfig's fault.
 import {
   Remotable as defaultRemotable,
+  Far as defaultFar,
   makeMarshal as defaultMakeMarshal,
   QCLASS,
 } from '@agoric/marshal';
@@ -23,6 +24,7 @@ export { E };
  * @typedef {Object} CapTPOptions the options to makeCapTP
  * @property {(err: any) => void} onReject
  * @property {typeof defaultRemotable} Remotable
+ * @property {typeof defaultFar} Far
  * @property {typeof defaultMakeMarshal} makeMarshal
  * @property {number} epoch
  */
@@ -411,9 +413,9 @@ export function makeLoopback(ourId) {
   let nextNonce = 0;
   const nonceToRef = new Map();
 
-  // TODO use the correct Remotable, which is not currently in scope here.
+  // TODO use the correct Far, which is not currently in scope here.
   const bootstrap = harden({
-    refGetter: defaultRemotable('Alleged: captp bootstrap', undefined, {
+    refGetter: defaultFar('captp bootstrap', {
       getRef(nonce) {
         // Find the local ref for the specified nonce.
         const xFar = nonceToRef.get(nonce);

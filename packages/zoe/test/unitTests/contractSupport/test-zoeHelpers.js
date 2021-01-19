@@ -2,7 +2,7 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
@@ -46,7 +46,7 @@ function makeMockTradingZcfBuilder() {
 
 test('ZoeHelpers satisfies blank proposal', t => {
   const { moolaR, moola } = setup();
-  const fakeZcfSeat = Remotable('Alleged: fakeZcfSeat', undefined, {
+  const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
     getProposal: () => harden({}),
   });
@@ -61,7 +61,7 @@ test('ZoeHelpers satisfies blank proposal', t => {
 
 test('ZoeHelpers satisfies simple proposal', t => {
   const { moolaR, moola, simoleans } = setup();
-  const fakeZcfSeat = Remotable('Alleged: fakeZcfSeat', undefined, {
+  const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
     getProposal: () => harden({ want: { Desire: moola(30) } }),
   });
@@ -92,7 +92,7 @@ test('ZoeHelpers satisfies simple proposal', t => {
 
 test('ZoeHelpers satisfies() with give', t => {
   const { moolaR, moola, bucks, bucksR, simoleanR } = setup();
-  const fakeZcfSeat = Remotable('Alleged: fakeZcfSeat', undefined, {
+  const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Charge: moola(30) }),
     getProposal: () =>
       harden({ give: { Charge: moola(30) }, want: { Desire: bucks(5) } }),
@@ -130,7 +130,7 @@ const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
     getAmountMath,
   );
   let hasExited = false;
-  const mockSeat = Remotable('Alleged: mockSeat', undefined, {
+  const mockSeat = Far('mockSeat', {
     isOfferSafe: actual.isOfferSafe,
     getCurrentAllocation: actual.getCurrentAllocation,
     getProposal: () => proposal,

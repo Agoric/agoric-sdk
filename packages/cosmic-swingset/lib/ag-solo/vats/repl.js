@@ -82,7 +82,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
   // We use getInterfaceOf locally, and transformTildot is baked into the
   // Compartment we use to evaluate REPL inputs. We provide getInterfaceOf
   // and Remotable to REPL input code.
-  const { getInterfaceOf, Remotable, transformTildot } = vatPowers;
+  const { getInterfaceOf, Remotable, Far, transformTildot } = vatPowers;
   let highestHistory = -1;
   const commands = {
     [highestHistory]: '',
@@ -154,6 +154,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
 
   const endowments = {
     Remotable,
+    Far,
     getInterfaceOf,
     console: replConsole,
     E,

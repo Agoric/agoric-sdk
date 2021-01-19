@@ -1,7 +1,7 @@
 import '@agoric/install-ses';
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
@@ -191,7 +191,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
 
   function build(_vatPowers) {
     let p1;
-    return Remotable('Alleged: onetwo', undefined, {
+    return Far('onetwo', {
       one(p) {
         p1 = p;
         E(p1).pipe1();

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { mustBeComparable } from '@agoric/same-structure';
 
 import './types';
@@ -94,7 +94,7 @@ function makeAmountMath(brand, amountMathKind) {
   const cache = new WeakSet();
 
   /** @type {AmountMath} */
-  const amountMath = Remotable('Alleged: amountMath', undefined, {
+  const amountMath = Far('amountMath', {
     getBrand: () => brand,
     getAmountMathKind: () => amountMathKind,
 

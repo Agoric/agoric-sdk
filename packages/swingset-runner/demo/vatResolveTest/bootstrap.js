@@ -1,12 +1,12 @@
 import { E } from '@agoric/eventual-send';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
 export function buildRootObject(_vatPowers) {
-  const target1 = Remotable('Alleged: target1', undefined, {
+  const target1 = Far('target1', {
     one(_p) {
       log(`target1 in one`);
     },
@@ -20,7 +20,7 @@ export function buildRootObject(_vatPowers) {
       log(`target1 in four`);
     },
   });
-  const target2 = Remotable('Alleged: target2', undefined, {
+  const target2 = Far('target2', {
     one(_p) {
       log(`target2 in one`);
     },

@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
 
@@ -45,7 +45,7 @@ export const makeZcfSeatAdminKit = (
   });
 
   /** @type {ZCFSeat} */
-  const zcfSeat = Remotable('Alleged: zcfSeat', undefined, {
+  const zcfSeat = Far('zcfSeat', {
     exit: completion => {
       assertExitedFalse();
       zcfSeatAdmin.updateHasExited();

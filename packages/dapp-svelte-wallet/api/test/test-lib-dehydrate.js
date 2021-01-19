@@ -1,7 +1,7 @@
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 import { makeDehydrator } from '../src/lib-dehydrate';
 
@@ -78,7 +78,7 @@ test('makeDehydrator', async t => {
   );
 
   const makeMockBrand = () =>
-    Remotable('Alleged: mock brand', undefined, {
+    Far('mock brand', {
       isMyIssuer: _allegedIssuer => {},
       getAllegedName: () => {},
     });

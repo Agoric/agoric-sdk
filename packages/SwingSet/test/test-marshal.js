@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import test from 'ava';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -19,8 +19,8 @@ async function prep() {
 test('serialize exports', t => {
   const { m } = makeMarshaller(undefined, gcTools);
   const ser = val => m.serialize(val);
-  const o1 = Remotable('Alleged: o1', undefined, {});
-  const o2 = Remotable('Alleged: o2', undefined, {
+  const o1 = Far('o1', {});
+  const o2 = Far('o2', {
     meth1() {
       return 4;
     },
@@ -70,7 +70,7 @@ test('deserialize imports', async t => {
 
 test('deserialize exports', t => {
   const { m } = makeMarshaller(undefined, gcTools);
-  const o1 = Remotable('Alleged: o1', undefined, {});
+  const o1 = Far('o1', {});
   m.serialize(o1); // allocates slot=1
   const a = m.unserialize({
     body: '{"@qclass":"slot","index":0}',

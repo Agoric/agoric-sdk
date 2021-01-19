@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import test from 'ava';
 import { E, makeLoopback } from '../lib/captp';
 
@@ -11,7 +11,7 @@ test('try loopback captp', async t => {
   });
 
   const syncHandle = harden({});
-  const syncAccess = Remotable('Alleged: syncAccess', undefined, {
+  const syncAccess = Far('syncAccess', {
     checkHandle(hnd) {
       // console.log('check', hnd, oobHandle);
       return hnd === syncHandle;
@@ -28,13 +28,13 @@ test('try loopback captp', async t => {
   const objNear = harden({
     promise: pr.p,
     syncAccess,
-    encourager: Remotable('Alleged: encourager', undefined, {
+    encourager: Far('encourager', {
       encourage(name) {
         const bang = new Promise(resolve => {
           setTimeout(
             () =>
               resolve(
-                Remotable('Alleged: triggerObj', undefined, {
+                Far('triggerObj', {
                   trigger() {
                     return `${name} BANG!`;
                   },

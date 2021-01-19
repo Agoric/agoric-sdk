@@ -828,7 +828,12 @@ export function makeMarshal(
  * @param {InterfaceSpec} [iface='Remotable'] The interface specification for
  * the remotable. For now, a string iface must be "Remotable" or begin with
  * "Alleged: ", to serve as the alleged name. More general ifaces are not yet
- * implemented. This is temporary.
+ * implemented. This is temporary. We include the
+ * "Alleged" as a reminder that we do not yet have SwingSet or Comms Vat
+ * support for ensuring this is according to the vat hosting the object.
+ * Currently, Alice can tell Bob about Carol, where VatA (on Alice's behalf)
+ * misrepresents Carol's `iface`. VatB and therefore Bob will then see
+ * Carol's `iface` as misrepresented by VatA.
  * @param {object} [props={}] Own-properties are copied to the remotable
  * @param {object} [remotable={}] The object used as the remotable
  * @returns {object} remotable, modified for debuggability
@@ -915,3 +920,17 @@ function Remotable(iface = 'Remotable', props = {}, remotable = {}) {
 
 harden(Remotable);
 export { Remotable };
+
+/**
+ * A concise convenience for the most common `Remotable` use.
+ *
+ * @param {string} farName This name will be prepended with `Alleged: `
+ * for now to form the `Remotable` `iface` argument.
+ * @param {object} [remotable={}] The object used as the remotable
+ * @returns {object} remotable, modified for debuggability
+ */
+const Far = (farName, remotable = {}) =>
+  Remotable(`Alleged: ${farName}`, undefined, remotable);
+
+harden(Far);
+export { Far };

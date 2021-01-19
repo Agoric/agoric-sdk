@@ -3,6 +3,7 @@
 import {
   QCLASS,
   Remotable,
+  Far,
   getInterfaceOf,
   mustPassByPresence,
   makeMarshal,
@@ -614,7 +615,13 @@ export function makeLiveSlots(
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
 ) {
-  const allVatPowers = { ...vatPowers, getInterfaceOf, Remotable, makeMarshal };
+  const allVatPowers = {
+    ...vatPowers,
+    getInterfaceOf,
+    Remotable,
+    Far,
+    makeMarshal,
+  };
   const r = build(syscall, forVatID, cacheSize, allVatPowers, vatParameters);
   const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
   return harden({ vatGlobals, dispatch, setBuildRootObject });

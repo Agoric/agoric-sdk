@@ -1,5 +1,5 @@
 import '@agoric/install-ses';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import test from 'ava';
 import { E, makeCapTP } from '../lib/captp';
 
@@ -11,7 +11,7 @@ test('try disconnecting captp', async t => {
     obj => objs.push(obj),
     // TODO Can we avoid the function wrapper? makeCapTP does the needed test
     () =>
-      Remotable('Alleged: test hello', undefined, {
+      Far('test hello', {
         method() {
           return 'hello';
         },
@@ -72,7 +72,7 @@ test('try aborting captp with reason', async t => {
     obj => objs.push(obj),
     // TODO Can we avoid the function wrapper? makeCapTP does the needed test
     () =>
-      Remotable('Alleged: test hello', undefined, {
+      Far('test hello', {
         method() {
           return 'hello';
         },

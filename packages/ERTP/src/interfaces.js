@@ -12,5 +12,8 @@ export const ERTPKind = {
 };
 
 /** @type {MakeInterface} */
+export const makeFarName = (allegedName, kind) => `${allegedName} ${kind}`;
+
+/** @type {MakeInterface} */
 export const makeInterface = (allegedName, kind) =>
   `Alleged: ${allegedName} ${kind}`;

@@ -354,3 +354,17 @@
  * @param {string} kind The ERTPKind
  * @returns {InterfaceSpec}
  */
+
+/**
+ * @callback MakeFarName
+ * Make the farName using the allegedName and kind. The particular
+ * structure may change in the future to be more sophisticated.
+ * Therefore, ERTP and Zoe should not depend on this particular
+ * implementation. `makeFar` converts its farName argument into
+ * the iface argument it passes to `Remotable`.
+ *
+ * @param {string} allegedName The allegedName, as passed to
+ *  `makeIssuerKit`
+ * @param {string} kind The ERTPKind
+ * @returns {string}
+ */

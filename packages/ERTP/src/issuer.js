@@ -5,12 +5,12 @@
 import { assert, details } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
 import { makeAmountMath, MathKind } from './amountMath';
-import { makeInterface, ERTPKind } from './interfaces';
+import { makeFarName, ERTPKind } from './interfaces';
 import { coerceDisplayInfo } from './displayInfo';
 
 import './types';
@@ -26,22 +26,18 @@ function makeIssuerKit(
   assert.typeof(allegedName, 'string');
   displayInfo = coerceDisplayInfo(displayInfo);
 
-  const brand = Remotable(
-    makeInterface(allegedName, ERTPKind.BRAND),
-    undefined,
-    {
-      isMyIssuer: allegedIssuerP => {
-        return E.when(allegedIssuerP, allegedIssuer => {
-          // eslint-disable-next-line no-use-before-define
-          return allegedIssuer === issuer;
-        });
-      },
-      getAllegedName: () => allegedName,
-
-      // Give information to UI on how to display the amount.
-      getDisplayInfo: () => displayInfo,
+  const brand = Far(makeFarName(allegedName, ERTPKind.BRAND), {
+    isMyIssuer: allegedIssuerP => {
+      return E.when(allegedIssuerP, allegedIssuer => {
+        // eslint-disable-next-line no-use-before-define
+        return allegedIssuer === issuer;
+      });
     },
-  );
+    getAllegedName: () => allegedName,
+
+    // Give information to UI on how to display the amount.
+    getDisplayInfo: () => displayInfo,
+  });
 
   const amountMath = makeAmountMath(brand, amountMathKind);
   const { add } = amountMath;
@@ -51,7 +47,7 @@ function makeIssuerKit(
     makeInstance: makePayment,
     makeWeakStore: makePaymentWeakStore,
   } = makeExternalStore('payment', () =>
-    Remotable(makeInterface(allegedName, ERTPKind.PAYMENT), undefined, {
+    Far(makeFarName(allegedName, ERTPKind.PAYMENT), {
       getAllegedBrand: () => brand,
     }),
   );
@@ -85,7 +81,7 @@ function makeIssuerKit(
      * @returns {DepositFacet}
      */
     purse =>
-      Remotable(makeInterface(allegedName, ERTPKind.DEPOSIT_FACET), undefined, {
+      Far(makeFarName(allegedName, ERTPKind.DEPOSIT_FACET), {
         receive: purse.deposit,
       }),
   );
@@ -99,51 +95,47 @@ function makeIssuerKit(
     } = makeNotifierKit(currentBalance);
 
     /** @type {Purse} */
-    const purse = Remotable(
-      makeInterface(allegedName, ERTPKind.PURSE),
-      undefined,
-      {
-        deposit: (srcPayment, optAmount = undefined) => {
-          if (isPromise(srcPayment)) {
-            throw new TypeError(
-              `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
-            );
-          }
-          assertKnownPayment(srcPayment);
-          const srcPaymentBalance = paymentLedger.get(srcPayment);
-          // Note: this does not guarantee that optAmount itself is a valid stable amount
-          assertAmountEqual(srcPaymentBalance, optAmount);
-          const newPurseBalance = amountMath.add(
-            srcPaymentBalance,
-            currentBalance,
+    const purse = Far(makeFarName(allegedName, ERTPKind.PURSE), {
+      deposit: (srcPayment, optAmount = undefined) => {
+        if (isPromise(srcPayment)) {
+          throw new TypeError(
+            `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
           );
-          // Commit point
-          // Move the assets in `srcPayment` into this purse, using up the
-          // source payment, such that total assets are conserved.
-          paymentLedger.delete(srcPayment);
-          currentBalance = newPurseBalance;
-          balanceUpdater.updateState(currentBalance);
-          return srcPaymentBalance;
-        },
-        withdraw: amount => {
-          amount = amountMath.coerce(amount);
-          const newPurseBalance = amountMath.subtract(currentBalance, amount);
-          const payment = makePayment();
-          // Commit point
-          // Move the withdrawn assets from this purse into a new payment
-          // which is returned. Total assets must remain conserved.
-          currentBalance = newPurseBalance;
-          balanceUpdater.updateState(currentBalance);
-          paymentLedger.init(payment, amount);
-          return payment;
-        },
-        getCurrentAmount: () => currentBalance,
-        getCurrentAmountNotifier: () => balanceNotifier,
-        getAllegedBrand: () => brand,
-        // eslint-disable-next-line no-use-before-define
-        getDepositFacet: () => depositFacet,
+        }
+        assertKnownPayment(srcPayment);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        // Note: this does not guarantee that optAmount itself is a valid stable amount
+        assertAmountEqual(srcPaymentBalance, optAmount);
+        const newPurseBalance = amountMath.add(
+          srcPaymentBalance,
+          currentBalance,
+        );
+        // Commit point
+        // Move the assets in `srcPayment` into this purse, using up the
+        // source payment, such that total assets are conserved.
+        paymentLedger.delete(srcPayment);
+        currentBalance = newPurseBalance;
+        balanceUpdater.updateState(currentBalance);
+        return srcPaymentBalance;
       },
-    );
+      withdraw: amount => {
+        amount = amountMath.coerce(amount);
+        const newPurseBalance = amountMath.subtract(currentBalance, amount);
+        const payment = makePayment();
+        // Commit point
+        // Move the withdrawn assets from this purse into a new payment
+        // which is returned. Total assets must remain conserved.
+        currentBalance = newPurseBalance;
+        balanceUpdater.updateState(currentBalance);
+        paymentLedger.init(payment, amount);
+        return payment;
+      },
+      getCurrentAmount: () => currentBalance,
+      getCurrentAmountNotifier: () => balanceNotifier,
+      getAllegedBrand: () => brand,
+      // eslint-disable-next-line no-use-before-define
+      getDepositFacet: () => depositFacet,
+    });
 
     const depositFacet = makeDepositFacet(purse);
     return purse;
@@ -201,95 +193,89 @@ function makeIssuerKit(
   };
 
   /** @type {Issuer} */
-  const issuer = Remotable(
-    makeInterface(allegedName, ERTPKind.ISSUER),
-    undefined,
-    {
-      getBrand: () => brand,
-      getAllegedName: () => allegedName,
-      getAmountMathKind: () => amountMathKind,
-      makeEmptyPurse: makePurse,
+  const issuer = Far(makeFarName(allegedName, ERTPKind.ISSUER), {
+    getBrand: () => brand,
+    getAllegedName: () => allegedName,
+    getAmountMathKind: () => amountMathKind,
+    makeEmptyPurse: makePurse,
 
-      isLive: paymentP => {
-        return E.when(paymentP, payment => {
-          return paymentLedger.has(payment);
-        });
-      },
-      getAmountOf: paymentP => {
-        return E.when(paymentP, payment => {
-          assertKnownPayment(payment);
-          return paymentLedger.get(payment);
-        });
-      },
-
-      burn: (paymentP, optAmount = undefined) => {
-        return E.when(paymentP, payment => {
-          assertKnownPayment(payment);
-          const paymentBalance = paymentLedger.get(payment);
-          assertAmountEqual(paymentBalance, optAmount);
-          // Commit point.
-          paymentLedger.delete(payment);
-          return paymentBalance;
-        });
-      },
-      claim: (paymentP, optAmount = undefined) => {
-        return E.when(paymentP, srcPayment => {
-          assertKnownPayment(srcPayment);
-          const srcPaymentBalance = paymentLedger.get(srcPayment);
-          assertAmountEqual(srcPaymentBalance, optAmount);
-          // Commit point.
-          const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
-          return payment;
-        });
-      },
-      // Payments in `fromPaymentsPArray` must be distinct. Alias
-      // checking is delegated to the `reallocate` function.
-      combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
-        return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-          fromPaymentsArray.every(assertKnownPayment);
-          const totalPaymentsBalance = fromPaymentsArray
-            .map(paymentLedger.get)
-            .reduce(add, empty);
-          assertAmountEqual(totalPaymentsBalance, optTotalAmount);
-          // Commit point.
-          const [payment] = reallocate(fromPaymentsArray, [
-            totalPaymentsBalance,
-          ]);
-          return payment;
-        });
-      },
-      // payment to two payments, A and B
-      split: (paymentP, paymentAmountA) => {
-        return E.when(paymentP, srcPayment => {
-          paymentAmountA = amountMath.coerce(paymentAmountA);
-          assertKnownPayment(srcPayment);
-          const srcPaymentBalance = paymentLedger.get(srcPayment);
-          const paymentAmountB = amountMath.subtract(
-            srcPaymentBalance,
-            paymentAmountA,
-          );
-          // Commit point
-          const newPayments = reallocate(
-            [srcPayment],
-            [paymentAmountA, paymentAmountB],
-          );
-          return newPayments;
-        });
-      },
-      splitMany: (paymentP, amounts) => {
-        return E.when(paymentP, srcPayment => {
-          assertKnownPayment(srcPayment);
-          amounts = amounts.map(amountMath.coerce);
-          // Commit point
-          const newPayments = reallocate([srcPayment], amounts);
-          return newPayments;
-        });
-      },
+    isLive: paymentP => {
+      return E.when(paymentP, payment => {
+        return paymentLedger.has(payment);
+      });
     },
-  );
+    getAmountOf: paymentP => {
+      return E.when(paymentP, payment => {
+        assertKnownPayment(payment);
+        return paymentLedger.get(payment);
+      });
+    },
+
+    burn: (paymentP, optAmount = undefined) => {
+      return E.when(paymentP, payment => {
+        assertKnownPayment(payment);
+        const paymentBalance = paymentLedger.get(payment);
+        assertAmountEqual(paymentBalance, optAmount);
+        // Commit point.
+        paymentLedger.delete(payment);
+        return paymentBalance;
+      });
+    },
+    claim: (paymentP, optAmount = undefined) => {
+      return E.when(paymentP, srcPayment => {
+        assertKnownPayment(srcPayment);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        assertAmountEqual(srcPaymentBalance, optAmount);
+        // Commit point.
+        const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
+        return payment;
+      });
+    },
+    // Payments in `fromPaymentsPArray` must be distinct. Alias
+    // checking is delegated to the `reallocate` function.
+    combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
+      return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
+        fromPaymentsArray.every(assertKnownPayment);
+        const totalPaymentsBalance = fromPaymentsArray
+          .map(paymentLedger.get)
+          .reduce(add, empty);
+        assertAmountEqual(totalPaymentsBalance, optTotalAmount);
+        // Commit point.
+        const [payment] = reallocate(fromPaymentsArray, [totalPaymentsBalance]);
+        return payment;
+      });
+    },
+    // payment to two payments, A and B
+    split: (paymentP, paymentAmountA) => {
+      return E.when(paymentP, srcPayment => {
+        paymentAmountA = amountMath.coerce(paymentAmountA);
+        assertKnownPayment(srcPayment);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        const paymentAmountB = amountMath.subtract(
+          srcPaymentBalance,
+          paymentAmountA,
+        );
+        // Commit point
+        const newPayments = reallocate(
+          [srcPayment],
+          [paymentAmountA, paymentAmountB],
+        );
+        return newPayments;
+      });
+    },
+    splitMany: (paymentP, amounts) => {
+      return E.when(paymentP, srcPayment => {
+        assertKnownPayment(srcPayment);
+        amounts = amounts.map(amountMath.coerce);
+        // Commit point
+        const newPayments = reallocate([srcPayment], amounts);
+        return newPayments;
+      });
+    },
+  });
 
   /** @type {Mint} */
-  const mint = Remotable(makeInterface(allegedName, ERTPKind.MINT), undefined, {
+  const mint = Far(makeFarName(allegedName, ERTPKind.MINT), {
     getIssuer: () => issuer,
     mintPayment: newAmount => {
       newAmount = amountMath.coerce(newAmount);

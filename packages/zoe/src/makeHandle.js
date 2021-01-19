@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 /**
  * Create an opaque handle object.
@@ -12,5 +12,5 @@ export const makeHandle = handleType => {
   // This assert ensures that handleType is referenced.
   assert.typeof(handleType, 'string', 'handleType must be a string');
   // Return the intersection type (really just an empty object).
-  return /** @type {Handle<H>} */ (Remotable(`Alleged: ${handleType}Handle`));
+  return /** @type {Handle<H>} */ (Far(`${handleType}Handle`));
 };

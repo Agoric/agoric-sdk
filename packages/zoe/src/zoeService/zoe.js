@@ -14,7 +14,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import '../../exported';
 import '../internal-types';
 
-import { Remotable } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
@@ -58,7 +58,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const install = async bundle => {
     assert(bundle, `a bundle must be provided`);
     /** @type {Installation} */
-    const installation = Remotable('Alleged: Installation', undefined, {
+    const installation = Far('Installation', {
       getBundle: () => bundle,
     });
     harden(installation);
@@ -76,7 +76,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   };
 
   /** @type {ZoeService} */
-  const zoeService = Remotable('Alleged: zoeService', undefined, {
+  const zoeService = Far('zoeService', {
     getInvitationIssuer: () => invitationKit.issuer,
     install,
     getPublicFacet: instance =>
@@ -236,7 +236,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         let acceptingOffers = true;
 
         /** @type {InstanceAdmin} */
-        return Remotable('Alleged: instanceAdmin', undefined, {
+        return Far('instanceAdmin', {
           addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
           tellZCFToMakeSeat: (
             invitationHandle,
@@ -289,63 +289,60 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       } = invitationKit;
 
       /** @type {ZoeInstanceAdmin} */
-      const zoeInstanceAdminForZcf = Remotable(
-        'Alleged: zoeInstanceAdminForZcf',
-        {
-          makeInvitation: (invitationHandle, description, customProperties) => {
-            const invitationAmount = invitationAmountMath.make(
-              harden([
-                {
-                  ...customProperties,
-                  description,
-                  handle: invitationHandle,
-                  instance,
-                  installation,
-                },
-              ]),
-            );
-            return invitationMint.mintPayment(invitationAmount);
-          },
-          // checks of keyword done on zcf side
-          saveIssuer: (issuerP, keyword) =>
-            (issuerTable.initIssuer(issuerP).then(issuerRecord => {
-              registerIssuerByKeyword(keyword, issuerRecord);
-              const { issuer, brand } = issuerRecord;
-              if (!brandToPurse.has(brand)) {
-                brandToPurse.init(brand, E(issuer).makeEmptyPurse());
-              }
-              return undefined;
-            })),
-          // A Seat requested by the contract without any payments to escrow
-          makeNoEscrowSeat: (
-            initialAllocation,
-            proposal,
-            exitObj,
-            seatHandle,
-          ) => {
-            const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-              initialAllocation,
-              instanceAdmin,
-              proposal,
-              brandToPurse,
-              exitObj,
-            );
-            instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
-            seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-            return { userSeat, notifier, zoeSeatAdmin };
-          },
-          exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
-          failAllSeats: reason => instanceAdmin.failAllSeats(reason),
-          makeZoeMint,
-          replaceAllocations: seatHandleAllocations => {
-            seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
-              const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
-              zoeSeatAdmin.replaceAllocation(allocation);
-            });
-          },
-          stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
+      const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
+        makeInvitation: (invitationHandle, description, customProperties) => {
+          const invitationAmount = invitationAmountMath.make(
+            harden([
+              {
+                ...customProperties,
+                description,
+                handle: invitationHandle,
+                instance,
+                installation,
+              },
+            ]),
+          );
+          return invitationMint.mintPayment(invitationAmount);
         },
-      );
+        // checks of keyword done on zcf side
+        saveIssuer: (issuerP, keyword) =>
+          (issuerTable.initIssuer(issuerP).then(issuerRecord => {
+            registerIssuerByKeyword(keyword, issuerRecord);
+            const { issuer, brand } = issuerRecord;
+            if (!brandToPurse.has(brand)) {
+              brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+            }
+            return undefined;
+          })),
+        // A Seat requested by the contract without any payments to escrow
+        makeNoEscrowSeat: (
+          initialAllocation,
+          proposal,
+          exitObj,
+          seatHandle,
+        ) => {
+          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            initialAllocation,
+            instanceAdmin,
+            proposal,
+            brandToPurse,
+            exitObj,
+          );
+          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
+          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+          return { userSeat, notifier, zoeSeatAdmin };
+        },
+        exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
+        failAllSeats: reason => instanceAdmin.failAllSeats(reason),
+        makeZoeMint,
+        replaceAllocations: seatHandleAllocations => {
+          seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
+            const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
+            zoeSeatAdmin.replaceAllocation(allocation);
+          });
+        },
+        stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
+      });
 
       // At this point, the contract will start executing. All must be
       // ready
