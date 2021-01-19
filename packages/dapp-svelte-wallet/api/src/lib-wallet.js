@@ -180,21 +180,23 @@ export function makeWallet({
       value,
       currentAmountSlots,
       currentAmount,
-    }) => harden({
-      brandBoardId,
-      ...(depositBoardId && { depositBoardId }),
-      brandPetname,
-      pursePetname,
-      ...(displayInfo && { displayInfo }),
-      value,
-      currentAmountSlots,
-      currentAmount,
-    });
+    }) => harden(
+      {
+        brandBoardId,
+        ...(depositBoardId && { depositBoardId }),
+        brandPetname,
+        pursePetname,
+        ...(displayInfo && { displayInfo }),
+        value,
+        currentAmountSlots,
+        currentAmount,
+      },
+    );
     const filter = state => state.map(innerFilter);
     observeIteration(pursesNotifier, {
       updateState: newState => attenuatedPursesUpdater.updateState(filter(newState)),
-      finish:    finalState => attenuatedPursesUpdater.finish(filter(finalState)),
-      fail:          reason => attenuatedPursesUpdater.fail(reason),
+      finish: finalState => attenuatedPursesUpdater.finish(filter(finalState)),
+      fail: reason => attenuatedPursesUpdater.fail(reason),
     });
   }
 
