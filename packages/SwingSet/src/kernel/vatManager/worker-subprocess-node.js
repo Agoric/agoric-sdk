@@ -34,7 +34,9 @@ export function makeNodeSubprocessFactory(tools) {
       // TODO: warn+ignore, rather than throw, because the kernel enables it
       // for all vats, because the Spawner still needs it. When the kernel
       // stops doing that, turn this into a regular assert
-      console.log(`node-worker does not support enableInternalMetering`);
+      console.log(
+        `node-worker does not support enableInternalMetering, ignoring`,
+      );
     }
     const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     const transcriptManager = makeTranscriptManager(
@@ -135,9 +137,16 @@ export function makeNodeSubprocessFactory(tools) {
       return pr.promise;
     }
 
-    function replayTranscript() {
-      // TODO unimplemented
-      throw Error(`replayTranscript not yet implemented`);
+    async function replayTranscript() {
+      transcriptManager.startReplay();
+      for (const t of vatKeeper.getTranscript()) {
+        transcriptManager.checkReplayError();
+        transcriptManager.startReplayDelivery(t.syscalls);
+        // eslint-disable-next-line no-await-in-loop
+        await deliver(t.d);
+      }
+      transcriptManager.checkReplayError();
+      transcriptManager.finishReplay();
     }
 
     function shutdown() {

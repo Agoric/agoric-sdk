@@ -1,14 +1,12 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { resolve } from 'path';
-import { existsSync } from 'fs';
-import { locateWorkerBin } from '@agoric/xs-vat-worker';
 import { loadBasedir, buildVatController } from '../../src/index';
 
-const xsWorkerBin = locateWorkerBin({ resolve });
-const maybeTestXS = existsSync(xsWorkerBin) ? test : test.skip;
+// The XS worker is disabled until the xsnap-based approach is ready for
+// testing. Unlike the old approach, I think we'll build xsnap
+// unconditionally, so we won't need the old 'maybeTestXS' conditional.
 
-maybeTestXS('xs vat manager', async t => {
+test.skip('xs vat manager', async t => {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType: 'xs-worker' };
   const c = await buildVatController(config, []);
