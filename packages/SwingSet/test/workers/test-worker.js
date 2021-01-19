@@ -2,11 +2,19 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { loadBasedir, buildVatController } from '../../src/index';
 
-const expected = [['B good', 'C good', 'F good'], 'rp3 good'];
+const expected = [['B good', 'C good', 'F good', 'three good'], 'rp3 good'];
 
 async function makeController(managerType) {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType };
+  const canCallNow = ['local'].indexOf(managerType) !== -1;
+  // const canCallNow = ['local', 'xs-worker'].indexOf(managerType) !== -1;
+  config.vats.target.parameters = { canCallNow };
+  config.devices = {
+    add: {
+      sourceSpec: require.resolve('./device-add.js'),
+    },
+  };
   const c = await buildVatController(config, []);
   return c;
 }
