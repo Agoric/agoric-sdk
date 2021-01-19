@@ -170,7 +170,10 @@ export function makeWallet({
   {
     const filter = (state) => state.map(
       // explict whitelist
-      /** @returns {PursesJSONState} */
+      /**
+       * @param {PursesJSONState}
+       * @returns {PursesJSONState}
+       */
       ({
         brandBoardId,
         depositBoardId,
