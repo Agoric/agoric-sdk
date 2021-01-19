@@ -164,9 +164,7 @@ export function makeWallet({
   const {
     notifier: attenuatedPursesNotifier,
     updater: attenuatedPursesUpdater,
-  } = makeNotifierKit(
-    [],
-  );
+  } = makeNotifierKit([]);
   {
     const filter = state => state.map(
       // explict whitelist
@@ -199,7 +197,7 @@ export function makeWallet({
       finish:    finalState => attenuatedPursesUpdater.finish(filter(finalState)),
       fail:          reason => attenuatedPursesUpdater.fail(reason),
     });
-  };
+  }
 
   /**
    * @param {Petname} pursePetname
