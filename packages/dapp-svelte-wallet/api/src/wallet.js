@@ -206,7 +206,7 @@ export function buildRootObject(_vatPowers) {
       return walletAdmin.getOffersNotifier();
     },
     async getPursesNotifier() {
-      return walletAdmin.getPursesNotifier();
+      return walletAdmin.getAttenuatedPursesNotifier();
     },
     suggestInstallation(petname, installationBoardId) {
       return walletAdmin.suggestInstallation(petname, installationBoardId);
