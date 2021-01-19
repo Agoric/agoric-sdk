@@ -168,7 +168,7 @@ export function makeWallet({
     [],
   );
   {
-    const filter = (state) => state.map(
+    const filter = state => state.map(
       // explict whitelist
       /**
        * @param {PursesFullState} _
