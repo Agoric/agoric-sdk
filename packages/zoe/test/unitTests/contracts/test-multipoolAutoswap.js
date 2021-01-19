@@ -388,15 +388,15 @@ test('multipoolAutoSwap with valid offers', async t => {
   );
   t.deepEqual(
     await simoleanR.issuer.getAmountOf(bobSimsPayout3),
-    simoleans(0),
-    `bob gets no simoleans back`,
+    simoleans(9),
+    `bob gets 9 simoleans back because 74 was more than required`,
   );
 
   t.deepEqual(
     await E(bobPublicFacet).getPoolAllocation(simoleanR.brand),
     harden({
-      // 398 + 74
-      Secondary: simoleans(472),
+      // 398 + 65
+      Secondary: simoleans(463),
       // 43 - 6
       Central: centralTokens(37),
       Liquidity: simoleanLiquidity(0),

@@ -97,44 +97,6 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         poolSeat.getAmountAllocated('Central', centralBrand),
       getSecondaryAmount: () =>
         poolSeat.getAmountAllocated('Secondary', secondaryBrand),
-      getCentralToSecondaryInputPrice: inputValue => {
-        assertPoolInitialized(pool);
-        const result = getInputPrice(
-          inputValue,
-          pool.getCentralAmount().value,
-          pool.getSecondaryAmount().value,
-        );
-        return pool.getAmountMath().make(result);
-      },
-      getSecondaryToCentralInputPrice: inputValue => {
-        assertPoolInitialized(pool);
-        const result = getInputPrice(
-          inputValue,
-          pool.getSecondaryAmount().value,
-          pool.getCentralAmount().value,
-        );
-        return pool.getCentralAmountMath().make(result);
-      },
-      // price in central tokens required to gain outputValue secondary units
-      getCentralToSecondaryOutputPrice: outputValue => {
-        assertPoolInitialized(pool);
-        const result = getOutputPrice(
-          outputValue,
-          pool.getCentralAmount().value,
-          pool.getSecondaryAmount().value,
-        );
-        return pool.getCentralAmountMath().make(result);
-      },
-      // price in secondary units required to gain outputValue in central tokens
-      getSecondaryToCentralOutputPrice: outputValue => {
-        assertPoolInitialized(pool);
-        const result = getOutputPrice(
-          outputValue,
-          pool.getSecondaryAmount().value,
-          pool.getCentralAmount().value,
-        );
-        return pool.getAmountMath().make(result);
-      },
 
       // The caller wants to sell inputAmount. if that could produce at most N,
       // but they could also get N by only selling inputAmount - epsilon
@@ -170,7 +132,6 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           amountMathOut,
           amountMathIn,
         } = reservesAndMath(pool, inputBrand, outputAmount.brand);
-
         const valueIn = getOutputPrice(
           outputAmount.value,
           inputReserve,

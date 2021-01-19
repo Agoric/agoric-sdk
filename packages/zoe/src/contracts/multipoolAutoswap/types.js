@@ -26,11 +26,16 @@
  */
 
 /**
+ * typedef {Object} PriceAmountPair
+ *
+ * @property {Amount} amountOut
+ * @property {Amount} amountIn
+ */
+
+/**
  * @typedef {Object} Pool
- * @property {(inputValue: Value) => Amount } getSecondaryToCentralInputPrice
- * @property {(inputValue: Value) => Amount } getCentralToSecondaryInputPrice
- * @property {(inputValue: Value) => Amount } getSecondaryToCentralOutputPrice
- * @property {(inputValue: Value) => Amount } getCentralToSecondaryOutputPrice
+ * @property {(inputAmount: Amount, outputBrand: Brand) => PriceAmountPair } getPriceGivenAvailableInput
+ * @property {(inputBrand: Brand, outputAmount: Amount) => PriceAmountPair } getPriceGivenRequiredOutput
  * @property {() => number} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
