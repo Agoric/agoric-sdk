@@ -166,32 +166,31 @@ export function makeWallet({
     updater: attenuatedPursesUpdater,
   } = makeNotifierKit([]);
   {
-    const filter = state => state.map(
-      // explict whitelist
-      /**
-       * @param {PursesFullState} _
-       * @returns {PursesJSONState}
-       */
-      ({
-        brandBoardId,
-        depositBoardId,
-        brandPetname,
-        pursePetname,
-        displayInfo,
-        value,
-        currentAmountSlots,
-        currentAmount,
-      }) => harden({
-        brandBoardId,
-        ...(depositBoardId && { depositBoardId }),
-        brandPetname,
-        pursePetname,
-        ...(displayInfo && { displayInfo }),
-        value,
-        currentAmountSlots,
-        currentAmount,
-      }),
-    );
+    // explict whitelist
+    /**
+     * @param {PursesFullState} _
+     * @returns {PursesJSONState}
+     */
+    const innerFilter = ({
+      brandBoardId,
+      depositBoardId,
+      brandPetname,
+      pursePetname,
+      displayInfo,
+      value,
+      currentAmountSlots,
+      currentAmount,
+    }) => harden({
+      brandBoardId,
+      ...(depositBoardId && { depositBoardId }),
+      brandPetname,
+      pursePetname,
+      ...(displayInfo && { displayInfo }),
+      value,
+      currentAmountSlots,
+      currentAmount,
+    });
+    const filter = state => state.map(innerFilter);
     observeIteration(pursesNotifier, {
       updateState: newState => attenuatedPursesUpdater.updateState(filter(newState)),
       finish:    finalState => attenuatedPursesUpdater.finish(filter(finalState)),
