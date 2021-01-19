@@ -3,6 +3,7 @@
 
 import '@agoric/install-ses';
 import test from 'ava';
+import { Far } from '@agoric/marshal';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -117,7 +118,7 @@ function resolvePR(pr, mode, targets) {
       break;
     case 'local-object':
       pr.resolve(
-        harden({
+        Far('vpid resolve test', {
           two() {
             /* console.log(`local two() called`); */
           },
@@ -595,7 +596,7 @@ async function doVatResolveCase4(t, mode) {
 
   function build(_vatPowers) {
     let p1;
-    return harden({
+    return Far('test vpid', {
       async get(p) {
         p1 = p;
         // if we don't add this, node will complain when the kernel notifies

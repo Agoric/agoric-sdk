@@ -11,6 +11,9 @@ export const ERTPKind = {
   DEPOSIT_FACET: 'depositFacet',
 };
 
+/** @type {MakeFarName} */
+export const makeFarName = (allegedName, kind) => `${allegedName} ${kind}`;
+
 /** @type {MakeInterface} */
 export const makeInterface = (allegedName, kind) =>
   `Alleged: ${allegedName} ${kind}`;

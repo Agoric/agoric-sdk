@@ -23,6 +23,7 @@
     "@agoric/ertp": "^0.9.0",
     "@agoric/eventual-send": "^0.13.0",
     "@agoric/install-ses": "^0.5.0",
+    "@agoric/marshal": "^0.3.0",
     "@agoric/same-structure": "^0.1.0",
     "@agoric/stat-logger": "^0.4.0",
     "@agoric/swing-store-lmdb": "^0.4.0",

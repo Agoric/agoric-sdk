@@ -14,6 +14,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import '../../exported';
 import '../internal-types';
 
+import { Far } from '@agoric/marshal';
 import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
@@ -57,7 +58,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const install = async bundle => {
     assert(bundle, `a bundle must be provided`);
     /** @type {Installation} */
-    const installation = { getBundle: () => bundle };
+    const installation = Far('Installation', {
+      getBundle: () => bundle,
+    });
     harden(installation);
     installations.add(installation);
     return installation;
@@ -73,7 +76,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   };
 
   /** @type {ZoeService} */
-  const zoeService = {
+  const zoeService = Far('zoeService', {
     getInvitationIssuer: () => invitationKit.issuer,
     install,
     getPublicFacet: instance =>
@@ -108,7 +111,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         details`${installation} was not a valid installation`,
       );
 
-      const instance = makeHandle('InstanceHandle');
+      const instance = makeHandle('Instance');
 
       const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
 
@@ -233,7 +236,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         let acceptingOffers = true;
 
         /** @type {InstanceAdmin} */
-        return {
+        return Far('instanceAdmin', {
           addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
           tellZCFToMakeSeat: (
             invitationHandle,
@@ -265,7 +268,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
           },
           stopAcceptingOffers: () => (acceptingOffers = false),
-        };
+        });
       };
 
       const instanceAdmin = makeInstanceAdmin();
@@ -286,7 +289,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       } = invitationKit;
 
       /** @type {ZoeInstanceAdmin} */
-      const zoeInstanceAdminForZcf = {
+      const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
         makeInvitation: (invitationHandle, description, customProperties) => {
           const invitationAmount = invitationAmountMath.make(
             harden([
@@ -339,7 +342,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           });
         },
         stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
-      };
+      });
 
       // At this point, the contract will start executing. All must be
       // ready
@@ -488,7 +491,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         },
       );
     },
-  };
+  });
   harden(zoeService);
 
   return zoeService;

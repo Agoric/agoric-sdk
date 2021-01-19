@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
 
@@ -44,7 +45,7 @@ export const makeZcfSeatAdminKit = (
   });
 
   /** @type {ZCFSeat} */
-  const zcfSeat = harden({
+  const zcfSeat = Far('zcfSeat', {
     exit: completion => {
       assertExitedFalse();
       zcfSeatAdmin.updateHasExited();

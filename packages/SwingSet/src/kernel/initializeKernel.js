@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { makeMarshal } from '@agoric/marshal';
+import { makeMarshal, Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { insistVatID } from './id';
@@ -133,7 +133,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       // non-empty object as vatObj0s, since an empty object would be
       // serialized as pass-by-presence. It wouldn't make much sense for the
       // bootstrap object to call itself, though.
-      const vref = harden({
+      const vref = Far('vref', {
         toString() {
           return name;
         },

@@ -1,4 +1,5 @@
 import '@agoric/install-ses';
+import { Far } from '@agoric/marshal';
 import test from 'ava';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -18,23 +19,25 @@ async function prep() {
 test('serialize exports', t => {
   const { m } = makeMarshaller(undefined, gcTools);
   const ser = val => m.serialize(val);
-  const o1 = harden({});
-  const o2 = harden({
+  const o1 = Far('o1', {});
+  const o2 = Far('o2', {
     meth1() {
       return 4;
     },
   });
   t.deepEqual(ser(o1), {
-    body: '{"@qclass":"slot","index":0}',
+    body: '{"@qclass":"slot","iface":"Alleged: o1","index":0}',
     slots: ['o+1'],
   });
   // m now remembers that o1 is exported as 1
   t.deepEqual(ser(harden([o1, o1])), {
-    body: '[{"@qclass":"slot","index":0},{"@qclass":"ibid","index":1}]',
+    body:
+      '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"ibid","index":1}]',
     slots: ['o+1'],
   });
   t.deepEqual(ser(harden([o2, o1])), {
-    body: '[{"@qclass":"slot","index":0},{"@qclass":"slot","index":1}]',
+    body:
+      '[{"@qclass":"slot","iface":"Alleged: o2","index":0},{"@qclass":"slot","iface":"Alleged: o1","index":1}]',
     slots: ['o+2', 'o+1'],
   });
 });
@@ -67,7 +70,7 @@ test('deserialize imports', async t => {
 
 test('deserialize exports', t => {
   const { m } = makeMarshaller(undefined, gcTools);
-  const o1 = harden({});
+  const o1 = Far('o1', {});
   m.serialize(o1); // allocates slot=1
   const a = m.unserialize({
     body: '{"@qclass":"slot","index":0}',
