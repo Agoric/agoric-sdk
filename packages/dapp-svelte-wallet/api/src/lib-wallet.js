@@ -161,13 +161,16 @@ export function makeWallet({
     [],
   );
   /** @type {NotifierRecord<PursesJSONState[]>} */
-  const { notifier: attenuatedPursesNotifier, updater: attenuatedPursesUpdater } = makeNotifierKit(
+  const {
+    notifier: attenuatedPursesNotifier,
+    updater: attenuatedPursesUpdater,
+  } = makeNotifierKit(
     [],
   );
   {
     const filter = (state) => state.map(
       // explict whitelist
-      /** @return {PursesJSONState} */
+      /** @returns {PursesJSONState} */
       ({
         brandBoardId,
         depositBoardId,
@@ -189,9 +192,9 @@ export function makeWallet({
       }),
     );
     observeIteration(pursesNotifier, {
-      updateState: (newState) => attenuatedPursesUpdater.updateState(filter(newState)),
-      finish:    (finalState) => attenuatedPursesUpdater.finish(filter(finalState)),
-      fail:          (reason) => attenuatedPursesUpdater.fail(reason),
+      updateState: newState => attenuatedPursesUpdater.updateState(filter(newState)),
+      finish:    finalState => attenuatedPursesUpdater.finish(filter(finalState)),
+      fail:          reason => attenuatedPursesUpdater.fail(reason),
     });
   };
 
