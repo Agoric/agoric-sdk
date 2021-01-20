@@ -28,7 +28,7 @@ test.skip('run contractHost Demo --mint', async t => {
 const contractTrivialGolden = [
   'starting trivialContractTest',
   'Does source match? true',
-  'foo balance {"brand":{},"value":[{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}]}',
+  'foo balance {"brand":{},"value":[{"installation":{},"seatDesc":"foo","seatIdentity":{},"terms":"foo terms"}]}',
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
 ];
