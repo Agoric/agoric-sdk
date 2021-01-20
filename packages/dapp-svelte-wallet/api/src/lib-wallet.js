@@ -193,8 +193,8 @@ export function makeWallet({
       });
     const filter = state => state.map(innerFilter);
     observeIteration(pursesNotifier, {
-      updateState:
-        newState => attenuatedPursesUpdater.updateState(filter(newState)),
+      updateState: newState =>
+        attenuatedPursesUpdater.updateState(filter(newState)),
       finish: finalState => attenuatedPursesUpdater.finish(filter(finalState)),
       fail: reason => attenuatedPursesUpdater.fail(reason),
     });
