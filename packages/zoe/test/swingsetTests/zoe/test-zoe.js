@@ -212,21 +212,21 @@ test.serial('zoe - simpleExchange - valid inputs', async t => {
 const expectedSimpleExchangeNotificationLog = [
   '=> alice, bob, carol and dave are set up',
   '{"buys":[],"sells":[]}',
-  '{"buys":[],"sells":[{"want":{"Price":{"brand":{},"value":4}},"give":{"Asset":{"brand":{},"value":3}}}]}',
+  '{"buys":[],"sells":[{"give":{"Asset":{"brand":{},"value":3}},"want":{"Price":{"brand":{},"value":4}}}]}',
   'Order Added',
   '{"buys":[],"sells":[]}',
   'Order Added',
   'bobMoolaPurse: balance {"brand":{},"value":0}',
   'bobSimoleanPurse: balance {"brand":{},"value":20}',
-  '{"buys":[{"want":{"Asset":{"brand":{},"value":8}},"give":{"Price":{"brand":{},"value":2}}}],"sells":[]}',
+  '{"buys":[{"give":{"Price":{"brand":{},"value":2}},"want":{"Asset":{"brand":{},"value":8}}}],"sells":[]}',
   'Order Added',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
   'bobSimoleanPurse: balance {"brand":{},"value":18}',
-  '{"buys":[{"want":{"Asset":{"brand":{},"value":8}},"give":{"Price":{"brand":{},"value":2}}},{"want":{"Asset":{"brand":{},"value":20}},"give":{"Price":{"brand":{},"value":13}}}],"sells":[]}',
+  '{"buys":[{"give":{"Price":{"brand":{},"value":2}},"want":{"Asset":{"brand":{},"value":8}}},{"give":{"Price":{"brand":{},"value":13}},"want":{"Asset":{"brand":{},"value":20}}}],"sells":[]}',
   'Order Added',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
   'bobSimoleanPurse: balance {"brand":{},"value":5}',
-  '{"buys":[{"want":{"Asset":{"brand":{},"value":8}},"give":{"Price":{"brand":{},"value":2}}},{"want":{"Asset":{"brand":{},"value":20}},"give":{"Price":{"brand":{},"value":13}}},{"want":{"Asset":{"brand":{},"value":5}},"give":{"Price":{"brand":{},"value":2}}}],"sells":[]}',
+  '{"buys":[{"give":{"Price":{"brand":{},"value":2}},"want":{"Asset":{"brand":{},"value":8}}},{"give":{"Price":{"brand":{},"value":13}},"want":{"Asset":{"brand":{},"value":20}}},{"give":{"Price":{"brand":{},"value":2}},"want":{"Asset":{"brand":{},"value":5}}}],"sells":[]}',
   'Order Added',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
   'bobSimoleanPurse: balance {"brand":{},"value":3}',
@@ -254,8 +254,7 @@ const expectedAutoswapOkLog = [
   'bobSimoleanPurse: balance {"brand":{},"value":5}',
   'simoleans required {"brand":{},"value":5}',
   'Liquidity successfully removed.',
-  'poolAmounts{"Liquidity":{"brand":{},"value":10},"Central":{"brand":{},"value":0},"Secondary":{"brand":{},"value":0}}',
-  'aliceMoolaPurse: balance {"brand":{},"value":8}',
+  'poolAmounts{"Central":{"brand":{},"value":0},"Liquidity":{"brand":{},"value":10},"Secondary":{"brand":{},"value":0}}',  'aliceMoolaPurse: balance {"brand":{},"value":8}',
   'aliceSimoleanPurse: balance {"brand":{},"value":7}',
   'aliceLiquidityTokenPurse: balance {"brand":{},"value":0}',
 ];
@@ -270,9 +269,9 @@ test.serial('zoe - autoswap - valid inputs', async t => {
 
 const expectedSellTicketsOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'availableTickets: {"brand":{},"value":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":1},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
-  'boughtTicketAmount: {"brand":{},"value":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":1}]}',
-  'after ticket1 purchased: {"brand":{},"value":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
+  'availableTickets: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
+  'boughtTicketAmount: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
+  'after ticket1 purchased: {"brand":{},"value":[{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'alice earned: {"brand":{},"value":22}',
 ];
 test.serial('zoe - sellTickets - valid inputs', async t => {

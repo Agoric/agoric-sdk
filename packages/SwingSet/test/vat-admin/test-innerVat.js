@@ -60,9 +60,9 @@ test('VatAdmin get vat stats', async t => {
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting stats test',
-    '{"objectCount":0,"promiseCount":0,"deviceCount":0,"transcriptCount":0}',
+    '{"deviceCount":0,"objectCount":0,"promiseCount":0,"transcriptCount":0}',
     '4',
-    '{"objectCount":0,"promiseCount":2,"deviceCount":0,"transcriptCount":2}',
+    '{"deviceCount":0,"objectCount":0,"promiseCount":2,"transcriptCount":2}',
   ]);
   await c.run();
 });

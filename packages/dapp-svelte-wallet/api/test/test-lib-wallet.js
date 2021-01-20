@@ -330,7 +330,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       ],
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":2},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":3}}]}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -344,8 +344,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           {
             description: 'getRefund',
             handle: { kind: 'unnamed', petname: 'unnamed-4' },
-            instance: { kind: 'unnamed', petname: 'unnamed-2' },
-            installation: { kind: 'unnamed', petname: 'unnamed-3' },
+            installation: { kind: 'unnamed', petname: 'unnamed-2' },
+            instance: { kind: 'unnamed', petname: 'unnamed-3' },
           },
         ],
       },
@@ -412,12 +412,12 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       ],
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":2},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":3}}]}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
-          { kind: 'instance', petname: 'automaticRefund' },
           { kind: 'installation', petname: 'automaticRefund' },
+          { kind: 'instance', petname: 'automaticRefund' },
         ],
       },
       currentAmount: {
@@ -517,12 +517,12 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       ],
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":2},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":3}}]}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
-          { kind: 'instance', petname: 'automaticRefund' },
           { kind: 'installation', petname: 'automaticRefund2' },
+          { kind: 'instance', petname: 'automaticRefund' },
         ],
       },
       currentAmount: {
@@ -728,8 +728,8 @@ test('lib-wallet offer methods', async t => {
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'accept',
-        instancePetname: 'unnamed-2',
-        installationPetname: 'unnamed-3',
+        instancePetname: 'unnamed-3',
+        installationPetname: 'unnamed-2',
         proposalForDisplay: {
           give: {
             Contribution: {
@@ -760,8 +760,8 @@ test('lib-wallet offer methods', async t => {
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'decline',
-        instancePetname: 'unnamed-2',
-        installationPetname: 'unnamed-3',
+        instancePetname: 'unnamed-3',
+        installationPetname: 'unnamed-2',
         proposalForDisplay: {
           give: {
             Contribution: {
