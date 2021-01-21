@@ -159,20 +159,25 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 #define xsMeterHostFunction(_COUNT) \
 	fxMeterHostFunction(the, _COUNT)
 
-static xsUnsignedValue gxMeteringLimit = 0;
-static xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
-{
-	if (index > gxMeteringLimit) {
-		fprintf(stderr, "too much computation\n");
-		return 0;
-	}
-//	fprintf(stderr, "%d\n", index);
-	return 1;
-}
-static xsBooleanValue gxMeteringPrint = 0;
-
 static FILE *fromParent;
 static FILE *toParent;
+
+static xsUnsignedValue gxMeteringLimit = 0;
+static xsUnsignedValue gxMeteringLevel = 0;
+static xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue level)
+{
+	gxMeteringLevel = level;
+	if (gxMeteringLimit != 0 && level > gxMeteringLimit) {
+		int writeError = fxWriteNetString(toParent, '$', "", 0);
+		if (writeError != 0) {
+			fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+			c_exit(1);
+		}
+		return 0;
+	}
+//	fprintf(stderr, "%d\n", level);
+	return 1;
+}
 
 int main(int argc, char* argv[])
 {
@@ -181,6 +186,7 @@ int main(int argc, char* argv[])
 	int error = 0;
 	int interval = 0;
 	int freeze = 0;
+	xsUnsignedValue coins = 0;
 	xsCreation _creation = {
 		16 * 1024 * 1024,	/* initialChunkSize */
 		16 * 1024 * 1024,	/* incrementalChunkSize */
@@ -240,8 +246,6 @@ int main(int argc, char* argv[])
 				return 1;
 			}
 		}
-		else if (!strcmp(argv[argi], "-p"))
-			gxMeteringPrint = 1;
 		else if (!strcmp(argv[argi], "-r")) {
 			argi++;
 			if (argi < argc)
@@ -296,29 +300,29 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "fdopen(4) to parent failed\n");
 		c_exit(1);
 	}
-	xsBeginMetering(machine, fxMeteringCallback, interval);
-	{
-		char done = 0;
-		while (!done) {
-			char* nsbuf;
-			size_t nslen;
-			int readError = fxReadNetString(fromParent, &nsbuf, &nslen);
-			if (readError != 0) {
-				if (feof(fromParent)) {
-					break;
-				} else {
-					fprintf(stderr, "%s\n", fxReadNetStringError(readError));
-					c_exit(1);
-				}
+	char done = 0;
+	while (!done) {
+		char* nsbuf;
+		size_t nslen;
+		int readError = fxReadNetString(fromParent, &nsbuf, &nslen);
+		if (readError != 0) {
+			if (feof(fromParent)) {
+				break;
+			} else {
+				fprintf(stderr, "%s\n", fxReadNetStringError(readError));
+				c_exit(1);
 			}
-			char command = *nsbuf;
-			// fprintf(stderr, "command: len %d %c arg: %s\n", nslen, command, nsbuf + 1);
-			switch(command) {
-			case '?':
-			case 'e':
-				error = 0;
-				char* response = NULL;
-				size_t responseLength = 0;
+		}
+		char command = *nsbuf;
+		// fprintf(stderr, "command: len %d %c arg: %s\n", nslen, command, nsbuf + 1);
+		switch(command) {
+		case '?':
+		case 'e':
+			error = 0;
+			char* response = NULL;
+			size_t responseLength = 0;
+			xsBeginMetering(machine, fxMeteringCallback, interval);
+			{
 				xsBeginHost(machine);
 				{
 					xsVars(3);
@@ -345,29 +349,33 @@ int main(int argc, char* argv[])
 					}
 				}
 				xsEndHost(machine);
-				fxRunLoop(machine);
-				if (error == 0) {
-					int writeError = fxWriteNetString(toParent, '.', response, responseLength);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
-				} else {
-					// TODO: dynamically build error message including Exception message.
-					int writeError = fxWriteNetString(toParent, '!', "", 0);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
+			}
+			xsEndMetering(machine);
+			fxRunLoop(machine);
+			if (error == 0) {
+				int writeError = fxWriteNetString(toParent, '.', response, responseLength);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
 				}
-				if (response != NULL) {
-					free(response);
-					response = NULL;
+			} else {
+				// TODO: dynamically build error message including Exception message.
+				int writeError = fxWriteNetString(toParent, '!', "", 0);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
 				}
-				break;
-			case 's':
-			case 'm':
-				path = nsbuf + 1;
+			}
+			if (response != NULL) {
+				free(response);
+				response = NULL;
+			}
+			break;
+		case 's':
+		case 'm':
+			path = nsbuf + 1;
+			xsBeginMetering(machine, fxMeteringCallback, interval);
+			{
 				xsBeginHost(machine);
 				{
 					xsVars(1);
@@ -388,68 +396,89 @@ int main(int argc, char* argv[])
 					}
 				}
 				xsEndHost(machine);
-				fxRunLoop(machine);
-				if (error == 0) {
-					int writeError = fxWriteNetString(toParent, '.', "", 0);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
-				} else {
-					// TODO: dynamically build error message including Exception message.
-					int writeError = fxWriteNetString(toParent, '!', "", 0);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
+			}
+			xsEndMetering(machine);
+			fxRunLoop(machine);
+			if (error == 0) {
+				int writeError = fxWriteNetString(toParent, '.', "", 0);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
 				}
-				break;
+			} else {
+				// TODO: dynamically build error message including Exception message.
+				int writeError = fxWriteNetString(toParent, '!', "", 0);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
+				}
+			}
+			break;
 
-			case 'w':
-				path = nsbuf + 1;
-				snapshot.stream = fopen(path, "wb");
-				if (snapshot.stream) {
-					fxWriteSnapshot(machine, &snapshot);
-					fclose(snapshot.stream);
-				}
-				else
-					snapshot.error = errno;
-				if (snapshot.error) {
-					fprintf(stderr, "cannot write snapshot %s: %s\n",
-							path, strerror(snapshot.error));
-				}
-				if (snapshot.error == 0) {
-					int writeError = fxWriteNetString(toParent, '.', "", 0);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
-				} else {
-					// TODO: dynamically build error message including Exception message.
-					int writeError = fxWriteNetString(toParent, '!', "", 0);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
-				}
-				break;
-			case -1:
-			default:
-				done = 1;
-				break;
+		case 'w':
+			path = nsbuf + 1;
+			snapshot.stream = fopen(path, "wb");
+			if (snapshot.stream) {
+				fxWriteSnapshot(machine, &snapshot);
+				fclose(snapshot.stream);
 			}
-			free(nsbuf);
-		}
-		xsBeginHost(machine);
-		{
-			if (xsTypeOf(xsException) != xsUndefinedType) {
-				fprintf(stderr, "%s\n", xsToString(xsException));
-				error = 1;
+			else
+				snapshot.error = errno;
+			if (snapshot.error) {
+				fprintf(stderr, "cannot write snapshot %s: %s\n",
+						path, strerror(snapshot.error));
 			}
+			if (snapshot.error == 0) {
+				int writeError = fxWriteNetString(toParent, '.', "", 0);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
+				}
+			} else {
+				// TODO: dynamically build error message including Exception message.
+				int writeError = fxWriteNetString(toParent, '!', "", 0);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
+				}
+			}
+			break;
+
+		case 'l':
+			coins = atoi(nsbuf);
+			if (coins == 0) {
+				// Reset meter (disable).
+				gxMeteringLimit = 0;
+				interval = 0;
+			} else {
+				// Add coins to meter.
+				gxMeteringLimit = gxMeteringLevel + coins;
+				interval = 1;
+			}
+
+			// Respond.
+			int writeError = fxWriteNetString(toParent, '.', "", 0);
+			if (writeError != 0) {
+				fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+				c_exit(1);
+			}
+			break;
+
+		case -1:
+		default:
+			done = 1;
+			break;
 		}
-		xsEndHost(machine);
+		free(nsbuf);
 	}
-	xsEndMetering(machine);
+	xsBeginHost(machine);
+	{
+		if (xsTypeOf(xsException) != xsUndefinedType) {
+			fprintf(stderr, "%s\n", xsToString(xsException));
+			error = 1;
+		}
+	}
+	xsEndHost(machine);
 	xsDeleteMachine(machine);
 	fxTerminateSharedCluster();
 	return error;
@@ -825,8 +854,6 @@ void fxPrintUsage()
 // void fx_print(xsMachine* the)
 // {
 // 	xsIntegerValue c = xsToInteger(xsArgc), i;
-// 	if (gxMeteringPrint)
-// 		fprintf(stdout, "[%u] ", the->meterIndex);
 // 	for (i = 0; i < c; i++) {
 // 		if (i)
 // 			fprintf(stdout, " ");

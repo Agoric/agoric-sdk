@@ -232,3 +232,19 @@ test('normal close of pathological script', async t => {
   await vat.terminate();
   await hang;
 });
+
+test('the meter runneth out', async t => {
+  const vat = xsnap({ ...xsnapOptions });
+  await vat.setMeter(100);
+  const hang = vat.evaluate(`for (;;) {}`).then(
+    () => t.fail('command should not complete'),
+    err => {
+      t.is(err.message, 'Meter limit exceeded by xsnap test worker')
+    },
+  );
+  await Promise.race([
+    hang,
+    delay(100).then(() => t.fail('test timed out'))
+  ]);
+  await vat.terminate();
+});

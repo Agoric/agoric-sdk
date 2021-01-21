@@ -17,6 +17,7 @@ import * as node from './node-stream';
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
+const METER = '$'.charCodeAt(0);
 
 const importMetaUrl = `file://${__filename}`;
 
@@ -124,6 +125,8 @@ export function xsnap(options) {
         return message.subarray(1);
       } else if (message[0] === ERROR) {
         throw new Error(`Uncaught exception in ${name}`);
+      } else if (message[0] === METER) {
+        throw new Error(`Meter limit exceeded by ${name}`);
       } else if (message[0] === QUERY) {
         await messagesToXsnap.next(await handleCommand(message.subarray(1)));
       }
@@ -212,6 +215,34 @@ export function xsnap(options) {
   /**
    * @returns {Promise<void>}
    */
+  async function resetMeter() {
+    const result = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`l0`));
+      await runToIdle();
+    });
+    baton = result.catch(() => {});
+    return Promise.race([vatExit.promise, baton]);
+  }
+
+  /**
+   * @param {number} steps
+   * @returns {Promise<void>}
+   */
+  async function setMeter(steps) {
+    if (Number.isNaN(steps) || steps <= 0) {
+      throw new Error(`Meter steps must be a positive number, got ${steps}`);
+    }
+    const result = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`l${steps}`));
+      await runToIdle();
+    });
+    baton = result.catch(() => {});
+    return Promise.race([vatExit.promise, baton]);
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
   async function close() {
     baton = baton.then(async () => {
       await messagesToXsnap.return();
@@ -241,5 +272,7 @@ export function xsnap(options) {
     execute,
     import: importModule,
     snapshot: writeSnapshot,
+    resetMeter,
+    setMeter,
   };
 }

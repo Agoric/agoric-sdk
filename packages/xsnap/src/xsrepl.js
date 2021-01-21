@@ -70,6 +70,15 @@ async function main() {
     } else if (answer === 'save') {
       const file = await ask('file> ');
       await vat.snapshot(file);
+    } else if (answer === 'meter') {
+      const steps = Number(await ask('steps> '));
+      if (Number.isNaN(steps)) {
+        console.error('Meter steps must be a number');
+      } else if (steps === 0) {
+        await vat.resetMeter();
+      } else {
+        await vat.setMeter(steps);
+      }
     } else {
       await vat.issueStringCommand(answer);
     }
