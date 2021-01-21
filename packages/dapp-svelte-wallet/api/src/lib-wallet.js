@@ -156,16 +156,16 @@ export function makeWallet({
     updater: offersUpdater,
   } = makeNotifierKit();
 
-  /** @type {NotifierRecord<PursesFullState[]>} */
-  const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
-    [],
-  );
-  /** @type {NotifierRecord<PursesJSONState[]>} */
-  const {
-    notifier: attenuatedPursesNotifier,
-    updater: attenuatedPursesUpdater,
-  } = makeNotifierKit([]);
-  {
+  const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => { 
+    /** @type {NotifierRecord<PursesFullState[]>} */
+    const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
+      [],
+    );
+    /** @type {NotifierRecord<PursesJSONState[]>} */
+    const {
+      notifier: attenuatedPursesNotifier,
+      updater: attenuatedPursesUpdater,
+    } = makeNotifierKit([]);
     // explicit whitelist
     /**
      * @param {PursesFullState} _
@@ -198,7 +198,7 @@ export function makeWallet({
       finish: finalState => attenuatedPursesUpdater.finish(filter(finalState)),
       fail: reason => attenuatedPursesUpdater.fail(reason),
     });
-  }
+  })();
 
   /**
    * @param {Petname} pursePetname
