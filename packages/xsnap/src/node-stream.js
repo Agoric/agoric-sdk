@@ -21,10 +21,11 @@ const continues = { value: undefined };
  * Back pressure emerges from awaiting on the promise
  * returned by `next` before calling `next` again.
  *
- * @param {NodeJS.WritableStream} output
+ * @param {NodeJS.WritableStream} output the destination Node.js writer
+ * @param {string} [name] a debug name for stream errors
  * @returns {Stream<void, Uint8Array, void>}
  */
-export function writer(output) {
+export function writer(output, name = '<unnamed stream>') {
   /**
    * @type {Deferred<IteratorResult<void>>}
    */
@@ -32,8 +33,7 @@ export function writer(output) {
   drained.resolve(continues);
 
   output.on('error', err => {
-    console.log('err', err);
-    drained.reject(err);
+    drained.reject(new Error(`Cannot write ${name}: ${err.message}`));
   });
 
   output.on('drain', () => {
