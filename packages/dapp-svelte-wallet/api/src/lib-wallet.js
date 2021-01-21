@@ -156,10 +156,57 @@ export function makeWallet({
     updater: offersUpdater,
   } = makeNotifierKit();
 
-  /** @type {NotifierRecord<PursesFullState[]>} */
-  const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
-    [],
-  );
+  const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => {
+    /** @type {NotifierRecord<PursesFullState[]>} */
+    const { notifier: ipn, updater: ipu } = makeNotifierKit([]);
+    /** @type {NotifierRecord<PursesJSONState[]>} */
+    const { notifier: apn, updater: apu } = makeNotifierKit([]);
+    // explicit whitelist
+    /**
+     * @param {PursesFullState} _
+     * @returns {PursesJSONState}
+     */
+    const innerFilter = ({
+      brandBoardId,
+      depositBoardId,
+      brandPetname,
+      pursePetname,
+      displayInfo,
+      value,
+      currentAmountSlots,
+      currentAmount,
+    }) =>
+      harden({
+        brandBoardId,
+        ...(depositBoardId && { depositBoardId }),
+        brandPetname,
+        pursePetname,
+        ...(displayInfo && { displayInfo }),
+        value,
+        currentAmountSlots,
+        currentAmount,
+      });
+    const filter = state => state.map(innerFilter);
+    const pu = harden({
+      updateState: newState => {
+        ipu.updateState(newState);
+        apu.updateState(filter(newState));
+      },
+      finish: finalState => {
+        ipu.finish(finalState);
+        apu.finish(filter(finalState));
+      },
+      fail: reason => {
+        ipu.fail(reason);
+        apu.fail(reason);
+      },
+    });
+    return harden({
+      pursesNotifier: ipn,
+      attenuatedPursesNotifier: apn,
+      pursesUpdater: pu,
+    });
+  })();
 
   /**
    * @param {Petname} pursePetname
@@ -1332,6 +1379,9 @@ export function makeWallet({
     },
     getPursesNotifier() {
       return pursesNotifier;
+    },
+    getAttenuatedPursesNotifier() {
+      return attenuatedPursesNotifier;
     },
     getIssuersNotifier() {
       return issuersNotifier;

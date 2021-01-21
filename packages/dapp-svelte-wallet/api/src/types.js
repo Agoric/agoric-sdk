@@ -62,7 +62,7 @@
  * addOfferInvitation add an invitation to the specified offer
  * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
  * return the board ID to use to receive payments of the specified brand.
- * @property {() => Promise<Notifier<Array<PursesFullState>>>} getPursesNotifier
+ * @property {() => Promise<Notifier<Array<PursesJSONState>>>} getPursesNotifier
  * Follow changes to the purses.
  * @property {() => Promise<Notifier<Array<OfferState>>>} getOffersNotifier
  * Follow changes to the offers.

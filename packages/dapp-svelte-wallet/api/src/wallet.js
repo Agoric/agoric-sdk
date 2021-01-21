@@ -109,7 +109,7 @@ export function buildRootObject(_vatPowers) {
     const bridge = {
       async getPursesNotifier() {
         await approve();
-        const pursesNotifier = walletAdmin.getPursesNotifier();
+        const pursesNotifier = walletAdmin.getAttenuatedPursesNotifier();
         const { notifier, updater } = makeNotifierKit();
         observeIteration(makeApprovedNotifier(pursesNotifier), updater);
         return notifier;
@@ -206,7 +206,7 @@ export function buildRootObject(_vatPowers) {
       return walletAdmin.getOffersNotifier();
     },
     async getPursesNotifier() {
-      return walletAdmin.getPursesNotifier();
+      return walletAdmin.getAttenuatedPursesNotifier();
     },
     suggestInstallation(petname, installationBoardId) {
       return walletAdmin.suggestInstallation(petname, installationBoardId);
