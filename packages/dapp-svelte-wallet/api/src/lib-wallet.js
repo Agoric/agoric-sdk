@@ -158,14 +158,9 @@ export function makeWallet({
 
   const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => { 
     /** @type {NotifierRecord<PursesFullState[]>} */
-    const { notifier: pursesNotifier, updater: innerPursesUpdater } = makeNotifierKit(
-      [],
-    );
+    const { notifier: ipn, updater: ipu } = makeNotifierKit([]);
     /** @type {NotifierRecord<PursesJSONState[]>} */
-    const {
-      notifier: attenuatedPursesNotifier,
-      updater: attenuatedPursesUpdater,
-    } = makeNotifierKit([]);
+    const { notifier: apn, updater: apu } = makeNotifierKit([]);
     // explicit whitelist
     /**
      * @param {PursesFullState} _
@@ -192,21 +187,21 @@ export function makeWallet({
         currentAmount,
       });
     const filter = state => state.map(innerFilter);
-    const pursesUpdater = harden({
+    const pu = harden({
       updateState: newState => {
-        innerPursesUpdater.updateState(newState);
-        attenuatedPursesUpdater.updateState(filter(newState));
+        ipu.updateState(newState);
+        apu.updateState(filter(newState));
       },
       finish: finalState => {
-        innerPursesUpdater.finish(finalState);
-        attenuatedPursesUpdater.finish(filter(finalState));
+        ipu.finish(finalState);
+        apu.finish(filter(finalState));
       },
       fail: reason => {
-        innerPursesUpdater.fail(reason);
-        attenuatedPursesUpdater.fail(reason);
+        ipu.fail(reason);
+        apu.fail(reason);
       },
     });
-    return harden({ pursesNotifier, attenuatedPursesNotifier, pursesUpdater });
+    return harden({ pursesNotifier: ipn, attenuatedPursesNotifier: apn, pursesUpdater: pu });
   })();
 
   /**
