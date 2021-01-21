@@ -82,6 +82,7 @@ test('getAttenuatedPursesNotifier', async t => {
   const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } = await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
+  await Promise.resolve(); // smá tilraun
   t.is(update.updateCount, 7);
   // Has the default Zoe invitation purse and a moola purse
   t.is(update.value.length, 2);
