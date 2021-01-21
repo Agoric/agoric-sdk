@@ -107,6 +107,10 @@ export const findOrMakeInvitation = async (
 ) => {
   const findInvitation = makeFindInvitation(invitationPurse, invitationMath);
 
+  if (offer.invitation) {
+    return offer.invitation;
+  }
+
   // Deprecated
   if (offer.inviteHandleBoardId) {
     const queryParams = {
