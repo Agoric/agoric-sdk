@@ -63,10 +63,10 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   };
 
   const addToDebtWhenNotified = lastCount => {
-    const finalValue = updateCount => updateCount === undefined;
+    const isFinalValue = updateCount => updateCount === undefined;
     const processUpdate = newState => {
       const { updateCount, value } = newState;
-      if (finalValue(updateCount)) {
+      if (isFinalValue(updateCount)) {
         const reason = 'PeriodNotifier should not publish a final value';
         debtNotifierUpdater.fail(reason);
         throw Error(reason);
