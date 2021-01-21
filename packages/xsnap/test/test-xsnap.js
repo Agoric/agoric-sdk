@@ -9,8 +9,12 @@ const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 const xsnapOptions = {
+  name: 'xsnap test worker',
   spawn: childProcess.spawn,
   os: os.type(),
+  stderr: 'inherit',
+  stdout: 'inherit',
+  debug: true
 };
 
 test('evaluate and issueCommand', async t => {
@@ -158,4 +162,73 @@ test('write and read snapshot', async t => {
   await vat1.close();
 
   t.deepEqual(['Hello, World!'], messages);
+});
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+test('fail to send command to already-closed xnsap worker', async t => {
+  const vat = xsnap({ ...xsnapOptions });
+  await vat.close();
+  await vat.evaluate(``).catch(err => {
+    t.is(err.message, 'xsnap test worker exited')
+  });
+});
+
+test('fail to send command to already-terminated xnsap worker', async t => {
+  const vat = xsnap({ ...xsnapOptions });
+  await vat.terminate();
+  await vat.evaluate(``).catch(err => {
+    t.is(err.message, 'xsnap test worker exited due to signal SIGTERM')
+  });
+});
+
+test('fail to send command to terminated xnsap worker', async t => {
+  const vat = xsnap({ ...xsnapOptions });
+  const hang = vat.evaluate(`for (;;) {}`).then(
+    () => t.fail('command should not complete'),
+    err => {
+      t.is(err.message, 'Cannot write messages to xsnap test worker: write EPIPE')
+    },
+  );
+
+  await vat.terminate();
+  await hang;
+});
+
+test('abnormal termination', async t => {
+  const vat = xsnap({ ...xsnapOptions });
+  const hang = vat.evaluate(`for (;;) {}`).then(
+    () => t.fail('command should not complete'),
+    err => {
+      t.is(err.message, 'xsnap test worker exited due to signal SIGTERM')
+    },
+  );
+
+  // Allow the evaluate command to flush.
+  await delay(10);
+  await vat.terminate();
+  await hang;
+});
+
+test('normal close of pathological script', async t => {
+  const vat = xsnap({ ...xsnapOptions });
+  const hang = vat.evaluate(`for (;;) {}`).then(
+    () => t.fail('command should not complete'),
+    err => {
+      t.is(err.message, 'xsnap test worker exited due to signal SIGTERM')
+    },
+  );
+  // Allow the evaluate command to flush.
+  await delay(10);
+  // Close must timeout and the evaluation command
+  // must hang.
+  await Promise.race([
+    vat.close().then(() => t.fail()),
+    hang,
+    delay(10),
+  ]);
+  await vat.terminate();
+  await hang;
 });
