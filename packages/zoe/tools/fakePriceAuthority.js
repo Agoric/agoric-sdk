@@ -13,12 +13,6 @@ import { natSafeMath } from '../src/contractSupport';
 import './types';
 import '../exported';
 
-// the bulk import style for typescript declarations doesn't seem to work here.
-/**
- * @typedef {import('./types').PriceAuthority} PriceAuthority
- * @typedef {import('./types').PriceQuote} PriceQuote
- */
-
 /**
  * @typedef {Object} FakePriceAuthorityOptions
  * @property {AmountMath} mathIn
