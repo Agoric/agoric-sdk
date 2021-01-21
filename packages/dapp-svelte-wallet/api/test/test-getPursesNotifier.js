@@ -78,7 +78,7 @@ test('getPursesNotifier', async t => {
   t.is(moolaPurseInfo.value, 0);
 });
 
-test('innwestigation', async t => {
+test.skip('innwestigation', async t => {
   const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } = await setup();
   const pursesNotifier = wallet.getPursesNotifier();
   const attPursesNotifier = wallet.getAttenuatedPursesNotifier();
@@ -89,9 +89,10 @@ test('innwestigation', async t => {
   t.fail('feila tímabundið');
 });
 
-test.skip('getAttenuatedPursesNotifier', async t => {
+test('getAttenuatedPursesNotifier', async t => {
   const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } = await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
+  await (wallet.getPursesNotifier()).getUpdateSince(); // önnur tilraun
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 7);
   // Has the default Zoe invitation purse and a moola purse
