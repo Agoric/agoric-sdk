@@ -17,7 +17,7 @@ const encoder = new TextEncoder();
  * @param {AsyncIterable<Uint8Array>} input
  * @param {string=} name
  * @param {number=} capacity
- * @returns {AsyncIterableIterator<Uint8Array>} input
+ * @returns {AsyncGenerator<Uint8Array>} input
  */
 export async function* reader(input, name = '<unknown>', capacity = 1024) {
   let length = 0;
