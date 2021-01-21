@@ -166,7 +166,7 @@ export function makeWallet({
     updater: attenuatedPursesUpdater,
   } = makeNotifierKit([]);
   {
-    // explict whitelist
+    // explicit whitelist
     /**
      * @param {PursesFullState} _
      * @returns {PursesJSONState}
