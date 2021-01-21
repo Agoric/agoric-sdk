@@ -158,7 +158,7 @@ export function makeWallet({
 
   const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => { 
     /** @type {NotifierRecord<PursesFullState[]>} */
-    const { notifier: pursesNotifier, updater: pursesUpdater } = makeNotifierKit(
+    const { notifier: pursesNotifier, updater: innerPursesUpdater } = makeNotifierKit(
       [],
     );
     /** @type {NotifierRecord<PursesJSONState[]>} */
@@ -192,12 +192,21 @@ export function makeWallet({
         currentAmount,
       });
     const filter = state => state.map(innerFilter);
-    observeIteration(pursesNotifier, {
-      updateState: newState =>
-        attenuatedPursesUpdater.updateState(filter(newState)),
-      finish: finalState => attenuatedPursesUpdater.finish(filter(finalState)),
-      fail: reason => attenuatedPursesUpdater.fail(reason),
+    const pursesUpdater = harden({
+      updateState: newState => {
+        innerPursesUpdater.updateState(newState);
+        attenuatedPursesUpdater.updateState(filter(newState));
+      },
+      finish: finalState => {
+        innerPursesUpdater.finish(finalState);
+        attenuatedPursesUpdater.finish(filter(finalState));
+      },
+      fail: reason => {
+        innerPursesUpdater.fail(reason);
+        attenuatedPursesUpdater.fail(reason);
+      },
     });
+    return harden({ pursesNotifier, attenuatedPursesNotifier, pursesUpdater });
   })();
 
   /**
