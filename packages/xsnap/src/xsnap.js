@@ -50,8 +50,8 @@ export function xsnap(options) {
     handleCommand = echoCommand,
     debug = false,
     snapshot = undefined,
-    stdout = 'inherit',
-    stderr = 'inherit',
+    stdout = 'ignore',
+    stderr = 'ignore',
   } = options;
 
   const platform = {
@@ -64,12 +64,8 @@ export function xsnap(options) {
     throw new Error(`xsnap does not support platform ${os}`);
   }
 
-  const xsnapBin = new URL(
-    `../build/bin/${platform}/release/xsnap`,
-    importMetaUrl,
-  ).pathname;
-  const xsnapDebugBin = new URL(
-    `../build/bin/${platform}/debug/xsnap`,
+  const bin = new URL(
+    `../build/bin/${platform}/${debug ? 'debug' : 'release'}/xsnap`,
     importMetaUrl,
   ).pathname;
 
@@ -78,15 +74,15 @@ export function xsnap(options) {
 
   const args = snapshot ? ['-r', snapshot] : [];
 
-  const bin = debug ? xsnapDebugBin : xsnapBin;
-
   const xsnapProcess = spawn(bin, args, {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });
 
-  xsnapProcess.on('exit', code => {
-    if (code === 0 || code === null) {
+  xsnapProcess.on('exit', (code, signal) => {
+    if (code === 0) {
       vatExit.resolve();
+    } else if (signal !== null) {
+      vatExit.reject(new Error(`${name} exited due to signal ${signal}`));
     } else {
       vatExit.reject(new Error(`${name} exited with code ${code}`));
     }
@@ -97,7 +93,10 @@ export function xsnap(options) {
   );
 
   const messagesToXsnap = netstring.writer(
-    node.writer(/** @type {NodeJS.WritableStream} */ (xsnapProcess.stdio[3])),
+    node.writer(
+      /** @type {NodeJS.WritableStream} */ (xsnapProcess.stdio[3]),
+      `messages to ${name}`,
+    ),
   );
   const messagesFromXsnap = netstring.reader(
     /** @type {AsyncIterable<Uint8Array>} */ (xsnapProcess.stdio[4]),
@@ -114,7 +113,7 @@ export function xsnap(options) {
       const { done, value: message } = await messagesFromXsnap.next();
       if (done) {
         xsnapProcess.kill();
-        throw new Error('xsnap protocol error: unexpected end of output');
+        return vatCancelled;
       }
       if (message.byteLength === 0) {
         // A protocol error kills the xsnap child process and breaks the baton
@@ -214,8 +213,10 @@ export function xsnap(options) {
    * @returns {Promise<void>}
    */
   async function close() {
-    await messagesToXsnap.return();
-    baton = Promise.reject(new Error(`xsnap closed`));
+    baton = baton.then(async () => {
+      await messagesToXsnap.return();
+      throw new Error(`${name} closed`);
+    });
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
   }
@@ -225,7 +226,7 @@ export function xsnap(options) {
    */
   async function terminate() {
     xsnapProcess.kill();
-    baton = Promise.reject(new Error(`xsnap closed`));
+    baton = Promise.reject(new Error(`${name} terminated`));
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
     // Mute the vatExit exception: it is expected.
     return vatExit.promise.catch(() => {});
