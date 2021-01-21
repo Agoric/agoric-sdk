@@ -78,17 +78,6 @@ test('getPursesNotifier', async t => {
   t.is(moolaPurseInfo.value, 0);
 });
 
-test('innwestigation', async t => {
-  const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } = await setup();
-  const pursesNotifier = wallet.getPursesNotifier();
-  const attPursesNotifier = wallet.getAttenuatedPursesNotifier();
-  const update = await pursesNotifier.getUpdateSince();
-  const updateAtt = await attPursesNotifier.getUpdateSince();
-  t.log('update: ', update);
-  t.log('updateAtt: ', updateAtt);
-  t.pass('');
-});
-
 test('getAttenuatedPursesNotifier', async t => {
   const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } = await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
