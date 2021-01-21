@@ -9,6 +9,8 @@ import {
   makeOnewayPriceAuthorityKit,
 } from '../contractSupport';
 
+import '../../tools/types';
+
 const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /**

@@ -71,8 +71,8 @@ const start = async zcf => {
   assert(autoswapInstance, `autoswapInstance must be provided`);
   assert(priceAuthority, `priceAuthority must be provided`);
   assert(periodNotifier, `periodNotifier must be provided`);
-  assert(Nat(interestRate), `interestRate must be a positive integer`);
-  assert(Nat(interestPeriod), `interestPeriod must be a positive integer`);
+  Nat(interestRate);
+  Nat(interestPeriod);
 
   /** @type {LoanTerms} */
   const config = {

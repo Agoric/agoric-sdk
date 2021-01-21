@@ -1,5 +1,3 @@
-import '@agoric/swingset-vat/exported';
-
 /**
  * @typedef {Object} PriceQuote
  * @property {Amount} quoteAmount Amount whose value is a PriceQuoteValue
