@@ -156,7 +156,7 @@ export function makeWallet({
     updater: offersUpdater,
   } = makeNotifierKit();
 
-  const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => { 
+  const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => {
     /** @type {NotifierRecord<PursesFullState[]>} */
     const { notifier: ipn, updater: ipu } = makeNotifierKit([]);
     /** @type {NotifierRecord<PursesJSONState[]>} */
@@ -201,7 +201,11 @@ export function makeWallet({
         apu.fail(reason);
       },
     });
-    return harden({ pursesNotifier: ipn, attenuatedPursesNotifier: apn, pursesUpdater: pu });
+    return harden({
+      pursesNotifier: ipn,
+      attenuatedPursesNotifier: apn,
+      pursesUpdater: pu,
+    });
   })();
 
   /**
