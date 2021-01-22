@@ -105,11 +105,12 @@ export const findOrMakeInvitation = async (
   invitationMath,
   offer,
 ) => {
-  const findInvitation = makeFindInvitation(invitationPurse, invitationMath);
-
   if (offer.invitation) {
+    // The invitation is directly specified.
     return offer.invitation;
   }
+
+  const findInvitation = makeFindInvitation(invitationPurse, invitationMath);
 
   // Deprecated
   if (offer.inviteHandleBoardId) {
