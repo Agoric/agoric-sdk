@@ -17,81 +17,6 @@ export const makeGetCurrentPrice = (
   getPool,
   centralBrand,
 ) => {
-  /**
-   * `getOutputForGivenInput` calculates the result of a trade, given a certain
-   * amount of digital assets in.
-   *
-   * @param {Amount} amountIn - the amount of digital
-   * assets to be sent in
-   * @param {Brand} brandOut - The brand of asset desired
-   * @returns {Amount} the amount that would be paid out at the current price.
-   */
-  const getOutputForGivenInput = (amountIn, brandOut) => {
-    const { brand: brandIn } = amountIn;
-
-    if (isCentral(brandIn) && isSecondary(brandOut)) {
-      return getPool(brandOut).getPriceGivenAvailableInput(amountIn, brandOut)
-        .amountOut;
-    }
-
-    if (isSecondary(brandIn) && isCentral(brandOut)) {
-      return getPool(brandIn).getPriceGivenAvailableInput(amountIn, brandOut)
-        .amountOut;
-    }
-
-    if (isSecondary(brandIn) && isSecondary(brandOut)) {
-      // We must do two consecutive calls to get the price: from
-      // the brandIn to the central token, then from the central
-      // token to the brandOut.
-      const { amountOut: centralTokenAmount } = getPool(
-        brandIn,
-      ).getPriceGivenAvailableInput(amountIn, centralBrand);
-      return getPool(brandOut).getPriceGivenAvailableInput(
-        centralTokenAmount,
-        brandOut,
-      ).amountOut;
-    }
-
-    throw new Error(`brands were not recognized`);
-  };
-
-  /**
-   * `getInputForGivenOutput` calculates the amount of assets required to be
-   * provided in order to obtain a specified gain.
-   *
-   * @param {Amount} amountOut - the amount of digital assets desired
-   * @param {Brand} brandIn - The brand of asset desired
-   * @returns {Amount} The amount required to be paid in order to gain amountOut
-   */
-  const getInputForGivenOutput = (amountOut, brandIn) => {
-    const { brand: brandOut } = amountOut;
-
-    if (isCentral(brandIn) && isSecondary(brandOut)) {
-      return getPool(brandOut).getPriceGivenRequiredOutput(brandIn, amountOut)
-        .amountIn;
-    }
-
-    if (isSecondary(brandIn) && isCentral(brandOut)) {
-      return getPool(brandIn).getPriceGivenRequiredOutput(brandIn, amountOut)
-        .amountIn;
-    }
-
-    if (isSecondary(brandIn) && isSecondary(brandOut)) {
-      // We must do two consecutive calls to get the price: from
-      // the brandIn to the central token, then from the central
-      // token to the brandOut.
-      const { amountIn: centralTokenAmount } = getPool(
-        brandIn,
-      ).getPriceGivenRequiredOutput(brandIn, amountOut);
-      return getPool(brandOut).getPriceGivenRequiredOutput(
-        centralBrand,
-        centralTokenAmount,
-      ).amountIn;
-    }
-
-    throw new Error(`brands were not recognized`);
-  };
-
   const getPriceGivenAvailableInput = (amountIn, brandOut) => {
     const { brand: brandIn } = amountIn;
 
@@ -155,16 +80,16 @@ export const makeGetCurrentPrice = (
       // 3) call getPriceGivenAvailableInput() to see if improvedCentralAmount
       // produces a larger amount (improvedAmountOut)
 
-      const brandInPool = getPool(brandOut);
-      const brandOutPool = getPool(brandIn);
+      const brandInPool = getPool(brandIn);
+      const brandOutPool = getPool(brandOut);
 
       const {
         amountIn: centralAmount,
-      } = brandInPool.getPriceGivenRequiredOutput(centralBrand, amountOut);
+      } = brandOutPool.getPriceGivenRequiredOutput(centralBrand, amountOut);
       const {
         amountIn,
         amountOut: improvedCentralAmount,
-      } = brandOutPool.getPriceGivenRequiredOutput(brandIn, centralAmount);
+      } = brandInPool.getPriceGivenRequiredOutput(brandIn, centralAmount);
 
       // propagate improved prices
       const {
@@ -181,6 +106,31 @@ export const makeGetCurrentPrice = (
     }
 
     throw new Error(`brands were not recognized`);
+  };
+
+  /**
+   * `getOutputForGivenInput` calculates the result of a trade, given a certain
+   * amount of digital assets in.
+   *
+   * @param {Amount} amountIn - the amount of digital
+   * assets to be sent in
+   * @param {Brand} brandOut - The brand of asset desired
+   * @returns {Amount} the amount that would be paid out at the current price.
+   */
+  const getOutputForGivenInput = (amountIn, brandOut) => {
+    return getPriceGivenAvailableInput(amountIn, brandOut).amountOut;
+  };
+
+  /**
+   * `getInputForGivenOutput` calculates the amount of assets required to be
+   * provided in order to obtain a specified gain.
+   *
+   * @param {Amount} amountOut - the amount of digital assets desired
+   * @param {Brand} brandIn - The brand of asset desired
+   * @returns {Amount} The amount required to be paid in order to gain amountOut
+   */
+  const getInputForGivenOutput = (amountOut, brandIn) => {
+    return getPriceGivenRequiredOutput(brandIn, amountOut).amountIn;
   };
 
   return {

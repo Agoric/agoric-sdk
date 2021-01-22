@@ -463,6 +463,184 @@ test('multipoolAutoSwap with valid offers', async t => {
   );
 });
 
+test('multipoolAutoSwap get detailed prices', async t => {
+  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+  const invitationIssuer = zoe.getInvitationIssuer();
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = centralR.amountMath.make;
+
+  // Setup Alice
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1000));
+  // Let's assume that central tokens are worth 2x as much as moola
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(500));
+  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000));
+
+  // Alice creates an autoswap instance
+
+  // Pack the contract.
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+
+  const installation = await zoe.install(bundle);
+  const { instance, publicFacet } = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+  );
+  const aliceAddLiquidityInvitation = E(
+    publicFacet,
+  ).makeAddLiquidityInvitation();
+
+  const invitationAmountMath = await makeLocalAmountMath(invitationIssuer);
+  const aliceInvitationAmount = await invitationIssuer.getAmountOf(
+    aliceAddLiquidityInvitation,
+  );
+  t.deepEqual(
+    aliceInvitationAmount,
+    invitationAmountMath.make(
+      harden([
+        {
+          description: 'multipool autoswap add liquidity',
+          instance,
+          installation,
+          handle: aliceInvitationAmount.value[0].handle,
+        },
+      ]),
+    ),
+    `invitation value is as expected`,
+  );
+
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityAmountMath = await makeLocalAmountMath(
+    moolaLiquidityIssuer,
+  );
+  const moolaLiquidity = moolaLiquidityAmountMath.make;
+
+  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+    simoleanR.issuer,
+    'Simoleans',
+  );
+  const simoleanLiquidityAmountMath = await makeLocalAmountMath(
+    simoleanLiquidityIssuer,
+  );
+  const simoleanLiquidity = simoleanLiquidityAmountMath.make;
+
+  // Alice adds liquidity to the moola pool
+  // 10 moola = 5 central tokens at the time of the liquidity adding
+  // aka 2 moola = 1 central token
+  const aliceProposal = harden({
+    want: { Liquidity: moolaLiquidity(500) },
+    give: { Secondary: moola(1000), Central: centralTokens(500) },
+  });
+  const alicePayments = {
+    Secondary: aliceMoolaPayment,
+    Central: aliceCentralPayment,
+  };
+
+  const addLiquiditySeat = await zoe.offer(
+    aliceAddLiquidityInvitation,
+    aliceProposal,
+    alicePayments,
+  );
+
+  t.is(
+    await E(addLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Alice added moola and central liquidity`,
+  );
+
+  const liquidityPayout = await addLiquiditySeat.getPayout('Liquidity');
+
+  t.deepEqual(
+    await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
+    moolaLiquidity(500),
+  );
+  t.deepEqual(
+    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    harden({
+      Secondary: moola(1000),
+      Central: centralTokens(500),
+      Liquidity: moolaLiquidity(0),
+    }),
+    `The poolAmounts record should contain the new liquidity`,
+  );
+
+  // Alice adds simoleans and central tokens to the simolean
+  // liquidity pool. 4000 simoleans = 500 central tokens at the time of
+  // adding the liquidity
+  const aliceSimCentralLiquidityInvitation = await E(
+    publicFacet,
+  ).makeAddLiquidityInvitation();
+  const aliceSimCentralProposal = harden({
+    want: { Liquidity: simoleanLiquidity(500) },
+    give: { Secondary: simoleans(4000), Central: centralTokens(500) },
+  });
+  const aliceCentralPayment2 = await centralR.mint.mintPayment(
+    centralTokens(500),
+  );
+  const aliceSimCentralPayments = {
+    Secondary: aliceSimoleanPayment,
+    Central: aliceCentralPayment2,
+  };
+
+  const aliceSeat2 = await zoe.offer(
+    aliceSimCentralLiquidityInvitation,
+    aliceSimCentralProposal,
+    aliceSimCentralPayments,
+  );
+
+  t.is(
+    await aliceSeat2.getOfferResult(),
+    'Added liquidity.',
+    `Alice added simoleans and central liquidity`,
+  );
+
+  const simoleanLiquidityPayout = await aliceSeat2.getPayout('Liquidity');
+
+  t.deepEqual(
+    await simoleanLiquidityIssuer.getAmountOf(simoleanLiquidityPayout),
+    simoleanLiquidity(500),
+    `simoleanLiquidity minted was equal to the amount of central tokens added to pool`,
+  );
+  t.deepEqual(
+    await E(publicFacet).getPoolAllocation(simoleanR.brand),
+    harden({
+      Secondary: simoleans(4000),
+      Central: centralTokens(500),
+      Liquidity: simoleanLiquidity(0),
+    }),
+    `The poolAmounts record should contain the new liquidity`,
+  );
+
+  // Let's check the price. What can we get for 74 simoleans?
+  const priceGivenSimoleansIn = await E(
+    publicFacet,
+  ).getPriceGivenAvailableInput(simoleans(100), moolaR.brand);
+  // for 100 simoleans you can't get more than 23 moola, but the price of
+  // 23 moola is only 99.
+  t.deepEqual(
+    priceGivenSimoleansIn,
+    { amountIn: simoleans(99), amountOut: moola(23) },
+    `price is as expected for secondary token to secondary token`,
+  );
+
+  // How much would it cost to get at least 35 moola?
+  const priceGivenMoolaOut = await E(publicFacet).getPriceGivenRequiredOutput(
+    simoleanR.brand,
+    moola(35),
+  );
+  // it would cost 159 to get 35 moola, but for 159 you can get 36.
+  t.deepEqual(
+    priceGivenMoolaOut,
+    { amountIn: simoleans(159), amountOut: moola(36) },
+    `price is as expected for secondary token to secondary token`,
+  );
+});
+
 test('multipoolAutoSwap with some invalid offers', async t => {
   const { moolaR, moola } = setup();
   const zoe = makeZoe(fakeVatAdmin);
