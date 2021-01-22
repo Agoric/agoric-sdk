@@ -123,7 +123,11 @@ export function xsnap(options) {
       } else if (message[0] === OK) {
         return message.subarray(1);
       } else if (message[0] === ERROR) {
-        throw new Error(`Uncaught exception in ${name}`);
+        throw new Error(
+          `Uncaught exception in ${name}: ${decoder.decode(
+            message.subarray(1),
+          )}`,
+        );
       } else if (message[0] === QUERY) {
         await messagesToXsnap.next(await handleCommand(message.subarray(1)));
       }
