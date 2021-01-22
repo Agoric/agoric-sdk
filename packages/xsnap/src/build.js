@@ -1,7 +1,7 @@
 import * as childProcess from 'child_process';
 import os from 'os';
 
-function exec(command, cwd) {
+function exec(command, cwd, args=[]) {
   const child = childProcess.spawn(command, {
     cwd,
     stdio: ['inherit', 'inherit', 'inherit'],
@@ -25,10 +25,13 @@ function exec(command, cwd) {
   // Run command depending on the OS
   if (os.type() === 'Linux') {
     await exec('make', 'makefiles/lin');
+    await exec('make', 'makefiles/lin', ['GOAL=debug']);
   } else if (os.type() === 'Darwin') {
     await exec('make', 'makefiles/mac');
+    await exec('make', 'makefiles/mac', ['GOAL=debug']);
   } else if (os.type() === 'Windows_NT') {
     await exec('nmake', 'makefiles/win');
+    await exec('make', 'makefiles/win', ['GOAL=debug']);
   } else {
     throw new Error(`Unsupported OS found: ${os.type()}`);
   }
