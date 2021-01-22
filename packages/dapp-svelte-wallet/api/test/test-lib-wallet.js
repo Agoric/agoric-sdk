@@ -1033,6 +1033,121 @@ test('addOffer invitationQuery', async t => {
   );
 });
 
+test('addOffer offer.invitation', async t => {
+  const {
+    zoe,
+    moolaBundle,
+    simoleanBundle,
+    wallet,
+    addLiquidityInvite,
+    autoswapInstanceHandle,
+  } = await setupTest();
+
+  const issuerManager = wallet.getIssuerManager();
+  await issuerManager.add('moola', moolaBundle.issuer);
+  await wallet.makeEmptyPurse('moola', 'Fun budget');
+  await wallet.deposit(
+    'Fun budget',
+    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
+  );
+
+  await issuerManager.add('simolean', simoleanBundle.issuer);
+  await wallet.makeEmptyPurse('simolean', 'Nest egg');
+  await wallet.deposit(
+    'Nest egg',
+    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
+  );
+
+  /** @type {{ getLiquidityIssuer: () => Issuer, makeSwapInvitation: () => Invitation }} */
+  const publicAPI = await E(zoe).getPublicFacet(autoswapInstanceHandle);
+  const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+
+  const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
+
+  // Let's add liquidity using our wallet and the addLiquidityInvite
+  // we have.
+  const proposal = harden({
+    give: {
+      Central: moolaBundle.amountMath.make(900),
+      Secondary: simoleanBundle.amountMath.make(500),
+    },
+    want: {
+      Liquidity: liquidityAmountMath.getEmpty(),
+    },
+  });
+
+  const pursesArray = await E(wallet).getPurses();
+  const purses = new Map(pursesArray);
+
+  const moolaPurse = purses.get('Fun budget');
+  const simoleanPurse = purses.get('Nest egg');
+  assert(moolaPurse);
+  assert(simoleanPurse);
+
+  const moolaPayment = await E(moolaPurse).withdraw(proposal.give.Central);
+  const simoleanPayment = await E(simoleanPurse).withdraw(
+    proposal.give.Secondary,
+  );
+
+  const payments = harden({
+    Central: moolaPayment,
+    Secondary: simoleanPayment,
+  });
+  const liqSeat = await E(zoe).offer(addLiquidityInvite, proposal, payments);
+  await E(liqSeat).getOfferResult();
+
+  const swapInvitation = await E(publicAPI).makeSwapInvitation();
+
+  const rawId = '1593482020370';
+  const id = `unknown#${rawId}`;
+
+  const offer = {
+    id: rawId,
+    invitation: swapInvitation,
+    proposalTemplate: {
+      give: {
+        In: {
+          pursePetname: 'Fun budget',
+          value: 30,
+        },
+      },
+      want: {
+        Out: {
+          pursePetname: 'Nest egg',
+          value: 1,
+        },
+      },
+      exit: {
+        onDemand: null,
+      },
+    },
+  };
+
+  await wallet.addOffer(offer);
+
+  const accepted = await wallet.acceptOffer(id);
+  assert(accepted);
+  const { depositedP } = accepted;
+  await t.throwsAsync(() => wallet.getUINotifier(rawId, `unknown`), {
+    message: 'offerResult must be a record to have a uiNotifier',
+  });
+
+  await depositedP;
+  const seats = wallet.getSeats(harden([id]));
+  const seat = wallet.getSeat(id);
+  t.is(seat, seats[0], `both getSeat(s) methods work`);
+  t.deepEqual(
+    await moolaPurse.getCurrentAmount(),
+    moolaBundle.amountMath.make(70),
+    `moola purse balance`,
+  );
+  t.deepEqual(
+    await simoleanPurse.getCurrentAmount(),
+    simoleanBundle.amountMath.make(516),
+    `simolean purse balance`,
+  );
+});
+
 test('addOffer makeContinuingInvitation', async t => {
   const zoe = makeZoe(fakeVatAdmin);
   const board = makeBoard();
