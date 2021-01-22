@@ -66,22 +66,45 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     });
   }
 
-  // dispatch.notifyResolve* from kernel lands here (local vat resolving some
+  // dispatch.notify from kernel lands here (local vat resolving some
   // Promise, we need to notify remote machines): translate to local, join
-  // with handleResolution
-  function resolveFromKernel(vpid, resolution, doNotSubscribeSet) {
-    insistPromiseIsUnresolved(vpid);
-    insistDeciderIsKernel(vpid);
-    changeDeciderFromKernelToComms(vpid);
-    handleResolution(
-      vpid,
-      mapResolutionFromKernel(resolution, doNotSubscribeSet),
-    );
+  // with handleResolutions
+  function resolveFromKernel(resolutions, doNotSubscribeSet) {
+    const localResolutions = [];
+    for (const resolution of resolutions) {
+      const [vpid, value] = resolution;
+
+      // I *think* we should never get here for local promises, since the
+      // controller only does sendOnly. But if we change that, we need to catch
+      // locally-generated promises and deal with them.
+      // if (promiseID in localPromises) {
+      //  resolveLocal(promiseID, { rejected: false, data });
+      // }
+
+      // todo: if we previously held resolution authority for this promise, then
+      // transferred it to some local vat, we'll have subscribed to the kernel
+      // to hear about it. If we then get the authority back again, we no longer
+      // want to hear about its resolution (since we're the ones doing the
+      // resolving), but the kernel still thinks of us as subscribing, so we'll
+      // get a bogus dispatch.notify. Currently we throw an error, which is
+      // currently ignored but might prompt a vat shutdown in the future.
+
+      insistPromiseIsUnresolved(vpid);
+      insistDeciderIsKernel(vpid);
+      changeDeciderFromKernelToComms(vpid);
+      localResolutions.push([
+        vpid,
+        mapResolutionFromKernel(value, doNotSubscribeSet),
+      ]);
+    }
+    handleResolutions(localResolutions);
+    // XXX question: do we need to call retirePromiseIDIfEasy (or some special
+    // comms vat version of it) here?
   }
 
   // dispatch.deliver with msg from vattp lands here, containing a message
   // from some remote machine. figure out whether it's a deliver or a
-  // resolve, parse, merge with handleSend/handleResolution
+  // resolve, parse, merge with handleSend/handleResolutions
   function messageFromRemote(remoteID, message) {
     const command = message.split(':', 1)[0];
     if (command === 'deliver') {
@@ -118,30 +141,37 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function resolveFromRemote(remoteID, message) {
-    const sci = message.indexOf(';');
-    assert(sci !== -1, details`missing semicolon in resolve ${message}`);
-    // message is created by resolveToRemote, taking the form:
-    // `resolve:${rejected}:${target}${rmss};${resolution.body}`
+    // message is created by resolveToRemote.  It consists of 1 or more
+    // resolutions, separated by newlines, each taking the form of either:
+    // `resolve:fulfill:${target}${rmss};${resolution.body}`
+    // or
+    // `resolve:reject:${target}${rmss};${resolution.body}`
+    const subMessages = message.split('\n');
+    const resolutions = [];
+    for (const submsg of subMessages) {
+      const sci = submsg.indexOf(';');
+      assert(sci !== -1, details`missing semicolon in resolve ${submsg}`);
 
-    const pieces = message.slice(0, sci).split(':');
-    // pieces[0] is 'resolve'
-    const rejected = pieces[1] === 'reject';
-    assert(rejected || pieces[1] === 'fulfill');
-    const remoteTarget = pieces[2];
-    const remoteSlots = pieces.slice(3); // length=1 for resolve:object
-    insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
-    const vpid = getLocalForRemote(remoteID, remoteTarget);
-    // rp+NN maps to target=p-+NN and we look at the promiseTable to make
-    // sure it's in the right state.
-    insistPromiseIsUnresolved(vpid);
-    insistDeciderIsRemote(vpid, remoteID);
+      const pieces = submsg.slice(0, sci).split(':');
+      assert(pieces[0] === 'resolve');
+      const rejected = pieces[1] === 'reject';
+      assert(rejected || pieces[1] === 'fulfill');
+      const remoteTarget = pieces[2];
+      const remoteSlots = pieces.slice(3);
+      insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
+      const vpid = getLocalForRemote(remoteID, remoteTarget);
+      // rp+NN maps to target=p-+NN and we look at the promiseTable to make
+      // sure it's in the right state.
+      insistPromiseIsUnresolved(vpid);
+      insistDeciderIsRemote(vpid, remoteID);
 
-    const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
-    const body = message.slice(sci + 1);
-    const data = harden({ body, slots });
-    changeDeciderFromRemoteToComms(vpid, remoteID);
-
-    handleResolution(vpid, harden({ rejected, data }));
+      const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
+      const body = submsg.slice(sci + 1);
+      const data = harden({ body, slots });
+      changeDeciderFromRemoteToComms(vpid, remoteID);
+      resolutions.push([vpid, { rejected, data }]);
+    }
+    handleResolutions(harden(resolutions));
   }
 
   function extractPresenceIfPresent(data) {
@@ -229,8 +259,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       if (!localDelivery.result) {
         return; // sendOnly, nowhere to send the rejection
       }
-      const resolution = harden({ rejected: true, data: where.reject });
-      handleResolution(localDelivery.result, resolution);
+      const resolutions = harden([
+        [localDelivery.result, { rejected: true, data: where.reject }],
+      ]);
+      handleResolutions(resolutions);
       return;
     }
 
@@ -275,64 +307,73 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     transmit(remoteID, msg);
   }
 
-  function handleResolution(vpid, resolution) {
-    // resolution: { rejected: boolean, data: capdata }
-    insistCapData(resolution.data);
-    insistVatType('promise', vpid);
-    insistPromiseIsUnresolved(vpid);
-    insistDeciderIsComms(vpid);
+  function handleResolutions(resolutions) {
+    const [[primaryVpid]] = resolutions;
+    const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(
+      primaryVpid,
+    );
+    for (const resolution of resolutions) {
+      const [vpid, value] = resolution;
+      // value: { rejected: boolean, data: capdata }
+      insistCapData(value.data);
+      insistVatType('promise', vpid);
+      insistPromiseIsUnresolved(vpid);
+      insistDeciderIsComms(vpid);
 
-    const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(vpid);
-
-    // mark it as resolved in the promise table, so later messages to it will
-    // be handled properly
-    markPromiseAsResolved(vpid, resolution);
+      // mark it as resolved in the promise table, so later messages to it will
+      // be handled properly
+      markPromiseAsResolved(vpid, value);
+    }
 
     // what remotes need to know?
     for (const remoteID of subscribers) {
       insistRemoteID(remoteID);
-      resolveToRemote(remoteID, vpid, resolution);
+      resolveToRemote(remoteID, resolutions);
       // TODO: what happens when we tell them about the promise again someday?
       // do we need to remember who we've notified, and never notify them
       // again?
     }
 
     if (kernelIsSubscribed) {
-      resolveToKernel(vpid, resolution);
+      resolveToKernel(resolutions);
       // the kernel now forgets this vpid: the p.resolved flag in
       // promiseTable reminds provideKernelForLocal to use a fresh VPID if we
       // ever reference it again in the future
     }
   }
 
-  function resolveToRemote(remoteID, vpid, resolution) {
-    const rpid = getRemoteForLocal(remoteID, vpid);
-    // rpid should be rp+NN
-    insistRemoteType('promise', rpid);
-    // assert(parseRemoteSlot(rpid).allocatedByRecipient, rpid); // rp+NN for them
-    function mapSlots() {
-      const { slots } = resolution.data;
-      let ss = slots.map(s => provideRemoteForLocal(remoteID, s)).join(':');
-      if (ss) {
-        ss = `:${ss}`;
+  function resolveToRemote(remoteID, resolutions) {
+    const msgs = [];
+    for (const resolution of resolutions) {
+      const [vpid, value] = resolution;
+
+      const rpid = getRemoteForLocal(remoteID, vpid);
+      // rpid should be rp+NN
+      insistRemoteType('promise', rpid);
+      // assert(parseRemoteSlot(rpid).allocatedByRecipient, rpid); // rp+NN for them
+      function mapSlots() {
+        const { slots } = value.data;
+        let ss = slots.map(s => provideRemoteForLocal(remoteID, s)).join(':');
+        if (ss) {
+          ss = `:${ss}`;
+        }
+        return ss;
       }
-      return ss;
+
+      const rejected = value.rejected ? 'reject' : 'fulfill';
+      // prettier-ignore
+      msgs.push(`resolve:${rejected}:${rpid}${mapSlots()};${value.data.body}`);
     }
-
-    const rejected = resolution.rejected ? 'reject' : 'fulfill';
-    // prettier-ignore
-    const msg =
-      `resolve:${rejected}:${rpid}${mapSlots()};${resolution.data.body}`;
-
-    transmit(remoteID, msg);
+    transmit(remoteID, msgs.join('\n'));
   }
 
-  function resolveToKernel(vpid, resolution) {
-    syscall.resolve(
-      vpid,
-      resolution.rejected,
-      mapDataToKernel(resolution.data),
-    );
+  function resolveToKernel(localResolutions) {
+    const resolutions = [];
+    for (const localResolution of localResolutions) {
+      const [vpid, value] = localResolution;
+      resolutions.push([vpid, value.rejected, mapDataToKernel(value.data)]);
+    }
+    syscall.resolve(resolutions);
   }
 
   return harden({

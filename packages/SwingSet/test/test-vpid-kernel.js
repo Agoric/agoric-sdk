@@ -108,22 +108,24 @@ const slot0arg = { '@qclass': 'slot', index: 0 };
 function doResolveSyscall(syscallA, vpid, mode, targets) {
   switch (mode) {
     case 'presence':
-      syscallA.resolve(vpid, false, capargs(slot0arg, [targets.target2]));
+      syscallA.resolve([[vpid, false, capargs(slot0arg, [targets.target2])]]);
       break;
     case 'local-object':
-      syscallA.resolve(vpid, false, capargs(slot0arg, [targets.localTarget]));
+      syscallA.resolve([
+        [vpid, false, capargs(slot0arg, [targets.localTarget])],
+      ]);
       break;
     case 'data':
-      syscallA.resolve(vpid, false, capargs(4, []));
+      syscallA.resolve([[vpid, false, capargs(4, [])]]);
       break;
     case 'promise-data':
-      syscallA.resolve(vpid, false, capargs([slot0arg], [targets.p1]));
+      syscallA.resolve([[vpid, false, capargs([slot0arg], [targets.p1])]]);
       break;
     case 'reject':
-      syscallA.resolve(vpid, true, capargs('error', []));
+      syscallA.resolve([[vpid, true, capargs('error', [])]]);
       break;
     case 'promise-reject':
-      syscallA.resolve(vpid, true, capargs([slot0arg], [targets.p1]));
+      syscallA.resolve([[vpid, true, capargs([slot0arg], [targets.p1])]]);
       break;
     default:
       throw Error(`unknown mode ${mode}`);
@@ -743,11 +745,13 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // **** begin Crank 4 (A) ****
   // usePromise(b) delivered to A
   syscallA.subscribe(importedGenResultBvatA);
-  syscallA.resolve(
-    importedGenResultAvatA,
-    false,
-    capargs([slot0arg], [importedGenResultBvatA]),
-  );
+  syscallA.resolve([
+    [
+      importedGenResultAvatA,
+      false,
+      capargs([slot0arg], [importedGenResultBvatA]),
+    ],
+  ]);
   await kernel.run();
   t.deepEqual(logX.shift(), {
     type: 'notify',
@@ -777,11 +781,13 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // **** begin Crank 5 (B) ****
   // usePromise(a) delivered to B
   syscallB.subscribe(importedGenResultAvatB);
-  syscallB.resolve(
-    importedGenResultBvatB,
-    false,
-    capargs([slot0arg], [importedGenResultAvatB]),
-  );
+  syscallB.resolve([
+    [
+      importedGenResultBvatB,
+      false,
+      capargs([slot0arg], [importedGenResultAvatB]),
+    ],
+  ]);
 
   await kernel.run();
   t.deepEqual(logB.shift(), {

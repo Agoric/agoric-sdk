@@ -28,8 +28,8 @@ function buildSyscall() {
     subscribe(target) {
       log.push({ type: 'subscribe', target });
     },
-    resolve(promiseID, rejected, data) {
-      log.push({ type: 'resolve', promiseID, rejected, data });
+    resolve(resolutions) {
+      log.push({ type: 'resolve', resolutions });
     },
   };
 
@@ -285,8 +285,7 @@ async function doOutboundPromise(t, mode) {
   let resolution;
   const resolveSyscall = {
     type: 'resolve',
-    promiseID: expectedP1,
-    rejected: false,
+    resolutions: [[expectedP1, false]],
   };
   if (mode === 'to presence') {
     // n.b.: because the `body` object gets stringified and THEN compared to the
@@ -298,14 +297,14 @@ async function doOutboundPromise(t, mode) {
       index: 0,
     };
     resolution = slot0arg;
-    resolveSyscall.data = capargs(body, [target]);
+    resolveSyscall.resolutions[0][2] = capargs(body, [target]);
   } else if (mode === 'to data') {
     resolution = 4;
-    resolveSyscall.data = capargs(4, []);
+    resolveSyscall.resolutions[0][2] = capargs(4, []);
   } else if (mode === 'reject') {
     resolution = 'reject';
-    resolveSyscall.rejected = true;
-    resolveSyscall.data = capargs('reject', []);
+    resolveSyscall.resolutions[0][1] = true;
+    resolveSyscall.resolutions[0][2] = capargs('reject', []);
   } else {
     throw Error(`unknown mode ${mode}`);
   }
@@ -341,7 +340,7 @@ async function doOutboundPromise(t, mode) {
   // and again it subscribes to the result promise
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
 
-  resolveSyscall.promiseID = expectedP2;
+  resolveSyscall.resolutions[0][0] = expectedP2;
   t.deepEqual(log.shift(), resolveSyscall);
 
   t.deepEqual(log, []);
