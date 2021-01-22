@@ -78,7 +78,7 @@ export function makeOutbound(state, stateKit) {
       // we must send the resolution *after* the message which introduces it
       const { remoteID } = remote;
       Promise.resolve().then(() =>
-        resolveToRemote(remoteID, vpid, p.resolution),
+        resolveToRemote(remoteID, [[vpid, p.resolution]]),
       );
     } else {
       // or arrange to send it later, once it resolves

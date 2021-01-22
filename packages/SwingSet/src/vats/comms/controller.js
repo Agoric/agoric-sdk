@@ -60,7 +60,7 @@ export function deliverToController(
     // todo: consider, this leaves one message (setReceiver) on the queue,
     // rather than giving the caller of comms!addRemote() something to
     // synchronize upon. I don't think it hurts, but might affect debugging.
-    syscall.resolve(result, false, UNDEFINED);
+    syscall.resolve([[result, false, UNDEFINED]]);
   }
 
   function doAddEgress() {
@@ -80,7 +80,7 @@ export function deliverToController(
     }
     const localRef = slots[args[2].index];
     addEgress(remoteID, remoteRefID, localRef);
-    syscall.resolve(result, false, UNDEFINED);
+    syscall.resolve([[result, false, UNDEFINED]]);
   }
 
   function doAddIngress() {
@@ -99,7 +99,7 @@ export function deliverToController(
       body: '{"@qclass":"slot","index":0}',
       slots: [localRef],
     };
-    syscall.resolve(result, false, data);
+    syscall.resolve([[result, false, data]]);
   }
 
   switch (method) {

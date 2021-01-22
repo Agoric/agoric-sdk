@@ -119,35 +119,38 @@ export function makeKernelSyscallHandler(tools) {
     return null;
   }
 
-  function resolve(vatID, kpid, rejected, data) {
+  function resolve(vatID, resolutions) {
     insistVatID(vatID);
-    insistKernelType('promise', kpid);
-    insistCapData(data);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallResolve');
-    if (rejected) {
-      resolveToError(kpid, data, vatID);
-    } else {
-      const p = kernelKeeper.getResolveablePromise(kpid, vatID);
-      const { subscribers, queue } = p;
-      let idx = 0;
-      for (const dataSlot of data.slots) {
-        kernelKeeper.incrementRefCount(dataSlot, `resolve|s${idx}`);
-        idx += 1;
-      }
-      const presence = extractPresenceIfPresent(data);
-      if (presence) {
-        kernelKeeper.fulfillKernelPromiseToPresence(kpid, presence);
-      } else if (rejected) {
-        kernelKeeper.rejectKernelPromise(kpid, data);
+    for (const resolution of resolutions) {
+      const [kpid, rejected, data] = resolution;
+      insistKernelType('promise', kpid);
+      insistCapData(data);
+      if (rejected) {
+        resolveToError(kpid, data, vatID);
       } else {
-        kernelKeeper.fulfillKernelPromiseToData(kpid, data);
-      }
-      notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
-      if (p.policy === 'logAlways') {
-        console.log(
-          `${kpid}.policy logAlways: resolve ${JSON.stringify(data)}`,
-        );
+        const p = kernelKeeper.getResolveablePromise(kpid, vatID);
+        const { subscribers, queue } = p;
+        let idx = 0;
+        for (const dataSlot of data.slots) {
+          kernelKeeper.incrementRefCount(dataSlot, `resolve|s${idx}`);
+          idx += 1;
+        }
+        const presence = extractPresenceIfPresent(data);
+        if (presence) {
+          kernelKeeper.fulfillKernelPromiseToPresence(kpid, presence);
+        } else if (rejected) {
+          kernelKeeper.rejectKernelPromise(kpid, data);
+        } else {
+          kernelKeeper.fulfillKernelPromiseToData(kpid, data);
+        }
+        notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
+        if (p.policy === 'logAlways') {
+          console.log(
+            `${kpid}.policy logAlways: resolve ${JSON.stringify(data)}`,
+          );
+        }
       }
     }
     return OKNULL;

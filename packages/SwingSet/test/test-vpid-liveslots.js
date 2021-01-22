@@ -3,7 +3,6 @@
 
 import '@agoric/install-ses';
 import test from 'ava';
-import { Far } from '@agoric/marshal';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -34,8 +33,8 @@ function buildSyscall() {
     subscribe(target) {
       log.push({ type: 'subscribe', target });
     },
-    resolve(promiseID, rejected, data) {
-      log.push({ type: 'resolve', promiseID, rejected, data });
+    resolve(resolutions) {
+      log.push({ type: 'resolve', resolutions });
     },
   };
 
@@ -115,16 +114,14 @@ function resolvePR(pr, mode, targets) {
       pr.resolve(targets.target2);
       break;
     case 'local-object':
-      pr.resolve(
-        Far('vpid resolve test', {
-          two() {
-            /* console.log(`local two() called`); */
-          },
-          four() {
-            /* console.log(`local four() called`); */
-          },
-        }),
-      );
+      pr.resolve({
+        two() {
+          /* console.log(`local two() called`); */
+        },
+        four() {
+          /* console.log(`local four() called`); */
+        },
+      });
       break;
     case 'data':
       pr.resolve(4);
@@ -149,8 +146,7 @@ const slot1arg = { '@qclass': 'slot', index: 1 };
 function resolutionOf(vpid, mode, targets) {
   const resolution = {
     type: 'resolve',
-    promiseID: vpid,
-    rejected: false,
+    resolutions: [[vpid, false]],
   };
   switch (mode) {
     case 'presence': {
@@ -159,25 +155,25 @@ function resolutionOf(vpid, mode, targets) {
         iface: `Alleged: presence ${targets.target2}`,
         index: 0,
       };
-      resolution.data = capargs(presenceBody, [targets.target2]);
+      resolution.resolutions[0][2] = capargs(presenceBody, [targets.target2]);
       break;
     }
     case 'local-object':
-      resolution.data = capargs(slot0arg, [targets.localTarget]);
+      resolution.resolutions[0][2] = capargs(slot0arg, [targets.localTarget]);
       break;
     case 'data':
-      resolution.data = capargs(4, []);
+      resolution.resolutions[0][2] = capargs(4, []);
       break;
     case 'promise-data':
-      resolution.data = capargs([slot0arg], [targets.p1]);
+      resolution.resolutions[0][2] = capargs([slot0arg], [targets.p1]);
       break;
     case 'reject':
-      resolution.rejected = true;
-      resolution.data = capargs('error', []);
+      resolution.resolutions[0][1] = true;
+      resolution.resolutions[0][2] = capargs('error', []);
       break;
     case 'promise-reject':
-      resolution.rejected = true;
-      resolution.data = capargs([slot0arg], [targets.p1]);
+      resolution.resolutions[0][1] = true;
+      resolution.resolutions[0][2] = capargs([slot0arg], [targets.p1]);
       break;
     default:
       throw Error(`unknown mode ${mode}`);
@@ -589,7 +585,7 @@ async function doVatResolveCase4(t, mode) {
 
   function build(_vatPowers) {
     let p1;
-    return Far('test vpid', {
+    return harden({
       async get(p) {
         p1 = p;
         // if we don't add this, node will complain when the kernel notifies
@@ -768,9 +764,7 @@ test('inter-vat circular promise references', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    promiseID: paA,
-    rejected: false,
-    data: capargs([slot0arg], [pbA]),
+    resolutions: [[paA, false, capargs([slot0arg], [pbA])]],
   });
   t.deepEqual(log, []);
 
@@ -779,9 +773,7 @@ test('inter-vat circular promise references', async t => {
   // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
   // t.deepEqual(log.shift(), {
   //   type: 'resolve',
-  //   promiseID: pbB,
-  //   rejected: false,
-  //   data: capargs([slot0arg], [paB]),
+  //   resoutions: [[pbB, false, capargs([slot0arg], [paB])]],
   // });
   // t.deepEqual(log, []);
 });

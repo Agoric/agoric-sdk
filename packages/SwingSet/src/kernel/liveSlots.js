@@ -476,7 +476,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       harden(res);
       lsdebug(`ls.thenResolve fired`, res);
       const ser = m.serialize(res);
-      syscall.resolve(promiseID, false, ser);
+      syscall.resolve([[promiseID, false, ser]]);
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
         pRec.resolve(res);
@@ -490,7 +490,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       harden(rej);
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
-      syscall.resolve(promiseID, true, ser);
+      syscall.resolve([[promiseID, true, ser]]);
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
         pRec.reject(rej);

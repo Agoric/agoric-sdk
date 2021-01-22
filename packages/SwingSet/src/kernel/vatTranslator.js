@@ -221,26 +221,37 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return ks;
   }
 
-  function translateResolve(vpid, rejected, data) {
-    insistVatType('promise', vpid);
-    insistCapData(data);
-    const kpid = mapVatSlotToKernelSlot(vpid);
-    const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
-    const kernelData = harden({ ...data, slots: kernelSlots });
-    kdebug(
-      `syscall[${vatID}].resolve(${vpid}/${kpid}, ${rejected}) = ${
-        data.body
-      } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
-    );
-    deleteCListEntryIfEasy(
-      vatID,
-      vatKeeper,
-      kernelKeeper,
-      kpid,
-      vpid,
-      kernelData,
-    );
-    return harden(['resolve', vatID, kpid, rejected, kernelData]);
+  function translateResolve(vresolutions) {
+    const kresolutions = [];
+    let idx = 0;
+    for (const resolution of vresolutions) {
+      const [vpid, rejected, data] = resolution;
+      insistVatType('promise', vpid);
+      insistCapData(data);
+      const kpid = mapVatSlotToKernelSlot(vpid);
+      const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
+      const kernelData = harden({ ...data, slots: kernelSlots });
+      kdebug(
+        `syscall[${vatID}].resolve[${idx}](${vpid}/${kpid}, ${rejected}) = ${
+          data.body
+        } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
+      );
+      idx += 1;
+      kresolutions.push([kpid, rejected, kernelData]);
+      deleteCListEntryIfEasy(
+        vatID,
+        vatKeeper,
+        kernelKeeper,
+        kpid,
+        vpid,
+        kernelData,
+      );
+    }
+    // XXX TODO Once we get rid of the "if easy" logic, the above deletions
+    // should be collected and then processed in a batch here after all the
+    // translation is done, e.g., something like:
+    // vatKeeper.deleteCListEntriesForKernelSlots(targets);
+    return harden(['resolve', vatID, kresolutions]);
   }
 
   // vsc is [type, ...args]

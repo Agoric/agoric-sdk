@@ -774,7 +774,7 @@ test('promise resolveToData', async t => {
     },
   ]);
 
-  syscallB.resolve(pForB, false, capdata('"args"', [aliceForA]));
+  syscallB.resolve([[pForB, false, capdata('"args"', [aliceForA])]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
@@ -860,7 +860,7 @@ test('promise resolveToPresence', async t => {
     },
   ]);
 
-  syscallB.resolve(pForB, false, capargs(slot0arg, [bobForB]));
+  syscallB.resolve([[pForB, false, capargs(slot0arg, [bobForB])]]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -941,7 +941,7 @@ test('promise reject', async t => {
     },
   ]);
 
-  syscallB.resolve(pForB, true, capdata('args', [aliceForA]));
+  syscallB.resolve([[pForB, true, capdata('args', [aliceForA])]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [

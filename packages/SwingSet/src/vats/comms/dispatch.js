@@ -72,47 +72,20 @@ export function buildCommsDispatch(syscall) {
     throw Error(`unknown target ${target}`);
   }
 
-  function notify(notifications) {
+  function notify(resolutions) {
     const willBeResolved = new Set();
-    for (const notification of notifications) {
-      const [vpid] = notification;
+    for (const resolution of resolutions) {
+      const [vpid, value] = resolution;
       willBeResolved.add(vpid);
-    }
-
-    for (const notification of notifications) {
-      const [vpid, resolution] = notification;
-
-      assert(typeof resolution === 'object');
-      insistCapData(resolution.data);
-      // console.debug(`comms.notify(${promiseID}, ${resoluion})`);
+      assert(typeof value === 'object');
+      insistCapData(value.data);
+      // console.debug(`comms.notify(${vpid}, ${value})`);
       // dumpState(state);
-
-      // I *think* we should never get here for local promises, since the
-      // controller only does sendOnly. But if we change that, we need to catch
-      // locally-generated promises and deal with them.
-      // if (promiseID in localPromises) {
-      //  resolveLocal(promiseID, { rejected: false, data });
-      // }
-
-      // todo: if we previously held resolution authority for this promise, then
-      // transferred it to some local vat, we'll have subscribed to the kernel
-      // to hear about it. If we then get the authority back again, we no longer
-      // want to hear about its resolution (since we're the ones doing the
-      // resolving), but the kernel still thinks of us as subscribing, so we'll
-      // get a bogus dispatch.notify. Currently we throw an error, which is
-      // currently ignored but might prompt a vat shutdown in the future.
-
-      // TODO: The following goofiness, namely taking apart the capdata object
-      // and looking at it to see if it's a single presence reference and then
-      // treating it in a special way if it is, is a consequence of an impedance
-      // mismatch that has grown up between the comms protocol and the
-      // evolutionary path that the kernel/vat interface has taken.  In the
-      // future we should clean this up and unify presences and data in the
-      // comms protocol the way the kernel/vat interface has.
-      resolveFromKernel(vpid, resolution, willBeResolved);
-      // XXX question: do we need to call retirePromiseIDIfEasy (or some special
-      // comms vat version of it) here?
     }
+    resolveFromKernel(resolutions, willBeResolved);
+
+    // XXX question: do we need to call retirePromiseIDIfEasy (or some special
+    // comms vat version of it) here?
   }
 
   const dispatch = harden({ deliver, notify });

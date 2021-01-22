@@ -62,7 +62,7 @@ export function makeKernel(state, syscall, stateKit) {
         // console.log(`fresh: ${fresh} for ${vpid}`, p.resolution);
         // we must tell the kernel about the resolution *after* the message
         // which introduces it
-        Promise.resolve().then(() => resolveToKernel(fresh, p.resolution));
+        Promise.resolve().then(() => resolveToKernel([[fresh, p.resolution]]));
         return fresh;
       }
 

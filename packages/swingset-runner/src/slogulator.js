@@ -354,11 +354,14 @@ export function main() {
   }
 
   function doSyscallResolve(tag, entry) {
-    const target = kernelSpace ? entry[2] : entry[1];
-    const rejected = kernelSpace ? entry[3] : entry[2];
-    const rejTag = rejected ? 'reject' : 'fulfill';
-    const value = kernelSpace ? entry[4] : entry[3];
-    p(`${tag} ${rejTag}: ${pref(target)} = ${pdata(value)}`);
+    let idx = 0;
+    const resolutions = kernelSpace ? entry[2] : entry[1];
+    for (const resolution of resolutions) {
+      const [target, rejected, value] = resolution;
+      const rejTag = rejected ? 'reject' : 'fulfill';
+      p(`${tag} ${idx} ${rejTag}: ${pref(target)} = ${pdata(value)}`);
+      idx += 1;
+    }
   }
 
   function doSyscallInvoke(tag, entry) {
