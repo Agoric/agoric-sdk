@@ -14,7 +14,6 @@ const xsnapOptions = {
   os: os.type(),
   stderr: 'inherit',
   stdout: 'inherit',
-  debug: true
 };
 
 function options() {
@@ -44,6 +43,34 @@ test('evaluate until idle', async t => {
   `);
   await vat.close();
   t.deepEqual(['Hello, World!'], opts.messages);
+});
+
+test('evaluate and report', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  const result = await vat.evaluate(`(() => {
+    const report = {};
+    Promise.resolve('hi').then(v => {
+      report.result = ArrayBuffer.fromString(v);
+    });
+    return report;
+  })()`);
+  await vat.close();
+  t.deepEqual('hi', decoder.decode(result));
+});
+
+test('evaluate error', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await vat
+    .evaluate(`***`)
+    .then(_ => {
+      t.fail('should throw');
+    })
+    .catch(_ => {
+      t.pass();
+    });
+  await vat.terminate();
 });
 
 test('idle includes setImmediate too', async t => {

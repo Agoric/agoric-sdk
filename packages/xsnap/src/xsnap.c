@@ -317,52 +317,63 @@ int main(int argc, char* argv[])
 			case '?':
 			case 'e':
 				error = 0;
-				char* response = NULL;
-				size_t responseLength = 0;
+				xsSlot report;
 				xsBeginHost(machine);
 				{
-					xsVars(3);
+					xsVars(1);
 					xsTry {
 						if (command == '?') {
-							xsVar(1) = xsArrayBuffer(nsbuf + 1, nslen - 1);
-							xsVar(2) = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(1));
-							if (xsTypeOf(xsVar(2)) != xsUndefinedType) {
-								responseLength = fxGetArrayBufferLength(machine, &xsVar(2));
-								response = malloc(responseLength);
-								fxGetArrayBufferData(machine, &xsVar(2), 0, response, responseLength);
-							}
+							xsVar(0) = xsArrayBuffer(nsbuf + 1, nslen - 1);
+							report = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(0));
 						} else {
-							xsVar(1) = xsStringBuffer(nsbuf + 1, nslen - 1);
-							xsCall1_noResult(xsGlobal, xsID("eval"), xsVar(1));
+							xsVar(0) = xsStringBuffer(nsbuf + 1, nslen - 1);
+							report = xsCall1(xsGlobal, xsID("eval"), xsVar(0));
 						}
+						xsRemember(report);
 					}
 					xsCatch {
 						if (xsTypeOf(xsException) != xsUndefinedType) {
-							fprintf(stderr, "%s\n", xsToString(xsException));
+							// fprintf(stderr, "%c: %s\n", command, xsToString(xsException));
 							error = 1;
+							report = xsException;
+							xsRemember(report);
 							xsException = xsUndefined;
 						}
 					}
 				}
 				xsEndHost(machine);
 				fxRunLoop(machine);
-				if (error == 0) {
-					int writeError = fxWriteNetString(toParent, '.', response, responseLength);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
+				int writeError;
+				xsBeginHost(machine);
+				{
+					if (error) {
+						xsStringValue message = xsToString(report);
+						writeError = fxWriteNetString(toParent, '!', message, strlen(message));
+						// fprintf(stderr, "error: %d, writeError: %d %s\n", error, writeError, message);
+					} else {
+						char* response = NULL;
+						txInteger responseLength = 0;
+						// fprintf(stderr, "report: %d %s\n", xsTypeOf(report), xsToString(report));
+						xsSlot result;
+						if (command == 'e' && xsTypeOf(report) != xsUndefinedType) {
+							result = xsGet(report, xsID("result"));
+						} else {
+							result = report;
+						}
+						// fprintf(stderr, "result: %d %s\n", xsTypeOf(result), xsToString(result));
+						if (xsTypeOf(result) != xsUndefinedType) {
+							response = xsToArrayBuffer(result);	 // TODO: catch exceptions from this?
+							responseLength = xsGetArrayBufferLength(result);
+						}
+						// fprintf(stderr, "response of %d bytes\n", responseLength);
+						writeError = fxWriteNetString(toParent, '.', response, responseLength);
 					}
-				} else {
-					// TODO: dynamically build error message including Exception message.
-					int writeError = fxWriteNetString(toParent, '!', "", 0);
-					if (writeError != 0) {
-						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
-						c_exit(1);
-					}
+					xsForget(report);
 				}
-				if (response != NULL) {
-					free(response);
-					response = NULL;
+				xsEndHost(machine);
+				if (writeError != 0) {
+					fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
+					c_exit(1);
 				}
 				break;
 			case 's':

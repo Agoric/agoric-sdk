@@ -136,14 +136,14 @@ export function xsnap(options) {
 
   /**
    * @param {string} code
-   * @returns {Promise<void>}
+   * @returns {Promise<Uint8Array | void>}
    */
   async function evaluate(code) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
-      await runToIdle();
+      return runToIdle();
     });
-    baton = result.catch(() => {});
+    baton = result.then(_ => undefined).catch(() => {});
     return Promise.race([vatCancelled, result]);
   }
 
