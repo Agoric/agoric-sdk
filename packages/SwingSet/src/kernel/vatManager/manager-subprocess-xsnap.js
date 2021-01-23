@@ -124,17 +124,8 @@ export function makeXsSubprocessFactory({
       return [tag, ...rest];
     }
 
-    let seq = 0;
-    /** @type { (item: Tagged) => Promise<Tagged> } */
-    async function commandResult(item) {
-      const [tag, ...rest] = await issueTagged(item);
-      seq += 1;
-      if (tag === 'err') return [tag, ...rest];
-      return issueTagged(['getResult', seq]);
-    }
-
     parentLog(`instructing worker to load bundle..`);
-    const bundleReply = await commandResult([
+    const bundleReply = await issueTagged([
       'setBundle',
       vatID,
       bundle,
@@ -150,7 +141,7 @@ export function makeXsSubprocessFactory({
     /** @type { (item: Tagged) => Promise<Tagged> } */
     async function deliver(delivery) {
       parentLog(`sending delivery`, delivery);
-      const result = await commandResult(['deliver', ...delivery]);
+      const result = await issueTagged(['deliver', ...delivery]);
       parentLog(`deliverDone`, result[0], result.length);
       return result;
     }

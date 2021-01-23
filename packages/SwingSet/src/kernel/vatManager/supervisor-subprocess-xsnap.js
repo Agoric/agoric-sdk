@@ -20,23 +20,45 @@ function workerLog(first, ...args) {
 workerLog(`supervisor started`);
 
 /**
+ * @param { (cmd: ArrayBuffer) => ArrayBuffer } issueCommand
  * @typedef { [unknown, ...unknown[]] } Tagged
+ * @typedef { (item: Tagged) => unknown } DataHandler
+ * @typedef { (item: Tagged) => Promise<Tagged> } AsyncHandler
  */
-const Item = {
+function ManagerPort(issueCommand) {
   /** @type { (item: Tagged) => ArrayBuffer } */
-  encode: tagged => encoder.encode(JSON.stringify(tagged)).buffer,
+  const encode = item => encoder.encode(JSON.stringify(item)).buffer;
+
+  /** @type { (msg: ArrayBuffer) => any } */
+  const decodeData = msg => JSON.parse(decoder.decode(msg));
 
   /** @type { (msg: ArrayBuffer) => Tagged } */
-  decode(msg) {
-    const txt = decoder.decode(msg);
-
+  function decode(msg) {
     /** @type { Tagged } */
-    const item = JSON.parse(txt);
+    const item = decodeData(msg);
     assert(Array.isArray(item), details`expected array`);
     assert(item.length > 0, details`empty array lacks tag`);
     return item;
-  },
-};
+  }
+
+  return harden({
+    /** @type { (item: Tagged) => void } */
+    send: item => {
+      issueCommand(encode(item));
+    },
+    /** @type { DataHandler } */
+    call: item => decodeData(issueCommand(encode(item))),
+    /** @type { (f: AsyncHandler)  => ((msg: ArrayBuffer) => { result?: ArrayBuffer })} */
+    handler: f => msg => {
+      const report = {};
+      f(decode(msg)).then(item => {
+        workerLog('result', item);
+        report.result = encode(item);
+      }); // TODO: .catch?!?!
+      return report;
+    },
+  });
+}
 
 function makeConsole(_tag) {
   const log = console; // TODO: anylogger(tag);
@@ -50,12 +72,6 @@ function makeConsole(_tag) {
   return harden(cons);
 }
 
-function testLog(...args) {
-  // @ts-ignore xsnap provides issueCommand global
-  // eslint-disable-next-line no-undef
-  issueCommand(Item.encode(['testLog', ...args]));
-}
-
 /**
  * @param { (value: void) => void } f
  * @param { string } errmsg
@@ -67,7 +83,10 @@ function runAndWait(f, errmsg) {
   return waitUntilQuiescent();
 }
 
-function makeWorker() {
+/**
+ * @param { ReturnType<ManagerPort> } port
+ */
+function makeWorker(port) {
   /** @type { Record<string, (...args: unknown[]) => void> | null } */
   let dispatch = null;
 
@@ -115,13 +134,10 @@ function makeWorker() {
   ) {
     /** @type { (item: Tagged) => unknown } */
     function doSyscall(vatSyscallObject) {
-      return JSON.parse(
-        decoder.decode(
-          // @ts-ignore
-          // eslint-disable-next-line no-undef
-          issueCommand(Item.encode(['syscall', ...vatSyscallObject])),
-        ),
-      );
+      workerLog('doSyscall', vatSyscallObject);
+      const result = port.call(['syscall', ...vatSyscallObject]);
+      workerLog(' ... syscall result:', result);
+      return result;
     }
 
     const syscall = harden({
@@ -137,7 +153,7 @@ function makeWorker() {
       Remotable,
       getInterfaceOf,
       makeMarshal,
-      testLog,
+      testLog: (...args) => port.send(['testLog', ...args]),
     };
 
     const ls = makeLiveSlots(
@@ -169,6 +185,7 @@ function makeWorker() {
 
   /** @type { (item: Tagged) => Promise<Tagged> } */
   async function handleItem([tag, ...args]) {
+    workerLog('handleItem', tag, args.length);
     switch (tag) {
       case 'setBundle':
         assert(!dispatch, 'cannot setBundle again');
@@ -191,43 +208,14 @@ function makeWorker() {
     }
   }
 
-  let seq = 0;
-  /** @type { Tagged? } */
-  let result = null;
-
-  /** @type { (item: Tagged) => Tagged } */
-  function answerItem(item) {
-    const [tag, ...args] = item;
-    workerLog('answerItem', tag, args.length);
-    if (tag === 'getResult') {
-      const [target] = args;
-      if (target !== seq) return ['err', 'seq expected', seq, 'got', target];
-      const out = result;
-      result = null;
-      if (!Array.isArray(out)) return ['no result available', result];
-      return out;
-    }
-
-    handleItem([tag, ...args]).then(out => {
-      seq += 1;
-      result = out;
-    });
-    return ['queued', seq, tag, args.length];
-  }
-
   return harden({
-    /** @type { (msg: ArrayBuffer) => ArrayBuffer } */
-    handleCommand(msg) {
-      let item;
-      const { encode } = Item;
-      try {
-        item = Item.decode(msg);
-      } catch (badItem) {
-        return encode(['bad msg', badItem.message]);
-      }
-      return Item.encode(answerItem(item));
-    },
+    /** @type { AsyncHandler } */
+    handleItem,
   });
 }
 
-globalThis.handleCommand = makeWorker().handleCommand;
+// @ts-ignore xsnap provides issueCommand global
+// eslint-disable-next-line no-undef
+const port = ManagerPort(issueCommand);
+const worker = makeWorker(port);
+globalThis.handleCommand = port.handler(worker.handleItem);
