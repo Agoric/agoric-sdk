@@ -51,25 +51,17 @@ function ManagerPort(issueCommand) {
     /** @type { (f: AsyncHandler)  => ((msg: ArrayBuffer) => { result?: ArrayBuffer })} */
     handler: f => msg => {
       const report = {};
-      f(decode(msg)).then(item => {
-        workerLog('result', item);
-        report.result = encode(item);
-      }); // TODO: .catch?!?!
+      f(decode(msg))
+        .then(item => {
+          workerLog('result', item);
+          report.result = encode(item);
+        })
+        .catch(err => {
+          report.result = encode(['err', err.message]);
+        });
       return report;
     },
   });
-}
-
-function makeConsole(_tag) {
-  const log = console; // TODO: anylogger(tag);
-  const cons = {
-    debug: log.debug,
-    log: log.log,
-    info: log.info,
-    warn: log.warn,
-    error: log.error,
-  };
-  return harden(cons);
 }
 
 /**
@@ -117,6 +109,19 @@ function makeWorker(port) {
   function doNotify(resolutions) {
     const errmsg = `vat.notify failed`;
     return doProcess(['notify', resolutions], errmsg);
+  }
+
+  function makeConsole(tag) {
+    const log = level => (...args) =>
+      port.send(['console', level, tag, ...args]);
+    const cons = {
+      debug: log('debug'),
+      log: log('log'),
+      info: log('info'),
+      warn: log('warn'),
+      error: log('error'),
+    };
+    return harden(cons);
   }
 
   /**

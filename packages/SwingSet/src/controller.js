@@ -175,7 +175,6 @@ export async function makeSwingsetController(
 
   const { xsnapBundles = await buildXsBundles() } = {}; // @@@ options?
   const startXSnap = (name, handleCommand) => {
-    console.log('starting xsnap for', name);
     const worker = xsnap({
       os: osType(),
       spawn,

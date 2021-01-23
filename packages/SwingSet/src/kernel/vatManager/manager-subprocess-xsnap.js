@@ -79,6 +79,15 @@ export function makeXsSubprocessFactory({
           const [scTag, ...vatSyscallArgs] = args;
           return handleSyscall([scTag, ...vatSyscallArgs]);
         }
+        case 'console': {
+          const [level, tag, ...rest] = args;
+          if (typeof level === 'string' && level in console) {
+            console[level](tag, ...rest);
+          } else {
+            console.error('bad console level', level);
+          }
+          return ['ok'];
+        }
         case 'testLog':
           testLog(...args);
           return ['OK'];
