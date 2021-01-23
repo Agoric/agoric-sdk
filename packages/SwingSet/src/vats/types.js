@@ -40,7 +40,7 @@
 
 /**
  * @typedef {Object} TimerRepeater
- * @property {(waker: TimerWaker) => void} schedule Returns the time scheduled for
+ * @property {(waker: TimerWaker) => Timestamp} schedule Returns the time scheduled for
  * the first call to `E(waker).wake()`.  The waker will continue to be scheduled
  * every interval until the repeater is disabled.
  * @property {() => void} disable Disable this repeater, so `schedule(w)` can't

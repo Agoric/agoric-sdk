@@ -24,7 +24,8 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         });
         const rptr = D(devices.timer).makeRepeater(argv[1], argv[2]);
-        D(devices.timer).schedule(rptr, handler);
+        const nextTime = D(devices.timer).schedule(rptr, handler);
+        log(`next scheduled time: ${nextTime}`);
       } else {
         throw new Error(`unknown argv mode '${argv[0]}'`);
       }
