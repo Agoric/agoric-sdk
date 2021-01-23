@@ -26,9 +26,9 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   dispatch.deliver(target, method="zero", result=pA, args=[callbackObj, pD, pE, adder])
   //   syscall.subscribe(pD)
   //   syscall.subscribe(pE)
+  //   syscall.callNow(adder, args=[1, 2]) -> 3
   //   syscall.send(callbackObj, method="callback", result=rp2, args=[11, 12]);
   //   syscall.subscribe(rp2)
-  //   syscall.callNow(adder, args=[1, 2]) -> 3
   //   syscall.fulfillToData(pA, [pB, pC, 3]);
   function zero(obj, pD, pE, adder) {
     callbackObj = obj;
