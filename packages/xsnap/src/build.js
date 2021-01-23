@@ -1,10 +1,11 @@
 import * as childProcess from 'child_process';
 import os from 'os';
 
-function exec(command, cwd, args=[]) {
+function exec(command, cwd, args = []) {
   const child = childProcess.spawn(command, {
     cwd,
     stdio: ['inherit', 'inherit', 'inherit'],
+    args,
   });
   return new Promise((resolve, reject) => {
     child.on('close', () => {
