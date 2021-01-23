@@ -1,1 +1,1 @@
-import '@agoric/xsnap/src/bootstrap';
+import '@agoric/xsnap/lib/bootstrap';

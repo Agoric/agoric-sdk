@@ -3,7 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 
 export default [
   {
-    input: 'src/bootstrap.js',
+    input: 'lib/bootstrap.js',
     output: {
       file: `dist/bootstrap.umd.js`,
       format: 'umd',
