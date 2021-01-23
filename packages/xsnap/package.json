@@ -13,7 +13,9 @@
   },
   "scripts": {
     "repl": "node -r esm src/xsrepl.js",
-    "build": "git submodule update --init && node -r esm src/build.js",
+    "build:bundle": "rollup --config rollup.config.js",
+    "build:bin": "git submodule update --init && node -r esm src/build.js",
+    "build": "yarn build:bin && yarn build:bundle",
     "clean": "rm -rf build",
     "lint": "yarn lint:js && yarn lint:types",
     "lint:js": "eslint 'src/**/*.js'",
@@ -24,6 +26,8 @@
     "postinstall": "yarn build"
   },
   "dependencies": {
+    "@agoric/eventual-send": "^0.13.0",
+    "ses": "^0.11.0",
     "esm": "^3.2.5"
   },
   "devDependencies": {

@@ -48,7 +48,6 @@
     "@agoric/tame-metering": "^1.3.0",
     "@agoric/transform-eventual-send": "^1.4.0",
     "@agoric/transform-metering": "^1.4.0",
-    "@agoric/xs-vat-worker": "^0.4.0",
     "@agoric/xsnap": "^0.1.0",
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",

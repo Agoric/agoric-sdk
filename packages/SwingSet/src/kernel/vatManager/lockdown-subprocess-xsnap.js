@@ -1,1 +1,1 @@
-import '@agoric/xs-vat-worker/src/bootstrap';
+import '@agoric/xsnap/src/bootstrap';

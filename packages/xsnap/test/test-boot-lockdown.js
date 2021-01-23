@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
-import { xsnap } from '@agoric/xsnap';
+import { xsnap } from '../src/xsnap';
 
 const importModuleUrl = `file://${__filename}`;
 
