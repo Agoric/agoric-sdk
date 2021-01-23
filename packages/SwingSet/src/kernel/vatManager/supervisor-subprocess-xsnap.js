@@ -20,12 +20,12 @@ function workerLog(first, ...args) {
 workerLog(`supervisor started`);
 
 /**
- * @param { (cmd: ArrayBuffer) => ArrayBuffer } issueCommand
- * @typedef { [unknown, ...unknown[]] } Tagged
- * @typedef { (item: Tagged) => unknown } DataHandler
- * @typedef { (item: Tagged) => Promise<Tagged> } AsyncHandler
+ * Wrap byte-level protocols with tagged array codec.
+ *
+ * @param { (cmd: ArrayBuffer) => ArrayBuffer } issueCommand as from xsnap
+ * @typedef { [unknown, ...unknown[]] } Tagged tagged array
  */
-function ManagerPort(issueCommand) {
+function managerPort(issueCommand) {
   /** @type { (item: Tagged) => ArrayBuffer } */
   const encode = item => encoder.encode(JSON.stringify(item)).buffer;
 
@@ -46,20 +46,31 @@ function ManagerPort(issueCommand) {
     send: item => {
       issueCommand(encode(item));
     },
-    /** @type { DataHandler } */
+    /** @type { (item: Tagged) => unknown } */
     call: item => decodeData(issueCommand(encode(item))),
-    /** @type { (f: AsyncHandler)  => ((msg: ArrayBuffer) => { result?: ArrayBuffer })} */
-    handler: f => msg => {
-      const report = {};
-      f(decode(msg))
-        .then(item => {
-          workerLog('result', item);
-          report.result = encode(item);
-        })
-        .catch(err => {
-          report.result = encode(['err', err.message]);
-        });
-      return report;
+
+    /**
+     * Wrap an async Tagged handler in the xsnap async reporting idiom.
+     *
+     * @param { (item: Tagged) => Promise<Tagged> } f async Tagged handler
+     * @returns { (msg: ArrayBuffer) => Report<ArrayBuffer> } xsnap style handleCommand
+     *
+     * @typedef { { result?: T } } Report<T> report T when idle
+     * @template T
+     */
+    handlerFrom(f) {
+      return msg => {
+        const report = {};
+        f(decode(msg))
+          .then(item => {
+            workerLog('result', item);
+            report.result = encode(item);
+          })
+          .catch(err => {
+            report.result = encode(['err', err.message]);
+          });
+        return report;
+      };
     },
   });
 }
@@ -76,7 +87,7 @@ function runAndWait(f, errmsg) {
 }
 
 /**
- * @param { ReturnType<ManagerPort> } port
+ * @param { ReturnType<managerPort> } port
  */
 function makeWorker(port) {
   /** @type { Record<string, (...args: unknown[]) => void> | null } */
@@ -214,13 +225,12 @@ function makeWorker(port) {
   }
 
   return harden({
-    /** @type { AsyncHandler } */
     handleItem,
   });
 }
 
 // @ts-ignore xsnap provides issueCommand global
 // eslint-disable-next-line no-undef
-const port = ManagerPort(issueCommand);
+const port = managerPort(issueCommand);
 const worker = makeWorker(port);
-globalThis.handleCommand = port.handler(worker.handleItem);
+globalThis.handleCommand = port.handlerFrom(worker.handleItem);

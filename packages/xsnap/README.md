@@ -34,6 +34,10 @@ The parent and child communicate using "commands".
   and receive as response from the Node.js parent.
 - The XS child can implement a synchronous `handleCommand` function to respond
   to commands from the Node.js parent.
+  - The XS child `handleCommand` may be asynchronous after a fashion: it
+    may return an object and, before the promise queue becomes empty,
+    set the `result` property of this object to an `ArrayBuffer`.
+    See the **evaluate and report** test for an example.
 - The Node.js parent uses an asynchronous `issueCommand` method to send a
   request and receive a response from the XS child.
 - The Node.js parent can implement an asynchronous `handleCommand` function to
