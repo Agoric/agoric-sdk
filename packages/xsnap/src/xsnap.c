@@ -346,6 +346,7 @@ int main(int argc, char* argv[])
 				int writeError;
 				xsBeginHost(machine);
 				{
+					xsSlot result = xsUndefined;
 					if (error) {
 						xsStringValue message = xsToString(report);
 						writeError = fxWriteNetString(toParent, '!', message, strlen(message));
@@ -354,16 +355,26 @@ int main(int argc, char* argv[])
 						char* response = NULL;
 						txInteger responseLength = 0;
 						// fprintf(stderr, "report: %d %s\n", xsTypeOf(report), xsToString(report));
-						xsSlot result;
-						if (command == 'e' && xsTypeOf(report) != xsUndefinedType) {
-							result = xsGet(report, xsID("result"));
-						} else {
-							result = report;
+						xsTry {
+							if (xsTypeOf(report) == xsReferenceType && xsHas(report, xsID("result"))) {
+								result = xsGet(report, xsID("result"));
+							} else {
+								result = report;
+							}
+							// fprintf(stderr, "result: %d %s\n", xsTypeOf(result), xsToString(result));
+							if (xsIsInstanceOf(result, xsArrayBufferPrototype)) {
+								response = xsToArrayBuffer(result);
+								responseLength = xsGetArrayBufferLength(result);
+							}
 						}
-						// fprintf(stderr, "result: %d %s\n", xsTypeOf(result), xsToString(result));
-						if (xsTypeOf(result) != xsUndefinedType) {
-							response = xsToArrayBuffer(result);	 // TODO: catch exceptions from this?
-							responseLength = xsGetArrayBufferLength(result);
+						xsCatch {
+							if (xsTypeOf(xsException) != xsUndefinedType) {
+								fprintf(stderr, "%c computing response %d %d: %s: %s\n", command,
+												xsTypeOf(report), xsTypeOf(result),
+												xsToString(result),
+												xsToString(xsException));
+								xsException = xsUndefined;
+							}
 						}
 						// fprintf(stderr, "response of %d bytes\n", responseLength);
 						writeError = fxWriteNetString(toParent, '.', response, responseLength);
