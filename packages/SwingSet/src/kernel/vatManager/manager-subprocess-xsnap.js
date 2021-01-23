@@ -117,10 +117,7 @@ export function makeXsSubprocessFactory({
         superCode.moduleFormat === 'getExport',
         details`${it} unexpected: ${superCode.moduleFormat}`,
       );
-      await worker.evaluate(
-        `(${superCode.source}
-            )()`.trim(),
-      );
+      await worker.evaluate(`(${superCode.source}\n)()`.trim());
     }
 
     /** @type { (item: Tagged) => Promise<Tagged> } */

@@ -12,7 +12,6 @@ import anylogger from 'anylogger';
 import { assert } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
-import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
@@ -36,20 +35,6 @@ function makeConsole(tag) {
     cons[level] = log[level];
   }
   return harden(cons);
-}
-
-async function buildXsBundles() {
-  const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-  const { keys, values, fromEntries } = Object;
-  const allValues = async obj =>
-    fromEntries(zip(keys(obj), await Promise.all(values(obj))));
-  const src = rel => bundleSource(require.resolve(rel), 'getExport');
-  return harden(
-    await allValues({
-      lockdown: src('./kernel/vatManager/lockdown-subprocess-xsnap.js'),
-      supervisor: src('./kernel/vatManager/supervisor-subprocess-xsnap.js'),
-    }),
-  );
 }
 
 export async function makeSwingsetController(
@@ -173,7 +158,6 @@ export async function makeSwingsetController(
     return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
   }
 
-  const { xsnapBundles = await buildXsBundles() } = {}; // @@@ options?
   const startXSnap = (name, handleCommand) => {
     const worker = xsnap({
       os: osType(),
@@ -185,7 +169,11 @@ export async function makeSwingsetController(
       // debug: true,
     });
 
-    return harden({ worker, bundles: xsnapBundles });
+    const bundles = {
+      lockdown: JSON.parse(hostStorage.get('lockdownBundle')),
+      supervisor: JSON.parse(hostStorage.get('supervisorBundle')),
+    };
+    return harden({ worker, bundles });
   };
 
   const slogF =
