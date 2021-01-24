@@ -122,6 +122,12 @@ function makeWorker(port) {
     return doProcess(['notify', resolutions], errmsg);
   }
 
+  /**
+   * TODO: consider other methods per SES VirtualConsole.
+   * See https://github.com/Agoric/agoric-sdk/issues/2146
+   *
+   * @param { string } tag
+   */
   function makeConsole(tag) {
     const log = level => (...args) =>
       port.send(['console', level, tag, ...args]);
