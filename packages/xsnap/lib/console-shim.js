@@ -16,7 +16,6 @@ const noop = _ => {};
  * Note that this runs in the start compartment,
  * before lockdown.
  *
- * TODO: consider other methods per SES VirtualConsole.
  * See https://github.com/Agoric/agoric-sdk/issues/2146
  */
 const console = {
@@ -26,9 +25,26 @@ const console = {
   warn: tryPrint,
   error: tryPrint,
 
+  trace: noop,
+  dirxml: noop,
   group: noop,
   groupCollapsed: noop,
   groupEnd: noop,
+
+  assert: noop,
+  timeLog: noop,
+
+  clear: noop,
+  count: noop,
+  countReset: noop,
+  dir: noop,
+
+  table: noop,
+  time: noop,
+  timeEnd: noop,
+  profile: noop,
+  profileEnd: noop,
+  timeStamp: noop,
 };
 
 globalThis.console = console;
