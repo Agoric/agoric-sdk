@@ -160,9 +160,7 @@ function makeWorker(port) {
       send: (...args) => doSyscall(['send', ...args]),
       callNow: (...args) => doSyscall(['callNow', ...args]),
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
-      fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
-      fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
-      reject: (...args) => doSyscall(['reject', ...args]),
+      resolve: (...args) => doSyscall(['resolve', ...args]),
     });
 
     const vatPowers = {
