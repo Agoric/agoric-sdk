@@ -98,7 +98,7 @@ export default function buildKernel(
     transformTildot,
     makeNodeWorker,
     startSubprocessWorkerNode,
-    startSubprocessWorkerXS,
+    startXSnap,
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
@@ -560,7 +560,7 @@ export default function buildKernel(
     waitUntilQuiescent,
     makeNodeWorker,
     startSubprocessWorkerNode,
-    startSubprocessWorkerXS,
+    startXSnap,
     gcTools,
   });
 
