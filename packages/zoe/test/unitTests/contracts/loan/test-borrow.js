@@ -390,11 +390,13 @@ test('aperiodic interest', async t => {
     debtNotifier,
   ).getUpdateSince(updateCount1);
   t.is(15, await E(borrowFacet).getLastCalculationTimestamp());
-  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40040));
+  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40060));
+
+  periodUpdater.updateState(20);
   const { value: debtCompounded3 } = await E(debtNotifier).getUpdateSince(
     updateCount2,
   );
-  t.deepEqual(debtCompounded3, loanKit.amountMath.make(40060));
+  t.deepEqual(debtCompounded3, loanKit.amountMath.make(40080));
 });
 
 test.todo('borrow bad proposal');
