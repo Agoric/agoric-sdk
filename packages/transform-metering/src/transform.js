@@ -18,7 +18,7 @@ export function makeMeteringTransformer(
 ) {
   const parser = overrideParser
     ? overrideParser.parse || overrideParser
-    : babelCore.parseSync;
+    : (source, opts) => babelCore.parseSync(source, { parserOpts: opts });
   const meterId = overrideMeterId;
   const replaceGlobalMeterId = overrideSetMeterId;
   const regexpIdPrefix = overrideRegExpIdPrefix;
