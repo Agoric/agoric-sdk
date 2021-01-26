@@ -126,6 +126,7 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	return (fwrite(address, size, 1, stream) == 1) ? 0 : errno;
 }
 
+#if mxMetering
 #define xsBeginMetering(_THE, _CALLBACK, _STEP) \
 	do { \
 		xsJump __HOST_JUMP__; \
@@ -158,6 +159,12 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	fxPop())
 #define xsMeterHostFunction(_COUNT) \
 	fxMeterHostFunction(the, _COUNT)
+#else
+	#define xsBeginMetering(_THE, _CALLBACK, _STEP)
+	#define xsEndMetering(_THE)
+	#define xsPatchHostFunction(_FUNCTION,_PATCH)
+	#define xsMeterHostFunction(_COUNT)
+#endif
 
 static xsUnsignedValue gxMeteringLimit = 0;
 static xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
@@ -847,8 +854,10 @@ void fxPrintUsage()
 void fx_print(xsMachine* the)
 {
 	xsIntegerValue c = xsToInteger(xsArgc), i;
+#if mxMetering
 	if (gxMeteringPrint)
 		fprintf(stdout, "[%u] ", the->meterIndex);
+#endif
 	for (i = 0; i < c; i++) {
 		if (i)
 			fprintf(stdout, " ");

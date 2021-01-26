@@ -20,7 +20,6 @@ C_OPTIONS = \
 	/D _CRT_SECURE_NO_DEPRECATE \
 	/D INCLUDE_XSPLATFORM \
 	/D XSPLATFORM=\"xsnap.h\" \
-	/D mxMetering=1 \
 	/D mxParse=1 \
 	/D mxRun=1 \
 	/D mxSloppy=1 \

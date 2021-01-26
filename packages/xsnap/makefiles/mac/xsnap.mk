@@ -28,7 +28,6 @@ C_OPTIONS = \
 	$(MACOS_VERSION_MIN) \
 	-DINCLUDE_XSPLATFORM \
 	-DXSPLATFORM=\"xsnap.h\" \
-	-DmxMetering=1 \
 	-DmxParse=1 \
 	-DmxRun=1 \
 	-DmxSloppy=1 \
