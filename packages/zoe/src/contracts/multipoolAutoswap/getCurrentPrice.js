@@ -1,9 +1,14 @@
 import '../../../exported';
 
 /**
- * Build functions to calculate prices for multipoolAutoswap. Two methods are
- * returned. In one the caller specifies the amount they will pay, and in the
- * other they specify the amount they wish to receive.
+ * Build functions to calculate prices for multipoolAutoswap. Four methods are
+ * returned, as two complementary pairs. In one pair of methods the caller
+ * specifies the amount they will pay, and in the other they specify the amount
+ * they wish to receive. The two with shorter names (getOutputForGivenInput,
+ * getInputForGivenOutput) are consistent with the uniswap interface. They each
+ * return a single amount. The other two return { amountIn, centralAmount,
+ * amountOut }, which specifies the best exchange consistent with the request.
+ * centralAmount is omitted from these methods' results in the publicFacet.
  *
  * @param {(brand: Brand) => boolean} isSecondary
  * @param {(brand: Brand) => boolean} isCentral
