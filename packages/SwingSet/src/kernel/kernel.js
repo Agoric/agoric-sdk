@@ -104,7 +104,11 @@ export default function buildKernel(
     FinalizationRegistry,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
-  const { verbose, testTrackDecref = false } = kernelOptions;
+  const {
+    verbose,
+    testTrackDecref = false,
+    defaultManagerType = 'local',
+  } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
   insistStorageAPI(hostStorage);
@@ -562,6 +566,7 @@ export default function buildKernel(
     startSubprocessWorkerNode,
     startXSnap,
     gcTools,
+    defaultManagerType,
   });
 
   function buildVatSyscallHandler(vatID, translators) {

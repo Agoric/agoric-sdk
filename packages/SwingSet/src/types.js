@@ -1,12 +1,12 @@
+// @ts-check
+
 /**
- * @typedef {Object} CapData
- * @property {string} body
- * @property {Array<string>} slots
+ * @typedef {CapData<string>} CapDataS
  */
 
 /**
  * @typedef {{
- *   bundle: Bundle,
+ *   bundle: unknown,
  *   enableSetup: false,
  * }} HasBundle
  * @typedef {{
@@ -21,7 +21,7 @@
  *   managerType: 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker',
  *   metered?: boolean,
  *   enableInternalMetering?: boolean,
- *   vatParameters: Serializable,
+ *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
@@ -44,7 +44,7 @@
  * }} MeteringVatPowers
  *
  * @typedef {{
- *   transformTildot: ReturnType<import('@agoric/transform-eventual-send').makeTransform>,
+ *   transformTildot: ReturnType<typeof import('@agoric/transform-eventual-send').makeTransform>,
  * }} EventualSyntaxVatPowers
  *
  * @typedef {{

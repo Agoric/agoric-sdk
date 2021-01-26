@@ -280,6 +280,7 @@ export async function initializeSwingset(
     creationOptions: {
       enablePipelining: true,
       enableSetup: true,
+      managerType: 'local',
     },
   };
 

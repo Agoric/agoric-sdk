@@ -41,6 +41,7 @@ test('bridge device', async t => {
 
   await initializeSwingset(config, argv, storage.storage);
   const c = await makeSwingsetController(storage.storage, deviceEndowments);
+  t.teardown(c.shutdown);
   await c.run();
 
   t.deepEqual(outboundLog, argv);
@@ -141,7 +142,10 @@ test('bridge device can return undefined', async t => {
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
   await initializeSwingset(config, argv, storage.storage);
-  const c = await makeSwingsetController(storage.storage, deviceEndowments);
+  const c = await makeSwingsetController(storage.storage, deviceEndowments, {
+    defaultManagerType: 'local',
+  });
+  t.teardown(c.shutdown);
   await c.run();
 
   t.deepEqual(outboundLog, argv);

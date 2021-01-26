@@ -41,10 +41,13 @@ export function makeXsSubprocessFactory({
    * @param { ManagerOptions } managerOptions
    */
   async function createFromBundle(vatID, bundle, managerOptions) {
-    parentLog('createFromBundle', { vatID });
+    parentLog(vatID, 'createFromBundle', { vatID });
     const { vatParameters, virtualObjectCacheSize } = managerOptions;
-    assert(!managerOptions.metered, 'not supported yet');
-    assert(!managerOptions.enableSetup, 'not supported at all');
+    assert(!managerOptions.metered, 'xs-worker: metered not supported yet');
+    assert(
+      !managerOptions.enableSetup,
+      'xs-worker: enableSetup not supported at all',
+    );
     if (managerOptions.enableInternalMetering) {
       // TODO: warn+ignore, rather than throw, because the kernel enables it
       // for all vats, because the Spawner still needs it. When the kernel
@@ -74,10 +77,10 @@ export function makeXsSubprocessFactory({
 
     /** @type { (item: Tagged) => unknown } */
     function handleUpstream([type, ...args]) {
-      parentLog(`handleUpstream`, type, args.length);
+      parentLog(vatID, `handleUpstream`, type, args.length);
       switch (type) {
         case 'syscall': {
-          parentLog(`syscall`, args);
+          parentLog(vatID, `syscall`, args[0], args.length);
           const [scTag, ...vatSyscallArgs] = args;
           return handleSyscall([scTag, ...vatSyscallArgs]);
         }
@@ -116,7 +119,7 @@ export function makeXsSubprocessFactory({
 
     /** @type { (msg: Uint8Array) => Uint8Array } */
     function handleCommand(msg) {
-      parentLog('handleCommand', { length: msg.byteLength });
+      // parentLog('handleCommand', { length: msg.byteLength });
       const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
       return encoder.encode(JSON.stringify(tagged));
     }
@@ -124,7 +127,7 @@ export function makeXsSubprocessFactory({
     // start the worker and establish a connection
     const { worker, bundles } = startXSnap(`${vatID}`, handleCommand);
     for await (const [it, superCode] of Object.entries(bundles)) {
-      parentLog('bundle', it);
+      parentLog(vatID, 'eval bundle', it);
       assert(
         superCode.moduleFormat === 'getExport',
         details`${it} unexpected: ${superCode.moduleFormat}`,
@@ -134,7 +137,7 @@ export function makeXsSubprocessFactory({
 
     /** @type { (item: Tagged) => Promise<Tagged> } */
     async function issueTagged(item) {
-      parentLog('issueTagged', item[0]);
+      parentLog(item[0], '...', item.length - 1);
       const txt = await worker.issueStringCommand(JSON.stringify(item));
       const reply = JSON.parse(txt);
       assert(Array.isArray(reply));
@@ -142,7 +145,7 @@ export function makeXsSubprocessFactory({
       return [tag, ...rest];
     }
 
-    parentLog(`instructing worker to load bundle..`);
+    parentLog(vatID, `instructing worker to load bundle..`);
     const bundleReply = await issueTagged([
       'setBundle',
       vatID,
@@ -151,7 +154,7 @@ export function makeXsSubprocessFactory({
       virtualObjectCacheSize,
     ]);
     if (bundleReply[0] === 'dispatchReady') {
-      parentLog(`bundle loaded. dispatch ready.`);
+      parentLog(vatID, `bundle loaded. dispatch ready.`);
     } else {
       throw new Error(`failed to setBundle: ${bundleReply}`);
     }
@@ -189,7 +192,7 @@ export function makeXsSubprocessFactory({
       shutdown,
     });
 
-    parentLog('manager', Object.keys(manager));
+    parentLog(vatID, 'manager', Object.keys(manager));
     return manager;
   }
 

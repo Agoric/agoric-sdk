@@ -12,6 +12,8 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+const localOnlyForNow = { defaultManagerType: 'local' };
+
 // Dynamic vats can be created without metering
 
 test('unmetered dynamic vat', async t => {
@@ -23,7 +25,7 @@ test('unmetered dynamic vat', async t => {
       },
     },
   };
-  const c = await buildVatController(config, []);
+  const c = await buildVatController(config, [], localOnlyForNow);
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
