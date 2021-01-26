@@ -39,6 +39,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   } = debtCalculatorConfig;
   let debt = originalDebt;
 
+  // the last period-end for which interest has been added
   let lastCalculationTimestamp;
 
   const {
@@ -51,17 +52,19 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   const config = { ...configMinusGetDebt, getDebt };
 
   const updateDebt = timestamp => {
-    let prevUpdateTimestamp = lastCalculationTimestamp;
+    let updatedLoan = false;
     // we could calculate the number of required updates and multiply by a power
     // of the interest rate, but this seems easier to read.
-    while (prevUpdateTimestamp + interestPeriod <= timestamp) {
-      prevUpdateTimestamp += interestPeriod;
+    while (lastCalculationTimestamp + interestPeriod <= timestamp) {
+      lastCalculationTimestamp += interestPeriod;
       const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
       debt = loanMath.add(debt, interest);
-      lastCalculationTimestamp = prevUpdateTimestamp;
+      updatedLoan = true;
     }
-    debtNotifierUpdater.updateState(debt);
-    scheduleLiquidation(zcf, config);
+    if (updatedLoan) {
+      debtNotifierUpdater.updateState(debt);
+      scheduleLiquidation(zcf, config);
+    }
   };
 
   const addToDebtWhenNotified = lastCount => {
