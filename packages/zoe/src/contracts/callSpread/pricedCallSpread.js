@@ -50,7 +50,6 @@ import { makePercent } from '../../contractSupport/percentMath';
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
- * + increase the precision of the calculations. (use Percents with base=10000)
  */
 
 /** @type {ContractStartFn} */
@@ -98,7 +97,7 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
-    const required = share.scale(collateralMath, terms.settlementAmount);
+    const required = share.scale(terms.settlementAmount);
 
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
@@ -146,7 +145,11 @@ const start = zcf => {
   }
 
   function makeInvitationPair(longCollateralShare) {
-    const longPercent = makePercent(longCollateralShare);
+    const longPercent = makePercent(
+      longCollateralShare * 100,
+      collateralMath,
+      10000,
+    );
 
     const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
     const shortInvitation = makeOptionInvitation(

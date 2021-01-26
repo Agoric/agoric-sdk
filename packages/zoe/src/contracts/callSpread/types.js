@@ -24,7 +24,6 @@
 
 /**
  * @callback Scale
- * @param {AmountMath} amountMath
  * @param {Amount} amount
  * @returns {Amount}
  */
@@ -32,7 +31,14 @@
 /**
  * @callback MakePercent
  * @param {number} value
- * @param {number} base
+ * @param {AmountMath} amountMath
+ * @param {number=} base
+ * @returns {Percent}
+ */
+
+/**
+ * @callback MakeCanonicalPercent
+ * @param {AmountMath} amountMath
  * @returns {Percent}
  */
 
@@ -40,6 +46,7 @@
  * @callback CalculatePercent
  * @param {Amount} numerator
  * @param {Amount} denominator
+ * @param {AmountMath} amountMath
  * @param {number=} base
  * @returns {Percent}
  */
@@ -70,6 +77,7 @@
  * Otherwise return a number between 1 and 99 reflecting the position of price
  * in the range from strikePrice1 to strikePrice2.
  * @param {AmountMath} strikeMath
+ * @param {AmountMath} collateralMath
  * @param {Amount} price
  * @param {Amount} strikePrice1
  * @param {Amount} strikePrice2

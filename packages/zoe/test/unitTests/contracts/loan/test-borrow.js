@@ -28,6 +28,7 @@ import buildManualTimer from '../../../../tools/manualTimer';
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
+import { makePercent } from '../../../../src/contractSupport/percentMath';
 
 const setupBorrow = async (maxLoanValue = 100) => {
   const setup = await setupLoanUnitTest();
@@ -39,7 +40,7 @@ const setupBorrow = async (maxLoanValue = 100) => {
     { give: { Loan: maxLoan } },
     { Loan: loanKit.mint.mintPayment(maxLoan) },
   );
-  const mmr = 150;
+  const mmr = makePercent(150, loanKit.amountMath);
 
   const priceList = [2, 1, 1, 1];
   const timer = buildManualTimer(console.log);

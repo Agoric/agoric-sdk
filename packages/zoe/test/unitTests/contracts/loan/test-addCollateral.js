@@ -16,6 +16,7 @@ import {
   makeSeatKit,
   performAddCollateral,
 } from './helpers';
+import { makePercent } from '../../../../src/contractSupport/percentMath';
 
 test.todo('makeAddCollateralInvitation - test bad proposal');
 
@@ -53,7 +54,7 @@ test('makeAddCollateralInvitation', async t => {
     autoswapInstance,
     priceAuthority,
     getDebt,
-    mmr: 150,
+    mmr: makePercent(150, loanKit.amountMath),
   };
   const addCollateralInvitation = makeAddCollateralInvitation(zcf, config);
 

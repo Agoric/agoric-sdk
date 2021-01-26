@@ -50,9 +50,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // formula: assert collateralValue*100 >= loanWanted*mmr
 
     // Calculate approximate value just for the error message if needed
-    const approxForMsg = loanMath.make(
-      natSafeMath.floorDivide(natSafeMath.multiply(loanWanted.value, mmr), 100),
-    );
+    const approxForMsg = mmr.scale(loanWanted);
 
     // Assert the required collateral was escrowed.
     assert(
@@ -60,7 +58,7 @@ export const makeBorrowInvitation = (zcf, config) => {
         loanMath.make(
           natSafeMath.multiply(collateralPriceInLoanBrand.value, 100),
         ),
-        loanMath.make(natSafeMath.multiply(loanWanted.value, mmr)),
+        mmr.scale(loanWanted),
       ),
       details`The required margin is approximately ${approxForMsg} but collateral only had value of ${collateralPriceInLoanBrand}`,
     );

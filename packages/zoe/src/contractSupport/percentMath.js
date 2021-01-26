@@ -1,13 +1,14 @@
 import './types';
 import { assert } from '@agoric/assert';
+import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
 
-// make a percentMath object, which represents a unitless fraction between 0
-// and 1. It can be multiplied by ERTP amounts to take a percentage.
-// complement() produces a new percent object that adds to the original to produce
-// 100%.
+// make a percentMath object, which represents a unitless fraction. It can be
+// multiplied by ERTP amounts that match amountMath to take a percentage.
+// complement() produces a new percent object that adds to the original to
+// produce 100%. complement() throws if the receiver is greater than 100%.
 //
 // The default base for the percent is 100, but higher precision can be
 // specified.
@@ -17,21 +18,22 @@ const { multiply, floorDivide } = natSafeMath;
 // with the same units. If you divide gallons by miles, the result is not a
 // percentage.
 /** @type {MakePercent} */
-function makePercent(value, base = 100) {
-  assert(
-    value >= 0 && value <= base,
-    `percentages (${value}) must be between 0 and base (${base})`,
-  );
-
+function makePercent(value, amountMath, base = 100) {
+  Nat(value);
   return harden({
-    scale: (amountMath, amount) => {
+    scale: amount => {
       assert(
         amountMath.getBrand() === amount.brand,
         `amountMath must have the same brand as amount`,
       );
       return amountMath.make(floorDivide(multiply(amount.value, value), base));
     },
-    complement: _ => makePercent(base - value, base),
+    complement: _ => {
+      if (value > base) {
+        throw Error(`cannot take complement when > 100%.`);
+      }
+      return makePercent(base - value, amountMath, base);
+    },
   });
 }
 harden(makePercent);
@@ -39,18 +41,25 @@ harden(makePercent);
 // calculatePercent is an alternative method of producing a percent object by
 // dividing two amounts of the same brand.
 /** @type {CalculatePercent} */
-function calculatePercent(numerator, denominator, base = 100) {
+function calculatePercent(numerator, denominator, amountMath, base = 100) {
   assert(
     numerator.brand === denominator.brand,
     `Dividing amounts of different brands doesn't produce a percent.`,
   );
 
   const value = floorDivide(multiply(base, numerator.value), denominator.value);
-  return makePercent(value, base);
+  return makePercent(value, amountMath, base);
 }
 harden(calculatePercent);
 
-const ALL = harden(makePercent(100));
-const NONE = harden(makePercent(0));
+/** @type {MakeCanonicalPercent} */
+function makeAll(amountMath) {
+  return makePercent(100, amountMath);
+}
 
-export { makePercent, calculatePercent, ALL, NONE };
+/** @type {MakeCanonicalPercent} */
+function makeNone(amountMath) {
+  return makePercent(0, amountMath);
+}
+
+export { makePercent, calculatePercent, makeAll, makeNone };

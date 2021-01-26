@@ -6,6 +6,7 @@ import { assert } from '@agoric/assert';
 import { makeAsyncIterableFromNotifier } from '@agoric/notifier';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeLendInvitation } from './lend';
+import { makePercent } from '../../contractSupport/percentMath';
 
 /**
  * Add collateral of a particular brand and get a loan of another
@@ -53,12 +54,13 @@ import { makeLendInvitation } from './lend';
  */
 const start = async zcf => {
   assertIssuerKeywords(zcf, harden(['Collateral', 'Loan']));
+  const loanMath = zcf.getTerms().maths.Loan;
 
   // Rather than grabbing the terms each time we use them, let's set
   // some defaults and add them to a contract-wide config.
 
   const {
-    mmr = 150, // Maintenance Margin Requirement
+    mmr = makePercent(150, loanMath), // Maintenance Margin Requirement
     autoswapInstance,
     priceAuthority,
     periodNotifier,

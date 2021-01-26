@@ -10,6 +10,7 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 import { setup } from '../../setupBasicMints';
 
 import { setupZCFTest } from '../../zcf/setupZcfTest';
+import { makePercent } from '../../../../src/contractSupport/percentMath';
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t
@@ -87,7 +88,7 @@ export const checkPayouts = async (
 
 export const setupLoanUnitTest = async (
   terms = harden({
-    mmr: 150,
+    mmr: makePercent(150),
     autoswapInstance: {},
   }),
 ) => {
