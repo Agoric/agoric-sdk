@@ -706,4 +706,3 @@ test('resolveWithPresence test nr 6', async t => {
   //
   t.is(log[6][0], 'doing stuff there');
 });
-
