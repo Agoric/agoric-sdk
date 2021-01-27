@@ -243,7 +243,10 @@ export function makeHandledPromise() {
           } = proxyOpts;
           if (revokerCallback) {
             // Create a proxy and its revoke function.
-            const { proxy, revoke } = Proxy.revocable(proxyTarget, proxyHandler);
+            const { proxy, revoke } = Proxy.revocable(
+              proxyTarget,
+              proxyHandler,
+            );
             presence = proxy;
             revokerCallback(revoke);
           } else {
