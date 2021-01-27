@@ -64,7 +64,7 @@ func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (
 // ChanOpenInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the dibc IBC handler.
 func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
-	portID, channelID, rPortID, rChannelID, version string,
+	portID, rPortID, rChannelID, version string,
 ) error {
 	capName := host.PortPath(portID)
 	portCap, ok := k.GetCapability(ctx, capName)
@@ -75,7 +75,7 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 		ChannelId: rChannelID,
 		PortId:    rPortID,
 	}
-	chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap, counterparty, version)
+	channelID, chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, portCap, counterparty, version)
 	if err != nil {
 		return err
 	}

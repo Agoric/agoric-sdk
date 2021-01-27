@@ -40,8 +40,7 @@ func GetCmdDeliver() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cctx := client.GetClientContextFromCmd(cmd)
-			cctx, err := client.ReadTxCommandFlags(cctx, cmd.Flags())
+			cctx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
@@ -87,8 +86,7 @@ func GetCmdProvisionOne() *cobra.Command {
 		Args:  cobra.RangeArgs(2, 3),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cctx := client.GetClientContextFromCmd(cmd)
-			cctx, err := client.ReadTxCommandFlags(cctx, cmd.Flags())
+			cctx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}

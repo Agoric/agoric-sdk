@@ -14,8 +14,8 @@ type ChannelKeeper interface {
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
 	SendPacket(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
 	WriteAcknowledgement(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI, acknowledgement []byte) error
-	ChanOpenInit(ctx sdk.Context, order channel.Order, connectionHops []string, portID, channelID string,
-		portCap *capability.Capability, counterparty channel.Counterparty, version string) (*capability.Capability, error)
+	ChanOpenInit(ctx sdk.Context, order channel.Order, connectionHops []string, portID string,
+		portCap *capability.Capability, counterparty channel.Counterparty, version string) (string, *capability.Capability, error)
 
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capability.Capability) error
 	TimeoutExecuted(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error

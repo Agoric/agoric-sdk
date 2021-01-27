@@ -1,4 +1,4 @@
-package app
+package gaia
 
 import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"

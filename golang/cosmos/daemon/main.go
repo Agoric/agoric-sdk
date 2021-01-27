@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cosmos/cosmos-sdk/server"
+	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
 )
 
@@ -56,7 +60,12 @@ func RunWithController(sendToController cmd.Sender) {
 	config.Seal()
 
 	rootCmd, _ := cmd.NewRootCmd(sendToController)
-	if err := cmd.Execute(rootCmd); err != nil {
-		os.Exit(1)
+	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+		switch e := err.(type) {
+		case server.ErrorCode:
+			os.Exit(e.Code)
+		default:
+			os.Exit(1)
+		}
 	}
 }
