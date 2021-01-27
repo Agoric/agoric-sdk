@@ -7,7 +7,7 @@ export function makeTransform(parser, generate) {
     const parseFunc = parser.parse;
     const ast = (parseFunc || parser)(source, {
       sourceType: 'module',
-      plugins: ['eventualSend'],
+      plugins: ['eventualSend', 'bigInt'],
     });
     // Create the source from the ast.
     const output = generate(ast, { retainLines: true }, source);
