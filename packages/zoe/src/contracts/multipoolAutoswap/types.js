@@ -26,11 +26,16 @@
  */
 
 /**
+ * typedef {Object} PriceAmountPair
+ *
+ * @property {Amount} amountOut
+ * @property {Amount} amountIn
+ */
+
+/**
  * @typedef {Object} Pool
- * @property {(inputValue: Value) => Amount } getSecondaryToCentralInputPrice
- * @property {(inputValue: Value) => Amount } getCentralToSecondaryInputPrice
- * @property {(inputValue: Value) => Amount } getSecondaryToCentralOutputPrice
- * @property {(inputValue: Value) => Amount } getCentralToSecondaryOutputPrice
+ * @property {(inputAmount: Amount, outputBrand: Brand) => PriceAmountPair } getPriceGivenAvailableInput
+ * @property {(inputBrand: Brand, outputAmount: Amount) => PriceAmountPair } getPriceGivenRequiredOutput
  * @property {() => number} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
@@ -68,6 +73,14 @@
  * @property {(amountOut: Amount, brandIn: Brand) => Amount} getOutputPrice
  * calculate the amount of brandIn that is required in order to get amountOut
  * using makeSwapOutInvitation at the current price
+ * @property {(amountIn: Amount, brandOut: Brand) => PriceAmountPair} getPriceGivenAvailableInput
+ * calculate the amount of brandOut that will be returned if the amountIn is
+ * offered using makeSwapInInvitation at the current price. Include the minimum
+ * amountIn required to gain that much.
+ * @property {(amountOut: Amount, brandIn: Brand) => PriceAmountPair} getPriceGivenRequiredOutput
+ * calculate the amount of brandIn that is required in order to get amountOut
+ * using makeSwapOutInvitation at the current price. Include the maximum amount
+ * of amountOut that can be gained for that amountIn.
  * @property {(brand: Brand) => Record<string, Amount>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool for brand.
  */
