@@ -665,8 +665,6 @@ test('resolveWithPresence test nr 6', async t => {
       revokerCallback: r => { revoker = r; },
     },
   });
-  await Promise.resolve();
-  revoker();
   await pr.promise
     .then(presence => {
       l('step: .then invoked');
@@ -679,6 +677,8 @@ test('resolveWithPresence test nr 6', async t => {
     })
     .catch(problem => t.log('.then callback got problem:', problem));
   const presence = await pr.promise;
+  revoker();
+  await Promise.resolve();
   l('log: ', log);
   t.is(log[0][0], 'get');
   t.is(log[0][1], proxyTarget);
