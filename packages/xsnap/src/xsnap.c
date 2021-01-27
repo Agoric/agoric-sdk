@@ -318,10 +318,17 @@ int main(int argc, char* argv[])
 			case 'e':
 				error = 0;
 				xsSlot report;
+#ifdef mxPerfReport
+				struct timespec start, end;
+#endif
 				xsBeginHost(machine);
 				{
 					xsVars(1);
 					xsTry {
+#ifdef mxPerfReport
+						clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+						// fprintf(stderr, "start: %ld %ld\n", start.tv_sec, start.tv_nsec / 1000);
+#endif
 						if (command == '?') {
 							xsVar(0) = xsArrayBuffer(nsbuf + 1, nslen - 1);
 							report = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(0));
@@ -376,7 +383,13 @@ int main(int argc, char* argv[])
 								xsException = xsUndefined;
 							}
 						}
-						// fprintf(stderr, "response of %d bytes\n", responseLength);
+#ifdef mxPerfReport
+						clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+						// fprintf(stderr, "end: %ld %ld\n", end.tv_sec, end.tv_nsec / 1000);
+						uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+						fprintf(stderr, "{%c: \"%0.12s...\", dur_us: %ld, byteLength: %d}\n",
+								command, nsbuf + 1, delta_us, responseLength);
+#endif
 						writeError = fxWriteNetString(toParent, '.', response, responseLength);
 					}
 					xsForget(report);
