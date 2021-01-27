@@ -477,7 +477,9 @@ test('resolveWithPresence test nr 5', async t => {
     proxy: {
       handler: presenceImmediateHandler,
       target: proxyTarget,
-      revokerCallback: r => { revoker = r; },
+      revokerCallback: r => {
+        revoker = r;
+      },
     },
   });
   await pr.promise
@@ -662,7 +664,9 @@ test('resolveWithPresence test nr 6', async t => {
     proxy: {
       handler: presenceImmediateHandler,
       target: proxyTarget,
-      revokerCallback: r => { revoker = r; },
+      revokerCallback: r => {
+        revoker = r;
+      },
     },
   });
   await pr.promise
