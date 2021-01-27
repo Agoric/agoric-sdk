@@ -492,7 +492,7 @@ test('resolveWithPresence test nr 5', async t => {
     })
     .catch(problem => t.log('.then callback got problem:', problem));
   const presence = await pr.promise;
-  l('log: ', log);
+  // l('log: ', log); // smá tilraun
   t.is(log[0][0], 'get');
   t.is(log[0][1], proxyTarget);
   t.is(log[0][2], 'then');
