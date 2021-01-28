@@ -67,6 +67,43 @@ test('repl: basic eval, eventual promise resolution', async t => {
   t.deepEqual(sentMessages, []);
 });
 
+test('repl: bigInts', async t => {
+  const { doEval, sentMessages } = make();
+
+  let m = sentMessages.shift();
+  t.deepEqual(doEval(0, '3n'), {});
+  m = sentMessages.shift();
+  t.deepEqual(m.type, 'updateHistory');
+  t.is(sentMessages.length, 1);
+
+  t.is(m.histnum, 0);
+  t.is(m.display, 'working on eval(3n)');
+  m = sentMessages.shift();
+  t.is(m.type, 'updateHistory');
+  t.is(m.histnum, 0);
+  t.is(m.display, '3n');
+  t.deepEqual(sentMessages, []);
+});
+
+// TODO(2278) The bug describes failures for Symbol, undefined, NaN, infinities
+test.failing('repl: NaN', async t => {
+  const { doEval, sentMessages } = make();
+
+  let m = sentMessages.shift();
+  t.deepEqual(doEval(0, 'NaN'), {});
+  m = sentMessages.shift();
+  t.deepEqual(m.type, 'updateHistory');
+  t.is(sentMessages.length, 1);
+
+  t.is(m.histnum, 0);
+  t.is(m.display, 'working on eval(NaN)');
+  m = sentMessages.shift();
+  t.is(m.type, 'updateHistory');
+  t.is(m.histnum, 0);
+  t.is(m.display, 'NaN');
+  t.deepEqual(sentMessages, []);
+});
+
 test('repl: sloppyGlobals, home, endowments', async t => {
   const { doEval, sentMessages } = make();
 
