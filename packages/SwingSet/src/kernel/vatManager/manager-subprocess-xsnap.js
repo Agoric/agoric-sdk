@@ -146,9 +146,11 @@ export function makeXsSubprocessFactory({
 
     /** @type { (item: Tagged) => Promise<Tagged> } */
     async function deliver(delivery) {
-      parentLog(`sending delivery`, delivery);
+      parentLog(vatID, `sending delivery`, delivery);
+      transcriptManager.startDispatch(delivery);
       const result = await issueTagged(['deliver', ...delivery]);
-      parentLog(`deliverDone`, result[0], result.length);
+      parentLog(vatID, `deliverDone`, result[0], result.length);
+      transcriptManager.finishDispatch();
       return result;
     }
 
