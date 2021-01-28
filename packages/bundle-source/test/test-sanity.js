@@ -1,5 +1,3 @@
-/* global Compartment */
-
 import '@agoric/install-ses';
 import { decodeBase64 } from '@agoric/base64';
 import { parseArchive } from '@agoric/compartment-mapper';
