@@ -13,6 +13,9 @@ export function stringify(
   depth = 0,
 ) {
   if (Object(value) !== value) {
+    if (typeof value === 'bigint') {
+      return `${value}n`;
+    }
     return JSON.stringify(value, null, spaces);
   }
 
