@@ -249,7 +249,11 @@ export default async function main(progname, args, { path, env, agcc }) {
         ...fns
       } = await launchAndInitializeSwingSet();
       savedChainSends = scs;
-      blockManager = makeBlockManager({ ...fns, flushChainSends });
+      blockManager = makeBlockManager({
+        ...fns,
+        flushChainSends,
+        verboseBlocks: true,
+      });
     }
 
     if (action.type === AG_COSMOS_INIT) {

@@ -27,8 +27,16 @@ anylogger.ext = (l, o) => {
       l[level] = () => {};
     } else {
       // Enable the printing with a prefix.
-      const doLog = l[level] || (() => {});
-      l[level] = (...args) => doLog(`${prefix}:`, ...args);
+      const doLog = l[level];
+      if (doLog) {
+        l[level] = (...args) => {
+          // Add a timestamp.
+          const now = new Date().toISOString();
+          doLog(`${now} ${prefix}:`, ...args);
+        };
+      } else {
+        l[level] = () => {};
+      }
     }
   }
   return l;

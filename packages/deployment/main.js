@@ -410,7 +410,7 @@ show-config      display the client connection parameters
           'play',
           'install',
           `-eexecline=${shellEscape(
-            '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start',
+            '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start --log_level=warn',
           )}`,
         ]),
       );

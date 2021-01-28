@@ -43,7 +43,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   if (appFile) {
     log(`read ${appFile}`);
-    const appToml = await fs.readFile(configFile, 'utf-8');
+    const appToml = await fs.readFile(appFile, 'utf-8');
 
     const newAppToml = finishCosmosApp({
       appToml,

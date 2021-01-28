@@ -282,7 +282,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         `--keyring-dir=${keysHome}`,
         '--keyring-backend=test',
         `--chain-id=${CHAIN_ID}`,
-        `--amount=${DELEGATE0_COINS}`,
+        `${DELEGATE0_COINS}`,
       ]);
       if (exitStatus) {
         return exitStatus;

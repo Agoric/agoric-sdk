@@ -16,11 +16,6 @@ trap 'kill $(jobs -p) 2>/dev/null' EXIT
 BASE_PORT=8000
 NUM_SOLOS=1
 
-get_alphabetic() {
-  id="$1"
-  ida=$(echo "$1" | sed -e 's/0/zero/g; s/1/one/g; s/2/two/g; s/3/three/g; s/4/four/g; s/5/five/g; s/6/six/g; s/7/seven/g; s/8/eight/g; s/9/nine/g;')
-}
-
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" && pwd -P)
 
@@ -211,12 +206,11 @@ start-relayer)
   else
     # Create a new path.
     i=0
-    get_alphabetic $i
-    while [[ -e "nchainz/config/$ida.json" ]]; do
+    path=path-$i
+    while [[ -e "nchainz/config/$path.json" ]]; do
       i=$(( $i + 1 ))
-      get_alphabetic $i
+      path=path-$i
     done
-    path=$ida
 
     echo "Creating new path \`$path'"
     jq -s "$jqexpr"' * { "generator": "ag-nchainz" }' \
