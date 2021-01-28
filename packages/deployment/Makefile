@@ -24,15 +24,19 @@ docker-build-sdk:
 	  dirty=`git diff --quiet || echo -dirty`; \
 	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt && \
 		docker build -t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
+	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 
 docker-build-setup:
-	docker build -t $(REPOSITORY)-setup:$(TAG) .
+	docker build --build-arg=TAG=$(TAG)  -t $(REPOSITORY)-setup:$(TAG) .
+	docker tag $(REPOSITORY)-setup:$(TAG) $(REPOSITORY)-setup:latest
 
 docker-build-solo:
-	docker build -t $(REPOSITORY)-solo:$(TAG) $(SS)lib/ag-solo
+	docker build --build-arg=TAG=$(TAG) -t $(REPOSITORY)-solo:$(TAG) $(SS)lib/ag-solo
+	docker tag $(REPOSITORY)-solo:$(TAG) $(REPOSITORY)-solo:latest
 
 docker-build-deployment:
-	docker build -t agoric/deployment:$(TAG) --file=Dockerfile.deployment ./docker
+	docker build --build-arg=TAG=$(TAG)  -t agoric/deployment:$(TAG) --file=Dockerfile.deployment ./docker
+	docker tag agoric/deployment:$(TAG) agoric/deployment:latest
 
 # Just push $(TAG)
 docker-push-only:
@@ -49,21 +53,17 @@ docker-push-ibc-alpha: docker-build-ibc-alpha
 	docker push $(REPOSITORY_SDK):ibc-alpha
 
 docker-push-setup:
-	$(DONT_PUSH_LATEST) docker tag $(REPOSITORY)-setup:$(TAG) $(REPOSITORY)-setup:latest
 	$(DONT_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest
 	docker push $(REPOSITORY)-setup:$(TAG)
 
 docker-push-base:
-	$(DONT_PUSH_LATEST) docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 	$(DONT_PUSH_LATEST) docker push $(REPOSITORY_SDK):latest
 	docker push $(REPOSITORY_SDK):$(TAG)
 
 docker-push-solo:
-	$(DONT_PUSH_LATEST) docker tag $(REPOSITORY)-solo:$(TAG) $(REPOSITORY)-solo:latest
 	$(DONT_PUSH_LATEST) docker push $(REPOSITORY)-solo:latest
 	docker push $(REPOSITORY)-solo:$(TAG)
 
 docker-push-deployment:
-	$(DONT_PUSH_LATEST) docker tag agoric/deployment:$(TAG) agoric/deployment:latest
 	$(DONT_PUSH_LATEST) docker push agoric/deployment:latest
 	docker push $(REPOSITORY)-solo:$(TAG)

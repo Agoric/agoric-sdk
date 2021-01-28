@@ -31,6 +31,7 @@ RUN cd packages/cosmic-swingset && make install install-helper
 RUN yarn build
 
 # Remove dev dependencies.
+RUN rm -rf packages/xsnap/moddable
 RUN find . -name node_modules -prune -print0 | xargs -0 rm -rf
 RUN yarn install --frozen-lockfile --production
 

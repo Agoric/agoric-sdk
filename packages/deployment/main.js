@@ -614,10 +614,10 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
           ),
         buf => {
           const match = buf.match(
-            /Committed state.*module=state.*height=([1-9]\d*)/,
+            /( block-manager: block ([1-9]\d*) commit|Committed state.*module=state.*height=([1-9]\d*))/,
           );
           if (match) {
-            return match[1];
+            return match[2] || match[3];
           }
           return undefined;
         },
