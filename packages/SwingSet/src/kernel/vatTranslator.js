@@ -221,59 +221,37 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return ks;
   }
 
-  function translateFulfillToPresence(vpid, slot) {
-    insistVatType('promise', vpid);
-    const kpid = mapVatSlotToKernelSlot(vpid);
-    const targetSlot = mapVatSlotToKernelSlot(slot);
-    kdebug(
-      `syscall[${vatID}].fulfillToPresence(${vpid}/${kpid}) = ${slot}/${targetSlot}`,
-    );
-    vatKeeper.deleteCListEntry(kpid, vpid);
-    return harden(['fulfillToPresence', vatID, kpid, targetSlot]);
-  }
-
-  function translateFulfillToData(vpid, data) {
-    insistVatType('promise', vpid);
-    insistCapData(data);
-    const kpid = mapVatSlotToKernelSlot(vpid);
-    const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
-    const kernelData = harden({ ...data, slots: kernelSlots });
-    kdebug(
-      `syscall[${vatID}].fulfillToData(${vpid}/${kpid}) = ${
-        data.body
-      } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
-    );
-    deleteCListEntryIfEasy(
-      vatID,
-      vatKeeper,
-      kernelKeeper,
-      kpid,
-      vpid,
-      kernelData,
-    );
-    return harden(['fulfillToData', vatID, kpid, kernelData]);
-  }
-
-  function translateReject(vpid, data) {
-    insistVatType('promise', vpid);
-    insistCapData(data);
-    const kpid = mapVatSlotToKernelSlot(vpid);
-    const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
-    const kernelData = harden({ ...data, slots: kernelSlots });
-    kdebug(
-      `syscall[${vatID}].reject(${vpid}/${kpid}) = ${
-        data.body
-      } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
-    );
-    deleteCListEntryIfEasy(
-      vatID,
-      vatKeeper,
-      kernelKeeper,
-      kpid,
-      vpid,
-      kernelData,
-    );
-    return harden(['reject', vatID, kpid, kernelData]);
+  function translateResolve(vresolutions) {
+    const kresolutions = [];
+    let idx = 0;
+    for (const resolution of vresolutions) {
+      const [vpid, rejected, data] = resolution;
+      insistVatType('promise', vpid);
+      insistCapData(data);
+      const kpid = mapVatSlotToKernelSlot(vpid);
+      const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
+      const kernelData = harden({ ...data, slots: kernelSlots });
+      kdebug(
+        `syscall[${vatID}].resolve[${idx}](${vpid}/${kpid}, ${rejected}) = ${
+          data.body
+        } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
+      );
+      idx += 1;
+      kresolutions.push([kpid, rejected, kernelData]);
+      deleteCListEntryIfEasy(
+        vatID,
+        vatKeeper,
+        kernelKeeper,
+        kpid,
+        vpid,
+        kernelData,
+      );
+    }
+    // XXX TODO Once we get rid of the "if easy" logic, the above deletions
+    // should be collected and then processed in a batch here after all the
+    // translation is done, e.g., something like:
+    // vatKeeper.deleteCListEntriesForKernelSlots(targets);
+    return harden(['resolve', vatID, kresolutions]);
   }
 
   // vsc is [type, ...args]
@@ -288,12 +266,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateCallNow(...args); // becomes invoke()
       case 'subscribe':
         return translateSubscribe(...args);
-      case 'fulfillToPresence':
-        return translateFulfillToPresence(...args);
-      case 'fulfillToData':
-        return translateFulfillToData(...args);
-      case 'reject':
-        return translateReject(...args);
+      case 'resolve':
+        return translateResolve(...args);
       case 'exit':
         return translateExit(...args);
       case 'vatstoreGet':

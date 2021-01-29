@@ -1,7 +1,8 @@
 import fs from 'fs';
-import path from 'path';
 import process from 'process';
 import re2 from 're2';
+import { spawn } from 'child_process';
+import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import * as babelCore from '@babel/core';
 import * as babelParser from '@agoric/babel-parser';
@@ -14,7 +15,7 @@ import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
-import { locateWorkerBin } from '@agoric/xs-vat-worker';
+import { xsnap } from '@agoric/xsnap';
 
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
@@ -144,7 +145,7 @@ export async function makeSwingsetController(
     // TODO: after we move away from `-r esm` and use real ES6 modules, point
     // this at nodeWorkerSupervisor.js instead of the CJS intermediate
     const supercode = require.resolve(
-      './kernel/vatManager/nodeWorkerSupervisorCJS.js',
+      './kernel/vatManager/supervisor-nodeworker-cjs.js',
     );
     return new Worker(supercode);
   }
@@ -152,16 +153,28 @@ export async function makeSwingsetController(
   // launch a worker in a subprocess (which runs Node.js)
   function startSubprocessWorkerNode() {
     const supercode = require.resolve(
-      './kernel/vatManager/subprocessSupervisor.js',
+      './kernel/vatManager/supervisor-subprocess-node.js',
     );
     return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
   }
 
-  let startSubprocessWorkerXS;
-  const xsWorkerBin = locateWorkerBin({ resolve: path.resolve });
-  if (fs.existsSync(xsWorkerBin)) {
-    startSubprocessWorkerXS = () => startSubprocessWorker(xsWorkerBin);
-  }
+  const startXSnap = (name, handleCommand) => {
+    const worker = xsnap({
+      os: osType(),
+      spawn,
+      handleCommand,
+      name,
+      stdout: 'inherit',
+      stderr: 'inherit',
+      // debug: true,
+    });
+
+    const bundles = {
+      lockdown: JSON.parse(hostStorage.get('lockdownBundle')),
+      supervisor: JSON.parse(hostStorage.get('supervisorBundle')),
+    };
+    return harden({ worker, bundles });
+  };
 
   const slogF =
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
@@ -186,7 +199,7 @@ export async function makeSwingsetController(
     transformTildot,
     makeNodeWorker,
     startSubprocessWorkerNode,
-    startSubprocessWorkerXS,
+    startXSnap,
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,

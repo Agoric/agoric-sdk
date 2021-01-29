@@ -1,6 +1,7 @@
 import '@agoric/install-ses';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import test from 'ava';
+import path from 'path';
 import { buildLoopbox } from '../src/devices/loopbox';
 import {
   loadBasedir,
@@ -36,6 +37,9 @@ const encouragementBotGolden = [
 ];
 
 test('run encouragementBot Demo', async t => {
-  const dump = await main('demo/encouragementBot', []);
+  const dump = await main(
+    path.resolve(__dirname, '../demo/encouragementBot'),
+    [],
+  );
   t.deepEqual(dump.log, encouragementBotGolden);
 });

@@ -3,16 +3,28 @@ import { assertProposalShape, trade } from '../../contractSupport';
 import '../../../exported';
 
 /**
+ * typedef {Object} PriceAmountTriple
+ *
+ * @property {Amount} amountOut
+ * @property {Amount} amountIn
+ * @property {Amount} centralAmount
+ */
+
+/**
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => boolean} isSecondary
  * @param {(brand: Brand) => boolean} isCentral
  * @param {(brand: Brand) => Pool} getPool
+ * @param {(amountIn, brandOut) => PriceAmountTriple} getPriceGivenAvailableInput
+ * @param {(brandIn, amountOut) => PriceAmountTriple} getPriceGivenRequiredOutput
  */
 export const makeMakeSwapInvitation = (
   zcf,
   isSecondary,
   isCentral,
   getPool,
+  getPriceGivenAvailableInput,
+  getPriceGivenRequiredOutput,
 ) => {
   // trade with a stated amountIn.
   const swapIn = seat => {
@@ -22,95 +34,95 @@ export const makeMakeSwapInvitation = (
     });
     const {
       give: { In: amountIn },
-      want: { Out: wantedAmountOut },
+      want: {
+        Out: { brand: brandOut },
+      },
     } = seat.getProposal();
-    const { brand: brandIn, value: inputValue } = amountIn;
-    const brandOut = wantedAmountOut.brand;
+    const { brand: brandIn } = amountIn;
 
     // we could be swapping (1) central to secondary, (2) secondary to
     // central, or (3) secondary to secondary
 
     if (isCentral(brandIn) && isSecondary(brandOut)) {
       const pool = getPool(brandOut);
-      const amountOut = pool.getCentralToSecondaryInputPrice(inputValue);
+      const {
+        amountOut,
+        amountIn: reducedAmountIn,
+      } = pool.getPriceGivenAvailableInput(amountIn, brandOut);
       trade(
         zcf,
         {
           seat: pool.getPoolSeat(),
-          gains: { Central: amountIn },
+          gains: { Central: reducedAmountIn },
           losses: { Secondary: amountOut },
         },
         {
           seat,
           gains: { Out: amountOut },
-          losses: { In: amountIn },
+          losses: { In: reducedAmountIn },
         },
       );
       seat.exit();
       return `Swap successfully completed.`;
-    }
-
-    if (isSecondary(brandIn) && isCentral(brandOut)) {
+    } else if (isSecondary(brandIn) && isCentral(brandOut)) {
+      // this branch is very similar to the above, with only pool and the left
+      // seat's gains and losses changing. Sharing code makes it less readable.
       const pool = getPool(brandIn);
-      const amountOut = pool.getSecondaryToCentralInputPrice(inputValue);
+      const {
+        amountOut,
+        amountIn: reducedAmountIn,
+      } = pool.getPriceGivenAvailableInput(amountIn, brandOut);
       trade(
         zcf,
         {
           seat: pool.getPoolSeat(),
-          gains: { Secondary: amountIn },
+          gains: { Secondary: reducedAmountIn },
           losses: { Central: amountOut },
         },
         {
           seat,
           gains: { Out: amountOut },
-          losses: { In: amountIn },
+          losses: { In: reducedAmountIn },
         },
       );
       seat.exit();
       return `Swap successfully completed.`;
-    }
-
-    if (isSecondary(brandIn) && isSecondary(brandOut)) {
-      // We must do two consecutive `getCurrentPrice` calls: from
-      // the brandIn to the central token, then from the central
-      // token to the brandOut.
+    } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
+      const {
+        amountIn: reducedAmountIn,
+        amountOut,
+        centralAmount: reducedCentralAmount,
+      } = getPriceGivenAvailableInput(amountIn, brandOut);
 
       const brandInPool = getPool(brandIn);
       const brandOutPool = getPool(brandOut);
-
-      const centralAmount = brandInPool.getSecondaryToCentralInputPrice(
-        inputValue,
-      );
-      const amountOut = brandOutPool.getCentralToSecondaryInputPrice(
-        centralAmount.value,
-      );
+      const brandInAmountMath = brandInPool.getAmountMath();
 
       const seatStaging = seat.stage(
         harden({
-          In: brandInPool.getAmountMath().getEmpty(),
+          In: brandInAmountMath.subtract(amountIn, reducedAmountIn),
           Out: amountOut,
         }),
       );
 
       const centralTokenAmountMath = brandInPool.getCentralAmountMath();
-      const brandInAmountMath = brandInPool.getAmountMath();
       const brandOutAmountMath = brandOutPool.getAmountMath();
 
       const poolBrandInStaging = brandInPool.getPoolSeat().stage({
         Secondary: brandInAmountMath.add(
           brandInPool.getSecondaryAmount(),
-          amountIn,
+          reducedAmountIn,
         ),
         Central: centralTokenAmountMath.subtract(
           brandInPool.getCentralAmount(),
-          centralAmount,
+          reducedCentralAmount,
         ),
       });
 
       const poolBrandOutStaging = brandOutPool.getPoolSeat().stage({
         Central: centralTokenAmountMath.add(
           brandOutPool.getCentralAmount(),
-          centralAmount,
+          reducedCentralAmount,
         ),
         Secondary: brandOutAmountMath.subtract(
           brandOutPool.getSecondaryAmount(),
@@ -132,12 +144,12 @@ export const makeMakeSwapInvitation = (
       give: { In: null },
       want: { Out: null },
     });
-    // The offer's amountOut is exact; the offeredAmountIn is a max.
+    // The offer's amountOut is a minimum; the offeredAmountIn is a max.
     const {
       give: { In: offeredAmountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const { brand: brandOut, value: outputValue } = amountOut;
+    const { brand: brandOut } = amountOut;
     const brandIn = offeredAmountIn.brand;
 
     // we could be swapping (1) central to secondary, (2) secondary to
@@ -145,12 +157,15 @@ export const makeMakeSwapInvitation = (
 
     if (isCentral(brandOut) && isSecondary(brandIn)) {
       const pool = getPool(brandIn);
-      const amountIn = pool.getCentralToSecondaryOutputPrice(outputValue);
+      const {
+        amountIn,
+        amountOut: improvedAmountOut,
+      } = pool.getPriceGivenRequiredOutput(brandIn, amountOut);
 
       const brandInAmountMath = getPool(brandIn).getAmountMath();
       if (!brandInAmountMath.isGTE(offeredAmountIn, amountIn)) {
         seat.fail();
-        return `insufficient funds offered`;
+        return `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
       }
 
       trade(
@@ -158,63 +173,57 @@ export const makeMakeSwapInvitation = (
         {
           seat: pool.getPoolSeat(),
           gains: { Secondary: amountIn },
-          losses: { Central: amountOut },
+          losses: { Central: improvedAmountOut },
         },
         {
           seat,
-          gains: { Out: amountOut },
+          gains: { Out: improvedAmountOut },
           losses: { In: amountIn },
         },
       );
       seat.exit();
       return `Swap successfully completed.`;
-    }
-
-    if (isSecondary(brandOut) && isCentral(brandIn)) {
+    } else if (isSecondary(brandOut) && isCentral(brandIn)) {
       const pool = getPool(brandOut);
-      const amountIn = pool.getSecondaryToCentralOutputPrice(outputValue);
+      const {
+        amountIn,
+        amountOut: improvedAmountOut,
+      } = pool.getPriceGivenRequiredOutput(brandIn, amountOut);
+
       trade(
         zcf,
         {
           seat: pool.getPoolSeat(),
           gains: { Central: amountIn },
-          losses: { Secondary: amountOut },
+          losses: { Secondary: improvedAmountOut },
         },
         {
           seat,
-          gains: { Out: amountOut },
+          gains: { Out: improvedAmountOut },
           losses: { In: amountIn },
         },
       );
       seat.exit();
       return `Swap successfully completed.`;
-    }
-
-    if (isSecondary(brandOut) && isSecondary(brandIn)) {
-      // We must do two consecutive `getCurrentPrice` calls: from
-      // the brandOut to the central token, then from the central
-      // token to the brandIn.
-
-      const brandInPool = getPool(brandOut);
-      const brandOutPool = getPool(brandIn);
-
-      const centralAmount = brandInPool.getSecondaryToCentralOutputPrice(
-        outputValue,
-      );
-      const amountIn = brandOutPool.getCentralToSecondaryOutputPrice(
-        centralAmount.value,
-      );
+    } else if (isSecondary(brandOut) && isSecondary(brandIn)) {
+      const {
+        amountIn,
+        amountOut: improvedAmountOut,
+        centralAmount: improvedCentralAmount,
+      } = getPriceGivenRequiredOutput(brandIn, amountOut);
+      const brandInPool = getPool(brandIn);
+      const brandOutPool = getPool(brandOut);
+      const brandOutAmountMath = brandOutPool.getAmountMath();
 
       const seatStaging = seat.stage(
         harden({
-          In: brandInPool.getAmountMath().getEmpty(),
-          Out: amountOut,
+          In: amountIn,
+          Out: brandOutAmountMath().subtract(improvedAmountOut, amountOut),
         }),
       );
 
       const centralAmountMath = brandInPool.getCentralAmountMath();
       const brandInAmountMath = brandInPool.getAmountMath();
-      const brandOutAmountMath = brandOutPool.getAmountMath();
 
       const poolBrandInStaging = brandInPool.getPoolSeat().stage({
         Secondary: brandInAmountMath.add(
@@ -223,18 +232,18 @@ export const makeMakeSwapInvitation = (
         ),
         Central: centralAmountMath.subtract(
           brandInPool.getCentralAmount(),
-          centralAmount,
+          improvedCentralAmount,
         ),
       });
 
       const poolBrandOutStaging = brandOutPool.getPoolSeat().stage({
         Central: centralAmountMath.add(
           brandOutPool.getCentralAmount(),
-          centralAmount,
+          improvedCentralAmount,
         ),
         Secondary: brandOutAmountMath.subtract(
           brandOutPool.getSecondaryAmount(),
-          amountOut,
+          improvedAmountOut,
         ),
       });
 

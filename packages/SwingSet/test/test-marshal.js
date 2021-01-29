@@ -95,8 +95,8 @@ test('serialize imports', async t => {
 test('serialize promise', async t => {
   const log = [];
   const syscall = {
-    fulfillToData(result, data) {
-      log.push({ result, data });
+    resolve(resolutions) {
+      log.push(resolutions);
     },
   };
 
@@ -124,7 +124,7 @@ test('serialize promise', async t => {
   const { promise: pauseP, resolve: pauseRes } = makePromiseKit();
   setImmediate(() => pauseRes());
   await pauseP;
-  t.deepEqual(log, [{ result: 'p+5', data: { body: '5', slots: [] } }]);
+  t.deepEqual(log, [[['p+5', false, { body: '5', slots: [] }]]]);
 });
 
 test('unserialize promise', async t => {

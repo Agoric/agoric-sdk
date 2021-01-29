@@ -353,16 +353,15 @@ export function main() {
     p(`${tag}: ${pref(target)} <- ${method}(${pargs(args)}): ${pref(result)}`);
   }
 
-  function doSyscallFulfillToDataOrReject(tag, entry) {
-    const target = kernelSpace ? entry[2] : entry[1];
-    const value = kernelSpace ? entry[3] : entry[2];
-    p(`${tag}: ${pref(target)} = ${pdata(value)}`);
-  }
-
-  function doSyscallFulfillToPresence(tag, entry) {
-    const target = kernelSpace ? entry[2] : entry[1];
-    const value = kernelSpace ? entry[3] : entry[2];
-    p(`${tag}: ${pref(target)} = ${pref(value)}`);
+  function doSyscallResolve(tag, entry) {
+    let idx = 0;
+    const resolutions = kernelSpace ? entry[2] : entry[1];
+    for (const resolution of resolutions) {
+      const [target, rejected, value] = resolution;
+      const rejTag = rejected ? 'reject' : 'fulfill';
+      p(`${tag} ${idx} ${rejTag}: ${pref(target)} = ${pdata(value)}`);
+      idx += 1;
+    }
   }
 
   function doSyscallInvoke(tag, entry) {
@@ -406,12 +405,8 @@ export function main() {
       case 'exit':
         doSyscallExit(tag, syscall);
         break;
-      case 'fulfillToData':
-      case 'reject':
-        doSyscallFulfillToDataOrReject(tag, syscall);
-        break;
-      case 'fulfillToPresence':
-        doSyscallFulfillToPresence(tag, syscall);
+      case 'resolve':
+        doSyscallResolve(tag, syscall);
         break;
       case 'invoke':
         doSyscallInvoke(tag, syscall);
@@ -447,9 +442,7 @@ export function main() {
     }
     switch (currentSyscallName) {
       case 'exit':
-      case 'fulfillToData':
-      case 'fulfillToPresence':
-      case 'reject':
+      case 'resolve':
       case 'send':
       case 'subscribe':
       case 'vatstoreDelete':

@@ -8,27 +8,33 @@ import { initSwingStore } from '@agoric/swing-store-simple';
 import { insistStorageAPI } from './storageAPI';
 import { initializeKernel } from './kernel/initializeKernel';
 
+const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
+const { keys, values, fromEntries } = Object;
+const allValues = async obj =>
+  fromEntries(zip(keys(obj), await Promise.all(values(obj))));
+
 /**
- * Build the kernel source bundles.
- *
+ * Build the source bundles for the kernel and xsnap vat worker.
  */
 export async function buildKernelBundles() {
   // this takes 2.7s on my computer
-  const sources = {
-    kernel: require.resolve('./kernel/kernel.js'),
-    adminDevice: require.resolve('./kernel/vatAdmin/vatAdmin-src'),
-    adminVat: require.resolve('./kernel/vatAdmin/vatAdminWrapper'),
-    comms: require.resolve('./vats/comms'),
-    vattp: require.resolve('./vats/vat-tp'),
-    timer: require.resolve('./vats/vat-timerWrapper'),
-  };
-  const kernelBundles = {};
-  for (const name of Object.keys(sources)) {
-    // this was harder to read with Promise.all
-    // eslint-disable-next-line no-await-in-loop
-    kernelBundles[name] = await bundleSource(sources[name]);
-  }
-  return harden(kernelBundles);
+
+  const src = rel => bundleSource(require.resolve(rel));
+  const srcGE = rel => bundleSource(require.resolve(rel), 'getExport');
+
+  const bundles = await allValues({
+    kernel: src('./kernel/kernel.js'),
+    adminDevice: src('./kernel/vatAdmin/vatAdmin-src'),
+    adminVat: src('./kernel/vatAdmin/vatAdminWrapper'),
+    comms: src('./vats/comms'),
+    vattp: src('./vats/vat-tp'),
+    timer: src('./vats/vat-timerWrapper'),
+
+    lockdown: srcGE('./kernel/vatManager/lockdown-subprocess-xsnap.js'),
+    supervisor: srcGE('./kernel/vatManager/supervisor-subprocess-xsnap.js'),
+  });
+
+  return harden(bundles);
 }
 
 function byName(a, b) {
@@ -246,6 +252,8 @@ export async function initializeSwingset(
   const { kernelBundles = await buildKernelBundles() } = initializationOptions;
 
   hostStorage.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
+  hostStorage.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
+  hostStorage.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 
   if (config.bootstrap && argv) {
     if (config.vats[config.bootstrap]) {

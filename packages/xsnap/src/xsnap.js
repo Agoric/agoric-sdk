@@ -123,7 +123,11 @@ export function xsnap(options) {
       } else if (message[0] === OK) {
         return message.subarray(1);
       } else if (message[0] === ERROR) {
-        throw new Error(`Uncaught exception in ${name}`);
+        throw new Error(
+          `Uncaught exception in ${name}: ${decoder.decode(
+            message.subarray(1),
+          )}`,
+        );
       } else if (message[0] === QUERY) {
         await messagesToXsnap.next(await handleCommand(message.subarray(1)));
       }
@@ -132,14 +136,14 @@ export function xsnap(options) {
 
   /**
    * @param {string} code
-   * @returns {Promise<void>}
+   * @returns {Promise<Uint8Array>}
    */
   async function evaluate(code) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
-      await runToIdle();
+      return runToIdle();
     });
-    baton = result.catch(() => {});
+    baton = result.then(() => {}).catch(() => {});
     return Promise.race([vatCancelled, result]);
   }
 

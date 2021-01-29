@@ -1,18 +1,13 @@
-// this file is loaded at the start of a new subprocess
+// this file is loaded at the start of a new Worker, which makes it a new JS
+// environment (with it's own Realm), so we must install-ses too.
 import '@agoric/install-ses';
-
+import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
-import fs from 'fs';
 
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
-import {
-  netstringEncoderStream,
-  netstringDecoderStream,
-} from '../../netstring';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 
@@ -37,6 +32,11 @@ function runAndWait(f, errmsg) {
     .then(f)
     .then(undefined, err => workerLog(`doProcess: ${errmsg}:`, err));
   return waitUntilQuiescent();
+}
+
+function sendUplink(msg) {
+  assert(msg instanceof Array, `msg must be an Array`);
+  parentPort.postMessage(msg);
 }
 
 let dispatch;
@@ -64,27 +64,7 @@ function doNotify(resolutions) {
   return doProcess(['notify', resolutions], errmsg);
 }
 
-const toParent = arrayEncoderStream();
-toParent
-  .pipe(netstringEncoderStream())
-  .pipe(fs.createWriteStream('IGNORED', { fd: 4, encoding: 'utf-8' }));
-
-const fromParent = fs
-  .createReadStream('IGNORED', { fd: 3, encoding: 'utf-8' })
-  .pipe(netstringDecoderStream())
-  .pipe(arrayDecoderStream());
-
-function sendUplink(msg) {
-  assert(msg instanceof Array, `msg must be an Array`);
-  toParent.write(msg);
-}
-
-// fromParent.on('data', data => {
-//  workerLog('data from parent', data);
-//  toParent.write('child ack');
-// });
-
-fromParent.on('data', ([type, ...margs]) => {
+parentPort.on('message', ([type, ...margs]) => {
   workerLog(`received`, type);
   if (type === 'start') {
     // TODO: parent should send ['start', vatID]
@@ -106,9 +86,7 @@ fromParent.on('data', ([type, ...margs]) => {
         throw Error(`nodeWorker cannot syscall.callNow`);
       },
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
-      fulfillToData: (...args) => doSyscall(['fulfillToData', ...args]),
-      fulfillToPresence: (...args) => doSyscall(['fulfillToPresence', ...args]),
-      reject: (...args) => doSyscall(['reject', ...args]),
+      resolve: (...args) => doSyscall(['resolve', ...args]),
     });
 
     const vatID = 'demo-vatID';
