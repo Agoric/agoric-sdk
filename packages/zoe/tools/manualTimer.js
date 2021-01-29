@@ -23,6 +23,7 @@ export default function buildManualTimer(log, startValue = 0) {
   const makeRepeater = (delaySecs, interval, timer) => {
     /** @type {Array<TimerWaker> | null} */
     let wakers = [];
+    let nextWakeup;
 
     /** @type {TimerWaker} */
     const repeaterWaker = {
@@ -30,7 +31,8 @@ export default function buildManualTimer(log, startValue = 0) {
         if (!wakers) {
           return;
         }
-        timer.setWakeup(ticks + interval, repeaterWaker);
+        nextWakeup = ticks + interval;
+        timer.setWakeup(nextWakeup, repeaterWaker);
         await Promise.allSettled(wakers.map(waker => E(waker).wake(timestamp)));
       },
     };
@@ -42,6 +44,7 @@ export default function buildManualTimer(log, startValue = 0) {
           throw Error(`Cannot schedule on a disabled repeater`);
         }
         wakers.push(waker);
+        return nextWakeup;
       },
       disable() {
         wakers = null;
@@ -49,7 +52,8 @@ export default function buildManualTimer(log, startValue = 0) {
       },
     };
     harden(repeater);
-    timer.setWakeup(ticks + delaySecs, repeaterWaker);
+    nextWakeup = ticks + delaySecs;
+    timer.setWakeup(nextWakeup, repeaterWaker);
     return repeater;
   };
 

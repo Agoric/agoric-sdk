@@ -52,6 +52,7 @@ test('repeater', async t => {
   await c.step();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
+    'next scheduled time: 3',
     'handler.wake(3) called 1 times.',
   ]);
 });
@@ -73,6 +74,7 @@ test('repeater2', async t => {
   await c.step();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
+    'next scheduled time: 3',
     'handler.wake(3) called 1 times.',
     'handler.wake(7) called 2 times.',
   ]);
@@ -109,6 +111,7 @@ test('repeaterZero', async t => {
   await c.step();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
+    'next scheduled time: 3',
     'handler.wake(3) called 1 times.',
     'handler.wake(6) called 2 times.',
     'handler.wake(9) called 3 times.',
