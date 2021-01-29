@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
+import { Data } from '@agoric/marshal';
 import { MathKind, makeIssuerKit } from '../../src';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
@@ -18,7 +19,7 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
 });
 
 test('brand.getDisplayInfo()', t => {
-  const displayInfo = harden({ decimalPlaces: 3 });
+  const displayInfo = Data({ decimalPlaces: 3 });
   const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
   t.deepEqual(brand.getDisplayInfo(), displayInfo);
   const display = amount => {
@@ -36,7 +37,7 @@ test('brand.getDisplayInfo()', t => {
 });
 
 test('bad display info', t => {
-  const displayInfo = harden({ somethingUnexpected: 3 });
+  const displayInfo = Data({ somethingUnexpected: 3 });
   // @ts-ignore
   t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
     message:
@@ -45,7 +46,7 @@ test('bad display info', t => {
 });
 
 test('empty display info', t => {
-  const displayInfo = harden({});
+  const displayInfo = Data({});
   const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
   t.deepEqual(brand.getDisplayInfo(), displayInfo);
 });
