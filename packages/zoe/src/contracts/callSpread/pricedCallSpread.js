@@ -144,6 +144,8 @@ const start = zcf => {
     });
   }
 
+  // TODO(2282): change the API so the caller can provide share in basis points
+  //  rather than percent
   function makeInvitationPair(longCollateralShare) {
     const longPercent = makePercent(
       longCollateralShare * 100,

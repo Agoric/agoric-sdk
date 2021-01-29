@@ -60,7 +60,7 @@ export const makeBorrowInvitation = (zcf, config) => {
         ),
         mmr.scale(loanWanted),
       ),
-      details`The required margin is approximately ${approxForMsg} but collateral only had value of ${collateralPriceInLoanBrand}`,
+      details`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
 
     // Assert that the collateralGiven has not changed after the AWAIT

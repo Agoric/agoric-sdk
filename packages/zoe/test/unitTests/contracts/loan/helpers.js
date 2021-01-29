@@ -86,14 +86,15 @@ export const checkPayouts = async (
   t.truthy(seat.hasExited());
 };
 
-export const setupLoanUnitTest = async (
-  terms = harden({
-    mmr: makePercent(150),
-    autoswapInstance: {},
-  }),
-) => {
+export const setupLoanUnitTest = async terms => {
   const { moolaKit: collateralKit, simoleanKit: loanKit } = setup();
 
+  if (!terms) {
+    terms = harden({
+      mmr: makePercent(150, collateralKit.amountMath),
+      autoswapInstance: {},
+    });
+  }
   const issuerKeywordRecord = harden({
     Collateral: collateralKit.issuer,
     Loan: loanKit.issuer,

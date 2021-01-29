@@ -6,7 +6,7 @@ import { natSafeMath } from './safeMath';
 const { multiply, floorDivide } = natSafeMath;
 
 // make a percentMath object, which represents a unitless fraction. It can be
-// multiplied by ERTP amounts that match amountMath to take a percentage.
+// multiplied by ERTP amounts that have the same brand to take a percentage.
 // complement() produces a new percent object that adds to the original to
 // produce 100%. complement() throws if the receiver is greater than 100%.
 //

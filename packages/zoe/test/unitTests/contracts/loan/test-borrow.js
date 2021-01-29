@@ -145,7 +145,7 @@ test('borrow not enough collateral', async t => {
   const { borrowSeat } = await setupBorrowFacet(0);
   await t.throwsAsync(() => E(borrowSeat).getOfferResult(), {
     message:
-      'The required margin is approximately (an object) but collateral only had value of (an object)',
+      'The required margin is approximately (a number)% but collateral only had value of (a number)',
   });
 });
 
