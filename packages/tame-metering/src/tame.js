@@ -20,6 +20,15 @@ export function tameMetering() {
     return replaceGlobalMeter;
   }
 
+  // These are properties that we cannot define.
+  const DEFINE_PROPERTY_FAILURES_ALLOWLIST = [
+    '#.Function.prototype.Symbol(Symbol.hasInstance)',
+    '#.globalThis.URL.prototype.Symbol(format)',
+  ];
+
+  // These are paths that are already frozen.
+  const FROZEN_PATHS_ALLOWLIST = ['#.globalThis.console._times.__proto__'];
+
   const {
     defineProperty,
     entries,
@@ -37,8 +46,8 @@ export function tameMetering() {
   const FunctionPrototype = Function.prototype;
 
   let globalMeter = null;
-  const definePropertyFailures = new Set();
-  const frozenPaths = new Set();
+  const definePropertyFailures = new Set(DEFINE_PROPERTY_FAILURES_ALLOWLIST);
+  const frozenPaths = new Set(FROZEN_PATHS_ALLOWLIST);
   const wrapped = new WeakMap();
   const setWrapped = (...args) => apply(wmSet, wrapped, args);
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
@@ -245,6 +254,7 @@ export function tameMetering() {
       if (Object.isFrozen(wrapper)) {
         if (!frozenPaths.has(pname)) {
           frozenPaths.add(pname);
+          // This is an intentional use of console.log, not a debugging vestige.
           console.log(`Cannot meter frozen ${pname}`);
         }
         return;

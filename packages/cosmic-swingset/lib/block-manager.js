@@ -19,6 +19,7 @@ export default function makeBlockManager({
   saveOutsideState,
   savedActions,
   savedHeight,
+  verboseBlocks = false,
 }) {
   let computedHeight = savedHeight;
   let runTime = 0;
@@ -80,6 +81,7 @@ export default function makeBlockManager({
     // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
       case COMMIT_BLOCK: {
+        verboseBlocks && log.info('block', action.blockHeight, 'commit');
         if (action.blockHeight !== computedHeight) {
           throw Error(
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
@@ -90,6 +92,8 @@ export default function makeBlockManager({
       }
 
       case BEGIN_BLOCK: {
+        verboseBlocks && log.info('block', action.blockHeight, 'begin');
+
         // Start a new block, or possibly replay the prior one.
         for (const a of currentActions) {
           // FIXME: This is a problem, apparently with Cosmos SDK.

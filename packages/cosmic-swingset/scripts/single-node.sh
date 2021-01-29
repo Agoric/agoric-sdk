@@ -25,7 +25,7 @@ $DAEMON init --chain-id $CHAINID $CHAINID
 $CLI keys add validator --keyring-backend="test"
 $DAEMON add-genesis-account validator $STAKE --keyring-backend="test"
 $DAEMON add-genesis-account $GENACCT $coins --keyring-backend="test"
-$DAEMON gentx --name validator --amount=$STAKE --keyring-backend="test"
+$DAEMON gentx --name validator $STAKE --keyring-backend="test"
 $DAEMON collect-gentxs
 
 # Silly old Darwin 

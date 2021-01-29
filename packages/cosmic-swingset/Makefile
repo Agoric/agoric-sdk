@@ -46,7 +46,7 @@ AGCH = ag-cosmos-helper
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
-	mkdir t1
+	mkdir -p t1/bootstrap
 	# Init the chain node.
 	$(AGC) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
 	# Init all the ag-solos.
@@ -54,12 +54,11 @@ scenario2-setup-nobuild:
 		bin/ag-solo init t1/$$port --webport=$$port; \
 	done
 	# Create the bootstrap account.
-	mkdir t1/bootstrap
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
 	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGC) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap --amount=1000000uagstake --chain-id=$(CHAIN_ID)
+	$(AGC) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000uagstake --chain-id=$(CHAIN_ID)
 	$(AGC) --home=t1/n0 collect-gentxs
 	$(AGC) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults ag-chain-cosmos t1/n0/config
@@ -67,7 +66,7 @@ scenario2-setup-nobuild:
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
-	$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start
+	$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo

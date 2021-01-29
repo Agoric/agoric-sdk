@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 )
 
@@ -18,6 +18,6 @@ func main() {
 		panic(err)
 	}
 
-	app.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-cosmos-helper")
+	gaia.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-cosmos-helper")
 	daemon.Run()
 }

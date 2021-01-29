@@ -22,8 +22,6 @@ export function finishCosmosApp({ appToml, portNum = `${DEFAULT_RPC_PORT}` }) {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
 
-  app.proxy_app = 'kvstore';
-
   // Offset the GRPC listener from our rpc port.
   app.grpc.address = `0.0.0.0:${rpcPort +
     DEFAULT_GRPC_PORT -
@@ -47,6 +45,8 @@ export function finishCosmosConfig({
 
   // Adjust the config.toml.
   const config = TOML.parse(configToml);
+
+  config.proxy_app = 'kvstore';
 
   // Enforce our inter-block delays for this node.
   config.consensus.timeout_commit = `${BLOCK_CADENCE_S}s`;

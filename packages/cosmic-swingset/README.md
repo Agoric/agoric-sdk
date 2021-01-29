@@ -25,7 +25,7 @@ If you want to build and install from sources, you need to install
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [node.js](https://nodejs.org/en/) (you need at least version 11). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
     - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
-- [Golang](https://golang.org/doc/install) (you need at least version 1.13)
+- [Golang](https://golang.org/doc/install) (you need at least version 1.15)
     - **(optional)** If installing the GO language didn't setup a `$GOPATH` variable, you'll need to find the directory and set the variable. Typically `GOPATH="$HOME/go"`
 - (scenarios 1 and 0) [Python3](https://www.python.org/downloads/)
 - (scenarios 1 and 0) python3-venv

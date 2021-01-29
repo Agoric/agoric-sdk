@@ -88,7 +88,7 @@
   become_user: "{{ service }}"
   shell: "\
     {{ service }} gentx --keyring-dir=/home/{{ service }}/.ag-cosmos-helper \
-      --keyring-backend=test --amount={{ STAKER_AMOUNT }} \
+      --keyring-backend=test {{ STAKER_AMOUNT }} \
       {{ (website | default(None)) and '--website=' ~ website }} \
       {{ (identity | default(None)) and '--identity=' ~ identity }} \
       {{ STAKER }}-{{ STAKER_NODE }} --chain-id={{ CHAIN_NAME }} --output-document={{ json }}"
