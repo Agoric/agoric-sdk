@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit } from '../../../src';
 
 export function buildRootObject(vatPowers, vatParameters) {
@@ -27,5 +28,5 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   };
-  return harden(obj0);
+  return Far('root', obj0);
 }

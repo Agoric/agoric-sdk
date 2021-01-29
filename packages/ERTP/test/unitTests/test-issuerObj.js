@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
+import { Data } from '@agoric/marshal';
 import { MathKind, makeIssuerKit } from '../../src';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
@@ -45,7 +46,7 @@ test('bad display info', t => {
 });
 
 test('empty display info', t => {
-  const displayInfo = harden({});
+  const displayInfo = Data({});
   const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
   t.deepEqual(brand.getDisplayInfo(), displayInfo);
 });
