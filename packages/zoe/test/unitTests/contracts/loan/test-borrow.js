@@ -346,6 +346,19 @@ test('getDebtNotifier with interest', async t => {
   });
 });
 
+test('borrow collateral just too low', async t => {
+  const { borrowSeat: borrowSeatGood } = await setupBorrowFacet(75);
+  const offerResult = await E(borrowSeatGood).getOfferResult();
+  const collateralAmount = await E(offerResult).getRecentCollateralAmount();
+  t.is(collateralAmount.value, 75);
+
+  const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74);
+  await t.throwsAsync(() => E(borrowSeatBad).getOfferResult(), {
+    message:
+      'The required margin is approximately (a number)% but collateral only had value of (a number)',
+  });
+});
+
 test.todo('borrow bad proposal');
 
 test.todo('schedule a liquidation that fails, giving collateral to the lender');

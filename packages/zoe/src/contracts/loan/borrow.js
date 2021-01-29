@@ -5,7 +5,7 @@ import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { assertProposalShape, trade, natSafeMath } from '../../contractSupport';
+import { assertProposalShape, trade } from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
 import { calculateInterest, makeDebtCalculator } from './updateDebt';
@@ -55,9 +55,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // Assert the required collateral was escrowed.
     assert(
       loanMath.isGTE(
-        loanMath.make(
-          natSafeMath.multiply(collateralPriceInLoanBrand.value, 100),
-        ),
+        loanMath.make(collateralPriceInLoanBrand.value),
         mmr.scale(loanWanted),
       ),
       details`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
