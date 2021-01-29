@@ -4,6 +4,7 @@ import {
   passStyleOf,
   REMOTE_STYLE,
   getInterfaceOf,
+  Data,
 } from '@agoric/marshal';
 
 // TODO: assertSubset and assertKeysAllowed are copied from Zoe. Move
@@ -61,7 +62,7 @@ export const coerceDisplayInfo = allegedDisplayInfo => {
     assert.equal(Reflect.ownKeys(allegedDisplayInfo).length, 0);
     assert.equal(Object.getPrototypeOf(allegedDisplayInfo), Object.prototype);
     assert.equal(getInterfaceOf(allegedDisplayInfo), undefined);
-    return harden({});
+    return Data({});
   }
   allegedDisplayInfo = pureCopy(allegedDisplayInfo);
   assertDisplayInfo(allegedDisplayInfo);

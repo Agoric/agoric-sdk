@@ -1,12 +1,12 @@
 import test from 'ava';
-
+import { Far, Data } from '@agoric/marshal';
 import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
-const mockBrand = harden({
+const mockBrand = Far('brand', {
   isMyIssuer: () => false,
   getAllegedName: () => 'mock',
 });
@@ -133,7 +133,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   // isEmpty
   t.assert(isEmpty(make(harden([]))), `isEmpty([]) is true`);
   t.throws(
-    () => isEmpty(harden({ brand: mockBrand, value: {} })),
+    () => isEmpty(harden({ brand: mockBrand, value: Data({}) })),
     { message: /list must be an array/ },
     `isEmpty({}) throws`,
   );
@@ -381,9 +381,9 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 };
 
 test('setMathHelpers with handles', t => {
-  const a = harden({});
-  const b = harden({});
-  const c = harden({});
+  const a = Far('iface', {});
+  const b = Far('iface', {});
+  const c = Far('iface', {});
 
   runSetMathHelpersTests(t, harden([a, b, c]));
 });
@@ -399,9 +399,21 @@ test('setMathHelpers with basic objects', t => {
 });
 
 test('setMathHelpers with complex objects', t => {
-  const a = { handle: {}, instanceHandle: {}, name: 'a' };
-  const b = { handle: {}, instanceHandle: a.instanceHandle, name: 'b' };
-  const c = { handle: {}, instanceHandle: {}, name: 'c' };
+  const a = {
+    handle: Far('handle', {}),
+    instanceHandle: Far('ihandle', {}),
+    name: 'a',
+  };
+  const b = {
+    handle: Far('handle', {}),
+    instanceHandle: a.instanceHandle,
+    name: 'b',
+  };
+  const c = {
+    handle: Far('handle', {}),
+    instanceHandle: Far('ihandle', {}),
+    name: 'c',
+  };
 
   const a2 = harden({ ...a });
 

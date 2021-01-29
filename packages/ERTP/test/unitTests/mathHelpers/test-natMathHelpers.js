@@ -1,12 +1,12 @@
 import test from 'ava';
-
+import { Far } from '@agoric/marshal';
 import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
-const mockBrand = harden({
+const mockBrand = Far('brand', {
   isMyIssuer: () => false,
   getAllegedName: () => 'mock',
 });

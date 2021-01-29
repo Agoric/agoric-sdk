@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 function makeAliceMaker(log) {
-  return harden({
+  return Far('aliceMaker', {
     make(issuer, amountMath, oldPaymentP) {
-      const alice = harden({
+      const alice = Far('alice', {
         async testSplitPayments() {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
           const splitPayments = await E(issuer).split(
@@ -26,9 +27,9 @@ function makeAliceMaker(log) {
 }
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     makeAliceMaker(host) {
-      return harden(makeAliceMaker(vatPowers.testLog, host));
+      return makeAliceMaker(vatPowers.testLog, host);
     },
   });
 }

@@ -1,5 +1,6 @@
 import test from 'ava';
 
+import { Far } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeIssuerKit, MathKind } from '../../src';
 
@@ -38,9 +39,9 @@ test('mint.mintPayment strSet MathKind', async t => {
 
 test('mint.mintPayment set MathKind', async t => {
   const { mint, issuer, amountMath } = makeIssuerKit('items', MathKind.SET);
-  const item1handle = {};
-  const item2handle = {};
-  const item3handle = {};
+  const item1handle = Far('iface', {});
+  const item2handle = Far('iface', {});
+  const item3handle = Far('iface', {});
   const items1and2 = amountMath.make(harden([item1handle, item2handle]));
   const payment1 = mint.mintPayment(items1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -60,10 +61,19 @@ test('mint.mintPayment set MathKind', async t => {
 
 test('mint.mintPayment set MathKind with invites', async t => {
   const { mint, issuer, amountMath } = makeIssuerKit('items', MathKind.SET);
-  const instanceHandle1 = {};
-  const invite1Value = { handle: {}, instanceHandle: instanceHandle1 };
-  const invite2Value = { handle: {}, instanceHandle: instanceHandle1 };
-  const invite3Value = { handle: {}, instanceHandle: {} };
+  const instanceHandle1 = Far('iface', {});
+  const invite1Value = {
+    handle: Far('iface', {}),
+    instanceHandle: instanceHandle1,
+  };
+  const invite2Value = {
+    handle: Far('iface', {}),
+    instanceHandle: instanceHandle1,
+  };
+  const invite3Value = {
+    handle: Far('iface', {}),
+    instanceHandle: Far('iface', {}),
+  };
   const invites1and2 = amountMath.make(harden([invite1Value, invite2Value]));
   const payment1 = mint.mintPayment(invites1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
