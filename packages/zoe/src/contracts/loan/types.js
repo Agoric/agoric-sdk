@@ -31,7 +31,8 @@
 /**
  * @typedef LoanTerms
  *
- * @property {MMR} [mmr=150]
+ * @property {Percent} mmr - Maintenance Margin Requirement, a Percent object.
+ * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
  *

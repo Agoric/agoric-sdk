@@ -36,7 +36,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   function reallocateToSeat(seatPromise, sharePercent) {
     seatPromise.then(seat => {
       const totalCollateral = terms.settlementAmount;
-      const seatPortion = sharePercent.scale(collateralMath, totalCollateral);
+      const seatPortion = sharePercent.scale(totalCollateral);
       trade(
         zcf,
         { seat, gains: { Collateral: seatPortion } },
@@ -56,6 +56,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
     const strike2 = terms.strikePrice2;
     const { longShare, shortShare } = calculateShares(
       strikeMath,
+      collateralMath,
       quoteAmount,
       strike1,
       strike2,

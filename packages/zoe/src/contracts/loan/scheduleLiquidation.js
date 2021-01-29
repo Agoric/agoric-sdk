@@ -4,8 +4,6 @@ import '../../../exported';
 
 import { E } from '@agoric/eventual-send';
 
-import { natSafeMath } from '../../contractSupport';
-
 import { liquidate } from './liquidate';
 
 /** @type {ScheduleLiquidation} */
@@ -19,16 +17,12 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
     mmr,
   } = configWithBorrower;
 
-  const loanMath = zcf.getTerms().maths.Loan;
-
   const currentDebt = getDebt();
 
   // The liquidationTriggerValue is when the value of the collateral
   // equals mmr percent of the current debt
   // Formula: liquidationTriggerValue = (currentDebt * mmr) / 100
-  const liquidationTriggerValue = loanMath.make(
-    natSafeMath.floorDivide(natSafeMath.multiply(currentDebt.value, mmr), 100),
-  );
+  const liquidationTriggerValue = mmr.scale(currentDebt);
 
   const collateralMath = zcf.getTerms().maths.Collateral;
 

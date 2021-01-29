@@ -14,6 +14,7 @@ import { checkDetails, checkPayout } from './helpers';
 import { setup } from '../../setupBasicMints';
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
 import buildManualTimer from '../../../../tools/manualTimer';
+import { makePercent } from '../../../../src/contractSupport/percentMath';
 
 const loanRoot = `${__dirname}/../../../../src/contracts/loan/`;
 const autoswapRoot = `${__dirname}/../../../../src/contracts/autoswap`;
@@ -59,7 +60,7 @@ test('loan - lend - exit before borrow', async t => {
   const { notifier: periodNotifier } = makeNotifierKit();
 
   const terms = {
-    mmr: 150,
+    mmr: makePercent(150, loanKit.amountMath),
     autoswapInstance,
     priceAuthority,
     periodNotifier,

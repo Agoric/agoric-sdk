@@ -10,6 +10,7 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 import { setup } from '../../setupBasicMints';
 
 import { setupZCFTest } from '../../zcf/setupZcfTest';
+import { makePercent } from '../../../../src/contractSupport/percentMath';
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t
@@ -85,14 +86,15 @@ export const checkPayouts = async (
   t.truthy(seat.hasExited());
 };
 
-export const setupLoanUnitTest = async (
-  terms = harden({
-    mmr: 150,
-    autoswapInstance: {},
-  }),
-) => {
+export const setupLoanUnitTest = async terms => {
   const { moolaKit: collateralKit, simoleanKit: loanKit } = setup();
 
+  if (!terms) {
+    terms = harden({
+      mmr: makePercent(150, collateralKit.amountMath),
+      autoswapInstance: {},
+    });
+  }
   const issuerKeywordRecord = harden({
     Collateral: collateralKit.issuer,
     Loan: loanKit.issuer,
