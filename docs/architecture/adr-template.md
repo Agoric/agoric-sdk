@@ -10,6 +10,7 @@
 
 ## Context
 
+> Note the project to which this ADR applies, including other relevant ADRs.
 > This section describes the forces at play, including technological, political,
 social, and project local. These forces are probably in tension, and should be
 called out as such. The language in this section is value-neutral. It is simply
