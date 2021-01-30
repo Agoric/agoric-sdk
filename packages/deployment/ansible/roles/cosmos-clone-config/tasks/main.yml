@@ -4,6 +4,12 @@
     state: directory
     path: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst"
 
+- name: "Copy to data/*.dst/app.toml"
+  delegate_to: localhost
+  copy:
+    src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/app.toml"
+    dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/app.toml"
+
 - name: "Copy to data/*.dst/config.toml"
   delegate_to: localhost
   copy:
