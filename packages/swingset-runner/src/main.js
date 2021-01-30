@@ -512,7 +512,7 @@ export async function main() {
     const statsPre = controller.getStats();
     const args = { body: '[]', slots: [] };
     let totalSteps = 0;
-    let totalDeltaT = BigInt(0);
+    let totalDeltaT = 0n;
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatExport(
         launchIndirectly ? 'launcher' : 'bootstrap',

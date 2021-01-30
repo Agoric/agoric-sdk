@@ -114,7 +114,7 @@ test('percentMath - Nats only', t => {
     message: 'not a safe integer',
   });
 
-  t.throws(() => makePercent(BigInt(47), amountMath), {
+  t.throws(() => makePercent(47n, amountMath), {
     message: 'not a safe integer',
   });
 });
