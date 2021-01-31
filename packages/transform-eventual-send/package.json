@@ -17,7 +17,7 @@
     "@agoric/acorn-eventual-send": "^2.1.0",
     "@agoric/babel-parser": "^7.6.4",
     "@babel/generator": "^7.5.0",
-    "acorn": "^7.1.0",
+    "acorn": "^8.0.5",
     "ava": "^3.12.1",
     "esm": "^3.2.5",
     "nyc": "^15.1.0"

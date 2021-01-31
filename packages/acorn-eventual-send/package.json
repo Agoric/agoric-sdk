@@ -13,7 +13,7 @@
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "acorn": "^7.1.0",
+    "acorn": "^8.0.5",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0",
