@@ -4,9 +4,6 @@ import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
 
-// TODO(2196): use 10000n instead of  10000n
-// We use this workaround due to some parser in our toolchain that can't parse
-// bigint literals.
 const BIG_10000 = 10000n;
 const BIG_ONE = 1n;
 
