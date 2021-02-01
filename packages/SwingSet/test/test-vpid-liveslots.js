@@ -189,6 +189,7 @@ function makeDispatch(syscall, build, vatID = 'vatA') {
     vatID,
     {},
     {},
+    undefined,
     gcTools,
   );
   setBuildRootObject(build);
