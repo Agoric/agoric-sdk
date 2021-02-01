@@ -964,6 +964,7 @@ void fx_setTimerCallback(txJob* job)
 			mxPop();
 		}
 		mxCatch(the) {
+			fprintf(stderr, "exception in setTimerCallback: %s\n", xsToString(xsException));
 		}
 	}
 	fxEndHost(the);
