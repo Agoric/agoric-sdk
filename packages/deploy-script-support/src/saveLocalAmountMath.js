@@ -1,7 +1,6 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
 
 // Note that this cannot be in the wallet, since that is a different
@@ -17,7 +16,7 @@ export const makeLocalAmountManager = issuerManager => {
 
   const saveLocalAmountMath = async petname => {
     const issuer = E(issuerManager).get(petname);
-    const amountMath = await makeLocalAmountMath(issuer);
+    const amountMath = await E(issuer).getBrand();
     localAmountMath.init(petname, amountMath);
   };
 

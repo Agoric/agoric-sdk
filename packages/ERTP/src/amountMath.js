@@ -56,6 +56,7 @@ export { MathKind };
  *
  * `makeAmountMath` takes in a brand and the kind of amountMath to use.
  *
+ * TODO Revise obsolete paragraph
  * amountMath is not pass-by-copy, but everything it does can be done
  * locally in each vat that needs the functionality. If the operations
  * are done against a remote version, they have the same semantics, but

@@ -1,5 +1,5 @@
 // @ts-check
-import { makeIssuerKit, MathKind, makeLocalAmountMath } from '@agoric/ertp';
+import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   makeNotifierKit,
@@ -81,7 +81,7 @@ export async function makeFakePriceAuthority(options) {
   };
 
   const quoteIssuer = E(quoteMint).getIssuer();
-  const quoteMath = await makeLocalAmountMath(quoteIssuer);
+  const quoteMath = await E(quoteIssuer).getBrand();
 
   /**
    * @type {NotifierRecord<Timestamp>} We need to have a notifier driven by the
@@ -114,6 +114,7 @@ export async function makeFakePriceAuthority(options) {
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
+    // @ts-ignore
     const quoteAmount = quoteMath.make(
       harden([
         {
