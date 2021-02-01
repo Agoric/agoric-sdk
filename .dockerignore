@@ -15,3 +15,4 @@ packages/stat-logger
 **/swingset-kernel-state
 **/_agstate
 .vagrant
+packages/xsnap/moddable

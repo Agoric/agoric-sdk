@@ -28,8 +28,9 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alp
 // At least until tendermint v0.34.4 is released.
 // replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210126214117-87803b32fbb4
 
-// At least until cosmos-sdk v0.40.0-rc3 is released.
-// replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201011165527-9684bf64c2db
+// At least until https://github.com/cosmos/cosmos-sdk/issues/8478 is solved and
+// released.
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210129184725-f1afab29a888
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk

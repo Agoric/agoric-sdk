@@ -10,6 +10,16 @@
     group: "{{ service }}"
     mode: 0644
 
+- name: "Install {{ data | default(service + '/data') }}/*.dst/config/app.toml"
+  become_user: root
+  become: true
+  copy:
+    src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/app.toml"
+    dest: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    owner: "{{ service }}"
+    group: "{{ service }}"
+    mode: 0644
+
 - name: "Install {{ data | default(service + '/data') }}/*.dst/config/config.toml"
   become_user: root
   become: true
