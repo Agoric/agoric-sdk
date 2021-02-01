@@ -1,4 +1,3 @@
-/* global BigInt */
 import * as c from './constants';
 
 const { isArray } = Array;

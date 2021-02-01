@@ -1,4 +1,3 @@
-/* global Compartment */
 // eslint-disable-next-line import/order
 import { replaceGlobalMeter } from './install-metering';
 import '@agoric/install-ses'; // calls lockdown()
