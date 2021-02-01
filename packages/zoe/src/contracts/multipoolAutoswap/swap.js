@@ -1,3 +1,4 @@
+import { M } from '@agoric/ertp';
 import { assertProposalShape, trade } from '../../contractSupport';
 
 import '../../../exported';
@@ -96,38 +97,25 @@ export const makeMakeSwapInvitation = (
 
       const brandInPool = getPool(brandIn);
       const brandOutPool = getPool(brandOut);
-      const brandInAmountMath = brandInPool.getAmountMath();
 
       const seatStaging = seat.stage(
         harden({
-          In: brandInAmountMath.subtract(amountIn, reducedAmountIn),
+          In: M.subtract(amountIn, reducedAmountIn),
           Out: amountOut,
         }),
       );
 
-      const centralTokenAmountMath = brandInPool.getCentralAmountMath();
-      const brandOutAmountMath = brandOutPool.getAmountMath();
-
       const poolBrandInStaging = brandInPool.getPoolSeat().stage({
-        Secondary: brandInAmountMath.add(
-          brandInPool.getSecondaryAmount(),
-          reducedAmountIn,
-        ),
-        Central: centralTokenAmountMath.subtract(
+        Secondary: M.add(brandInPool.getSecondaryAmount(), reducedAmountIn),
+        Central: M.subtract(
           brandInPool.getCentralAmount(),
           reducedCentralAmount,
         ),
       });
 
       const poolBrandOutStaging = brandOutPool.getPoolSeat().stage({
-        Central: centralTokenAmountMath.add(
-          brandOutPool.getCentralAmount(),
-          reducedCentralAmount,
-        ),
-        Secondary: brandOutAmountMath.subtract(
-          brandOutPool.getSecondaryAmount(),
-          amountOut,
-        ),
+        Central: M.add(brandOutPool.getCentralAmount(), reducedCentralAmount),
+        Secondary: M.subtract(brandOutPool.getSecondaryAmount(), amountOut),
       });
 
       zcf.reallocate(poolBrandInStaging, poolBrandOutStaging, seatStaging);
@@ -162,8 +150,7 @@ export const makeMakeSwapInvitation = (
         amountOut: improvedAmountOut,
       } = pool.getPriceGivenRequiredOutput(brandIn, amountOut);
 
-      const brandInAmountMath = getPool(brandIn).getAmountMath();
-      if (!brandInAmountMath.isGTE(offeredAmountIn, amountIn)) {
+      if (!M.isGTE(offeredAmountIn, amountIn)) {
         seat.fail();
         return `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
       }
@@ -222,26 +209,17 @@ export const makeMakeSwapInvitation = (
         }),
       );
 
-      const centralAmountMath = brandInPool.getCentralAmountMath();
-      const brandInAmountMath = brandInPool.getAmountMath();
-
       const poolBrandInStaging = brandInPool.getPoolSeat().stage({
-        Secondary: brandInAmountMath.add(
-          brandInPool.getSecondaryAmount(),
-          amountIn,
-        ),
-        Central: centralAmountMath.subtract(
+        Secondary: M.add(brandInPool.getSecondaryAmount(), amountIn),
+        Central: M.subtract(
           brandInPool.getCentralAmount(),
           improvedCentralAmount,
         ),
       });
 
       const poolBrandOutStaging = brandOutPool.getPoolSeat().stage({
-        Central: centralAmountMath.add(
-          brandOutPool.getCentralAmount(),
-          improvedCentralAmount,
-        ),
-        Secondary: brandOutAmountMath.subtract(
+        Central: M.add(brandOutPool.getCentralAmount(), improvedCentralAmount),
+        Secondary: M.subtract(
           brandOutPool.getSecondaryAmount(),
           improvedAmountOut,
         ),

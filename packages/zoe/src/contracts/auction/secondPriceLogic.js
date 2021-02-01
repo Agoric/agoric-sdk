@@ -1,3 +1,5 @@
+import { M } from '@agoric/ertp';
+
 export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   const {
     give: { Asset: assetAmount },
@@ -16,11 +18,11 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
       activeBidsCount += 1;
       const bid = bidSeat.getAmountAllocated('Bid', highestBid.brand);
       // If the bid is greater than the highestBid, it's the new highestBid
-      if (bidMath.isGTE(bid, highestBid)) {
+      if (M.isGTE(bid, highestBid)) {
         secondHighestBid = highestBid;
         highestBid = bid;
         highestBidSeat = bidSeat;
-      } else if (bidMath.isGTE(bid, secondHighestBid)) {
+      } else if (M.isGTE(bid, secondHighestBid)) {
         // If the bid is not greater than the highest bid, but is greater
         // than the second highest bid, it is the new second highest bid.
         secondHighestBid = bid;
@@ -38,7 +40,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
     secondHighestBid = highestBid;
   }
 
-  const winnerRefund = bidMath.subtract(highestBid, secondHighestBid);
+  const winnerRefund = M.subtract(highestBid, secondHighestBid);
 
   // Everyone else gets a refund so their values remain the
   // same.

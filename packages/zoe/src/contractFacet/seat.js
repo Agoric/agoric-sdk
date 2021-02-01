@@ -78,7 +78,7 @@ export const makeZcfSeatAdminKit = (
         return currentAllocation[keyword];
       }
       assert(brand, `A brand must be supplied when the keyword is not defined`);
-      return getAmountMath(brand).getEmpty();
+      return brand.getEmpty();
     },
     getCurrentAllocation: () => {
       assertExitedFalse();

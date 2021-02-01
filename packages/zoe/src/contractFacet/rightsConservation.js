@@ -21,8 +21,9 @@ const sumByBrand = (getAmountMath, amounts) => {
   const sumsByBrand = makeStore('brand');
   amounts.forEach(amount => {
     const { brand } = amount;
-    const amountMath = getAmountMath(brand);
+    const amountMath = brand;
     if (!sumsByBrand.has(brand)) {
+      // @ts-ignore
       sumsByBrand.init(brand, amountMath.getEmpty());
     }
     const sumSoFar = sumsByBrand.get(brand);
@@ -52,17 +53,13 @@ const assertEqualPerBrand = (
     rightKeys.length,
     details`${leftKeys.length} should be equal to ${rightKeys.length}`,
   );
-  leftSumsByBrand
-    .keys()
-    .forEach(brand =>
-      assert(
-        getAmountMath(brand).isEqual(
-          leftSumsByBrand.get(brand),
-          rightSumsByBrand.get(brand),
-        ),
-        details`rights were not conserved for brand ${brand}`,
-      ),
-    );
+  leftSumsByBrand.keys().forEach(brand =>
+    assert(
+      // @ts-ignore
+      M.isEqual(leftSumsByBrand.get(brand), rightSumsByBrand.get(brand)),
+      details`rights were not conserved for brand ${brand}`,
+    ),
+  );
 };
 
 /**

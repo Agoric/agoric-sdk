@@ -3,6 +3,7 @@ import { assert, details } from '@agoric/assert';
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
+import { M } from '@agoric/ertp';
 import { trade } from '../contractSupport';
 
 /**
@@ -67,7 +68,7 @@ const start = async zcf => {
         const noFee = feeMath.getEmpty();
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
         assert(
-          !requiredFee || feeMath.isGTE(noFee, requiredFee),
+          !requiredFee || M.isGTE(noFee, requiredFee),
           details`Oracle required a fee but the query had none`,
         );
         return reply;

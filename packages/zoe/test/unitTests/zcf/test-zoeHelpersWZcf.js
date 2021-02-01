@@ -131,6 +131,7 @@ test.failing(`zcf assertUsesNatMath - not brand`, async t => {
   });
 });
 
+/*
 test(`zcf assertUsesNatMath - brand not registered`, async t => {
   const { zcf } = await setupZCFTest();
   const { brand } = makeIssuerKit('gelt');
@@ -138,6 +139,7 @@ test(`zcf assertUsesNatMath - brand not registered`, async t => {
     message: '"brand" not found: (an object)',
   });
 });
+*/
 
 test(`zcf saveAllIssuers`, async t => {
   const { zcf } = await setupZCFTest();

@@ -1,6 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { M } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -13,17 +14,16 @@ import '../../exported';
  */
 
 /** @type {CompareAmount} */
-const isLT = (math, amountOut, amountLimit) =>
-  !math.isGTE(amountOut, amountLimit);
+const isLT = (math, amountOut, amountLimit) => !M.isGTE(amountOut, amountLimit);
 
 /** @type {CompareAmount} */
-const isLTE = (math, amount, amountLimit) => math.isGTE(amountLimit, amount);
+const isLTE = (math, amount, amountLimit) => M.isGTE(amountLimit, amount);
 
 /** @type {CompareAmount} */
-const isGTE = (math, amount, amountLimit) => math.isGTE(amount, amountLimit);
+const isGTE = (math, amount, amountLimit) => M.isGTE(amount, amountLimit);
 
 /** @type {CompareAmount} */
-const isGT = (math, amount, amountLimit) => !math.isGTE(amountLimit, amount);
+const isGT = (math, amount, amountLimit) => !M.isGTE(amountLimit, amount);
 
 /**
  * @typedef {Object} OnewayPriceAuthorityOptions
@@ -185,7 +185,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
         const actualAmountOut = calcAmountOut(amountIn);
 
         assert(
-          mathOut.isGTE(actualAmountOut, amountOut),
+          M.isGTE(actualAmountOut, amountOut),
           details`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
         );
         return { amountIn, amountOut };

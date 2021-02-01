@@ -2,6 +2,7 @@
 
 import '../../../exported';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { M } from '@agoric/ertp';
 
 import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -48,7 +49,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const updateDebt = _state => {
     const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
-    debt = loanMath.add(debt, interest);
+    debt = M.add(debt, interest);
     debtNotifierUpdater.updateState(debt);
     scheduleLiquidation(zcf, config);
   };

@@ -2,6 +2,7 @@
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
+import { M } from '@agoric/ertp';
 import {
   assertIssuerKeywords,
   trade,
@@ -73,7 +74,7 @@ const start = zcf => {
     } = buyerSeat.getProposal();
 
     // Check that the wanted items are still for sale.
-    if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
+    if (!M.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
       throw buyerSeat.fail(new Error(rejectMsg));
     }
@@ -85,7 +86,7 @@ const start = zcf => {
 
     // Check that the money provided to pay for the items is greater than the totalCost.
     assert(
-      moneyMath.isGTE(providedMoney, totalCost),
+      M.isGTE(providedMoney, totalCost),
       details`More money (${totalCost}) is required to buy these items`,
     );
 

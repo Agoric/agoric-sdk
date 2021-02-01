@@ -11,7 +11,7 @@ import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
-import { MathKind } from '@agoric/ertp';
+import { MathKind, M } from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
@@ -243,11 +243,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
               totalToMint.brand === amountToAdd.brand,
               details`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
             );
-            totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
+            totalToMint = M.add(totalToMint, amountToAdd);
             const oldAmount = oldAllocation[seatKeyword];
             // oldAmount being absent is equivalent to empty.
             const newAmount = oldAmount
-              ? mintyAmountMath.add(oldAmount, amountToAdd)
+              ? M.add(oldAmount, amountToAdd)
               : amountToAdd;
             return [seatKeyword, newAmount];
           });
@@ -280,12 +280,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
                 totalToBurn.brand === amountToSubtract.brand,
                 details`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
               );
-              totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
+              totalToBurn = M.add(totalToBurn, amountToSubtract);
               const oldAmount = oldAllocation[seatKeyword];
-              const newAmount = mintyAmountMath.subtract(
-                oldAmount,
-                amountToSubtract,
-              );
+              const newAmount = M.subtract(oldAmount, amountToSubtract);
               return [seatKeyword, newAmount];
             },
           );

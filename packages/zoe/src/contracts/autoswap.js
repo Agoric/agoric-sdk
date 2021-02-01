@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
+import { M } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -254,7 +255,7 @@ const start = async zcf => {
 
     // Central was specified precisely so offer must provide enough secondary.
     assert(
-      secondaryMath.isGTE(secondaryIn, secondaryOut),
+      M.isGTE(secondaryIn, secondaryOut),
       'insufficient Secondary deposited',
     );
 
@@ -335,7 +336,8 @@ const start = async zcf => {
       inputReserve,
       outputReserve,
     );
-    return zcf.getAmountMath(brandOut).make(outputValue);
+    // @ts-ignore
+    return brandOut.make(outputValue);
   };
 
   /**
@@ -353,7 +355,8 @@ const start = async zcf => {
       inputReserve,
       outputReserve,
     );
-    return zcf.getAmountMath(brandIn).make(outputValue);
+    // @ts-ignore
+    return brandIn.make(outputValue);
   };
 
   const getPoolAllocation = poolSeat.getCurrentAllocation;

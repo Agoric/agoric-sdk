@@ -1,4 +1,5 @@
 // @ts-check
+import { M } from '@agoric/ertp';
 import '../../../exported';
 import './types';
 
@@ -21,20 +22,20 @@ function calculateShares(
   strikePrice1,
   strikePrice2,
 ) {
-  if (strikeMath.isGTE(strikePrice1, price)) {
+  if (M.isGTE(strikePrice1, price)) {
     return {
       longShare: makeNone(collateralMath),
       shortShare: makeAll(collateralMath),
     };
-  } else if (strikeMath.isGTE(price, strikePrice2)) {
+  } else if (M.isGTE(price, strikePrice2)) {
     return {
       longShare: makeAll(collateralMath),
       shortShare: makeNone(collateralMath),
     };
   }
 
-  const denominator = strikeMath.subtract(strikePrice2, strikePrice1);
-  const numerator = strikeMath.subtract(price, strikePrice1);
+  const denominator = M.subtract(strikePrice2, strikePrice1);
+  const numerator = M.subtract(price, strikePrice1);
   const longShare = calculatePercent(
     numerator,
     denominator,

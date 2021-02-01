@@ -5,6 +5,7 @@ import './types';
 import { assert, details } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { M } from '@agoric/ertp';
 import {
   assertProposalShape,
   depositToSeat,
@@ -64,7 +65,7 @@ const start = async zcf => {
   // notice that we don't assert that the Underlying is fungible.
 
   assert(
-    strikeMath.isGTE(terms.strikePrice2, terms.strikePrice1),
+    M.isGTE(terms.strikePrice2, terms.strikePrice1),
     details`strikePrice2 must be greater than strikePrice1`,
   );
 

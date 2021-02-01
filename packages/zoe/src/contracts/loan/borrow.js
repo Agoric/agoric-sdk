@@ -4,6 +4,7 @@ import '../../../exported';
 import { assert, details } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { M } from '@agoric/ertp';
 
 import { assertProposalShape, trade, natSafeMath } from '../../contractSupport';
 
@@ -36,7 +37,6 @@ export const makeBorrowInvitation = (zcf, config) => {
     const loanWanted = borrowerSeat.getProposal().want.Loan;
     const loanBrand = zcf.getTerms().brands.Loan;
     const loanMath = zcf.getTerms().maths.Loan;
-    const collateralMath = zcf.getTerms().maths.Collateral;
 
     // The value of the collateral in the Loan brand
     const { quoteAmount } = await E(priceAuthority).quoteGiven(
@@ -54,7 +54,7 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert the required collateral was escrowed.
     assert(
-      loanMath.isGTE(
+      M.isGTE(
         loanMath.make(
           natSafeMath.multiply(collateralPriceInLoanBrand.value, 100),
         ),
@@ -65,16 +65,13 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert that the collateralGiven has not changed after the AWAIT
     assert(
-      collateralMath.isEqual(
-        collateralGiven,
-        borrowerSeat.getAmountAllocated('Collateral'),
-      ),
+      M.isEqual(collateralGiven, borrowerSeat.getAmountAllocated('Collateral')),
       `The collateral allocated changed during the borrow step, which should not have been possible`,
     );
 
     // Assert that loanWanted <= maxLoan
     assert(
-      loanMath.isGTE(maxLoan, loanWanted),
+      M.isGTE(maxLoan, loanWanted),
       details`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
     );
 

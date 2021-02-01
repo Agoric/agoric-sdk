@@ -321,8 +321,8 @@ export const assertProposalShape = (seat, expected) => {
 };
 
 /* Given a brand, assert that the issuer uses NAT amountMath. */
-export const assertUsesNatMath = (zcf, brand) => {
-  const amountMath = zcf.getAmountMath(brand);
+export const assertUsesNatMath = (_zcf, brand) => {
+  const amountMath = brand;
   assert(
     amountMath.getAmountMathKind() === MathKind.NAT,
     details`issuer must use NAT amountMath`,

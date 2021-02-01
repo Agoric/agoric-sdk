@@ -1,5 +1,5 @@
 // @ts-check
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, MathKind, M } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   makeNotifierKit,
@@ -237,19 +237,19 @@ export async function makeFakePriceAuthority(options) {
       return priceOutQuote(brandIn, amountOut, timestamp);
     },
     quoteWhenGTE: (amountIn, amountOutLimit) => {
-      const compareGTE = (math, amount) => math.isGTE(amount, amountOutLimit);
+      const compareGTE = (math, amount) => M.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareGTE, amountIn, amountOutLimit);
     },
     quoteWhenGT: (amountIn, amountOutLimit) => {
-      const compareGT = (math, amount) => !math.isGTE(amountOutLimit, amount);
+      const compareGT = (math, amount) => !M.isGTE(amountOutLimit, amount);
       return resolveQuoteWhen(compareGT, amountIn, amountOutLimit);
     },
     quoteWhenLTE: (amountIn, amountOutLimit) => {
-      const compareLTE = (math, amount) => math.isGTE(amountOutLimit, amount);
+      const compareLTE = (math, amount) => M.isGTE(amountOutLimit, amount);
       return resolveQuoteWhen(compareLTE, amountIn, amountOutLimit);
     },
     quoteWhenLT: (amountIn, amountOutLimit) => {
-      const compareLT = (math, amount) => !math.isGTE(amount, amountOutLimit);
+      const compareLT = (math, amount) => !M.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
     },
   };

@@ -91,8 +91,9 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
       getLiquiditySupply: () => liqTokenSupply,
       getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
-      getAmountMath: () => zcf.getAmountMath(secondaryBrand),
-      getCentralAmountMath: () => zcf.getAmountMath(centralBrand),
+      getAmountMath: () => secondaryBrand,
+      // @ts-ignore
+      getCentralAmountMath: () => centralBrand,
       getCentralAmount: () =>
         poolSeat.getAmountAllocated('Central', centralBrand),
       getSecondaryAmount: () =>
