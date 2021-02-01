@@ -6,7 +6,7 @@ import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { MathKind } from '@agoric/ertp';
+import { MathKind, M } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
 
@@ -22,7 +22,7 @@ const getKeysSorted = obj =>
  * entries in fromLosses are subtracted from 'from'. (If fromLosses
  * is not defined, toGains is subtracted from 'from'.)
  *
- * @param {ContractFacet} zcf
+ * @param {ContractFacet} _zcf
  * @param {FromToAllocations} allocations - the 'to' and 'from'
  * allocations
  * @param {AmountKeywordRecord} toGains - what should be gained in
@@ -38,25 +38,21 @@ const getKeysSorted = obj =>
  * @property {Allocation} to
  */
 const calcNewAllocations = (
-  zcf,
+  _zcf,
   allocations,
   toGains,
   fromLosses = toGains,
 ) => {
   const subtract = (amount, amountToSubtract) => {
-    const { brand } = amount;
-    const amountMath = zcf.getAmountMath(brand);
     if (amountToSubtract !== undefined) {
-      return amountMath.subtract(amount, amountToSubtract);
+      return M.subtract(amount, amountToSubtract);
     }
     return amount;
   };
 
   const add = (amount, amountToAdd) => {
     if (amount && amountToAdd) {
-      const { brand } = amount;
-      const amountMath = zcf.getAmountMath(brand);
-      return amountMath.add(amount, amountToAdd);
+      return M.add(amount, amountToAdd);
     }
     return amount || amountToAdd;
   };

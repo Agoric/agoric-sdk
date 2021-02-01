@@ -2,7 +2,7 @@
 
 import { assert, details } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { mustBeComparable } from '@agoric/same-structure';
+// import { mustBeComparable } from '@agoric/same-structure';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
@@ -194,3 +194,25 @@ function makeAmountMath(brand, amountMathKind) {
 harden(makeAmountMath);
 
 export { makeAmountMath };
+
+const M = {
+  isEmpty: amount => amount.brand.isEmpty(amount),
+  isGTE: (leftAmount, rightAmount) => {
+    assert.equal(leftAmount.brand, rightAmount.brand);
+    return leftAmount.brand.isGTE(leftAmount, rightAmount);
+  },
+  isEqual: (leftAmount, rightAmount) => {
+    assert.equal(leftAmount.brand, rightAmount.brand);
+    return leftAmount.brand.isEqual(leftAmount, rightAmount);
+  },
+  add: (leftAmount, rightAmount) => {
+    assert.equal(leftAmount.brand, rightAmount.brand);
+    return leftAmount.brand.add(leftAmount, rightAmount);
+  },
+  subtract: (leftAmount, rightAmount) => {
+    assert.equal(leftAmount.brand, rightAmount.brand);
+    return leftAmount.brand.subtract(leftAmount, rightAmount);
+  },
+};
+harden(M);
+export { M };

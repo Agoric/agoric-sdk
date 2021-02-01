@@ -1,24 +1,25 @@
 // @ts-check
 
+import { M } from '@agoric/ertp';
+
 /**
  * Helper to perform satisfiesWant and satisfiesGive. Is
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath
+ * @param {(brand: Brand) => AmountMath} _getAmountMath
  * @param {AmountKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
  */
-const satisfiesInternal = (getAmountMath, giveOrWant = {}, allocation) => {
+const satisfiesInternal = (_getAmountMath, giveOrWant = {}, allocation) => {
   const isGTEByKeyword = ([keyword, requiredAmount]) => {
     // If there is no allocation for a keyword, we know the giveOrWant
     // is not satisfied without checking further.
     if (allocation[keyword] === undefined) {
       return false;
     }
-    const amountMath = getAmountMath(requiredAmount.brand);
     const allocationAmount = allocation[keyword];
-    return amountMath.isGTE(allocationAmount, requiredAmount);
+    return M.isGTE(allocationAmount, requiredAmount);
   };
   return Object.entries(giveOrWant).every(isGTEByKeyword);
 };

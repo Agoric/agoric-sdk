@@ -9,7 +9,7 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
-import { makeAmountMath, MathKind } from './amountMath';
+import { makeAmountMath, MathKind, M } from './amountMath';
 import { makeFarName, ERTPKind } from './interfaces';
 import { coerceDisplayInfo } from './displayInfo';
 
@@ -26,10 +26,6 @@ function makeIssuerKit(
   displayInfo = undefined,
 ) {
   assert.typeof(allegedName, 'string');
-  assert(
-    /[\w_$]+/.test(allegedName),
-    details`allegedName must be an ascii identifier ${q(allegedName)}`,
-  );
   displayInfo = coerceDisplayInfo(displayInfo);
 
   const brandFarName = `${allegedName} brand ${q([
@@ -82,7 +78,7 @@ function makeIssuerKit(
   const assertAmountEqual = (paymentBalance, amount) => {
     if (amount !== undefined) {
       assert(
-        amountMath.isEqual(amount, paymentBalance),
+        M.isEqual(amount, paymentBalance),
         details`payment balance ${paymentBalance} must equal amount ${amount}`,
       );
     }
@@ -120,10 +116,7 @@ function makeIssuerKit(
         const srcPaymentBalance = paymentLedger.get(srcPayment);
         // Note: this does not guarantee that optAmount itself is a valid stable amount
         assertAmountEqual(srcPaymentBalance, optAmount);
-        const newPurseBalance = amountMath.add(
-          srcPaymentBalance,
-          currentBalance,
-        );
+        const newPurseBalance = M.add(srcPaymentBalance, currentBalance);
         // Commit point
         // Move the assets in `srcPayment` into this purse, using up the
         // source payment, such that total assets are conserved.
@@ -134,7 +127,7 @@ function makeIssuerKit(
       },
       withdraw: amount => {
         amount = amountMath.coerce(amount);
-        const newPurseBalance = amountMath.subtract(currentBalance, amount);
+        const newPurseBalance = M.subtract(currentBalance, amount);
         const payment = makePayment();
         // Commit point
         // Move the withdrawn assets from this purse into a new payment
@@ -192,7 +185,7 @@ function makeIssuerKit(
     const newTotal = newPaymentBalances.reduce(add, empty);
 
     // Invariant check
-    assert(amountMath.isEqual(total, newTotal), 'rights were not conserved');
+    assert(M.isEqual(total, newTotal), 'rights were not conserved');
 
     // commit point
     payments.forEach(payment => paymentLedger.delete(payment));
@@ -265,10 +258,7 @@ function makeIssuerKit(
         paymentAmountA = amountMath.coerce(paymentAmountA);
         assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
-        const paymentAmountB = amountMath.subtract(
-          srcPaymentBalance,
-          paymentAmountA,
-        );
+        const paymentAmountB = M.subtract(srcPaymentBalance, paymentAmountA);
         // Commit point
         const newPayments = reallocate(
           [srcPayment],
@@ -312,7 +302,7 @@ harden(makeIssuerKit);
 
 export { makeIssuerKit };
 
-const BRAND_PATTERN = /^Alleged: ([\w_$]+) brand (.+)/;
+const BRAND_PATTERN = /^Alleged: (.*) brand (.+)$/;
 const tagIfBrand = (pres, iface) => {
   if (typeof iface !== 'string') {
     return;

@@ -11,7 +11,7 @@ import { assert, details, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
-import { makeAmountMath, MathKind } from '@agoric/ertp';
+import { MathKind } from '@agoric/ertp';
 import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
@@ -41,7 +41,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
   ) => {
     /** @type {IssuerTable} */
     const issuerTable = makeIssuerTable();
-    const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
+    const getAmountMath = brand => brand;
 
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
@@ -211,7 +211,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zoeMintP,
       ).getIssuerRecord();
       // AWAIT
-      const mintyAmountMath = makeAmountMath(mintyBrand, amountMathKind);
+      /** @type {AmountMath} */
+      // @ts-ignore TODO
+      const mintyAmountMath = mintyBrand;
       const mintyIssuerRecord = harden({
         brand: mintyBrand,
         issuer: mintyIssuer,

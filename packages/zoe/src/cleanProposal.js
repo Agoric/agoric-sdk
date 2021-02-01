@@ -52,7 +52,7 @@ export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
 export const coerceAmountKeywordRecord = (
-  getAmountMath,
+  _getAmountMath,
   allegedAmountKeywordRecord,
 ) => {
   const keywords = getKeywords(allegedAmountKeywordRecord);
@@ -61,9 +61,7 @@ export const coerceAmountKeywordRecord = (
   const amounts = Object.values(allegedAmountKeywordRecord);
   // Check that each value can be coerced using the amountMath
   // indicated by brand. `AmountMath.coerce` throws if coercion fails.
-  const coercedAmounts = amounts.map(amount =>
-    getAmountMath(amount.brand).coerce(amount),
-  );
+  const coercedAmounts = amounts.map(amount => amount.brand.coerce(amount));
 
   // Recreate the amountKeywordRecord with coercedAmounts.
   return arrayToObj(coercedAmounts, keywords);

@@ -2,6 +2,7 @@
 
 import makeStore from '@agoric/store';
 import { assert, details } from '@agoric/assert';
+import { M } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -25,7 +26,7 @@ const sumByBrand = (getAmountMath, amounts) => {
       sumsByBrand.init(brand, amountMath.getEmpty());
     }
     const sumSoFar = sumsByBrand.get(brand);
-    sumsByBrand.set(brand, amountMath.add(sumSoFar, amount));
+    sumsByBrand.set(brand, M.add(sumSoFar, amount));
   });
   return sumsByBrand;
 };
