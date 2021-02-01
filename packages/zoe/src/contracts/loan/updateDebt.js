@@ -1,13 +1,14 @@
 // @ts-check
 
 import '../../../exported';
-import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
+import { E } from '@agoric/eventual-send';
 
 import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
 
 // Update the debt by adding the new interest on every period, as
-// indicated by the periodAsyncIterable
+// indicated by the periodNotifier
 
 const BASIS_POINT_DENOMINATOR = 10000;
 
@@ -30,12 +31,16 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     calcInterestFn = calculateInterest,
     originalDebt,
     loanMath,
-    periodAsyncIterable,
+    periodNotifier,
     interestRate,
+    interestPeriod,
     zcf,
     configMinusGetDebt,
   } = debtCalculatorConfig;
   let debt = originalDebt;
+
+  // the last period-end for which interest has been added
+  let lastCalculationTimestamp;
 
   const {
     updater: debtNotifierUpdater,
@@ -46,32 +51,63 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const config = { ...configMinusGetDebt, getDebt };
 
-  const updateDebt = _state => {
-    const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
-    debt = loanMath.add(debt, interest);
-    debtNotifierUpdater.updateState(debt);
-    scheduleLiquidation(zcf, config);
+  const updateDebt = timestamp => {
+    let updatedLoan = false;
+    // we could calculate the number of required updates and multiply by a power
+    // of the interest rate, but this seems easier to read.
+    while (lastCalculationTimestamp + interestPeriod <= timestamp) {
+      lastCalculationTimestamp += interestPeriod;
+      const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
+      debt = loanMath.add(debt, interest);
+      updatedLoan = true;
+    }
+    if (updatedLoan) {
+      debtNotifierUpdater.updateState(debt);
+      scheduleLiquidation(zcf, config);
+    }
   };
 
-  /** @type {IterationObserver<undefined>} */
-  const debtObserver = {
-    // Debt is updated with interest every time the
-    // periodAsyncIterable pushes another value
-    updateState: updateDebt,
-    finish: updateDebt,
-    fail: reason => {
+  const addToDebtWhenNotified = lastCount => {
+    const processUpdate = newState => {
+      const { updateCount, value } = newState;
+      if (updateCount === undefined) {
+        const reason = 'PeriodNotifier should not publish a final value';
+        debtNotifierUpdater.fail(reason);
+        throw Error(reason);
+      }
+
+      updateDebt(value);
+      addToDebtWhenNotified(updateCount);
+    };
+    const reject = reason => {
       debtNotifierUpdater.fail(reason);
       throw Error(reason);
-    },
+    };
+
+    E(periodNotifier)
+      .getUpdateSince(lastCount)
+      .then(processUpdate, reject);
   };
-  harden(debtObserver);
 
   // Initialize
-  observeIteration(periodAsyncIterable, debtObserver);
+  E(periodNotifier)
+    .getUpdateSince()
+    .then(({ value, updateCount }) => {
+      lastCalculationTimestamp = value;
+      addToDebtWhenNotified(updateCount);
+    });
+
+  // TODO(hibbert) https://github.com/Agoric/agoric-sdk/issues/2258
+  // convert addToDebtWhenNotified to a for-await-of loop
+  // for await (const value of iterateNotifier(periodNotifier)) {
+  //   updateDebt(value);
+  // }
+
   debtNotifierUpdater.updateState(debt);
 
   return harden({
     getDebt,
-    getDebtNotifier: () => debtNotifier,
+    getLastCalculationTimestamp: _ => lastCalculationTimestamp,
+    getDebtNotifier: _ => debtNotifier,
   });
 };
