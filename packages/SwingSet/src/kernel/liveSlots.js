@@ -9,6 +9,8 @@ import {
 } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
+import { tagIfBrand } from '@agoric/ertp';
+
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { makeVirtualObjectManager } from './virtualObjectManager';
@@ -84,6 +86,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     let presence;
     const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
       const remote = resolveWithPresence(fulfilledHandler);
+      tagIfBrand(remote, iface);
       presence = Remotable(iface, undefined, remote);
       // remote === presence, actually
 

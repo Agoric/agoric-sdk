@@ -76,7 +76,7 @@ export { MathKind };
  * @returns {AmountMath}
  */
 function makeAmountMath(brand, amountMathKind) {
-  mustBeComparable(brand);
+  // mustBeComparable(brand);
   assert.typeof(amountMathKind, 'string');
 
   const mathHelpers = {
@@ -92,6 +92,8 @@ function makeAmountMath(brand, amountMathKind) {
 
   // Cache the amount if we can.
   const cache = new WeakSet();
+
+  let empty; // lazy initialization
 
   /** @type {AmountMath} */
   const amountMath = Far('amountMath', {
@@ -140,8 +142,12 @@ function makeAmountMath(brand, amountMathKind) {
     getValue: amount => amountMath.coerce(amount).value,
 
     // Represents the empty set/mathematical identity.
-    // eslint-disable-next-line no-use-before-define
-    getEmpty: () => empty,
+    getEmpty: () => {
+      if (empty === undefined) {
+        empty = amountMath.make(helpers.doGetEmpty());
+      }
+      return empty;
+    },
 
     // Is the amount equal to the empty set?
     isEmpty: amount => helpers.doIsEmpty(amountMath.getValue(amount)),
@@ -182,7 +188,6 @@ function makeAmountMath(brand, amountMathKind) {
         ),
       ),
   });
-  const empty = amountMath.make(helpers.doGetEmpty());
   return amountMath;
 }
 

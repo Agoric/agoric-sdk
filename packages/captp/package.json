@@ -45,7 +45,8 @@
     "@agoric/marshal": "^0.3.0",
     "@agoric/nat": "^2.0.1",
     "@agoric/promise-kit": "^0.2.0",
-    "esm": "^3.2.5"
+    "esm": "^3.2.5",
+    "@agoric/ertp": "^0.9.0"
   },
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"

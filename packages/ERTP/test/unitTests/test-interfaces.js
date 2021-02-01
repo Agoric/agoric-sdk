@@ -8,7 +8,7 @@ test('interfaces - abstracted implementation', t => {
   const allegedName = 'bucks';
   const { issuer, brand, mint, amountMath } = makeIssuerKit(allegedName);
   t.is(getInterfaceOf(issuer), makeInterface(allegedName, ERTPKind.ISSUER));
-  t.is(getInterfaceOf(brand), makeInterface(allegedName, ERTPKind.BRAND));
+  t.is(getInterfaceOf(brand), 'Alleged: bucks brand ["nat",null]');
   t.is(getInterfaceOf(mint), makeInterface(allegedName, ERTPKind.MINT));
   const purse = issuer.makeEmptyPurse();
   t.is(getInterfaceOf(purse), makeInterface(allegedName, ERTPKind.PURSE));
@@ -25,7 +25,7 @@ test('interfaces - particular implementation', t => {
   const allegedName = 'bucks';
   const { issuer, brand, mint, amountMath } = makeIssuerKit(allegedName);
   t.is(getInterfaceOf(issuer), 'Alleged: bucks issuer');
-  t.is(getInterfaceOf(brand), 'Alleged: bucks brand');
+  t.is(getInterfaceOf(brand), 'Alleged: bucks brand ["nat",null]');
   t.is(getInterfaceOf(mint), 'Alleged: bucks mint');
   const purse = issuer.makeEmptyPurse();
   t.is(getInterfaceOf(purse), 'Alleged: bucks purse');

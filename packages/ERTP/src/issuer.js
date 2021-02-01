@@ -2,7 +2,7 @@
 
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
@@ -15,6 +15,8 @@ import { coerceDisplayInfo } from './displayInfo';
 
 import './types';
 
+const { getOwnPropertyDescriptors, defineProperties } = Object;
+
 /**
  * @type {MakeIssuerKit}
  */
@@ -24,9 +26,17 @@ function makeIssuerKit(
   displayInfo = undefined,
 ) {
   assert.typeof(allegedName, 'string');
+  assert(
+    /[\w_$]+/.test(allegedName),
+    details`allegedName must be an ascii identifier ${q(allegedName)}`,
+  );
   displayInfo = coerceDisplayInfo(displayInfo);
 
-  const brand = Far(makeFarName(allegedName, ERTPKind.BRAND), {
+  const brandFarName = `${allegedName} brand ${q([
+    amountMathKind,
+    displayInfo,
+  ])}`;
+  const brand = {
     isMyIssuer: allegedIssuerP => {
       return E.when(allegedIssuerP, allegedIssuer => {
         // eslint-disable-next-line no-use-before-define
@@ -37,9 +47,13 @@ function makeIssuerKit(
 
     // Give information to UI on how to display the amount.
     getDisplayInfo: () => displayInfo,
-  });
+  };
 
-  const amountMath = makeAmountMath(brand, amountMathKind);
+  // @ts-ignore TODO wtf
+  const amountMathInternal = makeAmountMath(brand, amountMathKind);
+  defineProperties(brand, getOwnPropertyDescriptors(amountMathInternal));
+  const amountMath = Far(brandFarName, brand);
+
   const { add } = amountMath;
   const empty = amountMath.getEmpty();
 
@@ -285,6 +299,7 @@ function makeIssuerKit(
     },
   });
 
+  // @ts-ignore TODO wtf
   return harden({
     mint,
     issuer,
@@ -296,3 +311,30 @@ function makeIssuerKit(
 harden(makeIssuerKit);
 
 export { makeIssuerKit };
+
+const BRAND_PATTERN = /^Alleged: ([\w_$]+) brand (.+)/;
+const tagIfBrand = (pres, iface) => {
+  if (typeof iface !== 'string') {
+    return;
+  }
+  const match = BRAND_PATTERN.exec(iface);
+  if (match === null) {
+    return;
+  }
+  const allegedName = match[1];
+  const jsonString = match[2];
+  const [amountMathKind, displayInfo] = JSON.parse(jsonString);
+
+  const brandMethods = {
+    isMyIssuer: allegedIssuerP => E(pres).isMyIssuer(allegedIssuerP),
+    getAllegedName: () => allegedName,
+    getDisplayInfo: () => displayInfo,
+  };
+  defineProperties(pres, getOwnPropertyDescriptors(brandMethods));
+  const amountMathInternal = makeAmountMath(pres, amountMathKind);
+  defineProperties(pres, getOwnPropertyDescriptors(amountMathInternal));
+  // eslint-disable-next-line no-debugger
+  debugger;
+};
+harden(tagIfBrand);
+export { tagIfBrand };

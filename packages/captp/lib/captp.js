@@ -12,6 +12,7 @@ import {
 } from '@agoric/marshal';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
+import { tagIfBrand } from '@agoric/ertp';
 
 export { E };
 
@@ -242,6 +243,8 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
         const pres = pr.resPres();
         if (iface === undefined) {
           iface = `Alleged: Presence ${ourId} ${slot}`;
+        } else {
+          tagIfBrand(pres, iface);
         }
         val = Remotable(iface, undefined, pres);
       } else {
