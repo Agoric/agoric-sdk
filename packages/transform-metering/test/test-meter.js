@@ -1,4 +1,3 @@
-/* globals BigInt */
 /* eslint-disable no-await-in-loop */
 import test from 'ava';
 

@@ -1,4 +1,3 @@
-/* global BigInt */
 import * as c from './constants';
 
 const { isArray } = Array;
@@ -7,8 +6,8 @@ const { ceil } = Math;
 const ObjectConstructor = Object;
 
 // eslint-disable-next-line no-bitwise
-const bigIntWord = typeof BigInt !== 'undefined' && BigInt(2) ** BigInt(64);
-const bigIntZero = bigIntWord && BigInt(0);
+const bigIntWord = typeof BigInt !== 'undefined' && 2n ** 64n;
+const bigIntZero = bigIntWord && 0n;
 
 // Stop deducting when we reach a negative number.
 const makeCounter = initBalance => {

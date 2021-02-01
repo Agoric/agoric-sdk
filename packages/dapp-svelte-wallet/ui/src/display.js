@@ -10,9 +10,9 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
  */
 
 /**
- * 
- * @param {string} str 
- * @param {AmountDisplayInfo} displayInfo 
+ *
+ * @param {string} str
+ * @param {AmountDisplayInfo} displayInfo
  */
 export function parseValue(str, displayInfo) {
   const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } = displayInfo || {};
@@ -47,14 +47,14 @@ export function parseValue(str, displayInfo) {
 }
 
 /**
- * 
- * @param {any} value 
+ *
+ * @param {any} value
  * @param {AmountDisplayInfo} [displayInfo]
  * @returns {string}
  */
 export function stringifyValue(value, displayInfo = undefined) {
   const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } = displayInfo || {};
-  
+
   if (amountMathKind !== MathKind.NAT) {
     // Just return the size of the set.
     return `${value.length}`;
@@ -66,7 +66,7 @@ export function stringifyValue(value, displayInfo = undefined) {
     return `${bValue}`;
   }
 
-  const bScale = BigInt(10) ** BigInt(decimalPlaces);
+  const bScale = 10n ** BigInt(decimalPlaces);
 
   // Take integer division of the value by the scale.
   const unitstr = `${bValue / bScale}`;
