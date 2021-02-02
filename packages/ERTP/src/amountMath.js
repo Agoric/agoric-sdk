@@ -6,6 +6,7 @@ import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
 import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
+import { mustBeComparable } from '@agoric/same-structure';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
@@ -79,6 +80,7 @@ const getHelpers = amount => {
 
 const optionalBrandCheck = (amount, brand) => {
   if (brand !== undefined) {
+    mustBeComparable(brand);
     assert.equal(amount.brand, brand);
   }
 };
@@ -91,11 +93,13 @@ const noCoerceMake = (value, brand) => {
 /** @type {M} */
 const M = {
   make: (allegedValue, brand) => {
+    mustBeComparable(brand);
     const value = getHelpersFromBrand(brand).doCoerce(allegedValue);
     const amount = harden({ brand, value });
     return amount;
   },
   coerce: (allegedAmount, brand) => {
+    mustBeComparable(brand);
     const { brand: allegedBrand, value } = allegedAmount;
     assert(
       allegedBrand !== undefined,
@@ -108,19 +112,25 @@ const M = {
     // Will throw on inappropriate value
     return M.make(value, brand);
   },
-  getValue: (amount, brand) => M.coerce(amount, brand).value,
-  getEmpty: brand => getHelpersFromBrand(brand).doGetEmpty(),
-  isEmpty: (amount, brand) => {
+  getValue: (amount, brand) => {
+    mustBeComparable(brand);
+    return M.coerce(amount, brand).value;
+  },
+  getEmpty: brand => {
+    mustBeComparable(brand);
+    return getHelpersFromBrand(brand).doGetEmpty();
+  },
+  isEmpty: (amount, brand = undefined) => {
     optionalBrandCheck(amount, brand);
     return getHelpers(amount).doIsEmpty(amount.value);
   },
-  isGTE: (leftAmount, rightAmount, brand) => {
+  isGTE: (leftAmount, rightAmount, brand = undefined) => {
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
     return getHelpers(leftAmount).doIsGTE(leftAmount.value, rightAmount.value);
   },
-  isEqual: (leftAmount, rightAmount, brand) => {
+  isEqual: (leftAmount, rightAmount, brand = undefined) => {
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
@@ -129,7 +139,7 @@ const M = {
       rightAmount.value,
     );
   },
-  add: (leftAmount, rightAmount, brand) => {
+  add: (leftAmount, rightAmount, brand = undefined) => {
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
@@ -138,7 +148,7 @@ const M = {
       leftAmount.brand,
     );
   },
-  subtract: (leftAmount, rightAmount, brand) => {
+  subtract: (leftAmount, rightAmount, brand = undefined) => {
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
