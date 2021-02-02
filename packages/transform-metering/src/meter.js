@@ -5,8 +5,8 @@ const { getOwnPropertyDescriptors } = Object;
 const { ceil } = Math;
 const ObjectConstructor = Object;
 
-const bigIntWord = typeof BigInt !== 'undefined' && 2n ** 64n;
-const bigIntZero = bigIntWord && 0n;
+const bigIntWord = 2n ** 64n;
+const bigIntZero = 0n;
 
 // Stop deducting when we reach a negative number.
 const makeCounter = initBalance => {
