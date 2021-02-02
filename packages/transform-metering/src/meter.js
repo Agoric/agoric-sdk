@@ -5,7 +5,6 @@ const { getOwnPropertyDescriptors } = Object;
 const { ceil } = Math;
 const ObjectConstructor = Object;
 
-// eslint-disable-next-line no-bitwise
 const bigIntWord = typeof BigInt !== 'undefined' && 2n ** 64n;
 const bigIntZero = bigIntWord && 0n;
 
