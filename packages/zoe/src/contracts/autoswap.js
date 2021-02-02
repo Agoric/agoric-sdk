@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
+import { M } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -68,10 +69,7 @@ const start = async zcf => {
 
   // In order to get all the brands, we must call zcf.getTerms() after
   // we create the liquidityIssuer
-  const {
-    brands,
-    maths: { Central: centralMath, Secondary: secondaryMath },
-  } = zcf.getTerms();
+  const { brands } = zcf.getTerms();
   Object.values(brands).forEach(brand => assertUsesNatMath(zcf, brand));
   /** @type {Map<Brand,Keyword>} */
   const brandToKeyword = new Map(
@@ -133,7 +131,7 @@ const start = async zcf => {
   const swapInHandler = swapSeat => {
     assertSwapProposal(swapSeat);
     assert(
-      !centralMath.isEmpty(getPoolAmount(brands.Central)),
+      !M.isEmpty(getPoolAmount(brands.Central), brands.Central),
       `Pool not initialized`,
     );
 
@@ -162,7 +160,7 @@ const start = async zcf => {
   const swapOutHandler = swapSeat => {
     assertSwapProposal(swapSeat);
     assert(
-      !centralMath.isEmpty(getPoolAmount(brands.Central)),
+      !M.isEmpty(getPoolAmount(brands.Central), brands.Central),
       'Pool not initialized',
     );
 
@@ -201,7 +199,7 @@ const start = async zcf => {
       {
         seat: poolSeat,
         gains: {
-          Central: centralMath.make(centralIn),
+          Central: M.make(centralIn, brands.Central),
           Secondary: secondaryAmount,
         },
       },
@@ -234,7 +232,7 @@ const start = async zcf => {
       give: { Central: null, Secondary: null },
       want: { Liquidity: null },
     });
-    if (centralMath.isEmpty(getPoolAmount(brands.Central))) {
+    if ((M.isEmpty(getPoolAmount(brands.Central)), brands.Central)) {
       return initiateLiquidity(liqSeat);
     }
 
@@ -243,18 +241,19 @@ const start = async zcf => {
 
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
-    const secondaryOut = secondaryMath.make(
+    const secondaryOut = M.make(
       calcSecondaryRequired(
         userAllocation.Central.value,
         getPoolAmount(brands.Central).value,
         getPoolAmount(brands.Secondary).value,
         secondaryIn.value,
       ),
+      brands.Secondary,
     );
 
     // Central was specified precisely so offer must provide enough secondary.
     assert(
-      secondaryMath.isGTE(secondaryIn, secondaryOut),
+      M.isGTE(secondaryIn, secondaryOut, brands.Secondary),
       'insufficient Secondary deposited',
     );
 
@@ -271,19 +270,21 @@ const start = async zcf => {
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
 
-    const newUserCentralAmount = centralMath.make(
+    const newUserCentralAmount = M.make(
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Central).value,
         liquidityValueIn,
       ),
+      brands.Central,
     );
-    const newUserSecondaryAmount = secondaryMath.make(
+    const newUserSecondaryAmount = M.make(
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Secondary).value,
         liquidityValueIn,
       ),
+      brands.Secondary,
     );
 
     liqTokenSupply -= liquidityValueIn;

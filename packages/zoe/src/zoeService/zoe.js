@@ -41,9 +41,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
-  /** @type {GetAmountMath} */
-  const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
-
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeWeakStore('brand');
 
@@ -136,10 +133,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         issuerRecords.map(record => record.brand),
         keywords,
       );
-      const maths = arrayToObj(
-        issuerRecords.map(record => record.amountMath),
-        keywords,
-      );
 
       let instanceRecord = {
         installation,
@@ -147,7 +140,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           ...customTerms,
           issuers,
           brands,
-          maths,
         },
       };
 
@@ -170,10 +162,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             brands: {
               ...instanceRecord.terms.brands,
               [keyword]: issuerRecord.brand,
-            },
-            maths: {
-              ...instanceRecord.terms.maths,
-              [keyword]: issuerRecord.amountMath,
             },
           },
         };

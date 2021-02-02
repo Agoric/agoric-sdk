@@ -41,7 +41,7 @@
  */
 
 /**
- * @typedef {Object} AmountMath
+ * @typedef {Object} M
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
@@ -49,46 +49,41 @@
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
- * @property {() => Brand} getBrand Return the brand.
- * @property {() => AmountMathKind} getAmountMathKind
- * Get the kind of amountMath used. This can be passed as an
- * argument to `makeAmountMath` to create local amountMath.
- *
- * @property {(allegedValue: Value) => Amount} make
+ * @property {(allegedValue: Value, brand: Brand) => Amount} make
  * Make an amount from a value by adding the brand.
  *
- * @property {(allegedAmount: Amount) => Amount} coerce
+ * @property {(allegedAmount: Amount, brand: Brand) => Amount} coerce
  * Make sure this amount is valid and return it if so.
  *
- * @property {(amount: Amount) => Value} getValue
+ * @property {(amount: Amount, brand: Brand) => Value} getValue
  * Extract and return the value.
  *
- * @property {() => Amount} getEmpty
+ * @property {(brand: Brand) => Amount} getEmpty
  * Return the amount representing an empty amount. This is the
  * identity element for MathHelpers.add and MatHelpers.subtract.
  *
- * @property {(amount: Amount) => boolean} isEmpty
+ * @property {(amount: Amount, brand?: Brand) => boolean} isEmpty
  * Return true if the Amount is empty. Otherwise false.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => boolean} isGTE
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => boolean} isGTE
  * Returns true if the leftAmount is greater than or equal to the
  * rightAmount. For non-scalars, "greater than or equal to" depends
  * on the kind of amount, as defined by the MathHelpers. For example,
  * whether rectangle A is greater than rectangle B depends on whether rectangle
  * A includes rectangle B as defined by the logic in MathHelpers.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => boolean} isEqual
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => boolean} isEqual
  * Returns true if the leftAmount equals the rightAmount. We assume
  * that if isGTE is true in both directions, isEqual is also true
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} add
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => Amount} add
  * Returns a new amount that is the union of both leftAmount and rightAmount.
  *
  * For fungible amount this means adding the values. For other kinds of
  * amount, it usually means including all of the elements from both
  * left and right.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} subtract
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => Amount} subtract
  * Returns a new amount that is the leftAmount minus the rightAmount
  * (i.e. everything in the leftAmount that is not in the
  * rightAmount). If leftAmount doesn't include rightAmount
@@ -224,7 +219,6 @@
  *
  * @property {Mint} mint
  * @property {Issuer} issuer
- * @property {AmountMath} amountMath
  * @property {Brand} brand
  */
 
