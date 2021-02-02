@@ -9,8 +9,7 @@
  * @param {Record<string, string>} [param0.env] the default environment
  * @param {*} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
- * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}
- * param0.spawn the spawn function
+ * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}param0.spawn the spawn function
  */
 export const makePspawn = ({
   env: defaultEnv = process.env,

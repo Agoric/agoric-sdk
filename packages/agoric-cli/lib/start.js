@@ -26,6 +26,7 @@ const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 
 /**
  * Resolve after a delay in milliseconds.
+ *
  * @param {number} ms
  * @returns {Promise<void>}
  */

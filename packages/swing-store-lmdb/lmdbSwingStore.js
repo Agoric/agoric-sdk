@@ -10,7 +10,7 @@ import lmdb from 'node-lmdb';
  * @param dirPath  Path to a directory in which database files may be kept.
  * @param forceReset  If true, initialize the database to an empty state
  *
- * @return an object: {
+ * @returns an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
  *   close    // a function to shutdown the store, abandoning any uncommitted changes
@@ -58,7 +58,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    *
    * @param key  The key whose value is sought.
    *
-   * @return the (string) value for the given key, or undefined if there is no
+   * @returns the (string) value for the given key, or undefined if there is no
    *    such value.
    *
    * @throws if key is not a string.
@@ -85,7 +85,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @param end  End of the key range of interest (exclusive).  An empty string
    *    indicates a range through the end of the key set.
    *
-   * @return an iterator for the keys from start <= key < end
+   * @yields an iterator for the keys from start <= key < end
    *
    * @throws if either parameter is not a string.
    */
@@ -112,7 +112,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    *
    * @param key  The key that is of interest.
    *
-   * @return true if a value is stored for the key, false if not.
+   * @returns true if a value is stored for the key, false if not.
    *
    * @throws if key is not a string.
    */
@@ -206,7 +206,7 @@ function makeSwingStore(dirPath, forceReset = false) {
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * @return an object: {
+ * @returns an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
  *   close    // a function to shutdown the store, abandoning any uncommitted
@@ -229,7 +229,7 @@ export function initSwingStore(dirPath) {
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * @return an object: {
+ * @returns an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
  *   close    // a function to shutdown the store, abandoning any uncommitted
@@ -249,7 +249,7 @@ export function openSwingStore(dirPath) {
  * @param dirPath  Path to a directory in which database files might be present.
  *   This directory need not actually exist
  *
- * @return boolean
+ * @returns boolean
  *   If the directory is present and contains the files created by initSwingStore
  *   or openSwingStore, returns true. Else returns false.
  *
