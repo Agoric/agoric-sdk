@@ -144,6 +144,10 @@ jobs:
       run: cd packages/deployment && yarn test
       env:
         ESM_DISABLE_CACHE: true
+    - name: yarn test (deploy-script-support)
+      run: cd packages/deploy-script-support && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (ERTP)
       run: cd packages/ERTP && yarn test
       env:
@@ -230,6 +234,10 @@ jobs:
         ESM_DISABLE_CACHE: true
     - name: yarn test (transform-metering)
       run: cd packages/transform-metering && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (ui-components)
+      run: cd packages/ui-components && yarn test
       env:
         ESM_DISABLE_CACHE: true
 
