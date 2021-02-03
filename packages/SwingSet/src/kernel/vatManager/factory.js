@@ -44,6 +44,7 @@ export function makeVatManagerFactory({
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
+    allVatPowers,
     testLog: allVatPowers.testLog,
     decref: gcTools.decref,
   });

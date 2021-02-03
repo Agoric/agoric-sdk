@@ -13,8 +13,9 @@ const decoder = new TextDecoder();
 
 /**
  * @param {{
- *   startXSnap: (name: string, handleCommand: SyncHandler) => { worker: XSnap, bundles: Record<string, ExportBundle> },
+ *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
+ *   startXSnap: (name: string, handleCommand: SyncHandler) => { worker: XSnap, bundles: Record<string, ExportBundle> },
  *   testLog: (...args: unknown[]) => void,
  *   decref: (vatID: unknown, vref: unknown, count: number) => void,
  * }} tools
@@ -28,8 +29,9 @@ const decoder = new TextDecoder();
  * @typedef { [unknown, ...unknown[]] } Tagged
  */
 export function makeXsSubprocessFactory({
-  startXSnap,
+  allVatPowers: { transformTildot },
   kernelKeeper,
+  startXSnap,
   testLog,
   decref,
 }) {
@@ -96,6 +98,16 @@ export function makeXsSubprocessFactory({
           assert(typeof count === 'number');
           vatDecref(vref, count);
           return ['OK'];
+        }
+        case 'transformTildot': {
+          const [extjs] = args;
+          try {
+            const stdjs = transformTildot(extjs);
+            // console.log({ extjs, stdjs });
+            return ['ok', stdjs];
+          } catch (err) {
+            return ['err', err.message];
+          }
         }
         default:
           throw new Error(`unrecognized uplink message ${type}`);
