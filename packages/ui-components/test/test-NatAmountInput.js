@@ -1,4 +1,7 @@
 // @ts-check
+
+import '@agoric/install-ses';
+
 import test from 'ava';
 import React from 'react';
 import { shallow, render } from 'enzyme';
