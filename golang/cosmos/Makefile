@@ -89,10 +89,13 @@ proto-lint: proto-tools
 proto-check-breaking: proto-tools
 	buf check breaking --against-input '.git#branch=master'
 
-TM_URL           = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.0-rc3/proto/tendermint
+TMVER = v0.34.3
+COSMOSVER = v0.41.0
+
+TM_URL           = https://raw.githubusercontent.com/tendermint/tendermint/$(TMVER)/proto/tendermint
 GOGO_PROTO_URL   = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-IBC_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/ibc/core
-COSMOS_SDK_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master/proto/cosmos/base
+IBC_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/$(COSMOSVER)/proto/ibc/core
+COSMOS_SDK_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/$(COSMOSVER)/proto/cosmos/base
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
 IBC_CHANNEL_TYPES = third_party/proto/ibc/core/channel/v1

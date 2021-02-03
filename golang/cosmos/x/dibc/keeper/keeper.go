@@ -61,10 +61,16 @@ func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (
 	return k.channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
 }
 
+// GetChannel defines a wrapper function for the channel Keeper's function
+// in order to expose it to the dibc IBC handler.
+func (k Keeper) GetChannel(ctx sdk.Context, portID, channelID string) (channeltypes.Channel, bool) {
+	return k.channelKeeper.GetChannel(ctx, portID, channelID)
+}
+
 // ChanOpenInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the dibc IBC handler.
 func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
-	portID, rPortID, rChannelID, version string,
+	portID, rPortID, version string,
 ) error {
 	capName := host.PortPath(portID)
 	portCap, ok := k.GetCapability(ctx, capName)
@@ -72,8 +78,7 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
 	}
 	counterparty := channeltypes.Counterparty{
-		ChannelId: rChannelID,
-		PortId:    rPortID,
+		PortId: rPortID,
 	}
 	channelID, chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, portCap, counterparty, version)
 	if err != nil {

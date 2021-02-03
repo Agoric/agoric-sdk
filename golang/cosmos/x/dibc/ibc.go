@@ -307,13 +307,14 @@ func (am AppModule) OnChanOpenTry(
 }
 
 type channelOpenAckEvent struct {
-	Type                string `json:"type"`  // IBC
-	Event               string `json:"event"` // channelOpenAck
-	PortID              string `json:"portID"`
-	ChannelID           string `json:"channelID"`
-	CounterpartyVersion string `json:"counterpartyVersion"`
-	BlockHeight         int64  `json:"blockHeight"`
-	BlockTime           int64  `json:"blockTime"`
+	Type                string                    `json:"type"`  // IBC
+	Event               string                    `json:"event"` // channelOpenAck
+	PortID              string                    `json:"portID"`
+	ChannelID           string                    `json:"channelID"`
+	CounterpartyVersion string                    `json:"counterpartyVersion"`
+	Counterparty        channeltypes.Counterparty `json:"counterparty"`
+	BlockHeight         int64                     `json:"blockHeight"`
+	BlockTime           int64                     `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenAck(
@@ -330,12 +331,15 @@ func (am AppModule) OnChanOpenAck(
 		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
+	channel, _ := am.keeper.GetChannel(ctx, portID, channelID)
+
 	event := channelOpenAckEvent{
 		Type:                "IBC_EVENT",
 		Event:               "channelOpenAck",
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
+		Counterparty:        channel.Counterparty,
 		BlockHeight:         ctx.BlockHeight(),
 		BlockTime:           ctx.BlockTime().Unix(),
 	}
