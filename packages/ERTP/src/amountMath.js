@@ -1,12 +1,12 @@
 // @ts-check
 
 import { assert, details } from '@agoric/assert';
+import { mustBeComparable } from '@agoric/same-structure';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
 import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
-import { mustBeComparable } from '@agoric/same-structure';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
