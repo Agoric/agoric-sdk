@@ -318,10 +318,8 @@ test('records', t => {
   }
   const CSO = /cannot serialize objects/;
   const NOACC = /Records must not contain accessors/;
-  // this error is accidental, and will go away
-  const SYMSTR = /Cannot convert a Symbol value to a string/;
-  // const REMSYM = /Remotables must not have symbol-named properties/;
-  // const RECSYM = /Records must not have symbol-named properties/;
+  const REMSYM = /Remotables must not have symbol-named properties/;
+  const RECSYM = /Records must not have symbol-named properties/;
   const RECENUM = /Record fields must be enumerable/;
   // const REMENUM = /Remotable methods must be enumerable/;
   const NOMETH = /cannot serialize objects with non-methods/;
@@ -386,13 +384,13 @@ test('records', t => {
   shouldThrow(['enumStringGet', 'enumStringFunc'], CSO);
 
   // anything with symbol-named properties is rejected
-  // shouldThrow(['enumSymbol'], REMSYM);
-  shouldThrow(['enumSymbol', 'enumStringData'], SYMSTR);
-  // shouldThrow(['enumSymbol', 'enumStringFunc'], REMSYM);
+  shouldThrow(['enumSymbol'], REMSYM);
+  shouldThrow(['enumSymbol', 'enumStringData'], RECSYM);
+  shouldThrow(['enumSymbol', 'enumStringFunc'], REMSYM);
 
-  // shouldThrow(['nonenumSymbol'], REMSYM);
-  shouldThrow(['nonenumSymbol', 'enumStringData'], SYMSTR);
-  // shouldThrow(['nonenumSymbol', 'enumStringFunc'], REMSYM);
+  shouldThrow(['nonenumSymbol'], REMSYM);
+  shouldThrow(['nonenumSymbol', 'enumStringData'], RECSYM);
+  shouldThrow(['nonenumSymbol', 'enumStringFunc'], REMSYM);
 
   // anything with non-enumerable properties is rejected
   shouldThrow(['nonenumString'], RECENUM);

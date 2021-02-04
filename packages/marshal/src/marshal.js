@@ -208,7 +208,8 @@ function isPassByCopyRecord(val) {
   if (Object.getPrototypeOf(val) !== Object.prototype) {
     return false;
   }
-  const descEntries = Object.entries(Object.getOwnPropertyDescriptors(val));
+  const descs = Object.getOwnPropertyDescriptors(val);
+  const descEntries = Object.entries(descs);
   if (descEntries.length === 0) {
     // empty non-array objects are pass-by-remote, not pass-by-copy
     return false;
@@ -218,12 +219,12 @@ function isPassByCopyRecord(val) {
       return false;
     }
   }
+  for (const key of Object.getOwnPropertySymbols(descs)) {
+    throw new TypeError(
+      `Records must not have symbol-named properties: ${String(key)}`,
+    );
+  }
   for (const [key, desc] of descEntries) {
-    if (typeof key === 'symbol') {
-      throw new TypeError(
-        `Records must not have symbol-named properties: ${String(key)}`,
-      );
-    }
     if (!('value' in desc)) {
       throw new TypeError(`Records must not contain accessors: ${key}`);
     }
@@ -253,13 +254,24 @@ function assertCanBeRemotable(val) {
     throw new Error(`null cannot be pass-by-remote`);
   }
 
-  const names = Object.getOwnPropertyNames(val);
+  const descs = Object.getOwnPropertyDescriptors(val);
+
+  for (const key of Object.getOwnPropertySymbols(descs)) {
+    throw new TypeError(
+      `Remotables must not have symbol-named properties: ${String(key)}`,
+    );
+  }
+
+  const names = Object.getOwnPropertyNames(descs);
   names.forEach(name => {
     if (typeof val[name] !== 'function') {
       throw new Error(
         `cannot serialize objects with non-methods like the .${name} in ${val}`,
       );
       // return false;
+    }
+    if (!descs[name].enumerable) {
+      throw new TypeError(`Remotable methods must be enumerable: ${name}`);
     }
   });
 
