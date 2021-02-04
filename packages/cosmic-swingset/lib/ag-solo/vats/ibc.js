@@ -15,7 +15,7 @@ import { makeWithQueue } from './queue';
 
 const DEFAULT_PACKET_TIMEOUT = 1000;
 
-// FIXME: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
+// CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
 const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 
@@ -43,8 +43,6 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
  * @property {IBCPortID} destination_port
  */
 
-let lastPortID = 0;
-
 /**
  * Create a handler for the IBC protocol, both from the network
  * and from the bridge.
@@ -54,6 +52,9 @@ let lastPortID = 0;
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
 export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
+  // Nonce for creating port identifiers.
+  let lastPortID = 0;
+
   const callIBCDevice = (method, params) => {
     console.info('IBC downcall', method, params);
     return rawCallIBCDevice(method, params);

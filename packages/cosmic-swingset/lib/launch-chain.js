@@ -18,6 +18,10 @@ const log = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
+// This is how many cranks we run per block, as per #2299.
+// TODO Make it dependent upon metering instead.
+const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
+
 async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
@@ -95,7 +99,13 @@ export async function launch(
   // ////////////////////////////
   // TODO: This is where we would add the scheduler.
   async function endBlock(_blockHeight, _blockTime) {
-    await controller.run();
+    let stepsRemaining = FIXME_MAX_CRANKS_PER_BLOCK;
+    let stepped = true;
+    while (stepped && stepsRemaining > 0) {
+      // eslint-disable-next-line no-await-in-loop
+      stepped = await controller.step();
+      stepsRemaining -= 1;
+    }
   }
 
   async function saveChainState() {

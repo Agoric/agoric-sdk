@@ -331,6 +331,8 @@ func (am AppModule) OnChanOpenAck(
 		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	}
 
+	// We don't care if the channel was found.  If it wasn't then GetChannel
+	// returns an empty channel object that we can still use without crashing.
 	channel, _ := am.keeper.GetChannel(ctx, portID, channelID)
 
 	event := channelOpenAckEvent{
