@@ -118,10 +118,12 @@ start-solos)
       rpcport=`$thisdir/../calc-rpcport.js $n0d/config/config.toml`
 
       addr=$(cat ag-cosmos-helper-address)
-      $CLI --home=./$CLI-statedir tx swingset provision-one \
+      while ! $CLI --home=./$CLI-statedir tx swingset provision-one \
         "$solo" "$addr" agoric.vattp \
         --node="tcp://$rpcport" --chain-id="$chainid" \
-        --keyring-backend=test --from=ag-solo --yes
+        --keyring-backend=test --from=ag-solo --yes; do
+        sleep 5
+      done
 
       # Now wire into the chain.
       gci=`$thisdir/../calc-gci.js $n0d/config/genesis.json`
@@ -154,7 +156,9 @@ start-relayer)
 
   echo "Reading path specification (Control-D to finish, Control-C to abort)..."
   tmpfile=$(mktemp ${TMPDIR-/tmp}/relayer-start.XXXXXX)
-  trap "rm -f '$tmpfile'" EXIT
+  cfgfile=$(mktemp ${TMPDIR-/tmp}/relayer-config.XXXXXX)
+  trap "rm -f '$tmpfile' '$cfgfile'" EXIT 
+  rly config show --json > "$cfgfile"
   cat > "$tmpfile"
 
   srccid=$(jq -r '.src["connection-id"]' "$tmpfile")
@@ -162,6 +166,12 @@ start-relayer)
     echo 1>&2 "You must specify .src[\"connection-id\"]"
     exit 1
   fi
+
+  # Extract existing config.
+  for path in $(jq '.paths | keys | .[]' "$cfgfile"); do
+    rawpath=$(echo "$path" | jq -r .)
+    jq -r ".paths[$path]" "$cfgfile" > "nchainz/config/$rawpath.json"
+  done
 
   jqexpr=
   for fname in nchainz/config/*.json; do
@@ -197,6 +207,9 @@ start-relayer)
     exit 1
   fi
 
+  # Trim off the channel ids.
+  jqexpr=$jqexpr' | del(.src["channel-id"]) | del(.dst["channel-id"])'
+
   if [[ $replace == yes ]]; then
     # Overwrite existing path.
     echo "Replacing path \`$path'"
@@ -220,8 +233,6 @@ start-relayer)
   echo "$ rly config add-dir nchainz/config/"
   rly config add-dir nchainz/config/
 
-  echo "$ rly start -d $path"
-  rly start -d "$path" &
   try=0
   while ! rly tx link $path --timeout=3s -d >> "nchainz/logs/$path.log" 2>&1; do
     try=$(( $try + 1 ))
@@ -232,7 +243,8 @@ start-relayer)
   echo "$path tx link initialized (try=$try)"
 
   # Wait for the rly start command.
-  wait
+  echo "$ rly start -d $path"
+  rly start -d "$path"
   ;;
 *)
   echo 1>&2 "$progname: unrecognized command \`$COMMAND'"
