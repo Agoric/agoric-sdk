@@ -225,7 +225,7 @@ test('fail to send command to already-closed xnsap worker', async t => {
   const vat = xsnap({ ...xsnapOptions });
   await vat.close();
   await vat.evaluate(``).catch(err => {
-    t.is(err.message, 'xsnap test worker exited')
+    t.is(err.message, 'xsnap test worker exited');
   });
 });
 
@@ -242,7 +242,10 @@ test('fail to send command to terminated xnsap worker', async t => {
   const hang = vat.evaluate(`for (;;) {}`).then(
     () => t.fail('command should not complete'),
     err => {
-      t.is(err.message, 'Cannot write messages to xsnap test worker: write EPIPE')
+      t.is(
+        err.message,
+        'Cannot write messages to xsnap test worker: write EPIPE',
+      );
     },
   );
 
@@ -270,18 +273,14 @@ test('normal close of pathological script', async t => {
   const hang = vat.evaluate(`for (;;) {}`).then(
     () => t.fail('command should not complete'),
     err => {
-      t.is(err.message, 'xsnap test worker exited due to signal SIGTERM')
+      t.is(err.message, 'xsnap test worker exited due to signal SIGTERM');
     },
   );
   // Allow the evaluate command to flush.
   await delay(10);
   // Close must timeout and the evaluation command
   // must hang.
-  await Promise.race([
-    vat.close().then(() => t.fail()),
-    hang,
-    delay(10),
-  ]);
+  await Promise.race([vat.close().then(() => t.fail()), hang, delay(10)]);
   await vat.terminate();
   await hang;
 });
