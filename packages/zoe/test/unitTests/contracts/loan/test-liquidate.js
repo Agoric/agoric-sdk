@@ -138,7 +138,10 @@ test('test with malfunctioning autoswap', async t => {
     makeSwapInInvitation: () => zcf.makeInvitation(swapHandler, 'swap'),
   });
 
-  await doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat);
+  await t.throwsAsync(
+    () => doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat),
+    { message: 'Pool not initialized' },
+  );
 
   // Ensure collateralSeat exited
   t.truthy(collateralSeat.hasExited());

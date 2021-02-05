@@ -164,8 +164,8 @@ export const makeMakeSwapInvitation = (
 
       const brandInAmountMath = getPool(brandIn).getAmountMath();
       if (!brandInAmountMath.isGTE(offeredAmountIn, amountIn)) {
-        seat.fail();
-        return `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
+        const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
+        throw seat.fail(Error(reason));
       }
 
       trade(
