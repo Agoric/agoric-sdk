@@ -37,6 +37,15 @@
     option: addr_book_strict
     value: "false"
 
+# This limit is 40 by default, but that turns out to be too small
+# for a trivial testnet (no sentry nodes) with > 40 validators.
+- name: Set p2p.max_num_inbound_peers=200
+  ini_file:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    section: p2p
+    option: max_num_inbound_peers
+    value: 200
+
 - name: Set tx_index.index_all_keys=true
   ini_file:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
