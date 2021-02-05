@@ -73,6 +73,20 @@ test('evaluate error', async t => {
   await vat.terminate();
 });
 
+test.failing('uncaught rejections should not be silent', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await vat
+    .evaluate(`Promise.reject(1)`)
+    .then(_ => {
+      t.fail('should throw');
+    })
+    .catch(_ => {
+      t.pass();
+    });
+  await vat.terminate();
+});
+
 test('reject odd regex range', async t => {
   const opts = options();
   const vat = xsnap(opts);
