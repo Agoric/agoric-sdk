@@ -30,7 +30,7 @@ function managerPort(issueCommand) {
   const encode = item => encoder.encode(JSON.stringify(item)).buffer;
 
   /** @type { (msg: ArrayBuffer) => any } */
-  const decodeData = msg => JSON.parse(decoder.decode(msg));
+  const decodeData = msg => JSON.parse(decoder.decode(msg) || 'null');
 
   /** @type { (msg: ArrayBuffer) => Tagged } */
   function decode(msg) {
@@ -175,6 +175,9 @@ function makeWorker(port) {
       callNow: (...args) => doSyscall(['callNow', ...args]),
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
       resolve: (...args) => doSyscall(['resolve', ...args]),
+      vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
+      vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
+      vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
     });
 
     const vatPowers = {
