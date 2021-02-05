@@ -817,7 +817,7 @@ export default function buildKernel(
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
       // eslint-disable-next-line no-await-in-loop
       const NS = await importBundle(source.bundle, {
-        filePrefix: `dev-${name}`,
+        filePrefix: `dev-${name}/...`,
         endowments: harden({ ...vatEndowments, console: devConsole, assert }),
       });
       assert(

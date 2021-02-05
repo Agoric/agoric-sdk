@@ -84,7 +84,7 @@ export async function makeSwingsetController(
   }
   const kernelBundle = JSON.parse(hostStorage.get('kernelBundle'));
   const kernelNS = await importBundle(kernelBundle, {
-    filePrefix: 'kernel',
+    filePrefix: 'kernel/...',
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
       assert,
