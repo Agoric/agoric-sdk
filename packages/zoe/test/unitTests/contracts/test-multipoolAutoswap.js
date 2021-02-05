@@ -1655,3 +1655,98 @@ test('multipoolAutoSwap jig - remove all liquidity', async t => {
   );
   moolaPoolState = updatePoolState(moolaPoolState, liqExpected);
 });
+
+test('multipoolAutoSwap jig - insufficient', async t => {
+  const { moolaR, moola } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = centralR.amountMath.make;
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(centralTokens(30000));
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
+
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+  );
+  /** @type {MultipoolAutoswapPublicFacet} */
+  const { publicFacet } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityAmountMath = await makeLocalAmountMath(
+    moolaLiquidityIssuer,
+  );
+
+  const moolaLiquidity = moolaLiquidityAmountMath.make;
+  const mIssuerKeywordRecord = {
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let mPoolState = {
+    c: 0,
+    s: 0,
+    l: 0,
+    k: 0,
+  };
+  const initMoolaLiquidityDetails = {
+    cAmount: centralTokens(10000),
+    sAmount: moola(10000),
+    lAmount: moolaLiquidity(10000),
+  };
+  const initMoolaLiquidityExpected = {
+    c: 10000,
+    s: 10000,
+    l: 10000,
+    k: 100000000,
+    payoutC: 0,
+    payoutS: 0,
+    payoutL: 10000,
+  };
+  await alice.initLiquidityAndCheck(
+    t,
+    mPoolState,
+    initMoolaLiquidityDetails,
+    initMoolaLiquidityExpected,
+    mIssuerKeywordRecord,
+  );
+  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
+
+  // trade for central specifying 300 output: moola price 311
+  const gain = 300;
+  const mPrice = priceFromTargetOutput(gain, mPoolState.c, mPoolState.s, 30);
+  t.is(mPrice, 311);
+
+  // provide insufficient moola; trade fails
+  const seat = await alice.offerAndTrade(
+    centralTokens(gain),
+    moola(200),
+    false,
+  );
+  await t.throwsAsync(
+    () => seat.getOfferResult(),
+    { message: / is insufficient to buy amountOut / },
+    `shouldn't have been able to trade`,
+  );
+  const { In: refund, Out: payout } = await seat.getPayouts();
+  t.deepEqual(await moolaR.issuer.getAmountOf(refund), moola(200));
+  t.deepEqual(await centralR.issuer.getAmountOf(payout), centralTokens(0));
+});

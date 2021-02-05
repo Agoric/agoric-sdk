@@ -48,6 +48,7 @@ export const doLiquidation = async (
     lenderSeat.fail(err);
     collateralSeat.fail(err);
     zcf.shutdownWithFailure(err);
+    throw err;
   };
 
   const offerResultP = E(autoswapUserSeat).getOfferResult();
