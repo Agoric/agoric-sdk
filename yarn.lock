@@ -9162,10 +9162,10 @@ ses@^0.11.0:
     "@agoric/make-hardener" "^0.1.0"
     "@agoric/transform-module" "^0.4.1"
 
-ses@^0.12.1:
-  version "0.12.1"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.1.tgz#d19573eef628782fb939faa4e4e4102258669072"
-  integrity sha512-psZZCy75Bf7yJAapStZ011/xfpcCqASMYo+LbaZYHtESHI3ZCYNCsfST5JlQfL/LetDEm5uT+nanN1RFLeZolA==
+ses@^0.12.2:
+  version "0.12.2"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.2.tgz#ac8180eb8ec8e12652f352c2f3fae0b19be03465"
+  integrity sha512-XhzToLDYbT4liHNzt+GY6RNP64e+pi2ioCgyYztXt6ZnsSF4UttaN1EXEzDZoPjU67Nym7f8bSQiVRu7tezD5g==
   dependencies:
     "@agoric/babel-standalone" "^7.9.5"
     "@agoric/make-hardener" "^0.1.2"
