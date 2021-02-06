@@ -151,7 +151,7 @@ export function makeLocalVatManagerFactory(tools) {
     }
 
     const vatNS = await importBundle(bundle, {
-      filePrefix: vatID,
+      filePrefix: `vat-${vatID}/...`,
       endowments,
       inescapableTransforms,
       inescapableGlobalLexicals,
