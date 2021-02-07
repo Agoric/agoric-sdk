@@ -4,7 +4,6 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
-import { deleteCListEntryIfEasy } from './cleanup';
 
 /*
  * Return a function that converts KernelDelivery objects into VatDelivery
@@ -223,6 +222,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
 
   function translateResolve(vresolutions) {
     const kresolutions = [];
+    const kpidsResolved = [];
     let idx = 0;
     for (const resolution of vresolutions) {
       const [vpid, rejected, data] = resolution;
@@ -238,19 +238,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       );
       idx += 1;
       kresolutions.push([kpid, rejected, kernelData]);
-      deleteCListEntryIfEasy(
-        vatID,
-        vatKeeper,
-        kernelKeeper,
-        kpid,
-        vpid,
-        kernelData,
-      );
+      kpidsResolved.push(kpid);
     }
-    // XXX TODO Once we get rid of the "if easy" logic, the above deletions
-    // should be collected and then processed in a batch here after all the
-    // translation is done, e.g., something like:
-    // vatKeeper.deleteCListEntriesForKernelSlots(targets);
+    vatKeeper.deleteCListEntriesForKernelSlots(kpidsResolved);
     return harden(['resolve', vatID, kresolutions]);
   }
 

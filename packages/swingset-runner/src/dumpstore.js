@@ -172,6 +172,10 @@ export function dumpStore(store, outfile, rawMode) {
     popt(key);
   }
 
+  if (outfile) {
+    out.end('');
+  }
+
   function p(str) {
     out.write(str);
     out.write('\n');

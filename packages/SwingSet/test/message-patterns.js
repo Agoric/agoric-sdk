@@ -895,6 +895,42 @@ export function buildPatterns(log) {
   out.a91 = ['carol got Pbert', 'hi bert'];
   test('a91');
 
+  // 100-series: test cross-referential promise resolutions
+  test('a100');
+  {
+    objA.a100 = async () => {
+      const apa = await E(b.bob).b100_1();
+      const apb = await E(b.bob).b100_2();
+      const pa = apa[0];
+      const pb = apb[0];
+      E(b.bob).b100_3([pa], [pb]);
+      try {
+        const pa2 = (await pa)[0];
+        const pb2 = (await pb)[0];
+        const pa3 = (await pa2)[0];
+        const pb3 = (await pb2)[0];
+        log(`${pb3 !== pa3}`);
+        log(`${pb3 === pa2}`);
+        log(`${pa3 === pb2}`);
+      } catch (e) {
+        log(`a100 await failed with ${e}`);
+      }
+    };
+    const p1 = makePromiseKit();
+    const p2 = makePromiseKit();
+    objB.b100_1 = () => {
+      return [p1.promise];
+    };
+    objB.b100_2 = () => {
+      return [p2.promise];
+    };
+    objB.b100_3 = (apa, apb) => {
+      p1.resolve(apb);
+      p2.resolve(apa);
+    };
+  }
+  out.a100 = ['true', 'true', 'true'];
+
   // TODO: kernel-allocated promise, either comms or kernel resolves it,
   // comms needs to send into kernel again
 

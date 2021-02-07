@@ -33,6 +33,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     changeDeciderFromRemoteToComms,
     getPromiseSubscribers,
     markPromiseAsResolved,
+    markPromiseAsResolvedInKernel,
   } = stateKit;
 
   function mapDataToKernel(data) {
@@ -339,6 +340,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // the kernel now forgets this vpid: the p.resolved flag in
       // promiseTable reminds provideKernelForLocal to use a fresh VPID if we
       // ever reference it again in the future
+    }
+    for (const resolution of resolutions) {
+      const [vpid] = resolution;
+      markPromiseAsResolvedInKernel(vpid);
     }
   }
 

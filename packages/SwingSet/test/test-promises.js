@@ -7,8 +7,6 @@ import {
   buildKernelBundles,
 } from '../src/index';
 
-const RETIRE_KPIDS = true;
-
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   t.context.data = { kernelBundles };
@@ -146,34 +144,23 @@ test('circular promise resolution data', async t => {
       },
     },
     {
-      id: 'kp41',
+      id: 'kp45',
       state: 'fulfilledToData',
-      refCount: 2,
+      refCount: 1,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp42'],
+        slots: ['kp46'],
       },
     },
     {
-      id: 'kp42',
+      id: 'kp46',
       state: 'fulfilledToData',
-      refCount: 2,
+      refCount: 1,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp41'],
+        slots: ['kp45'],
       },
     },
   ];
-  if (!RETIRE_KPIDS) {
-    expectedPromises.push({
-      id: 'kp43',
-      state: 'fulfilledToData',
-      refCount: 0,
-      data: {
-        body: '{"@qclass":"undefined"}',
-        slots: [],
-      },
-    });
-  }
   t.deepEqual(c.dump().promises, expectedPromises);
 });

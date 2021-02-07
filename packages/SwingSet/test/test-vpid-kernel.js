@@ -10,8 +10,6 @@ import { initializeKernel } from '../src/kernel/initializeKernel';
 
 import { buildDispatch } from './util';
 
-const RETIRE_VPIDS = true;
-
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -61,8 +59,7 @@ async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
 
 // The next batch of tests exercises how the kernel handles promise
 // identifiers ("vpid" strings) across various forms of resolution. Our
-// current code never retires vpids, but an upcoming storage-performance
-// improvement will retire them after resolution. We have the simulated vat
+// current code retires vpids after resolution. We have the simulated vat
 // do various syscalls, and examine the kernel's c-lists afterwards.
 
 // legend:
@@ -104,6 +101,8 @@ const modes = [
 ];
 
 const slot0arg = { '@qclass': 'slot', index: 0 };
+
+const undefinedArg = { '@qclass': 'undefined' };
 
 function doResolveSyscall(syscallA, vpid, mode, targets) {
   switch (mode) {
@@ -261,9 +260,6 @@ async function doTest123(t, which, mode) {
   let p1VatA;
   let p1VatB;
 
-  const expectRetirement =
-    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
-
   if (which === 1) {
     // 1: Alice creates a new promise, sends it to Bob, and resolves it
     // A: bob~.one(p1); resolve_p1(mode) // to bob, 4, or reject
@@ -368,16 +364,10 @@ async function doTest123(t, which, mode) {
   t.deepEqual(got, wanted);
   t.deepEqual(logB, []);
 
-  if (expectRetirement) {
-    // after resolution, A's c-list should *not* have the promise
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
-    t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-    t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-  } else {
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), true);
-    t.is(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
-    t.is(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
-  }
+  // after resolution, A's c-list should *not* have the promise
+  t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+  t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
 }
 // uncomment this when debugging specific problems
 // test.only(`XX`, async t => {
@@ -439,8 +429,6 @@ async function doTest4567(t, which, mode) {
   let p1kernel;
   let p1VatA;
   let p1VatB;
-
-  const expectRetirement = RETIRE_VPIDS;
 
   if (which === 4) {
     // 4: Alice receives a promise from Bob, which is then resolved
@@ -558,7 +546,7 @@ async function doTest4567(t, which, mode) {
   };
   onDispatchCallback = function odc1(d) {
     t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), !expectRetirement);
+    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
   };
   const targetsB = {
     target2: rootAvatB,
@@ -572,16 +560,10 @@ async function doTest4567(t, which, mode) {
   t.deepEqual(logA.shift(), resolutionOf(p1VatA, mode, targetsA));
   t.deepEqual(logA, []);
 
-  if (expectRetirement) {
-    // after resolution, A's c-list should *not* have the promise
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
-    t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-    t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-  } else {
-    t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
-    t.is(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
-    t.is(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
-  }
+  // after resolution, A's c-list should *not* have the promise
+  t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+  t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
 }
 
 for (const caseNum of [4, 5, 6, 7]) {
@@ -638,11 +620,13 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   const importedGenResultAvatX = 'p-60'; // re-export
   const importedGenResultAvatA = 'p-60';
   const importedGenResultAvatB = 'p-61';
+  const importedGenResultA2vatA = 'p-63';
   const genResultAkernel = 'kp40';
 
   const exportedGenResultBvatX = 'p+2';
   const importedGenResultBvatA = 'p-61';
   const importedGenResultBvatB = 'p-60';
+  const importedGenResultB2vatB = 'p-63';
   const genResultBkernel = 'kp41';
 
   const exportedUseResultAvatX = 'p+3';
@@ -650,11 +634,11 @@ test(`kernel vpid handling crossing resolutions`, async t => {
 
   const exportedUseResultBvatX = 'p+4';
 
-  const importedUseResultvatB = 'p-62';
+  const importedUseResultBvatB = 'p-62';
 
   // X is the controlling vat, which orchestrates alice and bob
-  // X: pa=alice~.getPromise()  // alice generates promise pa and returns it
-  // X: pb=bob~.getPromise()    // bob generates promise pb and returns it
+  // X: pa=alice~.genPromise()  // alice generates promise pa and returns it
+  // X: pb=bob~.genPromise()    // bob generates promise pb and returns it
   // X: alice~.usePromise(pb)   // alice resolves promise pa to an array containing pb
   // X: bob~.usePromise(pa)     // bob resolves promise pb to an array containing pa
 
@@ -719,7 +703,7 @@ test(`kernel vpid handling crossing resolutions`, async t => {
     targetSlot: rootBvatB,
     method: 'usePromise',
     args: capargs([slot0arg], [importedGenResultAvatB]),
-    resultSlot: importedUseResultvatB,
+    resultSlot: importedUseResultBvatB,
   });
   t.deepEqual(logA, []);
   t.deepEqual(logB, []);
@@ -746,6 +730,9 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // usePromise(b) delivered to A
   syscallA.subscribe(importedGenResultBvatA);
   syscallA.resolve([
+    [importedUseResultAvatA, false, capargs(undefinedArg, [])],
+  ]);
+  syscallA.resolve([
     [
       importedGenResultAvatA,
       false,
@@ -753,6 +740,18 @@ test(`kernel vpid handling crossing resolutions`, async t => {
     ],
   ]);
   await kernel.run();
+  t.deepEqual(logX.shift(), {
+    type: 'notify',
+    resolutions: [
+      [
+        exportedUseResultAvatX,
+        {
+          rejected: false,
+          data: capargs(undefinedArg, []),
+        },
+      ],
+    ],
+  });
   t.deepEqual(logX.shift(), {
     type: 'notify',
     resolutions: [
@@ -770,7 +769,7 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   t.deepEqual(logB, []);
 
   t.is(inCList(kernel, vatX, genResultAkernel, exportedGenResultAvatX), false);
-  t.is(inCList(kernel, vatA, genResultAkernel, importedGenResultAvatA), true);
+  t.is(inCList(kernel, vatA, genResultAkernel, importedGenResultAvatA), false);
   t.is(inCList(kernel, vatB, genResultAkernel, importedGenResultAvatB), true);
 
   t.is(inCList(kernel, vatA, genResultBkernel, importedGenResultBvatA), true);
@@ -782,6 +781,9 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // usePromise(a) delivered to B
   syscallB.subscribe(importedGenResultAvatB);
   syscallB.resolve([
+    [importedUseResultBvatB, false, capargs(undefinedArg, [])],
+  ]);
+  syscallB.resolve([
     [
       importedGenResultBvatB,
       false,
@@ -790,26 +792,18 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   ]);
 
   await kernel.run();
-  t.deepEqual(logB.shift(), {
+  t.deepEqual(logX.shift(), {
     type: 'notify',
     resolutions: [
       [
-        importedGenResultAvatB,
+        exportedUseResultBvatX,
         {
           rejected: false,
-          data: capargs([slot0arg], [importedGenResultBvatB]),
-        },
-      ],
-      [
-        importedGenResultBvatB,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [importedGenResultAvatB]),
+          data: capargs(undefinedArg, []),
         },
       ],
     ],
   });
-  t.deepEqual(logB, []);
   t.deepEqual(logX.shift(), {
     type: 'notify',
     resolutions: [
@@ -830,6 +824,26 @@ test(`kernel vpid handling crossing resolutions`, async t => {
     ],
   });
   t.deepEqual(logX, []);
+  t.deepEqual(logB.shift(), {
+    type: 'notify',
+    resolutions: [
+      [
+        importedGenResultAvatB,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultB2vatB]),
+        },
+      ],
+      [
+        importedGenResultB2vatB,
+        {
+          rejected: false,
+          data: capargs([slot0arg], [importedGenResultAvatB]),
+        },
+      ],
+    ],
+  });
+  t.deepEqual(logB, []);
   t.deepEqual(logA.shift(), {
     type: 'notify',
     resolutions: [
@@ -837,11 +851,11 @@ test(`kernel vpid handling crossing resolutions`, async t => {
         importedGenResultBvatA,
         {
           rejected: false,
-          data: capargs([slot0arg], [importedGenResultAvatA]),
+          data: capargs([slot0arg], [importedGenResultA2vatA]),
         },
       ],
       [
-        importedGenResultAvatA,
+        importedGenResultA2vatA,
         {
           rejected: false,
           data: capargs([slot0arg], [importedGenResultBvatA]),
