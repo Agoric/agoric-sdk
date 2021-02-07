@@ -47,6 +47,10 @@ export function makeKernel(state, syscall, stateKit) {
       // promise is retired (to remember the resolution).
       assert(p, `how did I forget about ${vpid}`);
 
+      if (p.kernelAwaitingResolve) {
+        return vpid;
+      }
+
       if (p.resolved) {
         // The vpid might have been retired, in which case we must not use it
         // when speaking to the kernel. It will only be retired if 1: it

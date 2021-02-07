@@ -28,7 +28,7 @@ test('local vat manager', async t => {
   t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
 });
 
-test('xs vat manager', async t => {
+test.skip('xs vat manager', async t => {
   const c = await makeController('xs-worker');
   t.teardown(c.shutdown);
 

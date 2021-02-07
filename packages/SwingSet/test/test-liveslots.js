@@ -338,24 +338,24 @@ async function doOutboundPromise(t, mode) {
     args: capargs([slot0arg], [expectedP2]),
     resultSlot: expectedResultP2,
   });
-  // and again it subscribes to the result promise
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
-
   resolveSyscall.resolutions[0][0] = expectedP2;
   t.deepEqual(log.shift(), resolveSyscall);
+
+  // and again it subscribes to the result promise
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
 
   t.deepEqual(log, []);
 }
 
-test('liveslots does not retire outbound promise IDs after resolve to presence', async t => {
+test('liveslots retires outbound promise IDs after resolve to presence', async t => {
   await doOutboundPromise(t, 'to presence');
 });
 
-test('liveslots does not retire outbound promise IDs after resolve to data', async t => {
+test('liveslots retires outbound promise IDs after resolve to data', async t => {
   await doOutboundPromise(t, 'to data');
 });
 
-test('liveslots does not retire outbound promise IDs after reject', async t => {
+test('liveslots retires outbound promise IDs after reject', async t => {
   await doOutboundPromise(t, 'reject');
 });
 
@@ -465,14 +465,14 @@ async function doResultPromise(t, mode) {
   t.deepEqual(log, []);
 }
 
-test('liveslots does not retire result promise IDs after resolve to presence', async t => {
+test('liveslots retires result promise IDs after resolve to presence', async t => {
   await doResultPromise(t, 'to presence');
 });
 
-test('liveslots does not retire result promise IDs after resolve to data', async t => {
+test('liveslots retires result promise IDs after resolve to data', async t => {
   await doResultPromise(t, 'to data');
 });
 
-test('liveslots does not retire result promise IDs after reject', async t => {
+test('liveslots retires result promise IDs after reject', async t => {
   await doResultPromise(t, 'reject');
 });

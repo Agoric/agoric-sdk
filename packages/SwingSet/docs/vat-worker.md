@@ -23,18 +23,21 @@ If instead, the run-queue action is `notify`, the action will name a promise (wh
 The `Delivery` object is a hardened Array of data (Objects, Arrays, and Strings, all of which can be serialized as JSON), whose first element is a type. It will take one of the following shapes:
 
 * `['message', targetSlot, msg]`
-* `['notify', vpid, vp]`
+* `['notify', resolutions]`
 
 In the `message` form, `targetSlot` is a object/promise reference (a string like `o+13` or `p-24`), which identifies the object or promise to which the message is being sent. This target can be a promise if the message is being pipelined to the result of some earlier message.
 
 The `msg` field is an object shaped like `{ method, args, result }`, where `method` is a string (the method name being invoked), `args` is a "capdata" structure (an object `{ body, slots }`, where `body` is a JSON-formatted string, and `slots` is an array of object/promise references), and `result` is either `null` or a promise reference string (the promise that should be resolved by the executing vat if/when the message processing is complete).
 
-In the `notify` form, `vpid` is a promise reference that names the promise being resolved. `vp` is a record that describes the resolution. It will take one of the following forms:
+In the `notify` form, `resolutions` is an array of one or more resolution descriptors, each of which is an array of the form:
 
-* `{ state: 'fulfilledToPresence', slot }` (where `slot` is an object reference string)
-* `{ state: 'fulfilledToData', data }` (where `data` is a capdata structure)
-* `{ state: 'rejected', data }` (again `data` is a capdata structure)
-* (a future form might use `state: 'forwarded'`, but that is not implemented yet)
+* `[vpid, promiseDescriptor]`
+
+`vpid` is a promise reference that names the promise being resolved. `promiseDescriptor` is a record that describes the resolution, in the form:
+
+* `{ rejected, data }`
+
+`rejected` is a boolean value, where `true` indicates that the promise is being fulfilled and `false` indicates that `data` is a capdata structure that describes the value the promise is being fulfilled to or rejected as.
 
 This Delivery object begins life in the kernel as a `KernelDelivery` object, in which all of the object/promise references ("slots") are kernel-centric. Object references will look like `ko123`, and promise references will look like `kp456`.
 
@@ -49,18 +52,20 @@ The VatManager is given access to a `VatSyscallHandler` function. This takes a `
 * `['send', target, msg]`
 * `['callNow', target, method, args]`
 * `['subscribe', vpid]`
-* `['fulfillToPresence', vpid, slot]`
-* `['fulfillToData', vpid, data]`
-* `['reject', vpid, data]`
+* `['resolve', resolutions]`
+* `['vatstoreGet', key]`
+* `['vatstoreSet', key, data]`
+* `['vatstoreDelete', key]`
 
 As with deliveries (but in reverse), the translator converts this from vat-centric identifiers into kernel-centric ones, and emits a `KernelSyscall` object, with one of these forms:
 
 * `['send', target, msg]`
 * `['invoke', target, method, args]`
 * `['subscribe', vatid, kpid]`
-* `['fulfillToPresence', kpid, slot]`
-* `['fulfillToData', kpid, data]`
-* `['reject', kpid, data]`
+* `['resolve', vatid, resolutions]`
+* `['vatstoreGet', vatid, key]`
+* `['vatstoreSet', vatid, key, data]`
+* `['vatstoreDelete', vatid, key]`
 
 The `KernelSyscallHandler` accepts one of these objects and executes the syscall. Most syscalls modify kernel state (by appending an item to the run-queue, or modifying promise- and object- tables) and then return an empty result. `invoke` is special in that it will synchronously invoke some device and then return a result that contains arbitrary data. In any event, the KernelSyscallHandler returns a `KernelSyscallResult` object, which has one of the following forms:
 

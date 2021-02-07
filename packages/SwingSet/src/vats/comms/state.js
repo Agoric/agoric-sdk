@@ -244,10 +244,18 @@ export function makeStateKit(state) {
     assert(!p.resolved);
     insistCapData(resolution.data);
     p.resolved = true;
+    p.kernelAwaitingResolve = true;
     p.resolution = resolution;
     p.decider = undefined;
     p.subscribers = undefined;
     p.kernelIsSubscribed = undefined;
+  }
+
+  function markPromiseAsResolvedInKernel(vpid) {
+    const p = state.promiseTable.get(vpid);
+    assert(p, `unknown ${vpid}`);
+    assert(p.resolved && p.kernelAwaitingResolve);
+    p.kernelAwaitingResolve = false;
   }
 
   return harden({
@@ -275,6 +283,7 @@ export function makeStateKit(state) {
 
     insistPromiseIsUnresolved,
     markPromiseAsResolved,
+    markPromiseAsResolvedInKernel,
 
     dumpState: () => dumpState(state),
   });

@@ -9,8 +9,6 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
-const RETIRE_VPIDS = true;
-
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -54,8 +52,7 @@ function hush(p) {
 
 // The next batch of tests exercises how liveslots handles promise
 // identifiers ("vpid" strings) across various forms of resolution. Our
-// current code never retires vpids, but an upcoming storage-performance
-// improvement will retire them after resolution.
+// current code retires vpids after resolution.
 
 // legend:
 //  C: vat creates promise
@@ -248,14 +245,8 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log.shift(), resolutionOf(expectedP1, mode, targets));
 
   // then it should send 'two'.
-  const expectRetirement =
-    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
-  let expectedTwoArg = expectedP3;
-  let expectedResultOfTwo = expectedP4;
-  if (!expectRetirement) {
-    expectedTwoArg = expectedP1;
-    expectedResultOfTwo = expectedP3;
-  }
+  const expectedTwoArg = expectedP3;
+  const expectedResultOfTwo = expectedP4;
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
@@ -263,10 +254,9 @@ async function doVatResolveCase1(t, mode) {
     args: capargs([slot0arg], [expectedTwoArg]),
     resultSlot: expectedResultOfTwo,
   });
+  const targets2 = { target2, localTarget, p1: expectedP3 };
+  t.deepEqual(log.shift(), resolutionOf(expectedTwoArg, mode, targets2));
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultOfTwo });
-  if (expectRetirement) {
-    t.deepEqual(log.shift(), resolutionOf(expectedP3, mode, targets));
-  }
   t.deepEqual(log, []);
 }
 
@@ -281,13 +271,6 @@ for (const mode of modes) {
 // authority is exercised when the vat resolves the Promise that was returned
 // from an inbound `result()` message. Liveslots always notifies the kernel
 // about this act of resolution.
-
-// In the current code, the kernel then echoes the resolution back into the
-// vat (by delivering a `dispatch.notify` message in a subsequent
-// crank). In the upcoming retire-promiseid branch, the kernel does not, and
-// liveslots must notice that we're also subscribed to this promise, and
-// exercise the resolver/rejector that would normally be waiting for a
-// message from the kernel.
 
 // Ordering guarantees: we don't intend to make any promises (haha) about the
 // relative ordering of the syscall that resolves the promise, and the
@@ -488,20 +471,9 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   const targets = { target2, localTarget, p1 };
   t.deepEqual(log.shift(), resolutionOf(p1, mode, targets));
 
-  // The VPIDs in the remaining messages will depend upon whether we retired
-  // p1 during that resolution.
-  const expectRetirement =
-    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
-
-  let expectedVPIDInThree = p1;
-  let expectedResultOfThree = expectedP4;
-  let expectedResultOfFour = expectedP5;
-
-  if (expectRetirement) {
-    expectedVPIDInThree = expectedP4;
-    expectedResultOfThree = expectedP5;
-    expectedResultOfFour = expectedP6;
-  }
+  const expectedVPIDInThree = expectedP4;
+  const expectedResultOfThree = expectedP5;
+  const expectedResultOfFour = expectedP6;
 
   // three() references the old promise, which will use a new VPID if we
   // retired the old one as it was resolved
@@ -534,9 +506,8 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       target: expectedResultOfFour,
     });
   }
-  if (expectRetirement) {
-    t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
-  }
+  const targets2 = { target2, localTarget, p1: expectedP4 };
+  t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets2));
 
   // that's all the syscalls we should see
   t.deepEqual(log, []);

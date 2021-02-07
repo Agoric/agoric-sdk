@@ -10,8 +10,6 @@ import { initializeKernel } from '../src/kernel/initializeKernel';
 import { makeVatSlot } from '../src/parseVatSlots';
 import { checkKT } from './util';
 
-const RETIRE_KPIDS = true;
-
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -792,16 +790,6 @@ test('promise resolveToData', async t => {
     oneResolution(pForA, false, capdata('"args"', ['o-50'])),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
-  if (!RETIRE_KPIDS) {
-    t.deepEqual(kernel.dump().promises, [
-      {
-        id: pForKernel,
-        state: 'fulfilledToData',
-        refCount: 0,
-        data: capdata('args', ['ko20']),
-      },
-    ]);
-  }
   t.deepEqual(kernel.dump().runQueue, []);
 });
 
@@ -879,16 +867,6 @@ test('promise resolveToPresence', async t => {
     }),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
-  if (!RETIRE_KPIDS) {
-    t.deepEqual(kernel.dump().promises, [
-      {
-        id: pForKernel,
-        state: 'fulfilledToPresence',
-        refCount: 0,
-        slot: bobForKernel,
-      },
-    ]);
-  }
   t.deepEqual(kernel.dump().runQueue, []);
 });
 
@@ -959,16 +937,6 @@ test('promise reject', async t => {
     oneResolution(pForA, true, capdata('args', ['o-50'])),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
-  if (!RETIRE_KPIDS) {
-    t.deepEqual(kernel.dump().promises, [
-      {
-        id: pForKernel,
-        state: 'rejected',
-        refCount: 0,
-        data: capdata('args', ['ko20']),
-      },
-    ]);
-  }
   t.deepEqual(kernel.dump().runQueue, []);
 });
 

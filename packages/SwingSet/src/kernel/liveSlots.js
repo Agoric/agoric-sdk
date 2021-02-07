@@ -195,11 +195,15 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     return makeVatSlot('promise', true, promiseID);
   }
 
+  const knownResolutions = new WeakMap();
+
   function exportPromise(p) {
     const pid = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${pid} in exportPromise`);
-    // eslint-disable-next-line no-use-before-define
-    p.then(thenResolve(pid), thenReject(pid));
+    if (!knownResolutions.has(p)) {
+      // eslint-disable-next-line no-use-before-define
+      p.then(thenResolve(p, pid), thenReject(p, pid));
+    }
     return pid;
   }
 
@@ -311,6 +315,49 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     return val;
   }
 
+  function resolutionCollector() {
+    const resolutions = [];
+    const doneResolutions = new Set();
+
+    function scanSlots(slots) {
+      for (const slot of slots) {
+        const { type } = parseVatSlot(slot);
+        if (type === 'promise') {
+          const p = slotToVal.get(slot);
+          assert(p, details`should have a value for ${slot} but didn't`);
+          const priorResolution = knownResolutions.get(p);
+          if (priorResolution && !doneResolutions.has(slot)) {
+            const [priorRejected, priorRes] = priorResolution;
+            // eslint-disable-next-line no-use-before-define
+            collect(slot, priorRejected, priorRes);
+          }
+        }
+      }
+    }
+
+    function collect(promiseID, rejected, value) {
+      doneResolutions.add(promiseID);
+      const valueSer = m.serialize(value);
+      resolutions.push([promiseID, rejected, valueSer]);
+      scanSlots(valueSer.slots);
+    }
+
+    function forPromise(promiseID, rejected, value) {
+      collect(promiseID, rejected, value);
+      return resolutions;
+    }
+
+    function forSlots(slots) {
+      scanSlots(slots);
+      return resolutions;
+    }
+
+    return {
+      forPromise,
+      forSlots,
+    };
+  }
+
   function queueMessage(targetSlot, prop, args, returnedP) {
     const serArgs = m.serialize(harden(args));
     const resultVPID = allocatePromiseID();
@@ -326,6 +373,10 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       )}) -> ${resultVPID}`,
     );
     syscall.send(targetSlot, prop, serArgs, resultVPID);
+    const resolutions = resolutionCollector().forSlots(serArgs.slots);
+    if (resolutions.length > 0) {
+      syscall.resolve(resolutions);
+    }
 
     // ideally we'd wait until .then is called on p before subscribing, but
     // the current Promise API doesn't give us a way to discover this, so we
@@ -410,16 +461,6 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
 
     const args = m.unserialize(argsdata);
 
-    let notifySuccess = () => undefined;
-    let notifyFailure = () => undefined;
-    if (result) {
-      insistVatType('promise', result);
-      // eslint-disable-next-line no-use-before-define
-      notifySuccess = thenResolve(result);
-      // eslint-disable-next-line no-use-before-define
-      notifyFailure = thenReject(result);
-    }
-
     // If the method is missing, or is not a Function, or the method throws a
     // synchronous exception, we notify the caller (by rejecting the result
     // promise, if any). If the method returns an eventually-rejected
@@ -442,6 +483,15 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       // TODO: untested, but in principle sound.
       res = HandledPromise.get(t, method);
     }
+    let notifySuccess = () => undefined;
+    let notifyFailure = () => undefined;
+    if (result) {
+      insistVatType('promise', result);
+      // eslint-disable-next-line no-use-before-define
+      notifySuccess = thenResolve(res, result);
+      // eslint-disable-next-line no-use-before-define
+      notifyFailure = thenReject(res, result);
+    }
     res.then(notifySuccess, notifyFailure);
   }
 
@@ -453,50 +503,38 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     slotToVal.delete(promiseID);
   }
 
-  const ENABLE_PROMISE_ANALYSIS = true;
+  function thenHandler(p, promiseID, rejected) {
+    insistVatType('promise', promiseID);
+    return value => {
+      knownResolutions.set(p, harden([rejected, value]));
+      harden(value);
+      lsdebug(`ls.thenHandler fired`, value);
+      const resolutions = resolutionCollector().forPromise(
+        promiseID,
+        rejected,
+        value,
+      );
 
-  function retirePromiseIDIfEasy(promiseID, data) {
-    if (ENABLE_PROMISE_ANALYSIS) {
-      for (const slot of data.slots) {
-        const { type } = parseVatSlot(slot);
-        if (type === 'promise') {
-          lsdebug(
-            `Unable to retire ${promiseID} because slot ${slot} is a promise`,
-          );
-          return;
+      syscall.resolve(resolutions);
+
+      const pRec = importedPromisesByPromiseID.get(promiseID);
+      if (pRec) {
+        if (rejected) {
+          pRec.reject(value);
+        } else {
+          pRec.resolve(value);
         }
       }
-    }
-    retirePromiseID(promiseID);
-  }
-
-  function thenResolve(promiseID) {
-    insistVatType('promise', promiseID);
-    return res => {
-      harden(res);
-      lsdebug(`ls.thenResolve fired`, res);
-      const ser = m.serialize(res);
-      syscall.resolve([[promiseID, false, ser]]);
-      const pRec = importedPromisesByPromiseID.get(promiseID);
-      if (pRec) {
-        pRec.resolve(res);
-      }
-      retirePromiseIDIfEasy(promiseID, ser);
+      retirePromiseID(promiseID);
     };
   }
 
-  function thenReject(promiseID) {
-    return rej => {
-      harden(rej);
-      lsdebug(`ls thenReject fired`, rej);
-      const ser = m.serialize(rej);
-      syscall.resolve([[promiseID, true, ser]]);
-      const pRec = importedPromisesByPromiseID.get(promiseID);
-      if (pRec) {
-        pRec.reject(rej);
-      }
-      retirePromiseIDIfEasy(promiseID, ser);
-    };
+  function thenResolve(p, promiseID) {
+    return thenHandler(p, promiseID, false);
+  }
+
+  function thenReject(p, promiseID) {
+    return thenHandler(p, promiseID, true);
   }
 
   function notifyOnePromise(promiseID, rejected, data) {
