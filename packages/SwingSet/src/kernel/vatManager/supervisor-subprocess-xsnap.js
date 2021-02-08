@@ -14,7 +14,7 @@ const decoder = new TextDecoder();
 function workerLog(first, ...args) {
   // @ts-ignore
   // eslint-disable-next-line
-  // print(`---worker: ${first}`, ...args);
+  // console.log(`---worker: ${first}`, ...args);
 }
 
 workerLog(`supervisor started`);
@@ -30,7 +30,7 @@ function managerPort(issueCommand) {
   const encode = item => encoder.encode(JSON.stringify(item)).buffer;
 
   /** @type { (msg: ArrayBuffer) => any } */
-  const decodeData = msg => JSON.parse(decoder.decode(msg));
+  const decodeData = msg => JSON.parse(decoder.decode(msg) || 'null');
 
   /** @type { (msg: ArrayBuffer) => Tagged } */
   function decode(msg) {
@@ -59,6 +59,7 @@ function managerPort(issueCommand) {
      * @template T
      */
     handlerFrom(f) {
+      const lastResort = encoder.encode(`exception from ${f.name}`).buffer;
       return msg => {
         const report = {};
         f(decode(msg))
@@ -67,7 +68,10 @@ function managerPort(issueCommand) {
             report.result = encode(item);
           })
           .catch(err => {
-            report.result = encode(['err', err.message]);
+            report.result = encode(['err', f.name, err.message]);
+          })
+          .catch(_err => {
+            report.result = lastResort;
           });
         return report;
       };
@@ -82,12 +86,14 @@ function managerPort(issueCommand) {
 function runAndWait(f, errmsg) {
   Promise.resolve()
     .then(f)
-    .then(undefined, err => workerLog(`doProcess: ${errmsg}:`, err));
+    .then(undefined, err => {
+      workerLog(`doProcess: ${errmsg}:`, err.message);
+    });
   return waitUntilQuiescent();
 }
 
 /**
- * @param { ReturnType<managerPort> } port
+ * @param { ReturnType<typeof managerPort> } port
  */
 function makeWorker(port) {
   /** @type { Record<string, (...args: unknown[]) => void> | null } */
@@ -141,6 +147,14 @@ function makeWorker(port) {
     return harden(cons);
   }
 
+  /** @type { (extSrc: string) => string } */
+  function transformTildot(extSrc) {
+    const reply = port.call(['transformTildot', extSrc]);
+    assert(Array.isArray(reply));
+    if (reply[0] === 'err') throw new Error(reply[1]);
+    return reply[1];
+  }
+
   /**
    * @param {unknown} vatID
    * @param {unknown} bundle
@@ -167,12 +181,16 @@ function makeWorker(port) {
       callNow: (...args) => doSyscall(['callNow', ...args]),
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
       resolve: (...args) => doSyscall(['resolve', ...args]),
+      vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
+      vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
+      vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
     });
 
     const vatPowers = {
       Remotable,
       getInterfaceOf,
       makeMarshal,
+      transformTildot,
       testLog: (...args) => port.send(['testLog', ...args]),
     };
 

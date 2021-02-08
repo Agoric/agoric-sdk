@@ -16,6 +16,7 @@ export function makeVatManagerFactory({
   startSubprocessWorkerNode,
   startXSnap,
   gcTools,
+  defaultManagerType,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -44,6 +45,7 @@ export function makeVatManagerFactory({
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
+    allVatPowers,
     testLog: allVatPowers.testLog,
     decref: gcTools.decref,
   });
@@ -74,17 +76,30 @@ export function makeVatManagerFactory({
   // returns promise for new vatManager
   function vatManagerFactory(vatID, managerOptions) {
     validateManagerOptions(managerOptions);
-    const { managerType = 'local', setup, bundle } = managerOptions;
+    const {
+      managerType = defaultManagerType,
+      setup,
+      bundle,
+      metered,
+      enableSetup,
+    } = managerOptions;
 
-    if (managerType === 'local') {
+    if (metered && managerType !== 'local') {
+      console.warn(
+        `TODO: support metered with ${managerType}; using local as work-around`,
+      );
+    }
+    if (setup && managerType !== 'local') {
+      console.warn(
+        `TODO: stop using setup() with ${managerType}; using local as work-around`,
+      );
+    }
+    if (managerType === 'local' || metered || enableSetup) {
       if (setup) {
         return localFactory.createFromSetup(vatID, setup, managerOptions);
       }
       return localFactory.createFromBundle(vatID, bundle, managerOptions);
     }
-    // 'setup' based vats must be local. TODO: stop using 'setup' in vats,
-    // but tests and comms-vat still need it
-    assert(!setup, `setup()-based vats must use a local Manager`);
 
     if (managerType === 'nodeWorker') {
       return nodeWorkerFactory.createFromBundle(vatID, bundle, managerOptions);

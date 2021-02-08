@@ -29,6 +29,7 @@ struct sxJob {
 	txMachine* the;
 	txNumber when;
 	txJobCallback callback;
+	txSlot self;
 	txSlot function;
 	txSlot argument;
 	txNumber interval;
@@ -46,7 +47,7 @@ static void fxPrintUsage();
 static void fx_issueCommand(xsMachine *the);
 static void fx_Array_prototype_meter(xsMachine* the);
 
-// extern void fx_clearTimer(txMachine* the);
+extern void fx_clearTimer(txMachine* the);
 static void fx_destroyTimer(void* data);
 // static void fx_evalScript(xsMachine* the);
 // static void fx_gc(xsMachine* the);
@@ -126,6 +127,7 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	return (fwrite(address, size, 1, stream) == 1) ? 0 : errno;
 }
 
+#if mxMetering
 #define xsBeginMetering(_THE, _CALLBACK, _STEP) \
 	do { \
 		xsJump __HOST_JUMP__; \
@@ -158,6 +160,12 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	fxPop())
 #define xsMeterHostFunction(_COUNT) \
 	fxMeterHostFunction(the, _COUNT)
+#else
+	#define xsBeginMetering(_THE, _CALLBACK, _STEP)
+	#define xsEndMetering(_THE)
+	#define xsPatchHostFunction(_FUNCTION,_PATCH)
+	#define xsMeterHostFunction(_COUNT)
+#endif
 
 static xsUnsignedValue gxMeteringLimit = 0;
 static xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
@@ -303,6 +311,7 @@ int main(int argc, char* argv[])
 			char* nsbuf;
 			size_t nslen;
 			int readError = fxReadNetString(fromParent, &nsbuf, &nslen);
+			int writeError = 0;
 			if (readError != 0) {
 				if (feof(fromParent)) {
 					break;
@@ -317,38 +326,31 @@ int main(int argc, char* argv[])
 			case '?':
 			case 'e':
 				error = 0;
-				xsSlot report;
 				xsBeginHost(machine);
 				{
-					xsVars(1);
+					xsVars(3);
 					xsTry {
 						if (command == '?') {
 							xsVar(0) = xsArrayBuffer(nsbuf + 1, nslen - 1);
-							report = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(0));
+							xsVar(1) = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(0));
 						} else {
 							xsVar(0) = xsStringBuffer(nsbuf + 1, nslen - 1);
-							report = xsCall1(xsGlobal, xsID("eval"), xsVar(0));
+							xsVar(1) = xsCall1(xsGlobal, xsID("eval"), xsVar(0));
 						}
-						xsRemember(report);
 					}
 					xsCatch {
 						if (xsTypeOf(xsException) != xsUndefinedType) {
 							// fprintf(stderr, "%c: %s\n", command, xsToString(xsException));
 							error = 1;
-							report = xsException;
-							xsRemember(report);
+							xsVar(1) = xsException;
 							xsException = xsUndefined;
 						}
 					}
 				}
-				xsEndHost(machine);
 				fxRunLoop(machine);
-				int writeError;
-				xsBeginHost(machine);
 				{
-					xsSlot result = xsUndefined;
 					if (error) {
-						xsStringValue message = xsToString(report);
+						xsStringValue message = xsToString(xsVar(1));
 						writeError = fxWriteNetString(toParent, '!', message, strlen(message));
 						// fprintf(stderr, "error: %d, writeError: %d %s\n", error, writeError, message);
 					} else {
@@ -356,22 +358,22 @@ int main(int argc, char* argv[])
 						txInteger responseLength = 0;
 						// fprintf(stderr, "report: %d %s\n", xsTypeOf(report), xsToString(report));
 						xsTry {
-							if (xsTypeOf(report) == xsReferenceType && xsHas(report, xsID("result"))) {
-								result = xsGet(report, xsID("result"));
+							if (xsTypeOf(xsVar(1)) == xsReferenceType && xsHas(xsVar(1), xsID("result"))) {
+								xsVar(2) = xsGet(xsVar(1), xsID("result"));
 							} else {
-								result = report;
+								xsVar(2) = xsVar(1);
 							}
 							// fprintf(stderr, "result: %d %s\n", xsTypeOf(result), xsToString(result));
-							if (xsIsInstanceOf(result, xsArrayBufferPrototype)) {
-								response = xsToArrayBuffer(result);
-								responseLength = xsGetArrayBufferLength(result);
+							if (xsIsInstanceOf(xsVar(2), xsArrayBufferPrototype)) {
+								responseLength = xsGetArrayBufferLength(xsVar(2));
+								response = xsToArrayBuffer(xsVar(2));
 							}
 						}
 						xsCatch {
 							if (xsTypeOf(xsException) != xsUndefinedType) {
 								fprintf(stderr, "%c computing response %d %d: %s: %s\n", command,
-												xsTypeOf(report), xsTypeOf(result),
-												xsToString(result),
+												xsTypeOf(xsVar(1)), xsTypeOf(xsVar(2)),
+												xsToString(xsVar(2)),
 												xsToString(xsException));
 								xsException = xsUndefined;
 							}
@@ -379,7 +381,6 @@ int main(int argc, char* argv[])
 						// fprintf(stderr, "response of %d bytes\n", responseLength);
 						writeError = fxWriteNetString(toParent, '.', response, responseLength);
 					}
-					xsForget(report);
 				}
 				xsEndHost(machine);
 				if (writeError != 0) {
@@ -847,8 +848,10 @@ void fxPrintUsage()
 void fx_print(xsMachine* the)
 {
 	xsIntegerValue c = xsToInteger(xsArgc), i;
+#if mxMetering
 	if (gxMeteringPrint)
 		fprintf(stdout, "[%u] ", the->meterIndex);
+#endif
 	for (i = 0; i < c; i++) {
 		if (i)
 			fprintf(stdout, " ");
@@ -873,24 +876,15 @@ void fx_setImmediate(txMachine* the)
 }
 
 
-// void fx_clearTimer(txMachine* the)
-// {
-// 	txJob* data = fxGetHostData(the, mxThis);
-// 	if (data) {
-// 		txJob* job;
-// 		txJob** address;
-// 		address = (txJob**)&(the->timerJobs);
-// 		while ((job = *address)) {
-// 			if (job == data) {
-// 				*address = job->next;
-// 				c_free(job);
-// 				break;
-// 			}
-// 			address = &(job->next);
-// 		}
-// 		fxSetHostData(the, mxThis, NULL);
-// 	}
-// }
+void fx_clearTimer(txMachine* the)
+{
+	txJob* job = xsGetHostData(xsArg(0));
+	if (job) {
+        xsForget(job->self);
+        xsSetHostData(xsArg(0), NULL);
+		job->the = NULL;
+	}
+}
 
 static txHostHooks gxTimerHooks = {
 	fx_destroyTimer,
@@ -926,16 +920,16 @@ void fx_setTimer(txMachine* the, txNumber interval, txBoolean repeat)
 	if (repeat)
 		job->interval = interval;
 	job->when = ((txNumber)(tv.tv_sec) * 1000.0) + ((txNumber)(tv.tv_usec) / 1000.0) + interval;
-	job->function.kind = mxArgv(0)->kind;
-	job->function.value = mxArgv(0)->value;
-	if (mxArgc > 2) {
-		job->argument.kind = mxArgv(2)->kind;
-		job->argument.value = mxArgv(2)->value;
-	}
-	fxNewHostObject(the, C_NULL);
-	fxSetHostData(the, the->stack, job);
-	fxSetHostHooks(the, the->stack, &gxTimerHooks);
-	mxPullSlot(mxResult);
+	job->self = xsNewHostObject(NULL);
+	job->function = xsArg(0);
+	if (xsToInteger(xsArgc) > 2)
+		job->argument = xsArg(2);
+	else
+		job->argument = xsUndefined;
+	xsSetHostData(job->self, job);
+	xsSetHostHooks(job->self,  &gxTimerHooks);
+	xsRemember(job->self);
+	xsResult = xsAccess(job->self);
 }
 
 void fx_setTimerCallback(txJob* job)
@@ -955,6 +949,7 @@ void fx_setTimerCallback(txJob* job)
 			mxPop();
 		}
 		mxCatch(the) {
+			fprintf(stderr, "exception in setTimerCallback: %s\n", xsToString(xsException));
 		}
 	}
 	fxEndHost(the);
@@ -987,15 +982,6 @@ void fxDeleteMachinePlatform(txMachine* the)
 {
 }
 
-void fxMarkHost(txMachine* the, txMarkRoot markRoot)
-{
-	txJob* job = the->timerJobs;
-	while (job) {
-		fx_markTimer(the, job, markRoot);
-		job = job->next;
-	}
-}
-
 void fxQueuePromiseJobs(txMachine* the)
 {
 	the->promiseJobs = 1;
@@ -1018,24 +1004,33 @@ void fxRunLoop(txMachine* the)
 		if (!*address)
 			break;
 		while ((job = *address)) {
-			if (job->when <= when) {
-				(*job->callback)(job);
-				if (job->interval) {
-					job->when += job->interval;
+			if (job->the) {
+				if (job->when <= when) {
+					(*job->callback)(job);
+					if (job->the) {
+						if (job->interval) {
+							job->when += job->interval;
+						}
+						else {
+							xsBeginHost(job->the);
+							xsResult = xsAccess(job->self);
+							xsForget(job->self);
+							xsSetHostData(xsResult, NULL);
+							xsEndHost(job->the);
+							job->the = NULL;
+						}
+					}
+					break; // to run promise jobs queued by the timer in the same "tick"
 				}
-				else {
-					*address = job->next;
-					c_free(job);
-				}
-				break;
+				address = &(job->next);
 			}
-			address = &(job->next);
+			else {
+				*address = job->next;
+				c_free(job);
+
+			}
 		}
 	}
-}
-
-void fxSweepHost(txMachine* the)
-{
 }
 
 void fxFulfillModuleFile(txMachine* the)

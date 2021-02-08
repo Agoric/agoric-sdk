@@ -44,12 +44,16 @@ export async function makeSwingsetController(
 ) {
   insistStorageAPI(hostStorage);
 
+  // Use ambient process.env only if caller did not specify.
+  const { env = process.env } = runtimeOptions;
+
   // build console early so we can add console.log to diagnose early problems
   const {
     verbose,
     debugPrefix = '',
     slogFile,
     testTrackDecref,
+    defaultManagerType = env.WORKER_TYPE || 'local',
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -166,7 +170,7 @@ export async function makeSwingsetController(
       name,
       stdout: 'inherit',
       stderr: 'inherit',
-      // debug: true,
+      debug: !!env.XSNAP_DEBUG,
     });
 
     const bundles = {
@@ -205,7 +209,7 @@ export async function makeSwingsetController(
     FinalizationRegistry,
   };
 
-  const kernelOptions = { verbose, testTrackDecref };
+  const kernelOptions = { verbose, testTrackDecref, defaultManagerType };
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -298,8 +302,14 @@ export async function buildVatController(
     kernelBundles,
     debugPrefix,
     testTrackDecref,
+    defaultManagerType,
   } = runtimeOptions;
-  const actualRuntimeOptions = { verbose, debugPrefix, testTrackDecref };
+  const actualRuntimeOptions = {
+    verbose,
+    debugPrefix,
+    testTrackDecref,
+    defaultManagerType,
+  };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
   if (!swingsetIsInitialized(hostStorage)) {

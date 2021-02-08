@@ -25,7 +25,6 @@ C_OPTIONS = \
 	-fno-common \
 	-DINCLUDE_XSPLATFORM \
 	-DXSPLATFORM=\"xsnap.h\" \
-	-DmxMetering=1 \
 	-DmxParse=1 \
 	-DmxRun=1 \
 	-DmxSloppy=1 \

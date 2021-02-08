@@ -12,6 +12,8 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+const localOnlyForNow = { defaultManagerType: 'local' };
+
 test('metering within a vat', async t => {
   // we'll give this bundle to the vat, which will import it under metering
   const bundle = await bundleSource(require.resolve('./metered-code.js'));
@@ -22,7 +24,7 @@ test('metering within a vat', async t => {
       },
     },
   };
-  const c = await buildVatController(config, []);
+  const c = await buildVatController(config, [], localOnlyForNow);
   const nextLog = makeNextLog(c);
 
   // 'start' will import the bundle

@@ -279,7 +279,11 @@ export async function initializeSwingset(
     bundle: kernelBundles.comms,
     creationOptions: {
       enablePipelining: true,
+      // The use of setup rather than buildRootObject requires
+      // a local worker. We have no plans to support setup on
+      // non-local workers any time soon.
       enableSetup: true,
+      managerType: 'local',
     },
   };
 
