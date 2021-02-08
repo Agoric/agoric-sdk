@@ -46,8 +46,7 @@ test('evaluate until idle', async t => {
 });
 
 test('evaluate and report', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
+  const vat = xsnap(options());
   const result = await vat.evaluate(`(() => {
     const report = {};
     Promise.resolve('hi').then(v => {
@@ -60,8 +59,7 @@ test('evaluate and report', async t => {
 });
 
 test('evaluate error', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
+  const vat = xsnap(options());
   await vat
     .evaluate(`***`)
     .then(_ => {
