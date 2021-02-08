@@ -4,7 +4,8 @@ import {
   Remotable,
   Far,
   getInterfaceOf,
-  mustPassByPresence,
+  passStyleOf,
+  REMOTE_STYLE,
   makeMarshal,
 } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
@@ -248,7 +249,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
-        mustPassByPresence(val);
+        assert.equal(passStyleOf(val), REMOTE_STYLE);
         slot = exportPassByPresence();
       }
       parseVatSlot(slot); // assertion
@@ -602,7 +603,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       harden({ D, exitVat, exitVatWithFailure, ...vatPowers }),
       harden(vatParameters),
     );
-    mustPassByPresence(rootObject);
+    assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
     const rootSlot = makeVatSlot('object', true, 0);
     valToSlot.set(rootObject, rootSlot);
