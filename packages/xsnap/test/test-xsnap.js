@@ -71,6 +71,28 @@ test('evaluate error', async t => {
   await vat.terminate();
 });
 
+test('Array is allocated lazily', async t => {
+  const vat = xsnap(options());
+  await vat.evaluate(`Array(4e9)`);
+  t.pass();
+  await vat.terminate();
+});
+
+test('stack exhaustion is fail-stop deterministic', async t => {
+  const vat = xsnap(options());
+  const result = await vat.evaluate(`(() => {
+    const report = {};
+    function next(n) {
+      report.result = ArrayBuffer.fromString(\`\${n}\`);
+      next(n + 1);
+    }
+    Promise.resolve('hi').then(v => next(0));
+    return report;
+  })()`);
+  t.is(decoder.decode(result), '352');
+  await vat.terminate();
+});
+
 test('idle includes setImmediate too', async t => {
   const opts = options();
   const vat = xsnap(opts);
