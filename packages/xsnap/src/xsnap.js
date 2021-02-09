@@ -32,6 +32,8 @@ const importMetaUrl = `file://${__filename}`;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+const { freeze } = Object;
+
 /**
  * @param {Uint8Array} arg
  * @returns {Uint8Array}
@@ -276,7 +278,7 @@ export function xsnap(options) {
     return vatExit.promise.catch(() => {});
   }
 
-  return {
+  return freeze({
     issueCommand,
     issueStringCommand,
     close,
@@ -285,5 +287,5 @@ export function xsnap(options) {
     execute,
     import: importModule,
     snapshot: writeSnapshot,
-  };
+  });
 }
