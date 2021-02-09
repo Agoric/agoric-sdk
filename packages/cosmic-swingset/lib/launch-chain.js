@@ -1,6 +1,8 @@
 import path from 'path';
 import anylogger from 'anylogger';
 
+import { MeterProvider } from '@opentelemetry/metrics';
+
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -13,6 +15,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { getBestSwingStore } from './check-lmdb';
+import { exportKernelStats } from './kernel-stats';
 
 const log = anylogger('launch-chain');
 
@@ -75,6 +78,7 @@ export async function launch(
   vatsDir,
   argv,
   debugName = undefined,
+  meterProvider = new MeterProvider(),
 ) {
   log.info('Launching SwingSet kernel');
 
@@ -95,6 +99,10 @@ export async function launch(
     argv,
     debugName,
   );
+
+  // Not to be confused with the gas model, this meter is for OpenTelemetry.
+  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
+  exportKernelStats({ controller, metricMeter, log });
 
   // ////////////////////////////
   // TODO: This is where we would add the scheduler.
