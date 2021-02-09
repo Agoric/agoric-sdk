@@ -108,7 +108,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: temp for debugging github action
-      run: echo ===== in benchmark job, GITHUB_REF=${GITHUB_REF} github.event.name=${{github.event.name}}
+      run: echo "===== in benchmark job, GITHUB_REF=${GITHUB_REF} github.event.name=${{github.event.name}}"
     - name: benchmark changes
       run: cd packages/swingset-runner && yarn ci:autobench
 
