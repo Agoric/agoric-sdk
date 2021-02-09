@@ -60,7 +60,6 @@ export function makeVatManagerFactory({
       'enableDisavow',
       'enableSetup',
       'liveSlotsConsole',
-      'notifyTermination',
       'virtualObjectCacheSize',
       'vatParameters',
       'vatConsole',

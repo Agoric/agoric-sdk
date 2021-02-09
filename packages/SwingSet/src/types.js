@@ -25,7 +25,6 @@
  *   managerType: ManagerType,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
- *   notifyTermination?: (shouldReject: boolean, info: SwingSetCapData) => void,
  *   virtualObjectCacheSize: number,
  *   vatParameters: Record<string, unknown>,
  *   name: string,
