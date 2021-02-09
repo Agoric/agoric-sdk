@@ -2,42 +2,42 @@
 const KERNEL_STATS_SUM_METRICS = [
   {
     key: 'syscalls',
-    name: 'syscall_total',
+    name: 'swingset_syscall_total',
     description: 'Total number of SwingSet kernel calls',
   },
   {
     key: 'syscallSend',
-    name: 'syscall_send_total',
+    name: 'swingset_syscall_send_total',
     description: 'Total number of SwingSet message send kernel calls',
   },
   {
     key: 'syscallCallNow',
-    name: 'syscall_call_now_total',
+    name: 'swingset_syscall_call_now_total',
     description: 'Total number of SwingSet synchronous device kernel calls',
   },
   {
     key: 'syscallSubscribe',
-    name: 'syscall_subscribe_total',
+    name: 'swingset_syscall_subscribe_total',
     description: 'Total number of SwingSet promise subscription kernel calls',
   },
   {
     key: 'syscallResolve',
-    name: 'syscall_resolve_total',
+    name: 'swingset_syscall_resolve_total',
     description: 'Total number of SwingSet promise resolution kernel calls',
   },
   {
     key: 'dispatches',
-    name: 'dispatch_total',
+    name: 'swingset_dispatch_total',
     description: 'Total number of SwingSet vat calls',
   },
   {
     key: 'dispatchDeliver',
-    name: 'dispatch_deliver_total',
+    name: 'swingset_dispatch_deliver_total',
     description: 'Total number of SwingSet vat message deliveries',
   },
   {
     key: 'dispatchNotify',
-    name: 'dispatch_notify_total',
+    name: 'swingset_dispatch_notify_total',
     description: 'Total number of SwingSet vat promise notifications',
   },
 ];
@@ -85,7 +85,7 @@ const KERNEL_STATS_UPDOWN_METRICS = [
   },
   {
     key: 'clistEntries',
-    name: 'clist_entries',
+    name: 'swingset_clist_entries',
     description: 'Number of entries in the kernel c-list',
   },
 ];
