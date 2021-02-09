@@ -107,6 +107,8 @@ jobs:
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
 
+    - name: temp for debugging github action
+      run: echo ===== in benchmark job, GITHUB_REF=${GITHUB_REF}
     - name: benchmark changes
       run: cd packages/swingset-runner && yarn ci:autobench
 
