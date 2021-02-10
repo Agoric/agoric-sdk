@@ -84,6 +84,7 @@ jobs:
     strategy:
       matrix:
         node-version: ['14.x']
+    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -109,6 +110,10 @@ jobs:
 
     - name: benchmark changes
       run: cd packages/swingset-runner && yarn ci:autobench
+    - uses: actions/upload-artifact@v2
+      with:
+        name: benchmarkstats.json
+        path: packages/swingset-runner/benchstats.json
 
 ##################
 # Fast-running tests run as a group:
