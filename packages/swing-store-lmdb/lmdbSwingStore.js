@@ -7,10 +7,10 @@ import lmdb from 'node-lmdb';
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param dirPath  Path to a directory in which database files may be kept.
- * @param forceReset  If true, initialize the database to an empty state
+ * @param {string} dirPath  Path to a directory in which database files may be kept.
+ * @param {boolean} forceReset  If true, initialize the database to an empty state
  *
- * @returns an object: {
+ * returns an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
  *   close    // a function to shutdown the store, abandoning any uncommitted changes
@@ -56,9 +56,9 @@ function makeSwingStore(dirPath, forceReset = false) {
   /**
    * Obtain the value stored for a given key.
    *
-   * @param key  The key whose value is sought.
+   * @param {string} key  The key whose value is sought.
    *
-   * @returns the (string) value for the given key, or undefined if there is no
+   * @returns {string | undefined} the (string) value for the given key, or undefined if there is no
    *    such value.
    *
    * @throws if key is not a string.
@@ -80,9 +80,9 @@ function makeSwingStore(dirPath, forceReset = false) {
    * given range.  Note that this can be slow as it's only intended for use in
    * debugging.
    *
-   * @param start  Start of the key range of interest (inclusive).  An empty
+   * @param {string} start  Start of the key range of interest (inclusive).  An empty
    *    string indicates a range from the beginning of the key set.
-   * @param end  End of the key range of interest (exclusive).  An empty string
+   * @param {string} end  End of the key range of interest (exclusive).  An empty string
    *    indicates a range through the end of the key set.
    *
    * @yields an iterator for the keys from start <= key < end
@@ -110,9 +110,9 @@ function makeSwingStore(dirPath, forceReset = false) {
   /**
    * Test if the state contains a value for a given key.
    *
-   * @param key  The key that is of interest.
+   * @param {string} key  The key that is of interest.
    *
-   * @returns true if a value is stored for the key, false if not.
+   * @returns {boolean} true if a value is stored for the key, false if not.
    *
    * @throws if key is not a string.
    */
@@ -127,8 +127,8 @@ function makeSwingStore(dirPath, forceReset = false) {
    * Store a value for a given key.  The value will replace any prior value if
    * there was one.
    *
-   * @param key  The key whose value is being set.
-   * @param value  The value to set the key to.
+   * @param {string} key  The key whose value is being set.
+   * @param {string} value  The value to set the key to.
    *
    * @throws if either parameter is not a string.
    */
@@ -147,7 +147,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    * Remove any stored value for a given key.  It is permissible for there to
    * be no existing stored value for the key.
    *
-   * @param key  The key whose value is to be deleted
+   * @param {string} key  The key whose value is to be deleted
    *
    * @throws if key is not a string.
    */
@@ -201,12 +201,12 @@ function makeSwingStore(dirPath, forceReset = false) {
  * Create a swingset store backed by an LMDB database.  If there is an existing
  * store at the given `dirPath`, it will be reinitialized to an empty state.
  *
- * @param dirPath  Path to a directory in which database files may be kept.
+ * @param {string} dirPath  Path to a directory in which database files may be kept.
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * @returns an object: {
+ * returns an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
  *   close    // a function to shutdown the store, abandoning any uncommitted
@@ -224,12 +224,12 @@ export function initSwingStore(dirPath) {
  * Open a swingset store backed by an LMDB database.  If there is no existing
  * store at the given `dirPath`, a new, empty store will be created.
  *
- * @param dirPath  Path to a directory in which database files may be kept.
+ * @param {string} dirPath  Path to a directory in which database files may be kept.
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * @returns an object: {
+ * returns an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
  *   close    // a function to shutdown the store, abandoning any uncommitted
@@ -246,10 +246,10 @@ export function openSwingStore(dirPath) {
 /**
  * Is this directory a compatible swing store?
  *
- * @param dirPath  Path to a directory in which database files might be present.
+ * @param {string} dirPath  Path to a directory in which database files might be present.
  *   This directory need not actually exist
  *
- * @returns boolean
+ * @returns {boolean}
  *   If the directory is present and contains the files created by initSwingStore
  *   or openSwingStore, returns true. Else returns false.
  *
