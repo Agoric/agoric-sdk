@@ -111,7 +111,7 @@ jobs:
       if: ${{github.event_name == 'push'}}
       run: echo ==== event_name=push test is true
     - name: temp for debugging github action conditional on target branch
-      if: ${{github.ref_name == 'refs/heads/test-post-ci-benchmark-support'}}
+      if: ${{github.ref == 'refs/heads/test-post-ci-benchmark-support'}}
       run: echo ==== github.ref=targetbranch test is true
     - name: temp for debugging github action
       if: ${{github.event_name == 'push'}}
