@@ -114,9 +114,6 @@ jobs:
       if: ${{github.ref == 'refs/heads/test-post-ci-benchmark-support'}}
       run: echo ==== github.ref=targetbranch test is true
     - name: temp for debugging github action
-      if: ${{github.event_name == 'push'}}
-      run: echo ==== running with event_name=push set
-    - name: temp for debugging github action
       run: echo "===== github.ref=${{github.ref}} github.event_name=${{github.event_name}}"
     - name: benchmark changes
       run: cd packages/swingset-runner && yarn ci:autobench
