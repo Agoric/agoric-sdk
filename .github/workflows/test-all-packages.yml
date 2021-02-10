@@ -84,6 +84,7 @@ jobs:
     strategy:
       matrix:
         node-version: ['14.x']
+    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/test-post-ci-benchmark-support'}}
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -107,9 +108,6 @@ jobs:
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
 
-    - name: temp for debugging github action conditional
-      if: ${{github.event_name == 'push' && github.ref == 'refs/heads/test-post-ci-benchmark-support'}}
-      run: echo ==== conditionals are true
     - name: temp for debugging github action
       run: echo "===== github.ref=${{github.ref}} github.event_name=${{github.event_name}}"
     - name: benchmark changes
