@@ -1,2 +1,3 @@
 #!/bin/sh
+node -r esm demo/exchangeBenchmark/prepareContracts.js
 node --expose-gc -r esm bin/runner --init --benchmark 100 --statsfile benchstats.json --config demo/exchangeBenchmark/swingset.json run -- --quiet --prime
