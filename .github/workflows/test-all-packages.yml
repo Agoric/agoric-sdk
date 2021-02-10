@@ -5,7 +5,7 @@ name: Test all Packages
 
 on:
  push:
-   branches: [master, test-post-ci-benchmark-support]
+   branches: [master]
  pull_request:
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
