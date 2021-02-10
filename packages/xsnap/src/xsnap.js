@@ -14,9 +14,14 @@ import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';
 
+// This will need adjustment, but seems to be fine for a start.
+const DEFAULT_CRANK_METERING_LIMIT = 1e7;
+
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
+
+const SEMI = ';'.charCodeAt(0);
 
 const importMetaUrl = `file://${__filename}`;
 
@@ -41,6 +46,7 @@ function echoCommand(arg) {
  * @param {string=} [options.snapshot]
  * @param {'ignore' | 'inherit'} [options.stdout]
  * @param {'ignore' | 'inherit'} [options.stderr]
+ * @param {number} [options.meteringLimit]
  */
 export function xsnap(options) {
   const {
@@ -52,6 +58,7 @@ export function xsnap(options) {
     snapshot = undefined,
     stdout = 'ignore',
     stderr = 'ignore',
+    meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
   } = options;
 
   const platform = {
@@ -73,6 +80,9 @@ export function xsnap(options) {
   const vatExit = defer();
 
   const args = snapshot ? ['-r', snapshot] : [];
+  if (meteringLimit) {
+    args.push('-l', `${meteringLimit}`);
+  }
 
   const xsnapProcess = spawn(bin, args, {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
@@ -88,9 +98,9 @@ export function xsnap(options) {
     }
   });
 
-  const vatCancelled = vatExit.promise.then(() =>
-    Promise.reject(new Error(`${name} exited`)),
-  );
+  const vatCancelled = vatExit.promise.then(() => {
+    throw Error(`${name} exited`);
+  });
 
   const messagesToXsnap = netstring.writer(
     node.writer(
@@ -105,8 +115,40 @@ export function xsnap(options) {
   /** @type {Promise<void>} */
   let baton = Promise.resolve();
 
+  /** @type {string} */
+  let xsWorkerType;
+  async function getWorkerType() {
+    if (xsWorkerType) {
+      return xsWorkerType;
+    }
+    await new Promise(resolve => {
+      // Inititialize the worker type before sending messages.
+      const bufs = [];
+      const xsnapQueryVersion = spawn(bin, ['-v'], {
+        stdio: ['ignore', 'pipe', 'inherit'],
+      });
+      xsnapQueryVersion.stdout.on('data', chunk => {
+        bufs.push(chunk);
+      });
+      xsnapQueryVersion.on('close', () => {
+        const str = Buffer.concat(bufs).toString('utf-8');
+        const firstLine = str.split(/^/m)[0];
+        xsWorkerType = firstLine.trimEnd();
+        resolve();
+      });
+    });
+    return xsWorkerType;
+  }
+
   /**
-   * @returns {Promise<Uint8Array>}
+   * @template T
+   * @typedef {Object} RunResult
+   * @property {T} reply
+   * @property {{ workerType: string, allocate: number, compute: number }} crankStats
+   */
+
+  /**
+   * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
     for (;;) {
@@ -121,7 +163,25 @@ export function xsnap(options) {
         xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
-        return message.subarray(1);
+        let compute = NaN;
+        const semi = message.indexOf(SEMI, 1);
+        if (semi >= 0) {
+          // The message is `.938586;`.
+          const computeBuf = message.slice(1, semi);
+          const computeStr = decoder.decode(computeBuf);
+          compute = JSON.parse(computeStr);
+        }
+        const workerType = await getWorkerType();
+        const crankStats = {
+          workerType,
+          allocate: NaN,
+          compute,
+        };
+        // console.log('have crankStats', crankStats);
+        return {
+          reply: message.subarray(semi < 0 ? 1 : semi + 1),
+          crankStats,
+        };
       } else if (message[0] === ERROR) {
         throw new Error(
           `Uncaught exception in ${name}: ${decoder.decode(
@@ -136,7 +196,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} code
-   * @returns {Promise<Uint8Array>}
+   * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function evaluate(code) {
     const result = baton.then(async () => {
@@ -175,7 +235,7 @@ export function xsnap(options) {
 
   /**
    * @param {Uint8Array} message
-   * @returns {Promise<Uint8Array>}
+   * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function issueCommand(message) {
     const result = baton.then(async () => {
@@ -194,10 +254,11 @@ export function xsnap(options) {
 
   /**
    * @param {string} message
-   * @returns {Promise<string>}
+   * @returns {Promise<RunResult<string>>}
    */
   async function issueStringCommand(message) {
-    return decoder.decode(await issueCommand(encoder.encode(message)));
+    const result = await issueCommand(encoder.encode(message));
+    return { ...result, reply: decoder.decode(result.reply) };
   }
 
   /**

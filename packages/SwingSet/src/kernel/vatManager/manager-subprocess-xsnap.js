@@ -3,6 +3,9 @@ import { assert, details } from '@agoric/assert';
 import { makeTranscriptManager } from './transcript';
 import { createSyscall } from './syscall';
 
+import '../../types';
+import './types';
+
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
@@ -26,7 +29,6 @@ const decoder = new TextDecoder();
  * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
  * @typedef { ReturnType<typeof import('../state/kernelKeeper').default> } KernelKeeper
  * @typedef { ReturnType<typeof import('./manager-nodeworker').makeNodeWorkerVatManagerFactory> } VatManagerFactory
- * @typedef { [unknown, ...unknown[]] } Tagged
  */
 export function makeXsSubprocessFactory({
   allVatPowers: { transformTildot },
@@ -135,18 +137,18 @@ export function makeXsSubprocessFactory({
       await worker.evaluate(`(${superCode.source}\n)()`.trim());
     }
 
-    /** @type { (item: Tagged) => Promise<Tagged> } */
+    /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
-      const txt = await worker.issueStringCommand(JSON.stringify(item));
-      const reply = JSON.parse(txt);
+      const result = await worker.issueStringCommand(JSON.stringify(item));
+      const reply = JSON.parse(result.reply);
       assert(Array.isArray(reply));
       const [tag, ...rest] = reply;
-      return [tag, ...rest];
+      return { ...result, reply: [tag, ...rest] };
     }
 
     parentLog(vatID, `instructing worker to load bundle..`);
-    const bundleReply = await issueTagged([
+    const { reply: bundleReply } = await issueTagged([
       'setBundle',
       vatID,
       bundle,
@@ -159,12 +161,12 @@ export function makeXsSubprocessFactory({
       throw new Error(`failed to setBundle: ${bundleReply}`);
     }
 
-    /** @type { (item: Tagged) => Promise<Tagged> } */
+    /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function deliver(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
       transcriptManager.startDispatch(delivery);
       const result = await issueTagged(['deliver', ...delivery]);
-      parentLog(vatID, `deliverDone`, result[0], result.length);
+      parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       transcriptManager.finishDispatch();
       return result;
     }

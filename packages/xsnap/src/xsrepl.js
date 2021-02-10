@@ -17,6 +17,7 @@ async function main() {
   const xsnapOptions = {
     spawn: childProcess.spawn,
     os: os.type(),
+    meteringLimit: 0,
   };
 
   /**
