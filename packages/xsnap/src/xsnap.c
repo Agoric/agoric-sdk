@@ -3,7 +3,9 @@
 #include "xsSnapshot.h"
 #include "xs.h"
 
-#define XSNAP_VERSION "0.1.0"
+#ifndef XSNAP_VERSION
+# error "You must define XSNAP_VERSION in the right Makefile"
+#endif
 
 extern txScript* fxLoadScript(txMachine* the, txString path, txUnsigned flags);
 
