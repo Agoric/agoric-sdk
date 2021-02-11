@@ -166,7 +166,7 @@ export function xsnap(options) {
         let compute = NaN;
         const semi = message.indexOf(SEMI, 1);
         if (semi >= 0) {
-          // The message is `.938586;`.
+          // The message is `.938586;reply`.
           const computeBuf = message.slice(1, semi);
           const computeStr = decoder.decode(computeBuf);
           compute = JSON.parse(computeStr);

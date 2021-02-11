@@ -25,6 +25,7 @@ C_OPTIONS = \
 	/D mxRun=1 \
 	/D mxSloppy=1 \
 	/D mxSnapshot=1 \
+	/D mxMetering=1 \
 	/D mxRegExpUnicodePropertyEscapes=1 \
 	/I$(INC_DIR) \
 	/I$(PLT_DIR) \

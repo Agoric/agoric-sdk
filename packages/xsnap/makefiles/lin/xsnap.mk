@@ -30,6 +30,7 @@ C_OPTIONS = \
 	-DmxRun=1 \
 	-DmxSloppy=1 \
 	-DmxSnapshot=1 \
+	-DmxMetering=1 \
 	-DmxRegExpUnicodePropertyEscapes=1 \
 	-I$(INC_DIR) \
 	-I$(PLT_DIR) \

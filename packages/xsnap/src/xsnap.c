@@ -175,14 +175,14 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	#define xsBeginMetering(_THE, _CALLBACK, _STEP)
 	#define xsEndMetering(_THE)
 	#define xsPatchHostFunction(_FUNCTION,_PATCH)
-	#define xsMeterHostFunction(_COUNT)
+	#define xsMeterHostFunction(_COUNT) (void)(_COUNT)
   #define xsBeginCrank(_THE, _LIMIT)
   #define xsEndCrank(_THE) 0
 #endif
 
 static xsUnsignedValue gxCrankMeteringLimit = 0;
 static xsUnsignedValue gxCurrentMeter = 0;
-static xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
+xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
 {
 	if (gxCurrentMeter > 0 && index > gxCurrentMeter) {
 		// Just throw right out of the main loop and exit.
@@ -254,6 +254,7 @@ int main(int argc, char* argv[])
 			}
 		}
 		else if (!strcmp(argv[argi], "-l")) {
+#if mxMetering
 			argi++;
 			if (argi < argc)
 				gxCrankMeteringLimit = atoi(argv[argi]);
@@ -261,6 +262,10 @@ int main(int argc, char* argv[])
 				fxPrintUsage();
 				return 1;
 			}
+#else
+			fprintf(stderr, "%s flag not implemented; mxMetering is not enabled\n", argv[argi]);
+			return 1;
+#endif
 		}
 		else if (!strcmp(argv[argi], "-p"))
 			gxMeteringPrint = 1;
