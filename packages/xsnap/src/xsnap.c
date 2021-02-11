@@ -3,6 +3,7 @@
 #include "xsSnapshot.h"
 #include "xs.h"
 
+#define SNAPSHOT_SIGNATURE "xsnap 1"
 #ifndef XSNAP_VERSION
 # error "You must define XSNAP_VERSION in the right Makefile"
 #endif
@@ -176,8 +177,8 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	#define xsEndMetering(_THE)
 	#define xsPatchHostFunction(_FUNCTION,_PATCH)
 	#define xsMeterHostFunction(_COUNT) (void)(_COUNT)
-  #define xsBeginCrank(_THE, _LIMIT)
-  #define xsEndCrank(_THE) 0
+	#define xsBeginCrank(_THE, _LIMIT)
+	#define xsEndCrank(_THE) 0
 #endif
 
 static xsUnsignedValue gxCrankMeteringLimit = 0;
@@ -218,8 +219,8 @@ int main(int argc, char* argv[])
 	xsCreation* creation = &_creation;
 
 	txSnapshot snapshot = {
-		"xsnap-" XSNAP_VERSION,
-		11,
+		SNAPSHOT_SIGNATURE,
+		sizeof(SNAPSHOT_SIGNATURE) - 1,
 		gxSnapshotCallbacks,
 		mxSnapshotCallbackCount,
 		fxSnapshotRead,
@@ -328,7 +329,7 @@ int main(int argc, char* argv[])
 		char done = 0;
 		while (!done) {
 			// By default, use the infinite meter.
-      gxCurrentMeter = 0;
+			gxCurrentMeter = 0;
 
 			xsUnsignedValue meterIndex = 0;
 			char* nsbuf;
@@ -830,10 +831,10 @@ void fx_Array_prototype_meter(xsMachine* the)
 
 void fxPatchBuiltIns(txMachine* machine)
 {
-  // FIXME: This function is disabled because it caused failures.
-  // https://github.com/Moddable-OpenSource/moddable/issues/550
+	// FIXME: This function is disabled because it caused failures.
+	// https://github.com/Moddable-OpenSource/moddable/issues/550
 
-  // TODO: Provide complete metering of builtins and operators.
+	// TODO: Provide complete metering of builtins and operators.
 #if 0
 	xsBeginHost(machine);
 	xsVars(2);
@@ -1332,7 +1333,7 @@ static char* fxReadNetStringError(int code)
 static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, char* buf, size_t length) {
 	char prefix[32];
 	// Prepend the meter usage to the reply.
-	snprintf(prefix, sizeof(prefix) - 1, ".%u;", meterIndex);
+	snprintf(prefix, sizeof(prefix) - 1, ".%u\1", meterIndex);
 	return fxWriteNetString(outStream, prefix, buf, length);
 }
 

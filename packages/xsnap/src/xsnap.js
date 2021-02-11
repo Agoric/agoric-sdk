@@ -17,11 +17,15 @@ import * as node from './node-stream';
 // This will need adjustment, but seems to be fine for a start.
 const DEFAULT_CRANK_METERING_LIMIT = 1e7;
 
+// The version identifier for our meter type.
+// TODO Bump this whenever there's a change to metering semantics.
+const METER_TYPE = 'xs-meter-1';
+
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
 
-const SEMI = ';'.charCodeAt(0);
+const OK_SEPARATOR = 1;
 
 const importMetaUrl = `file://${__filename}`;
 
@@ -115,36 +119,11 @@ export function xsnap(options) {
   /** @type {Promise<void>} */
   let baton = Promise.resolve();
 
-  /** @type {string} */
-  let xsWorkerType;
-  async function getWorkerType() {
-    if (xsWorkerType) {
-      return xsWorkerType;
-    }
-    await new Promise(resolve => {
-      // Inititialize the worker type before sending messages.
-      const bufs = [];
-      const xsnapQueryVersion = spawn(bin, ['-v'], {
-        stdio: ['ignore', 'pipe', 'inherit'],
-      });
-      xsnapQueryVersion.stdout.on('data', chunk => {
-        bufs.push(chunk);
-      });
-      xsnapQueryVersion.on('close', () => {
-        const str = Buffer.concat(bufs).toString('utf-8');
-        const firstLine = str.split(/^/m)[0];
-        xsWorkerType = firstLine.trimEnd();
-        resolve();
-      });
-    });
-    return xsWorkerType;
-  }
-
   /**
    * @template T
    * @typedef {Object} RunResult
    * @property {T} reply
-   * @property {{ workerType: string, allocate: number, compute: number }} crankStats
+   * @property {{ meterType: string, allocate: number|null, compute: number|null }} crankStats
    */
 
   /**
@@ -163,23 +142,23 @@ export function xsnap(options) {
         xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
-        let compute = NaN;
-        const semi = message.indexOf(SEMI, 1);
-        if (semi >= 0) {
-          // The message is `.938586;reply`.
-          const computeBuf = message.slice(1, semi);
-          const computeStr = decoder.decode(computeBuf);
-          compute = JSON.parse(computeStr);
+        let compute = null;
+        const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
+        if (meterSeparator >= 0) {
+          // The message is `.meterdata\1reply`.
+          const meterData = message.slice(1, meterSeparator);
+          // We parse the meter data as JSON.
+          // For now it is just a number for the used compute meter.
+          compute = JSON.parse(decoder.decode(meterData));
         }
-        const workerType = await getWorkerType();
         const crankStats = {
-          workerType,
-          allocate: NaN,
+          meterType: METER_TYPE,
+          allocate: null, // No allocation meter yet.
           compute,
         };
         // console.log('have crankStats', crankStats);
         return {
-          reply: message.subarray(semi < 0 ? 1 : semi + 1),
+          reply: message.subarray(meterSeparator < 0 ? 1 : meterSeparator + 1),
           crankStats,
         };
       } else if (message[0] === ERROR) {
