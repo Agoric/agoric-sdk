@@ -490,7 +490,11 @@ test('kernelKeeper promises', async t => {
     { type: 'send', more: [2] },
   ]);
 
-  k.fulfillKernelPromiseToPresence(p1, 'ko44');
+  const capdata = harden({
+    body: '{"@qclass":"slot","index":0}',
+    slots: ['ko44'],
+  });
+  k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilledToPresence',
     refCount: 0,
@@ -522,13 +526,16 @@ test('kernelKeeper promise resolveToData', async t => {
   k.createStartingKernelState();
 
   const p1 = k.addKernelPromiseForVat('v4');
-  const capdata = harden({ body: 'bodyjson', slots: ['ko22', 'kp24', 'kd25'] });
-  k.fulfillKernelPromiseToData(p1, capdata);
+  const capdata = harden({
+    body: '"bodyjson"',
+    slots: ['ko22', 'kp24', 'kd25'],
+  });
+  k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilledToData',
     refCount: 0,
     data: {
-      body: 'bodyjson',
+      body: '"bodyjson"',
       slots: ['ko22', 'kp24', 'kd25'],
     },
   });
@@ -540,13 +547,16 @@ test('kernelKeeper promise reject', async t => {
   k.createStartingKernelState();
 
   const p1 = k.addKernelPromiseForVat('v4');
-  const capdata = harden({ body: 'bodyjson', slots: ['ko22', 'kp24', 'kd25'] });
-  k.rejectKernelPromise(p1, capdata);
+  const capdata = harden({
+    body: '"bodyjson"',
+    slots: ['ko22', 'kp24', 'kd25'],
+  });
+  k.resolveKernelPromise(p1, true, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'rejected',
     refCount: 0,
     data: {
-      body: 'bodyjson',
+      body: '"bodyjson"',
       slots: ['ko22', 'kp24', 'kd25'],
     },
   });

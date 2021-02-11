@@ -409,35 +409,47 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     storage.delete(`${kpid}.refCount`);
   }
 
-  function fulfillKernelPromiseToPresence(kernelSlot, targetSlot) {
-    insistKernelType('promise', kernelSlot);
-    deleteKernelPromiseState(kernelSlot);
-    decStat('kpUnresolved');
-    incStat('kpFulfilledToPresence');
-    storage.set(`${kernelSlot}.state`, 'fulfilledToPresence');
-    storage.set(`${kernelSlot}.slot`, targetSlot);
+  function extractPresenceIfPresent(data) {
+    const body = JSON.parse(data.body);
+    if (
+      body &&
+      typeof body === 'object' &&
+      body['@qclass'] === 'slot' &&
+      body.index === 0
+    ) {
+      if (data.slots.length === 1) {
+        const slot = data.slots[0];
+        const { type } = parseKernelSlot(slot);
+        if (type === 'object') {
+          return slot;
+        }
+      }
+    }
+    return null;
   }
 
-  function fulfillKernelPromiseToData(kernelSlot, capdata) {
+  function resolveKernelPromise(kernelSlot, rejected, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
-    incStat('kpFulfilledToData');
-    storage.set(`${kernelSlot}.state`, 'fulfilledToData');
-    storage.set(`${kernelSlot}.data.body`, capdata.body);
-    storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
-  }
 
-  function rejectKernelPromise(kernelSlot, capdata) {
-    insistKernelType('promise', kernelSlot);
-    insistCapData(capdata);
-    deleteKernelPromiseState(kernelSlot);
-    decStat('kpUnresolved');
-    incStat('kpRejected');
-    storage.set(`${kernelSlot}.state`, 'rejected');
-    storage.set(`${kernelSlot}.data.body`, capdata.body);
-    storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
+    const presence = extractPresenceIfPresent(capdata);
+    if (presence) {
+      incStat('kpFulfilledToPresence');
+      storage.set(`${kernelSlot}.state`, 'fulfilledToPresence');
+      storage.set(`${kernelSlot}.slot`, presence);
+    } else if (rejected) {
+      incStat('kpRejected');
+      storage.set(`${kernelSlot}.state`, 'rejected');
+      storage.set(`${kernelSlot}.data.body`, capdata.body);
+      storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
+    } else {
+      incStat('kpFulfilledToData');
+      storage.set(`${kernelSlot}.state`, 'fulfilledToData');
+      storage.set(`${kernelSlot}.data.body`, capdata.body);
+      storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
+    }
   }
 
   function cleanupAfterTerminatedVat(vatID) {
@@ -497,7 +509,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     if (newDynamicVatIDs.length !== oldDynamicVatIDs.length) {
       storage.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
     } else {
-      console.log(`removing static vat ${vatID}`);
+      kdebug(`removing static vat ${vatID}`);
       for (const k of storage.getKeys('vat.name.', 'vat.name/')) {
         if (storage.get(k) === vatID) {
           storage.delete(k);
@@ -892,9 +904,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     getKernelPromise,
     getResolveablePromise,
     hasKernelPromise,
-    fulfillKernelPromiseToPresence,
-    fulfillKernelPromiseToData,
-    rejectKernelPromise,
+    resolveKernelPromise,
     addMessageToPromiseQueue,
     addSubscriberToPromise,
     setDecider,

@@ -58,7 +58,7 @@ async function testFailure(t) {
     failureHappened = true;
     t.is(
       e.message,
-      'kernel panic kp40.policy panic: rejection {"body":"{\\"@qclass\\":\\"error\\",\\"errorId\\":\\"error:liveSlots:v1#1\\",\\"message\\":\\"gratuitous error\\",\\"name\\":\\"Error\\"}","slots":[]}',
+      'kernel panic kp40.policy panic: rejected {"body":"{\\"@qclass\\":\\"error\\",\\"errorId\\":\\"error:liveSlots:v1#1\\",\\"message\\":\\"gratuitous error\\",\\"name\\":\\"Error\\"}","slots":[]}',
     );
   }
   t.truthy(failureHappened);
