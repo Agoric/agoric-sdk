@@ -14,9 +14,18 @@ import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';
 
+// This will need adjustment, but seems to be fine for a start.
+const DEFAULT_CRANK_METERING_LIMIT = 1e7;
+
+// The version identifier for our meter type.
+// TODO Bump this whenever there's a change to metering semantics.
+const METER_TYPE = 'xs-meter-1';
+
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
+
+const OK_SEPARATOR = 1;
 
 const importMetaUrl = `file://${__filename}`;
 
@@ -41,6 +50,7 @@ function echoCommand(arg) {
  * @param {string=} [options.snapshot]
  * @param {'ignore' | 'inherit'} [options.stdout]
  * @param {'ignore' | 'inherit'} [options.stderr]
+ * @param {number} [options.meteringLimit]
  */
 export function xsnap(options) {
   const {
@@ -52,6 +62,7 @@ export function xsnap(options) {
     snapshot = undefined,
     stdout = 'ignore',
     stderr = 'ignore',
+    meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
   } = options;
 
   const platform = {
@@ -73,6 +84,9 @@ export function xsnap(options) {
   const vatExit = defer();
 
   const args = snapshot ? ['-r', snapshot] : [];
+  if (meteringLimit) {
+    args.push('-l', `${meteringLimit}`);
+  }
 
   const xsnapProcess = spawn(bin, args, {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
@@ -88,9 +102,9 @@ export function xsnap(options) {
     }
   });
 
-  const vatCancelled = vatExit.promise.then(() =>
-    Promise.reject(new Error(`${name} exited`)),
-  );
+  const vatCancelled = vatExit.promise.then(() => {
+    throw Error(`${name} exited`);
+  });
 
   const messagesToXsnap = netstring.writer(
     node.writer(
@@ -106,7 +120,14 @@ export function xsnap(options) {
   let baton = Promise.resolve();
 
   /**
-   * @returns {Promise<Uint8Array>}
+   * @template T
+   * @typedef {Object} RunResult
+   * @property {T} reply
+   * @property {{ meterType: string, allocate: number|null, compute: number|null }} crankStats
+   */
+
+  /**
+   * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
     for (;;) {
@@ -121,7 +142,25 @@ export function xsnap(options) {
         xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
-        return message.subarray(1);
+        let compute = null;
+        const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
+        if (meterSeparator >= 0) {
+          // The message is `.meterdata\1reply`.
+          const meterData = message.slice(1, meterSeparator);
+          // We parse the meter data as JSON.
+          // For now it is just a number for the used compute meter.
+          compute = JSON.parse(decoder.decode(meterData));
+        }
+        const crankStats = {
+          meterType: METER_TYPE,
+          allocate: null, // No allocation meter yet.
+          compute,
+        };
+        // console.log('have crankStats', crankStats);
+        return {
+          reply: message.subarray(meterSeparator < 0 ? 1 : meterSeparator + 1),
+          crankStats,
+        };
       } else if (message[0] === ERROR) {
         throw new Error(
           `Uncaught exception in ${name}: ${decoder.decode(
@@ -136,7 +175,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} code
-   * @returns {Promise<Uint8Array>}
+   * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function evaluate(code) {
     const result = baton.then(async () => {
@@ -175,7 +214,7 @@ export function xsnap(options) {
 
   /**
    * @param {Uint8Array} message
-   * @returns {Promise<Uint8Array>}
+   * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function issueCommand(message) {
     const result = baton.then(async () => {
@@ -194,10 +233,11 @@ export function xsnap(options) {
 
   /**
    * @param {string} message
-   * @returns {Promise<string>}
+   * @returns {Promise<RunResult<string>>}
    */
   async function issueStringCommand(message) {
-    return decoder.decode(await issueCommand(encoder.encode(message)));
+    const result = await issueCommand(encoder.encode(message));
+    return { ...result, reply: decoder.decode(result.reply) };
   }
 
   /**

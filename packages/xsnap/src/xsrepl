@@ -1,3 +1,4 @@
 #!/bin/bash
-HERE=$(dirname -- $(readlink -f "$0"))
-node -r esm $HERE/xsrepl.js "@*"
+real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
+thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
+node -r esm "$thisdir/xsrepl.js" "@*"

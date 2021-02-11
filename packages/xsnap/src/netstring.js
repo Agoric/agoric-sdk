@@ -17,7 +17,7 @@ const encoder = new TextEncoder();
  * @param {AsyncIterable<Uint8Array>} input
  * @param {string=} name
  * @param {number=} capacity
- * @returns {AsyncGenerator<Uint8Array>} input
+ * @returns {AsyncGenerator<Uint8Array, Uint8Array, unknown>} input
  */
 export async function* reader(input, name = '<unknown>', capacity = 1024) {
   let length = 0;
@@ -72,6 +72,7 @@ export async function* reader(input, name = '<unknown>', capacity = 1024) {
       `Unexpected dangling message at offset ${offset} of ${name}`,
     );
   }
+  return new Uint8Array(0);
 }
 
 /**

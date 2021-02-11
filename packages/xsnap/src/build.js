@@ -1,5 +1,5 @@
 import * as childProcess from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import os from 'os';
 
 function exec(command, cwd, args = []) {
@@ -47,16 +47,20 @@ function exec(command, cwd, args = []) {
     await exec('git', '.', ['submodule', 'update', '--init']);
   }
 
+  const pjson = readFileSync(`${__dirname}/../package.json`, 'utf-8');
+  const pkg = JSON.parse(pjson);
+  const XSNAP_VERSION = `XSNAP_VERSION=${pkg.version}`;
+
   // Run command depending on the OS
   if (os.type() === 'Linux') {
-    await exec('make', 'makefiles/lin');
-    await exec('make', 'makefiles/lin', ['GOAL=debug']);
+    await exec('make', 'makefiles/lin', [XSNAP_VERSION]);
+    await exec('make', 'makefiles/lin', ['GOAL=debug', XSNAP_VERSION]);
   } else if (os.type() === 'Darwin') {
-    await exec('make', 'makefiles/mac');
-    await exec('make', 'makefiles/mac', ['GOAL=debug']);
+    await exec('make', 'makefiles/mac', [XSNAP_VERSION]);
+    await exec('make', 'makefiles/mac', ['GOAL=debug', XSNAP_VERSION]);
   } else if (os.type() === 'Windows_NT') {
-    await exec('nmake', 'makefiles/win');
-    await exec('make', 'makefiles/win', ['GOAL=debug']);
+    await exec('nmake', 'makefiles/win', [XSNAP_VERSION]);
+    await exec('make', 'makefiles/win', ['GOAL=debug', XSNAP_VERSION]);
   } else {
     throw new Error(`Unsupported OS found: ${os.type()}`);
   }

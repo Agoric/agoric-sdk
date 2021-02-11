@@ -3,6 +3,11 @@
 #include "xsSnapshot.h"
 #include "xs.h"
 
+#define SNAPSHOT_SIGNATURE "xsnap 1"
+#ifndef XSNAP_VERSION
+# error "You must define XSNAP_VERSION in the right Makefile"
+#endif
+
 extern txScript* fxLoadScript(txMachine* the, txString path, txUnsigned flags);
 
 typedef struct sxAliasIDLink txAliasIDLink;
@@ -68,7 +73,8 @@ static void fxRunLoop(txMachine* the);
 
 static int fxReadNetString(FILE *inStream, char** dest, size_t* len);
 static char* fxReadNetStringError(int code);
-static int fxWriteNetString(FILE* outStream, char prefix, char* buf, size_t len);
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, char* buf, size_t len);
+static int fxWriteNetString(FILE* outStream, char* prefix, char* buf, size_t len);
 static char* fxWriteNetStringError(int code);
 
 // The order of the callbacks materially affects how they are introduced to
@@ -160,21 +166,30 @@ static int fxSnapshotWrite(void* stream, void* address, size_t size)
 	fxPop())
 #define xsMeterHostFunction(_COUNT) \
 	fxMeterHostFunction(the, _COUNT)
+#define xsBeginCrank(_THE, _LIMIT) \
+	((_THE)->meterIndex = 0, \
+	gxCurrentMeter = _LIMIT)
+#define xsEndCrank(_THE) \
+	(gxCurrentMeter = 0, \
+	(_THE)->meterIndex)
 #else
 	#define xsBeginMetering(_THE, _CALLBACK, _STEP)
 	#define xsEndMetering(_THE)
 	#define xsPatchHostFunction(_FUNCTION,_PATCH)
-	#define xsMeterHostFunction(_COUNT)
+	#define xsMeterHostFunction(_COUNT) (void)(_COUNT)
+	#define xsBeginCrank(_THE, _LIMIT)
+	#define xsEndCrank(_THE) 0
 #endif
 
-static xsUnsignedValue gxMeteringLimit = 0;
-static xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
+static xsUnsignedValue gxCrankMeteringLimit = 0;
+static xsUnsignedValue gxCurrentMeter = 0;
+xsBooleanValue fxMeteringCallback(xsMachine* the, xsUnsignedValue index)
 {
-	if (index > gxMeteringLimit) {
-		fprintf(stderr, "too much computation\n");
+	if (gxCurrentMeter > 0 && index > gxCurrentMeter) {
+		// Just throw right out of the main loop and exit.
 		return 0;
 	}
-//	fprintf(stderr, "%d\n", index);
+	// fprintf(stderr, "metering up to %d\n", index);
 	return 1;
 }
 static xsBooleanValue gxMeteringPrint = 0;
@@ -204,8 +219,8 @@ int main(int argc, char* argv[])
 	xsCreation* creation = &_creation;
 
 	txSnapshot snapshot = {
-		"xsnap 0.1.0",
-		11,
+		SNAPSHOT_SIGNATURE,
+		sizeof(SNAPSHOT_SIGNATURE) - 1,
 		gxSnapshotCallbacks,
 		mxSnapshotCallbackCount,
 		fxSnapshotRead,
@@ -240,13 +255,18 @@ int main(int argc, char* argv[])
 			}
 		}
 		else if (!strcmp(argv[argi], "-l")) {
+#if mxMetering
 			argi++;
 			if (argi < argc)
-				gxMeteringLimit = atoi(argv[argi]);
+				gxCrankMeteringLimit = atoi(argv[argi]);
 			else {
 				fxPrintUsage();
 				return 1;
 			}
+#else
+			fprintf(stderr, "%s flag not implemented; mxMetering is not enabled\n", argv[argi]);
+			return 1;
+#endif
 		}
 		else if (!strcmp(argv[argi], "-p"))
 			gxMeteringPrint = 1;
@@ -260,14 +280,14 @@ int main(int argc, char* argv[])
 			}
 		}
 		else if (!strcmp(argv[argi], "-v")) {
-			printf("XS %d.%d.%d\n", XS_MAJOR_VERSION, XS_MINOR_VERSION, XS_PATCH_VERSION);
+			printf("xsnap %s (XS %d.%d.%d)\n", XSNAP_VERSION, XS_MAJOR_VERSION, XS_MINOR_VERSION, XS_PATCH_VERSION);
 			return 0;
 		} else {
 			fxPrintUsage();
 			return 1;
 		}
 	}
-	if (gxMeteringLimit) {
+	if (gxCrankMeteringLimit) {
 		if (interval == 0)
 			interval = 1;
 	}
@@ -308,10 +328,15 @@ int main(int argc, char* argv[])
 	{
 		char done = 0;
 		while (!done) {
+			// By default, use the infinite meter.
+			gxCurrentMeter = 0;
+
+			xsUnsignedValue meterIndex = 0;
 			char* nsbuf;
 			size_t nslen;
 			int readError = fxReadNetString(fromParent, &nsbuf, &nslen);
 			int writeError = 0;
+
 			if (readError != 0) {
 				if (feof(fromParent)) {
 					break;
@@ -325,6 +350,7 @@ int main(int argc, char* argv[])
 			switch(command) {
 			case '?':
 			case 'e':
+				xsBeginCrank(machine, gxCrankMeteringLimit);
 				error = 0;
 				xsBeginHost(machine);
 				{
@@ -348,10 +374,11 @@ int main(int argc, char* argv[])
 					}
 				}
 				fxRunLoop(machine);
+				meterIndex = xsEndCrank(machine);
 				{
 					if (error) {
 						xsStringValue message = xsToString(xsVar(1));
-						writeError = fxWriteNetString(toParent, '!', message, strlen(message));
+						writeError = fxWriteNetString(toParent, "!", message, strlen(message));
 						// fprintf(stderr, "error: %d, writeError: %d %s\n", error, writeError, message);
 					} else {
 						char* response = NULL;
@@ -379,7 +406,7 @@ int main(int argc, char* argv[])
 							}
 						}
 						// fprintf(stderr, "response of %d bytes\n", responseLength);
-						writeError = fxWriteNetString(toParent, '.', response, responseLength);
+						writeError = fxWriteOkay(toParent, meterIndex, response, responseLength);
 					}
 				}
 				xsEndHost(machine);
@@ -390,6 +417,7 @@ int main(int argc, char* argv[])
 				break;
 			case 's':
 			case 'm':
+				xsBeginCrank(machine, gxCrankMeteringLimit);
 				path = nsbuf + 1;
 				xsBeginHost(machine);
 				{
@@ -412,15 +440,16 @@ int main(int argc, char* argv[])
 				}
 				xsEndHost(machine);
 				fxRunLoop(machine);
+				meterIndex = xsEndCrank(machine);
 				if (error == 0) {
-					int writeError = fxWriteNetString(toParent, '.', "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(1);
 					}
 				} else {
 					// TODO: dynamically build error message including Exception message.
-					int writeError = fxWriteNetString(toParent, '!', "", 0);
+					int writeError = fxWriteNetString(toParent, "!", "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(1);
@@ -442,14 +471,14 @@ int main(int argc, char* argv[])
 							path, strerror(snapshot.error));
 				}
 				if (snapshot.error == 0) {
-					int writeError = fxWriteNetString(toParent, '.', "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(1);
 					}
 				} else {
 					// TODO: dynamically build error message including Exception message.
-					int writeError = fxWriteNetString(toParent, '!', "", 0);
+					int writeError = fxWriteNetString(toParent, "!", "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(1);
@@ -802,6 +831,11 @@ void fx_Array_prototype_meter(xsMachine* the)
 
 void fxPatchBuiltIns(txMachine* machine)
 {
+	// FIXME: This function is disabled because it caused failures.
+	// https://github.com/Moddable-OpenSource/moddable/issues/550
+
+	// TODO: Provide complete metering of builtins and operators.
+#if 0
 	xsBeginHost(machine);
 	xsVars(2);
 	xsVar(0) = xsGet(xsGlobal, xsID("Array"));
@@ -811,11 +845,12 @@ void fxPatchBuiltIns(txMachine* machine)
 	xsVar(1) = xsGet(xsVar(0), xsID("sort"));
 	xsPatchHostFunction(xsVar(1), fx_Array_prototype_meter);
 	xsEndHost(machine);
+#endif
 }
 
 void fxPrintUsage()
 {
-	printf("xsnap [-h] [-f] [i <interval>] [l <limit] [-m] [-r <snapshot>] [-s] [-v]\n");
+	printf("xsnap [-h] [-f] [-i <interval>] [-l <limit>] [-m] [-r <snapshot>] [-s] [-v]\n");
 	printf("\t-f: freeze the XS machine\n");
 	printf("\t-h: print this help message\n");
 	printf("\t-i <interval>: metering interval (default to 1)\n");
@@ -880,8 +915,8 @@ void fx_clearTimer(txMachine* the)
 {
 	txJob* job = xsGetHostData(xsArg(0));
 	if (job) {
-        xsForget(job->self);
-        xsSetHostData(xsArg(0), NULL);
+		xsForget(job->self);
+		xsSetHostData(xsArg(0), NULL);
 		job->the = NULL;
 	}
 }
@@ -1295,9 +1330,16 @@ static char* fxReadNetStringError(int code)
 	}
 }
 
-static int fxWriteNetString(FILE* outStream, char prefix, char* buf, size_t length)
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, char* buf, size_t length) {
+	char prefix[32];
+	// Prepend the meter usage to the reply.
+	snprintf(prefix, sizeof(prefix) - 1, ".%u\1", meterIndex);
+	return fxWriteNetString(outStream, prefix, buf, length);
+}
+
+static int fxWriteNetString(FILE* outStream, char* prefix, char* buf, size_t length)
 {
-	if (fprintf(outStream, "%lu:%c", length + 1, prefix) < 1) {
+	if (fprintf(outStream, "%lu:%s", length + strlen(prefix), prefix) < 1) {
 		return 1;
 	} else if (fwrite(buf, 1, length, outStream) < length) {
 		return 2;
@@ -1337,7 +1379,7 @@ static void fx_issueCommand(xsMachine *the)
 	buf = malloc(length);
 
 	fxGetArrayBufferData(the, arrayBuffer, 0, buf, length);
-	int writeError = fxWriteNetString(toParent, '?', buf, length);
+	int writeError = fxWriteNetString(toParent, "?", buf, length);
 
 	free(buf);
 

@@ -45,6 +45,37 @@ test('evaluate until idle', async t => {
   t.deepEqual(['Hello, World!'], opts.messages);
 });
 
+test('evaluate infinite loop', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await t.throwsAsync(vat.evaluate(`for (;;) {}`), {
+    message: 'xsnap test worker exited',
+    instanceOf: Error,
+  });
+  await vat.close();
+  t.deepEqual([], opts.messages);
+});
+
+// TODO: Reenable when this doesn't take 3.6 seconds.
+test.skip('evaluate promise loop', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await t.throwsAsync(
+    vat.evaluate(`
+    function f() {
+      Promise.resolve().then(f);
+    }
+    f();
+  `),
+    {
+      message: 'xsnap test worker exited',
+      instanceOf: Error,
+    },
+  );
+  await vat.close();
+  t.deepEqual([], opts.messages);
+});
+
 test('evaluate and report', async t => {
   const opts = options();
   const vat = xsnap(opts);
@@ -56,7 +87,8 @@ test('evaluate and report', async t => {
     return report;
   })()`);
   await vat.close();
-  t.deepEqual('hi', decoder.decode(result));
+  const { reply } = result;
+  t.deepEqual('hi', decoder.decode(reply));
 });
 
 test('evaluate error', async t => {
@@ -202,9 +234,9 @@ test('receive a response', async t => {
       return ArrayBuffer.fromString(String(number + 1));
     };
   `);
-  t.is('1', await vat.issueStringCommand('0'));
-  t.is('2', await vat.issueStringCommand('1'));
-  t.is('3', await vat.issueStringCommand('2'));
+  t.is('1', (await vat.issueStringCommand('0')).reply);
+  t.is('2', (await vat.issueStringCommand('1')).reply);
+  t.is('3', (await vat.issueStringCommand('2')).reply);
   await vat.close();
 });
 
@@ -261,7 +293,7 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test('fail to send command to already-closed xnsap worker', async t => {
+test('fail to send command to already-closed xsnap worker', async t => {
   const vat = xsnap({ ...xsnapOptions });
   await vat.close();
   await vat.evaluate(``).catch(err => {
@@ -269,7 +301,7 @@ test('fail to send command to already-closed xnsap worker', async t => {
   });
 });
 
-test('fail to send command to already-terminated xnsap worker', async t => {
+test('fail to send command to already-terminated xsnap worker', async t => {
   const vat = xsnap({ ...xsnapOptions });
   await vat.terminate();
   await vat.evaluate(``).catch(err => {
@@ -277,30 +309,23 @@ test('fail to send command to already-terminated xnsap worker', async t => {
   });
 });
 
-test('fail to send command to terminated xnsap worker', async t => {
-  const vat = xsnap({ ...xsnapOptions });
-  const hang = vat.evaluate(`for (;;) {}`).then(
-    () => t.fail('command should not complete'),
-    err => {
-      t.is(
-        err.message,
-        'Cannot write messages to xsnap test worker: write EPIPE',
-      );
-    },
-  );
+test('fail to send command to terminated xsnap worker', async t => {
+  const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
+  const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
+    instanceOf: Error,
+    message: /^(Cannot write messages to xsnap test worker: write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
+  });
 
   await vat.terminate();
   await hang;
 });
 
 test('abnormal termination', async t => {
-  const vat = xsnap({ ...xsnapOptions });
-  const hang = vat.evaluate(`for (;;) {}`).then(
-    () => t.fail('command should not complete'),
-    err => {
-      t.is(err.message, 'xsnap test worker exited due to signal SIGTERM');
-    },
-  );
+  const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
+  const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
+    instanceOf: Error,
+    message: 'xsnap test worker exited due to signal SIGTERM',
+  });
 
   // Allow the evaluate command to flush.
   await delay(10);
@@ -309,7 +334,7 @@ test('abnormal termination', async t => {
 });
 
 test('normal close of pathological script', async t => {
-  const vat = xsnap({ ...xsnapOptions });
+  const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
   const hang = vat.evaluate(`for (;;) {}`).then(
     () => t.fail('command should not complete'),
     err => {
