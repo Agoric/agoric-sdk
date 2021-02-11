@@ -317,10 +317,13 @@ jobs:
       run: cd packages/SwingSet && yarn test
       env:
         ESM_DISABLE_CACHE: true
+    - name: yarn test (xsnap)
+      run: cd packages/xsnap && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     # explicitly test the XS worker, for visibility
     - name: yarn test (SwingSet XS Worker)
-      working-directory: ./packages/SwingSet
-      run: yarn test:xs-worker
+      run: cd packages/SwingSet && yarn test:xs-worker
       env:
         ESM_DISABLE_CACHE: true
 

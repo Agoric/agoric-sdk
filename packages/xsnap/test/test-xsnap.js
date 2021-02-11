@@ -68,7 +68,7 @@ test.skip('evaluate promise loop', async t => {
     f();
   `),
     {
-      message: /^xsnap test worker exited; meter was /,
+      message: 'xsnap test worker exited',
       instanceOf: Error,
     },
   );
@@ -313,7 +313,7 @@ test('fail to send command to terminated xsnap worker', async t => {
   const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
   const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
     instanceOf: Error,
-    message: 'Cannot write messages to xsnap test worker: write EPIPE',
+    message: /^(Cannot write messages to xsnap test worker: write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
   });
 
   await vat.terminate();
@@ -322,8 +322,6 @@ test('fail to send command to terminated xsnap worker', async t => {
 
 test('abnormal termination', async t => {
   const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
-  // Wait for xsnap to wake up.
-  await vat.evaluate(``);
   const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
     instanceOf: Error,
     message: 'xsnap test worker exited due to signal SIGTERM',
