@@ -1,0 +1,16 @@
+BasedOnStyle: LLVM
+UseTab: Never
+# Moddable has: UseTab: Always
+IndentWidth: 4
+TabWidth: 4
+ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 4
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: false
+ColumnLimit: 0
+AccessModifierOffset: -4
+SortIncludes: false
+PointerAlignment: Left
+AlignTrailingComments: false
+AlignEscapedNewlines: Left
