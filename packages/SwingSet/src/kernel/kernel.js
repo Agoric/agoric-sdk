@@ -842,7 +842,6 @@ export default function buildKernel(
     // replay any transcripts
     // This happens every time, now that initialisation is separated from
     // execution.
-    console.log('Replaying SwingSet transcripts');
     const oldLength = kernelKeeper.getRunQueueLength();
     for (const vatID of ephemeral.vats.keys()) {
       logStartup(`Replaying transcript of vatID ${vatID}`);
