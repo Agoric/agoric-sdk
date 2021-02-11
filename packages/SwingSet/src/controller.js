@@ -138,11 +138,13 @@ export async function makeSwingsetController(
   // kernelEndowments. If our enclosing application decided to not tame the
   // globals, we detect that and refrain from touching it later.
   const replaceGlobalMeter = isTamed() ? tameMetering() : undefined;
-  console.log(
-    `SwingSet global metering is ${
-      isTamed() ? 'enabled' : 'disabled (no replaceGlobalMeter)'
-    }`,
-  );
+  if (verbose) {
+    console.log(
+      `SwingSet global metering is ${
+        isTamed() ? 'enabled' : 'disabled (no replaceGlobalMeter)'
+      }`,
+    );
+  }
 
   // this launches a worker in a Node.js thread (aka "Worker")
   function makeNodeWorker() {

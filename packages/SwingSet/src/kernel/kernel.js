@@ -243,9 +243,7 @@ export default function buildKernel(
     // eslint-disable-next-line no-use-before-define
     notify,
     // eslint-disable-next-line no-use-before-define
-    notifySubscribersAndQueue,
-    // eslint-disable-next-line no-use-before-define
-    resolveToError,
+    doResolve,
     // eslint-disable-next-line no-use-before-define
     setTerminationTrigger,
   });
@@ -305,25 +303,36 @@ export default function buildKernel(
     }
   }
 
+  function doResolve(vatID, resolutions) {
+    if (vatID) {
+      insistVatID(vatID);
+    }
+    for (const resolution of resolutions) {
+      const [kpid, rejected, data] = resolution;
+      insistKernelType('promise', kpid);
+      insistCapData(data);
+      const p = kernelKeeper.getResolveablePromise(kpid, vatID);
+      const { subscribers, queue } = p;
+      let idx = 0;
+      for (const dataSlot of data.slots) {
+        kernelKeeper.incrementRefCount(dataSlot, `resolve|s${idx}`);
+        idx += 1;
+      }
+      kernelKeeper.resolveKernelPromise(kpid, rejected, data);
+      notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
+      const tag = rejected ? 'rejected' : 'fulfilled';
+      if (p.policy === 'logAlways' || (rejected && p.policy === 'logFailure')) {
+        console.log(
+          `${kpid}.policy ${p.policy}: ${tag} ${JSON.stringify(data)}`,
+        );
+      } else if (rejected && p.policy === 'panic') {
+        panic(`${kpid}.policy panic: ${tag} ${JSON.stringify(data)}`);
+      }
+    }
+  }
+
   function resolveToError(kpid, errorData, expectedDecider) {
-    insistCapData(errorData);
-    const p = kernelKeeper.getResolveablePromise(kpid, expectedDecider);
-    const { subscribers, queue } = p;
-    let idx = 0;
-    for (const dataSlot of errorData.slots) {
-      kernelKeeper.incrementRefCount(dataSlot, `reject|s${idx}`);
-      idx += 1;
-    }
-    kernelKeeper.rejectKernelPromise(kpid, errorData);
-    // we don't notify the decider; they already know
-    notifySubscribersAndQueue(kpid, expectedDecider, subscribers, queue);
-    if (p.policy === 'logFailure' || p.policy === 'logAlways') {
-      console.log(
-        `${kpid}.policy ${p.policy}: rejection ${JSON.stringify(errorData)}`,
-      );
-    } else if (p.policy === 'panic') {
-      panic(`${kpid}.policy panic: rejection ${JSON.stringify(errorData)}`);
-    }
+    doResolve(expectedDecider, [[kpid, true, errorData]]);
   }
 
   function removeVatManager(vatID, shouldReject, info) {
@@ -840,6 +849,7 @@ export default function buildKernel(
     // replay any transcripts
     // This happens every time, now that initialisation is separated from
     // execution.
+    kdebug('Replaying SwingSet transcripts');
     const oldLength = kernelKeeper.getRunQueueLength();
     for (const vatID of ephemeral.vats.keys()) {
       logStartup(`Replaying transcript of vatID ${vatID}`);

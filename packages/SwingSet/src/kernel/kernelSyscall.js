@@ -29,8 +29,7 @@ export function makeKernelSyscallHandler(tools) {
     storage,
     ephemeral,
     notify,
-    notifySubscribersAndQueue,
-    resolveToError,
+    doResolve,
     setTerminationTrigger,
   } = tools;
 
@@ -98,59 +97,11 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
-  function extractPresenceIfPresent(data) {
-    const body = JSON.parse(data.body);
-    if (
-      body &&
-      typeof body === 'object' &&
-      body['@qclass'] === 'slot' &&
-      body.index === 0
-    ) {
-      if (data.slots.length === 1) {
-        const slot = data.slots[0];
-        const { type } = parseKernelSlot(slot);
-        if (type === 'object') {
-          return slot;
-        }
-      }
-    }
-    return null;
-  }
-
   function resolve(vatID, resolutions) {
     insistVatID(vatID);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallResolve');
-    for (const resolution of resolutions) {
-      const [kpid, rejected, data] = resolution;
-      insistKernelType('promise', kpid);
-      insistCapData(data);
-      if (rejected) {
-        resolveToError(kpid, data, vatID);
-      } else {
-        const p = kernelKeeper.getResolveablePromise(kpid, vatID);
-        const { subscribers, queue } = p;
-        let idx = 0;
-        for (const dataSlot of data.slots) {
-          kernelKeeper.incrementRefCount(dataSlot, `resolve|s${idx}`);
-          idx += 1;
-        }
-        const presence = extractPresenceIfPresent(data);
-        if (presence) {
-          kernelKeeper.fulfillKernelPromiseToPresence(kpid, presence);
-        } else if (rejected) {
-          kernelKeeper.rejectKernelPromise(kpid, data);
-        } else {
-          kernelKeeper.fulfillKernelPromiseToData(kpid, data);
-        }
-        notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
-        if (p.policy === 'logAlways') {
-          console.log(
-            `${kpid}.policy logAlways: resolve ${JSON.stringify(data)}`,
-          );
-        }
-      }
-    }
+    doResolve(vatID, resolutions);
     return OKNULL;
   }
 
