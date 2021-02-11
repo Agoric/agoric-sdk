@@ -161,14 +161,14 @@ export function makeXsSubprocessFactory({
       throw new Error(`failed to setBundle: ${bundleReply}`);
     }
 
-    /** @type { (item: Tagged) => Promise<CrankResults> } */
+    /** @type { (item: Tagged) => Promise<Tagged> } */
     async function deliver(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
       transcriptManager.startDispatch(delivery);
       const result = await issueTagged(['deliver', ...delivery]);
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       transcriptManager.finishDispatch();
-      return result;
+      return result.reply;
     }
 
     async function replayTranscript() {
