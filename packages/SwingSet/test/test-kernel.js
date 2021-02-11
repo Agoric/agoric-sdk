@@ -10,6 +10,8 @@ import { initializeKernel } from '../src/kernel/initializeKernel';
 import { makeVatSlot } from '../src/parseVatSlots';
 import { checkKT } from './util';
 
+const { details: X } = assert;
+
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -144,7 +146,7 @@ test('vat store', async t => {
           syscall.vatstoreDelete('zot');
           break;
         default:
-          throw Error(`this can't happen`);
+          assert.fail(X`this can't happen`);
       }
     }
     return { deliver };

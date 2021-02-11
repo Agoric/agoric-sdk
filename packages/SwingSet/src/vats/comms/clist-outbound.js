@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../parseVatSlots';
 import {
   flipRemoteSlot,
@@ -28,7 +28,7 @@ export function makeOutbound(state, stateKit) {
   function getRemoteForLocal(remoteID, lref) {
     const remote = getRemote(state, remoteID);
     const rref = remote.toRemote.get(lref);
-    assert(rref, `${lref} must already be in ${rname(remote)}`);
+    assert(rref, X`${lref} must already be in ${rname(remote)}`);
     return rref;
   }
 
@@ -44,7 +44,10 @@ export function makeOutbound(state, stateKit) {
       const owner = state.objectTable.get(vatoid);
       // make sure it's not a local object (like one of the receivers): those
       // aren't supposed to be sent off-device
-      assert(owner, `sending non-remote object ${vatoid} to remote machine`);
+      assert(
+        owner,
+        X`sending non-remote object ${q(vatoid)} to remote machine`,
+      );
       assert(
         owner !== remote,
         `hey ${vatoid} already came from ${rname(remote)}`,
@@ -65,7 +68,7 @@ export function makeOutbound(state, stateKit) {
 
   function addRemotePromiseForLocal(remote, vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `promise ${vpid} wasn't being tracked`);
+    assert(p, X`promise ${vpid} wasn't being tracked`);
 
     const index = remote.nextPromiseIndex;
     remote.nextPromiseIndex += 1;
@@ -98,7 +101,7 @@ export function makeOutbound(state, stateKit) {
       } else if (type === 'promise') {
         addRemotePromiseForLocal(remote, lref);
       } else {
-        throw Error(`cannot send type ${type} to remote`);
+        assert.fail(X`cannot send type ${type} to remote`);
       }
     }
     return remote.toRemote.get(lref);

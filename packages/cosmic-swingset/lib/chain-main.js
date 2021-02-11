@@ -10,13 +10,16 @@ import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { launch } from './launch-chain';
 import makeBlockManager from './block-manager';
 
+const { details: X } = assert;
+
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
 const toNumber = specimen => {
   const number = parseInt(specimen, 10);
-  if (String(number) !== String(specimen)) {
-    throw Error(`Could not parse ${JSON.stringify(specimen)} as a number`);
-  }
+  assert(
+    String(number) === String(specimen),
+    X`Could not parse ${JSON.stringify(specimen)} as a number`,
+  );
   return number;
 };
 
@@ -214,7 +217,9 @@ export default async function main(progname, args, { path, env, agcc }) {
       try {
         return JSON.parse(retStr);
       } catch (e) {
-        throw Error(`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
+        assert.fail(
+          X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`,
+        );
       }
     }
 

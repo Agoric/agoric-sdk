@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -81,7 +81,7 @@ export function buildRootObject(vatPowers) {
     } = makePromiseKit();
     const name = makeConnectionName();
     let openCalled = false;
-    assert(!connectionNames.has(name), `already have host for ${name}`);
+    assert(!connectionNames.has(name), X`already have host for ${name}`);
     const host = harden({
       publish(obj) {
         const address = makeAddress();
@@ -96,7 +96,7 @@ export function buildRootObject(vatPowers) {
     const handler = harden({
       async onOpen(connection, ..._args) {
         // make a new Remote for this new connection
-        assert(!openCalled, `host ${name} already opened`);
+        assert(!openCalled, X`host ${name} already opened`);
         openCalled = true;
 
         // transmitter
@@ -146,7 +146,7 @@ export function buildRootObject(vatPowers) {
      * deliverInboundMessages/deliverInboundAck
      */
     addRemote(name) {
-      assert(!remotes.has(name), details`already have remote ${name}`);
+      assert(!remotes.has(name), X`already have remote ${name}`);
       const r = getRemote(name);
       const transmitter = harden({
         transmit(msg) {
@@ -159,9 +159,7 @@ export function buildRootObject(vatPowers) {
       });
       const setReceiver = harden({
         setReceiver(newReceiver) {
-          if (r.inbound.receiver) {
-            throw new Error(`setReceiver is call-once`);
-          }
+          assert(!r.inbound.receiver, X`setReceiver is call-once`);
           r.inbound.receiver = newReceiver;
         },
       });

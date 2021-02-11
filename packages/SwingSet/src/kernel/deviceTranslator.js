@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../message';
 import { insistKernelType } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
@@ -19,7 +19,7 @@ export function makeKDTranslator(deviceID, kernelKeeper) {
     insistCapData(args);
     const targetSlot = mapKernelSlotToDeviceSlot(target);
     const { allocatedByVat } = parseVatSlot(targetSlot);
-    assert(allocatedByVat, `invoke() to someone else's device`);
+    assert(allocatedByVat, X`invoke() to someone else's device`);
     const slots = args.slots.map(slot => mapKernelSlotToDeviceSlot(slot));
     const deviceArgs = { ...args, slots };
     const deviceInvocation = harden([targetSlot, method, deviceArgs]);
@@ -90,7 +90,7 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
       case 'sendOnly':
         return translateSendOnly(...args); // becomes ['send' .. result=null]
       default:
-        throw Error(`unknown deviceSyscall type ${type}`);
+        assert.fail(X`unknown deviceSyscall type ${type}`);
     }
   }
 

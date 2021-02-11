@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 async function logCounter(log, publicAPI) {
@@ -109,7 +109,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`Swap outcome resolves to an invitation: ${o}`),
-        e => assert(false, `Expected swap outcome to succeed ${e}`),
+        e => assert(false, X`Expected swap outcome to succeed ${e}`),
       );
     // the refunds for swap won't happen till later
     E(seat)
@@ -241,7 +241,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`Successful refund: ${o}`),
-        e => assert(false, `Expected swap outcome to succeed ${e}`),
+        e => assert(false, X`Expected swap outcome to succeed ${e}`),
       );
     const newPurse = await E(moolaIssuer).makeEmptyPurse();
     const swapMoolaPayout = await E(secondSeat).getPayout('Asset');
@@ -293,7 +293,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
               return log(`Swap outcome is an invitation (${val}).`);
             });
         },
-        e => assert(false, `expected outcome not to resolve yet ${e}`),
+        e => assert(false, X`expected outcome not to resolve yet ${e}`),
       );
     logCounter(log, publicFacet);
 
@@ -345,7 +345,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`outcome correctly resolves: "${o}"`),
-        e => assert(false, `expected outcome to succeed ${e}`),
+        e => assert(false, X`expected outcome to succeed ${e}`),
       );
     const moolaSwapTwoPayout = await E(swapSeatTwo).getPayout('Asset');
     const simoleanSwapTwoPayout = await E(swapSeatTwo).getPayout('Price');
@@ -386,14 +386,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(publicFacet)
       .meterException()
       .then(
-        () => assert(false, `meterException in an API call should kill vat`),
+        () => assert(false, X`meterException in an API call should kill vat`),
         e => log(`Vat correctly died for ${e}`),
       );
     E(seat)
       .getOfferResult()
       .then(
         o => log(`outcome correctly resolves to "${o}"`),
-        e => assert(false, `expected outcome to succeed: ${e}`),
+        e => assert(false, X`expected outcome to succeed: ${e}`),
       );
 
     const moolaPayout = await E(seat).getPayout('Asset');
@@ -657,7 +657,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
           return doSadTermination();
         }
         default: {
-          throw new Error(`testName ${testName} not recognized`);
+          assert.fail(X`testName ${testName} not recognized`);
         }
       }
     },

@@ -1,3 +1,5 @@
+const { details: X } = assert;
+
 /*
  * The "loopbox" is a special device used for unit tests, which glues one
  * comms+vattp pair to another, within the same swingset machine. It looks
@@ -15,9 +17,10 @@
  */
 
 export function buildLoopbox(deliverMode) {
-  if (deliverMode !== 'immediate' && deliverMode !== 'queued') {
-    throw Error(`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`);
-  }
+  assert(
+    deliverMode === 'immediate' || deliverMode === 'queued',
+    X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`,
+  );
   const loopboxSrcPath = require.resolve('./loopbox-src');
 
   let loopboxPassOneMessage;

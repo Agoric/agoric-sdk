@@ -1,5 +1,7 @@
 import Nat from '@agoric/nat';
 
+const { details: X } = assert;
+
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const highestInboundDelivered = harden(new Map());
@@ -55,9 +57,10 @@ export function buildRootDeviceNode(tools) {
 
   // console.debug(`mailbox-src build: inboundHandler is`, inboundHandler);
   deliverInboundMessages = (peer, newMessages) => {
-    if (!inboundHandler) {
-      throw new Error(`deliverInboundMessages before registerInboundHandler`);
-    }
+    assert(
+      inboundHandler,
+      X`deliverInboundMessages before registerInboundHandler`,
+    );
     try {
       SO(inboundHandler).deliverInboundMessages(peer, newMessages);
     } catch (e) {
@@ -66,9 +69,7 @@ export function buildRootDeviceNode(tools) {
   };
 
   deliverInboundAck = (peer, ack) => {
-    if (!inboundHandler) {
-      throw new Error(`deliverInboundAck before registerInboundHandler`);
-    }
+    assert(inboundHandler, X`deliverInboundAck before registerInboundHandler`);
     try {
       SO(inboundHandler).deliverInboundAck(peer, ack);
     } catch (e) {
@@ -79,9 +80,7 @@ export function buildRootDeviceNode(tools) {
   // the Root Device Node.
   return harden({
     registerInboundHandler(handler) {
-      if (inboundHandler) {
-        throw new Error(`already registered`);
-      }
+      assert(!inboundHandler, X`already registered`);
       inboundHandler = handler;
       setDeviceState(harden({ inboundHandler }));
     },
@@ -90,7 +89,7 @@ export function buildRootDeviceNode(tools) {
       try {
         endowments.add(`${peer}`, Nat(msgnum), `${body}`);
       } catch (e) {
-        throw new Error(`error in add: ${e}`);
+        assert.fail(X`error in add: ${e}`);
       }
     },
 
@@ -98,7 +97,7 @@ export function buildRootDeviceNode(tools) {
       try {
         endowments.remove(`${peer}`, Nat(msgnum));
       } catch (e) {
-        throw new Error(`error in remove: ${e}`);
+        assert.fail(X`error in remove: ${e}`);
       }
     },
 
@@ -106,7 +105,7 @@ export function buildRootDeviceNode(tools) {
       try {
         endowments.setAcknum(`${peer}`, Nat(msgnum));
       } catch (e) {
-        throw new Error(`error in ackInbound: ${e}`);
+        assert.fail(X`error in ackInbound: ${e}`);
       }
     },
   });

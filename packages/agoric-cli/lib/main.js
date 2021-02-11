@@ -8,6 +8,8 @@ import setDefaultsMain from './set-defaults';
 import startMain from './start';
 import walletMain from './open';
 
+const { details: X } = assert;
+
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
 
@@ -78,7 +80,10 @@ const main = async (progname, rawArgs, powers) => {
         if (['yes', 'only', 'no'].includes(value)) {
           return value;
         }
-        throw TypeError(`--repl must be one of 'yes', 'no', or 'only'`);
+        assert.fail(
+          X`--repl must be one of 'yes', 'no', or 'only'`,
+          TypeError,
+        );
       },
     )
     .action(async cmd => {

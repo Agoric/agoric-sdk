@@ -33,6 +33,8 @@ import {
   SSH_TYPE,
 } from './setup';
 
+const { details: X } = assert;
+
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
 const COSMOS_DIR = 'ag-chain-cosmos';
@@ -116,9 +118,7 @@ const main = async (progname, rawArgs) => {
 
   const needReMain = async reArgs => {
     const code = await reMain(reArgs);
-    if (code !== 0) {
-      throw Error(`Unexpected exit: ${code}`);
-    }
+    assert(code === 0, X`Unexpected exit: ${code}`);
   };
 
   const initHint = () => {
@@ -252,7 +252,7 @@ show-config      display the client connection parameters
           break;
         }
         default: {
-          throw Error(`Unrecognized bootstrap argument ${subArgs[0]}`);
+          assert.fail(X`Unrecognized bootstrap argument ${subArgs[0]}`);
         }
       }
       break;
@@ -286,9 +286,10 @@ show-config      display the client connection parameters
           break;
 
         default:
-          if (!versionKind.match(/^[1-9]/)) {
-            throw Error(`${versionKind} is not one of "epoch", or NNN`);
-          }
+          assert(
+            versionKind.match(/^[1-9]/),
+            X`${versionKind} is not one of "epoch", or NNN`,
+          );
       }
 
       let vstr = `${epoch}`;
@@ -509,9 +510,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
     case 'ssh': {
       const [host, ...sshArgs] = args.slice(1);
-      if (!host) {
-        throw Error(`Need: [host]`);
-      }
+      assert(host, X`Need: [host]`);
 
       setSilent(true);
       await chdir(SETUP_HOME);
@@ -581,9 +580,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       const nodes = Object.keys(nodeMap).sort();
-      if (nodes.length === 0) {
-        throw Error(`Need at least one node`);
-      }
+      assert(nodes.length !== 0, X`Need at least one node`);
 
       for (const node of nodes) {
         const nodePlaybook = (book, ...pbargs) =>
@@ -692,24 +689,19 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         const raw = await trimReadFile(idPath);
         const ID = String(raw);
 
-        if (!ID) {
-          throw Error(`${idPath} does not contain a node ID`);
-        }
-        if (!ID.match(/^[a-f0-9]+/)) {
-          throw Error(`${idPath} contains an invalid ID ${ID}`);
-        }
+        assert(ID, X`${idPath} does not contain a node ID`);
+        assert(
+          ID.match(/^[a-f0-9]+/),
+          X`${idPath} contains an invalid ID ${ID}`,
+        );
         const IP = publicIps[i];
-        if (!IP) {
-          throw Error(`${idPath} does not correspond to a Terraform public IP`);
-        }
+        assert(IP, X`${idPath} does not correspond to a Terraform public IP`);
         const PORT = publicPorts[i] || DEFAULT_PORT;
         peers += `${sep}${ID}@${IP}:${PORT}`;
         sep = ',';
         i += 1;
       }
-      if (i === 0) {
-        throw Error(`No ${idPath} file found`);
-      }
+      assert(i !== 0, X`No ${idPath} file found`);
       process.stdout.write(peers);
       break;
     }
@@ -730,9 +722,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       if (!dir) {
         dir = SETUP_HOME;
       }
-      if (!dir) {
-        throw Error(`Need: [dir]`);
-      }
+      assert(dir, X`Need: [dir]`);
 
       // Unprovision terraform.
       await chdir(dir);
@@ -749,9 +739,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
             message: `Type "yes" if you are sure you want to reset ${dir} state:`,
           },
         ]);
-        if (CONFIRM !== 'yes') {
-          throw Error(`Aborting due to user request`);
-        }
+        assert(CONFIRM === 'yes', X`Aborting due to user request`);
       }
 
       // We no longer are provisioned or have Cosmos.
@@ -852,21 +840,18 @@ ${units}`;
 
     case 'play': {
       const [pb, ...pbargs] = args.slice(1);
-      if (!pb) {
-        throw Error(`Need: [playbook name]`);
-      }
-      if (!pb.match(/^\w[-\w]*$/)) {
-        throw Error(`[playbook] ${JSON.stringify(pb)} must be a word`);
-      }
+      assert(pb, X`Need: [playbook name]`);
+      assert(
+        pb.match(/^\w[-\w]*$/),
+        X`[playbook] ${JSON.stringify(pb)} must be a word`,
+      );
       await inited();
       return doRun(playbook(pb, ...pbargs));
     }
 
     case 'run': {
       const [host, ...subcmd] = args.slice(1);
-      if (!host || subcmd.length === 0) {
-        throw Error(`Need: [host] [cmd...]`);
-      }
+      assert(host && subcmd.length !== 0, X`Need: [host] [cmd...]`);
       await inited();
       let runArg;
       if (subcmd.length === 1) {
@@ -887,7 +872,7 @@ ${units}`;
     }
 
     default:
-      throw Error(`Unknown command ${cmd}; try \`${progname} help'`);
+      assert.fail(X`Unknown command ${cmd}; try \`${progname} help'`);
   }
   return 0;
 };

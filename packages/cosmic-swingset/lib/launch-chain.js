@@ -17,6 +17,8 @@ import {
 import { getBestSwingStore } from './check-lmdb';
 import { exportKernelStats } from './kernel-stats';
 
+const { details: X } = assert;
+
 const log = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
@@ -130,9 +132,7 @@ export async function launch(
   }
 
   async function deliverInbound(sender, messages, ack) {
-    if (!Array.isArray(messages)) {
-      throw new Error(`inbound given non-Array: ${messages}`);
-    }
+    assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
     }

@@ -1,5 +1,7 @@
 import { initSwingStore } from '@agoric/swing-store-simple';
 
+const { details: X } = assert;
+
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that
 work on string keys and accept string values.  A lot of kernel-side code
@@ -97,21 +99,15 @@ export function buildHostDBInMemory(storage) {
     // after earlier changes have actually been applied, potentially leaving
     // the store in an indeterminate state.  Problem?  I suspect so...
     for (const c of changes) {
-      if (`${c.op}` !== c.op) {
-        throw new Error(`non-string c.op ${c.op}`);
-      }
-      if (`${c.key}` !== c.key) {
-        throw new Error(`non-string c.key ${c.key}`);
-      }
+      assert(`${c.op}` === c.op, X`non-string c.op ${c.op}`);
+      assert(`${c.key}` === c.key, X`non-string c.key ${c.key}`);
       if (c.op === 'set') {
-        if (`${c.value}` !== c.value) {
-          throw new Error(`non-string c.value ${c.value}`);
-        }
+        assert(`${c.value}` === c.value, X`non-string c.value ${c.value}`);
         storage.set(c.key, c.value);
       } else if (c.op === 'delete') {
         storage.delete(c.key);
       } else {
-        throw new Error(`unknown c.op ${c.op}`);
+        assert.fail(X`unknown c.op ${c.op}`);
       }
     }
   }

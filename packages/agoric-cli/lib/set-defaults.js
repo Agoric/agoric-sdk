@@ -5,15 +5,18 @@ import {
   finishCosmosGenesis,
 } from './chain-config';
 
+const { details: X } = assert;
+
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs } = powers;
   const log = anylogger('agoric:set-defaults');
 
   const [prog, configDir] = rawArgs.slice(1);
 
-  if (prog !== 'ag-chain-cosmos') {
-    throw Error(`<prog> must currently be 'ag-chain-cosmos'`);
-  }
+  assert(
+    prog === 'ag-chain-cosmos',
+    X`<prog> must currently be 'ag-chain-cosmos'`,
+  );
 
   let appFile;
   let configFile;

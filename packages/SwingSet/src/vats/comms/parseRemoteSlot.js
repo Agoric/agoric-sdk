@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 // Object/promise references (in remote messages) contain a three-tuple of
 // (type, allocator flag, index). The allocator flag inside an inbound
@@ -21,7 +21,7 @@ export function parseRemoteSlot(s) {
   } else if (typechars === 'rr') {
     type = 'resolver';
   } else {
-    throw new Error(`invalid remoteSlot ${s}`);
+    assert.fail(X`invalid remoteSlot ${s}`);
   }
 
   if (allocchar === '+') {
@@ -29,7 +29,7 @@ export function parseRemoteSlot(s) {
   } else if (allocchar === '-') {
     allocatedByRecipient = false;
   } else {
-    throw new Error(`invalid remoteSlot ${s}`);
+    assert.fail(X`invalid remoteSlot ${s}`);
   }
 
   const id = Nat(Number(indexSuffix));
@@ -53,13 +53,13 @@ export function makeRemoteSlot(type, allocatedByRecipient, id) {
   if (type === 'resolver') {
     return `rr${indexSuffix}`;
   }
-  throw new Error(`unknown type ${type}`);
+  assert.fail(X`unknown type ${type}`);
 }
 
 export function insistRemoteType(type, remoteSlot) {
   assert(
     type === parseRemoteSlot(remoteSlot).type,
-    details`remoteSlot ${remoteSlot} is not of type ${type}`,
+    X`remoteSlot ${remoteSlot} is not of type ${type}`,
   );
 }
 

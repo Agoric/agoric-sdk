@@ -1,6 +1,6 @@
 // @ts-check
 import { makeWeakStore } from '@agoric/store';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -56,7 +56,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
    */
   /** @type {Install} */
   const install = async bundle => {
-    assert(bundle, `a bundle must be provided`);
+    assert(bundle, X`a bundle must be provided`);
     /** @type {Installation} */
     const installation = Far('Installation', {
       getBundle: () => bundle,
@@ -69,7 +69,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {GetAmountOfInvitationThen} */
   const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
     const onRejected = () =>
-      assert.fail(details`A Zoe invitation is required, not ${invitationP}`);
+      assert.fail(X`A Zoe invitation is required, not ${invitationP}`);
     return E(invitationKit.issuer)
       .getAmountOf(invitationP)
       .then(onFulfilled, onRejected);
@@ -108,7 +108,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const installation = await Promise.resolve(installationP);
       assert(
         installations.has(installation),
-        details`${installation} was not a valid installation`,
+        X`${installation} was not a valid installation`,
       );
 
       const instance = makeHandle('Instance');
@@ -376,7 +376,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         if (creatorInvitation !== undefined) {
           assert(
             isLiveResult.status === 'fulfilled' && isLiveResult.value,
-            details`The contract did not correctly return a creatorInvitation`,
+            X`The contract did not correctly return a creatorInvitation`,
           );
         }
         const adminFacet = harden({
@@ -485,9 +485,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           });
         },
         () => {
-          throw assert.fail(
-            details`A Zoe invitation is required, not ${invitation}`,
-          );
+          assert.fail(X`A Zoe invitation is required, not ${invitation}`);
         },
       );
     },

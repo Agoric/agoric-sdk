@@ -2,6 +2,8 @@
 
 import { makeCapTP } from '@agoric/captp';
 
+const { details: X } = assert;
+
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const restart = getDeviceState();
@@ -95,9 +97,7 @@ export function buildRootDeviceNode(tools) {
   function send(index, obj) {
     const mod = connectedMods[index];
     // console.info('send', index, obj, mod);
-    if (!mod) {
-      throw TypeError(`No module associated with ${index}`);
-    }
+    assert(mod, X`No module associated with ${index}`, TypeError);
     let sender = senders[index];
     if (!sender) {
       // Lazily create a fresh sender.
@@ -124,9 +124,7 @@ export function buildRootDeviceNode(tools) {
     connect,
     send,
     registerReceiver(receiver) {
-      if (registeredReceiver) {
-        throw Error(`registered receiver already set`);
-      }
+      assert(!registeredReceiver, X`registered receiver already set`);
       registeredReceiver = receiver;
       saveState();
     },

@@ -1,6 +1,6 @@
 // import { spawn } from 'child_process'; // not from Compartment
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeTranscriptManager } from './transcript';
 
@@ -64,9 +64,10 @@ export function makeNodeSubprocessFactory(tools) {
       // by doing a blocking read from the pipe, so we could fix this, and
       // re-enable syscall.callNow
       const type = vatSyscallObject[0];
-      if (type === 'callNow') {
-        throw Error(`nodeWorker cannot block, cannot use syscall.callNow`);
-      }
+      assert(
+        type !== 'callNow',
+        X`nodeWorker cannot block, cannot use syscall.callNow`,
+      );
       // This might throw an Error if the syscall was faulty, in which case
       // the vat will be terminated soon. It returns a vatSyscallResults,
       // which we discard because there is currently nobody to send it to.
@@ -130,7 +131,7 @@ export function makeNodeSubprocessFactory(tools) {
 
     function deliver(delivery) {
       parentLog(`sending delivery`, delivery);
-      assert(!waiting, `already waiting for delivery`);
+      assert(!waiting, X`already waiting for delivery`);
       const pr = makePromiseKit();
       waiting = pr.resolve;
       sendToWorker(['deliver', ...delivery]);

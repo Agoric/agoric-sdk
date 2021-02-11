@@ -7,7 +7,7 @@ import {
   mustPassByPresence,
   makeMarshal,
 } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -138,7 +138,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
         lsdebug(`makeImportedPromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
-          throw Error(`mIPromise handler called after resolution`);
+          assert.fail(X`mIPromise handler called after resolution`);
         }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(vpid, prop, args, returnedP);
@@ -285,14 +285,14 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       assert.equal(type, 'object');
       val = makeVirtualObjectRepresentative(slot);
     } else {
-      assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
+      assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {
         // this is a new import value
         val = makeImportedPresence(slot, iface);
       } else if (type === 'promise') {
         assert(
           !parseVatSlot(slot).allocatedByVat,
-          details`kernel is being presumptuous: vat got unrecognized vatSlot ${slot}`,
+          X`kernel is being presumptuous: vat got unrecognized vatSlot ${slot}`,
         );
         val = makeImportedPromise(slot);
         // ideally we'd wait until .then is called on p before subscribing,
@@ -307,7 +307,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
       } else {
-        throw Error(`unrecognized slot type '${type}'`);
+        assert.fail(X`unrecognized slot type '${type}'`);
       }
       slotToVal.set(slot, val);
       valToSlot.set(val, slot);
@@ -324,7 +324,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
         const { type } = parseVatSlot(slot);
         if (type === 'promise') {
           const p = slotToVal.get(slot);
-          assert(p, details`should have a value for ${slot} but didn't`);
+          assert(p, X`should have a value for ${slot} but didn't`);
           const priorResolution = knownResolutions.get(p);
           if (priorResolution && !doneResolutions.has(slot)) {
             const [priorRejected, priorRes] = priorResolution;
@@ -400,9 +400,10 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
 
   function forbidPromises(serArgs) {
     for (const slot of serArgs.slots) {
-      if (parseVatSlot(slot).type === 'promise') {
-        throw Error(`D() arguments cannot include a Promise`);
-      }
+      assert(
+        parseVatSlot(slot).type !== 'promise',
+        X`D() arguments cannot include a Promise`,
+      );
     }
   }
 
@@ -446,9 +447,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
     );
     const t = convertSlotToVal(target);
-    if (!t) {
-      throw Error(`no target ${target}`);
-    }
+    assert(t, X`no target ${target}`);
     // TODO: if we acquire new decision-making authority over a promise that
     // we already knew about ('result' is already in slotToVal), we should no
     // longer accept dispatch.notify from the kernel. We currently use
@@ -544,9 +543,10 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     );
     insistVatType('promise', promiseID);
     // TODO: insist that we do not have decider authority for promiseID
-    if (!importedPromisesByPromiseID.has(promiseID)) {
-      throw new Error(`unknown promiseID '${promiseID}'`);
-    }
+    assert(
+      importedPromisesByPromiseID.has(promiseID),
+      X`unknown promiseID '${promiseID}'`,
+    );
     const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
     if (rejected) {

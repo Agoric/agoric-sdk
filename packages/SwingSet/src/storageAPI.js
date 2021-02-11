@@ -1,3 +1,5 @@
+const { details: X } = assert;
+
 /**
  * Assert function to ensure that something expected to be a storage object
  * actually implements the storage API.  It should have methods `has`,
@@ -12,9 +14,7 @@
  */
 export function insistStorageAPI(storage) {
   for (const n of ['has', 'getKeys', 'get', 'set', 'delete']) {
-    if (!(n in storage)) {
-      throw new Error(`storage.${n} is missing, cannot use`);
-    }
+    assert(n in storage, X`storage.${n} is missing, cannot use`);
   }
 }
 
@@ -38,8 +38,6 @@ export function insistEnhancedStorageAPI(storage) {
     'getPrefixedValues',
     'deletePrefixedKeys',
   ]) {
-    if (!(n in storage)) {
-      throw new Error(`storage.${n} is missing, cannot use`);
-    }
+    assert(n in storage, X`storage.${n} is missing, cannot use`);
   }
 }

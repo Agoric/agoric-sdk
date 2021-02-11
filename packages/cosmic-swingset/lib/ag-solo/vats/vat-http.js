@@ -3,6 +3,8 @@ import { E } from '@agoric/eventual-send';
 import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';
 
+const { details: X } = assert;
+
 // This vat contains the HTTP request handler.
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -71,8 +73,8 @@ export function buildRootObject(vatPowers) {
   }
 
   return harden({
-    setCommandDevice(d) {
-      commandDevice = d;
+    setCommandDevice(dp) {
+      commandDevice = dp;
 
       const replHandler = getReplHandler(replObjects, send, vatPowers);
       registerURLHandler(replHandler, '/private/repl');
@@ -187,7 +189,7 @@ export function buildRootObject(vatPowers) {
 
         if (dispatcher === 'onMessage') {
           sendResponse(count, false, { type: 'doesNotUnderstand', obj });
-          throw Error(`No handler for ${url} ${type}`);
+          assert.fail(X`No handler for ${url} ${type}`);
         }
         sendResponse(count, false, true);
       } catch (rej) {

@@ -12,6 +12,8 @@ import {
 
 import '../../exported';
 
+const { details: X } = assert;
+
 /**
  * Sell items in exchange for money. Items may be fungible or
  * non-fungible and multiple items may be bought at once. Money must
@@ -54,7 +56,7 @@ const start = zcf => {
   /** @type {SellItemsPublicFacet} */
   const publicFacet = {
     getAvailableItems: () => {
-      assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
+      assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
       return sellerSeat.getAmountAllocated('Items');
     },
     getItemsIssuer: () => issuers.Items,

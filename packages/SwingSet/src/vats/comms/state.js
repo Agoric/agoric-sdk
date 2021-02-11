@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
 import { makeVatSlot } from '../../parseVatSlots';
 import { insistRemoteID } from './remote';
@@ -78,7 +78,7 @@ export function dumpState(state) {
 
 export function makeStateKit(state) {
   function trackUnresolvedPromise(vpid) {
-    assert(!state.promiseTable.has(vpid), `${vpid} already present`);
+    assert(!state.promiseTable.has(vpid), X`${vpid} already present`);
     state.promiseTable.set(vpid, {
       resolved: false,
       decider: COMMS,
@@ -105,14 +105,14 @@ export function makeStateKit(state) {
 
   function deciderIsKernel(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     const { decider } = p;
     return decider === KERNEL;
   }
 
   function deciderIsRemote(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     const { decider } = p;
     if (decider === KERNEL || decider === COMMS) {
       return undefined;
@@ -123,7 +123,7 @@ export function makeStateKit(state) {
 
   function insistDeciderIsRemote(vpid, remoteID) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     const { decider } = p;
     assert.equal(
       decider,
@@ -134,7 +134,7 @@ export function makeStateKit(state) {
 
   function insistDeciderIsComms(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     const { decider } = p;
     assert.equal(
       decider,
@@ -145,7 +145,7 @@ export function makeStateKit(state) {
 
   function insistDeciderIsKernel(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     const { decider } = p;
     assert.equal(
       decider,
@@ -161,7 +161,7 @@ export function makeStateKit(state) {
     // console.log(`changeDecider ${vpid}: COMMS->${newDecider}`);
     insistRemoteID(newDecider);
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     assert.equal(p.decider, COMMS);
     p.decider = newDecider;
   }
@@ -170,7 +170,7 @@ export function makeStateKit(state) {
     // console.log(`changeDecider ${vpid}: ${oldDecider}->COMMS`);
     insistRemoteID(oldDecider);
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     assert.equal(p.decider, oldDecider);
     p.decider = COMMS;
   }
@@ -178,8 +178,8 @@ export function makeStateKit(state) {
   function changeDeciderToKernel(vpid) {
     // console.log(`changeDecider ${vpid}: COMMS->KERNEL`);
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     assert.equal(p.decider, COMMS);
     p.decider = KERNEL;
   }
@@ -187,60 +187,60 @@ export function makeStateKit(state) {
   function changeDeciderFromKernelToComms(vpid) {
     // console.log(`changeDecider ${vpid}: KERNEL->COMMS`);
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     assert.equal(p.decider, KERNEL);
     p.decider = COMMS;
   }
 
   function getPromiseSubscribers(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     const { subscribers, kernelIsSubscribed } = p;
     return { subscribers, kernelIsSubscribed };
   }
 
   function subscribeRemoteToPromise(vpid, subscriber) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
-    assert(!p.resolved, `${vpid} already resolved`);
+    assert(p, X`unknown ${vpid}`);
+    assert(!p.resolved, X`${vpid} already resolved`);
     p.subscribers.push(subscriber);
   }
 
   function unsubscribeRemoteFromPromise(vpid, subscriber) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
-    assert(!p.resolved, `${vpid} already resolved`);
+    assert(p, X`unknown ${vpid}`);
+    assert(!p.resolved, X`${vpid} already resolved`);
     p.subscribers = p.subscribers.filter(s => s !== subscriber);
   }
 
   function subscribeKernelToPromise(vpid) {
     const p = state.promiseTable.get(vpid);
     // console.log(`subscribeKernelToPromise ${vpid} d=${p.decider}`);
-    assert(p, `unknown ${vpid}`);
-    assert(!p.resolved, `${vpid} already resolved`);
-    assert(p.decider !== KERNEL, `kernel is decider for ${vpid}, hush`);
+    assert(p, X`unknown ${vpid}`);
+    assert(!p.resolved, X`${vpid} already resolved`);
+    assert(p.decider !== KERNEL, X`kernel is decider for ${vpid}, hush`);
     p.kernelIsSubscribed = true;
   }
 
   function unsubscribeKernelFromPromise(vpid) {
     const p = state.promiseTable.get(vpid);
     // console.log(`unsubscribeKernelToPromise ${vpid} d=${p.decider}`);
-    assert(p, `unknown ${vpid}`);
-    assert(!p.resolved, `${vpid} already resolved`);
+    assert(p, X`unknown ${vpid}`);
+    assert(!p.resolved, X`${vpid} already resolved`);
     p.kernelIsSubscribed = false;
   }
 
   function insistPromiseIsUnresolved(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
-    assert(!p.resolved, `${vpid} was already resolved`);
+    assert(p, X`unknown ${vpid}`);
+    assert(!p.resolved, X`${vpid} was already resolved`);
   }
 
   function markPromiseAsResolved(vpid, resolution) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     assert(!p.resolved);
     insistCapData(resolution.data);
     p.resolved = true;
@@ -253,7 +253,7 @@ export function makeStateKit(state) {
 
   function markPromiseAsResolvedInKernel(vpid) {
     const p = state.promiseTable.get(vpid);
-    assert(p, `unknown ${vpid}`);
+    assert(p, X`unknown ${vpid}`);
     assert(p.resolved && p.kernelAwaitingResolve);
     p.kernelAwaitingResolve = false;
   }

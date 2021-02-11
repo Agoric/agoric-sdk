@@ -1,5 +1,7 @@
 import { E } from '@agoric/eventual-send';
 
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, vatParameters) {
   return harden({
     bootstrap(vats) {
@@ -12,7 +14,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             err => vatPowers.testLog(`b.rejected ${err}`),
           );
       } else {
-        throw Error(`unknown mode ${mode}`);
+        assert.fail(X`unknown mode ${mode}`);
       }
     },
   });

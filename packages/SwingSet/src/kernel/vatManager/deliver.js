@@ -1,5 +1,7 @@
 import { insistMessage } from '../../message';
 
+const { details: X } = assert;
+
 export function makeDeliver(tools, dispatch) {
   const {
     meterRecord,
@@ -107,7 +109,7 @@ export function makeDeliver(tools, dispatch) {
       case 'notify':
         return deliverOneNotification(...args);
       default:
-        throw Error(`unknown delivery type ${type}`);
+        assert.fail(X`unknown delivery type ${type}`);
     }
   }
 

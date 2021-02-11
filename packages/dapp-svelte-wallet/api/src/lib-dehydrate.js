@@ -2,7 +2,7 @@
 
 import { makeMarshal } from '@agoric/marshal';
 import makeStore from '@agoric/store';
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 
 /* eslint-disable jsdoc/valid-types */
 /**
@@ -16,7 +16,7 @@ export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
   }
-  assert(x.length > 0, details`Path ${q(x)} must not be empty`);
+  assert(x.length > 0, X`Path ${q(x)} must not be empty`);
   for (const name of x) {
     if (typeof name !== 'string') {
       return false;
@@ -49,7 +49,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const explode = data => {
     assert(
       data.startsWith(IMPLODE_PREFIX),
-      details`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
+      X`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
     );
     const strongname = JSON.parse(data.slice(IMPLODE_PREFIX.length));
     if (!isPath(strongname)) {
@@ -78,7 +78,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const { petnameToVal: petnameToRoot } = edgeMapping;
     if (!petnameToRoot.has(path[0])) {
       // Avoid asserting, which fills up the logs.
-      throw Error(`Edgename for ${q(path[0])} petname not found`);
+      assert.fail(X`Edgename for ${q(path[0])} petname not found`);
     }
     const root = petnameToRoot.get(path[0]);
     path[0] = root;
@@ -92,7 +92,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    * @returns {Mapping<T>}
    */
   const makeMapping = kind => {
-    assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
+    assert.typeof(kind, 'string', X`kind ${kind} must be a string`);
     /** @type {Store<T, string>} */
     const rawValToPetname = makeStore('value');
     /** @type {Store<T, string | Path>} */
@@ -156,10 +156,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
      * @param {any} val
      */
     const addPath = (path, val) => {
-      assert(
-        isPath(path),
-        details`path ${q(path)} must be an array of strings`,
-      );
+      assert(isPath(path), X`path ${q(path)} must be an array of strings`);
 
       if (
         !valToPetname.has(val) &&
@@ -202,9 +199,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       }
       assert(
         !petnameToVal.has(petname),
-        details`petname ${petname} is already in use`,
+        X`petname ${petname} is already in use`,
       );
-      assert(!valToPetname.has(val), details`val ${val} already has a petname`);
+      assert(!valToPetname.has(val), X`val ${val} already has a petname`);
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
 
@@ -216,11 +213,11 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const renamePetname = (petname, val) => {
       assert(
         valToPetname.has(val),
-        details`val ${val} has not been previously named, would you like to add it instead?`,
+        X`val ${val} has not been previously named, would you like to add it instead?`,
       );
       assert(
         !petnameToVal.has(petname),
-        details`petname ${petname} is already in use`,
+        X`petname ${petname} is already in use`,
       );
       // Delete the old mappings.
       const oldPetname = valToPetname.get(val);
@@ -268,7 +265,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const deletePetname = petname => {
       assert(
         petnameToVal.has(petname),
-        details`petname ${q(
+        X`petname ${q(
           petname,
         )} has not been previously named, would you like to add it instead?`,
       );

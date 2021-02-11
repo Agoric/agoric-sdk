@@ -1,7 +1,7 @@
 // @ts-check
 import '../../exported';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -91,7 +91,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
   expected.sort();
   assert(
     sameStructure(actual, harden(expected)),
-    details`keywords: ${actual} were not as expected: ${expected}`,
+    X`keywords: ${actual} were not as expected: ${expected}`,
   );
 };
 
@@ -129,7 +129,7 @@ export const trade = (
   leftHasExitedMsg = 'the left seat has exited',
   rightHasExitedMsg = 'the right seat has exited',
 ) => {
-  assert(left.seat !== right.seat, details`a seat cannot trade with itself`);
+  assert(left.seat !== right.seat, X`a seat cannot trade with itself`);
   assert(!left.seat.hasExited(), leftHasExitedMsg);
   assert(!right.seat.hasExited(), rightHasExitedMsg);
   let leftAllocation = left.seat.getCurrentAllocation();
@@ -155,7 +155,7 @@ export const trade = (
     const newErr = new Error(
       `The trade between left ${left} and right ${right} failed.`,
     );
-    assert.note(newErr, details`due to ${err}`);
+    assert.note(newErr, X`due to ${err}`);
     throw newErr;
   }
 
@@ -190,7 +190,7 @@ export const trade = (
     );
   } catch (err) {
     const newErr = Error(`The reallocation failed to conserve rights.`);
-    assert.note(newErr, details`due to ${err}`);
+    assert.note(newErr, X`due to ${err}`);
     throw newErr;
   }
 };
@@ -292,13 +292,13 @@ export const swapExact = (
  */
 export const assertProposalShape = (seat, expected) => {
   assert.typeof(expected, 'object');
-  assert(!Array.isArray(expected), `Expected must be an non-array object`);
+  assert(!Array.isArray(expected), X`Expected must be an non-array object`);
   const assertValuesNull = e => {
     if (e !== undefined) {
       Object.values(e).forEach(value =>
         assert(
           value === null,
-          details`The value of the expected record must be null but was ${value}`,
+          X`The value of the expected record must be null but was ${value}`,
         ),
       );
     }
@@ -315,7 +315,7 @@ export const assertProposalShape = (seat, expected) => {
     if (e !== undefined) {
       assert(
         sameStructure(getKeysSorted(a), getKeysSorted(e)),
-        details`actual ${a} did not match expected ${e}`,
+        X`actual ${a} did not match expected ${e}`,
       );
     }
   };
@@ -329,7 +329,7 @@ export const assertUsesNatMath = (zcf, brand) => {
   const amountMath = zcf.getAmountMath(brand);
   assert(
     amountMath.getAmountMathKind() === MathKind.NAT,
-    details`issuer must use NAT amountMath`,
+    X`issuer must use NAT amountMath`,
   );
 };
 

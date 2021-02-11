@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeLiveSlots } from '../liveSlots';
 import { createSyscall } from './syscall';
@@ -72,8 +72,8 @@ export function makeLocalVatManagerFactory(tools) {
   }
 
   function createFromSetup(vatID, setup, managerOptions) {
-    assert(!managerOptions.metered, `unsupported`);
-    assert(!managerOptions.enableInternalMetering, `unsupported`);
+    assert(!managerOptions.metered, X`unsupported`);
+    assert(!managerOptions.enableInternalMetering, X`unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
     const { syscall, finish } = prepare(vatID, managerOptions);
 
@@ -164,7 +164,7 @@ export function makeLocalVatManagerFactory(tools) {
       dispatch = ls.dispatch;
     } else if (enableSetup) {
       const setup = vatNS.default;
-      assert(setup, `vat source bundle lacks (default) setup() function`);
+      assert(setup, X`vat source bundle lacks (default) setup() function`);
       assert(
         setup instanceof Function,
         `vat source bundle default export is not a function`,
@@ -173,7 +173,7 @@ export function makeLocalVatManagerFactory(tools) {
       const state = null; // TODO remove from setup()
       dispatch = setup(syscall, state, helpers, vatPowers);
     } else {
-      throw Error(`vat source bundle lacks buildRootObject() function`);
+      assert.fail(X`vat source bundle lacks buildRootObject() function`);
     }
 
     const manager = finish(dispatch, meterRecord);

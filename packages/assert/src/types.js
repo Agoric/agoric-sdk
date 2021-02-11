@@ -173,16 +173,16 @@
  * ```
  *
  * The normal convention is to locally rename `quote` to `q` and
- * `details` to `d`
+ * `details` to `X`
  * ```js
- * const { details: d, quote: q } = assert;
+ * const { details: X, quote: q } = assert;
  * ```
  * so the above example would then be
  * ```js
  * assert.equal(
  *   sky.color,
  *   color,
- *   d`${sky.color} should be ${q(color)}`,
+ *   X`${sky.color} should be ${q(color)}`,
  * );
  * ```
  *

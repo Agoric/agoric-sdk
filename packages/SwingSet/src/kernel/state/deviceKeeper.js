@@ -3,7 +3,7 @@
  */
 
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistDeviceID } from '../id';
@@ -59,7 +59,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
-    assert(`${devSlot}` === devSlot, details`non-string devSlot: ${devSlot}`);
+    assert(`${devSlot}` === devSlot, X`non-string devSlot: ${devSlot}`);
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
     if (!storage.has(devKey)) {
@@ -68,13 +68,13 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
-          throw new Error(`devices cannot export Objects`);
+          assert.fail(X`devices cannot export Objects`);
         } else if (type === 'promise') {
-          throw new Error(`devices cannot export Promises`);
+          assert.fail(X`devices cannot export Promises`);
         } else if (type === 'device') {
           kernelSlot = addKernelDeviceNode(deviceID);
         } else {
-          throw new Error(`unknown type ${type}`);
+          assert.fail(X`unknown type ${type}`);
         }
         const kernelKey = `${deviceID}.c.${kernelSlot}`;
         storage.set(kernelKey, devSlot);
@@ -82,7 +82,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
-        throw new Error(`unknown devSlot ${devSlot}`);
+        assert.fail(X`unknown devSlot ${devSlot}`);
       }
     }
 
@@ -115,7 +115,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
       } else if (type === 'promise') {
         throw new Error('devices cannot import Promises');
       } else {
-        throw new Error(`unknown type ${type}`);
+        assert.fail(X`unknown type ${type}`);
       }
       const devSlot = makeVatSlot(type, false, id);
 

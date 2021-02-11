@@ -1,5 +1,7 @@
 import anylogger from 'anylogger';
 
+const { details: X } = assert;
+
 const log = anylogger('outbound');
 
 /**
@@ -50,9 +52,7 @@ export function deliver(mbs) {
 }
 
 export function addDeliveryTarget(target, deliverator) {
-  if (knownTargets.has(target)) {
-    throw new Error(`target ${target} already added`);
-  }
+  assert(!knownTargets.has(target), X`target ${target} already added`);
   /** @type {TargetRecord} */
   const targetRecord = { deliverator, highestSent: 0, highestAck: 0 };
   knownTargets.set(target, targetRecord);

@@ -8,7 +8,7 @@
 // from test/ to src/
 
 // @ts-check
-import { assert, details as d, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import {
   makeNotifierKit,
   makeSubscriptionKit,
@@ -109,7 +109,7 @@ export const makeMapFollower = snapshotNotifierP => {
           break;
         }
         default: {
-          throw assert.fail(d`unexpected deltaKind ${q(deltaKind)}`);
+          assert.fail(X`unexpected deltaKind ${q(deltaKind)}`);
         }
       }
     },

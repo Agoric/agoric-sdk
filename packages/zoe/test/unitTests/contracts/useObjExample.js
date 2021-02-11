@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
@@ -33,7 +33,7 @@ const start = zcf => {
       colorPixels: (color, amountToColor = undefined) => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(!seat.hasExited(), `the escrowing offer is no longer active`);
+        assert(!seat.hasExited(), X`the escrowing offer is no longer active`);
         const escrowedAmount = seat.getAmountAllocated('Pixels', pixelBrand);
         // If no amountToColor is provided, color all the pixels
         // escrowed for this offer.
@@ -44,7 +44,7 @@ const start = zcf => {
         // covered by what is actually escrowed.
         assert(
           amountMath.isGTE(escrowedAmount, amountToColor),
-          details`The pixels to color were not all escrowed. Currently escrowed: ${escrowedAmount}, amount to color: ${amountToColor}`,
+          X`The pixels to color were not all escrowed. Currently escrowed: ${escrowedAmount}, amount to color: ${amountToColor}`,
         );
 
         // Pretend to color

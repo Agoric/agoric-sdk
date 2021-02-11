@@ -3,6 +3,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { evalContractBundle } from './evalContractCode';
 
+const { details: X } = assert;
+
 function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
   // provided to allow unit testing of contracts that call zcf.shutdown()
@@ -49,7 +51,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       });
     },
     createVatByName: _name => {
-      throw Error(`createVatByName not supported in fake mode`);
+      assert.fail(X`createVatByName not supported in fake mode`);
     },
   });
   const vatAdminState = {

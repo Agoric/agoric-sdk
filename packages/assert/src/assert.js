@@ -48,7 +48,7 @@ export { globalAssert as assert, details, quote };
 // abbreviation 'q' for quote.
 //
 // ```js
-// import { quote as q, details as d } from '@agoric/assert';
+// import { quote as q, details as X } from '@agoric/assert';
 // ```
 export { quote as q };
 

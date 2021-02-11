@@ -3,6 +3,7 @@
 import makeStore from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { assert, details as X } from '@agoric/assert';
 import { toBytes } from './bytes';
 
 import '@agoric/store/exported';
@@ -276,12 +277,8 @@ export function makeNetworkProtocol(protocolHandler) {
         return localAddr;
       },
       async addListener(listenHandler) {
-        if (revoked) {
-          throw Error(`Port ${localAddr} is revoked`);
-        }
-        if (!listenHandler) {
-          throw TypeError(`listenHandler is not defined`);
-        }
+        assert(!revoked, X`Port ${localAddr} is revoked`);
+        assert(listenHandler, X`listenHandler is not defined`, TypeError);
         if (listening.has(localAddr)) {
           // Last one wins.
           const [lport, lhandler] = listening.get(localAddr);
@@ -309,12 +306,11 @@ export function makeNetworkProtocol(protocolHandler) {
           .catch(rethrowUnlessMissing);
       },
       async removeListener(listenHandler) {
-        if (!listening.has(localAddr)) {
-          throw Error(`Port ${localAddr} is not listening`);
-        }
-        if (listening.get(localAddr)[1] !== listenHandler) {
-          throw Error(`Port ${localAddr} handler to remove is not listening`);
-        }
+        assert(listening.has(localAddr), X`Port ${localAddr} is not listening`);
+        assert(
+          listening.get(localAddr)[1] === listenHandler,
+          X`Port ${localAddr} handler to remove is not listening`,
+        );
         listening.delete(localAddr);
         await E(protocolHandler).onListenRemove(
           port,
@@ -327,9 +323,7 @@ export function makeNetworkProtocol(protocolHandler) {
           .catch(rethrowUnlessMissing);
       },
       async connect(remotePort, connectionHandler = {}) {
-        if (revoked) {
-          throw Error(`Port ${localAddr} is revoked`);
-        }
+        assert(!revoked, X`Port ${localAddr} is revoked`);
         /**
          * @type {Endpoint}
          */
@@ -344,9 +338,10 @@ export function makeNetworkProtocol(protocolHandler) {
         return conn;
       },
       async revoke() {
-        if (revoked === RevokeState.REVOKED) {
-          throw Error(`Port ${localAddr} is already revoked`);
-        }
+        assert(
+          revoked !== RevokeState.REVOKED,
+          X`Port ${localAddr} is already revoked`,
+        );
         revoked = RevokeState.REVOKING;
         await E(protocolHandler).onRevoke(port, localAddr, protocolHandler);
         revoked = RevokeState.REVOKED;
@@ -579,12 +574,11 @@ export function makeLoopbackProtocolHandler() {
     },
     async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
-      if (lport !== port) {
-        throw Error(`Port does not match listener on ${localAddr}`);
-      }
-      if (lhandler !== listenHandler) {
-        throw Error(`Listen handler does not match listener on ${localAddr}`);
-      }
+      assert(lport === port, X`Port does not match listener on ${localAddr}`);
+      assert(
+        lhandler === listenHandler,
+        X`Listen handler does not match listener on ${localAddr}`,
+      );
       listeners.delete(localAddr);
     },
     async onRevoke(_port, _localAddr, _protocolHandler) {

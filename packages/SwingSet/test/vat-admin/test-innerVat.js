@@ -50,7 +50,7 @@ test('error creating vat from non-bundle', async t => {
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting non-bundle test',
-    'yay, rejected: Error: Vat Creation Error: Error: vat creation requires a bundle, not a plain string',
+    'yay, rejected: Error: Vat Creation Error: TypeError: vat creation requires a bundle, not a plain string',
   ]);
   await c.run();
 });

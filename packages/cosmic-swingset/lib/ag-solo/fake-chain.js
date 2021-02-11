@@ -14,6 +14,8 @@ import makeBlockManager from '../block-manager';
 import { makeWithQueue } from './vats/queue';
 import { makeBatchedDeliver } from './batched-deliver';
 
+const { details: X } = assert;
+
 const log = anylogger('fake-chain');
 
 const PRETEND_BLOCK_DELAY = 5;
@@ -60,9 +62,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     return `Bridge device (${dstID}) not implemented for fake-chain`;
   }
   function flushChainSends(replay) {
-    if (replay) {
-      throw Error(`Replay not implemented`);
-    }
+    assert(!replay, X`Replay not implemented`);
   }
   const s = await launch(
     stateDBdir,

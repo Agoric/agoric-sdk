@@ -1,5 +1,7 @@
 import { E } from '@agoric/eventual-send';
 
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, _vatParameters) {
   const log = vatPowers.testLog;
   let pingPongP;
@@ -18,7 +20,7 @@ export function buildRootObject(vatPowers, _vatParameters) {
             break;
           }
           default: {
-            throw new Error(`unknown bridge input ${msg}`);
+            assert.fail(X`unknown bridge input ${msg}`);
           }
         }
       } catch (e) {

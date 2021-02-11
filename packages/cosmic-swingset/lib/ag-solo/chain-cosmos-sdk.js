@@ -11,6 +11,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeBatchedDeliver } from './batched-deliver';
 
+const { details: X } = assert;
+
 const log = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
@@ -391,9 +393,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
     blockNotifier
       .getUpdateSince(lastBlockUpdate)
       .then(({ updateCount, value }) => {
-        if (!value) {
-          throw Error(`${GCI} unexpectedly finished!`);
-        }
+        assert(value, X`${GCI} unexpectedly finished!`);
         log.debug(`new block on ${GCI}, fetching mailbox`);
         getMailbox()
           .then(ret => {
@@ -498,7 +498,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
             // We submitted the transaction successfully.
             return {};
           }
-          throw Error(`Unexpected output: ${stdout.trimRight()}`);
+          assert.fail(X`Unexpected output: ${stdout.trimRight()}`);
         },
         undefined,
         {}, // defaultIfCancelled

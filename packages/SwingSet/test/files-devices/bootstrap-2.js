@@ -1,5 +1,7 @@
 import { E } from '@agoric/eventual-send';
 
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;
   return harden({
@@ -95,7 +97,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           log('good: callNow failed');
         }
       } else {
-        throw new Error(`unknown argv mode '${argv[0]}'`);
+        assert.fail(X`unknown argv mode '${argv[0]}'`);
       }
     },
     ping() {

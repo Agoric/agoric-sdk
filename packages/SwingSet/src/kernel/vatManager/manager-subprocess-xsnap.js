@@ -6,6 +6,8 @@ import { createSyscall } from './syscall';
 import '../../types';
 import './types';
 
+const { details: X } = assert;
+
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
@@ -115,7 +117,7 @@ export function makeXsSubprocessFactory({
           }
         }
         default:
-          throw new Error(`unrecognized uplink message ${type}`);
+          assert.fail(X`unrecognized uplink message ${type}`);
       }
     }
 
@@ -158,7 +160,7 @@ export function makeXsSubprocessFactory({
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);
     } else {
-      throw new Error(`failed to setBundle: ${bundleReply}`);
+      assert.fail(X`failed to setBundle: ${bundleReply}`);
     }
 
     /** @type { (item: Tagged) => Promise<Tagged> } */

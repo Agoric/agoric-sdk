@@ -7,6 +7,8 @@ import { bundleFunction } from '../../make-function-bundle';
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
 
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
 
@@ -77,9 +79,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
           eightP.then(res => {
             log('++ eightP resolved to ', res, ' (should be 8)');
-            if (res !== 8) {
-              throw new Error(`eightP resolved to ${res}, not 8`);
-            }
+            assert(res === 8, X`eightP resolved to ${res}, not 8`);
             log('++ DONE');
           });
           return eightP;
@@ -356,6 +356,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   const obj0 = {
+    // eslint-disable-next-line consistent-return
     async bootstrap(vats) {
       switch (vatParameters.argv[0]) {
         case 'trivial-oldformat': {
@@ -412,7 +413,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           );
         }
         default: {
-          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
+          assert.fail(X`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

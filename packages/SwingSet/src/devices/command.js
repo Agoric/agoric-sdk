@@ -1,10 +1,10 @@
 import Nat from '@agoric/nat';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+const { details: X } = assert;
+
 export default function buildCommand(broadcastCallback) {
-  if (!broadcastCallback) {
-    throw new Error(`broadcastCallback must be provided.`);
-  }
+  assert(broadcastCallback, X`broadcastCallback must be provided.`);
   let inboundCallback;
   const srcPath = require.resolve('./command-src');
   let nextCount = 0;
@@ -18,9 +18,7 @@ export default function buildCommand(broadcastCallback) {
     const count = nextCount;
     nextCount += 1;
     responses.set(count, { resolve, reject });
-    if (!inboundCallback) {
-      throw new Error(`inboundCommand before registerInboundCallback`);
-    }
+    assert(inboundCallback, X`inboundCommand before registerInboundCallback`);
     try {
       inboundCallback(count, JSON.stringify(obj));
     } catch (e) {
@@ -35,9 +33,7 @@ export default function buildCommand(broadcastCallback) {
   }
 
   function registerInboundCallback(cb) {
-    if (inboundCallback) {
-      throw new Error(`registerInboundCallback called more than once`);
-    }
+    assert(!inboundCallback, X`registerInboundCallback called more than once`);
     inboundCallback = cb;
   }
 
@@ -52,7 +48,7 @@ export default function buildCommand(broadcastCallback) {
     }
     if (!responses.has(count)) {
       // maybe just ignore it
-      throw new Error(`unknown response index ${count}`);
+      assert.fail(X`unknown response index ${count}`);
     }
     const { resolve, reject } = responses.get(count);
     if (isReject) {

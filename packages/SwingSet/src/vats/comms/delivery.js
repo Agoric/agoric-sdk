@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistVatType, parseVatSlot } from '../../parseVatSlots';
 import { makeUndeliverableError } from '../../makeUndeliverableError';
 import { insistCapData } from '../../capdata';
@@ -114,13 +114,13 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     if (command === 'resolve') {
       return resolveFromRemote(remoteID, message);
     }
-    throw Error(`unrecognized '${command}' in received message ${message}`);
+    assert.fail(X`unrecognized '${command}' in received message ${message}`);
   }
 
   function sendFromRemote(remoteID, message) {
     // deliver:$target:$method:[$result][:$slots..];body
     const sci = message.indexOf(';');
-    assert(sci !== -1, details`missing semicolon in deliver ${message}`);
+    assert(sci !== -1, X`missing semicolon in deliver ${message}`);
     const fields = message
       .slice(0, sci)
       .split(':')
@@ -151,7 +151,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const resolutions = [];
     for (const submsg of subMessages) {
       const sci = submsg.indexOf(';');
-      assert(sci !== -1, details`missing semicolon in resolve ${submsg}`);
+      assert(sci !== -1, X`missing semicolon in resolve ${submsg}`);
 
       const pieces = submsg.slice(0, sci).split(':');
       assert(pieces[0] === 'resolve');
@@ -267,7 +267,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       return;
     }
 
-    throw Error(`unknown where ${where}`);
+    assert.fail(X`unknown where ${where}`);
   }
 
   function sendToKernel(target, delivery) {
@@ -281,7 +281,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function sendToRemote(target, remoteID, localDelivery) {
-    assert(remoteID, details`oops ${target}`);
+    assert(remoteID, X`oops ${target}`);
     insistCapData(localDelivery.args);
 
     const {

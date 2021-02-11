@@ -9,6 +9,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
+const { details: X } = assert;
+
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -133,7 +135,7 @@ function resolvePR(pr, mode, targets) {
       pr.reject([targets.p1]);
       break;
     default:
-      throw Error(`unknown mode ${mode}`);
+      assert.fail(X`unknown mode ${mode}`);
   }
 }
 
@@ -173,7 +175,7 @@ function resolutionOf(vpid, mode, targets) {
       resolution.resolutions[0][2] = capargs([slot0arg], [targets.p1]);
       break;
     default:
-      throw Error(`unknown mode ${mode}`);
+      assert.fail(X`unknown mode ${mode}`);
   }
   return resolution;
 }
@@ -385,7 +387,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     dispatch.deliver(rootA, 'promise', capargs([slot0arg], [p1]));
     dispatch.deliver(rootA, 'result', capargs([], []), p1);
   } else {
-    throw Error(`bad which=${which}`);
+    assert.fail(X`bad which=${which}`);
   }
   await endOfCrank();
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
@@ -638,7 +640,7 @@ async function doVatResolveCase4(t, mode) {
   } else if (mode === 'promise-reject') {
     dispatch.notify(oneResolution(p1, true, capargs([slot0arg], [p1])));
   } else {
-    throw Error(`unknown mode ${mode}`);
+    assert.fail(X`unknown mode ${mode}`);
   }
   await endOfCrank();
   t.deepEqual(log, []);

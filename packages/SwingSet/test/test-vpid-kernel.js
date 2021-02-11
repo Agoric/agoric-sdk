@@ -10,6 +10,8 @@ import { initializeKernel } from '../src/kernel/initializeKernel';
 
 import { buildDispatch } from './util';
 
+const { details: X } = assert;
+
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -127,7 +129,7 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
       syscallA.resolve([[vpid, true, capargs([slot0arg], [targets.p1])]]);
       break;
     default:
-      throw Error(`unknown mode ${mode}`);
+      assert.fail(X`unknown mode ${mode}`);
   }
 }
 
@@ -180,7 +182,7 @@ function resolutionOf(vpid, mode, targets) {
         ),
       };
     default:
-      throw Error(`unknown mode ${mode}`);
+      assert.fail(X`unknown mode ${mode}`);
   }
 }
 
@@ -389,9 +391,9 @@ async function doTest4567(t, which, mode) {
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatA is our primary actor
   let onDispatchCallback;
-  function odc(d) {
+  function odc(dp) {
     if (onDispatchCallback) {
-      onDispatchCallback(d);
+      onDispatchCallback(dp);
     }
   }
   const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
@@ -544,8 +546,8 @@ async function doTest4567(t, which, mode) {
     localTarget: localTargetA,
     p1: dataPromiseA,
   };
-  onDispatchCallback = function odc1(d) {
-    t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
+  onDispatchCallback = function odc1(dp) {
+    t.deepEqual(dp, resolutionOf(p1VatA, mode, targetsA));
     t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
   };
   const targetsB = {
@@ -581,9 +583,9 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatX controls the scenario, vatA and vatB are the players
   let onDispatchCallback;
-  function odc(d) {
+  function odc(dp) {
     if (onDispatchCallback) {
-      onDispatchCallback(d);
+      onDispatchCallback(dp);
     }
   }
   const { log: logA, getSyscall: getSyscallA } = await buildRawVat(

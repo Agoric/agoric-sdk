@@ -2,6 +2,8 @@ import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
+const { details: X } = assert;
+
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
@@ -568,7 +570,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doBadTimer();
         }
         default: {
-          throw new Error(`testName ${testName} not recognized`);
+          assert.fail(X`testName ${testName} not recognized`);
         }
       }
     },

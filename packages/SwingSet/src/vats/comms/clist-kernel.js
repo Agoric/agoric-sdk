@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { parseVatSlot } from '../../parseVatSlots';
 
 export function makeKernel(state, syscall, stateKit) {
@@ -45,7 +45,7 @@ export function makeKernel(state, syscall, stateKit) {
       // receipt of a remote promise, and p-NN is added upon receipt of a
       // kernel promise. We retain the promiseTable entry even after the
       // promise is retired (to remember the resolution).
-      assert(p, `how did I forget about ${vpid}`);
+      assert(p, X`how did I forget about ${vpid}`);
 
       if (p.kernelAwaitingResolve) {
         return vpid;
@@ -78,7 +78,7 @@ export function makeKernel(state, syscall, stateKit) {
       }
       return vpid;
     }
-    throw Error(`cannot give type ${type} to kernel`);
+    assert.fail(X`cannot give type ${type} to kernel`);
   }
 
   function provideKernelForLocalResult(vpid) {
@@ -86,7 +86,7 @@ export function makeKernel(state, syscall, stateKit) {
       return null;
     }
     const p = state.promiseTable.get(vpid);
-    assert(!p.resolved, `result ${vpid} is already resolved`);
+    assert(!p.resolved, X`result ${vpid} is already resolved`);
     // TODO: reject somehow rather than crashing weirdly if we are not
     // already the decider, but I'm not sure how we could hit that case.
     changeDeciderToKernel(vpid);
@@ -103,7 +103,7 @@ export function makeKernel(state, syscall, stateKit) {
     if (type !== 'object' && type !== 'promise') {
       // TODO: reject the message rather than crashing weirdly, we
       // can't prevent vats from attempting this
-      throw Error(`cannot accept type ${type} from kernel`);
+      assert.fail(X`cannot accept type ${type} from kernel`);
     }
     if (type === 'object') {
       if (allocatedByVat) {
@@ -124,7 +124,7 @@ export function makeKernel(state, syscall, stateKit) {
         if (p) {
           // hey, we agreed to never speak of the resolved VPID again. maybe
           // the kernel is recycling p-NN VPIDs, or is just confused
-          assert(!p.resolved, `kernel sent retired ${vpid}`);
+          assert(!p.resolved, X`kernel sent retired ${vpid}`);
         } else {
           // the kernel is telling us about a new promise, so it's the decider
           trackUnresolvedPromise(vpid);
@@ -149,12 +149,12 @@ export function makeKernel(state, syscall, stateKit) {
     // we know to be resolved. We agreed to never speak of the resolved VPID
     // again. maybe the kernel is recycling p-NN VPIDs, or is just confused
     if (p) {
-      assert(!p.resolved, `kernel sent retired ${vpid}`);
+      assert(!p.resolved, X`kernel sent retired ${vpid}`);
     }
 
     // if we're supposed to have allocated the number, we better recognize it
     if (allocatedByVat) {
-      assert(p, `I don't remember giving ${vpid} to the kernel`);
+      assert(p, X`I don't remember giving ${vpid} to the kernel`);
     }
 
     if (p) {

@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { addRemote } from './remote';
 
 const UNDEFINED = harden({
@@ -39,13 +39,15 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const name = args[0];
-    assert.typeof(name, 'string', details`bad addRemote name ${name}`);
-    if (args[1]['@qclass'] !== 'slot' || args[1].index !== 0) {
-      throw new Error(`unexpected args for addRemote(): ${controllerArgs}`);
-    }
-    if (args[2]['@qclass'] !== 'slot' || args[2].index !== 1) {
-      throw new Error(`unexpected args for addRemote(): ${controllerArgs}`);
-    }
+    assert.typeof(name, 'string', X`bad addRemote name ${name}`);
+    assert(
+      args[1]['@qclass'] === 'slot' && args[1].index === 0,
+      X`unexpected args for addRemote(): ${controllerArgs}`,
+    );
+    assert(
+      args[2]['@qclass'] === 'slot' && args[2].index === 1,
+      X`unexpected args for addRemote(): ${controllerArgs}`,
+    );
     const transmitterID = slots[args[1].index];
     const setReceiverID = slots[args[2].index];
 
@@ -69,15 +71,13 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const remoteName = args[0];
-    assert(
-      state.names.has(remoteName),
-      details`unknown remote name ${remoteName}`,
-    );
+    assert(state.names.has(remoteName), X`unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
-    if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
-      throw new Error(`unexpected args for addEgress(): ${controllerArgs}`);
-    }
+    assert(
+      args[2]['@qclass'] === 'slot' && args[2].index === 0,
+      X`unexpected args for addEgress(): ${controllerArgs}`,
+    );
     const localRef = slots[args[2].index];
     addEgress(remoteID, remoteRefID, localRef);
     syscall.resolve([[result, false, UNDEFINED]]);
@@ -88,10 +88,7 @@ export function deliverToController(
     const args = JSON.parse(controllerArgs.body);
 
     const remoteName = args[0];
-    assert(
-      state.names.has(remoteName),
-      details`unknown remote name ${remoteName}`,
-    );
+    assert(state.names.has(remoteName), X`unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
     const localRef = addIngress(remoteID, remoteRefID);
@@ -110,6 +107,6 @@ export function deliverToController(
     case 'addIngress':
       return doAddIngress();
     default:
-      throw new Error(`method ${method} is not available`);
+      assert.fail(X`method ${method} is not available`);
   }
 }

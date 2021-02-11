@@ -1,7 +1,7 @@
 // @ts-check
 import '../../../exported';
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import Nat from '@agoric/nat';
 
 import { assertIssuerKeywords } from '../../contractSupport';
@@ -70,9 +70,9 @@ const start = async zcf => {
     interestPeriod,
   } = zcf.getTerms();
 
-  assert(autoswapInstance, `autoswapInstance must be provided`);
-  assert(priceAuthority, `priceAuthority must be provided`);
-  assert(periodNotifier, `periodNotifier must be provided`);
+  assert(autoswapInstance, X`autoswapInstance must be provided`);
+  assert(priceAuthority, X`priceAuthority must be provided`);
+  assert(periodNotifier, X`periodNotifier must be provided`);
   Nat(interestRate);
   Nat(interestPeriod);
 

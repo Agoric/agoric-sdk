@@ -7,6 +7,8 @@ import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 
 import { makeLiveSlots } from '../liveSlots';
 
+const { details: X } = assert;
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -237,7 +239,7 @@ function makeWorker(port) {
           case 'notify':
             return doNotify(dargs[0]);
           default:
-            throw Error(`bad delivery type ${dtype}`);
+            assert.fail(X`bad delivery type ${dtype}`);
         }
       }
       default:

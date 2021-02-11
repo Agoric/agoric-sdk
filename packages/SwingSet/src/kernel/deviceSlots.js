@@ -1,5 +1,5 @@
 import { Remotable, mustPassByPresence, makeMarshal } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 
@@ -80,16 +80,16 @@ export function makeDeviceSlots(
     if (!slotToVal.has(slot)) {
       let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
-      assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
+      assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);
         val = makePresence(slot, iface);
         // lsdebug(` for presence`, val);
       } else if (type === 'device') {
-        throw Error(`devices should not be given other devices '${slot}'`);
+        assert.fail(X`devices should not be given other devices '${slot}'`);
       } else {
-        throw Error(`unrecognized slot type '${type}'`);
+        assert.fail(X`unrecognized slot type '${type}'`);
       }
       slotToVal.set(slot, val);
       valToSlot.set(val, slot);
@@ -132,9 +132,10 @@ export function makeDeviceSlots(
       throw new Error('SO(SO(x)) is invalid');
     }
     const slot = valToSlot.get(x);
-    if (!slot || parseVatSlot(slot).type !== 'object') {
-      throw new Error(`SO(x) must be called on a Presence, not ${x}`);
-    }
+    assert(
+      slot && parseVatSlot(slot).type === 'object',
+      X`SO(x) must be called on a Presence, not ${x}`,
+    );
     const handler = PresenceHandler(slot);
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);

@@ -11,6 +11,8 @@ import {
 } from './files';
 import { chdir, needDoRun, shellEscape } from './run';
 
+const { details: X } = assert;
+
 const calculateTotal = placement =>
   (placement ? Object.values(placement) : []).reduce(
     (prior, cur) => prior + cur,
@@ -252,9 +254,7 @@ const doInit = async (progname, args) => {
   if (!dir) {
     dir = SETUP_HOME;
   }
-  if (!dir) {
-    throw Error(`Need: [dir] [[network name]]`);
-  }
+  assert(dir, X`Need: [dir] [[network name]]`);
   await needNotExists(`${dir}/network.txt`);
 
   const adir = resolve(process.cwd(), dir);
@@ -420,9 +420,7 @@ const doInit = async (progname, args) => {
     OFFSETS[PLACEMENT] = offset;
   }
 
-  if (instance === 0) {
-    throw Error(`Aborting due to no nodes configured!`);
-  }
+  assert(instance !== 0, X`Aborting due to no nodes configured!`);
 
   await createFile(
     `vars.tf`,

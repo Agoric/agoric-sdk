@@ -1,3 +1,5 @@
+const { details: X } = assert;
+
 /* global WebSocket fetch document window walletFrame localStorage */
 const RECONNECT_BACKOFF_SECONDS = 3;
 // Functions to run to reset the HTML state to what it was.
@@ -63,7 +65,7 @@ function run() {
     if (j.ok) {
       return j.res;
     }
-    throw new Error(`server error: ${JSON.stringify(j.rej)}`);
+    assert.fail(X`server error: ${JSON.stringify(j.rej)}`);
   }
 
   const protocol = window.location.protocol.replace(/^http/, 'ws');
@@ -300,9 +302,7 @@ run();
 const fetches = [];
 const fgr = fetch('/git-revision.txt')
   .then(resp => {
-    if (resp.status < 200 || resp.status >= 300) {
-      throw Error(`status ${resp.status}`);
-    }
+    assert(resp.status >= 200 && resp.status < 300, X`status ${resp.status}`);
     return resp.text();
   })
   .then(text => {
@@ -329,9 +329,7 @@ if (
 ) {
   fetch(`wallet/${accessTokenParams}`)
     .then(resp => {
-      if (resp.status < 200 || resp.status >= 300) {
-        throw Error(`status ${resp.status}`);
-      }
+      assert(resp.status >= 200 && resp.status < 300, X`status ${resp.status}`);
       walletFrame.style.display = 'block';
       walletFrame.src = `wallet/#${accessTokenParams.slice(1)}`;
     })

@@ -1,5 +1,7 @@
 import { E } from '@agoric/eventual-send';
 
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;
   const receiver = harden({
@@ -23,7 +25,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       } else if (argv[0] === '2') {
         E(transmitter).transmit('out1');
       } else {
-        throw new Error(`unknown argv mode '${argv[0]}'`);
+        assert.fail(X`unknown argv mode '${argv[0]}'`);
       }
     },
   });

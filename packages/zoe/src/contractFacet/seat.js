@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
@@ -23,8 +23,7 @@ export const makeZcfSeatAdminKit = (
   let currentAllocation = harden(seatData.initialAllocation);
   let exited = false; // seat is "active"
 
-  const assertExitedFalse = () =>
-    assert(!exited, details`seat has been exited`);
+  const assertExitedFalse = () => assert(!exited, X`seat has been exited`);
 
   /** @type {ZCFSeatAdmin} */
   const zcfSeatAdmin = harden({
@@ -34,7 +33,7 @@ export const makeZcfSeatAdminKit = (
       assertExitedFalse();
       assert(
         allSeatStagings.has(seatStaging),
-        details`The seatStaging ${seatStaging} was not recognized`,
+        X`The seatStaging ${seatStaging} was not recognized`,
       );
       currentAllocation = seatStaging.getStagedAllocation();
     },
@@ -77,7 +76,10 @@ export const makeZcfSeatAdminKit = (
       if (currentAllocation[keyword] !== undefined) {
         return currentAllocation[keyword];
       }
-      assert(brand, `A brand must be supplied when the keyword is not defined`);
+      assert(
+        brand,
+        X`A brand must be supplied when the keyword is not defined`,
+      );
       return getAmountMath(brand).getEmpty();
     },
     getCurrentAllocation: () => {
@@ -103,7 +105,7 @@ export const makeZcfSeatAdminKit = (
 
       assert(
         isOfferSafe(getAmountMath, proposal, allocation),
-        details`The reallocation was not offer safe`,
+        X`The reallocation was not offer safe`,
       );
 
       const seatStaging = {

@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import * as vega from 'vega';
 
+const { details: X } = assert;
+
 function scanMax(filePath, fields) {
   const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');
   const headers = lines[0].split('\t');
@@ -16,7 +18,7 @@ function scanMax(filePath, fields) {
       }
     }
     if (hit < 0) {
-      throw new Error(`field ${field} not found in ${filePath}`);
+      assert.fail(X`field ${field} not found in ${filePath}`);
     } else {
       headerMap[hit] = field;
     }
@@ -156,9 +158,10 @@ export async function renderGraph(spec, outputPath, type = 'png') {
   } else if (spec.marks.length === 0) {
     throw new Error('graph spec has no graphs defined');
   }
-  if (type !== 'png' && type !== 'pdf') {
-    throw new Error(`invalid output type ${type}, valid types are png or pdf`);
-  }
+  assert(
+    type === 'png' || type === 'pdf',
+    X`invalid output type ${type}, valid types are png or pdf`,
+  );
 
   let loadDir = '.';
   let out = process.stdout;

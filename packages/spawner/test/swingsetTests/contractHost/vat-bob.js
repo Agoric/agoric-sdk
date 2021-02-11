@@ -6,6 +6,8 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { makeCollect } from '../../../src/makeCollect';
 
+const { details: X } = assert;
+
 function makeBobMaker(host, log) {
   const collect = makeCollect(E, log);
 
@@ -43,7 +45,7 @@ function makeBobMaker(host, log) {
               break;
             }
             default: {
-              throw new Error(`unknown desc: ${desc}`);
+              assert.fail(X`unknown desc: ${desc}`);
             }
           }
 

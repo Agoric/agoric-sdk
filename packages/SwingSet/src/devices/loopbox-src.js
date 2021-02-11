@@ -1,3 +1,5 @@
+const { details: X } = assert;
+
 export function buildRootDeviceNode(tools) {
   const { SO, endowments } = tools;
   const { registerPassOneMessage, deliverMode } = endowments;
@@ -17,9 +19,7 @@ export function buildRootDeviceNode(tools) {
 
   return harden({
     registerInboundHandler(name, handler) {
-      if (inboundHandlers.has(name)) {
-        throw new Error(`already registered`);
-      }
+      assert(!inboundHandlers.has(name), X`already registered`);
       inboundHandlers.set(name, handler);
     },
 
@@ -27,9 +27,7 @@ export function buildRootDeviceNode(tools) {
       let count = 1;
       return harden({
         add(peer, msgnum, body) {
-          if (!inboundHandlers.has(peer)) {
-            throw new Error(`unregistered peer '${peer}'`);
-          }
+          assert(inboundHandlers.has(peer), X`unregistered peer '${peer}'`);
           const h = inboundHandlers.get(peer);
           if (deliverMode === 'immediate') {
             SO(h).deliverInboundMessages(sender, harden([[count, body]]));

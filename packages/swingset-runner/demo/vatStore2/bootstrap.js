@@ -1,6 +1,8 @@
 import { E } from '@agoric/eventual-send';
 import { makeXorShift128 } from './xorshift128';
 
+const { details: X } = assert;
+
 const p = console.log;
 
 const randomness = makeXorShift128();
@@ -70,7 +72,7 @@ export function buildRootObject(_vatPowers) {
             break;
           }
           default:
-            throw Error(`this can't happen`);
+            assert.fail(X`this can't happen`);
         }
       }
       return 'done';

@@ -1,4 +1,4 @@
-import { assert, details as d } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 const { defineProperties } = Object;
 
@@ -29,13 +29,13 @@ const weakRefTarget = new WeakMap();
 const FakeWeakRef = function WeakRef(target) {
   assert(
     new.target !== undefined,
-    d`WeakRef Constructor requires 'new'`,
+    X`WeakRef Constructor requires 'new'`,
     TypeError,
   );
   assert.equal(
     Object(target),
     target,
-    d`WeakRef target must be an object`,
+    X`WeakRef target must be an object`,
     TypeError,
   );
   weakRefTarget.set(this, target);
@@ -77,13 +77,13 @@ const FakeFinalizationRegistry = function FinalizationRegistry(
 ) {
   assert(
     new.target !== undefined,
-    d`FinalizationRegistry Constructor requires 'new'`,
+    X`FinalizationRegistry Constructor requires 'new'`,
     TypeError,
   );
   assert.typeof(
     cleanupCallback,
     'function',
-    d`cleanupCallback must be a function`,
+    X`cleanupCallback must be a function`,
   );
   // fall off the end with an empty instance
 };

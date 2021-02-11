@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 
 import { makeMarshal, Far } from '@agoric/marshal';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { insistVatID } from './id';
 import { makeVatSlot } from '../parseVatSlots';
@@ -44,12 +44,12 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       logStartup(`adding vat '${name}' from bundle ${bundleName}`);
 
       if (bundle) {
-        if (typeof bundle !== 'object') {
-          throw Error(`bundle is not an object, rather ${bundle}`);
-        }
-      } else if (!bundleName) {
-        throw Error(`no bundle specified for vat ${name}`);
-      }
+        assert.typeof(
+          bundle,
+          'object',
+          X`bundle is not an object, rather ${bundle}`,
+        );
+      } else assert(bundleName, X`no bundle specified for vat ${name}`);
 
       // todo: consider having vats indicate 'enablePipelining' by exporting a
       // boolean, rather than options= . We'd have to retrieve the flag from
@@ -86,9 +86,11 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
       const bundle =
         config.devices[name].bundle || config.bundles[bundleName].bundle;
-      if (typeof bundle !== 'object') {
-        throw Error(`bundle is not an object, rather ${bundle}`);
-      }
+      assert.typeof(
+        bundle,
+        'object',
+        X`bundle is not an object, rather ${bundle}`,
+      );
       creationOptions.deviceParameters = deviceParameters;
 
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
@@ -99,9 +101,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         haveAdminDevice = true;
       }
     }
-    if (!haveAdminDevice) {
-      throw Error(`a vat admin device is required`);
-    }
+    assert(haveAdminDevice, X`a vat admin device is required`);
   }
 
   // And enqueue the bootstrap() call. If we're reloading from an

@@ -17,6 +17,8 @@ import { Readable } from 'stream';
 import { open as tempOpen } from 'temp';
 import chalk from 'chalk';
 
+const { details: X } = assert;
+
 export const chmod = util.promisify(rawChmod);
 export const exists = util.promisify(rawExists);
 export const mkdir = util.promisify(rawMkdir);
@@ -31,9 +33,7 @@ const fsClose = util.promisify(rawClose);
 export { resolve, dirname, basename };
 
 export const needNotExists = async filename => {
-  if (await exists(filename)) {
-    throw Error(`${filename} already exists`);
-  }
+  assert(!(await exists(filename)), X`${filename} already exists`);
 };
 
 export const createFile = async (path, contents) => {

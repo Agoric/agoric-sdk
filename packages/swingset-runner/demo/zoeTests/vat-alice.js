@@ -4,6 +4,8 @@ import { showPurseBalance, setupIssuers } from './helpers';
 
 import { makePrintLog } from './printLog';
 
+const { details: X } = assert;
+
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
@@ -484,6 +486,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   };
 
   return harden({
+    // eslint-disable-next-line consistent-return
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {
@@ -517,7 +520,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doOTCDesk(bobP);
         }
         default: {
-          throw new Error(`testName ${testName} not recognized`);
+          assert.fail(X`testName ${testName} not recognized`);
         }
       }
     },

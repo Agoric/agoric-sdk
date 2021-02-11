@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../parseVatSlots';
 import { flipRemoteSlot, makeRemoteSlot } from './parseRemoteSlot';
 import { getRemote } from './remote';
@@ -14,13 +14,13 @@ export function makeIngressEgress(state, provideLocalForRemote) {
     Nat(remoteRefID);
     insistVatType('object', vatoid);
     const { allocatedByVat } = parseVatSlot(vatoid);
-    assert(!allocatedByVat, `vatoid should be kernel-allocated`);
-    assert(!remote.toRemote.has(vatoid), `already present ${vatoid}`);
+    assert(!allocatedByVat, X`vatoid should be kernel-allocated`);
+    assert(!remote.toRemote.has(vatoid), X`already present ${vatoid}`);
 
     const inboundRRef = makeRemoteSlot('object', true, remoteRefID);
     const outboundRRef = flipRemoteSlot(inboundRRef);
-    assert(!remote.fromRemote.has(inboundRRef), `already have ${inboundRRef}`);
-    assert(!remote.toRemote.has(outboundRRef), `already have ${outboundRRef}`);
+    assert(!remote.fromRemote.has(inboundRRef), X`already have ${inboundRRef}`);
+    assert(!remote.toRemote.has(outboundRRef), X`already have ${outboundRRef}`);
     remote.fromRemote.set(inboundRRef, vatoid);
     remote.toRemote.set(vatoid, outboundRRef);
     if (remote.nextObjectIndex <= remoteRefID) {

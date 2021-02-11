@@ -7,6 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network';
 import makeStore from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { assert, details as X } from '@agoric/assert';
 
 import '@agoric/store/exported';
 import '@agoric/swingset-vat/src/vats/network/types';
@@ -409,9 +410,7 @@ EOF
             },
           );
 
-          if (oidx < 0) {
-            throw Error(`${portID}: did not expect channelOpenInit`);
-          }
+          assert(oidx >= 0, X`${portID}: did not expect channelOpenInit`);
 
           // Continue the handshake by extracting the outbound information.
           const { onConnectP, ...chanInfo } = outbounds[oidx];
@@ -512,9 +511,10 @@ EOF
             counterpartyVersion: rVersion,
           } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (!channelKeyToOnConnectP.has(channelKey)) {
-            throw Error(`${channelKey}: did not expect channelOpenAck`);
-          }
+          assert(
+            channelKeyToOnConnectP.has(channelKey),
+            X`${channelKey}: did not expect channelOpenAck`,
+          );
           const onConnectP = channelKeyToOnConnectP.get(channelKey);
           channelKeyToOnConnectP.delete(channelKey);
 
@@ -540,9 +540,10 @@ EOF
         case 'channelOpenConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (!channelKeyToAttemptP.has(channelKey)) {
-            throw Error(`${channelKey}: did not expect channelOpenConfirm`);
-          }
+          assert(
+            channelKeyToAttemptP.has(channelKey),
+            X`${channelKey}: did not expect channelOpenConfirm`,
+          );
           const attemptP = channelKeyToAttemptP.get(channelKey);
           channelKeyToAttemptP.delete(channelKey);
 
@@ -643,7 +644,7 @@ EOF
 
         default:
           console.error('Unexpected IBC_EVENT', obj.event);
-          throw TypeError(`unrecognized method ${obj.event}`);
+          assert.fail(X`unrecognized method ${obj.event}`, TypeError);
       }
     },
   });

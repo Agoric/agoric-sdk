@@ -3,7 +3,7 @@
  */
 
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistVatID } from '../id';
@@ -88,7 +88,7 @@ export function makeVatKeeper(
    *    or is otherwise invalid.
    */
   function mapVatSlotToKernelSlot(vatSlot) {
-    assert(`${vatSlot}` === vatSlot, details`non-string vatSlot: ${vatSlot}`);
+    assert(`${vatSlot}` === vatSlot, X`non-string vatSlot: ${vatSlot}`);
     const vatKey = `${vatID}.c.${vatSlot}`;
     if (!storage.has(vatKey)) {
       const { type, allocatedByVat } = parseVatSlot(vatSlot);
@@ -98,11 +98,11 @@ export function makeVatKeeper(
         if (type === 'object') {
           kernelSlot = addKernelObject(vatID);
         } else if (type === 'device') {
-          throw new Error(`normal vats aren't allowed to export device nodes`);
+          assert.fail(X`normal vats aren't allowed to export device nodes`);
         } else if (type === 'promise') {
           kernelSlot = addKernelPromiseForVat(vatID);
         } else {
-          throw new Error(`unknown type ${type}`);
+          assert.fail(X`unknown type ${type}`);
         }
         incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
@@ -121,7 +121,7 @@ export function makeVatKeeper(
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
-        throw new Error(`unknown vatSlot ${vatSlot}`);
+        assert.fail(X`unknown vatSlot ${vatSlot}`);
       }
     }
 
@@ -156,7 +156,7 @@ export function makeVatKeeper(
         id = Nat(Number(storage.get(`${vatID}.p.nextID`)));
         storage.set(`${vatID}.p.nextID`, `${id + 1}`);
       } else {
-        throw new Error(`unknown type ${type}`);
+        assert.fail(X`unknown type ${type}`);
       }
       incrementRefCount(kernelSlot, `${vatID}[kv|clist`);
       const vatSlot = makeVatSlot(type, false, id);

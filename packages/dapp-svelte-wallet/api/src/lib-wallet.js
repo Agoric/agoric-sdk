@@ -11,7 +11,7 @@
  * and dapps.
  */
 
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
 import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
@@ -478,7 +478,7 @@ export function makeWallet({
         const purse = purseKeywordRecord[keyword];
         assert(
           purse !== undefined,
-          details`purse was not found for keyword ${q(keyword)}`,
+          X`purse was not found for keyword ${q(keyword)}`,
         );
         keywords.push(keyword);
         return E(purse).withdraw(amount);
@@ -602,7 +602,7 @@ export function makeWallet({
 
     assert(
       !found,
-      details`${q(found && found[0])} is already the petname for board ID ${q(
+      X`${q(found && found[0])} is already the petname for board ID ${q(
         depositBoardId,
       )}`,
     );
@@ -1366,7 +1366,7 @@ export function makeWallet({
       passStyleOf(offerResult) === 'copyRecord',
       `offerResult must be a record to have a uiNotifier`,
     );
-    assert(offerResult.uiNotifier, `offerResult does not have a uiNotifier`);
+    assert(offerResult.uiNotifier, X`offerResult does not have a uiNotifier`);
     return offerResult.uiNotifier;
   }
 
@@ -1427,7 +1427,7 @@ export function makeWallet({
     async addOfferInvitation(_offer, _invitation, _dappOrigin = undefined) {
       // Will be part of the Rendezvous system, when landed.
       // TODO unimplemented
-      throw Error(`Adding an invitation to an offer is unimplemented`);
+      assert.fail(X`Adding an invitation to an offer is unimplemented`);
     },
     declineOffer,
     cancelOffer,

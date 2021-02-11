@@ -1,6 +1,8 @@
 import { exec as rawExec, spawn } from 'child_process';
 import { Writable } from 'stream';
 
+const { details: X } = assert;
+
 export const shellMetaRegexp = /(\s|[[\]'"\\`$;*?{}])/;
 export const shellEscape = arg =>
   arg.match(shellMetaRegexp) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg;
@@ -44,9 +46,10 @@ export const backtick = async cmd => {
 
 export const needBacktick = async cmd => {
   const ret = await getStdout(cmd);
-  if (ret.code !== 0) {
-    throw Error(`Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`);
-  }
+  assert(
+    ret.code === 0,
+    X`Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`,
+  );
   return ret.stdout;
 };
 
@@ -97,8 +100,6 @@ export const doRun = (cmd, readable, writeCb) => {
 
 export const needDoRun = async (cmd, ...opts) => {
   const ret = await doRun(cmd, ...opts);
-  if (ret !== 0) {
-    throw Error(`Aborted with exit code ${ret}`);
-  }
+  assert(ret === 0, X`Aborted with exit code ${ret}`);
   return ret;
 };

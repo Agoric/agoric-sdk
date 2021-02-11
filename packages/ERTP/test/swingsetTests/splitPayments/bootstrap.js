@@ -1,6 +1,8 @@
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit } from '../../../src';
 
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, vatParameters) {
   function testSplitPayments(aliceMaker) {
     vatPowers.testLog('start test splitPayments');
@@ -12,6 +14,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   const obj0 = {
+    // eslint-disable-next-line consistent-return
     async bootstrap(vats) {
       switch (vatParameters.argv[0]) {
         case 'splitPayments': {
@@ -19,7 +22,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           return testSplitPayments(aliceMaker);
         }
         default: {
-          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
+          assert.fail(X`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

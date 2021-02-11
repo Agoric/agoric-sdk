@@ -1,3 +1,5 @@
+const { details: X } = assert;
+
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   const log = vatPowers.testLog;
@@ -27,7 +29,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         const nextTime = D(devices.timer).schedule(rptr, handler);
         log(`next scheduled time: ${nextTime}`);
       } else {
-        throw new Error(`unknown argv mode '${argv[0]}'`);
+        assert.fail(X`unknown argv mode '${argv[0]}'`);
       }
     },
   });
