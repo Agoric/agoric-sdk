@@ -1,4 +1,4 @@
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 
 import '../exported';
@@ -20,13 +20,13 @@ export const assertKeywordName = keyword => {
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
   assert(
     firstCapASCII.test(keyword),
-    details`keyword ${q(
+    X`keyword ${q(
       keyword,
     )} must be ascii and must start with a capital letter.`,
   );
   assert(
     keyword !== 'NaN' && keyword !== 'Infinity',
-    details`keyword ${q(keyword)} must not be a number's name`,
+    X`keyword ${q(keyword)} must not be a number's name`,
   );
 };
 
@@ -39,7 +39,7 @@ const assertKeysAllowed = (allowedKeys, record) => {
   // assert that there are no symbol properties.
   assert(
     Object.getOwnPropertySymbols(record).length === 0,
-    details`no symbol properties allowed`,
+    X`no symbol properties allowed`,
   );
 };
 
@@ -77,7 +77,7 @@ export const cleanKeywords = keywordRecord => {
   // Insist that there are no symbol properties.
   assert(
     Object.getOwnPropertySymbols(keywordRecord).length === 0,
-    details`no symbol properties allowed`,
+    X`no symbol properties allowed`,
   );
 
   // Assert all key characters are ascii and keys start with a
@@ -118,7 +118,7 @@ export const cleanProposal = (getAmountMath, proposal) => {
   // Check exit
   assert(
     Object.getOwnPropertyNames(exit).length === 1,
-    details`exit ${proposal.exit} should only have one key`,
+    X`exit ${proposal.exit} should only have one key`,
   );
   // We expect the single exit key to be one of the following:
   const allowedExitKeys = ['onDemand', 'afterDeadline', 'waived'];
@@ -132,13 +132,10 @@ export const cleanProposal = (getAmountMath, proposal) => {
   if (exitKey === 'afterDeadline') {
     const expectedAfterDeadlineKeys = ['timer', 'deadline'];
     assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
-    assert(
-      exit.afterDeadline.timer !== undefined,
-      details`timer must be defined`,
-    );
+    assert(exit.afterDeadline.timer !== undefined, X`timer must be defined`);
     assert(
       exit.afterDeadline.deadline !== undefined,
-      details`deadline must be defined`,
+      X`deadline must be defined`,
     );
     // timers must have a 'setWakeup' function which takes a deadline
     // and an object as arguments.
@@ -154,7 +151,7 @@ export const cleanProposal = (getAmountMath, proposal) => {
   giveKeywords.forEach(keyword => {
     assert(
       !wantKeywordSet.has(keyword),
-      details`a keyword cannot be in both 'want' and 'give'`,
+      X`a keyword cannot be in both 'want' and 'give'`,
     );
   });
 

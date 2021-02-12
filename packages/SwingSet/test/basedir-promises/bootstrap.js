@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;

@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 // Allows multiple parties to store values for retrieval by others.
 function makeSharedMap(name) {

@@ -1,12 +1,10 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeTranscriptManager } from './transcript';
 import { createSyscall } from './syscall';
 
 import '../../types';
 import './types';
-
-const { details: X } = assert;
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
@@ -134,7 +132,7 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, 'eval bundle', it);
       assert(
         superCode.moduleFormat === 'getExport',
-        details`${it} unexpected: ${superCode.moduleFormat}`,
+        X`${it} unexpected: ${superCode.moduleFormat}`,
       );
       await worker.evaluate(`(${superCode.source}\n)()`.trim());
     }

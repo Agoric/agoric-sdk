@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import '../../exported';
@@ -141,12 +141,12 @@ export function makeOnewayPriceAuthorityKit(opts) {
     assert.equal(
       brandIn,
       paBrandIn,
-      details`Desired brandIn ${brandIn} must match ${paBrandIn}`,
+      X`Desired brandIn ${brandIn} must match ${paBrandIn}`,
     );
     assert.equal(
       brandOut,
       paBrandOut,
-      details`Desired brandOut ${brandOut} must match ${paBrandOut}`,
+      X`Desired brandOut ${brandOut} must match ${paBrandOut}`,
     );
   };
 
@@ -186,7 +186,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
         assert(
           mathOut.isGTE(actualAmountOut, amountOut),
-          details`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
+          X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
         );
         return { amountIn, amountOut };
       });

@@ -1,4 +1,4 @@
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export default function setup(syscall, state, _helpers, vatPowers) {
   const { testLog } = vatPowers;

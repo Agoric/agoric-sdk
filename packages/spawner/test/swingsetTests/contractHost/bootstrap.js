@@ -2,12 +2,11 @@
 
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+import { assert, details as X } from '@agoric/assert';
 import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
-
-const { details: X } = assert;
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
@@ -356,7 +355,6 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   const obj0 = {
-    // eslint-disable-next-line consistent-return
     async bootstrap(vats) {
       switch (vatParameters.argv[0]) {
         case 'trivial-oldformat': {

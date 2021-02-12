@@ -1,4 +1,4 @@
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 /**
  * Assert function to ensure that something expected to be a storage object

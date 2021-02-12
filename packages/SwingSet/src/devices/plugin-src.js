@@ -2,7 +2,7 @@
 
 import { makeCapTP } from '@agoric/captp';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;

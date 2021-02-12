@@ -1,6 +1,6 @@
 import { initSwingStore } from '@agoric/swing-store-simple';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that

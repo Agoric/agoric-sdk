@@ -1,10 +1,9 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { makeSharedMap } from '../../../src/sharedMap';
 import { makeSharingService } from '../../../src/sharing';
-
-const { details: X } = assert;
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
@@ -82,7 +81,6 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   const obj0 = {
-    // eslint-disable-next-line consistent-return
     async bootstrap(vats) {
       switch (vatParameters.argv[0]) {
         case 'sharedMap': {

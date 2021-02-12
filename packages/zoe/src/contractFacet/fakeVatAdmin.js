@@ -1,9 +1,8 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from './evalContractCode';
-
-const { details: X } = assert;
 
 function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is

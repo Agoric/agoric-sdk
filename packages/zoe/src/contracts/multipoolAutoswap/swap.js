@@ -1,8 +1,8 @@
+import { assert, details as X } from '@agoric/assert';
+
 import { assertProposalShape, trade } from '../../contractSupport';
 
 import '../../../exported';
-
-const { details: X } = assert;
 
 /**
  * typedef {Object} PriceAmountTriple

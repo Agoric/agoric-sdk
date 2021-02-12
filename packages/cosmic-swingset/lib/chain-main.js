@@ -7,10 +7,9 @@ import {
 import { MeterProvider } from '@opentelemetry/metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
+import { assert, details as X } from '@agoric/assert';
 import { launch } from './launch-chain';
 import makeBlockManager from './block-manager';
-
-const { details: X } = assert;
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
@@ -217,9 +216,7 @@ export default async function main(progname, args, { path, env, agcc }) {
       try {
         return JSON.parse(retStr);
       } catch (e) {
-        assert.fail(
-          X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`,
-        );
+        assert.fail(X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
       }
     }
 

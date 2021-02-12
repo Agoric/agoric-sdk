@@ -9,12 +9,11 @@ import {
 
 import anylogger from 'anylogger';
 
+import { assert, details as X } from '@agoric/assert';
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
 import { makeWithQueue } from './vats/queue';
 import { makeBatchedDeliver } from './batched-deliver';
-
-const { details: X } = assert;
 
 const log = anylogger('fake-chain');
 

@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 /**
  * @typedef {Object} Deleter
@@ -139,7 +139,7 @@ export const makePriceAuthorityRegistry = () => {
           assert.equal(
             priceStore.has(brandOut) && priceStore.get(brandOut),
             record,
-            details`Price authority already dropped`,
+            X`Price authority already dropped`,
           );
           priceStore.delete(brandOut);
         },

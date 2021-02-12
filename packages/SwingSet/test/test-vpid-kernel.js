@@ -2,6 +2,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -9,8 +10,6 @@ import buildKernel from '../src/kernel/index';
 import { initializeKernel } from '../src/kernel/initializeKernel';
 
 import { buildDispatch } from './util';
-
-const { details: X } = assert;
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -391,9 +390,9 @@ async function doTest4567(t, which, mode) {
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatA is our primary actor
   let onDispatchCallback;
-  function odc(dp) {
+  function odc(d) {
     if (onDispatchCallback) {
-      onDispatchCallback(dp);
+      onDispatchCallback(d);
     }
   }
   const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
@@ -546,8 +545,8 @@ async function doTest4567(t, which, mode) {
     localTarget: localTargetA,
     p1: dataPromiseA,
   };
-  onDispatchCallback = function odc1(dp) {
-    t.deepEqual(dp, resolutionOf(p1VatA, mode, targetsA));
+  onDispatchCallback = function odc1(d) {
+    t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
     t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
   };
   const targetsB = {

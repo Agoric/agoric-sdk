@@ -55,7 +55,6 @@ function objectFromEntries(iter) {
  * @param {Passable} passable
  * @returns {Promise<Comparable>}
  */
-// eslint-disable-next-line consistent-return
 function allComparable(passable) {
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
@@ -103,7 +102,6 @@ harden(allComparable);
  * @param {Comparable} right
  * @returns {boolean}
  */
-// eslint-disable-next-line consistent-return
 function sameStructure(left, right) {
   const leftStyle = passStyleOf(left);
   const rightStyle = passStyleOf(right);

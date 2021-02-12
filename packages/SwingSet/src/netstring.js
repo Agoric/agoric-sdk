@@ -1,7 +1,7 @@
+import { assert, details as X, q } from '@agoric/assert';
+
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 const { Transform } = require('stream');
-
-const { details: X, quote: q } = assert;
 
 const COLON = 58;
 const COMMA = 44;

@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 /**
  * This contract lets a funder endow a bounty that will pay out if an Oracle
@@ -51,7 +51,7 @@ const start = async zcf => {
       const feeAmount = bountySeat.getCurrentAllocation().Fee;
       assert(
         feeMath.isGTE(feeAmount, fee),
-        details`Fee was required to be at least ${fee}`,
+        X`Fee was required to be at least ${fee}`,
       );
 
       // The funder gets the fee regardless of the outcome.

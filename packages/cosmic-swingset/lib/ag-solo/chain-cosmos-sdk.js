@@ -9,9 +9,8 @@ import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { assert, details as X } from '@agoric/assert';
 import { makeBatchedDeliver } from './batched-deliver';
-
-const { details: X } = assert;
 
 const log = anylogger('chain-cosmos-sdk');
 
@@ -112,7 +111,6 @@ export async function connectToChain(
     throwIfCancelled = () => undefined,
     defaultIfCancelled = WAS_CANCELLED_EXCEPTION,
   ) {
-    // eslint-disable-next-line consistent-return
     return retryRpcAddr(async rpcAddr => {
       await throwIfCancelled();
 

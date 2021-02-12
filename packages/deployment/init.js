@@ -1,17 +1,16 @@
 import fetch from 'node-fetch';
 import inquirer from 'inquirer';
+import { assert, details as X } from '@agoric/assert';
 import { SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE } from './setup';
 import {
   basename,
   chmod,
   createFile,
   mkdir,
-  needNotExists,
+  mustNotExist,
   resolve,
 } from './files';
 import { chdir, needDoRun, shellEscape } from './run';
-
-const { details: X } = assert;
 
 const calculateTotal = placement =>
   (placement ? Object.values(placement) : []).reduce(
@@ -255,7 +254,7 @@ const doInit = async (progname, args) => {
     dir = SETUP_HOME;
   }
   assert(dir, X`Need: [dir] [[network name]]`);
-  await needNotExists(`${dir}/network.txt`);
+  await mustNotExist(`${dir}/network.txt`);
 
   const adir = resolve(process.cwd(), dir);
   const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);

@@ -4,9 +4,8 @@ import djson from 'deterministic-json';
 import path from 'path';
 import fs from 'fs';
 
+import { assert, details as X } from '@agoric/assert';
 import setGCIIngress from './set-gci-ingress';
-
-const { details: X } = assert;
 
 const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';
 

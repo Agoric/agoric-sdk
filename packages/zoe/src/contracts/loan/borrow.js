@@ -1,7 +1,7 @@
 // @ts-check
 import '../../../exported';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -59,7 +59,7 @@ export const makeBorrowInvitation = (zcf, config) => {
         loanMath.make(collateralPriceInLoanBrand.value),
         mmr.scale(loanWanted),
       ),
-      details`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
+      X`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
 
     // Assert that the collateralGiven has not changed after the AWAIT
@@ -74,7 +74,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // Assert that loanWanted <= maxLoan
     assert(
       loanMath.isGTE(maxLoan, loanWanted),
-      details`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
+      X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
     );
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();

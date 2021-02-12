@@ -4,9 +4,8 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
+import { assert, details as X } from '@agoric/assert';
 import { makeCollect } from '../../../src/makeCollect';
-
-const { details: X } = assert;
 
 function makeBobMaker(host, log) {
   const collect = makeCollect(E, log);

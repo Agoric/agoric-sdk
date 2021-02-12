@@ -2,6 +2,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -9,8 +10,6 @@ import buildKernel from '../src/kernel/index';
 import { initializeKernel } from '../src/kernel/initializeKernel';
 import { makeVatSlot } from '../src/parseVatSlots';
 import { checkKT } from './util';
-
-const { details: X } = assert;
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

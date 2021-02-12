@@ -8,7 +8,7 @@ import {
   initSwingStore as initSwingStoreSimple,
 } from '@agoric/swing-store-simple';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 /*
  * Return an 'openSwingStore' function for the best kind of DB that works on

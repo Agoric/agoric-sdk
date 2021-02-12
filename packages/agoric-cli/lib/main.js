@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 
+import { assert, details as X } from '@agoric/assert';
 import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';
@@ -7,8 +8,6 @@ import installMain from './install';
 import setDefaultsMain from './set-defaults';
 import startMain from './start';
 import walletMain from './open';
-
-const { details: X } = assert;
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
@@ -77,13 +76,12 @@ const main = async (progname, rawArgs, powers) => {
       '--repl [yes | only | no]',
       'whether to show the Read-eval-print loop [yes]',
       value => {
-        if (['yes', 'only', 'no'].includes(value)) {
-          return value;
-        }
-        assert.fail(
+        assert(
+          ['yes', 'only', 'no'].includes(value),
           X`--repl must be one of 'yes', 'no', or 'only'`,
           TypeError,
         );
+        return value;
       },
     )
     .action(async cmd => {

@@ -14,10 +14,9 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
+import { assert, details as X } from '@agoric/assert';
 import { getBestSwingStore } from './check-lmdb';
 import { exportKernelStats } from './kernel-stats';
-
-const { details: X } = assert;
 
 const log = anylogger('launch-chain');
 

@@ -1,11 +1,10 @@
 import { basename } from 'path';
+import { assert, details as X } from '@agoric/assert';
 import {
   finishCosmosApp,
   finishCosmosConfig,
   finishCosmosGenesis,
 } from './chain-config';
-
-const { details: X } = assert;
 
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs } = powers;

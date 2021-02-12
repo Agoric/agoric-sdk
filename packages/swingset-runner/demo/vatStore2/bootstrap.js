@@ -1,7 +1,6 @@
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { makeXorShift128 } from './xorshift128';
-
-const { details: X } = assert;
 
 const p = console.log;
 

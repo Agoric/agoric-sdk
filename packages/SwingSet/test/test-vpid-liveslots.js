@@ -6,10 +6,9 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
-
-const { details: X } = assert;
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

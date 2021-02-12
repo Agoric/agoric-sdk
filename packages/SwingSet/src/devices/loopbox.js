@@ -1,4 +1,4 @@
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 /*
  * The "loopbox" is a special device used for unit tests, which glues one

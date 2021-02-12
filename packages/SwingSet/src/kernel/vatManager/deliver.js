@@ -1,6 +1,5 @@
+import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../../message';
-
-const { details: X } = assert;
 
 export function makeDeliver(tools, dispatch) {
   const {

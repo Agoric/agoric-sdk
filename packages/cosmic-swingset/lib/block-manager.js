@@ -1,6 +1,6 @@
 import anylogger from 'anylogger';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 const log = anylogger('block-manager');
 

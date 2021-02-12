@@ -5,7 +5,7 @@ import path from 'path';
 
 import { openSwingStore } from '@agoric/swing-store-simple';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 // Adapted from https://stackoverflow.com/a/43866992/14073862
 export function generateAccessToken({

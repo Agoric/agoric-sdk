@@ -3,7 +3,7 @@ import process from 'process';
 import Readlines from 'n-readlines';
 import yargs from 'yargs';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 /* eslint-disable no-use-before-define */
 

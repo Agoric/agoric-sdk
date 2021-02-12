@@ -1,9 +1,8 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';
-
-const { details: X } = assert;
 
 // This vat contains the HTTP request handler.
 export function buildRootObject(vatPowers) {

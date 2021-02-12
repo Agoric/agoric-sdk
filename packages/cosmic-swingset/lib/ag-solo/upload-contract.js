@@ -6,7 +6,7 @@
 
 import { E } from '@agoric/eventual-send';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export default async function uploadContracts({ home, bundle }) {
   console.error(`Installing targeted contracts...`);

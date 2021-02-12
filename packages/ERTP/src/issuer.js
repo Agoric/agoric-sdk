@@ -2,7 +2,7 @@
 
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
@@ -56,10 +56,7 @@ function makeIssuerKit(
   const paymentLedger = makePaymentWeakStore();
 
   function assertKnownPayment(payment) {
-    assert(
-      paymentLedger.has(payment),
-      details`payment not found for ${allegedName}`,
-    );
+    assert(paymentLedger.has(payment), X`payment not found for ${allegedName}`);
   }
 
   // Methods like deposit() have an optional second parameter `amount`
@@ -69,7 +66,7 @@ function makeIssuerKit(
     if (amount !== undefined) {
       assert(
         amountMath.isEqual(amount, paymentBalance),
-        details`payment balance ${paymentBalance} must equal amount ${amount}`,
+        X`payment balance ${paymentBalance} must equal amount ${amount}`,
       );
     }
   };

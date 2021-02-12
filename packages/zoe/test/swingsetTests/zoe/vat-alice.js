@@ -1,8 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers';
-
-const { details: X } = assert;
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);

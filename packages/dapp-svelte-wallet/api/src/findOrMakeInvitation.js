@@ -141,7 +141,5 @@ export const findOrMakeInvitation = async (
     );
   }
 
-  assert.fail(
-    X`no invitation was found or made for this offer ${offer.id}`,
-  );
+  assert.fail(X`no invitation was found or made for this offer ${offer.id}`);
 };

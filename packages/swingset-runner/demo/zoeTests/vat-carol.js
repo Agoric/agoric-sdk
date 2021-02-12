@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from './helpers';
 
@@ -26,14 +26,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
       assert(
         installation === installations.secondPriceAuction,
-        details`wrong installation`,
+        X`wrong installation`,
       );
       assert(
         sameStructure(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
-        details`issuerKeywordRecord were not as expected`,
+        X`issuerKeywordRecord were not as expected`,
       );
       assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
       assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));

@@ -174,7 +174,6 @@ export function buildRootObject(vatPowers, vatParameters) {
   }
 
   const obj0 = {
-    // eslint-disable-next-line consistent-return
     async bootstrap(vats) {
       const host = await E(vats.host).makeHost();
       const { mint: randMintP } = E(vats.mint).makeIssuerKit('rand');

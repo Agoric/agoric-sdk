@@ -1,7 +1,7 @@
 // @ts-check
 
 import { passStyleOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 
 import '../types';
@@ -43,7 +43,7 @@ const checkForDupes = buckets => {
       for (let j = i + 1; j < maybeMatches.length; j += 1) {
         assert(
           !sameStructure(maybeMatches[i], maybeMatches[j]),
-          details`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
+          X`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
         );
       }
     }
@@ -92,7 +92,7 @@ const setMathHelpers = harden({
     right.forEach(rightElem => {
       assert(
         hasElement(leftBuckets, rightElem),
-        details`right element ${rightElem} was not in left`,
+        X`right element ${rightElem} was not in left`,
       );
     });
     const leftElemNotInRight = leftElem => !hasElement(rightBuckets, leftElem);

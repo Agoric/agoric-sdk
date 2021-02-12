@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 /* eslint-disable jsdoc/valid-types,jsdoc/require-returns-check */
 /**
@@ -15,11 +15,11 @@ export function insistCapData(capdata) {
   assert.typeof(
     capdata.body,
     'string',
-    details`capdata has non-string .body ${capdata.body}`,
+    X`capdata has non-string .body ${capdata.body}`,
   );
   assert(
     Array.isArray(capdata.slots),
-    details`capdata has non-Array slots ${capdata.slots}`,
+    X`capdata has non-Array slots ${capdata.slots}`,
   );
   // TODO check that the .slots array elements are actually strings
 }

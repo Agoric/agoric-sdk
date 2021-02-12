@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { generateSparseInts } from '@agoric/sparse-ints';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 // TODO(https://github.com/Agoric/agoric-sdk/issues/827), rename internally to
 //  match teh way it's now published.
@@ -44,13 +44,13 @@ function makeRegistrar(systemVersion, seed = 0) {
       return key;
     },
     get(key, version = null) {
-      assert.typeof(key, 'string', details`Key must be string ${key}`);
-      assert(keyFormat.test(key), details`Key must end with _<digits> ${key}`);
+      assert.typeof(key, 'string', X`Key must be string ${key}`);
+      assert(keyFormat.test(key), X`Key must end with _<digits> ${key}`);
       if (version) {
         assert.equal(
           version,
           systemVersion,
-          details`Key is from incompatible version: ${version} should be ${systemVersion}`,
+          X`Key is from incompatible version: ${version} should be ${systemVersion}`,
         );
       }
       return contents.get(key);

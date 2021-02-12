@@ -7,7 +7,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
@@ -85,7 +85,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       assertKeywordName(keyword);
       assert(
         !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-        details`keyword ${q(keyword)} must be unique`,
+        X`keyword ${q(keyword)} must be unique`,
       );
       return registerIssuerRecord(keyword, issuerRecord);
     };
@@ -111,12 +111,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       seatStagings.forEach(seatStaging => {
         assert(
           allSeatStagings.has(seatStaging),
-          details`The seatStaging ${seatStaging} was not recognized`,
+          X`The seatStaging ${seatStaging} was not recognized`,
         );
         const seat = seatStaging.getSeat();
         assert(
           !seatsSoFar.has(seat),
-          details`Seat (${seat}) was already an argument to reallocate`,
+          X`Seat (${seat}) was already an argument to reallocate`,
         );
         seatsSoFar.add(seat);
       });
@@ -199,7 +199,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     ) => {
       assert(
         !(keyword in instanceRecord.terms.issuers),
-        details`Keyword ${keyword} already registered`,
+        X`Keyword ${keyword} already registered`,
       );
 
       const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
@@ -229,7 +229,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           assert.typeof(
             gains,
             'object',
-            details`gains ${gains} must be an amountKeywordRecord`,
+            X`gains ${gains} must be an amountKeywordRecord`,
           );
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
@@ -239,7 +239,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
             assert(
               totalToMint.brand === amountToAdd.brand,
-              details`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
+              X`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
             );
             totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
             const oldAmount = oldAllocation[seatKeyword];
@@ -267,7 +267,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           assert.typeof(
             losses,
             'object',
-            details`losses ${losses} must be an amountKeywordRecord`,
+            X`losses ${losses} must be an amountKeywordRecord`,
           );
           let totalToBurn = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
@@ -276,7 +276,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             ([seatKeyword, amountToSubtract]) => {
               assert(
                 totalToBurn.brand === amountToSubtract.brand,
-                details`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
+                X`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
               );
               totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
               const oldAmount = oldAllocation[seatKeyword];
@@ -311,7 +311,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
         assert(
           seatStagings.length >= 2,
-          details`reallocating must be done over two or more seats`,
+          X`reallocating must be done over two or more seats`,
         );
 
         // Ensure that rights are conserved overall. Offer safety was
@@ -337,7 +337,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         assertKeywordName(keyword);
         assert(
           !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-          details`keyword ${q(keyword)} must be unique`,
+          X`keyword ${q(keyword)} must be unique`,
         );
       },
       saveIssuer: async (issuerP, keyword) => {
@@ -359,7 +359,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         assert.typeof(
           description,
           'string',
-          details`invitations must have a description string: ${description}`,
+          X`invitations must have a description string: ${description}`,
         );
 
         const invitationHandle = makeHandle('Invitation');

@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 export const assertBidSeat = (zcf, sellSeat, bidSeat) => {
   const {
@@ -8,12 +8,12 @@ export const assertBidSeat = (zcf, sellSeat, bidSeat) => {
   const bid = bidSeat.getAmountAllocated('Bid', minBid.brand);
   assert(
     bidMath.isGTE(bid, minBid),
-    details`bid ${bid} is under the minimum bid ${minBid}`,
+    X`bid ${bid} is under the minimum bid ${minBid}`,
   );
   const assetAtAuction = sellSeat.getProposal().give.Asset;
   const assetWanted = bidSeat.getAmountAllocated('Asset', assetAtAuction.brand);
   assert(
     assetMath.isGTE(assetAtAuction, assetWanted),
-    details`more assets were wanted ${assetWanted} than were available ${assetAtAuction}`,
+    X`more assets were wanted ${assetWanted} than were available ${assetAtAuction}`,
   );
 };

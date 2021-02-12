@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
 
 export function buildRootObject(vatPowers) {
@@ -28,7 +28,7 @@ export function buildRootObject(vatPowers) {
         Nat(delaySecs);
         assert(
           Nat(interval) > 0,
-          details`makeRepeater's second parameter must be a positive integer: ${interval}`,
+          X`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
         const index = D(timerNode).makeRepeater(delaySecs, interval);
@@ -49,7 +49,7 @@ export function buildRootObject(vatPowers) {
         Nat(delaySecs);
         assert(
           Nat(interval) > 0,
-          details`makeNotifier's second parameter must be a positive integer: ${interval}`,
+          X`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
         const index = D(timerNode).makeRepeater(delaySecs, interval);

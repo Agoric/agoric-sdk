@@ -279,7 +279,7 @@ export default async function start(basedir, argv) {
 
   const vatsDir = path.join(basedir, 'vats');
   const stateDBDir = path.join(basedir, 'swingset-kernel-state');
-  const dp = await buildSwingset(
+  const d = await buildSwingset(
     stateDBDir,
     mailboxStateFile,
     vatsDir,
@@ -293,7 +293,7 @@ export default async function start(basedir, argv) {
     deliverOutbound,
     startTimer,
     resetOutdatedState,
-  } = dp;
+  } = d;
 
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});

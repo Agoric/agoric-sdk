@@ -2,7 +2,7 @@
 
 // @ts-check
 
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import './types';
 
 /**
@@ -14,9 +14,9 @@ import './types';
 export function makeWeakStore(keyName = 'key') {
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
-    assert(!wm.has(key), details`${q(keyName)} already registered: ${key}`);
+    assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(wm.has(key), details`${q(keyName)} not found: ${key}`);
+    assert(wm.has(key), X`${q(keyName)} not found: ${key}`);
   return harden({
     has: key => wm.has(key),
     init: (key, value) => {

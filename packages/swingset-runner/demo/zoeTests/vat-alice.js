@@ -1,10 +1,9 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from './helpers';
 
 import { makePrintLog } from './printLog';
-
-const { details: X } = assert;
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
@@ -486,7 +485,6 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   };
 
   return harden({
-    // eslint-disable-next-line consistent-return
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {

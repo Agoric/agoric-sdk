@@ -4,6 +4,7 @@ import djson from 'deterministic-json';
 import crypto from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
+import { assert, details as X } from '@agoric/assert';
 import doInit from './init';
 import {
   chdir,
@@ -32,8 +33,6 @@ import {
   sleep,
   SSH_TYPE,
 } from './setup';
-
-const { details: X } = assert;
 
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
@@ -580,7 +579,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       const nodes = Object.keys(nodeMap).sort();
-      assert(nodes.length !== 0, X`Need at least one node`);
+      assert(nodes.length > 0, X`Need at least one node`);
 
       for (const node of nodes) {
         const nodePlaybook = (book, ...pbargs) =>
@@ -689,7 +688,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         const raw = await trimReadFile(idPath);
         const ID = String(raw);
 
-        assert(ID, X`${idPath} does not contain a node ID`);
+        assert(ID, X`${idPath} must contain a node ${ID}`);
         assert(
           ID.match(/^[a-f0-9]+/),
           X`${idPath} contains an invalid ID ${ID}`,

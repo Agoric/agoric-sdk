@@ -66,7 +66,7 @@
 
 import Nat from '@agoric/nat';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 // This Map-based mailboxState object is a good starting point, but we may
 // replace it with one that tracks which parts of the state have been
@@ -135,11 +135,11 @@ export function buildMailboxStateMap(state = harden(new Map())) {
     assert(!state.size, X`cannot populateFromData: outbox is not empty`);
     for (const peer of Object.getOwnPropertyNames(data)) {
       const inout = getOrCreatePeer(peer);
-      const dp = data[peer];
+      const d = data[peer];
       importMailbox(
         {
-          ack: dp.inboundAck,
-          outbox: dp.outbox,
+          ack: d.inboundAck,
+          outbox: d.outbox,
         },
         inout,
       );

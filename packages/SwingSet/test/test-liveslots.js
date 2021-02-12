@@ -2,11 +2,10 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
-
-const { details: X } = assert;
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

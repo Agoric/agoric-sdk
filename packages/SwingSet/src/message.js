@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from './capdata';
 
 /**
@@ -18,14 +18,14 @@ export function insistMessage(message) {
   assert.typeof(
     message.method,
     'string',
-    details`message has non-string .method ${message.method}`,
+    X`message has non-string .method ${message.method}`,
   );
   insistCapData(message.args);
   if (message.result) {
     assert.typeof(
       message.result,
       'string',
-      details`message has non-string non-null .result ${message.result}`,
+      X`message has non-string non-null .result ${message.result}`,
     );
   }
 }

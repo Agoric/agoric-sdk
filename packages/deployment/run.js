@@ -1,7 +1,7 @@
 import { exec as rawExec, spawn } from 'child_process';
 import { Writable } from 'stream';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export const shellMetaRegexp = /(\s|[[\]'"\\`$;*?{}])/;
 export const shellEscape = arg =>

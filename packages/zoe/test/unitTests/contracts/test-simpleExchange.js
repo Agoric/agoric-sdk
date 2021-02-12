@@ -6,7 +6,7 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 // noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
@@ -121,11 +121,11 @@ test('simpleExchange with valid offers', async t => {
 
   assert(
     bobIssuers.Asset === moolaIssuer,
-    details`The Asset issuer should be the moola issuer`,
+    X`The Asset issuer should be the moola issuer`,
   );
   assert(
     bobIssuers.Price === simoleanIssuer,
-    details`The Price issuer should be the simolean issuer`,
+    X`The Price issuer should be the simolean issuer`,
   );
 
   // Bob creates a buy order, saying that he wants exactly 3 moola,
@@ -350,11 +350,11 @@ test('simpleExchange with non-fungible assets', async t => {
   const bobIssuers = zoe.getIssuers(bobInstance);
   assert(
     bobIssuers.Asset === rpgIssuer,
-    details`The Asset issuer should be the RPG issuer`,
+    X`The Asset issuer should be the RPG issuer`,
   );
   assert(
     bobIssuers.Price === ccIssuer,
-    details`The Price issuer should be the CryptoCat issuer`,
+    X`The Price issuer should be the CryptoCat issuer`,
   );
 
   // Bob creates a buy order, saying that he wants the Spell of Binding,

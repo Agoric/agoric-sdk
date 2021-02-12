@@ -1,7 +1,7 @@
 import Nat from '@agoric/nat';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export default function buildCommand(broadcastCallback) {
   assert(broadcastCallback, X`broadcastCallback must be provided.`);
@@ -46,10 +46,9 @@ export default function buildCommand(broadcastCallback) {
     if (kResponseString !== undefined) {
       obj = JSON.parse(`${kResponseString}`);
     }
-    if (!responses.has(count)) {
-      // maybe just ignore it
-      assert.fail(X`unknown response index ${count}`);
-    }
+    // TODO this might not qualify as an error, it needs more thought
+    // See https://github.com/Agoric/agoric-sdk/pull/2406#discussion_r575561554
+    assert(responses.has(count), X`unknown response index ${count}`);
     const { resolve, reject } = responses.get(count);
     if (isReject) {
       reject(obj);

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
+// NOTE: Runs outside SES
+
 const process = require('process');
 const fs = require('fs');
 const toml = require('@iarna/toml');
-
-const { details: X } = assert;
 
 // point this at ~/.ag-cosmos-chain/config/config.toml
 
@@ -13,7 +13,9 @@ const config = toml.parse(configString);
 const { laddr } = config.rpc; // like tcp://0.0.0.0:26657
 // eslint-disable-next-line no-useless-escape
 const m = laddr.match(/^tcp:\/\/([\d\.]+):(\d+)$/);
-assert(m, X`error, unexpected laddr format ${laddr}`);
+if (!m) {
+  throw new Error(`error, unexpected laddr format ${laddr}`);
+}
 let addr = m[1];
 if (addr === '0.0.0.0') {
   addr = '127.0.0.1';

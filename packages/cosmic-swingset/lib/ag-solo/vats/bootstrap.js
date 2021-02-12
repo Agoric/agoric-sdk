@@ -9,10 +9,9 @@ import { E } from '@agoric/eventual-send';
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
+import { assert, details as X } from '@agoric/assert';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
-
-const { details: X } = assert;
 
 const NUM_IBC_PORTS = 3;
 const CENTRAL_ISSUER_NAME = 'Testnet.$USD';

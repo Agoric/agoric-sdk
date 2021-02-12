@@ -17,7 +17,7 @@ import { Readable } from 'stream';
 import { open as tempOpen } from 'temp';
 import chalk from 'chalk';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 export const chmod = util.promisify(rawChmod);
 export const exists = util.promisify(rawExists);
@@ -32,8 +32,9 @@ const fsWrite = util.promisify(rawWrite);
 const fsClose = util.promisify(rawClose);
 export { resolve, dirname, basename };
 
-export const needNotExists = async filename => {
-  assert(!(await exists(filename)), X`${filename} already exists`);
+export const mustNotExist = async filename => {
+  const fileExists = await exists(filename);
+  assert(!fileExists, X`${filename} already exists`);
 };
 
 export const createFile = async (path, contents) => {

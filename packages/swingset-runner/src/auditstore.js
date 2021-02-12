@@ -1,4 +1,4 @@
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
 
 /* eslint-disable no-use-before-define */
 export function auditRefCounts(store) {

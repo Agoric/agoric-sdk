@@ -1,7 +1,6 @@
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { makePluginManager } from '../../src/vats/plugin-manager';
-
-const { details: X } = assert;
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;

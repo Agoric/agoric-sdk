@@ -36,6 +36,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@agoric/assert": "^0.2.0",
     "@rollup/plugin-replace": "^2.3.4"
   }
 }
