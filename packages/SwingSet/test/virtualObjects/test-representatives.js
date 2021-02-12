@@ -14,7 +14,7 @@ function capargs(args, slots = []) {
 
 function slot0(kid) {
   return {
-    body: '{"@qclass":"slot",index:0}',
+    body: '{"@qclass":"slot","index":0}',
     slots: [kid],
   };
 }

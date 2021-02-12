@@ -496,9 +496,9 @@ test('kernelKeeper promises', async t => {
   });
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
-    state: 'fulfilledToPresence',
+    state: 'fulfilled',
     refCount: 0,
-    slot: 'ko44',
+    data: capdata,
   });
   t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
@@ -514,8 +514,9 @@ test('kernelKeeper promises', async t => {
     ['kd.nextID', '30'],
     ['ko.nextID', '20'],
     ['kp.nextID', '41'],
-    ['kp40.slot', 'ko44'],
-    ['kp40.state', 'fulfilledToPresence'],
+    ['kp40.data.body', '{"@qclass":"slot","index":0}'],
+    ['kp40.data.slots', 'ko44'],
+    ['kp40.state', 'fulfilled'],
     ['kp40.refCount', '0'],
   ]);
 });
@@ -532,7 +533,7 @@ test('kernelKeeper promise resolveToData', async t => {
   });
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
-    state: 'fulfilledToData',
+    state: 'fulfilled',
     refCount: 0,
     data: {
       body: '"bodyjson"',

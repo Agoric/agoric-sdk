@@ -29,7 +29,7 @@ async function doTerminate(t, mode, reference, extraMessage = []) {
   const configPath = path.resolve(__dirname, 'swingset-terminate.json');
   const config = loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [mode], t.context.data);
-  t.is(controller.kpStatus(controller.bootstrapResult), 'pending');
+  t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   await controller.run();
   t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
   t.deepEqual(
