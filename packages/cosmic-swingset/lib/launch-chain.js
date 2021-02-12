@@ -26,6 +26,21 @@ const SWING_STORE_META_KEY = 'cosmos/meta';
 // TODO Make it dependent upon metering instead.
 const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
 
+export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = [
+  0.005,
+  0.01,
+  0.025,
+  0.05,
+  0.1,
+  0.25,
+  0.5,
+  1,
+  2.5,
+  5,
+  10,
+  Infinity,
+];
+
 async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
@@ -101,20 +116,42 @@ export async function launch(
     debugName,
   );
 
+  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
+
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
-  exportKernelStats({ controller, metricMeter, log });
+  exportKernelStats({ controller, metricMeter, log, labels: METRIC_LABELS });
+
+  const schedulerCrankTimeHistogram = metricMeter
+    .createValueRecorder('swingset_crank_processing_time', {
+      description: 'Processing time per crank (ms)',
+      boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
+    })
+    .bind(METRIC_LABELS);
+
+  const schedulerBlockTimeHistogram = metricMeter
+    .createValueRecorder('swingset_block_processing_seconds', {
+      description: 'Processing time per block',
+      boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
+    })
+    .bind(METRIC_LABELS);
 
   // ////////////////////////////
   // TODO: This is where we would add the scheduler.
   async function endBlock(_blockHeight, _blockTime) {
+    let now = Date.now();
+    const blockStart = now;
     let stepsRemaining = FIXME_MAX_CRANKS_PER_BLOCK;
     let stepped = true;
     while (stepped && stepsRemaining > 0) {
+      const crankStart = now;
       // eslint-disable-next-line no-await-in-loop
       stepped = await controller.step();
+      now = Date.now();
+      schedulerCrankTimeHistogram.record(now - crankStart);
       stepsRemaining -= 1;
     }
+    schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
   async function saveChainState() {

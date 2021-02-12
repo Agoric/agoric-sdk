@@ -95,8 +95,14 @@ const KERNEL_STATS_UPDOWN_METRICS = [
  * @param {any} param0.controller
  * @param {import('@opentelemetry/metrics').Meter} param0.metricMeter
  * @param {Console} param0.log
+ * @param {Record<string, any>} param0.labels
  */
-export function exportKernelStats({ controller, metricMeter, log = console }) {
+export function exportKernelStats({
+  controller,
+  metricMeter,
+  log = console,
+  labels,
+}) {
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
 
@@ -145,6 +151,6 @@ export function exportKernelStats({ controller, metricMeter, log = console }) {
         observations.push(metric.observation(value));
       }
     });
-    batchObserverResult.observe({ app: 'ag-chain-cosmos' }, observations);
+    batchObserverResult.observe(labels, observations);
   });
 }

@@ -226,18 +226,26 @@ export default async function main(progname, args, { path, env, agcc }) {
       noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
     };
     let meterProvider;
-    if (process.env.AG_CHAIN_COSMOS_PROMETHEUS) {
+    if (
+      process.env.OTEL_EXPORTER_PROMETHEUS_HOST ||
+      process.env.OTEL_EXPORTER_PROMETHEUS_PORT
+    ) {
+      const host =
+        process.env.OTEL_EXPORTER_PROMETHEUS_HOST ||
+        PrometheusExporter.DEFAULT_OPTIONS.host ||
+        '0.0.0.0';
       const port =
-        Number(process.env.AG_CHAIN_COSMOS_PROMETHEUS) ||
+        Number(process.env.OTEL_EXPORTER_PROMETHEUS_PORT) ||
         PrometheusExporter.DEFAULT_OPTIONS.port;
       const exporter = new PrometheusExporter(
         {
           startServer: true,
+          host,
           port,
         },
         () => {
           console.log(
-            `prometheus scrape endpoint: http://localhost:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
+            `Prometheus scrape endpoint: http://${host}:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
           );
         },
       );
