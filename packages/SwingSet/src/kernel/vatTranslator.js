@@ -52,15 +52,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   }
 
   function translatePromiseDescriptor(kp) {
-    if (kp.state === 'fulfilledToPresence') {
-      return {
-        rejected: false,
-        data: {
-          body: '{"@qclass":"slot","index":0}',
-          slots: [mapKernelSlotToVatSlot(kp.slot)],
-        },
-      };
-    } else if (kp.state === 'fulfilledToData' || kp.state === 'rejected') {
+    if (kp.state === 'fulfilled' || kp.state === 'rejected') {
       return {
         rejected: kp.state === 'rejected',
         data: {

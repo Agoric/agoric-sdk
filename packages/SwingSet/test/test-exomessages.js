@@ -12,7 +12,7 @@ async function beginning(t, mode) {
     },
   };
   const controller = await buildVatController(config, [mode]);
-  t.is(controller.kpStatus(controller.bootstrapResult), 'pending');
+  t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   return controller;
 }
 
@@ -40,7 +40,7 @@ test('bootstrap returns presence', async t => {
   await bootstrapSuccessfully(
     t,
     'presence',
-    '{"@qclass":"slot",index:0}',
+    '{"@qclass":"slot","index":0}',
     ['ko25'],
   );
 });
@@ -109,7 +109,7 @@ test('extra message returns presence', async t => {
     t,
     'presence',
     'fulfilled',
-    '{"@qclass":"slot",index:0}',
+    '{"@qclass":"slot","index":0}',
     ['ko25'],
   );
 });

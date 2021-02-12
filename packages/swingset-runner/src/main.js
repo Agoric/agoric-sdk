@@ -538,7 +538,7 @@ export async function main() {
       // eslint-disable-next-line no-await-in-loop
       const [steps, deltaT] = await runBatch(0, true);
       const status = controller.kpStatus(roundResult);
-      if (status === 'pending') {
+      if (status === 'unresolved') {
         log(`benchmark round ${i + 1} did not finish`);
       } else {
         const resolution = JSON.stringify(controller.kpResolution(roundResult));
@@ -659,7 +659,7 @@ export async function main() {
     }
     if (bootstrapResult) {
       const status = controller.kpStatus(bootstrapResult);
-      if (status === 'pending') {
+      if (status === 'unresolved') {
         log('bootstrap result still pending');
       } else if (status === 'unknown') {
         log(`bootstrap result ${bootstrapResult} is unknown to the kernel`);

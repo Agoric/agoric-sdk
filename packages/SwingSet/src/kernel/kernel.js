@@ -405,6 +405,25 @@ export default function buildKernel(
     }
   }
 
+  function extractPresenceIfPresent(data) {
+    const body = JSON.parse(data.body);
+    if (
+      body &&
+      typeof body === 'object' &&
+      body['@qclass'] === 'slot' &&
+      body.index === 0
+    ) {
+      if (data.slots.length === 1) {
+        const slot = data.slots[0];
+        const { type } = parseKernelSlot(slot);
+        if (type === 'object') {
+          return slot;
+        }
+      }
+    }
+    return null;
+  }
+
   async function deliverToTarget(target, msg) {
     insistMessage(msg);
     const { type } = parseKernelSlot(target);
@@ -417,20 +436,21 @@ export default function buildKernel(
       }
     } else if (type === 'promise') {
       const kp = kernelKeeper.getKernelPromise(target);
-      if (kp.state === 'fulfilledToPresence') {
-        await deliverToTarget(kp.slot, msg);
-      } else if (kp.state === 'redirected') {
+      if (kp.state === 'redirected') {
         // await deliverToTarget(kp.redirectTarget, msg); // probably correct
         // TODO unimplemented
         throw new Error('not implemented yet');
-      } else if (kp.state === 'fulfilledToData') {
-        if (msg.result) {
+      } else if (kp.state === 'fulfilled') {
+        const presence = extractPresenceIfPresent(kp.data);
+        if (presence) {
+          await deliverToTarget(presence, msg);
+        } else if (msg.result) {
           const s = `data is not callable, has no method ${msg.method}`;
           // TODO: maybe replicate whatever happens with {}.foo() or 3.foo()
           // etc: "TypeError: {}.foo is not a function"
           await resolveToError(msg.result, makeError(s));
         }
-        // todo: maybe log error?
+        // else { todo: maybe log error? }
       } else if (kp.state === 'rejected') {
         // TODO would it be simpler to redirect msg.kpid to kp?
         if (msg.result) {
@@ -923,17 +943,7 @@ export default function buildKernel(
     try {
       const p = kernelKeeper.getKernelPromise(kpid);
       if (p) {
-        switch (p.state) {
-          case 'unresolved':
-            return 'pending';
-          case 'fulfilledToPresence':
-          case 'fulfilledToData':
-            return 'fulfilled';
-          case 'rejected':
-            return 'rejected';
-          default:
-            assert.fail(X`invalid state for ${kpid}: ${p.state}`);
-        }
+        return p.state;
       } else {
         return 'unknown';
       }
@@ -947,13 +957,7 @@ export default function buildKernel(
     switch (p.state) {
       case 'unresolved':
         assert.fail(X`resolution of ${kpid} is still pending`);
-      case 'fulfilledToPresence':
-        kernelKeeper.decrementRefCount(kpid, 'external');
-        return {
-          body: '{"@qclass":"slot",index:0}',
-          slots: [p.slot],
-        };
-      case 'fulfilledToData':
+      case 'fulfilled':
       case 'rejected':
         kernelKeeper.decrementRefCount(kpid, 'external');
         return p.data;
