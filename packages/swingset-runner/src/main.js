@@ -22,7 +22,13 @@ import {
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
-import { printStats, printBenchmarkStats } from './printStats';
+import {
+  organizeBenchmarkStats,
+  printBenchmarkStats,
+  organizeMainStats,
+  printMainStats,
+  outputStats,
+} from './printStats';
 
 const log = console.log;
 
@@ -63,7 +69,8 @@ FLAGS may be:
   --dumpdir DIR    - place kernel state dumps in directory DIR (default ".")
   --dumptag STR    - prefix kernel state dump filenames with STR (default "t")
   --raw            - perform kernel state dumps in raw mode
-  --stats          - print performance stats at the end of a run
+  --stats          - print a performance stats report at the end of a run
+  --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
   --indirect       - launch swingset from a vat instead of launching directly
   --globalmetering - install metering on global objects
@@ -172,6 +179,7 @@ export async function main() {
   let launchIndirectly = false;
   let benchmarkRounds = 0;
   let configPath = null;
+  let statsFile = null;
   let dbDir = null;
   let initOnly = false;
 
@@ -247,6 +255,9 @@ export async function main() {
         break;
       case '--stats':
         shouldPrintStats = true;
+        break;
+      case '--statsfile':
+        statsFile = argv.shift();
         break;
       case '--globalmetering':
         globalMeteringActive = true;
@@ -410,6 +421,9 @@ export async function main() {
     statLogger = makeStatLogger(logTag, headers);
   }
 
+  let mainStats;
+  let benchmarkStats;
+
   let crankNumber = 0;
   switch (command) {
     case 'run': {
@@ -509,7 +523,7 @@ export async function main() {
 
   async function runBenchmark(rounds) {
     const cranksPre = getCrankNumber();
-    const statsPre = controller.getStats();
+    const rawStatsPre = controller.getStats();
     const args = { body: '[]', slots: [] };
     let totalSteps = 0;
     let totalDeltaT = 0n;
@@ -534,8 +548,14 @@ export async function main() {
       totalDeltaT += deltaT;
     }
     const cranksPost = getCrankNumber();
-    const statsPost = controller.getStats();
-    printBenchmarkStats(statsPre, statsPost, cranksPost - cranksPre, rounds);
+    const rawStatsPost = controller.getStats();
+    benchmarkStats = organizeBenchmarkStats(
+      rawStatsPre,
+      rawStatsPost,
+      cranksPost - cranksPre,
+      rounds,
+    );
+    printBenchmarkStats(benchmarkStats);
     return [totalSteps, totalDeltaT];
   }
 
@@ -626,9 +646,11 @@ export async function main() {
     if (!runInBlockMode) {
       store.commit();
     }
+    const cranks = getCrankNumber();
+    const rawStats = controller.getStats();
+    mainStats = organizeMainStats(rawStats, cranks);
     if (shouldPrintStats) {
-      const cranks = getCrankNumber();
-      printStats(controller.getStats(), cranks);
+      printMainStats(mainStats);
     }
     if (benchmarkRounds > 0) {
       const [moreSteps, moreDeltaT] = await runBenchmark(benchmarkRounds);
@@ -651,6 +673,9 @@ export async function main() {
       }
     }
     store.close();
+    if (statsFile) {
+      outputStats(statsFile, mainStats, benchmarkStats);
+    }
     if (totalSteps) {
       const per = deltaT / BigInt(totalSteps);
       log(

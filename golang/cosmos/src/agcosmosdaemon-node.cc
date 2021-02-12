@@ -1,3 +1,4 @@
+// This file is formatted with Alt-Shift-F in VSCode.
 #include <napi.h>
 #include <napi-thread-safe-callback.hpp>
 #include <iostream>
@@ -11,10 +12,12 @@ class NodeReplier : public Napi::ObjectWrap<NodeReplier> {
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports) {
         Napi::HandleScope scope(env);
-        Napi::Function func = DefineClass(env, "NodeReplier", {
-            InstanceMethod("resolve", &NodeReplier::Resolve),
-            InstanceMethod("reject", &NodeReplier::Reject),
-        });
+        Napi::Function func = DefineClass(
+            env, "NodeReplier",
+            {
+                InstanceMethod("resolve", &NodeReplier::Resolve),
+                InstanceMethod("reject", &NodeReplier::Reject),
+            });
 
         constructor = Napi::Persistent(func);
         constructor.SuppressDestruct();
@@ -40,12 +43,12 @@ private:
         try {
             // std::cerr << "Replying to Go with " << value << " " << isRejection << std::endl;
             if (replyPort_) {
-              ReplyToGo(replyPort_, isRejection, value.c_str());
+                ReplyToGo(replyPort_, isRejection, value.c_str());
             }
         } catch (std::exception& e) {
             // std::cerr << "Exceptioning " << e.what() << std::endl;
             if (replyPort_) {
-              ReplyToGo(replyPort_, true, e.what());
+                ReplyToGo(replyPort_, true, e.what());
             }
         }
         // std::cerr << "Replier is finished" << std::endl;
@@ -75,7 +78,7 @@ int SendToNode(int port, int replyPort, Body str) {
     // This call is queued on the main thread, so we can return immediately to Golang.
     dispatcher->call(
         // Prepare arguments.
-        [instr, port, replyPort](Napi::Env env, std::vector<napi_value>& args){
+        [instr, port, replyPort](Napi::Env env, std::vector<napi_value>& args) {
             // std::cerr << "Calling threadsafe callback with " << instr << std::endl;
             args = {
                 Napi::Number::New(env, port),
@@ -112,7 +115,7 @@ static Napi::Value runAgCosmosDaemon(const Napi::CallbackInfo& info) {
     Napi::Array daemonArgv = info[2].As<Napi::Array>();
     unsigned int argc = daemonArgv.Length();
     char** argv = new char*[argc];
-    for (unsigned int i = 0; i < argc; i ++) {
+    for (unsigned int i = 0; i < argc; i++) {
         if (daemonArgv.Has(i)) {
             std::string tmp = daemonArgv.Get(i).As<Napi::String>().Utf8Value();
             argv[i] = strdup(tmp.c_str());
@@ -124,7 +127,7 @@ static Napi::Value runAgCosmosDaemon(const Napi::CallbackInfo& info) {
     GoSlice args = {argv, argc, argc};
     RunAgCosmosDaemon(nodePort, SendToNode, args);
 
-    for (unsigned int i = 0; i < argc; i ++) {
+    for (unsigned int i = 0; i < argc; i++) {
         free(argv[i]);
     }
     delete[] argv;
@@ -145,4 +148,4 @@ static Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
 
 NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
 
-}
+} // namespace ss

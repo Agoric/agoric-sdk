@@ -64,9 +64,9 @@ xs> quit
 ```
 
 ```sh
+$ xsrepl
 xs> load
 file> temp.xss
-$ xsrepl
 xs> x
 42
 xs> quit

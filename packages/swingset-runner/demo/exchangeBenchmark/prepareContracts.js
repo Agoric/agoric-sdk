@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 import bundleSource from '@agoric/bundle-source';
 
 import fs from 'fs';
