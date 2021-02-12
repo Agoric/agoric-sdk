@@ -5,6 +5,7 @@
   "useWorkspaces": true,
   "workspaces": [
     "golang/cosmos",
+    "packages/eslint-plugin",
     "packages/eslint-config",
     "packages/assert",
     "packages/base64",
