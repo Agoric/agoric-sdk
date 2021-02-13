@@ -2,10 +2,14 @@ package swingset
 
 import (
 	"encoding/json"
+	"time"
 
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
 type beginBlockAction struct {
@@ -30,6 +34,8 @@ type commitBlockAction struct {
 }
 
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
+
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
 		StoragePort: GetPort("storage"),
@@ -52,6 +58,7 @@ var endBlockHeight int64
 var endBlockTime int64
 
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 	action := &endBlockAction{
 		Type:        "END_BLOCK",
 		BlockHeight: ctx.BlockHeight(),
@@ -80,6 +87,8 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 }
 
 func CommitBlock(keeper Keeper) error {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
+
 	action := &commitBlockAction{
 		Type:        "COMMIT_BLOCK",
 		BlockHeight: endBlockHeight,

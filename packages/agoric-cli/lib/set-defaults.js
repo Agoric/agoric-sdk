@@ -2,7 +2,7 @@ import { basename } from 'path';
 import { assert, details as X } from '@agoric/assert';
 import {
   finishCosmosApp,
-  finishCosmosConfig,
+  finishTendermintConfig,
   finishCosmosGenesis,
 } from './chain-config';
 
@@ -16,6 +16,8 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     prog === 'ag-chain-cosmos',
     X`<prog> must currently be 'ag-chain-cosmos'`,
   );
+
+  const { exportMetrics } = opts;
 
   let appFile;
   let configFile;
@@ -49,6 +51,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
     const newAppToml = finishCosmosApp({
       appToml,
+      exportMetrics,
     });
     await create(appFile, newAppToml);
   }
@@ -58,9 +61,10 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     const { persistentPeers } = opts;
     const configToml = await fs.readFile(configFile, 'utf-8');
 
-    const newConfigToml = finishCosmosConfig({
+    const newConfigToml = finishTendermintConfig({
       configToml,
       persistentPeers,
+      exportMetrics,
     });
     await create(configFile, newConfigToml);
   }
