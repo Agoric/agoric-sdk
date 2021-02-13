@@ -23,7 +23,7 @@ import { assert, details as X } from '@agoric/assert';
  */
 export function insistVatID(s) {
   try {
-    assert(s === `${s}`, X`not a string`);
+    assert.typeof(s, 'string', X`not a string`);
     assert(s.startsWith(`v`), X`does not start with 'v'`);
     Nat(Number(s.slice(1)));
   } catch (e) {
@@ -55,7 +55,7 @@ export function makeVatID(index) {
  */
 export function insistDeviceID(s) {
   try {
-    assert(s === `${s}`, X`not a string`);
+    assert.typeof(s, 'string', X`not a string`);
     assert(s.startsWith(`d`), X`does not start with 'd'`);
     Nat(Number(s.slice(1)));
   } catch (e) {
@@ -87,7 +87,11 @@ export function makeDeviceID(index) {
  * @throws {Error} if the parameter is not a string or is malformed.
  */
 export function parseVatOrDeviceID(s) {
-  assert(s === `${s}`, X`${s} is not a string, so cannot be a VatID/DeviceID`);
+  assert.typeof(
+    s,
+    'string',
+    X`${s} is not a string, so cannot be a VatID/DeviceID`,
+  );
   s = `${s}`;
   let type;
   let idSuffix;

@@ -204,13 +204,11 @@ export function loadSwingsetConfigFile(configPath) {
     normalizeConfigDescriptor(config.vats, dirname, true);
     normalizeConfigDescriptor(config.bundles, dirname, false);
     // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
-    if (!config.bootstrap) {
-      assert.fail(X`no designated bootstrap vat in ${configPath}`);
-    } else if (!config.vats[config.bootstrap]) {
-      throw Error(
-        `bootstrap vat ${config.bootstrap} not found in ${configPath}`,
-      );
-    }
+    assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
+    assert(
+      config.vats[config.bootstrap],
+      X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
+    );
     return config;
   } catch (e) {
     if (e.code === 'ENOENT') {

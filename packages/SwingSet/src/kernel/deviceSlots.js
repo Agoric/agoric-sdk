@@ -128,9 +128,7 @@ export function makeDeviceSlots(
     // since devices don't accept Promises either, SO(x) must be given a
     // presence, not a promise that might resolve to a presence.
 
-    if (outstandingProxies.has(x)) {
-      throw new Error('SO(SO(x)) is invalid');
-    }
+    assert(!outstandingProxies.has(x), X`SO(SO(x)) is invalid`);
     const slot = valToSlot.get(x);
     assert(
       slot && parseVatSlot(slot).type === 'object',

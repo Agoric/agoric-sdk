@@ -536,6 +536,6 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   // now check that the vat was terminated: this should throw an exception
   // because the entire bootstrap vat was deleted
   t.throws(() => c.queueToVatExport('bootstrap', 'o+0', 'ping', capargs([])), {
-    message: `vat name "bootstrap" must exist, but doesn't`,
+    message: /vat name .* must exist, but doesn't/,
   });
 });

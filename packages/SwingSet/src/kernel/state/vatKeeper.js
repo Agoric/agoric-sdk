@@ -88,7 +88,7 @@ export function makeVatKeeper(
    *    or is otherwise invalid.
    */
   function mapVatSlotToKernelSlot(vatSlot) {
-    assert(`${vatSlot}` === vatSlot, X`non-string vatSlot: ${vatSlot}`);
+    assert.typeof(vatSlot, 'string', X`non-string vatSlot: ${vatSlot}`);
     const vatKey = `${vatID}.c.${vatSlot}`;
     if (!storage.has(vatKey)) {
       const { type, allocatedByVat } = parseVatSlot(vatSlot);
@@ -140,7 +140,7 @@ export function makeVatKeeper(
    *    or is otherwise invalid.
    */
   function mapKernelSlotToVatSlot(kernelSlot) {
-    assert(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     if (!storage.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);

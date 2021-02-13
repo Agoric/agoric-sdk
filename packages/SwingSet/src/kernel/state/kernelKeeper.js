@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
@@ -589,7 +589,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   function getVatIDForName(name) {
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
-    assert(storage.has(k), X`vat name ${q(name)} must exist, but doesn't`);
+    assert(storage.has(k), X`vat name ${name} must exist, but doesn't`);
     return storage.get(k);
   }
 
@@ -752,7 +752,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   function getDeviceIDForName(name) {
     assert.typeof(name, 'string');
     const k = `device.name.${name}`;
-    assert(storage.has(k), X`device name ${q(name)} must exist, but doesn't`);
+    assert(storage.has(k), X`device name ${name} must exist, but doesn't`);
     return storage.get(k);
   }
 

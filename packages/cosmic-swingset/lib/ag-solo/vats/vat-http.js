@@ -72,8 +72,8 @@ export function buildRootObject(vatPowers) {
   }
 
   return harden({
-    setCommandDevice(dp) {
-      commandDevice = dp;
+    setCommandDevice(d) {
+      commandDevice = d;
 
       const replHandler = getReplHandler(replObjects, send, vatPowers);
       registerURLHandler(replHandler, '/private/repl');

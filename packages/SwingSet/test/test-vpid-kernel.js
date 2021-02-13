@@ -582,9 +582,9 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatX controls the scenario, vatA and vatB are the players
   let onDispatchCallback;
-  function odc(dp) {
+  function odc(d) {
     if (onDispatchCallback) {
-      onDispatchCallback(dp);
+      onDispatchCallback(d);
     }
   }
   const { log: logA, getSyscall: getSyscallA } = await buildRawVat(

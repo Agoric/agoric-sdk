@@ -49,7 +49,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
           'object',
           X`bundle is not an object, rather ${bundle}`,
         );
-      } else assert(bundleName, X`no bundle specified for vat ${name}`);
+      } else {
+        assert(bundleName, X`no bundle specified for vat ${name}`);
+      }
 
       // todo: consider having vats indicate 'enablePipelining' by exporting a
       // boolean, rather than options= . We'd have to retrieve the flag from

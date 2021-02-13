@@ -117,7 +117,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const { mapVatSlotToKernelSlot } = vatKeeper;
 
   function translateSend(targetSlot, method, args, resultSlot) {
-    assert(`${targetSlot}` === targetSlot, 'non-string targetSlot');
+    assert.typeof(targetSlot, 'string', 'non-string targetSlot');
     insistCapData(args);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);

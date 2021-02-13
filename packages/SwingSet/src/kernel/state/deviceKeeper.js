@@ -59,7 +59,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
-    assert(`${devSlot}` === devSlot, X`non-string devSlot: ${devSlot}`);
+    assert.typeof(devSlot, 'string', X`non-string devSlot: ${devSlot}`);
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
     if (!storage.has(devKey)) {
@@ -101,7 +101,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
-    assert(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
     if (!storage.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
