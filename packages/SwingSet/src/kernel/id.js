@@ -27,7 +27,7 @@ export function insistVatID(s) {
     assert(s.startsWith(`v`), X`does not start with 'v'`);
     Nat(Number(s.slice(1)));
   } catch (e) {
-    assert.fail(X`'${s} is not a 'vNN'-style VatID: ${e.message}`);
+    assert.fail(X`'${s} is not a 'vNN'-style VatID: ${e}`);
   }
 }
 
@@ -59,7 +59,7 @@ export function insistDeviceID(s) {
     assert(s.startsWith(`d`), X`does not start with 'd'`);
     Nat(Number(s.slice(1)));
   } catch (e) {
-    assert.fail(X`'${s} is not a 'dNN'-style DeviceID: ${e.message}`);
+    assert.fail(X`'${s} is not a 'dNN'-style DeviceID: ${e}`);
   }
 }
 
