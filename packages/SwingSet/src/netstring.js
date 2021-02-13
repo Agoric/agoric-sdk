@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 const { Transform } = require('stream');
@@ -51,7 +51,7 @@ export function decode(data) {
     const size = parseInt(sizeString, 10);
     if (!(size > -1)) {
       // reject NaN, all negative numbers
-      assert.fail(X`unparseable size ${q(sizeString)}, should be integer`);
+      assert.fail(X`unparseable size ${sizeString}, should be integer`);
     }
     if (data.length < colon + 1 + size + 1) {
       break; // still waiting for `${DATA}.`
