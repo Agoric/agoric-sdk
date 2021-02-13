@@ -1,5 +1,7 @@
 import anylogger from 'anylogger';
 
+import { assert, details as X } from '@agoric/assert';
+
 const log = anylogger('block-manager');
 
 const BEGIN_BLOCK = 'BEGIN_BLOCK';
@@ -64,7 +66,7 @@ export default function makeBlockManager({
         break;
 
       default:
-        throw new Error(`${action.type} not recognized`);
+        assert.fail(X`${action.type} not recognized`);
     }
     p.then(finish, finish);
     return p;

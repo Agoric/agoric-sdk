@@ -151,8 +151,6 @@
  */
 
 /**
- * @callback AssertQuote
- *
  * To "declassify" and quote a substitution value used in a
  * details`...` template literal, enclose that substitution expression
  * in a call to `quote`. This states that the argument should appear quoted
@@ -171,21 +169,21 @@
  *   details`${sky.color} should be ${quote(color)}`,
  * );
  * ```
- *
- * The normal convention is to locally rename `quote` to `q` and
- * `details` to `d`
+ * The normal convention is to locally rename `details` to `X` and import `q`
+ * and `assert` unmodified.
  * ```js
- * const { details: d, quote: q } = assert;
+ * import { assert, details as X, q } from \'@agoric/assert\';
  * ```
  * so the above example would then be
  * ```js
  * assert.equal(
  *   sky.color,
  *   color,
- *   d`${sky.color} should be ${q(color)}`,
+ *   X`${sky.color} should be ${q(color)}`,
  * );
  * ```
  *
+ * @callback AssertQuote
  * @param {*} payload What to declassify
  * @returns {StringablePayload} The declassified payload
  */

@@ -1,3 +1,5 @@
+// NOTE: Runs outside SES
+
 /* global WebSocket fetch document window walletFrame localStorage */
 const RECONNECT_BACKOFF_SECONDS = 3;
 // Functions to run to reset the HTML state to what it was.

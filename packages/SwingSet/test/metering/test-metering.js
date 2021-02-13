@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { replaceGlobalMeter } from './install-global-metering';
 import '@agoric/install-ses';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeter, makeMeteringTransformer } from '@agoric/transform-metering';
@@ -72,9 +72,7 @@ async function meteredImportBundle(bundle, endowments) {
   }
   // this throws if top-level code exhausts meter
   const topLevelOk = await runUnderMeter(meter, doImport);
-  if (!topLevelOk) {
-    throw Error(`top-level code exhausted the meter`);
-  }
+  assert(topLevelOk, X`top-level code exhausted the meter`);
   assert(ns, 'bundle failed to produce namespace object before quiesence');
 
   function runBundleThunkUnderMeter(thunk) {

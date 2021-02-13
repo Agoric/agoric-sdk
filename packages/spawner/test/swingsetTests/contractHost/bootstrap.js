@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+import { assert, details as X } from '@agoric/assert';
 import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
@@ -77,9 +78,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
           eightP.then(res => {
             log('++ eightP resolved to ', res, ' (should be 8)');
-            if (res !== 8) {
-              throw new Error(`eightP resolved to ${res}, not 8`);
-            }
+            assert(res === 8, X`eightP resolved to ${res}, not 8`);
             log('++ DONE');
           });
           return eightP;
@@ -412,7 +411,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           );
         }
         default: {
-          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
+          assert.fail(X`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

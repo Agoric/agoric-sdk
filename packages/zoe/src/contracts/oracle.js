@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
@@ -68,7 +68,7 @@ const start = async zcf => {
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
         assert(
           !requiredFee || feeMath.isGTE(noFee, requiredFee),
-          details`Oracle required a fee but the query had none`,
+          X`Oracle required a fee but the query had none`,
         );
         return reply;
       } catch (e) {

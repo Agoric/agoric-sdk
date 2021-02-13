@@ -4,6 +4,7 @@ import djson from 'deterministic-json';
 import path from 'path';
 import fs from 'fs';
 
+import { assert, details as X } from '@agoric/assert';
 import setGCIIngress from './set-gci-ingress';
 
 const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';
@@ -62,9 +63,7 @@ async function addChain(basedir, chainConfig, force = false) {
     netconf.gci = gci;
   }
 
-  if (!netconf.gci) {
-    throw Error(`${url.href} does not contain a "gci" entry`);
-  }
+  assert(netconf.gci, X`${url.href} does not contain a "gci" entry`);
 
   const connFile = path.join(basedir, 'connections.json');
   const conns = JSON.parse(fs.readFileSync(connFile));

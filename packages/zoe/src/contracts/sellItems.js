@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import {
   assertIssuerKeywords,
   trade,
@@ -54,7 +54,7 @@ const start = zcf => {
   /** @type {SellItemsPublicFacet} */
   const publicFacet = {
     getAvailableItems: () => {
-      assert(sellerSeat && !sellerSeat.hasExited(), `no items are for sale`);
+      assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
       return sellerSeat.getAmountAllocated('Items');
     },
     getItemsIssuer: () => issuers.Items,
@@ -86,7 +86,7 @@ const start = zcf => {
     // Check that the money provided to pay for the items is greater than the totalCost.
     assert(
       moneyMath.isGTE(providedMoney, totalCost),
-      details`More money (${totalCost}) is required to buy these items`,
+      X`More money (${totalCost}) is required to buy these items`,
     );
 
     // Reallocate. We are able to trade by only defining the gains
@@ -114,7 +114,7 @@ const start = zcf => {
       const itemsAmount = sellerSeat.getAmountAllocated('Items');
       assert(
         sellerSeat && !itemsMath.isEmpty(itemsAmount),
-        details`no items are for sale`,
+        X`no items are for sale`,
       );
       return zcf.makeInvitation(buy, 'buyer');
     },

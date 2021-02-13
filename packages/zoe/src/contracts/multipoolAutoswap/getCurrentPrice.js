@@ -1,5 +1,7 @@
 import '../../../exported';
 
+import { assert, details as X } from '@agoric/assert';
+
 /**
  * Build functions to calculate prices for multipoolAutoswap. Four methods are
  * returned, as two complementary pairs. In one pair of methods the caller
@@ -64,7 +66,7 @@ export const makeGetCurrentPrice = (
       };
     }
 
-    throw new Error(`brands were not recognized`);
+    assert.fail(X`brands were not recognized`);
   };
 
   const getPriceGivenRequiredOutput = (brandIn, amountOut) => {
@@ -110,7 +112,7 @@ export const makeGetCurrentPrice = (
       };
     }
 
-    throw new Error(`brands were not recognized`);
+    assert.fail(X`brands were not recognized`);
   };
 
   /**

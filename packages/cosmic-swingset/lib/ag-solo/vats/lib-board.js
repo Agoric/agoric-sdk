@@ -1,7 +1,7 @@
 // @ts-check
 
 import { generateSparseInts } from '@agoric/sparse-ints';
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import { models as crcmodels } from 'polycrc';
 
@@ -57,10 +57,10 @@ function makeBoard(seed = 0) {
       return valToId.get(value);
     },
     getValue: id => {
-      assert.equal(typeof id, 'string', details`id must be string ${id}`);
+      assert.equal(typeof id, 'string', X`id must be string ${id}`);
       assert(
         id.match(ID_REGEXP),
-        details`id must consist of at least ${q(CRC_NUM_DIGITS + 1)} digits`,
+        X`id must consist of at least ${q(CRC_NUM_DIGITS + 1)} digits`,
       );
       const num = Number(id.slice(0, -CRC_NUM_DIGITS));
       const allegedCrc = id.slice(-CRC_NUM_DIGITS);
@@ -68,9 +68,9 @@ function makeBoard(seed = 0) {
       assert.equal(
         allegedCrc,
         crc,
-        details`id is probably a typo, cannot verify CRC: ${id}`,
+        X`id is probably a typo, cannot verify CRC: ${id}`,
       );
-      assert(idToVal.has(id), details`board does not have id: ${id}`);
+      assert(idToVal.has(id), X`board does not have id: ${id}`);
       return idToVal.get(id);
     },
     has: valToId.has,

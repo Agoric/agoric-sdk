@@ -1,5 +1,5 @@
 import { Remotable, getInterfaceOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatManagerFactory } from './vatManager/factory';
@@ -151,8 +151,8 @@ export default function buildKernel(
 
   const pendingDecrefs = [];
   function decref(vatID, vref, count) {
-    assert(ephemeral.vats.has(vatID), `unknown vatID ${vatID}`);
-    assert(count > 0, `bad count ${count}`);
+    assert(ephemeral.vats.has(vatID), X`unknown vatID ${vatID}`);
+    assert(count > 0, X`bad count ${count}`);
     // TODO: decrement the clist import counter by 'count', then GC if zero
     if (testTrackDecref) {
       console.log(`kernel decref [${vatID}].${vref} -= ${count}`);
@@ -444,10 +444,10 @@ export default function buildKernel(
           }
         }
       } else {
-        throw new Error(`unknown kernelPromise state '${kp.state}'`);
+        assert.fail(X`unknown kernelPromise state '${kp.state}'`);
       }
     } else {
-      throw Error(`unable to send() to slot.type ${type}`);
+      assert.fail(X`unable to send() to slot.type ${type}`);
     }
   }
 
@@ -464,7 +464,7 @@ export default function buildKernel(
       kernelKeeper.incStat('dispatchNotify');
       const vatKeeper = kernelKeeper.getVatKeeper(vatID);
 
-      assert(p.state !== 'unresolved', details`spurious notification ${kpid}`);
+      assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
       const resolutions = [];
       if (!vatKeeper.hasCListEntry(kpid)) {
         kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
@@ -506,7 +506,7 @@ export default function buildKernel(
     kdebug(legibilizeMessage(message));
     if (processQueueRunning) {
       console.error(`We're currently already running at`, processQueueRunning);
-      throw Error(`Kernel reentrancy is forbidden`);
+      assert.fail(X`Kernel reentrancy is forbidden`);
     }
     try {
       processQueueRunning = Error('here');
@@ -524,7 +524,7 @@ export default function buildKernel(
         kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
         await processNotify(message);
       } else {
-        throw Error(`unable to process message.type ${message.type}`);
+        assert.fail(X`unable to process message.type ${message.type}`);
       }
       let didAbort = false;
       if (terminationTrigger) {
@@ -706,14 +706,14 @@ export default function buildKernel(
     vatParameters = {},
     creationOptions = {},
   ) {
-    if (typeof setup !== 'function') {
-      throw Error(`setup is not a function, rather ${setup}`);
-    }
+    assert.typeof(
+      setup,
+      'function',
+      X`setup is not a function, rather ${setup}`,
+    );
     assertKnownOptions(creationOptions, ['enablePipelining', 'metered']);
 
-    if (kernelKeeper.hasVatWithName(name)) {
-      throw Error(`vat ${name} already exists`);
-    }
+    assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
     creationOptions.vatParameters = vatParameters;
 
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
@@ -781,9 +781,7 @@ export default function buildKernel(
       throw Error('kernel.start already called');
     }
     started = true;
-    if (!kernelKeeper.getInitialized()) {
-      throw Error(`kernel not initialized`);
-    }
+    assert(kernelKeeper.getInitialized(), X`kernel not initialized`);
 
     // instantiate all static vats
     for (const [name, vatID] of kernelKeeper.getStaticVats()) {
@@ -855,7 +853,7 @@ export default function buildKernel(
         const newLength = kernelKeeper.getRunQueueLength();
         if (newLength !== oldLength) {
           console.log(`SPURIOUS RUNQUEUE`, kernelKeeper.dump().runQueue);
-          throw Error(`replay ${vatID} added spurious run-queue entries`);
+          assert.fail(X`replay ${vatID} added spurious run-queue entries`);
         }
       }
     }
@@ -924,7 +922,7 @@ export default function buildKernel(
           case 'rejected':
             return 'rejected';
           default:
-            throw Error(`invalid state for ${kpid}: ${p.state}`);
+            assert.fail(X`invalid state for ${kpid}: ${p.state}`);
         }
       } else {
         return 'unknown';
@@ -938,7 +936,7 @@ export default function buildKernel(
     const p = kernelKeeper.getKernelPromise(kpid);
     switch (p.state) {
       case 'unresolved':
-        throw Error(`resolution of ${kpid} is still pending`);
+        assert.fail(X`resolution of ${kpid} is still pending`);
       case 'fulfilledToPresence':
         kernelKeeper.decrementRefCount(kpid, 'external');
         return {
@@ -950,7 +948,7 @@ export default function buildKernel(
         kernelKeeper.decrementRefCount(kpid, 'external');
         return p.data;
       default:
-        throw Error(`invalid state for ${kpid}: ${p.state}`);
+        assert.fail(X`invalid state for ${kpid}: ${p.state}`);
     }
   }
 

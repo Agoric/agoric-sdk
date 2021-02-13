@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from './helpers';
 
 import { makePrintLog } from './printLog';
@@ -517,7 +518,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doOTCDesk(bobP);
         }
         default: {
-          throw new Error(`testName ${testName} not recognized`);
+          assert.fail(X`testName ${testName} not recognized`);
         }
       }
     },

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';
 
@@ -204,13 +204,11 @@ export function loadSwingsetConfigFile(configPath) {
     normalizeConfigDescriptor(config.vats, dirname, true);
     normalizeConfigDescriptor(config.bundles, dirname, false);
     // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
-    if (!config.bootstrap) {
-      throw Error(`no designated bootstrap vat in ${configPath}`);
-    } else if (!config.vats[config.bootstrap]) {
-      throw Error(
-        `bootstrap vat ${config.bootstrap} not found in ${configPath}`,
-      );
-    }
+    assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
+    assert(
+      config.vats[config.bootstrap],
+      X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
+    );
     return config;
   } catch (e) {
     if (e.code === 'ENOENT') {
@@ -233,9 +231,10 @@ export async function initializeSwingset(
 ) {
   insistStorageAPI(hostStorage);
 
-  if (swingsetIsInitialized(hostStorage)) {
-    throw Error(`kernel store already initialized`);
-  }
+  assert(
+    !swingsetIsInitialized(hostStorage),
+    X`kernel store already initialized`,
+  );
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));

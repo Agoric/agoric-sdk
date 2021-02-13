@@ -44,12 +44,6 @@ const { details, quote } = globalAssert;
 
 export { globalAssert as assert, details, quote };
 
-// DEPRECATED: Going forward we encourage the pattern over importing the
-// abbreviation 'q' for quote.
-//
-// ```js
-// import { quote as q, details as d } from '@agoric/assert';
-// ```
 export { quote as q };
 
 /**

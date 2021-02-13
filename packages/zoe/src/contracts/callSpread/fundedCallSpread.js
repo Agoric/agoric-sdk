@@ -2,7 +2,7 @@
 import '../../../exported';
 import './types';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import {
@@ -65,7 +65,7 @@ const start = async zcf => {
 
   assert(
     strikeMath.isGTE(terms.strikePrice2, terms.strikePrice1),
-    details`strikePrice2 must be greater than strikePrice1`,
+    X`strikePrice2 must be greater than strikePrice1`,
   );
 
   await zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');

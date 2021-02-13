@@ -2,7 +2,7 @@
 
 // @ts-check
 
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 
 /**
  * Distinguishes between adding a new key (init) and updating or
@@ -18,9 +18,9 @@ import { assert, details, q } from '@agoric/assert';
 export function makeStore(keyName = 'key') {
   const store = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(!store.has(key), details`${q(keyName)} already registered: ${key}`);
+    assert(!store.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(store.has(key), details`${q(keyName)} not found: ${key}`);
+    assert(store.has(key), X`${q(keyName)} not found: ${key}`);
   return harden({
     has: key => store.has(key),
     init: (key, value) => {

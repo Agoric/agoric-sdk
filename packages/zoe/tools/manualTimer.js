@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
+import { assert, details as X } from '@agoric/assert';
 
 import './types';
 import './internal-types';
@@ -40,9 +41,7 @@ export default function buildManualTimer(log, startValue = 0) {
     /** @type {TimerRepeater} */
     const repeater = {
       schedule(waker) {
-        if (!wakers) {
-          throw Error(`Cannot schedule on a disabled repeater`);
-        }
+        assert(wakers, X`Cannot schedule on a disabled repeater`);
         wakers.push(waker);
         return nextWakeup;
       },

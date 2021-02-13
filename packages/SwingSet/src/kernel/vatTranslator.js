@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../message';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
@@ -31,11 +31,11 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       const p = kernelKeeper.getKernelPromise(msg.result);
       assert(
         p.state === 'unresolved',
-        details`result ${msg.result} already resolved`,
+        X`result ${msg.result} already resolved`,
       );
       assert(
         !p.decider,
-        details`result ${msg.result} already has decider ${p.decider}`,
+        X`result ${msg.result} already has decider ${p.decider}`,
       );
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
@@ -72,7 +72,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       // TODO unimplemented
       throw new Error('not implemented yet');
     } else {
-      throw new Error(`unknown kernelPromise state '${kp.state}'`);
+      assert.fail(X`unknown kernelPromise state '${kp.state}'`);
     }
   }
 
@@ -81,7 +81,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     let idx = 0;
     for (const resolution of kResolutions) {
       const [kpid, p] = resolution;
-      assert(p.state !== 'unresolved', details`spurious notification ${kpid}`);
+      assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
       const vpid = mapKernelSlotToVatSlot(kpid);
       const vres = translatePromiseDescriptor(p);
       vResolutions.push([vpid, vres]);
@@ -100,7 +100,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       case 'notify':
         return translateNotify(...args);
       default:
-        throw Error(`unknown kernelDelivery.type ${type}`);
+        assert.fail(X`unknown kernelDelivery.type ${type}`);
     }
     // returns ['message', target, msg] or ['notify', resolutions] or null
   }
@@ -117,7 +117,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const { mapVatSlotToKernelSlot } = vatKeeper;
 
   function translateSend(targetSlot, method, args, resultSlot) {
-    assert(`${targetSlot}` === targetSlot, 'non-string targetSlot');
+    assert.typeof(targetSlot, 'string', 'non-string targetSlot');
     insistCapData(args);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
@@ -138,11 +138,11 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       const p = kernelKeeper.getKernelPromise(result);
       assert(
         p.state === 'unresolved',
-        details`send() result ${result} is already resolved`,
+        X`send() result ${result} is already resolved`,
       );
       assert(
         p.decider === vatID,
-        details`send() result ${result} is decided by ${p.decider} not ${vatID}`,
+        X`send() result ${result} is decided by ${p.decider} not ${vatID}`,
       );
       kernelKeeper.clearDecider(result);
       // resolution authority now held by run-queue
@@ -194,9 +194,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
     const { type } = parseKernelSlot(dev);
-    if (type !== 'device') {
-      throw new Error(`doCallNow must target a device, not ${dev}`);
-    }
+    assert(type === 'device', X`doCallNow must target a device, not ${dev}`);
     for (const slot of args.slots) {
       assert(
         parseVatSlot(slot).type !== 'promise',
@@ -213,9 +211,10 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   function translateSubscribe(vpid) {
     const kpid = mapVatSlotToKernelSlot(vpid);
     kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
-    if (!kernelKeeper.hasKernelPromise(kpid)) {
-      throw new Error(`unknown kernelPromise id '${kpid}'`);
-    }
+    assert(
+      kernelKeeper.hasKernelPromise(kpid),
+      X`unknown kernelPromise id '${kpid}'`,
+    );
     const ks = harden(['subscribe', vatID, kpid]);
     return ks;
   }
@@ -267,7 +266,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       case 'vatstoreDelete':
         return translateVatstoreDelete(...args);
       default:
-        throw Error(`unknown vatSyscall type ${type}`);
+        assert.fail(X`unknown vatSyscall type ${type}`);
     }
   }
 

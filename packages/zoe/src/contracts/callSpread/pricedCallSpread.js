@@ -2,7 +2,7 @@
 import '../../../exported';
 import './types';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import {
@@ -64,7 +64,7 @@ const start = zcf => {
 
   assert(
     strikeMath.isGTE(terms.strikePrice2, terms.strikePrice1),
-    details`strikePrice2 must be greater than strikePrice1`,
+    X`strikePrice2 must be greater than strikePrice1`,
   );
 
   zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
@@ -115,14 +115,14 @@ const start = zcf => {
       // assert that the allocation includes the amount of collateral required
       assert(
         collateralMath.isEqual(newCollateral, required),
-        details`Collateral required: ${required.value}`,
+        X`Collateral required: ${required.value}`,
       );
 
       // assert that the requested option was the right one.
       assert(
         spreadAmount.Option.value[0].instance ===
           desiredOption.value[0].instance,
-        details`wanted option not a match`,
+        X`wanted option not a match`,
       );
 
       trade(

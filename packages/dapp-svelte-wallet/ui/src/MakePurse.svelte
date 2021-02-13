@@ -5,11 +5,11 @@
   import Button from "smelte/src/components/Button";
   import TextField from "smelte/src/components/TextField";
   import Select from "smelte/src/components/Select";
-  
+
   import CancelButton from '../lib/CancelButton.svelte';
   import DefaultButton from '../lib/DefaultButton.svelte';
   import { walletP } from './store';
-  import { q } from '@agoric/assert';
+  import { assert, details as d } from '@agoric/assert';
 
   import { issuers } from './store';
   const title = "Make Purse";
@@ -34,13 +34,9 @@
   <div slot="actions">
     <DefaultButton on:click={async () => {
       try {
-        if (!issuerPetname) {
-          throw TypeError(`Need to specify an Issuer`);
-        }
+        assert(issuerPetname, d`Need to specify an Issuer`, TypeError);
         petname = petname.trim();
-        if (!petname) {
-          throw TypeError(`Need to specify a ${name} petname`);
-        }
+        assert(petname, d`Need to specify a ${name} petname`, TypeError);
         await E(walletP).makeEmptyPurse(issuerPetname, petname);
         showModal = false;
       } catch (e) {

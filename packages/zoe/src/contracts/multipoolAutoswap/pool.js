@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { MathKind } from '@agoric/ertp/src/amountMath';
 
 import {
@@ -62,7 +62,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
     const assertPoolInitialized = pool =>
       assert(
         !pool.getAmountMath().isEmpty(pool.getSecondaryAmount()),
-        details`pool not initialized`,
+        X`pool not initialized`,
       );
 
     const reservesAndMath = (pool, inputBrand, outputBrand) => {
@@ -242,11 +242,11 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
 
     assert(
       !isSecondary(secondaryBrand),
-      details`issuer ${secondaryIssuer} already has a pool`,
+      X`issuer ${secondaryIssuer} already has a pool`,
     );
     assert(
       secondaryMathKind === MathKind.NAT,
-      details`${keyword} issuer must use NAT math`,
+      X`${keyword} issuer must use NAT math`,
     );
 
     // We've checked all the foreseeable exceptions (except

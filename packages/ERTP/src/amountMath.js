@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { mustBeComparable } from '@agoric/same-structure';
 
@@ -87,7 +87,7 @@ function makeAmountMath(brand, amountMathKind) {
   const helpers = mathHelpers[amountMathKind];
   assert(
     helpers !== undefined,
-    details`unrecognized amountMathKind: ${amountMathKind}`,
+    X`unrecognized amountMathKind: ${amountMathKind}`,
   );
 
   // Cache the amount if we can.
@@ -126,11 +126,11 @@ function makeAmountMath(brand, amountMathKind) {
       const { brand: allegedBrand, value } = allegedAmount;
       assert(
         allegedBrand !== undefined,
-        details`The brand in allegedAmount ${allegedAmount} is undefined. Did you pass a value rather than an amount?`,
+        X`The brand in allegedAmount ${allegedAmount} is undefined. Did you pass a value rather than an amount?`,
       );
       assert(
         brand === allegedBrand,
-        details`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the amountMath brand ${brand}.`,
+        X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the amountMath brand ${brand}.`,
       );
       // Will throw on inappropriate value
       return amountMath.make(value);

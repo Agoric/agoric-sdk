@@ -5,6 +5,8 @@ import path from 'path';
 
 import { openSwingStore } from '@agoric/swing-store-simple';
 
+import { assert, details as X } from '@agoric/assert';
+
 // Adapted from https://stackoverflow.com/a/43866992/14073862
 export function generateAccessToken({
   stringBase = 'base64url',
@@ -71,7 +73,10 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
       suffix = '?w=0';
       break;
     default:
-      throw TypeError(`Unexpected --repl option ${JSON.stringify(opts.repl)}`);
+      assert.fail(
+        X`Unexpected --repl option ${JSON.stringify(opts.repl)}`,
+        TypeError,
+      );
   }
 
   process.stderr.write(`Launching wallet...`);

@@ -1,3 +1,5 @@
+import { assert, details as X } from '@agoric/assert';
+
 function sanitize(data) {
   // TODO: Use @agoric/marshal:pureCopy when it exists.
   if (data === undefined) {
@@ -15,9 +17,7 @@ export function buildRootDeviceNode(tools) {
   let { inboundHandler } = getDeviceState() || {};
 
   function inboundCallback(...args) {
-    if (!inboundHandler) {
-      throw new Error(`inboundHandler not yet registered`);
-    }
+    assert(inboundHandler, X`inboundHandler not yet registered`);
     const safeArgs = JSON.parse(JSON.stringify(args));
     try {
       SO(inboundHandler).inbound(...harden(safeArgs));

@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 
@@ -65,7 +65,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         });
     });
     result.then(r => {
-      assert(r, details`expected successful check ${result}`);
+      assert(r, X`expected successful check ${result}`);
     });
   }
 
@@ -196,7 +196,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           return testEscrowCheckPartialWrongStock(host, randMintP, artMintP);
         }
         default: {
-          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
+          assert.fail(X`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

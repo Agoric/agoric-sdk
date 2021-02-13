@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from './helpers';
 
@@ -33,14 +33,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       assert(
         installation === installations.secondPriceAuction,
-        details`wrong installation`,
+        X`wrong installation`,
       );
       assert(
         sameStructure(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
-        details`issuerKeywordRecord were not as expected`,
+        X`issuerKeywordRecord were not as expected`,
       );
       assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
       assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
@@ -84,62 +84,56 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // pick some arbitrary code points as a signature.
       assert(
         source.includes('asset: give.Asset,'),
-        details`source bundle didn't match at "asset: give.Asset,"`,
+        X`source bundle didn't match at "asset: give.Asset,"`,
       );
       assert(
         source.includes('swap(zcf, firstSeat, matchingSeat)'),
-        details`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
+        X`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
       );
       assert(
         source.includes('makeMatchingInvitation'),
-        details`source bundle didn't match at "makeMatchingInvitation"`,
+        X`source bundle didn't match at "makeMatchingInvitation"`,
       );
-      assert(
-        installation === installations.atomicSwap,
-        details`wrong installation`,
-      );
+      assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
         sameStructure(
           harden({ Asset: invitationIssuer, Price: bucksIssuer }),
           issuerKeywordRecord,
         ),
-        details`issuerKeywordRecord were not as expected`,
+        X`issuerKeywordRecord were not as expected`,
       );
 
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       assert(
         sameStructure(invitationValue[0].asset, optionAmounts),
-        details`asset is the option`,
+        X`asset is the option`,
       );
       assert(
         sameStructure(invitationValue[0].price, bucks(1)),
-        details`price is 1 buck`,
+        X`price is 1 buck`,
       );
       const optionValue = optionAmounts.value;
       assert(
         optionValue[0].description === 'exerciseOption',
-        details`wrong invitation`,
+        X`wrong invitation`,
       );
       assert(
         moolaAmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
-        details`wrong underlying asset`,
+        X`wrong underlying asset`,
       );
       assert(
         simoleanAmountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
-        details`wrong strike price`,
+        X`wrong strike price`,
       );
-      assert(
-        optionValue[0].expirationDate === 100,
-        details`wrong expiration date`,
-      );
-      assert(optionValue[0].timeAuthority === timer, details`wrong timer`);
+      assert(optionValue[0].expirationDate === 100, X`wrong expiration date`);
+      assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
 
       // Dave escrows his 1 buck with Zoe and forms his proposal
       const daveSwapProposal = harden({

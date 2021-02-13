@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistMessage } from '../message';
 import { insistCapData } from '../capdata';
@@ -73,9 +73,7 @@ export function makeKernelSyscallHandler(tools) {
     const deviceID = kernelKeeper.ownerOfKernelDevice(deviceSlot);
     insistDeviceID(deviceID);
     const dev = ephemeral.devices.get(deviceID);
-    if (!dev) {
-      throw new Error(`unknown deviceRef ${deviceSlot}`);
-    }
+    assert(dev, X`unknown deviceRef ${deviceSlot}`);
     const ki = harden([deviceSlot, method, args]);
     const di = dev.translators.kernelInvocationToDeviceInvocation(ki);
     const dr = dev.manager.invoke(di);
@@ -176,7 +174,7 @@ export function makeKernelSyscallHandler(tools) {
       case 'vatstoreDelete':
         return vatstoreDelete(...args);
       default:
-        throw Error(`unknown vatSyscall type ${type}`);
+        assert.fail(X`unknown vatSyscall type ${type}`);
     }
   }
 

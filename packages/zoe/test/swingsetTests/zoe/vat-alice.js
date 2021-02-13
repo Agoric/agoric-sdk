@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
+import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
@@ -568,7 +569,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doBadTimer();
         }
         default: {
-          throw new Error(`testName ${testName} not recognized`);
+          assert.fail(X`testName ${testName} not recognized`);
         }
       }
     },

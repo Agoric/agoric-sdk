@@ -1,12 +1,13 @@
 import fetch from 'node-fetch';
 import inquirer from 'inquirer';
+import { assert, details as X } from '@agoric/assert';
 import { SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE } from './setup';
 import {
   basename,
   chmod,
   createFile,
   mkdir,
-  needNotExists,
+  mustNotExist,
   resolve,
 } from './files';
 import { chdir, needDoRun, shellEscape } from './run';
@@ -252,10 +253,8 @@ const doInit = async (progname, args) => {
   if (!dir) {
     dir = SETUP_HOME;
   }
-  if (!dir) {
-    throw Error(`Need: [dir] [[network name]]`);
-  }
-  await needNotExists(`${dir}/network.txt`);
+  assert(dir, X`Need: [dir] [[network name]]`);
+  await mustNotExist(`${dir}/network.txt`);
 
   const adir = resolve(process.cwd(), dir);
   const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
@@ -420,9 +419,7 @@ const doInit = async (progname, args) => {
     OFFSETS[PLACEMENT] = offset;
   }
 
-  if (instance === 0) {
-    throw Error(`Aborting due to no nodes configured!`);
-  }
+  assert(instance !== 0, X`Aborting due to no nodes configured!`);
 
   await createFile(
     `vars.tf`,

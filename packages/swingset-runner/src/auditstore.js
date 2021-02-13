@@ -1,3 +1,5 @@
+import { assert, details as X } from '@agoric/assert';
+
 /* eslint-disable no-use-before-define */
 export function auditRefCounts(store) {
   const refCounts = new Map();
@@ -48,7 +50,7 @@ export function auditRefCounts(store) {
         break;
       }
       default:
-        throw new Error(`unknown state for ${kpid}: ${state}`);
+        assert.fail(X`unknown state for ${kpid}: ${state}`);
     }
   }
 
@@ -77,7 +79,7 @@ export function auditRefCounts(store) {
         slotNum += 1;
       }
     } else {
-      throw new Error(`unknown message type ${msg.type}`);
+      assert.fail(X`unknown message type ${msg.type}`);
     }
   }
 

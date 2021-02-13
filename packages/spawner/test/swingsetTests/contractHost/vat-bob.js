@@ -4,6 +4,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
+import { assert, details as X } from '@agoric/assert';
 import { makeCollect } from '../../../src/makeCollect';
 
 function makeBobMaker(host, log) {
@@ -43,7 +44,7 @@ function makeBobMaker(host, log) {
               break;
             }
             default: {
-              throw new Error(`unknown desc: ${desc}`);
+              assert.fail(X`unknown desc: ${desc}`);
             }
           }
 

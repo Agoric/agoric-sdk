@@ -1,3 +1,4 @@
+import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../../message';
 
 export function makeDeliver(tools, dispatch) {
@@ -107,7 +108,7 @@ export function makeDeliver(tools, dispatch) {
       case 'notify':
         return deliverOneNotification(...args);
       default:
-        throw Error(`unknown delivery type ${type}`);
+        assert.fail(X`unknown delivery type ${type}`);
     }
   }
 

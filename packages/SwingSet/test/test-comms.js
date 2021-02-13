@@ -19,7 +19,7 @@ test('provideRemoteForLocal', t => {
   t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
   t.is(provideRemoteForLocal(remoteID, 'o-5'), 'ro-21');
   t.throws(() => provideRemoteForLocal(remoteID, 'o+5'), {
-    message: /sending non-remote object o\+5 to remote machine/,
+    message: /sending non-remote object "o\+5" to remote machine/,
   });
 });
 

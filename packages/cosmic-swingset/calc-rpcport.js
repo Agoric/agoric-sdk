@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// NOTE: Runs outside SES
+
 const process = require('process');
 const fs = require('fs');
 const toml = require('@iarna/toml');

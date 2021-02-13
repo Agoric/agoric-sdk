@@ -10,7 +10,7 @@ import anylogger from 'anylogger';
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import {
   loadBasedir,
   loadSwingsetConfigFile,
@@ -104,7 +104,7 @@ async function buildSwingset(
     const pluginFile = path.resolve(pluginsPrefix, mod);
     assert(
       pluginFile.startsWith(pluginsPrefix),
-      details`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`,
+      X`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`,
     );
 
     // eslint-disable-next-line import/no-dynamic-require,global-require
@@ -169,9 +169,7 @@ async function buildSwingset(
   // other inbound messages.
   const queuedDeliverInboundToMbx = withInputQueue(
     async function deliverInboundToMbx(sender, messages, ack) {
-      if (!Array.isArray(messages)) {
-        throw new Error(`inbound given non-Array: ${messages}`);
-      }
+      assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
       // console.debug(`deliverInboundToMbx`, messages, ack);
       if (mb.deliverInbound(sender, messages, ack, true)) {
         await processKernel();
@@ -350,9 +348,7 @@ export default async function start(basedir, argv) {
         }
         case 'http':
           log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
-          if (broadcastJSON) {
-            throw new Error(`duplicate type=http in connections.json`);
-          }
+          assert(!broadcastJSON, X`duplicate type=http in connections.json`);
           hostport = `${c.host}:${c.port}`;
           broadcastJSON = await makeHTTPListener(
             basedir,
@@ -362,7 +358,7 @@ export default async function start(basedir, argv) {
           );
           break;
         default:
-          throw new Error(`unknown connection type in ${c}`);
+          assert.fail(X`unknown connection type in ${c}`);
       }
     }),
   );

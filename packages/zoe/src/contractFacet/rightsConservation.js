@@ -1,7 +1,7 @@
 // @ts-check
 
 import makeStore from '@agoric/store';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import '../../exported';
 import '../internal-types';
@@ -49,7 +49,7 @@ const assertEqualPerBrand = (
   assert.equal(
     leftKeys.length,
     rightKeys.length,
-    details`${leftKeys.length} should be equal to ${rightKeys.length}`,
+    X`${leftKeys.length} should be equal to ${rightKeys.length}`,
   );
   leftSumsByBrand
     .keys()
@@ -59,7 +59,7 @@ const assertEqualPerBrand = (
           leftSumsByBrand.get(brand),
           rightSumsByBrand.get(brand),
         ),
-        details`rights were not conserved for brand ${brand}`,
+        X`rights were not conserved for brand ${brand}`,
       ),
     );
 };

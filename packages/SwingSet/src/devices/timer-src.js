@@ -23,7 +23,7 @@
  */
 
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we
@@ -229,7 +229,7 @@ export function buildRootDeviceNode(tools) {
   function updateTime(time) {
     assert(
       time >= lastPolled,
-      details`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
+      X`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
     );
     lastPolled = time;
     saveState();

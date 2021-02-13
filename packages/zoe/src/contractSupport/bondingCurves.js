@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
@@ -37,15 +37,9 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  assert(inputValue > 0, details`inputValue ${inputValue} must be positive`);
-  assert(
-    inputReserve > 0,
-    details`inputReserve ${inputReserve} must be positive`,
-  );
-  assert(
-    outputReserve > 0,
-    details`outputReserve ${outputReserve} must be positive`,
-  );
+  assert(inputValue > 0, X`inputValue ${inputValue} must be positive`);
+  assert(inputReserve > 0, X`inputReserve ${inputReserve} must be positive`);
+  assert(outputReserve > 0, X`outputReserve ${outputReserve} must be positive`);
 
   const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
   const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
@@ -79,17 +73,11 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30,
 ) => {
-  assert(
-    inputReserve > 0,
-    details`inputReserve ${inputReserve} must be positive`,
-  );
-  assert(
-    outputReserve > 0,
-    details`outputReserve ${outputReserve} must be positive`,
-  );
+  assert(inputReserve > 0, X`inputReserve ${inputReserve} must be positive`);
+  assert(outputReserve > 0, X`outputReserve ${outputReserve} must be positive`);
   assert(
     outputReserve > outputValue,
-    details`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
+    X`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
   );
 
   const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
@@ -100,7 +88,7 @@ export const getOutputPrice = (
 };
 
 function assertDefined(label, value) {
-  assert(value !== undefined, details`${label} value required`);
+  assert(value !== undefined, X`${label} value required`);
 }
 
 // Calculate how many liquidity tokens we should be minting to send back to the

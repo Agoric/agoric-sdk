@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore } from '@agoric/store';
 
 import { assertIssuerKeywords } from '../../contractSupport';
@@ -59,7 +59,7 @@ const start = zcf => {
     brands: { Central: centralBrand },
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
-  assert(centralBrand !== undefined, details`centralBrand must be present`);
+  assert(centralBrand !== undefined, X`centralBrand must be present`);
 
   /** @type {WeakStore<Brand,Pool>} */
   const secondaryBrandToPool = makeWeakStore();

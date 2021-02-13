@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeTranscriptManager } from './transcript';
 import { createSyscall } from './syscall';
 
@@ -115,7 +115,7 @@ export function makeXsSubprocessFactory({
           }
         }
         default:
-          throw new Error(`unrecognized uplink message ${type}`);
+          assert.fail(X`unrecognized uplink message ${type}`);
       }
     }
 
@@ -132,7 +132,7 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, 'eval bundle', it);
       assert(
         superCode.moduleFormat === 'getExport',
-        details`${it} unexpected: ${superCode.moduleFormat}`,
+        X`${it} unexpected: ${superCode.moduleFormat}`,
       );
       await worker.evaluate(`(${superCode.source}\n)()`.trim());
     }
@@ -158,7 +158,7 @@ export function makeXsSubprocessFactory({
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);
     } else {
-      throw new Error(`failed to setBundle: ${bundleReply}`);
+      assert.fail(X`failed to setBundle: ${bundleReply}`);
     }
 
     /** @type { (item: Tagged) => Promise<Tagged> } */

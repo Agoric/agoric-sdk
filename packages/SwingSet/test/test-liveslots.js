@@ -2,6 +2,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
@@ -307,7 +308,7 @@ async function doOutboundPromise(t, mode) {
     resolveSyscall.resolutions[0][1] = true;
     resolveSyscall.resolutions[0][2] = capargs('reject', []);
   } else {
-    throw Error(`unknown mode ${mode}`);
+    assert.fail(X`unknown mode ${mode}`);
   }
 
   // function deliver(target, method, argsdata, result) {
@@ -434,7 +435,7 @@ async function doResultPromise(t, mode) {
   } else if (mode === 'reject') {
     dispatch.notify(oneResolution(expectedP1, true, capargs('error', [])));
   } else {
-    throw Error(`unknown mode ${mode}`);
+    assert.fail(X`unknown mode ${mode}`);
   }
   await waitUntilQuiescent();
   t.deepEqual(log, []);
@@ -458,7 +459,7 @@ async function doResultPromise(t, mode) {
     // Resolving to a non-target means a locally-generated error, and no
     // send() call
   } else {
-    throw Error(`unknown mode ${mode}`);
+    assert.fail(X`unknown mode ${mode}`);
   }
   // #823 fails here for the non-presence cases: we expect no syscalls, but
   // instead we get a send to p+5

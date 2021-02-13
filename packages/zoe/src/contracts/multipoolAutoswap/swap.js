@@ -1,3 +1,5 @@
+import { assert, details as X } from '@agoric/assert';
+
 import { assertProposalShape, trade } from '../../contractSupport';
 
 import '../../../exported';
@@ -135,7 +137,7 @@ export const makeMakeSwapInvitation = (
       return `Swap successfully completed.`;
     }
 
-    throw new Error(`brands were not recognized`);
+    assert.fail(X`brands were not recognized`);
   };
 
   // trade with a stated amount out.
@@ -252,7 +254,7 @@ export const makeMakeSwapInvitation = (
       return `Swap successfully completed.`;
     }
 
-    throw new Error(`brands were not recognized`);
+    assert.fail(X`brands were not recognized`);
   };
 
   const makeSwapInInvitation = () =>

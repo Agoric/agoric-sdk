@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistStorageAPI } from '../../storageAPI';
 
 // We manage a host-realm Storage object with a has/getKeys/get/set/del API.
@@ -40,7 +40,7 @@ export function guardStorage(hostStorage) {
       return hostStorage[method](...args);
     } catch (err) {
       console.error(`error invoking hostStorage.${method}(${args})`, err);
-      throw new Error(`error invoking hostStorage.${method}(${args}): ${err}`);
+      assert.fail(X`error invoking hostStorage.${method}(${args}): ${err}`);
     }
   }
 

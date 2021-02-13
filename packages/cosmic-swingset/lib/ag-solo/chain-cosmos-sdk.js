@@ -9,6 +9,7 @@ import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { assert, details as X } from '@agoric/assert';
 import { makeBatchedDeliver } from './batched-deliver';
 
 const log = anylogger('chain-cosmos-sdk');
@@ -110,7 +111,6 @@ export async function connectToChain(
     throwIfCancelled = () => undefined,
     defaultIfCancelled = WAS_CANCELLED_EXCEPTION,
   ) {
-    // eslint-disable-next-line consistent-return
     return retryRpcAddr(async rpcAddr => {
       await throwIfCancelled();
 
@@ -391,9 +391,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
     blockNotifier
       .getUpdateSince(lastBlockUpdate)
       .then(({ updateCount, value }) => {
-        if (!value) {
-          throw Error(`${GCI} unexpectedly finished!`);
-        }
+        assert(value, X`${GCI} unexpectedly finished!`);
         log.debug(`new block on ${GCI}, fetching mailbox`);
         getMailbox()
           .then(ret => {
@@ -498,7 +496,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
             // We submitted the transaction successfully.
             return {};
           }
-          throw Error(`Unexpected output: ${stdout.trimRight()}`);
+          assert.fail(X`Unexpected output: ${stdout.trimRight()}`);
         },
         undefined,
         {}, // defaultIfCancelled

@@ -2,6 +2,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -144,7 +145,7 @@ test('vat store', async t => {
           syscall.vatstoreDelete('zot');
           break;
         default:
-          throw Error(`this can't happen`);
+          assert.fail(X`this can't happen`);
       }
     }
     return { deliver };

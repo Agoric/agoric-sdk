@@ -3,7 +3,7 @@
 // FIXME: This is just hacked together for the legacy wallet.
 
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 export default async function deployWallet(
   homePromise,
@@ -40,7 +40,7 @@ export default async function deployWallet(
       issuers.map(async ([issuerPetname, issuer]) => {
         const brand = await E(issuer).getBrand();
         const brandMatches = E(brand).isMyIssuer(issuer);
-        assert(brandMatches, `issuer was using a brand which was not its own`);
+        assert(brandMatches, X`issuer was using a brand which was not its own`);
         brandToIssuer.set(brand, { issuerPetname, issuer });
       }),
     ]);

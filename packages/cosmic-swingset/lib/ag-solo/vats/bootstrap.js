@@ -9,6 +9,7 @@ import { E } from '@agoric/eventual-send';
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
+import { assert, details as X } from '@agoric/assert';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 
@@ -328,7 +329,7 @@ export function buildRootObject(vatPowers, vatParameters) {
                 );
             }
             default:
-              throw Error(`Unrecognized request ${obj.type}`);
+              assert.fail(X`Unrecognized request ${obj.type}`);
           }
         },
       });
@@ -447,9 +448,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         // ag-setup-solo runs this.
         case 'client': {
-          if (!GCI) {
-            throw new Error(`client must be given GCI`);
-          }
+          assert(GCI, X`client must be given GCI`);
 
           const localTimerService = await E(vats.timer).createTimerService(
             devices.timer,
@@ -527,7 +526,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           break;
         }
         default:
-          throw new Error(`ROLE was not recognized: ${ROLE}`);
+          assert.fail(X`ROLE was not recognized: ${ROLE}`);
       }
 
       console.debug(`all vats initialized for ${ROLE}`);

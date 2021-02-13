@@ -6,7 +6,7 @@ import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
@@ -60,7 +60,7 @@ test.before(
             requiredFee = feeAmount;
             assert(
               link.amountMath.isGTE(fee, requiredFee),
-              details`Minimum fee of ${feeAmount} not met; have ${fee}`,
+              X`Minimum fee of ${feeAmount} not met; have ${fee}`,
             );
           }
           const reply = { pong: query };

@@ -1,6 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from './evalContractCode';
 
 function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
@@ -49,7 +50,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       });
     },
     createVatByName: _name => {
-      throw Error(`createVatByName not supported in fake mode`);
+      assert.fail(X`createVatByName not supported in fake mode`);
     },
   });
   const vatAdminState = {

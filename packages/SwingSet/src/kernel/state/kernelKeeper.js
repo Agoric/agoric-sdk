@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
@@ -104,9 +104,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   insistEnhancedStorageAPI(storage);
 
   function getRequired(key) {
-    if (!storage.has(key)) {
-      throw new Error(`storage lacks required key ${key}`);
-    }
+    assert(storage.has(key), X`storage lacks required key ${key}`);
     return storage.get(key);
   }
 
@@ -313,7 +311,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     const p = { state: storage.get(`${kernelSlot}.state`) };
     switch (p.state) {
       case undefined:
-        throw new Error(`unknown kernelPromise '${kernelSlot}'`);
+        assert.fail(X`unknown kernelPromise '${kernelSlot}'`);
       case 'unresolved':
         p.refCount = Number(storage.get(`${kernelSlot}.refCount`));
         p.decider = storage.get(`${kernelSlot}.decider`);
@@ -348,7 +346,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
         p.data.slots.map(parseKernelSlot);
         break;
       default:
-        throw new Error(`unknown state for ${kernelSlot}: ${p.state}`);
+        assert.fail(X`unknown state for ${kernelSlot}: ${p.state}`);
     }
     return harden(p);
   }
@@ -359,17 +357,14 @@ export default function makeKernelKeeper(storage, kernelSlog) {
       insistVatID(expectedDecider);
     }
     const p = getKernelPromise(kpid);
-    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    assert(p.state === 'unresolved', X`${kpid} was already resolved`);
     if (expectedDecider) {
       assert(
         p.decider === expectedDecider,
-        details`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
+        X`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
       );
     } else {
-      assert(
-        !p.decider,
-        details`${kpid} is decided by ${p.decider}, not the kernel`,
-      );
+      assert(!p.decider, X`${kpid} is decided by ${p.decider}, not the kernel`);
     }
     return p;
   }
@@ -407,7 +402,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
         decStat('kpRejected');
         break;
       default:
-        throw new Error(`unknown state for ${kpid}: ${state}`);
+        assert.fail(X`unknown state for ${kpid}: ${state}`);
     }
     decStat('kernelPromises');
     deleteKernelPromiseState(kpid);
@@ -523,9 +518,10 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     insistKernelType('promise', kernelSlot);
 
     const p = getKernelPromise(kernelSlot);
-    if (p.state !== 'unresolved') {
-      throw new Error(`${kernelSlot} is '${p.state}', not 'unresolved'`);
-    }
+    assert(
+      p.state === 'unresolved',
+      X`${kernelSlot} is '${p.state}', not 'unresolved'`,
+    );
     const nkey = `${kernelSlot}.queue.nextID`;
     const nextID = Nat(Number(storage.get(nkey)));
     storage.set(nkey, `${nextID + 1}`);
@@ -536,14 +532,14 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   function setDecider(kpid, decider) {
     insistVatID(decider);
     const p = getKernelPromise(kpid);
-    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
-    assert(!p.decider, details`${kpid} has decider ${p.decider}, not empty`);
+    assert(p.state === 'unresolved', X`${kpid} was already resolved`);
+    assert(!p.decider, X`${kpid} has decider ${p.decider}, not empty`);
     storage.set(`${kpid}.decider`, decider);
   }
 
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
-    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    assert(p.state === 'unresolved', X`${kpid} was already resolved`);
     storage.set(`${kpid}.decider`, '');
   }
 
@@ -593,9 +589,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   function getVatIDForName(name) {
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
-    if (!storage.has(k)) {
-      throw new Error(`vat name ${name} must exist, but doesn't`);
-    }
+    assert(storage.has(k), X`vat name ${name} must exist, but doesn't`);
     return storage.get(k);
   }
 
@@ -682,7 +676,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   function decrementRefCount(kernelSlot, tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
       let refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`)));
-      assert(refCount > 0, details`refCount underflow {kernelSlot} ${tag}`);
+      assert(refCount > 0, X`refCount underflow {kernelSlot} ${tag}`);
       refCount -= 1;
       // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       storage.set(`${kernelSlot}.refCount`, `${refCount}`);
@@ -726,10 +720,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     if (!storage.has(`${vatID}.o.nextID`)) {
       initializeVatState(storage, vatID);
     }
-    assert(
-      !ephemeral.vatKeepers.has(vatID),
-      details`vatID ${vatID} already defined`,
-    );
+    assert(!ephemeral.vatKeepers.has(vatID), X`vatID ${vatID} already defined`);
     const vk = makeVatKeeper(
       storage,
       kernelSlog,
@@ -761,9 +752,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   function getDeviceIDForName(name) {
     assert.typeof(name, 'string');
     const k = `device.name.${name}`;
-    if (!storage.has(k)) {
-      throw new Error(`device name ${name} must exist, but doesn't`);
-    }
+    assert(storage.has(k), X`device name ${name} must exist, but doesn't`);
     return storage.get(k);
   }
 

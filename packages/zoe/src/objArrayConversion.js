@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 
 /**
  * @typedef {bigint|boolean|null|number|string|symbol|undefined} Primitive
@@ -16,7 +16,7 @@ import { assert, details, q } from '@agoric/assert';
 export const arrayToObj = (array, keys) => {
   assert(
     array.length === keys.length,
-    details`array and keys must be of equal length`,
+    X`array and keys must be of equal length`,
   );
   const obj =
     /** @type {Record<U, T>} */
@@ -36,7 +36,7 @@ export const assertSubset = (whole, part) => {
     assert.typeof(key, 'string');
     assert(
       whole.includes(key),
-      details`key ${q(key)} was not one of the expected keys ${q(whole)}`,
+      X`key ${q(key)} was not one of the expected keys ${q(whole)}`,
     );
   });
 };

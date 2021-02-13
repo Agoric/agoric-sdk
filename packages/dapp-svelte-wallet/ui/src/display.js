@@ -1,6 +1,6 @@
 // @ts-check
 import JSON5 from 'json5';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { MathKind } from '@agoric/ertp';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;
@@ -15,13 +15,10 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
  * @param {AmountDisplayInfo} displayInfo
  */
 export function parseValue(str, displayInfo) {
-  const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } = displayInfo || {};
+  const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } =
+    displayInfo || {};
 
-  assert.typeof(
-    str,
-    'string',
-    details`valueString ${str} is not a string`,
-  );
+  assert.typeof(str, 'string', X`valueString ${str} is not a string`);
 
   if (amountMathKind !== MathKind.NAT) {
     // Punt to JSON5 parsing.
@@ -30,17 +27,14 @@ export function parseValue(str, displayInfo) {
 
   // Parse the string as a number.
   const match = str.match(/^0*(\d+)(\.(\d*[1-9])?0*)?$/);
-  assert(
-    match,
-    details`${str} must be a non-negative decimal number`,
-  );
+  assert(match, X`${str} must be a non-negative decimal number`);
 
   const unitstr = match[1];
   const dec0str = match[3] || '';
   const dec0str0 = dec0str.padEnd(decimalPlaces, '0');
   assert(
     dec0str0.length <= decimalPlaces,
-    details`${str} exceeds ${decimalPlaces} decimal places`,
+    X`${str} exceeds ${decimalPlaces} decimal places`,
   );
 
   return parseInt(`${unitstr}${dec0str0}`, 10);

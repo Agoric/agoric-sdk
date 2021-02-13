@@ -1,4 +1,5 @@
 import { basename } from 'path';
+import { assert, details as X } from '@agoric/assert';
 import {
   finishCosmosApp,
   finishCosmosConfig,
@@ -11,9 +12,10 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   const [prog, configDir] = rawArgs.slice(1);
 
-  if (prog !== 'ag-chain-cosmos') {
-    throw Error(`<prog> must currently be 'ag-chain-cosmos'`);
-  }
+  assert(
+    prog === 'ag-chain-cosmos',
+    X`<prog> must currently be 'ag-chain-cosmos'`,
+  );
 
   let appFile;
   let configFile;

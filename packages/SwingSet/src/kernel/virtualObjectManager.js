@@ -1,4 +1,4 @@
-import { assert, details as d, quote as q } from '@agoric/assert';
+import { assert, details as X, quote as q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
 
 const initializationsInProgress = new WeakSet();
@@ -29,9 +29,10 @@ export function makeCache(size, fetch, store) {
         if (initializationsInProgress.has(lruTail.rawData)) {
           let refreshCount = 1;
           while (initializationsInProgress.has(lruTail.rawData)) {
-            if (refreshCount > size) {
-              throw Error(`cache overflowed with objects being initialized`);
-            }
+            assert(
+              refreshCount <= size,
+              X`cache overflowed with objects being initialized`,
+            );
             cache.refresh(lruTail);
             refreshCount += 1;
           }
@@ -197,7 +198,7 @@ export function makeVirtualObjectManager(
     if (reanimator) {
       return reanimator(vobjID);
     } else {
-      throw Error(`unknown kind ${kindID}`);
+      assert.fail(X`unknown kind ${kindID}`);
     }
   }
 
@@ -230,11 +231,11 @@ export function makeVirtualObjectManager(
     nextWeakStoreID += 1;
 
     function assertKeyDoesNotExist(key) {
-      assert(!backingMap.has(key), d`${q(keyName)} already registered: ${key}`);
+      assert(!backingMap.has(key), X`${q(keyName)} already registered: ${key}`);
     }
 
     function assertKeyExists(key) {
-      assert(backingMap.has(key), d`${q(keyName)} not found: ${key}`);
+      assert(backingMap.has(key), X`${q(keyName)} not found: ${key}`);
     }
 
     function virtualObjectKey(key) {
@@ -265,7 +266,7 @@ export function makeVirtualObjectManager(
         if (vkey) {
           assert(
             !syscall.vatstoreGet(vkey),
-            d`${q(keyName)} already registered: ${key}`,
+            X`${q(keyName)} already registered: ${key}`,
           );
           syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(value)));
         } else {
@@ -277,7 +278,7 @@ export function makeVirtualObjectManager(
         const vkey = virtualObjectKey(key);
         if (vkey) {
           const rawValue = syscall.vatstoreGet(vkey);
-          assert(rawValue, d`${q(keyName)} not found: ${key}`);
+          assert(rawValue, X`${q(keyName)} not found: ${key}`);
           return m.unserialize(JSON.parse(rawValue));
         } else {
           assertKeyExists(key);
@@ -287,7 +288,7 @@ export function makeVirtualObjectManager(
       set(key, value) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
-          assert(syscall.vatstoreGet(vkey), d`${q(keyName)} not found: ${key}`);
+          assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
           syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(harden(value))));
         } else {
           assertKeyExists(key);
@@ -297,7 +298,7 @@ export function makeVirtualObjectManager(
       delete(key) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
-          assert(syscall.vatstoreGet(vkey), d`${q(keyName)} not found: ${key}`);
+          assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
           syscall.vatstoreSet(vkey, undefined);
         } else {
           assertKeyExists(key);

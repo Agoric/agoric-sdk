@@ -2,7 +2,7 @@
 
 import { importBundle } from '@agoric/import-bundle';
 import { makeWeakStore } from '@agoric/store';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
 import { makeIssuerKit } from '@agoric/ertp';
 
@@ -35,7 +35,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
 
   function redeem(allegedInvitePayment) {
     return inviteIssuer.getAmountOf(allegedInvitePayment).then(inviteAmount => {
-      assert(!inviteAmountMath.isEmpty(inviteAmount), details`No invites left`);
+      assert(!inviteAmountMath.isEmpty(inviteAmount), X`No invites left`);
       const [{ seatIdentity }] = inviteAmountMath.getValue(inviteAmount);
       return Promise.resolve(
         inviteIssuer.burn(allegedInvitePayment, inviteAmount),

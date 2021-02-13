@@ -1,5 +1,5 @@
 import './types';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import Nat from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
@@ -29,9 +29,7 @@ function makePercent(value, amountMath, base = 100) {
       return amountMath.make(floorDivide(multiply(amount.value, value), base));
     },
     complement: _ => {
-      if (value > base) {
-        throw Error(`cannot take complement when > 100%.`);
-      }
+      assert(value <= base, X`cannot take complement when > 100%.`);
       return makePercent(base - value, amountMath, base);
     },
   });

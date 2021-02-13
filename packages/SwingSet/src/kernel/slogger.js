@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 const IDLE = 'idle';
 const STARTUP = 'startup';
@@ -28,7 +28,7 @@ export function makeSlogger(writeObj) {
     let syscallNum;
 
     function assertOldState(exp, msg) {
-      assert(state === exp, `vat ${vatID} in ${state}, not ${exp}: ${msg}`);
+      assert(state === exp, X`vat ${vatID} in ${state}, not ${exp}: ${msg}`);
     }
 
     function vatConsole(origConsole) {
@@ -108,7 +108,7 @@ export function makeSlogger(writeObj) {
   }
 
   function addVat(vatID, dynamic, description, name, vatSourceBundle) {
-    assert(!vatSlogs.has(vatID), `already have slog for ${vatID}`);
+    assert(!vatSlogs.has(vatID), X`already have slog for ${vatID}`);
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
     write({

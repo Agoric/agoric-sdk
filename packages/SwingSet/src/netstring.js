@@ -1,3 +1,5 @@
+import { assert, details as X } from '@agoric/assert';
+
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 const { Transform } = require('stream');
 
@@ -49,14 +51,15 @@ export function decode(data) {
     const size = parseInt(sizeString, 10);
     if (!(size > -1)) {
       // reject NaN, all negative numbers
-      throw Error(`unparseable size '${sizeString}', should be integer`);
+      assert.fail(X`unparseable size ${sizeString}, should be integer`);
     }
     if (data.length < colon + 1 + size + 1) {
       break; // still waiting for `${DATA}.`
     }
-    if (data[colon + 1 + size] !== COMMA) {
-      throw Error(`malformed netstring: not terminated by comma`);
-    }
+    assert(
+      data[colon + 1 + size] === COMMA,
+      X`malformed netstring: not terminated by comma`,
+    );
     payloads.push(data.subarray(colon + 1, colon + 1 + size));
     start = colon + 1 + size + 1;
   }

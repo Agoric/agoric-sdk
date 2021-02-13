@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -40,7 +40,7 @@ const start = zcf => {
   const assertResponse = response => {
     assert(
       response === 'NO' || response === 'YES',
-      details`the answer ${q(response)} was not 'YES' or 'NO'`,
+      X`the answer ${q(response)} was not 'YES' or 'NO'`,
     );
     // Throw an error if the response is not valid, but do not
     // exit the seat. We should allow the voter to recast their vote.
@@ -59,7 +59,7 @@ const start = zcf => {
       vote: response => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(!voterSeat.hasExited(), details`the voter seat has exited`);
+        assert(!voterSeat.hasExited(), X`the voter seat has exited`);
 
         assertResponse(response);
 

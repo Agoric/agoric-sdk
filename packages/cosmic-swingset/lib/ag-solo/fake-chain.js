@@ -9,6 +9,7 @@ import {
 
 import anylogger from 'anylogger';
 
+import { assert, details as X } from '@agoric/assert';
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
 import { makeWithQueue } from './vats/queue';
@@ -60,9 +61,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     return `Bridge device (${dstID}) not implemented for fake-chain`;
   }
   function flushChainSends(replay) {
-    if (replay) {
-      throw Error(`Replay not implemented`);
-    }
+    assert(!replay, X`Replay not implemented`);
   }
   const s = await launch(
     stateDBdir,

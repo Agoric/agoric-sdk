@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { makePluginManager } from '../../src/vats/plugin-manager';
 
 export function buildRootObject(vatPowers, vatParameters) {
@@ -20,7 +21,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           E(vats.bridge).init(pingPongP);
           D(devices.bridge).registerInboundHandler(vats.bridge);
         } else {
-          throw new Error(`unknown argv mode '${argv[0]}'`);
+          assert.fail(X`unknown argv mode '${argv[0]}'`);
         }
       } catch (e) {
         console.error('have error', e);

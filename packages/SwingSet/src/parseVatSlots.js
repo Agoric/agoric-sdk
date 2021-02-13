@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
 // called "slots" are references, but the word "slot" suggests something into
@@ -48,7 +48,7 @@ export function parseVatSlot(s) {
   } else if (typechar === 'p') {
     type = 'promise';
   } else {
-    throw new Error(`invalid vatSlot ${s}`);
+    assert.fail(X`invalid vatSlot ${s}`);
   }
 
   if (allocchar === '+') {
@@ -56,7 +56,7 @@ export function parseVatSlot(s) {
   } else if (allocchar === '-') {
     allocatedByVat = false;
   } else {
-    throw new Error(`invalid vatSlot ${s}`);
+    assert.fail(X`invalid vatSlot ${s}`);
   }
 
   const delim = idSuffix.indexOf('/');
@@ -64,9 +64,7 @@ export function parseVatSlot(s) {
   let subid;
   let virtual = false;
   if (delim > 0) {
-    if (type !== 'object' || !allocatedByVat) {
-      throw new Error(`invalid vatSlot ${s}`);
-    }
+    assert(type === 'object' && allocatedByVat, X`invalid vatSlot ${s}`);
     virtual = true;
     id = Nat(Number(idSuffix.substr(0, delim)));
     subid = Nat(Number(idSuffix.slice(delim + 1)));
@@ -105,7 +103,7 @@ export function makeVatSlot(type, allocatedByVat, id) {
   if (type === 'promise') {
     return `p${idSuffix}`;
   }
-  throw new Error(`unknown type ${type}`);
+  assert.fail(X`unknown type ${type}`);
 }
 
 /**

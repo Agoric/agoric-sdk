@@ -2,7 +2,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
 import makeStore from '@agoric/store';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
   natSafeMath,
@@ -224,10 +224,7 @@ const start = async zcf => {
       ({ priceAuthority, adminFacet: priceAuthorityAdmin } = paKit);
     },
     async initOracle(oracleInstance, query = undefined) {
-      assert(
-        quoteKit,
-        details`Must initializeQuoteMint before adding an oracle`,
-      );
+      assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
 
       /** @type {OracleRecord} */
       const record = { querier: undefined, lastSample: NaN };
@@ -252,15 +249,12 @@ const start = async zcf => {
 
       // Obtain the oracle's publicFacet.
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
-      assert(records.has(record), details`Oracle record is already deleted`);
+      assert(records.has(record), X`Oracle record is already deleted`);
 
       /** @type {OracleAdmin} */
       const oracleAdmin = {
         async delete() {
-          assert(
-            records.has(record),
-            details`Oracle record is already deleted`,
-          );
+          assert(records.has(record), X`Oracle record is already deleted`);
 
           // The actual deletion is synchronous.
           oracleRecords.delete(record);

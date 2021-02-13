@@ -6,7 +6,7 @@ import {
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import { natSafeMath } from '../src/contractSupport';
 
@@ -46,7 +46,7 @@ export async function makeFakePriceAuthority(options) {
 
   assert(
     tradeList || priceList,
-    details`One of priceList or tradeList must be specified`,
+    X`One of priceList or tradeList must be specified`,
   );
 
   const unitValueIn = mathIn.getValue(unitAmountIn);
@@ -71,12 +71,12 @@ export async function makeFakePriceAuthority(options) {
     assert.equal(
       brandIn,
       mathIn.getBrand(),
-      details`${brandIn} is not an expected input brand`,
+      X`${brandIn} is not an expected input brand`,
     );
     assert.equal(
       brandOut,
       mathOut.getBrand(),
-      details`${brandOut} is not an expected output brand`,
+      X`${brandOut} is not an expected output brand`,
     );
   };
 

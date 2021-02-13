@@ -1,5 +1,6 @@
 import '@agoric/install-ses';
 import test from 'ava';
+import { assert, details as X } from '@agoric/assert';
 import { wrapInescapableCompartment } from '../src/compartment-wrapper.js';
 
 // We build a transform that allows oldSrc to increment the odometer, but not
@@ -8,9 +9,10 @@ import { wrapInescapableCompartment } from '../src/compartment-wrapper.js';
 // use cases that don't involve voluntary participation by oldSrc.
 
 function milageTransform(oldSrc) {
-  if (oldSrc.indexOf('getOdometer') !== -1) {
-    throw Error(`forbidden access to 'getOdometer' in oldSrc`);
-  }
+  assert(
+    oldSrc.indexOf('getOdometer') === -1,
+    X`forbidden access to 'getOdometer' in oldSrc`,
+  );
   return oldSrc.replace(/addMilage\(\)/g, 'getOdometer().add(1)');
 }
 

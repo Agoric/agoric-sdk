@@ -9,7 +9,7 @@ import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 import anylogger from 'anylogger';
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
@@ -83,7 +83,7 @@ export async function makeSwingsetController(
       // sure vats get (and stick with) re2 for their 'RegExp'.
       return re2;
     } else {
-      throw Error(`kernelRequire unprepared to satisfy require(${what})`);
+      assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
     }
   }
   const kernelBundle = JSON.parse(hostStorage.get('kernelBundle'));

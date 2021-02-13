@@ -1,6 +1,8 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { assert, details as X } from '@agoric/assert';
+
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
   return harden({
@@ -74,7 +76,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.call-promise1.finish`);
       } else {
-        throw Error(`unknown mode ${mode}`);
+        assert.fail(X`unknown mode ${mode}`);
       }
     },
   });

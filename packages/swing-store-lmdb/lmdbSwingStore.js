@@ -4,6 +4,8 @@ import path from 'path';
 
 import lmdb from 'node-lmdb';
 
+const { details: X } = assert;
+
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
@@ -64,9 +66,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @throws if key is not a string.
    */
   function get(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
+    assert.typeof(key, 'string', X`non-string key ${key}`);
     ensureTxn();
     let result = txn.getString(dbi, key);
     if (result === null) {
@@ -90,12 +90,8 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @throws if either parameter is not a string.
    */
   function* getKeys(start, end) {
-    if (`${start}` !== start) {
-      throw new Error(`non-string start ${start}`);
-    }
-    if (`${end}` !== end) {
-      throw new Error(`non-string end ${end}`);
-    }
+    assert.typeof(start, 'string', X`non-string start ${start}`);
+    assert.typeof(end, 'string', X`non-string end ${end}`);
 
     ensureTxn();
     const cursor = new lmdb.Cursor(txn, dbi);
@@ -117,9 +113,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @throws if key is not a string.
    */
   function has(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
+    assert.typeof(key, 'string', X`non-string key ${key}`);
     return get(key) !== undefined;
   }
 
@@ -133,12 +127,8 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @throws if either parameter is not a string.
    */
   function set(key, value) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
-    if (`${value}` !== value) {
-      throw new Error(`non-string value ${value}`);
-    }
+    assert.typeof(key, 'string', X`non-string key ${key}`);
+    assert.typeof(value, 'string', X`non-string value ${value}`);
     ensureTxn();
     txn.putString(dbi, key, value);
   }
@@ -152,9 +142,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @throws if key is not a string.
    */
   function del(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
+    assert.typeof(key, 'string', X`non-string key ${key}`);
     if (has(key)) {
       ensureTxn();
       txn.del(dbi, key);

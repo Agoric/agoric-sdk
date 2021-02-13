@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { makeSharedMap } from '../../../src/sharedMap';
 import { makeSharingService } from '../../../src/sharing';
 
@@ -95,7 +96,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           return testTwoVatSharing(aliceMaker, bobMaker, sharingService);
         }
         default: {
-          throw Error(`unrecognized argument value ${vatParameters.argv[0]}`);
+          assert.fail(X`unrecognized argument value ${vatParameters.argv[0]}`);
         }
       }
     },

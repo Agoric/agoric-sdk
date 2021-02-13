@@ -26,6 +26,7 @@
     "tmp": "^0.1.0"
   },
   "dependencies": {
+    "@agoric/assert": "^0.2.0",
     "@agoric/bundle-source": "^1.2.0",
     "@agoric/captp": "^1.7.0",
     "@agoric/install-ses": "^0.5.0",

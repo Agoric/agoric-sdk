@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
@@ -36,8 +36,8 @@ function managerPort(issueCommand) {
   function decode(msg) {
     /** @type { Tagged } */
     const item = decodeData(msg);
-    assert(Array.isArray(item), details`expected array`);
-    assert(item.length > 0, details`empty array lacks tag`);
+    assert(Array.isArray(item), X`expected array`);
+    assert(item.length > 0, X`empty array lacks tag`);
     return item;
   }
 
@@ -237,7 +237,7 @@ function makeWorker(port) {
           case 'notify':
             return doNotify(dargs[0]);
           default:
-            throw Error(`bad delivery type ${dtype}`);
+            assert.fail(X`bad delivery type ${dtype}`);
         }
       }
       default:

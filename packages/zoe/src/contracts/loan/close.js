@@ -2,7 +2,7 @@
 
 import './types';
 
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import { assertProposalShape, trade } from '../../contractSupport';
 
@@ -35,7 +35,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // All debt must be repaid.
     assert(
       loanMath.isGTE(repaid, debt),
-      details`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
+      X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
     );
 
     // We cannot use `swap` or `swapExact` helper because the collateralSeat

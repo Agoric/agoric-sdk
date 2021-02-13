@@ -1,3 +1,5 @@
+import { assert, details as X } from '@agoric/assert';
+
 let enableKDebug = false;
 
 export function kdebugEnable(flag) {
@@ -39,7 +41,7 @@ export function legibilizeValue(val, slots) {
         case 'ibid':
           return `ibid(${val.index})`;
         default:
-          throw new Error(`unknown qClass ${qClass} in legibilizeValue`);
+          assert.fail(X`unknown qClass ${qClass} in legibilizeValue`);
       }
     } else {
       let result = '{';

@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
 import { makeState, makeStateKit } from './state';
@@ -54,12 +54,12 @@ export function buildCommsDispatch(syscall) {
     if (state.objectTable.has(target) || state.promiseTable.has(target)) {
       assert(
         method.indexOf(':') === -1 && method.indexOf(';') === -1,
-        details`illegal method name ${method}`,
+        X`illegal method name ${method}`,
       );
       return sendFromKernel(target, method, args, result);
     }
     if (state.remoteReceivers.has(target)) {
-      assert(method === 'receive', details`unexpected method ${method}`);
+      assert(method === 'receive', X`unexpected method ${method}`);
       // the vat-tp integrity layer is a regular vat, so when they send the
       // received message to us, it will be embedded in a JSON array
       const remoteID = state.remoteReceivers.get(target);
@@ -69,7 +69,7 @@ export function buildCommsDispatch(syscall) {
 
     // TODO: if promise target not in PromiseTable: resolve result to error
     //   this will happen if someone pipelines to our controller/receiver
-    throw Error(`unknown target ${target}`);
+    assert.fail(X`unknown target ${target}`);
   }
 
   function notify(resolutions) {

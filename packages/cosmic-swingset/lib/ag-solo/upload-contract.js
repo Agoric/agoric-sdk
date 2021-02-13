@@ -6,6 +6,8 @@
 
 import { E } from '@agoric/eventual-send';
 
+import { assert, details as X } from '@agoric/assert';
+
 export default async function uploadContracts({ home, bundle }) {
   console.error(`Installing targeted contracts...`);
   // eslint-disable-next-line no-use-before-define
@@ -24,9 +26,7 @@ export async function upload(homeP, bundle, keys, verbose = false) {
   const contractsAP = [];
   for (const key of keys) {
     const match = key.match(/^(([^:]+):.+)$/);
-    if (!match) {
-      throw Error(`${key} isn't TARGET:NAME`);
-    }
+    assert(match, X`${key} isn't TARGET:NAME`);
     const name = match[1];
     const target = match[2];
     const { source, moduleFormat } = bundle[key];

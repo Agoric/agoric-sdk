@@ -1,5 +1,6 @@
 <script>
   import { E } from "@agoric/captp";
+  import { assert, details as d } from '@agoric/assert';
 
   import Button from 'smelte/src/components/Button';
   import Dialog from 'smelte/src/components/Dialog';
@@ -30,13 +31,9 @@
     <DefaultButton on:click={async () => {
       try {
         petname = petname.trim();
-        if (!petname) {
-          throw TypeError(`Need to specify a ${name} petname`);
-        }
+        assert(petname, d`Need to specify a ${name} petname`, TypeError);
         boardId = boardId.trim();
-        if (!boardId) {
-          throw TypeError(`Need to specify a ${name} "board:..."" ID`);
-        }
+        assert(boardId, d`Need to specify a ${name} "board:..."" ID`, TypeError);
         const trimmed = boardId.startsWith(prefix) ? boardId.slice(prefix.length) : boardId;
         const obj = await E(boardP).getValue(trimmed);
         await adder(petname, obj);

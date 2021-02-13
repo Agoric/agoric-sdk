@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 
+import { assert, details as X } from '@agoric/assert';
 import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';
@@ -75,10 +76,12 @@ const main = async (progname, rawArgs, powers) => {
       '--repl [yes | only | no]',
       'whether to show the Read-eval-print loop [yes]',
       value => {
-        if (['yes', 'only', 'no'].includes(value)) {
-          return value;
-        }
-        throw TypeError(`--repl must be one of 'yes', 'no', or 'only'`);
+        assert(
+          ['yes', 'only', 'no'].includes(value),
+          X`--repl must be one of 'yes', 'no', or 'only'`,
+          TypeError,
+        );
+        return value;
       },
     )
     .action(async cmd => {

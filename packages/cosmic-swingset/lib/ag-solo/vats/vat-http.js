@@ -1,5 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
+import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';
 
@@ -187,7 +188,7 @@ export function buildRootObject(vatPowers) {
 
         if (dispatcher === 'onMessage') {
           sendResponse(count, false, { type: 'doesNotUnderstand', obj });
-          throw Error(`No handler for ${url} ${type}`);
+          assert.fail(X`No handler for ${url} ${type}`);
         }
         sendResponse(count, false, true);
       } catch (rej) {

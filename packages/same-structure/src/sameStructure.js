@@ -1,7 +1,7 @@
 // @ts-check
 
 import { sameValueZero, passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
@@ -83,7 +83,7 @@ function allComparable(passable) {
       );
     }
     default: {
-      throw new TypeError(`unrecognized passStyle ${passStyle}`);
+      assert.fail(X`unrecognized passStyle ${passStyle}`, TypeError);
     }
   }
 }
@@ -107,11 +107,11 @@ function sameStructure(left, right) {
   const rightStyle = passStyleOf(right);
   assert(
     leftStyle !== 'promise',
-    details`Cannot structurally compare promises: ${left}`,
+    X`Cannot structurally compare promises: ${left}`,
   );
   assert(
     rightStyle !== 'promise',
-    details`Cannot structurally compare promises: ${right}`,
+    X`Cannot structurally compare promises: ${right}`,
   );
 
   if (leftStyle !== rightStyle) {
@@ -150,7 +150,7 @@ function sameStructure(left, right) {
       return left.name === right.name && left.message === right.message;
     }
     default: {
-      throw new TypeError(`unrecognized passStyle ${leftStyle}`);
+      assert.fail(X`unrecognized passStyle ${leftStyle}`, TypeError);
     }
   }
 }
@@ -177,7 +177,7 @@ function pathStr(path) {
 function mustBeSameStructureInternal(left, right, message, path) {
   function complain(problem) {
     assert.fail(
-      details`${q(message)}: ${q(problem)} at ${q(
+      X`${q(message)}: ${q(problem)} at ${q(
         pathStr(path),
       )}: (${left}) vs (${right})`,
     );

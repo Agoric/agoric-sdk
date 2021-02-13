@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -144,9 +144,7 @@ export function makeVatLoader(stuff) {
     assert(source.bundle || source.bundleName, 'broken source');
     const vatSourceBundle =
       source.bundle || kernelKeeper.getBundle(source.bundleName);
-    if (!vatSourceBundle) {
-      throw Error(`Bundle ${source.bundleName} not found`);
-    }
+    assert(vatSourceBundle, X`Bundle ${source.bundleName} not found`);
 
     assertKnownOptions(
       options,
@@ -196,9 +194,11 @@ export function makeVatLoader(stuff) {
     }
 
     async function build() {
-      if (typeof vatSourceBundle !== 'object') {
-        throw Error(`vat creation requires a bundle, not a plain string`);
-      }
+      assert.typeof(
+        vatSourceBundle,
+        'object',
+        X`vat creation requires a bundle, not a plain string`,
+      );
 
       kernelSlog.addVat(vatID, isDynamic, description, name, vatSourceBundle);
       const managerOptions = {

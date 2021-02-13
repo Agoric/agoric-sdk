@@ -2,6 +2,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
+import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 
@@ -127,7 +128,7 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
       syscallA.resolve([[vpid, true, capargs([slot0arg], [targets.p1])]]);
       break;
     default:
-      throw Error(`unknown mode ${mode}`);
+      assert.fail(X`unknown mode ${mode}`);
   }
 }
 
@@ -180,7 +181,7 @@ function resolutionOf(vpid, mode, targets) {
         ),
       };
     default:
-      throw Error(`unknown mode ${mode}`);
+      assert.fail(X`unknown mode ${mode}`);
   }
 }
 

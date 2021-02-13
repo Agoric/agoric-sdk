@@ -3,6 +3,8 @@ import process from 'process';
 import Readlines from 'n-readlines';
 import yargs from 'yargs';
 
+import { assert, details as X } from '@agoric/assert';
+
 /* eslint-disable no-use-before-define */
 
 function usage() {
@@ -246,7 +248,7 @@ export function main() {
             result = `ibid(${val.index})`;
             break;
           default:
-            throw new Error(`unknown qClass ${qClass} in legibilizeValue`);
+            assert.fail(X`unknown qClass ${qClass} in legibilizeValue`);
         }
       } else {
         result = '{';

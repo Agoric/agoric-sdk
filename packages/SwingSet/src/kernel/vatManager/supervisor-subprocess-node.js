@@ -4,7 +4,7 @@ import '@agoric/install-ses';
 import anylogger from 'anylogger';
 import fs from 'fs';
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
@@ -75,7 +75,7 @@ const fromParent = fs
   .pipe(arrayDecoderStream());
 
 function sendUplink(msg) {
-  assert(msg instanceof Array, `msg must be an Array`);
+  assert(msg instanceof Array, X`msg must be an Array`);
   toParent.write(msg);
 }
 
@@ -103,7 +103,7 @@ fromParent.on('data', ([type, ...margs]) => {
     const syscall = harden({
       send: (...args) => doSyscall(['send', ...args]),
       callNow: (..._args) => {
-        throw Error(`nodeWorker cannot syscall.callNow`);
+        assert.fail(X`nodeWorker cannot syscall.callNow`);
       },
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
       resolve: (...args) => doSyscall(['resolve', ...args]),
@@ -155,7 +155,7 @@ fromParent.on('data', ([type, ...margs]) => {
     } else if (dtype === 'notify') {
       doNotify(...dargs).then(res => sendUplink(['deliverDone', ...res]));
     } else {
-      throw Error(`bad delivery type ${dtype}`);
+      assert.fail(X`bad delivery type ${dtype}`);
     }
   } else {
     workerLog(`unrecognized downlink message ${type}`);

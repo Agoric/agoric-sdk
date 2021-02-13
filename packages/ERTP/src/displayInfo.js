@@ -1,4 +1,4 @@
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import {
   pureCopy,
   passStyleOf,
@@ -21,7 +21,7 @@ export const assertSubset = (whole, part) => {
     assert.typeof(key, 'string');
     assert(
       whole.includes(key),
-      details`key ${q(key)} was not one of the expected keys ${q(whole)}`,
+      X`key ${q(key)} was not one of the expected keys ${q(whole)}`,
     );
   });
 };
@@ -35,7 +35,7 @@ export const assertKeysAllowed = (allowedKeys, record) => {
   // assert that there are no symbol properties.
   assert(
     Object.getOwnPropertySymbols(record).length === 0,
-    details`no symbol properties allowed`,
+    X`no symbol properties allowed`,
   );
 };
 

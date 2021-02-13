@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
 import {
   flipRemoteSlot,
@@ -29,7 +29,7 @@ export function makeInbound(state, stateKit) {
   function getLocalForRemote(remoteID, rref) {
     const remote = getRemote(state, remoteID);
     const lref = remote.fromRemote.get(rref);
-    assert(lref, `${rref} must already be in ${rname(remote)}`);
+    assert(lref, X`${rref} must already be in ${rname(remote)}`);
     return lref;
   }
 
@@ -81,7 +81,7 @@ export function makeInbound(state, stateKit) {
       } else if (type === 'promise') {
         addLocalPromiseForRemote(remote, rref);
       } else {
-        throw Error(`cannot accept type ${type} from remote`);
+        assert.fail(X`cannot accept type ${type} from remote`);
       }
     }
     return remote.fromRemote.get(rref);

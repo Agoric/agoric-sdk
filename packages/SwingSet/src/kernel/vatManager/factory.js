@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../../assertOptions';
 import { makeLocalVatManagerFactory } from './manager-local';
 import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker';
@@ -70,7 +70,8 @@ export function makeVatManagerFactory({
       !bundle || typeof bundle === 'object',
       `bundle must be object, not a plain string`,
     );
-    assert(!(setup && !enableSetup), `setup() provided, but not enabled`); // todo maybe useless
+    // todo maybe useless
+    assert(!(setup && !enableSetup), X`setup() provided, but not enabled`);
   }
 
   // returns promise for new vatManager

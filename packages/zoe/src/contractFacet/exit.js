@@ -1,4 +1,4 @@
-import { assert, details, q } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 /**
@@ -56,7 +56,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
     // on demand
     assert(
       exitKind === 'waived',
-      details`exit kind was not recognized: ${q(exitKind)}`,
+      X`exit kind was not recognized: ${q(exitKind)}`,
     );
   }
   return exitObj;

@@ -1,13 +1,13 @@
 // @ts-check
 
 import { passStyleOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 const identity = harden([]);
 
 const checkForDupes = list => {
   const set = new Set(list);
-  assert(set.size === list.length, details`value has duplicates: ${list}`);
+  assert(set.size === list.length, X`value has duplicates: ${list}`);
 };
 
 /**
@@ -43,10 +43,7 @@ const strSetMathHelpers = harden({
   doAdd: (left, right) => {
     const union = new Set(left);
     const addToUnion = elem => {
-      assert(
-        !union.has(elem),
-        details`left and right have same element ${elem}`,
-      );
+      assert(!union.has(elem), X`left and right have same element ${elem}`);
       union.add(elem);
     };
     right.forEach(addToUnion);
@@ -58,7 +55,7 @@ const strSetMathHelpers = harden({
     const allRemovedCorrectly = right.every(remove);
     assert(
       allRemovedCorrectly,
-      details`some of the elements in right (${right}) were not present in left (${left})`,
+      X`some of the elements in right (${right}) were not present in left (${left})`,
     );
     return harden(Array.from(leftSet));
   },
