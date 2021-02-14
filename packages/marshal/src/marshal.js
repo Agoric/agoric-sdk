@@ -13,7 +13,6 @@ const {
   getPrototypeOf,
   setPrototypeOf,
   getOwnPropertyDescriptors,
-  defineProperties,
   is,
   isFrozen,
   fromEntries,
