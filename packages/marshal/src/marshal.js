@@ -27,16 +27,20 @@ export const REMOTE_STYLE = 'presence';
 const PASS_STYLE = Symbol.for('passStyle');
 
 /** @type {MarshalGetInterfaceOf} */
-export function getInterfaceOf(maybeRemotable) {
-  if (typeof maybeRemotable !== 'object' || maybeRemotable === null) {
+export function getInterfaceOf(val) {
+  if (typeof val !== 'object' || val === null) {
     return undefined;
   }
-  if (maybeRemotable[PASS_STYLE] !== REMOTE_STYLE) {
+  if (val[PASS_STYLE] !== REMOTE_STYLE) {
     return undefined;
   }
-  assert(isFrozen(maybeRemotable));
-  const iface = maybeRemotable[Symbol.toStringTag];
-  assert.typeof(iface, 'string');
+  assert(isFrozen(val), X`Remotable ${val} must be frozen`, TypeError);
+  const iface = val[Symbol.toStringTag];
+  assert.typeof(
+    iface,
+    'string',
+    X`Remotable interface currently can only be a string`,
+  );
   return iface;
 }
 
@@ -261,7 +265,11 @@ function isPassByCopyRecord(val) {
     }
   }
   for (const descKey of descKeys) {
-    assert.typeof(descKey, 'string');
+    assert.typeof(
+      descKey,
+      'string',
+      X`Pass by copy records can only have string-named own properties`,
+    );
     const desc = descs[descKey];
     assert(
       !('get' in desc),
@@ -297,8 +305,12 @@ const assertRemotableProto = val => {
   assert(!Array.isArray(val), X`Arrays cannot be pass-by-remote`);
   assert(val !== null, X`null cannot be pass-by-remote`);
 
-  assert(getPrototypeOf(val) === objectPrototype);
-  assert(isFrozen(val));
+  const protoProto = getPrototypeOf(val);
+  assert(
+    protoProto === objectPrototype || protoProto === null,
+    X`The Remotable Proto marker cannot inherit from anything unusual`,
+  );
+  assert(isFrozen(val), X`The Remotable proto must be frozen`);
   const {
     // @ts-ignore
     [PASS_STYLE]: { value: passStyleValue },
@@ -308,10 +320,16 @@ const assertRemotableProto = val => {
     [Symbol.toStringTag]: { value: toStringTagValue },
     ...rest
   } = getOwnPropertyDescriptors(val);
-  assert(ownKeys(rest).length === 0);
-  assert(passStyleValue === REMOTE_STYLE);
-  assert.typeof(toStringValue, 'function');
-  assert.typeof(toStringTagValue, 'string');
+  assert(
+    ownKeys(rest).length === 0,
+    X`Unexpect properties on Remotable Proto ${ownKeys(rest)}`,
+  );
+  assert(
+    passStyleValue === REMOTE_STYLE,
+    X`Expected ${q(REMOTE_STYLE)}, not ${q(passStyleValue)}`,
+  );
+  assert.typeof(toStringValue, 'function', X`toString must be a function`);
+  assert.typeof(toStringTagValue, 'string', X`@@toStringTag must be a string`);
 };
 
 /**
