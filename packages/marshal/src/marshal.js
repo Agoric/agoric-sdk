@@ -929,11 +929,12 @@ export function makeMarshal(
  * Currently, Alice can tell Bob about Carol, where VatA (on Alice's behalf)
  * misrepresents Carol's `iface`. VatB and therefore Bob will then see
  * Carol's `iface` as misrepresented by VatA.
- * @param {object} [props={}] Own-properties are copied to the remotable
+ * @param {undefined} [props=undefined] Currently may only be undefined.
+ * That plan is that own-properties are copied to the remotable
  * @param {object} [remotable={}] The object used as the remotable
  * @returns {object} remotable, modified for debuggability
  */
-function Remotable(iface = 'Remotable', props = {}, remotable = {}) {
+function Remotable(iface = 'Remotable', props = undefined, remotable = {}) {
   // TODO unimplemented
   assert.typeof(
     iface,
@@ -951,6 +952,7 @@ function Remotable(iface = 'Remotable', props = {}, remotable = {}) {
   // TODO: When iface is richer than just string, we need to get the allegedName
   // in a different way.
   const allegedName = iface;
+  assert(props === undefined, X`Remotable props not yet implemented ${props}`);
 
   // Fail fast: check that the unmodified object is able to become a Remotable.
   assertCanBeRemotable(remotable);
@@ -968,9 +970,9 @@ function Remotable(iface = 'Remotable', props = {}, remotable = {}) {
   );
 
   // Take a static copy of the enumerable own properties as data properties.
-  const propDescs = getOwnPropertyDescriptors({ ...props });
+  // const propDescs = getOwnPropertyDescriptors({ ...props });
   const mutateHardenAndCheck = target => {
-    defineProperties(target, propDescs);
+    // defineProperties(target, propDescs);
     setPrototypeOf(target, remotableProto);
     harden(target);
     assertCanBeRemotable(target);
