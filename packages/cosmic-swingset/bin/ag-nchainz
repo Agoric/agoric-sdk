@@ -231,6 +231,9 @@ start-relayer)
       "$PATHCONFIG/$template.json" "$tmpfile" > "$PATHCONFIG/$path.json"
   fi
 
+  # Bottom-up relay path validation may fail if src or dst chain is not past
+  # block #2.
+  # Keep trying to add-paths until both the chains have booted up.
   echo "$ rly config add-paths $PATHCONFIG/"
   while ! rly config add-paths $PATHCONFIG/; do
     sleep 3
