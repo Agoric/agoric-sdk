@@ -546,7 +546,15 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+
+	// Set Historical infos in InitChain to ignore genesis params
+	// This is needed for IBC connections not to time out easily
+	stakingParams := app.StakingKeeper.GetParams(ctx)
+	stakingParams.HistoricalEntries = 10000
+	app.StakingKeeper.SetParams(ctx, stakingParams)
+
+	return res
 }
 
 // Commit tells the controller that the block is commited
