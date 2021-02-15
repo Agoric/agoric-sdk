@@ -110,7 +110,7 @@ scenario3-run-client: scenario3-run
 scenario3-run:
 	(cd t3 && \
 			../bin/ag-solo set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI)
-	cd t3 && ../bin/ag-solo start
+	cd t3 && OTEL_EXPORTER_PROMETHEUS_PORT=9464 ../bin/ag-solo start
 
 docker-pull:
 	for f in '' -setup -solo; do \
