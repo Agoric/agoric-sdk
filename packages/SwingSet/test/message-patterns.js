@@ -5,6 +5,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { quote as q } from '@agoric/assert';
 import { ignore } from './util';
 
 // Exercise a set of increasingly complex object-capability message patterns,
@@ -38,6 +39,22 @@ import { ignore } from './util';
 
 // All messages should be sent twice, to check that the recipient gets the
 // same object reference in both messages
+
+function NonError(message) {
+  // marshal emits a warning (with stack trace) to the console each time it
+  // serializes an Error, which makes it look like tests are failing. We have
+  // tests which test 'raise' and Promise rejection to make sure they are
+  // signalled correctly. We previously used 'raise Error()' for this, but
+  // that provokes the scary-looking warning. Since we aren't trying to
+  // exercise *Error* serialization here, merely Promise rejection, we can
+  // use a non-Error instead, which avoids the warning.
+
+  // We use a pass-by-copy object, so the receiving side can log a quoted
+  // (JSON.stringify) version, and not wind up with Presence object-ids in
+  // the log. This does require changes to how the tests log "errors", and to
+  // the strings we compare those logs against.
+  return harden({ message });
+}
 
 export function buildPatterns(log) {
   let a;
@@ -225,14 +242,14 @@ export function buildPatterns(log) {
         const ret = await E(b.bob).b43();
         log(`a43 unexpectedly resolved to ${ret}`);
       } catch (e) {
-        log(`a43 rejected with ${e}`);
+        log(`a43 rejected with ${q(e)}`);
       }
     };
     objB.b43 = async () => {
-      throw Error('nope');
+      throw NonError('nope');
     };
   }
-  out.a43 = ['a43 rejected with Error: nope'];
+  out.a43 = ['a43 rejected with {"message":"nope"}'];
   test('a43');
 
   // bob!x() -> [<nada>] // rejection in result
@@ -244,14 +261,14 @@ export function buildPatterns(log) {
         const ret2 = await ret[0];
         log(`a44 ret[0] unexpectedly resolved to ${ret2}`);
       } catch (e) {
-        log(`a44 ret[0] rejected with ${e}`);
+        log(`a44 ret[0] rejected with ${q(e)}`);
       }
     };
     objB.b44 = async () => {
-      return harden([Promise.reject(Error('nope'))]);
+      return harden([Promise.reject(NonError('nope'))]);
     };
   }
-  out.a44 = ['a44 got ret', 'a44 ret[0] rejected with Error: nope'];
+  out.a44 = ['a44 got ret', 'a44 ret[0] rejected with {"message":"nope"}'];
   test('a44');
 
   // bob!x() -> P(data)
@@ -456,7 +473,7 @@ export function buildPatterns(log) {
         const bill = await p2.promise;
         log(`a65 unexpectedly resolved to ${bill}`);
       } catch (e) {
-        log(`a65 rejected with ${e}`);
+        log(`a65 rejected with ${q(e)}`);
       }
     };
     const p1 = makePromiseKit();
@@ -464,10 +481,10 @@ export function buildPatterns(log) {
       return { promise: p1.promise };
     };
     objB.b65_2 = async () => {
-      p1.reject(Error('nope'));
+      p1.reject(NonError('nope'));
     };
   }
-  out.a65 = ['a65 rejected with Error: nope'];
+  out.a65 = ['a65 rejected with {"message":"nope"}'];
   test('a65');
 
   // bob!pipe1()!pipe2()!pipe3() // pipelining
