@@ -3,8 +3,9 @@
 Run `make` in the current (cosmic-swingset) directory to build the Agoric Cosmos
 chain integration.
 
-You will need the Golang Cosmos IBC relayer.  You can clone it from
-https://github.com/cosmos/relayer
+You will need the Golang Cosmos IBC relayer source code.  You can clone it from
+https://github.com/cosmos/relayer  Don't worry about building it, that will
+happen later.
 
 ```sh
 cd relayer
@@ -70,7 +71,7 @@ Then run the IBC transfer request, where `path-2` is the path that was printed
 in the newly-started relayer:
 
 ```sh
-rly tx xfer ibc1 ibc0 10000n0token true $(rly keys show ibc0 testkey) -ppath-2
+rly tx xfer ibc1 ibc0 10000n0token $(rly keys show ibc0 testkey) -ppath-2
 ```
 
 You should see an inbound message in your REPL like:
