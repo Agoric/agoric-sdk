@@ -325,10 +325,7 @@ test('records', t => {
   }
   const CSO = /cannot serialize objects/;
   const NOACC = /Records must not contain accessors/;
-  // const REMSYM = /Remotables must not have symbol-named properties/;
-  // const RECSYM = /Records must not have symbol-named properties/;
   const RECENUM = /Record fields must be enumerable/;
-  // const REMENUM = /Remotable methods must be enumerable/;
   const NOMETH = /cannot serialize objects with non-methods/;
 
   // empty objects
