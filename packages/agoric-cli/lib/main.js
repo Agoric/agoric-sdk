@@ -119,6 +119,11 @@ const main = async (progname, rawArgs, powers) => {
       'set the config.toml p2p.persistent_peers value',
       '',
     )
+    .option(
+      '--export-metrics',
+      'open ports to export Prometheus metrics',
+      false,
+    )
     .action(async (prog, configDir, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);

@@ -5,7 +5,7 @@ import { createHash } from 'crypto';
 import {
   STAKING_DENOM,
   MINT_DENOM,
-  finishCosmosConfig,
+  finishTendermintConfig,
   finishCosmosGenesis,
   finishCosmosApp,
 } from './chain-config';
@@ -314,7 +314,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const newGenesisJson = finishCosmosGenesis({
       genesisJson,
     });
-    const newConfigToml = finishCosmosConfig({
+    const newConfigToml = finishTendermintConfig({
       configToml,
       portNum,
     });

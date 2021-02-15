@@ -61,12 +61,13 @@ scenario2-setup-nobuild:
 	$(AGC) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000uagstake --chain-id=$(CHAIN_ID)
 	$(AGC) --home=t1/n0 collect-gentxs
 	$(AGC) --home=t1/n0 validate-genesis
-	../agoric-cli/bin/agoric set-defaults ag-chain-cosmos t1/n0/config
+	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
-	$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
+	OTEL_EXPORTER_PROMETHEUS_PORT=9464 \
+		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
@@ -109,7 +110,7 @@ scenario3-run-client: scenario3-run
 scenario3-run:
 	(cd t3 && \
 			../bin/ag-solo set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI)
-	cd t3 && ../bin/ag-solo start
+	cd t3 && OTEL_EXPORTER_PROMETHEUS_PORT=9464 ../bin/ag-solo start
 
 docker-pull:
 	for f in '' -setup -solo; do \

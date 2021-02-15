@@ -1,3 +1,6 @@
+import { MeterProvider } from '@opentelemetry/metrics';
+import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
+
 // All the kernel metrics we are prepared for.
 const KERNEL_STATS_SUM_METRICS = [
   {
@@ -95,8 +98,14 @@ const KERNEL_STATS_UPDOWN_METRICS = [
  * @param {any} param0.controller
  * @param {import('@opentelemetry/metrics').Meter} param0.metricMeter
  * @param {Console} param0.log
+ * @param {Record<string, any>} param0.labels
  */
-export function exportKernelStats({ controller, metricMeter, log = console }) {
+export function exportKernelStats({
+  controller,
+  metricMeter,
+  log = console,
+  labels,
+}) {
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
 
@@ -145,6 +154,41 @@ export function exportKernelStats({ controller, metricMeter, log = console }) {
         observations.push(metric.observation(value));
       }
     });
-    batchObserverResult.observe({ app: 'ag-chain-cosmos' }, observations);
+    batchObserverResult.observe(labels, observations);
   });
+}
+
+/**
+ * Interpret the meter provider environment variables.
+ *
+ * @param {{ log: Console['log'] }} console
+ * @param {Record<string, string>} env
+ */
+export function getMeterProvider(console, env) {
+  if (
+    !env.OTEL_EXPORTER_PROMETHEUS_HOST &&
+    !env.OTEL_EXPORTER_PROMETHEUS_PORT
+  ) {
+    return undefined;
+  }
+  const host =
+    env.OTEL_EXPORTER_PROMETHEUS_HOST ||
+    PrometheusExporter.DEFAULT_OPTIONS.host ||
+    '0.0.0.0';
+  const port =
+    Number(env.OTEL_EXPORTER_PROMETHEUS_PORT) ||
+    PrometheusExporter.DEFAULT_OPTIONS.port;
+  const exporter = new PrometheusExporter(
+    {
+      startServer: true,
+      host,
+      port,
+    },
+    () => {
+      console.log(
+        `Prometheus scrape endpoint: http://${host}:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
+      );
+    },
+  );
+  return new MeterProvider({ exporter, interval: 1000 });
 }

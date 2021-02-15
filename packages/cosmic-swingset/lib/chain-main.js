@@ -4,12 +4,10 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox';
 
-import { MeterProvider } from '@opentelemetry/metrics';
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
-
 import { assert, details as X } from '@agoric/assert';
 import { launch } from './launch-chain';
 import makeBlockManager from './block-manager';
+import { getMeterProvider } from './kernel-stats';
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
@@ -225,24 +223,7 @@ export default async function main(progname, args, { path, env, agcc }) {
       ROLE: 'chain',
       noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
     };
-    let meterProvider;
-    if (process.env.AG_CHAIN_COSMOS_PROMETHEUS) {
-      const port =
-        Number(process.env.AG_CHAIN_COSMOS_PROMETHEUS) ||
-        PrometheusExporter.DEFAULT_OPTIONS.port;
-      const exporter = new PrometheusExporter(
-        {
-          startServer: true,
-          port,
-        },
-        () => {
-          console.log(
-            `prometheus scrape endpoint: http://localhost:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
-          );
-        },
-      );
-      meterProvider = new MeterProvider({ exporter, interval: 1000 });
-    }
+    const meterProvider = getMeterProvider(console, process.env);
     const s = await launch(
       stateDBDir,
       mailboxStorage,

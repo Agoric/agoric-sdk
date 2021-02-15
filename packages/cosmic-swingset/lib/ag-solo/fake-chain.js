@@ -14,6 +14,7 @@ import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
 import { makeWithQueue } from './vats/queue';
 import { makeBatchedDeliver } from './batched-deliver';
+import { getMeterProvider } from '../kernel-stats';
 
 const log = anylogger('fake-chain');
 
@@ -63,6 +64,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   function flushChainSends(replay) {
     assert(!replay, X`Replay not implemented`);
   }
+
+  const meterProvider = getMeterProvider(log, process.env);
   const s = await launch(
     stateDBdir,
     mailboxStorage,
@@ -70,6 +73,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     vatsdir,
     argv,
     GCI, // debugName
+    meterProvider,
   );
 
   const { savedHeight, savedActions, savedChainSends } = s;

@@ -16,9 +16,15 @@ export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 
 export const DEFAULT_GRPC_PORT = 9090;
 export const DEFAULT_RPC_PORT = 26657;
+export const DEFAULT_PROM_PORT = 26660;
+export const DEFAULT_API_PORT = 1317;
 
 // Rewrite the app.toml.
-export function finishCosmosApp({ appToml, portNum = `${DEFAULT_RPC_PORT}` }) {
+export function finishCosmosApp({
+  appToml,
+  exportMetrics,
+  portNum = `${DEFAULT_RPC_PORT}`,
+}) {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
 
@@ -32,12 +38,22 @@ export function finishCosmosApp({ appToml, portNum = `${DEFAULT_RPC_PORT}` }) {
   app['pruning-keep-recent'] = '10000';
   app['pruning-keep-every'] = '50000';
   app['pruning-interval'] = '1000';
+
+  const apiPort = DEFAULT_API_PORT + (rpcPort - DEFAULT_RPC_PORT) / 100;
+  if (exportMetrics) {
+    app.api.laddr = `tcp://0.0.0.0:${apiPort}`;
+    app.api.enable = true;
+    app.telemetry.enabled = true;
+    app.telemetry['prometheus-retention-time'] = 60;
+  }
+
   return TOML.stringify(app);
 }
 
 // Rewrite the config.toml.
-export function finishCosmosConfig({
+export function finishTendermintConfig({
   configToml,
+  exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
   persistentPeers = '',
 }) {
@@ -56,6 +72,12 @@ export function finishCosmosConfig({
   config.p2p.persistent_peers = persistentPeers;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
   config.rpc.max_body_bytes = 15 * 10 ** 6;
+
+  if (exportMetrics) {
+    const promPort = rpcPort - DEFAULT_RPC_PORT + DEFAULT_PROM_PORT;
+    config.instrumentation.prometheus = true;
+    config.instrumentation.prometheus_listen_addr = `:${promPort}`;
+  }
 
   // Needed for IBC.
   config.tx_index.index_all_keys = true;

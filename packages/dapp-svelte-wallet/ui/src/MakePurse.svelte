@@ -9,7 +9,7 @@
   import CancelButton from '../lib/CancelButton.svelte';
   import DefaultButton from '../lib/DefaultButton.svelte';
   import { walletP } from './store';
-  import { assert, details as d } from '@agoric/assert';
+  import { assert, details as X } from '@agoric/assert';
 
   import { issuers } from './store';
   const title = "Make Purse";
@@ -34,9 +34,9 @@
   <div slot="actions">
     <DefaultButton on:click={async () => {
       try {
-        assert(issuerPetname, d`Need to specify an Issuer`, TypeError);
+        assert(issuerPetname, X`Need to specify an Issuer`, TypeError);
         petname = petname.trim();
-        assert(petname, d`Need to specify a ${name} petname`, TypeError);
+        assert(petname, X`Need to specify a ${name} petname`, TypeError);
         await E(walletP).makeEmptyPurse(issuerPetname, petname);
         showModal = false;
       } catch (e) {
