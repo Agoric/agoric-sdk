@@ -57,11 +57,7 @@ export function makeXsSubprocessFactory({
       console.log(`xsnap worker does not support enableInternalMetering`);
     }
     const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(
-      kernelKeeper,
-      vatKeeper,
-      vatID,
-    );
+    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
 
     const { doSyscall, setVatSyscallHandler } = createSyscall(
       transcriptManager,
