@@ -2,7 +2,7 @@
  * Kernel's keeper of persistent state for a vat.
  */
 
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
@@ -12,10 +12,10 @@ import { kdebug } from '../kdebug';
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
 // TODO: tests rely on these numbers and haven't been updated to use names.
-const FIRST_OBJECT_ID = 50;
-const FIRST_PROMISE_ID = 60;
-const FIRST_DEVICE_ID = 70;
-const FIRST_TRANSCRIPT_ID = 0;
+const FIRST_OBJECT_ID = 50n;
+const FIRST_PROMISE_ID = 60n;
+const FIRST_DEVICE_ID = 70n;
+const FIRST_TRANSCRIPT_ID = 0n;
 
 /**
  * Establish a vat's state.
@@ -147,14 +147,14 @@ export function makeVatKeeper(
 
       let id;
       if (type === 'object') {
-        id = Nat(Number(storage.get(`${vatID}.o.nextID`)));
-        storage.set(`${vatID}.o.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${vatID}.o.nextID`)));
+        storage.set(`${vatID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
-        id = Nat(Number(storage.get(`${vatID}.d.nextID`)));
-        storage.set(`${vatID}.d.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${vatID}.d.nextID`)));
+        storage.set(`${vatID}.d.nextID`, `${id + 1n}`);
       } else if (type === 'promise') {
-        id = Nat(Number(storage.get(`${vatID}.p.nextID`)));
-        storage.set(`${vatID}.p.nextID`, `${id + 1}`);
+        id = Nat(BigInt(storage.get(`${vatID}.p.nextID`)));
+        storage.set(`${vatID}.p.nextID`, `${id + 1n}`);
       } else {
         assert.fail(X`unknown type ${type}`);
       }
@@ -240,26 +240,28 @@ export function makeVatKeeper(
    * @param {string} msg  The message to append.
    */
   function addToTranscript(msg) {
-    const id = Nat(Number(storage.get(`${vatID}.t.nextID`)));
-    storage.set(`${vatID}.t.nextID`, `${id + 1}`);
+    const id = Nat(BigInt(storage.get(`${vatID}.t.nextID`)));
+    storage.set(`${vatID}.t.nextID`, `${id + 1n}`);
     storage.set(`${vatID}.t.${id}`, JSON.stringify(msg));
   }
 
   function vatStats() {
-    function getStringAsNat(ostr) {
-      return Nat(Number(storage.get(ostr)));
+    function getCount(key, first) {
+      const id = Nat(BigInt(storage.get(key)));
+      return id - Nat(first);
     }
 
-    const objectCount = getStringAsNat(`${vatID}.o.nextID`) - FIRST_OBJECT_ID;
-    const promiseCount = getStringAsNat(`${vatID}.p.nextID`) - FIRST_PROMISE_ID;
-    const deviceCount = getStringAsNat(`${vatID}.d.nextID`) - FIRST_DEVICE_ID;
-    const transcriptCount =
-      storage.get(`${vatID}.t.nextID`) - FIRST_TRANSCRIPT_ID;
+    const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
+    const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
+    const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
+    const transcriptCount = getCount(`${vatID}.t.nextID`, FIRST_TRANSCRIPT_ID);
+
+    // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
     return harden({
-      objectCount: Nat(objectCount),
-      promiseCount: Nat(promiseCount),
-      deviceCount: Nat(deviceCount),
-      transcriptCount: Nat(Number(transcriptCount)),
+      objectCount: Number(objectCount),
+      promiseCount: Number(promiseCount),
+      deviceCount: Number(deviceCount),
+      transcriptCount: Number(transcriptCount),
     });
   }
 

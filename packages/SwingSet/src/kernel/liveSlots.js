@@ -605,7 +605,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     );
     assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
-    const rootSlot = makeVatSlot('object', true, 0);
+    const rootSlot = makeVatSlot('object', true, 0n);
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, rootObject);
   }
