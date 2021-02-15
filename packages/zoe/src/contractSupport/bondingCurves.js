@@ -4,8 +4,7 @@ import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
 
-const BIG_10000 = 10000n;
-const BIG_ONE = 1n;
+const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
 
 /**
  * Calculations for constant product markets like Uniswap.
@@ -41,10 +40,10 @@ export const getInputPrice = (
   assert(inputReserve > 0, X`inputReserve ${inputReserve} must be positive`);
   assert(outputReserve > 0, X`outputReserve ${outputReserve} must be positive`);
 
-  const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
+  const oneMinusFeeScaled = BASIS_POINTS - BigInt(feeBasisPoints);
   const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
   const numerator = inputWithFee * BigInt(outputReserve);
-  const denominator = BigInt(inputReserve) * BIG_10000 + inputWithFee;
+  const denominator = BigInt(inputReserve) * BASIS_POINTS + inputWithFee;
   return Nat(Number(numerator / denominator));
 };
 
@@ -80,11 +79,11 @@ export const getOutputPrice = (
     X`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
   );
 
-  const oneMinusFeeScaled = BIG_10000 - BigInt(feeBasisPoints);
-  const numerator = BigInt(outputValue) * BigInt(inputReserve) * BIG_10000;
+  const oneMinusFeeScaled = BASIS_POINTS - BigInt(feeBasisPoints);
+  const numerator = BigInt(outputValue) * BigInt(inputReserve) * BASIS_POINTS;
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
-  return Nat(Number(numerator / denominator + BIG_ONE));
+  return Nat(Number(numerator / denominator + 1n));
 };
 
 function assertDefined(label, value) {
