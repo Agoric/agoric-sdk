@@ -232,8 +232,11 @@ start-relayer)
   fi
 
   echo "$ rly config add-paths $PATHCONFIG/"
-  rly config add-paths $PATHCONFIG/
+  while ! rly config add-paths $PATHCONFIG/; do
+    sleep 3
+  done
 
+  echo "$ rly link $path --timeout=3s -d"
   try=0
   while ! rly tx link $path --timeout=3s -d >> "nchainz/logs/$path.log" 2>&1; do
     try=$(( $try + 1 ))
