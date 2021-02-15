@@ -19,6 +19,7 @@ NUM_SOLOS=1
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" && pwd -P)
 
+PATHCONFIG=nchainz/config/paths
 CLI=ag-cosmos-helper
 DAEMON=ag-chain-cosmos
 SOLO=$thisdir/ag-solo
@@ -170,12 +171,12 @@ start-relayer)
   # Extract existing config.
   for path in $(jq '.paths | keys | .[]' "$cfgfile"); do
     rawpath=$(echo "$path" | jq -r .)
-    jq -r ".paths[$path]" "$cfgfile" > "nchainz/config/$rawpath.json"
+    jq -r ".paths[$path]" "$cfgfile" > "$PATHCONFIG/$rawpath.json"
   done
 
   jqexpr=
-  for fname in nchainz/config/*.json; do
-    [[ -z $template || $fname == "nchainz/config/$template.json" ]] || continue
+  for fname in $PATHCONFIG/*.json; do
+    [[ -z $template || $fname == "$PATHCONFIG/$template.json" ]] || continue
     [[ $fname =~ $BASE_RE ]] || continue
     if grep -q '"generator": "ag-nchainz"' "$fname"; then :
     else
@@ -200,9 +201,9 @@ start-relayer)
 
   if [[ -z $jqexpr ]]; then
     if [[ -n $template ]]; then
-      echo 1>&2 "Connection ID \`$srccid' is not defined in nchainz/config/$template.json"
+      echo 1>&2 "Connection ID \`$srccid' is not defined in $PATHCONFIG/$template.json"
     else
-      echo 1>&2 "Connection ID \`$srccid' is not defined in nchainz/config/*.json"
+      echo 1>&2 "Connection ID \`$srccid' is not defined in $PATHCONFIG/*.json"
     fi
     exit 1
   fi
@@ -215,24 +216,30 @@ start-relayer)
     echo "Replacing path \`$path'"
     path=$template
     jq -s "$jqexpr" \
-      "nchainz/config/$template.json" "$tmpfile" > "nchainz/config/$path.json"
+      "$PATHCONFIG/$template.json" "$tmpfile" > "$PATHCONFIG/$path.json"
   else
     # Create a new path.
     i=0
     path=path-$i
-    while [[ -e "nchainz/config/$path.json" ]]; do
+    while [[ -e "$PATHCONFIG/$path.json" ]]; do
       i=$(( $i + 1 ))
       path=path-$i
     done
 
     echo "Creating new path \`$path'"
     jq -s "$jqexpr"' * { "generator": "ag-nchainz" }' \
-      "nchainz/config/$template.json" "$tmpfile" > "nchainz/config/$path.json"
+      "$PATHCONFIG/$template.json" "$tmpfile" > "$PATHCONFIG/$path.json"
   fi
 
-  echo "$ rly config add-dir nchainz/config/"
-  rly config add-dir nchainz/config/
+  # Bottom-up relay path validation may fail if src or dst chain is not past
+  # block #2.
+  # Keep trying to add-paths until both the chains have booted up.
+  echo "$ rly config add-paths $PATHCONFIG/"
+  while ! rly config add-paths $PATHCONFIG/; do
+    sleep 3
+  done
 
+  echo "$ rly link $path --timeout=3s -d"
   try=0
   while ! rly tx link $path --timeout=3s -d >> "nchainz/logs/$path.log" 2>&1; do
     try=$(( $try + 1 ))
