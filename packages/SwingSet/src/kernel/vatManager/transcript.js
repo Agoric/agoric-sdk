@@ -1,6 +1,6 @@
 import djson from '../djson';
 
-export function makeTranscriptManager(kernelKeeper, vatKeeper, vatID) {
+export function makeTranscriptManager(vatKeeper, vatID) {
   let weAreInReplay = false;
   let playbackSyscalls;
   let currentEntry;
@@ -9,7 +9,6 @@ export function makeTranscriptManager(kernelKeeper, vatKeeper, vatID) {
     currentEntry = {
       d,
       syscalls: [],
-      crankNumber: kernelKeeper.getCrankNumber(),
     };
   }
 

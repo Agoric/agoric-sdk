@@ -38,11 +38,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       );
     }
     const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(
-      kernelKeeper,
-      vatKeeper,
-      vatID,
-    );
+    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
 
     // prepare to accept syscalls from the worker
 

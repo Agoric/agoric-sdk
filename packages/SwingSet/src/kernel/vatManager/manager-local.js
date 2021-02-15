@@ -32,11 +32,7 @@ export function makeLocalVatManagerFactory(tools) {
 
   function prepare(vatID) {
     const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(
-      kernelKeeper,
-      vatKeeper,
-      vatID,
-    );
+    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
     const { syscall, setVatSyscallHandler } = createSyscall(transcriptManager);
     function finish(dispatch, meterRecord) {
       assert(
