@@ -38,10 +38,10 @@ export const getInputPrice = (
   assert(inputReserve > 0, X`inputReserve ${inputReserve} must be positive`);
   assert(outputReserve > 0, X`outputReserve ${outputReserve} must be positive`);
 
-  const oneMinusFeeScaled = 10_000n - BigInt(feeBasisPoints);
+  const oneMinusFeeScaled = 10000n - BigInt(feeBasisPoints);
   const inputWithFee = BigInt(inputValue) * oneMinusFeeScaled;
   const numerator = inputWithFee * BigInt(outputReserve);
-  const denominator = BigInt(inputReserve) * 10_000n + inputWithFee;
+  const denominator = BigInt(inputReserve) * 10000n + inputWithFee;
   return Nat(Number(numerator / denominator));
 };
 
@@ -77,8 +77,8 @@ export const getOutputPrice = (
     X`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
   );
 
-  const oneMinusFeeScaled = 10_000n - BigInt(feeBasisPoints);
-  const numerator = BigInt(outputValue) * BigInt(inputReserve) * 10_000n;
+  const oneMinusFeeScaled = 10000n - BigInt(feeBasisPoints);
+  const numerator = BigInt(outputValue) * BigInt(inputReserve) * 10000n;
   const denominator =
     (BigInt(outputReserve) - BigInt(outputValue)) * oneMinusFeeScaled;
   return Nat(Number(numerator / denominator + 1n));
