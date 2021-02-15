@@ -274,8 +274,11 @@ test('records', t => {
   };
   // const emptyData = { body: JSON.stringify({}), slots: [] };
 
-  // objects with Symbol-named properties
-  const sym = Symbol.for('registered');
+  // For objects with Symbol-named properties
+  const sym1 = Symbol.for('sym1');
+  const sym2 = Symbol.for('sym2');
+  const sym3 = Symbol.for('sym3');
+  const sym4 = Symbol.for('sym4');
 
   function build(...opts) {
     const props = {};
@@ -287,12 +290,18 @@ test('records', t => {
         props.key2 = { enumerable: true, value: () => 0 };
       } else if (opt === 'enumStringGet') {
         props.key3 = { enumerable: true, get: () => 0 };
-      } else if (opt === 'enumSymbol') {
-        props[sym] = { enumerable: true, value: 2 };
-      } else if (opt === 'nonenumSymbol') {
-        props[sym] = { enumerable: false, value: 2 };
-      } else if (opt === 'nonenumString') {
+      } else if (opt === 'enumSymbolData') {
+        props[sym1] = { enumerable: true, value: 2 };
+      } else if (opt === 'enumSymbolFunc') {
+        props[sym2] = { enumerable: true, value: () => 0 };
+      } else if (opt === 'nonenumStringData') {
         props.key4 = { enumerable: false, value: 3 };
+      } else if (opt === 'nonenumStringFunc') {
+        props.key5 = { enumerable: false, value: () => 0 };
+      } else if (opt === 'nonenumSymbolData') {
+        props[sym3] = { enumerable: false, value: 4 };
+      } else if (opt === 'nonenumSymbolFunc') {
+        props[sym4] = { enumerable: false, value: () => 0 };
       } else if (opt === 'data') {
         mark = 'data';
       } else if (opt === 'far') {
@@ -316,8 +325,6 @@ test('records', t => {
   }
   const CSO = /cannot serialize objects/;
   const NOACC = /Records must not contain accessors/;
-  // this error is accidental, and will go away
-  const SYMSTR = /Cannot convert a Symbol value to a string/;
   // const REMSYM = /Remotables must not have symbol-named properties/;
   // const RECSYM = /Records must not have symbol-named properties/;
   const RECENUM = /Record fields must be enumerable/;
@@ -356,6 +363,9 @@ test('records', t => {
   // Far('iface', {key: func})
   // all cases: pass-by-ref
   t.deepEqual(ser(build('far', 'enumStringFunc')), yesIface);
+  t.deepEqual(ser(build('far', 'enumSymbolFunc')), yesIface);
+  t.deepEqual(ser(build('far', 'nonenumStringFunc')), yesIface);
+  t.deepEqual(ser(build('far', 'nonenumSymbolFunc')), yesIface);
 
   // { key: data }
   // all: pass-by-copy without warning
@@ -370,6 +380,9 @@ test('records', t => {
   // interim2: reject
   // final: reject
   t.deepEqual(ser(build('enumStringFunc')), noIface);
+  t.deepEqual(ser(build('enumSymbolFunc')), noIface);
+  t.deepEqual(ser(build('nonenumStringFunc')), noIface);
+  t.deepEqual(ser(build('nonenumSymbolFunc')), noIface);
 
   // Data({ key: data, key: func }) : rejected
   // shouldThrow('data', 'enumStringData', 'enumStringFunc');
@@ -383,17 +396,17 @@ test('records', t => {
   shouldThrow(['enumStringGet', 'enumStringData'], NOACC);
   shouldThrow(['enumStringGet', 'enumStringFunc'], CSO);
 
-  // anything with symbol-named properties is rejected
-  // shouldThrow(['enumSymbol'], REMSYM);
-  shouldThrow(['enumSymbol', 'enumStringData'], SYMSTR);
-  // shouldThrow(['enumSymbol', 'enumStringFunc'], REMSYM);
+  // anything with symbols can only be a remotable
+  shouldThrow(['enumSymbolData'], NOMETH);
+  shouldThrow(['enumSymbolData', 'enumStringData'], NOMETH);
+  shouldThrow(['enumSymbolData', 'enumStringFunc'], NOMETH);
 
-  // shouldThrow(['nonenumSymbol'], REMSYM);
-  shouldThrow(['nonenumSymbol', 'enumStringData'], SYMSTR);
-  // shouldThrow(['nonenumSymbol', 'enumStringFunc'], REMSYM);
+  shouldThrow(['nonenumSymbolData'], NOMETH);
+  shouldThrow(['nonenumSymbolData', 'enumStringData'], NOMETH);
+  shouldThrow(['nonenumSymbolData', 'enumStringFunc'], NOMETH);
 
   // anything with non-enumerable properties is rejected
-  shouldThrow(['nonenumString'], RECENUM);
-  shouldThrow(['nonenumString', 'enumStringData'], RECENUM);
-  shouldThrow(['nonenumString', 'enumStringFunc'], NOMETH);
+  shouldThrow(['nonenumStringData'], RECENUM);
+  shouldThrow(['nonenumStringData', 'enumStringData'], RECENUM);
+  shouldThrow(['nonenumStringData', 'enumStringFunc'], NOMETH);
 });
