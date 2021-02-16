@@ -83,8 +83,9 @@ const start = async zcf => {
    */
   const getPoolKeyword = brand => {
     assert(brandToKeyword.has(brand), 'getPoolKeyword: brand not found');
-    // @ts-ignore
-    return brandToKeyword.get(brand);
+    const keyword = brandToKeyword.get(brand);
+    assert.typeof(keyword, 'string');
+    return keyword;
   };
 
   const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
