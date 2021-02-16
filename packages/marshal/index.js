@@ -19,4 +19,4 @@ export {
 // Reported at https://github.com/Agoric/agoric-sdk/issues/2439
 // TODO Investigate. This anomaly may be a big deal.
 //
-// export { stringify, parse } from './src/marshal-stringify';
+export { stringify, parse } from './src/marshal-stringify';
