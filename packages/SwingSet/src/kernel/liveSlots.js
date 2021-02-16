@@ -561,8 +561,8 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     assert(didRoot);
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
-      const [vpid, vp] = resolution;
-      notifyOnePromise(vpid, vp.rejected, vp.data);
+      const [vpid, rejected, data] = resolution;
+      notifyOnePromise(vpid, rejected, data);
     }
     for (const resolution of resolutions) {
       const [vpid] = resolution;

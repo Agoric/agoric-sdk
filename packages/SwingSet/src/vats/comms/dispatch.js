@@ -75,11 +75,10 @@ export function buildCommsDispatch(syscall) {
   function notify(resolutions) {
     const willBeResolved = new Set();
     for (const resolution of resolutions) {
-      const [vpid, value] = resolution;
+      const [vpid, _rejected, data] = resolution;
       willBeResolved.add(vpid);
-      assert(typeof value === 'object');
-      insistCapData(value.data);
-      // console.debug(`comms.notify(${vpid}, ${value})`);
+      insistCapData(data);
+      // console.debug(`comms.notify(${vpid}, ${rejected}, ${data})`);
       // dumpState(state);
     }
     resolveFromKernel(resolutions, willBeResolved);

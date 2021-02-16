@@ -20,7 +20,7 @@ function capargs(args, slots = []) {
 }
 
 function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, { rejected, data }]];
+  return [[promiseID, rejected, data]];
 }
 
 function makeConsole(tag) {
@@ -743,25 +743,15 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.run();
   t.deepEqual(logX.shift(), {
     type: 'notify',
-    resolutions: [
-      [
-        exportedUseResultAvatX,
-        {
-          rejected: false,
-          data: capargs(undefinedArg, []),
-        },
-      ],
-    ],
+    resolutions: [[exportedUseResultAvatX, false, capargs(undefinedArg, [])]],
   });
   t.deepEqual(logX.shift(), {
     type: 'notify',
     resolutions: [
       [
         exportedGenResultAvatX,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [exportedGenResultBvatX]),
-        },
+        false,
+        capargs([slot0arg], [exportedGenResultBvatX]),
       ],
     ],
   });
@@ -795,32 +785,20 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.run();
   t.deepEqual(logX.shift(), {
     type: 'notify',
-    resolutions: [
-      [
-        exportedUseResultBvatX,
-        {
-          rejected: false,
-          data: capargs(undefinedArg, []),
-        },
-      ],
-    ],
+    resolutions: [[exportedUseResultBvatX, false, capargs(undefinedArg, [])]],
   });
   t.deepEqual(logX.shift(), {
     type: 'notify',
     resolutions: [
       [
         exportedGenResultBvatX,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [importedGenResultAvatX]),
-        },
+        false,
+        capargs([slot0arg], [importedGenResultAvatX]),
       ],
       [
         importedGenResultAvatX,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [exportedGenResultBvatX]),
-        },
+        false,
+        capargs([slot0arg], [exportedGenResultBvatX]),
       ],
     ],
   });
@@ -830,17 +808,13 @@ test(`kernel vpid handling crossing resolutions`, async t => {
     resolutions: [
       [
         importedGenResultAvatB,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [importedGenResultB2vatB]),
-        },
+        false,
+        capargs([slot0arg], [importedGenResultB2vatB]),
       ],
       [
         importedGenResultB2vatB,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [importedGenResultAvatB]),
-        },
+        false,
+        capargs([slot0arg], [importedGenResultAvatB]),
       ],
     ],
   });
@@ -850,17 +824,13 @@ test(`kernel vpid handling crossing resolutions`, async t => {
     resolutions: [
       [
         importedGenResultBvatA,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [importedGenResultA2vatA]),
-        },
+        false,
+        capargs([slot0arg], [importedGenResultA2vatA]),
       ],
       [
         importedGenResultA2vatA,
-        {
-          rejected: false,
-          data: capargs([slot0arg], [importedGenResultBvatA]),
-        },
+        false,
+        capargs([slot0arg], [importedGenResultBvatA]),
       ],
     ],
   });
