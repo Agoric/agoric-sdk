@@ -105,18 +105,16 @@ test('evaluate error', async t => {
   await vat.terminate();
 });
 
-test.failing('uncaught rejections should not be silent', async t => {
+test('evaluate does not throw on unhandled rejections', async t => {
   const opts = options();
-  const vat = xsnap(opts);
-  await vat
-    .evaluate(`Promise.reject(1)`)
-    .then(_ => {
-      t.fail('should throw');
-    })
-    .catch(_ => {
-      t.pass();
-    });
-  await vat.terminate();
+  // ISSUE: how to test that they are not entirely unobservable?
+  // It's important that we can observe them using xsbug.
+  // We can confirm this by running xsbug while running this test.
+  for await (const debug of [false, true]) {
+    const vat = xsnap({ ...opts, debug });
+    t.teardown(() => vat.terminate());
+    await t.notThrowsAsync(vat.evaluate(`Promise.reject(1)`));
+  }
 });
 
 test('reject odd regex range', async t => {
