@@ -14,8 +14,12 @@ const doNotConvertSlotToVal = (slot, _iface) =>
   assert.fail(X`Marshal's parse must not encode any slots ${slot}`);
 
 const badArrayHandler = harden({
-  get: (_target, name, _receiver) =>
-    assert.fail(X`Marshal's parse must not encode any slot positions ${name}`),
+  get: (_target, name, _receiver) => {
+    if (name === 'length') {
+      return 0;
+    }
+    assert.fail(X`Marshal's parse must not encode any slot positions ${name}`);
+  },
 });
 
 const badArray = harden(new Proxy(harden([]), badArrayHandler));
