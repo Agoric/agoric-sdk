@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.10.0...@agoric/swingset-runner@0.11.0) (2021-02-16)
+
+
+### Bug Fixes
+
+* review comments ([7db7e5c](https://github.com/Agoric/agoric-sdk/commit/7db7e5c4c569dfedff8d748dd58893218b0a2458))
+* tolerate symbols as property names ([#2094](https://github.com/Agoric/agoric-sdk/issues/2094)) ([15022fe](https://github.com/Agoric/agoric-sdk/commit/15022fe7f3fd3d1fc67687f3b010968725c30a7e))
+* use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric-sdk/commit/f860c5bf5add165a08cb5bd543502857c3f57998))
+
+
+### Features
+
+* add GitHub action to run post-CI benchmark ([0dc6335](https://github.com/Agoric/agoric-sdk/commit/0dc63357fa166afa2b45a47f8ce284c7fc0d4ef4))
+* add support for post-CI automated benchmarking ([2bdd9db](https://github.com/Agoric/agoric-sdk/commit/2bdd9db4d3f553a58b0ca5245d9159fcb5432d80))
+* pluralize `resolve` syscall ([6276286](https://github.com/Agoric/agoric-sdk/commit/6276286b5553f13d3cb267c8015f83921a6caf9d))
+* promise resolution notification refactoring ([4ffb911](https://github.com/Agoric/agoric-sdk/commit/4ffb91147dbdae971111d7f2fa1e5c9cdc1ae578))
+* publish benchmarks stats to GitHub artifact ([cce6d36](https://github.com/Agoric/agoric-sdk/commit/cce6d36a9dd8411b2e1fce2598bfd8725d628438))
+* refactor notification and subscription ([dd5f7f7](https://github.com/Agoric/agoric-sdk/commit/dd5f7f7fc5b6ae7f8bee4f123821d92a26581af4))
+* slogulator annotation enhancements ([1c09876](https://github.com/Agoric/agoric-sdk/commit/1c09876f8998fabe8021ca24b8e60ae7b27825d2))
+* vat-side promise ID retirement ([94e0078](https://github.com/Agoric/agoric-sdk/commit/94e0078673ff15e47c2fcf32f472d27c416a1cd8))
+
+
+
+
+
 # [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.9.0...@agoric/swingset-runner@0.10.0) (2020-12-10)
 
 

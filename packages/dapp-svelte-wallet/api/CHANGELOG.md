@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.2](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.1...@agoric/dapp-svelte-wallet-api@0.5.2) (2021-02-16)
+
+
+### Bug Fixes
+
+* Correlate sent errors with received errors ([73b9cfd](https://github.com/Agoric/agoric/commit/73b9cfd33cf7842bdc105a79592028649cb1c92a))
+* Far and Remotable do unverified local marking rather than WeakMap ([#2361](https://github.com/Agoric/agoric/issues/2361)) ([ab59ab7](https://github.com/Agoric/agoric/commit/ab59ab779341b9740827b7c4cca4680e7b7212b2))
+* message batches reduce wallet setup from 80 to 20 chain trips ([7d17f2f](https://github.com/Agoric/agoric/commit/7d17f2f5f7585adb5ae02a26489ef2e9abe7c5bb))
+* review comments ([7db7e5c](https://github.com/Agoric/agoric/commit/7db7e5c4c569dfedff8d748dd58893218b0a2458))
+* use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric/commit/f860c5bf5add165a08cb5bd543502857c3f57998))
+* wire through the CapTP bootstrap message ([7af41bc](https://github.com/Agoric/agoric/commit/7af41bc13a778c4872863e2060874910d6c1fefa))
+
+
+
+
+
 ## [0.5.1](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.0...@agoric/dapp-svelte-wallet-api@0.5.1) (2020-12-10)
 
 

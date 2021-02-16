@@ -1,6 +1,6 @@
 {
   "name": "@agoric/base64",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transcodes base64",
   "parsers": {
     "js": "mjs"
