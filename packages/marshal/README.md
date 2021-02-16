@@ -164,15 +164,3 @@ Unfortunately, at the present time, because of
 plain empty objects, which should be valid `OnlyData` and serialize fine,
 are instead rejected because they are currently classified as a presence.
 We are in the process of fixing this.
-
-The string resulting from marshal's `stringify` must be unserialized
-by marshal's `parse`. If the string encoding was simply the `Encoding`
-string produced by the normal use of marshal described above, it would also be
-valid JSON and one might mistakenly decode it using plain `JSON.stringify`. To
-protect againt this hazard happening by accident, marshal's `stringify`
-prepends an `'M:'` and delegates to marshal's normal serialzation.
-Marshal's `parse` checks for and removes this `'M:'` before
-delegaing to marshal's normal unserialization. If this prefix is not present,
-`parse` throws an error.
-Of course, if you want to use `JSON.parse` on the data on purpose, to look
-at the encoded form, you can strip off the prefix and do so yourself.

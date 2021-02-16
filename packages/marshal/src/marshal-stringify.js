@@ -30,26 +30,11 @@ const { serialize, unserialize } = makeMarshal(
   { errorTagging: 'off' },
 );
 
-const PREFIX = 'M:';
-
-const PREFIX_PATTERN = /^M:(.*)$/;
-
-const addPrefix = suffix => `${PREFIX}${suffix}`;
-
-const removePrefix = str => {
-  const match = PREFIX_PATTERN.exec(str);
-  assert(
-    match !== null,
-    X`Marshal only parses strings that marshal strigified ${str}`,
-  );
-  return match[1];
-};
-
 /**
  * @param {OnlyData} val
  * @returns {string}
  */
-const stringify = val => addPrefix(serialize(val).body);
+const stringify = val => serialize(val).body;
 harden(stringify);
 
 /**
@@ -59,7 +44,7 @@ harden(stringify);
 const parse = str =>
   unserialize(
     harden({
-      body: removePrefix(str),
+      body: str,
       slots: badArray,
     }),
   );

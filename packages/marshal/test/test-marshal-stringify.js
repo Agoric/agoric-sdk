@@ -4,26 +4,26 @@ import { Far } from '../src/marshal';
 import { stringify, parse } from '../src/marshal-stringify';
 
 const pairs = harden([
-  [['a', { foo: 8 }, []], 'M:["a",{"foo":8},[]]'],
+  [['a', { foo: 8 }, []], '["a",{"foo":8},[]]'],
   [
     [1n, NaN, Infinity, -Infinity, undefined],
-    'M:[{"@qclass":"bigint","digits":"1"},{"@qclass":"NaN"},{"@qclass":"Infinity"},{"@qclass":"-Infinity"},{"@qclass":"undefined"}]',
+    '[{"@qclass":"bigint","digits":"1"},{"@qclass":"NaN"},{"@qclass":"Infinity"},{"@qclass":"-Infinity"},{"@qclass":"undefined"}]',
   ],
-  [URIError('foo'), 'M:{"@qclass":"error","message":"foo","name":"URIError"}'],
+  [URIError('foo'), '{"@qclass":"error","message":"foo","name":"URIError"}'],
 ]);
 
 test('marshal stringify', t => {
   for (const [data, str] of pairs) {
     t.is(stringify(data), str);
   }
-  t.is(stringify(harden([-0])), 'M:[0]');
+  t.is(stringify(harden([-0])), '[0]');
 });
 
 test('marshal parse', t => {
   for (const [data, str] of pairs) {
     t.deepEqual(parse(str), data);
   }
-  t.deepEqual(parse('M:[0]'), [0]);
+  t.deepEqual(parse('[0]'), [0]);
 });
 
 test('marshal stringify errors', t => {
@@ -55,10 +55,7 @@ test('marshal stringify errors', t => {
 });
 
 test('marshal parse errors', t => {
-  t.throws(() => parse('[0]'), {
-    message: /Marshal only parses strings that marshal strigified .*/,
-  });
-  t.throws(() => parse('M:{"@qclass":"slot","index":0}'), {
+  t.throws(() => parse('{"@qclass":"slot","index":0}'), {
     message: /Marshal's parse must not encode any slot positions .*/,
   });
 });
