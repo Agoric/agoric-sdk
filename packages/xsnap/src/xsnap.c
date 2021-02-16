@@ -969,39 +969,61 @@ void fx_setTimer(txMachine* the, txNumber interval, txBoolean repeat)
 
 void fx_setTimerCallback(txJob* job)
 {
-	txMachine* the = job->the;
-	fxBeginHost(the);
+	xsMachine* the = job->the;
+	xsBeginHost(the);
 	{
 		mxTry(the) {
-			/* THIS */
-			mxPushUndefined();
-			/* FUNCTION */
-			mxPush(job->function);
-			mxCall();
-			mxPush(job->argument);
-			/* ARGC */
-			mxRunCount(1);
-			mxPop();
+			xsCallFunction1(job->function, xsUndefined, job->argument);
 		}
 		mxCatch(the) {
 			fprintf(stderr, "exception in setTimerCallback: %s\n", xsToString(xsException));
 		}
 	}
-	fxEndHost(the);
+	xsEndHost(the);
 }
 
 /* PLATFORM */
 
 void fxAbort(txMachine* the, int status)
 {
-	if (status == XS_NOT_ENOUGH_MEMORY_EXIT)
-		mxUnknownError("not enough memory");
-	else if (status == XS_STACK_OVERFLOW_EXIT)
-		mxUnknownError("stack overflow");
-	else if (status == XS_TOO_MUCH_COMPUTATION_EXIT)
+	switch (status) {
+		case XS_STACK_OVERFLOW_EXIT:
+			xsLog("stack overflow\n");
+#ifdef mxDebug
+			fxDebugger(the, (char *)__FILE__, __LINE__);
+#endif
+			fxExitToHost(the);
+			break;
+	case XS_NOT_ENOUGH_MEMORY_EXIT:
+		xsLog("memory full\n");
+#ifdef mxDebug
+		fxDebugger(the, (char *)__FILE__, __LINE__);
+#endif
 		fxExitToHost(the);
-	else
+		break;
+	case XS_NO_MORE_KEYS_EXIT:
+		xsLog("not enough keys\n");
+#ifdef mxDebug
+		fxDebugger(the, (char *)__FILE__, __LINE__);
+#endif
+		fxExitToHost(the);
+		break;
+	case XS_TOO_MUCH_COMPUTATION_EXIT:
+		xsLog("too much computation\n");
+#ifdef mxDebug
+		fxDebugger(the, (char *)__FILE__, __LINE__);
+#endif
+		fxExitToHost(the);
+		break;
+	case XS_UNHANDLED_EXCEPTION_EXIT:
+	case XS_UNHANDLED_REJECTION_EXIT:
+		xsLog("%s\n", xsToString(xsException));
+		xsException = xsUndefined;
+		break;
+	default:
 		c_exit(status);
+		break;
+	}
 }
 
 void fxCreateMachinePlatform(txMachine* the)
@@ -1062,7 +1084,6 @@ void fxRunLoop(txMachine* the)
 			else {
 				*address = job->next;
 				c_free(job);
-
 			}
 		}
 	}

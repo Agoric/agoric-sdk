@@ -41,9 +41,9 @@ C_OPTIONS += \
 	-Wno-misleading-indentation \
 	-Wno-implicit-fallthrough
 ifeq ($(GOAL),debug)
-	C_OPTIONS += -g -O0 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -DmxDebug=1
+	C_OPTIONS += -DmxDebug=1 -g -O0 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter
 else
-	C_OPTIONS += -O3
+	C_OPTIONS += -DmxBoundsCheck=1 -O3
 endif
 
 LIBRARIES = -ldl -lm -lpthread
