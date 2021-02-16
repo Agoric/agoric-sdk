@@ -155,7 +155,7 @@ The full marshal package will serialize `Passable` objects containing
 presences and promises, because it serializes to a `CapData` structure
 containing both a `body` string and a `slots` array. Marshal's `stringify`
 function serializes only to a string, and so will not
-accept any presences of promises. If any are found in the input, this
+accept any presences or promises. If any are found in the input, this
 `stringify` will throw an error. The `OnlyData` type exported by this marshal
 represents that restriction.
 
