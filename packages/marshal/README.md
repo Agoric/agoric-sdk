@@ -128,3 +128,51 @@ Each time `m.unserialize()` encounters such a record, it calls
 `convertSlotToVal` with that slot from the slots array. `convertSlotToVal`
 should create and return a proxy (or other representative) of the
 pass-by-presence object.
+
+# As a direct alternative to JSON
+
+This marshal package also exports `stringify` and `parse` functions that
+can serve as a direct substitute for `JSON.stringify` and `JSON.parse`,
+with the following differences. These alternate functions are built on
+the marshal encoding of passable data explained above.
+
+Compared to JSON, marshal's `stringify` and `parse` is both more tolerant and
+less tolerant of what data it accepts. Marshal is more tolerant in that it will
+encode `NaN`, `Infinity`, `-Infinity`, BigInts, and
+`undefined`. Marshal is less tolerant in that accepts only pass-by-copy data
+according to the semantics of our distributed object model, as enforced
+by marshal---the `Passable` type exported by the marshal package. For example,
+all objects-as-records must be frozen, inherit from `Object.prototype` and have
+only enumerable string-named own properties. When JSON encounters something it
+does not like, JSON rejects it by skipping it. Marshal rejects it by throwing
+an error terminating the whole serialization.
+
+The JSON methods have more than one parameter, enabling customization
+of the operation, for example with *replacers* or *revivers*. These
+marshal-based alternative do not.
+
+The full marshal package will serialize `Passable` objects containing
+presences and promises, because it serializes to a `CapData` structure
+containing both a `body` string and a `slots` array. Marshal's `stringify`
+function serializes only to a string, and so will not
+accept any presences of promises. If any are found in the input, this
+`stringify` will throw an error. The `OnlyData` type exported by this marshal
+represents that restriction.
+
+Unfortunately, at the present time, because of
+[Empty objects are surprising (#2018)](https://github.com/Agoric/agoric-sdk/issues/2018)
+plain empty objects, which should be valid `OnlyData` and serialize fine,
+are instead rejected because they are currently classified as a presence.
+We are in the process of fixing this.
+
+The string resulting from marshal's `stringify` must be unserialized
+by marshal's `parse`. If the string encoding was simply the `Encoding`
+string produced by the normal use of marshal described above, it would also be
+valid JSON and one might mistakenly decode it using plain `JSON.stringify`. To
+protect againt this hazard happening by accident, marshal's `stringify`
+prepends an `'M:'` and delegates to marshal's normal serialzation.
+Marshal's `parse` checks for and removes this `'M:'` before
+delegaing to marshal's normal unserialization. If this prefix is not present,
+`parse` throws an error.
+Of course, if you want to use `JSON.parse` on the data on purpose, to look
+at the encoded form, you can strip off the prefix and do so yourself.
