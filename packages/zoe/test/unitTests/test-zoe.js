@@ -1,3 +1,4 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -29,7 +30,7 @@ test(`zoe.getInvitationIssuer`, async t => {
 
 test(`zoe.install bad bundle`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
     message: 'a bundle must be provided',
   });
@@ -46,7 +47,7 @@ test(`zoe.install`, async t => {
 
 test(`zoe.startInstance bad installation`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
     message: `(an undefined) was not a valid installation`,
   });
@@ -107,7 +108,7 @@ test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
     () =>
       E(zoe).startInstance(
         installation,
-        // @ts-ignore
+        // @ts-ignore deliberate invalid arguments for testing
         { something: 2 },
         { Moola: moolaKit.issuer },
       ),
@@ -126,6 +127,7 @@ test(`zoe.offer`, async t => {
 
 test(`zoe.offer - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
@@ -144,7 +146,7 @@ test(`zoe.getPublicFacet`, async t => {
 
 test(`zoe.getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -172,7 +174,7 @@ test(`zoe.getIssuers - none`, async t => {
 
 test(`zoe.getIssuers - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -200,7 +202,7 @@ test(`zoe.getBrands - none`, async t => {
 
 test(`zoe.getBrands - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -257,7 +259,7 @@ test(`zoe.getTerms`, async t => {
 
 test(`zoe.getTerms - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -272,6 +274,7 @@ test(`zoe.getInstance`, async t => {
 
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
@@ -286,6 +289,7 @@ test(`zoe.getInstallation`, async t => {
 
 test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
@@ -305,6 +309,7 @@ test(`zoe.getInvitationDetails`, async t => {
 
 test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
