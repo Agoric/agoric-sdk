@@ -52,10 +52,23 @@ test('marshal stringify errors', t => {
   t.throws(() => stringify(harden({})), {
     message: /Marshal's stringify rejects presences and promises .*/,
   });
+
+  t.throws(() => stringify(harden({ '@qclass': 'slot', index: 0 })), {
+    message: /property "@qclass" reserved/,
+  });
 });
 
 test('marshal parse errors', t => {
   t.throws(() => parse('{"@qclass":"slot","index":0}'), {
     message: /Marshal's parse must not encode any slot positions .*/,
+  });
+  t.throws(() => parse('X'), {
+    message: /Unexpected token X in JSON at position 0*/,
+  });
+  t.throws(() => parse('{"@qclass":8}'), {
+    message: /invalid qclass typeof "number"*/,
+  });
+  t.throws(() => parse('{"@qclass":"bogus"}'), {
+    message: /unrecognized "@qclass" "bogus"*/,
   });
 });
