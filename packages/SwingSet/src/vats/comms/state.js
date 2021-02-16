@@ -238,14 +238,20 @@ export function makeStateKit(state) {
     assert(!p.resolved, X`${vpid} was already resolved`);
   }
 
-  function markPromiseAsResolved(vpid, resolution) {
+  function markPromiseAsResolved(vpid, rejected, data) {
     const p = state.promiseTable.get(vpid);
     assert(p, X`unknown ${vpid}`);
     assert(!p.resolved);
-    insistCapData(resolution.data);
+    assert.typeof(
+      rejected,
+      'boolean',
+      X`non-boolean "rejected" flag: ${rejected}`,
+    );
+    insistCapData(data);
     p.resolved = true;
     p.kernelAwaitingResolve = true;
-    p.resolution = resolution;
+    p.rejected = rejected;
+    p.data = data;
     p.decider = undefined;
     p.subscribers = undefined;
     p.kernelIsSubscribed = undefined;

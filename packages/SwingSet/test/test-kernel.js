@@ -22,7 +22,7 @@ function capargs(args, slots = []) {
 const slot0arg = { '@qclass': 'slot', index: 0 };
 
 function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, { rejected, data }]];
+  return [[promiseID, rejected, data]];
 }
 
 function checkPromises(t, kernel, expected) {
