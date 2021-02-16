@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.24.0...@agoric/cosmic-swingset@0.25.0) (2021-02-16)
+
+
+### Bug Fixes
+
+* adapt to new cosmos-sdk ([3b12c9e](https://github.com/Agoric/agoric-sdk/commit/3b12c9e2ef33117206189ecd085f51523c7d0d87))
+* add more metrics ([e3223fb](https://github.com/Agoric/agoric-sdk/commit/e3223fb25a672e002128e9a4d13d3a0da62cb872))
+* be more tolerant of errors ([967832e](https://github.com/Agoric/agoric-sdk/commit/967832e17010b0fec30a0bf80d2cb740406c4dbb))
+* configure go relayer properly with add-paths ([7f2bd5b](https://github.com/Agoric/agoric-sdk/commit/7f2bd5bb41435a97bdb6256dc7bdccb45bb390dc))
+* limit number of kernel steps per block ([a0f4588](https://github.com/Agoric/agoric-sdk/commit/a0f45880cc515c6a7f9333c670a3c1d9bdf35834))
+* make HTTP replies more robust ([4b98e64](https://github.com/Agoric/agoric-sdk/commit/4b98e64412499bccd016b86eaa48abd21dc35b03))
+* message batches reduce wallet setup from 80 to 20 chain trips ([7d17f2f](https://github.com/Agoric/agoric-sdk/commit/7d17f2f5f7585adb5ae02a26489ef2e9abe7c5bb))
+* motivate some changes, drop an extraneous JSON-laundering ([6a1dfe0](https://github.com/Agoric/agoric-sdk/commit/6a1dfe08cb061216cd90cdec5a52cf84c451e95e))
+* prefix Prometheus metrics with swingset_ ([73238dc](https://github.com/Agoric/agoric-sdk/commit/73238dc75e699bc7e888f1d8080ea20f1e2f483e))
+* prevent device node leaks and stale urlHandlers ([a2825ac](https://github.com/Agoric/agoric-sdk/commit/a2825ace27d51fa1d6421a995cc38af346b2c03c))
+* properly honour FIXME_MAX_CRANKS_PER_BLOCK ([60be251](https://github.com/Agoric/agoric-sdk/commit/60be25159f6786d5f911502aefdaa7ab7fd3cb6f))
+* review comments ([17d7df6](https://github.com/Agoric/agoric-sdk/commit/17d7df6ee06eb5c340500bb5582f985c2993ab19))
+* review comments ([7db7e5c](https://github.com/Agoric/agoric-sdk/commit/7db7e5c4c569dfedff8d748dd58893218b0a2458))
+* speed up sim-chain when no configured inter-block delay ([8c7dd1e](https://github.com/Agoric/agoric-sdk/commit/8c7dd1eda1d864c89208256f27aaee3712f77d17))
+* update dibc for v0.41.0 ([d990c14](https://github.com/Agoric/agoric-sdk/commit/d990c145ddcef3b090c63879a96a1942bc4ae69c))
+* use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric-sdk/commit/f860c5bf5add165a08cb5bd543502857c3f57998))
+* wire through the CapTP bootstrap message ([7af41bc](https://github.com/Agoric/agoric-sdk/commit/7af41bc13a778c4872863e2060874910d6c1fefa))
+
+
+### Features
+
+* add a notifier to the timerService ([#2143](https://github.com/Agoric/agoric-sdk/issues/2143)) ([3cb4606](https://github.com/Agoric/agoric-sdk/commit/3cb46063080dd4fac27507ad0062e54dbf82eda4))
+* add OTEL (OpenTelemetry) histograms ([f526ff4](https://github.com/Agoric/agoric-sdk/commit/f526ff4c787129d0fe99e1f82fd9f75bd27afb27))
+* allow $NO_FAKE_CURRENCIES=1 to eliminate default purses ([0a2d054](https://github.com/Agoric/agoric-sdk/commit/0a2d05496dd2de6e582f0df5729ffacd5ce80406))
+* export SwingSet metrics to Prometheus via local HTTP port ([78160fe](https://github.com/Agoric/agoric-sdk/commit/78160fe0de20b8032bbdb988a882d8dcf10f9150))
+* wire metrics into fake-chain too ([003c34c](https://github.com/Agoric/agoric-sdk/commit/003c34caa9832c8171675dfbb466127ca14b360e))
+
+
+
+
+
 # [0.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.23.0...@agoric/cosmic-swingset@0.24.0) (2020-12-10)
 
 

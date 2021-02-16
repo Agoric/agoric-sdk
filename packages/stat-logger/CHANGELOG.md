@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.0...@agoric/stat-logger@0.4.1) (2021-02-16)
+
+
+### Bug Fixes
+
+* use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric-sdk/commit/f860c5bf5add165a08cb5bd543502857c3f57998))
+
+
+
+
+
 # [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.3.4...@agoric/stat-logger@0.4.0) (2020-12-10)
 
 

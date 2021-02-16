@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.3.0...@agoric/tame-metering@1.3.1) (2021-02-16)
+
+
+### Bug Fixes
+
+* adapt to new cosmos-sdk ([3b12c9e](https://github.com/Agoric/agoric-sdk/commit/3b12c9e2ef33117206189ecd085f51523c7d0d87))
+* **tame-metering:** be tolerant to Node.js 14.15.x ([5b54e07](https://github.com/Agoric/agoric-sdk/commit/5b54e07c058230cbcc9f9505ce8ec60b61c099f1))
+* **tame-metering:** log problems trying to meter roots ([5ed0310](https://github.com/Agoric/agoric-sdk/commit/5ed03102fd9b893578a1d6ecaa05c0fb010065e0))
+* **tame-metering:** quieter warnings for defineProperty failures ([7575b94](https://github.com/Agoric/agoric-sdk/commit/7575b945d6f647bf3416ce18f843c45d073f8c3a))
+
+
+
+
+
 # [1.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.2.7...@agoric/tame-metering@1.3.0) (2020-12-10)
 
 

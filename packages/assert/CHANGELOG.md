@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.2.0...@agoric/assert@0.2.1) (2021-02-16)
+
+
+### Bug Fixes
+
+* review comments ([17d7df6](https://github.com/Agoric/agoric-sdk/commit/17d7df6ee06eb5c340500bb5582f985c2993ab19))
+* update '@agoric/assert' types ([3ce7587](https://github.com/Agoric/agoric-sdk/commit/3ce7587d0ba6d7a0f5c51a0cacbdc414eb02891b))
+* use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric-sdk/commit/f860c5bf5add165a08cb5bd543502857c3f57998))
+
+
+
+
+
 # [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.1.0...@agoric/assert@0.2.0) (2020-12-10)
 
 
