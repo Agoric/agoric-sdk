@@ -330,7 +330,7 @@ test(`zcf.makeInvitation - no customProperties`, async t => {
   const { zcf, zoe, instance, installation } = await setupZCFTest();
   const invitationP = zcf.makeInvitation(() => {}, 'myInvitation');
   const details = await E(zoe).getInvitationDetails(invitationP);
-  assertAmountsEqual(t, details, {
+  t.deepEqual(details, {
     description: 'myInvitation',
     handle: details.handle,
     installation,
