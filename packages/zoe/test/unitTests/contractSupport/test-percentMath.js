@@ -11,6 +11,7 @@ import {
   makeNone,
   makeAll,
 } from '../../../src/contractSupport/percentMath';
+import { assertAmountsEqual } from '../../zoeTestHelpers';
 
 test('percentMath - basic', t => {
   const { brand } = makeIssuerKit('moe');
@@ -63,7 +64,7 @@ test('percentMath - ALL', t => {
   /** @param {bigint} value */
   const moe = value => amountMath.make(value, brand);
 
-  t.deepEqual(moe(100000n), makeAll(brand).scale(moe(100000n)));
+  assertAmountsEqual(t, moe(100000), makeAll(brand).scale(moe(100000n)));
 });
 
 test('percentMath - NONE', t => {
@@ -71,7 +72,11 @@ test('percentMath - NONE', t => {
   /** @param {bigint} value */
   const moe = value => amountMath.make(value, brand);
 
-  t.deepEqual(amountMath.makeEmpty(brand), makeNone(brand).scale(moe(100000n)));
+  assertAmountsEqual(
+    t,
+    amountMath.getEmpty(),
+    makeNone(brand).scale(moe(100000n)),
+  );
 });
 
 test('percentMath - complement', t => {

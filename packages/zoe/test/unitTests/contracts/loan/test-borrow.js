@@ -27,6 +27,7 @@ import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
 import { makeRatio } from '../../../../src/contractSupport';
+import { assertAmountsEqual } from '../../../zoeTestHelpers';
 
 const BASIS_POINTS = 10000n;
 
@@ -179,13 +180,13 @@ test('borrow getDebtNotifier', async t => {
   const { borrowFacet, maxLoan } = await setupBorrowFacet();
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
   const state = await debtNotifier.getUpdateSince();
-  t.deepEqual(state.value, maxLoan);
+  assertAmountsEqual(t, state.value, maxLoan);
 });
 
 test('borrow getRecentCollateralAmount', async t => {
   const { borrowFacet, collateral } = await setupBorrowFacet();
   const collateralAmount = await E(borrowFacet).getRecentCollateralAmount();
-  t.deepEqual(collateralAmount, collateral);
+  assertAmountsEqual(t, collateralAmount, collateral);
 });
 
 test('borrow getLiquidationPromise', async t => {
@@ -213,8 +214,9 @@ test('borrow getLiquidationPromise', async t => {
   const { quoteAmount, quotePayment } = await liquidationPromise;
   const quoteAmount2 = await E(quoteIssuer).getAmountOf(quotePayment);
 
-  t.deepEqual(quoteAmount, quoteAmount2);
-  t.deepEqual(
+  assertAmountsEqual(t, quoteAmount, quoteAmount2);
+  assertAmountsEqual(
+    t,
     quoteAmount,
     amountMath.make(
       [
@@ -276,9 +278,9 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
 
   const quoteBrand = await E(quoteIssuer).getBrand();
 
-  t.deepEqual(quoteAmount, quoteAmount2);
-
-  t.deepEqual(
+  assertAmountsEqual(t, quoteAmount, quoteAmount2);
+  assertAmountsEqual(
+    t,
     quoteAmount,
     amountMath.make(
       [
@@ -324,21 +326,29 @@ test('getDebtNotifier with interest', async t => {
   const { value: originalDebt, updateCount } = await E(
     debtNotifier,
   ).getUpdateSince();
-  t.deepEqual(originalDebt, maxLoan);
+  assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(6);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
-  t.deepEqual(debtCompounded1, amountMath.make(40020n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded1,
+    amountMath.make(40020n, loanKit.brand),
+  );
 
   periodUpdater.updateState(11);
 
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
     updateCount1,
   );
-  t.deepEqual(debtCompounded2, amountMath.make(40040n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded2,
+    amountMath.make(40040n, loanKit.brand),
+  );
 
   const closeLoanInvitation = E(borrowFacet).makeCloseLoanInvitation();
   await checkDescription(t, zoe, closeLoanInvitation, 'repayAndClose');
@@ -387,14 +397,18 @@ test('aperiodic interest', async t => {
   const { value: originalDebt, updateCount } = await E(
     debtNotifier,
   ).getUpdateSince();
-  t.deepEqual(originalDebt, maxLoan);
+  assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(6);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
-  t.deepEqual(debtCompounded1, amountMath.make(40020n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded1,
+    amountMath.make(40020n, loanKit.brand),
+  );
 
   // skip ahead a notification
   periodUpdater.updateState(16);
@@ -404,13 +418,21 @@ test('aperiodic interest', async t => {
     debtNotifier,
   ).getUpdateSince(updateCount1);
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
-  t.deepEqual(debtCompounded2, amountMath.make(40060n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded2,
+    amountMath.make(40060n, loanKit.brand),
+  );
 
   periodUpdater.updateState(21);
   const { value: debtCompounded3 } = await E(debtNotifier).getUpdateSince(
     updateCount2,
   );
-  t.deepEqual(debtCompounded3, amountMath.make(40080n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded3,
+    amountMath.make(40080n, loanKit.brand),
+  );
 });
 
 // Show that interest is charged from the time the loan was created.
@@ -479,7 +501,7 @@ test('short periods', async t => {
   const { value: originalDebt, updateCount } = await E(
     debtNotifier,
   ).getUpdateSince();
-  t.deepEqual(originalDebt, maxLoan);
+  assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(5);
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 1n);
@@ -488,28 +510,44 @@ test('short periods', async t => {
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
-  t.deepEqual(debtCompounded1, amountMath.make(40020n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded1,
+    amountMath.make(40020n, loanKit.brand),
+  );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 6n);
 
   periodUpdater.updateState(14);
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount1);
-  t.deepEqual(debtCompounded2, amountMath.make(40040n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded2,
+    amountMath.make(40040n, loanKit.brand),
+  );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 11n);
 
   periodUpdater.updateState(17);
   const { value: debtCompounded3, updateCount: updateCount3 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount2);
-  t.deepEqual(debtCompounded3, amountMath.make(40060n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded3,
+    amountMath.make(40060n, loanKit.brand),
+  );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
 
   periodUpdater.updateState(21);
   const { value: debtCompounded4, updateCount: updateCount4 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount3);
-  t.deepEqual(debtCompounded4, amountMath.make(40080n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded4,
+    amountMath.make(40080n, loanKit.brand),
+  );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
 
   periodUpdater.updateState(25);
@@ -519,7 +557,11 @@ test('short periods', async t => {
   const { value: debtCompounded5 } = await E(debtNotifier).getUpdateSince(
     updateCount4,
   );
-  t.deepEqual(debtCompounded5, amountMath.make(40100n, loanKit.brand));
+  assertAmountsEqual(
+    t,
+    debtCompounded5,
+    amountMath.make(40100n, loanKit.brand),
+  );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 26n);
 });
 
