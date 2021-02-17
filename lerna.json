@@ -8,6 +8,7 @@
   },
   "packages": [
     ".",
+    "golang/cosmos",
     "packages/*", 
     "packages/dapp-*-wallet/api",
     "packages/dapp-*-wallet/contract",

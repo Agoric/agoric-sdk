@@ -67,14 +67,9 @@ const KERNEL_STATS_UPDOWN_METRICS = [
     description: 'Unresolved kernel promises',
   },
   {
-    key: 'kpFulfilledToPresence',
-    name: 'swingset_presence_kernel_promises',
-    description: 'Kernel promises fulfilled to presences',
-  },
-  {
-    key: 'kpFulfilledToData',
-    name: 'swingset_data_kernel_promises',
-    description: 'Kernel promises fulfilled to data',
+    key: 'kpFulfilled',
+    name: 'swingset_fulfilled_kernel_promises',
+    description: 'Fulfilled kernel promises',
   },
   {
     key: 'kpRejected',

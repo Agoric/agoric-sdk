@@ -27,7 +27,7 @@
     "@agoric/babel-parser": "^7.6.4",
     "@agoric/bundle-source": "^1.2.1",
     "@agoric/captp": "^1.7.1",
-    "@agoric/cosmos": "^0.23.0",
+    "@agoric/cosmos": "^0.24.0",
     "@agoric/dapp-svelte-wallet": "^0.6.1",
     "@agoric/ertp": "^0.9.1",
     "@agoric/eventual-send": "^0.13.1",
