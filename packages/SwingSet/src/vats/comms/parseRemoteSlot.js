@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 
 // Object/promise references (in remote messages) contain a three-tuple of
@@ -32,7 +32,7 @@ export function parseRemoteSlot(s) {
     assert.fail(X`invalid remoteSlot ${s}`);
   }
 
-  const id = Nat(Number(indexSuffix));
+  const id = Nat(BigInt(indexSuffix));
   return { type, allocatedByRecipient, id };
 }
 

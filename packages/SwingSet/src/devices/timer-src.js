@@ -22,7 +22,7 @@
  * expose only capabilities that don't reveal them.
  */
 
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
@@ -103,7 +103,7 @@ function makeTimerMap(state = undefined) {
       typeof repeater === 'number' ? { handler, index: repeater } : { handler };
     const { handlers: records } = eventsFor(time);
     records.push(handlerRecord);
-    schedule.sort((a, b) => a.time - b.time);
+    schedule.sort((a, b) => Number(a.time - b.time));
     return time;
   }
 

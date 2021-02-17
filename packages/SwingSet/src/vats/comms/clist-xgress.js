@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../parseVatSlots';
 import { flipRemoteSlot, makeRemoteSlot } from './parseRemoteSlot';
@@ -24,7 +24,7 @@ export function makeIngressEgress(state, provideLocalForRemote) {
     remote.fromRemote.set(inboundRRef, vatoid);
     remote.toRemote.set(vatoid, outboundRRef);
     if (remote.nextObjectIndex <= remoteRefID) {
-      remote.nextObjectIndex = remoteRefID + 1;
+      remote.nextObjectIndex = remoteRefID + 1n;
     }
   }
 

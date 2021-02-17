@@ -261,6 +261,7 @@ test.serial('mailbox outbound', async t => {
   await initializeSwingset(config, ['mailbox1'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
+  // exportToData() provides plain Numbers to the host that needs to convey the messages
   t.deepEqual(s.exportToData(), {
     peer1: {
       inboundAck: 13,
