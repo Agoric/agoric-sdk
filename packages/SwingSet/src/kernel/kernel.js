@@ -22,7 +22,10 @@ import { makeVatLoader } from './loadVat';
 import { makeVatTranslators } from './vatTranslator';
 import { makeDeviceTranslators } from './deviceTranslator';
 
-function abbreviateReviver(_, arg) {
+function abbreviateReplacer(_, arg) {
+  if (typeof arg === 'bigint') {
+    return Number(arg);
+  }
   if (typeof arg === 'string' && arg.length >= 40) {
     // truncate long strings
     return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
@@ -138,7 +141,7 @@ export default function buildKernel(
   // 'result' value returned by c.queueToExport()
   function testLog(...args) {
     const rendered = args.map(arg =>
-      typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReviver),
+      typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReplacer),
     );
     ephemeral.log.push(rendered.join(''));
   }
