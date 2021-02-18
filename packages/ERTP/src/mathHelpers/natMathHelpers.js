@@ -1,10 +1,10 @@
 // @ts-check
 
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 
 import '../types';
 
-const identity = 0;
+const identity = 0n;
 
 /**
  * Fungible digital assets use the natMathHelpers to manage balances -
@@ -24,7 +24,8 @@ const natMathHelpers = harden({
   doIsEmpty: nat => nat === identity,
   doIsGTE: (left, right) => left >= right,
   doIsEqual: (left, right) => left === right,
-  doAdd: (left, right) => Nat(left + right),
+  // BigInts don't observably overflow
+  doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
 });
 
