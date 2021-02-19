@@ -61,7 +61,7 @@ test('amountMath from makeIssuerKit', async t => {
       fungible(150),
     ),
   );
-  t.is(fungible(4000).value, 4000);
+  t.is(fungible(4000).value, 4000n);
   t.is(fungible(0).brand, brand);
 });
 
@@ -399,7 +399,7 @@ test('issuer.combine array of promises', async t => {
 
   const checkCombinedResult = paymentP => {
     issuer.getAmountOf(paymentP).then(pAmount => {
-      t.is(pAmount.value, 100);
+      t.is(pAmount.value, 100n);
     });
   };
 
