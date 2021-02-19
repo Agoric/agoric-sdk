@@ -50,197 +50,197 @@ const getOutputPricethrows = (
 // diverged from the calculation in the Uniswap paper.
 test('getInputPrice no reserves', t => {
   const input = {
-    inputReserve: 0,
-    outputReserve: 0,
-    inputValue: 1,
+    inputReserve: 0n,
+    outputReserve: 0n,
+    inputValue: 1n,
   };
-  const message = 'inputReserve (a number) must be positive';
+  const message = 'inputReserve (a bigint) must be positive';
   getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice ok 2', t => {
   const input = {
-    inputReserve: 5984,
-    outputReserve: 3028,
-    inputValue: 1398,
+    inputReserve: 5984n,
+    outputReserve: 3028n,
+    inputValue: 1398n,
   };
-  const expectedOutput = 572;
+  const expectedOutput = 572n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 3', t => {
   const input = {
-    inputReserve: 8160,
-    outputReserve: 7743,
-    inputValue: 6635,
+    inputReserve: 8160n,
+    outputReserve: 7743n,
+    inputValue: 6635n,
   };
-  const expectedOutput = 3466;
+  const expectedOutput = 3466n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 4', t => {
   const input = {
-    inputReserve: 10,
-    outputReserve: 10,
-    inputValue: 1000,
+    inputReserve: 10n,
+    outputReserve: 10n,
+    inputValue: 1000n,
   };
-  const expectedOutput = 9;
+  const expectedOutput = 9n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 5', t => {
   const input = {
-    inputReserve: 100,
-    outputReserve: 50,
-    inputValue: 17,
+    inputReserve: 100n,
+    outputReserve: 50n,
+    inputValue: 17n,
   };
-  const expectedOutput = 7;
+  const expectedOutput = 7n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 6', t => {
   const input = {
-    outputReserve: 117,
-    inputReserve: 43,
-    inputValue: 7,
+    outputReserve: 117n,
+    inputReserve: 43n,
+    inputValue: 7n,
   };
-  const expectedOutput = 16;
+  const expectedOutput = 16n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice negative', t => {
   const input = {
-    outputReserve: 117,
-    inputReserve: 43,
-    inputValue: -7,
+    outputReserve: 117n,
+    inputReserve: 43n,
+    inputValue: -7n,
   };
-  const message = 'inputValue (a number) must be positive';
+  const message = 'inputValue (a bigint) must be positive';
   getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice bad reserve 1', t => {
   const input = {
-    outputReserve: 0,
-    inputReserve: 43,
-    inputValue: 347,
+    outputReserve: 0n,
+    inputReserve: 43n,
+    inputValue: 347n,
   };
-  const message = 'outputReserve (a number) must be positive';
+  const message = 'outputReserve (a bigint) must be positive';
   getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice bad reserve 2', t => {
   const input = {
-    outputReserve: 50,
-    inputReserve: 0,
-    inputValue: 828,
+    outputReserve: 50n,
+    inputReserve: 0n,
+    inputValue: 828n,
   };
-  const message = 'inputReserve (a number) must be positive';
+  const message = 'inputReserve (a bigint) must be positive';
   getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice zero input', t => {
   const input = {
-    outputReserve: 50,
-    inputReserve: 320,
-    inputValue: 0,
+    outputReserve: 50n,
+    inputReserve: 320n,
+    inputValue: 0n,
   };
-  const message = 'inputValue (a number) must be positive';
+  const message = 'inputValue (a bigint) must be positive';
   getInputPricethrows(t, input, message);
 });
 
 test('getInputPrice big product', t => {
   const input = {
-    outputReserve: 100000000,
-    inputReserve: 100000000,
-    inputValue: 1000,
+    outputReserve: 100000000n,
+    inputReserve: 100000000n,
+    inputValue: 1000n,
   };
-  const expectedOutput = 996;
+  const expectedOutput = 996n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('calculate value to mint - positive supply 1', t => {
-  const res = calcLiqValueToMint(20, 30, 5);
-  t.is(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
+  const res = calcLiqValueToMint(20n, 30n, 5n);
+  t.is(res, (20n * 30n) / 5n, 'When supply is present, floor(x*y/z)');
 });
 
 test('calculate value to mint - positive supply 2', t => {
-  const res = calcLiqValueToMint(5, 8, 7);
-  t.is(res, 5, 'When supply is present, floor(x*y/z)');
+  const res = calcLiqValueToMint(5n, 8n, 7n);
+  t.is(res, 5n, 'When supply is present, floor(x*y/z)');
 });
 
 test('calculate value to mint - no supply', t => {
-  const res = calcLiqValueToMint(0, 30, 5);
-  t.is(res, 30, 'When the supply is empty, return inputValue');
+  const res = calcLiqValueToMint(0n, 30n, 5n);
+  t.is(res, 30n, 'When the supply is empty, return inputValue');
 });
 
 test('getOutputPrice ok', t => {
   const input = {
-    outputReserve: 117,
-    inputReserve: 43,
-    outputValue: 37,
+    outputReserve: 117n,
+    inputReserve: 43n,
+    outputValue: 37n,
   };
-  const expectedOutput = 20;
+  const expectedOutput = 20n;
   testGetOutputPrice(t, input, expectedOutput);
 });
 
 test('getOutputPrice zero output reserve', t => {
   const input = {
-    outputReserve: 0,
-    inputReserve: 43,
-    outputValue: 37,
+    outputReserve: 0n,
+    inputReserve: 43n,
+    outputValue: 37n,
   };
-  const message = 'outputReserve (a number) must be positive';
+  const message = 'outputReserve (a bigint) must be positive';
   getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice zero input reserve', t => {
   const input = {
-    outputReserve: 92,
-    inputReserve: 0,
-    outputValue: 37,
+    outputReserve: 92n,
+    inputReserve: 0n,
+    outputValue: 37n,
   };
-  const message = 'inputReserve (a number) must be positive';
+  const message = 'inputReserve (a bigint) must be positive';
   getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice too much output', t => {
   const input = {
-    outputReserve: 1024,
-    inputReserve: 1132,
-    outputValue: 20923,
+    outputReserve: 1024n,
+    inputReserve: 1132n,
+    outputValue: 20923n,
   };
   const message =
-    'outputReserve (a number) must be greater than outputValue (a number)';
+    'outputReserve (a bigint) must be greater than outputValue (a bigint)';
   getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice too much output 2', t => {
   const input = {
-    outputReserve: 345,
-    inputReserve: 1132,
-    outputValue: 345,
+    outputReserve: 345n,
+    inputReserve: 1132n,
+    outputValue: 345n,
   };
   const message =
-    'outputReserve (a number) must be greater than outputValue (a number)';
+    'outputReserve (a bigint) must be greater than outputValue (a bigint)';
   getOutputPricethrows(t, input, message);
 });
 
 test('getOutputPrice big product', t => {
   const input = {
-    outputReserve: 100000000,
-    inputReserve: 100000000,
-    outputValue: 1000,
+    outputReserve: 100000000n,
+    inputReserve: 100000000n,
+    outputValue: 1000n,
   };
-  const expectedOutput = 1004;
+  const expectedOutput = 1004n;
   testGetOutputPrice(t, input, expectedOutput);
 });
 
 test('getOutputPrice minimum price', t => {
   const input = {
-    outputReserve: 10,
-    inputReserve: 1,
-    outputValue: 1,
+    outputReserve: 10n,
+    inputReserve: 1n,
+    outputValue: 1n,
   };
-  const expectedOutput = 1;
+  const expectedOutput = 1n;
   testGetOutputPrice(t, input, expectedOutput);
 });

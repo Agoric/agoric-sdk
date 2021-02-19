@@ -64,7 +64,7 @@ const start = async zcf => {
     issuer: liquidityIssuer,
     amountMath: liquidityMath,
   } = liquidityMint.getIssuerRecord();
-  let liqTokenSupply = 0;
+  let liqTokenSupply = 0n;
 
   // In order to get all the brands, we must call zcf.getTerms() after
   // we create the liquidityIssuer

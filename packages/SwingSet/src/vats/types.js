@@ -24,10 +24,10 @@
  */
 
 /**
- * @typedef {number} Timestamp An absolute individual stamp returned by a
+ * @typedef {bigint} Timestamp An absolute individual stamp returned by a
  * TimerService.  Note that different timer services may have different
  * interpretations of actual Timestamp values.
- * @typedef {number} RelativeTime Difference between two Timestamps.  Note that
+ * @typedef {bigint} RelativeTime Difference between two Timestamps.  Note that
  * different timer services may have different interpretations of actual
  * RelativeTime values.
  */

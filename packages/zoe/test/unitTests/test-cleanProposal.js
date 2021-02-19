@@ -74,7 +74,7 @@ test('cleanProposal - repeated brands', t => {
   const proposal = harden({
     want: { Asset2: simoleans(1) },
     give: { Price2: moola(3) },
-    exit: { afterDeadline: { timer, deadline: 100 } },
+    exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
   const expected = harden({
@@ -82,7 +82,7 @@ test('cleanProposal - repeated brands', t => {
       Asset2: simoleans(1),
     },
     give: { Price2: moola(3) },
-    exit: { afterDeadline: { timer, deadline: 100 } },
+    exit: { afterDeadline: { timer, deadline: 100n } },
   });
   // cleanProposal no longer fills in empty keywords
   const actual = cleanProposal(getAmountMathForBrand, proposal);

@@ -1,7 +1,11 @@
+// @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import '../../../src/contractSupport/types';
+
+import '../../../exported';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import {
@@ -15,8 +19,8 @@ test('percentMath - basic', t => {
   const { amountMath } = makeIssuerKit('moe');
   const moe = amountMath.make;
 
-  const halfDefault = makePercent(50, amountMath);
-  const halfPrecise = makePercent(5000, amountMath, 10000);
+  const halfDefault = makePercent(50n, amountMath);
+  const halfPrecise = makePercent(5000n, amountMath, 10000n);
 
   t.deepEqual(moe(666), halfDefault.scale(moe(1333)));
   t.deepEqual(moe(6666666), halfDefault.scale(moe(13333333)));
@@ -42,7 +46,7 @@ test('percentMath - brand mismatch', t => {
 
   const oneThirdDefault = calculatePercent(moe(1), moe(3), amountMath);
   t.throws(
-    () => calculatePercent(moe(1), amountMath, astAmountMath.make(3), 10000),
+    () => calculatePercent(moe(1), amountMath, astAmountMath.make(3), 10000n),
     {
       message: `Dividing amounts of different brands doesn't produce a percent.`,
     },
@@ -73,7 +77,7 @@ test('percentMath - complement', t => {
 
   const oneThirdDefault = calculatePercent(moe(1), moe(3), amountMath);
   const twoThirdsDefault = oneThirdDefault.complement();
-  const oneThirdPrecise = calculatePercent(moe(1), moe(3), amountMath, 10000);
+  const oneThirdPrecise = calculatePercent(moe(1), moe(3), amountMath, 10000n);
   const twoThirdsPrecise = oneThirdPrecise.complement();
 
   t.deepEqual(moe(33000), oneThirdDefault.scale(moe(100000)));
@@ -86,8 +90,8 @@ test('percentMath - non-standard thirds', t => {
   const moe = amountMath.make;
 
   const oneThirdDefault = calculatePercent(moe(1), moe(3), amountMath);
-  const oneThirdBetter = calculatePercent(moe(1), moe(3), amountMath, 1000);
-  const oneThirdPrecise = makePercent(1, amountMath, 3);
+  const oneThirdBetter = calculatePercent(moe(1), moe(3), amountMath, 1000n);
+  const oneThirdPrecise = makePercent(1n, amountMath, 3n);
 
   t.deepEqual(moe(2970), oneThirdDefault.scale(moe(9000)));
   t.deepEqual(moe(2997), oneThirdBetter.scale(moe(9000)));
@@ -99,7 +103,7 @@ test('percentMath - larger than 100%', t => {
   const moe = amountMath.make;
 
   const oneFiftyDefault = calculatePercent(moe(5), moe(3), amountMath);
-  const oneFiftyBetter = calculatePercent(moe(5), moe(3), amountMath, 1000);
+  const oneFiftyBetter = calculatePercent(moe(5), moe(3), amountMath, 1000n);
 
   // 1.66 * 7777
   t.deepEqual(moe(12909), oneFiftyDefault.scale(moe(7777)));
@@ -111,10 +115,8 @@ test('percentMath - Nats only', t => {
   const { amountMath } = makeIssuerKit('moe');
 
   t.throws(() => makePercent(10.1, amountMath), {
-    message: 'not a safe integer',
+    message: '10.1 not a safe integer',
   });
 
-  t.throws(() => makePercent(47n, amountMath), {
-    message: 'not a safe integer',
-  });
+  t.notThrows(() => makePercent(47n, amountMath));
 });

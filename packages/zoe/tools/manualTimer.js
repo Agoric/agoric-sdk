@@ -15,7 +15,7 @@ import { makeNotifierKit } from '@agoric/notifier';
  * @param {Timestamp} [startValue=0]
  * @returns {ManualTimer}
  */
-export default function buildManualTimer(log, startValue = 0) {
+export default function buildManualTimer(log, startValue = 0n) {
   let ticks = startValue;
 
   /** @type {Store<Timestamp, Array<TimerWaker>>} */
@@ -60,7 +60,7 @@ export default function buildManualTimer(log, startValue = 0) {
   const timer = {
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
-      ticks += 1;
+      ticks += 1n;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         const wakers = schedule.get(ticks);

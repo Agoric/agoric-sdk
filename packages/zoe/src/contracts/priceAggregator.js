@@ -2,6 +2,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
 import makeStore from '@agoric/store';
+import { Nat, isNat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
@@ -41,7 +42,7 @@ const start = async zcf => {
   /** @type {PriceAuthorityAdmin} */
   let priceAuthorityAdmin;
 
-  /** @type {number} */
+  /** @type {bigint} */
   let lastValueOutForUnitIn;
 
   /**
@@ -60,7 +61,7 @@ const start = async zcf => {
   /**
    * @typedef {Object} OracleRecord
    * @property {(timestamp: Timestamp) => Promise<void>=} querier
-   * @property {number} lastSample
+   * @property {bigint} lastSample
    */
 
   /** @type {Set<OracleRecord>} */
@@ -72,7 +73,7 @@ const start = async zcf => {
   let publishedTimestamp = await E(timer).getCurrentTimestamp();
 
   // Wake every POLL_INTERVAL and run the queriers.
-  const repeaterP = E(timer).makeRepeater(0, POLL_INTERVAL);
+  const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
   /** @type {TimerWaker} */
   const waker = {
     async wake(timestamp) {
@@ -90,7 +91,7 @@ const start = async zcf => {
 
   /**
    * @param {Object} param0
-   * @param {number} [param0.overrideValueOut]
+   * @param {bigint} [param0.overrideValueOut]
    * @param {Timestamp} [param0.timestamp]
    */
   const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
@@ -157,12 +158,12 @@ const start = async zcf => {
     };
 
   /**
-   * @param {Array<number>} samples
+   * @param {Array<bigint>} samples
    * @param {Timestamp} timestamp
    */
   const updateQuote = async (samples, timestamp) => {
     const median = calculateMedian(
-      samples.filter(sample => sample > 0 && Number.isSafeInteger(sample)),
+      samples.filter(sample => isNat(sample) && sample > 0n),
       { add, divide: floorDivide, isGTE },
     );
 
@@ -227,7 +228,7 @@ const start = async zcf => {
       assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
 
       /** @type {OracleRecord} */
-      const record = { querier: undefined, lastSample: NaN };
+      const record = { querier: undefined, lastSample: 0n };
 
       /** @type {Set<OracleRecord>} */
       let records;
@@ -243,7 +244,7 @@ const start = async zcf => {
       const pushResult = result => {
         // Sample of NaN, 0, or negative numbers get culled in the median
         // calculation.
-        const sample = parseInt(result, 10);
+        const sample = Nat(parseInt(result, 10));
         record.lastSample = sample;
       };
 
@@ -288,7 +289,7 @@ const start = async zcf => {
         return harden(oracleAdmin);
       }
 
-      let lastWakeTimestamp = 0;
+      let lastWakeTimestamp = 0n;
 
       /**
        * @param {Timestamp} timestamp

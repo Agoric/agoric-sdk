@@ -68,7 +68,7 @@ test('pay bounty', async t => {
     { Bounty: moolaIssuer, Fee: moolaIssuer },
     {
       oracle: publicFacet,
-      deadline: 3,
+      deadline: 3n,
       condition: 'Succeeded',
       timer,
       fee: moola(50),
@@ -136,7 +136,7 @@ test('pay no bounty', async t => {
     { Bounty: moolaIssuer, Fee: moolaIssuer },
     {
       oracle: publicFacet,
-      deadline: 3,
+      deadline: 3n,
       condition: 'Succeeded',
       timer,
       fee: moola(50),

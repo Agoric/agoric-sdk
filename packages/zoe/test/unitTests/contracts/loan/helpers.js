@@ -91,7 +91,7 @@ export const setupLoanUnitTest = async terms => {
 
   if (!terms) {
     terms = harden({
-      mmr: makePercent(150, collateralKit.amountMath),
+      mmr: makePercent(150n, collateralKit.amountMath),
       autoswapInstance: {},
     });
   }

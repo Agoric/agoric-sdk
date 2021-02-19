@@ -18,11 +18,11 @@ import '../../exported';
  * @param {ContractFacet} zcf
  */
 const start = zcf => {
-  let offersCount = 0;
+  let offersCount = 0n;
 
   /** @type {OfferHandler} */
   const refund = seat => {
-    offersCount += 1;
+    offersCount += 1n;
     seat.exit();
     return `The offer was accepted`;
   };

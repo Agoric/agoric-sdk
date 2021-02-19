@@ -149,7 +149,7 @@
  */
 
 /**
- * @typedef {number} Deadline
+ * @typedef {bigint} Deadline
  */
 
 /**

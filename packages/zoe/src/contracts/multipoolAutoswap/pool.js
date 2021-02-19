@@ -23,7 +23,7 @@ import '../../../exported';
  */
 export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
-    let liqTokenSupply = 0;
+    let liqTokenSupply = 0n;
     const {
       brand: liquidityBrand,
       amountMath: liquidityAmountMath,
@@ -144,7 +144,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         };
       },
       addLiquidity: zcfSeat => {
-        if (liqTokenSupply === 0) {
+        if (liqTokenSupply === 0n) {
           const userAllocation = zcfSeat.getCurrentAllocation();
           return addLiquidityActual(pool, zcfSeat, userAllocation.Secondary);
         }

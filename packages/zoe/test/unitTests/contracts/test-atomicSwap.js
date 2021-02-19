@@ -427,19 +427,19 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   // Alice deposits her payout to ensure she can
   const aliceAssetAmount = await aliceMoolaPurse.deposit(aliceAssetPayout);
-  t.is(aliceAssetAmount.value, 0);
+  t.is(aliceAssetAmount.value, 0n);
   const alicePriceAmount = await aliceMoolaPurse.deposit(alicePricePayout);
-  t.is(alicePriceAmount.value, 7);
+  t.is(alicePriceAmount.value, 7n);
 
   // Bob deposits his original payments to ensure he can
   const bobAssetAmount = await bobMoolaPurse.deposit(bobAssetPayout);
-  t.is(bobAssetAmount.value, 3);
+  t.is(bobAssetAmount.value, 3n);
   const bobPriceAmount = await bobMoolaPurse.deposit(bobPricePayout);
-  t.is(bobPriceAmount.value, 0);
+  t.is(bobPriceAmount.value, 0n);
 
   // Assert that the correct payouts were received.
   // Alice had 3 moola from Asset and 0 from Price.
   // Bob had 0 moola from Asset and 7 from Price.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 7);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 3);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 7n);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 3n);
 });

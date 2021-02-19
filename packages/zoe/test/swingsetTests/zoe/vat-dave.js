@@ -130,7 +130,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100, X`wrong expiration date`);
+      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
       assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
 
       // Dave escrows his 1 buck with Zoe and forms his proposal
