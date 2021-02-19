@@ -312,6 +312,11 @@
  * values labeled with a brand. AmountMath use mathHelpers to do their value arithmetic,
  * and then brand the results, making a new amount.
  *
+ * The MathHelpers are designed to be called only from AmountMath, and so
+ * all methods but coerce can assume their inputs are valid. They only
+ * need to do output validation, and only when there is a possibility of
+ * invalid output.
+ *
  * @property {(allegedValue: Value) => Value} doCoerce
  * Check the kind of this value and throw if it is not the
  * expected kind.
