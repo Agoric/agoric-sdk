@@ -213,6 +213,7 @@ export async function makeFakePriceAuthority(options) {
       return makeNotifierFromAsyncIterable(generateQuotes(amountIn, brandOut));
     },
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
+      assert.typeof(timeStamp, 'bigint');
       assertBrands(amountIn.brand, brandOut);
       const { promise, resolve } = makePromiseKit();
       E(timer).setWakeup(

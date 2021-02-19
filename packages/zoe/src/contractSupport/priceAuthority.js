@@ -192,6 +192,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       });
     },
     async quoteAtTime(deadline, amountIn, brandOut) {
+      assert.typeof(deadline, 'bigint');
       mathIn.coerce(amountIn);
       assertBrands(amountIn.brand, brandOut);
 
