@@ -189,6 +189,8 @@
  * @property {ContractFacet} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
+ * @property {Timestamp} basetime The starting point from which to calculate
+ * interest.
  */
 
 /**

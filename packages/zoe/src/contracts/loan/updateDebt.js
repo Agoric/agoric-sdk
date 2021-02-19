@@ -1,8 +1,10 @@
 // @ts-check
 
 import '../../../exported';
-import { makeNotifierKit } from '@agoric/notifier';
-import { E } from '@agoric/eventual-send';
+import {
+  makeNotifierKit,
+  makeAsyncIterableFromNotifier,
+} from '@agoric/notifier';
 
 import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -26,7 +28,7 @@ export const calculateInterest = (oldDebtValue, interestRate) =>
   );
 
 /** @type {MakeDebtCalculator} */
-export const makeDebtCalculator = debtCalculatorConfig => {
+export const makeDebtCalculator = async debtCalculatorConfig => {
   const {
     calcInterestFn = calculateInterest,
     originalDebt,
@@ -34,13 +36,14 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     periodNotifier,
     interestRate,
     interestPeriod,
+    basetime,
     zcf,
     configMinusGetDebt,
   } = debtCalculatorConfig;
   let debt = originalDebt;
 
   // the last period-end for which interest has been added
-  let lastCalculationTimestamp;
+  let lastCalculationTimestamp = basetime;
 
   const {
     updater: debtNotifierUpdater,
@@ -67,41 +70,16 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     }
   };
 
-  const addToDebtWhenNotified = lastCount => {
-    const processUpdate = newState => {
-      const { updateCount, value } = newState;
-      if (updateCount === undefined) {
-        const reason = 'PeriodNotifier should not publish a final value';
-        debtNotifierUpdater.fail(reason);
-        throw Error(reason);
-      }
-
+  const handleDebt = async () => {
+    for await (const value of makeAsyncIterableFromNotifier(periodNotifier)) {
       updateDebt(value);
-      addToDebtWhenNotified(updateCount);
-    };
-    const reject = reason => {
-      debtNotifierUpdater.fail(reason);
-      throw Error(reason);
-    };
-
-    E(periodNotifier)
-      .getUpdateSince(lastCount)
-      .then(processUpdate, reject);
+    }
   };
-
-  // Initialize
-  E(periodNotifier)
-    .getUpdateSince()
-    .then(({ value, updateCount }) => {
-      lastCalculationTimestamp = value;
-      addToDebtWhenNotified(updateCount);
-    });
-
-  // TODO(hibbert) https://github.com/Agoric/agoric-sdk/issues/2258
-  // convert addToDebtWhenNotified to a for-await-of loop
-  // for await (const value of iterateNotifier(periodNotifier)) {
-  //   updateDebt(value);
-  // }
+  handleDebt().catch(() =>
+    console.error(
+      `Unable to updateDebt originally:${originalDebt}, started: ${basetime}, debt: ${debt}`,
+    ),
+  );
 
   debtNotifierUpdater.updateState(debt);
 

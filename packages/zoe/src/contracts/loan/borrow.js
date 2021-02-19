@@ -46,7 +46,10 @@ export const makeBorrowInvitation = (zcf, config) => {
     );
     // AWAIT ///
 
-    const collateralPriceInLoanBrand = quoteAmount.value[0].amountOut;
+    const {
+      amountOut: collateralPriceInLoanBrand,
+      timestamp,
+    } = quoteAmount.value[0];
 
     // formula: assert collateralValue*100 >= loanWanted*mmr
 
@@ -115,6 +118,7 @@ export const makeBorrowInvitation = (zcf, config) => {
       periodNotifier,
       interestRate,
       interestPeriod,
+      basetime: timestamp,
       zcf,
       configMinusGetDebt: {
         ...config,
@@ -126,7 +130,7 @@ export const makeBorrowInvitation = (zcf, config) => {
       getDebt,
       getDebtNotifier,
       getLastCalculationTimestamp,
-    } = makeDebtCalculator(harden(debtCalculatorConfig));
+    } = await makeDebtCalculator(harden(debtCalculatorConfig));
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {
