@@ -13,7 +13,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             log(`handler.wake()`);
           },
         });
-        D(devices.timer).setWakeup(3, handler);
+        D(devices.timer).setWakeup(3n, handler);
       } else if (argv[0] === 'repeater') {
         log(`starting repeater test`);
         let handlerCalled = 0;

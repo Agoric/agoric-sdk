@@ -257,6 +257,7 @@ export function buildRootDeviceNode(tools) {
   // point will be reached at consistent intervals.
   return harden({
     setWakeup(delaySecs, handler) {
+      assert.typeof(delaySecs, 'bigint');
       deadlines.add(lastPolled + Nat(delaySecs), handler);
       saveState();
       return lastPolled + Nat(delaySecs);
