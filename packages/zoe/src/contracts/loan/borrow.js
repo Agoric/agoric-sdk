@@ -11,6 +11,7 @@ import {
   trade,
   getAmountOut,
   multiplyBy,
+  getTimestamp,
 } from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -59,6 +60,8 @@ export const makeBorrowInvitation = (zcf, config) => {
       loanMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
       X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
+
+    const timestamp = getTimestamp(quote);
 
     // Assert that the collateralGiven has not changed after the AWAIT
     assert(
@@ -113,6 +116,7 @@ export const makeBorrowInvitation = (zcf, config) => {
       periodNotifier,
       interestRate,
       interestPeriod,
+      basetime: timestamp,
       zcf,
       configMinusGetDebt: {
         ...config,
@@ -124,7 +128,7 @@ export const makeBorrowInvitation = (zcf, config) => {
       getDebt,
       getDebtNotifier,
       getLastCalculationTimestamp,
-    } = makeDebtCalculator(harden(debtCalculatorConfig));
+    } = await makeDebtCalculator(harden(debtCalculatorConfig));
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {

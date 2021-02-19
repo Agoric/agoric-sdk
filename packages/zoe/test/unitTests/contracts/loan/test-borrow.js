@@ -310,14 +310,14 @@ test('getDebtNotifier with interest', async t => {
   ).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
-  periodUpdater.updateState(5);
+  periodUpdater.updateState(6);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
 
-  periodUpdater.updateState(10);
+  periodUpdater.updateState(11);
 
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
     updateCount1,
@@ -375,7 +375,7 @@ test('aperiodic interest', async t => {
   ).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
-  periodUpdater.updateState(5);
+  periodUpdater.updateState(6);
 
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
@@ -383,16 +383,16 @@ test('aperiodic interest', async t => {
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
 
   // skip ahead a notification
-  periodUpdater.updateState(15);
+  periodUpdater.updateState(16);
 
   // both debt notifications are received
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount1);
-  t.is(15, await E(borrowFacet).getLastCalculationTimestamp());
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16);
   t.deepEqual(debtCompounded2, loanKit.amountMath.make(40060));
 
-  periodUpdater.updateState(20);
+  periodUpdater.updateState(21);
   const { value: debtCompounded3 } = await E(debtNotifier).getUpdateSince(
     updateCount2,
   );
@@ -400,7 +400,8 @@ test('aperiodic interest', async t => {
 });
 
 // In this test, the updates are expected at multiples of 5, but they show up at
-// multiples of 4 instead. We should charge interest after 8, 12, 16, 20, 28
+// multiples of 4 instead. The starting time is 1. We should charge interest
+// after 9, 13, 17, 21, 29
 test('short periods', async t => {
   const {
     borrowFacet,
@@ -417,46 +418,46 @@ test('short periods', async t => {
   ).getUpdateSince();
   t.deepEqual(originalDebt, maxLoan);
 
-  periodUpdater.updateState(4);
-  t.is(0, await E(borrowFacet).getLastCalculationTimestamp());
+  periodUpdater.updateState(5);
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 1n);
 
-  periodUpdater.updateState(8);
+  periodUpdater.updateState(9);
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
   t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
-  t.is(5, await E(borrowFacet).getLastCalculationTimestamp());
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 6n);
 
-  periodUpdater.updateState(12);
+  periodUpdater.updateState(14);
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount1);
   t.deepEqual(debtCompounded2, loanKit.amountMath.make(40040));
-  t.is(10, await E(borrowFacet).getLastCalculationTimestamp());
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 11n);
 
-  periodUpdater.updateState(16);
+  periodUpdater.updateState(17);
   const { value: debtCompounded3, updateCount: updateCount3 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount2);
   t.deepEqual(debtCompounded3, loanKit.amountMath.make(40060));
-  t.is(15, await E(borrowFacet).getLastCalculationTimestamp());
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
 
-  periodUpdater.updateState(20);
+  periodUpdater.updateState(21);
   const { value: debtCompounded4, updateCount: updateCount4 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount3);
   t.deepEqual(debtCompounded4, loanKit.amountMath.make(40080));
-  t.is(20, await E(borrowFacet).getLastCalculationTimestamp());
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
 
-  periodUpdater.updateState(24);
-  t.is(20, await E(borrowFacet).getLastCalculationTimestamp());
+  periodUpdater.updateState(25);
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
 
-  periodUpdater.updateState(28);
+  periodUpdater.updateState(29);
   const { value: debtCompounded5 } = await E(debtNotifier).getUpdateSince(
     updateCount4,
   );
   t.deepEqual(debtCompounded5, loanKit.amountMath.make(40100));
-  t.is(25, await E(borrowFacet).getLastCalculationTimestamp());
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 26n);
 });
 
 test.todo('borrow bad proposal');
