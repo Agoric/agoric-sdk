@@ -2,7 +2,7 @@
 import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeLendInvitation } from './lend';
@@ -62,7 +62,7 @@ const start = async zcf => {
   // some defaults and add them to a contract-wide config.
 
   const {
-    mmr = makePercent(150, loanMath), // Maintenance Margin Requirement
+    mmr = makePercent(150n, loanMath), // Maintenance Margin Requirement
     autoswapInstance,
     priceAuthority,
     periodNotifier,

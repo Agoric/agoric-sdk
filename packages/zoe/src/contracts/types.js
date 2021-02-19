@@ -12,7 +12,7 @@
 /**
  * @typedef {Object} SellItemsParameters
  * @property {Record<string, any>} customValueProperties
- * @property {number} count
+ * @property {bigint} count
  * @property {Issuer} moneyIssuer
  * @property {Installation} sellItemsInstallation
  * @property {Amount} pricePerItem
@@ -30,7 +30,7 @@
 
 /**
  * @typedef {Object} AutomaticRefundPublicFacet
- * @property {() => number} getOffersCount
+ * @property {() => bigint} getOffersCount
  * @property {() => Promise<Invitation>} makeInvitation
  */
 /**

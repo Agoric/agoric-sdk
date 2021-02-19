@@ -145,7 +145,7 @@ test('borrow not enough collateral', async t => {
   const { borrowSeat } = await setupBorrowFacet(0);
   await t.throwsAsync(() => E(borrowSeat).getOfferResult(), {
     message:
-      'The required margin is approximately (a number)% but collateral only had value of (a number)',
+      'The required margin is approximately (a bigint)% but collateral only had value of (a bigint)',
   });
 });
 
@@ -216,7 +216,7 @@ test('borrow getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: loanKit.amountMath.make(100),
           timer,
-          timestamp: 2,
+          timestamp: 2n,
         },
       ]),
     ),
@@ -276,7 +276,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
           amountIn: collateralGiven,
           amountOut: loanKit.amountMath.make(103),
           timer,
-          timestamp: 3,
+          timestamp: 3n,
         },
       ]),
     ),
@@ -350,12 +350,12 @@ test('borrow collateral just too low', async t => {
   const { borrowSeat: borrowSeatGood } = await setupBorrowFacet(75);
   const offerResult = await E(borrowSeatGood).getOfferResult();
   const collateralAmount = await E(offerResult).getRecentCollateralAmount();
-  t.is(collateralAmount.value, 75);
+  t.is(collateralAmount.value, 75n);
 
   const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74);
   await t.throwsAsync(() => E(borrowSeatBad).getOfferResult(), {
     message:
-      'The required margin is approximately (a number)% but collateral only had value of (a number)',
+      'The required margin is approximately (a bigint)% but collateral only had value of (a bigint)',
   });
 });
 

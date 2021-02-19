@@ -26,10 +26,10 @@ const makeScaleFn = (xPre, xPost) => value => {
 // reducing to a single division:
 //    deltaY = deltaX * gammaNum * yPre / (xPre * gammaDen + deltaX * gammaNum)
 export const outputFromInputPrice = (xPre, yPre, deltaX, fee) => {
-  const gammaNumerator = 10000 - fee;
+  const gammaNumerator = 10000n - fee;
   return floorDivide(
     multiply(multiply(deltaX, yPre), gammaNumerator),
-    add(multiply(xPre, 10000), multiply(deltaX, gammaNumerator)),
+    add(multiply(xPre, 10000n), multiply(deltaX, gammaNumerator)),
   );
 };
 
@@ -39,12 +39,12 @@ export const outputFromInputPrice = (xPre, yPre, deltaX, fee) => {
 // reducing to a single division:
 //    deltaX = (deltaY * xPre * 10000 / (yPre - deltaY ) * gammaNum)) + 1
 export const priceFromTargetOutput = (deltaY, yPre, xPre, fee) => {
-  const gammaNumerator = 10000 - fee;
+  const gammaNumerator = 10000n - fee;
   return (
     floorDivide(
-      multiply(multiply(deltaY, xPre), 10000),
+      multiply(multiply(deltaY, xPre), 10000n),
       multiply(subtract(yPre, deltaY), gammaNumerator),
-    ) + 1
+    ) + 1n
   );
 };
 
@@ -58,7 +58,7 @@ export const scaleForAddLiquidity = (poolState, deposits, exactRatio) => {
   // The test declares when it expects an exact ratio
   const deltaS = exactRatio
     ? scaleByAlpha(poolState.s)
-    : add(1, scaleByAlpha(poolState.s));
+    : add(1n, scaleByAlpha(poolState.s));
   const poolSecondaryPost = add(poolState.s, deltaS);
   const liquidityPost = add(poolState.l, scaleByAlpha(poolState.l));
 
@@ -68,7 +68,7 @@ export const scaleForAddLiquidity = (poolState, deposits, exactRatio) => {
     l: liquidityPost,
     k: multiply(poolCentralPost, poolSecondaryPost),
     payoutL: subtract(liquidityPost, poolState.l),
-    payoutC: 0,
+    payoutC: 0n,
     payoutS: subtract(sDeposit, deltaS),
   };
 };
@@ -87,7 +87,7 @@ export const scaleForRemoveLiquidity = (poolState, withdrawal) => {
     s: poolSecondaryPost,
     l: liquidityPost,
     k: multiply(poolCentralPost, poolSecondaryPost),
-    payoutL: 0,
+    payoutL: 0n,
     payoutC: cWithdraw,
     payoutS: sWithdraw,
   };
@@ -215,7 +215,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         payoutC,
         payoutS,
       } = expected;
-      t.truthy(payoutC === 0 || payoutS === 0, 'only refund one side');
+      t.truthy(payoutC === 0n || payoutS === 0n, 'only refund one side');
       const scaleByAlpha = makeScaleFn(cPre, cPost);
 
       const poolPre = await getPoolAllocation(secondaryIssuer);
@@ -268,7 +268,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         t.is(add(sPre, scaleByAlpha(sPre)), sPost, 'secondary post add');
       } else {
         t.is(add(cPre, cAmount.value), cPost, 'central post add');
-        t.is(add(1, add(sPre, scaleByAlpha(sPre))), sPost, 's post add');
+        t.is(add(1n, add(sPre, scaleByAlpha(sPre))), sPost, 's post add');
       }
     },
 
@@ -299,7 +299,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       const poolPre = await getPoolAllocation(secondaryIssuer);
       t.deepEqual(poolPre.Central, central(cPre), `central before add liq`);
       t.deepEqual(poolPre.Secondary, secondary(sPre), `s before add liq`);
-      t.deepEqual(payoutL, 0, 'no liquidity refund');
+      t.deepEqual(payoutL, 0n, 'no liquidity refund');
       t.is(
         await getLiquidity(secondaryIssuer),
         lPre,
@@ -361,10 +361,10 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         payoutC,
         payoutS,
       } = expected;
-      t.truthy(payoutC === 0 || payoutS === 0, 'only refund one side');
+      t.truthy(payoutC === 0n || payoutS === 0n, 'only refund one side');
       const poolPre = await getPoolAllocation(secondaryIssuer);
       t.deepEqual(poolPre, {}, `central before liquidity`);
-      t.is(await getLiquidity(secondaryIssuer), 0, 'liquidity pool pre init');
+      t.is(await getLiquidity(secondaryIssuer), 0n, 'liquidity pool pre init');
       t.is(kPre, sPre * cPre);
       t.is(await getLiquidity(secondaryIssuer), lPre, 'liquidity pre init');
 
