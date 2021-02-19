@@ -150,10 +150,10 @@ function makeHandler() {
 test.serial('home.localTimerService createRepeater', async t => {
   const { localTimerService } = E.G(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
-  const repeater = E(localTimerService).createRepeater(1, 1);
+  const repeater = E(localTimerService).createRepeater(1n, 1n);
   const handler = makeHandler();
   await E(repeater).schedule(handler);
-  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const notifier = E(localTimerService).makeNotifier(1n, 1n);
   await E(notifier).getUpdateSince();
 
   t.is(1, handler.getCalls());

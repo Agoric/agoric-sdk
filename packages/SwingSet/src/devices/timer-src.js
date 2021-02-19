@@ -39,6 +39,7 @@ function copyState(schedState) {
 
   const newSchedule = [];
   for (const { time, handlers } of schedState) {
+    assert.typeof(time, 'bigint');
     // we want a mutable copy of the handlers array, but not its contents.
     newSchedule.push({ time, handlers: handlers.slice(0) });
   }
@@ -47,7 +48,7 @@ function copyState(schedState) {
 
 /**
  * @typedef {Object} Event
- * @property {number} time
+ * @property {bigint} time
  * @property {Array<IndexedHandler>} handlers
  *
  * @typedef {Object} IndexedHandler
@@ -55,7 +56,7 @@ function copyState(schedState) {
  * @property {Waker} handler
  *
  * @typedef {Object} Waker
- * @property {(now: number) => void} wake
+ * @property {(now: bigint) => void} wake
  */
 
 /**
@@ -85,6 +86,7 @@ function makeTimerMap(state = undefined) {
   }
 
   function eventsFor(time) {
+    assert.typeof(time, 'bigint');
     for (let i = 0; i < schedule.length && schedule[i].time <= time; i += 1) {
       if (schedule[i].time === time) {
         return schedule[i];
@@ -99,6 +101,7 @@ function makeTimerMap(state = undefined) {
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
   function add(time, handler, repeater = undefined) {
+    assert.typeof(time, 'bigint');
     const handlerRecord =
       typeof repeater === 'number' ? { handler, index: repeater } : { handler };
     const { handlers: records } = eventsFor(time);
@@ -109,6 +112,7 @@ function makeTimerMap(state = undefined) {
 
   // Remove and return all pairs indexed by numbers up to target
   function removeEventsThrough(target) {
+    assert.typeof(target, 'bigint');
     const returnValues = [];
     // remove events from last to first so as not to disturb the indexes.
     const reversedIndexesToRemove = [];
@@ -155,7 +159,10 @@ function makeTimerMap(state = undefined) {
 }
 
 function nextScheduleTime(index, repeaters, lastPolled) {
+  assert.typeof(lastPolled, 'bigint');
   const { startTime, interval } = repeaters[index];
+  assert.typeof(startTime, 'bigint');
+  assert.typeof(interval, 'bigint');
   // return the smallest value of `startTime + N * interval` after lastPolled
   return lastPolled + interval - ((lastPolled - startTime) % interval);
 }
@@ -169,6 +176,7 @@ function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
     let wokeAnything = false;
     timeAndEvents.forEach(events => {
       const { time, handlers } = events;
+      assert.typeof(time, 'bigint');
       for (const { index, handler } of handlers) {
         if (typeof index === 'number') {
           SO(handler).wake(time);
@@ -280,7 +288,7 @@ export function buildRootDeviceNode(tools) {
         startTime: Nat(startTime),
         interval: Nat(interval),
       });
-      nextRepeater += 1;
+      nextRepeater += 1n;
       saveState();
       return index;
     },
