@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     - name: cache node modules
@@ -53,7 +53,7 @@ jobs:
       matrix:
         node-version: ['12.x']
     steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     # BEGIN-RESTORE-BOILERPLATE
@@ -86,7 +86,7 @@ jobs:
         node-version: ['14.x']
     if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
     steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     # BEGIN-RESTORE-BOILERPLATE
@@ -125,7 +125,7 @@ jobs:
       matrix:
         node-version: ['12.14.1', '12.x', '14.x']
     steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
@@ -280,7 +280,7 @@ jobs:
       matrix:
         node-version: ['12.14.1', '12.x', '14.x']
     steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
@@ -327,7 +327,7 @@ jobs:
       matrix:
         node-version: ['12.14.1', '12.x', '14.x']
     steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
@@ -372,7 +372,7 @@ jobs:
       matrix:
         node-version: ['12.14.1', '12.x', '14.x']
     steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
