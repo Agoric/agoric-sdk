@@ -216,7 +216,7 @@ export function buildRootDeviceNode(tools) {
   // might be a time from Date.now(). The current time is not reflected back
   // to the user.
   let lastPolled = restart ? restart.lastPolled : 0n;
-  let nextRepeater = restart ? restart.nextRepeater : 0n;
+  let nextRepeater = restart ? restart.nextRepeater : 0;
 
   function getLastPolled() {
     return lastPolled;
@@ -288,7 +288,7 @@ export function buildRootDeviceNode(tools) {
         startTime: Nat(startTime),
         interval: Nat(interval),
       });
-      nextRepeater += 1n;
+      nextRepeater += 1;
       saveState();
       return index;
     },
