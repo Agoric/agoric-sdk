@@ -122,7 +122,9 @@ test('Timer schedule repeated event first', t => {
   t.truthy(poll(5n));
   t.is(handler.getCalls(), 1);
   t.deepEqual(handler.getArgs(), [5n]);
-  const expected = [{ time: 7n, handlers: [{ handler, index: repeaterIndex }] }];
+  const expected = [
+    { time: 7n, handlers: [{ handler, index: repeaterIndex }] },
+  ];
   t.deepEqual(schedule.removeEventsThrough(8n), expected);
 });
 
