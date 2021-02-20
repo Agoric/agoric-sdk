@@ -31,6 +31,7 @@ async function simpleCall(t) {
       vat1: {
         sourceSpec: require.resolve('./vat-controller-1'),
         creationOptions: { enableSetup: true },
+        parameters: [BigInt(1)],
       },
     },
   };
