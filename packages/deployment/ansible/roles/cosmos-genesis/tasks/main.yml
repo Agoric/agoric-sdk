@@ -69,6 +69,7 @@
   shell: "\
     {{ service }} add-genesis-account \
     {{ item | regex_replace('^([^:]*):([^:]*).*$', '\\1 \\2') }}"
+  ignore_errors: true
   with_items:
     - "{{ delegates.splitlines() }}"
   when: delegates != ""

@@ -66,4 +66,4 @@ docker-push-solo:
 
 docker-push-deployment:
 	$(DONT_PUSH_LATEST) docker push agoric/deployment:latest
-	docker push $(REPOSITORY)-solo:$(TAG)
+	docker push agoric/deployment:$(TAG)
