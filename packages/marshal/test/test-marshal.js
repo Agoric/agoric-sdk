@@ -124,7 +124,7 @@ const roundTripPairs = harden([
   ],
 ]);
 
-test('seriailize unserialize round trip pairs', t => {
+test('serialize unserialize round trip pairs', t => {
   const { serialize, unserialize } = makeMarshal(undefined, undefined, {
     // TODO errorTagging will only be recognized once we merge with PR #2437
     // We're turning it off only for the round trip test, not in general.
