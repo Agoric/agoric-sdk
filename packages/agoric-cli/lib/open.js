@@ -102,9 +102,6 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
   process.stdout.write(`${walletUrl}\n`);
   if (opts.browser) {
     const browser = opener(walletUrl);
-    browser.unref();
-    process.stdout.unref();
-    process.stderr.unref();
-    process.stdin.unref();
+    await new Promise(resolve => browser.on('exit', resolve));
   }
 }
