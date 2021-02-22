@@ -86,7 +86,7 @@ export default function initBasedir(
     dots += '../';
     nm = path.resolve(here, dots, 'node_modules');
   }
-  fs.symlinkSync(nm, path.join(basedir, 'node_modules'));
+  fs.symlinkSync(nm, path.join(basedir, 'node_modules'), 'junction');
 
   // cosmos-sdk keypair
   if (egresses.includes('cosmos')) {
