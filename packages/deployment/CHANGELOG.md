@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.24.1...@agoric/deployment@1.24.2) (2021-02-22)
+
+
+### Bug Fixes
+
+* be tolerant of delegation errors ([db75f65](https://github.com/Agoric/agoric-sdk/commit/db75f651f8742340714264848c3cfb12ee72a16f))
+* properly docker push agoric/deployment:$(TAG) ([8afd58b](https://github.com/Agoric/agoric-sdk/commit/8afd58b5f9c1552ca564433c1cfd6f61b8f6cf2a))
+* remove journalbeat from build; it fails and we don't use it ([c2fed3b](https://github.com/Agoric/agoric-sdk/commit/c2fed3b2992385c5e20d9c8f26507089b546c5a3))
+
+
+
+
+
 ## [1.24.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.24.0...@agoric/deployment@1.24.1) (2021-02-16)
 
 

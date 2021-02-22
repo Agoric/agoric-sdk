@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.12.1...@agoric/sdk@2.13.0) (2021-02-22)
+
+
+### Bug Fixes
+
+* **agoric-cli:** Allow path.sep to be \ when we use it in a RegExp ([c0ed576](https://github.com/Agoric/agoric-sdk/commit/c0ed5769d292a7842e5047a002e4410e91735045))
+* **agoric-cli:** Don't exit agoric open until the browser loads ([a28548b](https://github.com/Agoric/agoric-sdk/commit/a28548b50912f3b0303594bbd94bd945d46a6caf))
+* **bundle-source:** Downgrade @rollup/plugin-commonjs for Windows ([2721da7](https://github.com/Agoric/agoric-sdk/commit/2721da770aad3077f1024b71c217883f31461641))
+* **cosmic-swingset:** Use 'junction' symlinks for directories ([1446df8](https://github.com/Agoric/agoric-sdk/commit/1446df8dfad115ef9a5a47349cd0b4c4d8a14e7b))
+* **xsnap:** lib directory was missing from package files ([5bd8eb8](https://github.com/Agoric/agoric-sdk/commit/5bd8eb848a348877c1674fd8ce55bbc1ae37986a))
+* be tolerant of delegation errors ([db75f65](https://github.com/Agoric/agoric-sdk/commit/db75f651f8742340714264848c3cfb12ee72a16f))
+* properly docker push agoric/deployment:$(TAG) ([8afd58b](https://github.com/Agoric/agoric-sdk/commit/8afd58b5f9c1552ca564433c1cfd6f61b8f6cf2a))
+* protect testLog against BigInts ([60c4684](https://github.com/Agoric/agoric-sdk/commit/60c468477de3c24dbf39866e010f3ea22cbb195a))
+* remove journalbeat from build; it fails and we don't use it ([c2fed3b](https://github.com/Agoric/agoric-sdk/commit/c2fed3b2992385c5e20d9c8f26507089b546c5a3))
+
+
+### Features
+
+* bump to cosmos-sdk v0.41.1 ([7e45aa4](https://github.com/Agoric/agoric-sdk/commit/7e45aa44e89f39ccaaf620bc2f75d4ff9302898c))
+
+
+
+
+
 # [2.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.11.0...@agoric/sdk@2.12.0) (2021-02-16)
 
 
