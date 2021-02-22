@@ -26,7 +26,7 @@ export const calculateInterest = (oldDebt, interestRate) =>
   multiplyBy(oldDebt, interestRate);
 
 /** @type {MakeDebtCalculator} */
-export const makeDebtCalculator = async debtCalculatorConfig => {
+export const makeDebtCalculator = debtCalculatorConfig => {
   const {
     calcInterestFn = calculateInterest,
     originalDebt,

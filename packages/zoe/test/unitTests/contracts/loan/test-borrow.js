@@ -30,7 +30,10 @@ import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addC
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
 import { makeRatio } from '../../../../src/contractSupport';
 
-const setupBorrow = async (maxLoanValue = 100) => {
+const setupBorrow = async (
+  maxLoanValue = 100,
+  timer = buildManualTimer(console.log),
+) => {
   const setup = await setupLoanUnitTest();
   const { zcf, loanKit, collateralKit, zoe } = setup;
   // Set up the lender seat
@@ -43,7 +46,6 @@ const setupBorrow = async (maxLoanValue = 100) => {
 
   const mmr = makeRatio(150, loanKit.brand);
   const priceList = [2, 1, 1, 1];
-  const timer = buildManualTimer(console.log);
 
   const priceAuthority = await makeFakePriceAuthority({
     mathIn: collateralKit.amountMath,
@@ -397,6 +399,55 @@ test('aperiodic interest', async t => {
     updateCount2,
   );
   t.deepEqual(debtCompounded3, loanKit.amountMath.make(40080));
+});
+
+// Show that interest is charged from the time the loan was created.
+// setupBorrow() calls timer.tick(), so the basetime for the loan will be 4.
+test('interest starting from non-zero time', async t => {
+  const collateralValue = 100000;
+  const maxLoanValue = 40000;
+  // The fakePriceAuthority pays attention to the fakeTimer
+  const timer = buildManualTimer(console.log);
+  timer.tick();
+  timer.tick();
+  timer.tick();
+  const setup = await setupBorrow(maxLoanValue, timer);
+  const {
+    borrowInvitation,
+    zoe,
+    maxLoan,
+    collateralKit,
+    periodUpdater,
+    loanKit,
+  } = setup;
+  const collateral = collateralKit.amountMath.make(collateralValue);
+
+  const proposal = harden({
+    want: { Loan: maxLoan },
+    give: { Collateral: collateral },
+  });
+
+  const payments = { Collateral: collateralKit.mint.mintPayment(collateral) };
+  const borrowSeat = await E(zoe).offer(borrowInvitation, proposal, payments);
+  /** @type {ERef<BorrowFacet>} */
+  const borrowFacet = E(borrowSeat).getOfferResult();
+
+  // The loan gets notifications from the updater
+  periodUpdater.updateState(6);
+
+  const debtNotifier = await E(borrowFacet).getDebtNotifier();
+
+  const { value: originalDebt, updateCount } = await E(
+    debtNotifier,
+  ).getUpdateSince();
+  t.deepEqual(originalDebt, maxLoan);
+
+  periodUpdater.updateState(9);
+  const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
+    updateCount,
+  );
+  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40020));
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 9);
 });
 
 // In this test, the updates are expected at multiples of 5, but they show up at
