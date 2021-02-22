@@ -38,7 +38,6 @@ let swingSetRunning = false;
 
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
-const mkdir = promisify(fs.mkdir);
 const rename = promisify(fs.rename);
 const symlink = promisify(fs.symlink);
 const unlink = promisify(fs.unlink);
@@ -97,7 +96,7 @@ async function buildSwingset(
   });
 
   const pluginDir = path.resolve('./plugins');
-  await mkdir(pluginDir, { recursive: true });
+  fs.mkdirSync(pluginDir, { recursive: true });
   const pluginsPrefix = `${pluginDir}${path.sep}`;
   const pluginRequire = mod => {
     // Ensure they can't traverse out of the plugins prefix.
@@ -311,7 +310,7 @@ export default async function start(basedir, argv) {
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);
-  symlink(agWalletHtml, 'html/wallet').catch(e => {
+  symlink(agWalletHtml, 'html/wallet', 'junction').catch(e => {
     console.error('Cannot link html/wallet:', e);
   });
 
