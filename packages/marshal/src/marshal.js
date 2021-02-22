@@ -184,20 +184,20 @@ function isPassByCopyError(val) {
   if (ownKeys(restDescs).length >= 1) {
     assert.note(
       val,
-      X`Pass-by-copy error has extra unpassed properties ${restDescs}`,
+      X`Passed Error has extra unpassed properties ${restDescs}`,
     );
   }
   if (mDesc) {
     if (typeof mDesc.value !== 'string') {
       assert.note(
         val,
-        X`Error message property ${mDesc} must be a string-valued data property.`,
+        X`Passed Error "message" ${mDesc} must be a string-valued data property.`,
       );
     }
     if (mDesc.enumerable) {
       assert.note(
         val,
-        X`Error message property ${mDesc} must not be enumerable`,
+        X`Passed Error "message" ${mDesc} must not be enumerable`,
       );
     }
   }
