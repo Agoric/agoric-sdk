@@ -21,7 +21,7 @@ import { getAccessToken } from './open';
 
 const RETRY_DELAY_MS = 1000;
 
-const PATH_SEP_RE = new RegExp(`${path.sep}`, 'g');
+const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 
 export default async function deployMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, makeWebSocket } = powers;
