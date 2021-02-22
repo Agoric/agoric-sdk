@@ -18,7 +18,7 @@ const { is, isFrozen, create, prototype: objectPrototype } = Object;
  * stringification of `encoding`, which unserializes to something deepEqual
  * to `plain`.
  */
-const roundTripPairs = harden([
+export const roundTripPairs = harden([
   // Simple JSON data encodes as itself
   [
     [1, 2],
@@ -53,8 +53,6 @@ const roundTripPairs = harden([
   [[undefined], [{ '@qclass': 'undefined' }]],
   [{ foo: undefined }, { foo: { '@qclass': 'undefined' } }],
 
-  /*
-  // TODO enable the error pairs once we've merged PR #2437
   // errors
   [
     Error(),
@@ -72,7 +70,6 @@ const roundTripPairs = harden([
       name: 'ReferenceError',
     },
   ],
-  */
 
   // Hilbert hotel
   [
