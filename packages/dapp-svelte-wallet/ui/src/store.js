@@ -1,7 +1,7 @@
 // @ts-check
 import { writable } from 'svelte/store';
 import { E } from '@agoric/eventual-send';
-import { updateFromNotifier } from '@agoric/notifier';
+import { observeNotifier } from '@agoric/notifier';
 
 import { makeWebSocket } from './websocket';
 import { makeCapTPConnection } from './captp';
@@ -94,37 +94,65 @@ function onReset(readyP) {
   readyP.then(() => resetAlls.forEach(fn => fn()));
   E(walletP).getSelfContact().then(sc => setSelfContact({ contactPetname: 'Self', ...kv('Self', sc) }));
   // Set up our subscriptions.
-  updateFromNotifier({
+  observeNotifier(E(walletP).getOffersNotifier(), {
     updateState(state) {
-      setInbox(state.map(tx => ({ ...tx, offerId: tx.id, id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`}))
-        .sort((a, b) => cmp(b.id, a.id)));
+      setInbox(
+        state
+          .map(tx => ({
+            ...tx,
+            offerId: tx.id,
+            id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`,
+          }))
+          .sort((a, b) => cmp(b.id, a.id)),
+      );
     },
-  }, E(walletP).getOffersNotifier());
-  updateFromNotifier({
+  });
+  observeNotifier(E(walletP).getPursesNotifier(), {
     updateState(state) {
-      setPurses(state.map(purse => kv({ pursePetname: purse.pursePetname }, purse))
-        .sort((a, b) => cmp(a.brandPetname, b.brandPetname) || cmp(a.pursePetname, b.pursePetname)));
+      setPurses(
+        state
+          .map(purse => kv({ pursePetname: purse.pursePetname }, purse))
+          .sort(
+            (a, b) =>
+              cmp(a.brandPetname, b.brandPetname) ||
+              cmp(a.pursePetname, b.pursePetname),
+          ),
+      );
     },
-  }, E(walletP).getPursesNotifier());
-  updateFromNotifier({
+  });
+  observeNotifier(E(walletP).getDappsNotifier(), {
     updateState(state) {
-      setDapps(state.map(dapp => ({ ...dapp, id: dapp.origin }))
-        .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id)));
+      setDapps(
+        state
+          .map(dapp => ({ ...dapp, id: dapp.origin }))
+          .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id)),
+      );
     },
-  }, E(walletP).getDappsNotifier());
-  updateFromNotifier({
+  });
+  observeNotifier(E(walletP).getContactsNotifier(), {
     updateState(state) {
-      setContacts(state.map(([contactPetname, contact]) => kv({ contactPetname }, contact))
-        .sort((a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id)));
+      setContacts(
+        state
+          .map(([contactPetname, contact]) => kv({ contactPetname }, contact))
+          .sort(
+            (a, b) =>
+              cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id),
+          ),
+      );
     },
-  }, E(walletP).getContactsNotifier());
-  updateFromNotifier({ updateState: setPayments }, E(walletP).getPaymentsNotifier());
-  updateFromNotifier({
+  });
+  observeNotifier(E(walletP).getPaymentsNotifier(), {
+    updateState: setPayments,
+  });
+  observeNotifier(E(walletP).getIssuersNotifier(), {
     updateState(state) {
-      setIssuers(state.map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
-        .sort((a, b) => cmp(a.id, b.id)));
+      setIssuers(
+        state
+          .map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
+          .sort((a, b) => cmp(a.id, b.id)),
+      );
     },
-  }, E(walletP).getIssuersNotifier());
+  });
 }
 
 /**

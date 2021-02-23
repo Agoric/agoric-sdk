@@ -18,11 +18,7 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf } from '@agoric/marshal';
-import {
-  makeNotifierKit,
-  observeIteration,
-  makeAsyncIterableFromNotifier,
-} from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeDehydrator } from './lib-dehydrate';
@@ -640,20 +636,17 @@ export function makeWallet({
     await updatePursesState(petnameForPurse, purse);
 
     // Just notice the balance updates for the purse.
-    observeIteration(
-      makeAsyncIterableFromNotifier(E(purse).getCurrentAmountNotifier()),
-      {
-        updateState(_balance) {
-          updatePursesState(
-            purseMapping.valToPetname.get(purse),
-            purse,
-          ).catch(e => console.error('cannot updateState', e));
-        },
-        fail(reason) {
-          console.error(`failed updateState observer`, reason);
-        },
+    observeNotifier(E(purse).getCurrentAmountNotifier(), {
+      updateState(_balance) {
+        updatePursesState(
+          purseMapping.valToPetname.get(purse),
+          purse,
+        ).catch(e => console.error('cannot updateState', e));
       },
-    );
+      fail(reason) {
+        console.error(`failed updateState observer`, reason);
+      },
+    });
   };
 
   async function deposit(pursePetname, payment) {
