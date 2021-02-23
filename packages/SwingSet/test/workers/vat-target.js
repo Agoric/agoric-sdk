@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 function ignore(p) {
   p.then(
@@ -55,7 +56,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   // crank 5: dispatch.notify(pF, false, ['data', callbackObj])
 
-  const target = harden({
+  const target = Far('root', {
     zero,
     one,
   });

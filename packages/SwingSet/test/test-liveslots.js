@@ -55,7 +55,7 @@ test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       one() {
         log.push('one');
       },
@@ -119,7 +119,7 @@ test('liveslots pipelines to syscall.send', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       one(x) {
         const p1 = E(x).pipe1();
         const p2 = E(p1).pipe2();
@@ -253,7 +253,7 @@ async function doOutboundPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       run(target, resolution) {
         let p; // vat creates the promise
         if (resolution === 'reject') {
@@ -371,7 +371,7 @@ async function doResultPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       async run(target1) {
         const p1 = E(target1).getTarget2();
         hush(p1);

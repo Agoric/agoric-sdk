@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers, vatParameters) {
   const { promise: vatAdminSvc, resolve: gotVatAdminSvc } = makePromiseKit();
   let root;
 
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       gotVatAdminSvc(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
     },

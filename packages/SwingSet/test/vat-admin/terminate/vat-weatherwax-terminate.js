@@ -1,4 +1,5 @@
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   // we use testLog to attempt to deliver messages even after we're supposed
@@ -6,7 +7,7 @@ export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
   let resolvers;
 
-  return harden({
+  return Far('root', {
     live() {
       testLog(`w: I ate'nt dead`);
       if (resolvers && resolvers.length) {

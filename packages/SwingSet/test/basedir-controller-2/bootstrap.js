@@ -1,4 +1,6 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject(vatPowers) {
   vatPowers.testLog(`bootstrap called`);
-  return harden({});
+  return Far('root', {});
 }

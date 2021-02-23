@@ -1,4 +1,6 @@
 /* global makeKind makeWeakStore */
+import { Far } from '@agoric/marshal';
+
 const stuff = makeWeakStore();
 
 let initialSelf;
@@ -9,7 +11,7 @@ function makeThingInstance(state) {
     // eslint-disable-next-line no-use-before-define
     initialSelf = self;
   }
-  const self = {
+  const self = Far('thing', {
     getName() {
       return state.name;
     },
@@ -19,7 +21,7 @@ function makeThingInstance(state) {
     getSelf() {
       return self;
     },
-  };
+  });
   return { init, self };
 }
 
@@ -37,14 +39,14 @@ function makeZotInstance(state) {
       zotMaker('recur', true);
     }
   }
-  const self = {
+  const self = Far('zot', {
     getName() {
       return state.name;
     },
     rename(newName) {
       state.name = newName;
     },
-  };
+  });
   return { init, self };
 }
 
@@ -53,7 +55,7 @@ const zotMaker = makeKind(makeZotInstance);
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
 
-  return harden({
+  return Far('root', {
     bootstrap() {
       return 'bootstrap done';
     },

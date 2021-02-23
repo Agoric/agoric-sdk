@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootDeviceNode({
   setDeviceState,
   getDeviceState,
@@ -5,7 +7,7 @@ export function buildRootDeviceNode({
 }) {
   testLog(typeof getDeviceState());
 
-  return harden({
+  return Far('root', {
     setState(arg) {
       setDeviceState(arg);
       return 'ok';
