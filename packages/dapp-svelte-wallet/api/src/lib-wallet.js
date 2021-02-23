@@ -18,11 +18,7 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf } from '@agoric/marshal';
-import {
-  makeNotifierKit,
-  observeIteration,
-  observeNotifier,
-} from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeDehydrator } from './lib-dehydrate';
