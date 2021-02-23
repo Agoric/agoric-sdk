@@ -6,7 +6,7 @@ import test from 'ava';
 
 import { MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -1234,6 +1234,19 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
     message: 'No further offers are accepted',
   });
   t.is(vatAdminState.getExitMessage(), `And don't come back`);
+  t.truthy(vatAdminState.getExitWithFailure());
+});
+
+test(`zcf.assert - no further offers accepted`, async t => {
+  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const invitation = await zcf.makeInvitation(() => {}, 'seat');
+  t.throws(() => zcf.assert(false, X`And do not come back`), {
+    message: /And do not come back/,
+  });
+  await t.throwsAsync(() => E(zoe).offer(invitation), {
+    message: 'No further offers are accepted',
+  });
+  t.deepEqual(vatAdminState.getExitMessage(), Error(`And do not come back`));
   t.truthy(vatAdminState.getExitWithFailure());
 });
 
