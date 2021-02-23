@@ -17,7 +17,7 @@ export function makeDummySlogger(makeConsole) {
 }
 
 export function makeSlogger(writeObj) {
-  const write = writeObj ? e => writeObj(harden(e)) : () => 0;
+  const write = writeObj ? e => writeObj(e) : () => 0;
 
   const vatSlogs = new Map(); // vatID -> vatSlog
 
