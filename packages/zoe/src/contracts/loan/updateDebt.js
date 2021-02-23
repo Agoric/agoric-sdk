@@ -1,7 +1,11 @@
 // @ts-check
 
 import '../../../exported';
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  // After #2511, replace with observeNotifier with swapped arguments
+  updateFromNotifier,
+} from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
 
 import { natSafeMath } from '../../contractSupport';
@@ -52,31 +56,37 @@ export const makeDebtCalculator = async debtCalculatorConfig => {
 
   const config = { ...configMinusGetDebt, getDebt };
 
-  const updateDebt = timestamp => {
-    let updatedLoan = false;
-    // we could calculate the number of required updates and multiply by a power
-    // of the interest rate, but this seems easier to read.
-    while (lastCalculationTimestamp + interestPeriod <= timestamp) {
-      lastCalculationTimestamp += interestPeriod;
-      const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
-      debt = loanMath.add(debt, interest);
-      updatedLoan = true;
-    }
-    if (updatedLoan) {
-      debtNotifierUpdater.updateState(debt);
-      scheduleLiquidation(zcf, config);
-    }
-  };
+  const periodObserver = harden({
+    updateState: timestamp => {
+      let updatedLoan = false;
+      // we could calculate the number of required updates and multiply by a power
+      // of the interest rate, but this seems easier to read.
+      while (lastCalculationTimestamp + interestPeriod <= timestamp) {
+        lastCalculationTimestamp += interestPeriod;
+        const interest = loanMath.make(
+          calcInterestFn(debt.value, interestRate),
+        );
+        debt = loanMath.add(debt, interest);
+        updatedLoan = true;
+      }
+      if (updatedLoan) {
+        debtNotifierUpdater.updateState(debt);
+        scheduleLiquidation(zcf, config);
+      }
+    },
+    fail: reason => {
+      assert.note(
+        reason,
+        X`Period problem: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
+      );
+      console.error(reason);
+    },
+  });
 
-  const handleDebt = async () => {
-    for await (const value of periodNotifier) {
-      updateDebt(value);
-    }
-  };
-  handleDebt().catch(reason => {
+  updateFromNotifier(periodObserver, periodNotifier).catch(reason => {
     assert.note(
       reason,
-      X`Unable to updateDebt originally:${originalDebt}, started: ${basetime}, debt: ${debt}`,
+      X`Unable to updateDebt originally: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
     );
     console.error(reason);
   });
