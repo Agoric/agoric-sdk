@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
+import { assert, details as X } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 const log = anylogger('ag-solo:init');
@@ -20,16 +21,14 @@ export default function initBasedir(
   options.wallet = wallet;
 
   const here = __dirname;
-  try {
-    fs.mkdirSync(basedir, 0o700);
-  } catch (e) {
-    if (!fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))) {
-      log.error(
-        `unable to create basedir ${basedir}, it must not already exist`,
-      );
-      throw e;
-    }
+  if (
+    fs.existsSync(basedir) &&
+    !fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))
+  ) {
+    assert.fail(X`${basedir} must not already exist`);
   }
+
+  fs.mkdirSync(basedir, { mode: 0o700, recursive: true });
 
   const connections = [{ type: 'http', port: webport, host: webhost }];
   fs.writeFileSync(
