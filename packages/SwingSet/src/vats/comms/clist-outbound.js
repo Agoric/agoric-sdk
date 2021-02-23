@@ -19,12 +19,6 @@ export function makeOutbound(state, stateKit) {
     changeDeciderToRemote,
   } = stateKit;
 
-  let resolveToRemote; // cyclic, set later
-
-  function setDeliveryKit(deliveryKit) {
-    resolveToRemote = deliveryKit.resolveToRemote;
-  }
-
   function getRemoteForLocal(remoteID, lref) {
     const remote = getRemote(state, remoteID);
     const rref = remote.toRemote.get(lref);
@@ -131,8 +125,6 @@ export function makeOutbound(state, stateKit) {
   }
 
   return harden({
-    setDeliveryKit,
-
     getRemoteForLocal,
     provideRemoteForLocal,
     provideRemoteForLocalResult,

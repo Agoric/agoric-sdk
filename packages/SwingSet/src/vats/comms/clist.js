@@ -77,7 +77,6 @@ export function makeCListKit(state, syscall, stateKit) {
   );
 
   function setDeliveryKit(deliveryKit) {
-    outbound.setDeliveryKit(deliveryKit);
     kernel.setDeliveryKit(deliveryKit);
   }
 
