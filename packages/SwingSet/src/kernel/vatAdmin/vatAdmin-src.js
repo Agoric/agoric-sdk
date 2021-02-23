@@ -16,6 +16,9 @@
  * @param {Record<string, any>} param0.endowments
  * @param {*} param0.serialize
  */
+
+import { Far } from '@agoric/marshal';
+
 export function buildRootDeviceNode({ endowments, serialize }) {
   const {
     create: kernelVatCreationFn,
@@ -24,7 +27,7 @@ export function buildRootDeviceNode({ endowments, serialize }) {
   } = endowments;
 
   // The Root Device Node.
-  return harden({
+  return Far('root', {
     // Called by the wrapper vat to create a new vat. Gets a new ID from the
     // kernel's vat creator fn. Remember that the root object will arrive
     // separately. Clean up the outgoing and incoming arguments.
