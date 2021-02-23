@@ -15,7 +15,7 @@ export const natSafeMath = harden({
   floorDivide: (x, y) => Nat(x) / Nat(y),
   ceilDivide: (x, y) => {
     y = Nat(y);
-    return Nat(Nat(x) + y - BigInt(1)) / y;
+    return Nat(Nat(x) + y - 1n) / y;
   },
   // Numbers and BigInts already compare magnitudes correctly.
   isGTE: (x, y) => x >= y,
