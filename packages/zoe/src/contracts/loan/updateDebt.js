@@ -1,10 +1,7 @@
 // @ts-check
 
 import '../../../exported';
-import {
-  makeNotifierKit,
-  makeAsyncIterableFromNotifier,
-} from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -71,7 +68,7 @@ export const makeDebtCalculator = async debtCalculatorConfig => {
   };
 
   const handleDebt = async () => {
-    for await (const value of makeAsyncIterableFromNotifier(periodNotifier)) {
+    for await (const value of periodNotifier) {
       updateDebt(value);
     }
   };
