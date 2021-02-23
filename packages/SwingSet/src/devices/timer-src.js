@@ -24,6 +24,7 @@
 
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we
@@ -263,7 +264,7 @@ export function buildRootDeviceNode(tools) {
   // guarantee that the handler will be called at the precise desired time,
   // but the repeated calls won't accumulate timing drift, so the trigger
   // point will be reached at consistent intervals.
-  return harden({
+  return Far('root', {
     setWakeup(delaySecs, handler) {
       assert.typeof(delaySecs, 'bigint');
       deadlines.add(lastPolled + Nat(delaySecs), handler);
