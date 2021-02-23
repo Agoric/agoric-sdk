@@ -1,5 +1,7 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     encourageMe(name) {
       vatPowers.testLog(
         `=> encouragementBot.encourageMe got the name: ${name}`,

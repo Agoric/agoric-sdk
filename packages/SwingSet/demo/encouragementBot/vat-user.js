@@ -1,8 +1,9 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
-  return harden({
+  return Far('root', {
     talkToBot(bot, botName) {
       log(`=> user.talkToBot is called with ${botName}`);
       E(bot)
