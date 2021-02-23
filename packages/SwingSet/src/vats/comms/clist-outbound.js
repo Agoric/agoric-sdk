@@ -77,14 +77,8 @@ export function makeOutbound(state, stateKit) {
     remote.toRemote.set(vpid, rpid);
     remote.fromRemote.set(flipRemoteSlot(rpid), vpid);
 
-    if (p.resolved) {
-      // we must send the resolution *after* the message which introduces it
-      const { remoteID } = remote;
-      Promise.resolve().then(() =>
-        resolveToRemote(remoteID, [[vpid, p.rejected, p.data]]),
-      );
-    } else {
-      // or arrange to send it later, once it resolves
+    if (!p.resolved) {
+      // arrange to send it later, once it resolves
       subscribeRemoteToPromise(vpid, remote.remoteID);
     }
   }
