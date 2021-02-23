@@ -33,11 +33,14 @@ const ratioPropertyNames = [
 
 function assertIsRatio(ratio) {
   const propertyNames = Object.getOwnPropertyNames(ratio);
-  assert(propertyNames.length === 4, X`Ratio must be a record with 4 fields`);
-  for (let i = 0; i < 4; i += 1) {
+  assert(
+    propertyNames.length === 4,
+    X`Ratio ${ratio} must be a record with 4 fields.`,
+  );
+  for (const name of propertyNames) {
     assert(
-      ratioPropertyNames[i] === propertyNames[i],
-      X`parameter must be a Ratio record`,
+      ratioPropertyNames.includes(name),
+      X`Parameter must be a Ratio record, but ${ratio} has ${name}`,
     );
   }
   Nat(ratio.numerator);

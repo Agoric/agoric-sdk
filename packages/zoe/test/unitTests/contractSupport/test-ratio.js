@@ -204,7 +204,7 @@ test('ratio multiple Ratios', t => {
     message: 'Ratios must have a common unit',
   });
   t.throws(() => multiplyRatios(moe(5), fiveEighths), {
-    message: 'Ratio must be a record with 4 fields',
+    message: 'Ratio (an object) must be a record with 4 fields.',
   });
 });
 
@@ -224,6 +224,6 @@ test('ratio bad inputs', t => {
     message: `amount's brand (an undefined) must match ratio's denominator (an object)`,
   });
   t.throws(() => divideBy(makeRatioFromAmounts(moe(3), moe(5)), 37), {
-    message: `Ratio must be a record with 4 fields`,
+    message: `Ratio (a number) must be a record with 4 fields.`,
   });
 });
