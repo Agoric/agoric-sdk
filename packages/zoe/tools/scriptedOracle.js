@@ -1,3 +1,4 @@
+// @ts-check
 import { E } from '@agoric/eventual-send';
 
 /**
@@ -10,12 +11,11 @@ import { E } from '@agoric/eventual-send';
  * result, but has no impact on the result. If the script has no entry for the
  * time, the event is 'nothing to report'.
  *
- * @param {Array} script
+ * @param {Record<string, any>} script
  * @param {Installation} oracleInstallation
- * @param {Timer} timer
+ * @param {TimerService} timer
  * @param {ZoeService} zoe
  * @param {Issuer} feeIssuer
- * @returns {Promise<unknown[]>}
  */
 
 export async function makeScriptedOracle(
@@ -29,7 +29,7 @@ export async function makeScriptedOracle(
   const oracleHandler = harden({
     async onQuery(query) {
       const time = await E(timer).getCurrentTimestamp();
-      const event = script[time] || 'Nothing to report';
+      const event = script[`${time}`] || 'Nothing to report';
       const reply = { event, time, query };
       return harden({ reply });
     },

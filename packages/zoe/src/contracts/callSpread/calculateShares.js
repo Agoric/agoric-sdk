@@ -39,7 +39,7 @@ function calculateShares(
     numerator,
     denominator,
     collateralMath,
-    10000,
+    10000n,
   );
   return { longShare, shortShare: longShare.complement() };
 }

@@ -730,7 +730,7 @@ test(`zcfSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
     },
   });
@@ -741,11 +741,11 @@ test(`zcfSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
       B: {
         brand: brand2,
-        value: 6,
+        value: 6n,
       },
     },
   });
@@ -774,7 +774,7 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(zcfSeat.getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
   });
 
@@ -784,11 +784,11 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(zcfSeat.getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
     B: {
       brand: brand2,
-      value: 6,
+      value: 6n,
     },
   });
 
@@ -807,7 +807,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(zcfSeat.getAmountAllocated('A', brand1), {
     brand: brand1,
-    value: 3,
+    value: 3n,
   });
 
   // Again, mint some gains to change the allocation.
@@ -815,12 +815,12 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
-    value: 6,
+    value: 6n,
   });
 
   t.deepEqual(zcfSeat.getAmountAllocated('B', brand2), {
     brand: brand2,
-    value: 6,
+    value: 6n,
   });
 
   t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
@@ -908,7 +908,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   const { zcf } = await setupZCFTest();
   const timer = buildManualTimer(console.log);
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit({
-    afterDeadline: { timer, deadline: 1 },
+    afterDeadline: { timer, deadline: 1n },
   });
   t.falsy(zcfSeat.hasExited());
   await t.throwsAsync(() => E(userSeat).tryExit(), {
@@ -941,7 +941,7 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
   });
 
@@ -951,11 +951,11 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
     B: {
       brand: brand2,
-      value: 6,
+      value: 6n,
     },
   });
 
@@ -984,7 +984,7 @@ test(`userSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
     },
   });
@@ -995,11 +995,11 @@ test(`userSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
       B: {
         brand: brand2,
-        value: 6,
+        value: 6n,
       },
     },
   });
@@ -1037,11 +1037,11 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
     B: {
       brand: brand2,
-      value: 6,
+      value: 6n,
     },
   });
 
@@ -1056,11 +1056,11 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(await E(issuer1).getAmountOf(payoutAP), {
     brand: brand1,
-    value: 3,
+    value: 3n,
   });
   t.deepEqual(await E(issuer2).getAmountOf(payoutBP), {
     brand: brand2,
-    value: 6,
+    value: 6n,
   });
 });
 

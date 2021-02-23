@@ -57,11 +57,11 @@ test('getPursesNotifier', async t => {
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
     brand: { kind: 'brand', petname: 'moola' }, // not a real amount
-    value: 0,
+    value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
     body:
-      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":0}',
+      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
         kind: 'brand',
@@ -75,7 +75,7 @@ test('getPursesNotifier', async t => {
   const moolaPurse = wallet.getPurse(MOOLA_PURSE_PETNAME);
   t.is(moolaPurseInfo.purse, moolaPurse);
   t.is(moolaPurseInfo.pursePetname, MOOLA_PURSE_PETNAME);
-  t.is(moolaPurseInfo.value, 0);
+  t.is(moolaPurseInfo.value, 0n);
 });
 
 test('getAttenuatedPursesNotifier', async t => {
@@ -94,11 +94,11 @@ test('getAttenuatedPursesNotifier', async t => {
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
     brand: { kind: 'brand', petname: 'moola' }, // not a real amount
-    value: 0,
+    value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
     body:
-      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":0}',
+      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
         kind: 'brand',
@@ -113,5 +113,5 @@ test('getAttenuatedPursesNotifier', async t => {
   // @ts-ignore
   t.is(moolaPurseInfo.purse, undefined);
   t.is(moolaPurseInfo.pursePetname, MOOLA_PURSE_PETNAME);
-  t.is(moolaPurseInfo.value, 0);
+  t.is(moolaPurseInfo.value, 0n);
 });

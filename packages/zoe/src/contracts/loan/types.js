@@ -9,7 +9,7 @@
  */
 
 /**
- * @typedef {number} MMR
+ * @typedef {bigint} MMR
  *  The Maintenance Margin Requirement, in percent. The default is
  *  150, meaning that collateral should be worth at least 150% of the
  *  loan. If the value of the collateral drops below mmr, liquidation
@@ -24,7 +24,7 @@
  *   collateral on liquidation.
  */
 
-/** @typedef {number} InterestRate
+/** @typedef {bigint} InterestRate
  *
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
@@ -157,9 +157,9 @@
 
 /**
  * @callback CalcInterestFn
- * @param {number} oldDebtValue
- * @param {number} interestRate
- * @returns {number} interest
+ * @param {bigint} oldDebtValue
+ * @param {bigint} interestRate
+ * @returns {bigint} interest
  */
 
 /**
@@ -181,7 +181,7 @@
  *
  *   The AsyncIterable to notify when a period has occurred
  *
- * @property {number} interestRate
+ * @property {bigint} interestRate
  * @property {RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate
@@ -195,11 +195,11 @@
  * @typedef {Object} ConfigMinusGetDebt
  * @property {ZCFSeat} collateralSeat
  * @property {PromiseRecord<any>} liquidationPromiseKit
- * @property {number} [mmr]
+ * @property {bigint} [mmr]
  * @property {InstanceHandle} autoswapInstance
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
- * @property {number} interestRate
+ * @property {bigint} interestRate
  * @property {RelativeTime} interestPeriod
  * @property {ZCFSeat} lenderSeat
  */

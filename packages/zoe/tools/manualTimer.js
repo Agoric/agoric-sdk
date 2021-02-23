@@ -3,6 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
 
 import './types';
 import './internal-types';
@@ -15,13 +16,15 @@ import { makeNotifierKit } from '@agoric/notifier';
  * @param {Timestamp} [startValue=0]
  * @returns {ManualTimer}
  */
-export default function buildManualTimer(log, startValue = 0) {
-  let ticks = startValue;
+export default function buildManualTimer(log, startValue = 0n) {
+  let ticks = Nat(startValue);
 
   /** @type {Store<Timestamp, Array<TimerWaker>>} */
   const schedule = makeStore('Timestamp');
 
   const makeRepeater = (delaySecs, interval, timer) => {
+    assert.typeof(delaySecs, 'bigint');
+    assert.typeof(interval, 'bigint');
     /** @type {Array<TimerWaker> | null} */
     let wakers = [];
     let nextWakeup;
@@ -29,6 +32,7 @@ export default function buildManualTimer(log, startValue = 0) {
     /** @type {TimerWaker} */
     const repeaterWaker = {
       async wake(timestamp) {
+        assert.typeof(timestamp, 'bigint');
         if (!wakers) {
           return;
         }
@@ -60,7 +64,7 @@ export default function buildManualTimer(log, startValue = 0) {
   const timer = {
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
-      ticks += 1;
+      ticks += 1n;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         const wakers = schedule.get(ticks);
@@ -77,6 +81,7 @@ export default function buildManualTimer(log, startValue = 0) {
       return ticks;
     },
     setWakeup(baseTime, waker) {
+      assert.typeof(baseTime, 'bigint');
       if (baseTime <= ticks) {
         log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
         E(waker).wake(ticks);
@@ -115,10 +120,13 @@ export default function buildManualTimer(log, startValue = 0) {
       return makeRepeater(delaySecs, interval, timer);
     },
     makeNotifier(delaySecs, interval) {
+      assert.typeof(delaySecs, 'bigint');
+      assert.typeof(interval, 'bigint');
       const { notifier, updater } = makeNotifierKit();
       /** @type {TimerWaker} */
       const repeaterWaker = {
         async wake(timestamp) {
+          assert.typeof(timestamp, 'bigint');
           updater.updateState(timestamp);
           timer.setWakeup(ticks + interval, repeaterWaker);
         },

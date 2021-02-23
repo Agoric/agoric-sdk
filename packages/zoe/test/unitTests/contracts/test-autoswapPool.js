@@ -64,39 +64,39 @@ async function setupPool(poolBalances) {
 }
 
 test('pool getPrice centToSec', async t => {
-  const allocations = { central: 100, secondary: 100 };
+  const allocations = { central: 100n, secondary: 100n };
   const { pool, secondaryBrand, central, secondary } = await setupPool(
     allocations,
   );
-  const valueIn = 40;
+  const valueIn = 40n;
   const { amountOut, amountIn } = await E(pool).getPriceGivenAvailableInput(
     central(valueIn),
     secondaryBrand,
   );
-  const expected = outputFromInputPrice(100, 100, valueIn, 3);
+  const expected = outputFromInputPrice(100n, 100n, valueIn, 3n);
   t.deepEqual(amountOut, secondary(expected));
   t.deepEqual(amountIn, central(valueIn));
 });
 
 test('pool getPrice secToCent', async t => {
-  const allocations = { central: 100, secondary: 100 };
+  const allocations = { central: 100n, secondary: 100n };
   const { pool, centralBrand, central, secondary } = await setupPool(
     allocations,
   );
-  const valueIn = 40;
+  const valueIn = 40n;
   const { amountOut, amountIn } = await E(pool).getPriceGivenAvailableInput(
     secondary(valueIn),
     centralBrand,
   );
-  const expected = outputFromInputPrice(100, 100, valueIn, 3);
+  const expected = outputFromInputPrice(100n, 100n, valueIn, 3n);
   t.deepEqual(amountOut, central(expected));
   t.deepEqual(amountIn, secondary(valueIn));
 });
 
 test('pool getPrice secToSec', async t => {
-  const allocations = { central: 100, secondary: 100 };
+  const allocations = { central: 100n, secondary: 100n };
   const { pool, secondaryBrand, secondary } = await setupPool(allocations);
-  const valueIn = 40;
+  const valueIn = 40n;
   await t.throwsAsync(
     () =>
       E(pool).getPriceGivenAvailableInput(secondary(valueIn), secondaryBrand),
@@ -105,11 +105,11 @@ test('pool getPrice secToSec', async t => {
 });
 
 test('pool getPrice amountIn != available', async t => {
-  const allocations = { central: 100, secondary: 1000 };
+  const allocations = { central: 100n, secondary: 1000n };
   const { pool, centralBrand, central, secondary } = await setupPool(
     allocations,
   );
-  const valueIn = 40;
+  const valueIn = 40n;
   const { amountOut, amountIn } = await E(pool).getPriceGivenAvailableInput(
     secondary(valueIn),
     centralBrand,
@@ -120,41 +120,41 @@ test('pool getPrice amountIn != available', async t => {
 });
 
 test('pool getOutputPrice cenToSec', async t => {
-  const poolBalances = { central: 100, secondary: 100 };
+  const poolBalances = { central: 100n, secondary: 100n };
   const { pool, centralBrand, central, secondary } = await setupPool(
     poolBalances,
   );
-  const valueOut = 40;
+  const valueOut = 40n;
   const { amountOut, amountIn } = await E(pool).getPriceGivenRequiredOutput(
     centralBrand,
     secondary(valueOut),
   );
-  const expected = priceFromTargetOutput(valueOut, 100, 100, 3);
+  const expected = priceFromTargetOutput(valueOut, 100n, 100n, 3n);
   t.deepEqual(amountOut, secondary(valueOut));
   t.deepEqual(amountIn, central(expected));
 });
 
 test('pool getOutputPrice secToCent', async t => {
-  const poolBalances = { central: 100, secondary: 100 };
+  const poolBalances = { central: 100n, secondary: 100n };
   const { pool, secondaryBrand, central, secondary } = await setupPool(
     poolBalances,
   );
-  const valueOut = 40;
+  const valueOut = 40n;
   const { amountOut, amountIn } = await E(pool).getPriceGivenRequiredOutput(
     secondaryBrand,
     central(valueOut),
   );
-  const expected = priceFromTargetOutput(valueOut, 100, 100, 3);
+  const expected = priceFromTargetOutput(valueOut, 100n, 100n, 3n);
   t.deepEqual(amountOut, central(valueOut));
   t.deepEqual(amountIn, secondary(expected));
 });
 
 test('pool getOutputPrice amountOut != requested', async t => {
-  const poolBalances = { central: 1000, secondary: 100 };
+  const poolBalances = { central: 1000n, secondary: 100n };
   const { pool, secondaryBrand, central, secondary } = await setupPool(
     poolBalances,
   );
-  const valueOut = 4;
+  const valueOut = 4n;
   const { amountOut, amountIn } = await E(pool).getPriceGivenRequiredOutput(
     secondaryBrand,
     central(valueOut),
@@ -166,9 +166,9 @@ test('pool getOutputPrice amountOut != requested', async t => {
 });
 
 test('pool getOutputPrice secToSec', async t => {
-  const poolBalances = { central: 100, secondary: 100 };
+  const poolBalances = { central: 100n, secondary: 100n };
   const { pool, secondaryBrand, secondary } = await setupPool(poolBalances);
-  const valueOut = 40;
+  const valueOut = 40n;
   await t.throwsAsync(
     () =>
       E(pool).getPriceGivenRequiredOutput(secondaryBrand, secondary(valueOut)),
@@ -179,9 +179,9 @@ test('pool getOutputPrice secToSec', async t => {
 });
 
 test('pool getOutputPrice cenToCen', async t => {
-  const poolBalances = { central: 100, secondary: 100 };
+  const poolBalances = { central: 100n, secondary: 100n };
   const { pool, centralBrand, central } = await setupPool(poolBalances);
-  const valueOut = 40;
+  const valueOut = 40n;
   await t.throwsAsync(
     () => E(pool).getPriceGivenRequiredOutput(centralBrand, central(valueOut)),
     {

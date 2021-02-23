@@ -40,7 +40,7 @@ export async function makeFakePriceAuthority(options) {
     tradeList,
     timer,
     unitAmountIn = mathIn.make(1),
-    quoteInterval = 1,
+    quoteInterval = 1n,
     quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
   } = options;
 
@@ -169,7 +169,7 @@ export async function makeFakePriceAuthority(options) {
         }
       },
     });
-    const repeater = E(timer).makeRepeater(0, quoteInterval);
+    const repeater = E(timer).makeRepeater(0n, quoteInterval);
     return E(repeater).schedule(handler);
   }
   await startTimer();
@@ -213,6 +213,7 @@ export async function makeFakePriceAuthority(options) {
       return makeNotifierFromAsyncIterable(generateQuotes(amountIn, brandOut));
     },
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
+      assert.typeof(timeStamp, 'bigint');
       assertBrands(amountIn.brand, brandOut);
       const { promise, resolve } = makePromiseKit();
       E(timer).setWakeup(

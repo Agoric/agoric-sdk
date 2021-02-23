@@ -1,6 +1,8 @@
+// @ts-check
+
 import './types';
 import { assert, details as X } from '@agoric/assert';
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
@@ -17,8 +19,9 @@ const { multiply, floorDivide } = natSafeMath;
 // brands. It only makes sense to produce a percentage by dividing two values
 // with the same units. If you divide gallons by miles, the result is not a
 // percentage.
+
 /** @type {MakePercent} */
-function makePercent(value, amountMath, base = 100) {
+function makePercent(value, amountMath, base = 100n) {
   Nat(value);
   return harden({
     scale: amount => {
@@ -39,7 +42,7 @@ harden(makePercent);
 // calculatePercent is an alternative method of producing a percent object by
 // dividing two amounts of the same brand.
 /** @type {CalculatePercent} */
-function calculatePercent(numerator, denominator, amountMath, base = 100) {
+function calculatePercent(numerator, denominator, amountMath, base = 100n) {
   assert(
     numerator.brand === denominator.brand,
     `Dividing amounts of different brands doesn't produce a percent.`,
@@ -52,12 +55,12 @@ harden(calculatePercent);
 
 /** @type {MakeCanonicalPercent} */
 function makeAll(amountMath) {
-  return makePercent(100, amountMath);
+  return makePercent(100n, amountMath);
 }
 
 /** @type {MakeCanonicalPercent} */
 function makeNone(amountMath) {
-  return makePercent(0, amountMath);
+  return makePercent(0n, amountMath);
 }
 
 export { makePercent, calculatePercent, makeAll, makeNone };

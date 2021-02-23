@@ -428,7 +428,7 @@ test('zoe - otcDesk - offerOk', async t => {
     { Simolean: simoleans(4) },
     { Moola: moola(3) },
     timer,
-    1,
+    1n,
   );
 
   await bob.offerOk(invitation1);
@@ -477,7 +477,7 @@ test('zoe - otcDesk - offerExpired', async t => {
     { Simolean: simoleans(4) },
     { Moola: moola(3) },
     timer,
-    1,
+    1n,
   );
   timer.tick();
 
@@ -526,7 +526,7 @@ test('zoe - otcDesk - offerWantTooMuch', async t => {
     { Buck: bucks(500), Moola: moola(35) },
     { Simolean: simoleans(15) },
     timer,
-    100,
+    100n,
   );
 
   // Bob tries to offer but he wants more than what was quoted.

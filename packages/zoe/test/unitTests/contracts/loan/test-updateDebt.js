@@ -15,11 +15,11 @@ test('test calculateInterest', async t => {
   };
 
   const expectations = [
-    [40000, 5, 20],
-    [0, 5, 0], // debt of 0 is 0 interest
-    [100, 0, 0], // interest rate of 0 is 0 interest
-    [10000000, 3, 3000],
-    [20392, 1, 2],
+    [40000n, 5n, 20n],
+    [0n, 5n, 0n], // debt of 0 is 0 interest
+    [100n, 0n, 0n], // interest rate of 0 is 0 interest
+    [10000000n, 3n, 3000n],
+    [20392n, 1n, 2n],
   ];
 
   expectations.forEach(testCalculateInterest);

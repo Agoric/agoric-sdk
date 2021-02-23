@@ -30,9 +30,9 @@
 
 /**
  * @callback MakePercent
- * @param {number} value
+ * @param {bigint} value
  * @param {AmountMath} amountMath
- * @param {number=} base
+ * @param {bigint=} base
  * @returns {Percent}
  */
 
@@ -47,7 +47,7 @@
  * @param {Amount} numerator
  * @param {Amount} denominator
  * @param {AmountMath} amountMath
- * @param {number=} base
+ * @param {bigint=} base
  * @returns {Percent}
  */
 

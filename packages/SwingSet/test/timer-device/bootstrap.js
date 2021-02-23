@@ -1,4 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
@@ -13,7 +14,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             log(`handler.wake()`);
           },
         });
-        D(devices.timer).setWakeup(3, handler);
+        D(devices.timer).setWakeup(3n, handler);
       } else if (argv[0] === 'repeater') {
         log(`starting repeater test`);
         let handlerCalled = 0;
@@ -25,7 +26,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             );
           },
         });
-        const rptr = D(devices.timer).makeRepeater(argv[1], argv[2]);
+        const rptr = D(devices.timer).makeRepeater(Nat(argv[1]), Nat(argv[2]));
         const nextTime = D(devices.timer).schedule(rptr, handler);
         log(`next scheduled time: ${nextTime}`);
       } else {
