@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-returns-check,jsdoc/valid-types */
+// @ts-check
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
@@ -15,6 +15,18 @@
  * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
  * constructor to use.
  * @returns {asserts flag}
+ */
+
+/**
+ * @callback AssertMakeError
+ *
+ * The `assert.error` method, recording details for the console.
+ *
+ * The optional `optDetails` can be a string.
+ * @param {Details=} optDetails The details of what was asserted
+ * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * constructor to use.
+ * @returns {Error}
  */
 
 /**
@@ -169,6 +181,7 @@
  *   details`${sky.color} should be ${quote(color)}`,
  * );
  * ```
+ *
  * The normal convention is to locally rename `details` to `X` and import `q`
  * and `assert` unmodified.
  * ```js
@@ -189,6 +202,18 @@
  */
 
 /**
+ * @callback Raise
+ *
+ * To make an `assert` which terminates some larger unit of computation
+ * like a transaction, vat, or process, call `makeAssert` with a `Raise`
+ * callback, where that callback actually performs that larger termination.
+ * If possible, the callback should also report its `reason` parameter as
+ * the alleged reason for the termination.
+ *
+ * @param {Error} reason
+ */
+
+/**
  * @callback MakeAssert
  *
  * Makes and returns an `assert` function object that shares the bookkeeping
@@ -199,13 +224,13 @@
  * can be called.
  *
  * If `optRaise` is provided, the returned `assert` function object will call
- * `optRaise(error)` before throwing the error. This enables `optRaise` to
+ * `optRaise(reason)` before throwing the error. This enables `optRaise` to
  * engage in even more violent termination behavior, like terminating the vat,
  * that prevents execution from reaching the following throw. However, if
  * `optRaise` returns normally, which would be unusual, the throw following
- * `optRaise(error)` would still happen.
+ * `optRaise(reason)` would still happen.
  *
- * @param {((error: Error) => void)=} optRaise
+ * @param {Raise=} optRaise
  * @returns {Assert}
  */
 
@@ -251,6 +276,7 @@
  *
  * @typedef { BaseAssert & {
  *   typeof: AssertTypeof,
+ *   error: AssertMakeError,
  *   fail: AssertFail,
  *   equal: AssertEqual,
  *   string: AssertString,
