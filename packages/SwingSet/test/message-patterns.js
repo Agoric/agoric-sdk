@@ -6,6 +6,7 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { quote as q } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { ignore } from './util';
 
 // Exercise a set of increasingly complex object-capability message patterns,
@@ -135,7 +136,7 @@ export function buildPatterns(log) {
       log(`match: ${b20amy === data}`);
     };
   }
-  out.a20 = ['b20 got [Alleged: presence o-50]', 'match: true', 'a20 done'];
+  out.a20 = ['b20 got [Alleged: amy]', 'match: true', 'a20 done'];
   test('a20');
 
   // bob!x({key: amy})
@@ -154,7 +155,7 @@ export function buildPatterns(log) {
       log(`match: ${b21amy === data.key2}`);
     };
   }
-  out.a21 = ['b21 got [Alleged: presence o-50]', 'match: true', 'a21 done'];
+  out.a21 = ['b21 got [Alleged: amy]', 'match: true', 'a21 done'];
   test('a21');
 
   // bob!x(bob)
@@ -232,7 +233,7 @@ export function buildPatterns(log) {
       return b.bill;
     };
   }
-  out.a42 = ['a42 done, [Alleged: presence o-53] match true'];
+  out.a42 = ['a42 done, [Alleged: bill] match true'];
   test('a42');
 
   // bob!x() -> <nada> // rejection
@@ -308,7 +309,7 @@ export function buildPatterns(log) {
     };
   }
   // TODO https://github.com/Agoric/agoric-sdk/issues/1631
-  out.a51 = ['a51 done, got [Alleged: presence o-74], match true true'];
+  out.a51 = ['a51 done, got [Alleged: bert], match true true'];
   test('a51');
 
   // bob!x() -> P(bill) // new reference
@@ -329,7 +330,7 @@ export function buildPatterns(log) {
       return b.bill;
     };
   }
-  out.a52 = ['a52 done, got [Alleged: presence o-53], match true'];
+  out.a52 = ['a52 done, got [Alleged: bill], match true'];
   test('a52');
 
   // bob!x(amy) -> P(amy) // new to bob
@@ -397,7 +398,7 @@ export function buildPatterns(log) {
       p1.resolve(b.bill);
     };
   }
-  out.a62 = ['a62 done, got [Alleged: presence o-53]'];
+  out.a62 = ['a62 done, got [Alleged: bill]'];
   test('a62');
 
   // bob!x(amy) -> P(amy) // resolve after receipt
@@ -499,10 +500,10 @@ export function buildPatterns(log) {
     };
     objB.b70_pipe1 = async () => {
       log(`pipe1`);
-      const pipe2 = harden({
+      const pipe2 = Far('pipe2', {
         pipe2() {
           log(`pipe2`);
-          const pipe3 = harden({
+          const pipe3 = Far('pipe3', {
             pipe3() {
               log(`pipe3`);
             },
@@ -543,13 +544,13 @@ export function buildPatterns(log) {
     const p1 = makePromiseKit();
     objB.b71_getpx = async () => p1.promise;
     objB.b71_resolvex = async () => {
-      const x = harden({
+      const x = Far('x', {
         pipe1() {
           log(`pipe1`);
-          const pipe2 = harden({
+          const pipe2 = Far('pipe2', {
             pipe2() {
               log(`pipe2`);
-              const pipe3 = harden({
+              const pipe3 = Far('pipe3', {
                 pipe3() {
                   log(`pipe3`);
                 },
@@ -594,13 +595,13 @@ export function buildPatterns(log) {
     objB.b72_wait = async () => 0;
     objB.b72_getpx = async () => p1.promise;
     objB.b72_resolvex = async () => {
-      const x = harden({
+      const x = Far('x', {
         pipe1() {
           log(`pipe1`);
-          const pipe2 = harden({
+          const pipe2 = Far('pipe2', {
             pipe2() {
               log(`pipe2`);
-              const pipe3 = harden({
+              const pipe3 = Far('pipe3', {
                 pipe3() {
                   log(`pipe3`);
                 },
@@ -639,7 +640,7 @@ export function buildPatterns(log) {
       ignore(p2);
     };
     objB.b73_one = () =>
-      harden({
+      Far('one', {
         two: () => log('two'),
       });
   }
@@ -954,7 +955,10 @@ export function buildPatterns(log) {
   // TODO: vat-allocated promise, either comms or kernel resolves it, comms
   // needs to send into kernel again
 
-  return harden({
+  // note: we don't harden() this return value because certain callers
+  // (vat-a/b/c.js) need to Far() the objA/B/C pieces (which isn't convenient
+  // to do here), and you can't Far() something that's already hardened.
+  return {
     setA,
     setB,
     setC,
@@ -964,5 +968,5 @@ export function buildPatterns(log) {
     objC,
     expected: out,
     expected_pipelined: outPipelined,
-  });
+  };
 }
