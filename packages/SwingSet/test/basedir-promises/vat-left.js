@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
@@ -12,7 +13,7 @@ export function buildRootObject(vatPowers) {
     },
     call2(arg) {
       log(`left.call2 ${arg}`);
-      return harden({
+      return Far('iface', {
         call3(x) {
           log(`left.call3 ${x}`);
           return 3;
@@ -26,7 +27,7 @@ export function buildRootObject(vatPowers) {
     },
 
     returnMyObject() {
-      return harden({
+      return Far('iface', {
         foo(x) {
           log(`left.myobject.call ${x}`);
         },
@@ -44,5 +45,5 @@ export function buildRootObject(vatPowers) {
       );
     },
   };
-  return harden(obj0);
+  return Far('root', obj0);
 }

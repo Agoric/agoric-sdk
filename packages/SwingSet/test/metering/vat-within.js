@@ -1,5 +1,6 @@
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const { makeGetMeter, transformMetering } = vatPowers;
@@ -21,7 +22,7 @@ export function buildRootObject(vatPowers) {
   const log2 = [];
   let meterMe;
 
-  const root = {
+  return Far('root', {
     async start(bundle) {
       // console.log(`vatPowers`, vatPowers);
       // console.log('bundle', bundle);
@@ -71,6 +72,5 @@ export function buildRootObject(vatPowers) {
     async refill(mode) {
       refillFacet[mode](10000000);
     },
-  };
-  return harden(root);
+  });
 }

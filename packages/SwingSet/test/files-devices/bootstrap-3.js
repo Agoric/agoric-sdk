@@ -1,8 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       if (vatParameters.argv[0] === 'write+read') {
         log(`w+r`);

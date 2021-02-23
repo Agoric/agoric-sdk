@@ -1,6 +1,8 @@
+import { Far, getInterfaceOf } from '@agoric/marshal';
+
 export function buildRootObject(vatPowers) {
   let counter = 0;
-  return harden({
+  return Far('root', {
     increment() {
       counter += 1;
     },
@@ -11,8 +13,8 @@ export function buildRootObject(vatPowers) {
       return vatPowers.transformTildot('x~.foo(arg1)');
     },
     remotable() {
-      const r = vatPowers.Far('iface1');
-      return vatPowers.getInterfaceOf(r);
+      const r = Far('iface1');
+      return getInterfaceOf(r);
     },
   });
 }

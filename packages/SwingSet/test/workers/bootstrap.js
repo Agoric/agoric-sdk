@@ -1,8 +1,9 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject() {
-  const callbackObj = harden({
+  const callbackObj = Far('callback', {
     callback(_arg1, _arg2) {
       // console.log(`callback`, arg1, arg2);
       return ['data', callbackObj]; // four, resolves pF
@@ -53,7 +54,7 @@ export function buildRootObject() {
     ]);
   }
 
-  return harden({
+  return Far('root', {
     bootstrap(vats, devices) {
       const pA = E(vats.target).zero(
         callbackObj,

@@ -1,3 +1,4 @@
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
@@ -14,5 +15,5 @@ export function buildRootObject(vatPowers) {
       log(arg);
     },
   };
-  return harden(root);
+  return Far('root', root);
 }

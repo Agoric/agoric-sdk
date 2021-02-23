@@ -1,14 +1,15 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { testLog } = vatPowers;
 
-  const ourThing = harden({
+  const ourThing = Far('ourThing', {
     pretendToBeAThing(from) {
       testLog(`pretendToBeAThing invoked from ${from}`);
     },
   });
-  const self = harden({
+  const self = Far('root', {
     async bootstrap(vats, devices) {
       testLog('bootstrap');
       let badvat;

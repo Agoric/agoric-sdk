@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { makeMarshal } from '@agoric/marshal';
+import { makeMarshal, Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../../src/parseVatSlots';
 import { makeVirtualObjectManager } from '../../src/kernel/virtualObjectManager';
@@ -81,7 +81,7 @@ function makeThingInstance(state) {
       state.label = label;
       state.resetCounter = 0;
     },
-    self: {
+    self: Far('thing', {
       inc() {
         state.counter += 1;
         return state.counter;
@@ -100,7 +100,7 @@ function makeThingInstance(state) {
       describe() {
         return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
       },
-    },
+    }),
   };
 }
 
@@ -112,7 +112,7 @@ function makeZotInstance(state) {
       state.tag = tag;
       state.count = 0;
     },
-    self: {
+    self: Far('zot', {
       sayHello(msg) {
         state.count += 1;
         return `${msg} ${state.name}`;
@@ -126,7 +126,7 @@ function makeZotInstance(state) {
         state.count += 1;
         return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
       },
-    },
+    }),
   };
 }
 

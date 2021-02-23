@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
 
-  const self = harden({
+  const self = Far('root', {
     async bootstrap(vats, devices) {
       testLog('preparing dynamic vat');
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
