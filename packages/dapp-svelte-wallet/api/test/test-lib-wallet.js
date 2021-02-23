@@ -210,7 +210,7 @@ test('lib-wallet issuer and purse methods', async t => {
         value: 100,
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
+            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
           slots: [{ kind: 'brand', petname: 'moola' }],
         },
         currentAmount: {
@@ -704,7 +704,7 @@ test('lib-wallet offer methods', async t => {
       value: 100,
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
         slots: [{ kind: 'brand', petname: 'moola' }],
       },
       currentAmount: {

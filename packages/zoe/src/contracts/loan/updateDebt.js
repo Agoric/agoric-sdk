@@ -10,7 +10,7 @@ import { scheduleLiquidation } from './scheduleLiquidation';
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodNotifier
 
-const BASIS_POINT_DENOMINATOR = 10000;
+const BASIS_POINT_DENOMINATOR = 10000n;
 
 /**
  * @type {CalcInterestFn} Calculate the interest using an interest

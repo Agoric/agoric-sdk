@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
@@ -26,6 +26,8 @@ import '../../../src/contracts/exported';
  */
 
 const contractPath = `${__dirname}/../../../src/contracts/oracle`;
+
+const test = /** @type {import('ava').TestInterface<TestContext>} */ (anyTest);
 
 test.before(
   'setup oracle',

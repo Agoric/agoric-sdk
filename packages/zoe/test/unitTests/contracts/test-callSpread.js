@@ -52,7 +52,7 @@ test('fundedCallSpread below Strike1', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [54, 20, 35, 15, 28],
@@ -60,7 +60,7 @@ test('fundedCallSpread below Strike1', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3,
+    expiration: 3n,
     underlyingAmount: simoleans(2),
     priceAuthority,
     strikePrice1: moola(60),
@@ -150,7 +150,7 @@ test('fundedCallSpread above Strike2', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 55],
@@ -158,7 +158,7 @@ test('fundedCallSpread above Strike2', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3,
+    expiration: 3n,
     underlyingAmount: simoleans(2),
     priceAuthority,
     strikePrice1: moola(60),
@@ -250,7 +250,7 @@ test('fundedCallSpread, mid-strike', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 45],
@@ -258,7 +258,7 @@ test('fundedCallSpread, mid-strike', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3,
+    expiration: 3n,
     underlyingAmount: simoleans(2),
     priceAuthority,
     strikePrice1: moola(60),
@@ -349,7 +349,7 @@ test('fundedCallSpread, late exercise', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 45],
@@ -357,7 +357,7 @@ test('fundedCallSpread, late exercise', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3,
+    expiration: 3n,
     underlyingAmount: simoleans(2),
     priceAuthority,
     strikePrice1: moola(60),
@@ -452,7 +452,7 @@ test('fundedCallSpread, sell options', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(100));
 
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const priceAuthority = makeTestPriceAuthority(
     amountMaths,
     [20, 45],
@@ -460,7 +460,7 @@ test('fundedCallSpread, sell options', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3,
+    expiration: 3n,
     underlyingAmount: simoleans(2),
     priceAuthority,
     strikePrice1: moola(60),
@@ -628,7 +628,7 @@ test('pricedCallSpread, mid-strike', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(75));
 
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const priceAuthority = await makeTestPriceAuthority(
     amountMaths,
     [20, 45, 45, 45, 45, 45, 45],
@@ -636,7 +636,7 @@ test('pricedCallSpread, mid-strike', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3,
+    expiration: 3n,
     underlyingAmount: simoleans(2),
     priceAuthority,
     strikePrice1: moola(60),
@@ -655,7 +655,7 @@ test('pricedCallSpread, mid-strike', async t => {
     issuerKeywordRecord,
     terms,
   );
-  const invitationPair = await E(creatorFacet).makeInvitationPair(75);
+  const invitationPair = await E(creatorFacet).makeInvitationPair(75n);
   const { longInvitation, shortInvitation } = invitationPair;
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();

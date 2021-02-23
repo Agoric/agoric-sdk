@@ -18,7 +18,7 @@ import '../../../exported';
  */
 const start = zcf => {
   const terms = zcf.getTerms();
-  let offersCount = 0;
+  let offersCount = 0n;
 
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
@@ -30,7 +30,7 @@ const start = zcf => {
   }
 
   const safeAutoRefund = seat => {
-    offersCount += 1;
+    offersCount += 1n;
     seat.exit();
     return `The offer was accepted`;
   };
@@ -38,14 +38,14 @@ const start = zcf => {
     zcf.makeInvitation(safeAutoRefund, 'getRefund');
 
   const meterExceeded = () => {
-    offersCount += 1;
+    offersCount += 1n;
     return new Array(1e9);
   };
   const makeExcessiveInvitation = () =>
     zcf.makeInvitation(meterExceeded, 'getRefund');
 
   const throwing = () => {
-    offersCount += 1;
+    offersCount += 1n;
     throw new Error('someException');
   };
   const makeThrowingInvitation = () =>
@@ -56,7 +56,7 @@ const start = zcf => {
       give: { Asset: null },
       want: { Price: null },
     });
-    offersCount += 1;
+    offersCount += 1n;
     const { want, give } = firstSeat.getProposal();
 
     return zcf.makeInvitation(
@@ -75,10 +75,10 @@ const start = zcf => {
   const makeSwapInvitation = () =>
     zcf.makeInvitation(makeMatchingInvitation, 'firstOffer');
 
-  offersCount += 1;
+  offersCount += 1n;
   const publicFacet = harden({
     getOffersCount: () => {
-      offersCount += 1;
+      offersCount += 1n;
       return offersCount;
     },
     makeSafeInvitation,
@@ -88,11 +88,11 @@ const start = zcf => {
     zcfShutdown,
     zcfShutdownWithFailure,
     meterException: () => {
-      offersCount += 1;
+      offersCount += 1n;
       return new Array(1e9);
     },
     throwSomething: () => {
-      offersCount += 1;
+      offersCount += 1n;
       throw new Error('someException');
     },
   });

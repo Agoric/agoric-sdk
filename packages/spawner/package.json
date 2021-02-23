@@ -36,7 +36,7 @@
     "@agoric/ertp": "^0.9.2",
     "@agoric/eventual-send": "^0.13.2",
     "@agoric/import-bundle": "^0.2.2",
-    "@agoric/nat": "^2.0.1",
+    "@agoric/nat": "^4.0.0",
     "@agoric/promise-kit": "^0.2.2",
     "@agoric/same-structure": "^0.1.2",
     "@agoric/store": "^0.4.2",

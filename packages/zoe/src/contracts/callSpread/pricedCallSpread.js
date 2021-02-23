@@ -148,9 +148,9 @@ const start = zcf => {
   //  rather than percent
   function makeInvitationPair(longCollateralShare) {
     const longPercent = makePercent(
-      longCollateralShare * 100,
+      longCollateralShare * 100n,
       collateralMath,
-      10000,
+      10000n,
     );
 
     const longInvitation = makeOptionInvitation(Position.LONG, longPercent);

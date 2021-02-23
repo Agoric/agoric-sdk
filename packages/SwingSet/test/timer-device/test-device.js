@@ -66,11 +66,11 @@ test('repeater2', async t => {
 
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
-  timer.poll(1);
+  timer.poll(1n);
   await c.step();
-  timer.poll(5);
+  timer.poll(5n);
   await c.step();
-  timer.poll(8);
+  timer.poll(8n);
   await c.step();
   t.deepEqual(c.dump().log, [
     'starting repeater test',

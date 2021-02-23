@@ -27,6 +27,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeDehydrator } from './lib-dehydrate';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
+import { bigintStringify } from './bigintStringify';
 
 import '@agoric/store/exported';
 import '@agoric/zoe/exported';
@@ -129,7 +130,7 @@ export function makeWallet({
       .sort(([id1], [id2]) => cmp(id1, id2))
       .map(([_id, value]) => value);
 
-    return JSON.stringify(values);
+    return bigintStringify(harden(values));
   }
 
   function getPursesState() {

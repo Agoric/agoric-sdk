@@ -2,6 +2,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
 import {
   assertIssuerKeywords,
   trade,
@@ -80,7 +81,7 @@ const start = zcf => {
 
     // All items are the same price.
     const totalCost = moneyMath.make(
-      pricePerItem.value * wantedItems.value.length,
+      pricePerItem.value * Nat(wantedItems.value.length),
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.

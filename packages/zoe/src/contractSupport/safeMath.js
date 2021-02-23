@@ -1,14 +1,22 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 
 /**
- * These operations should be used for calculations with the
- * values of basic fungible tokens.
+ * These operations should be used for calculations with the values of
+ * basic fungible tokens.
+ *
+ * natSafeMath is designed to be used directly, and so it needs to
+ * validate the inputs, as well as the outputs when necessary.
  */
 export const natSafeMath = harden({
-  add: (x, y) => Nat(x + y),
-  subtract: (x, y) => Nat(x - y),
-  multiply: (x, y) => Nat(x * y),
-  floorDivide: (x, y) => Nat(Math.floor(x / y)),
-  ceilDivide: (x, y) => Nat(Math.ceil(x / y)),
+  // BigInts don't observably overflow
+  add: (x, y) => Nat(x) + Nat(y),
+  subtract: (x, y) => Nat(Nat(x) - Nat(y)),
+  multiply: (x, y) => Nat(x) * Nat(y),
+  floorDivide: (x, y) => Nat(x) / Nat(y),
+  ceilDivide: (x, y) => {
+    y = Nat(y);
+    return Nat(Nat(x) + y - 1n) / y;
+  },
+  // Numbers and BigInts already compare magnitudes correctly.
   isGTE: (x, y) => x >= y,
 });

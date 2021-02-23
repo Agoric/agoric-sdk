@@ -35,15 +35,18 @@ test('natMathHelpers', t => {
   t.deepEqual(getAmountMathKind(), MathKind.NAT, 'amountMathKind is nat');
 
   // make
-  t.deepEqual(make(4), { brand: mockBrand, value: 4 });
+  t.deepEqual(make(4), { brand: mockBrand, value: 4n });
   t.throws(
     () => make('abc'),
-    { instanceOf: RangeError, message: 'not a safe integer' },
+    {
+      instanceOf: TypeError,
+      message: 'abc is a string but must be a bigint or a number',
+    },
     `'abc' is not a nat`,
   );
   t.throws(
     () => make(-1),
-    { instanceOf: RangeError, message: 'negative' },
+    { instanceOf: RangeError, message: '-1 is negative' },
     `- 1 is not a valid Nat`,
   );
 
@@ -52,13 +55,15 @@ test('natMathHelpers', t => {
     coerce(harden({ brand: mockBrand, value: 4 })),
     {
       brand: mockBrand,
-      value: 4,
+      value: 4n,
     },
     `coerce can take an amount`,
   );
   t.throws(
     () =>
-      coerce(harden({ brand: { getAllegedName: () => 'somename' }, value: 4 })),
+      coerce(
+        harden({ brand: { getAllegedName: () => 'somename' }, value: 4n }),
+      ),
     {
       message: /The brand in the allegedAmount .* in 'coerce' didn't match the amountMath brand/,
     },
@@ -71,14 +76,14 @@ test('natMathHelpers', t => {
   );
 
   // getValue
-  t.is(getValue(make(4)), 4);
+  t.is(getValue(make(4)), 4n);
 
   // getEmpty
   t.deepEqual(getEmpty(), make(0), `empty is 0`);
 
   // isEmpty
-  t.assert(isEmpty({ brand: mockBrand, value: 0 }), `isEmpty(0) is true`);
-  t.falsy(isEmpty({ brand: mockBrand, value: 6 }), `isEmpty(6) is false`);
+  t.assert(isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
+  t.falsy(isEmpty({ brand: mockBrand, value: 6n }), `isEmpty(6) is false`);
   t.assert(isEmpty(make(0)), `isEmpty(0) is true`);
   t.falsy(isEmpty(make(6)), `isEmpty(6) is false`);
   t.throws(
@@ -88,7 +93,10 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () => isEmpty({ brand: mockBrand, value: 'abc' }),
-    { instanceOf: RangeError, message: 'not a safe integer' },
+    {
+      instanceOf: TypeError,
+      message: 'abc is a string but must be a bigint or a number',
+    },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(

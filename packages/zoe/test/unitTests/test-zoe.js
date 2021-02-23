@@ -138,7 +138,7 @@ test(`zoe.getPublicFacet`, async t => {
   const installation = await E(zoe).install(bundle);
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   const offersCount = await E(publicFacet).getOffersCount();
-  t.is(offersCount, 0);
+  t.is(offersCount, 0n);
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
 });
 
