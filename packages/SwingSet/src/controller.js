@@ -37,6 +37,10 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
+function unhandledRejectionHandler(e) {
+  console.error('UnhandledPromiseRejectionWarning:', e);
+}
+
 export async function makeSwingsetController(
   hostStorage = initSwingStore().storage,
   deviceEndowments = {},
@@ -68,9 +72,17 @@ export async function makeSwingsetController(
   harden(console);
 
   // FIXME: Put this somewhere better.
-  process.on('unhandledRejection', e =>
-    console.error('UnhandledPromiseRejectionWarning:', e),
-  );
+  const handlers = process.listeners('unhandledRejection');
+  let haveUnhandledRejectionHandler = false;
+  for (const handler of handlers) {
+    if (handler === unhandledRejectionHandler) {
+      haveUnhandledRejectionHandler = true;
+      break;
+    }
+  }
+  if (!haveUnhandledRejectionHandler) {
+    process.on('unhandledRejection', unhandledRejectionHandler);
+  }
 
   function kernelRequire(what) {
     if (what === 're2') {
