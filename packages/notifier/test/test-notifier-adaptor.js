@@ -5,7 +5,7 @@ import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,
   observeIteration,
-  updateFromNotifier,
+  observeNotifier,
 } from '../src/index';
 import {
   finiteStream,
@@ -81,11 +81,11 @@ test('notifier adaptor - for await fails', async t => {
 test('notifier adaptor - update from notifier finishes', t => {
   const u = makeTestIterationObserver(t, true, false);
   const n = makeNotifierFromAsyncIterable(finiteStream);
-  return updateFromNotifier(u, n);
+  return observeNotifier(n, u);
 });
 
 test('notifier adaptor - update from notifier fails', t => {
   const u = makeTestIterationObserver(t, true, true);
   const n = makeNotifierFromAsyncIterable(explodingStream);
-  return updateFromNotifier(u, n);
+  return observeNotifier(n, u);
 });

@@ -21,7 +21,7 @@ import { makeMarshal, passStyleOf } from '@agoric/marshal';
 import {
   makeNotifierKit,
   observeIteration,
-  makeAsyncIterableFromNotifier,
+  observeNotifier,
 } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -640,20 +640,17 @@ export function makeWallet({
     await updatePursesState(petnameForPurse, purse);
 
     // Just notice the balance updates for the purse.
-    observeIteration(
-      makeAsyncIterableFromNotifier(E(purse).getCurrentAmountNotifier()),
-      {
-        updateState(_balance) {
-          updatePursesState(
-            purseMapping.valToPetname.get(purse),
-            purse,
-          ).catch(e => console.error('cannot updateState', e));
-        },
-        fail(reason) {
-          console.error(`failed updateState observer`, reason);
-        },
+    observeNotifier(E(purse).getCurrentAmountNotifier(), {
+      updateState(_balance) {
+        updatePursesState(
+          purseMapping.valToPetname.get(purse),
+          purse,
+        ).catch(e => console.error('cannot updateState', e));
       },
-    );
+      fail(reason) {
+        console.error(`failed updateState observer`, reason);
+      },
+    });
   };
 
   async function deposit(pursePetname, payment) {

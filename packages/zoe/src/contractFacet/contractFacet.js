@@ -12,7 +12,7 @@ import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { makeAmountMath, MathKind } from '@agoric/ertp';
-import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
@@ -183,7 +183,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       E(zoeInstanceAdmin)
         .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
         .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
-          updateFromNotifier(updater, zoeNotifier);
+          observeNotifier(zoeNotifier, updater);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
           userSeatPromiseKit.resolve(userSeat);
         });
