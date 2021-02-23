@@ -120,3 +120,73 @@
  * keywordRecord
  * @param {KeywordKeywordRecord} keywordMapping
  */
+
+/**
+ * @typedef {Object} Ratio
+ * @property {bigint} numerator
+ * @property {Brand} numeratorBrand
+ * @property {bigint} denominator
+ * @property {Brand} denominatorBrand
+ */
+
+/**
+ * @callback MakeRatio
+ * @param {bigint} numerator
+ * @param {Brand} numeratorBrand
+ * @param {bigint=} denominator The default denomiator is 100
+ * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback MakeRatioFromAmounts
+ * @param {Amount} numerator
+ * @param {Amount} denominator
+ * @param {bigint=} base The default base is 10000
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback MultiplyBy
+ * @param {Amount} amount
+ * @param {Ratio} ratio
+ * @returns {amount}
+ */
+
+/**
+ * @callback DivideBy
+ * @param {Amount} amount
+ * @param {Ratio} ratio
+ * @returns {amount}
+ */
+
+/**
+ * @callback InvertRatio
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback MultiplyRatios
+ * @param {Ratio} ratioA
+ * @param {Ratio} ratioB
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback ComplementPercent
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback Make100Percent
+ * @param {Brand} brand
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback Make0Percent
+ * @param {Brand} brand
+ * @returns {Ratio}
+ */
