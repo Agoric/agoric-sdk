@@ -14,6 +14,7 @@ const {
   setPrototypeOf,
   getOwnPropertyDescriptors,
   defineProperties,
+  getOwnPropertyNames,
   is,
   isFrozen,
   fromEntries,
@@ -256,13 +257,42 @@ function isPassByCopyRecord(val) {
   }
   const descs = getOwnPropertyDescriptors(val);
   const descKeys = ownKeys(descs);
+  // Empty non-array objects must be registered with Far/Remotable, or Data
+  // (in which case they won't be empty, because Data() attaches a PASS_STYLE
+  // property). This causes a warning for now, eventually it will become an
+  // error, then it will go back to pass-by-copy.
   if (descKeys.length === 0) {
     // empty non-array objects are pass-by-remote, not pass-by-copy
     // TODO Beware: Unmarked empty records will become pass-by-copy
     // See https://github.com/Agoric/agoric-sdk/issues/2018
+    // console.log(`--- @@marshal: empty object without Data/Far/Remotable`);
+    // assert.fail(X`empty object without Data/Far/Remotable`);
     return false;
   }
+
+  function ignorePassStyle(descKey) {
+    const desc = descs[descKey];
+    return (
+      descKey === PASS_STYLE &&
+      !desc.enumerable &&
+      desc.value === 'copyRecord' &&
+      !('get' in desc)
+    );
+  }
+
+  if (descKeys.length === 1) {
+    if (ignorePassStyle(descKeys[0])) {
+      // the only key is the Data() marker, therefore this is pass-by-data
+      return true;
+    }
+  }
+
   for (const descKey of descKeys) {
+    // we tolerate and ignore a non-enumerable PASS_STYLE symbol-named key, the Data marker
+    if (ignorePassStyle(descKey)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     if (typeof descKey === 'symbol') {
       return false;
     }
@@ -272,6 +302,10 @@ function isPassByCopyRecord(val) {
     }
   }
   for (const descKey of descKeys) {
+    if (ignorePassStyle(descKey)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     assert.typeof(
       descKey,
       'string',
@@ -351,6 +385,7 @@ function assertCanBeRemotable(val) {
   assert.typeof(val, 'object', X`cannot serialize non-objects like ${val}`);
   assert(!Array.isArray(val), X`Arrays cannot be pass-by-remote`);
   assert(val !== null, X`null cannot be pass-by-remote`);
+  assert(val[PASS_STYLE] !== 'copyRecord', X`object already marked as Data`);
 
   const descs = getOwnPropertyDescriptors(val);
   const keys = ownKeys(descs); // enumerable-and-not, string-or-Symbol
@@ -465,6 +500,8 @@ export function passStyleOf(val) {
         return 'copyRecord';
       }
       assertRemotable(val);
+      // console.log(`--- @@marshal: pass-by-ref object without Far/Remotable`);
+      // assert.fail(X`pass-by-ref object without Far/Remotable`);
       return REMOTE_STYLE;
     }
     case 'function': {
@@ -759,7 +796,7 @@ export function makeMarshal(
               // Currently copyRecord allows only string keys so this will
               // work. If we allow sortable symbol keys, this will need to
               // become more interesting.
-              const names = ownKeys(val).sort();
+              const names = getOwnPropertyNames(val).sort();
               return fromEntries(names.map(name => [name, encode(val[name])]));
             }
             case 'copyArray': {
@@ -967,6 +1004,12 @@ export function makeMarshal(
           assert.typeof(name, 'string');
           result[name] = fullRevive(rawTree[name]);
         }
+        if (names.length === 0) {
+          Object.defineProperty(result, PASS_STYLE, {
+            enumerable: false,
+            value: 'copyRecord',
+          });
+        }
         return ibidTable.finish(result);
       }
     };
@@ -1089,3 +1132,17 @@ const Far = (farName, remotable = {}) =>
 
 harden(Far);
 export { Far };
+
+function Data(props) {
+  assert(
+    ownKeys(props).length === 0 || isPassByCopyRecord(props),
+    X`Data() can only be applied to otherwise pass-by-copy records`,
+  );
+  Object.defineProperty(props, PASS_STYLE, {
+    enumerable: false,
+    value: 'copyRecord',
+  });
+  return harden(props);
+}
+harden(Data);
+export { Data };
