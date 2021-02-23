@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
-import { exec } from 'child_process';
+import { fork } from 'child_process';
 import { promisify } from 'util';
 // import { createHash } from 'crypto';
 
@@ -380,28 +380,35 @@ export default async function start(basedir, argv) {
     .map(dep => path.resolve(agWallet, dep))
     .join(' ');
 
-  const agoricCli = require.resolve('.bin/agoric');
+  const agoricCli = require.resolve('agoric/bin/agoric');
 
   // Use the same verbosity as our caller did for us.
   let verbosity;
   if (process.env.DEBUG === undefined) {
-    verbosity = '';
+    verbosity = [];
   } else if (process.env.DEBUG.includes('agoric')) {
-    verbosity = ' -vv';
+    verbosity = ['-vv'];
   } else {
-    verbosity = ' -v';
+    verbosity = ['-v'];
   }
 
-  // Launch the agoric wallet deploys (if any).
-  const cp = exec(
-    `${agoricCli} deploy${verbosity} --provide=wallet --hostport=${hostport} ${agWalletDeploy}`,
+  // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
+  // runs correctly under the same version of the JS engine we're currently
+  // using.
+  fork(
+    agoricCli,
+    [
+      `deploy`,
+      ...verbosity,
+      `--provide=wallet`,
+      `--hostport=${hostport}`,
+      `${agWalletDeploy}`,
+    ],
+    { stdio: 'inherit' },
     err => {
       if (err) {
         console.error(err);
       }
     },
   );
-
-  cp.stderr.pipe(process.stderr);
-  cp.stdout.pipe(process.stdout);
 }

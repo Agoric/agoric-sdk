@@ -21,12 +21,12 @@ export default function initBasedir(
   options.wallet = wallet;
 
   const here = __dirname;
-  if (
-    fs.existsSync(basedir) &&
-    !fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))
-  ) {
-    assert.fail(X`${basedir} must not already exist`);
-  }
+  // We either need a basedir with an initialised key, or no basedir.
+  assert(
+    fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address')) ||
+      !fs.existsSync(basedir),
+    X`${basedir} must not already exist`,
+  );
 
   fs.mkdirSync(basedir, { mode: 0o700, recursive: true });
 
