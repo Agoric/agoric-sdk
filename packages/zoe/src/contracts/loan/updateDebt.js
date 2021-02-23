@@ -2,6 +2,7 @@
 
 import '../../../exported';
 import { makeNotifierKit } from '@agoric/notifier';
+import { assert, details as X } from '@agoric/assert';
 
 import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -72,11 +73,13 @@ export const makeDebtCalculator = async debtCalculatorConfig => {
       updateDebt(value);
     }
   };
-  handleDebt().catch(() =>
-    console.error(
-      `Unable to updateDebt originally:${originalDebt}, started: ${basetime}, debt: ${debt}`,
-    ),
-  );
+  handleDebt().catch(reason => {
+    assert.note(
+      reason,
+      X`Unable to updateDebt originally:${originalDebt}, started: ${basetime}, debt: ${debt}`,
+    );
+    console.error(reason);
+  });
 
   debtNotifierUpdater.updateState(debt);
 
