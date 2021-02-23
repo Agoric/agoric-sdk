@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.25.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.25.0...@agoric/cosmic-swingset@0.25.1-dev.0) (2021-02-23)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** Use 'junction' symlinks for directories ([74f3b7b](https://github.com/Agoric/agoric-sdk/commit/74f3b7bf2f1401ac08f9e83979b3a82bccc50dcc))
+
+
+
+# 0.24.0 (2021-02-17)
+
+
+### Bug Fixes
+
+* update kernel stats descriptions for kpFulfilled ([b4ed286](https://github.com/Agoric/agoric-sdk/commit/b4ed2861c29b92f9c255fb2cf443c0abab4b8e68))
+
+
+
+
+
 # [0.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.24.0...@agoric/cosmic-swingset@0.25.0) (2021-02-16)
 
 

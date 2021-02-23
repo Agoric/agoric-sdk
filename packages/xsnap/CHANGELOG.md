@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.1-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.2.0...@agoric/xsnap@0.2.1-dev.0) (2021-02-23)
+
+
+### Bug Fixes
+
+* **xsnap:** lib directory was missing from package files ([8022a34](https://github.com/Agoric/agoric-sdk/commit/8022a343a68db9381be5932732d0dd1b8be0c47b))
+
+
+
+
+
 # 0.2.0 (2021-02-16)
 
 

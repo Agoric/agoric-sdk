@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.2-dev.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.11.1...agoric@0.11.2-dev.0) (2021-02-23)
+
+
+### Bug Fixes
+
+* **agoric-cli:** Don't exit agoric open until the browser loads ([ff0c8b9](https://github.com/Agoric/agoric-sdk/commit/ff0c8b980ee324647afc20c891c05ee5b1f68689))
+
+
+
+
+
 ## [0.11.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.11.0...agoric@0.11.1) (2021-02-16)
 
 

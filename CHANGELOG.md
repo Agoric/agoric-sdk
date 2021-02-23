@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.12.2-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.12.1...@agoric/sdk@2.12.2-dev.0) (2021-02-23)
+
+
+### Bug Fixes
+
+* **agoric-cli:** Don't exit agoric open until the browser loads ([ff0c8b9](https://github.com/Agoric/agoric-sdk/commit/ff0c8b980ee324647afc20c891c05ee5b1f68689))
+* **bundle-source:** Downgrade @rollup/plugin-commonjs for Windows ([ddfec6a](https://github.com/Agoric/agoric-sdk/commit/ddfec6aab5f18e7234e731cb0895d8e13fb8d202))
+* **cosmic-swingset:** Use 'junction' symlinks for directories ([74f3b7b](https://github.com/Agoric/agoric-sdk/commit/74f3b7bf2f1401ac08f9e83979b3a82bccc50dcc))
+* **xsnap:** lib directory was missing from package files ([8022a34](https://github.com/Agoric/agoric-sdk/commit/8022a343a68db9381be5932732d0dd1b8be0c47b))
+
+
+
+
+
 # [2.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.11.0...@agoric/sdk@2.12.0) (2021-02-16)
 
 

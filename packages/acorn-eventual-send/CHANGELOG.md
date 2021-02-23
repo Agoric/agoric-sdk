@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.2-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/acorn-eventual-send@2.1.1...@agoric/acorn-eventual-send@2.1.2-dev.0) (2021-02-23)
+
+**Note:** Version bump only for package @agoric/acorn-eventual-send
+
+
+
+
+
 ## [2.1.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/acorn-eventual-send@2.1.0...@agoric/acorn-eventual-send@2.1.1) (2021-02-16)
 
 **Note:** Version bump only for package @agoric/acorn-eventual-send

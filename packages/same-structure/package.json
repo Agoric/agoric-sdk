@@ -1,6 +1,6 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.1.1",
+  "version": "0.1.2-dev.0",
   "description": "Deep equals",
   "parsers": {
     "js": "mjs"
@@ -32,8 +32,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.1",
-    "@agoric/marshal": "^0.3.1"
+    "@agoric/assert": "^0.2.2-dev.0",
+    "@agoric/marshal": "^0.3.2-dev.0"
   },
   "devDependencies": {
     "ava": "^3.12.1",

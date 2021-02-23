@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap",
-  "version": "0.2.0",
+  "version": "0.2.1-dev.0",
   "description": "Description forthcoming.",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -25,7 +25,7 @@
     "test": "ava"
   },
   "dependencies": {
-    "@agoric/eventual-send": "^0.13.1",
+    "@agoric/eventual-send": "^0.13.2-dev.0",
     "esm": "^3.2.5",
     "ses": "^0.12.2"
   },

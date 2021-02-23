@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.2-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/bundle-source@1.2.1...@agoric/bundle-source@1.2.2-dev.0) (2021-02-23)
+
+
+### Bug Fixes
+
+* **bundle-source:** Downgrade @rollup/plugin-commonjs for Windows ([ddfec6a](https://github.com/Agoric/agoric-sdk/commit/ddfec6aab5f18e7234e731cb0895d8e13fb8d202))
+
+
+
+
+
 ## [1.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/bundle-source@1.2.0...@agoric/bundle-source@1.2.1) (2021-02-16)
 
 
