@@ -174,7 +174,7 @@
  */
 
 /**
- * @callback ComplementPercent
+ * @callback oneMinus
  * @param {Ratio} ratio
  * @returns {Ratio}
  */

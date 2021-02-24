@@ -11,7 +11,7 @@ import {
   divideBy,
   invertRatio,
   multiplyRatios,
-  complementPercent,
+  oneMinus,
   make100Percent,
   make0Percent,
 } from '../../../src/contractSupport/ratio';
@@ -96,18 +96,18 @@ test('ratio - complement', t => {
   const moe = amountMath.make;
 
   const oneThird = makeRatioFromAmounts(moe(1), moe(3));
-  const twoThirds = complementPercent(oneThird);
+  const twoThirds = oneMinus(oneThird);
 
   amountsEqual(t, multiplyBy(moe(100000), oneThird), moe(33333), brand);
   amountsEqual(t, multiplyBy(moe(100000), twoThirds), moe(66666), brand);
 
   t.throws(() =>
-    complementPercent(moe(3), {
+    oneMinus(moe(3), {
       message: 'Ratio must be a record with 4 fields',
     }),
   );
-  t.throws(() => complementPercent(makeRatioFromAmounts(moe(30), moe(20))), {
-    message: 'Ratio must be less than or equal to 1 to take its complement',
+  t.throws(() => oneMinus(makeRatioFromAmounts(moe(30), moe(20))), {
+    message: 'Parameter must be less than or equal to 1: (a bigint)/(a bigint)',
   });
 });
 

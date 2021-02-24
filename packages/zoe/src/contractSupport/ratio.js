@@ -53,7 +53,7 @@ export function makeRatio(
   denominator = PERCENT,
   denominatorBrand = numeratorBrand,
 ) {
-  assert(denominator > 0, X`No infinite ratios!`);
+  assert(denominator > 0n, X`No infinite ratios!`);
 
   return harden({
     numerator: Nat(numerator),
@@ -141,11 +141,11 @@ export function multiplyRatios(ratioA, ratioB) {
 // ///// PERCENT ///////////////////
 
 // If ratio is between 0 and 1, subtract from 1.
-export function complementPercent(ratio) {
+export function oneMinus(ratio) {
   assertIsRatio(ratio);
   assert(
     ratio.numerator <= ratio.denominator,
-    X`Ratio must be less than or equal to 1 to take its complement`,
+    X`Parameter must be less than or equal to 1: ${ratio.numerator}/${ratio.denominator}`,
   );
   return makeRatio(
     subtract(ratio.denominator, ratio.numerator),
