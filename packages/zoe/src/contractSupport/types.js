@@ -123,10 +123,8 @@
 
 /**
  * @typedef {Object} Ratio
- * @property {bigint} numerator
- * @property {Brand} numeratorBrand
- * @property {bigint} denominator
- * @property {Brand} denominatorBrand
+ * @property {Amount} numerator
+ * @property {Amount} denominator
  */
 
 /**
@@ -170,23 +168,5 @@
  * @callback MultiplyRatios
  * @param {Ratio} ratioA
  * @param {Ratio} ratioB
- * @returns {Ratio}
- */
-
-/**
- * @callback oneMinus
- * @param {Ratio} ratio
- * @returns {Ratio}
- */
-
-/**
- * @callback Make100Percent
- * @param {Brand} brand
- * @returns {Ratio}
- */
-
-/**
- * @callback Make0Percent
- * @param {Brand} brand
  * @returns {Ratio}
  */

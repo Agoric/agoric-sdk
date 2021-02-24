@@ -1,9 +1,9 @@
 import './types';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { natSafeMath } from './safeMath';
+import { natSafeMath } from '.';
 
-const { multiply, floorDivide, subtract } = natSafeMath;
+const { multiply, floorDivide } = natSafeMath;
 
 // make a Ratio, which represents a fraction. It is a pass-by-copy record.
 //
@@ -21,30 +21,24 @@ const { multiply, floorDivide, subtract } = natSafeMath;
 // of the wrong brand, and that exchange rates are only used in the appropriate
 // direction.
 
-const BASIS_POINTS = 10000n;
 const PERCENT = 100n;
 
-const ratioPropertyNames = [
-  'numerator',
-  'denominator',
-  'numeratorBrand',
-  'denominatorBrand',
-];
+const ratioPropertyNames = ['numerator', 'denominator'];
 
-function assertIsRatio(ratio) {
+export function assertIsRatio(ratio) {
   const propertyNames = Object.getOwnPropertyNames(ratio);
   assert(
-    propertyNames.length === 4,
-    X`Ratio ${ratio} must be a record with 4 fields.`,
+    propertyNames.length === 2,
+    X`Ratio ${ratio} must be a record with 2 fields.`,
   );
   for (const name of propertyNames) {
     assert(
       ratioPropertyNames.includes(name),
-      X`Parameter must be a Ratio record, but ${ratio} has ${name}`,
+      X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
     );
   }
-  Nat(ratio.numerator);
-  Nat(ratio.denominator);
+  Nat(ratio.numerator.value);
+  Nat(ratio.denominator.value);
 }
 
 export function makeRatio(
@@ -56,10 +50,8 @@ export function makeRatio(
   assert(denominator > 0n, X`No infinite ratios!`);
 
   return harden({
-    numerator: Nat(numerator),
-    denominator: Nat(denominator),
-    numeratorBrand,
-    denominatorBrand,
+    numerator: { value: Nat(numerator), brand: numeratorBrand },
+    denominator: { value: Nat(denominator), brand: denominatorBrand },
   });
 }
 
@@ -67,41 +59,45 @@ export function makeRatioFromAmounts(numeratorAmount, denominatorAmount) {
   assert(denominatorAmount.value > 0, X`No infinite ratios!`);
 
   return harden({
-    numerator: Nat(numeratorAmount.value),
-    denominator: Nat(denominatorAmount.value),
-    numeratorBrand: numeratorAmount.brand,
-    denominatorBrand: denominatorAmount.brand,
+    numerator: {
+      value: Nat(numeratorAmount.value),
+      brand: numeratorAmount.brand,
+    },
+    denominator: {
+      value: Nat(denominatorAmount.value),
+      brand: denominatorAmount.brand,
+    },
   });
 }
 
 export function multiplyBy(amount, ratio) {
   assertIsRatio(ratio);
   assert(
-    amount.brand === ratio.denominatorBrand,
-    X`amount's brand ${amount.brand} must match ratio's denominator ${ratio.denominatorBrand}`,
+    amount.brand === ratio.denominator.brand,
+    X`amount's brand ${amount.brand} must match ratio's denominator ${ratio.denominator.brand}`,
   );
 
   return harden({
     value: floorDivide(
-      multiply(amount.value, ratio.numerator),
-      ratio.denominator,
+      multiply(amount.value, ratio.numerator.value),
+      ratio.denominator.value,
     ),
-    brand: ratio.numeratorBrand,
+    brand: ratio.numerator.brand,
   });
 }
 
 export function divideBy(amount, ratio) {
   assertIsRatio(ratio);
   assert(
-    amount.brand === ratio.numeratorBrand,
-    X`amount's brand ${amount.brand} must match ratio's numerator ${ratio.numeratorBrand}`,
+    amount.brand === ratio.numerator.brand,
+    X`amount's brand ${amount.brand} must match ratio's numerator ${ratio.numerator.brand}`,
   );
   return harden({
     value: floorDivide(
-      multiply(amount.value, ratio.denominator),
-      ratio.numerator,
+      multiply(amount.value, ratio.denominator.value),
+      ratio.numerator.value,
     ),
-    brand: ratio.denominatorBrand,
+    brand: ratio.denominator.brand,
   });
 }
 
@@ -109,10 +105,10 @@ export function invertRatio(ratio) {
   assertIsRatio(ratio);
 
   return makeRatio(
-    ratio.denominator,
-    ratio.denominatorBrand,
-    ratio.numerator,
-    ratio.numeratorBrand,
+    ratio.denominator.value,
+    ratio.denominator.brand,
+    ratio.numerator.value,
+    ratio.numerator.brand,
   );
 }
 
@@ -120,45 +116,20 @@ export function multiplyRatios(ratioA, ratioB) {
   assertIsRatio(ratioA);
   assertIsRatio(ratioB);
 
-  if (ratioA.numeratorBrand === ratioB.denominatorBrand) {
+  if (ratioA.numerator.brand === ratioB.denominator.brand) {
     return makeRatio(
-      multiply(ratioA.numerator, ratioB.numerator),
-      ratioB.numeratorBrand,
-      multiply(ratioA.denominator, ratioB.denominator),
-      ratioA.denominatorBrand,
+      multiply(ratioA.numerator.value, ratioB.numerator.value),
+      ratioB.numerator.brand,
+      multiply(ratioA.denominator.value, ratioB.denominator.value),
+      ratioA.denominator.brand,
     );
-  } else if (ratioA.denominatorBrand === ratioB.numeratorBrand) {
+  } else if (ratioA.denominator.brand === ratioB.numerator.brand) {
     return makeRatio(
-      multiply(ratioA.numerator, ratioB.numerator),
-      ratioA.numeratorBrand,
-      multiply(ratioA.denominator, ratioB.denominator),
-      ratioB.denominatorBrand,
+      multiply(ratioA.numerator.value, ratioB.numerator.value),
+      ratioA.numerator.brand,
+      multiply(ratioA.denominator.value, ratioB.denominator.value),
+      ratioB.denominator.brand,
     );
   }
   assert.fail(X`Ratios must have a common unit`);
-}
-
-// ///// PERCENT ///////////////////
-
-// If ratio is between 0 and 1, subtract from 1.
-export function oneMinus(ratio) {
-  assertIsRatio(ratio);
-  assert(
-    ratio.numerator <= ratio.denominator,
-    X`Parameter must be less than or equal to 1: ${ratio.numerator}/${ratio.denominator}`,
-  );
-  return makeRatio(
-    subtract(ratio.denominator, ratio.numerator),
-    ratio.numeratorBrand,
-    ratio.denominator,
-    ratio.denominatorBrand,
-  );
-}
-
-export function make100Percent(brand) {
-  return makeRatio(BASIS_POINTS, brand, BASIS_POINTS);
-}
-
-export function make0Percent(brand) {
-  return makeRatio(0, brand);
 }

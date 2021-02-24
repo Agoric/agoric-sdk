@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 import test from 'ava';
 import '../../../src/contractSupport/types';
@@ -11,9 +10,6 @@ import {
   divideBy,
   invertRatio,
   multiplyRatios,
-  oneMinus,
-  make100Percent,
-  make0Percent,
 } from '../../../src/contractSupport/ratio';
 
 function amountsEqual(t, a1, a2, brand) {
@@ -65,50 +61,6 @@ test('ratio - brand mismatch', t => {
 
   const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
   amountsEqual(t, multiplyBy(ast(10_000), convertToMoe), moe(3333), moeBrand);
-});
-
-test('ratio - ALL', t => {
-  const { amountMath, brand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
-
-  amountsEqual(
-    t,
-    multiplyBy(moe(100_000), make100Percent(brand)),
-    moe(100_000),
-    brand,
-  );
-});
-
-test('ratio - NONE', t => {
-  const { amountMath, brand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
-
-  amountsEqual(
-    t,
-    amountMath.getEmpty(),
-    multiplyBy(moe(100000), make0Percent(brand)),
-    brand,
-  );
-});
-
-test('ratio - complement', t => {
-  const { amountMath, brand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
-
-  const oneThird = makeRatioFromAmounts(moe(1), moe(3));
-  const twoThirds = oneMinus(oneThird);
-
-  amountsEqual(t, multiplyBy(moe(100000), oneThird), moe(33333), brand);
-  amountsEqual(t, multiplyBy(moe(100000), twoThirds), moe(66666), brand);
-
-  t.throws(() =>
-    oneMinus(moe(3), {
-      message: 'Ratio must be a record with 4 fields',
-    }),
-  );
-  t.throws(() => oneMinus(makeRatioFromAmounts(moe(30), moe(20))), {
-    message: 'Parameter must be less than or equal to 1: (a bigint)/(a bigint)',
-  });
 });
 
 test('ratio - larger than 100%', t => {
@@ -179,7 +131,7 @@ test('ratio multiple Ratios', t => {
     message: 'Ratios must have a common unit',
   });
   t.throws(() => multiplyRatios(moe(5), fiveEighths), {
-    message: 'Ratio (an object) must be a record with 4 fields.',
+    message: 'Parameter must be a Ratio record, but (an object) has "brand"',
   });
 });
 
@@ -199,6 +151,6 @@ test('ratio bad inputs', t => {
     message: `amount's brand (an undefined) must match ratio's denominator (an object)`,
   });
   t.throws(() => divideBy(makeRatioFromAmounts(moe(3), moe(5)), 37), {
-    message: `Ratio (a number) must be a record with 4 fields.`,
+    message: `Ratio (a number) must be a record with 2 fields.`,
   });
 });

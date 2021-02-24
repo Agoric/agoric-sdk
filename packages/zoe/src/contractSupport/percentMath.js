@@ -4,6 +4,7 @@ import './types';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
+import { makeRatio } from './ratio';
 
 const { multiply, floorDivide } = natSafeMath;
 
@@ -34,6 +35,10 @@ function makePercent(value, amountMath, base = 100n) {
     complement: _ => {
       assert(value <= base, X`cannot take complement when > 100%.`);
       return makePercent(base - value, amountMath, base);
+    },
+    // Percent is deprecated. This method supports migration.
+    makeRatio: _ => {
+      return makeRatio(value, amountMath.getBrand(), base);
     },
   });
 }
