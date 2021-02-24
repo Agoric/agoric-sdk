@@ -109,7 +109,7 @@ async function runTestScript(
 
     if ('bundleSource' in msg) {
       const [startFilename, ...rest] = msg.bundleSource;
-      const bundle = await bundleSource(startFilename, ...rest);
+      const bundle = await bundleSource(resolve(startFilename), ...rest);
       return encoder.encode(JSON.stringify(bundle));
     }
 
@@ -132,6 +132,7 @@ async function runTestScript(
   // ISSUE: only works in one file / dir
   const literal = JSON.stringify;
   const testPath = resolve(filename);
+  // see also resolveKludge() below
   const pathGlobalsKludge = `
     globalThis.__filename = ${literal(testPath)};
     globalThis.__dirname = ${literal(dirname(testPath))};
@@ -303,6 +304,23 @@ async function main(
   return stats['not ok'] > 0 ? 1 : 0;
 }
 
+/**
+ * Fix path resolution for the case of unitTests/zcf/zcfTesterContract
+ *
+ * @param {ResolveFn} resolve
+ * @returns {ResolveFn}
+ * @typedef {typeof import('path').resolve } ResolveFn
+ */
+function resolveKludge(resolve) {
+  return function resolveWithFixes(seg0, ...pathSegments) {
+    seg0 = seg0.replace(
+      /unitTests\/zcfTesterContract$/,
+      'unitTests/zcf/zcfTesterContract',
+    );
+    return resolve(seg0, ...pathSegments);
+  };
+}
+
 /* eslint-disable global-require */
 if (require.main === module) {
   main(process.argv.slice(2), {
@@ -310,7 +328,7 @@ if (require.main === module) {
     spawn: require('child_process').spawn,
     osType: require('os').type,
     readFile: require('fs').promises.readFile,
-    resolve: require('path').resolve,
+    resolve: resolveKludge(require('path').resolve),
     dirname: require('path').dirname,
     glob: require('glob'),
   })
