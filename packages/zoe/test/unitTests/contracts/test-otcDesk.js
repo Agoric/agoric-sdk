@@ -5,6 +5,7 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -124,7 +125,7 @@ const makeBob = (
   moolaPurse.deposit(moolaPayment);
   simoleanPurse.deposit(simoleanPayment);
   bucksPurse.deposit(bucksPayment);
-  return harden({
+  return Far('Bob', {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await invitationIssuer.claim(untrustedInvitation);

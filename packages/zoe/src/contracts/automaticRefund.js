@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
+
 import '../../exported';
 
 /**
@@ -29,7 +31,7 @@ const start = zcf => {
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
   /** @type {AutomaticRefundPublicFacet} */
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     getOffersCount: () => offersCount,
     makeInvitation: makeRefundInvitation,
   });

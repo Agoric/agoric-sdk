@@ -2,6 +2,7 @@
 
 import './types';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 import { makeRatio } from './ratio';
@@ -27,7 +28,7 @@ const { multiply, floorDivide } = natSafeMath;
  */
 function makePercent(value, amountMath, base = 100n) {
   Nat(value);
-  return harden({
+  return Far('percent', {
     scale: amount => {
       assert(
         amountMath.getBrand() === amount.brand,

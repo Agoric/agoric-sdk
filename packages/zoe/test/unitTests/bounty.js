@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 
 /**
@@ -60,7 +61,7 @@ const start = async zcf => {
         bountySeat.stage({ Fee: feeMath.getEmpty() }),
       );
 
-      const wakeHandler = harden({
+      const wakeHandler = Far('wakeHandler', {
         wake: async () => {
           const reply = await E(oracle).query('state');
           if (reply.event === condition) {

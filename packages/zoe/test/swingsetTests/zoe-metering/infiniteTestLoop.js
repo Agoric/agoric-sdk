@@ -1,5 +1,7 @@
+import { Far } from '@agoric/marshal';
+
 export const start = _zcf => {
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     doTest: () => {
       for (;;) {
         // Nothing

@@ -2,6 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore } from '@agoric/store';
+import { Far } from '@agoric/marshal';
 
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool';
@@ -124,7 +125,7 @@ const start = zcf => {
   );
 
   /** @type {MultipoolAutoswapPublicFacet} */
-  const publicFacet = {
+  const publicFacet = Far('MultipoolAutoswapPublicFacet', {
     addPool,
     getPoolAllocation,
     getLiquidityIssuer,
@@ -138,7 +139,7 @@ const start = zcf => {
     makeSwapOutInvitation,
     makeAddLiquidityInvitation,
     makeRemoveLiquidityInvitation,
-  };
+  });
 
   return harden({ publicFacet });
 };

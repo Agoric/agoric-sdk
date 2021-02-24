@@ -1,5 +1,6 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import '../../exported';
 
@@ -126,7 +127,7 @@ const start = zcf => {
     return 'Trade completed.';
   };
 
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     makeInvitation: () => zcf.makeInvitation(exchangeOfferHandler, 'exchange'),
   });
 

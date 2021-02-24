@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { natSafeMath } from '../src/contractSupport';
 
@@ -121,7 +122,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
   const getPoolAllocation = issuer =>
     E(publicFacet).getPoolAllocation(issuer.getBrand());
 
-  const trader = harden({
+  const trader = Far('trader', {
     offerAndTrade: async (outAmount, inAmount, swapIn) => {
       const proposal = harden({
         want: { Out: outAmount },

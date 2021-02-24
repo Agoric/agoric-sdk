@@ -3,6 +3,7 @@ import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import {
@@ -147,7 +148,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // TODO: Add ability to repay partially
 
     /** @type {BorrowFacet} */
-    const borrowFacet = {
+    const borrowFacet = Far('borrowFacet', {
       makeCloseLoanInvitation: () =>
         makeCloseLoanInvitation(zcf, configWithBorrower),
       makeAddCollateralInvitation: () =>
@@ -157,9 +158,9 @@ export const makeBorrowInvitation = (zcf, config) => {
       getLastCalculationTimestamp,
       getRecentCollateralAmount: () =>
         collateralSeat.getAmountAllocated('Collateral'),
-    };
+    });
 
-    return harden(borrowFacet);
+    return borrowFacet;
   };
 
   const customBorrowProps = harden({ maxLoan });

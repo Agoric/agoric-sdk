@@ -6,6 +6,7 @@ import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -65,7 +66,7 @@ test.before(
     /** @type {MakeFakePriceOracle} */
     const makeFakePriceOracle = async (t, valueOut = undefined) => {
       /** @type {OracleHandler} */
-      const oracleHandler = harden({
+      const oracleHandler = Far('OracleHandler', {
         async onQuery({ increment }, _fee) {
           valueOut += increment;
           return harden({

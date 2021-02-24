@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Data, Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
 
@@ -26,7 +26,7 @@ export const makeZcfSeatAdminKit = (
   const assertExitedFalse = () => assert(!exited, X`seat has been exited`);
 
   /** @type {ZCFSeatAdmin} */
-  const zcfSeatAdmin = harden({
+  const zcfSeatAdmin = Far('zcfSeatAdmin', {
     // Updates the currentAllocation of the seat, using the allocation
     // from seatStaging.
     commit: seatStaging => {
@@ -88,7 +88,7 @@ export const makeZcfSeatAdminKit = (
     },
     isOfferSafe: newAllocation => {
       assertExitedFalse();
-      const reallocation = harden({
+      const reallocation = Data({
         ...currentAllocation,
         ...newAllocation,
       });
@@ -98,7 +98,7 @@ export const makeZcfSeatAdminKit = (
     stage: newAllocation => {
       assertExitedFalse();
       // Check offer safety.
-      const allocation = harden({
+      const allocation = Data({
         ...currentAllocation,
         ...newAllocation,
       });

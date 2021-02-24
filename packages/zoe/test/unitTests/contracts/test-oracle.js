@@ -6,6 +6,7 @@ import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
@@ -55,7 +56,7 @@ test.before(
      */
     const makePingOracle = async _t => {
       /** @type {OracleHandler} */
-      const oracleHandler = harden({
+      const oracleHandler = Far('OracleHandler', {
         async onQuery(query, fee) {
           let requiredFee;
           if (query.kind === 'Paid') {

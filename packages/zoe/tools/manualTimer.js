@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
+import { Far } from '@agoric/marshal';
 
 import './types';
 import './internal-types';
@@ -43,7 +44,7 @@ export default function buildManualTimer(log, startValue = 0n) {
     };
 
     /** @type {TimerRepeater} */
-    const repeater = {
+    const repeater = Far('TimerRepeater', {
       schedule(waker) {
         assert(wakers, X`Cannot schedule on a disabled repeater`);
         wakers.push(waker);
@@ -53,15 +54,14 @@ export default function buildManualTimer(log, startValue = 0n) {
         wakers = null;
         timer.removeWakeup(repeaterWaker);
       },
-    };
-    harden(repeater);
+    });
     nextWakeup = ticks + delaySecs;
     timer.setWakeup(nextWakeup, repeaterWaker);
     return repeater;
   };
 
   /** @type {ManualTimer} */
-  const timer = {
+  const timer = Far('ManualTimer', {
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
       ticks += 1n;
@@ -134,7 +134,6 @@ export default function buildManualTimer(log, startValue = 0n) {
       timer.setWakeup(ticks + delaySecs, repeaterWaker);
       return notifier;
     },
-  };
-  harden(timer);
+  });
   return timer;
 }

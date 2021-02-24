@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
+import { Data, Far } from '@agoric/marshal';
 import {
   trade,
   offerTo,
@@ -116,7 +117,7 @@ const start = zcf => {
     return 'Inventory removed';
   };
 
-  const creatorFacet = {
+  const creatorFacet = Far('creatorFacet', {
     /**
      * The inventory can be added in bulk before any quotes are made
      * or can be added immediately before a quote.
@@ -124,7 +125,7 @@ const start = zcf => {
      * @param {IssuerKeywordRecord=} issuerKeywordRecord
      * @returns {Promise<Payment>}
      */
-    makeAddInventoryInvitation: async (issuerKeywordRecord = {}) => {
+    makeAddInventoryInvitation: async (issuerKeywordRecord = Data({})) => {
       await saveAllIssuers(zcf, issuerKeywordRecord);
       return zcf.makeInvitation(addInventory, 'addInventory');
     },
@@ -139,7 +140,7 @@ const start = zcf => {
       return zcf.makeInvitation(removeInventory, 'removeInventory');
     },
     makeQuote,
-  };
+  });
 
   return harden({ creatorFacet });
 };
