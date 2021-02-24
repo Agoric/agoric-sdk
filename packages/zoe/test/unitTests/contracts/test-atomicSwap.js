@@ -327,6 +327,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   // on how to use it and Bob decides he wants to be the
   // counter-party, without needing to trust Alice at all.
 
+  console.log(`--! inv`, invitation);
   await bob.offer(invitation, calico37Amount, vorpalAmount);
 });
 
