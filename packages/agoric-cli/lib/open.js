@@ -2,6 +2,7 @@ import { promises as defaultFs } from 'fs';
 import opener from 'opener';
 import crypto from 'crypto';
 import path from 'path';
+import os from 'os';
 
 import { openSwingStore } from '@agoric/swing-store-simple';
 
@@ -37,7 +38,7 @@ export async function getAccessToken(port, powers = {}) {
   }
 
   // Ensure we're protected with a unique accessToken for this basedir.
-  const sharedStateDir = path.join(process.env.HOME || '', '.agoric');
+  const sharedStateDir = path.join(os.homedir(), '.agoric');
   await fs.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
   // Ensure an access token exists.

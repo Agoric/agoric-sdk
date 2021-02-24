@@ -5,6 +5,8 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox';
 
 import { assert, details as X } from '@agoric/assert';
+import os from 'os';
+
 import { launch } from './launch-chain';
 import makeBlockManager from './block-manager';
 import { getMeterProvider } from './kernel-stats';
@@ -103,7 +105,7 @@ export default async function main(progname, args, { path, env, agcc }) {
 
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
-  const cosmosHome = getFlagValue('home', `${env.HOME}/.ag-chain-cosmos`);
+  const cosmosHome = getFlagValue('home', `${os.homedir()}/.ag-chain-cosmos`);
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
 
   // console.log('Have AG_COSMOS', agcc);
