@@ -3,6 +3,7 @@ import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { makeWeakStore } from '@agoric/store';
+import { Data } from '@agoric/marshal';
 import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
@@ -44,14 +45,14 @@ test('cleanProposal - all empty', t => {
   const getAmountMathForBrand = brandToAmountMath.get;
 
   const proposal = harden({
-    give: {},
-    want: {},
+    give: Data({}),
+    want: Data({}),
     exit: { waived: null },
   });
 
   const expected = harden({
-    give: {},
-    want: {},
+    give: Data({}),
+    want: Data({}),
     exit: { waived: null },
   });
 
