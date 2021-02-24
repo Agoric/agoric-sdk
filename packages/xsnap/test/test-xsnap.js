@@ -347,3 +347,17 @@ test('normal close of pathological script', async t => {
   await vat.terminate();
   await hang;
 });
+
+test('heap exhaustion: orderly fail-stop', async t => {
+  const grow = `
+  let stuff = '1234';
+  while (true) {
+    stuff = stuff + stuff;
+  }
+  `;
+  for await (const debug of [false, true]) {
+    const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
+    t.teardown(() => vat.terminate());
+    await t.throwsAsync(vat.evaluate(grow));
+  }
+});
