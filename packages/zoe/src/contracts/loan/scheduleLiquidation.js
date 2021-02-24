@@ -5,7 +5,7 @@ import '../../../exported';
 import { E } from '@agoric/eventual-send';
 
 import { liquidate } from './liquidate';
-import { getAmountIn } from '../../contractSupport';
+import { getAmountIn, multiplyBy } from '../../contractSupport';
 
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {
@@ -18,12 +18,20 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
     mmr,
   } = configWithBorrower;
 
+  // TODO(hibbert) drop mmr as Percent before Beta
+  let {
+    mmrRatio, // Maintenance Margin Requirement, as a ratio
+  } = configWithBorrower;
+  if (!mmrRatio) {
+    mmrRatio = mmr.makeRatio();
+  }
+
   const currentDebt = getDebt();
 
   // The liquidationTriggerValue is when the value of the collateral
-  // equals mmr percent of the current debt
-  // Formula: liquidationTriggerValue = (currentDebt * mmr) / 100
-  const liquidationTriggerValue = mmr.scale(currentDebt);
+  // equals mmrRatio of the current debt
+  // Formula: liquidationTriggerValue = (currentDebt * mmrRatio) / 100
+  const liquidationTriggerValue = multiplyBy(currentDebt, mmrRatio);
 
   const collateralMath = zcf.getTerms().maths.Collateral;
 

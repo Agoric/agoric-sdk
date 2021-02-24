@@ -9,14 +9,6 @@
  */
 
 /**
- * @typedef {bigint} MMR
- *  The Maintenance Margin Requirement, in percent. The default is
- *  150, meaning that collateral should be worth at least 150% of the
- *  loan. If the value of the collateral drops below mmr, liquidation
- *  occurs.
- */
-
-/**
  * @typedef {Instance} AutoswapInstance
  *   The running contract instance for an Autoswap or Multipool
  *   Autoswap installation.  The publicFacet from the Autoswap
@@ -34,6 +26,9 @@
  * @typedef LoanTerms
  *
  * @property {Percent} mmr - Maintenance Margin Requirement, a Percent object.
+ * Default is 150%. Percents are deprecated. This value will be dropped by Beta
+ *
+ * @property {Ratio} mmrRatio - Maintenance Margin Requirement, a Ratio record.
  * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
@@ -157,9 +152,9 @@
 
 /**
  * @callback CalcInterestFn
- * @param {bigint} oldDebtValue
- * @param {bigint} interestRate
- * @returns {bigint} interest
+ * @param {Amount} oldDebt
+ * @param {Ratio} interestRate
+ * @returns {Amount} interest
  */
 
 /**

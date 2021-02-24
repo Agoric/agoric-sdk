@@ -9,6 +9,7 @@ import {
   assertProposalShape,
   trade,
   getAmountOut,
+  multiplyBy,
 } from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -19,13 +20,21 @@ import { makeAddCollateralInvitation } from './addCollateral';
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {
   const {
-    mmr, // Maintenance Margin Requirement, in percent
+    mmr, // Maintenance Margin Requirement, as a Percent (deprecated)
     priceAuthority,
     periodNotifier,
     interestRate,
     interestPeriod,
     lenderSeat,
   } = config;
+
+  // TODO(hibbert) drop mmr as Percent before Beta
+  let {
+    mmrRatio, // Maintenance Margin Requirement, as a ratio
+  } = config;
+  if (!mmrRatio) {
+    mmrRatio = mmr.makeRatio();
+  }
 
   // We can only lend what the lender has already escrowed.
   const maxLoan = lenderSeat.getAmountAllocated('Loan');
@@ -52,16 +61,16 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     const collateralPriceInLoanBrand = getAmountOut(quote);
 
-    // formula: assert collateralValue*100 >= loanWanted*mmr
+    // formula: assert collateralValue*100 >= loanWanted*mmrRatio
 
     // Calculate approximate value just for the error message if needed
-    const approxForMsg = mmr.scale(loanWanted);
+    const approxForMsg = multiplyBy(loanWanted, mmrRatio);
 
     // Assert the required collateral was escrowed.
     assert(
       loanMath.isGTE(
         loanMath.make(collateralPriceInLoanBrand.value),
-        mmr.scale(loanWanted),
+        multiplyBy(loanWanted, mmrRatio),
       ),
       X`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );

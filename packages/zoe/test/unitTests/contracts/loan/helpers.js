@@ -10,7 +10,7 @@ import { makeLocalAmountMath } from '@agoric/ertp';
 import { setup } from '../../setupBasicMints';
 
 import { setupZCFTest } from '../../zcf/setupZcfTest';
-import { makePercent } from '../../../../src/contractSupport/percentMath';
+import { makeRatio } from '../../../../src/contractSupport';
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t
@@ -91,7 +91,7 @@ export const setupLoanUnitTest = async terms => {
 
   if (!terms) {
     terms = harden({
-      mmr: makePercent(150n, collateralKit.amountMath),
+      mmrRatio: makeRatio(150n, collateralKit.brand),
       autoswapInstance: {},
     });
   }

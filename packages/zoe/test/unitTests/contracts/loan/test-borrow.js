@@ -40,7 +40,11 @@ const setupBorrow = async (maxLoanValue = 100) => {
     { give: { Loan: maxLoan } },
     { Loan: loanKit.mint.mintPayment(maxLoan) },
   );
+
+  // TODO(hibbert): mmr is deprecated. replace with mmrRatio. mmr remains here
+  // to test backward compatibility
   const mmr = makePercent(150, loanKit.amountMath);
+  // const mmrRatio = makeRatio(150, loanKit.brand);
 
   const priceList = [2, 1, 1, 1];
   const timer = buildManualTimer(console.log);

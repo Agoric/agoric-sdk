@@ -4,8 +4,8 @@ import '../../../exported';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 
-import { natSafeMath } from '../../contractSupport';
 import { scheduleLiquidation } from './scheduleLiquidation';
+import { makeRatio, multiplyBy } from '../../contractSupport';
 
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodNotifier
@@ -19,11 +19,8 @@ const BASIS_POINT_DENOMINATOR = 10000n;
  * interestRate (in basis points) is 5 = 5/10,000
  * interest charged this period is 20 loan brand
  */
-export const calculateInterest = (oldDebtValue, interestRate) =>
-  natSafeMath.floorDivide(
-    natSafeMath.multiply(oldDebtValue, interestRate),
-    BASIS_POINT_DENOMINATOR,
-  );
+export const calculateInterest = (oldDebt, interestRate) =>
+  multiplyBy(oldDebt, interestRate);
 
 /** @type {MakeDebtCalculator} */
 export const makeDebtCalculator = debtCalculatorConfig => {
@@ -38,6 +35,11 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     configMinusGetDebt,
   } = debtCalculatorConfig;
   let debt = originalDebt;
+  const interestRatio = makeRatio(
+    interestRate,
+    debt.brand,
+    BASIS_POINT_DENOMINATOR,
+  );
 
   // the last period-end for which interest has been added
   let lastCalculationTimestamp;
@@ -57,7 +59,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     // of the interest rate, but this seems easier to read.
     while (lastCalculationTimestamp + interestPeriod <= timestamp) {
       lastCalculationTimestamp += interestPeriod;
-      const interest = loanMath.make(calcInterestFn(debt.value, interestRate));
+      const interest = calcInterestFn(debt, interestRatio);
       debt = loanMath.add(debt, interest);
       updatedLoan = true;
     }

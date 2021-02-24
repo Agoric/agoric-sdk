@@ -8,10 +8,17 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import { calculateInterest } from '../../../../src/contracts/loan/updateDebt';
+import { makeRatio } from '../../../../src/contractSupport';
+
+const FAKE_BRAND = 'FAKE';
 
 test('test calculateInterest', async t => {
   const testCalculateInterest = ([oldDebt, interestRate, expected]) => {
-    t.is(calculateInterest(oldDebt, interestRate), expected);
+    const debt = { brand: FAKE_BRAND, value: oldDebt };
+    const interestRateRatio = makeRatio(interestRate, FAKE_BRAND, 10000);
+    const interest = calculateInterest(debt, interestRateRatio);
+    t.is(interest.value, expected);
+    t.is(interest.brand, FAKE_BRAND);
   };
 
   const expectations = [
