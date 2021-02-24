@@ -355,9 +355,10 @@ test('heap exhaustion: orderly fail-stop', async t => {
     stuff = stuff + stuff;
   }
   `;
-  for await (const debug of [false, true]) {
+  for (const debug of [false, true]) {
     const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
+    // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(vat.evaluate(grow));
   }
 });
