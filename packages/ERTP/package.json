@@ -12,6 +12,9 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
+    "test:xs-unit": "node -r esm ../xsnap/src/avaXS.js test/unitTests/test-*.js",
+    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
