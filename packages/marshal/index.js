@@ -1,4 +1,5 @@
 export {
+  PASS_STYLE,
   REMOTE_STYLE,
   getInterfaceOf,
   pureCopy,

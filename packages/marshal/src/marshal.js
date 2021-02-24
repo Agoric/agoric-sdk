@@ -27,6 +27,10 @@ const { ownKeys } = Reflect;
 export const REMOTE_STYLE = 'presence';
 
 const PASS_STYLE = Symbol.for('passStyle');
+// The symbol itself is needed by zoe cleanProposal.js rejectSymbols(), so it
+// knows what to tolerate on Data()-marked records. When we remove Data, we
+// can stop exporting this.
+export { PASS_STYLE };
 
 /** @type {MarshalGetInterfaceOf} */
 export function getInterfaceOf(val) {
