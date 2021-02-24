@@ -1,4 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 function sanitize(data) {
   // TODO: Use @agoric/marshal:pureCopy when it exists.
@@ -27,7 +28,7 @@ export function buildRootDeviceNode(tools) {
   }
   registerInboundCallback(inboundCallback);
 
-  return harden({
+  return Far('root', {
     registerInboundHandler(handler) {
       if (inboundHandler) {
         throw Error('inboundHandler already registered');
