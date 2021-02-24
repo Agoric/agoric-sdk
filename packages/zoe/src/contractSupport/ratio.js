@@ -63,20 +63,12 @@ export function makeRatio(
   });
 }
 
-export function makeRatioFromAmounts(
-  numeratorAmount,
-  denominatorAmount,
-  base = BASIS_POINTS,
-) {
+export function makeRatioFromAmounts(numeratorAmount, denominatorAmount) {
   assert(denominatorAmount.value > 0, X`No infinite ratios!`);
 
-  const numerator = floorDivide(
-    multiply(Nat(base), numeratorAmount.value),
-    denominatorAmount.value,
-  );
   return harden({
-    numerator,
-    denominator: Nat(base),
+    numerator: Nat(numeratorAmount.value),
+    denominator: Nat(denominatorAmount.value),
     numeratorBrand: numeratorAmount.brand,
     denominatorBrand: denominatorAmount.brand,
   });
@@ -153,7 +145,7 @@ export function complementPercent(ratio) {
   assertIsRatio(ratio);
   assert(
     ratio.numerator <= ratio.denominator,
-    X`Ratio must be less than 1 to take its complement`,
+    X`Ratio must be less than or equal to 1 to take its complement`,
   );
   return makeRatio(
     subtract(ratio.denominator, ratio.numerator),

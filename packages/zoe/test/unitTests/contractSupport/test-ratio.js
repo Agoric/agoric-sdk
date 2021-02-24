@@ -52,11 +52,9 @@ test('ratio - onethird', t => {
   const { amountMath, brand } = makeIssuerKit('moe');
   const moe = amountMath.make;
 
-  const oneThirdPer100 = makeRatioFromAmounts(moe(1), moe(3), 100);
-  const oneThirdPrecise = makeRatioFromAmounts(moe(1), moe(3));
+  const oneThird = makeRatioFromAmounts(moe(1), moe(3));
 
-  amountsEqual(t, multiplyBy(moe(100000), oneThirdPer100), moe(33000), brand);
-  amountsEqual(t, multiplyBy(moe(100000), oneThirdPrecise), moe(33330), brand);
+  amountsEqual(t, multiplyBy(moe(100000), oneThird), moe(33333), brand);
 });
 
 test('ratio - brand mismatch', t => {
@@ -65,11 +63,7 @@ test('ratio - brand mismatch', t => {
   const moe = amountMath.make;
   const ast = astAmountMath.make;
 
-  const convertToMoe = makeRatioFromAmounts(
-    moe(1),
-    astAmountMath.make(3),
-    10000,
-  );
+  const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
   amountsEqual(t, multiplyBy(ast(10_000), convertToMoe), moe(3333), moeBrand);
 });
 
@@ -101,14 +95,11 @@ test('ratio - complement', t => {
   const { amountMath, brand } = makeIssuerKit('moe');
   const moe = amountMath.make;
 
-  const oneThirdPer100 = makeRatioFromAmounts(moe(1), moe(3), 100);
-  const twoThirdsPer100 = complementPercent(oneThirdPer100);
-  const oneThirdPrecise = makeRatioFromAmounts(moe(1), moe(3));
-  const twoThirdsPrecise = complementPercent(oneThirdPrecise);
+  const oneThird = makeRatioFromAmounts(moe(1), moe(3));
+  const twoThirds = complementPercent(oneThird);
 
-  amountsEqual(t, multiplyBy(moe(100000), oneThirdPer100), moe(33000), brand);
-  amountsEqual(t, multiplyBy(moe(100000), twoThirdsPer100), moe(67000), brand);
-  amountsEqual(t, multiplyBy(moe(100000), twoThirdsPrecise), moe(66670), brand);
+  amountsEqual(t, multiplyBy(moe(100000), oneThird), moe(33333), brand);
+  amountsEqual(t, multiplyBy(moe(100000), twoThirds), moe(66666), brand);
 
   t.throws(() =>
     complementPercent(moe(3), {
@@ -116,34 +107,18 @@ test('ratio - complement', t => {
     }),
   );
   t.throws(() => complementPercent(makeRatioFromAmounts(moe(30), moe(20))), {
-    message: 'Ratio must be less than 1 to take its complement',
+    message: 'Ratio must be less than or equal to 1 to take its complement',
   });
-});
-
-test('ratio - non-standard thirds', t => {
-  const { amountMath, brand: moeBrand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
-
-  const oneThirdPer100 = makeRatioFromAmounts(moe(1), moe(3), 100);
-  const oneThirdBetter = makeRatioFromAmounts(moe(1), moe(3), 1000);
-  const oneThirdPrecise = makeRatio(1, moeBrand, 3, moeBrand);
-
-  amountsEqual(t, multiplyBy(moe(9000), oneThirdPer100), moe(2970), moeBrand);
-  amountsEqual(t, multiplyBy(moe(9000), oneThirdBetter), moe(2997), moeBrand);
-  amountsEqual(t, multiplyBy(moe(9000), oneThirdPrecise), moe(3000), moeBrand);
 });
 
 test('ratio - larger than 100%', t => {
   const { amountMath, brand } = makeIssuerKit('moe');
   const moe = amountMath.make;
 
-  const oneFiftyPer100 = makeRatioFromAmounts(moe(5), moe(3), 100);
-  const oneFiftyBetter = makeRatioFromAmounts(moe(5), moe(3), 1000);
+  const fiveThirds = makeRatioFromAmounts(moe(5), moe(3));
 
-  // 1.66 * 7777
-  amountsEqual(t, multiplyBy(moe(7777), oneFiftyPer100), moe(12909), brand);
-  // 1.666 * 7777
-  amountsEqual(t, multiplyBy(moe(7777), oneFiftyBetter), moe(12956), brand);
+  // 5/3 * 7777
+  amountsEqual(t, multiplyBy(moe(7777), fiveThirds), moe(12961), brand);
 });
 
 test('ratio - Nats', t => {
@@ -184,7 +159,7 @@ test('ratio multiple Ratios', t => {
 
   const fourFifths = makeRatioFromAmounts(larry(4), moe(5));
   const half = makeRatioFromAmounts(moe(10), curly(20));
-  const fiveEighths = makeRatioFromAmounts(moe(25), curly(40), 1000);
+  const fiveEighths = makeRatioFromAmounts(moe(25), curly(40));
 
   amountsEqual(
     t,
