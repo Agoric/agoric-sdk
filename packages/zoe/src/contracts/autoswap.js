@@ -1,5 +1,6 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
@@ -359,7 +360,7 @@ const start = async zcf => {
   const getPoolAllocation = poolSeat.getCurrentAllocation;
 
   /** @type {AutoswapPublicFacet} */
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     getInputPrice: getOutputForGivenInput,
     getOutputPrice: getInputForGivenOutput,
     getLiquidityIssuer: () => liquidityIssuer,

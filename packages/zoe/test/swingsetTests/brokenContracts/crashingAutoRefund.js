@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
+
 import {
   swap,
   assertIssuerKeywords,
@@ -76,7 +78,7 @@ const start = zcf => {
     zcf.makeInvitation(makeMatchingInvitation, 'firstOffer');
 
   offersCount += 1n;
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     getOffersCount: () => {
       offersCount += 1n;
       return offersCount;

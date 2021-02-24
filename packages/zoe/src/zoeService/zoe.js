@@ -61,7 +61,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     const installation = Far('Installation', {
       getBundle: () => bundle,
     });
-    harden(installation);
     installations.add(installation);
     return installation;
   };
@@ -204,7 +203,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         brandToPurse.init(localBrand, localPooledPurse);
 
         /** @type {ZoeMint} */
-        const zoeMint = harden({
+        const zoeMint = Far('ZoeMint', {
           getIssuerRecord: () => {
             return localIssuerRecord;
           },
@@ -379,7 +378,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             X`The contract did not correctly return a creatorInvitation`,
           );
         }
-        const adminFacet = harden({
+        const adminFacet = Far('adminFacet', {
           getVatShutdownPromise: () => E(adminNode).done(),
           getVatStats: () => E(adminNode).adminData(),
         });
@@ -490,7 +489,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       );
     },
   });
-  harden(zoeService);
 
   return zoeService;
 }

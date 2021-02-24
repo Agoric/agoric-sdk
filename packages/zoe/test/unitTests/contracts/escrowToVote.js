@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -50,7 +51,7 @@ const start = zcf => {
     assertProposalShape(voterSeat, {
       give: { Assets: null },
     });
-    const voter = harden({
+    const voter = Far('voter', {
       /**
        * Vote on a particular issue
        *
@@ -75,7 +76,7 @@ const start = zcf => {
     return voter;
   };
 
-  const creatorFacet = harden({
+  const creatorFacet = Far('creatorFacet', {
     closeElection: () => {
       assert(electionOpen, 'the election is already closed');
       // YES | NO to Nat

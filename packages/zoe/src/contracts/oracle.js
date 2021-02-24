@@ -1,5 +1,7 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
+
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
@@ -53,14 +55,14 @@ const start = async zcf => {
     },
   };
 
-  const creatorFacet = {
+  const creatorFacet = Far('creatorFacet', {
     initialize(privateParams) {
       ({ oracleHandler: handler } = privateParams);
       return realCreatorFacet;
     },
-  };
+  });
 
-  const publicFacet = {
+  const publicFacet = Far('publicFacet', {
     async query(query) {
       try {
         assert(!revoked, revokedMsg);
@@ -99,7 +101,7 @@ const start = async zcf => {
       };
       return zcf.makeInvitation(doQuery, 'oracle query', { query });
     },
-  };
+  });
 
   return harden({ creatorFacet, publicFacet });
 };

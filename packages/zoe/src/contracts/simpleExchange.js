@@ -1,6 +1,7 @@
 // @ts-check
 
 import { makeNotifierKit } from '@agoric/notifier';
+import { Far } from '@agoric/marshal';
 
 import '../../exported';
 import {
@@ -134,7 +135,7 @@ const start = zcf => {
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
   /** @type {SimpleExchangePublicFacet} */
-  const publicFacet = harden({
+  const publicFacet = Far('SimpleExchangePublicFacet', {
     makeInvitation: makeExchangeInvitation,
     getNotifier: () => notifier,
   });

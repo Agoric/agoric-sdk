@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers';
@@ -532,7 +533,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  return harden({
+  return Far('build', {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {
@@ -577,7 +578,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 };
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
 }

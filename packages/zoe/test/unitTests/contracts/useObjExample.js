@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
@@ -23,7 +24,7 @@ const start = zcf => {
     assertProposalShape(seat, {
       give: { Pixels: null },
     });
-    const useObj = harden({
+    const useObj = Far('useObj', {
       /**
        * (Pretend to) color some pixels.
        *
@@ -54,10 +55,10 @@ const start = zcf => {
     return useObj;
   };
 
-  const publicFacet = {
+  const publicFacet = Far('publicFacet', {
     // The only publicFacet method is to make an invitation.
     makeInvitation: () => zcf.makeInvitation(makeUseObj, 'use object'),
-  };
+  });
 
   return harden({ publicFacet });
 };

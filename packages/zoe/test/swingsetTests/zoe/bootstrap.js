@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
@@ -77,7 +78,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { argv, contractBundles: cb } = vatParameters;
-  const obj0 = {
+  return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
@@ -106,6 +107,5 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },
-  };
-  return harden(obj0);
+  });
 }

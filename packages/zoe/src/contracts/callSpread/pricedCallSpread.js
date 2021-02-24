@@ -5,6 +5,7 @@ import './types';
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import {
   assertProposalShape,
   depositToSeat,
@@ -162,7 +163,7 @@ const start = zcf => {
     return { longInvitation, shortInvitation };
   }
 
-  const creatorFacet = harden({ makeInvitationPair });
+  const creatorFacet = Far('creatorFacet', { makeInvitationPair });
   return harden({ creatorFacet });
 };
 

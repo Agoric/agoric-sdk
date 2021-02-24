@@ -4,7 +4,6 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
-import { Data, Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 // eslint-disable-next-line import/no-extraneous-dependencies

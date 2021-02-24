@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -151,7 +152,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
   };
 
   /** @type {PriceAuthority} */
-  const priceAuthority = {
+  const priceAuthority = Far('PriceAuthority', {
     getQuoteIssuer(brandIn, brandOut) {
       assertBrands(brandIn, brandOut);
       return quoteIssuer;
@@ -200,7 +201,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       const quotePK = makePromiseKit();
       await E(timer).setWakeup(
         deadline,
-        harden({
+        Far('wakeObj', {
           async wake(timestamp) {
             try {
               const quoteP = createQuote(calcAmountOut => ({
@@ -227,8 +228,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
     quoteWhenLTE: makeQuoteWhenOut(isLTE),
     quoteWhenGTE: makeQuoteWhenOut(isGTE),
     quoteWhenGT: makeQuoteWhenOut(isGT),
-  };
-  harden(priceAuthority);
+  });
 
   return { priceAuthority, adminFacet: { fireTriggers } };
 }

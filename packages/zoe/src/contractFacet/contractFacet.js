@@ -10,6 +10,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
+import { Far, Data } from '@agoric/marshal';
 
 import { makeAmountMath, MathKind } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
@@ -146,8 +147,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     };
 
     const makeEmptySeatKit = (exit = undefined) => {
-      const initialAllocation = harden({});
-      const proposal = cleanProposal(getAmountMath, harden({ exit }));
+      const initialAllocation = Data({});
+      const proposal = cleanProposal(getAmountMath, Data({ exit }));
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -221,7 +222,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       issuerTable.initIssuerByRecord(mintyIssuerRecord);
 
       /** @type {ZCFMint} */
-      const zcfMint = harden({
+      const zcfMint = Far('zcfMint', {
         getIssuerRecord: () => {
           return mintyIssuerRecord;
         },
@@ -249,7 +250,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
               : amountToAdd;
             return [seatKeyword, newAmount];
           });
-          const newAllocation = harden({
+          const newAllocation = Data({
             ...oldAllocation,
             ...updates,
           });
@@ -287,7 +288,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
               return [seatKeyword, newAmount];
             },
           );
-          const newAllocation = harden({
+          const newAllocation = Data({
             ...oldAllocation,
             ...updates,
           });
@@ -305,7 +306,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     };
 
     /** @type {ContractFacet} */
-    const zcf = {
+    const zcf = Far('zcf', {
       reallocate: (/** @type {SeatStaging[]} */ ...seatStagings) => {
         // We may want to handle this with static checking instead.
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
@@ -424,13 +425,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           testJigSetter({ ...testFn(), zcf });
         }
       },
-    };
-    harden(zcf);
+    });
 
     // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
     // added in offer(). ZCF responds with the exitObj and offerResult.
     /** @type {AddSeatObj} */
-    const addSeatObj = {
+    const addSeatObj = Far('addSeatObj', {
       addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
         const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
           allSeatStagings,
@@ -453,8 +453,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });
       },
-    };
-    harden(addSeatObj);
+    });
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
@@ -480,7 +479,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     return result;
   };
 
-  return harden({ executeContract });
+  return Far('executeContract', { executeContract });
 }
 
 harden(buildRootObject);

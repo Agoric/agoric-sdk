@@ -5,6 +5,7 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
@@ -78,7 +79,7 @@ test('zoe - atomicSwap', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('bob', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
 
@@ -237,7 +238,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   };
 
   const makeBob = (installation, rpgPayment) => {
-    return harden({
+    return Far('bob', {
       offer: async (untrustedInvitation, calico37Amount, vorpalAmount) => {
         const ccPurse = ccIssuer.makeEmptyPurse();
         const rpgPurse = rpgIssuer.makeEmptyPurse();

@@ -1,5 +1,6 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 /**
  * Makes the appropriate exitObj, which runs in ZCF and allows the seat's owner
@@ -11,7 +12,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
   const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
 
   /** @type {ExitObj} */
-  let exitObj = harden({
+  let exitObj = Far('exitObj', {
     exit: () => {
       throw new Error(
         `Only seats with the exit rule "onDemand" can exit at will`,
@@ -29,7 +30,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
     E(proposal.exit.afterDeadline.timer)
       .setWakeup(
         proposal.exit.afterDeadline.deadline,
-        harden({
+        Far('wakeObj', {
           wake: exitFn,
         }),
       )

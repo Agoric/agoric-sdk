@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
@@ -620,7 +621,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(publicFacet).zcfShutdownWithFailure('Sadness');
   };
 
-  return harden({
+  return Far('build', {
     startTest: async testName => {
       switch (testName) {
         case 'meterInOfferHook': {
@@ -665,7 +666,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 };
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
 }
