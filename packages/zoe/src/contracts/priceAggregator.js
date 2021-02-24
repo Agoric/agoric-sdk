@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import makeStore from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
@@ -203,7 +204,7 @@ const start = async zcf => {
   };
 
   /** @type {PriceAggregatorCreatorFacet} */
-  const creatorFacet = harden({
+  const creatorFacet = Far('PriceAggregatorCreatorFacet', {
     async initializeQuoteMint(quoteMint) {
       const quoteIssuerRecord = await zcf.saveIssuer(
         E(quoteMint).getIssuer(),
@@ -317,11 +318,11 @@ const start = async zcf => {
     },
   });
 
-  const publicFacet = {
+  const publicFacet = Far('publicFacet', {
     getPriceAuthority() {
       return priceAuthority;
     },
-  };
+  });
 
   return harden({ creatorFacet, publicFacet });
 };

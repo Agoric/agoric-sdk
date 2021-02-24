@@ -2,6 +2,7 @@
 import '../../../exported';
 
 import { makeIssuerKit } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
 
 import { depositToSeat } from '../../../src/contractSupport';
 
@@ -31,10 +32,10 @@ const start = zcf => {
   const makeThrowInDepositToSeatInvitation = () =>
     zcf.makeInvitation(throwInDepositToSeat, 'throwInDepositToSeat');
 
-  const creatorFacet = {
+  const creatorFacet = Far('creatorFacet', {
     makeThrowInOfferHandlerInvitation,
     makeThrowInDepositToSeatInvitation,
-  };
+  });
   return harden({ creatorFacet });
 };
 

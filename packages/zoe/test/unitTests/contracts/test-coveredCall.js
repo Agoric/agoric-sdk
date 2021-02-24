@@ -4,6 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import { sameStructure } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
@@ -109,7 +110,7 @@ test('zoe - coveredCall', async t => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     const bucksPurse = bucksKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('bob', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
 

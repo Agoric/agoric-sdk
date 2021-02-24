@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from './evalContractCode';
@@ -26,7 +27,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // This is explicitly intended to be mutable so that
   // test-only state can be provided from contracts
   // to their tests.
-  const admin = harden({
+  const admin = Far('vatAdmin', {
     createVat: bundle => {
       return harden({
         root: makeRemote(
@@ -36,7 +37,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
             testContextSetter,
           ),
         ),
-        adminNode: {
+        adminNode: Far('adminNode', {
           done: () => {
             const kit = makePromiseKit();
             // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
@@ -46,7 +47,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
           },
           terminateWithFailure: () => {},
           adminData: () => {},
-        },
+        }),
       });
     },
     createVatByName: _name => {

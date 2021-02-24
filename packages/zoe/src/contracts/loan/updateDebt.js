@@ -3,6 +3,7 @@
 import '../../../exported';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
 import { makeRatio, multiplyBy } from '../../contractSupport';
@@ -107,7 +108,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   debtNotifierUpdater.updateState(debt);
 
-  return harden({
+  return Far('debtCalculator', {
     getDebt,
     getLastCalculationTimestamp: _ => lastCalculationTimestamp,
     getDebtNotifier: _ => debtNotifier,

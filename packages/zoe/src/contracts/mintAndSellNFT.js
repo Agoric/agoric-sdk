@@ -2,6 +2,7 @@
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import '../../exported';
 import { assert } from '@agoric/assert';
@@ -109,7 +110,10 @@ const start = zcf => {
   };
 
   /** @type {MintAndSellNFTCreatorFacet} */
-  const creatorFacet = harden({ sellTokens, getIssuer: () => issuer });
+  const creatorFacet = Far('creatorFacet', {
+    sellTokens,
+    getIssuer: () => issuer,
+  });
 
   return harden({ creatorFacet });
 };

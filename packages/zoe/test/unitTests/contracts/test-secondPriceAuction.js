@@ -4,6 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -85,7 +86,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('bob', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
 
@@ -157,7 +158,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeLosingBidder = (bidAmount, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('losing bidder', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
         const invitation = await invitationIssuer.claim(untrustedInvitation);

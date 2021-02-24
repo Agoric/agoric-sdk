@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit } from '@agoric/ertp';
 /* eslint-disable import/extensions, import/no-unresolved */
 import crashingAutoRefund from './bundle-crashingAutoRefund';
@@ -38,7 +39,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(vatPowers, vatParameters) {
-  const obj0 = {
+  return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
@@ -59,6 +60,5 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       await E(aliceP).startTest(testName);
     },
-  };
-  return harden(obj0);
+  });
 }

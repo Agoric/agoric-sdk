@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 /* eslint-disable import/extensions, import/no-unresolved */
 import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';
 import infiniteInstanceLoopBundle from './bundle-infiniteInstanceLoop';
@@ -8,7 +9,7 @@ import testBuiltinsBundle from './bundle-testBuiltins';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
-  const obj0 = {
+  return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
@@ -44,6 +45,5 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`error: ${e}`);
       }
     },
-  };
-  return harden(obj0);
+  });
 }
