@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far, Data } from '@agoric/marshal';
 import { mustBeComparable } from '@agoric/same-structure';
 
 import './types';
@@ -106,7 +106,7 @@ function makeAmountMath(brand, amountMathKind) {
      */
     make: allegedValue => {
       const value = helpers.doCoerce(allegedValue);
-      const amount = harden({ brand, value });
+      const amount = Data({ brand, value });
       cache.add(amount);
       return amount;
     },

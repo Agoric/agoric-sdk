@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Far } from '@agoric/marshal';
+import { Far, Data } from '@agoric/marshal';
 import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
@@ -63,47 +63,47 @@ test('strSetMathHelpers', t => {
 
   // coerce
   t.deepEqual(
-    coerce(harden({ brand: mockBrand, value: ['1'] })),
-    harden({ brand: mockBrand, value: ['1'] }),
+    coerce(Data({ brand: mockBrand, value: ['1'] })),
+    Data({ brand: mockBrand, value: ['1'] }),
     `coerce({ brand, value: ['1']}) is a valid amount`,
   );
   t.throws(
-    () => coerce(harden({ brand: mockBrand, value: [6] })),
+    () => coerce(Data({ brand: mockBrand, value: [6] })),
     { message: /must be a string/ },
     `[6] is not a valid string array`,
   );
   t.throws(
-    () => coerce(harden({ brand: mockBrand, value: '6' })),
+    () => coerce(Data({ brand: mockBrand, value: '6' })),
     { message: /value must be an array/ },
     `'6' is not a valid array`,
   );
   t.throws(
-    () => coerce(harden({ brand: mockBrand, value: ['a', 'a'] })),
+    () => coerce(Data({ brand: mockBrand, value: ['a', 'a'] })),
     { message: /value has duplicates/ },
     `duplicates should throw`,
   );
 
   // getValue
-  t.deepEqual(getValue(harden({ brand: mockBrand, value: ['1'] })), ['1']);
+  t.deepEqual(getValue(Data({ brand: mockBrand, value: ['1'] })), ['1']);
   t.deepEqual(getValue(make(harden(['1']))), ['1']);
 
   // getEmpty
   t.deepEqual(
     getEmpty(),
-    harden({ brand: mockBrand, value: [] }),
+    Data({ brand: mockBrand, value: [] }),
     `empty is []`,
   );
 
   t.assert(
-    isEmpty(harden({ brand: mockBrand, value: [] })),
+    isEmpty(Data({ brand: mockBrand, value: [] })),
     `isEmpty([]) is true`,
   );
   t.falsy(
-    isEmpty(harden({ brand: mockBrand, value: ['abc'] })),
+    isEmpty(Data({ brand: mockBrand, value: ['abc'] })),
     `isEmpty(['abc']) is false`,
   );
   t.throws(
-    () => isEmpty(harden({ brand: mockBrand, value: ['a', 'a'] })),
+    () => isEmpty(Data({ brand: mockBrand, value: ['a', 'a'] })),
     { message: /value has duplicates/ },
     `duplicates in isEmpty throw because coerce throws`,
   );
@@ -112,8 +112,8 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       isGTE(
-        harden({ brand: mockBrand, value: ['a', 'a'] }),
-        harden({ brand: mockBrand, value: ['b'] }),
+        Data({ brand: mockBrand, value: ['a', 'a'] }),
+        Data({ brand: mockBrand, value: ['b'] }),
       ),
     null,
     `duplicates in the left of isGTE should throw`,
@@ -121,30 +121,30 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       isGTE(
-        harden({ brand: mockBrand, value: ['a'] }),
-        harden({ brand: mockBrand, value: ['b', 'b'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['b', 'b'] }),
       ),
     null,
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(
     isGTE(
-      harden({ brand: mockBrand, value: ['a'] }),
-      harden({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
     ),
     `overlap between left and right of isGTE should not throw`,
   );
   t.assert(
     isGTE(
-      harden({ brand: mockBrand, value: ['a', 'b'] }),
-      harden({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a', 'b'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
     ),
     `['a', 'b'] is gte to ['a']`,
   );
   t.falsy(
     isGTE(
-      harden({ brand: mockBrand, value: ['a'] }),
-      harden({ brand: mockBrand, value: ['b'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['b'] }),
     ),
     `['a'] is not gte to ['b']`,
   );
@@ -153,8 +153,8 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       isEqual(
-        harden({ brand: mockBrand, value: ['a', 'a'] }),
-        harden({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['a', 'a'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
       ),
     { message: /value has duplicates/ },
     `duplicates in left of isEqual should throw`,
@@ -162,30 +162,30 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       isEqual(
-        harden({ brand: mockBrand, value: ['a'] }),
-        harden({ brand: mockBrand, value: ['a', 'a'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['a', 'a'] }),
       ),
     { message: /value has duplicates/ },
     `duplicates in right of isEqual should throw`,
   );
   t.assert(
     isEqual(
-      harden({ brand: mockBrand, value: ['a'] }),
-      harden({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
     ),
     `overlap between left and right of isEqual is ok`,
   );
   t.assert(
     isEqual(
-      harden({ brand: mockBrand, value: ['a', 'b'] }),
-      harden({ brand: mockBrand, value: ['b', 'a'] }),
+      Data({ brand: mockBrand, value: ['a', 'b'] }),
+      Data({ brand: mockBrand, value: ['b', 'a'] }),
     ),
     `['a', 'b'] equals ['b', 'a']`,
   );
   t.falsy(
     isEqual(
-      harden({ brand: mockBrand, value: ['a'] }),
-      harden({ brand: mockBrand, value: ['b'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['b'] }),
     ),
     `['a'] does not equal ['b']`,
   );
@@ -194,8 +194,8 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       add(
-        harden({ brand: mockBrand, value: ['a', 'a'] }),
-        harden({ brand: mockBrand, value: ['b'] }),
+        Data({ brand: mockBrand, value: ['a', 'a'] }),
+        Data({ brand: mockBrand, value: ['b'] }),
       ),
     { message: /value has duplicates/ },
     `duplicates in left of add should throw`,
@@ -203,8 +203,8 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       add(
-        harden({ brand: mockBrand, value: ['a'] }),
-        harden({ brand: mockBrand, value: ['b', 'b'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['b', 'b'] }),
       ),
     { message: /value has duplicates/ },
     `duplicates in right of add should throw`,
@@ -212,18 +212,18 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       add(
-        harden({ brand: mockBrand, value: ['a'] }),
-        harden({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
       ),
     { message: /left and right have same element/ },
     `overlap between left and right of add should throw`,
   );
   t.deepEqual(
     add(
-      harden({ brand: mockBrand, value: ['a'] }),
-      harden({ brand: mockBrand, value: ['b'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['b'] }),
     ),
-    harden({ brand: mockBrand, value: ['a', 'b'] }),
+    Data({ brand: mockBrand, value: ['a', 'b'] }),
     `['a'] + ['b'] = ['a', 'b']`,
   );
 
@@ -231,8 +231,8 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       subtract(
-        harden({ brand: mockBrand, value: ['a', 'a'] }),
-        harden({ brand: mockBrand, value: ['b'] }),
+        Data({ brand: mockBrand, value: ['a', 'a'] }),
+        Data({ brand: mockBrand, value: ['b'] }),
       ),
     { message: /value has duplicates/ },
     `duplicates in left of subtract should throw`,
@@ -240,35 +240,35 @@ test('strSetMathHelpers', t => {
   t.throws(
     () =>
       subtract(
-        harden({ brand: mockBrand, value: ['a'] }),
-        harden({ brand: mockBrand, value: ['b', 'b'] }),
+        Data({ brand: mockBrand, value: ['a'] }),
+        Data({ brand: mockBrand, value: ['b', 'b'] }),
       ),
     { message: /value has duplicates/ },
     `duplicates in right of subtract should throw`,
   );
   t.deepEqual(
     subtract(
-      harden({ brand: mockBrand, value: ['a'] }),
-      harden({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
     ),
-    harden({ brand: mockBrand, value: [] }),
+    Data({ brand: mockBrand, value: [] }),
     `overlap between left and right of subtract should not throw`,
   );
   t.throws(
     () =>
       subtract(
-        harden({ brand: mockBrand, value: ['a', 'b'] }),
-        harden({ brand: mockBrand, value: ['c'] }),
+        Data({ brand: mockBrand, value: ['a', 'b'] }),
+        Data({ brand: mockBrand, value: ['c'] }),
       ),
     { message: /some of the elements in right .* were not present in left/ },
     `elements in right but not in left of subtract should throw`,
   );
   t.deepEqual(
     subtract(
-      harden({ brand: mockBrand, value: ['a', 'b'] }),
-      harden({ brand: mockBrand, value: ['a'] }),
+      Data({ brand: mockBrand, value: ['a', 'b'] }),
+      Data({ brand: mockBrand, value: ['a'] }),
     ),
-    harden({ brand: mockBrand, value: ['b'] }),
+    Data({ brand: mockBrand, value: ['b'] }),
     `['a', 'b'] - ['a'] = ['a']`,
   );
 });

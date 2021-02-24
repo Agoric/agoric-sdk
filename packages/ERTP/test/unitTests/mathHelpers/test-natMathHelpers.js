@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Far } from '@agoric/marshal';
+import { Far, Data } from '@agoric/marshal';
 import { makeAmountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
@@ -52,7 +52,7 @@ test('natMathHelpers', t => {
 
   // coerce
   t.deepEqual(
-    coerce(harden({ brand: mockBrand, value: 4 })),
+    coerce(Data({ brand: mockBrand, value: 4 })),
     {
       brand: mockBrand,
       value: 4n,
@@ -61,9 +61,7 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () =>
-      coerce(
-        harden({ brand: { getAllegedName: () => 'somename' }, value: 4n }),
-      ),
+      coerce(Data({ brand: { getAllegedName: () => 'somename' }, value: 4n })),
     {
       message: /The brand in the allegedAmount .* in 'coerce' didn't match the amountMath brand/,
     },
