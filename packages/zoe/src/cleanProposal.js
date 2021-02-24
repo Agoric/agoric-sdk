@@ -1,7 +1,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { Data } from '@agoric/marshal';
+import { Data, PASS_STYLE } from '@agoric/marshal';
 
 import '../exported';
 import './internal-types';
@@ -32,17 +32,24 @@ export const assertKeywordName = keyword => {
   );
 };
 
+const rejectSymbols = record => {
+  // Reject all symbols except for 'passStyle', which is used by the Data()
+  // marker. When we remove Data, this should revert back to rejecting
+  // absolutely all symbols.
+  for (const sym of Object.getOwnPropertySymbols(record)) {
+    if (sym !== PASS_STYLE) {
+      assert.fail(X`no symbol properties allowed: ${q(String(sym))}`);
+    }
+  }
+};
+
 // Assert that the keys of `record` are all in `allowedKeys`. If a key
 // of `record` is not in `allowedKeys`, throw an error. If a key in
 // `allowedKeys` is not a key of record, we do not throw an error.
 const assertKeysAllowed = (allowedKeys, record) => {
   const keys = Object.getOwnPropertyNames(record);
   assertSubset(allowedKeys, keys);
-  // assert that there are no symbol properties.
-  assert(
-    Object.getOwnPropertySymbols(record).length === 0,
-    X`no symbol properties allowed`,
-  );
+  rejectSymbols(record);
 };
 
 const cleanKeys = (allowedKeys, record) => {
@@ -77,10 +84,7 @@ export const cleanKeywords = keywordRecord => {
   const keywords = Object.getOwnPropertyNames(keywordRecord);
 
   // Insist that there are no symbol properties.
-  assert(
-    Object.getOwnPropertySymbols(keywordRecord).length === 0,
-    X`no symbol properties allowed`,
-  );
+  rejectSymbols(keywordRecord);
 
   // Assert all key characters are ascii and keys start with a
   // capital letter.
