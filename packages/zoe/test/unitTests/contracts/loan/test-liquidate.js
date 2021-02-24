@@ -1,6 +1,6 @@
 // ts-check
 
-import '../../../../exported';
+import '../../../../exported'; // TODO(warner) this should come after install-ses
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
