@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       const mode = vatParameters.argv[0];
       if (mode === 'flush') {
@@ -29,7 +30,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.call2`);
       } else if (mode === 'local1') {
-        const t1 = harden({
+        const t1 = Far('t1', {
           foo(arg) {
             log(`local.foo ${arg}`);
             return 2;
@@ -39,7 +40,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         p1.then(x => log(`b.resolved ${x}`));
         log(`b.local1.finish`);
       } else if (mode === 'local2') {
-        const t1 = harden({
+        const t1 = Far('t1', {
           foo(arg) {
             log(`local.foo ${arg}`);
             return 3;
@@ -50,7 +51,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.local2.finish`);
       } else if (mode === 'send-promise1') {
-        const t1 = harden({
+        const t1 = Far('t1', {
           foo(arg) {
             log(`local.foo ${arg}`);
             return 3;

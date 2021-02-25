@@ -1,10 +1,11 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 console.log(`=> loading bootstrap.js`);
 
 export function buildRootObject(vatPowers) {
   const { D, testLog: log } = vatPowers;
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       console.log('=> bootstrap() called');
 

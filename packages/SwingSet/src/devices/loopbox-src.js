@@ -1,4 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 export function buildRootDeviceNode(tools) {
   const { SO, endowments } = tools;
@@ -17,7 +18,7 @@ export function buildRootDeviceNode(tools) {
   }
   registerPassOneMessage(loopboxPassOneMessage);
 
-  return harden({
+  return Far('root', {
     registerInboundHandler(name, handler) {
       assert(!inboundHandlers.has(name), X`already registered`);
       inboundHandlers.set(name, handler);
@@ -25,7 +26,7 @@ export function buildRootDeviceNode(tools) {
 
     makeSender(sender) {
       let count = 1;
-      return harden({
+      return Far('sender', {
         add(peer, msgnum, body) {
           assert(inboundHandlers.has(peer), X`unregistered peer '${peer}'`);
           const h = inboundHandlers.get(peer);

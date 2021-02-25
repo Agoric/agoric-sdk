@@ -1,6 +1,8 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject(vatPowers) {
   const { D, testLog: log } = vatPowers;
-  return harden({
+  return Far('root', {
     left5(d2) {
       log(`left5`);
       const ret = D(d2).method5('hello');

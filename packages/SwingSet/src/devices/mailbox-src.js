@@ -1,4 +1,5 @@
 import { Nat } from '@agoric/nat';
+import { Far } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -78,7 +79,7 @@ export function buildRootDeviceNode(tools) {
   };
 
   // the Root Device Node.
-  return harden({
+  return Far('root', {
     registerInboundHandler(handler) {
       assert(!inboundHandler, X`already registered`);
       inboundHandler = handler;

@@ -1,3 +1,4 @@
+import { Far } from '@agoric/marshal';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.
@@ -7,7 +8,7 @@
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
-  return harden({
+  return Far('root', {
     talkToBot(pbot, botName) {
       log(`=> user.talkToBot is called with ${botName}`);
       pbot

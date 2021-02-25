@@ -1,6 +1,8 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject() {
   let counter = 0;
-  return harden({
+  return Far('root', {
     first() {
       counter += 1;
       return counter;

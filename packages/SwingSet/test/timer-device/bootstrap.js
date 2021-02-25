@@ -1,15 +1,16 @@
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   const log = vatPowers.testLog;
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       const { argv } = vatParameters;
       if (argv[0] === 'timer') {
         log(`starting wake test`);
-        const handler = harden({
+        const handler = Far('handler', {
           wake() {
             log(`handler.wake()`);
           },
@@ -18,7 +19,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       } else if (argv[0] === 'repeater') {
         log(`starting repeater test`);
         let handlerCalled = 0;
-        const handler = harden({
+        const handler = Far('handler', {
           wake(h) {
             handlerCalled += 1;
             log(

@@ -1,11 +1,11 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       const { argv } = vatParameters;
       const mode = argv[0];

@@ -1,3 +1,4 @@
+import { Far } from '@agoric/marshal';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.
@@ -9,7 +10,7 @@ console.log(`=> loading bootstrap.js`);
 
 export function buildRootObject(vatPowers) {
   const { D, testLog: log } = vatPowers;
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       console.log('=> bootstrap() called');
 

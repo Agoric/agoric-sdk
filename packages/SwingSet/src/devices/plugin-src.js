@@ -1,7 +1,7 @@
 /* global HandledPromise */
 
 import { makeCapTP } from '@agoric/captp';
-
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
@@ -117,7 +117,7 @@ export function buildRootDeviceNode(tools) {
     });
   });
 
-  return harden({
+  return Far('root', {
     getPluginDir() {
       return endowments.getPluginDir();
     },

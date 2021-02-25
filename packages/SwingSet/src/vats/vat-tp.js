@@ -1,6 +1,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -82,7 +83,7 @@ export function buildRootObject(vatPowers) {
     const name = makeConnectionName();
     let openCalled = false;
     assert(!connectionNames.has(name), X`already have host for ${name}`);
-    const host = harden({
+    const host = Far('host', {
       publish(obj) {
         const address = makeAddress();
         exportedObjects.set(address, obj);
@@ -93,7 +94,7 @@ export function buildRootObject(vatPowers) {
       },
     });
 
-    const handler = harden({
+    const handler = Far('host handler', {
       async onOpen(connection, ..._args) {
         // make a new Remote for this new connection
         assert(!openCalled, X`host ${name} already opened`);
@@ -136,7 +137,7 @@ export function buildRootObject(vatPowers) {
     return harden({ host, handler });
   }
 
-  const handler = harden({
+  const handler = Far('vat-tp handler', {
     registerMailboxDevice(mailboxDevnode) {
       mailbox = mailboxDevnode;
     },
@@ -148,7 +149,7 @@ export function buildRootObject(vatPowers) {
     addRemote(name) {
       assert(!remotes.has(name), X`already have remote ${name}`);
       const r = getRemote(name);
-      const transmitter = harden({
+      const transmitter = Far('transmitter', {
         transmit(msg) {
           const o = r.outbound;
           const num = o.highestAdded + 1;
@@ -157,7 +158,7 @@ export function buildRootObject(vatPowers) {
           o.highestAdded = num;
         },
       });
-      const setReceiver = harden({
+      const setReceiver = Far('receiver setter', {
         setReceiver(newReceiver) {
           assert(!r.inbound.receiver, X`setReceiver is call-once`);
           r.inbound.receiver = newReceiver;

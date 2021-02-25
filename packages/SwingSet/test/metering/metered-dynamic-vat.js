@@ -1,12 +1,13 @@
 import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 import { meterMe } from './metered-code';
 
 export function buildRootObject(_dynamicVatPowers) {
   let grandchildNS;
 
-  return harden({
+  return Far('root', {
     never() {
       return makePromiseKit().promise;
     },

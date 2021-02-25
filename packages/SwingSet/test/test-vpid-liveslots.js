@@ -7,6 +7,7 @@ import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
@@ -112,14 +113,16 @@ function resolvePR(pr, mode, targets) {
       pr.resolve(targets.target2);
       break;
     case 'local-object':
-      pr.resolve({
-        two() {
-          /* console.log(`local two() called`); */
-        },
-        four() {
-          /* console.log(`local four() called`); */
-        },
-      });
+      pr.resolve(
+        Far('local-object', {
+          two() {
+            /* console.log(`local two() called`); */
+          },
+          four() {
+            /* console.log(`local four() called`); */
+          },
+        }),
+      );
       break;
     case 'data':
       pr.resolve(4);
@@ -138,6 +141,9 @@ function resolvePR(pr, mode, targets) {
   }
 }
 
+function slotArg(iface, index) {
+  return { '@qclass': 'slot', iface, index };
+}
 const slot0arg = { '@qclass': 'slot', index: 0 };
 const slot1arg = { '@qclass': 'slot', index: 1 };
 
@@ -157,7 +163,10 @@ function resolutionOf(vpid, mode, targets) {
       break;
     }
     case 'local-object':
-      resolution.resolutions[0][2] = capargs(slot0arg, [targets.localTarget]);
+      resolution.resolutions[0][2] = capargs(
+        slotArg('Alleged: local-object', 0),
+        [targets.localTarget],
+      );
       break;
     case 'data':
       resolution.resolutions[0][2] = capargs(4, []);
@@ -200,7 +209,7 @@ async function doVatResolveCase1(t, mode) {
 
   function build(_vatPowers) {
     const pr = makePromiseKit();
-    return harden({
+    return Far('root', {
       async run(target1, target2) {
         const p1 = pr.promise;
         E(target1).one(p1);
@@ -296,7 +305,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     let p1;
     const pr = makePromiseKit();
     const p0 = pr.promise;
-    return harden({
+    return Far('root', {
       promise(p) {
         p1 = p;
         stashP1 = p1;
@@ -558,7 +567,7 @@ async function doVatResolveCase4(t, mode) {
 
   function build(_vatPowers) {
     let p1;
-    return harden({
+    return Far('local-object', {
       async get(p) {
         p1 = p;
         // if we don't add this, node will complain when the kernel notifies
@@ -703,7 +712,7 @@ test('inter-vat circular promise references', async t => {
   function build(_vatPowers) {
     let p;
     let r;
-    return harden({
+    return Far('root', {
       genPromise() {
         [p, r] = makePR();
         return p;

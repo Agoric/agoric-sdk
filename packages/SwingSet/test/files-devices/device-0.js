@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootDeviceNode() {
-  return harden({});
+  return Far('root', {});
 }
