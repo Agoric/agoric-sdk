@@ -113,8 +113,8 @@ test('test with malfunctioning autoswap', async t => {
   // Set up the lender seat. At this point the lender has nothing.
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
     zcf,
-    { give: {} },
-    {},
+    { give: Data({}) },
+    Data({}),
   );
 
   const collateral = collateralKit.amountMath.make(10);
