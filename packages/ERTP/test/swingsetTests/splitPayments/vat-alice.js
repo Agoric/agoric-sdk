@@ -1,14 +1,17 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '../../../src';
 
 function makeAliceMaker(log) {
   return harden({
-    make(issuer, amountMath, oldPaymentP) {
+    make(issuer, brand, oldPaymentP) {
       const alice = harden({
         async testSplitPayments() {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
           const splitPayments = await E(issuer).split(
             oldPaymentP,
-            await E(amountMath).make(10),
+            amountMath.make(10n, brand),
           );
           log(
             'splitPayment[0] balance: ',
@@ -27,8 +30,8 @@ function makeAliceMaker(log) {
 
 export function buildRootObject(vatPowers) {
   return harden({
-    makeAliceMaker(host) {
-      return harden(makeAliceMaker(vatPowers.testLog, host));
+    makeAliceMaker() {
+      return harden(makeAliceMaker(vatPowers.testLog));
     },
   });
 }

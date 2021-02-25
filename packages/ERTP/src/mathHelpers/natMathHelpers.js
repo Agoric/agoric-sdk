@@ -16,11 +16,11 @@ const identity = 0n;
  * done with the smallest whole unit such that the NatMathHelpers never
  * deals with fractional parts.
  *
- * @type {MathHelpers}
+ * @type {NatMathHelpers}
  */
 const natMathHelpers = harden({
   doCoerce: Nat,
-  doGetEmpty: _ => identity,
+  doMakeEmpty: _ => identity,
   doIsEmpty: nat => nat === identity,
   doIsGTE: (left, right) => left >= right,
   doIsEqual: (left, right) => left === right,

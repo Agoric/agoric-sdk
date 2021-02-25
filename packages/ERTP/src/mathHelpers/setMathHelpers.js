@@ -64,7 +64,7 @@ const hasElement = (buckets, elem) => {
 // only use sameStructure within that bucket.
 
 /**
- * @type {MathHelpers}
+ * @type {SetMathHelpers}
  */
 const setMathHelpers = harden({
   doCoerce: list => {
@@ -72,7 +72,7 @@ const setMathHelpers = harden({
     checkForDupes(makeBuckets(list));
     return list;
   },
-  doGetEmpty: _ => identity,
+  doMakeEmpty: _ => identity,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
   doIsGTE: (left, right) => {
     const leftBuckets = makeBuckets(left);

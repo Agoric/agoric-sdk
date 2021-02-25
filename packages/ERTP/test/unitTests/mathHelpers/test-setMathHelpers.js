@@ -1,6 +1,9 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { makeAmountMath, MathKind } from '../../../src';
+import { amountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -11,32 +14,22 @@ const mockBrand = harden({
   getAllegedName: () => 'mock',
 });
 
-const amountMath = makeAmountMath(mockBrand, 'set');
-
 const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   // a2 is a copy of a which should have the same values but not same
   // identity. This doesn't make sense to use for handle tests, but
   // makes sense for anything where the identity is based on data.
 
   const {
-    getBrand,
-    getAmountMathKind,
     make,
     coerce,
     getValue,
-    getEmpty,
+    makeEmpty,
     isEmpty,
     isGTE,
     isEqual,
     add,
     subtract,
   } = amountMath;
-
-  // getBrand
-  t.deepEqual(getBrand(), mockBrand, 'brand is brand');
-
-  // getAmountMathKind
-  t.deepEqual(getAmountMathKind(), MathKind.SET, 'amountMathKind is set');
 
   // make
   t.deepEqual(

@@ -1,6 +1,9 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { makeAmountMath, MathKind } from '../../../src';
+import { amountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -11,32 +14,18 @@ const mockBrand = harden({
   getAllegedName: () => 'mock',
 });
 
-const amountMath = makeAmountMath(mockBrand, 'strSet');
-
 test('strSetMathHelpers', t => {
   const {
-    getBrand,
-    getAmountMathKind,
     make,
     coerce,
     getValue,
-    getEmpty,
+    makeEmpty,
     isEmpty,
     isGTE,
     isEqual,
     add,
     subtract,
   } = amountMath;
-
-  // getBrand
-  t.deepEqual(getBrand(), mockBrand, 'brand is brand');
-
-  // getAmountMathKind
-  t.deepEqual(
-    getAmountMathKind(),
-    MathKind.STRING_SET,
-    'amountMathKind is strSet',
-  );
 
   // make
   t.notThrows(() => make(harden(['1'])), `['1'] is a valid string array`);

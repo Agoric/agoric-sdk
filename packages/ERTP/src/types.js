@@ -27,7 +27,7 @@
  */
 
 /**
- * @typedef {any} Value
+ * @typedef {NatValue | SetValue} Value
  * Values describe the value of something that can be owned or shared.
  * Fungible values are normally represented by natural numbers. Other
  * values may be represented as strings naming a particular right, or
@@ -49,46 +49,41 @@
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
- * @property {() => Brand} getBrand Return the brand.
- * @property {() => AmountMathKind} getAmountMathKind
- * Get the kind of amountMath used. This can be passed as an
- * argument to `makeAmountMath` to create local amountMath.
- *
- * @property {(allegedValue: Value) => Amount} make
+ * @property {(allegedValue: Value, brand: Brand) => Amount} make
  * Make an amount from a value by adding the brand.
  *
- * @property {(allegedAmount: Amount) => Amount} coerce
+ * @property {(allegedAmount: Amount, brand: Brand) => Amount} coerce
  * Make sure this amount is valid and return it if so.
  *
- * @property {(amount: Amount) => Value} getValue
+ * @property {(amount: Amount, brand: Brand) => Value} getValue
  * Extract and return the value.
  *
- * @property {() => Amount} getEmpty
+ * @property {(string: mathKind, brand: Brand) => Amount} makeEmpty
  * Return the amount representing an empty amount. This is the
  * identity element for MathHelpers.add and MatHelpers.subtract.
  *
- * @property {(amount: Amount) => boolean} isEmpty
+ * @property {(amount: Amount, brand?: Brand) => boolean} isEmpty
  * Return true if the Amount is empty. Otherwise false.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => boolean} isGTE
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => boolean} isGTE
  * Returns true if the leftAmount is greater than or equal to the
  * rightAmount. For non-scalars, "greater than or equal to" depends
  * on the kind of amount, as defined by the MathHelpers. For example,
  * whether rectangle A is greater than rectangle B depends on whether rectangle
  * A includes rectangle B as defined by the logic in MathHelpers.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => boolean} isEqual
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => boolean} isEqual
  * Returns true if the leftAmount equals the rightAmount. We assume
  * that if isGTE is true in both directions, isEqual is also true
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} add
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => Amount} add
  * Returns a new amount that is the union of both leftAmount and rightAmount.
  *
  * For fungible amount this means adding the values. For other kinds of
  * amount, it usually means including all of the elements from both
  * left and right.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} subtract
+ * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => Amount} subtract
  * Returns a new amount that is the leftAmount minus the rightAmount
  * (i.e. everything in the leftAmount that is not in the
  * rightAmount). If leftAmount doesn't include rightAmount
@@ -224,7 +219,6 @@
  *
  * @property {Mint} mint
  * @property {Issuer} issuer
- * @property {AmountMath} amountMath
  * @property {Brand} brand
  */
 
@@ -304,7 +298,8 @@
  */
 
 /**
- * @typedef {Object} MathHelpers
+ * @template V
+ * @typedef {Object} MathHelpers<T>
  * All of the difference in how digital asset amount are manipulated can be reduced to
  * the behavior of the math on values. We extract this
  * custom logic into mathHelpers. MathHelpers are about value
@@ -317,29 +312,45 @@
  * need to do output validation, and only when there is a possibility of
  * invalid output.
  *
- * @property {(allegedValue: Value) => Value} doCoerce
+ * @property {(allegedValue: V) => V} doCoerce
  * Check the kind of this value and throw if it is not the
  * expected kind.
  *
- * @property {() => Value} doGetEmpty
+ * @property {() => V} doMakeEmpty
  * Get the representation for the identity element (often 0 or an
  * empty array)
  *
- * @property {(value: Value) => boolean} doIsEmpty
+ * @property {(value: V) => boolean} doIsEmpty
  * Is the value the identity element?
  *
- * @property {(left: Value, right: Value) => boolean} doIsGTE
+ * @property {(left: V, right: V) => boolean} doIsGTE
  * Is the left greater than or equal to the right?
  *
- * @property {(left: Value, right: Value) => boolean} doIsEqual
+ * @property {(left: V, right: V) => boolean} doIsEqual
  * Does left equal right?
  *
- * @property {(left: Value, right: Value) => Value} doAdd
+ * @property {(left: V, right: V) => Value} doAdd
  * Return the left combined with the right.
  *
- * @property {(left: Value, right: Value) => Value} doSubtract
+ * @property {(left: V, right: V) => V} doSubtract
  * Return what remains after removing the right from the left. If
  * something in the right was not in the left, we throw an error.
+ */
+
+/**
+ * @typedef {bigint} NatValue
+ */
+
+/**
+ * @typedef {Array<Comparable>} SetValue
+ */
+
+/**
+ * @typedef {MathHelpers<NatValue>} NatMathHelpers
+ */
+
+/**
+ * @typedef {MathHelpers<SetValue>} SetMathHelpers
  */
 
 /**

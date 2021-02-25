@@ -1,26 +1,26 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { makeAmountMath, MathKind } from '../../../src';
+import { amountMath, MathKind } from '../../../src';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
 const mockBrand = harden({
-  isMyIssuer: () => false,
+  isMyIssuer: async () => false,
   getAllegedName: () => 'mock',
+  getDisplayInfo: () => ({}),
 });
-
-const amountMath = makeAmountMath(mockBrand, MathKind.NAT);
 
 test('natMathHelpers', t => {
   const {
-    getBrand,
-    getAmountMathKind,
     make,
     coerce,
     getValue,
-    getEmpty,
+    makeEmpty,
     isEmpty,
     isGTE,
     isEqual,
@@ -28,16 +28,10 @@ test('natMathHelpers', t => {
     subtract,
   } = amountMath;
 
-  // getBrand
-  t.deepEqual(getBrand(), mockBrand, 'brand is brand');
-
-  // getAmountMathKind
-  t.deepEqual(getAmountMathKind(), MathKind.NAT, 'amountMathKind is nat');
-
   // make
-  t.deepEqual(make(4), { brand: mockBrand, value: 4n });
+  t.deepEqual(make(4n, mockBrand), { brand: mockBrand, value: 4n });
   t.throws(
-    () => make('abc'),
+    () => make('abc', mockBrand),
     {
       instanceOf: TypeError,
       message: 'abc is a string but must be a bigint or a number',
@@ -45,14 +39,14 @@ test('natMathHelpers', t => {
     `'abc' is not a nat`,
   );
   t.throws(
-    () => make(-1),
+    () => make(-1, mockBrand),
     { instanceOf: RangeError, message: '-1 is negative' },
     `- 1 is not a valid Nat`,
   );
 
   // coerce
   t.deepEqual(
-    coerce(harden({ brand: mockBrand, value: 4 })),
+    coerce(harden({ brand: mockBrand, value: 4n }), mockBrand),
     {
       brand: mockBrand,
       value: 4n,
@@ -62,24 +56,32 @@ test('natMathHelpers', t => {
   t.throws(
     () =>
       coerce(
-        harden({ brand: { getAllegedName: () => 'somename' }, value: 4n }),
+        harden({
+          brand: {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({}),
+          },
+          value: 4n,
+        }),
+        mockBrand,
       ),
     {
-      message: /The brand in the allegedAmount .* in 'coerce' didn't match the amountMath brand/,
+      message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
     `coerce can't take the wrong brand`,
   );
   t.throws(
-    () => coerce(3),
+    () => coerce(3n, mockBrand),
     { message: /The brand in allegedAmount .* is undefined/ },
     `coerce needs a brand`,
   );
 
   // getValue
-  t.is(getValue(make(4)), 4n);
+  t.is(getValue(make(4n, mockBrand), mockBrand), 4n);
 
-  // getEmpty
-  t.deepEqual(getEmpty(), make(0), `empty is 0`);
+  // makeEmpty
+  t.deepEqual(makeEmpty(MathKind.NAT, mockBrand), make(0n, mockBrand), `empty is 0`);
 
   // isEmpty
   t.assert(isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
