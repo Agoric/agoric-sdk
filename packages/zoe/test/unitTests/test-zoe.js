@@ -5,6 +5,7 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
@@ -52,6 +53,11 @@ test(`zoe.startInstance bad installation`, async t => {
   });
 });
 
+function isEmptyFacet(t, facet) {
+  t.is(passStyleOf(facet), REMOTE_STYLE);
+  t.deepEqual(Object.getOwnPropertyNames(facet), []);
+}
+
 test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const result = await E(zoe).startInstance(installation);
@@ -63,9 +69,9 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
     'instance',
     'publicFacet',
   ]);
-  t.deepEqual(result.creatorFacet, {});
+  isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  t.deepEqual(result.publicFacet, {});
+  isEmptyFacet(t, result.publicFacet);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
     'getVatStats',
@@ -91,9 +97,9 @@ test(`zoe.startInstance promise for installation`, async t => {
     'instance',
     'publicFacet',
   ]);
-  t.deepEqual(result.creatorFacet, {}); // here
+  isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  t.deepEqual(result.publicFacet, {});
+  isEmptyFacet(t, result.publicFacet);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
     'getVatStats',
