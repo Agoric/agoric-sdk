@@ -91,6 +91,8 @@ function managerPort(issueCommand) {
 // please excuse copy-and-paste from kernel.js
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
+    // since testLog is only for testing, 2^53 is enough.
+    // precedent: 32a1dd3
     return Number(arg);
   }
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -215,8 +217,6 @@ function makeWorker(port) {
       testLog: (...args) =>
         port.send([
           'testLog',
-          // since testLog is only for testing, 2^53 is enough.
-          // precedent: 32a1dd3
           ...args.map(arg =>
             typeof arg === 'string'
               ? arg
