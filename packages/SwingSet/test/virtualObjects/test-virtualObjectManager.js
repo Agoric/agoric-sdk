@@ -25,6 +25,7 @@ function makeAllTheStuff(cacheSize) {
   const fakeSyscall = {
     vatstoreGet: key => fakeStore.get(key),
     vatstoreSet: (key, value) => fakeStore.set(key, value),
+    vatstoreDelete: key => fakeStore.delete(key),
   };
 
   let nextExportID = 1;

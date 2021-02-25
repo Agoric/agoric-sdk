@@ -299,7 +299,7 @@ export function makeVirtualObjectManager(
         const vkey = virtualObjectKey(key);
         if (vkey) {
           assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
-          syscall.vatstoreSet(vkey, undefined);
+          syscall.vatstoreDelete(vkey);
         } else {
           assertKeyExists(key);
           backingMap.delete(key);
