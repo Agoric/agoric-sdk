@@ -27,7 +27,16 @@ workerLog(`supervisor started`);
  */
 function managerPort(issueCommand) {
   /** @type { (item: Tagged) => ArrayBuffer } */
-  const encode = item => encoder.encode(JSON.stringify(item)).buffer;
+  const encode = item => {
+    let txt;
+    try {
+      txt = JSON.stringify(item);
+    } catch (nope) {
+      workerLog(nope.message, item);
+      throw nope;
+    }
+    return encoder.encode(txt).buffer;
+  };
 
   /** @type { (msg: ArrayBuffer) => any } */
   const decodeData = msg => JSON.parse(decoder.decode(msg) || 'null');
@@ -77,6 +86,18 @@ function managerPort(issueCommand) {
       };
     },
   });
+}
+
+// please excuse copy-and-paste from kernel.js
+function abbreviateReplacer(_, arg) {
+  if (typeof arg === 'bigint') {
+    return Number(arg);
+  }
+  if (typeof arg === 'string' && arg.length >= 40) {
+    // truncate long strings
+    return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
+  }
+  return arg;
 }
 
 /**
@@ -191,7 +212,17 @@ function makeWorker(port) {
       getInterfaceOf,
       makeMarshal,
       transformTildot,
-      testLog: (...args) => port.send(['testLog', ...args]),
+      testLog: (...args) =>
+        port.send([
+          'testLog',
+          // since testLog is only for testing, 2^53 is enough.
+          // precedent: 32a1dd3
+          ...args.map(arg =>
+            typeof arg === 'string'
+              ? arg
+              : JSON.stringify(arg, abbreviateReplacer),
+          ),
+        ]),
     };
 
     const ls = makeLiveSlots(
