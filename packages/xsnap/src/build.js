@@ -37,7 +37,7 @@ function exec(command, cwd, args = []) {
     }
     await exec('git', 'moddable', ['checkout', moddableCommitHash]);
   } else {
-    await exec('git', '.', ['submodule', 'update']);
+    await exec('git', '.', ['submodule', 'update', '--init', '--checkout']);
   }
 
   const pjson = readFileSync(`${__dirname}/../package.json`, 'utf-8');
