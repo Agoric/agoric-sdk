@@ -11,6 +11,10 @@ const BASIS_POINTS = 10000n;
 
 // If ratio is between 0 and 1, subtract from 1.
 export function oneMinus(ratio) {
+  assert(
+    ratio.numerator.brand === ratio.denominator.brand,
+    X`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`,
+  );
   assertIsRatio(ratio);
   assert(
     ratio.numerator.value <= ratio.denominator.value,

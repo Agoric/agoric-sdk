@@ -140,7 +140,6 @@
  * @callback MakeRatioFromAmounts
  * @param {Amount} numerator
  * @param {Amount} denominator
- * @param {bigint=} base The default base is 10000
  * @returns {Ratio}
  */
 
