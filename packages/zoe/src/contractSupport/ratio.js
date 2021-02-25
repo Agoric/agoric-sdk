@@ -3,7 +3,7 @@
 import './types';
 import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { natSafeMath } from '.';
+import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
 

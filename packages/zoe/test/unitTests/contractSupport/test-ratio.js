@@ -11,7 +11,7 @@ import {
   multiplyBy,
   divideBy,
   invertRatio,
-} from '../../../src/contractSupport/ratio';
+} from '../../../src/contractSupport';
 
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;
