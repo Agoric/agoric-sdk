@@ -47,7 +47,7 @@ test('transmit', t => {
   // look at machine A, on which some local vat is sending messages to a
   // remote 'bob' on machine B
   const { syscall, sends } = mockSyscall();
-  const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers', {});
+  const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(d);
   const { provideLocalForRemote, getLocalForRemote } = clistKit;
   // add the remote, and an object to send at
@@ -96,7 +96,7 @@ test('receive', t => {
   // look at machine B, which is receiving remote messages aimed at a local
   // vat's object 'bob'
   const { syscall, sends } = mockSyscall();
-  const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers', {});
+  const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(d);
   const { provideRemoteForLocal, getRemoteForLocal } = clistKit;
   // add the remote, and an object to send at

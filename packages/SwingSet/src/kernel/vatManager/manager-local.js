@@ -77,8 +77,8 @@ export function makeLocalVatManagerFactory(tools) {
     const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
-    const vatPowers = harden({ ...baseVP, vatParameters, testLog });
-    const dispatch = setup(syscall, state, helpers, vatPowers);
+    const vatPowers = harden({ ...baseVP, testLog });
+    const dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
     const meterRecord = null;
     const manager = finish(dispatch, meterRecord);
     return manager;
@@ -167,7 +167,7 @@ export function makeLocalVatManagerFactory(tools) {
       );
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       const state = null; // TODO remove from setup()
-      dispatch = setup(syscall, state, helpers, vatPowers);
+      dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
     } else {
       assert.fail(X`vat source bundle lacks buildRootObject() function`);
     }
