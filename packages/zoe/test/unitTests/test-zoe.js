@@ -91,7 +91,7 @@ test(`zoe.startInstance promise for installation`, async t => {
     'instance',
     'publicFacet',
   ]);
-  t.deepEqual(result.creatorFacet, {});
+  t.deepEqual(result.creatorFacet, {}); // here
   t.deepEqual(result.creatorInvitation, undefined);
   t.deepEqual(result.publicFacet, {});
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
