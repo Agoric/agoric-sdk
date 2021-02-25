@@ -10,12 +10,14 @@ import { makeDeliveryKit } from './delivery';
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(syscall, _state, _helpers, vatPowers) {
-  const identifierBase =
-    (vatPowers &&
-      vatPowers.vatParameters &&
-      vatPowers.vatParameters.identifierBase) ||
-    0;
+export function buildCommsDispatch(
+  syscall,
+  _state,
+  _helpers,
+  _vatPowers,
+  vatParameters = {},
+) {
+  const { identifierBase = 0 } = vatParameters;
   const state = makeState(identifierBase);
   const stateKit = makeStateKit(state);
   const clistKit = makeCListKit(state, syscall, stateKit);
