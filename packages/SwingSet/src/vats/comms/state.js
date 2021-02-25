@@ -22,14 +22,14 @@ const KERNEL = 'kernel';
 // record the new `p+NN` value anywhere. The counter we use for allocation
 // will continue on to the next higher NN.
 
-export function makeState() {
+export function makeState(identifierBase = 0) {
   const state = {
     nextRemoteIndex: 1,
     remotes: new Map(), // remoteNN -> { remoteID, name, fromRemote/toRemote, etc }
     names: new Map(), // name -> remoteNN
 
     // we allocate `o+NN` with this counter
-    nextObjectIndex: 10,
+    nextObjectIndex: identifierBase + 10,
     remoteReceivers: new Map(), // o+NN -> remoteNN, for admin rx objects
     objectTable: new Map(), // o+NN -> owning remote for non-admin objects
 
@@ -38,7 +38,8 @@ export function makeState() {
     // decider is one of: remoteID, 'kernel', 'comms'
     // once resolved, -> { resolved, resolution }
     // where resolution takes the form: {rejected, data}
-    nextPromiseIndex: 20,
+    nextPromiseIndex: identifierBase + 20,
+    identifierBase,
   };
 
   return state; // mutable
