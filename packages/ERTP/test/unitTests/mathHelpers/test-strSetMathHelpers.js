@@ -88,11 +88,7 @@ test('strSetMathHelpers', t => {
   t.deepEqual(getValue(make(harden(['1']))), ['1']);
 
   // getEmpty
-  t.deepEqual(
-    getEmpty(),
-    Data({ brand: mockBrand, value: [] }),
-    `empty is []`,
-  );
+  t.deepEqual(getEmpty(), Data({ brand: mockBrand, value: [] }), `empty is []`);
 
   t.assert(
     isEmpty(Data({ brand: mockBrand, value: [] })),

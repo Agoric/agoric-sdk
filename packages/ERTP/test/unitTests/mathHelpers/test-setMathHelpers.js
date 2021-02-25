@@ -124,11 +124,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
 
   // getEmpty
-  t.deepEqual(
-    getEmpty(),
-    Data({ brand: mockBrand, value: [] }),
-    `empty is []`,
-  );
+  t.deepEqual(getEmpty(), Data({ brand: mockBrand, value: [] }), `empty is []`);
 
   // isEmpty
   t.assert(isEmpty(make(harden([]))), `isEmpty([]) is true`);
