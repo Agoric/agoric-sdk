@@ -16,19 +16,10 @@
  *   collateral on liquidation.
  */
 
-/** @typedef {bigint} InterestRate
- *
- *   The rate in basis points that will be multiplied with the debt on
- *   every period to compound interest.
- */
-
 /**
  * @typedef LoanTerms
  *
- * @property {Percent} mmr - Maintenance Margin Requirement, a Percent object.
- * Default is 150%. Percents are deprecated. This value will be dropped by Beta
- *
- * @property {Ratio} mmrRatio - Maintenance Margin Requirement, a Ratio record.
+ * @property {Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
  * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
@@ -40,8 +31,10 @@
  *
  * @property {PeriodNotifier} periodNotifier
  *
- * @property {InterestRate} interestRate
- *
+ * @property {Ratio} interestRate
+ *   The rate in basis points that will be multiplied with the debt on
+ *   every period to compound interest.
+ 
  * @property {RelativeTime} interestPeriod
  */
 
@@ -176,7 +169,7 @@
  *
  *   The AsyncIterable to notify when a period has occurred
  *
- * @property {bigint} interestRate
+ * @property {Ratio} interestRate
  * @property {RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate

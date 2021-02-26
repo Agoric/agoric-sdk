@@ -28,7 +28,7 @@ import buildManualTimer from '../../../../tools/manualTimer';
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
-import { makePercent } from '../../../../src/contractSupport/percentMath';
+import { makeRatio } from '../../../../src/contractSupport';
 
 const setupBorrow = async (maxLoanValue = 100) => {
   const setup = await setupLoanUnitTest();
@@ -41,11 +41,7 @@ const setupBorrow = async (maxLoanValue = 100) => {
     { Loan: loanKit.mint.mintPayment(maxLoan) },
   );
 
-  // TODO(hibbert): mmr is deprecated. replace with mmrRatio. mmr remains here
-  // to test backward compatibility
-  const mmr = makePercent(150, loanKit.amountMath);
-  // const mmrRatio = makeRatio(150, loanKit.brand);
-
+  const mmr = makeRatio(150, loanKit.brand);
   const priceList = [2, 1, 1, 1];
   const timer = buildManualTimer(console.log);
 
@@ -149,7 +145,7 @@ test('borrow not enough collateral', async t => {
   const { borrowSeat } = await setupBorrowFacet(0);
   await t.throwsAsync(() => E(borrowSeat).getOfferResult(), {
     message:
-      'The required margin is approximately (a bigint)% but collateral only had value of (a bigint)',
+      'The required margin is (a bigint)% but collateral only had value of (a bigint)',
   });
 });
 
@@ -359,7 +355,7 @@ test('borrow collateral just too low', async t => {
   const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74);
   await t.throwsAsync(() => E(borrowSeatBad).getOfferResult(), {
     message:
-      'The required margin is approximately (a bigint)% but collateral only had value of (a bigint)',
+      'The required margin is (a bigint)% but collateral only had value of (a bigint)',
   });
 });
 

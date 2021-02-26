@@ -43,6 +43,7 @@ test('ratio - basic', t => {
   amountsEqual(t, multiplyBy(moe(13333333), halfDefault), moe(6666666), brand);
   amountsEqual(t, multiplyBy(moe(1333), halfPrecise), moe(666), brand);
   amountsEqual(t, multiplyBy(moe(13333333), halfPrecise), moe(6666666), brand);
+  amountsEqual(t, multiplyBy(moe(0), halfPrecise), moe(0), brand);
 });
 
 test('ratio - multiplyBy non Amount', t => {
@@ -119,6 +120,7 @@ test('ratio division', t => {
   const twoFifths = makeRatioFromAmounts(moe(2), moe(5));
   amountsEqual(t, divideBy(moe(100), twoFifths), moe(250), moeBrand);
   amountsEqual(t, multiplyBy(moe(100), twoFifths), moe(40), moeBrand);
+  amountsEqual(t, divideBy(moe(0), twoFifths), moe(0), moeBrand);
 });
 
 test('ratio inverse', t => {

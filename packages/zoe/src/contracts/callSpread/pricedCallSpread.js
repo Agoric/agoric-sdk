@@ -154,7 +154,7 @@ const start = zcf => {
   //  rather than percent
   function makeInvitationPair(longCollateralShare) {
     const longPercent = makeRatio(
-      longCollateralShare * PERCENT_BASE,
+      (longCollateralShare * BASIS_POINTS) / PERCENT_BASE,
       collateralMath.getBrand(),
       BASIS_POINTS,
     );

@@ -20,21 +20,13 @@ import { makeAddCollateralInvitation } from './addCollateral';
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {
   const {
-    mmr, // Maintenance Margin Requirement, as a Percent (deprecated)
+    mmr, // Maintenance Margin Requirement, as a Ratio
     priceAuthority,
     periodNotifier,
     interestRate,
     interestPeriod,
     lenderSeat,
   } = config;
-
-  // TODO(hibbert) drop mmr as Percent before Beta
-  let {
-    mmrRatio, // Maintenance Margin Requirement, as a ratio
-  } = config;
-  if (!mmrRatio) {
-    mmrRatio = mmr.makeRatio();
-  }
 
   // We can only lend what the lender has already escrowed.
   const maxLoan = lenderSeat.getAmountAllocated('Loan');
@@ -57,22 +49,14 @@ export const makeBorrowInvitation = (zcf, config) => {
       collateralGiven,
       loanBrand,
     );
-    // AWAIT ///
 
     const collateralPriceInLoanBrand = getAmountOut(quote);
 
-    // formula: assert collateralValue*100 >= loanWanted*mmrRatio
-
-    // Calculate approximate value just for the error message if needed
-    const approxForMsg = multiplyBy(loanWanted, mmrRatio);
-
     // Assert the required collateral was escrowed.
+    const requiredMargin = multiplyBy(loanWanted, mmr);
     assert(
-      loanMath.isGTE(
-        loanMath.make(collateralPriceInLoanBrand.value),
-        multiplyBy(loanWanted, mmrRatio),
-      ),
-      X`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
+      loanMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
+      X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
 
     // Assert that the collateralGiven has not changed after the AWAIT

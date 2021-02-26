@@ -4,15 +4,14 @@ import '../../../exported';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 
-import { assertIssuerKeywords } from '../../contractSupport';
+import { assertIssuerKeywords, makeRatio } from '../../contractSupport';
 import { makeLendInvitation } from './lend';
-import { makePercent } from '../../contractSupport/percentMath';
 
 /**
  * Add collateral of a particular brand and get a loan of another
  * brand. Collateral (also known as margin) must be greater than the
  * loan value, at an amount set by the Maintenance Margin Requirement
- * (mmrRatio) in the terms of the contract. The loan does not have a
+ * (mmr) in the terms of the contract. The loan does not have a
  * distinct end time. Rather, if the value of the collateral changes
  * such that insufficient margin is provided, the collateral is
  * liquidated, and the loan is closed. At any time, the borrower can
@@ -27,12 +26,10 @@ import { makePercent } from '../../contractSupport/percentMath';
  * loaned amount and interest must be of the same (separate) brand.
  *
  * Terms:
- *  * mmr (default = 150) - the Maintenance Margin Requirement, as a Percent.
- *    This value is deprecated and will be dropped before Beta.
- *  * mmrRatio (default = 150) - the Maintenance Margin Requirement, as a
+ *  * mmr (default = 150) - the Maintenance Margin Requirement, as a
  *    ratio. The default is 1.5, meaning that collateral should be
  *    worth at least 150% of the loan. If the value of the collateral
- *    drops below mmrRatio, liquidation occurs.
+ *    drops below mmr, liquidation occurs.
  *  * priceAuthority - will be used for getting the current value of
  *    collateral and setting liquidation triggers.
  *  * autoswapInstance - The running contract instance for an Autoswap
@@ -64,19 +61,13 @@ const start = async zcf => {
   // some defaults and add them to a contract-wide config.
 
   const {
-    mmr = makePercent(150n, loanMath), // Maintenance Margin Requirement
+    mmr = makeRatio(150n, loanMath), // Maintenance Margin Requirement
     autoswapInstance,
     priceAuthority,
     periodNotifier,
     interestRate,
     interestPeriod,
   } = zcf.getTerms();
-
-  // TODO(hibbert) drop mmr as Percent before Beta
-  let { mmrRatio } = zcf.getTerms();
-  if (!mmrRatio) {
-    mmrRatio = mmr.makeRatio();
-  }
 
   assert(autoswapInstance, X`autoswapInstance must be provided`);
   assert(priceAuthority, X`priceAuthority must be provided`);
@@ -87,7 +78,6 @@ const start = async zcf => {
   /** @type {LoanTerms} */
   const config = {
     mmr,
-    mmrRatio,
     autoswapInstance,
     priceAuthority,
     periodNotifier,

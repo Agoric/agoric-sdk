@@ -60,7 +60,7 @@ test('loan - lend - exit before borrow', async t => {
   const { notifier: periodNotifier } = makeNotifierKit();
 
   const terms = {
-    mmrRatio: makeRatio(150, loanKit.brand),
+    mmr: makeRatio(150, loanKit.brand),
     autoswapInstance,
     priceAuthority,
     periodNotifier,

@@ -6,7 +6,7 @@ import { makeRatio } from '../../contractSupport';
 import { oneMinus, make100Percent, make0Percent } from './percent';
 
 /**
- * Calculate the portion (as a percentage) of the collateral that should be
+ * Calculate the portion (as a Ratio) of the collateral that should be
  * allocated to the long side of a call spread contract. price gives the value
  * of the underlying asset at closing that determines the payouts to the parties
  *

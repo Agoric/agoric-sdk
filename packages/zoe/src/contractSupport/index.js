@@ -43,5 +43,4 @@ export {
   divideBy,
   assertIsRatio,
   invertRatio,
-  multiplyRatios,
 } from './ratio';

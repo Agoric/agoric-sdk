@@ -18,20 +18,12 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
     mmr,
   } = configWithBorrower;
 
-  // TODO(hibbert) drop mmr as Percent before Beta
-  let {
-    mmrRatio, // Maintenance Margin Requirement, as a ratio
-  } = configWithBorrower;
-  if (!mmrRatio) {
-    mmrRatio = mmr.makeRatio();
-  }
-
   const currentDebt = getDebt();
 
   // The liquidationTriggerValue is when the value of the collateral
-  // equals mmrRatio of the current debt
-  // Formula: liquidationTriggerValue = (currentDebt * mmrRatio) / 100
-  const liquidationTriggerValue = multiplyBy(currentDebt, mmrRatio);
+  // equals mmr of the current debt
+  // Formula: liquidationTriggerValue = (currentDebt * mmr)
+  const liquidationTriggerValue = multiplyBy(currentDebt, mmr);
 
   const collateralMath = zcf.getTerms().maths.Collateral;
 

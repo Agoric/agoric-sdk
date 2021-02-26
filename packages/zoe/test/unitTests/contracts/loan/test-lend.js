@@ -16,7 +16,7 @@ test('makeLendInvitation', async t => {
   const { zcf, zoe, loanKit } = await setupLoanUnitTest();
 
   const config = {
-    mmrRatio: makeRatio(150, loanKit.brand),
+    mmr: makeRatio(150, loanKit.brand),
   };
   const lendInvitation = makeLendInvitation(zcf, config);
 

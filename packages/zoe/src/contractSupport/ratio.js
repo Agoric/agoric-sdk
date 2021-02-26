@@ -79,7 +79,8 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 export const multiplyBy = (amount, ratio) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
   // coerce amount using a native amountMath operation.
-  assert(amount.value && amount.brand, X`Expected an amount: ${amount}`);
+  assert(amount.brand, X`Expected an amount: ${amount}`);
+  Nat(amount.value);
 
   assertIsRatio(ratio);
   assert(
@@ -105,7 +106,8 @@ export const multiplyBy = (amount, ratio) => {
 export const divideBy = (amount, ratio) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
   // coerce amount using a native amountMath operation.
-  assert(amount.value && amount.brand, X`Expected an amount: ${amount}`);
+  assert(amount.brand, X`Expected an amount: ${amount}`);
+  Nat(amount.value);
 
   assertIsRatio(ratio);
   assert(

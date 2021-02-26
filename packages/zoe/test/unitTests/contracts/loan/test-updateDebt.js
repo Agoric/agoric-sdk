@@ -9,16 +9,17 @@ import test from 'ava';
 
 import { calculateInterest } from '../../../../src/contracts/loan/updateDebt';
 import { makeRatio } from '../../../../src/contractSupport';
-
-const FAKE_BRAND = 'FAKE';
+import { setup } from '../../setupBasicMints';
 
 test('test calculateInterest', async t => {
+  const { brands } = setup();
+  const brand = brands.get('moola');
   const testCalculateInterest = ([oldDebt, interestRate, expected]) => {
-    const debt = { brand: FAKE_BRAND, value: oldDebt };
-    const interestRateRatio = makeRatio(interestRate, FAKE_BRAND, 10000);
+    const debt = { brand, value: oldDebt };
+    const interestRateRatio = makeRatio(interestRate, brand, 10000);
     const interest = calculateInterest(debt, interestRateRatio);
     t.is(interest.value, expected);
-    t.is(interest.brand, FAKE_BRAND);
+    t.is(interest.brand, brand);
   };
 
   const expectations = [
