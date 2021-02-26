@@ -1013,7 +1013,7 @@ export function makeMarshal(
             assert.typeof(
               name,
               'string',
-              X`String-named property ${name} of ${rawTree} not allowed`,
+              X`Property ${name} of ${rawTree} must be a string`,
             );
             result[name] = fullRevive(rawTree[name]);
           }
