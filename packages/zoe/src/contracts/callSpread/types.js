@@ -55,6 +55,7 @@
  * @typedef {Object} Percent
  * @property {Scale} scale
  * @property {() => Percent} complement
+ * @property {() => Ratio} makeRatio
  */
 
 /**
@@ -82,4 +83,22 @@
  * @param {Amount} strikePrice1
  * @param {Amount} strikePrice2
  * @returns {CalculateSharesReturn  }
+ */
+
+/**
+ * @callback oneMinus
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback Make100Percent
+ * @param {Brand} brand
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback Make0Percent
+ * @param {Brand} brand
+ * @returns {Ratio}
  */

@@ -4,6 +4,7 @@ import './types';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
+import { makeRatio } from './ratio';
 
 const { multiply, floorDivide } = natSafeMath;
 
@@ -20,7 +21,10 @@ const { multiply, floorDivide } = natSafeMath;
 // with the same units. If you divide gallons by miles, the result is not a
 // percentage.
 
-/** @type {MakePercent} */
+/**
+ * @deprecated use Ratio instead
+ * @type {MakePercent}
+ */
 function makePercent(value, amountMath, base = 100n) {
   Nat(value);
   return harden({
@@ -35,6 +39,8 @@ function makePercent(value, amountMath, base = 100n) {
       assert(value <= base, X`cannot take complement when > 100%.`);
       return makePercent(base - value, amountMath, base);
     },
+    // Percent is deprecated. This method supports migration.
+    makeRatio: _ => makeRatio(value, amountMath.getBrand(), base),
   });
 }
 harden(makePercent);
