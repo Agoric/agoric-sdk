@@ -128,7 +128,7 @@ export const makeBorrowInvitation = (zcf, config) => {
       getDebt,
       getDebtNotifier,
       getLastCalculationTimestamp,
-    } = await makeDebtCalculator(harden(debtCalculatorConfig));
+    } = makeDebtCalculator(harden(debtCalculatorConfig));
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {
