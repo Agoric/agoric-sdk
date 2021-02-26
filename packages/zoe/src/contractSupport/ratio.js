@@ -68,13 +68,6 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
   // coerce amounts using a native amountMath operation.
 
-  assert(
-    denominatorAmount.value > 0,
-    X`No infinite ratios! Denoninator was 0/${q(
-      denominatorAmount.brand.getAllegedName(),
-    )}`,
-  );
-
   return makeRatio(
     Nat(numeratorAmount.value),
     numeratorAmount.brand,
