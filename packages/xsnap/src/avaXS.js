@@ -180,9 +180,12 @@ async function main(
       stderr: 'inherit',
     });
 
-  // we only use import() in type annotations
-  const hideImport = (/** @type { string } */ src) =>
-    src.replace(/import\(/g, '');
+  /**
+   * we only use import() in type annotations
+   *
+   * @param { string } src
+   */
+  const hideImport = src => src.replace(/import\(/g, '');
 
   const preamble = [
     await asset(SESboot, readFile),
