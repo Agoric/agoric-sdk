@@ -13,9 +13,6 @@ const { freeze, keys } = Object;
  *
  * @type {(x: unknown, y: unknown) => Delta }
  * @typedef { null | { actual: unknown, expected?: unknown }} Delta
- * @throws { NotEqualError } when non-primitive objects differ
- *         with some details the difference;
- *         for example, what property is missing.
  */
 function deepDifference(x, y) {
   if (Object.is(x, y)) {
