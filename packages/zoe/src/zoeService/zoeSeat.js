@@ -4,7 +4,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, Data } from '@agoric/marshal';
 import { objectMap } from '../objArrayConversion';
 
 import '../types';

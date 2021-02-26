@@ -140,7 +140,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         keywords,
       );
 
-      let instanceRecord = {
+      let instanceRecord = Data({
         installation,
         terms: {
           ...customTerms,
@@ -148,7 +148,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           brands,
           maths,
         },
-      };
+      });
 
       const createVatResultP = zcfBundleName
         ? E(vatAdminSvc).createVatByName(zcfBundleName)

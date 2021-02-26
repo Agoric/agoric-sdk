@@ -162,5 +162,5 @@ export const cleanProposal = (getAmountMath, proposal) => {
     );
   });
 
-  return harden({ want, give, exit });
+  return Data({ want, give, exit });
 };

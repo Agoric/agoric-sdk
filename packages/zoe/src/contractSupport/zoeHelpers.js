@@ -9,6 +9,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { MathKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
+import { Data } from '@agoric/marshal';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -408,7 +409,7 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
  * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
  * ZCF
  */
-export async function saveAllIssuers(zcf, issuerKeywordRecord = {}) {
+export async function saveAllIssuers(zcf, issuerKeywordRecord = Data({})) {
   const { issuers } = zcf.getTerms();
   const issuersPSaved = Object.entries(issuerKeywordRecord).map(
     ([keyword, issuer]) => {

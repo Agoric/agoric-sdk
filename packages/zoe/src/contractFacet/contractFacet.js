@@ -10,7 +10,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
-import { Far, Data } from '@agoric/marshal';
+import { Far, Data, passStyleOf } from '@agoric/marshal';
 
 import { makeAmountMath, MathKind } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
@@ -148,7 +148,10 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = Data({});
-      const proposal = cleanProposal(getAmountMath, Data({ exit }));
+      // const proposal = cleanProposal(getAmountMath, Data({ exit
+      // }));
+      // TODO: figure out why this wasn't working
+      const proposal = Data({ exit: { onDemand: null } });
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -451,7 +454,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           zcfSeatAdmin,
         );
         /** @type {AddSeatResult} */
-        return harden({ offerResultP, exitObj });
+        return Data({ offerResultP, exitObj });
       },
     });
 
@@ -465,14 +468,20 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     /** @type {Promise<ExecuteContractResult>} */
     const result = E(contractCode)
       .start(zcf)
-      .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
-        return harden({
-          creatorFacet,
-          publicFacet,
-          creatorInvitation,
-          addSeatObj,
-        });
-      });
+      .then(
+        ({
+          creatorFacet = Data({}),
+          publicFacet = Data({}),
+          creatorInvitation = undefined,
+        }) => {
+          return Data({
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+            addSeatObj,
+          });
+        },
+      );
     // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
     // This does not suppress any error messages.
     result.catch(() => {});
