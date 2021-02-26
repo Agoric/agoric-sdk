@@ -4,6 +4,7 @@
 
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import {
   makeAsyncIterableFromNotifier,
   observeIteration,
@@ -68,7 +69,7 @@ export const makeNotifierKit = (...args) => {
     },
   });
 
-  const notifier = harden({
+  const notifier = Far('notifier', {
     ...makeNotifier(baseNotifier),
     // TODO stop exposing baseNotifier methods directly
     ...baseNotifier,

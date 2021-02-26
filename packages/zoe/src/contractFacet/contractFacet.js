@@ -355,7 +355,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       makeInvitation: (
         offerHandler = () => {},
         description,
-        customProperties = {},
+        customProperties = Data({}),
       ) => {
         assert.typeof(
           description,

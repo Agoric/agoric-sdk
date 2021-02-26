@@ -37,6 +37,7 @@
   "dependencies": {
     "@agoric/assert": "^0.2.2",
     "@agoric/eventual-send": "^0.13.2",
+    "@agoric/marshal": "^0.3.2-dev.0",
     "@agoric/promise-kit": "^0.2.2"
   },
   "devDependencies": {

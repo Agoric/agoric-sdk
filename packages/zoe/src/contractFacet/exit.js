@@ -49,9 +49,9 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
     // only allows two kinds of objects: records (no methods and only
     // data) and presences (local proxies for objects that may have
     // methods).
-    exitObj = {
+    exitObj = Far('exitObj', {
       exit: exitFn,
-    };
+    });
   } else {
     // if exitKind is 'waived' the user has no ability to exit their seat
     // on demand

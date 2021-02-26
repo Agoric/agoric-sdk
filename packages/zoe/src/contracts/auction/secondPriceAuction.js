@@ -94,7 +94,7 @@ const start = zcf => {
 
     // The bid invitations can only be sent out after the assets to be
     // auctioned are escrowed.
-    return harden({ makeBidInvitation });
+    return Far('offerResult', { makeBidInvitation });
   };
 
   const creatorInvitation = zcf.makeInvitation(sell, 'sellAssets');

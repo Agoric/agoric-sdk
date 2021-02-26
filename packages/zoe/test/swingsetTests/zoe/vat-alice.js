@@ -505,7 +505,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
       want: { StrikePrice: simoleans(7) },
-      exit: { afterDeadline: { timer: {}, deadline: 1n } },
+      exit: { afterDeadline: { timer: Far({}), deadline: 1n } },
     });
 
     const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
