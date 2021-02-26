@@ -210,12 +210,17 @@ function makeTester(htest, out) {
     }
   }
 
-  function truthy(/** @type {unknown} */ value, msg = 'should be truthy') {
+  /**
+   * @param {unknown} value
+   * @param {string=} msg
+   */
+  function truthy(value, msg = 'should be truthy') {
     assert(!!value, msg);
   }
 
   const t = freeze({
-    plan(/** @type {number} */ count) {
+    /** @param {number} count */
+    plan(count) {
       pending = count;
     },
     get pending() {
@@ -224,21 +229,35 @@ function makeTester(htest, out) {
     get context() {
       return htest.context;
     },
-    pass(/** @type {string} */ message) {
+    /** @param {string} message */
+    pass(message) {
       assert(true, message);
     },
-    fail(/** @type {string} */ message) {
+    /** @param {string} message */
+    fail(message) {
       assert(false, message);
     },
     assert,
     truthy,
-    falsy(/** @type {unknown} */ value, message = 'should be falsy') {
+    /**
+     * @param {unknown} value
+     * @param {string=} message
+     */
+    falsy(value, message = 'should be falsy') {
       assert(!value, message);
     },
-    true(/** @type {unknown} */ value, message = 'should be true') {
+    /**
+     * @param {unknown} value
+     * @param {string=} message
+     */
+    true(value, message = 'should be true') {
       assert(value === true, message);
     },
-    false(/** @type {unknown} */ value, message = 'should be false') {
+    /**
+     * @param {unknown} value
+     * @param {string=} message
+     */
+    false(value, message = 'should be false') {
       assert(value === false, message);
     },
     /** @type {(a: unknown, b: unknown, message?: string) => void} */
