@@ -1010,7 +1010,11 @@ export function makeMarshal(
           result = Data(result);
         } else {
           for (const name of names) {
-            assert.typeof(name, 'string');
+            assert.typeof(
+              name,
+              'string',
+              X`String-named property ${name} of ${rawTree} not allowed`,
+            );
             result[name] = fullRevive(rawTree[name]);
           }
         }
