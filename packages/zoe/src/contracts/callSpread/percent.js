@@ -1,3 +1,5 @@
+// @ts-check
+
 // some tools to make treating ratios as percents easier
 
 import { assert, details as X } from '@agoric/assert';

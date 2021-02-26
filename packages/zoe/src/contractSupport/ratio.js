@@ -1,3 +1,5 @@
+// @ts-check
+
 import './types';
 import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
@@ -25,7 +27,7 @@ const PERCENT = 100n;
 
 const ratioPropertyNames = ['numerator', 'denominator'];
 
-export function assertIsRatio(ratio) {
+export const assertIsRatio = ratio => {
   const propertyNames = Object.getOwnPropertyNames(ratio);
   assert(
     propertyNames.length === 2,
@@ -39,44 +41,65 @@ export function assertIsRatio(ratio) {
   }
   Nat(ratio.numerator.value);
   Nat(ratio.denominator.value);
-}
+};
 
-export function makeRatio(
+export const makeRatio = (
   numerator,
   numeratorBrand,
   denominator = PERCENT,
   denominatorBrand = numeratorBrand,
-) {
-  assert(denominator > 0n, X`No infinite ratios!`);
+) => {
+  assert(
+    denominator > 0n,
+    X`No infinite ratios! Denoninator was 0/${q(
+      denominatorBrand.getAllegedName(),
+    )}`,
+  );
 
+  // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
+  //  use amountMath's constructor here rather than building the record directly
   return harden({
     numerator: { value: Nat(numerator), brand: numeratorBrand },
     denominator: { value: Nat(denominator), brand: denominatorBrand },
   });
-}
+};
 
-export function makeRatioFromAmounts(numeratorAmount, denominatorAmount) {
-  assert(denominatorAmount.value > 0, X`No infinite ratios!`);
+export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
+  // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
+  // coerce amounts using a native amountMath operation.
 
-  return harden({
-    numerator: {
-      value: Nat(numeratorAmount.value),
-      brand: numeratorAmount.brand,
-    },
-    denominator: {
-      value: Nat(denominatorAmount.value),
-      brand: denominatorAmount.brand,
-    },
-  });
-}
+  assert(
+    denominatorAmount.value > 0,
+    X`No infinite ratios! Denoninator was 0/${q(
+      denominatorAmount.brand.getAllegedName(),
+    )}`,
+  );
 
-export function multiplyBy(amount, ratio) {
+  return makeRatio(
+    Nat(numeratorAmount.value),
+    numeratorAmount.brand,
+    Nat(denominatorAmount.value),
+    denominatorAmount.brand,
+  );
+};
+
+export const multiplyBy = (amount, ratio) => {
+  // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
+  // coerce amount using a native amountMath operation.
+  assert(amount.value && amount.brand, X`Expected an amount: ${amount}`);
+
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.denominator.brand,
-    X`amount's brand ${amount.brand} must match ratio's denominator ${ratio.denominator.brand}`,
+    X`amount's brand ${q(
+      amount.brand.getAllegedName(),
+    )} must match ratio's denominator ${q(
+      ratio.denominator.brand.getAllegedName(),
+    )}`,
   );
 
+  // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
+  //  use amountMath's constructor here rather than building the record directly
   return harden({
     value: floorDivide(
       multiply(amount.value, ratio.numerator.value),
@@ -84,14 +107,25 @@ export function multiplyBy(amount, ratio) {
     ),
     brand: ratio.numerator.brand,
   });
-}
+};
 
-export function divideBy(amount, ratio) {
+export const divideBy = (amount, ratio) => {
+  // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
+  // coerce amount using a native amountMath operation.
+  assert(amount.value && amount.brand, X`Expected an amount: ${amount}`);
+
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.numerator.brand,
-    X`amount's brand ${amount.brand} must match ratio's numerator ${ratio.numerator.brand}`,
+    X`amount's brand ${q(
+      amount.brand.getAllegedName(),
+    )} must match ratio's numerator ${q(
+      ratio.numerator.brand.getAllegedName(),
+    )}`,
   );
+
+  // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
+  //  use amountMath's constructor here rather than building the record directly
   return harden({
     value: floorDivide(
       multiply(amount.value, ratio.denominator.value),
@@ -99,9 +133,9 @@ export function divideBy(amount, ratio) {
     ),
     brand: ratio.denominator.brand,
   });
-}
+};
 
-export function invertRatio(ratio) {
+export const invertRatio = ratio => {
   assertIsRatio(ratio);
 
   return makeRatio(
@@ -110,26 +144,4 @@ export function invertRatio(ratio) {
     ratio.numerator.value,
     ratio.numerator.brand,
   );
-}
-
-export function multiplyRatios(ratioA, ratioB) {
-  assertIsRatio(ratioA);
-  assertIsRatio(ratioB);
-
-  if (ratioA.numerator.brand === ratioB.denominator.brand) {
-    return makeRatio(
-      multiply(ratioA.numerator.value, ratioB.numerator.value),
-      ratioB.numerator.brand,
-      multiply(ratioA.denominator.value, ratioB.denominator.value),
-      ratioA.denominator.brand,
-    );
-  } else if (ratioA.denominator.brand === ratioB.numerator.brand) {
-    return makeRatio(
-      multiply(ratioA.numerator.value, ratioB.numerator.value),
-      ratioA.numerator.brand,
-      multiply(ratioA.denominator.value, ratioB.denominator.value),
-      ratioB.denominator.brand,
-    );
-  }
-  assert.fail(X`Ratios must have a common unit`);
-}
+};

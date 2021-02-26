@@ -21,7 +21,10 @@ const { multiply, floorDivide } = natSafeMath;
 // with the same units. If you divide gallons by miles, the result is not a
 // percentage.
 
-/** @type {MakePercent} */
+/**
+ * @deprecated use Ratio instead
+ * @type {MakePercent}
+ */
 function makePercent(value, amountMath, base = 100n) {
   Nat(value);
   return harden({
@@ -37,9 +40,7 @@ function makePercent(value, amountMath, base = 100n) {
       return makePercent(base - value, amountMath, base);
     },
     // Percent is deprecated. This method supports migration.
-    makeRatio: _ => {
-      return makeRatio(value, amountMath.getBrand(), base);
-    },
+    makeRatio: _ => makeRatio(value, amountMath.getBrand(), base),
   });
 }
 harden(makePercent);

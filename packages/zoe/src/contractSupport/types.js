@@ -162,10 +162,3 @@
  * @param {Ratio} ratio
  * @returns {Ratio}
  */
-
-/**
- * @callback MultiplyRatios
- * @param {Ratio} ratioA
- * @param {Ratio} ratioB
- * @returns {Ratio}
- */

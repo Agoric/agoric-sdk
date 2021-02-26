@@ -1,3 +1,5 @@
+// @ts-check
+
 import '@agoric/install-ses';
 import test from 'ava';
 import { makeIssuerKit } from '@agoric/ertp';
