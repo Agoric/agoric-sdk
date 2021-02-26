@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { observeIteration, observeIterator } from '../src/index';
 
-import '@agoric/marshal';
+import '@agoric/marshal/exported';
 import '../src/types';
 
 const obj = harden({});
