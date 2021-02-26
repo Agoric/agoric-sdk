@@ -1,6 +1,6 @@
 /* set up globalThis.handleCommand for running test scripts
 
-This is run using xsnap.evaluate() from avaXS.js .
+See avaXS.js for the way this is run inside an xsnap process.
 
 issueCommand is provided by xsnap.
 test global is defined in avaAssertXS.js .
