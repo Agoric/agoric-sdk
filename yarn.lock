@@ -1667,7 +1667,7 @@ acorn-node@^1.6.1:
   resolved "https://registry.yarnpkg.com/acorn-node/-/acorn-node-1.8.2.tgz#114c95d64539e53dede23de8b9d96df7c7ae2af8"
   integrity sha512-8mt+fslDufLYntIoPAaIMUe/lrbrehIiwmR3t2k9LljIzoigEPF27eLk2hy8zSGzmR/ogr7zbRKINMo1u0yh5A==
   dependencies:
-    acorn "^7.0.0"
+    acorn "^8.0.1"
     acorn-walk "^7.0.0"
     xtend "^4.0.2"
 
@@ -4203,7 +4203,7 @@ espree@^6.1.2:
   resolved "https://registry.yarnpkg.com/espree/-/espree-6.1.2.tgz#6c272650932b4f91c3714e5e7b5f5e2ecf47262d"
   integrity sha512-2iUPuuPP+yW1PZaMSDM9eyVf8D5P0Hi8h83YtZ5bPc/zHYjII5khoixIUTMO794NOY8F/ThF1Bo8ncZILarUTA==
   dependencies:
-    acorn "^7.1.0"
+    acorn "^8.0.1"
     acorn-jsx "^5.1.0"
     eslint-visitor-keys "^1.1.0"
 
@@ -9052,7 +9052,7 @@ rollup@1.31.0:
   dependencies:
     "@types/estree" "*"
     "@types/node" "*"
-    acorn "^7.1.0"
+    acorn "^8.0.1"
 
 rollup@^1.16.6, rollup@^1.16.7, rollup@^1.2.2, rollup@^1.23.1, rollup@^1.26.2:
   version "1.27.5"
@@ -9061,7 +9061,7 @@ rollup@^1.16.6, rollup@^1.16.7, rollup@^1.2.2, rollup@^1.23.1, rollup@^1.26.2:
   dependencies:
     "@types/estree" "*"
     "@types/node" "*"
-    acorn "^7.1.0"
+    acorn "^8.0.1"
 
 rollup@^1.32.0:
   version "1.32.0"
@@ -9070,7 +9070,7 @@ rollup@^1.32.0:
   dependencies:
     "@types/estree" "*"
     "@types/node" "*"
-    acorn "^7.1.0"
+    acorn "^8.0.1"
 
 rollup@^2.3.4:
   version "2.23.0"
