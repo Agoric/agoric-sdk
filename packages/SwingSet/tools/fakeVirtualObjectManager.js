@@ -30,20 +30,26 @@ export function makeFakeVirtualObjectManager(cacheSize = 100) {
   }
 
   const valToSlot = new WeakMap();
+  const slotToVal = new Map();
 
   function fakeConvertValToSlot(val) {
+    if (!valToSlot.has(val)) {
+      const slot = `o+${fakeAllocateExportID()}`;
+      valToSlot.set(val, slot);
+      slotToVal.set(slot, val);
+    }
     return valToSlot.get(val);
   }
 
   function fakeConvertSlotToVal(slot) {
     const { type, virtual } = parseVatSlot(slot);
-    assert(
-      virtual,
-      'fakeConvertSlotToVal only works with virtual object references',
-    );
     assert.equal(type, 'object');
-    // eslint-disable-next-line no-use-before-define
-    return makeVirtualObjectRepresentative(slot);
+    if (virtual) {
+      // eslint-disable-next-line no-use-before-define
+      return makeVirtualObjectRepresentative(slot);
+    } else {
+      return slotToVal.get(slot);
+    }
   }
 
   // eslint-disable-next-line no-use-before-define
