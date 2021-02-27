@@ -85,7 +85,7 @@ const setupBorrow = async (
     makeAddCollateralInvitation,
     periodNotifier,
     interestRate,
-    interestPeriod: 5,
+    interestPeriod: 5n,
   };
   const borrowInvitation = makeBorrowInvitation(zcf, config);
   return {
@@ -303,7 +303,7 @@ test('getDebtNotifier with interest', async t => {
     zoe,
     loanKit,
   } = await setupBorrowFacet(100000, 40000);
-  periodUpdater.updateState(0);
+  periodUpdater.updateState(0n);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
 
@@ -391,7 +391,7 @@ test('aperiodic interest', async t => {
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount1);
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16);
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
   t.deepEqual(debtCompounded2, loanKit.amountMath.make(40060));
 
   periodUpdater.updateState(21);
@@ -447,7 +447,7 @@ test('interest starting from non-zero time', async t => {
     updateCount,
   );
   t.deepEqual(debtCompounded2, loanKit.amountMath.make(40020));
-  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 9);
+  t.is(await E(borrowFacet).getLastCalculationTimestamp(), 9n);
 });
 
 // In this test, the updates are expected at multiples of 5, but they show up at

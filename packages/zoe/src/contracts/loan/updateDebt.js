@@ -2,11 +2,7 @@
 
 import '../../../exported';
 import { Far } from '@agoric/marshal';
-import {
-  makeNotifierKit,
-  // After #2511, replace with observeNotifier with swapped arguments
-  updateFromNotifier,
-} from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -59,22 +55,6 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const config = { ...configMinusGetDebt, getDebt };
 
-  const updateDebt = timestamp => {
-    let updatedLoan = false;
-    // we could calculate the number of required updates and multiply by a power
-    // of the interest rate, but this seems easier to read.
-    while (lastCalculationTimestamp + interestPeriod <= timestamp) {
-      lastCalculationTimestamp += interestPeriod;
-      const interest = calcInterestFn(debt, interestRatio);
-      debt = loanMath.add(debt, interest);
-      updatedLoan = true;
-    }
-    if (updatedLoan) {
-      debtNotifierUpdater.updateState(debt);
-      scheduleLiquidation(zcf, config);
-    }
-  };
-
   const periodObserver = harden({
     updateState: timestamp => {
       let updatedLoan = false;
@@ -100,7 +80,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     },
   });
 
-  updateFromNotifier(periodObserver, periodNotifier).catch(reason => {
+  observeNotifier(periodNotifier, periodObserver).catch(reason => {
     assert.note(
       reason,
       X`Unable to updateDebt originally: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
