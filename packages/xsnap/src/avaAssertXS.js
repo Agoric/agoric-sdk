@@ -339,6 +339,7 @@ function test(label, run, htestOpt) {
       await run(t);
       out.diagnostic('end', label);
     } catch (ex) {
+      console.log('FAIL (todo route console)', ex);
       t.fail(`${label} threw: ${ex.message}`);
     }
     const pending = t.pending;
