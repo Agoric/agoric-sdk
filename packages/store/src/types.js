@@ -1,3 +1,6 @@
+// eslint-disable-next-line spaced-comment
+/// <reference types="ses"/>
+
 /**
  * @typedef {Record<string, Function>} ExternalInstance
  */
