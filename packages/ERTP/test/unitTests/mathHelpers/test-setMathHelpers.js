@@ -4,15 +4,11 @@
 import test from 'ava';
 
 import { amountMath, MathKind } from '../../../src';
+import { mockBrand } from './mockBrand';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
-
-const mockBrand = harden({
-  isMyIssuer: () => false,
-  getAllegedName: () => 'mock',
-});
 
 const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   // a2 is a copy of a which should have the same values but not same
@@ -33,38 +29,38 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   // make
   t.deepEqual(
-    make(harden([a])),
+    make(harden([a]), mockBrand),
     { brand: mockBrand, value: [a] },
     `[a] is a valid set`,
   );
   t.deepEqual(
-    make(harden([a, b])),
+    make(harden([a, b]), mockBrand),
     { brand: mockBrand, value: [a, b] },
     `[a, b] is a valid set`,
   );
   t.deepEqual(
-    make(harden([])),
+    make(harden([]), mockBrand),
     { brand: mockBrand, value: [] },
     `[] is a valid set`,
   );
   t.throws(
-    () => make(harden([a, a])),
+    () => make(harden([a, a]), mockBrand),
     { message: /value has duplicates/ },
     `duplicates in make should throw`,
   );
   t.deepEqual(
-    make(harden(['a', 'b'])),
+    make(harden(['a', 'b']), mockBrand),
     { brand: mockBrand, value: ['a', 'b'] },
     'anything comparable is a valid element',
   );
   t.throws(
-    () => make(harden('a')),
+    () => make(harden('a'), mockBrand),
     { message: /list must be an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
     t.throws(
-      () => make(harden([a, a2])),
+      () => make(harden([a, a2]), mockBrand),
       { message: /value has duplicates/ },
       `data identity throws`,
     );

@@ -2,7 +2,8 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
-import { Nat } from '@agoric/nat';
+import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
+import { Nat, isNat } from '@agoric/nat';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
@@ -105,21 +106,58 @@ const noCoerceMake = (value, brand) => {
   return amount;
 };
 
+const assertLooksLikeValue = value => {
+  assert(
+    Array.isArray(value) || (typeof value === 'bigint' && isNat(value)),
+    X`value ${value} must be a Nat or an array`,
+  );
+};
+
+const brandMethods = ['isMyIssuer', 'getAllegedName', 'getDisplayInfo'];
+
+const assertLooksLikeBrand = brand => {
+  assert(
+    typeof brand === 'object',
+    X`The brand ${brand} doesn't look like a brand. Did you pass a value rather than an amount?`,
+  );
+  const ownKeys = Reflect.ownKeys(brand);
+  const inBrandMethods = key => brandMethods.includes(key);
+  assert(
+    passStyleOf(brand) === REMOTE_STYLE && ownKeys.every(inBrandMethods),
+    X`The brand ${brand} doesn't look like a brand. It has these keys: ${ownKeys}`,
+  );
+};
+
+const assertLooksLikeAmountBrand = amount => {
+  const deets = X`The brand in amount ${amount} doesn't look like a brand. Did you pass a value rather than an amount?`;
+  assert(typeof amount === 'object', deets);
+  const ownKeys = Reflect.ownKeys(amount.brand);
+  const inBrandMethods = key => brandMethods.includes(key);
+  assert(
+    passStyleOf(amount.brand) === REMOTE_STYLE && ownKeys.every(inBrandMethods),
+    deets,
+  );
+};
+
+const assertLooksLikeAmount = amount => {
+  assertLooksLikeAmountBrand(amount);
+  assertLooksLikeValue(amount.value);
+};
+
 /** @type {AmountMath} */
 const amountMath = {
   make: (allegedValue, brand) => {
     mustBeComparable(brand);
+    assertLooksLikeBrand(brand);
+    assertLooksLikeValue(allegedValue);
     const value = getHelpersFromValue(allegedValue).doCoerce(allegedValue);
     const amount = harden({ brand, value });
     return amount;
   },
   coerce: (allegedAmount, brand) => {
     mustBeComparable(brand);
+    assertLooksLikeAmount(allegedAmount);
     const { brand: allegedBrand, value } = allegedAmount;
-    assert(
-      allegedBrand !== undefined,
-      X`The brand in allegedAmount ${allegedAmount} is undefined. Did you pass a value rather than an amount?`,
-    );
     assert(
       brand === allegedBrand,
       X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
@@ -128,6 +166,7 @@ const amountMath = {
     return amountMath.make(value, brand);
   },
   getValue: (amount, brand) => {
+    assertLooksLikeAmount(amount);
     mustBeComparable(brand);
     return amountMath.coerce(amount, brand).value;
   },
@@ -136,13 +175,17 @@ const amountMath = {
       helpers[mathKind],
       X`${mathKind} must be MathKind.NAT or MathKind.SET`,
     );
+    assertLooksLikeBrand(brand);
     return noCoerceMake(helpers[mathKind].doMakeEmpty(), brand);
   },
   isEmpty: (amount, brand = undefined) => {
+    assertLooksLikeAmount(amount);
     optionalBrandCheck(amount, brand);
     return getHelpersFromAmount(amount).doIsEmpty(amount.value);
   },
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
+    assertLooksLikeAmount(leftAmount);
+    assertLooksLikeAmount(rightAmount);
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
@@ -152,6 +195,8 @@ const amountMath = {
     );
   },
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
+    assertLooksLikeAmount(leftAmount);
+    assertLooksLikeAmount(rightAmount);
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
@@ -161,6 +206,8 @@ const amountMath = {
     );
   },
   add: (leftAmount, rightAmount, brand = undefined) => {
+    assertLooksLikeAmount(leftAmount);
+    assertLooksLikeAmount(rightAmount);
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);
@@ -173,6 +220,8 @@ const amountMath = {
     );
   },
   subtract: (leftAmount, rightAmount, brand = undefined) => {
+    assertLooksLikeAmount(leftAmount);
+    assertLooksLikeAmount(rightAmount);
     optionalBrandCheck(leftAmount, brand);
     optionalBrandCheck(rightAmount, brand);
     assert.equal(leftAmount.brand, rightAmount.brand);

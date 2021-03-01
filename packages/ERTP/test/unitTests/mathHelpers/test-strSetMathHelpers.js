@@ -14,7 +14,7 @@ const mockBrand = harden({
   getAllegedName: () => 'mock',
 });
 
-test('strSetMathHelpers', t => {
+test('setMathHelpers with strings', t => {
   const {
     make,
     coerce,

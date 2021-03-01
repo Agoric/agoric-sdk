@@ -4,16 +4,11 @@
 import test from 'ava';
 
 import { amountMath, MathKind } from '../../../src';
+import { mockBrand } from './mockBrand';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
-
-const mockBrand = harden({
-  isMyIssuer: async () => false,
-  getAllegedName: () => 'mock',
-  getDisplayInfo: () => ({}),
-});
 
 test('natMathHelpers', t => {
   const {
@@ -33,14 +28,13 @@ test('natMathHelpers', t => {
   t.throws(
     () => make('abc', mockBrand),
     {
-      instanceOf: TypeError,
-      message: 'abc is a string but must be a bigint or a number',
+      message: 'value (a string) must be a Nat or an array',
     },
     `'abc' is not a nat`,
   );
   t.throws(
     () => make(-1, mockBrand),
-    { instanceOf: RangeError, message: '-1 is negative' },
+    { message: 'value (a number) must be a Nat or an array' },
     `- 1 is not a valid Nat`,
   );
 
@@ -73,55 +67,73 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () => coerce(3n, mockBrand),
-    { message: /The brand in allegedAmount .* is undefined/ },
+    {
+      message: `The brand in amount (a bigint) doesn\'t look like a brand. Did you pass a value rather than an amount?`,
+    },
     `coerce needs a brand`,
   );
 
   // getValue
   t.is(getValue(make(4n, mockBrand), mockBrand), 4n);
 
+  const empty = make(0n, mockBrand);
+
   // makeEmpty
-  t.deepEqual(makeEmpty(MathKind.NAT, mockBrand), make(0n, mockBrand), `empty is 0`);
+  t.deepEqual(makeEmpty(MathKind.NAT, mockBrand), empty, `empty is 0`);
 
   // isEmpty
   t.assert(isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
   t.falsy(isEmpty({ brand: mockBrand, value: 6n }), `isEmpty(6) is false`);
-  t.assert(isEmpty(make(0)), `isEmpty(0) is true`);
-  t.falsy(isEmpty(make(6)), `isEmpty(6) is false`);
+  t.assert(isEmpty(make(0n, mockBrand)), `isEmpty(0) is true`);
+  t.falsy(isEmpty(make(6n, mockBrand)), `isEmpty(6) is false`);
   t.throws(
     () => isEmpty('abc'),
-    { message: /The brand in allegedAmount .* is undefined/ },
+    {
+      message: `The brand in amount (a string) doesn\'t look like a brand. Did you pass a value rather than an amount?`,
+    },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
     () => isEmpty({ brand: mockBrand, value: 'abc' }),
     {
-      instanceOf: TypeError,
-      message: 'abc is a string but must be a bigint or a number',
+      message: 'value (a string) must be a Nat or an array',
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
-    () => isEmpty(0),
-    { message: /The brand in allegedAmount .* is undefined/ },
+    () => isEmpty(0n),
+    {
+      message: `The brand in amount (a bigint) doesn\'t look like a brand. Did you pass a value rather than an amount?`,
+    },
     `isEmpty(0) throws because it cannot be coerced`,
   );
 
   // isGTE
-  t.assert(isGTE(make(5), make(3)), `5 >= 3`);
-  t.assert(isGTE(make(3), make(3)), `3 >= 3`);
+  t.assert(isGTE(make(5n, mockBrand), make(3n, mockBrand)), `5 >= 3`);
+  t.assert(isGTE(make(3n, mockBrand), make(3n, mockBrand)), `3 >= 3`);
   t.falsy(
-    isGTE({ brand: mockBrand, value: 3 }, { brand: mockBrand, value: 4 }),
+    isGTE({ brand: mockBrand, value: 3n }, { brand: mockBrand, value: 4n }),
     `3 < 4`,
   );
 
   // isEqual
-  t.assert(isEqual(make(4), make(4)), `4 equals 4`);
-  t.falsy(isEqual(make(4), make(5)), `4 does not equal 5`);
+  t.assert(isEqual(make(4n, mockBrand), make(4n, mockBrand)), `4 equals 4`);
+  t.falsy(
+    isEqual(make(4n, mockBrand), make(5n, mockBrand)),
+    `4 does not equal 5`,
+  );
 
   // add
-  t.deepEqual(add(make(5), make(9)), make(14), `5 + 9 = 14`);
+  t.deepEqual(
+    add(make(5n, mockBrand), make(9n, mockBrand)),
+    make(14n, mockBrand),
+    `5 + 9 = 14`,
+  );
 
   // subtract
-  t.deepEqual(subtract(make(6), make(1)), make(5), `6 - 1 = 5`);
+  t.deepEqual(
+    subtract(make(6n, mockBrand), make(1n, mockBrand)),
+    make(5n, mockBrand),
+    `6 - 1 = 5`,
+  );
 });
