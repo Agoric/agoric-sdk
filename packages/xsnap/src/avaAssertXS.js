@@ -349,9 +349,11 @@ function test(label, run, htestOpt) {
   });
 }
 
+test.createHarness = createHarness;
+
 // TODO: test.skip, test.failing
 
-test.createHarness = createHarness;
+test.todo = _title => {};
 
 /** @type {(label: string, fn: () => Promise<void>) => void } */
 test.before = (label, fn) => {
