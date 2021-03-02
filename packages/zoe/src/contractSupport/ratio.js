@@ -51,9 +51,7 @@ export const makeRatio = (
 ) => {
   assert(
     denominator > 0n,
-    X`No infinite ratios! Denoninator was 0/${q(
-      denominatorBrand.getAllegedName(),
-    )}`,
+    X`No infinite ratios! Denoninator was 0/${q(denominatorBrand)}`,
   );
 
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
@@ -85,10 +83,8 @@ export const multiplyBy = (amount, ratio) => {
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.denominator.brand,
-    X`amount's brand ${q(
-      amount.brand.getAllegedName(),
-    )} must match ratio's denominator ${q(
-      ratio.denominator.brand.getAllegedName(),
+    X`amount's brand ${q(amount.brand)} must match ratio's denominator ${q(
+      ratio.denominator.brand,
     )}`,
   );
 
@@ -112,10 +108,8 @@ export const divideBy = (amount, ratio) => {
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.numerator.brand,
-    X`amount's brand ${q(
-      amount.brand.getAllegedName(),
-    )} must match ratio's numerator ${q(
-      ratio.numerator.brand.getAllegedName(),
+    X`amount's brand ${q(amount.brand)} must match ratio's numerator ${q(
+      ratio.numerator.brand,
     )}`,
   );
 
