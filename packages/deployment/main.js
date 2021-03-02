@@ -39,6 +39,7 @@ const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
 const COSMOS_DIR = 'ag-chain-cosmos';
 const DWEB_DIR = 'dweb';
 const SECONDS_BETWEEN_BLOCKS = 5;
+const DEFAULT_SWINGSET_PROMETHEUS_PORT = 9464;
 
 // This is needed for hyphenated group names not to trigger Ansible.
 process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
@@ -405,6 +406,17 @@ show-config      display the client connection parameters
         needReMain(['play', 'install-cosmos']),
       );
 
+      let SWINGSET_PROMETHEUS_PORT;
+      if (await exists(`prometheus-tendermint.txt`)) {
+        SWINGSET_PROMETHEUS_PORT = DEFAULT_SWINGSET_PROMETHEUS_PORT;
+      }
+      const agChainCosmosEnvironment = SWINGSET_PROMETHEUS_PORT
+        ? [
+            `-eserviceLines=${shellEscape(
+              `Environment="OTEL_EXPORTER_PROMETHEUS_PORT=${SWINGSET_PROMETHEUS_PORT}"`,
+            )}`,
+          ]
+        : [];
       await guardFile(`${COSMOS_DIR}/service.stamp`, () =>
         needReMain([
           'play',
@@ -412,6 +424,7 @@ show-config      display the client connection parameters
           `-eexecline=${shellEscape(
             '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start --log_level=warn',
           )}`,
+          ...agChainCosmosEnvironment,
         ]),
       );
 

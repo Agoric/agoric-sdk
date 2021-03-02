@@ -11,6 +11,10 @@ import {
 import { insistCapData } from '../../capdata';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 import { kdebug } from '../kdebug';
+import {
+  KERNEL_STATS_SUM_METRICS,
+  KERNEL_STATS_UPDOWN_METRICS,
+} from '../metrics';
 
 const enableKernelPromiseGC = true;
 
@@ -120,49 +124,23 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   // counter named 'fooUp', the stats collection machinery will automatically
   // track the number of times 'foo' is incremented.  Similarly, 'fooDown' will
   // track the number of times 'foo' is decremented.
-  let kernelStats = {
-    kernelObjects: 0,
-    kernelObjectsUp: 0,
-    kernelObjectsDown: 0,
-    kernelObjectsMax: 0,
-    kernelDevices: 0,
-    kernelDevicesUp: 0,
-    kernelDevicesDown: 0,
-    kernelDevicesMax: 0,
-    kernelPromises: 0,
-    kernelPromisesUp: 0,
-    kernelPromisesDown: 0,
-    kernelPromisesMax: 0,
-    kpUnresolved: 0,
-    kpUnresolvedUp: 0,
-    kpUnresolvedDown: 0,
-    kpUnresolvedMax: 0,
-    kpFulfilled: 0,
-    kpFulfilledUp: 0,
-    kpFulfilledDown: 0,
-    kpFulfilledMax: 0,
-    kpRejected: 0,
-    kpRejectedUp: 0,
-    kpRejectedDown: 0,
-    kpRejectedMax: 0,
-    runQueueLength: 0,
-    runQueueLengthUp: 0,
-    runQueueLengthMax: 0,
-    syscalls: 0,
-    syscallSend: 0,
-    syscallSubscribe: 0,
-    syscallResolve: 0,
-    syscallCallNow: 0,
-    dispatches: 0,
-    dispatchDeliver: 0,
-    dispatchNotify: 0,
-    clistEntries: 0,
-    clistEntriesUp: 0,
-    clistEntriesDown: 0,
-    clistEntriesMax: 0,
-  };
+  let kernelStats = {};
+
+  // The SUM_METRICS just allow incrementing a single value.
+  KERNEL_STATS_SUM_METRICS.forEach(({ key }) => {
+    kernelStats[key] = 0;
+  });
+
+  // The UPDOWN_METRICS track a value, up, down, and max.
+  KERNEL_STATS_UPDOWN_METRICS.forEach(({ key }) => {
+    kernelStats[key] = 0;
+    kernelStats[`${key}Up`] = 0;
+    kernelStats[`${key}Down`] = 0;
+    kernelStats[`${key}Max`] = 0;
+  });
 
   function incStat(stat) {
+    assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] += 1;
     const maxStat = `${stat}Max`;
     if (
@@ -178,6 +156,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function decStat(stat) {
+    assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] -= 1;
     const downStat = `${stat}Down`;
     if (kernelStats[downStat] !== undefined) {
