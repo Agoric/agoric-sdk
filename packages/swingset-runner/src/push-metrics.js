@@ -4,23 +4,25 @@ import fs from 'fs';
 
 const AUTOBENCH_METRICS_URL = process.env.AUTOBENCH_METRICS_URL;
 
+const NAME_PREFIX = 'autobench_';
+
 const AUTOBENCH_METRICS = [
   {
     key: 'cranks',
     metricType: 'counter',
-    name: 'autobench_cranks_total',
+    name: 'cranks_total',
     description: 'Total number of cranks',
   },
   {
     key: 'rounds',
     metricType: 'counter',
-    name: 'autobench_rounds_total',
+    name: 'rounds_total',
     description: 'Total number of rounds',
   },
   {
     key: 'cranksPerRound',
     metricType: 'gauge',
-    name: 'autobench_cranks_per_round',
+    name: 'cranks_per_round',
     description: 'Number of cranks per round',
   },
 ];
@@ -35,11 +37,11 @@ function promHeader(name, metricType, help = undefined) {
   let hdr = '';
   if (help !== undefined) {
     hdr += `\
-# HELP ${name} ${help}
+# HELP ${NAME_PREFIX}${name} ${help}
 `;
   }
   hdr += `\
-# TYPE ${name} ${metricType}
+# TYPE ${NAME_PREFIX}${name} ${metricType}
 `;
   return hdr;
 }
@@ -58,7 +60,7 @@ function promValue(name, value, labels = []) {
   }
 
   return `\
-${name}${labelstr} ${value}
+${NAME_PREFIX}${name}${labelstr} ${value}
 `;
 }
 
