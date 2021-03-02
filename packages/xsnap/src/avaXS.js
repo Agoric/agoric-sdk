@@ -11,6 +11,7 @@ Usage:
 
 /* eslint-disable no-await-in-loop */
 import '@agoric/install-ses';
+import { assert, details as X, q } from '@agoric/assert';
 import { xsnap } from './xsnap';
 
 // scripts for use in xsnap subprocesses
@@ -38,6 +39,8 @@ const externals = [
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+const { entries, keys } = Object;
 
 /**
  * Run one test script in an xsnap subprocess.
@@ -152,7 +155,66 @@ async function runTestScript(
 }
 
 /**
- * @param {string[]} argv
+ * Get ava / ava-xs config from package.json
+ *
+ * @param { string[] } args
+ * @param {{ packageFilename?: string }} opts
+ * @param {{
+ *   readFile: typeof import('fs').promises.readFile
+ *   glob: typeof import('glob')
+ * }} io
+ * @returns {Promise<AvaXSConfig>}
+ *
+ * @typedef {Object} AvaXSConfig
+ * @property {string[]} files - files from args or else ava.files
+ * @property {string[]} require - specifiers of modules to run before each test script
+ * @property {string=} exclude - files containing this should be skipped
+ */
+async function avaConfig(args, opts, { glob, readFile }) {
+  const { packageFilename = 'package.json' } = opts;
+
+  const txt = await readFile(packageFilename, 'utf-8');
+  const pkgMeta = JSON.parse(txt);
+
+  if (!pkgMeta.ava) {
+    return { files: [], require: [] };
+  }
+  const expected = ['files', 'require'];
+  const unsupported = keys(pkgMeta.ava).filter(k => !expected.includes(k));
+  if (unsupported.length > 0) {
+    console.warn(X`ava-xs does not support ava options: ${q(unsupported)}`);
+  }
+  const { files: filePatterns, require } = pkgMeta.ava;
+  const { exclude } = pkgMeta['ava-xs'];
+  assert(
+    !exclude || typeof exclude === 'string',
+    X`ava-xs.exclude: expected string: ${q(exclude)}`,
+  );
+
+  /**
+   * @param { string } pattern
+   * @returns { Promise<string[]> }
+   */
+  const globFiles = pattern =>
+    new Promise((res, rej) =>
+      glob(pattern, {}, (err, matches) => (err ? rej(err) : res(matches))),
+    );
+  assert(
+    Array.isArray(filePatterns),
+    X`ava.files: expected Array: ${q(filePatterns)}`,
+  );
+  const files = (await Promise.all(filePatterns.map(globFiles))).flat();
+
+  assert(
+    Array.isArray(require),
+    X`ava.requires: expected Array: ${q(require)}`,
+  );
+  const config = { files: args.length > 0 ? args : files, require, exclude };
+  return config;
+}
+
+/**
+ * @param {string[]} args - CLI args (excluding node interpreter, script name)
  * @param {{
  *   bundleSource: typeof import('@agoric/bundle-source').default,
  *   spawn: typeof import('child_process')['spawn'],
@@ -160,16 +222,23 @@ async function runTestScript(
  *   readFile: typeof import('fs')['promises']['readFile'],
  *   resolve: typeof import('path').resolve,
  *   dirname: typeof import('path').dirname,
+ *   glob: typeof import('glob'),
  * }} io
  */
 async function main(
-  argv,
-  { bundleSource, spawn, osType, readFile, resolve, dirname },
+  args,
+  { bundleSource, spawn, osType, readFile, resolve, dirname, glob },
 ) {
-  const args = argv.slice(2);
   const debug = args[0] === '--debug';
-  const files = debug ? args.slice(1) : args;
+  const verbose = ['--verbose', '-v'].includes(args[0]) || debug;
+  const fileArgs = debug || verbose ? args.slice(1) : args;
+  const { files, require, exclude } = await avaConfig(
+    fileArgs,
+    {},
+    { readFile, glob },
+  );
 
+  /** @param {Record<string, unknown>} opts */
   const spawnXSnap = opts =>
     xsnap({
       ...opts,
@@ -182,14 +251,25 @@ async function main(
     });
 
   /**
-   * we only use import() in type annotations
+   * SES objects to `import(...)`
+   * avaAssert and avaHandler only use import() in type comments
    *
    * @param { string } src
    */
   const hideImport = src => src.replace(/import\(/g, '');
 
+  const requiredBundles = await Promise.all(
+    require
+      .filter(specifier => !['esm', ...externals].includes(specifier))
+      .map(specifier => bundleSource(specifier, 'getExport', { externals })),
+  );
+  const requiredScripts = requiredBundles.map(
+    ({ source }) => `(${source}\n)()`,
+  );
+
   const preamble = [
     await asset(SESboot, readFile),
+    ...requiredScripts,
     hideImport(await asset(avaAssert, readFile)),
     hideImport(await asset(avaHandler, readFile)),
   ];
@@ -198,7 +278,13 @@ async function main(
   const stats = { ok: 0, 'not ok': 0, SKIP: 0 };
 
   for (const filename of files) {
-    console.log('# test script:', filename);
+    if (exclude && filename.match(exclude)) {
+      console.warn('# SKIP test excluded on XS', filename);
+      // eslint-disable-next-line no-continue
+      continue;
+    } else if (verbose) {
+      console.log('# test script:', filename);
+    }
 
     const { qty, byStatus } = await runTestScript(filename, preamble, debug, {
       spawnXSnap,
@@ -219,13 +305,14 @@ async function main(
 
 /* eslint-disable global-require */
 if (require.main === module) {
-  main([...process.argv], {
+  main(process.argv.slice(2), {
     bundleSource: require('@agoric/bundle-source').default,
     spawn: require('child_process').spawn,
     osType: require('os').type,
     readFile: require('fs').promises.readFile,
     resolve: require('path').resolve,
     dirname: require('path').dirname,
+    glob: require('glob'),
   })
     .then(status => {
       process.exit(status);
