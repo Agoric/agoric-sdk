@@ -6,7 +6,20 @@
  * Simple boilerplate program providing linkage to launch an application written using modules within the
  * as yet not-entirely-ESM-supporting version of NodeJS.
  */
-import lmdb from 'node-lmdb';
+
+// LMDB bindings need to be imported before lockdown.
+import 'node-lmdb';
+
+// FIXME: Without importing vega ahead of lockdown,
+// node -r esm bin/runner --init --memdb run demo/encouragementBot
+// exits with error code 1, just printing `{}`.
+//
+// Since this started with ses@0.12.3 we suspect vega is somehow
+// hitting the override mistake with `constructor`.
+import 'vega';
+
+// Now do lockdown.
 import '../src/install-optional-metering-and-ses';
 import { main } from '../src/main.js';
+
 main();
