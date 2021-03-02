@@ -3,6 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { bundleFunction } from '../../make-function-bundle';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
@@ -34,7 +35,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     ]);
   }
 
-  const fakeNeverTimer = harden({
+  const fakeNeverTimer = Far('fakeNeverTimer', {
     setWakeup(deadline, _resolution = undefined) {
       log(`Pretend ${deadline} never happens`);
       return deadline;
@@ -354,7 +355,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     });
   }
 
-  const obj0 = {
+  return Far('root', {
     async bootstrap(vats) {
       switch (vatParameters.argv[0]) {
         case 'trivial-oldformat': {
@@ -415,6 +416,5 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
       }
     },
-  };
-  return harden(obj0);
+  });
 }

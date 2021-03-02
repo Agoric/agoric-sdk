@@ -2,6 +2,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 
@@ -10,7 +11,7 @@ import { makeCollect } from '../../../src/makeCollect';
 function makeFredMaker(host, log) {
   const collect = makeCollect(E, log);
 
-  return harden({
+  return Far('fredMaker', {
     async make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
@@ -37,7 +38,7 @@ function makeFredMaker(host, log) {
       const wonka7 = stockMath.make(7);
       const fin55 = finMath.make(55);
 
-      const fred = harden({
+      const fred = Far('fred', {
         acceptOptionOffer(allegedSaleInvitePaymentP) {
           log('++ fred.acceptOptionOffer starting');
 
@@ -97,9 +98,9 @@ function makeFredMaker(host, log) {
 }
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     makeFredMaker(host) {
-      return harden(makeFredMaker(host, vatPowers.log));
+      return makeFredMaker(host, vatPowers.log);
     },
   });
 }

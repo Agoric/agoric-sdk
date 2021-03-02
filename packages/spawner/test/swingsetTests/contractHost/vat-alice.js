@@ -1,6 +1,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { allComparable } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
@@ -21,7 +22,7 @@ function makeAliceMaker(host, log) {
     });
   }
 
-  return harden({
+  return Far('aliceMaker', {
     async make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
@@ -38,7 +39,7 @@ function makeAliceMaker(host, log) {
       const moneyMath = await makeLocalAmountMath(moneyIssuerP);
       const stockMath = await makeLocalAmountMath(stockIssuerP);
 
-      const alice = harden({
+      const alice = Far('alice', {
         payBobWell(bob) {
           log('++ alice.payBobWell starting');
           const paymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
@@ -188,9 +189,9 @@ function makeAliceMaker(host, log) {
 }
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     makeAliceMaker(host) {
-      return harden(makeAliceMaker(host, vatPowers.log));
+      return makeAliceMaker(host, vatPowers.log);
     },
   });
 }

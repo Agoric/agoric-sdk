@@ -2,6 +2,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeLocalAmountMath } from '@agoric/ertp';
 
 import { assert, details as X } from '@agoric/assert';
@@ -10,7 +11,7 @@ import { makeCollect } from '../../../src/makeCollect';
 function makeBobMaker(host, log) {
   const collect = makeCollect(E, log);
 
-  return harden({
+  return Far('bobMaker', {
     async make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
@@ -26,7 +27,7 @@ function makeBobMaker(host, log) {
       const moneyNeeded = moneyMath.make(10);
       const stockNeeded = stockMath.make(7);
 
-      const bob = harden({
+      const bob = Far('bob', {
         /*
          * This is not an imperative to Bob to buy something but rather
          * the opposite. It is a request by a client to buy something from
@@ -109,9 +110,9 @@ function makeBobMaker(host, log) {
 }
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     makeBobMaker(host) {
-      return harden(makeBobMaker(host, vatPowers.log));
+      return makeBobMaker(host, vatPowers.log);
     },
   });
 }
