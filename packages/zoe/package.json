@@ -68,6 +68,34 @@
     "exported.js",
     "NEWS.md"
   ],
+  "ava-xs": {
+    "exclude": [
+      "# eek! SIGSEGV in GC https://github.com/Moddable-OpenSource/moddable/issues/592",
+      "test-loan-e2e.js",
+      "# another SEGV, but not in --debug so I cannot get a stack trace",
+      "contracts/test-callSpread-calculation",
+      "# test-ratio uses _ which is not supported yet",
+      "test-ratio",
+      "test-percentSupport",
+      "# trouble locating zcfTesterContract using __dirname",
+      "loan/test-addCollateral",
+      "loan/test-borrow",
+      "loan/test-close",
+      "loan/test-lend",
+      "loan/test-liquidate",
+      "contracts/test-autoswapPool",
+      "test-zoe.js",
+      "# bad plan: 4 still to go",
+      "contracts/test-barter",
+      "contracts/test-simpleExchange",
+      "# ReferenceError#1: get 25961: undefined variable",
+      "test-offerSafety",
+      "# no function",
+      "test-zoeHelpersWZcf.js",
+      "# We use WORKER_TYPE=xs ava to run these...",
+      "swingsetTests"
+    ]
+  },
   "ava": {
     "files": [
       "test/**/test-*.js"
