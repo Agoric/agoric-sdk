@@ -4,6 +4,7 @@ import '@agoric/install-ses'; // calls lockdown()
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
+import { Data } from '@agoric/marshal';
 
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
@@ -269,7 +270,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
       inviteHandleBoardId,
 
-      proposalTemplate: {},
+      proposalTemplate: Data({}),
     });
 
   const rawId = '1588645041696';
@@ -1190,7 +1191,7 @@ test('addOffer makeContinuingInvitation', async t => {
       instance,
       description: 'FirstThing',
     },
-    proposalTemplate: {},
+    proposalTemplate: Data({}),
   };
 
   await wallet.addOffer(offer);
@@ -1213,7 +1214,7 @@ test('addOffer makeContinuingInvitation', async t => {
       priorOfferId: rawId,
       description: 'SecondThing',
     },
-    proposalTemplate: {},
+    proposalTemplate: Data({}),
   };
 
   await wallet.addOffer(offer2);
