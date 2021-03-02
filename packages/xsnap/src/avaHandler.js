@@ -55,6 +55,10 @@ const testRequire = function require(specifier) {
 
 function handler(msg) {
   const src = decoder.decode(msg);
+  const virtualObjectGlobals =
+    // @ts-ignore
+    // eslint-disable-next-line no-undef
+    typeof makeKind !== 'undefined' ? { makeKind, makeWeakStore } : {};
   // @ts-ignore How do I get ses types in scope?!?!?!
   const c = new Compartment({
     require: testRequire,
@@ -67,6 +71,7 @@ function handler(msg) {
     HandledPromise,
     TextEncoder,
     TextDecoder,
+    ...virtualObjectGlobals,
   });
   try {
     c.evaluate(`(${src}\n)()`);
