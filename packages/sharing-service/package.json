@@ -30,7 +30,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.2"
+    "@agoric/assert": "^0.2.2",
+    "@agoric/marshal": "^0.3.2"
   },
   "devDependencies": {
     "@agoric/eventual-send": "^0.13.2",
