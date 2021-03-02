@@ -63,7 +63,6 @@ function handler(msg) {
     console,
     // @ts-ignore
     assert,
-    harden,
     // @ts-ignore
     HandledPromise,
     TextEncoder,
