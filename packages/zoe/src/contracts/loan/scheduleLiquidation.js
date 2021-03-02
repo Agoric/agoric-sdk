@@ -5,6 +5,7 @@ import '../../../exported';
 import { E } from '@agoric/eventual-send';
 
 import { liquidate } from './liquidate';
+import { getAmountIn } from '../../contractSupport';
 
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {
@@ -35,8 +36,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
 
   internalLiquidationPromise
     .then(priceQuote => {
-      const { quoteAmount } = priceQuote;
-      const amountIn = quoteAmount.value[0].amountIn;
+      const amountIn = getAmountIn(priceQuote);
       // Only liquidate if this trigger is still pertinent.  Check
       // that the quote is for exactly the current amount of
       // collateral. If the amount is wrong, we will have already

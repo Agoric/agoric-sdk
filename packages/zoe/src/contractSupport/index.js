@@ -8,6 +8,13 @@ export {
 
 export * from './priceAuthority';
 
+export {
+  getAmountIn,
+  getAmountOut,
+  getTimestamp,
+  getQuoteValues,
+} from './priceQuote';
+
 export { natSafeMath } from './safeMath';
 
 export { makeStateMachine } from './stateMachine';

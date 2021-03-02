@@ -8,6 +8,12 @@ import buildManualTimer from '../../tools/manualTimer';
 
 import { setup } from './setupBasicMints';
 import { makeFakePriceAuthority } from '../../tools/fakePriceAuthority';
+import {
+  getAmountOut,
+  getTimestamp,
+  getAmountIn,
+  getQuoteValues,
+} from '../../src/contractSupport';
 
 const makeTestPriceAuthority = (amountMaths, priceList, timer) =>
   makeFakePriceAuthority({
@@ -30,13 +36,9 @@ test('priceAuthority quoteAtTime', async t => {
   const done = E(priceAuthority)
     .quoteAtTime(3n, moola(5), bucksBrand)
     .then(async quote => {
-      t.deepEqual(
-        moola(5),
-        quote.quoteAmount.value[0].amountIn,
-        'amountIn match',
-      );
-      t.deepEqual(bucks(55 * 5), quote.quoteAmount.value[0].amountOut);
-      t.is(3n, quote.quoteAmount.value[0].timestamp);
+      t.deepEqual(moola(5), getAmountIn(quote), 'amountIn match');
+      t.deepEqual(bucks(55 * 5), getAmountOut(quote));
+      t.is(3n, getTimestamp(quote));
     });
 
   await E(manualTimer).tick();
@@ -58,7 +60,7 @@ test('priceAuthority quoteGiven', async t => {
 
   await E(manualTimer).tick();
   const quote = await E(priceAuthority).quoteGiven(moola(37), bucksBrand);
-  const quoteAmount = quote.quoteAmount.value[0];
+  const quoteAmount = getQuoteValues(quote);
   t.is(1n, quoteAmount.timestamp);
   t.deepEqual(bucks(37 * 20), quoteAmount.amountOut);
 });

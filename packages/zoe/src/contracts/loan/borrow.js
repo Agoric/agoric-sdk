@@ -5,7 +5,11 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { assertProposalShape, trade } from '../../contractSupport';
+import {
+  assertProposalShape,
+  trade,
+  getAmountOut,
+} from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
 import { calculateInterest, makeDebtCalculator } from './updateDebt';
@@ -40,13 +44,13 @@ export const makeBorrowInvitation = (zcf, config) => {
     const collateralMath = zcf.getTerms().maths.Collateral;
 
     // The value of the collateral in the Loan brand
-    const { quoteAmount } = await E(priceAuthority).quoteGiven(
+    const quote = await E(priceAuthority).quoteGiven(
       collateralGiven,
       loanBrand,
     );
     // AWAIT ///
 
-    const collateralPriceInLoanBrand = quoteAmount.value[0].amountOut;
+    const collateralPriceInLoanBrand = getAmountOut(quote);
 
     // formula: assert collateralValue*100 >= loanWanted*mmr
 
