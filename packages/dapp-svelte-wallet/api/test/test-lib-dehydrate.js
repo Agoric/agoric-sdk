@@ -11,9 +11,9 @@ test('makeDehydrator', async t => {
   const instanceHandleMapping = makeMapping('instanceHandle');
   const brandMapping = makeMapping('brand');
 
-  const handle1 = harden({});
-  const handle2 = harden({});
-  const handle3 = harden({});
+  const handle1 = Far('handle1');
+  const handle2 = Far('handle2');
+  const handle3 = Far('handle3');
   instanceHandleMapping.addPetname('simpleExchange', handle1);
   instanceHandleMapping.addPetname('atomicSwap', handle2);
   instanceHandleMapping.addPetname('automaticRefund', handle3);
@@ -21,7 +21,11 @@ test('makeDehydrator', async t => {
     message: /val \(an object\) already has a petname/,
   });
   t.throws(
-    () => instanceHandleMapping.addPetname('simpleExchange', harden({})),
+    () =>
+      instanceHandleMapping.addPetname(
+        'simpleExchange',
+        Far('simpleExchangeHandle'),
+      ),
     { message: /petname \(a string\) is already in use/ },
   );
 
@@ -38,7 +42,7 @@ test('makeDehydrator', async t => {
     `renaming is successful going from val to petname`,
   );
   t.throws(
-    () => instanceHandleMapping.renamePetname('new value', harden({})),
+    () => instanceHandleMapping.renamePetname('new value', Far('newHandle')),
     {
       message: /has not been previously named, would you like to add it instead\?/,
     },
@@ -58,7 +62,7 @@ test('makeDehydrator', async t => {
   );
 
   // Test deletion.
-  const temp = harden({});
+  const temp = Far('temp');
   instanceHandleMapping.addPetname('to be deleted', temp);
   t.is(
     instanceHandleMapping.valToPetname.get(temp),
@@ -67,7 +71,7 @@ test('makeDehydrator', async t => {
   );
   t.deepEqual(
     instanceHandleMapping.petnameToVal.get('to be deleted'),
-    handle1,
+    temp,
     `'to be deleted' present going from val to petname`,
   );
   instanceHandleMapping.deletePetname('to be deleted');
@@ -99,7 +103,8 @@ test('makeDehydrator', async t => {
   t.deepEqual(
     dehydrate(harden({ handle: handle1 })),
     {
-      body: '{"handle":{"@qclass":"slot","index":0}}',
+      body:
+        '{"handle":{"@qclass":"slot","iface":"Alleged: handle1","index":0}}',
       slots: [{ kind: 'instanceHandle', petname: 'simpleExchange' }],
     },
     `serialize val with petname`,
@@ -148,7 +153,7 @@ test('makeDehydrator', async t => {
     },
     exit: {
       afterDeadline: {
-        timer: {},
+        timer: Far('timer', {}),
         deadline: 55,
       },
     },
@@ -157,7 +162,7 @@ test('makeDehydrator', async t => {
     dehydrate(proposal),
     {
       body:
-        '{"exit":{"afterDeadline":{"deadline":55,"timer":{"@qclass":"slot","index":0}}},"give":{"Price":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":1},"value":3}},"want":{"Asset1":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":2},"value":60},"Asset2":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":3},"value":{"instanceHandle":{"@qclass":"slot","index":4}}}}}',
+        '{"exit":{"afterDeadline":{"deadline":55,"timer":{"@qclass":"slot","iface":"Alleged: timer","index":0}}},"give":{"Price":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":1},"value":3}},"want":{"Asset1":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":2},"value":60},"Asset2":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":3},"value":{"instanceHandle":{"@qclass":"slot","iface":"Alleged: handle3","index":4}}}}}',
       slots: [
         { kind: 'unnamed', petname: 'unnamed-1' },
         { kind: 'brand', petname: 'simolean' },
@@ -185,11 +190,12 @@ test('makeDehydrator', async t => {
     proposal,
     `hydrated proposal`,
   );
-  const handle4 = harden({});
+  const handle4 = Far('handle4');
   t.deepEqual(
     dehydrate(harden({ handle: handle4 })),
     {
-      body: '{"handle":{"@qclass":"slot","index":0}}',
+      body:
+        '{"handle":{"@qclass":"slot","iface":"Alleged: handle4","index":0}}',
       slots: [{ kind: 'unnamed', petname: 'unnamed-2' }],
     },
     `serialize val with no petname`,
@@ -209,7 +215,8 @@ test('makeDehydrator', async t => {
   t.deepEqual(
     dehydrate(harden({ handle: handle4 })),
     {
-      body: '{"handle":{"@qclass":"slot","index":0}}',
+      body:
+        '{"handle":{"@qclass":"slot","iface":"Alleged: handle4","index":0}}',
       slots: [{ kind: 'instanceHandle', petname: 'autoswap' }],
     },
     `serialize val with new petname`,
