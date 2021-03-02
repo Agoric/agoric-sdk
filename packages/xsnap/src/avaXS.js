@@ -169,7 +169,7 @@ async function runTestScript(
  * @typedef {Object} AvaXSConfig
  * @property {string[]} files - files from args or else ava.files
  * @property {string[]} require - specifiers of modules to run before each test script
- * @property {string=} exclude - files containing this should be skipped
+ * @property {string[]=} exclude - files containing any of these should be skipped
  */
 async function avaConfig(args, opts, { glob, readFile }) {
   const { packageFilename = 'package.json' } = opts;
@@ -186,10 +186,13 @@ async function avaConfig(args, opts, { glob, readFile }) {
     console.warn(X`ava-xs does not support ava options: ${q(unsupported)}`);
   }
   const { files: filePatterns, require } = pkgMeta.ava;
-  const { exclude } = pkgMeta['ava-xs'];
+  let { exclude } = pkgMeta['ava-xs'];
+  if (typeof exclude === 'string') {
+    exclude = [exclude];
+  }
   assert(
-    !exclude || typeof exclude === 'string',
-    X`ava-xs.exclude: expected string: ${q(exclude)}`,
+    !exclude || Array.isArray(exclude),
+    X`ava-xs.exclude: expected array or string: ${q(exclude)}`,
   );
 
   /**
@@ -279,7 +282,7 @@ async function main(
   const stats = { ok: 0, 'not ok': 0, SKIP: 0 };
 
   for (const filename of files) {
-    if (exclude && filename.match(exclude)) {
+    if (exclude && exclude.filter(s => filename.match(s)).length > 0) {
       console.warn('# SKIP test excluded on XS', filename);
       // eslint-disable-next-line no-continue
       continue;
