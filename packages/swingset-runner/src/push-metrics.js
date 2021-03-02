@@ -7,13 +7,13 @@ const AUTOBENCH_METRICS_URL = process.env.AUTOBENCH_METRICS_URL;
 const AUTOBENCH_METRICS = [
   {
     key: 'cranks',
-    metricType: 'count',
+    metricType: 'counter',
     name: 'autobench_cranks_total',
     description: 'Total number of cranks',
   },
   {
     key: 'rounds',
-    metricType: 'count',
+    metricType: 'counter',
     name: 'autobench_rounds_total',
     description: 'Total number of rounds',
   },
@@ -162,7 +162,7 @@ function generateMetricsFromBenchStats(benchStats) {
   const obj = JSON.parse(benchStats);
   const mainLabels = [['phase', 'prime']];
   const benchmarkLabels = [['phase', 'bench']];
-  let metrics = generateCommonMetrics(benchStats, {
+  let metrics = generateCommonMetrics(obj, {
     main: mainLabels,
     benchmark: benchmarkLabels,
   });
