@@ -3,6 +3,7 @@
 import makeStore from '@agoric/store';
 import '@agoric/store/exported';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 /**
  * @template T
@@ -53,7 +54,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     // No return value.
   }
 
-  const bridgeHandler = harden({ inbound: bridgeInbound });
+  const bridgeHandler = Far('bridgeHandler', { inbound: bridgeInbound });
 
   function callOutbound(dstID, obj) {
     assert(bridgeDevice, X`bridge device not yet connected`);
@@ -70,7 +71,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
   // We now manage the device.
   D(bridgeDevice).registerInboundHandler(bridgeHandler);
 
-  return harden({
+  return Far('bridgeManager', {
     toBridge(dstID, obj) {
       return callOutbound(dstID, obj);
     },
