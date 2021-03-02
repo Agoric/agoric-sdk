@@ -48,8 +48,8 @@ function promValue(name, value, labels = []) {
   let sep = '{';
   let labelstr = '';
 
-  for (const [key, value] of labels) {
-    labelstr += `${sep}${key}=${JSON.stringify(value)}`;
+  for (const [key, lbl] of labels) {
+    labelstr += `${sep}${key}=${JSON.stringify(lbl)}`;
     sep = ',';
   }
 
@@ -71,25 +71,11 @@ function generateCommonMetrics(obj, phaseLabels) {
         // Only write the header once.
         metrics += hdr;
         hdr = '';
-        metrics += promValue(cranks, obj[phase][key], phaseLabels[phase]);
+        metrics += promValue(name, obj[phase][key], phaseLabels[phase]);
       }
     }
   }
   return metrics;
-}
-
-function generateMetricsFromBenchStats(benchStats) {
-  const obj = JSON.parse(benchStats);
-  const mainLabels = [['phase', 'prime']];
-  const benchmarkLabels = [['phase', 'bench']];
-  let metrics = generateCommonMetrics(benchStats, { main: mainLabels, benchmark: benchmarkLabels });
-  if (obj.main) {
-    metrics += generateMetricsFromPrimeData(obj.main.data, mainLabels);
-  }
-  if (obj.benchmark) {
-    metrics += generateMetricsFromBenchmarkData(obj.benchmark.data, benchmarkLabels);
-  }
-  return metrics; 
 }
 
 function generateMetricsFromPrimeData(data, labels = undefined) {
@@ -97,6 +83,7 @@ function generateMetricsFromPrimeData(data, labels = undefined) {
   const todo = new Set(Object.keys(data));
   for (const { metricType, key, name, description } of KERNEL_STATS_METRICS) {
     if (!(key in data)) {
+      // eslint-disable-next-line no-continue
       continue;
     }
     todo.delete(key);
@@ -106,12 +93,20 @@ function generateMetricsFromPrimeData(data, labels = undefined) {
     }
     if ('up' in data[key]) {
       const nm = `${name}_up`;
-      metrics += promHeader(nm, 'counter', `${description} (number of increments)`);
+      metrics += promHeader(
+        nm,
+        'counter',
+        `${description} (number of increments)`,
+      );
       metrics += promValue(nm, data[key].up, labels);
     }
     if ('down' in data[key]) {
       const nm = `${name}_down`;
-      metrics += promHeader(nm, 'counter', `${description} (number of decrements)`);
+      metrics += promHeader(
+        nm,
+        'counter',
+        `${description} (number of decrements)`,
+      );
       metrics += promValue(nm, data[key].down, labels);
     }
     if ('max' in data[key]) {
@@ -137,6 +132,7 @@ function generateMetricsFromBenchmarkData(data, labels = undefined) {
   const todo = new Set(Object.keys(data));
   for (const { key, name, description } of KERNEL_STATS_METRICS) {
     if (!(key in data)) {
+      // eslint-disable-next-line no-continue
       continue;
     }
     todo.delete(key);
@@ -147,7 +143,11 @@ function generateMetricsFromBenchmarkData(data, labels = undefined) {
     }
     if ('deltaPerRound' in data[key]) {
       const nm = `${name}_delta_per_round`;
-      metrics += promHeader(nm, 'gauge', `${description} benchmark delta per round`);
+      metrics += promHeader(
+        nm,
+        'gauge',
+        `${description} benchmark delta per round`,
+      );
       metrics += promValue(nm, data[key].deltaPerRound, labels);
     }
   }
@@ -158,6 +158,25 @@ function generateMetricsFromBenchmarkData(data, labels = undefined) {
   return metrics;
 }
 
+function generateMetricsFromBenchStats(benchStats) {
+  const obj = JSON.parse(benchStats);
+  const mainLabels = [['phase', 'prime']];
+  const benchmarkLabels = [['phase', 'bench']];
+  let metrics = generateCommonMetrics(benchStats, {
+    main: mainLabels,
+    benchmark: benchmarkLabels,
+  });
+  if (obj.main) {
+    metrics += generateMetricsFromPrimeData(obj.main.data, mainLabels);
+  }
+  if (obj.benchmark) {
+    metrics += generateMetricsFromBenchmarkData(
+      obj.benchmark.data,
+      benchmarkLabels,
+    );
+  }
+  return metrics;
+}
 const benchStats = fs.readFileSync(benchStatsFile, 'utf-8');
 const metrics = generateMetricsFromBenchStats(benchStats);
 
@@ -176,11 +195,16 @@ const gitCp = spawnSync('git', ['rev-parse', 'HEAD'], {
 });
 const revision = gitCp.stdout.trimRight();
 
-const labels = [['revision', revision], ['suite', suite]];
+const labels = [
+  ['revision', revision],
+  ['suite', suite],
+];
 
 // This setting of metricsGroup ensures the history is kept for other git
 // commits, but reset for previous uploads of this same gitCommit or suite.
-const metricsGroup = '/' + labels.flatMap((kv) => kv.map(encodeURIComponent)).join('/');
+const metricsGroup = `/${labels
+  .flatMap(kv => kv.map(encodeURIComponent))
+  .join('/')}`;
 
 const curlCp = spawnSync(
   'curl',
