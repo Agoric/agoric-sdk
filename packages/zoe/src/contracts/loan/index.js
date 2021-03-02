@@ -26,8 +26,8 @@ import { makeLendInvitation } from './lend';
  * loaned amount and interest must be of the same (separate) brand.
  *
  * Terms:
- *  * mmr (default = 150) - the Maintenance Margin Requirement, as a
- *    ratio. The default is 1.5, meaning that collateral should be
+ *  * mmr (default = 150/100) - the Maintenance Margin Requirement, as a
+ *    ratio. The default is 150/100, meaning that collateral should be
  *    worth at least 150% of the loan. If the value of the collateral
  *    drops below mmr, liquidation occurs.
  *  * priceAuthority - will be used for getting the current value of
