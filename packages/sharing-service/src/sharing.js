@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { makeSharedMap } from './sharedMap';
 
 function makeSharingService() {
@@ -9,7 +10,7 @@ function makeSharingService() {
   const brand = new WeakSet();
   const tombstone = [];
 
-  const sharingService = harden({
+  const sharingService = Far('sharingService', {
     // retrieve and remove from the map.
     grabSharedMap(key) {
       if (!sharedMaps.has(key)) {
