@@ -86,10 +86,8 @@ test('getAttenuatedPursesNotifier', async t => {
   // Has the default Zoe invitation purse and a moola purse
   t.is(update.value.length, 2);
   const moolaPurseInfo = update.value[1];
-  // @ts-ignore
-  t.is(moolaPurseInfo.actions, undefined);
-  // @ts-ignore
-  t.is(moolaPurseInfo.brand, undefined);
+  t.false('actions' in moolaPurseInfo);
+  t.false('brand' in moolaPurseInfo);
   t.is(moolaPurseInfo.brandBoardId, '1532665031');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
@@ -110,8 +108,7 @@ test('getAttenuatedPursesNotifier', async t => {
     amountMathKind: 'nat',
   });
 
-  // @ts-ignore
-  t.is(moolaPurseInfo.purse, undefined);
+  t.false('purse' in moolaPurseInfo);
   t.is(moolaPurseInfo.pursePetname, MOOLA_PURSE_PETNAME);
   t.is(moolaPurseInfo.value, 0n);
 });
