@@ -80,7 +80,22 @@ test('ratio - different brands', t => {
   amountsEqual(t, multiplyBy(ast(10_000), convertToMoe), moe(3333), moeBrand);
 });
 
-test.failing('ratio - brand mismatch', t => {
+test('ratio - brand mismatch', t => {
+  const { amountMath } = makeIssuerKit('moe');
+  const { amountMath: astAmountMath } = makeIssuerKit('ast');
+  const moe = amountMath.make;
+  const ast = astAmountMath.make;
+
+  const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
+  t.throws(() => divideBy(ast(10_000), convertToMoe), {
+    message: /amount's brand .* must match ratio's numerator .*/,
+  });
+  t.throws(() => multiplyBy(moe(10_000), convertToMoe), {
+    message: /amount's brand .* must match ratio's denominator .*/,
+  });
+});
+
+test.failing('ratio - brand mismatch & details', t => {
   const { amountMath } = makeIssuerKit('moe');
   const { amountMath: astAmountMath } = makeIssuerKit('ast');
   const moe = amountMath.make;
@@ -134,7 +149,7 @@ test('ratio inverse', t => {
   amountsEqual(t, multiplyBy(moe(100), fiveHalves), moe(250), moeBrand);
 });
 
-test.failing('ratio bad inputs', t => {
+test('ratio bad inputs', t => {
   const { amountMath, brand: moeBrand } = makeIssuerKit('moe');
   const moe = amountMath.make;
   t.throws(() => makeRatio(-3, moeBrand), {
@@ -152,6 +167,20 @@ test.failing('ratio bad inputs', t => {
   t.throws(() => divideBy(makeRatioFromAmounts(moe(3), moe(5)), 37), {
     message: `Expected an amount: (an object)`,
   });
+  t.throws(() => makeRatio(3, moeBrand, 0), {
+    message: /No infinite ratios! Denoninator was 0/,
+  });
+  t.throws(() => makeRatioFromAmounts(moe(37), moe(0)), {
+    message: /No infinite ratios! Denoninator was 0/,
+  });
+  t.throws(() => makeRatioFromAmounts(moe(37), moe(0)), {
+    message: /No infinite ratios! Denoninator was 0/,
+  });
+});
+
+test.failing('ratio bad inputs w/brand names', t => {
+  const { amountMath, brand: moeBrand } = makeIssuerKit('moe');
+  const moe = amountMath.make;
   t.throws(() => makeRatio(3, moeBrand, 0), {
     message: 'No infinite ratios! Denoninator was 0/"moe"',
   });
