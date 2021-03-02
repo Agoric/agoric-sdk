@@ -143,6 +143,30 @@ test('accept std regex range', async t => {
   await vat.terminate();
 });
 
+test('bigint map key', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+    const store = new Map([[1n, "abc"]]);
+    send(store.get(1n))
+  `);
+  t.deepEqual(opts.messages, ['"abc"']);
+});
+
+test('keyword in destructuring', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+    const { default: d, in: i } = { default: 1, in: 2 };
+    send({ d, i })
+  `);
+  t.deepEqual(opts.messages, ['{"d":1,"i":2}']);
+});
+
 test('idle includes setImmediate too', async t => {
   const opts = options();
   const vat = xsnap(opts);
