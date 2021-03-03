@@ -255,7 +255,7 @@ export function makeWallet({
         ...jstate,
         purse,
         brand,
-        actions: Far('actions', {
+        actions: Far('purse.actions', {
           // Send a value from this purse.
           async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
@@ -776,7 +776,7 @@ export function makeWallet({
         origin,
         approvalP,
         enable: false,
-        actions: Far('actions', {
+        actions: Far('dapp.actions', {
           setPetname(petname) {
             if (dappRecord.petname === petname) {
               return dappRecord.actions;
