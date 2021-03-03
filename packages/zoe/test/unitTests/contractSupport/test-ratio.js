@@ -77,7 +77,7 @@ test('ratio - different brands', t => {
   const ast = astAmountMath.make;
 
   const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
-  amountsEqual(t, multiplyBy(ast(10_000), convertToMoe), moe(3333), moeBrand);
+  amountsEqual(t, multiplyBy(ast(10000), convertToMoe), moe(3333), moeBrand);
 });
 
 test('ratio - brand mismatch', t => {
@@ -87,10 +87,10 @@ test('ratio - brand mismatch', t => {
   const ast = astAmountMath.make;
 
   const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
-  t.throws(() => divideBy(ast(10_000), convertToMoe), {
+  t.throws(() => divideBy(ast(10000), convertToMoe), {
     message: /amount's brand .* must match ratio's numerator .*/,
   });
-  t.throws(() => multiplyBy(moe(10_000), convertToMoe), {
+  t.throws(() => multiplyBy(moe(10000), convertToMoe), {
     message: /amount's brand .* must match ratio's denominator .*/,
   });
 });
@@ -102,10 +102,10 @@ test.failing('ratio - brand mismatch & details', t => {
   const ast = astAmountMath.make;
 
   const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
-  t.throws(() => divideBy(ast(10_000), convertToMoe), {
+  t.throws(() => divideBy(ast(10000), convertToMoe), {
     message: `amount's brand "ast" must match ratio's numerator "moe"`,
   });
-  t.throws(() => multiplyBy(moe(10_000), convertToMoe), {
+  t.throws(() => multiplyBy(moe(10000), convertToMoe), {
     message: `amount's brand "moe" must match ratio's denominator "ast"`,
   });
 });
