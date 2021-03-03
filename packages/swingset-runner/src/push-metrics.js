@@ -160,10 +160,10 @@ function generateMetricsFromBenchmarkData(data, labels = undefined) {
   return metrics;
 }
 
-function generateMetricsFromBenchStats(benchStats) {
+function generateMetricsFromBenchStats(benchStats, labels = []) {
   const obj = JSON.parse(benchStats);
-  const mainLabels = [['phase', 'prime']];
-  const benchmarkLabels = [['phase', 'bench']];
+  const mainLabels = [['phase', 'prime'], ...labels];
+  const benchmarkLabels = [['phase', 'bench'], ...labels];
   let metrics = generateCommonMetrics(obj, {
     main: mainLabels,
     benchmark: benchmarkLabels,
@@ -180,7 +180,17 @@ function generateMetricsFromBenchStats(benchStats) {
   return metrics;
 }
 const benchStats = fs.readFileSync(benchStatsFile, 'utf-8');
-const metrics = generateMetricsFromBenchStats(benchStats);
+
+// We get the commit id to post.
+const gitCp = spawnSync('git', ['rev-parse', 'HEAD'], {
+  stdio: ['inherit', 'pipe', 'inherit'],
+  encoding: 'utf-8',
+});
+const revision = gitCp.stdout.trimRight();
+
+const metrics = generateMetricsFromBenchStats(benchStats, [
+  ['revision', revision],
+]);
 
 const metricsFile = benchStatsFile.replace(/(\.json)?$/, '.txt');
 fs.writeFileSync(metricsFile, metrics);
@@ -190,21 +200,15 @@ if (!AUTOBENCH_METRICS_URL) {
   process.exit(0);
 }
 
-// We get the commit id to post.
-const gitCp = spawnSync('git', ['rev-parse', 'HEAD'], {
-  stdio: ['inherit', 'pipe', 'inherit'],
-  encoding: 'utf-8',
-});
-const revision = gitCp.stdout.trimRight();
-
-const labels = [
-  ['revision', revision],
+//  These are the labels for which corresponding metrics should be overwritten.
+const groupLabels = [
+  // We overwrite all the metrics for the suite to facilitate graphing.
   ['suite', suite],
+  // (We used to keep revisions forever, but that turns out to be overkill.)
+  // ['revision', revision],
 ];
 
-// This setting of metricsGroup ensures the history is kept for other git
-// commits, but reset for previous uploads of this same gitCommit or suite.
-const metricsGroup = `/${labels
+const metricsGroup = `/${groupLabels
   .flatMap(kv => kv.map(encodeURIComponent))
   .join('/')}`;
 
