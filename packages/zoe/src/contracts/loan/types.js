@@ -9,14 +9,6 @@
  */
 
 /**
- * @typedef {bigint} MMR
- *  The Maintenance Margin Requirement, in percent. The default is
- *  150, meaning that collateral should be worth at least 150% of the
- *  loan. If the value of the collateral drops below mmr, liquidation
- *  occurs.
- */
-
-/**
  * @typedef {Instance} AutoswapInstance
  *   The running contract instance for an Autoswap or Multipool
  *   Autoswap installation.  The publicFacet from the Autoswap
@@ -24,16 +16,10 @@
  *   collateral on liquidation.
  */
 
-/** @typedef {bigint} InterestRate
- *
- *   The rate in basis points that will be multiplied with the debt on
- *   every period to compound interest.
- */
-
 /**
  * @typedef LoanTerms
  *
- * @property {Percent} mmr - Maintenance Margin Requirement, a Percent object.
+ * @property {Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
  * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
@@ -45,8 +31,10 @@
  *
  * @property {PeriodNotifier} periodNotifier
  *
- * @property {InterestRate} interestRate
- *
+ * @property {Ratio} interestRate
+ *   The rate in basis points that will be multiplied with the debt on
+ *   every period to compound interest.
+ 
  * @property {RelativeTime} interestPeriod
  */
 
@@ -157,9 +145,9 @@
 
 /**
  * @callback CalcInterestFn
- * @param {bigint} oldDebtValue
- * @param {bigint} interestRate
- * @returns {bigint} interest
+ * @param {Amount} oldDebt
+ * @param {Ratio} interestRate
+ * @returns {Amount} interest
  */
 
 /**
@@ -181,7 +169,7 @@
  *
  *   The AsyncIterable to notify when a period has occurred
  *
- * @property {bigint} interestRate
+ * @property {Ratio} interestRate
  * @property {RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate

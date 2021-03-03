@@ -4,8 +4,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 
-import { makeRatio, assertIsRatio } from '../../contractSupport/ratio';
-import { natSafeMath } from '../../contractSupport';
+import { makeRatio, assertIsRatio, natSafeMath } from '../../contractSupport';
 
 const { subtract } = natSafeMath;
 

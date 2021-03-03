@@ -10,11 +10,14 @@ import { E } from '@agoric/eventual-send';
 import { setupLoanUnitTest, checkDescription } from './helpers';
 
 import { makeLendInvitation } from '../../../../src/contracts/loan/lend';
+import { makeRatio } from '../../../../src/contractSupport';
 
 test('makeLendInvitation', async t => {
   const { zcf, zoe, loanKit } = await setupLoanUnitTest();
 
-  const config = {};
+  const config = {
+    mmr: makeRatio(150, loanKit.brand),
+  };
   const lendInvitation = makeLendInvitation(zcf, config);
 
   await checkDescription(t, zoe, lendInvitation, 'lend');

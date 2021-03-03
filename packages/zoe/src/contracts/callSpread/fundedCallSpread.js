@@ -50,7 +50,8 @@ import { Position } from './position';
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
- * + increase the precision of the calculations. (use Percents with base=10000)
+ * + increase the precision of the calculations. (use Ratios with
+ *   denominator.value=10000)
  */
 
 /** @type {ContractStartFn} */

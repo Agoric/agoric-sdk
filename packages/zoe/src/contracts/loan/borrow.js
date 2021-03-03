@@ -9,6 +9,7 @@ import {
   assertProposalShape,
   trade,
   getAmountOut,
+  multiplyBy,
 } from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
@@ -19,7 +20,7 @@ import { makeAddCollateralInvitation } from './addCollateral';
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {
   const {
-    mmr, // Maintenance Margin Requirement, in percent
+    mmr, // Maintenance Margin Requirement, as a Ratio
     priceAuthority,
     periodNotifier,
     interestRate,
@@ -48,22 +49,14 @@ export const makeBorrowInvitation = (zcf, config) => {
       collateralGiven,
       loanBrand,
     );
-    // AWAIT ///
 
     const collateralPriceInLoanBrand = getAmountOut(quote);
 
-    // formula: assert collateralValue*100 >= loanWanted*mmr
-
-    // Calculate approximate value just for the error message if needed
-    const approxForMsg = mmr.scale(loanWanted);
-
     // Assert the required collateral was escrowed.
+    const requiredMargin = multiplyBy(loanWanted, mmr);
     assert(
-      loanMath.isGTE(
-        loanMath.make(collateralPriceInLoanBrand.value),
-        mmr.scale(loanWanted),
-      ),
-      X`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
+      loanMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
+      X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
 
     // Assert that the collateralGiven has not changed after the AWAIT

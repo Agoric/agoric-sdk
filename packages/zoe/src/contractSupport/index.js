@@ -35,3 +35,12 @@ export {
   saveAllIssuers,
   offerTo,
 } from './zoeHelpers';
+
+export {
+  makeRatio,
+  makeRatioFromAmounts,
+  multiplyBy,
+  divideBy,
+  assertIsRatio,
+  invertRatio,
+} from './ratio';

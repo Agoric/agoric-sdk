@@ -4,10 +4,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { makeIssuerKit } from '@agoric/ertp';
 
-import {
-  multiplyBy,
-  makeRatioFromAmounts,
-} from '../../../src/contractSupport/ratio';
+import { multiplyBy, makeRatioFromAmounts } from '../../../src/contractSupport';
 import {
   make100Percent,
   make0Percent,

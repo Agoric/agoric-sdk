@@ -11,7 +11,7 @@ import {
   multiplyBy,
   divideBy,
   invertRatio,
-} from '../../../src/contractSupport/ratio';
+} from '../../../src/contractSupport';
 
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;
@@ -43,6 +43,7 @@ test('ratio - basic', t => {
   amountsEqual(t, multiplyBy(moe(13333333), halfDefault), moe(6666666), brand);
   amountsEqual(t, multiplyBy(moe(1333), halfPrecise), moe(666), brand);
   amountsEqual(t, multiplyBy(moe(13333333), halfPrecise), moe(6666666), brand);
+  amountsEqual(t, multiplyBy(moe(0), halfPrecise), moe(0), brand);
 });
 
 test('ratio - multiplyBy non Amount', t => {
@@ -87,10 +88,25 @@ test('ratio - brand mismatch', t => {
 
   const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
   t.throws(() => divideBy(ast(10_000), convertToMoe), {
+    message: /amount's brand .* must match ratio's numerator .*/,
+  });
+  t.throws(() => multiplyBy(moe(10_000), convertToMoe), {
+    message: /amount's brand .* must match ratio's denominator .*/,
+  });
+});
+
+test.failing('ratio - brand mismatch & details', t => {
+  const { amountMath } = makeIssuerKit('moe');
+  const { amountMath: astAmountMath } = makeIssuerKit('ast');
+  const moe = amountMath.make;
+  const ast = astAmountMath.make;
+
+  const convertToMoe = makeRatioFromAmounts(moe(1), astAmountMath.make(3));
+  t.throws(() => divideBy(ast(10_000), convertToMoe), {
     message: `amount's brand "ast" must match ratio's numerator "moe"`,
   });
   t.throws(() => multiplyBy(moe(10_000), convertToMoe), {
-    message: 'amount\'s brand "moe" must match ratio\'s denominator "ast"',
+    message: `amount's brand "moe" must match ratio's denominator "ast"`,
   });
 });
 
@@ -119,6 +135,7 @@ test('ratio division', t => {
   const twoFifths = makeRatioFromAmounts(moe(2), moe(5));
   amountsEqual(t, divideBy(moe(100), twoFifths), moe(250), moeBrand);
   amountsEqual(t, multiplyBy(moe(100), twoFifths), moe(40), moeBrand);
+  amountsEqual(t, divideBy(moe(0), twoFifths), moe(0), moeBrand);
 });
 
 test('ratio inverse', t => {
@@ -150,6 +167,20 @@ test('ratio bad inputs', t => {
   t.throws(() => divideBy(makeRatioFromAmounts(moe(3), moe(5)), 37), {
     message: `Expected an amount: (an object)`,
   });
+  t.throws(() => makeRatio(3, moeBrand, 0), {
+    message: /No infinite ratios! Denoninator was 0/,
+  });
+  t.throws(() => makeRatioFromAmounts(moe(37), moe(0)), {
+    message: /No infinite ratios! Denoninator was 0/,
+  });
+  t.throws(() => makeRatioFromAmounts(moe(37), moe(0)), {
+    message: /No infinite ratios! Denoninator was 0/,
+  });
+});
+
+test.failing('ratio bad inputs w/brand names', t => {
+  const { amountMath, brand: moeBrand } = makeIssuerKit('moe');
+  const moe = amountMath.make;
   t.throws(() => makeRatio(3, moeBrand, 0), {
     message: 'No infinite ratios! Denoninator was 0/"moe"',
   });

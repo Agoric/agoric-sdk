@@ -3,7 +3,7 @@
 import './types';
 import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { natSafeMath } from '.';
+import { natSafeMath } from './safeMath';
 
 const { multiply, floorDivide } = natSafeMath;
 
@@ -51,9 +51,7 @@ export const makeRatio = (
 ) => {
   assert(
     denominator > 0n,
-    X`No infinite ratios! Denoninator was 0/${q(
-      denominatorBrand.getAllegedName(),
-    )}`,
+    X`No infinite ratios! Denoninator was 0/${q(denominatorBrand)}`,
   );
 
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
@@ -79,15 +77,14 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 export const multiplyBy = (amount, ratio) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
   // coerce amount using a native amountMath operation.
-  assert(amount.value && amount.brand, X`Expected an amount: ${amount}`);
+  assert(amount.brand, X`Expected an amount: ${amount}`);
+  Nat(amount.value);
 
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.denominator.brand,
-    X`amount's brand ${q(
-      amount.brand.getAllegedName(),
-    )} must match ratio's denominator ${q(
-      ratio.denominator.brand.getAllegedName(),
+    X`amount's brand ${q(amount.brand)} must match ratio's denominator ${q(
+      ratio.denominator.brand,
     )}`,
   );
 
@@ -105,15 +102,14 @@ export const multiplyBy = (amount, ratio) => {
 export const divideBy = (amount, ratio) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
   // coerce amount using a native amountMath operation.
-  assert(amount.value && amount.brand, X`Expected an amount: ${amount}`);
+  assert(amount.brand, X`Expected an amount: ${amount}`);
+  Nat(amount.value);
 
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.numerator.brand,
-    X`amount's brand ${q(
-      amount.brand.getAllegedName(),
-    )} must match ratio's numerator ${q(
-      ratio.numerator.brand.getAllegedName(),
+    X`amount's brand ${q(amount.brand)} must match ratio's numerator ${q(
+      ratio.numerator.brand,
     )}`,
   );
 

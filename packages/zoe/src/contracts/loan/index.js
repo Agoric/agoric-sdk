@@ -4,9 +4,8 @@ import '../../../exported';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 
-import { assertIssuerKeywords } from '../../contractSupport';
+import { assertIssuerKeywords, makeRatio } from '../../contractSupport';
 import { makeLendInvitation } from './lend';
-import { makePercent } from '../../contractSupport/percentMath';
 
 /**
  * Add collateral of a particular brand and get a loan of another
@@ -27,8 +26,8 @@ import { makePercent } from '../../contractSupport/percentMath';
  * loaned amount and interest must be of the same (separate) brand.
  *
  * Terms:
- *  * mmr (default = 150) - the Maintenance Margin Requirement, in
- *    percent. The default is 150, meaning that collateral should be
+ *  * mmr (default = 150/100) - the Maintenance Margin Requirement, as a
+ *    ratio. The default is 150/100, meaning that collateral should be
  *    worth at least 150% of the loan. If the value of the collateral
  *    drops below mmr, liquidation occurs.
  *  * priceAuthority - will be used for getting the current value of
@@ -62,7 +61,7 @@ const start = async zcf => {
   // some defaults and add them to a contract-wide config.
 
   const {
-    mmr = makePercent(150n, loanMath), // Maintenance Margin Requirement
+    mmr = makeRatio(150n, loanMath), // Maintenance Margin Requirement
     autoswapInstance,
     priceAuthority,
     periodNotifier,
