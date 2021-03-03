@@ -6,12 +6,10 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
-import { makeRatio, multiplyBy } from '../../contractSupport';
+import { multiplyBy } from '../../contractSupport';
 
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodNotifier
-
-const BASIS_POINT_DENOMINATOR = 10000n;
 
 /**
  * @type {CalcInterestFn} Calculate the interest using an interest
@@ -37,11 +35,6 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     configMinusGetDebt,
   } = debtCalculatorConfig;
   let debt = originalDebt;
-  const interestRatio = makeRatio(
-    interestRate,
-    debt.brand,
-    BASIS_POINT_DENOMINATOR,
-  );
 
   // the last period-end for which interest has been added
   let lastCalculationTimestamp = basetime;

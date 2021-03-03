@@ -30,6 +30,8 @@ import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addC
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
 import { makeRatio } from '../../../../src/contractSupport';
 
+const BASIS_POINTS = 10000;
+
 const setupBorrow = async (
   maxLoanValue = 100,
   timer = buildManualTimer(console.log),
@@ -74,7 +76,7 @@ const setupBorrow = async (
     notifier: periodNotifier,
   } = makeNotifierKit();
 
-  const interestRate = 5;
+  const interestRate = makeRatio(5, loanKit.brand, BASIS_POINTS);
 
   const config = {
     lenderSeat,
