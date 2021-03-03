@@ -17,7 +17,7 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal, passStyleOf } from '@agoric/marshal';
+import { makeMarshal, passStyleOf, Far, Data } from '@agoric/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -184,7 +184,7 @@ export function makeWallet({
         currentAmount,
       });
     const filter = state => state.map(innerFilter);
-    const pu = harden({
+    const pu = Far('pursesUpdater', {
       updateState: newState => {
         ipu.updateState(newState);
         apu.updateState(filter(newState));
@@ -255,7 +255,7 @@ export function makeWallet({
         ...jstate,
         purse,
         brand,
-        actions: {
+        actions: Far('purse.actions', {
           // Send a value from this purse.
           async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
@@ -276,7 +276,7 @@ export function makeWallet({
           deposit(payment, amount = undefined) {
             return E(purse).deposit(payment, amount);
           },
-        },
+        }),
       }),
     );
     pursesUpdater.updateState([...pursesFullState.values()]);
@@ -470,7 +470,7 @@ export function makeWallet({
     // Payments are made for the keywords in proposal.give.
     const keywords = [];
 
-    const paymentPs = Object.entries(proposal.give || {}).map(
+    const paymentPs = Object.entries(proposal.give || Data({})).map(
       ([keyword, amount]) => {
         const purse = purseKeywordRecord[keyword];
         assert(
@@ -491,15 +491,11 @@ export function makeWallet({
     // for the offer.
     const payments = await Promise.all(paymentPs);
 
-    const paymentKeywordRecord = Object.fromEntries(
-      keywords.map((keyword, i) => [keyword, payments[i]]),
+    const paymentKeywordRecord = Data(
+      Object.fromEntries(keywords.map((keyword, i) => [keyword, payments[i]])),
     );
 
-    const seat = E(zoe).offer(
-      inviteP,
-      harden(proposal),
-      harden(paymentKeywordRecord),
-    );
+    const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
 
     // We'll resolve when deposited.
     const depositedP = E(seat)
@@ -586,7 +582,7 @@ export function makeWallet({
     if (already) {
       depositFacet = actions;
     } else {
-      depositFacet = harden({
+      depositFacet = Far('depositFacet', {
         receive(paymentP) {
           return E(actions).receive(paymentP);
         },
@@ -684,26 +680,28 @@ export function makeWallet({
 
   const compileProposal = proposalTemplate => {
     const {
-      want = {},
-      give = {},
+      want = Data({}),
+      give = Data({}),
       exit = { onDemand: null },
     } = proposalTemplate;
 
     const purseKeywordRecord = {};
 
     const compile = amountKeywordRecord => {
-      return Object.fromEntries(
-        Object.entries(amountKeywordRecord).map(
-          ([keyword, { pursePetname, value }]) => {
-            const purse = getPurse(pursePetname);
-            purseKeywordRecord[keyword] = purse;
-            const brand = purseToBrand.get(purse);
-            const amount = {
-              brand,
-              value,
-            };
-            return [keyword, amount];
-          },
+      return Data(
+        Object.fromEntries(
+          Object.entries(amountKeywordRecord).map(
+            ([keyword, { pursePetname, value }]) => {
+              const purse = getPurse(pursePetname);
+              purseKeywordRecord[keyword] = purse;
+              const brand = purseToBrand.get(purse);
+              const amount = {
+                brand,
+                value,
+              };
+              return [keyword, amount];
+            },
+          ),
         ),
       );
     };
@@ -778,7 +776,7 @@ export function makeWallet({
         origin,
         approvalP,
         enable: false,
-        actions: {
+        actions: Far('dapp.actions', {
           setPetname(petname) {
             if (dappRecord.petname === petname) {
               return dappRecord.actions;
@@ -824,7 +822,7 @@ export function makeWallet({
             updateDapp(dappRecord);
             return dappRecord.actions;
           },
-        },
+        }),
       };
 
       // Prepare the table entry to be updated.
@@ -1138,11 +1136,14 @@ export function makeWallet({
   };
 
   // Allow people to send us payments.
-  const selfContact = addContact('Self', {
-    receive(payment) {
-      return addPayment(payment);
-    },
-  });
+  const selfContact = addContact(
+    'Self',
+    Far('contact', {
+      receive(payment) {
+        return addPayment(payment);
+      },
+    }),
+  );
   async function getDepositFacetId(_brandBoardId) {
     // Always return the generic deposit facet.
     return E.G(selfContact).depositBoardId;
@@ -1278,8 +1279,8 @@ export function makeWallet({
     return selfContact;
   }
 
-  const makeManager = petnameMapping => {
-    const manager = {
+  const makeManager = (petnameMapping, managerType) => {
+    const manager = Far(managerType, {
       rename: async (petname, thing) => {
         petnameMapping.renamePetname(petname, thing);
         await updateAllState();
@@ -1290,18 +1291,21 @@ export function makeWallet({
         petnameMapping.suggestPetname(petname, thing);
         await updateAllState();
       },
-    };
-    return harden(manager);
+    });
+    return manager;
   };
 
   /** @type {InstallationManager} */
-  const installationManager = makeManager(installationMapping);
+  const installationManager = makeManager(
+    installationMapping,
+    'InstallationManager',
+  );
 
   /** @type {InstanceManager} */
-  const instanceManager = makeManager(instanceMapping);
+  const instanceManager = makeManager(instanceMapping, 'InstanceManager');
 
   /** @type {IssuerManager} */
-  const issuerManager = {
+  const issuerManager = Far('IssuerManager', {
     rename: async (petname, issuer) => {
       assert(
         brandTable.hasByIssuer(issuer),
@@ -1330,8 +1334,7 @@ export function makeWallet({
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },
-  };
-  harden(issuerManager);
+  });
 
   function getInstallationManager() {
     return installationManager;
@@ -1364,7 +1367,7 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
-  const wallet = harden({
+  const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
     waitForDappApproval,
