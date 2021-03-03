@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { Far } from '@agoric/marshal';
+import { Far, parse, stringify } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -19,7 +19,7 @@ export function buildRootDeviceNode(tools) {
       );
     }
     try {
-      const body = JSON.parse(`${bodyString}`);
+      const body = parse(`${bodyString}`);
       SO(inboundHandler).inbound(Nat(count), body);
     } catch (e) {
       console.error(`error during inboundCallback:`, e);
@@ -35,7 +35,7 @@ export function buildRootDeviceNode(tools) {
 
     sendResponse(count, isReject, obj) {
       try {
-        deliverResponse(count, isReject, JSON.stringify(obj));
+        deliverResponse(count, isReject, stringify(obj));
       } catch (e) {
         console.error(`error during sendResponse:`, e);
       }
@@ -43,7 +43,7 @@ export function buildRootDeviceNode(tools) {
 
     sendBroadcast(obj) {
       try {
-        sendBroadcast(JSON.stringify(obj));
+        sendBroadcast(stringify(obj));
       } catch (e) {
         console.error(`error during sendBroadcast:`, e);
       }

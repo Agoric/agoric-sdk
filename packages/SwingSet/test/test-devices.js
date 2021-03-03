@@ -433,7 +433,7 @@ test.serial('command broadcast', async t => {
   await initializeSwingset(config, ['command1'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
-  t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
+  t.deepEqual(broadcasts, [{ hello: 'everybody', big: BigInt(1) }]);
 });
 
 test.serial('command deliver', async t => {
@@ -461,21 +461,25 @@ test.serial('command deliver', async t => {
   await c.run();
 
   t.deepEqual(c.dump().log.length, 0);
-  const p1 = cm.inboundCommand({ piece: 'missing', doReject: false });
+  const p1 = cm.inboundCommand(
+    harden({ piece: 'missing', doReject: false, big: BigInt(2) }),
+  );
   await c.run();
   const r1 = await p1;
-  t.deepEqual(r1, { response: 'body' });
-  t.deepEqual(c.dump().log, ['handle-0-missing']);
+  t.deepEqual(r1, { response: 'body', big: BigInt(4) });
+  t.deepEqual(c.dump().log, ['handle-0-missing-2']);
 
-  const p2 = cm.inboundCommand({ piece: 'errory', doReject: true });
+  const p2 = cm.inboundCommand(
+    harden({ piece: 'errory', doReject: true, big: 3 }),
+  );
   let rejection;
   p2.then(
     res => t.fail(`expected to reject, but got ${res}`),
     rej => (rejection = rej),
   );
   await c.run();
-  t.deepEqual(c.dump().log, ['handle-0-missing', 'handle-1-errory']);
-  t.deepEqual(rejection, { response: 'body' });
+  t.deepEqual(c.dump().log, ['handle-0-missing-2', 'handle-1-errory-3']);
+  t.deepEqual(rejection, { response: 'body', big: BigInt(4) });
 });
 
 test.serial('liveslots throws when D() gets promise', async t => {

@@ -74,14 +74,21 @@ export function buildRootObject(vatPowers, vatParameters) {
         });
         D(devices.mailbox).registerInboundHandler(handler);
       } else if (argv[0] === 'command1') {
-        D(devices.command).sendBroadcast({ hello: 'everybody' });
+        D(devices.command).sendBroadcast(
+          harden({ hello: 'everybody', big: BigInt(1) }),
+        );
       } else if (argv[0] === 'command2') {
         const handler = Far('handler', {
           inbound(count, body) {
-            log(`handle-${count}-${body.piece}`);
-            D(devices.command).sendResponse(count, body.doReject, {
-              response: 'body',
-            });
+            log(`handle-${count}-${body.piece}-${body.big}`);
+            D(devices.command).sendResponse(
+              count,
+              body.doReject,
+              harden({
+                response: 'body',
+                big: BigInt(4),
+              }),
+            );
           },
         });
         D(devices.command).registerInboundHandler(handler);
