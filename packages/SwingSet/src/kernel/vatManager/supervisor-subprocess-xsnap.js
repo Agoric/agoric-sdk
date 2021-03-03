@@ -12,7 +12,6 @@ const decoder = new TextDecoder();
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
-  // @ts-ignore
   // eslint-disable-next-line
   // console.log(`---worker: ${first}`, ...args);
 }
@@ -225,13 +224,17 @@ function makeWorker(port) {
         ]),
     };
 
+    const cacheSize =
+      typeof virtualObjectCacheSize === 'number'
+        ? virtualObjectCacheSize
+        : undefined;
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
       vatPowers,
       vatParameters,
-      // @ts-ignore  TODO: defend against non-numeric?
-      virtualObjectCacheSize,
+      cacheSize,
       // TODO: lsgc? API drift?
     );
 
@@ -239,9 +242,8 @@ function makeWorker(port) {
       ...ls.vatGlobals,
       console: makeConsole(`SwingSet:vatWorker`),
       assert,
-      // @ts-ignore bootstrap provides HandledPromise
-      // eslint-disable-next-line no-undef
-      HandledPromise,
+      // bootstrap provides HandledPromise
+      HandledPromise: globalThis.HandledPromise,
     };
     const vatNS = await importBundle(bundle, { endowments });
     workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
@@ -282,8 +284,7 @@ function makeWorker(port) {
   });
 }
 
-// @ts-ignore xsnap provides issueCommand global
-// eslint-disable-next-line no-undef
-const port = managerPort(issueCommand);
+// xsnap provides issueCommand global
+const port = managerPort(globalThis.issueCommand);
 const worker = makeWorker(port);
 globalThis.handleCommand = port.handlerFrom(worker.handleItem);

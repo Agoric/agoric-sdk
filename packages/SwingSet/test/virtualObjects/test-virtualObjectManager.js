@@ -1,79 +1,12 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { makeMarshal, Far } from '@agoric/marshal';
-import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../../src/parseVatSlots';
-import { makeVirtualObjectManager } from '../../src/kernel/virtualObjectManager';
+import { Far } from '@agoric/marshal';
+import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 const s = JSON.stringify;
-
-function makeAllTheStuff(cacheSize) {
-  const fakeStore = new Map();
-
-  function dumpStore() {
-    const result = [];
-    for (const entry of fakeStore.entries()) {
-      result.push(entry);
-    }
-    result.sort((e1, e2) => e1[0].localeCompare(e2[0]));
-    return result;
-  }
-
-  const fakeSyscall = {
-    vatstoreGet: key => fakeStore.get(key),
-    vatstoreSet: (key, value) => fakeStore.set(key, value),
-    vatstoreDelete: key => fakeStore.delete(key),
-  };
-
-  let nextExportID = 1;
-  function fakeAllocateExportID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
-  }
-
-  const valToSlot = new WeakMap();
-
-  // eslint-disable-next-line no-use-before-define
-  const fakeMarshal = makeMarshal(fakeConvertValToSlot, fakeConvertSlotToVal);
-
-  const {
-    makeVirtualObjectRepresentative,
-    makeWeakStore,
-    makeKind,
-    flushCache,
-  } = makeVirtualObjectManager(
-    fakeSyscall,
-    fakeAllocateExportID,
-    valToSlot,
-    fakeMarshal,
-    cacheSize,
-  );
-
-  function fakeConvertValToSlot(val) {
-    return valToSlot.get(val);
-  }
-
-  function fakeConvertSlotToVal(slot) {
-    const { type, virtual } = parseVatSlot(slot);
-    assert(
-      virtual,
-      'fakeConvertSlotToVal only works with virtual object references',
-    );
-    assert.equal(type, 'object');
-    return makeVirtualObjectRepresentative(slot);
-  }
-
-  return {
-    makeWeakStore,
-    makeKind,
-    flushCache,
-    dumpStore,
-  };
-}
 
 function makeThingInstance(state) {
   return {
@@ -132,7 +65,7 @@ function makeZotInstance(state) {
 }
 
 test('virtual object operations', t => {
-  const { makeKind, flushCache, dumpStore } = makeAllTheStuff(3);
+  const { makeKind, flushCache, dumpStore } = makeFakeVirtualObjectManager(3);
 
   const thingMaker = makeKind(makeThingInstance);
   const zotMaker = makeKind(makeZotInstance);
@@ -231,7 +164,7 @@ test('virtual object operations', t => {
 });
 
 test('weak store operations', t => {
-  const { makeWeakStore, makeKind } = makeAllTheStuff(3);
+  const { makeWeakStore, makeKind } = makeFakeVirtualObjectManager(3);
 
   const thingMaker = makeKind(makeThingInstance);
   const zotMaker = makeKind(makeZotInstance);

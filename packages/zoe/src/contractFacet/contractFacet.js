@@ -43,6 +43,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
+    /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
     /** @type {Store<ZCFSeat,ZCFSeatAdmin>} */
@@ -441,7 +442,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
-        // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           throw zcfSeat.fail(reason);
         });

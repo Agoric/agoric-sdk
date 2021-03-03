@@ -25,8 +25,7 @@ const start = zcf => {
   if (terms.throw) {
     throw new Error('blowup in makeContract');
   } else if (terms.meter) {
-    // @ts-ignore
-    return new Array(1e9);
+    return { publicFacet: new Array(1e9) };
   }
 
   const safeAutoRefund = seat => {

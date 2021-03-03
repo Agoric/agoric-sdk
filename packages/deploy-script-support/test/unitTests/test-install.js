@@ -27,7 +27,6 @@ test('install', async t => {
   };
 
   const board = makeBoard();
-  // @ts-ignore
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
   const resolvedPath = resolvePathForPackagedContract(

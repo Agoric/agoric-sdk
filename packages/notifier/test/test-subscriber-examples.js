@@ -35,9 +35,9 @@ test('subscription for-await-of cannot eat promise', async t => {
   const { publication, subscription } = makeSubscriptionKit();
   paula(publication);
   const subP = Promise.resolve(subscription);
-  // @ts-ignore because this test demonstrates the failure that results from
+  // Type cast because this test demonstrates the failure that results from
   // giving Alice a promise for a subscription.
-  const log = await alice(subP);
+  const log = await alice(/** @type {any} */ (subP));
 
   // This TypeError is thrown by JavaScript when a for-await-in loop
   // attempts to iterate a promise that is not an async iterable.

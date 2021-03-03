@@ -1,3 +1,4 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
@@ -37,7 +38,7 @@ test('brand.getDisplayInfo()', t => {
 
 test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
     message:
       'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces"]',
@@ -190,7 +191,7 @@ test('purse.deposit promise', async t => {
   const exclusivePaymentP = E(issuer).claim(payment);
 
   await t.throwsAsync(
-    // @ts-ignore
+    // @ts-ignore deliberate invalid arguments for testing
     () => E(purse).deposit(exclusivePaymentP, fungible25),
     { message: /deposit does not accept promises/ },
     'failed to reject a promise for a payment',
