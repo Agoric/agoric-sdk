@@ -86,6 +86,8 @@ async function runTestScript(
 ) {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
   let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
+  /** @type { number | null } */
+  let plan = null;
   const testStatus = { total: 0, pass: 0, fail: 0 };
   let label = '';
   /** @type { string[] } */
@@ -128,6 +130,9 @@ async function runTestScript(
         console.warn({ ...msg, filename, label });
       }
     }
+    if ('plan' in msg) {
+      plan = msg.plan;
+    }
     return encoder.encode('null');
   }
 
@@ -154,17 +159,27 @@ async function runTestScript(
 
     for (const name of testNames) {
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
+      plan = null;
       await worker.issueStringCommand(
         JSON.stringify({ method: 'runTest', name }),
       );
       testStatus.total += 1;
-      const pass = assertionStatus.ok > 0 && assertionStatus['not ok'] === 0;
+
+      const pending = typeof plan === 'number' ? plan - assertionStatus.ok : 0;
+
+      const pass =
+        pending === 0 &&
+        assertionStatus.ok > 0 &&
+        assertionStatus['not ok'] === 0;
       if (pass) {
         testStatus.pass += 1;
       } else {
         testStatus.fail += 1;
       }
       console.log(pass ? '.' : 'F', filename, name);
+      if (pending !== 0) {
+        console.warn(`bad plan: ${pending} still to go`);
+      }
     }
   } finally {
     await worker.terminate();

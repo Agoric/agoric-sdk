@@ -99,15 +99,12 @@ function handler(rawMessage) {
 
     case 'runTest': {
       const { name } = msg;
-      harness
-        .run(name)
-        .then(send)
-        .catch(ex =>
-          send({
-            status: 'not ok',
-            message: `getting test results: ${ex.message}`,
-          }),
-        );
+      harness.run(name).catch(ex =>
+        send({
+          status: 'not ok',
+          message: `${name} threw: ${ex.message}`,
+        }),
+      );
       break;
     }
 

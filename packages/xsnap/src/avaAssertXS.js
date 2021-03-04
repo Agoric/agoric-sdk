@@ -105,7 +105,6 @@ let theHarness = null; // ISSUE: ambient
  */
 function createHarness(send) {
   let testNum = 0;
-  let passCount = 0;
   /** @type {((ot: { context: Object }) => Promise<void>)[]} */
   const beforeHooks = [];
   /** @type {Record<string, () => Promise<void>>} */
@@ -122,11 +121,8 @@ function createHarness(send) {
       beforeHooks.push(hook);
     },
     /** @type { (ok: boolean) => number } */
-    finish(ok) {
+    finish(_ok) {
       testNum += 1;
-      if (ok) {
-        passCount += 1;
-      }
       return testNum;
     },
     /** @type { (name: string, thunk: () => Promise<void>) => void } */
@@ -141,25 +137,15 @@ function createHarness(send) {
     },
     /**
      * @param {string} name
-     * @returns { Promise<Summary> }
-     * @typedef {import('./avaXS').Summary} Summary
+     * @returns { Promise<void> }
      */
     async run(name) {
       for await (const hook of beforeHooks) {
         await hook({ context });
       }
 
-      passCount = 0;
-      const startNum = testNum;
       const suite = suitesToRun[name];
       await suite();
-      const total = testNum - startNum;
-
-      return {
-        pass: passCount,
-        fail: total - passCount,
-        total,
-      };
     },
   });
 
@@ -210,14 +196,8 @@ function checkExpectation(exc, expectation) {
  * @typedef {ReturnType<typeof makeTester>} Tester
  */
 function makeTester(htest, out) {
-  /** @type {number?} */
-  let pending;
-
   /** @type {(result: boolean, info?: string) => void} */
   function assert(result, info) {
-    if (typeof pending === 'number') {
-      pending -= 1;
-    }
     const testNum = htest.finish(result);
     if (result) {
       out.ok(testNum, info);
@@ -237,10 +217,7 @@ function makeTester(htest, out) {
   const t = freeze({
     /** @param {number} count */
     plan(count) {
-      pending = count;
-    },
-    get pending() {
-      return pending;
+      out.plan(count);
     },
     get context() {
       return htest.context;
@@ -362,10 +339,6 @@ function test(label, run, htestOpt) {
     } catch (ex) {
       console.log('FAIL (todo route console)', ex);
       t.fail(`${label} threw: ${ex.message}`);
-    }
-    const pending = t.pending;
-    if (typeof pending === 'number' && pending !== 0) {
-      t.fail(`bad plan: ${t.pending} still to go`);
     }
   });
 }
