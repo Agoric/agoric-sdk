@@ -20,17 +20,22 @@ const xsnapOptions = {
   os: os.type(),
 };
 
-test('bootstrap to SES lockdown', async t => {
-  const bootScript = await asset('..', 'dist', 'bootstrap.umd.js');
+function options() {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
     return new Uint8Array();
   }
+  return { ...xsnapOptions, handleCommand, messages };
+}
+
+test('bootstrap to SES lockdown', async t => {
+  const bootScript = await asset('..', 'dist', 'bootstrap.umd.js');
+  const opts = options();
   const name = 'SES lockdown worker';
-  const vat = xsnap({ ...xsnapOptions, handleCommand, name });
+  const vat = xsnap({ ...opts, name });
   await vat.evaluate(bootScript);
-  t.deepEqual([], messages);
+  t.deepEqual([], opts.messages);
 
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -40,22 +45,18 @@ test('bootstrap to SES lockdown', async t => {
     send([ typeof harden, typeof Compartment, typeof HandledPromise ]);
   `);
   await vat.close();
-  t.deepEqual(['["function","function","function"]'], messages);
+  t.deepEqual(['["function","function","function"]'], opts.messages);
 });
 
 test('child compartment cannot access start powers', async t => {
   const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const opts = options();
+  const vat = xsnap(opts);
   await vat.evaluate(bootScript);
 
   const script = await asset('escapeCompartment.js');
   await vat.evaluate(script);
   await vat.close();
 
-  t.deepEqual(messages, ['err was TypeError: Not available']);
+  t.deepEqual(opts.messages, ['err was TypeError: Not available']);
 });
