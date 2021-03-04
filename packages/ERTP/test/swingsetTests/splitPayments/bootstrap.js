@@ -1,17 +1,19 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit } from '../../../src';
+import { makeIssuerKit, amountMath } from '../../../src';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const arg0 = vatParameters.argv[0];
 
   function testSplitPayments(aliceMaker) {
     vatPowers.testLog('start test splitPayments');
-    const { mint: moolaMint, issuer, amountMath } = makeIssuerKit('moola');
-    const moolaPayment = moolaMint.mintPayment(amountMath.make(1000));
+    const { mint: moolaMint, issuer, brand } = makeIssuerKit('moola');
+    const moolaPayment = moolaMint.mintPayment(amountMath.make(1000n, brand));
 
-    const aliceP = E(aliceMaker).make(issuer, amountMath, moolaPayment);
+    const aliceP = E(aliceMaker).make(issuer, brand, moolaPayment);
     return E(aliceP).testSplitPayments();
   }
 

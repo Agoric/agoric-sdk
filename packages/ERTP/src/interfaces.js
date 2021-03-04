@@ -1,3 +1,5 @@
+// @ts-check
+
 /** @type {ERTPKind} */
 export const ERTPKind = {
   ISSUER: 'issuer',

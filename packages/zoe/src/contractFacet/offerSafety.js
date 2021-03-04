@@ -5,7 +5,7 @@
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath
+ * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath
  * @param {AmountKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
  */
@@ -27,7 +27,7 @@ const satisfiesInternal = (getAmountMath, giveOrWant = {}, allocation) => {
  * For this allocation to satisfy what the user wanted, their
  * allocated amounts must be greater than or equal to proposal.want.
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath - a
+ * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath - a
  * function that takes a brand and returns the appropriate amountMath.
  * The function must have an amountMath for every brand in
  * proposal.want.
@@ -49,7 +49,7 @@ const satisfiesWant = (getAmountMath, proposal, allocation) =>
  * amounts must be greater than or equal to what was originally
  * offered (proposal.give).
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath - a
+ * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath - a
  * function that takes a brand and returns the appropriate amountMath.
  * The function must have an amountMath for every brand in
  * proposal.give.
@@ -73,7 +73,7 @@ const satisfiesGive = (getAmountMath, proposal, allocation) =>
  * `proposal.give` (giving a refund) or whether we fully satisfy
  * `proposal.want`. Both can be fully satisfied.
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath - a
+ * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath - a
  * function that takes a brand and returns the appropriate amountMath.
  * The function must have an amountMath for every brand in
  * proposal.want and proposal.give.

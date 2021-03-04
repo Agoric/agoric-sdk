@@ -102,7 +102,7 @@
 /**
  * @callback GetAmountMath
  * @param {Brand} brand
- * @returns {AmountMath}
+ * @returns {DeprecatedAmountMath}
  */
 
 /**

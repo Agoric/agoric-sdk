@@ -101,7 +101,7 @@ export const cleanKeywords = keywordRecord => {
  * `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
  * :Timer, deadline :bigint } }
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath
+ * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath
  * @param {Proposal} proposal
  * @returns {ProposalRecord}
  */

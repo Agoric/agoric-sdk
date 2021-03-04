@@ -126,7 +126,7 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
     brands: { In: brandIn, Out: brandOut },
     issuers: { Quote: quoteIssuer },
     maths: { In: mathIn, Out: mathOut, Quote: quoteMath },
-    unitAmountIn = mathIn.make(1),
+    unitAmountIn = mathIn.make(1n),
   } = await E(zoe).getTerms(aggregator.instance);
 
   const price1000 = await makeFakePriceOracle(t, 1000n);
