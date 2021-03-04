@@ -186,7 +186,7 @@ async function avaConfig(args, opts, { glob, readFile }) {
     console.warn(X`ava-xs does not support ava options: ${q(unsupported)}`);
   }
   const { files: filePatterns, require } = pkgMeta.ava;
-  let { exclude } = pkgMeta['ava-xs'];
+  let { exclude } = pkgMeta['ava-xs'] || {};
   if (typeof exclude === 'string') {
     exclude = [exclude];
   }
