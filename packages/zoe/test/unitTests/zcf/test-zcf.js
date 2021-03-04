@@ -1198,7 +1198,7 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
 });
 
 test(`zcf.shutdown - userSeat exits`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const { userSeat } = await makeOffer(zoe, zcf);
   zcf.shutdown('so long');
   t.deepEqual(await E(userSeat).getPayouts(), {});
@@ -1206,7 +1206,7 @@ test(`zcf.shutdown - userSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - zcfSeat exits`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = await makeOffer(zoe, zcf);
   t.falsy(zcfSeat.hasExited());
   await t.falsy(await E(userSeat).hasExited());
@@ -1216,7 +1216,7 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdown('sayonara');
   await t.throwsAsync(() => E(zoe).offer(invitation), {
@@ -1227,7 +1227,7 @@ test(`zcf.shutdown - no further offers accepted`, async t => {
 });
 
 test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdownWithFailure(`And don't come back`);
   await t.throwsAsync(() => E(zoe).offer(invitation), {
@@ -1238,7 +1238,7 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
 });
 
 test(`zcf.assert - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   t.throws(() => zcf.assert(false, X`And do not come back`), {
     message: /And do not come back/,
@@ -1251,7 +1251,7 @@ test(`zcf.assert - no further offers accepted`, async t => {
 });
 
 test(`zcf.stopAcceptingOffers`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const invitation1 = await zcf.makeInvitation(() => {}, 'seat');
   const invitation2 = await zcf.makeInvitation(() => {}, 'seat');
 
