@@ -169,17 +169,29 @@ function createHarness(send) {
 /**
  * @param {*} exc
  * @param {Expectation} expectation
- * @returns {boolean}
+ * @returns {null | { expected: unknown, actual: unknown }}
  * @typedef {{ instanceOf: Function } | { message: string | RegExp }=} Expectation
  */
 function checkExpectation(exc, expectation) {
-  if (!expectation) return true;
-  if ('instanceOf' in expectation) return exc instanceof expectation.instanceOf;
+  if (!expectation) return null;
+  if ('instanceOf' in expectation) {
+    if (exc instanceof expectation.instanceOf) {
+      return null;
+    } else {
+      return { expected: expectation.instanceOf, actual: exc };
+    }
+  }
   if ('message' in expectation) {
     const { message } = expectation;
-    return typeof message === 'string'
-      ? message === exc.message
-      : message.test(exc.message);
+    const ok =
+      typeof message === 'string'
+        ? message === exc.message
+        : message.test(exc.message);
+    if (ok) {
+      return null;
+    } else {
+      return { actual: exc.message, expected: message };
+    }
   }
   throw Error(`not implemented: ${JSON.stringify(expectation)}`);
 }
@@ -289,7 +301,8 @@ function makeTester(htest, out) {
         fn();
         assert(false, message);
       } catch (ex) {
-        assert(checkExpectation(ex, expectation), message);
+        const delta = checkExpectation(ex, expectation);
+        assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
     /** @type {(fn: () => unknown, message?: string) => void } */
@@ -310,7 +323,8 @@ function makeTester(htest, out) {
         await (typeof thrower === 'function' ? thrower() : thrower);
         assert(false, message);
       } catch (ex) {
-        assert(checkExpectation(ex, expectation), message);
+        const delta = checkExpectation(ex, expectation);
+        assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
     /** @type {(thrower: () => Promise<unknown>, message?: string) => Promise<void> } */
@@ -354,6 +368,7 @@ test.createHarness = createHarness;
 // TODO: test.skip, test.failing
 
 test.todo = _title => {};
+test.failing = (_title, _implementation) => {};
 
 /** @type {(label: string, fn: () => Promise<void>) => void } */
 test.before = (label, fn) => {

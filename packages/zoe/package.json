@@ -80,8 +80,6 @@
       "loan/test-borrow.js",
       "# ReferenceError#1: get 25961: undefined variable",
       "test-offerSafety",
-      "# no function",
-      "test-zoeHelpersWZcf.js",
       "# We use WORKER_TYPE=xs ava to run these...",
       "swingsetTests"
     ]
