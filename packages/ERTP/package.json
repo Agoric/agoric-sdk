@@ -14,7 +14,7 @@
     "test": "yarn test:node && yarn test:xs",
     "test:node": "ava",
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
-    "test:xs-unit": "node -r esm ../xsnap/src/avaXS.js test/unitTests/test-*.js",
+    "test:xs-unit": "ava-xs",
     "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
@@ -66,6 +66,9 @@
     "NEWS.md",
     "exported.js"
   ],
+  "ava-xs": {
+    "exclude": "swingsetTests"
+  },
   "ava": {
     "files": [
       "test/**/test-*.js"
