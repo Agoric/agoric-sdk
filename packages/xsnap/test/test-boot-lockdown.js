@@ -44,7 +44,7 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const bootScript = await asset('..', 'dist', 'bootstrap.umd.js');
+  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
