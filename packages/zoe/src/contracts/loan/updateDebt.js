@@ -48,7 +48,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const config = { ...configMinusGetDebt, getDebt };
 
-  const periodObserver = harden({
+  const periodObserver = Far('periodObserver', {
     updateState: timestamp => {
       let updatedLoan = false;
       // we could calculate the number of required updates and multiply by a power
