@@ -115,7 +115,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     `m.isEmpty([]) is true`,
   );
   t.throws(
-    () => m.isEmpty({ brand: mockBrand, value:  Data({}) }),
+    () => m.isEmpty({ brand: mockBrand, value: Data({}) }),
     { message: `value (an object) must be a Nat or an array` },
     `m.isEmpty({}) throws`,
   );
