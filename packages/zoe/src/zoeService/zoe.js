@@ -400,13 +400,13 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     ) => {
       return invitationKit.issuer.burn(invitation).then(
         invitationAmount => {
+          const invitationValue = invitationAmount.value;
+          assert(Array.isArray(invitationValue));
           assert(
-            invitationAmount.value.length === 1,
+            invitationValue.length === 1,
             'Only one invitation can be redeemed at a time',
           );
-          const {
-            value: [{ instance, handle: invitationHandle }],
-          } = invitationAmount;
+          const [{ instance, handle: invitationHandle }] = invitationValue;
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
           assert(
             instanceAdmin.acceptingOffers(),

@@ -272,6 +272,7 @@ const start = async zcf => {
     // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
+    assert.typeof(liquidityValueIn, 'bigint');
 
     const newUserCentralAmount = centralMath.make(
       calcValueToRemove(
