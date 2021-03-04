@@ -458,7 +458,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       { Simolean: simoleans(4) },
       { Moola: moola(3) },
       timer,
-      1,
+      1n,
     );
 
     await E(bobP).doOTCDesk(bobInvitation);
