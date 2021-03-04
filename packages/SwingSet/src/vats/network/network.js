@@ -2,6 +2,7 @@
 
 import makeStore from '@agoric/store';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { toBytes } from './bytes';
@@ -51,7 +52,7 @@ export const makeConnection = (
   /**
    * @type {Connection}
    */
-  const connection = harden({
+  const connection = Far('Connection', {
     getLocalAddress() {
       return localAddr;
     },
@@ -138,7 +139,7 @@ export function crossoverConnection(
 
   function makeHalfConnection(l, r) {
     let closed;
-    conns[l] = harden({
+    conns[l] = Far('Connection', {
       getLocalAddress() {
         return addrs[l];
       },
@@ -271,7 +272,7 @@ export function makeNetworkProtocol(protocolHandler) {
     /**
      * @type {Port}
      */
-    const port = harden({
+    const port = Far('Port', {
       getLocalAddress() {
         // Works even after revoke().
         return localAddr;
@@ -372,7 +373,7 @@ export function makeNetworkProtocol(protocolHandler) {
   /**
    * @type {ProtocolImpl}
    */
-  const protocolImpl = harden({
+  const protocolImpl = Far('ProtocolImpl', {
     bind,
     async inbound(listenAddr, remoteAddr) {
       let lastFailure = Error(`No listeners for ${listenAddr}`);
@@ -400,7 +401,7 @@ export function makeNetworkProtocol(protocolHandler) {
         // We have a legitimate inbound attempt.
         let consummated;
         const current = currentConnections.get(port);
-        const inboundAttempt = harden({
+        const inboundAttempt = Far('InboundAttempt', {
           getLocalAddress() {
             // Return address metadata.
             return localAddr;
@@ -500,7 +501,7 @@ export function makeEchoConnectionHandler() {
   /**
    * @type {Connection}
    */
-  return harden({
+  return Far('ConnectionHandler', {
     async onReceive(_connection, bytes, _connectionHandler) {
       if (closed) {
         throw closed;
@@ -529,7 +530,7 @@ export function makeLoopbackProtocolHandler() {
 
   let nonce = 0;
 
-  return harden({
+  return Far('ProtocolHandler', {
     // eslint-disable-next-line no-empty-function
     async onCreate(_impl, _protocolHandler) {
       // TODO

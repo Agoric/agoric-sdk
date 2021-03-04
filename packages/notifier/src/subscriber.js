@@ -3,6 +3,7 @@
 /// <reference types="ses"/>
 
 import { HandledPromise, E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import './types';
@@ -13,7 +14,7 @@ import './types';
  * @returns {Subscription<T>}
  */
 const makeSubscription = startP => {
-  return harden({
+  return Far('Subscription', {
     // eslint-disable-next-line no-use-before-define
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(startP),
 
@@ -39,7 +40,7 @@ export { makeSubscription };
 const makeSubscriptionIterator = tailP => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  return harden({
+  return Far('SubscriptionIterator', {
     subscribe: () => makeSubscription(tailP),
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(tailP),
     next: () => {
@@ -61,7 +62,7 @@ const makeSubscriptionKit = () => {
   let rear;
   const subscription = makeSubscription(new HandledPromise(r => (rear = r)));
 
-  const publication = harden({
+  const publication = Far('publication', {
     updateState: value => {
       if (rear === undefined) {
         throw new Error('Cannot update state after termination.');
