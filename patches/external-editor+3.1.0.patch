@@ -1,0 +1,20 @@
+diff --git a/node_modules/external-editor/main/errors/CreateFileError.js b/node_modules/external-editor/main/errors/CreateFileError.js
+index 7faa34c..6686f9a 100644
+--- a/node_modules/external-editor/main/errors/CreateFileError.js
++++ b/node_modules/external-editor/main/errors/CreateFileError.js
+@@ -14,7 +14,14 @@ var __extends = (this && this.__extends) || (function () {
+     };
+     return function (d, b) {
+         extendStatics(d, b);
+-        function __() { this.constructor = d; }
++        function __() {
++          Object.defineProperty(this, 'constructor', {
++            value: d,
++            writable: true,
++            enumerable: true,
++            configurable: true
++          });
++        }
+         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+     };
+ })();
