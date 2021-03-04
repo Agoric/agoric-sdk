@@ -73,10 +73,7 @@ const { keys } = Object;
  *   resolve: ResolveFn,
  *   dirname: typeof import('path').dirname,
  * }} io
- * @returns {Promise<{
- *   qty: number,
- *   byStatus: Record<Status, number>
- * }>} quantity of tests run and breakdown by status
+ * @returns {Promise<{ total: number, pass: number, fail: number }>} test results
  *
  * @typedef { 'ok' | 'not ok' | 'SKIP' } Status
  * @typedef {ReturnType<typeof import('./xsnap').xsnap>} XSnap
@@ -88,10 +85,11 @@ async function runTestScript(
   { spawnXSnap, bundleSource, resolve, dirname },
 ) {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
-
-  let qty = 0;
-  const byStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
+  let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
+  const testStatus = { total: 0, pass: 0, fail: 0 };
   let label = '';
+  /** @type { string[] } */
+  let testNames = [];
 
   /**
    * Handle callback "command" from xsnap subprocess.
@@ -102,10 +100,14 @@ async function runTestScript(
     /**
      * See also send() in avaHandler.js
      *
-     * @type { TapMessage | { bundleSource: [string, ...unknown[]] } | Summary }
+     * @type { TapMessage | { testNames: string[] } | { bundleSource: [string, ...unknown[]] } | Summary }
      */
     const msg = JSON.parse(decoder.decode(message));
     // console.log(input, msg, qty, byStatus);
+
+    if ('testNames' in msg) {
+      testNames = msg.testNames;
+    }
 
     if ('bundleSource' in msg) {
       const [startFilename, ...rest] = msg.bundleSource;
@@ -121,8 +123,7 @@ async function runTestScript(
       }
     }
     if ('status' in msg) {
-      byStatus[msg.status] += 1;
-      qty += 1;
+      assertionStatus[msg.status] += 1;
       if (msg.status === 'not ok') {
         console.warn({ ...msg, filename, label });
       }
@@ -147,12 +148,29 @@ async function runTestScript(
     await worker.evaluate(pathGlobalsKludge);
 
     // Send the test script to avaHandler.
-    await worker.issueStringCommand(testBundle.source);
+    await worker.issueStringCommand(
+      JSON.stringify({ method: 'loadScript', source: testBundle.source }),
+    );
+
+    for (const name of testNames) {
+      assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
+      await worker.issueStringCommand(
+        JSON.stringify({ method: 'runTest', name }),
+      );
+      testStatus.total += 1;
+      const pass = assertionStatus.ok > 0 && assertionStatus['not ok'] === 0;
+      if (pass) {
+        testStatus.pass += 1;
+      } else {
+        testStatus.fail += 1;
+      }
+      console.log(pass ? '.' : 'F', filename, name);
+    }
   } finally {
     await worker.terminate();
   }
 
-  return { qty, byStatus };
+  return testStatus;
 }
 
 /**
@@ -278,8 +296,7 @@ async function main(
     hideImport(await asset(avaHandler, readFile)),
   ];
 
-  let totalTests = 0;
-  const stats = { ok: 0, 'not ok': 0, SKIP: 0 };
+  const stats = { total: 0, pass: 0, fail: 0 };
 
   for (const filename of files) {
     if (exclude && exclude.filter(s => filename.match(s)).length > 0) {
@@ -290,21 +307,23 @@ async function main(
       console.log('# test script:', filename);
     }
 
-    const { qty, byStatus } = await runTestScript(filename, preamble, debug, {
+    const results = await runTestScript(filename, preamble, debug, {
       spawnXSnap,
       bundleSource,
       resolve,
       dirname,
     });
 
-    totalTests += qty;
-    Object.entries(byStatus).forEach(([status, n]) => {
+    Object.entries(results).forEach(([status, n]) => {
       stats[status] += n;
     });
   }
 
-  console.log({ totalTests, stats });
-  return stats['not ok'] > 0 ? 1 : 0;
+  console.log(stats.pass, 'tests passed');
+  if (stats.fail > 0) {
+    console.warn(stats.fail, 'tests failed');
+  }
+  return stats.fail > 0 ? 1 : 0;
 }
 
 /**

@@ -107,22 +107,10 @@ function createHarness(send) {
   let testNum = 0;
   let passCount = 0;
   /** @type {((ot: { context: Object }) => Promise<void>)[]} */
-  let beforeHooks = [];
-  /** @type {(() => Promise<void>)[]} */
-  let suitesToRun = [];
+  const beforeHooks = [];
+  /** @type {Record<string, () => Promise<void>>} */
+  const suitesToRun = {};
   const context = {};
-
-  /**
-   * @returns { Summary }
-   * @typedef {import('./avaXS').Summary} Summary
-   */
-  function summary() {
-    return {
-      pass: passCount,
-      fail: testNum - passCount,
-      total: testNum,
-    };
-  }
 
   const it = freeze({
     send,
@@ -141,22 +129,37 @@ function createHarness(send) {
       }
       return testNum;
     },
-    /** @type { (thunk: () => Promise<void>) => Promise<void> } */
-    async defer(thunk) {
-      suitesToRun.push(thunk);
+    /** @type { (name: string, thunk: () => Promise<void>) => void } */
+    queue(name, thunk) {
+      if (name in suitesToRun) {
+        throw Error(`duplicate name ${name}`);
+      }
+      suitesToRun[name] = thunk;
     },
-    summary,
-    async result() {
+    testNames() {
+      return keys(suitesToRun);
+    },
+    /**
+     * @param {string} name
+     * @returns { Promise<Summary> }
+     * @typedef {import('./avaXS').Summary} Summary
+     */
+    async run(name) {
       for await (const hook of beforeHooks) {
         await hook({ context });
       }
-      beforeHooks = [];
-      for await (const suite of suitesToRun) {
-        await suite();
-      }
-      suitesToRun = [];
 
-      return summary();
+      passCount = 0;
+      const startNum = testNum;
+      const suite = suitesToRun[name];
+      await suite();
+      const total = testNum - startNum;
+
+      return {
+        pass: passCount,
+        fail: total - passCount,
+        total,
+      };
     },
   });
 
@@ -340,12 +343,16 @@ function makeTester(htest, out) {
   return t;
 }
 
-/** @type {(label: string, run: (t: Tester) => Promise<void>, htestOpt: Harness?) => void } */
+/**
+ * @param {string} label
+ * @param {(t: Tester) => Promise<void>} run
+ * @param {Harness?} htestOpt
+ */
 function test(label, run, htestOpt) {
   const htest = htestOpt || theHarness;
   if (!htest) throw Error('no harness');
 
-  htest.defer(async () => {
+  htest.queue(label, async () => {
     const out = tapFormat(htest.send);
     const t = makeTester(htest, out);
     try {
