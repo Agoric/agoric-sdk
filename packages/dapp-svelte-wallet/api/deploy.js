@@ -93,7 +93,7 @@ export default async function deployWallet(
         issuerToPursePetnameP.set(
           issuer,
           E(walletAdmin)
-            .makeEmptyPurse(issuerPetname, pursePetname)
+            .makeEmptyPurse(issuerPetname, pursePetname, true)
             .then(
               _ => pursePetname,
               _ => pursePetname,

@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { makeSharedMap } from '../../../src/sharedMap';
 import { makeSharingService } from '../../../src/sharing';
 
@@ -40,7 +41,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       log('expected sharedMap to validate');
     }
 
-    const fakeSharedMap = harden({
+    const fakeSharedMap = Far('fakeSharedMap', {
       lookup(propertyName) {
         return `${propertyName}: value`;
       },
@@ -80,7 +81,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       });
   }
 
-  const obj0 = {
+  return Far('root', {
     async bootstrap(vats) {
       switch (vatParameters.argv[0]) {
         case 'sharedMap': {
@@ -100,6 +101,5 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
       }
     },
-  };
-  return harden(obj0);
+  });
 }
