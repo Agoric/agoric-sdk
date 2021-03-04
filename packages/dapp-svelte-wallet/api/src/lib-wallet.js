@@ -547,7 +547,7 @@ export function makeWallet({
       petnameForBrand = brandMapping.suggestPetname(petnameForBrand, brand);
       if (!already && makePurse) {
         // eslint-disable-next-line no-use-before-define
-        p = makeEmptyPurse(petnameForBrand, petnameForBrand);
+        p = makeEmptyPurse(petnameForBrand, petnameForBrand, true);
       } else {
         p = Promise.resolve();
       }
@@ -620,7 +620,11 @@ export function makeWallet({
     return `instance ${q(petname)} successfully added to wallet`;
   };
 
-  const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
+  const makeEmptyPurse = async (
+    brandPetname,
+    petnameForPurse,
+    defaultAutoDeposit = false,
+  ) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
 
@@ -628,6 +632,13 @@ export function makeWallet({
 
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
+
+    if (defaultAutoDeposit && !brandToAutoDepositPurse.has(brand)) {
+      // Try to initialize the autodeposit purse for this brand.
+      // Don't do state updates, since we'll do that next.
+      // eslint-disable-next-line no-use-before-define
+      await doEnableAutoDeposit(petnameForPurse, false);
+    }
 
     await updatePursesState(petnameForPurse, purse);
 
@@ -1164,7 +1175,7 @@ export function makeWallet({
   }
 
   const pendingEnableAutoDeposits = makeStore('brand');
-  async function enableAutoDeposit(pursePetname) {
+  async function doEnableAutoDeposit(pursePetname, updateState) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     const brand = purseToBrand.get(purse);
     if (brandToAutoDepositPurse.has(brand)) {
@@ -1172,7 +1183,10 @@ export function makeWallet({
     } else {
       brandToAutoDepositPurse.init(brand, purse);
     }
-    await updateAllPurseState();
+
+    if (updateState) {
+      await updateAllPurseState();
+    }
 
     const pendingP =
       pendingEnableAutoDeposits.has(brand) &&
@@ -1186,7 +1200,9 @@ export function makeWallet({
     const boardId = await boardIdP;
     brandToDepositFacetId.init(brand, boardId);
 
-    await updateAllPurseState();
+    if (updateState) {
+      await updateAllPurseState();
+    }
     return boardIdP;
   }
 
@@ -1432,7 +1448,10 @@ export function makeWallet({
     getOffers,
     getSeat: id => idToSeat.get(id),
     getSeats: ids => ids.map(wallet.getSeat),
-    enableAutoDeposit,
+    enableAutoDeposit(pursePetname) {
+      // Enable the autodeposit with intermediary state updates.
+      return doEnableAutoDeposit(pursePetname, true);
+    },
     disableAutoDeposit,
     getDepositFacetId,
     suggestIssuer,
