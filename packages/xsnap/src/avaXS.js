@@ -40,7 +40,7 @@ const externals = [
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const { entries, keys } = Object;
+const { keys } = Object;
 
 /**
  * Run one test script in an xsnap subprocess.
@@ -70,7 +70,7 @@ const { entries, keys } = Object;
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: (...args: [string, ...unknown[]]) => Promise<Bundle>,
- *   resolve: typeof import('path').resolve,
+ *   resolve: ResolveFn,
  *   dirname: typeof import('path').dirname,
  * }} io
  * @returns {Promise<{
@@ -109,6 +109,7 @@ async function runTestScript(
 
     if ('bundleSource' in msg) {
       const [startFilename, ...rest] = msg.bundleSource;
+      // see also makeBundleResolve() below
       const bundle = await bundleSource(resolve(startFilename), ...rest);
       return encoder.encode(JSON.stringify(bundle));
     }
@@ -132,7 +133,6 @@ async function runTestScript(
   // ISSUE: only works in one file / dir
   const literal = JSON.stringify;
   const testPath = resolve(filename);
-  // see also resolveKludge() below
   const pathGlobalsKludge = `
     globalThis.__filename = ${literal(testPath)};
     globalThis.__dirname = ${literal(dirname(testPath))};
@@ -298,8 +298,8 @@ async function main(
     });
 
     totalTests += qty;
-    Object.entries(byStatus).forEach(([status, q]) => {
-      stats[status] += q;
+    Object.entries(byStatus).forEach(([status, n]) => {
+      stats[status] += n;
     });
   }
 
@@ -308,19 +308,24 @@ async function main(
 }
 
 /**
- * Fix path resolution for the case of unitTests/zcf/zcfTesterContract
+ * Fix path resolution for test contract bundles.
  *
- * @param {ResolveFn} resolve
+ * @param {typeof import('path')} path
  * @returns {ResolveFn}
  * @typedef {typeof import('path').resolve } ResolveFn
  */
-function resolveKludge(resolve) {
+function makeBundleResolve(path) {
+  const bundleRoots = [
+    { basename: 'zcfTesterContract', pkg: 'zoe', dir: 'test/unitTests/zcf' },
+  ];
   return function resolveWithFixes(seg0, ...pathSegments) {
-    seg0 = seg0.replace(
-      /unitTests\/zcfTesterContract$/,
-      'unitTests/zcf/zcfTesterContract',
-    );
-    return resolve(seg0, ...pathSegments);
+    for (const { basename, pkg, dir } of bundleRoots) {
+      if (seg0.indexOf(basename) >= 0) {
+        const [sdk] = seg0.split(`packages${path.sep}${pkg}${path.sep}`, 1);
+        seg0 = path.join(sdk, 'packages', pkg, ...dir.split('/'), basename);
+      }
+    }
+    return path.resolve(seg0, ...pathSegments);
   };
 }
 
@@ -331,7 +336,7 @@ if (require.main === module) {
     spawn: require('child_process').spawn,
     osType: require('os').type,
     readFile: require('fs').promises.readFile,
-    resolve: resolveKludge(require('path').resolve),
+    resolve: makeBundleResolve(require('path')),
     dirname: require('path').dirname,
     glob: require('glob'),
   })
