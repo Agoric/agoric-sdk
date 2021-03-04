@@ -1,0 +1,43 @@
+diff --git a/node_modules/node-fetch/lib/index.js b/node_modules/node-fetch/lib/index.js
+index 4b241bf..c5f1165 100644
+--- a/node_modules/node-fetch/lib/index.js
++++ b/node_modules/node-fetch/lib/index.js
+@@ -153,9 +153,23 @@ function FetchError(message, type, systemError) {
+   Error.captureStackTrace(this, this.constructor);
+ }
+ 
+-FetchError.prototype = Object.create(Error.prototype);
+-FetchError.prototype.constructor = FetchError;
+-FetchError.prototype.name = 'FetchError';
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++  });
++}
++makeErrorish(FetchError, 'FetchError');
+ 
+ let convert;
+ try {
+@@ -1378,10 +1392,7 @@ function AbortError(message) {
+   // hide custom error implementation details from end-users
+   Error.captureStackTrace(this, this.constructor);
+ }
+-
+-AbortError.prototype = Object.create(Error.prototype);
+-AbortError.prototype.constructor = AbortError;
+-AbortError.prototype.name = 'AbortError';
++makeErrorish(AbortError, 'AbortError');
+ 
+ // fix an issue where "PassThrough", "resolve" aren't a named export for node <10
+ const PassThrough$1 = Stream.PassThrough;
