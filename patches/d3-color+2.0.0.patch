@@ -1,0 +1,18 @@
+diff --git a/node_modules/d3-color/dist/d3-color.js b/node_modules/d3-color/dist/d3-color.js
+index ba46026..5742b8c 100644
+--- a/node_modules/d3-color/dist/d3-color.js
++++ b/node_modules/d3-color/dist/d3-color.js
+@@ -7,7 +7,12 @@ typeof define === 'function' && define.amd ? define(['exports'], factory) :
+ 
+ function define(constructor, factory, prototype) {
+   constructor.prototype = factory.prototype = prototype;
+-  prototype.constructor = constructor;
++  Object.defineProperty(prototype, 'constructor', {
++    value: constructor,
++    writable: true,
++    enumerable: true,
++    configurable: true
++  });
+ }
+ 
+ function extend(parent, definition) {
