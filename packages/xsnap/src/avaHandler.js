@@ -62,9 +62,8 @@ function handler(rawMessage) {
    * @type {{ method: 'loadScript', source: string } | { method: 'runTest', name: string }}
    */
   const msg = JSON.parse(decoder.decode(rawMessage));
-  const { method } = msg;
 
-  switch (method) {
+  switch (msg.method) {
     case 'loadScript': {
       const { source } = msg;
       const virtualObjectGlobals =
@@ -109,7 +108,7 @@ function handler(rawMessage) {
     }
 
     default:
-      console.log('bad method', method);
+      console.log('bad method', msg);
   }
   return undefined;
 }
