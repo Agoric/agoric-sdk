@@ -11,10 +11,12 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "ava --verbose",
+    "test": "yarn test:node && yarn test:xs-unit && yarn test:xs-worker",
+    "test:node": "ava --verbose",
     "test:nyc": "nyc ava",
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-unit-debug": "ava-xs --debug",
+    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
