@@ -24,13 +24,16 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
   const linkFolder = path.resolve(`_agstate/yarn-links`);
   const linkFlags = [`--link-folder=${linkFolder}`];
-  let packages;
 
+  const packages = new Map();
+  const versions = new Map();
+  const dirPackages = [];
   if (opts.sdk) {
-    packages = new Map();
-    const versions = new Map();
+    // We remove all the links to prevent `yarn install` below from corrupting
+    // them.
     log('removing', linkFolder);
     await rimraf(linkFolder);
+
     await Promise.all(
       ['packages', 'golang'].map(async pkgSubdir => {
         const pkgRoot = path.resolve(__dirname, `../../../${pkgSubdir}`);
@@ -42,44 +45,38 @@ export default async function installMain(progname, rawArgs, powers, opts) {
               .readFile(`${dir}/package.json`, 'utf-8')
               .catch(err => log('error reading', `${dir}/package.json`, err));
             if (!packageJSON) {
-              return undefined;
+              return;
             }
 
             const pj = JSON.parse(packageJSON);
             if (pj.private) {
               log('not linking private package', pj.name);
-              return undefined;
+              return;
             }
 
             // Save our metadata.
+            dirPackages.push([dir, pj.name]);
             packages.set(pkg, pj.name);
             versions.set(pj.name, pj.version);
-
-            const SUBOPTIMAL = false;
-            if (SUBOPTIMAL) {
-              // This use of yarn is noisy and slow.
-              return pspawn('yarn', [...linkFlags, 'link'], {
-                stdio: 'inherit',
-                cwd: dir,
-              });
-            }
-
-            // This open-coding of the above yarn command is quiet and fast.
-            const linkName = `${linkFolder}/${pj.name}`;
-            const linkDir = path.dirname(linkName);
-            log('linking', linkName);
-            return fs
-              .mkdir(linkDir, { recursive: true })
-              .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
           }),
         );
       }),
     );
+
     await Promise.all(
       subdirs.map(async subdir => {
         const nm = `${subdir}/node_modules`;
         log(chalk.bold.green(`removing ${nm} link`));
         await fs.unlink(nm).catch(_ => {});
+
+        // Remove all the package links.
+        // This is needed to prevent yarn errors when installing new versions of
+        // linked modules (like `@agoric/zoe`).
+        await Promise.all(
+          dirPackages.map(async ([_dir, pjName]) =>
+            fs.unlink(`${nm}/${pjName}`).catch(_ => {}),
+          ),
+        );
 
         // Mark all the SDK package dependencies as wildcards.
         const pjson = `${subdir}/package.json`;
@@ -104,15 +101,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         await fs.writeFile(pjson, `${JSON.stringify(pj, null, 2)}\n`);
       }),
     );
-  } else {
-    // Delete all old node_modules.
-    await Promise.all(
-      subdirs.map(subdir => {
-        const nm = `${subdir}/node_modules`;
-        log(chalk.bold.green(`removing ${nm}`));
-        return rimraf(nm);
-      }),
-    );
   }
 
   const yarnInstall = await pspawn('yarn', [...linkFlags, 'install'], {
@@ -124,22 +112,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     return 1;
   }
 
-  if (packages) {
-    const sdkPackages = [...packages.values()].sort();
-    for (const subdir of subdirs) {
-      if (
-        // eslint-disable-next-line no-await-in-loop
-        await pspawn('yarn', [...linkFlags, 'link', ...sdkPackages], {
-          stdio: 'inherit',
-          cwd: subdir,
-        })
-      ) {
-        log.error('Cannot yarn link', ...sdkPackages);
-        return 1;
-      }
-    }
-  }
-
   // Try to install via Yarn.
   const yarnInstallUi = await (subdirs.includes('ui') &&
     pspawn('yarn', [...linkFlags, 'install'], {
@@ -147,8 +119,58 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       cwd: 'ui',
     }));
   if (yarnInstallUi) {
-    log.warn('Cannot yarn install in ui directory');
+    log.error('Cannot yarn install in ui directory');
     return 1;
+  }
+
+  if (opts.sdk) {
+    await Promise.all(
+      dirPackages.map(async ([dir, pjName]) => {
+        const SUBOPTIMAL = false;
+        if (SUBOPTIMAL) {
+          // This use of yarn is noisy and slow.
+          await pspawn('yarn', [...linkFlags, 'unlink', pjName]);
+          return pspawn('yarn', [...linkFlags, 'link'], {
+            stdio: 'inherit',
+            cwd: dir,
+          });
+        }
+
+        // This open-coding of the above yarn command is quiet and fast.
+        const linkName = `${linkFolder}/${pjName}`;
+        const linkDir = path.dirname(linkName);
+        log('linking', linkName);
+        return fs
+          .mkdir(linkDir, { recursive: true })
+          .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
+      }),
+    );
+  } else {
+    // Delete all old node_modules.
+    await Promise.all(
+      subdirs.map(subdir => {
+        const nm = `${subdir}/node_modules`;
+        log(chalk.bold.green(`removing ${nm}`));
+        return rimraf(nm);
+      }),
+    );
+  }
+
+  const sdkPackages = [...packages.values()].sort();
+  for (const subdir of subdirs) {
+    // eslint-disable-next-line no-await-in-loop
+    const exists = await fs.stat(`${subdir}/yarn.lock`).catch(_ => false);
+    if (
+      exists &&
+      // eslint-disable-next-line no-await-in-loop
+      (await pspawn('yarn', [...linkFlags, 'link', ...sdkPackages], {
+        stdio: 'inherit',
+        cwd: subdir,
+      }))
+    ) {
+      log.error('Cannot yarn link', ...sdkPackages);
+      return 1;
+    }
   }
 
   log.info(chalk.bold.green('Done installing'));
