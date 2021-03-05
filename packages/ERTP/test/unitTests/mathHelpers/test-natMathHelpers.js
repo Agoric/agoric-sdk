@@ -125,7 +125,7 @@ test('natMathHelpers isEmpty', t => {
   t.throws(
     () => m.isEmpty('abc'),
     {
-      message: `The amount (a string) doesn\'t look like an amount. Did you pass a value instead?`,
+      message: `The amount (a string) doesn't look like an amount. Did you pass a value instead?`,
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
