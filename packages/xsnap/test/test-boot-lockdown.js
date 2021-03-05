@@ -30,7 +30,7 @@ function options() {
 }
 
 test('bootstrap to SES lockdown', async t => {
-  const bootScript = await asset('..', 'dist', 'bootstrap.umd.js');
+  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
   const opts = options();
   const name = 'SES lockdown worker';
   const vat = xsnap({ ...opts, name });
