@@ -13,7 +13,7 @@ import '@agoric/install-ses';
 import { xsnap } from './xsnap';
 
 // scripts for use in xsnap subprocesses
-const SESboot = `../dist/bootstrap.umd.js`;
+const SESboot = `../dist/bundle-ses-boot.umd.js`;
 const avaAssert = `./avaAssertXS.js`;
 const avaHandler = `./avaHandler.js`;
 
