@@ -31,6 +31,7 @@ const missing = [
   'note',
   'details',
   'quote',
+  'makeAssert',
 ].filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {
   throw new Error(
@@ -40,11 +41,13 @@ if (missing.length > 0) {
   );
 }
 
-const { details, quote } = globalAssert;
+const { details, quote, makeAssert } = globalAssert;
 
 export { globalAssert as assert, details, quote };
 
 export { quote as q };
+
+export { makeAssert };
 
 /**
  * Prepend the correct indefinite article onto a noun, typically a typeof result

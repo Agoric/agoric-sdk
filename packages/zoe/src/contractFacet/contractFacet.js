@@ -7,7 +7,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X, q, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
 import { Far, Data } from '@agoric/marshal';
@@ -306,6 +306,16 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return zcfMint;
     };
 
+    const shutdownWithFailure = reason => {
+      E(zoeInstanceAdmin).failAllSeats(reason);
+      zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
+        if (!zcfSeat.hasExited()) {
+          zcfSeatAdmin.updateHasExited();
+        }
+      });
+      powers.exitVatWithFailure(reason);
+    };
+
     /** @type {ContractFacet} */
     const zcf = Far('zcf', {
       reallocate: (/** @type {SeatStaging[]} */ ...seatStagings) => {
@@ -384,15 +394,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         });
         powers.exitVat(completion);
       },
-      shutdownWithFailure: reason => {
-        E(zoeInstanceAdmin).failAllSeats(reason);
-        zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
-          if (!zcfSeat.hasExited()) {
-            zcfSeatAdmin.updateHasExited();
-          }
-        });
-        powers.exitVatWithFailure(reason);
-      },
+      shutdownWithFailure,
+      assert: makeAssert(shutdownWithFailure),
       stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
       makeZCFMint,
       makeEmptySeatKit,

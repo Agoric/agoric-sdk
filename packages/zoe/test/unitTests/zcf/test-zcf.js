@@ -6,7 +6,7 @@ import test from 'ava';
 
 import { MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -1198,7 +1198,7 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
 });
 
 test(`zcf.shutdown - userSeat exits`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const { userSeat } = await makeOffer(zoe, zcf);
   zcf.shutdown('so long');
   t.deepEqual(await E(userSeat).getPayouts(), {});
@@ -1206,7 +1206,7 @@ test(`zcf.shutdown - userSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - zcfSeat exits`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = await makeOffer(zoe, zcf);
   t.falsy(zcfSeat.hasExited());
   await t.falsy(await E(userSeat).hasExited());
@@ -1216,7 +1216,7 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdown('sayonara');
   await t.throwsAsync(() => E(zoe).offer(invitation), {
@@ -1227,7 +1227,7 @@ test(`zcf.shutdown - no further offers accepted`, async t => {
 });
 
 test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdownWithFailure(`And don't come back`);
   await t.throwsAsync(() => E(zoe).offer(invitation), {
@@ -1237,8 +1237,21 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
   t.truthy(vatAdminState.getExitWithFailure());
 });
 
+test(`zcf.assert - no further offers accepted`, async t => {
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
+  const invitation = await zcf.makeInvitation(() => {}, 'seat');
+  t.throws(() => zcf.assert(false, X`And do not come back`), {
+    message: /And do not come back/,
+  });
+  await t.throwsAsync(() => E(zoe).offer(invitation), {
+    message: 'No further offers are accepted',
+  });
+  t.deepEqual(vatAdminState.getExitMessage(), Error(`And do not come back`));
+  t.truthy(vatAdminState.getExitWithFailure());
+});
+
 test(`zcf.stopAcceptingOffers`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const invitation1 = await zcf.makeInvitation(() => {}, 'seat');
   const invitation2 = await zcf.makeInvitation(() => {}, 'seat');
 
