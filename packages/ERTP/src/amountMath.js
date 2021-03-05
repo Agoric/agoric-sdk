@@ -148,7 +148,7 @@ const assertLooksLikeBrand = brand => {
  * @type {(amount: Amount) => void}
  */
 const assertLooksLikeAmountBrand = amount => {
-  const msg = X`The brand in amount ${amount} doesn't look like a brand. Did you pass a value rather than an amount?`;
+  const msg = X`The amount ${amount} doesn't look like an amount. Did you pass a value instead?`;
   checkBrand(amount.brand, msg);
 };
 
@@ -167,8 +167,7 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
     rightAmount.brand,
     X`Brands in left ${leftAmount.brand} and right ${rightAmount.brand} should match but do not`,
   );
-  const h = getHelpers(leftAmount, rightAmount);
-  return h;
+  return getHelpers(leftAmount, rightAmount);
 };
 
 const coerceLR = (h, leftAmount, rightAmount) => {

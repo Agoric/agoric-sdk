@@ -67,7 +67,7 @@ test('natMathHelpers coerce', t => {
   t.throws(
     () => m.coerce(3n, mockBrand),
     {
-      message: `The brand in amount (a bigint) doesn't look like a brand. Did you pass a value rather than an amount?`,
+      message: `The amount (a bigint) doesn't look like an amount. Did you pass a value instead?`,
     },
     `coerce needs a brand`,
   );
@@ -125,7 +125,7 @@ test('natMathHelpers isEmpty', t => {
   t.throws(
     () => m.isEmpty('abc'),
     {
-      message: `The brand in amount (a string) doesn't look like a brand. Did you pass a value rather than an amount?`,
+      message: `The amount (a string) doesn\'t look like an amount. Did you pass a value instead?`,
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
@@ -139,7 +139,7 @@ test('natMathHelpers isEmpty', t => {
   t.throws(
     () => m.isEmpty(0n),
     {
-      message: `The brand in amount (a bigint) doesn't look like a brand. Did you pass a value rather than an amount?`,
+      message: `The amount (a bigint) doesn't look like an amount. Did you pass a value instead?`,
     },
     `isEmpty(0) throws because it cannot be coerced`,
   );
