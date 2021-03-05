@@ -12,7 +12,7 @@ import { makeStore } from '@agoric/store';
 
 /** @type {MakeLocalAmountMathManager} */
 export const makeLocalAmountManager = issuerManager => {
-  /** @type {Store<Petname,AmountMath>} */
+  /** @type {Store<Petname,DeprecatedAmountMath>} */
   const localAmountMath = makeStore('petname');
 
   const saveLocalAmountMath = async petname => {
