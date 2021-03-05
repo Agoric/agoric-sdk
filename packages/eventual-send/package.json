@@ -28,6 +28,7 @@
   "devDependencies": {
     "@agoric/assert": "^0.2.2",
     "@agoric/install-ses": "^0.5.2",
+    "@agoric/ses-ava": "^0.1.0+1-dev",
     "ava": "^3.12.1",
     "esm": "^3.2.7",
     "nyc": "^15.1.0",
