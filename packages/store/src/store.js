@@ -3,6 +3,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
+import { isEmptyNonRemotableObject } from './helpers';
 
 /**
  * Distinguishes between adding a new key (init) and updating or
@@ -21,21 +22,30 @@ export function makeStore(keyName = 'key') {
     assert(!store.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(store.has(key), X`${q(keyName)} not found: ${key}`);
+  const assertNotBadKey = key =>
+    assert(!isEmptyNonRemotableObject(key), X`${q(keyName)} bad key: ${key}`);
   return harden({
-    has: key => store.has(key),
+    has: key => {
+      assertNotBadKey(key);
+      return store.has(key);
+    },
     init: (key, value) => {
+      assertNotBadKey(key);
       assertKeyDoesNotExist(key);
       store.set(key, value);
     },
     get: key => {
+      assertNotBadKey(key);
       assertKeyExists(key);
       return store.get(key);
     },
     set: (key, value) => {
+      assertNotBadKey(key);
       assertKeyExists(key);
       store.set(key, value);
     },
     delete: key => {
+      assertNotBadKey(key);
       assertKeyExists(key);
       store.delete(key);
     },

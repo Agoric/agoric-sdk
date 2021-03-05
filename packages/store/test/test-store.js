@@ -2,8 +2,16 @@
 /* eslint-disable no-use-before-define */
 import '@agoric/install-ses';
 import test from 'ava';
+import { Far } from '@agoric/marshal';
 import { makeStore, makeWeakStore } from '../src/index';
+import { isEmptyNonRemotableObject } from '../src/helpers';
 import '../src/types';
+
+test('empty object check', t => {
+  const f = isEmptyNonRemotableObject;
+  t.truthy(f(harden({})));
+  t.falsy(f(Far()));
+});
 
 function check(t, mode, objMaker) {
   // Check the full API, and make sure object identity isn't a problem by
@@ -78,8 +86,34 @@ test('store', t => {
   // makeStore
   check(t, 'strong', count => count); // simple numeric keys
   check(t, 'strong', count => `${count}`); // simple strings
-  check(t, 'strong', () => harden({}));
+  check(t, 'strong', () => Far('handle', {}));
 
   // makeWeakStore
-  check(t, 'weak', () => harden({}));
+  check(t, 'weak', () => Far('handle', {}));
+});
+
+test('reject unmarked empty objects', t => {
+  // Older client code used harden({}) to create a "handle" that served as an
+  // otherwise-empty key for a store/weakstore, but ticket #2018 changes
+  // marshal to treat unmarked empty objects as pass-by-copy, so they won't
+  // retain identity across messages, breaking old-style handles in
+  // surprising ways (key collisions). New client code should use Far()
+  // instead, which arrives here as an object with a non-empty
+  // getInterfaceOf(). To catch older clients that need to be updated, we
+  // reject the use of plain empty objects as keys.
+
+  const k = harden({});
+  const s = makeStore('store1');
+  t.throws(() => s.init(k, 1), { message: /"store1" bad key:/ });
+  t.throws(() => s.has(k), { message: /"store1" bad key:/ });
+  t.throws(() => s.get(k), { message: /"store1" bad key:/ });
+  t.throws(() => s.set(k, 1), { message: /"store1" bad key:/ });
+  t.throws(() => s.delete(k), { message: /"store1" bad key:/ });
+
+  const w = makeWeakStore('store1');
+  t.throws(() => w.init(k, 1), { message: /"store1" bad key:/ });
+  t.throws(() => w.has(k), { message: /"store1" bad key:/ });
+  t.throws(() => w.get(k), { message: /"store1" bad key:/ });
+  t.throws(() => w.set(k, 1), { message: /"store1" bad key:/ });
+  t.throws(() => w.delete(k), { message: /"store1" bad key:/ });
 });
