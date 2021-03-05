@@ -60,3 +60,23 @@ test('child compartment cannot access start powers', async t => {
 
   t.deepEqual(opts.messages, ['err was TypeError: Not available']);
 });
+
+test('SES deep stacks work on xsnap', async t => {
+  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
+  const opts = options();
+  const vat = xsnap(opts);
+  await vat.evaluate(bootScript);
+  await vat.evaluate(`
+    const encoder = new TextEncoder();
+    const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
+
+    const err = Error('msg');
+    send('stack' in err);
+    const msg = getStackString(err);
+    send(msg);
+  `);
+  const [stackInErr, msg] = opts.messages.map(JSON.parse);
+  t.assert(!stackInErr);
+  t.is(typeof msg, 'string');
+  t.assert(msg.length >= 1);
+});
