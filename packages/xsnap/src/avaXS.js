@@ -73,8 +73,9 @@ const { keys } = Object;
  *   resolve: ResolveFn,
  *   dirname: typeof import('path').dirname,
  * }} io
- * @returns {Promise<{ total: number, pass: number, fail: number }>} test results
+ * @returns {Promise<TestResults>}
  *
+ * @typedef {{ total: number, pass: number, fail: { filename: string, name: string }[] }} TestResults
  * @typedef { 'ok' | 'not ok' | 'SKIP' } Status
  * @typedef {ReturnType<typeof import('./xsnap').xsnap>} XSnap
  */
@@ -88,7 +89,8 @@ async function runTestScript(
   let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
   /** @type { number | null } */
   let plan = null;
-  const testStatus = { total: 0, pass: 0, fail: 0 };
+  /** @type {TestResults} */
+  const testStatus = { total: 0, pass: 0, fail: [] };
   let label = '';
   /** @type { string[] } */
   let testNames = [];
@@ -174,7 +176,7 @@ async function runTestScript(
       if (pass) {
         testStatus.pass += 1;
       } else {
-        testStatus.fail += 1;
+        testStatus.fail.push({ filename, name });
       }
       console.log(pass ? '.' : 'F', filename, name);
       if (pending !== 0) {
@@ -311,7 +313,8 @@ async function main(
     hideImport(await asset(avaHandler, readFile)),
   ];
 
-  const stats = { total: 0, pass: 0, fail: 0 };
+  /** @type { TestResults } */
+  const stats = { total: 0, pass: 0, fail: [] };
 
   for (const filename of files) {
     if (exclude && exclude.filter(s => filename.match(s)).length > 0) {
@@ -329,16 +332,19 @@ async function main(
       dirname,
     });
 
-    Object.entries(results).forEach(([status, n]) => {
-      stats[status] += n;
-    });
+    stats.total += results.total;
+    stats.pass += results.pass;
+    results.fail.forEach(info => stats.fail.push(info));
   }
 
   console.log(stats.pass, 'tests passed');
-  if (stats.fail > 0) {
-    console.warn(stats.fail, 'tests failed');
+  if (stats.fail.length > 0) {
+    console.warn(stats.fail.length, 'tests failed');
+    for (const { filename, name } of stats.fail) {
+      console.log('F', filename, name);
+    }
   }
-  return stats.fail > 0 ? 1 : 0;
+  return stats.fail.length > 0 ? 1 : 0;
 }
 
 /**
