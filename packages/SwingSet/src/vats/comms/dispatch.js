@@ -7,6 +7,7 @@ import { insistCapData } from '../../capdata';
 
 import { makeCListKit } from './clist';
 import { makeDeliveryKit } from './delivery';
+import { cdebug } from './cdebug';
 
 export const debugState = new WeakMap();
 
@@ -43,6 +44,7 @@ export function buildCommsDispatch(
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
+  cdebug(`comms controller is ${controller}`);
 
   function deliver(target, method, args, result) {
     insistCapData(args);

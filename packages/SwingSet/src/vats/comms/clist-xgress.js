@@ -3,6 +3,7 @@ import { assert, details as X } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../parseVatSlots';
 import { flipRemoteSlot, makeRemoteSlot } from './parseRemoteSlot';
 import { getRemote } from './remote';
+import { cdebug } from './cdebug';
 
 export function makeIngressEgress(state, provideLocalForRemote) {
   function addEgress(remoteID, remoteRefID, vatoid) {
@@ -26,6 +27,8 @@ export function makeIngressEgress(state, provideLocalForRemote) {
     if (remote.nextObjectIndex <= remoteRefID) {
       remote.nextObjectIndex = remoteRefID + 1n;
     }
+    // prettier-ignore
+    cdebug(`comms add egress ${vatoid} to ${remoteID} in ${inboundRRef} out ${outboundRRef}`);
   }
 
   // to let machine2 access 'o-5' on machine1, pick an unused index (12), then:
@@ -43,6 +46,7 @@ export function makeIngressEgress(state, provideLocalForRemote) {
     // 'remoteRefID'. Just a wrapper around provideLocalForRemote.
     const inboundRRef = makeRemoteSlot('object', false, remoteRefID);
     const vatoid = provideLocalForRemote(remoteID, inboundRRef);
+    cdebug(`comms add ingress ${vatoid} to ${remoteID} in ${inboundRRef}`);
     return vatoid;
   }
 
