@@ -80,8 +80,15 @@
       "contracts/test-callSpread-calculation",
       "# another SEGV; not investigated",
       "loan/test-borrow.js",
-      "# ReferenceError#1: get 25961: undefined variable",
+      "test-fakePriceAuthority.js",
       "test-offerSafety",
+      "# multiple instances of automaticRefund for the same Zoe bad plan: 6 still to go",
+      "test-automaticRefund",
+      "test-secondPriceAuction.js",
+      "test-escrowToVote",
+      "test-coveredCall",
+      "# offerOk threw: \"instance\" not found: (an object)'",
+      "test-otcDesk.js",
       "# We use WORKER_TYPE=xs ava to run these...",
       "swingsetTests"
     ]
