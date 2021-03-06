@@ -291,7 +291,9 @@ function makeTester(htest, out) {
         fn();
       } catch (ex) {
         assert(false, message);
+        return;
       }
+      assert(true, message);
     },
     /** @type {(thrower: () => Promise<unknown>, expectation?: Expectation, message?: string) => Promise<void> } */
     async throwsAsync(
@@ -313,7 +315,9 @@ function makeTester(htest, out) {
         await (typeof nonThrower === 'function' ? nonThrower() : nonThrower);
       } catch (ex) {
         assert(false, message);
+        return;
       }
+      assert(true, message);
     },
   });
 
