@@ -201,7 +201,11 @@ export async function makeSwingsetController(
     // TODO sqlite
     // console.log(`--slog ${JSON.stringify(obj)}`);
     if (slogF) {
-      slogF.write(JSON.stringify(obj));
+      slogF.write(
+        JSON.stringify(obj, (_, arg) =>
+          typeof arg === 'bigint' ? Number(arg) : arg,
+        ),
+      );
       slogF.write('\n');
     }
   }

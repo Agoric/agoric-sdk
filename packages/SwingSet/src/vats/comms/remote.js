@@ -1,6 +1,7 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { makeVatSlot, insistVatType } from '../../parseVatSlots';
+import { cdebug } from './cdebug';
 
 function makeRemoteID(index) {
   return `remote${Nat(index)}`;
@@ -59,5 +60,7 @@ export function addRemote(state, name, transmitterID) {
   // send incoming messages. Each remote machine is assigned a separate
   // receiver object.
   state.remoteReceivers.set(receiverID, remoteID);
+  // prettier-ignore
+  cdebug(`comms add remote ${remoteID}/${name} xmit:${transmitterID} recv:${receiverID}`);
   return { remoteID, receiverID };
 }

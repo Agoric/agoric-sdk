@@ -3,7 +3,7 @@
  */
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistVatID } from '../id';
@@ -121,7 +121,7 @@ export function makeVatKeeper(
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
-        assert.fail(X`unknown vatSlot ${vatSlot}`);
+        assert.fail(X`unknown vatSlot ${q(vatSlot)}`);
       }
     }
 

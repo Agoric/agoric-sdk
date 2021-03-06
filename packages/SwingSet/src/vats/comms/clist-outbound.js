@@ -6,6 +6,7 @@ import {
   makeRemoteSlot,
 } from './parseRemoteSlot';
 import { getRemote } from './remote';
+import { cdebug } from './cdebug';
 
 function rname(remote) {
   return `${remote.remoteID} (${remote.name})`;
@@ -58,6 +59,7 @@ export function makeOutbound(state, stateKit) {
     remote.toRemote.set(vatoid, roid);
     // but when they send it back, they'll send ro+NN
     remote.fromRemote.set(flipRemoteSlot(roid), vatoid);
+    cdebug(`comms export ${remote.remoteID}/${remote.name} ${vatoid} ${roid}`);
   }
 
   function addRemotePromiseForLocal(remote, vpid) {
@@ -70,6 +72,7 @@ export function makeOutbound(state, stateKit) {
     const rpid = makeRemoteSlot('promise', false, index);
     remote.toRemote.set(vpid, rpid);
     remote.fromRemote.set(flipRemoteSlot(rpid), vpid);
+    cdebug(`comms export ${remote.remoteID}/${remote.name} ${vpid} ${rpid}`);
 
     if (!p.resolved) {
       // arrange to send it later, once it resolves

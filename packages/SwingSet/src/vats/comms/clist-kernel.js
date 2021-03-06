@@ -1,5 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { parseVatSlot } from '../../parseVatSlots';
+import { cdebug } from './cdebug';
 
 export function makeKernel(state, syscall, stateKit) {
   const {
@@ -69,6 +70,7 @@ export function makeKernel(state, syscall, stateKit) {
         Promise.resolve().then(() =>
           resolveToKernel([[fresh, p.rejected, p.data]]),
         );
+        cdebug(`comms export resolved ${lref} as ${fresh}`);
         return fresh;
       }
 
