@@ -10,29 +10,35 @@ const PORT = 7999;
 export { E };
 
 export async function makeFixture() {
+  const noisy = process.env.NOISY;
   const accessToken = await getAccessToken(PORT);
 
   let expectedToExit = false;
   let buf = '';
+  const stdio = noisy
+    ? ['ignore', 'inherit', 'inherit']
+    : ['ignore', 'pipe', 'pipe'];
   const cp = spawn(
     'make',
     ['scenario3-setup', 'scenario3-run', `BASE_PORT=${PORT}`],
     {
       cwd: `${__dirname}/..`,
       env: { ...process.env, PORT },
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio,
       detached: true,
     },
   );
 
-  cp.stdout.on('data', chunk => (buf += chunk.toString('utf-8')));
-  cp.stderr.on('data', chunk => {
-    const msg = chunk.toString('utf-8');
-    if (!msg.match(/^make: \*\*\*.*99/)) {
-      // Write chunks that don't describe the exit status.
-      process.stderr.write(chunk);
-    }
-  });
+  if (!noisy) {
+    cp.stdout.on('data', chunk => (buf += chunk.toString('utf-8')));
+    cp.stderr.on('data', chunk => {
+      const msg = chunk.toString('utf-8');
+      if (!msg.match(/^make: \*\*\*.*99/)) {
+        // Write chunks that don't describe the exit status.
+        process.stderr.write(chunk);
+      }
+    });
+  }
 
   /** @type {WebSocket} */
   let ws;
@@ -122,10 +128,11 @@ export async function makeFixture() {
     // Don't kill on exit anymore, as we're doing it now.
     process.off('exit', kill);
     // console.log('killing!');
-    process.kill(-cp.pid, 'SIGINT');
+    process.kill(-cp.pid, 'SIGTERM');
   }
 
   process.on('exit', kill);
   process.on('SIGINT', kill);
+  process.on('SIGTERM', kill);
   return { homeP: connect(), kill };
 }
