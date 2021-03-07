@@ -9,8 +9,7 @@ const PORT = 7999;
 // Ensure we're all using the same HandledPromise.
 export { E };
 
-export async function makeFixture() {
-  const noisy = process.env.NOISY;
+export async function makeFixture(noisy = false) {
   const accessToken = await getAccessToken(PORT);
 
   let expectedToExit = false;
