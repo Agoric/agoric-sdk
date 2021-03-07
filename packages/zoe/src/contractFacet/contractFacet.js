@@ -233,6 +233,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             'object',
             X`gains ${gains} must be an amountKeywordRecord`,
           );
+          assert(gains !== null, X`gains cannot be null`);
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
@@ -271,6 +272,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             'object',
             X`losses ${losses} must be an amountKeywordRecord`,
           );
+          assert(losses !== null, X`losses cannot be null`);
           let totalToBurn = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
