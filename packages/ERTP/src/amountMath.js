@@ -129,7 +129,7 @@ const checkBrand = (brand, msg) => {
   const ownKeys = Reflect.ownKeys(brand);
   const inBrandMethods = key => brandMethods.includes(key);
   assert(
-    passStyleOf(brand) === REMOTE_STYLE && ownKeys.every(inBrandMethods),
+    ownKeys.every(inBrandMethods),
     X`The brand ${brand} doesn't look like a brand. It has these keys: ${ownKeys}`,
   );
 };
