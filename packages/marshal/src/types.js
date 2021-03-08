@@ -1,3 +1,6 @@
+// eslint-disable-next-line spaced-comment
+/// <reference path="extra-types.d.ts" />
+
 /**
  * @typedef { "bigint" | "boolean" | "null" | "number" | "string" | "symbol" | "undefined" | "copyArray" | "copyRecord" | "copyError" | "promise" | "presence" } PassStyle
  * TODO "presence" above should indirect through REMOTE_STYLE to prepare
@@ -55,7 +58,7 @@
  */
 
 /**
- * @typedef {SOMETHING} Remotable
+ * @typedef {*} Remotable
  * Might be an object explicitly deemed to be `Remotable`, an object inferred
  * to be Remotable, or a remote presence of a Remotable.
  */
@@ -83,27 +86,29 @@
  */
 
 /**
- * @typedef Encoding
+ * @template T
+ * @typedef {{ '@qclass': T }} EncodingClass
+ */
+
+/**
+ * @typedef {EncodingClass<'NaN'> |
+ * EncodingClass<'undefined'> |
+ * EncodingClass<'Infinity'> |
+ * EncodingClass<'-Infinity'> |
+ * EncodingClass<'bigint'> & { digits: string } |
+ * EncodingClass<'@@asyncIterator'> |
+ * EncodingClass<'ibid'> & { index: number } |
+ * EncodingClass<'error'> & { name: string, message: string, errorId?: string } |
+ * EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
+ * EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }} EncodingUnion
+ * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }} EncodingRecord
+ * We exclude '@qclass' as a property in encoding records.
+ * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord} EncodingElement
+ */
+
+/**
+ * @typedef {EncodingElement | NestedArray<EncodingElement>} Encoding
  * The JSON structure that the data portion of a Passable serializes to.
- *
- * TODO turn into a discriminated union type
- *   { [QCLASS]: 'undefined' }
- * | { [QCLASS]: 'NaN' }
- * | { [QCLASS]: 'Infinity' }
- * | { [QCLASS]: '-Infinity' }
- * | { [QCLASS]: 'bigint', digits: string }
- *   // Likely to generalize to more symbols
- * | { [QCLASS]: '@@asyncIterator' }
- *   // Should be path rather than index
- * | { [QCLASS]: 'ibid', index: number }
- * | { [QCLASS]: 'error', name: string, message: string, errorId? string }
- * | { [QCLASS]: 'slot', index: number, iface? InterfaceSpec }
- * | { [QCLASS]: 'hilbert', original: Encoding, rest? Record<string, Encoding> }
- *   // Primitive values directly encodable in JSON
- * | null | string | boolean | number
- * | Encoding[]
- *   // excluding QCLASS as a property name
- * | Record<string, Encoding>
  *
  * The QCLASS 'hilbert' is a reference to the Hilbert Hotel
  * of https://www.ias.edu/ideas/2016/pires-hilbert-hotel
