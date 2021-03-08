@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "yarn test:node && yarn test:xs-unit && yarn test:xs-worker",
+    "test": "yarn test:node && yarn test:xs-unit",
     "test:node": "ava --verbose",
     "test:nyc": "nyc ava",
     "test:xs-unit": "ava-xs --verbose",
