@@ -16,9 +16,7 @@
     "test": "ava --config .ava-unit-test.config.js",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-check": "eslint '**/*.{js,jsx}'",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'"
   },
   "devDependencies": {
     "ava": "^3.12.1",

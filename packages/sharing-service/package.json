@@ -14,9 +14,7 @@
     "test": "ava",
     "test:nyc": "nyc ava",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
+    "lint-check": "eslint '**/*.js'"
   },
   "repository": {
     "type": "git",
