@@ -2,6 +2,7 @@
 import '../../../exported';
 import './types';
 
+import { assert } from '@agoric/assert';
 import { makeRatio } from '../../contractSupport';
 import { oneMinus, make100Percent, make0Percent } from './percent';
 
@@ -33,6 +34,7 @@ function calculateShares(
 
   const denominator = strikeMath.subtract(strikePrice2, strikePrice1);
   const numerator = strikeMath.subtract(price, strikePrice1);
+  assert.typeof(denominator.value, 'bigint');
   const longShare = makeRatio(
     numerator.value,
     collateralBrand,

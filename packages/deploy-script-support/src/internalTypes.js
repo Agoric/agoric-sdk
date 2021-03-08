@@ -44,7 +44,7 @@
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Purse>} zoeInvitationPurse
  * @param {GetLocalAmountMath} getLocalAmountMath
- * @param {AmountMath} invitationMath
+ * @param {DeprecatedAmountMath} invitationMath
  * @returns {{ offer: OfferHelper, findInvitationAmount: FindInvitationAmount }}
  */
 

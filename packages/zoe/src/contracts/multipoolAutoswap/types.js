@@ -41,9 +41,9 @@
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
- * @property {() => AmountMath} getAmountMath - get the amountMath for this
+ * @property {() => DeprecatedAmountMath} getAmountMath - get the amountMath for this
  * pool's secondary brand
- * @property {() => AmountMath} getCentralAmountMath
+ * @property {() => DeprecatedAmountMath} getCentralAmountMath
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
  */

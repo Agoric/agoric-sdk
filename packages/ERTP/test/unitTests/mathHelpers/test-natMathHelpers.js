@@ -1,58 +1,45 @@
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { Far } from '@agoric/marshal';
-import { makeAmountMath, MathKind } from '../../../src';
+import { amountMath as m, MathKind } from '../../../src';
+import { mockBrand } from './mockBrand';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
-const mockBrand = Far('brand', {
-  isMyIssuer: () => false,
-  getAllegedName: () => 'mock',
-});
-
-const amountMath = makeAmountMath(mockBrand, MathKind.NAT);
-
-test('natMathHelpers', t => {
-  const {
-    getBrand,
-    getAmountMathKind,
-    make,
-    coerce,
-    getValue,
-    getEmpty,
-    isEmpty,
-    isGTE,
-    isEqual,
-    add,
-    subtract,
-  } = amountMath;
-
-  // getBrand
-  t.deepEqual(getBrand(), mockBrand, 'brand is brand');
-
-  // getAmountMathKind
-  t.deepEqual(getAmountMathKind(), MathKind.NAT, 'amountMathKind is nat');
-
-  // make
-  t.deepEqual(make(4), { brand: mockBrand, value: 4n });
+test('natMathHelpers make', t => {
+  t.deepEqual(m.make(4n, mockBrand), { brand: mockBrand, value: 4n });
+  t.deepEqual(m.make(4, mockBrand), { brand: mockBrand, value: 4n });
   t.throws(
-    () => make('abc'),
+    () => m.make('abc', mockBrand),
     {
-      instanceOf: TypeError,
-      message: 'abc is a string but must be a bigint or a number',
+      message: 'value (a string) must be a Nat or an array',
     },
     `'abc' is not a nat`,
   );
   t.throws(
-    () => make(-1),
-    { instanceOf: RangeError, message: '-1 is negative' },
+    () => m.make(-1, mockBrand),
+    { message: 'value (a number) must be a Nat or an array' },
     `- 1 is not a valid Nat`,
   );
+});
 
-  // coerce
+test('natMathHelpers make no brand', t => {
+  t.throws(
+    () => m.make(4n),
+    {
+      message: "The brand (an undefined) doesn't look like a brand.",
+    },
+    `brand is required in make`,
+  );
+});
+
+test('natMathHelpers coerce', t => {
   t.deepEqual(
-    coerce(harden({ brand: mockBrand, value: 4 })),
+    m.coerce({ brand: mockBrand, value: 4n }, mockBrand),
     {
       brand: mockBrand,
       value: 4n,
@@ -61,65 +48,235 @@ test('natMathHelpers', t => {
   );
   t.throws(
     () =>
-      coerce(
-        harden({ brand: { getAllegedName: () => 'somename' }, value: 4n }),
+      m.coerce(
+        {
+          brand: Far('otherBrand', {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({}),
+          }),
+          value: 4n,
+        },
+        mockBrand,
       ),
     {
-      message: /The brand in the allegedAmount .* in 'coerce' didn't match the amountMath brand/,
+      message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
     `coerce can't take the wrong brand`,
   );
   t.throws(
-    () => coerce(3),
-    { message: /The brand in allegedAmount .* is undefined/ },
+    () => m.coerce(3n, mockBrand),
+    {
+      message: `The amount (a bigint) doesn't look like an amount. Did you pass a value instead?`,
+    },
     `coerce needs a brand`,
   );
+});
 
-  // getValue
-  t.is(getValue(make(4)), 4n);
-
-  // getEmpty
-  t.deepEqual(getEmpty(), make(0), `empty is 0`);
-
-  // isEmpty
-  t.assert(isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
-  t.falsy(isEmpty({ brand: mockBrand, value: 6n }), `isEmpty(6) is false`);
-  t.assert(isEmpty(make(0)), `isEmpty(0) is true`);
-  t.falsy(isEmpty(make(6)), `isEmpty(6) is false`);
+test('natMathHelpers coerce no brand', t => {
   t.throws(
-    () => isEmpty('abc'),
-    { message: /The brand in allegedAmount .* is undefined/ },
-    `isEmpty('abc') throws because it cannot be coerced`,
-  );
-  t.throws(
-    () => isEmpty({ brand: mockBrand, value: 'abc' }),
+    // @ts-ignore
+    () => m.coerce(m.make(4n, mockBrand)),
     {
-      instanceOf: TypeError,
-      message: 'abc is a string but must be a bigint or a number',
+      message: "The brand (an undefined) doesn't look like a brand.",
+    },
+    `brand is required in coerce`,
+  );
+});
+
+test('natMathHelpers getValue', t => {
+  t.is(m.getValue(m.make(4n, mockBrand), mockBrand), 4n);
+  t.is(m.getValue(m.make(4, mockBrand), mockBrand), 4n);
+});
+
+test('natMathHelpers getValue no brand', t => {
+  t.throws(
+    // @ts-ignore
+    () => m.getValue(m.make(4n, mockBrand)),
+    {
+      message: "The brand (an undefined) doesn't look like a brand.",
+    },
+    `brand is required in getValue`,
+  );
+});
+
+test('natMathHelpers makeEmpty', t => {
+  const empty = m.make(0n, mockBrand);
+
+  t.deepEqual(m.makeEmpty(MathKind.NAT, mockBrand), empty, `empty is 0`);
+});
+
+test('natMathHelpers makeEmpty no brand', t => {
+  t.throws(
+    // @ts-ignore
+    () => m.makeEmpty(MathKind.NAT),
+    {
+      message: "The brand (an undefined) doesn't look like a brand.",
+    },
+    `brand is required in coerce`,
+  );
+});
+
+test('natMathHelpers isEmpty', t => {
+  t.assert(m.isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
+  t.falsy(m.isEmpty({ brand: mockBrand, value: 6n }), `isEmpty(6) is false`);
+  t.assert(m.isEmpty(m.make(0n, mockBrand)), `isEmpty(0) is true`);
+  t.falsy(m.isEmpty(m.make(6n, mockBrand)), `isEmpty(6) is false`);
+  t.throws(
+    () => m.isEmpty('abc'),
+    {
+      message: `The amount (a string) doesn't look like an amount. Did you pass a value instead?`,
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
-    () => isEmpty(0),
-    { message: /The brand in allegedAmount .* is undefined/ },
+    () => m.isEmpty({ brand: mockBrand, value: 'abc' }),
+    {
+      message: 'value (a string) must be a Nat or an array',
+    },
+    `isEmpty('abc') throws because it cannot be coerced`,
+  );
+  t.throws(
+    () => m.isEmpty(0n),
+    {
+      message: `The amount (a bigint) doesn't look like an amount. Did you pass a value instead?`,
+    },
     `isEmpty(0) throws because it cannot be coerced`,
   );
+});
 
-  // isGTE
-  t.assert(isGTE(make(5), make(3)), `5 >= 3`);
-  t.assert(isGTE(make(3), make(3)), `3 >= 3`);
+test('natMathHelpers isGTE', t => {
+  t.assert(m.isGTE(m.make(5n, mockBrand), m.make(3n, mockBrand)), `5 >= 3`);
+  t.assert(m.isGTE(m.make(3n, mockBrand), m.make(3n, mockBrand)), `3 >= 3`);
   t.falsy(
-    isGTE({ brand: mockBrand, value: 3 }, { brand: mockBrand, value: 4 }),
+    m.isGTE({ brand: mockBrand, value: 3n }, { brand: mockBrand, value: 4n }),
     `3 < 4`,
   );
+});
 
-  // isEqual
-  t.assert(isEqual(make(4), make(4)), `4 equals 4`);
-  t.falsy(isEqual(make(4), make(5)), `4 does not equal 5`);
+test('natMathHelpers isGTE mixed brands', t => {
+  t.throws(
+    () => m.isGTE(m.make(5n, Far('otherBrand', {})), m.make(3n, mockBrand)),
+    {
+      message:
+        'Brands in left (an object) and right (an object) should match but do not',
+    },
+  );
+});
 
-  // add
-  t.deepEqual(add(make(5), make(9)), make(14), `5 + 9 = 14`);
+test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
+  t.throws(
+    () =>
+      m.isGTE(
+        m.make(5n, mockBrand),
+        m.make(3n, mockBrand),
+        Far('otherBrand', {}),
+      ),
+    {
+      message:
+        "amount's brand (an object) did not match expected brand (an object)",
+    },
+  );
+});
 
-  // subtract
-  t.deepEqual(subtract(make(6), make(1)), make(5), `6 - 1 = 5`);
+test('natMathHelpers isEqual', t => {
+  t.assert(
+    m.isEqual(m.make(4n, mockBrand), m.make(4n, mockBrand)),
+    `4 equals 4`,
+  );
+  t.falsy(
+    m.isEqual(m.make(4n, mockBrand), m.make(5n, mockBrand)),
+    `4 does not equal 5`,
+  );
+});
+
+test('natMathHelpers isEqual mixed brands', t => {
+  t.throws(
+    () => m.isEqual(m.make(4n, Far('otherBrand', {})), m.make(4n, mockBrand)),
+    {
+      message:
+        'Brands in left (an object) and right (an object) should match but do not',
+    },
+  );
+});
+
+test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
+  t.throws(
+    () =>
+      m.isEqual(
+        m.make(4n, mockBrand),
+        m.make(4n, mockBrand),
+        Far('otherBrand', {}),
+      ),
+    {
+      message:
+        "amount's brand (an object) did not match expected brand (an object)",
+    },
+  );
+});
+
+test('natMathHelpers add', t => {
+  t.deepEqual(
+    m.add(m.make(5n, mockBrand), m.make(9n, mockBrand)),
+    m.make(14n, mockBrand),
+    `5 + 9 = 14`,
+  );
+});
+
+test('natMathHelpers add mixed brands', t => {
+  t.throws(
+    () => m.add(m.make(5n, Far('otherBrand', {})), m.make(9n, mockBrand)),
+    {
+      message:
+        'Brands in left (an object) and right (an object) should match but do not',
+    },
+  );
+});
+
+test(`natMathHelpers add - brands don't match objective brand`, t => {
+  t.throws(
+    () =>
+      m.add(
+        m.make(5n, mockBrand),
+        m.make(9n, mockBrand),
+        Far('otherBrand', {}),
+      ),
+    {
+      message:
+        "amount's brand (an object) did not match expected brand (an object)",
+    },
+  );
+});
+
+test('natMathHelpers subtract', t => {
+  t.deepEqual(
+    m.subtract(m.make(6n, mockBrand), m.make(1n, mockBrand)),
+    m.make(5n, mockBrand),
+    `6 - 1 = 5`,
+  );
+});
+
+test('natMathHelpers subtract mixed brands', t => {
+  t.throws(
+    () => m.subtract(m.make(6n, Far('otherBrand', {})), m.make(1n, mockBrand)),
+    {
+      message:
+        'Brands in left (an object) and right (an object) should match but do not',
+    },
+  );
+});
+
+test(`natMathHelpers subtract brands don't match brand`, t => {
+  t.throws(
+    () =>
+      m.subtract(
+        m.make(6n, mockBrand),
+        m.make(1n, mockBrand),
+        Far('otherBrand', {}),
+      ),
+    {
+      message:
+        "amount's brand (an object) did not match expected brand (an object)",
+    },
+  );
 });

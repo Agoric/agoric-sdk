@@ -26,7 +26,7 @@ const start = async zcf => {
     timer: rawTimer,
     POLL_INTERVAL,
     maths: { In: mathIn, Out: mathOut },
-    unitAmountIn = mathIn.make(1),
+    unitAmountIn = mathIn.make(1n),
   } = zcf.getTerms();
 
   const unitIn = mathIn.getValue(unitAmountIn);

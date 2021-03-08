@@ -15,8 +15,8 @@ import '../exported';
 
 /**
  * @typedef {Object} FakePriceAuthorityOptions
- * @property {AmountMath} mathIn
- * @property {AmountMath} mathOut
+ * @property {DeprecatedAmountMath} mathIn
+ * @property {DeprecatedAmountMath} mathOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
@@ -39,7 +39,7 @@ export async function makeFakePriceAuthority(options) {
     priceList,
     tradeList,
     timer,
-    unitAmountIn = mathIn.make(1),
+    unitAmountIn = mathIn.make(1n),
     quoteInterval = 1n,
     quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
   } = options;

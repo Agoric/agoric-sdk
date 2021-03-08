@@ -7,7 +7,7 @@ import '../../exported';
 
 /**
  * @callback CompareAmount
- * @param {AmountMath} math
+ * @param {DeprecatedAmountMath} math
  * @param {Amount} amount
  * @param {Amount} amountLimit
  * @returns {boolean}
@@ -29,8 +29,8 @@ const isGT = (math, amount, amountLimit) => !math.isGTE(amountLimit, amount);
 /**
  * @typedef {Object} OnewayPriceAuthorityOptions
  * @property {Issuer} quoteIssuer
- * @property {AmountMath} mathIn
- * @property {AmountMath} mathOut
+ * @property {DeprecatedAmountMath} mathIn
+ * @property {DeprecatedAmountMath} mathOut
  * @property {Notifier<PriceQuote>} notifier
  * @property {TimerService} timer
  * @property {PriceQuoteCreate} createQuote

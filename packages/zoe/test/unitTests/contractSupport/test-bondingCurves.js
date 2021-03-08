@@ -114,7 +114,7 @@ test('getInputPrice negative', t => {
     inputReserve: 43n,
     inputValue: -7n,
   };
-  const message = 'inputValue (a bigint) must be positive';
+  const message = '-7 is negative';
   getInputPricethrows(t, input, message);
 });
 

@@ -15,6 +15,7 @@
  * @typedef {Handle<'Invitation'>} InvitationHandle - an opaque handle for an invitation
  * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
  * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
+ * @typedef {Record<Keyword, DeprecatedAmountMath} DeprecatedAmountMathKeywordRecord
  */
 
 /**
@@ -23,7 +24,7 @@
  * keywords keys, issuer values
  * @property {BrandKeywordRecord} brands - record with keywords
  * keys, brand values
- * @property {AmountMathKeywordRecord} maths - record with keywords
+ * @property {DeprecatedAmountMathKeywordRecord} maths - record with keywords
  * keys, amountMath values
  *
  * @typedef {StandardTerms & Record<string, any>} Terms
@@ -36,7 +37,7 @@
  * @typedef {Object} IssuerRecord
  * @property {Brand} brand
  * @property {Issuer} issuer
- * @property {AmountMath} amountMath
+ * @property {DeprecatedAmountMath} amountMath
  * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation

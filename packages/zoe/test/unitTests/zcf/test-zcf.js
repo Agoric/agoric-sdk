@@ -370,7 +370,8 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message: 'unrecognized amountMathKind: (a string)',
+    message:
+      '(a string) must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated',
   });
 });
 

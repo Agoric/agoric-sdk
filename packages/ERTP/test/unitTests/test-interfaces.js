@@ -1,12 +1,14 @@
+// @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { getInterfaceOf } from '@agoric/marshal';
-import { makeIssuerKit } from '../../src';
+import { makeIssuerKit, amountMath } from '../../src';
 import { ERTPKind, makeInterface } from '../../src/interfaces';
 
 test('interfaces - abstracted implementation', t => {
   const allegedName = 'bucks';
-  const { issuer, brand, mint, amountMath } = makeIssuerKit(allegedName);
+  const { issuer, brand, mint } = makeIssuerKit(allegedName);
   t.is(getInterfaceOf(issuer), makeInterface(allegedName, ERTPKind.ISSUER));
   t.is(getInterfaceOf(brand), makeInterface(allegedName, ERTPKind.BRAND));
   t.is(getInterfaceOf(mint), makeInterface(allegedName, ERTPKind.MINT));
@@ -17,13 +19,13 @@ test('interfaces - abstracted implementation', t => {
     getInterfaceOf(depositFacet),
     makeInterface(allegedName, ERTPKind.DEPOSIT_FACET),
   );
-  const payment = mint.mintPayment(amountMath.make(2));
+  const payment = mint.mintPayment(amountMath.make(2n, brand));
   t.is(getInterfaceOf(payment), makeInterface(allegedName, ERTPKind.PAYMENT));
 });
 
 test('interfaces - particular implementation', t => {
   const allegedName = 'bucks';
-  const { issuer, brand, mint, amountMath } = makeIssuerKit(allegedName);
+  const { issuer, brand, mint } = makeIssuerKit(allegedName);
   t.is(getInterfaceOf(issuer), 'Alleged: bucks issuer');
   t.is(getInterfaceOf(brand), 'Alleged: bucks brand');
   t.is(getInterfaceOf(mint), 'Alleged: bucks mint');
@@ -31,6 +33,6 @@ test('interfaces - particular implementation', t => {
   t.is(getInterfaceOf(purse), 'Alleged: bucks purse');
   const depositFacet = purse.getDepositFacet();
   t.is(getInterfaceOf(depositFacet), 'Alleged: bucks depositFacet');
-  const payment = mint.mintPayment(amountMath.make(2));
+  const payment = mint.mintPayment(amountMath.make(2n, brand));
   t.is(getInterfaceOf(payment), 'Alleged: bucks payment');
 });

@@ -179,6 +179,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           liquidityBrand,
         );
         const liquidityValueIn = liquidityIn.value;
+        assert.typeof(liquidityValueIn, 'bigint');
         const centralTokenAmountOut = pool
           .getCentralAmountMath()
           .make(

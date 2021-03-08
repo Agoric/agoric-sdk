@@ -1,4 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
@@ -18,16 +19,16 @@ const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
  * request, and to do the actual reallocation after an offer has
  * been made.
  *
- * @param {bigint} inputValue - the value of the asset sent
+ * @param {Value} inputValue - the value of the asset sent
  * in to be swapped
- * @param {bigint} inputReserve - the value in the liquidity
+ * @param {Value} inputReserve - the value in the liquidity
  * pool of the kind of asset sent in
- * @param {bigint} outputReserve - the value in the liquidity
+ * @param {Value} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
  * @param {bigint} [feeBasisPoints=30n] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee
  * is taken from inputValue
- * @returns {bigint} outputValue - the current price, in value form
+ * @returns {Value} outputValue - the current price, in value form
  */
 export const getInputPrice = (
   inputValue,
@@ -35,6 +36,9 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30n,
 ) => {
+  Nat(inputValue);
+  Nat(inputReserve);
+  Nat(outputReserve);
   assert(inputValue > 0n, X`inputValue ${inputValue} must be positive`);
   assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
   assert(
@@ -57,11 +61,11 @@ export const getInputPrice = (
  * request, and to do the actual reallocation after an offer has
  * been made.
  *
- * @param {bigint} outputValue - the value of the asset the user wants
+ * @param {Value} outputValue - the value of the asset the user wants
  * to get
- * @param {bigint} inputReserve - the value in the liquidity
+ * @param {Value} inputReserve - the value in the liquidity
  * pool of the asset being spent
- * @param {bigint} outputReserve - the value in the liquidity
+ * @param {Value} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
  * @param {bigint} [feeBasisPoints=30n] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee is taken from
@@ -74,6 +78,9 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30n,
 ) => {
+  Nat(outputValue);
+  Nat(inputReserve);
+  Nat(outputReserve);
   assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
   assert(
     outputReserve > 0n,
@@ -93,10 +100,6 @@ export const getOutputPrice = (
   return add(floorDivide(numerator, denominator), 1n);
 };
 
-function assertDefined(label, value) {
-  assert(value !== undefined, X`${label} value required`);
-}
-
 // Calculate how many liquidity tokens we should be minting to send back to the
 // user when adding liquidity. We provide new liquidity equal to the existing
 // liquidity multiplied by the ratio of new central tokens to central tokens
@@ -107,9 +110,9 @@ export const calcLiqValueToMint = (
   inputValue,
   inputReserve,
 ) => {
-  assertDefined('liqTokenSupply', liqTokenSupply);
-  assertDefined('inputValue', inputValue);
-  assertDefined('inputReserve', inputReserve);
+  Nat(liqTokenSupply);
+  Nat(inputValue);
+  Nat(inputReserve);
 
   if (liqTokenSupply === 0n) {
     return inputValue;
@@ -122,10 +125,10 @@ export const calcLiqValueToMint = (
  * adding liquidity. We require that the deposited ratio of central to secondary
  * match the current ratio of holdings in the pool.
  *
- * @param {bigint} centralIn - The value of central assets being deposited
- * @param {bigint} centralPool - The value of central assets in the pool
- * @param {bigint} secondaryPool - The value of secondary assets in the pool
- * @param {bigint} secondaryIn - The value of secondary assets provided. If
+ * @param {Value} centralIn - The value of central assets being deposited
+ * @param {Value} centralPool - The value of central assets in the pool
+ * @param {Value} secondaryPool - The value of secondary assets in the pool
+ * @param {Value} secondaryIn - The value of secondary assets provided. If
  * the pool is empty, the entire amount will be accepted
  * @returns {bigint} - the amount of secondary required
  */
@@ -135,9 +138,10 @@ export const calcSecondaryRequired = (
   secondaryPool,
   secondaryIn,
 ) => {
-  assertDefined('centralIn', centralIn);
-  assertDefined('centralPool', centralPool);
-  assertDefined('secondaryReserve', secondaryPool);
+  Nat(centralIn);
+  Nat(centralPool);
+  Nat(secondaryPool);
+  Nat(secondaryIn);
   if (centralPool === 0n || secondaryPool === 0n) {
     return secondaryIn;
   }
@@ -162,9 +166,9 @@ export const calcValueToRemove = (
   poolValue,
   liquidityValueIn,
 ) => {
-  assertDefined('liqTokenSupply', liqTokenSupply);
-  assertDefined('liquidityValueIn', liquidityValueIn);
-  assertDefined('poolValue', poolValue);
+  Nat(liqTokenSupply);
+  Nat(liquidityValueIn);
+  Nat(poolValue);
 
   return floorDivide(multiply(liquidityValueIn, poolValue), liqTokenSupply);
 };

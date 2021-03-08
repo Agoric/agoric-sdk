@@ -161,7 +161,7 @@
  *
  *   The debt at the start of the loan, in Loan brand
  *
- * @property {AmountMath} loanMath
+ * @property {DeprecatedAmountMath} loanMath
  *
  *   AmountMath for the loan brand
  *

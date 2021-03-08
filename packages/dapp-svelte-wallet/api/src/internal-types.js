@@ -21,7 +21,7 @@
  * @property {Brand} brand
  * @property {Issuer} issuer
  * @property {string} issuerBoardId
- * @property {AmountMath} amountMath
+ * @property {DeprecatedAmountMath} amountMath
  */
 
 /**

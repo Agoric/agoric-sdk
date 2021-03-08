@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
-import { makeAmountMath } from './amountMath';
+import { makeAmountMath } from './deprecatedAmountMath';
 
 /**
+ * @deprecated Use `amountMath` as exported by `@agoric/ertp` directly
  * @param {ERef<Issuer>} issuer
- * @returns {Promise<AmountMath>}
+ * @returns {Promise<DeprecatedAmountMath>}
  */
 const makeLocalAmountMath = async issuer => {
   const [brand, amountMathKind] = await Promise.all([

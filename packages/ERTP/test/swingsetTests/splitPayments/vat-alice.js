@@ -1,15 +1,18 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { amountMath } from '../../../src';
 
 function makeAliceMaker(log) {
   return Far('aliceMaker', {
-    make(issuer, amountMath, oldPaymentP) {
+    make(issuer, brand, oldPaymentP) {
       const alice = Far('alice', {
         async testSplitPayments() {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
           const splitPayments = await E(issuer).split(
             oldPaymentP,
-            await E(amountMath).make(10),
+            amountMath.make(10n, brand),
           );
           log(
             'splitPayment[0] balance: ',
@@ -28,8 +31,8 @@ function makeAliceMaker(log) {
 
 export function buildRootObject(vatPowers) {
   return Far('root', {
-    makeAliceMaker(host) {
-      return makeAliceMaker(vatPowers.testLog, host);
+    makeAliceMaker() {
+      return makeAliceMaker(vatPowers.testLog);
     },
   });
 }
