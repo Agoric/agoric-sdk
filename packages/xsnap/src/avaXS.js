@@ -1,4 +1,3 @@
-/* global module require process __filename */
 /* avaXS - ava style test runner for XS
 
 Usage:
@@ -6,6 +5,7 @@ Usage:
   node -r esm avaXS.js [--debug] test-*.js
 
 */
+/* global __filename */
 
 // @ts-check
 
@@ -368,4 +368,3 @@ export function makeBundleResolve(path) {
     return path.resolve(seg0, ...pathSegments);
   };
 }
-
