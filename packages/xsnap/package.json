@@ -9,7 +9,7 @@
   },
   "main": "./src/xsnap.js",
   "bin": {
-    "ava-xs": "./src/ava-xs",
+    "ava-xs": "./src/ava-xs.js",
     "xsrepl": "./src/xsrepl"
   },
   "scripts": {

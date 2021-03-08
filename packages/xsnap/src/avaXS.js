@@ -264,7 +264,7 @@ async function avaConfig(args, opts, { glob, readFile }) {
  *   glob: typeof import('glob'),
  * }} io
  */
-async function main(
+export async function main(
   args,
   { bundleSource, spawn, osType, readFile, resolve, dirname, glob },
 ) {
@@ -354,7 +354,7 @@ async function main(
  * @returns {ResolveFn}
  * @typedef {typeof import('path').resolve } ResolveFn
  */
-function makeBundleResolve(path) {
+export function makeBundleResolve(path) {
   const bundleRoots = [
     { basename: 'zcfTesterContract', pkg: 'zoe', dir: 'test/unitTests/zcf' },
   ];
@@ -369,22 +369,3 @@ function makeBundleResolve(path) {
   };
 }
 
-/* eslint-disable global-require */
-if (require.main === module) {
-  main(process.argv.slice(2), {
-    bundleSource: require('@agoric/bundle-source').default,
-    spawn: require('child_process').spawn,
-    osType: require('os').type,
-    readFile: require('fs').promises.readFile,
-    resolve: makeBundleResolve(require('path')),
-    dirname: require('path').dirname,
-    glob: require('glob'),
-  })
-    .then(status => {
-      process.exit(status);
-    })
-    .catch(err => {
-      console.error(err);
-      process.exit(1);
-    });
-}
