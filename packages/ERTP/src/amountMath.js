@@ -125,8 +125,7 @@ const assertLooksLikeValue = value => {
 const brandMethods = ['isMyIssuer', 'getAllegedName', 'getDisplayInfo'];
 
 const checkBrand = (brand, msg) => {
-  mustBeComparable(brand);
-  assert(typeof brand === 'object', msg);
+  assert(passStyleOf(brand) === REMOTE_STYLE, msg);
   const ownKeys = Reflect.ownKeys(brand);
   const inBrandMethods = key => brandMethods.includes(key);
   assert(
