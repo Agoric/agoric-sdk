@@ -1,3 +1,4 @@
+/* global __dirname */
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 

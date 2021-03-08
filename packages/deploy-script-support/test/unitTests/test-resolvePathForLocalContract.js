@@ -1,3 +1,4 @@
+/* global require */
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies

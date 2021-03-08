@@ -1,3 +1,4 @@
+/* global process */
 import fetch from 'node-fetch';
 import inquirer from 'inquirer';
 import { assert, details as X } from '@agoric/assert';

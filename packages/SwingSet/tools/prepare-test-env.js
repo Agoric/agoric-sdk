@@ -1,3 +1,4 @@
+/* global globalThis */
 /**
  * Prepare Agoric SwingSet vat global environment for testing.
  *

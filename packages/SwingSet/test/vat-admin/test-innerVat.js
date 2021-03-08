@@ -1,3 +1,4 @@
+/* global __dirname */
 import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';

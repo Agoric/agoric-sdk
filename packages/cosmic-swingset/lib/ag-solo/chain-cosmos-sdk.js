@@ -1,3 +1,4 @@
+/* global setTimeout */
 import path from 'path';
 import fs from 'fs';
 import { execFile } from 'child_process';

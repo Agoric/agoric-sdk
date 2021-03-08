@@ -1,3 +1,4 @@
+/* global globalThis */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable class-methods-use-this */
 

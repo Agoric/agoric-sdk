@@ -1,3 +1,4 @@
+/* global __dirname process setTimeout */
 import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';

@@ -1,3 +1,4 @@
+/* global require process setTimeout */
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';

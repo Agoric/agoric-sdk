@@ -1,3 +1,4 @@
+/* global process */
 // @ts-check
 
 /** @typedef {import('child_process').ChildProcess} ChildProcess */

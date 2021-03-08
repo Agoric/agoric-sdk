@@ -1,3 +1,4 @@
+/* global globalThis */
 /* eslint-disable no-await-in-loop */
 // @ts-check
 

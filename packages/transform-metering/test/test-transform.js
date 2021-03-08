@@ -1,3 +1,4 @@
+/* global __dirname */
 /* eslint-disable no-await-in-loop */
 import test from 'ava';
 import * as babelCore from '@babel/core';

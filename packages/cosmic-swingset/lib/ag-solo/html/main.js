@@ -1,3 +1,4 @@
+/* global setTimeout */
 // NOTE: Runs outside SES
 
 /* global WebSocket fetch document window walletFrame localStorage */

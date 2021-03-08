@@ -1,3 +1,4 @@
+/* global require */
 // @ts-check
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies

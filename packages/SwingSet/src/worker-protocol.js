@@ -1,3 +1,4 @@
+/* global Buffer */
 import { Transform } from 'stream';
 
 // Transform objects which convert from hardened Arrays of JSON-serializable

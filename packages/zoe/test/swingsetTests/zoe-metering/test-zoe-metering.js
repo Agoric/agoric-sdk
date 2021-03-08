@@ -1,3 +1,4 @@
+/* global process __dirname */
 import '@agoric/install-metering-and-ses';
 import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';

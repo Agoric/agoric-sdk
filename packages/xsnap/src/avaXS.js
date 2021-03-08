@@ -1,3 +1,4 @@
+/* global module require process __filename */
 /* avaXS - ava style test runner for XS
 
 Usage:

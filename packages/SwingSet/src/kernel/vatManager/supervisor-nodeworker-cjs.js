@@ -1,3 +1,4 @@
+/* global module require */
 // `tap` and `node -r esm` were able to allow the swingset process to create
 // a thread (`new Worker()`) from the (ESM) supervisor file without problems,
 // but for some reason AVA cannot. The file loaded into the new thread

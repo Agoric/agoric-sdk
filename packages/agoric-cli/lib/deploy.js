@@ -1,3 +1,4 @@
+/* global require process setTimeout setInterval clearInterval */
 /* eslint-disable no-await-in-loop */
 import { E, makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';

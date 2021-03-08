@@ -1,3 +1,4 @@
+/* global globalThis */
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';

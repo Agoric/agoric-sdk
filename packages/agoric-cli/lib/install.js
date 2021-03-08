@@ -1,3 +1,4 @@
+/* global __dirname process */
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers';

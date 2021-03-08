@@ -1,3 +1,4 @@
+/* global require */
 import test from 'ava';
 import { rollup } from 'rollup/dist/rollup.es';
 import * as acorn from 'acorn';

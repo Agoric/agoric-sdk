@@ -1,3 +1,4 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-metering-and-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
