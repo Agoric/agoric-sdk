@@ -1,3 +1,4 @@
+/* global __dirname */
 // ts-check
 import '../../../../exported';
 

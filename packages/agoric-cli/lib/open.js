@@ -1,3 +1,4 @@
+/* global process setInterval clearInterval */
 import { promises as defaultFs } from 'fs';
 import opener from 'opener';
 import crypto from 'crypto';

@@ -1,3 +1,4 @@
+/* global require */
 export function buildPlugin(pluginDir, pluginRequire, queueThunkForKernel) {
   const srcPath = require.resolve('./plugin-src');
   let resetter;

@@ -1,3 +1,4 @@
+/* global require */
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Nat } from '@agoric/nat';
 

@@ -1,3 +1,4 @@
+/* global __dirname process */
 import { Command } from 'commander';
 
 import { assert, details as X } from '@agoric/assert';

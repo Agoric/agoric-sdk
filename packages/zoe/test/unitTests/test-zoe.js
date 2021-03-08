@@ -1,3 +1,4 @@
+/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';

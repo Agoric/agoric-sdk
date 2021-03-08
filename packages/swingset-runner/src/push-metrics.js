@@ -1,3 +1,4 @@
+/* global process */
 import { KERNEL_STATS_METRICS } from '@agoric/swingset-vat/src/kernel/metrics';
 import { spawnSync } from 'child_process';
 import fs from 'fs';

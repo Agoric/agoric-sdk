@@ -1,3 +1,4 @@
+/* global __dirname process */
 /* eslint-disable no-await-in-loop */
 import inquirer from 'inquirer';
 import djson from 'deterministic-json';

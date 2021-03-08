@@ -1,3 +1,4 @@
+/* global require */
 import * as c from './constants';
 
 // We'd like to import this, but RE2 is cjs

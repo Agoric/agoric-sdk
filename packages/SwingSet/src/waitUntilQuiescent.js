@@ -1,3 +1,4 @@
+/* global setImmediate */
 import { makePromiseKit } from '@agoric/promise-kit';
 
 // This can only be imported from the Start Compartment, where 'setImmediate'

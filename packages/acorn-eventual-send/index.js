@@ -1,3 +1,4 @@
+/* global module */
 const tilde = '~'.charCodeAt(0);
 const dot = '.'.charCodeAt(0);
 const zero = '0'.charCodeAt(0);

@@ -1,3 +1,4 @@
+/* global __dirname setInterval */
 import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
 import {
   importMailbox,

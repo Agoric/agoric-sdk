@@ -1,3 +1,4 @@
+/* global __dirname process */
 import * as childProcess from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import os from 'os';

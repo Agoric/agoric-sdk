@@ -1,3 +1,4 @@
+/* global require */
 /*
   The 'bridge' devices provides bidirectional function calls between objects
   on the host and code within a swingset.

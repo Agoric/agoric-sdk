@@ -1,3 +1,4 @@
+/* global process */
 import anylogger from 'anylogger';
 
 // Turn on debugging output with DEBUG=agoric

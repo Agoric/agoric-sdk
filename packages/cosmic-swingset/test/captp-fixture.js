@@ -1,3 +1,4 @@
+/* global __dirname process setTimeout */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@agoric/captp';

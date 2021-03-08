@@ -1,3 +1,4 @@
+/* global __dirname process setTimeout clearTimeout setInterval clearInterval */
 /* eslint-disable import/no-extraneous-dependencies */
 import '@agoric/install-ses';
 import test from 'ava';

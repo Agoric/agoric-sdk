@@ -1,3 +1,4 @@
+/* global process */
 import { exec as rawExec, spawn } from 'child_process';
 import { Writable } from 'stream';
 

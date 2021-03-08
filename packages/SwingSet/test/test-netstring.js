@@ -1,3 +1,4 @@
+/* global Buffer */
 import '@agoric/install-ses'; // adds 'harden' to global
 
 import test from 'ava';

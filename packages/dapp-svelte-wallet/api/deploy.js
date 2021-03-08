@@ -1,3 +1,4 @@
+/* global __dirname */
 // @ts-nocheck
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.

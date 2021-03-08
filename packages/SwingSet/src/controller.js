@@ -1,3 +1,4 @@
+/* global require */
 import fs from 'fs';
 import process from 'process';
 import re2 from 're2';

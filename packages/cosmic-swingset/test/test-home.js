@@ -1,3 +1,4 @@
+/* global require */
 import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';

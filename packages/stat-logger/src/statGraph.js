@@ -1,3 +1,4 @@
+/* global process */
 import fs from 'fs';
 import path from 'path';
 import * as vega from 'vega';

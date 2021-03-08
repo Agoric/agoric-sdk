@@ -1,3 +1,4 @@
+/* global __dirname process setInterval */
 import chalk from 'chalk';
 import { resolve } from './files';
 

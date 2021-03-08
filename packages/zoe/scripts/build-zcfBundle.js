@@ -1,3 +1,4 @@
+/* global __dirname */
 import 'ses';
 import fs from 'fs';
 import process from 'process';

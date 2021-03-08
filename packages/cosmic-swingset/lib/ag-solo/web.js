@@ -1,3 +1,4 @@
+/* global require setTimeout clearTimeout setInterval clearInterval */
 // Start a network service
 import path from 'path';
 import http from 'http';

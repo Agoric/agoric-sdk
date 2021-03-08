@@ -1,3 +1,4 @@
+/* global require Buffer */
 import { assert, details as X } from '@agoric/assert';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
