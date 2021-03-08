@@ -1,8 +1,8 @@
 #!/bin/sh
-set -e
-for suite in exchangeBenchmark; do
+for suite in exchangeBenchmark pingPongBenchmark swapBenchmark; do
   echo "Autobenching suite $suite ..."
   test ! -f demo/$suite/prepareContracts.js || node -r esm demo/$suite/prepareContracts.js
+  echo '{}' > benchstats.json || continue
   node --expose-gc -r esm bin/runner --init --benchmark 100 --statsfile benchstats.json --config demo/$suite/swingset.json run -- --quiet --prime
   node -r esm src/push-metrics.js $suite benchstats.json
 done
