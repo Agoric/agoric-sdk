@@ -10,9 +10,7 @@
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
     "lint:types": "tsc -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+    "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.2.2",
