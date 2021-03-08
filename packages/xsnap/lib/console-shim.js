@@ -1,3 +1,4 @@
+/* global globalThis */
 function tryPrint(...args) {
   try {
     // eslint-disable-next-line

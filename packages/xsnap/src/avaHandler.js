@@ -1,4 +1,4 @@
-/* global __dirname __filename */
+/* global globalThis __dirname __filename */
 /* set up globalThis.handleCommand for running test scripts
 
 See avaXS.js for the way this is run inside an xsnap process.

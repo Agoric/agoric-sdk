@@ -12,7 +12,6 @@
     "commonjs": false
   },
   "globals": {
-    "globalThis": "readonly",
     "BigInt": "readonly",
     "assert": "readonly",
     "console": "readonly",
