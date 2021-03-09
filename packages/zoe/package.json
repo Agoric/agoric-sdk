@@ -83,6 +83,7 @@
       "test-fakePriceAuthority.js",
       "test-offerSafety",
       "test-scriptedOracle",
+      "test-zoeHelpers",
       "# multiple instances of automaticRefund for the same Zoe bad plan: 6 still to go",
       "test-automaticRefund",
       "test-secondPriceAuction.js",
