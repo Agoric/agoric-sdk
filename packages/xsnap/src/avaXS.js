@@ -194,7 +194,8 @@ async function runTestScript(
  * Get ava / ava-xs config from package.json
  *
  * @param { string[] } args
- * @param {{ packageFilename?: string }} opts
+ * @param {Object} options
+ * @param {string} [options.packageFilename]
  * @param {Object} io
  * @param {typeof import('fs').promises.readFile} io.readFile
  * @param {typeof import('glob')} io.glob
