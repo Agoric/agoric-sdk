@@ -115,7 +115,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: benchmarkstats.json
-        path: packages/swingset-runner/benchstats.json
+        path: packages/swingset-runner/benchstats*.json
 
 ##################
 # Fast-running tests run as a group:
