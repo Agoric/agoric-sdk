@@ -77,8 +77,7 @@ function isMatch(specimen, pattern) {
  *
  * @param { string } filename
  * @param { string[] } preamble scripts to run in XS start compartment
- * @param { boolean } verbose
- * @param { string? } titleMatch
+ * @param {{ verbose?: boolean, titleMatch?: string }} options
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: (...args: [string, ...unknown[]]) => Promise<Bundle>,
@@ -94,8 +93,7 @@ function isMatch(specimen, pattern) {
 async function runTestScript(
   filename,
   preamble,
-  verbose,
-  titleMatch,
+  { verbose, titleMatch },
   { spawnXSnap, bundleSource, resolve, dirname },
 ) {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
@@ -174,6 +172,7 @@ async function runTestScript(
 
     for (const name of testNames) {
       if (titleMatch && !isMatch(name, titleMatch)) {
+        // eslint-disable-next-line no-continue
         continue;
       }
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
@@ -232,8 +231,9 @@ async function avaConfig(args, options, { glob, readFile }) {
   let debug = false;
   let verbose = false;
   let titleMatch;
-  let arg;
-  while (arg = args.shift()) {
+  while (args.length > 0) {
+    const arg = args.shift();
+    assert.typeof(arg, 'string');
     switch (arg) {
       case '--debug':
         debug = true;
@@ -247,7 +247,7 @@ async function avaConfig(args, options, { glob, readFile }) {
         titleMatch = args.shift();
         break;
       default:
-        files.push(arg)
+        files.push(arg);
     }
   }
   const { packageFilename = 'package.json' } = options;
@@ -313,11 +313,14 @@ export async function main(
   args,
   { bundleSource, spawn, osType, readFile, resolve, dirname, glob },
 ) {
-  const { files, require, exclude, debug, verbose, titleMatch } = await avaConfig(
-    args,
-    {},
-    { readFile, glob },
-  );
+  const {
+    files,
+    require,
+    exclude,
+    debug,
+    verbose,
+    titleMatch,
+  } = await avaConfig(args, {}, { readFile, glob });
 
   /** @param {Record<string, unknown>} opts */
   const spawnXSnap = opts =>
@@ -367,12 +370,17 @@ export async function main(
       console.log('# test script:', filename);
     }
 
-    const results = await runTestScript(filename, preamble, debug, titleMatch, {
-      spawnXSnap,
-      bundleSource,
-      resolve,
-      dirname,
-    });
+    const results = await runTestScript(
+      filename,
+      preamble,
+      { verbose, titleMatch },
+      {
+        spawnXSnap,
+        bundleSource,
+        resolve,
+        dirname,
+      },
+    );
 
     stats.total += results.total;
     stats.pass += results.pass;
