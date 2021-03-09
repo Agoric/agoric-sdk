@@ -43,6 +43,17 @@ const decoder = new TextDecoder();
 const { keys } = Object;
 
 /**
+ * Quick-n-dirty work-alike for matcher
+ * https://github.com/sindresorhus/matcher
+ *
+ * @param {string} specimen
+ * @param {string} pattern
+ */
+function isMatch(specimen, pattern) {
+  return specimen.match(pattern.replace(/\*/g, '.*'));
+}
+
+/**
  * Run one test script in an xsnap subprocess.
  *
  * The subprocess reports back once for each test assertion.
@@ -67,6 +78,7 @@ const { keys } = Object;
  * @param { string } filename
  * @param { string[] } preamble scripts to run in XS start compartment
  * @param { boolean } verbose
+ * @param { string? } titleMatch
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: (...args: [string, ...unknown[]]) => Promise<Bundle>,
@@ -83,6 +95,7 @@ async function runTestScript(
   filename,
   preamble,
   verbose,
+  titleMatch,
   { spawnXSnap, bundleSource, resolve, dirname },
 ) {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
@@ -160,6 +173,9 @@ async function runTestScript(
     );
 
     for (const name of testNames) {
+      if (titleMatch && !isMatch(name, titleMatch)) {
+        continue;
+      }
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
       plan = null;
       await worker.issueStringCommand(
@@ -206,15 +222,41 @@ async function runTestScript(
  * @property {string[]} files - files from args or else ava.files
  * @property {string[]} require - specifiers of modules to run before each test script
  * @property {string[]=} exclude - files containing any of these should be skipped
+ * @property {boolean} debug
+ * @property {boolean} verbose
+ * @property {string=} titleMatch
  */
 async function avaConfig(args, options, { glob, readFile }) {
+  /** @type {string[]} */
+  let files = [];
+  let debug = false;
+  let verbose = false;
+  let titleMatch;
+  let arg;
+  while (arg = args.shift()) {
+    switch (arg) {
+      case '--debug':
+        debug = true;
+        break;
+      case '-v':
+      case '--verbose':
+        verbose = true;
+        break;
+      case '-m':
+      case '--match':
+        titleMatch = args.shift();
+        break;
+      default:
+        files.push(arg)
+    }
+  }
   const { packageFilename = 'package.json' } = options;
 
   const txt = await readFile(packageFilename, 'utf-8');
   const pkgMeta = JSON.parse(txt);
 
   if (!pkgMeta.ava) {
-    return { files: [], require: [] };
+    return { files: [], require: [], debug, verbose };
   }
   const expected = ['files', 'require'];
   const unsupported = keys(pkgMeta.ava).filter(k => !expected.includes(k));
@@ -231,25 +273,27 @@ async function avaConfig(args, options, { glob, readFile }) {
     X`ava-xs.exclude: expected array or string: ${q(exclude)}`,
   );
 
-  /**
-   * @param { string } pattern
-   * @returns { Promise<string[]> }
-   */
-  const globFiles = pattern =>
-    new Promise((res, rej) =>
-      glob(pattern, {}, (err, matches) => (err ? rej(err) : res(matches))),
+  if (!files.length) {
+    /**
+     * @param { string } pattern
+     * @returns { Promise<string[]> }
+     */
+    const globFiles = pattern =>
+      new Promise((res, rej) =>
+        glob(pattern, {}, (err, matches) => (err ? rej(err) : res(matches))),
+      );
+    assert(
+      Array.isArray(filePatterns),
+      X`ava.files: expected Array: ${q(filePatterns)}`,
     );
-  assert(
-    Array.isArray(filePatterns),
-    X`ava.files: expected Array: ${q(filePatterns)}`,
-  );
-  const files = (await Promise.all(filePatterns.map(globFiles))).flat();
+    files = (await Promise.all(filePatterns.map(globFiles))).flat();
+  }
 
   assert(
     Array.isArray(require),
     X`ava.requires: expected Array: ${q(require)}`,
   );
-  const config = { files: args.length > 0 ? args : files, require, exclude };
+  const config = { files, require, exclude, debug, verbose, titleMatch };
   return config;
 }
 
@@ -269,11 +313,8 @@ export async function main(
   args,
   { bundleSource, spawn, osType, readFile, resolve, dirname, glob },
 ) {
-  const debug = args[0] === '--debug';
-  const verbose = ['--verbose', '-v'].includes(args[0]) || debug;
-  const fileArgs = debug || verbose ? args.slice(1) : args;
-  const { files, require, exclude } = await avaConfig(
-    fileArgs,
+  const { files, require, exclude, debug, verbose, titleMatch } = await avaConfig(
+    args,
     {},
     { readFile, glob },
   );
@@ -326,7 +367,7 @@ export async function main(
       console.log('# test script:', filename);
     }
 
-    const results = await runTestScript(filename, preamble, debug, {
+    const results = await runTestScript(filename, preamble, debug, titleMatch, {
       spawnXSnap,
       bundleSource,
       resolve,
