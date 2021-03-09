@@ -78,7 +78,7 @@ function isMatch(specimen, pattern) {
  * @param { string } filename
  * @param { string[] } preamble scripts to run in XS start compartment
  * @param { boolean } verbose
- * @param { string? } titleMatch
+ * @param { string | undefined } titleMatch
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: (...args: [string, ...unknown[]]) => Promise<Bundle>,
@@ -174,6 +174,7 @@ async function runTestScript(
 
     for (const name of testNames) {
       if (titleMatch && !isMatch(name, titleMatch)) {
+        // eslint-disable-next-line no-continue
         continue;
       }
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
@@ -233,7 +234,8 @@ async function avaConfig(args, options, { glob, readFile }) {
   let verbose = false;
   let titleMatch;
   let arg;
-  while (arg = args.shift()) {
+  // eslint-disable-next-line no-cond-assign
+  while ((arg = args.shift())) {
     switch (arg) {
       case '--debug':
         debug = true;
@@ -247,7 +249,7 @@ async function avaConfig(args, options, { glob, readFile }) {
         titleMatch = args.shift();
         break;
       default:
-        files.push(arg)
+        files.push(arg);
     }
   }
   const { packageFilename = 'package.json' } = options;
@@ -313,11 +315,14 @@ export async function main(
   args,
   { bundleSource, spawn, osType, readFile, resolve, dirname, glob },
 ) {
-  const { files, require, exclude, debug, verbose, titleMatch } = await avaConfig(
-    args,
-    {},
-    { readFile, glob },
-  );
+  const {
+    files,
+    require,
+    exclude,
+    debug,
+    verbose,
+    titleMatch,
+  } = await avaConfig(args, {}, { readFile, glob });
 
   /** @param {Record<string, unknown>} opts */
   const spawnXSnap = opts =>
