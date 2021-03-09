@@ -196,9 +196,10 @@ async function runTestScript(
  * @param { string[] } args
  * @param {Object} options
  * @param {string} [options.packageFilename]
- * @param {Object} io
- * @param {typeof import('fs').promises.readFile} io.readFile
- * @param {typeof import('glob')} io.glob
+ * @param {{
+ *   readFile: typeof import('fs').promises.readFile,
+ *   glob: typeof import('glob')
+ * }} io
  * @returns {Promise<AvaXSConfig>}
  *
  * @typedef {Object} AvaXSConfig
@@ -206,8 +207,8 @@ async function runTestScript(
  * @property {string[]} require - specifiers of modules to run before each test script
  * @property {string[]=} exclude - files containing any of these should be skipped
  */
-async function avaConfig(args, opts, { glob, readFile }) {
-  const { packageFilename = 'package.json' } = opts;
+async function avaConfig(args, options, { glob, readFile }) {
+  const { packageFilename = 'package.json' } = options;
 
   const txt = await readFile(packageFilename, 'utf-8');
   const pkgMeta = JSON.parse(txt);
