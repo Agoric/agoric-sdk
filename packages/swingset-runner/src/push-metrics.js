@@ -81,90 +81,60 @@ function generateCommonMetrics(obj, phaseLabels) {
   return metrics;
 }
 
-function makePropMetrics(metricName, headerSpecs) {
-  return Object.fromEntries(
-    headerSpecs.map(([prop, ...args]) => [
-      prop,
-      promHeader(metricName[prop], ...args),
-    ]),
+function gatherMetrics(kind, data, labels, specs) {
+  const metricName = Object.fromEntries(
+    specs.map(([prop, name]) => [prop, name]),
   );
+  const propMetrics = Object.fromEntries(
+    specs.map(([prop, name, ...args]) => [prop, promHeader(name, ...args)]),
+  );
+
+  const todo = new Set(Object.keys(data));
+  for (const { key, name } of KERNEL_STATS_METRICS) {
+    if (!(key in data)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    todo.delete(key);
+    const statLabels = [...(labels || []), ['stat', name]];
+
+    for (const prop of Object.keys(propMetrics)) {
+      if (prop in data[key]) {
+        propMetrics[prop] += promValue(
+          metricName[prop],
+          data[key][prop],
+          statLabels,
+        );
+      }
+    }
+  }
+
+  for (const key of todo.keys()) {
+    console.warn(`Unrecognized ${kind} data property ${key}`);
+  }
+  return Object.values(propMetrics).join('');
 }
 
 function generateMetricsFromPrimeData(data, labels = undefined) {
-  const metricName = {
-    up: 'stat_up',
-    down: 'stat_down',
-    max: 'stat_max',
-    value: 'stat_value',
-    perCrank: 'stat_per_crank',
-  };
-  const propMetrics = makePropMetrics(metricName, [
-    ['up', 'counter', `Number of increments`],
-    ['down', 'counter', `Number of decrements`],
-    ['max', 'gauge', `Maximum value`],
-    ['value', 'gauge', 'Latest value'],
-    ['perCrank', 'gauge', `Autobench value per crank`],
+  return gatherMetrics('prime', data, labels, [
+    ['up', 'stat_up', 'counter', `Number of increments`],
+    ['down', 'stat_down', 'counter', `Number of decrements`],
+    ['max', 'stat_max', 'gauge', `Maximum value`],
+    ['value', 'stat_value', 'gauge', 'Latest value'],
+    ['perCrank', 'stat_per_crank', 'gauge', `Autobench value per crank`],
   ]);
-
-  const todo = new Set(Object.keys(data));
-  for (const { key, name } of KERNEL_STATS_METRICS) {
-    if (!(key in data)) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    todo.delete(key);
-    const statLabels = [...labels, ['stat', name]];
-
-    for (const prop of Object.keys(propMetrics)) {
-      if (prop in data[key]) {
-        propMetrics[prop] += promValue(
-          metricName[prop],
-          data[key][prop],
-          statLabels,
-        );
-      }
-    }
-  }
-
-  for (const key of todo.keys()) {
-    console.warn(`Unrecognized prime data property ${key}`);
-  }
-  return Object.values(propMetrics).join('');
 }
 
 function generateMetricsFromBenchmarkData(data, labels = undefined) {
-  const metricName = {
-    delta: 'stat_delta',
-    deltaPerRound: 'stat_delta_per_round',
-  };
-  const propMetrics = makePropMetrics(metricName, [
-    ['delta', 'gauge', `Autobench benchmark delta`],
-    ['deltaPerRound', 'gauge', `Autobench benchmark delta per round`],
+  return gatherMetrics('benchmark', data, labels, [
+    ['delta', 'stat_delta', 'gauge', `Autobench benchmark delta`],
+    [
+      'deltaPerRound',
+      'stat_delta_per_round',
+      'gauge',
+      `Autobench benchmark delta per round`,
+    ],
   ]);
-
-  const todo = new Set(Object.keys(data));
-  for (const { key, name } of KERNEL_STATS_METRICS) {
-    if (!(key in data)) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    todo.delete(key);
-    const statLabels = [...labels, ['stat', name]];
-    for (const prop of Object.keys(propMetrics)) {
-      if (prop in data[key]) {
-        propMetrics[prop] += promValue(
-          metricName[prop],
-          data[key][prop],
-          statLabels,
-        );
-      }
-    }
-  }
-
-  for (const key of todo.keys()) {
-    console.warn(`Unrecognized benchmark data property ${key}`);
-  }
-  return Object.values(propMetrics).join('');
 }
 
 function generateMetricsFromBenchStats(benchStats, labels = []) {
