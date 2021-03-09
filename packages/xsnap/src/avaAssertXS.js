@@ -105,24 +105,11 @@ let theHarness = null; // ISSUE: ambient
  */
 function createHarness(send) {
   let testNum = 0;
-  let passCount = 0;
   /** @type {((ot: { context: Object }) => Promise<void>)[]} */
-  let beforeHooks = [];
-  /** @type {(() => Promise<void>)[]} */
-  let suitesToRun = [];
+  const beforeHooks = [];
+  /** @type {Record<string, () => Promise<void>>} */
+  const suitesToRun = {};
   const context = {};
-
-  /**
-   * @returns { Summary }
-   * @typedef {import('./avaXS').Summary} Summary
-   */
-  function summary() {
-    return {
-      pass: passCount,
-      fail: testNum - passCount,
-      total: testNum,
-    };
-  }
 
   const it = freeze({
     send,
@@ -134,29 +121,31 @@ function createHarness(send) {
       beforeHooks.push(hook);
     },
     /** @type { (ok: boolean) => number } */
-    finish(ok) {
+    finish(_ok) {
       testNum += 1;
-      if (ok) {
-        passCount += 1;
-      }
       return testNum;
     },
-    /** @type { (thunk: () => Promise<void>) => Promise<void> } */
-    async defer(thunk) {
-      suitesToRun.push(thunk);
+    /** @type { (name: string, thunk: () => Promise<void>) => void } */
+    queue(name, thunk) {
+      if (name in suitesToRun) {
+        throw Error(`duplicate name ${name}`);
+      }
+      suitesToRun[name] = thunk;
     },
-    summary,
-    async result() {
+    testNames() {
+      return keys(suitesToRun);
+    },
+    /**
+     * @param {string} name
+     * @returns { Promise<void> }
+     */
+    async run(name) {
       for await (const hook of beforeHooks) {
         await hook({ context });
       }
-      beforeHooks = [];
-      for await (const suite of suitesToRun) {
-        await suite();
-      }
-      suitesToRun = [];
 
-      return summary();
+      const suite = suitesToRun[name];
+      await suite();
     },
   });
 
@@ -169,17 +158,29 @@ function createHarness(send) {
 /**
  * @param {*} exc
  * @param {Expectation} expectation
- * @returns {boolean}
+ * @returns {null | { expected: unknown, actual: unknown }}
  * @typedef {{ instanceOf: Function } | { message: string | RegExp }=} Expectation
  */
 function checkExpectation(exc, expectation) {
-  if (!expectation) return true;
-  if ('instanceOf' in expectation) return exc instanceof expectation.instanceOf;
+  if (!expectation) return null;
+  if ('instanceOf' in expectation) {
+    if (exc instanceof expectation.instanceOf) {
+      return null;
+    } else {
+      return { expected: expectation.instanceOf, actual: exc };
+    }
+  }
   if ('message' in expectation) {
     const { message } = expectation;
-    return typeof message === 'string'
-      ? message === exc.message
-      : message.test(exc.message);
+    const ok =
+      typeof message === 'string'
+        ? message === exc.message
+        : message.test(exc.message);
+    if (ok) {
+      return null;
+    } else {
+      return { actual: exc.message, expected: message };
+    }
   }
   throw Error(`not implemented: ${JSON.stringify(expectation)}`);
 }
@@ -195,14 +196,8 @@ function checkExpectation(exc, expectation) {
  * @typedef {ReturnType<typeof makeTester>} Tester
  */
 function makeTester(htest, out) {
-  /** @type {number?} */
-  let pending;
-
   /** @type {(result: boolean, info?: string) => void} */
   function assert(result, info) {
-    if (typeof pending === 'number') {
-      pending -= 1;
-    }
     const testNum = htest.finish(result);
     if (result) {
       out.ok(testNum, info);
@@ -222,10 +217,7 @@ function makeTester(htest, out) {
   const t = freeze({
     /** @param {number} count */
     plan(count) {
-      pending = count;
-    },
-    get pending() {
-      return pending;
+      out.plan(count);
     },
     get context() {
       return htest.context;
@@ -289,7 +281,8 @@ function makeTester(htest, out) {
         fn();
         assert(false, message);
       } catch (ex) {
-        assert(checkExpectation(ex, expectation), message);
+        const delta = checkExpectation(ex, expectation);
+        assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
     /** @type {(fn: () => unknown, message?: string) => void } */
@@ -298,7 +291,9 @@ function makeTester(htest, out) {
         fn();
       } catch (ex) {
         assert(false, message);
+        return;
       }
+      assert(true, message);
     },
     /** @type {(thrower: () => Promise<unknown>, expectation?: Expectation, message?: string) => Promise<void> } */
     async throwsAsync(
@@ -310,7 +305,8 @@ function makeTester(htest, out) {
         await (typeof thrower === 'function' ? thrower() : thrower);
         assert(false, message);
       } catch (ex) {
-        assert(checkExpectation(ex, expectation), message);
+        const delta = checkExpectation(ex, expectation);
+        assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
     /** @type {(thrower: () => Promise<unknown>, message?: string) => Promise<void> } */
@@ -319,19 +315,25 @@ function makeTester(htest, out) {
         await (typeof nonThrower === 'function' ? nonThrower() : nonThrower);
       } catch (ex) {
         assert(false, message);
+        return;
       }
+      assert(true, message);
     },
   });
 
   return t;
 }
 
-/** @type {(label: string, run: (t: Tester) => Promise<void>, htestOpt: Harness?) => void } */
+/**
+ * @param {string} label
+ * @param {(t: Tester) => Promise<void>} run
+ * @param {Harness?} htestOpt
+ */
 function test(label, run, htestOpt) {
   const htest = htestOpt || theHarness;
   if (!htest) throw Error('no harness');
 
-  htest.defer(async () => {
+  htest.queue(label, async () => {
     const out = tapFormat(htest.send);
     const t = makeTester(htest, out);
     try {
@@ -339,18 +341,18 @@ function test(label, run, htestOpt) {
       await run(t);
       out.diagnostic('end', label);
     } catch (ex) {
+      console.log('FAIL (todo route console)', ex);
       t.fail(`${label} threw: ${ex.message}`);
-    }
-    const pending = t.pending;
-    if (typeof pending === 'number' && pending !== 0) {
-      t.fail(`bad plan: ${t.pending} still to go`);
     }
   });
 }
 
+test.createHarness = createHarness;
+
 // TODO: test.skip, test.failing
 
-test.createHarness = createHarness;
+test.todo = _title => {};
+test.failing = (_title, _implementation) => {};
 
 /** @type {(label: string, fn: () => Promise<void>) => void } */
 test.before = (label, fn) => {

@@ -37,8 +37,8 @@ test('ratio - ALL', t => {
 
   amountsEqual(
     t,
-    multiplyBy(moe(100_000), make100Percent(brand)),
-    moe(100_000),
+    multiplyBy(moe(100000), make100Percent(brand)),
+    moe(100000),
     brand,
   );
 });

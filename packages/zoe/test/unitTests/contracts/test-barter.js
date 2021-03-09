@@ -114,11 +114,13 @@ test('barter with valid offers', async t => {
   // Alice sold all of her moola
   t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
-  // Alice had 0 moola and 4 simoleans.
-  assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0));
-  assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4));
+  await Promise.all([
+    // Alice had 0 moola and 4 simoleans.
+    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0)),
+    assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4)),
 
-  // Bob had 3 moola and 3 simoleans.
-  assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3));
-  assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3));
+    // Bob had 3 moola and 3 simoleans.
+    assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3)),
+    assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3)),
+  ]);
 });

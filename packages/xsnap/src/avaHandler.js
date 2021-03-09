@@ -19,7 +19,9 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 /**
- * @param { TapMessage | { bundleSource: [string, ...unknown[]] } | Summary } item
+ * @param { { testNames: string[] } |
+ *          { bundleSource: [string, ...unknown[]] } |
+ *          TapMessage | Summary } item
  * @typedef {import('./avaXS').Summary} Summary
  */
 function send(item) {
@@ -36,7 +38,8 @@ const bundleSource = async (startFilename, ...args) => {
   return JSON.parse(decoder.decode(msg));
 };
 
-const harness = test.createHarness(send);
+const harness = test.createHarness(send); // ISSUE: global mutable state
+
 const testRequire = function require(specifier) {
   switch (specifier) {
     case 'ava':
@@ -53,36 +56,61 @@ const testRequire = function require(specifier) {
   }
 };
 
-function handler(msg) {
-  const src = decoder.decode(msg);
-  // @ts-ignore How do I get ses types in scope?!?!?!
-  const c = new Compartment({
-    require: testRequire,
-    __dirname,
-    __filename,
-    console,
-    // @ts-ignore
-    assert,
-    harden,
-    // @ts-ignore
-    HandledPromise,
-    TextEncoder,
-    TextDecoder,
-  });
-  try {
-    c.evaluate(`(${src}\n)()`);
-  } catch (ex) {
-    send({ status: 'not ok', message: `running test script: ${ex.message}` });
+/** @param {ArrayBuffer} rawMessage */
+function handler(rawMessage) {
+  /**
+   * @type {{ method: 'loadScript', source: string } | { method: 'runTest', name: string }}
+   */
+  const msg = JSON.parse(decoder.decode(rawMessage));
+
+  switch (msg.method) {
+    case 'loadScript': {
+      const { source } = msg;
+      const virtualObjectGlobals =
+        // @ts-ignore
+        // eslint-disable-next-line no-undef
+        typeof makeKind !== 'undefined' ? { makeKind, makeWeakStore } : {};
+      // @ts-ignore How do I get ses types in scope?!?!?!
+      const c = new Compartment({
+        require: testRequire,
+        __dirname,
+        __filename,
+        console,
+        // @ts-ignore
+        assert,
+        // @ts-ignore
+        HandledPromise,
+        TextEncoder,
+        TextDecoder,
+        ...virtualObjectGlobals,
+      });
+      try {
+        c.evaluate(`(${source}\n)()`);
+        send({ testNames: harness.testNames() });
+      } catch (ex) {
+        send({
+          status: 'not ok',
+          message: `running test script: ${ex.message}`,
+        });
+      }
+      break;
+    }
+
+    case 'runTest': {
+      const { name } = msg;
+      harness.run(name).catch(ex =>
+        send({
+          status: 'not ok',
+          message: `${name} threw: ${ex.message}`,
+        }),
+      );
+      break;
+    }
+
+    default:
+      console.log('bad method', msg);
   }
-  harness
-    .result()
-    .then(send)
-    .catch(ex =>
-      send({
-        status: 'not ok',
-        message: `getting test results: ${ex.message}`,
-      }),
-    );
+  return undefined;
 }
 
 globalThis.handleCommand = harden(handler);

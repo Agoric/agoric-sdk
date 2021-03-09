@@ -256,8 +256,8 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.throws(
     () => assertIssuerKeywords(zcf),
     {
-      message:
-        'undefined is not iterable (cannot read property Symbol(Symbol.iterator))',
+      // host-defined error message differs between node and XS. (agoric-sdk/issues/1780)
+      message: /undefined/,
     },
     'no expected keywordRecord gets an error',
   );

@@ -11,8 +11,12 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "ava --verbose",
+    "test": "yarn test:node && yarn test:xs-unit",
+    "test:node": "ava --verbose",
     "test:nyc": "nyc ava",
+    "test:xs-unit": "ava-xs --verbose",
+    "test:xs-unit-debug": "ava-xs --debug",
+    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
@@ -68,6 +72,29 @@
     "exported.js",
     "NEWS.md"
   ],
+  "ava-xs": {
+    "exclude": [
+      "# eek! SIGSEGV in GC https://github.com/Moddable-OpenSource/moddable/issues/592",
+      "test-loan-e2e.js",
+      "# another SEGV, but not in --debug so I cannot get a stack trace",
+      "contracts/test-callSpread-calculation",
+      "# another SEGV; not investigated",
+      "loan/test-borrow.js",
+      "test-fakePriceAuthority.js",
+      "test-offerSafety",
+      "test-scriptedOracle",
+      "test-zoeHelpers",
+      "# multiple instances of automaticRefund for the same Zoe bad plan: 6 still to go",
+      "test-automaticRefund",
+      "test-secondPriceAuction.js",
+      "test-escrowToVote",
+      "test-coveredCall",
+      "# offerOk threw: \"instance\" not found: (an object)'",
+      "test-otcDesk.js",
+      "# We use WORKER_TYPE=xs ava to run these...",
+      "swingsetTests"
+    ]
+  },
   "ava": {
     "files": [
       "test/**/test-*.js"

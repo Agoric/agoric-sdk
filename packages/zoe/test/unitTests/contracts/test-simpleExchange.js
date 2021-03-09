@@ -86,7 +86,7 @@ test('simpleExchange with valid offers', async t => {
     alicePayments,
   );
 
-  E(aliceNotifier)
+  const part1 = E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: afterAliceOrders, updateCount: afterAliceCount }) => {
       t.deepEqual(
@@ -104,7 +104,7 @@ test('simpleExchange with valid offers', async t => {
       );
       t.is(afterAliceCount, 4);
 
-      aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
+      return aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
         t.falsy(update.value.sells[0], 'accepted offer from Bob');
         t.is(update.updateCount, 5);
       });
@@ -182,15 +182,18 @@ test('simpleExchange with valid offers', async t => {
   // Alice sold all of her moola
   t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
-  // 6: Alice deposits her payout to ensure she can
-  // Alice had 0 moola and 4 simoleans.
-  assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0));
-  assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4));
+  await Promise.all([
+    part1,
+    // 6: Alice deposits her payout to ensure she can
+    // Alice had 0 moola and 4 simoleans.
+    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0)),
+    assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4)),
 
-  // 7: Bob deposits his original payments to ensure he can
-  // Bob had 3 moola and 3 simoleans.
-  assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3));
-  assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3));
+    // 7: Bob deposits his original payments to ensure he can
+    // Bob had 3 moola and 3 simoleans.
+    assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3)),
+    assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3)),
+  ]);
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -409,9 +412,9 @@ test('simpleExchange with non-fungible assets', async t => {
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
   const noCats = amountMaths.get('cc').getEmpty();
   const noRpgItems = amountMaths.get('rpg').getEmpty();
-  assertPayoutAmount(t, rpgIssuer, aliceRpgPayout, noRpgItems);
+  await assertPayoutAmount(t, rpgIssuer, aliceRpgPayout, noRpgItems);
   const cheshireCatAmount = cryptoCats(harden(['Cheshire Cat']));
-  assertPayoutAmount(t, ccIssuer, aliceCcPayout, cheshireCatAmount);
-  assertPayoutAmount(t, rpgIssuer, bobRpgPayout, rpgItems(spell));
-  assertPayoutAmount(t, ccIssuer, bobCcPayout, noCats);
+  await assertPayoutAmount(t, ccIssuer, aliceCcPayout, cheshireCatAmount);
+  await assertPayoutAmount(t, rpgIssuer, bobRpgPayout, rpgItems(spell));
+  await assertPayoutAmount(t, ccIssuer, bobCcPayout, noCats);
 });
