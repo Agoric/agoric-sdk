@@ -195,10 +195,9 @@ async function runTestScript(
  *
  * @param { string[] } args
  * @param {{ packageFilename?: string }} opts
- * @param {{
- *   readFile: typeof import('fs').promises.readFile
- *   glob: typeof import('glob')
- * }} io
+ * @param {Object} io
+ * @param {typeof import('fs').promises.readFile} io.readFile
+ * @param {typeof import('glob')} io.glob
  * @returns {Promise<AvaXSConfig>}
  *
  * @typedef {Object} AvaXSConfig
