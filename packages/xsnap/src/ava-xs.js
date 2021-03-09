@@ -1,25 +1,31 @@
-#!/usr/bin/env node -r esm
+#!/usr/bin/env node
+/* global require, module */
 // @ts-check
-import process from 'process';
-import { spawn } from 'child_process';
-import { type as osType } from 'os';
-import { promises } from 'fs';
-import path from 'path';
-import glob from 'glob';
-import '@agoric/install-ses';
-import bundleSource from '@agoric/bundle-source';
+const esmRequire = require('esm')(module);
+const process = require('process');
+const { spawn } = require('child_process');
+const { type: osType } = require('os');
+const { promises } = require('fs');
+const path = require('path');
+const glob = require('glob');
 
-import { main, makeBundleResolve } from './avaXS';
+esmRequire('@agoric/install-ses');
+const bundleSource = esmRequire('@agoric/bundle-source').default;
 
-main(process.argv.slice(2), {
-  bundleSource,
-  spawn,
-  osType,
-  readFile: promises.readFile,
-  resolve: makeBundleResolve(path),
-  dirname: path.dirname,
-  glob,
-})
+const { main, makeBundleResolve } = esmRequire('./avaXS');
+
+Promise.resolve()
+  .then(_ =>
+    main(process.argv.slice(2), {
+      bundleSource,
+      spawn,
+      osType,
+      readFile: promises.readFile,
+      resolve: makeBundleResolve(path),
+      dirname: path.dirname,
+      glob,
+    }),
+  )
   .then(status => {
     process.exit(status);
   })
