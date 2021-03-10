@@ -62,14 +62,37 @@ test('serialize decodeToJustin eval round trip pairs', t => {
     // Will be the endowments assumed by these Justin expressions
   });
   const { serialize } = makeMarshal(undefined, undefined, {
-    // TODO errorTagging will only be recognized once we merge with PR #2437
-    // We're turning it off only for the round trip test, not in general.
+    // We're turning `errorTagging`` off only for the round trip test, not in
+    // general.
     errorTagging: 'off',
   });
   for (const [body, justinSrc] of jsonPairs) {
     const encoding = JSON.parse(body);
     const justinExpr = decodeToJustin(encoding);
-    t.is(justinSrc, justinExpr);
+    t.is(justinExpr, justinSrc);
+    const value = harden(c.evaluate(`(${justinExpr})`));
+    const { body: newBody } = serialize(value);
+    t.is(newBody, body);
+  }
+});
+
+// Like "serialize decodeToJustin eval round trip pairs" but uses the indented
+// representation *without* checking its specific whitespace decisions, which
+// are currently terrible. Just checking that it has equivalent evaluation, and
+// that the decoder passes the extra `level` balancing diagnostic in
+// `makeYesIndenter`.
+test('serialize decodeToJustin indented eval round trip', t => {
+  const c = new Compartment({
+    // Will be the endowments assumed by these Justin expressions
+  });
+  const { serialize } = makeMarshal(undefined, undefined, {
+    // We're turning `errorTagging`` off only for the round trip test, not in
+    // general.
+    errorTagging: 'off',
+  });
+  for (const [body] of jsonPairs) {
+    const encoding = JSON.parse(body);
+    const justinExpr = decodeToJustin(encoding, true);
     const value = harden(c.evaluate(`(${justinExpr})`));
     const { body: newBody } = serialize(value);
     t.is(body, newBody);

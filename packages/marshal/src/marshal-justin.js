@@ -34,6 +34,7 @@ const makeYesIndenter = () => {
   const line = () => strings.push('\n', '  '.repeat(level));
   return harden({
     open: openBracket => {
+      assert(level >= 1);
       level += 1;
       return strings.push(' ', openBracket);
     },
@@ -44,7 +45,10 @@ const makeYesIndenter = () => {
       line();
       return strings.push(closeBracket);
     },
-    done: () => strings.join(''),
+    done: () => {
+      assert.equal(level, 0);
+      return strings.join('');
+    },
   });
 };
 
