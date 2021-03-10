@@ -81,84 +81,60 @@ function generateCommonMetrics(obj, phaseLabels) {
   return metrics;
 }
 
-function generateMetricsFromPrimeData(data, labels = undefined) {
-  let metrics = '';
+function gatherMetrics(kind, data, labels, specs) {
+  const metricName = Object.fromEntries(
+    specs.map(([prop, name]) => [prop, name]),
+  );
+  const propMetrics = Object.fromEntries(
+    specs.map(([prop, name, ...args]) => [prop, promHeader(name, ...args)]),
+  );
+
   const todo = new Set(Object.keys(data));
-  for (const { metricType, key, name, description } of KERNEL_STATS_METRICS) {
+  for (const { key, name } of KERNEL_STATS_METRICS) {
     if (!(key in data)) {
       // eslint-disable-next-line no-continue
       continue;
     }
     todo.delete(key);
-    if ('value' in data[key]) {
-      metrics += promHeader(name, metricType, description);
-      metrics += promValue(name, data[key].value, labels);
-    }
-    if ('up' in data[key]) {
-      const nm = `${name}_up`;
-      metrics += promHeader(
-        nm,
-        'counter',
-        `${description} (number of increments)`,
-      );
-      metrics += promValue(nm, data[key].up, labels);
-    }
-    if ('down' in data[key]) {
-      const nm = `${name}_down`;
-      metrics += promHeader(
-        nm,
-        'counter',
-        `${description} (number of decrements)`,
-      );
-      metrics += promValue(nm, data[key].down, labels);
-    }
-    if ('max' in data[key]) {
-      const nm = `${name}_max`;
-      metrics += promHeader(nm, 'gauge', `${description} (maximum value)`);
-      metrics += promValue(nm, data[key].max, labels);
-    }
-    if ('perCrank' in data[key]) {
-      const nm = `${name}_per_crank`;
-      metrics += promHeader(nm, 'gauge', `${description} (value per crank)`);
-      metrics += promValue(nm, data[key].perCrank, labels);
+    const statLabels = [...(labels || []), ['stat', name]];
+
+    for (const prop of Object.keys(propMetrics)) {
+      if (prop in data[key]) {
+        propMetrics[prop] += promValue(
+          metricName[prop],
+          data[key][prop],
+          statLabels,
+        );
+      }
     }
   }
 
   for (const key of todo.keys()) {
-    console.warn(`Unrecognized prime data property ${key}`);
+    console.warn(`Unrecognized ${kind} data property ${key}`);
   }
-  return metrics;
+  return Object.values(propMetrics).join('');
+}
+
+function generateMetricsFromPrimeData(data, labels = undefined) {
+  return gatherMetrics('prime', data, labels, [
+    ['up', 'stat_up', 'counter', `Number of increments`],
+    ['down', 'stat_down', 'counter', `Number of decrements`],
+    ['max', 'stat_max', 'gauge', `Maximum value`],
+    ['value', 'stat_value', 'gauge', 'Latest value'],
+    ['perCrank', 'stat_per_crank', 'gauge', `Autobench value per crank`],
+  ]);
 }
 
 function generateMetricsFromBenchmarkData(data, labels = undefined) {
-  let metrics = '';
-  const todo = new Set(Object.keys(data));
-  for (const { key, name, description } of KERNEL_STATS_METRICS) {
-    if (!(key in data)) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    todo.delete(key);
-    if ('delta' in data[key]) {
-      const nm = `${name}_delta`;
-      metrics += promHeader(nm, 'gauge', `${description} benchmark delta`);
-      metrics += promValue(nm, data[key].delta, labels);
-    }
-    if ('deltaPerRound' in data[key]) {
-      const nm = `${name}_delta_per_round`;
-      metrics += promHeader(
-        nm,
-        'gauge',
-        `${description} benchmark delta per round`,
-      );
-      metrics += promValue(nm, data[key].deltaPerRound, labels);
-    }
-  }
-
-  for (const key of todo.keys()) {
-    console.warn(`Unrecognized benchmark data property ${key}`);
-  }
-  return metrics;
+  return gatherMetrics('benchmark', data, labels, [
+    ['delta', 'stat_delta', 'gauge', `Autobench benchmark delta`],
+    [
+      'deltaPerRound',
+      'stat_delta_per_round',
+      'gauge',
+      `Autobench benchmark delta per round`,
+    ],
+  ]);
 }
 
 function generateMetricsFromBenchStats(benchStats, labels = []) {
