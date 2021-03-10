@@ -95,6 +95,6 @@ test('serialize decodeToJustin indented eval round trip', t => {
     const justinExpr = decodeToJustin(encoding, true);
     const value = harden(c.evaluate(`(${justinExpr})`));
     const { body: newBody } = serialize(value);
-    t.is(body, newBody);
+    t.is(newBody, body);
   }
 });
