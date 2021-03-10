@@ -100,6 +100,17 @@ interface EProxy {
   readonly G<T>(x: T): ESingleGet<Unpromise<T>>;
 
   /**
+   * E.get(x) returns a proxy on which you can get arbitrary properties.
+   * Each of these properties returns a promise for the property.  The promise
+   * value will be the property fetched from whatever 'x' designates (or
+   * resolves to) in a future turn, not this one.
+   *
+   * @param {*} x target for property get
+   * @returns {ESingleGet} property get proxy
+   */
+  readonly get<T>(x: T): ESingleGet<Unpromise<T>>;
+
+  /**
    * E.resolve(x) converts x to a handled promise. It is
    * shorthand for HandledPromise.resolve(x)
    */
