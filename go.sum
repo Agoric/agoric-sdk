@@ -60,6 +60,8 @@ github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210122151802-a81eb67c924d h1:
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210122151802-a81eb67c924d/go.mod h1:FxbRbTEQsxz1LUmY4cVFFcjcdNT6VwVm7Ajw5HQmf04=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210126214117-87803b32fbb4 h1:oHNB57wl8KSb6oo1w32FW19PdB5uFfPjfnFYX6/pbn8=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210126214117-87803b32fbb4/go.mod h1:h57vnXeOlrdvvNFCqPBSaOrpOivl+2swWEtlUAqStYE=
+github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210310191408-9156bacf449c h1:Mib4I7yaBDNA/xpadU6WH0mqporvACuQ5LSNuachIgo=
+github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210310191408-9156bacf449c/go.mod h1:JVuu3V1ZexOaZG8VJMRl8lnfrGw6hEB2TVnoUwKRbss=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
@@ -157,6 +159,8 @@ github.com/cosmos/cosmos-sdk v0.40.1 h1:gjrtV3MQj/CMeyXN4+sosHMG6Xwa2uH6HITSjSNL
 github.com/cosmos/cosmos-sdk v0.40.1/go.mod h1:vlgqdPpUGSxgqSbZea6fjszoLkPKwCuiqSBySLlv4ro=
 github.com/cosmos/cosmos-sdk v0.41.1 h1:QatVRc8EaEObHtOFDNYHoF6di/jvSFVkXBK3I3SQ+/4=
 github.com/cosmos/cosmos-sdk v0.41.1/go.mod h1:mCaJm2k+fqY7+qwvwd7WDHZZFG3avW4+I6c4lizAkIY=
+github.com/cosmos/cosmos-sdk v0.42.0 h1:oQ+rUTYZ5gUq8/YEW83NosCJ3+41iA/3/wZ3pfEIYH8=
+github.com/cosmos/cosmos-sdk v0.42.0/go.mod h1:xiLp1G8mumj82S5KLJGCAyeAlD+7VNomg/aRSJV12yk=
 github.com/cosmos/go-bip39 v0.0.0-20180618194314-52158e4697b8/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d h1:49RLWk1j44Xu4fjHb6JFYmeUnDORVwHNkDxaQ0ctCVU=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
@@ -707,6 +711,8 @@ github.com/tendermint/tendermint v0.34.3 h1:9yEsf3WO5VAwPVwrmM+RffDMiijmNfWaBwNt
 github.com/tendermint/tendermint v0.34.3/go.mod h1:h57vnXeOlrdvvNFCqPBSaOrpOivl+2swWEtlUAqStYE=
 github.com/tendermint/tendermint v0.34.4 h1:E7qkvFGx27d8ugVLiAY2iWP6DL5cep3l/mpTaWKHyBA=
 github.com/tendermint/tendermint v0.34.4/go.mod h1:JVuu3V1ZexOaZG8VJMRl8lnfrGw6hEB2TVnoUwKRbss=
+github.com/tendermint/tendermint v0.34.8 h1:PMWgUx47FrNTsfhxCWzoiIlVAC1SE9+WBlnsF9oQW0I=
+github.com/tendermint/tendermint v0.34.8/go.mod h1:JVuu3V1ZexOaZG8VJMRl8lnfrGw6hEB2TVnoUwKRbss=
 github.com/tendermint/tm-db v0.4.1/go.mod h1:JsJ6qzYkCGiGwm5GHl/H5GLI9XLb6qZX7PRe425dHAY=
 github.com/tendermint/tm-db v0.5.0/go.mod h1:lSq7q5WRR/njf1LnhiZ/lIJHk2S8Y1Zyq5oP/3o9C2U=
 github.com/tendermint/tm-db v0.6.1/go.mod h1:m3x9kRP4UFd7JODJL0yBAZqE7wTw+S37uAE90cTx7OA=
@@ -985,6 +991,7 @@ google.golang.org/grpc v1.32.0/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM
 google.golang.org/grpc v1.33.0 h1:IBKSUNL2uBS2DkJBncPP+TwT0sp9tgA8A75NjHt6umg=
 google.golang.org/grpc v1.33.0/go.mod h1:fr5YgcSWrqhRRxogOsw7RzIpsmvOZ6IcH4kBYTpR3n0=
 google.golang.org/grpc v1.33.1/go.mod h1:fr5YgcSWrqhRRxogOsw7RzIpsmvOZ6IcH4kBYTpR3n0=
+google.golang.org/grpc v1.33.2 h1:EQyQC3sa8M+p6Ulc8yy9SWSS2GVwyRc83gAbG8lrl4o=
 google.golang.org/grpc v1.33.2/go.mod h1:JMHMWHQWaTccqQQlmk3MJZS+GWXOdAesneDmEnv2fbc=
 google.golang.org/grpc v1.35.0 h1:TwIQcH3es+MojMVojxxfQ3l3OF2KzlRxML2xZq0kRo8=
 google.golang.org/grpc v1.35.0/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAGRRjU=
