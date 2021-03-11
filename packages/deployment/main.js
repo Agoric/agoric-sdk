@@ -1,39 +1,14 @@
-/* global __dirname process */
+/* global __dirname */
 /* eslint-disable no-await-in-loop */
-import inquirer from 'inquirer';
 import djson from 'deterministic-json';
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { assert, details as X } from '@agoric/assert';
 import doInit from './init';
-import {
-  chdir,
-  doRun,
-  needBacktick,
-  needDoRun,
-  shellEscape,
-  shellMetaRegexp,
-  setSilent,
-} from './run';
-import {
-  dirname,
-  exists,
-  readFile,
-  resolve,
-  stat,
-  streamFromString,
-  createFile,
-  mkdir,
-  readdir,
-} from './files';
-import {
-  SETUP_HOME,
-  DEFAULT_BOOT_TOKENS,
-  playbook,
-  sleep,
-  SSH_TYPE,
-} from './setup';
+import { shellMetaRegexp, shellEscape } from './run';
+import { streamFromString } from './files';
+import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup';
 
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
@@ -42,26 +17,21 @@ const DWEB_DIR = 'dweb';
 const SECONDS_BETWEEN_BLOCKS = 5;
 const DEFAULT_SWINGSET_PROMETHEUS_PORT = 9464;
 
-// This is needed for hyphenated group names not to trigger Ansible.
-process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
-
-const trimReadFile = async file => String(await readFile(file)).trimRight();
-
-const guardFile = async (file, maker) => {
-  if (await exists(file)) {
+const makeGuardFile = ({ rd, wr }) => async (file, maker) => {
+  if (await rd.exists(file)) {
     return 0;
   }
-  const parent = dirname(file);
-  await mkdir(parent, { recursive: true });
+  const parent = rd.dirname(file);
+  await wr.mkdir(parent, { recursive: true });
   let made = false;
   const ret = await maker(async contents => {
-    await createFile(file, contents);
+    await wr.createFile(file, contents);
     made = true;
   });
   if (!made) {
     if (!ret) {
       // Create a timestamp by default.
-      await createFile(file, String(new Date()));
+      await wr.createFile(file, String(new Date()));
     } else {
       // They failed.
       throw ret;
@@ -70,7 +40,13 @@ const guardFile = async (file, maker) => {
   return ret;
 };
 
-const waitForStatus = async (user, host, service, doRetry, acceptFn) => {
+const waitForStatus = ({ setup, running }) => async (
+  user,
+  host,
+  service,
+  doRetry,
+  acceptFn,
+) => {
   const hostArgs = host ? [`-l${host}`] : [];
   const serviceArgs = service ? [`-eservice=${service}`] : [];
   let retryNum = 0;
@@ -79,11 +55,11 @@ const waitForStatus = async (user, host, service, doRetry, acceptFn) => {
     await doRetry(retryNum);
     let buf = '';
     // eslint-disable-next-line no-await-in-loop
-    const code = await needDoRun(
-      playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
+    const code = await running.needDoRun(
+      setup.playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
       undefined,
       chunk => {
-        process.stdout.write(chunk);
+        running.stdout.write(chunk);
         buf += String(chunk);
       },
     );
@@ -95,21 +71,41 @@ const waitForStatus = async (user, host, service, doRetry, acceptFn) => {
   }
 };
 
-const provisionOutput = async () => {
+const provisionOutput = async ({ rd, wr, running }) => {
   const jsonFile = `${PROVISION_DIR}/terraform.json`;
-  await guardFile(jsonFile, async makeFile => {
-    const json = await needBacktick(`terraform output -json`);
+  await makeGuardFile({ rd, wr })(jsonFile, async makeFile => {
+    const json = await running.needBacktick(`terraform output -json`);
     await makeFile(json);
   });
-  const json = String(await readFile(jsonFile));
+  const json = String(await rd.readFile(jsonFile));
   return JSON.parse(json);
 };
 
-const main = async (progname, rawArgs) => {
+const main = async (
+  progname,
+  rawArgs,
+  { env, rd, wr, setup, running, inquirer, fetch },
+) => {
   const { _: args, ...opts } = parseArgs(rawArgs, {
     boolean: ['version', 'help'],
     stopEarly: true,
   });
+
+  // This is needed for hyphenated group names not to trigger Ansible.
+  env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
+
+  const trimReadFile = async file =>
+    String(await rd.readFile(file)).trimRight();
+  const guardFile = makeGuardFile({ rd, wr });
+  const {
+    doRun,
+    needDoRun,
+    needBacktick,
+    setSilent,
+    cwd,
+    chdir,
+    stdout,
+  } = running;
 
   const reMain = async reArgs => {
     const displayArgs = [progname, ...args];
@@ -123,7 +119,7 @@ const main = async (progname, rawArgs) => {
   };
 
   const initHint = () => {
-    const adir = process.cwd();
+    const adir = cwd();
     console.error(`\
 
 NOTE: to manage the ${adir} setup directory, do
@@ -151,17 +147,17 @@ show-config      display the client connection parameters
   const inited = async (cmd = `${progname} init`, ...files) => {
     files = [...files, 'ansible.cfg', 'vars.tf'];
     try {
-      const ps = files.map(path => stat(path));
+      const ps = files.map(path => rd.stat(path));
       await Promise.all(ps);
     } catch (e) {
       throw Error(
-        `${process.cwd()} does not appear to be a directory created by \`${cmd}'`,
+        `${cwd()} does not appear to be a directory created by \`${cmd}'`,
       );
     }
   };
 
   const cmd = args[0];
-  if (SETUP_HOME) {
+  if (setup.SETUP_HOME) {
     // Switch to the chain home.
     switch (cmd) {
       case 'bootstrap':
@@ -171,8 +167,8 @@ show-config      display the client connection parameters
       case 'ssh':
         break;
       default:
-        if (process.cwd() !== SETUP_HOME) {
-          await chdir(SETUP_HOME);
+        if (cwd() !== setup.SETUP_HOME) {
+          await chdir(setup.SETUP_HOME);
         }
         break;
     }
@@ -199,8 +195,8 @@ show-config      display the client connection parameters
         },
       );
 
-      const dir = SETUP_HOME;
-      if (await exists(`${dir}/network.txt`)) {
+      const dir = setup.SETUP_HOME;
+      if (await rd.exists(`${dir}/network.txt`)) {
         // Change to directory.
         await chdir(dir);
       } else {
@@ -208,9 +204,7 @@ show-config      display the client connection parameters
         await needReMain([
           'init',
           dir,
-          ...(process.env.AG_SETUP_COSMOS_NAME
-            ? [process.env.AG_SETUP_COSMOS_NAME]
-            : []),
+          ...(env.AG_SETUP_COSMOS_NAME ? [env.AG_SETUP_COSMOS_NAME] : []),
         ]);
       }
 
@@ -229,7 +223,7 @@ show-config      display the client connection parameters
           } else if (code !== 2) {
             return code;
           }
-          await sleep(10, 'for hosts to boot SSH');
+          await setup.sleep(10, 'for hosts to boot SSH');
         }
         return 0;
       });
@@ -241,7 +235,7 @@ show-config      display the client connection parameters
 
       switch (subArgs[0]) {
         case undefined: {
-          await createFile('boot-tokens.txt', bootTokens);
+          await wr.createFile('boot-tokens.txt', bootTokens);
           const bootOpts = [];
           for (const propagate of ['bump', 'import-from']) {
             const val = subOpts[propagate];
@@ -265,7 +259,7 @@ show-config      display the client connection parameters
       const versionFile = `chain-version.txt`;
 
       let epoch = '0';
-      if (await exists(versionFile)) {
+      if (await rd.exists(versionFile)) {
         const vstr = await trimReadFile(versionFile);
         const match = vstr.match(/^(\d+)/);
         epoch = match[1] || '0';
@@ -298,7 +292,7 @@ show-config      display the client connection parameters
         vstr = versionKind;
       }
       console.log(vstr);
-      await createFile(versionFile, vstr);
+      await wr.createFile(versionFile, vstr);
       break;
     }
 
@@ -320,7 +314,10 @@ show-config      display the client connection parameters
         }
 
         // Add the exported prefix if not absolute.
-        const absImportFrom = resolve(`${SETUP_HOME}/exported`, importFrom);
+        const absImportFrom = rd.resolve(
+          `${setup.SETUP_HOME}/exported`,
+          importFrom,
+        );
         importFlags.push(`--import-from=${absImportFrom}`);
       }
 
@@ -364,15 +361,14 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/set-defaults.stamp`, async () => {
         await needReMain(['play', 'cosmos-clone-config']);
 
-        const agoricCli = resolve(
-          __dirname,
-          `../agoric-cli/bin/agoric`,
-        ).replace('/cosmic-swingset/', '/');
+        const agoricCli = rd
+          .resolve(__dirname, `../agoric-cli/bin/agoric`)
+          .replace('/cosmic-swingset/', '/');
         // FIXME: The above .replace hacks around legacy /usr/src/agoric-sdk/packages/cosmic-swingset/setup location.
         // TODO: Should change the Dockerfiles to use /usr/src/agoric-sdk/packages/deployment instead.
 
         // Apply the Agoric set-defaults to all the .dst dirs.
-        const files = await readdir(`${COSMOS_DIR}/data`);
+        const files = await rd.readdir(`${COSMOS_DIR}/data`);
         const dsts = files.filter(fname => fname.endsWith('.dst'));
         const peers = await needBacktick(`${shellEscape(progname)} show-peers`);
         await Promise.all(
@@ -388,10 +384,10 @@ show-config      display the client connection parameters
             ]);
             if (i === 0) {
               // Make a canonical copy of the genesis.json.
-              const data = await readFile(
+              const data = await rd.readFile(
                 `${COSMOS_DIR}/data/${dst}/genesis.json`,
               );
-              await createFile(`${COSMOS_DIR}/data/genesis.json`, data);
+              await wr.createFile(`${COSMOS_DIR}/data/genesis.json`, data);
             }
           }),
         );
@@ -408,7 +404,7 @@ show-config      display the client connection parameters
       );
 
       let SWINGSET_PROMETHEUS_PORT;
-      if (await exists(`prometheus-tendermint.txt`)) {
+      if (await rd.exists(`prometheus-tendermint.txt`)) {
         SWINGSET_PROMETHEUS_PORT = DEFAULT_SWINGSET_PROMETHEUS_PORT;
       }
       const agChainCosmosEnvironment = SWINGSET_PROMETHEUS_PORT
@@ -454,10 +450,10 @@ show-config      display the client connection parameters
     case 'dweb': {
       await inited();
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
-      process.stdout.write(`${chalk.yellow(cfg)}\n`);
+      stdout.write(`${chalk.yellow(cfg)}\n`);
 
-      await mkdir(`${DWEB_DIR}/data`, { recursive: true });
-      await createFile(`${DWEB_DIR}/data/cosmos-chain.json`, cfg);
+      await wr.mkdir(`${DWEB_DIR}/data`, { recursive: true });
+      await wr.createFile(`${DWEB_DIR}/data/cosmos-chain.json`, cfg);
 
       const rpcAddrs = await needBacktick(
         `${shellEscape(progname)} show-rpcaddrs`,
@@ -468,7 +464,7 @@ show-config      display the client connection parameters
       let dwebHost;
       const cert = `dweb.crt`;
       const key = `dweb.key`;
-      if ((await exists(cert)) && (await exists(key))) {
+      if ((await rd.exists(cert)) && (await rd.exists(key))) {
         execline += ` --port=443 --ssl`;
         execline += ` --cert=${shellEscape(cert)}`;
         execline += ` --key=${shellEscape(key)}`;
@@ -517,7 +513,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
     case 'show-chain-name': {
       await inited();
       const chainName = await trimReadFile(`${COSMOS_DIR}/chain-name.txt`);
-      process.stdout.write(chainName);
+      stdout.write(chainName);
       break;
     }
 
@@ -526,7 +522,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       assert(host, X`Need: [host]`);
 
       setSilent(true);
-      await chdir(SETUP_HOME);
+      await chdir(setup.SETUP_HOME);
       await inited();
       const json = await needBacktick(
         `ansible-inventory --host=${shellEscape(host)}`,
@@ -548,7 +544,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
     case 'show-config': {
       setSilent(true);
-      await chdir(SETUP_HOME);
+      await chdir(setup.SETUP_HOME);
       await inited();
       const [chainName, gci, peers, rpcAddrs] = await Promise.all(
         [
@@ -566,7 +562,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         peers: peers.split(','),
         rpcAddrs: rpcAddrs.split(','),
       };
-      process.stdout.write(`${JSON.stringify(obj, undefined, 2)}\n`);
+      stdout.write(`${JSON.stringify(obj, undefined, 2)}\n`);
       break;
     }
 
@@ -597,7 +593,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
       for (const node of nodes) {
         const nodePlaybook = (book, ...pbargs) =>
-          playbook(book, '-l', node, ...pbargs);
+          setup.playbook(book, '-l', node, ...pbargs);
         await needDoRun(nodePlaybook('restart'));
         await needDoRun([progname, 'wait-for-any', node]);
       }
@@ -613,12 +609,12 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       // Detect when blocks are being produced.
-      const height = await waitForStatus(
+      const height = await waitForStatus({ setup, running })(
         'ag-chain-cosmos', // user
         host, // host
         'ag-chain-cosmos', // service
         _retries =>
-          sleep(
+          setup.sleep(
             SECONDS_BETWEEN_BLOCKS + 1,
             `to check if ${chalk.underline(host)} has committed a block`,
           ),
@@ -668,7 +664,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         }
       }
 
-      process.stdout.write(rpcaddrs);
+      stdout.write(rpcaddrs);
       break;
     }
 
@@ -695,7 +691,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       while (true) {
         // Read the node-id file for this node.
         idPath = `${COSMOS_DIR}/data/node${i}/node-id`;
-        if (!(await exists(idPath))) {
+        if (!(await rd.exists(idPath))) {
           break;
         }
 
@@ -715,32 +711,31 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         i += 1;
       }
       assert(i !== 0, X`No ${idPath} file found`);
-      process.stdout.write(peers);
+      stdout.write(peers);
       break;
     }
 
     case 'show-gci': {
-      const genesis = await readFile(`${COSMOS_DIR}/data/genesis.json`);
+      const genesis = await rd.readFile(`${COSMOS_DIR}/data/genesis.json`);
       const s = djson.stringify(JSON.parse(String(genesis)));
-      const gci = crypto
-        .createHash('sha256')
+      const gci = createHash('sha256')
         .update(s)
         .digest('hex');
-      process.stdout.write(gci);
+      stdout.write(gci);
       break;
     }
 
     case 'destroy': {
       let [dir] = args.slice(1);
       if (!dir) {
-        dir = SETUP_HOME;
+        dir = setup.SETUP_HOME;
       }
       assert(dir, X`Need: [dir]`);
 
       // Unprovision terraform.
       await chdir(dir);
 
-      if (await exists(`.terraform`)) {
+      if (await rd.exists(`.terraform`)) {
         // Terraform will prompt.
         await needDoRun(['terraform', 'destroy']);
       } else {
@@ -761,14 +756,17 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
     }
 
     case 'init': {
-      await doInit(progname, args);
+      await doInit({ env, rd, wr, running, setup, inquirer, fetch })(
+        progname,
+        args,
+      );
       initHint();
       break;
     }
 
     case 'provision': {
       await inited();
-      if (!(await exists('.terraform'))) {
+      if (!(await rd.exists('.terraform'))) {
         await needDoRun(['terraform', 'init']);
       }
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
@@ -777,10 +775,10 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
     }
 
     case 'show-hosts': {
-      const SSH_PRIVATE_KEY_FILE = resolve(`id_${SSH_TYPE}`);
+      const SSH_PRIVATE_KEY_FILE = rd.resolve(`id_${SSH_TYPE}`);
       await inited(`${progname} init`, SSH_PRIVATE_KEY_FILE);
       const prov = await provisionOutput();
-      const out = process.stdout;
+      const out = stdout;
       const prefixLines = (str, prefix) => {
         const allLines = str.split('\n');
         if (allLines[allLines.length - 1] === '') {
@@ -859,7 +857,7 @@ ${units}`;
         X`[playbook] ${JSON.stringify(pb)} must be a word`,
       );
       await inited();
-      return doRun(playbook(pb, ...pbargs));
+      return doRun(setup.playbook(pb, ...pbargs));
     }
 
     case 'run': {

@@ -1,23 +1,28 @@
-/* global __dirname process setInterval */
+/* global __dirname */
 import chalk from 'chalk';
-import { resolve } from './files';
 
 export const ACCOUNT_JSON = `account.json`;
 export const DEFAULT_BOOT_TOKENS = `10000000000000000000000000uag`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
-export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';
-export const SETUP_HOME = process.env.AG_SETUP_COSMOS_HOME
-  ? resolve(process.env.AG_SETUP_COSMOS_HOME)
-  : resolve('.');
-process.env.AG_SETUP_COSMOS_HOME = SETUP_HOME;
 
-export const playbook = (name, ...args) => {
-  const fullPath = `${SETUP_DIR}/ansible/${name}.yml`;
-  return [PLAYBOOK_WRAPPER, fullPath, ...args];
-};
+const { freeze } = Object;
 
-export const sleep = (seconds, why) => {
-  console.error(chalk.yellow(`Waiting ${seconds} seconds`, why || ''));
-  return new Promise(res => setInterval(res, 1000 * seconds));
+export const setup = ({ resolve, env, setInterval }) => {
+  const it = freeze({
+    SETUP_DIR: resolve(__dirname, '../setup'),
+    SETUP_HOME: env.AG_SETUP_COSMOS_HOME
+      ? resolve(env.AG_SETUP_COSMOS_HOME)
+      : resolve('.'),
+    playbook: (name, ...args) => {
+      const fullPath = `${it.SETUP_DIR}/ansible/${name}.yml`;
+      return [PLAYBOOK_WRAPPER, fullPath, ...args];
+    },
+    sleep: (seconds, why) => {
+      console.error(chalk.yellow(`Waiting ${seconds} seconds`, why || ''));
+      return new Promise(res => setInterval(res, 1000 * seconds));
+    },
+  });
+  env.AG_SETUP_COSMOS_HOME = it.SETUP_HOME;
+  return it;
 };
