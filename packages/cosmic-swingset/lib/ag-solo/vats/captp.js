@@ -2,6 +2,7 @@
 // in its own makeHardener, etc.
 import { makeCapTP } from '@agoric/captp/lib/captp';
 import { E } from '@agoric/eventual-send';
+import { Data } from '@agoric/marshal';
 
 export const getCapTPHandler = (
   send,
@@ -11,7 +12,7 @@ export const getCapTPHandler = (
   const chans = new Map();
   const doFallback = async (method, ...args) => {
     if (!fallback) {
-      return {};
+      return Data({});
     }
     return E(fallback)[method](...args);
   };

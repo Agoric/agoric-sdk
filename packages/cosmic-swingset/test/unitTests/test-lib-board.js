@@ -3,13 +3,14 @@
 import '@agoric/install-ses';
 import test from 'ava';
 
+import { Far } from '@agoric/marshal';
 import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
 
 test('makeBoard', async t => {
   const board = makeBoard();
 
-  const obj1 = harden({});
-  const obj2 = harden({});
+  const obj1 = Far('obj1', {});
+  const obj2 = Far('obj2', {});
 
   t.deepEqual(board.ids(), [], `board is empty to start`);
 

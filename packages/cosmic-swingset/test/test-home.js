@@ -2,6 +2,7 @@
 import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
+import { Far } from '@agoric/marshal';
 
 import { makeFixture, E } from './captp-fixture';
 
@@ -44,7 +45,7 @@ test.serial('home.board', async t => {
     `using a non-verified id throws`,
   );
 
-  const myValue = {};
+  const myValue = Far('myValue', {});
   const myId = await E(board).getId(myValue);
   t.is(typeof myId, 'string', `board key is string`);
 

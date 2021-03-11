@@ -5,6 +5,7 @@ import {
   makeEchoConnectionHandler,
 } from '@agoric/swingset-vat/src/vats/network';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
@@ -24,7 +25,7 @@ const PROVISIONER_INDEX = 1;
 
 function makeVattpFrom(vats) {
   const { vattp, comms } = vats;
-  return harden({
+  return Far('vattp', {
     makeNetworkHost(allegedName, console = undefined) {
       return E(vattp).makeNetworkHost(allegedName, comms, console);
     },
@@ -205,7 +206,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       }),
     );
 
-    return harden({
+    return Far('chainBundler', {
       async createUserBundle(_nickname, powerFlags = []) {
         // Bind to some fresh ports (unspecified name) on the IBC implementation
         // and provide them for the user to have.
@@ -238,12 +239,12 @@ export function buildRootObject(vatPowers, vatParameters) {
           pursePetname: issuerNameToRecord.get(issuerName).pursePetname,
         }));
 
-        const faucet = {
+        const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
             return paymentInfo;
           },
-        };
+        });
 
         const bundle = harden({
           ...additionalPowers,
@@ -275,7 +276,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
     if (bridgeMgr) {
       // We have access to the bridge, and therefore IBC.
-      const callbacks = harden({
+      const callbacks = Far('callbacks', {
         downcall(method, obj) {
           return bridgeMgr.toBridge('dibc', {
             ...obj,
@@ -304,7 +305,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Add an echo listener on our ibc-port network.
       const port = await E(vats.network).bind('/ibc-port/echo');
       E(port).addListener(
-        harden({
+        Far('listener', {
           async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
             return harden(makeEchoConnectionHandler());
           },
@@ -314,7 +315,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     if (bridgeMgr) {
       // Register a provisioning handler over the bridge.
-      const handler = harden({
+      const handler = Far('provisioningHandler', {
         async fromBridge(_srcID, obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {
@@ -355,7 +356,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     }
 
     // This will allow dApp developers to register in their api/deploy.js
-    const httpRegCallback = {
+    const httpRegCallback = Far('httpRegCallback', {
       doneLoading(subsystems) {
         return E(vats.http).doneLoading(subsystems);
       },
@@ -378,7 +379,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           E(vats.http).setWallet(wallet),
         ]);
       },
-    };
+    });
 
     return allComparable(
       harden({
@@ -395,7 +396,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
   }
 
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       const bridgeManager =
         devices.bridge && makeBridgeManager(E, D, devices.bridge);
@@ -494,7 +495,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           // Allow some hardcoded client address connections into the chain.
           // This is necessary for fake-chain, which does not have Cosmos SDK
           // transactions to provision its client.
-          const demoProvider = harden({
+          const demoProvider = Far('demoProvider', {
             // build a chain-side bundle for a client.
             async getDemoBundle(nickname) {
               if (giveMeAllTheAgoricPowers) {

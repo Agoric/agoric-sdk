@@ -1,3 +1,4 @@
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit } from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
@@ -8,7 +9,7 @@ import makeStore from '@agoric/store';
 export function buildRootObject(_vatPowers) {
   const mintsAndMath = makeStore('issuerName');
 
-  const api = harden({
+  const api = Far('api', {
     getAllIssuerNames: () => mintsAndMath.keys(),
     getIssuer: issuerName => {
       const mint = mintsAndMath.get(issuerName);
