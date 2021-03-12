@@ -1,6 +1,10 @@
 #! /usr/bin/env node
 /* global require, module, setInterval */
 
+const esmRequire = require('esm')(module);
+
+esmRequire('@agoric/install-ses');
+
 const fs = require('fs');
 const path = require('path');
 const temp = require('temp');
@@ -8,9 +12,6 @@ const process = require('process');
 const { exec, spawn } = require('child_process');
 const inquirer = require('inquirer');
 const fetch = require('node-fetch');
-const esmRequire = require('esm')(module);
-
-esmRequire('@agoric/install-ses');
 
 const { running } = esmRequire('./run');
 const { setup } = esmRequire('./setup');

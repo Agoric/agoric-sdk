@@ -81,11 +81,8 @@ const provisionOutput = async ({ rd, wr, running }) => {
   return JSON.parse(json);
 };
 
-const main = async (
-  progname,
-  rawArgs,
-  { env, rd, wr, setup, running, inquirer, fetch },
-) => {
+const main = async (progname, rawArgs, powers) => {
+  const { env, rd, wr, setup, running, inquirer, fetch } = powers;
   const { _: args, ...opts } = parseArgs(rawArgs, {
     boolean: ['version', 'help'],
     stopEarly: true,
@@ -110,7 +107,7 @@ const main = async (
   const reMain = async reArgs => {
     const displayArgs = [progname, ...args];
     console.error('$', ...displayArgs.map(shellEscape));
-    return main(progname, reArgs);
+    return main(progname, reArgs, powers);
   };
 
   const needReMain = async reArgs => {
@@ -651,7 +648,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
     case 'show-rpcaddrs': {
       await inited();
-      const prov = await provisionOutput();
+      const prov = await provisionOutput({ rd, wr, running });
 
       let rpcaddrs = '';
       let sep = '';
@@ -670,7 +667,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
     case 'show-peers': {
       await inited();
-      const prov = await provisionOutput();
+      const prov = await provisionOutput({ rd, wr, running });
       const publicIps = [];
       const publicPorts = [];
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
@@ -777,7 +774,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
     case 'show-hosts': {
       const SSH_PRIVATE_KEY_FILE = rd.resolve(`id_${SSH_TYPE}`);
       await inited(`${progname} init`, SSH_PRIVATE_KEY_FILE);
-      const prov = await provisionOutput();
+      const prov = await provisionOutput({ rd, wr, running });
       const out = stdout;
       const prefixLines = (str, prefix) => {
         const allLines = str.split('\n');

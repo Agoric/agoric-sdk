@@ -1,3 +1,5 @@
+// @ts-check
+
 import { assert, details as X } from '@agoric/assert';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup';
 import { shellEscape } from './run';
@@ -40,6 +42,7 @@ const tfStringify = obj => {
   return ret;
 };
 
+/** @param {Powers} arg0 */
 const genericAskApiKey = ({ env, inquirer }) => async (provider, myDetails) => {
   const questions = [
     {
@@ -252,9 +255,10 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
     dir = setup.SETUP_HOME;
   }
   assert(dir, X`Need: [dir] [[network name]]`);
+  await wr.mkdir(dir, { recursive: true });
+  await chdir(dir);
 
-  const adir = rd.resolve(cwd(), dir);
-  const networkTxt = `${adir}/network.txt`;
+  const networkTxt = `network.txt`;
   if (await rd.exists(networkTxt)) {
     overrideNetworkName = (await rd.readFile(networkTxt, 'utf-8')).trimEnd();
   }
@@ -267,7 +271,7 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
   }
 
   // Gather saved information.
-  const deploymentJson = `${adir}/deployment.json`;
+  const deploymentJson = `deployment.json`;
   const config = (await rd.exists(deploymentJson))
     ? JSON.parse(await rd.readFile(deploymentJson, 'utf-8'))
     : {
@@ -282,12 +286,6 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
   config.NETWORK_NAME = overrideNetworkName;
 
   let instance = 0;
-  try {
-    await wr.mkdir(dir);
-  } catch (e) {
-    // ignore
-  }
-  await chdir(dir);
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -303,7 +301,7 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
       provider = PROVIDERS[PROVIDER];
     } else {
       // eslint-disable-next-line no-await-in-loop
-      const { PROVIDER } = await askProvider({ inquirer })();
+      const { PROVIDER } = await askProvider({ inquirer })(PROVIDERS);
       if (!PROVIDER) {
         // eslint-disable-next-line no-continue
         continue;
@@ -311,6 +309,11 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
       provider = PROVIDERS[PROVIDER];
 
       const setPlacement = () => {
+        if (config.PLACEMENT_PROVIDER[PLACEMENT]) {
+          // Already present.
+          return;
+        }
+
         const idx = config.PROVIDER_NEXT_INDEX;
         if (!idx[PROVIDER]) {
           idx[PROVIDER] = 0;
@@ -403,7 +406,9 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
         break;
       }
     }
-    config.PLACEMENTS.push([PLACEMENT, placement]);
+    if (!config.PLACEMENTS.find(([place]) => place === PLACEMENT)) {
+      config.PLACEMENTS.push([PLACEMENT, placement]);
+    }
   }
 
   // Collate the placement information.
@@ -494,7 +499,7 @@ output "offsets" {
 `,
   );
 
-  const keyFile = rd.resolve(adir, config.SSH_PRIVATE_KEY_FILE);
+  const keyFile = config.SSH_PRIVATE_KEY_FILE;
   if (!(await rd.exists(keyFile))) {
     // Set empty password.
     await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', keyFile]);
@@ -506,7 +511,7 @@ output "offsets" {
 #! /bin/sh
 exec ansible-playbook -f10 \\
   -eSETUP_HOME=${shellEscape(cwd())} \\
-  -eNETWORK_NAME=\`cat ${shellEscape(rd.esolve('network.txt'))}\` \\
+  -eNETWORK_NAME=\`cat ${shellEscape(rd.resolve('network.txt'))}\` \\
   \${1+"$@"}
 `,
   );

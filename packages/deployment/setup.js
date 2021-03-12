@@ -6,11 +6,9 @@ export const DEFAULT_BOOT_TOKENS = `10000000000000000000000000uag`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SSH_TYPE = 'ecdsa';
 
-const { freeze } = Object;
-
 export const setup = ({ resolve, env, setInterval }) => {
-  const it = freeze({
-    SETUP_DIR: resolve(__dirname, '../setup'),
+  const it = harden({
+    SETUP_DIR: __dirname,
     SETUP_HOME: env.AG_SETUP_COSMOS_HOME
       ? resolve(env.AG_SETUP_COSMOS_HOME)
       : resolve('.'),
