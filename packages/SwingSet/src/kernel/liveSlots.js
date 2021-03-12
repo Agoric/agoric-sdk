@@ -360,6 +360,11 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   }
 
   function queueMessage(targetSlot, prop, args, returnedP) {
+    if (prop === Symbol.asyncIterator) {
+      // Temporary hack. TODO reverse.
+      // See https://github.com/Agoric/agoric-sdk/issues/2619
+      prop = 'Symbol.asyncIterator';
+    }
     const serArgs = m.serialize(harden(args));
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
@@ -442,6 +447,11 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   }
 
   function deliver(target, method, argsdata, result) {
+    if (method === 'Symbol.asyncIterator') {
+      // Temporary hack. TODO reverse.
+      // See https://github.com/Agoric/agoric-sdk/issues/2619
+      method = Symbol.asyncIterator;
+    }
     assert(didRoot);
     insistCapData(argsdata);
     lsdebug(
