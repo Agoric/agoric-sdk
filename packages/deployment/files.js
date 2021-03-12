@@ -1,70 +1,76 @@
-import util from 'util';
-import { resolve, basename, dirname } from 'path';
-import {
-  chmod as rawChmod,
-  exists as rawExists,
-  mkdir as rawMkdir,
-  readFile as rawReadFile,
-  stat as rawStat,
-  writeFile as rawWriteFile,
-  readdir as rawReaddir,
-  write as rawWrite,
-  close as rawClose,
-  unlink as rawUnlink,
-  rename as rawRename,
-} from 'fs';
+import { promisify } from 'util';
 import { Readable } from 'stream';
-import { open as tempOpen } from 'temp';
 import chalk from 'chalk';
 
 import { assert, details as X } from '@agoric/assert';
 
-export const chmod = util.promisify(rawChmod);
-export const exists = util.promisify(rawExists);
-export const mkdir = util.promisify(rawMkdir);
-export const writeFile = util.promisify(rawWriteFile);
-export const readFile = util.promisify(rawReadFile);
-export const readdir = util.promisify(rawReaddir);
-export const stat = util.promisify(rawStat);
-export const unlink = util.promisify(rawUnlink);
-export const rename = util.promisify(rawRename);
-const fsWrite = util.promisify(rawWrite);
-const fsClose = util.promisify(rawClose);
-export { resolve, dirname, basename };
+const { freeze } = Object;
 
-export const mustNotExist = async filename => {
-  const fileExists = await exists(filename);
-  assert(!fileExists, X`${filename} already exists`);
+export const reading = (
+  { exists, readFile, readdir, stat },
+  { resolve, dirname, basename },
+) => {
+  const existsP = promisify(exists);
+  return freeze({
+    resolve,
+    dirname,
+    basename,
+    readFile: promisify(readFile),
+    readdir: promisify(readdir),
+    stat: promisify(stat),
+    exists: existsP,
+    mustNotExist: async filename => {
+      const fileExists = await existsP(filename);
+      assert(!fileExists, X`${filename} already exists`);
+    },
+  });
 };
 
-export const createFile = async (path, contents) => {
-  console.error(chalk.yellow(`Creating ${chalk.underline(path)}`));
-  const info = await new Promise((res, rej) => {
-    tempOpen(
-      { dir: dirname(path), prefix: `${basename(path)}.` },
-      (err, tmpInfo) => {
-        if (err) {
-          rej(err);
-          return;
+export const writing = (
+  { write, close, rename, unlink, chmod, mkdir, writeFile },
+  { dirname, basename },
+  { open: tempOpen },
+) => {
+  const fsWrite = promisify(write);
+  const fsClose = promisify(close);
+  const it = freeze({
+    chmod: promisify(chmod),
+    mkdir: promisify(mkdir),
+    writeFile: promisify(writeFile),
+    unlink: promisify(unlink),
+    rename: promisify(rename),
+
+    createFile: async (path, contents) => {
+      console.error(chalk.yellow(`Creating ${chalk.underline(path)}`));
+      const info = await new Promise((res, rej) => {
+        tempOpen(
+          { dir: dirname(path), prefix: `${basename(path)}.` },
+          (err, tmpInfo) => {
+            if (err) {
+              rej(err);
+              return;
+            }
+            res(tmpInfo);
+          },
+        );
+      });
+      try {
+        // Write the contents, close, and rename.
+        await fsWrite(info.fd, contents);
+        await fsClose(info.fd);
+        await it.rename(info.path, path);
+      } catch (e) {
+        // Unlink on error.
+        try {
+          await it.unlink(info.path);
+        } catch (e2) {
+          // do nothing
         }
-        res(tmpInfo);
-      },
-    );
+        throw e;
+      }
+    },
   });
-  try {
-    // Write the contents, close, and rename.
-    await fsWrite(info.fd, contents);
-    await fsClose(info.fd);
-    await rename(info.path, path);
-  } catch (e) {
-    // Unlink on error.
-    try {
-      await unlink(info.path);
-    } catch (e2) {
-      // do nothing
-    }
-    throw e;
-  }
+  return it;
 };
 
 export const streamFromString = str => {
