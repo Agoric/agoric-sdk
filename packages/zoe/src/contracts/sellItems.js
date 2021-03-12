@@ -2,6 +2,8 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
+import { Nat } from '@agoric/nat';
 import {
   assertIssuerKeywords,
   trade,
@@ -52,13 +54,13 @@ const start = zcf => {
   };
 
   /** @type {SellItemsPublicFacet} */
-  const publicFacet = {
+  const publicFacet = Far('SellItemsPublicFacet', {
     getAvailableItems: () => {
       assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
       return sellerSeat.getAmountAllocated('Items');
     },
     getItemsIssuer: () => issuers.Items,
-  };
+  });
 
   const buy = buyerSeat => {
     assertProposalShape(buyerSeat, {
@@ -80,7 +82,7 @@ const start = zcf => {
 
     // All items are the same price.
     const totalCost = moneyMath.make(
-      pricePerItem.value * wantedItems.value.length,
+      pricePerItem.value * Nat(wantedItems.value.length),
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
@@ -109,7 +111,7 @@ const start = zcf => {
   };
 
   /** @type {SellItemsCreatorFacet} */
-  const creatorFacet = {
+  const creatorFacet = Far('SellItemsCreatorFacet', {
     makeBuyerInvitation: () => {
       const itemsAmount = sellerSeat.getAmountAllocated('Items');
       assert(
@@ -120,7 +122,7 @@ const start = zcf => {
     },
     getAvailableItems: publicFacet.getAvailableItems,
     getItemsIssuer: publicFacet.getItemsIssuer,
-  };
+  });
 
   const creatorInvitation = zcf.makeInvitation(sell, 'seller');
 

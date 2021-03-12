@@ -1,22 +1,24 @@
+import { Far } from '@agoric/marshal';
 import { buildPatterns } from '../message-patterns';
 
 export function buildRootObject(vatPowers) {
-  const bert = harden({
+  const bert = Far('bert', {
     toString: () => 'obj-bert',
     log_bert: msg => {
       vatPowers.testLog(msg);
     },
   });
-  const bill = harden({
+  const bill = Far('bill', {
     toString: () => 'obj-bill',
     log_bill(msg) {
       vatPowers.testLog(msg);
     },
   });
 
-  const root = harden({
+  const root = Far('root', {
     init() {
-      const { setB, objB: bob } = buildPatterns(vatPowers.testLog);
+      const { setB, objB } = buildPatterns(vatPowers.testLog);
+      const bob = Far('bob', objB);
       const b = harden({ bob, bert, bill });
       setB(b);
       return harden({ bob, bert });

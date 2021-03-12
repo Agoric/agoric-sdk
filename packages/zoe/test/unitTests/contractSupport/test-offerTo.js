@@ -1,3 +1,4 @@
+/* global __dirname */
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -6,6 +7,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
+import { Data } from '@agoric/marshal';
 import bundleSource from '@agoric/bundle-source';
 
 import { setup } from '../setupBasicMints';
@@ -96,7 +98,7 @@ test(`offerTo - basic usage`, async t => {
   const { zcfSeat: fromSeatContractA } = await makeOffer(
     zoe,
     zcfA,
-    harden({ want: {}, give: { TokenK: bucks(5) } }),
+    harden({ want: Data({}), give: { TokenK: bucks(5) } }),
     harden({ TokenK: bucksMint.mintPayment(bucks(5)) }),
   );
 

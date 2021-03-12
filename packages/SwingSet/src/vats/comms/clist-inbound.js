@@ -6,6 +6,7 @@ import {
   parseRemoteSlot,
 } from './parseRemoteSlot';
 import { getRemote } from './remote';
+import { cdebug } from './cdebug';
 
 function rname(remote) {
   return `${remote.remoteID} (${remote.name})`;
@@ -55,6 +56,7 @@ export function makeInbound(state, stateKit) {
     remote.fromRemote.set(roid, vatoid);
     // when we send it back, we'll send ro+NN
     remote.toRemote.set(vatoid, flipRemoteSlot(roid));
+    cdebug(`comms import ${remote.remoteID}/${remote.name} ${vatoid} ${roid}`);
   }
 
   function addLocalPromiseForRemote(remote, rpid) {
@@ -67,6 +69,7 @@ export function makeInbound(state, stateKit) {
     changeDeciderToRemote(vpid, remote.remoteID);
     remote.fromRemote.set(rpid, vpid);
     remote.toRemote.set(vpid, flipRemoteSlot(rpid));
+    cdebug(`comms import ${remote.remoteID}/${remote.name} ${vpid} ${rpid}`);
   }
 
   function provideLocalForRemote(remoteID, rref) {

@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
@@ -19,7 +20,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
   let secondPriceAuctionSeatP;
 
-  return harden({
+  return Far('build', {
     doSecondPriceAuctionBid: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
@@ -130,7 +131,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100, X`wrong expiration date`);
+      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
       assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
 
       // Dave escrows his 1 buck with Zoe and forms his proposal
@@ -181,7 +182,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 };
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
 }

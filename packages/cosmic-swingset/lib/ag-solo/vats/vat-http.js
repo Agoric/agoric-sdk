@@ -1,5 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';
@@ -71,7 +72,7 @@ export function buildRootObject(vatPowers) {
     urlToHandler.set(url, commandHandler);
   }
 
-  return harden({
+  return Far('root', {
     setCommandDevice(d) {
       commandDevice = d;
 
@@ -79,7 +80,7 @@ export function buildRootObject(vatPowers) {
       registerURLHandler(replHandler, '/private/repl');
 
       // Assign the captp handler.
-      const captpHandler = harden({
+      const captpHandler = Far('captpHandler', {
         getBootstrap(_otherSide, _meta) {
           // Harden only our exported objects, and fetch them afresh each time.
           return harden(exportedToCapTP);
@@ -113,7 +114,7 @@ export function buildRootObject(vatPowers) {
         ...decentralObjects, // TODO: Remove; replaced by .agoric
         ...privateObjects, // TODO: Remove; replaced by .local
         ...handyObjects,
-        agoric: { ...decentralObjects },
+        agoric: { ...decentralObjects }, // TODO: maybe needs Data()???
         local: { ...privateObjects },
       };
 
@@ -161,7 +162,7 @@ export function buildRootObject(vatPowers) {
       try {
         let channelHandle = channelIdToHandle.get(rawChannelID);
         if (dispatcher === 'onOpen') {
-          channelHandle = harden({});
+          channelHandle = Far('channelHandle');
           channelIdToHandle.set(rawChannelID, channelHandle);
           channelHandleToId.set(channelHandle, rawChannelID);
         } else if (dispatcher === 'onClose') {

@@ -1,5 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
@@ -7,7 +8,7 @@ export function buildRootObject(vatPowers) {
   let weatherwaxRoot;
   let rAfterG;
 
-  const self = harden({
+  const self = Far('root', {
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       mediumRoot = vats.medium;

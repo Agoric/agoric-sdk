@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
@@ -11,6 +11,10 @@ import {
 import { insistCapData } from '../../capdata';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 import { kdebug } from '../kdebug';
+import {
+  KERNEL_STATS_SUM_METRICS,
+  KERNEL_STATS_UPDOWN_METRICS,
+} from '../metrics';
 
 const enableKernelPromiseGC = true;
 
@@ -95,11 +99,12 @@ export function commaSplit(s) {
 // different index). The safety mechanism is only likely to help during very
 // limited unit tests, where we only allocate a handful of items, but it's
 // proven useful even there.
-const FIRST_VAT_ID = 1;
-const FIRST_DEVICE_ID = 7;
-const FIRST_OBJECT_ID = 20;
-const FIRST_DEVNODE_ID = 30;
-const FIRST_PROMISE_ID = 40;
+const FIRST_VAT_ID = 1n;
+const FIRST_DEVICE_ID = 7n;
+const FIRST_OBJECT_ID = 20n;
+const FIRST_DEVNODE_ID = 30n;
+const FIRST_PROMISE_ID = 40n;
+const FIRST_CRANK_NUMBER = 0n;
 
 export default function makeKernelKeeper(storage, kernelSlog) {
   insistEnhancedStorageAPI(storage);
@@ -119,49 +124,23 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   // counter named 'fooUp', the stats collection machinery will automatically
   // track the number of times 'foo' is incremented.  Similarly, 'fooDown' will
   // track the number of times 'foo' is decremented.
-  let kernelStats = {
-    kernelObjects: 0,
-    kernelObjectsUp: 0,
-    kernelObjectsDown: 0,
-    kernelObjectsMax: 0,
-    kernelDevices: 0,
-    kernelDevicesUp: 0,
-    kernelDevicesDown: 0,
-    kernelDevicesMax: 0,
-    kernelPromises: 0,
-    kernelPromisesUp: 0,
-    kernelPromisesDown: 0,
-    kernelPromisesMax: 0,
-    kpUnresolved: 0,
-    kpUnresolvedUp: 0,
-    kpUnresolvedDown: 0,
-    kpUnresolvedMax: 0,
-    kpFulfilled: 0,
-    kpFulfilledUp: 0,
-    kpFulfilledDown: 0,
-    kpFulfilledMax: 0,
-    kpRejected: 0,
-    kpRejectedUp: 0,
-    kpRejectedDown: 0,
-    kpRejectedMax: 0,
-    runQueueLength: 0,
-    runQueueLengthUp: 0,
-    runQueueLengthMax: 0,
-    syscalls: 0,
-    syscallSend: 0,
-    syscallSubscribe: 0,
-    syscallResolve: 0,
-    syscallCallNow: 0,
-    dispatches: 0,
-    dispatchDeliver: 0,
-    dispatchNotify: 0,
-    clistEntries: 0,
-    clistEntriesUp: 0,
-    clistEntriesDown: 0,
-    clistEntriesMax: 0,
-  };
+  let kernelStats = {};
+
+  // The SUM_METRICS just allow incrementing a single value.
+  KERNEL_STATS_SUM_METRICS.forEach(({ key }) => {
+    kernelStats[key] = 0;
+  });
+
+  // The UPDOWN_METRICS track a value, up, down, and max.
+  KERNEL_STATS_UPDOWN_METRICS.forEach(({ key }) => {
+    kernelStats[key] = 0;
+    kernelStats[`${key}Up`] = 0;
+    kernelStats[`${key}Down`] = 0;
+    kernelStats[`${key}Max`] = 0;
+  });
 
   function incStat(stat) {
+    assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] += 1;
     const maxStat = `${stat}Max`;
     if (
@@ -177,6 +156,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function decStat(stat) {
+    assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] -= 1;
     const downStat = `${stat}Down`;
     if (kernelStats[downStat] !== undefined) {
@@ -210,25 +190,25 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function getCrankNumber() {
-    return Nat(Number(getRequired('crankNumber')));
+    return Nat(BigInt(getRequired('crankNumber')));
   }
 
   function incrementCrankNumber() {
-    const crankNumber = Nat(Number(getRequired('crankNumber')));
-    storage.set('crankNumber', `${crankNumber + 1}`);
+    const crankNumber = Nat(BigInt(getRequired('crankNumber')));
+    storage.set('crankNumber', `${crankNumber + 1n}`);
   }
 
   function createStartingKernelState() {
     storage.set('vat.names', '[]');
     storage.set('vat.dynamicIDs', '[]');
-    storage.set('vat.nextID', JSON.stringify(FIRST_VAT_ID));
+    storage.set('vat.nextID', `${FIRST_VAT_ID}`);
     storage.set('device.names', '[]');
-    storage.set('device.nextID', JSON.stringify(FIRST_DEVICE_ID));
-    storage.set('ko.nextID', JSON.stringify(FIRST_OBJECT_ID));
-    storage.set('kd.nextID', JSON.stringify(FIRST_DEVNODE_ID));
-    storage.set('kp.nextID', JSON.stringify(FIRST_PROMISE_ID));
+    storage.set('device.nextID', `${FIRST_DEVICE_ID}`);
+    storage.set('ko.nextID', `${FIRST_OBJECT_ID}`);
+    storage.set('kd.nextID', `${FIRST_DEVNODE_ID}`);
+    storage.set('kp.nextID', `${FIRST_PROMISE_ID}`);
     storage.set('runQueue', JSON.stringify([]));
-    storage.set('crankNumber', '0');
+    storage.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
   }
 
   function addBundle(name, bundle) {
@@ -241,9 +221,9 @@ export default function makeKernelKeeper(storage, kernelSlog) {
 
   function addKernelObject(ownerID) {
     insistVatID(ownerID);
-    const id = Nat(Number(getRequired('ko.nextID')));
+    const id = Nat(BigInt(getRequired('ko.nextID')));
     kdebug(`Adding kernel object ko${id} for ${ownerID}`);
-    storage.set('ko.nextID', `${id + 1}`);
+    storage.set('ko.nextID', `${id + 1n}`);
     const s = makeKernelSlot('object', id);
     storage.set(`${s}.owner`, ownerID);
     incStat('kernelObjects');
@@ -261,9 +241,9 @@ export default function makeKernelKeeper(storage, kernelSlog) {
 
   function addKernelDeviceNode(deviceID) {
     insistDeviceID(deviceID);
-    const id = Nat(Number(getRequired('kd.nextID')));
+    const id = Nat(BigInt(getRequired('kd.nextID')));
     kdebug(`Adding kernel device kd${id} for ${deviceID}`);
-    storage.set('kd.nextID', `${id + 1}`);
+    storage.set('kd.nextID', `${id + 1n}`);
     const s = makeKernelSlot('device', id);
     storage.set(`${s}.owner`, deviceID);
     incStat('kernelDevices');
@@ -278,8 +258,8 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function addKernelPromise(policy) {
-    const kpidNum = Nat(Number(getRequired('kp.nextID')));
-    storage.set('kp.nextID', `${kpidNum + 1}`);
+    const kpidNum = Nat(BigInt(getRequired('kp.nextID')));
+    storage.set('kp.nextID', `${kpidNum + 1n}`);
     const kpid = makeKernelSlot('promise', kpidNum);
     storage.set(`${kpid}.state`, 'unresolved');
     storage.set(`${kpid}.subscribers`, '');
@@ -491,8 +471,8 @@ export default function makeKernelKeeper(storage, kernelSlog) {
       X`${kernelSlot} is '${p.state}', not 'unresolved'`,
     );
     const nkey = `${kernelSlot}.queue.nextID`;
-    const nextID = Nat(Number(storage.get(nkey)));
-    storage.set(nkey, `${nextID + 1}`);
+    const nextID = Nat(BigInt(storage.get(nkey)));
+    storage.set(nkey, `${nextID + 1n}`);
     const qid = `${kernelSlot}.queue.${nextID}`;
     storage.set(qid, JSON.stringify(msg));
   }
@@ -562,8 +542,8 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function allocateUnusedVatID() {
-    const nextID = Nat(Number(getRequired(`vat.nextID`)));
-    storage.set(`vat.nextID`, `${nextID + 1}`);
+    const nextID = Nat(BigInt(getRequired(`vat.nextID`)));
+    storage.set(`vat.nextID`, `${nextID + 1n}`);
     return makeVatID(nextID);
   }
 
@@ -624,7 +604,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
    */
   function incrementRefCount(kernelSlot, _tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
-      const refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`))) + 1;
+      const refCount = Nat(BigInt(storage.get(`${kernelSlot}.refCount`))) + 1n;
       // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
       storage.set(`${kernelSlot}.refCount`, `${refCount}`);
     }
@@ -643,12 +623,12 @@ export default function makeKernelKeeper(storage, kernelSlog) {
    */
   function decrementRefCount(kernelSlot, tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
-      let refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`)));
-      assert(refCount > 0, X`refCount underflow {kernelSlot} ${tag}`);
-      refCount -= 1;
+      let refCount = Nat(BigInt(storage.get(`${kernelSlot}.refCount`)));
+      assert(refCount > 0n, X`refCount underflow {kernelSlot} ${tag}`);
+      refCount -= 1n;
       // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       storage.set(`${kernelSlot}.refCount`, `${refCount}`);
-      if (refCount === 0) {
+      if (refCount === 0n) {
         deadKernelPromises.add(kernelSlot);
         return true;
       }
@@ -704,9 +684,9 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function getAllVatIDs() {
-    const nextID = Nat(Number(getRequired(`vat.nextID`)));
+    const nextID = Nat(BigInt(getRequired(`vat.nextID`)));
     const vatIDs = [];
-    for (let i = FIRST_VAT_ID; i < nextID; i += 1) {
+    for (let i = FIRST_VAT_ID; i < nextID; i += 1n) {
       const vatID = makeVatID(i);
       if (storage.has(`${vatID}.o.nextID`)) {
         vatIDs.push(vatID);
@@ -726,8 +706,8 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     assert.typeof(name, 'string');
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
-      const nextID = Nat(Number(getRequired(`device.nextID`)));
-      storage.set(`device.nextID`, `${nextID + 1}`);
+      const nextID = Nat(BigInt(getRequired(`device.nextID`)));
+      storage.set(`device.nextID`, `${nextID + 1n}`);
       storage.set(k, makeDeviceID(nextID));
       const names = JSON.parse(getRequired('device.names'));
       names.push(name);
@@ -749,9 +729,9 @@ export default function makeKernelKeeper(storage, kernelSlog) {
   }
 
   function getAllDeviceIDs() {
-    const nextID = Nat(Number(getRequired(`device.nextID`)));
+    const nextID = Nat(BigInt(getRequired(`device.nextID`)));
     const deviceIDs = [];
-    for (let i = FIRST_DEVICE_ID; i < nextID; i += 1) {
+    for (let i = FIRST_DEVICE_ID; i < nextID; i += 1n) {
       const deviceID = makeDeviceID(i);
       if (storage.has(`${deviceID}.o.nextID`)) {
         deviceIDs.push(deviceID);
@@ -788,7 +768,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     }
 
     function compareNumbers(a, b) {
-      return a - b;
+      return Number(a - b);
     }
 
     function compareStrings(a, b) {
@@ -814,8 +794,8 @@ export default function makeKernelKeeper(storage, kernelSlog) {
 
     const promises = [];
 
-    const nextPromiseID = Nat(Number(getRequired('kp.nextID')));
-    for (let i = FIRST_PROMISE_ID; i < nextPromiseID; i += 1) {
+    const nextPromiseID = Nat(BigInt(getRequired('kp.nextID')));
+    for (let i = FIRST_PROMISE_ID; i < nextPromiseID; i += 1n) {
       const kpid = makeKernelSlot('promise', i);
       if (hasKernelPromise(kpid)) {
         promises.push({ id: kpid, ...getKernelPromise(kpid) });

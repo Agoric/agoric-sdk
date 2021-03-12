@@ -2,6 +2,7 @@
 
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details as X, q } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import { models as crcmodels } from 'polycrc';
 
@@ -40,7 +41,7 @@ function makeBoard(seed = 0) {
   const sparseInts = generateSparseInts(seed);
 
   /** @type {Board} */
-  const board = harden({
+  const board = Far('Board', {
     // Add if not already present
     getId: value => {
       if (!valToId.has(value)) {

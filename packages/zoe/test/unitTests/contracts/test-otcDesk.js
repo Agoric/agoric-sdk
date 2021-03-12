@@ -1,3 +1,4 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -5,6 +6,7 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -124,7 +126,7 @@ const makeBob = (
   moolaPurse.deposit(moolaPayment);
   simoleanPurse.deposit(simoleanPayment);
   bucksPurse.deposit(bucksPayment);
-  return harden({
+  return Far('Bob', {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await invitationIssuer.claim(untrustedInvitation);
@@ -428,7 +430,7 @@ test('zoe - otcDesk - offerOk', async t => {
     { Simolean: simoleans(4) },
     { Moola: moola(3) },
     timer,
-    1,
+    1n,
   );
 
   await bob.offerOk(invitation1);
@@ -477,7 +479,7 @@ test('zoe - otcDesk - offerExpired', async t => {
     { Simolean: simoleans(4) },
     { Moola: moola(3) },
     timer,
-    1,
+    1n,
   );
   timer.tick();
 
@@ -526,7 +528,7 @@ test('zoe - otcDesk - offerWantTooMuch', async t => {
     { Buck: bucks(500), Moola: moola(35) },
     { Simolean: simoleans(15) },
     timer,
-    100,
+    100n,
   );
 
   // Bob tries to offer but he wants more than what was quoted.

@@ -1,3 +1,4 @@
+/* global __filename */
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
@@ -31,6 +32,8 @@ const importMetaUrl = `file://${__filename}`;
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+const { freeze } = Object;
 
 /**
  * @param {Uint8Array} arg
@@ -276,7 +279,7 @@ export function xsnap(options) {
     return vatExit.promise.catch(() => {});
   }
 
-  return {
+  return freeze({
     issueCommand,
     issueStringCommand,
     close,
@@ -285,5 +288,5 @@ export function xsnap(options) {
     execute,
     import: importModule,
     snapshot: writeSnapshot,
-  };
+  });
 }

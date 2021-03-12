@@ -109,11 +109,13 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: benchmark changes
+      env:
+        AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
       run: cd packages/swingset-runner && yarn ci:autobench
     - uses: actions/upload-artifact@v2
       with:
         name: benchmarkstats.json
-        path: packages/swingset-runner/benchstats.json
+        path: packages/swingset-runner/benchstats*.json
 
 ##################
 # Fast-running tests run as a group:
@@ -396,6 +398,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: yarn test (zoe)
+      timeout-minutes: 20
       run: cd packages/zoe && yarn test
       env:
         ESM_DISABLE_CACHE: true

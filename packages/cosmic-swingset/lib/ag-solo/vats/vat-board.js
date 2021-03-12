@@ -1,6 +1,7 @@
+import { Far } from '@agoric/marshal';
 import { makeBoard } from './lib-board';
 
 export function buildRootObject(_vatPowers) {
   const board = makeBoard();
-  return harden({ getBoard: () => board });
+  return Far('board', { getBoard: () => board });
 }

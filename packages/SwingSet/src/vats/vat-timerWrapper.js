@@ -1,5 +1,6 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 
 export function buildRootObject(vatPowers) {
@@ -62,8 +63,8 @@ export function buildRootObject(vatPowers) {
         return notifier;
       },
     };
-    return harden(timerService);
+    return Far('timerService', timerService);
   }
 
-  return harden({ createTimerService });
+  return Far('root', { createTimerService });
 }

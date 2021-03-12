@@ -22,14 +22,14 @@ const KERNEL = 'kernel';
 // record the new `p+NN` value anywhere. The counter we use for allocation
 // will continue on to the next higher NN.
 
-export function makeState() {
+export function makeState(identifierBase = 0) {
   const state = {
     nextRemoteIndex: 1,
     remotes: new Map(), // remoteNN -> { remoteID, name, fromRemote/toRemote, etc }
     names: new Map(), // name -> remoteNN
 
     // we allocate `o+NN` with this counter
-    nextObjectIndex: 10,
+    nextObjectIndex: identifierBase + 10,
     remoteReceivers: new Map(), // o+NN -> remoteNN, for admin rx objects
     objectTable: new Map(), // o+NN -> owning remote for non-admin objects
 
@@ -38,7 +38,8 @@ export function makeState() {
     // decider is one of: remoteID, 'kernel', 'comms'
     // once resolved, -> { resolved, resolution }
     // where resolution takes the form: {rejected, data}
-    nextPromiseIndex: 20,
+    nextPromiseIndex: identifierBase + 20,
+    identifierBase,
   };
 
   return state; // mutable
@@ -238,14 +239,20 @@ export function makeStateKit(state) {
     assert(!p.resolved, X`${vpid} was already resolved`);
   }
 
-  function markPromiseAsResolved(vpid, resolution) {
+  function markPromiseAsResolved(vpid, rejected, data) {
     const p = state.promiseTable.get(vpid);
     assert(p, X`unknown ${vpid}`);
     assert(!p.resolved);
-    insistCapData(resolution.data);
+    assert.typeof(
+      rejected,
+      'boolean',
+      X`non-boolean "rejected" flag: ${rejected}`,
+    );
+    insistCapData(data);
     p.resolved = true;
     p.kernelAwaitingResolve = true;
-    p.resolution = resolution;
+    p.rejected = rejected;
+    p.data = data;
     p.decider = undefined;
     p.subscribers = undefined;
     p.kernelIsSubscribed = undefined;

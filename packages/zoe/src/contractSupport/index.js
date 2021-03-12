@@ -8,6 +8,13 @@ export {
 
 export * from './priceAuthority';
 
+export {
+  getAmountIn,
+  getAmountOut,
+  getTimestamp,
+  getQuoteValues,
+} from './priceQuote';
+
 export { natSafeMath } from './safeMath';
 
 export { makeStateMachine } from './stateMachine';
@@ -28,3 +35,12 @@ export {
   saveAllIssuers,
   offerTo,
 } from './zoeHelpers';
+
+export {
+  makeRatio,
+  makeRatioFromAmounts,
+  multiplyBy,
+  divideBy,
+  assertIsRatio,
+  invertRatio,
+} from './ratio';

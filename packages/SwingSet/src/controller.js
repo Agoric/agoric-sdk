@@ -1,3 +1,4 @@
+/* global require */
 import fs from 'fs';
 import process from 'process';
 import re2 from 're2';
@@ -37,6 +38,10 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
+function unhandledRejectionHandler(e) {
+  console.error('UnhandledPromiseRejectionWarning:', e);
+}
+
 export async function makeSwingsetController(
   hostStorage = initSwingStore().storage,
   deviceEndowments = {},
@@ -68,9 +73,17 @@ export async function makeSwingsetController(
   harden(console);
 
   // FIXME: Put this somewhere better.
-  process.on('unhandledRejection', e =>
-    console.error('UnhandledPromiseRejectionWarning:', e),
-  );
+  const handlers = process.listeners('unhandledRejection');
+  let haveUnhandledRejectionHandler = false;
+  for (const handler of handlers) {
+    if (handler === unhandledRejectionHandler) {
+      haveUnhandledRejectionHandler = true;
+      break;
+    }
+  }
+  if (!haveUnhandledRejectionHandler) {
+    process.on('unhandledRejection', unhandledRejectionHandler);
+  }
 
   function kernelRequire(what) {
     if (what === 're2') {
@@ -189,7 +202,11 @@ export async function makeSwingsetController(
     // TODO sqlite
     // console.log(`--slog ${JSON.stringify(obj)}`);
     if (slogF) {
-      slogF.write(JSON.stringify(obj));
+      slogF.write(
+        JSON.stringify(obj, (_, arg) =>
+          typeof arg === 'bigint' ? Number(arg) : arg,
+        ),
+      );
       slogF.write('\n');
     }
   }

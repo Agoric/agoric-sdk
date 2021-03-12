@@ -5,15 +5,22 @@ import './types';
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import {
   assertProposalShape,
   depositToSeat,
   trade,
   assertUsesNatMath,
+  makeRatio,
+  multiplyBy,
 } from '../../contractSupport';
 import { makePayoffHandler } from './payoffHandler';
 import { Position } from './position';
-import { makePercent } from '../../contractSupport/percentMath';
+
+import { oneMinus } from './percent';
+
+const PERCENT_BASE = 100n;
+const BASIS_POINTS = 10000n;
 
 /**
  * This contract implements a fully collateralized call spread. This is a
@@ -97,7 +104,7 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
-    const required = share.scale(terms.settlementAmount);
+    const required = multiplyBy(terms.settlementAmount, share);
 
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
@@ -147,22 +154,22 @@ const start = zcf => {
   // TODO(2282): change the API so the caller can provide share in basis points
   //  rather than percent
   function makeInvitationPair(longCollateralShare) {
-    const longPercent = makePercent(
-      longCollateralShare * 100,
-      collateralMath,
-      10000,
+    const longPercent = makeRatio(
+      (longCollateralShare * BASIS_POINTS) / PERCENT_BASE,
+      collateralMath.getBrand(),
+      BASIS_POINTS,
     );
 
     const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
     const shortInvitation = makeOptionInvitation(
       Position.SHORT,
-      longPercent.complement(),
+      oneMinus(longPercent),
     );
     payoffHandler.schedulePayoffs();
     return { longInvitation, shortInvitation };
   }
 
-  const creatorFacet = harden({ makeInvitationPair });
+  const creatorFacet = Far('creatorFacet', { makeInvitationPair });
   return harden({ creatorFacet });
 };
 

@@ -1,3 +1,4 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -5,7 +6,7 @@ import test from 'ava';
 
 import { MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -209,7 +210,7 @@ test(`zcf.saveIssuer & zoe.getTerms`, async t => {
 test(`zcf.saveIssuer - bad issuer`, async t => {
   const { moolaKit } = setup();
   const { zcf } = await setupZCFTest();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.saveIssuer(moolaKit.brand, 'A'), {
     // TODO: improve error message
     // https://github.com/Agoric/agoric-sdk/issues/1701
@@ -234,7 +235,7 @@ test(`zcf.saveIssuer - args reversed`, async t => {
   const { zcf } = await setupZCFTest();
   // TODO: improve error message
   // https://github.com/Agoric/agoric-sdk/issues/1702
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(async () => zcf.saveIssuer('A', moolaKit.issuer), {
     message: `(an object) must be a string`,
   });
@@ -279,7 +280,7 @@ test(`zcf.makeInvitation - throwing offerHandler`, async t => {
 
 test(`zcf.makeInvitation - no description`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}), {
     message: `invitations must have a description string: (an undefined)`,
   });
@@ -289,7 +290,7 @@ test(`zcf.makeInvitation - non-string description`, async t => {
   const { zcf } = await setupZCFTest();
   // TODO: improve error message
   // https://github.com/Agoric/agoric-sdk/issues/1704
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}, { something: 'a' }), {
     message: `invitations must have a description string: (an object)`,
   });
@@ -298,9 +299,6 @@ test(`zcf.makeInvitation - non-string description`, async t => {
 test(`zcf.makeInvitation - no customProperties`, async t => {
   const { zcf, zoe, instance, installation } = await setupZCFTest();
   const invitationP = zcf.makeInvitation(() => {}, 'myInvitation');
-  // TODO: allow promises for payments
-  // https://github.com/Agoric/agoric-sdk/issues/1705
-  // @ts-ignore
   const details = await E(zoe).getInvitationDetails(invitationP);
   t.deepEqual(details, {
     description: 'myInvitation',
@@ -317,9 +315,6 @@ test(`zcf.makeInvitation - customProperties`, async t => {
     whatever: 'whatever',
     timer,
   });
-  // TODO: allow promises for payments
-  // https://github.com/Agoric/agoric-sdk/issues/1705
-  // @ts-ignore
   const details = await E(zoe).getInvitationDetails(invitationP);
   t.deepEqual(details, {
     description: 'myInvitation',
@@ -338,9 +333,6 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
     installation: 'whatever',
     instance: 'whatever',
   });
-  // TODO: allow promises for payments
-  // https://github.com/Agoric/agoric-sdk/issues/1705
-  // @ts-ignore
   const details = await E(zoe).getInvitationDetails(invitationP);
   t.deepEqual(details, {
     description: 'myInvitation',
@@ -353,7 +345,7 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
 
 test(`zcf.makeZCFMint - no keyword`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint(), {
     message: '(an undefined) must be a string',
   });
@@ -376,9 +368,10 @@ test(`zcf.makeZCFMint - bad keyword`, async t => {
 
 test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message: 'unrecognized amountMathKind: (a string)',
+    message:
+      '(a string) must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated',
   });
 });
 
@@ -425,7 +418,7 @@ test(`zcf.makeZCFMint - SET`, async t => {
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message: `gains (an undefined) must be an amountKeywordRecord`,
   });
@@ -446,7 +439,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // TODO: create seat if one is not provided
   // https://github.com/Agoric/agoric-sdk/issues/1696
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
     message: 'gains (an undefined) must be an amountKeywordRecord',
   });
@@ -455,7 +448,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
 test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message: 'losses (an undefined) must be an amountKeywordRecord',
   });
@@ -465,7 +458,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
     message: 'losses (an undefined) must be an amountKeywordRecord',
   });
@@ -696,7 +689,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
   const { moola } = setup();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // Anything is offer safe with no want or give
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.truthy(zcfSeat.isOfferSafe());
   t.truthy(zcfSeat.isOfferSafe({ Moola: moola(0) }));
   t.truthy(zcfSeat.isOfferSafe({ Moola: moola(10) }));
@@ -730,7 +723,7 @@ test(`zcfSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
     },
   });
@@ -741,11 +734,11 @@ test(`zcfSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
       B: {
         brand: brand2,
-        value: 6,
+        value: 6n,
       },
     },
   });
@@ -774,7 +767,7 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(zcfSeat.getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
   });
 
@@ -784,11 +777,11 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(zcfSeat.getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
     B: {
       brand: brand2,
-      value: 6,
+      value: 6n,
     },
   });
 
@@ -807,7 +800,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(zcfSeat.getAmountAllocated('A', brand1), {
     brand: brand1,
-    value: 3,
+    value: 3n,
   });
 
   // Again, mint some gains to change the allocation.
@@ -815,12 +808,12 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
-    value: 6,
+    value: 6n,
   });
 
   t.deepEqual(zcfSeat.getAmountAllocated('B', brand2), {
     brand: brand2,
-    value: 6,
+    value: 6n,
   });
 
   t.throws(() => zcfSeat.getAmountAllocated('DoesNotExist'), {
@@ -908,7 +901,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   const { zcf } = await setupZCFTest();
   const timer = buildManualTimer(console.log);
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit({
-    afterDeadline: { timer, deadline: 1 },
+    afterDeadline: { timer, deadline: 1n },
   });
   t.falsy(zcfSeat.hasExited());
   await t.throwsAsync(() => E(userSeat).tryExit(), {
@@ -941,7 +934,7 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
   });
 
@@ -951,11 +944,11 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
     B: {
       brand: brand2,
-      value: 6,
+      value: 6n,
     },
   });
 
@@ -984,7 +977,7 @@ test(`userSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
     },
   });
@@ -995,11 +988,11 @@ test(`userSeat.getNotifier`, async t => {
     value: {
       A: {
         brand: brand1,
-        value: 3,
+        value: 3n,
       },
       B: {
         brand: brand2,
-        value: 6,
+        value: 6n,
       },
     },
   });
@@ -1037,11 +1030,11 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
       brand: brand1,
-      value: 3,
+      value: 3n,
     },
     B: {
       brand: brand2,
-      value: 6,
+      value: 6n,
     },
   });
 
@@ -1056,18 +1049,18 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(await E(issuer1).getAmountOf(payoutAP), {
     brand: brand1,
-    value: 3,
+    value: 3n,
   });
   t.deepEqual(await E(issuer2).getAmountOf(payoutBP), {
     brand: brand2,
-    value: 6,
+    value: 6n,
   });
 });
 
 test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { userSeat } = zcf.makeEmptySeatKit();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(userSeat).getPayout(), {
     message: 'A keyword must be provided',
   });
@@ -1075,7 +1068,7 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
 
 test(`zcf.reallocate < 2 seats`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcf.reallocate(), {
     message: 'reallocating must be done over two or more seats',
   });
@@ -1175,19 +1168,16 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
     }),
   );
 
-  // @ts-ignore
   const staging1 = zcfSeat1.stage({
     A: simoleans(100),
     B: moola(0),
   });
 
-  // @ts-ignore
   const staging2 = zcfSeat2.stage({
     Whatever: moola(2),
     Whatever2: simoleans(0),
   });
 
-  // @ts-ignore
   const staging3 = zcfSeat3.stage({
     Whatever: moola(1),
     Whatever2: simoleans(0),
@@ -1209,7 +1199,7 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
 });
 
 test(`zcf.shutdown - userSeat exits`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const { userSeat } = await makeOffer(zoe, zcf);
   zcf.shutdown('so long');
   t.deepEqual(await E(userSeat).getPayouts(), {});
@@ -1217,7 +1207,7 @@ test(`zcf.shutdown - userSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - zcfSeat exits`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = await makeOffer(zoe, zcf);
   t.falsy(zcfSeat.hasExited());
   await t.falsy(await E(userSeat).hasExited());
@@ -1227,7 +1217,7 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
 });
 
 test(`zcf.shutdown - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdown('sayonara');
   await t.throwsAsync(() => E(zoe).offer(invitation), {
@@ -1238,7 +1228,7 @@ test(`zcf.shutdown - no further offers accepted`, async t => {
 });
 
 test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest({});
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
   zcf.shutdownWithFailure(`And don't come back`);
   await t.throwsAsync(() => E(zoe).offer(invitation), {
@@ -1248,8 +1238,21 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
   t.truthy(vatAdminState.getExitWithFailure());
 });
 
+test(`zcf.assert - no further offers accepted`, async t => {
+  const { zoe, zcf, vatAdminState } = await setupZCFTest();
+  const invitation = await zcf.makeInvitation(() => {}, 'seat');
+  t.throws(() => zcf.assert(false, X`And do not come back`), {
+    message: /And do not come back/,
+  });
+  await t.throwsAsync(() => E(zoe).offer(invitation), {
+    message: 'No further offers are accepted',
+  });
+  t.deepEqual(vatAdminState.getExitMessage(), Error(`And do not come back`));
+  t.truthy(vatAdminState.getExitWithFailure());
+});
+
 test(`zcf.stopAcceptingOffers`, async t => {
-  const { zoe, zcf } = await setupZCFTest({});
+  const { zoe, zcf } = await setupZCFTest();
   const invitation1 = await zcf.makeInvitation(() => {}, 'seat');
   const invitation2 = await zcf.makeInvitation(() => {}, 'seat');
 

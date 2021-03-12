@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
@@ -16,7 +17,7 @@ export function buildRootObject(_vatPowers) {
 
   async function pleaseProvision(nickname, pubkey, powerFlags) {
     let chainBundle;
-    const fetch = harden({
+    const fetch = Far('fetch', {
       getDemoBundle() {
         return chainBundle;
       },
@@ -35,5 +36,5 @@ export function buildRootObject(_vatPowers) {
     return { ingressIndex: INDEX };
   }
 
-  return harden({ register, pleaseProvision });
+  return Far('root', { register, pleaseProvision });
 }

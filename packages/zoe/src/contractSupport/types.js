@@ -120,3 +120,45 @@
  * keywordRecord
  * @param {KeywordKeywordRecord} keywordMapping
  */
+
+/**
+ * @typedef {Object} Ratio
+ * @property {Amount} numerator
+ * @property {Amount} denominator
+ */
+
+/**
+ * @callback MakeRatio
+ * @param {bigint} numerator
+ * @param {Brand} numeratorBrand
+ * @param {bigint=} denominator The default denomiator is 100
+ * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback MakeRatioFromAmounts
+ * @param {Amount} numerator
+ * @param {Amount} denominator
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback MultiplyBy
+ * @param {Amount} amount
+ * @param {Ratio} ratio
+ * @returns {amount}
+ */
+
+/**
+ * @callback DivideBy
+ * @param {Amount} amount
+ * @param {Ratio} ratio
+ * @returns {amount}
+ */
+
+/**
+ * @callback InvertRatio
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */

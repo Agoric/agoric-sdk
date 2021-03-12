@@ -1,3 +1,4 @@
+/* global require */
 import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
@@ -69,8 +70,8 @@ test.serial('d0', async t => {
       vattp: { '@qclass': 'slot', iface: 'Alleged: vref', index: 4 },
     },
     {
-      d0: { '@qclass': 'slot', index: 5 },
-      vatAdmin: { '@qclass': 'slot', index: 6 },
+      d0: { '@qclass': 'slot', iface: 'Alleged: device', index: 5 },
+      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: device', index: 6 },
     },
   ]);
   t.deepEqual(JSON.parse(c.dump().log[1]), [
@@ -261,6 +262,7 @@ test.serial('mailbox outbound', async t => {
   await initializeSwingset(config, ['mailbox1'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
+  // exportToData() provides plain Numbers to the host that needs to convey the messages
   t.deepEqual(s.exportToData(), {
     peer1: {
       inboundAck: 13,

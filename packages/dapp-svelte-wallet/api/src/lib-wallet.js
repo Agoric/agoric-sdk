@@ -17,16 +17,13 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal, passStyleOf } from '@agoric/marshal';
-import {
-  makeNotifierKit,
-  observeIteration,
-  makeAsyncIterableFromNotifier,
-} from '@agoric/notifier';
+import { makeMarshal, passStyleOf, Far, Data } from '@agoric/marshal';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeDehydrator } from './lib-dehydrate';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
+import { bigintStringify } from './bigintStringify';
 
 import '@agoric/store/exported';
 import '@agoric/zoe/exported';
@@ -129,7 +126,7 @@ export function makeWallet({
       .sort(([id1], [id2]) => cmp(id1, id2))
       .map(([_id, value]) => value);
 
-    return JSON.stringify(values);
+    return bigintStringify(harden(values));
   }
 
   function getPursesState() {
@@ -187,7 +184,7 @@ export function makeWallet({
         currentAmount,
       });
     const filter = state => state.map(innerFilter);
-    const pu = harden({
+    const pu = Far('pursesUpdater', {
       updateState: newState => {
         ipu.updateState(newState);
         apu.updateState(filter(newState));
@@ -258,7 +255,7 @@ export function makeWallet({
         ...jstate,
         purse,
         brand,
-        actions: {
+        actions: Far('purse.actions', {
           // Send a value from this purse.
           async send(receiverP, sendValue) {
             const { amountMath } = brandTable.getByBrand(brand);
@@ -279,7 +276,7 @@ export function makeWallet({
           deposit(payment, amount = undefined) {
             return E(purse).deposit(payment, amount);
           },
-        },
+        }),
       }),
     );
     pursesUpdater.updateState([...pursesFullState.values()]);
@@ -473,7 +470,7 @@ export function makeWallet({
     // Payments are made for the keywords in proposal.give.
     const keywords = [];
 
-    const paymentPs = Object.entries(proposal.give || {}).map(
+    const paymentPs = Object.entries(proposal.give || Data({})).map(
       ([keyword, amount]) => {
         const purse = purseKeywordRecord[keyword];
         assert(
@@ -494,15 +491,11 @@ export function makeWallet({
     // for the offer.
     const payments = await Promise.all(paymentPs);
 
-    const paymentKeywordRecord = Object.fromEntries(
-      keywords.map((keyword, i) => [keyword, payments[i]]),
+    const paymentKeywordRecord = Data(
+      Object.fromEntries(keywords.map((keyword, i) => [keyword, payments[i]])),
     );
 
-    const seat = E(zoe).offer(
-      inviteP,
-      harden(proposal),
-      harden(paymentKeywordRecord),
-    );
+    const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
 
     // We'll resolve when deposited.
     const depositedP = E(seat)
@@ -554,7 +547,7 @@ export function makeWallet({
       petnameForBrand = brandMapping.suggestPetname(petnameForBrand, brand);
       if (!already && makePurse) {
         // eslint-disable-next-line no-use-before-define
-        p = makeEmptyPurse(petnameForBrand, petnameForBrand);
+        p = makeEmptyPurse(petnameForBrand, petnameForBrand, true);
       } else {
         p = Promise.resolve();
       }
@@ -589,7 +582,7 @@ export function makeWallet({
     if (already) {
       depositFacet = actions;
     } else {
-      depositFacet = harden({
+      depositFacet = Far('depositFacet', {
         receive(paymentP) {
           return E(actions).receive(paymentP);
         },
@@ -627,7 +620,11 @@ export function makeWallet({
     return `instance ${q(petname)} successfully added to wallet`;
   };
 
-  const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
+  const makeEmptyPurse = async (
+    brandPetname,
+    petnameForPurse,
+    defaultAutoDeposit = false,
+  ) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
 
@@ -636,23 +633,27 @@ export function makeWallet({
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
 
+    if (defaultAutoDeposit && !brandToAutoDepositPurse.has(brand)) {
+      // Try to initialize the autodeposit purse for this brand.
+      // Don't do state updates, since we'll do that next.
+      // eslint-disable-next-line no-use-before-define
+      await doEnableAutoDeposit(petnameForPurse, false);
+    }
+
     await updatePursesState(petnameForPurse, purse);
 
     // Just notice the balance updates for the purse.
-    observeIteration(
-      makeAsyncIterableFromNotifier(E(purse).getCurrentAmountNotifier()),
-      {
-        updateState(_balance) {
-          updatePursesState(
-            purseMapping.valToPetname.get(purse),
-            purse,
-          ).catch(e => console.error('cannot updateState', e));
-        },
-        fail(reason) {
-          console.error(`failed updateState observer`, reason);
-        },
+    observeNotifier(E(purse).getCurrentAmountNotifier(), {
+      updateState(_balance) {
+        updatePursesState(
+          purseMapping.valToPetname.get(purse),
+          purse,
+        ).catch(e => console.error('cannot updateState', e));
       },
-    );
+      fail(reason) {
+        console.error(`failed updateState observer`, reason);
+      },
+    });
   };
 
   async function deposit(pursePetname, payment) {
@@ -690,26 +691,28 @@ export function makeWallet({
 
   const compileProposal = proposalTemplate => {
     const {
-      want = {},
-      give = {},
+      want = Data({}),
+      give = Data({}),
       exit = { onDemand: null },
     } = proposalTemplate;
 
     const purseKeywordRecord = {};
 
     const compile = amountKeywordRecord => {
-      return Object.fromEntries(
-        Object.entries(amountKeywordRecord).map(
-          ([keyword, { pursePetname, value }]) => {
-            const purse = getPurse(pursePetname);
-            purseKeywordRecord[keyword] = purse;
-            const brand = purseToBrand.get(purse);
-            const amount = {
-              brand,
-              value,
-            };
-            return [keyword, amount];
-          },
+      return Data(
+        Object.fromEntries(
+          Object.entries(amountKeywordRecord).map(
+            ([keyword, { pursePetname, value }]) => {
+              const purse = getPurse(pursePetname);
+              purseKeywordRecord[keyword] = purse;
+              const brand = purseToBrand.get(purse);
+              const amount = {
+                brand,
+                value,
+              };
+              return [keyword, amount];
+            },
+          ),
         ),
       );
     };
@@ -784,7 +787,7 @@ export function makeWallet({
         origin,
         approvalP,
         enable: false,
-        actions: {
+        actions: Far('dapp.actions', {
           setPetname(petname) {
             if (dappRecord.petname === petname) {
               return dappRecord.actions;
@@ -830,7 +833,7 @@ export function makeWallet({
             updateDapp(dappRecord);
             return dappRecord.actions;
           },
-        },
+        }),
       };
 
       // Prepare the table entry to be updated.
@@ -1144,11 +1147,14 @@ export function makeWallet({
   };
 
   // Allow people to send us payments.
-  const selfContact = addContact('Self', {
-    receive(payment) {
-      return addPayment(payment);
-    },
-  });
+  const selfContact = addContact(
+    'Self',
+    Far('contact', {
+      receive(payment) {
+        return addPayment(payment);
+      },
+    }),
+  );
   async function getDepositFacetId(_brandBoardId) {
     // Always return the generic deposit facet.
     return E.G(selfContact).depositBoardId;
@@ -1169,7 +1175,7 @@ export function makeWallet({
   }
 
   const pendingEnableAutoDeposits = makeStore('brand');
-  async function enableAutoDeposit(pursePetname) {
+  async function doEnableAutoDeposit(pursePetname, updateState) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     const brand = purseToBrand.get(purse);
     if (brandToAutoDepositPurse.has(brand)) {
@@ -1177,7 +1183,10 @@ export function makeWallet({
     } else {
       brandToAutoDepositPurse.init(brand, purse);
     }
-    await updateAllPurseState();
+
+    if (updateState) {
+      await updateAllPurseState();
+    }
 
     const pendingP =
       pendingEnableAutoDeposits.has(brand) &&
@@ -1191,7 +1200,9 @@ export function makeWallet({
     const boardId = await boardIdP;
     brandToDepositFacetId.init(brand, boardId);
 
-    await updateAllPurseState();
+    if (updateState) {
+      await updateAllPurseState();
+    }
     return boardIdP;
   }
 
@@ -1284,8 +1295,8 @@ export function makeWallet({
     return selfContact;
   }
 
-  const makeManager = petnameMapping => {
-    const manager = {
+  const makeManager = (petnameMapping, managerType) => {
+    const manager = Far(managerType, {
       rename: async (petname, thing) => {
         petnameMapping.renamePetname(petname, thing);
         await updateAllState();
@@ -1296,18 +1307,21 @@ export function makeWallet({
         petnameMapping.suggestPetname(petname, thing);
         await updateAllState();
       },
-    };
-    return harden(manager);
+    });
+    return manager;
   };
 
   /** @type {InstallationManager} */
-  const installationManager = makeManager(installationMapping);
+  const installationManager = makeManager(
+    installationMapping,
+    'InstallationManager',
+  );
 
   /** @type {InstanceManager} */
-  const instanceManager = makeManager(instanceMapping);
+  const instanceManager = makeManager(instanceMapping, 'InstanceManager');
 
   /** @type {IssuerManager} */
-  const issuerManager = {
+  const issuerManager = Far('IssuerManager', {
     rename: async (petname, issuer) => {
       assert(
         brandTable.hasByIssuer(issuer),
@@ -1336,8 +1350,7 @@ export function makeWallet({
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },
-  };
-  harden(issuerManager);
+  });
 
   function getInstallationManager() {
     return installationManager;
@@ -1370,7 +1383,7 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
-  const wallet = harden({
+  const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
     waitForDappApproval,
@@ -1435,7 +1448,10 @@ export function makeWallet({
     getOffers,
     getSeat: id => idToSeat.get(id),
     getSeats: ids => ids.map(wallet.getSeat),
-    enableAutoDeposit,
+    enableAutoDeposit(pursePetname) {
+      // Enable the autodeposit with intermediary state updates.
+      return doEnableAutoDeposit(pursePetname, true);
+    },
     disableAutoDeposit,
     getDepositFacetId,
     suggestIssuer,

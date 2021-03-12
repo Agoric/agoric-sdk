@@ -24,7 +24,9 @@ export const makeOfferAndFindInvitationAmount = (
         ([key, value]) => invitationDetail[key] === value,
       );
 
-    const matchingValue = invitationAmount.value.find(matches);
+    const invitationValue = invitationAmount.value;
+    assert(Array.isArray(invitationValue));
+    const matchingValue = invitationValue.find(matches);
     const value =
       matchingValue === undefined ? harden([]) : harden([matchingValue]);
     return invitationMath.make(value);

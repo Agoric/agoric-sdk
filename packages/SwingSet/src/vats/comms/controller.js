@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { addRemote } from './remote';
 
@@ -91,11 +91,15 @@ export function deliverToController(
     assert(state.names.has(remoteName), X`unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
+    const iface = args[2];
     const localRef = addIngress(remoteID, remoteRefID);
     const data = {
       body: '{"@qclass":"slot","index":0}',
       slots: [localRef],
     };
+    if (iface) {
+      data.body = `{"@qclass":"slot","iface":"${iface}","index":0}`;
+    }
     syscall.resolve([[result, false, data]]);
   }
 

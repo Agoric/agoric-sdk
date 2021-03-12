@@ -1,3 +1,4 @@
+/* global __dirname process */
 import * as childProcess from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import os from 'os';
@@ -23,18 +24,11 @@ function exec(command, cwd, args = []) {
 }
 
 (async () => {
-  // Detect whether we're under Git.  We aren't when building Docker images.
-  let underGit;
-  try {
-    await exec('git', '.', ['submodule']);
-    underGit = true;
-  } catch (e) {
-    underGit = false;
-  }
+  // Allow overriding of the checked-out version of the Moddable submodule.
+  const moddableCommitHash = process.env.MODDABLE_COMMIT_HASH;
 
-  // Do the moral equivalent of submodule when not under Git.
-  // TODO: refactor overlap with git submodules file.
-  if (!underGit) {
+  if (moddableCommitHash) {
+    // Do the moral equivalent of submodule update when explicitly overriding.
     if (!existsSync('moddable')) {
       await exec('git', '.', [
         'clone',
@@ -42,9 +36,9 @@ function exec(command, cwd, args = []) {
         'moddable',
       ]);
     }
-    await exec('git', 'moddable', ['pull', '--ff-only']);
+    await exec('git', 'moddable', ['checkout', moddableCommitHash]);
   } else {
-    await exec('git', '.', ['submodule', 'update', '--init']);
+    await exec('git', '.', ['submodule', 'update', '--init', '--checkout']);
   }
 
   const pjson = readFileSync(`${__dirname}/../package.json`, 'utf-8');

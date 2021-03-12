@@ -3,9 +3,16 @@ import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { assertProposalShape, trade } from '../../contractSupport';
+import {
+  assertProposalShape,
+  trade,
+  getAmountOut,
+  multiplyBy,
+  getTimestamp,
+} from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
 import { calculateInterest, makeDebtCalculator } from './updateDebt';
@@ -15,7 +22,7 @@ import { makeAddCollateralInvitation } from './addCollateral';
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {
   const {
-    mmr, // Maintenance Margin Requirement, in percent
+    mmr, // Maintenance Margin Requirement, as a Ratio
     priceAuthority,
     periodNotifier,
     interestRate,
@@ -40,27 +47,21 @@ export const makeBorrowInvitation = (zcf, config) => {
     const collateralMath = zcf.getTerms().maths.Collateral;
 
     // The value of the collateral in the Loan brand
-    const { quoteAmount } = await E(priceAuthority).quoteGiven(
+    const quote = await E(priceAuthority).quoteGiven(
       collateralGiven,
       loanBrand,
     );
-    // AWAIT ///
 
-    const collateralPriceInLoanBrand = quoteAmount.value[0].amountOut;
-
-    // formula: assert collateralValue*100 >= loanWanted*mmr
-
-    // Calculate approximate value just for the error message if needed
-    const approxForMsg = mmr.scale(loanWanted);
+    const collateralPriceInLoanBrand = getAmountOut(quote);
 
     // Assert the required collateral was escrowed.
+    const requiredMargin = multiplyBy(loanWanted, mmr);
     assert(
-      loanMath.isGTE(
-        loanMath.make(collateralPriceInLoanBrand.value),
-        mmr.scale(loanWanted),
-      ),
-      X`The required margin is approximately ${approxForMsg.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
+      loanMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
+      X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
+
+    const timestamp = getTimestamp(quote);
 
     // Assert that the collateralGiven has not changed after the AWAIT
     assert(
@@ -115,6 +116,7 @@ export const makeBorrowInvitation = (zcf, config) => {
       periodNotifier,
       interestRate,
       interestPeriod,
+      basetime: timestamp,
       zcf,
       configMinusGetDebt: {
         ...config,
@@ -150,7 +152,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // TODO: Add ability to repay partially
 
     /** @type {BorrowFacet} */
-    const borrowFacet = {
+    const borrowFacet = Far('borrowFacet', {
       makeCloseLoanInvitation: () =>
         makeCloseLoanInvitation(zcf, configWithBorrower),
       makeAddCollateralInvitation: () =>
@@ -160,9 +162,9 @@ export const makeBorrowInvitation = (zcf, config) => {
       getLastCalculationTimestamp,
       getRecentCollateralAmount: () =>
         collateralSeat.getAmountAllocated('Collateral'),
-    };
+    });
 
-    return harden(borrowFacet);
+    return borrowFacet;
   };
 
   const customBorrowProps = harden({ maxLoan });

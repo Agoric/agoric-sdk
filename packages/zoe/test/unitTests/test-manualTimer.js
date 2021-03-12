@@ -9,8 +9,8 @@ import { E } from '@agoric/eventual-send';
 import buildManualTimer from '../../tools/manualTimer';
 
 test('manualTimer makeNotifier', async t => {
-  const manualTimer = buildManualTimer(console.log, 0);
-  const notifier = await E(manualTimer).makeNotifier(1, 1);
+  const manualTimer = buildManualTimer(console.log, 0n);
+  const notifier = await E(manualTimer).makeNotifier(1n, 1n);
   await manualTimer.tick();
   const update1 = await E(notifier).getUpdateSince();
   t.is(update1.updateCount, 2);
@@ -21,7 +21,7 @@ test('manualTimer makeNotifier', async t => {
 });
 
 function makeHandler() {
-  let calls = 0;
+  let calls = 0n;
   const args = [];
   return {
     getCalls() {
@@ -32,19 +32,19 @@ function makeHandler() {
     },
     wake(arg) {
       args.push(arg);
-      calls += 1;
+      calls += 1n;
     },
   };
 }
 
 test('manualTimer makeRepeater', async t => {
-  const manualTimer = buildManualTimer(console.log, 0);
+  const manualTimer = buildManualTimer(console.log, 0n);
   const timestamp = await E(manualTimer).getCurrentTimestamp();
-  const repeater = E(manualTimer).makeRepeater(1, 1);
+  const repeater = E(manualTimer).makeRepeater(1n, 1n);
   const handler = makeHandler();
   await E(repeater).schedule(handler);
   await manualTimer.tick();
 
-  t.is(1, handler.getCalls());
+  t.is(1n, handler.getCalls());
   t.truthy(handler.getArgs()[0] > timestamp);
 });

@@ -1,3 +1,4 @@
+/* global require */
 // @ts-check
 import '@agoric/zoe/exported';
 import { E } from '@agoric/eventual-send';

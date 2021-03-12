@@ -2,7 +2,7 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { Far } from '@agoric/marshal';
+import { Far, Data } from '@agoric/marshal';
 
 import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
@@ -27,13 +27,13 @@ function makeMockTradingZcfBuilder() {
   const amountMathToBrand = makeStore('amountMath');
   const reallocatedStagings = [];
 
-  return harden({
+  return Far('mockTradingZcfBuilder', {
     addOffer: (keyword, offer) => offers.init(keyword, offer),
     addAllocation: (keyword, alloc) => allocs.init(keyword, alloc),
     addBrand: issuerRecord =>
       amountMathToBrand.init(issuerRecord.brand, issuerRecord.amountMath),
     build: () =>
-      harden({
+      Far('mockZCF', {
         getAmountMath: amountMath => amountMathToBrand.get(amountMath),
         getZoeService: () => {},
         reallocate: (...seatStagings) => {
@@ -48,7 +48,7 @@ test('ZoeHelpers satisfies blank proposal', t => {
   const { moolaR, moola } = setup();
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
-    getProposal: () => harden({}),
+    getProposal: () => Data({}),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
   mockZCFBuilder.addBrand(moolaR);
@@ -122,7 +122,7 @@ test('ZoeHelpers satisfies() with give', t => {
 
 const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
   const allSeatStagings = new WeakSet();
-  const mockZoeSeatAdmin = harden({});
+  const mockZoeSeatAdmin = Far('mockZoeSeatAdmin', {});
   const { zcfSeat: actual } = makeZcfSeatAdminKit(
     allSeatStagings,
     mockZoeSeatAdmin,

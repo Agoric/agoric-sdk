@@ -1,13 +1,14 @@
+import { Far } from '@agoric/marshal';
 import { buildPatterns } from '../message-patterns';
 
 export function buildRootObject(vatPowers) {
-  const amy = harden({ toString: () => 'obj-amy' });
+  const amy = Far('amy', {});
   let alice;
 
-  const root = harden({
+  const root = Far('root', {
     init(bob, bert, carol) {
       const { setA, setB, setC, objA } = buildPatterns(vatPowers.testLog);
-      alice = objA;
+      alice = Far('alice', objA);
       const a = harden({ alice, amy });
       setA(a);
       setB(harden({ bob, bert }));

@@ -4,6 +4,7 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeWeakStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit } from '@agoric/ertp';
 
 export { makeCollect } from './makeCollect';
@@ -59,7 +60,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
   // installation, which may die forever.
 
   /** The contract host is designed to have a long-lived credible identity. */
-  const contractHost = harden({
+  const contractHost = Far('contractHost', {
     getInvitationIssuer() {
       return inviteIssuer;
     },
@@ -136,7 +137,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
         const startFn = ns.default;
 
         return Promise.resolve(allComparable(termsP)).then(terms => {
-          const inviteMaker = harden({
+          const inviteMaker = Far('inviteMaker', {
             // Used by the contract to make invites for credibly
             // participating in the contract. The returned invite
             // can be redeemed for this seat. The inviteMaker
@@ -146,7 +147,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
             // accurate. The seatDesc is according to that
             // contractSrc code.
             make(seatDesc, seat) {
-              const seatIdentity = harden({});
+              const seatIdentity = Far('seat', {});
               const seatDescription = harden([
                 {
                   installation,
@@ -170,7 +171,7 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
       }
 
       installation.spawn = spawn;
-      harden(installation);
+      Far('installation', installation);
       installationSourceBundles.init(installation, contractBundle);
       return installation;
     },

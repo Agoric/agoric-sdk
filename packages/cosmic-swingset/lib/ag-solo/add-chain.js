@@ -1,3 +1,4 @@
+/* global process */
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import djson from 'deterministic-json';

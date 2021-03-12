@@ -20,7 +20,7 @@ variable "ssh_key" {
 
 variable "instance_size" {
   description = "The instance size to use"
-  default = "2gb"
+  default = "s-2vcpu-4gb"
 }
 
 variable "volume_size" {

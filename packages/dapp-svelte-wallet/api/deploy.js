@@ -1,3 +1,4 @@
+/* global __dirname */
 // @ts-nocheck
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.
@@ -93,7 +94,7 @@ export default async function deployWallet(
         issuerToPursePetnameP.set(
           issuer,
           E(walletAdmin)
-            .makeEmptyPurse(issuerPetname, pursePetname)
+            .makeEmptyPurse(issuerPetname, pursePetname, true)
             .then(
               _ => pursePetname,
               _ => pursePetname,

@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
+
 import '../../exported';
 
 /**
@@ -18,18 +20,18 @@ import '../../exported';
  * @param {ContractFacet} zcf
  */
 const start = zcf => {
-  let offersCount = 0;
+  let offersCount = 0n;
 
   /** @type {OfferHandler} */
   const refund = seat => {
-    offersCount += 1;
+    offersCount += 1n;
     seat.exit();
     return `The offer was accepted`;
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
   /** @type {AutomaticRefundPublicFacet} */
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     getOffersCount: () => offersCount,
     makeInvitation: makeRefundInvitation,
   });

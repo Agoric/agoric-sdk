@@ -1,9 +1,11 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import { sameStructure } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
@@ -52,7 +54,7 @@ test('zoe - coveredCall', async t => {
         const proposal = harden({
           give: { Moola: moola(3) },
           want: { Simoleans: simoleans(7), Bucks: bucks(2) },
-          exit: { afterDeadline: { deadline: 1, timer } },
+          exit: { afterDeadline: { deadline: 1n, timer } },
         });
         const payments = { Moola: moolaPayment };
 
@@ -109,7 +111,7 @@ test('zoe - coveredCall', async t => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     const bucksPurse = bucksKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('bob', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
 
@@ -137,7 +139,7 @@ test('zoe - coveredCall', async t => {
           `strike price is 7 simoleans and 2 bucks, so bob must give that`,
         );
 
-        t.is(invitationValue.expirationDate, 1);
+        t.is(invitationValue.expirationDate, 1n);
         t.deepEqual(invitationValue.timeAuthority, timer);
 
         const proposal = harden({
@@ -251,7 +253,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     want: { StrikePrice: simoleans(7) },
     exit: {
       afterDeadline: {
-        deadline: 1,
+        deadline: 1n,
         timer,
       },
     },
@@ -281,7 +283,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   t.is(optionValue.description, 'exerciseOption');
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
   t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7) });
-  t.is(optionValue.expirationDate, 1);
+  t.is(optionValue.expirationDate, 1n);
   t.deepEqual(optionValue.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
@@ -391,7 +393,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     want: { StrikePrice: simoleans(7) },
     exit: {
       afterDeadline: {
-        deadline: 100, // we will not reach this
+        deadline: 100n, // we will not reach this
         timer,
       },
     },
@@ -423,7 +425,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.is(optionDesc.description, 'exerciseOption');
   t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3) });
   t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7) });
-  t.is(optionDesc.expirationDate, 100);
+  t.is(optionDesc.expirationDate, 100n);
   t.deepEqual(optionDesc.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
@@ -572,16 +574,16 @@ test('zoe - coveredCall with swap for invitation', async t => {
   await daveSimoleanPurse.deposit(daveSimoleanPayout);
   await daveBucksPurse.deposit(daveBucksPayout);
 
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 0);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 7);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(aliceSimoleanPurse.getCurrentAmount().value, 7n);
 
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(bobBucksPurse.getCurrentAmount().value, 1);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(bobSimoleanPurse.getCurrentAmount().value, 0n);
+  t.is(bobBucksPurse.getCurrentAmount().value, 1n);
 
-  t.is(daveMoolaPurse.getCurrentAmount().value, 3);
-  t.is(daveSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(daveBucksPurse.getCurrentAmount().value, 0);
+  t.is(daveMoolaPurse.getCurrentAmount().value, 3n);
+  t.is(daveSimoleanPurse.getCurrentAmount().value, 0n);
+  t.is(daveBucksPurse.getCurrentAmount().value, 0n);
 });
 
 // Alice makes a covered call and escrows. She shares the invitation to
@@ -640,7 +642,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     want: { StrikePrice: simoleans(7) },
     exit: {
       afterDeadline: {
-        deadline: 100, // we will not reach this
+        deadline: 100n, // we will not reach this
         timer,
       },
     },
@@ -672,7 +674,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.is(optionValue.description, 'exerciseOption');
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
   t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7) });
-  t.is(optionValue.expirationDate, 100);
+  t.is(optionValue.expirationDate, 100n);
   t.deepEqual(optionValue.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create another coveredCall, but
@@ -694,7 +696,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     want: { StrikePrice: bucks(1) },
     exit: {
       afterDeadline: {
-        deadline: 100, // we will not reach this
+        deadline: 100n, // we will not reach this
         timer,
       },
     },
@@ -727,7 +729,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
       bucks(1),
     ),
   );
-  t.is(daveOptionValue.expirationDate, 100);
+  t.is(daveOptionValue.expirationDate, 100n);
   t.deepEqual(daveOptionValue.timeAuthority, timer);
 
   // What about the underlying asset (the other option)?
@@ -737,7 +739,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   );
   t.is(
     daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].expirationDate,
-    100,
+    100n,
   );
   t.truthy(
     simoleanR.amountMath.isEqual(
@@ -846,16 +848,16 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   await daveSimoleanPurse.deposit(daveSimoleanPayout);
   await daveBucksPurse.deposit(daveBucksPayout);
 
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 0);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 7);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(aliceSimoleanPurse.getCurrentAmount().value, 7n);
 
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(bobBucksPurse.getCurrentAmount().value, 1);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(bobSimoleanPurse.getCurrentAmount().value, 0n);
+  t.is(bobBucksPurse.getCurrentAmount().value, 1n);
 
-  t.is(daveMoolaPurse.getCurrentAmount().value, 3);
-  t.is(daveSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(daveBucksPurse.getCurrentAmount().value, 0);
+  t.is(daveMoolaPurse.getCurrentAmount().value, 3n);
+  t.is(daveSimoleanPurse.getCurrentAmount().value, 0n);
+  t.is(daveBucksPurse.getCurrentAmount().value, 0n);
 });
 
 // Alice uses a covered call to sell a cryptoCat to Bob for the
@@ -912,7 +914,7 @@ test('zoe - coveredCall non-fungible', async t => {
   const aliceProposal = harden({
     give: { UnderlyingAsset: growlTigerAmount },
     want: { StrikePrice: aGloriousShieldAmount },
-    exit: { afterDeadline: { deadline: 1, timer } },
+    exit: { afterDeadline: { deadline: 1n, timer } },
   });
   const alicePayments = { UnderlyingAsset: aliceCcPayment };
   // Alice creates a call option
@@ -945,7 +947,7 @@ test('zoe - coveredCall non-fungible', async t => {
       .get('rpg')
       .isEqual(optionValue.strikePrice.StrikePrice, aGloriousShieldAmount),
   );
-  t.is(optionValue.expirationDate, 1);
+  t.is(optionValue.expirationDate, 1n);
   t.deepEqual(optionValue.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };

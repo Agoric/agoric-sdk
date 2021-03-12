@@ -6,6 +6,7 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
@@ -25,7 +26,7 @@ export function buildRootObject(vatPowers) {
     running.set(vatID, doneRR);
     doneP.catch(() => {}); // shut up false whine about unhandled rejection
 
-    const adminNode = harden({
+    const adminNode = Far('adminNode', {
       terminateWithFailure(reason) {
         D(vatAdminNode).terminateWithFailure(vatID, reason);
       },
@@ -42,7 +43,7 @@ export function buildRootObject(vatPowers) {
   }
 
   function createVatAdminService(vatAdminNode) {
-    return harden({
+    return Far('vatAdminService', {
       createVat(code, options) {
         const vatID = D(vatAdminNode).create(code, options);
         return finishVatCreation(vatAdminNode, vatID);
@@ -76,7 +77,7 @@ export function buildRootObject(vatPowers) {
     }
   }
 
-  return harden({
+  return Far('root', {
     createVatAdminService,
     newVatCallback,
     vatTerminated,

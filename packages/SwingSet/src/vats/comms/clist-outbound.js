@@ -6,6 +6,7 @@ import {
   makeRemoteSlot,
 } from './parseRemoteSlot';
 import { getRemote } from './remote';
+import { cdebug } from './cdebug';
 
 function rname(remote) {
   return `${remote.remoteID} (${remote.name})`;
@@ -18,12 +19,6 @@ export function makeOutbound(state, stateKit) {
     unsubscribeRemoteFromPromise,
     changeDeciderToRemote,
   } = stateKit;
-
-  let resolveToRemote; // cyclic, set later
-
-  function setDeliveryKit(deliveryKit) {
-    resolveToRemote = deliveryKit.resolveToRemote;
-  }
 
   function getRemoteForLocal(remoteID, lref) {
     const remote = getRemote(state, remoteID);
@@ -64,6 +59,7 @@ export function makeOutbound(state, stateKit) {
     remote.toRemote.set(vatoid, roid);
     // but when they send it back, they'll send ro+NN
     remote.fromRemote.set(flipRemoteSlot(roid), vatoid);
+    cdebug(`comms export ${remote.remoteID}/${remote.name} ${vatoid} ${roid}`);
   }
 
   function addRemotePromiseForLocal(remote, vpid) {
@@ -76,15 +72,10 @@ export function makeOutbound(state, stateKit) {
     const rpid = makeRemoteSlot('promise', false, index);
     remote.toRemote.set(vpid, rpid);
     remote.fromRemote.set(flipRemoteSlot(rpid), vpid);
+    cdebug(`comms export ${remote.remoteID}/${remote.name} ${vpid} ${rpid}`);
 
-    if (p.resolved) {
-      // we must send the resolution *after* the message which introduces it
-      const { remoteID } = remote;
-      Promise.resolve().then(() =>
-        resolveToRemote(remoteID, [[vpid, p.resolution]]),
-      );
-    } else {
-      // or arrange to send it later, once it resolves
+    if (!p.resolved) {
+      // arrange to send it later, once it resolves
       subscribeRemoteToPromise(vpid, remote.remoteID);
     }
   }
@@ -137,8 +128,6 @@ export function makeOutbound(state, stateKit) {
   }
 
   return harden({
-    setDeliveryKit,
-
     getRemoteForLocal,
     provideRemoteForLocal,
     provideRemoteForLocalResult,

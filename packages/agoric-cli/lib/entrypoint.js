@@ -1,3 +1,4 @@
+/* global process */
 import '@agoric/install-ses';
 
 import path from 'path';

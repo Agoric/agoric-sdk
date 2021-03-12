@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 
 // Object/promise references (in the kernel) contain a two-tuple of (type,
@@ -39,7 +39,7 @@ export function parseKernelSlot(s) {
   } else {
     assert.fail(X`invalid kernelSlot ${s}`);
   }
-  const id = Nat(Number(idSuffix));
+  const id = Nat(BigInt(idSuffix));
   return { type, id };
 }
 

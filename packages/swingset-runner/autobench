@@ -1,3 +1,45 @@
-#!/bin/sh
-node -r esm demo/exchangeBenchmark/prepareContracts.js
-node --expose-gc -r esm bin/runner --init --benchmark 100 --statsfile benchstats.json --config demo/exchangeBenchmark/swingset.json run -- --quiet --prime
+#! /usr/bin/env node
+const { spawnSync } = require('child_process');
+const { existsSync, unlinkSync } = require('fs');
+
+const spawnNodeSync = args => spawnSync('node', args, { stdio: 'inherit' });
+const SUITES = ['exchangeBenchmark', 'pingPongBenchmark', 'swapBenchmark'];
+for (const suite of SUITES) {
+  console.log(`Autobenching suite=${suite} ...`);
+  const prep = `demo/${suite}/prepareContracts.js`;
+  if (existsSync(prep)) {
+    spawnNodeSync(['-r', 'esm', prep]);
+  }
+  const benchstats = `benchstats-${suite}.json`;
+  try {
+    unlinkSync(benchstats);
+  } catch (e) {
+    if (e.code !== 'ENOENT') {
+      throw e;
+    }
+  }
+  const ssjson = `demo/${suite}/swingset.json`;
+  const configFlags = existsSync(ssjson) ? ['--config', ssjson] : [];
+  
+  // Calculate how many rounds to run.
+  let brounds;
+  switch (suite) {
+    case 'swapBenchmark': {
+      // This benchmark is significantly slower.
+      brounds = 10;
+      break;
+    }
+    default: {
+      brounds = 100;
+      break;
+    }
+  }
+  spawnNodeSync([
+    '--expose-gc', '-r', 'esm', 'bin/runner', '--init',
+    '--benchmark', brounds, '--statsfile', benchstats, ...configFlags,
+    'run', `demo/${suite}`, '--quiet', '--prime',
+  ]);
+  spawnNodeSync(['-r', 'esm', 'src/push-metrics.js', suite, benchstats]);
+}
+
+console.log(`Done!`);

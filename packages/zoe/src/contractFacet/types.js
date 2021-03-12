@@ -29,6 +29,7 @@
  * @property {MakeInvitation} makeInvitation
  * @property {(completion: Completion) => void} shutdown
  * @property {(reason: TerminationReason) => void} shutdownWithFailure
+ * @property {Assert} assert
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => Terms} getTerms
@@ -101,7 +102,7 @@
 /**
  * @callback GetAmountMath
  * @param {Brand} brand
- * @returns {AmountMath}
+ * @returns {DeprecatedAmountMath}
  */
 
 /**

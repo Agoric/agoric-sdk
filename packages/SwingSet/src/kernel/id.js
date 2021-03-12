@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -25,7 +25,7 @@ export function insistVatID(s) {
   try {
     assert.typeof(s, 'string', X`not a string`);
     assert(s.startsWith(`v`), X`does not start with 'v'`);
-    Nat(Number(s.slice(1)));
+    Nat(BigInt(s.slice(1)));
   } catch (e) {
     assert.fail(X`'${s} is not a 'vNN'-style VatID: ${e}`);
   }
@@ -57,7 +57,7 @@ export function insistDeviceID(s) {
   try {
     assert.typeof(s, 'string', X`not a string`);
     assert(s.startsWith(`d`), X`does not start with 'd'`);
-    Nat(Number(s.slice(1)));
+    Nat(BigInt(s.slice(1)));
   } catch (e) {
     assert.fail(X`'${s} is not a 'dNN'-style DeviceID: ${e}`);
   }
@@ -104,5 +104,5 @@ export function parseVatOrDeviceID(s) {
   } else {
     assert.fail(X`'${s}' is neither a VatID nor a DeviceID`);
   }
-  return harden({ type, id: Nat(Number(idSuffix)) });
+  return harden({ type, id: Nat(BigInt(idSuffix)) });
 }

@@ -1,3 +1,4 @@
+/* global globalThis */
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
@@ -12,7 +13,6 @@ const decoder = new TextDecoder();
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
-  // @ts-ignore
   // eslint-disable-next-line
   // console.log(`---worker: ${first}`, ...args);
 }
@@ -27,7 +27,16 @@ workerLog(`supervisor started`);
  */
 function managerPort(issueCommand) {
   /** @type { (item: Tagged) => ArrayBuffer } */
-  const encode = item => encoder.encode(JSON.stringify(item)).buffer;
+  const encode = item => {
+    let txt;
+    try {
+      txt = JSON.stringify(item);
+    } catch (nope) {
+      workerLog(nope.message, item);
+      throw nope;
+    }
+    return encoder.encode(txt).buffer;
+  };
 
   /** @type { (msg: ArrayBuffer) => any } */
   const decodeData = msg => JSON.parse(decoder.decode(msg) || 'null');
@@ -77,6 +86,20 @@ function managerPort(issueCommand) {
       };
     },
   });
+}
+
+// please excuse copy-and-paste from kernel.js
+function abbreviateReplacer(_, arg) {
+  if (typeof arg === 'bigint') {
+    // since testLog is only for testing, 2^53 is enough.
+    // precedent: 32a1dd3
+    return Number(arg);
+  }
+  if (typeof arg === 'string' && arg.length >= 40) {
+    // truncate long strings
+    return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
+  }
+  return arg;
 }
 
 /**
@@ -191,16 +214,28 @@ function makeWorker(port) {
       getInterfaceOf,
       makeMarshal,
       transformTildot,
-      testLog: (...args) => port.send(['testLog', ...args]),
+      testLog: (...args) =>
+        port.send([
+          'testLog',
+          ...args.map(arg =>
+            typeof arg === 'string'
+              ? arg
+              : JSON.stringify(arg, abbreviateReplacer),
+          ),
+        ]),
     };
+
+    const cacheSize =
+      typeof virtualObjectCacheSize === 'number'
+        ? virtualObjectCacheSize
+        : undefined;
 
     const ls = makeLiveSlots(
       syscall,
       vatID,
       vatPowers,
       vatParameters,
-      // @ts-ignore  TODO: defend against non-numeric?
-      virtualObjectCacheSize,
+      cacheSize,
       // TODO: lsgc? API drift?
     );
 
@@ -208,9 +243,8 @@ function makeWorker(port) {
       ...ls.vatGlobals,
       console: makeConsole(`SwingSet:vatWorker`),
       assert,
-      // @ts-ignore bootstrap provides HandledPromise
-      // eslint-disable-next-line no-undef
-      HandledPromise,
+      // bootstrap provides HandledPromise
+      HandledPromise: globalThis.HandledPromise,
     };
     const vatNS = await importBundle(bundle, { endowments });
     workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
@@ -251,8 +285,7 @@ function makeWorker(port) {
   });
 }
 
-// @ts-ignore xsnap provides issueCommand global
-// eslint-disable-next-line no-undef
-const port = managerPort(issueCommand);
+// xsnap provides issueCommand global
+const port = managerPort(globalThis.issueCommand);
 const worker = makeWorker(port);
 globalThis.handleCommand = port.handlerFrom(worker.handleItem);

@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Manage the Agoric Javascript smart contract platform",
   "parsers": {
     "js": "mjs"
@@ -16,9 +16,7 @@
     "test": "ava --config .ava-unit-test.config.js",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-check": "eslint '**/*.{js,jsx}'",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'"
   },
   "devDependencies": {
     "ava": "^3.12.1",
@@ -26,12 +24,12 @@
     "tmp": "^0.1.0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.2.1",
-    "@agoric/bundle-source": "^1.2.1",
-    "@agoric/captp": "^1.7.1",
-    "@agoric/install-ses": "^0.5.1",
-    "@agoric/promise-kit": "^0.2.1",
-    "@agoric/swing-store-simple": "^0.3.1",
+    "@agoric/assert": "^0.2.2",
+    "@agoric/bundle-source": "^1.2.2",
+    "@agoric/captp": "^1.7.2",
+    "@agoric/install-ses": "^0.5.2",
+    "@agoric/promise-kit": "^0.2.2",
+    "@agoric/swing-store-simple": "^0.3.2",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",

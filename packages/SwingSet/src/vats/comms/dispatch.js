@@ -7,11 +7,19 @@ import { insistCapData } from '../../capdata';
 
 import { makeCListKit } from './clist';
 import { makeDeliveryKit } from './delivery';
+import { cdebug } from './cdebug';
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(syscall) {
-  const state = makeState();
+export function buildCommsDispatch(
+  syscall,
+  _state,
+  _helpers,
+  _vatPowers,
+  vatParameters = {},
+) {
+  const { identifierBase = 0 } = vatParameters;
+  const state = makeState(identifierBase);
   const stateKit = makeStateKit(state);
   const clistKit = makeCListKit(state, syscall, stateKit);
 
@@ -36,6 +44,7 @@ export function buildCommsDispatch(syscall) {
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
+  cdebug(`comms controller is ${controller}`);
 
   function deliver(target, method, args, result) {
     insistCapData(args);
@@ -75,11 +84,10 @@ export function buildCommsDispatch(syscall) {
   function notify(resolutions) {
     const willBeResolved = new Set();
     for (const resolution of resolutions) {
-      const [vpid, value] = resolution;
+      const [vpid, _rejected, data] = resolution;
       willBeResolved.add(vpid);
-      assert(typeof value === 'object');
-      insistCapData(value.data);
-      // console.debug(`comms.notify(${vpid}, ${value})`);
+      insistCapData(data);
+      // console.debug(`comms.notify(${vpid}, ${rejected}, ${data})`);
       // dumpState(state);
     }
     resolveFromKernel(resolutions, willBeResolved);

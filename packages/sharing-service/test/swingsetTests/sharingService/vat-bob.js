@@ -1,11 +1,12 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 function makeBobMaker() {
-  return harden({
+  return Far('bobMaker', {
     make(sharingServiceP) {
-      const bob = harden({
+      const bob = Far('bob', {
         findSomething(key) {
           return E(sharingServiceP)
             .grabSharedMap(key)
@@ -20,9 +21,9 @@ function makeBobMaker() {
 }
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     makeBobMaker(_host) {
-      return harden(makeBobMaker());
+      return makeBobMaker();
     },
   });
 }

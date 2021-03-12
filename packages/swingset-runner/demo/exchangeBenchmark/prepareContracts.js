@@ -1,3 +1,4 @@
+/* global require __dirname */
 import '@agoric/install-ses';
 import bundleSource from '@agoric/bundle-source';
 

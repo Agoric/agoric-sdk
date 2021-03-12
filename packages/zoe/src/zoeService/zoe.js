@@ -14,7 +14,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import '../../exported';
 import '../internal-types';
 
-import { Far } from '@agoric/marshal';
+import { Data, Far } from '@agoric/marshal';
 import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
@@ -61,7 +61,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     const installation = Far('Installation', {
       getBundle: () => bundle,
     });
-    harden(installation);
     installations.add(installation);
     return installation;
   };
@@ -98,8 +97,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     },
     startInstance: async (
       installationP,
-      uncleanIssuerKeywordRecord = harden({}),
-      customTerms = harden({}),
+      uncleanIssuerKeywordRecord = Data({}),
+      customTerms = Data({}),
     ) => {
       /** @param {Issuer[]} issuers */
       const initIssuers = issuers =>
@@ -204,7 +203,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         brandToPurse.init(localBrand, localPooledPurse);
 
         /** @type {ZoeMint} */
-        const zoeMint = harden({
+        const zoeMint = Far('ZoeMint', {
           getIssuerRecord: () => {
             return localIssuerRecord;
           },
@@ -348,8 +347,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       // ready
 
       const {
-        creatorFacet = {},
-        publicFacet = {},
+        creatorFacet = Far('emptyCreatorFacet', {}),
+        publicFacet = Far('emptyPublicFacet', {}),
         creatorInvitation: creatorInvitationP,
         addSeatObj,
       } = await E(zcfRoot).executeContract(
@@ -357,7 +356,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         zoeService,
         invitationIssuer,
         zoeInstanceAdminForZcf,
-        harden({ ...instanceRecord }),
+        Data({ ...instanceRecord }),
       );
 
       addSeatObjPromiseKit.resolve(addSeatObj);
@@ -379,7 +378,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             X`The contract did not correctly return a creatorInvitation`,
           );
         }
-        const adminFacet = harden({
+        const adminFacet = Far('adminFacet', {
           getVatShutdownPromise: () => E(adminNode).done(),
           getVatStats: () => E(adminNode).adminData(),
         });
@@ -396,18 +395,18 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     },
     offer: async (
       invitation,
-      uncleanProposal = harden({}),
-      paymentKeywordRecord = harden({}),
+      uncleanProposal = Data({}),
+      paymentKeywordRecord = Data({}),
     ) => {
       return invitationKit.issuer.burn(invitation).then(
         invitationAmount => {
+          const invitationValue = invitationAmount.value;
+          assert(Array.isArray(invitationValue));
           assert(
-            invitationAmount.value.length === 1,
+            invitationValue.length === 1,
             'Only one invitation can be redeemed at a time',
           );
-          const {
-            value: [{ instance, handle: invitationHandle }],
-          } = invitationAmount;
+          const [{ instance, handle: invitationHandle }] = invitationValue;
           const instanceAdmin = instanceToInstanceAdmin.get(instance);
           assert(
             instanceAdmin.acceptingOffers(),
@@ -490,7 +489,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       );
     },
   });
-  harden(zoeService);
 
   return zoeService;
 }

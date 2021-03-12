@@ -1,3 +1,4 @@
+/* global globalThis */
 import test from 'ava';
 import '@agoric/install-ses';
 import fs from 'fs';

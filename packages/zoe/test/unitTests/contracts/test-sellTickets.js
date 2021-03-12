@@ -1,3 +1,4 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -243,6 +244,13 @@ test(`mint and sell opera tickets`, async t => {
       aliceProposal,
       alicePaymentKeywordRecord,
     );
+
+    const offerResult = await E(seat).getOfferResult();
+    t.is(
+      offerResult,
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
+    );
+
     const aliceTickets = seat.getPayout('Items');
     const aliceBoughtTicketAmount = await E(ticketIssuer).getAmountOf(
       aliceTickets,
@@ -450,7 +458,7 @@ test(`mint and sell opera tickets`, async t => {
       ]),
     );
 
-    const totalCost = moola(2 * terms.pricePerItem.value);
+    const totalCost = moola(2n * terms.pricePerItem.value);
 
     const bobProposal = harden({
       give: { Money: totalCost },
@@ -491,7 +499,7 @@ test(`mint and sell opera tickets`, async t => {
 
     t.is(
       currentPurseBalance.value,
-      3 * 22,
+      3n * 22n,
       `The Opera should get ${3 * 22} moolas from ticket sales`,
     );
   };

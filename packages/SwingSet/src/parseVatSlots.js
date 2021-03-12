@@ -1,4 +1,4 @@
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
@@ -66,10 +66,10 @@ export function parseVatSlot(s) {
   if (delim > 0) {
     assert(type === 'object' && allocatedByVat, X`invalid vatSlot ${s}`);
     virtual = true;
-    id = Nat(Number(idSuffix.substr(0, delim)));
-    subid = Nat(Number(idSuffix.slice(delim + 1)));
+    id = Nat(BigInt(idSuffix.substr(0, delim)));
+    subid = Nat(BigInt(idSuffix.slice(delim + 1)));
   } else {
-    id = Nat(Number(idSuffix));
+    id = Nat(BigInt(idSuffix));
   }
 
   return { type, allocatedByVat, virtual, id, subid };

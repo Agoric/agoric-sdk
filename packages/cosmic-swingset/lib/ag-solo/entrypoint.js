@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* global module require */
 
 const esmRequire = require('esm')(module);
 

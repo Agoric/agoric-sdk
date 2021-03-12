@@ -1,3 +1,4 @@
+import { Far } from '@agoric/marshal';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.
@@ -6,7 +7,7 @@
 // https://github.com/tc39/proposal-wavy-dot
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     encourageMe(nameObj) {
       // Test of tildot property get.
       return nameObj~.name.then(name => {

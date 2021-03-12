@@ -1,3 +1,4 @@
+/* global __dirname */
 import test from 'ava';
 import { spawn } from 'child_process';
 import fs from 'fs';

@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { makeMarshal, Far } from '@agoric/marshal';
+import { makeMarshal, Far, Data } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { insistVatID } from './id';
@@ -135,11 +135,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       // non-empty object as vatObj0s, since an empty object would be
       // serialized as pass-by-presence. It wouldn't make much sense for the
       // bootstrap object to call itself, though.
-      const vref = Far('vref', {
-        toString() {
-          return name;
-        },
-      }); // marker
+      const vref = Far('vref', {});
       vatObj0s[name] = vref;
       const vatKeeper = kernelKeeper.getVatKeeper(vatID);
       const kernelSlot = vatKeeper.mapVatSlotToKernelSlot(vatSlot);
@@ -150,21 +146,13 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     const drefs = new Map();
     const deviceObj0s = {};
     for (const [name, deviceID] of kernelKeeper.getDevices()) {
-      const dref = harden({});
+      const dref = Far('device', {});
       deviceObj0s[name] = dref;
       const devSlot = makeVatSlot('device', true, 0);
       const devKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
       const kernelSlot = devKeeper.mapDeviceSlotToKernelSlot(devSlot);
       drefs.set(dref, kernelSlot);
       logStartup(`adding dref ${name} [${deviceID}]`);
-    }
-    if (Object.getOwnPropertyNames(deviceObj0s) === 0) {
-      // we cannot serialize empty objects as pass-by-copy, because we decided
-      // to make them pass-by-presence for use as EQ-able markers (eg for
-      // Purses). So if we don't have any devices defined, we must add a dummy
-      // entry to this object so it will serialize as pass-by-copy.
-      // eslint-disable-next-line no-underscore-dangle
-      deviceObj0s._dummy = 'dummy';
     }
 
     function convertValToSlot(val) {
@@ -181,7 +169,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     const m = makeMarshal(convertValToSlot, undefined, {
       marshalName: 'kernel:bootstrap',
     });
-    const args = harden([vatObj0s, deviceObj0s]);
+    const args = harden([Data(vatObj0s), Data(deviceObj0s)]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootSlot = makeVatRootObjectSlot();
     const resultKpid = doQueueToExport(

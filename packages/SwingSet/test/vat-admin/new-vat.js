@@ -1,10 +1,11 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers) {
   function rcvrMaker(seed) {
     let count = 0;
     let sum = seed;
-    return harden({
+    return Far('rcvr', {
       increment(val) {
         sum += val;
         count += 1;
@@ -15,7 +16,7 @@ export function buildRootObject(_vatPowers) {
       },
     });
   }
-  return harden({
+  return Far('root', {
     getANumber() {
       return 13;
     },

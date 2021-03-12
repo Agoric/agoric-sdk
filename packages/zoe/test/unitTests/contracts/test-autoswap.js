@@ -1,3 +1,4 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -138,7 +139,7 @@ test('autoSwap API interactions, no jig', async t => {
     `pool allocation after first swap`,
   );
   const liquidityOutstanding = await E(bobAutoswap).getLiquiditySupply();
-  t.is(liquidityOutstanding, 10, 'liquidity outstanding');
+  t.is(liquidityOutstanding, 10n, 'liquidity outstanding');
 
   // Bob looks up how much he can get for 3 simoleans
   const moolaAmounts = await E(bobAutoswap).getInputPrice(
@@ -239,10 +240,10 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
   const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
   const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
   let poolState = {
-    c: 0,
-    s: 0,
-    l: 0,
-    k: 0,
+    c: 0n,
+    s: 0n,
+    l: 0n,
+    k: 0n,
   };
 
   // Setup Alice
@@ -268,13 +269,13 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
     lAmount: liquidity(10000),
   };
   const initLiquidityExpected = {
-    c: 10000,
-    s: 10000,
-    l: 10000,
-    k: 100000000,
-    payoutL: 10000,
-    payoutC: 0,
-    payoutS: 0,
+    c: 10000n,
+    s: 10000n,
+    l: 10000n,
+    k: 100000000n,
+    payoutL: 10000n,
+    payoutC: 0n,
+    payoutS: 0n,
   };
   await alice.initLiquidityAndCheck(
     t,
@@ -291,12 +292,12 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
     outAmount: simoleans(906),
   };
   const tradeExpected = {
-    c: 11000,
-    s: 9094,
-    l: 10000,
-    k: 11000 * 9094,
-    out: 906,
-    in: 0,
+    c: 11000n,
+    s: 9094n,
+    l: 10000n,
+    k: 11000n * 9094n,
+    out: 906n,
+    in: 0n,
   };
   await alice.tradeAndCheck(
     t,
@@ -315,7 +316,7 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
     lAmount: liquidity(1000),
   };
 
-  const deposit1 = { c: 1100, s: 910 };
+  const deposit1 = { c: 1100n, s: 910n };
   const liqExpected1 = scaleForAddLiquidity(poolState, deposit1, false);
   await alice.addLiquidityAndCheck(
     t,
@@ -354,10 +355,10 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
   const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
   const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
   let poolState = {
-    c: 0,
-    s: 0,
-    l: 0,
-    k: 0,
+    c: 0n,
+    s: 0n,
+    l: 0n,
+    k: 0n,
   };
 
   // Setup Alice
@@ -383,13 +384,13 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
     lAmount: liquidity(10000),
   };
   const initLiquidityExpected = {
-    c: 10000,
-    s: 10000,
-    l: 10000,
-    k: 100000000,
-    payoutL: 10000,
-    payoutC: 0,
-    payoutS: 0,
+    c: 10000n,
+    s: 10000n,
+    l: 10000n,
+    k: 100000000n,
+    payoutL: 10000n,
+    payoutC: 0n,
+    payoutS: 0n,
   };
   await alice.initLiquidityAndCheck(
     t,
@@ -409,7 +410,7 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
     lAmount: liquidity(200),
   };
 
-  const deposit1 = { c: 200, s: 200 };
+  const deposit1 = { c: 200n, s: 200n };
   const liqExpected1 = scaleForAddLiquidity(poolState, deposit1, true);
   await alice.addLiquidityAndCheck(
     t,
@@ -471,7 +472,7 @@ test('autoSwap - trade attempt before init, no jig', async t => {
   const poolPost = await E(publicFacet).getPoolAllocation();
   t.deepEqual({}, poolPost, `empty Pool still`);
 
-  t.is(0, await E(publicFacet).getLiquiditySupply(), 'liquidity empty after');
+  t.is(0n, await E(publicFacet).getLiquiditySupply(), 'liquidity empty after');
 });
 
 test('autoSwap jig - swap varying amounts', async t => {
@@ -500,10 +501,10 @@ test('autoSwap jig - swap varying amounts', async t => {
   const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
   const { make: liquidity } = await makeLocalAmountMath(liquidityIssuer);
   let poolState = {
-    c: 0,
-    s: 0,
-    l: 0,
-    k: 0,
+    c: 0n,
+    s: 0n,
+    l: 0n,
+    k: 0n,
   };
 
   // Setup Alice
@@ -529,13 +530,13 @@ test('autoSwap jig - swap varying amounts', async t => {
     lAmount: liquidity(10000),
   };
   const initLiquidityExpected = {
-    c: 10000,
-    s: 10000,
-    l: 10000,
-    k: 100000000,
-    payoutL: 10000,
-    payoutC: 0,
-    payoutS: 0,
+    c: 10000n,
+    s: 10000n,
+    l: 10000n,
+    k: 100000000n,
+    payoutL: 10000n,
+    payoutC: 0n,
+    payoutS: 0n,
   };
   await alice.initLiquidityAndCheck(
     t,
@@ -553,14 +554,14 @@ test('autoSwap jig - swap varying amounts', async t => {
     outAmount: simoleans(0),
   };
 
-  const simPrice = outputFromInputPrice(poolState.c, poolState.s, 1000, 30);
+  const simPrice = outputFromInputPrice(poolState.c, poolState.s, 1000n, 30n);
   const expectedA = {
-    c: poolState.c + 1000,
+    c: poolState.c + 1000n,
     s: poolState.s - simPrice,
-    l: 10000,
-    k: (poolState.c + 1000) * (poolState.s - simPrice),
+    l: 10000n,
+    k: (poolState.c + 1000n) * (poolState.s - simPrice),
     out: simPrice,
-    in: 0,
+    in: 0n,
   };
   await alice.tradeAndCheck(
     t,
@@ -579,14 +580,14 @@ test('autoSwap jig - swap varying amounts', async t => {
     outAmount: simoleans(300),
   };
 
-  const mPrice = priceFromTargetOutput(300, poolState.s, poolState.c, 30);
+  const mPrice = priceFromTargetOutput(300n, poolState.s, poolState.c, 30n);
   const expectedB = {
     c: poolState.c + mPrice,
-    s: poolState.s - 300,
-    l: 10000,
-    k: (poolState.c + mPrice) * (poolState.s - 300),
-    out: 300,
-    in: 500 - mPrice,
+    s: poolState.s - 300n,
+    l: 10000n,
+    k: (poolState.c + mPrice) * (poolState.s - 300n),
+    out: 300n,
+    in: 500n - mPrice,
   };
   await alice.tradeAndCheck(
     t,

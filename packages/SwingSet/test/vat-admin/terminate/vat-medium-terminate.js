@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
 
-  return harden({
+  return Far('root', {
     async speak(target, tag) {
       try {
         await E(target).live();

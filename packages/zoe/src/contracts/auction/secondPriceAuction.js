@@ -1,6 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -46,7 +47,9 @@ const start = zcf => {
   E(timeAuthority)
     .setWakeup(
       closesAfter,
-      harden({ wake: () => calcWinnerAndClose(zcf, sellSeat, bidSeats) }),
+      Far('wakeObj', {
+        wake: () => calcWinnerAndClose(zcf, sellSeat, bidSeats),
+      }),
     )
     .catch(err => {
       console.error(
@@ -91,7 +94,7 @@ const start = zcf => {
 
     // The bid invitations can only be sent out after the assets to be
     // auctioned are escrowed.
-    return harden({ makeBidInvitation });
+    return Far('offerResult', { makeBidInvitation });
   };
 
   const creatorInvitation = zcf.makeInvitation(sell, 'sellAssets');

@@ -1,5 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { parseVatSlot } from '../../parseVatSlots';
+import { cdebug } from './cdebug';
 
 export function makeKernel(state, syscall, stateKit) {
   const {
@@ -63,10 +64,13 @@ export function makeKernel(state, syscall, stateKit) {
         // the resolution and then immediately retire the vpid again.
 
         const fresh = allocateResolvedPromiseID();
-        // console.log(`fresh: ${fresh} for ${vpid}`, p.resolution);
+        // console.log(`fresh: ${fresh} for ${vpid}`, p.rejected, p.data);
         // we must tell the kernel about the resolution *after* the message
         // which introduces it
-        Promise.resolve().then(() => resolveToKernel([[fresh, p.resolution]]));
+        Promise.resolve().then(() =>
+          resolveToKernel([[fresh, p.rejected, p.data]]),
+        );
+        cdebug(`comms export resolved ${lref} as ${fresh}`);
         return fresh;
       }
 

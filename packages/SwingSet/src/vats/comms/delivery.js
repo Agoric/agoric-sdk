@@ -60,20 +60,13 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     handleSend(localDelivery);
   }
 
-  function mapResolutionFromKernel(resolution, doNotSubscribeSet) {
-    return harden({
-      ...resolution,
-      data: mapDataFromKernel(resolution.data, doNotSubscribeSet),
-    });
-  }
-
   // dispatch.notify from kernel lands here (local vat resolving some
   // Promise, we need to notify remote machines): translate to local, join
   // with handleResolutions
   function resolveFromKernel(resolutions, doNotSubscribeSet) {
     const localResolutions = [];
     for (const resolution of resolutions) {
-      const [vpid, value] = resolution;
+      const [vpid, rejected, data] = resolution;
 
       // I *think* we should never get here for local promises, since the
       // controller only does sendOnly. But if we change that, we need to catch
@@ -95,7 +88,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       changeDeciderFromKernelToComms(vpid);
       localResolutions.push([
         vpid,
-        mapResolutionFromKernel(value, doNotSubscribeSet),
+        rejected,
+        mapDataFromKernel(data, doNotSubscribeSet),
       ]);
     }
     handleResolutions(localResolutions);
@@ -170,7 +164,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const body = submsg.slice(sci + 1);
       const data = harden({ body, slots });
       changeDeciderFromRemoteToComms(vpid, remoteID);
-      resolutions.push([vpid, { rejected, data }]);
+      resolutions.push([vpid, rejected, data]);
     }
     handleResolutions(harden(resolutions));
   }
@@ -221,10 +215,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     assert(p);
 
     if (p.resolved) {
-      if (p.resolution.rejected) {
-        return { reject: p.resolution.data };
+      if (p.rejected) {
+        return { reject: p.data };
       }
-      const targetPresence = extractPresenceIfPresent(p.resolution.data);
+      const targetPresence = extractPresenceIfPresent(p.data);
       if (targetPresence) {
         return resolveTarget(targetPresence, method);
       } else {
@@ -260,9 +254,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       if (!localDelivery.result) {
         return; // sendOnly, nowhere to send the rejection
       }
-      const resolutions = harden([
-        [localDelivery.result, { rejected: true, data: where.reject }],
-      ]);
+      const resolutions = harden([[localDelivery.result, true, where.reject]]);
       handleResolutions(resolutions);
       return;
     }
@@ -314,16 +306,16 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       primaryVpid,
     );
     for (const resolution of resolutions) {
-      const [vpid, value] = resolution;
-      // value: { rejected: boolean, data: capdata }
-      insistCapData(value.data);
+      const [vpid, rejected, data] = resolution;
+      // rejected: boolean, data: capdata
+      insistCapData(data);
       insistVatType('promise', vpid);
       insistPromiseIsUnresolved(vpid);
       insistDeciderIsComms(vpid);
 
       // mark it as resolved in the promise table, so later messages to it will
       // be handled properly
-      markPromiseAsResolved(vpid, value);
+      markPromiseAsResolved(vpid, rejected, data);
     }
 
     // what remotes need to know?
@@ -350,14 +342,14 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   function resolveToRemote(remoteID, resolutions) {
     const msgs = [];
     for (const resolution of resolutions) {
-      const [vpid, value] = resolution;
+      const [vpid, rejected, data] = resolution;
 
       const rpid = getRemoteForLocal(remoteID, vpid);
       // rpid should be rp+NN
       insistRemoteType('promise', rpid);
       // assert(parseRemoteSlot(rpid).allocatedByRecipient, rpid); // rp+NN for them
       function mapSlots() {
-        const { slots } = value.data;
+        const { slots } = data;
         let ss = slots.map(s => provideRemoteForLocal(remoteID, s)).join(':');
         if (ss) {
           ss = `:${ss}`;
@@ -365,9 +357,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
         return ss;
       }
 
-      const rejected = value.rejected ? 'reject' : 'fulfill';
+      const rejectedTag = rejected ? 'reject' : 'fulfill';
       // prettier-ignore
-      msgs.push(`resolve:${rejected}:${rpid}${mapSlots()};${value.data.body}`);
+      msgs.push(`resolve:${rejectedTag}:${rpid}${mapSlots()};${data.body}`);
     }
     transmit(remoteID, msgs.join('\n'));
   }
@@ -375,8 +367,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   function resolveToKernel(localResolutions) {
     const resolutions = [];
     for (const localResolution of localResolutions) {
-      const [vpid, value] = localResolution;
-      resolutions.push([vpid, value.rejected, mapDataToKernel(value.data)]);
+      const [vpid, rejected, data] = localResolution;
+      resolutions.push([vpid, rejected, mapDataToKernel(data)]);
     }
     syscall.resolve(resolutions);
   }

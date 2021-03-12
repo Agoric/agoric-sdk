@@ -1,7 +1,7 @@
 import { isPromise } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import makeUIAgentMakers from './ui-agent';
 
 // A REPL-specific JSON stringify.

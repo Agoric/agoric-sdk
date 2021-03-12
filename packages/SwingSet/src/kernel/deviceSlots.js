@@ -174,7 +174,7 @@ export function makeDeviceSlots(
   });
   assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
-  const rootSlot = makeVatSlot('device', true, 0);
+  const rootSlot = makeVatSlot('device', true, 0n);
   valToSlot.set(rootObject, rootSlot);
   slotToVal.set(rootSlot, rootObject);
 

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/ertp",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "parsers": {
     "js": "mjs"
@@ -11,7 +11,11 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "ava",
+    "test": "yarn test:node && yarn test:xs",
+    "test:node": "ava",
+    "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
+    "test:xs-unit": "ava-xs",
+    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -19,9 +23,7 @@
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
+    "lint:types": "tsc -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -41,20 +43,20 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.1",
-    "@agoric/eventual-send": "^0.13.1",
-    "@agoric/import-manager": "^0.2.1",
-    "@agoric/marshal": "^0.3.1",
-    "@agoric/nat": "^2.0.1",
-    "@agoric/notifier": "^0.3.1",
-    "@agoric/promise-kit": "^0.2.1",
-    "@agoric/same-structure": "^0.1.1",
-    "@agoric/store": "^0.4.1"
+    "@agoric/assert": "^0.2.2",
+    "@agoric/eventual-send": "^0.13.2",
+    "@agoric/import-manager": "^0.2.2",
+    "@agoric/marshal": "^0.3.2",
+    "@agoric/nat": "^4.0.0",
+    "@agoric/notifier": "^0.3.2",
+    "@agoric/promise-kit": "^0.2.2",
+    "@agoric/same-structure": "^0.1.2",
+    "@agoric/store": "^0.4.2"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.2.1",
-    "@agoric/install-ses": "^0.5.1",
-    "@agoric/swingset-vat": "^0.12.0",
+    "@agoric/bundle-source": "^1.2.2",
+    "@agoric/install-ses": "^0.5.2",
+    "@agoric/swingset-vat": "^0.12.1",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"
@@ -64,6 +66,9 @@
     "NEWS.md",
     "exported.js"
   ],
+  "ava-xs": {
+    "exclude": "swingsetTests"
+  },
   "ava": {
     "files": [
       "test/**/test-*.js"

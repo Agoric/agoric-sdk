@@ -1,12 +1,14 @@
+/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 
+import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../src/contractFacet/fakeVatAdmin';
 import { makeZoe } from '../..';
 
@@ -21,6 +23,20 @@ import { makeScriptedOracle } from '../../tools/scriptedOracle';
 
 const oracleContractPath = `${__dirname}/../../src/contracts/oracle`;
 const bountyContractPath = `${__dirname}/bounty`;
+
+/**
+ * @typedef {Object} TestContext
+ * @property {ZoeService} zoe
+ * @property {Installation} oracleInstallation
+ * @property {Installation} bountyInstallation
+ * @property {Mint} moolaMint
+ * @property {Issuer} moolaIssuer
+ * @property {AmountMath['make']} moola
+ *
+ * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
+ */
+
+const test = /** @type {import('ava').TestInterface<TestContext>} */ (anyTest);
 
 test.before(
   'setup oracle',
@@ -68,7 +84,7 @@ test('pay bounty', async t => {
     { Bounty: moolaIssuer, Fee: moolaIssuer },
     {
       oracle: publicFacet,
-      deadline: 3,
+      deadline: 3n,
       condition: 'Succeeded',
       timer,
       fee: moola(50),
@@ -76,6 +92,7 @@ test('pay bounty', async t => {
   );
 
   // Alice funds a bounty
+  assert(funderInvitation);
   const funderSeat = await E(zoe).offer(
     funderInvitation,
     harden({
@@ -136,7 +153,7 @@ test('pay no bounty', async t => {
     { Bounty: moolaIssuer, Fee: moolaIssuer },
     {
       oracle: publicFacet,
-      deadline: 3,
+      deadline: 3n,
       condition: 'Succeeded',
       timer,
       fee: moola(50),
@@ -144,6 +161,7 @@ test('pay no bounty', async t => {
   );
 
   // Alice funds a bounty
+  assert(funderInvitation);
   const funderSeat = await E(zoe).offer(
     funderInvitation,
     harden({

@@ -1,3 +1,4 @@
+/* global require */
 /*
   The 'mailbox' device helps manage bidirectional communication with a number
   of 'peers'. Each peer is identified with a string. We exchange ordered
@@ -64,7 +65,7 @@
 
 */
 
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -77,7 +78,7 @@ export function importMailbox(data, inout = {}) {
   data.outbox.forEach(m => {
     outbox.set(Nat(m[0]), m[1]);
   });
-  inout.ack = data.ack;
+  inout.ack = Nat(data.ack);
   inout.outbox = outbox;
   return inout;
 }
@@ -85,11 +86,11 @@ export function importMailbox(data, inout = {}) {
 export function exportMailbox(inout) {
   const messages = [];
   inout.outbox.forEach((body, msgnum) => {
-    messages.push([msgnum, body]);
+    messages.push([Number(msgnum), body]);
   });
   messages.sort((a, b) => a[0] - b[0]);
   return {
-    ack: inout.ack,
+    ack: Number(inout.ack),
     outbox: messages,
   };
 }
@@ -99,7 +100,7 @@ export function buildMailboxStateMap(state = harden(new Map())) {
     if (!state.has(peer)) {
       const inout = {
         outbox: harden(new Map()),
-        ack: 0,
+        ack: 0n,
       };
       state.set(peer, inout);
     }
@@ -124,7 +125,7 @@ export function buildMailboxStateMap(state = harden(new Map())) {
     state.forEach((inout, peer) => {
       const exported = exportMailbox(inout);
       data[peer] = {
-        inboundAck: inout.ack,
+        inboundAck: exported.ack,
         outbox: exported.outbox,
       };
     });

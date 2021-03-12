@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
   let service;
   let control;
 
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       service = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },

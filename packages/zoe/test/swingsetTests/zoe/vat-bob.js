@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { makeLocalAmountMath } from '@agoric/ertp';
@@ -20,7 +21,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
   let secondPriceAuctionSeatP;
 
-  return harden({
+  return Far('build', {
     doAutomaticRefund: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
@@ -104,7 +105,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           simoleans(7),
         ),
       );
-      assert(optionValue[0].expirationDate === 1, X`wrong expirationDate`);
+      assert(optionValue[0].expirationDate === 1n, X`wrong expirationDate`);
       assert(optionValue[0].timeAuthority === timer, 'wrong timer');
       const { UnderlyingAsset, StrikePrice } = issuerKeywordRecord;
 
@@ -172,7 +173,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100, X`wrong expiration date`);
+      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
       assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
       assert(
         UnderlyingAsset === moolaIssuer,
@@ -563,7 +564,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 };
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
 }

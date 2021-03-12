@@ -1,3 +1,4 @@
+/* global __dirname */
 import '@agoric/install-ses';
 import path from 'path';
 import test from 'ava';
@@ -12,9 +13,9 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-function slot0(kid) {
+function slot0(iface, kid) {
   return {
-    body: '{"@qclass":"slot","index":0}',
+    body: `{"@qclass":"slot","iface":"Alleged: ${iface}","index":0}`,
     slots: [kid],
   };
 }
@@ -48,7 +49,7 @@ test('virtual object representatives', async t => {
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
-    t.deepEqual(c.kpResolution(r), slot0(result));
+    t.deepEqual(c.kpResolution(r), slot0('thing', result));
   }
   await doTestA(1, 'ko25');
   await doTestA(2, 'ko26');
@@ -68,7 +69,7 @@ test('virtual object representatives', async t => {
       `test${mode} thing.name after rename "thing${mode} modified"`,
       `test${mode} initialSelf.name after rename "thing${mode} modified"`,
     ]);
-    t.deepEqual(c.kpResolution(r), slot0(result));
+    t.deepEqual(c.kpResolution(r), slot0('thing', result));
   }
   await doTestB(3, 'ko27');
   await doTestB(4, 'ko28');
@@ -134,7 +135,7 @@ test('virtual object representatives', async t => {
   await c.run();
   t.is(c.kpStatus(rz1), 'fulfilled');
   t.deepEqual(nextLog(), []);
-  t.deepEqual(c.kpResolution(rz1), slot0('ko31'));
+  t.deepEqual(c.kpResolution(rz1), slot0('zot', 'ko31'));
 
   const rz2 = c.queueToVatExport(
     'bootstrap',

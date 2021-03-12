@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global require */
 
 const fs = require('fs');
 const djson = require('deterministic-json');

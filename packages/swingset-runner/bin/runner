@@ -6,7 +6,12 @@
  * Simple boilerplate program providing linkage to launch an application written using modules within the
  * as yet not-entirely-ESM-supporting version of NodeJS.
  */
-import lmdb from 'node-lmdb';
+
+// LMDB bindings need to be imported before lockdown.
+import 'node-lmdb';
+
+// Now do lockdown.
 import '../src/install-optional-metering-and-ses';
 import { main } from '../src/main.js';
+
 main();

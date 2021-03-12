@@ -1,3 +1,4 @@
+/* global globalThis */
 import * as c from './constants';
 
 let replaceGlobalMeter;

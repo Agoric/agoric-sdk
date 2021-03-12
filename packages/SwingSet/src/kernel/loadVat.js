@@ -4,7 +4,7 @@ import { makeVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 
 export function makeVatRootObjectSlot() {
-  return makeVatSlot('object', true, 0);
+  return makeVatSlot('object', true, 0n);
 }
 
 export function makeVatLoader(stuff) {

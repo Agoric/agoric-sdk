@@ -1,5 +1,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
+import { isNat } from '@agoric/nat';
+import { Data } from '@agoric/marshal';
 
 import '../exported';
 import './internal-types';
@@ -97,9 +99,9 @@ export const cleanKeywords = keywordRecord => {
  * must be keywords and the values must be amounts. The value of
  * `exit`, if present, must be a record of one of the following forms:
  * `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
- * :Timer, deadline :Number } }
+ * :Timer, deadline :bigint } }
  *
- * @param {(brand: Brand) => AmountMath} getAmountMath
+ * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath
  * @param {Proposal} proposal
  * @returns {ProposalRecord}
  */
@@ -109,7 +111,7 @@ export const cleanProposal = (getAmountMath, proposal) => {
   assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.
-  let { want = harden({}), give = harden({}) } = proposal;
+  let { want = Data({}), give = Data({}) } = proposal;
   const { exit = harden({ onDemand: null }) } = proposal;
 
   want = coerceAmountKeywordRecord(getAmountMath, want);
@@ -134,8 +136,9 @@ export const cleanProposal = (getAmountMath, proposal) => {
     assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
     assert(exit.afterDeadline.timer !== undefined, X`timer must be defined`);
     assert(
-      exit.afterDeadline.deadline !== undefined,
-      X`deadline must be defined`,
+      typeof exit.afterDeadline.deadline === 'bigint' &&
+        isNat(exit.afterDeadline.deadline),
+      X`deadline must be a Nat BigInt`,
     );
     // timers must have a 'setWakeup' function which takes a deadline
     // and an object as arguments.

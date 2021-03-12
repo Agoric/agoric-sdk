@@ -1,4 +1,10 @@
+/* global __dirname */
+// @ts-check
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
 

@@ -1,3 +1,4 @@
+/* global require */
 import { assert, details as X } from '@agoric/assert';
 
 /*

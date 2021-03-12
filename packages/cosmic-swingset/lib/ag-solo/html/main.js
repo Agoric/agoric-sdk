@@ -1,3 +1,4 @@
+/* global setTimeout */
 // NOTE: Runs outside SES
 
 /* global WebSocket fetch document window walletFrame localStorage */
@@ -6,29 +7,48 @@ const RECONNECT_BACKOFF_SECONDS = 3;
 const resetFns = [];
 let inpBackground;
 
-// Fetch the access token from the window's URL.
-let accessTokenParams = `?${window.location.hash.slice(1)}`;
-let hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
+let accessTokenParams;
+let hasAccessToken;
 
-try {
-  if (hasAccessToken) {
-    // Store the access token for later use.
-    localStorage.setItem('accessTokenParams', accessTokenParams);
-  } else {
-    // Try reviving it from localStorage.
-    accessTokenParams = localStorage.getItem('accessTokenParams') || '?';
-    hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
+function getAccessToken() {
+  // Fetch the access token from the window's URL.
+  accessTokenParams = `?${window.location.hash.slice(1)}`;
+  hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
+
+  try {
+    if (hasAccessToken) {
+      // Store the access token for later use.
+      localStorage.setItem('accessTokenParams', accessTokenParams);
+    } else {
+      // Try reviving it from localStorage.
+      accessTokenParams = localStorage.getItem('accessTokenParams') || '?';
+      hasAccessToken = new URLSearchParams(accessTokenParams).get(
+        'accessToken',
+      );
+    }
+  } catch (e) {
+    console.log('Error fetching accessTokenParams', e);
   }
-} catch (e) {
-  console.log('Error fetching accessTokenParams', e);
-}
 
-// Now that we've captured it, clear out the access token from the URL bar.
-window.location.hash = '';
-window.addEventListener('hashchange', _ev => {
-  // Keep it clear.
+  // Now that we've captured it, clear out the access token from the URL bar.
   window.location.hash = '';
-});
+  window.addEventListener('hashchange', _ev => {
+    // See if we should update the access token params.
+    const atp = `?${window.location.hash.slice(1)}`;
+    const hat = new URLSearchParams(atp).get('accessToken');
+
+    if (hat) {
+      // We have new params, so replace them.
+      accessTokenParams = atp;
+      hasAccessToken = hat;
+      localStorage.setItem('accessTokenParams', accessTokenParams);
+    }
+
+    // Keep it clear.
+    window.location.hash = '';
+  });
+}
+getAccessToken();
 
 if (!hasAccessToken) {
   // This is friendly advice to the user who doesn't know.

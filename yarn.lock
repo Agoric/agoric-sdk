@@ -19,20 +19,15 @@
   dependencies:
     ses "^0.11.0"
 
-"@agoric/make-hardener@^0.1.0":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.1.tgz#9b887da47aeec6637d9db4f0a92a4e740b8262bb"
-  integrity sha512-3emNc+yWJoFK5JMLoEFPs6rCzkntWQKxpR4gt3jaZYLKoUG4LrTmID3XNe8y40B6SJ3k/wLPodKa0ToQGlhrwQ==
+"@agoric/make-hardener@^0.1.0", "@agoric/make-hardener@^0.1.2":
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.3.tgz#807b0072bef95d935c3370d406d9dfeb719f69ee"
+  integrity sha512-rc9M2ErE/Zu822OLCnAltr957ZVTsBvVZ7KA2unqDpjo3q7PqZF2hWFB1xXD2Qkfwt5exQ3BjFbkj+NUaTg4gA==
 
-"@agoric/make-hardener@^0.1.2":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.2.tgz#b9a72d98ae23a4c6918cd7dc4a9a72deebafde45"
-  integrity sha512-l5O7TCVDcl6NcWW5Rp/lAQaFLmje97wHrKPJbYV08M4TNDgSiMlesYtar40OnAR2pnzgsyilSQc+hU5mEvCJWg==
-
-"@agoric/nat@2.0.1", "@agoric/nat@^2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
-  integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
+"@agoric/nat@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.0.0.tgz#330dcde37fcf8882dbc5012a3b2c4c135eee4930"
+  integrity sha512-zlTe14g0PGfONO0+TdhLv8k4IZH040ojvBZuNrcQSV+l8HlFTZ/IKzI5HorlCVDDBU7riykAb/6MaTgMRbYp3w==
 
 "@agoric/transform-module@^0.4.1":
   version "0.4.1"
@@ -1402,17 +1397,6 @@
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.11.tgz#aeb16f50649a91af79dbe36574b66d0f9e4d9f71"
   integrity sha512-3NsZsJIA/22P3QUyrEDNA2D133H4j224twJrdipXN38dpnIOzAbUDtOwkcJ5pXmn75w7LSQDjA4tO9dm1XlqlA==
 
-"@rollup/plugin-commonjs@^11.0.2":
-  version "11.0.2"
-  resolved "https://registry.yarnpkg.com/@rollup/plugin-commonjs/-/plugin-commonjs-11.0.2.tgz#837cc6950752327cb90177b608f0928a4e60b582"
-  integrity sha512-MPYGZr0qdbV5zZj8/2AuomVpnRVXRU5XKXb3HVniwRoRCreGlf5kOE081isNWeiLIi6IYkwTX9zE0/c7V8g81g==
-  dependencies:
-    "@rollup/pluginutils" "^3.0.0"
-    estree-walker "^1.0.1"
-    is-reference "^1.1.2"
-    magic-string "^0.25.2"
-    resolve "^1.11.0"
-
 "@rollup/plugin-commonjs@^12.0.0":
   version "12.0.0"
   resolved "https://registry.yarnpkg.com/@rollup/plugin-commonjs/-/plugin-commonjs-12.0.0.tgz#e2f308ae6057499e0f413f878fff7c3a0fdc02a1"
@@ -1422,6 +1406,17 @@
     commondir "^1.0.1"
     estree-walker "^1.0.1"
     glob "^7.1.2"
+    is-reference "^1.1.2"
+    magic-string "^0.25.2"
+    resolve "^1.11.0"
+
+"@rollup/plugin-commonjs@~11.0.2":
+  version "11.0.2"
+  resolved "https://registry.yarnpkg.com/@rollup/plugin-commonjs/-/plugin-commonjs-11.0.2.tgz#837cc6950752327cb90177b608f0928a4e60b582"
+  integrity sha512-MPYGZr0qdbV5zZj8/2AuomVpnRVXRU5XKXb3HVniwRoRCreGlf5kOE081isNWeiLIi6IYkwTX9zE0/c7V8g81g==
+  dependencies:
+    "@rollup/pluginutils" "^3.0.0"
+    estree-walker "^1.0.1"
     is-reference "^1.1.2"
     magic-string "^0.25.2"
     resolve "^1.11.0"
@@ -9245,10 +9240,10 @@ ses@^0.11.0:
     "@agoric/make-hardener" "^0.1.0"
     "@agoric/transform-module" "^0.4.1"
 
-ses@^0.12.2:
-  version "0.12.2"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.2.tgz#ac8180eb8ec8e12652f352c2f3fae0b19be03465"
-  integrity sha512-XhzToLDYbT4liHNzt+GY6RNP64e+pi2ioCgyYztXt6ZnsSF4UttaN1EXEzDZoPjU67Nym7f8bSQiVRu7tezD5g==
+ses@^0.12.3:
+  version "0.12.3"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.3.tgz#9092a1f54374d08571a62837954e3fa24fe31d0f"
+  integrity sha512-uDAUbVECNcgbl90ZwKCsmp5II/rgS1hiiB6KQMBU+GDvsUA+NFXdH76o3bTIk3ftPHqc4Vyk7vAU75pd+3Jy2Q==
   dependencies:
     "@agoric/babel-standalone" "^7.9.5"
     "@agoric/make-hardener" "^0.1.2"

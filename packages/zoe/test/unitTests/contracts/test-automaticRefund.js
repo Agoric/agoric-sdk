@@ -1,3 +1,4 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -137,7 +138,7 @@ test('zoe with automaticRefund', async t => {
 
   const bobInvitation = await E(publicFacet).makeInvitation();
   const count = await E(publicFacet).getOffersCount();
-  t.is(count, 1);
+  t.is(count, 1n);
 
   // Imagine that Alice has shared the bobInvitation with Bob. He
   // will do a claim on the invitation with the Zoe invitation issuer and
@@ -212,10 +213,10 @@ test('zoe with automaticRefund', async t => {
   // Assert that the correct refund was achieved.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 3);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 17);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 3n);
+  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0n);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(bobSimoleanPurse.getCurrentAmount().value, 17n);
 });
 
 test('multiple instances of automaticRefund for the same Zoe', async t => {
@@ -298,9 +299,9 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   );
 
   // Ensure that the number of offers received by each instance is one
-  t.is(await E(publicFacet1).getOffersCount(), 1);
-  t.is(await E(publicFacet2).getOffersCount(), 1);
-  t.is(await E(publicFacet3).getOffersCount(), 1);
+  t.is(await E(publicFacet1).getOffersCount(), 1n);
+  t.is(await E(publicFacet2).getOffersCount(), 1n);
+  t.is(await E(publicFacet3).getOffersCount(), 1n);
 });
 
 test('zoe - alice tries to complete after completion has already occurred', async t => {
@@ -361,8 +362,8 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
   // Assert that the correct refund was achieved.
   // Alice had 3 moola and 0 simoleans.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 3);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 3n);
+  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0n);
 });
 
 test('zoe - automaticRefund non-fungible', async t => {

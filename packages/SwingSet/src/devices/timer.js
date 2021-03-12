@@ -1,4 +1,5 @@
-import Nat from '@agoric/nat';
+/* global require */
+import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';
 

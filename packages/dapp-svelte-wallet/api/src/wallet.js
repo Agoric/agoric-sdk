@@ -13,6 +13,7 @@ import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
+import { bigintStringify } from './bigintStringify';
 
 import './internal-types';
 
@@ -415,7 +416,7 @@ export function buildRootObject(_vatPowers) {
               case 'walletGetPurses': {
                 return {
                   type: 'walletUpdatePurses',
-                  data: JSON.stringify(pursesState),
+                  data: bigintStringify(pursesState),
                 };
               }
               case 'walletAddOffer': {

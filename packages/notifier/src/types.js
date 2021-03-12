@@ -9,16 +9,6 @@
  */
 
 /**
- * @typedef {*} Passable
- * A value that can be passed between vats.
- * TODO This type should be exported by `@agoric/marshal` and imported here.
- * See https://github.com/Agoric/agoric-sdk/issues/1958
- * TODO For these tools to be used for distributed operation, we need a less
- * precise comparison than `t.is` when testing that these values have arrived.
- * https://github.com/Agoric/agoric-sdk/issues/1959
- */
-
-/**
  * @template T
  * @typedef {Object} IterationObserver<T>
  * A valid sequence of calls to the methods of an `IterationObserver`

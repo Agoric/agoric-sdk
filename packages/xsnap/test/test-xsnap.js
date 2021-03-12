@@ -105,18 +105,16 @@ test('evaluate error', async t => {
   await vat.terminate();
 });
 
-test.failing('uncaught rejections should not be silent', async t => {
+test('evaluate does not throw on unhandled rejections', async t => {
   const opts = options();
-  const vat = xsnap(opts);
-  await vat
-    .evaluate(`Promise.reject(1)`)
-    .then(_ => {
-      t.fail('should throw');
-    })
-    .catch(_ => {
-      t.pass();
-    });
-  await vat.terminate();
+  // ISSUE: how to test that they are not entirely unobservable?
+  // It's important that we can observe them using xsbug.
+  // We can confirm this by running xsbug while running this test.
+  for await (const debug of [false, true]) {
+    const vat = xsnap({ ...opts, debug });
+    t.teardown(() => vat.terminate());
+    await t.notThrowsAsync(vat.evaluate(`Promise.reject(1)`));
+  }
 });
 
 test('reject odd regex range', async t => {
@@ -143,6 +141,30 @@ test('accept std regex range', async t => {
   );
   t.pass();
   await vat.terminate();
+});
+
+test('bigint map key', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+    const store = new Map([[1n, "abc"]]);
+    send(store.get(1n))
+  `);
+  t.deepEqual(opts.messages, ['"abc"']);
+});
+
+test('keyword in destructuring', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+    const { default: d, in: i } = { default: 1, in: 2 };
+    send({ d, i })
+  `);
+  t.deepEqual(opts.messages, ['{"d":1,"i":2}']);
 });
 
 test('idle includes setImmediate too', async t => {
@@ -348,4 +370,19 @@ test('normal close of pathological script', async t => {
   await Promise.race([vat.close().then(() => t.fail()), hang, delay(10)]);
   await vat.terminate();
   await hang;
+});
+
+test('heap exhaustion: orderly fail-stop', async t => {
+  const grow = `
+  let stuff = '1234';
+  while (true) {
+    stuff = stuff + stuff;
+  }
+  `;
+  for (const debug of [false, true]) {
+    const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
+    t.teardown(() => vat.terminate());
+    // eslint-disable-next-line no-await-in-loop
+    await t.throwsAsync(vat.evaluate(grow));
+  }
 });

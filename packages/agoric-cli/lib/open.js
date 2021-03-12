@@ -1,7 +1,9 @@
+/* global process setInterval clearInterval */
 import { promises as defaultFs } from 'fs';
 import opener from 'opener';
 import crypto from 'crypto';
 import path from 'path';
+import os from 'os';
 
 import { openSwingStore } from '@agoric/swing-store-simple';
 
@@ -37,7 +39,7 @@ export async function getAccessToken(port, powers = {}) {
   }
 
   // Ensure we're protected with a unique accessToken for this basedir.
-  const sharedStateDir = path.join(process.env.HOME || '', '.agoric');
+  const sharedStateDir = path.join(os.homedir(), '.agoric');
   await fs.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
   // Ensure an access token exists.
@@ -102,9 +104,6 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
   process.stdout.write(`${walletUrl}\n`);
   if (opts.browser) {
     const browser = opener(walletUrl);
-    browser.unref();
-    process.stdout.unref();
-    process.stderr.unref();
-    process.stdin.unref();
+    await new Promise(resolve => browser.on('exit', resolve));
   }
 }

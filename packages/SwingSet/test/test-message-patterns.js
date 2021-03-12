@@ -1,3 +1,4 @@
+/* global __dirname */
 /* eslint no-await-in-loop: "off" */
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
@@ -84,9 +85,9 @@ test.before(async t => {
       a: { bundle: bundleA },
       b: { bundle: bundleB },
       c: { bundle: bundleC },
-      commsA: moreComms,
-      commsB: moreComms,
-      commsC: moreComms,
+      commsA: { ...moreComms, parameters: { identifierBase: 100 } },
+      commsB: { ...moreComms, parameters: { identifierBase: 200 } },
+      commsC: { ...moreComms, parameters: { identifierBase: 300 } },
       vattpA: moreVatTP,
       vattpB: moreVatTP,
       vattpC: moreVatTP,

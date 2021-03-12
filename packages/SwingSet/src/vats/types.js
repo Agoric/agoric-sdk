@@ -3,9 +3,9 @@
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
  * @property {() => Timestamp} getCurrentTimestamp Retrieve the latest timestamp
- * @property {(baseTime: Timestamp, waker: TimerWaker) => Timestamp} setWakeup Return
+ * @property {(baseTime: Timestamp, waker: ERef<TimerWaker>) => Timestamp} setWakeup Return
  * value is the time at which the call is scheduled to take place
- * @property {(waker: TimerWaker) => Array<Timestamp>} removeWakeup Remove the waker
+ * @property {(waker: ERef<TimerWaker>) => Array<Timestamp>} removeWakeup Remove the waker
  * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
  * `repeater.schedule(h)`.
  * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater} createRepeater
@@ -24,10 +24,10 @@
  */
 
 /**
- * @typedef {number} Timestamp An absolute individual stamp returned by a
+ * @typedef {bigint} Timestamp An absolute individual stamp returned by a
  * TimerService.  Note that different timer services may have different
  * interpretations of actual Timestamp values.
- * @typedef {number} RelativeTime Difference between two Timestamps.  Note that
+ * @typedef {bigint} RelativeTime Difference between two Timestamps.  Note that
  * different timer services may have different interpretations of actual
  * RelativeTime values.
  */
@@ -40,7 +40,7 @@
 
 /**
  * @typedef {Object} TimerRepeater
- * @property {(waker: TimerWaker) => Timestamp} schedule Returns the time scheduled for
+ * @property {(waker: ERef<TimerWaker>) => Timestamp} schedule Returns the time scheduled for
  * the first call to `E(waker).wake()`.  The waker will continue to be scheduled
  * every interval until the repeater is disabled.
  * @property {() => void} disable Disable this repeater, so `schedule(w)` can't

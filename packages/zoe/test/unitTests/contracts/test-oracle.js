@@ -1,11 +1,13 @@
+/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
@@ -26,6 +28,8 @@ import '../../../src/contracts/exported';
  */
 
 const contractPath = `${__dirname}/../../../src/contracts/oracle`;
+
+const test = /** @type {import('ava').TestInterface<TestContext>} */ (anyTest);
 
 test.before(
   'setup oracle',
@@ -53,7 +57,7 @@ test.before(
      */
     const makePingOracle = async _t => {
       /** @type {OracleHandler} */
-      const oracleHandler = harden({
+      const oracleHandler = Far('OracleHandler', {
         async onQuery(query, fee) {
           let requiredFee;
           if (query.kind === 'Paid') {

@@ -1,6 +1,8 @@
+/* global require process */
 import '@agoric/install-ses';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
+import { Far } from '@agoric/marshal';
 
 import { makeFixture, E } from './captp-fixture';
 
@@ -8,7 +10,7 @@ import { makeFixture, E } from './captp-fixture';
 let home;
 let teardown;
 test.before('setup', async t => {
-  const { homeP, kill } = await makeFixture();
+  const { homeP, kill } = await makeFixture(process.env.NOISY);
   teardown = kill;
   home = await homeP;
   t.truthy('ready');
@@ -43,7 +45,7 @@ test.serial('home.board', async t => {
     `using a non-verified id throws`,
   );
 
-  const myValue = {};
+  const myValue = Far('myValue', {});
   const myId = await E(board).getId(myValue);
   t.is(typeof myId, 'string', `board key is string`);
 
@@ -150,10 +152,10 @@ function makeHandler() {
 test.serial('home.localTimerService createRepeater', async t => {
   const { localTimerService } = E.G(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
-  const repeater = E(localTimerService).createRepeater(1, 1);
+  const repeater = E(localTimerService).createRepeater(1n, 1n);
   const handler = makeHandler();
   await E(repeater).schedule(handler);
-  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const notifier = E(localTimerService).makeNotifier(1n, 1n);
   await E(notifier).getUpdateSince();
 
   t.is(1, handler.getCalls());

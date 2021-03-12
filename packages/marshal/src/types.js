@@ -1,5 +1,8 @@
+// eslint-disable-next-line spaced-comment
+/// <reference path="extra-types.d.ts" />
+
 /**
- * @typedef {"bigint" | "boolean" | "null" | "number" | "string" | "symbol" | "undefined" | "copyArray" | "copyRecord" | "copyError" | "promise" | "presence" } PassStyle
+ * @typedef { "bigint" | "boolean" | "null" | "number" | "string" | "symbol" | "undefined" | "copyArray" | "copyRecord" | "copyError" | "promise" | "presence" } PassStyle
  * TODO "presence" above should indirect through REMOTE_STYLE to prepare
  * for changing it to "remotable"
  */
@@ -55,7 +58,7 @@
  */
 
 /**
- * @typedef {SOMETHING} Remotable
+ * @typedef {*} Remotable
  * Might be an object explicitly deemed to be `Remotable`, an object inferred
  * to be Remotable, or a remote presence of a Remotable.
  */
@@ -83,8 +86,35 @@
  */
 
 /**
- * @typedef Encoding
+ * @template T
+ * @typedef {{ '@qclass': T }} EncodingClass
+ */
+
+/**
+ * @typedef {EncodingClass<'NaN'> |
+ * EncodingClass<'undefined'> |
+ * EncodingClass<'Infinity'> |
+ * EncodingClass<'-Infinity'> |
+ * EncodingClass<'bigint'> & { digits: string } |
+ * EncodingClass<'@@asyncIterator'> |
+ * EncodingClass<'ibid'> & { index: number } |
+ * EncodingClass<'error'> & { name: string, message: string, errorId?: string } |
+ * EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
+ * EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }} EncodingUnion
+ * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }} EncodingRecord
+ * We exclude '@qclass' as a property in encoding records.
+ * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord} EncodingElement
+ */
+
+/**
+ * @typedef {EncodingElement | NestedArray<EncodingElement>} Encoding
  * The JSON structure that the data portion of a Passable serializes to.
+ *
+ * The QCLASS 'hilbert' is a reference to the Hilbert Hotel
+ * of https://www.ias.edu/ideas/2016/pires-hilbert-hotel
+ * If QCLASS appears as a property name in the data, we encode it instead
+ * as a QCLASS record of type 'hilbert'. To do so, we must move the other
+ * parts of the record into fields of the hilbert record.
  */
 
 /**
@@ -132,6 +162,7 @@
 /**
  * @typedef MakeMarshalOptions
  * @property {string=} marshalName
+ * @property {('on'|'off')=} errorTagging
  */
 
 // /////////////////////////////////////////////////////////////////////////////

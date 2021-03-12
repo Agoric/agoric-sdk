@@ -1,3 +1,4 @@
+/* global process */
 import anylogger from 'anylogger';
 import chalk from 'chalk';
 

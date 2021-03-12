@@ -9,14 +9,6 @@
  */
 
 /**
- * @typedef {number} MMR
- *  The Maintenance Margin Requirement, in percent. The default is
- *  150, meaning that collateral should be worth at least 150% of the
- *  loan. If the value of the collateral drops below mmr, liquidation
- *  occurs.
- */
-
-/**
  * @typedef {Instance} AutoswapInstance
  *   The running contract instance for an Autoswap or Multipool
  *   Autoswap installation.  The publicFacet from the Autoswap
@@ -24,16 +16,10 @@
  *   collateral on liquidation.
  */
 
-/** @typedef {number} InterestRate
- *
- *   The rate in basis points that will be multiplied with the debt on
- *   every period to compound interest.
- */
-
 /**
  * @typedef LoanTerms
  *
- * @property {Percent} mmr - Maintenance Margin Requirement, a Percent object.
+ * @property {Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
  * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
@@ -45,8 +31,10 @@
  *
  * @property {PeriodNotifier} periodNotifier
  *
- * @property {InterestRate} interestRate
- *
+ * @property {Ratio} interestRate
+ *   The rate in basis points that will be multiplied with the debt on
+ *   every period to compound interest.
+ 
  * @property {RelativeTime} interestPeriod
  */
 
@@ -157,9 +145,9 @@
 
 /**
  * @callback CalcInterestFn
- * @param {number} oldDebtValue
- * @param {number} interestRate
- * @returns {number} interest
+ * @param {Amount} oldDebt
+ * @param {Ratio} interestRate
+ * @returns {Amount} interest
  */
 
 /**
@@ -173,7 +161,7 @@
  *
  *   The debt at the start of the loan, in Loan brand
  *
- * @property {AmountMath} loanMath
+ * @property {DeprecatedAmountMath} loanMath
  *
  *   AmountMath for the loan brand
  *
@@ -181,7 +169,7 @@
  *
  *   The AsyncIterable to notify when a period has occurred
  *
- * @property {number} interestRate
+ * @property {Ratio} interestRate
  * @property {RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate
@@ -189,17 +177,19 @@
  * @property {ContractFacet} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
+ * @property {Timestamp} basetime The starting point from which to calculate
+ * interest.
  */
 
 /**
  * @typedef {Object} ConfigMinusGetDebt
  * @property {ZCFSeat} collateralSeat
  * @property {PromiseRecord<any>} liquidationPromiseKit
- * @property {number} [mmr]
+ * @property {bigint} [mmr]
  * @property {InstanceHandle} autoswapInstance
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
- * @property {number} interestRate
+ * @property {bigint} interestRate
  * @property {RelativeTime} interestPeriod
  * @property {ZCFSeat} lenderSeat
  */

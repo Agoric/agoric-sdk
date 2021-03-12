@@ -1,7 +1,9 @@
+/* global __dirname Buffer */
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
+import { assert, details as X } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 const log = anylogger('ag-solo:init');
@@ -20,16 +22,14 @@ export default function initBasedir(
   options.wallet = wallet;
 
   const here = __dirname;
-  try {
-    fs.mkdirSync(basedir, 0o700);
-  } catch (e) {
-    if (!fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))) {
-      log.error(
-        `unable to create basedir ${basedir}, it must not already exist`,
-      );
-      throw e;
-    }
-  }
+  // We either need a basedir with an initialised key, or no basedir.
+  assert(
+    fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address')) ||
+      !fs.existsSync(basedir),
+    X`${basedir} must not already exist`,
+  );
+
+  fs.mkdirSync(basedir, { mode: 0o700, recursive: true });
 
   const connections = [{ type: 'http', port: webport, host: webhost }];
   fs.writeFileSync(
@@ -86,7 +86,7 @@ export default function initBasedir(
     dots += '../';
     nm = path.resolve(here, dots, 'node_modules');
   }
-  fs.symlinkSync(nm, path.join(basedir, 'node_modules'));
+  fs.symlinkSync(nm, path.join(basedir, 'node_modules'), 'junction');
 
   // cosmos-sdk keypair
   if (egresses.includes('cosmos')) {

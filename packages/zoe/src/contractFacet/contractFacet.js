@@ -7,12 +7,13 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X, q, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore, makeWeakStore } from '@agoric/store';
+import { Far, Data } from '@agoric/marshal';
 
 import { makeAmountMath, MathKind } from '@agoric/ertp';
-import { makeNotifierKit, updateFromNotifier } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
 import { makeIssuerTable } from '../issuerTable';
@@ -43,6 +44,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
+    /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
     /** @type {Store<ZCFSeat,ZCFSeatAdmin>} */
@@ -146,7 +148,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     };
 
     const makeEmptySeatKit = (exit = undefined) => {
-      const initialAllocation = harden({});
+      const initialAllocation = Data({});
       const proposal = cleanProposal(getAmountMath, harden({ exit }));
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
@@ -183,7 +185,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       E(zoeInstanceAdmin)
         .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
         .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
-          updateFromNotifier(updater, zoeNotifier);
+          observeNotifier(zoeNotifier, updater);
           zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
           userSeatPromiseKit.resolve(userSeat);
         });
@@ -221,7 +223,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       issuerTable.initIssuerByRecord(mintyIssuerRecord);
 
       /** @type {ZCFMint} */
-      const zcfMint = harden({
+      const zcfMint = Far('zcfMint', {
         getIssuerRecord: () => {
           return mintyIssuerRecord;
         },
@@ -231,6 +233,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             'object',
             X`gains ${gains} must be an amountKeywordRecord`,
           );
+          assert(gains !== null, X`gains cannot be null`);
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
@@ -249,7 +252,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
               : amountToAdd;
             return [seatKeyword, newAmount];
           });
-          const newAllocation = harden({
+          const newAllocation = Data({
             ...oldAllocation,
             ...updates,
           });
@@ -269,6 +272,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             'object',
             X`losses ${losses} must be an amountKeywordRecord`,
           );
+          assert(losses !== null, X`losses cannot be null`);
           let totalToBurn = mintyAmountMath.getEmpty();
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
@@ -287,7 +291,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
               return [seatKeyword, newAmount];
             },
           );
-          const newAllocation = harden({
+          const newAllocation = Data({
             ...oldAllocation,
             ...updates,
           });
@@ -304,8 +308,18 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return zcfMint;
     };
 
+    const shutdownWithFailure = reason => {
+      E(zoeInstanceAdmin).failAllSeats(reason);
+      zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
+        if (!zcfSeat.hasExited()) {
+          zcfSeatAdmin.updateHasExited();
+        }
+      });
+      powers.exitVatWithFailure(reason);
+    };
+
     /** @type {ContractFacet} */
-    const zcf = {
+    const zcf = Far('zcf', {
       reallocate: (/** @type {SeatStaging[]} */ ...seatStagings) => {
         // We may want to handle this with static checking instead.
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
@@ -354,7 +368,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       makeInvitation: (
         offerHandler = () => {},
         description,
-        customProperties = {},
+        customProperties = Data({}),
       ) => {
         assert.typeof(
           description,
@@ -382,15 +396,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         });
         powers.exitVat(completion);
       },
-      shutdownWithFailure: reason => {
-        E(zoeInstanceAdmin).failAllSeats(reason);
-        zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
-          if (!zcfSeat.hasExited()) {
-            zcfSeatAdmin.updateHasExited();
-          }
-        });
-        powers.exitVatWithFailure(reason);
-      },
+      shutdownWithFailure,
+      assert: makeAssert(shutdownWithFailure),
       stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
       makeZCFMint,
       makeEmptySeatKit,
@@ -424,13 +431,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           testJigSetter({ ...testFn(), zcf });
         }
       },
-    };
-    harden(zcf);
+    });
 
     // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
     // added in offer(). ZCF responds with the exitObj and offerResult.
     /** @type {AddSeatObj} */
-    const addSeatObj = {
+    const addSeatObj = Far('addSeatObj', {
       addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
         const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
           allSeatStagings,
@@ -441,7 +447,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
-        // @ts-ignore
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           throw zcfSeat.fail(reason);
         });
@@ -453,8 +458,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });
       },
-    };
-    harden(addSeatObj);
+    });
 
     // First, evaluate the contract code bundle.
     const contractCode = evalContractBundle(bundle);
@@ -466,21 +470,27 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     /** @type {Promise<ExecuteContractResult>} */
     const result = E(contractCode)
       .start(zcf)
-      .then(({ creatorFacet, publicFacet, creatorInvitation }) => {
-        return harden({
-          creatorFacet,
-          publicFacet,
-          creatorInvitation,
-          addSeatObj,
-        });
-      });
+      .then(
+        ({
+          creatorFacet = Far('emptyCreatorFacet', {}),
+          publicFacet = Far('emptyPublicFacet', {}),
+          creatorInvitation = undefined,
+        }) => {
+          return harden({
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+            addSeatObj,
+          });
+        },
+      );
     // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
     // This does not suppress any error messages.
     result.catch(() => {});
     return result;
   };
 
-  return harden({ executeContract });
+  return Far('executeContract', { executeContract });
 }
 
 harden(buildRootObject);

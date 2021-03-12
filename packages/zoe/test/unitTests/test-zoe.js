@@ -1,3 +1,5 @@
+/* global __dirname */
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -5,6 +7,7 @@ import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
@@ -29,7 +32,7 @@ test(`zoe.getInvitationIssuer`, async t => {
 
 test(`zoe.install bad bundle`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
     message: 'a bundle must be provided',
   });
@@ -46,11 +49,16 @@ test(`zoe.install`, async t => {
 
 test(`zoe.startInstance bad installation`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
     message: `(an undefined) was not a valid installation`,
   });
 });
+
+function isEmptyFacet(t, facet) {
+  t.is(passStyleOf(facet), REMOTE_STYLE);
+  t.deepEqual(Object.getOwnPropertyNames(facet), []);
+}
 
 test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   const { zoe, installation } = await setupZCFTest();
@@ -63,9 +71,9 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
     'instance',
     'publicFacet',
   ]);
-  t.deepEqual(result.creatorFacet, {});
+  isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  t.deepEqual(result.publicFacet, {});
+  isEmptyFacet(t, result.publicFacet);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
     'getVatStats',
@@ -91,9 +99,9 @@ test(`zoe.startInstance promise for installation`, async t => {
     'instance',
     'publicFacet',
   ]);
-  t.deepEqual(result.creatorFacet, {});
+  isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  t.deepEqual(result.publicFacet, {});
+  isEmptyFacet(t, result.publicFacet);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
     'getVatStats',
@@ -107,7 +115,7 @@ test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
     () =>
       E(zoe).startInstance(
         installation,
-        // @ts-ignore
+        // @ts-ignore deliberate invalid arguments for testing
         { something: 2 },
         { Moola: moolaKit.issuer },
       ),
@@ -126,6 +134,7 @@ test(`zoe.offer`, async t => {
 
 test(`zoe.offer - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
@@ -138,13 +147,13 @@ test(`zoe.getPublicFacet`, async t => {
   const installation = await E(zoe).install(bundle);
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   const offersCount = await E(publicFacet).getOffersCount();
-  t.is(offersCount, 0);
+  t.is(offersCount, 0n);
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
 });
 
 test(`zoe.getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -172,7 +181,7 @@ test(`zoe.getIssuers - none`, async t => {
 
 test(`zoe.getIssuers - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -200,7 +209,7 @@ test(`zoe.getBrands - none`, async t => {
 
 test(`zoe.getBrands - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -257,7 +266,7 @@ test(`zoe.getTerms`, async t => {
 
 test(`zoe.getTerms - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message: `"instance" not found: (an undefined)`,
   });
@@ -272,6 +281,7 @@ test(`zoe.getInstance`, async t => {
 
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
@@ -286,6 +296,7 @@ test(`zoe.getInstallation`, async t => {
 
 test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });
@@ -305,6 +316,7 @@ test(`zoe.getInvitationDetails`, async t => {
 
 test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-ignore invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: `A Zoe invitation is required, not (an undefined)`,
   });

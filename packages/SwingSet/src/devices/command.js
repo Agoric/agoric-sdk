@@ -1,5 +1,6 @@
-import Nat from '@agoric/nat';
+/* global require */
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -7,7 +8,7 @@ export default function buildCommand(broadcastCallback) {
   assert(broadcastCallback, X`broadcastCallback must be provided.`);
   let inboundCallback;
   const srcPath = require.resolve('./command-src');
-  let nextCount = 0;
+  let nextCount = 0n;
   const responses = new Map();
 
   function inboundCommand(obj) {
@@ -16,7 +17,7 @@ export default function buildCommand(broadcastCallback) {
     // response
     const { promise, resolve, reject } = makePromiseKit();
     const count = nextCount;
-    nextCount += 1;
+    nextCount += 1n;
     responses.set(count, { resolve, reject });
     assert(inboundCallback, X`inboundCommand before registerInboundCallback`);
     try {

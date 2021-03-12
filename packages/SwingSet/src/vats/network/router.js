@@ -1,6 +1,7 @@
 // @ts-check
 
 import { E as defaultE } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network';
@@ -26,7 +27,7 @@ export default function makeRouter() {
    * @type {Store<string, any>}
    */
   const prefixToRoute = makeStore('prefix');
-  return harden({
+  return Far('Router', {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
       /**
@@ -116,7 +117,7 @@ export function makeRouterProtocol(E = defaultE) {
     return E(route[1]).bind(localAddr);
   }
 
-  return harden({
+  return Far('RouterProtocol', {
     bind,
     registerProtocolHandler,
     unregisterProtocolHandler,

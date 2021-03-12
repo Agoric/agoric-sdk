@@ -16,7 +16,7 @@ function capargs(args, slots = []) {
 }
 
 function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, { rejected, data }]];
+  return [[promiseID, rejected, data]];
 }
 
 function buildSyscall() {
@@ -55,7 +55,7 @@ test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       one() {
         log.push('one');
       },
@@ -119,7 +119,7 @@ test('liveslots pipelines to syscall.send', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       one(x) {
         const p1 = E(x).pipe1();
         const p2 = E(p1).pipe2();
@@ -253,7 +253,7 @@ async function doOutboundPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       run(target, resolution) {
         let p; // vat creates the promise
         if (resolution === 'reject') {
@@ -371,7 +371,7 @@ async function doResultPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return harden({
+    return Far('root', {
       async run(target1) {
         const p1 = E(target1).getTarget2();
         hush(p1);
@@ -476,4 +476,80 @@ test('liveslots retires result promise IDs after resolve to data', async t => {
 
 test('liveslots retires result promise IDs after reject', async t => {
   await doResultPromise(t, 'reject');
+});
+
+test('liveslots vs symbols', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(_vatPowers) {
+    return Far('root', {
+      [Symbol.asyncIterator](arg) {
+        return ['ok', 'asyncIterator', arg];
+      },
+      good(target) {
+        E(target)[Symbol.asyncIterator]('arg');
+      },
+      bad(target) {
+        return E(target)
+          [Symbol.for('nope')]('arg')
+          .then(
+            _ok => 'oops no error',
+            err => ['caught', err],
+          );
+      },
+    });
+  }
+  const dispatch = makeDispatch(syscall, build);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+  const target = 'o-1';
+
+  // E(root)[Symbol.asyncIterator]('one')
+  const rp1 = 'p-1';
+  dispatch.deliver(rootA, 'Symbol.asyncIterator', capargs(['one']), 'p-1');
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp1, false, capargs(['ok', 'asyncIterator', 'one'])]],
+  });
+  t.deepEqual(log, []);
+
+  // root~.good(target) -> send(methodname=Symbol.asyncIterator)
+  dispatch.deliver(
+    rootA,
+    'good',
+    capargs([{ '@qclass': 'slot', index: 0 }], [target]),
+    undefined,
+  );
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target,
+    method: 'Symbol.asyncIterator',
+    args: capargs(['arg']),
+    resultSlot: 'p+5',
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
+  t.deepEqual(log, []);
+
+  // root~.bad(target) -> error because other Symbols are rejected
+  const rp2 = 'p-2';
+  const expErr = {
+    '@qclass': 'error',
+    errorId: 'error:liveSlots:vatA#1',
+    message: 'arbitrary Symbols cannot be used as method names',
+    name: 'Error',
+  };
+  dispatch.deliver(
+    rootA,
+    'bad',
+    capargs([{ '@qclass': 'slot', index: 0 }], [target]),
+    rp2,
+  );
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp2, false, capargs(['caught', expErr])]],
+  });
+  t.deepEqual(log, []);
 });

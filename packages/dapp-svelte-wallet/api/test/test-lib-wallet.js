@@ -1,16 +1,22 @@
+/* global require */
 // @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
+import { Data } from '@agoric/marshal';
 
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeRegistrar } from '@agoric/registrar';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
 import { makeWallet } from '../src/lib-wallet';
 
@@ -167,14 +173,14 @@ test('lib-wallet issuer and purse methods', async t => {
     `can get issuer from purse petname`,
   );
   const moolaPayment = moolaBundle.mint.mintPayment(
-    moolaBundle.amountMath.make(100),
+    moolaBundle.amountMath.make(100n),
   );
   await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
     wallet.deposit('fun money', moolaPayment),
   );
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    moolaBundle.amountMath.make(100),
+    moolaBundle.amountMath.make(100n),
     `deposit successful`,
   );
   t.is(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
@@ -210,7 +216,7 @@ test('lib-wallet issuer and purse methods', async t => {
         value: 100,
         currentAmountSlots: {
           body:
-            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
+            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
           slots: [{ kind: 'brand', petname: 'moola' }],
         },
         currentAmount: {
@@ -256,9 +262,10 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   // longer in the purse.
   const inviteIssuer = await E(zoe).getInvitationIssuer();
   const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
-  const {
-    value: [{ handle: inviteHandle, installation }],
-  } = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmount = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmountValue = invitationAmount.value;
+  assert(Array.isArray(invitationAmountValue));
+  const [{ handle: inviteHandle, installation }] = invitationAmountValue;
   const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
   await wallet.deposit('Default Zoe invite purse', invite);
 
@@ -269,7 +276,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
       inviteHandleBoardId,
 
-      proposalTemplate: {},
+      proposalTemplate: Data({}),
     });
 
   const rawId = '1588645041696';
@@ -284,9 +291,10 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   /** @type {{ makeInvitation: () => Invitation }} */
   const publicAPI = await E(zoe).getPublicFacet(instance);
   const invite2 = await E(publicAPI).makeInvitation();
-  const {
-    value: [{ handle: inviteHandle2 }],
-  } = await E(inviteIssuer).getAmountOf(invite2);
+  const invitationAmount2 = await E(inviteIssuer).getAmountOf(invite2);
+  const invitationAmountValue2 = invitationAmount2.value;
+  assert(Array.isArray(invitationAmountValue2));
+  const [{ handle: inviteHandle2 }] = invitationAmountValue2;
 
   await waitForUpdate(E(zoeInvitePurse).getCurrentAmountNotifier(), () =>
     wallet.deposit('Default Zoe invite purse', invite2),
@@ -581,14 +589,15 @@ test('lib-wallet offer methods', async t => {
   await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
     wallet.deposit(
       'Fun budget',
-      moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
+      moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100n)),
     ),
   );
 
   const inviteIssuer = await E(zoe).getInvitationIssuer();
-  const {
-    value: [{ handle: inviteHandle, installation }],
-  } = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmount = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmountValue = invitationAmount.value;
+  assert(Array.isArray(invitationAmountValue));
+  const [{ handle: inviteHandle, installation }] = invitationAmountValue;
   const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
   await wallet.deposit('Default Zoe invite purse', invite);
 
@@ -645,7 +654,7 @@ test('lib-wallet offer methods', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    moolaBundle.amountMath.make(100),
+    moolaBundle.amountMath.make(100n),
     `moolaPurse balance`,
   );
   const rawId2 = '1588645230204';
@@ -653,9 +662,10 @@ test('lib-wallet offer methods', async t => {
   /** @type {{ makeInvitation: () => Invitation}} */
   const publicAPI = await E(zoe).getPublicFacet(instance);
   const invite2 = await E(publicAPI).makeInvitation();
-  const {
-    value: [{ handle: inviteHandle2 }],
-  } = await E(inviteIssuer).getAmountOf(invite2);
+  const invitationAmount2 = await E(inviteIssuer).getAmountOf(invite2);
+  const invitationAmountValue2 = invitationAmount2.value;
+  assert(Array.isArray(invitationAmountValue2));
+  const [{ handle: inviteHandle2 }] = invitationAmountValue2;
   const inviteHandleBoardId2 = await E(board).getId(inviteHandle2);
   const offer2 = formulateBasicOffer(rawId2, inviteHandleBoardId2);
   await wallet.deposit('Default Zoe invite purse', invite2);
@@ -704,7 +714,7 @@ test('lib-wallet offer methods', async t => {
       value: 100,
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":100}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
         slots: [{ kind: 'brand', petname: 'moola' }],
       },
       currentAmount: {
@@ -803,14 +813,14 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   await wallet.deposit(
     'Fun budget',
-    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
+    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000n)),
   );
 
   await wallet.addIssuer('simolean', simoleanBundle.issuer);
   await wallet.makeEmptyPurse('simolean', 'Nest egg');
   await wallet.deposit(
     'Nest egg',
-    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
+    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000n)),
   );
 
   /** @type {{ getLiquidityIssuer: () => Issuer, makeSwapInvitation: () => Invitation }} */
@@ -823,8 +833,8 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   // we have.
   const proposal = harden({
     give: {
-      Central: moolaBundle.amountMath.make(900),
-      Secondary: simoleanBundle.amountMath.make(500),
+      Central: moolaBundle.amountMath.make(900n),
+      Secondary: simoleanBundle.amountMath.make(500n),
     },
     want: {
       Liquidity: liquidityAmountMath.getEmpty(),
@@ -853,9 +863,10 @@ test('lib-wallet addOffer for autoswap swap', async t => {
 
   const invite = await E(publicAPI).makeSwapInvitation();
   const inviteIssuer = await E(zoe).getInvitationIssuer();
-  const {
-    value: [{ handle: inviteHandle }],
-  } = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmount = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmountValue = invitationAmount.value;
+  assert(Array.isArray(invitationAmountValue));
+  const [{ handle: inviteHandle }] = invitationAmountValue;
   const inviteHandleBoardId = await E(board).getId(inviteHandle);
 
   // add inviteIssuer and create invite purse
@@ -901,12 +912,12 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    moolaBundle.amountMath.make(70),
+    moolaBundle.amountMath.make(70n),
     `moola purse balance`,
   );
   t.deepEqual(
     await simoleanPurse.getCurrentAmount(),
-    simoleanBundle.amountMath.make(516),
+    simoleanBundle.amountMath.make(516n),
     `simolean purse balance`,
   );
 });
@@ -926,14 +937,14 @@ test('addOffer invitationQuery', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   await wallet.deposit(
     'Fun budget',
-    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
+    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000n)),
   );
 
   await issuerManager.add('simolean', simoleanBundle.issuer);
   await wallet.makeEmptyPurse('simolean', 'Nest egg');
   await wallet.deposit(
     'Nest egg',
-    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
+    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000n)),
   );
 
   /** @type {{ getLiquidityIssuer: () => Issuer, makeSwapInvitation: () => Invitation }} */
@@ -946,8 +957,8 @@ test('addOffer invitationQuery', async t => {
   // we have.
   const proposal = harden({
     give: {
-      Central: moolaBundle.amountMath.make(900),
-      Secondary: simoleanBundle.amountMath.make(500),
+      Central: moolaBundle.amountMath.make(900n),
+      Secondary: simoleanBundle.amountMath.make(500n),
     },
     want: {
       Liquidity: liquidityAmountMath.getEmpty(),
@@ -1023,12 +1034,12 @@ test('addOffer invitationQuery', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    moolaBundle.amountMath.make(70),
+    moolaBundle.amountMath.make(70n),
     `moola purse balance`,
   );
   t.deepEqual(
     await simoleanPurse.getCurrentAmount(),
-    simoleanBundle.amountMath.make(516),
+    simoleanBundle.amountMath.make(516n),
     `simolean purse balance`,
   );
 });
@@ -1048,14 +1059,14 @@ test('addOffer offer.invitation', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   await wallet.deposit(
     'Fun budget',
-    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000)),
+    moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(1000n)),
   );
 
   await issuerManager.add('simolean', simoleanBundle.issuer);
   await wallet.makeEmptyPurse('simolean', 'Nest egg');
   await wallet.deposit(
     'Nest egg',
-    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000)),
+    simoleanBundle.mint.mintPayment(simoleanBundle.amountMath.make(1000n)),
   );
 
   /** @type {{ getLiquidityIssuer: () => Issuer, makeSwapInvitation: () => Invitation }} */
@@ -1068,8 +1079,8 @@ test('addOffer offer.invitation', async t => {
   // we have.
   const proposal = harden({
     give: {
-      Central: moolaBundle.amountMath.make(900),
-      Secondary: simoleanBundle.amountMath.make(500),
+      Central: moolaBundle.amountMath.make(900n),
+      Secondary: simoleanBundle.amountMath.make(500n),
     },
     want: {
       Liquidity: liquidityAmountMath.getEmpty(),
@@ -1138,12 +1149,12 @@ test('addOffer offer.invitation', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    moolaBundle.amountMath.make(70),
+    moolaBundle.amountMath.make(70n),
     `moola purse balance`,
   );
   t.deepEqual(
     await simoleanPurse.getCurrentAmount(),
-    simoleanBundle.amountMath.make(516),
+    simoleanBundle.amountMath.make(516n),
     `simolean purse balance`,
   );
 });
@@ -1190,7 +1201,7 @@ test('addOffer makeContinuingInvitation', async t => {
       instance,
       description: 'FirstThing',
     },
-    proposalTemplate: {},
+    proposalTemplate: Data({}),
   };
 
   await wallet.addOffer(offer);
@@ -1213,7 +1224,7 @@ test('addOffer makeContinuingInvitation', async t => {
       priorOfferId: rawId,
       description: 'SecondThing',
     },
-    proposalTemplate: {},
+    proposalTemplate: Data({}),
   };
 
   await wallet.addOffer(offer2);

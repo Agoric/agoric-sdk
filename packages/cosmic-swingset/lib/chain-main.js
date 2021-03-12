@@ -1,3 +1,4 @@
+/* global __dirname setInterval */
 import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
 import {
   importMailbox,
@@ -5,6 +6,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox';
 
 import { assert, details as X } from '@agoric/assert';
+
 import { launch } from './launch-chain';
 import makeBlockManager from './block-manager';
 import { getMeterProvider } from './kernel-stats';
@@ -75,7 +77,11 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   return storage;
 };
 
-export default async function main(progname, args, { path, env, agcc }) {
+export default async function main(
+  progname,
+  args,
+  { path, env, homedir, agcc },
+) {
   const portNums = {};
 
   // TODO: use the 'basedir' pattern
@@ -103,7 +109,7 @@ export default async function main(progname, args, { path, env, agcc }) {
 
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
-  const cosmosHome = getFlagValue('home', `${env.HOME}/.ag-chain-cosmos`);
+  const cosmosHome = getFlagValue('home', `${homedir}/.ag-chain-cosmos`);
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
 
   // console.log('Have AG_COSMOS', agcc);
@@ -221,9 +227,9 @@ export default async function main(progname, args, { path, env, agcc }) {
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
     const argv = {
       ROLE: 'chain',
-      noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
+      noFakeCurrencies: env.NO_FAKE_CURRENCIES,
     };
-    const meterProvider = getMeterProvider(console, process.env);
+    const meterProvider = getMeterProvider(console, env);
     const s = await launch(
       stateDBDir,
       mailboxStorage,

@@ -3,16 +3,19 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import Nat from '@agoric/nat';
+import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
+import { makeReplacerIbidTable, makeReviverIbidTable } from './ibidTables';
 
 import './types';
 
 const {
   getPrototypeOf,
   setPrototypeOf,
+  create,
   getOwnPropertyDescriptors,
+  defineProperties,
   is,
   isFrozen,
   fromEntries,
@@ -134,13 +137,6 @@ function pureCopy(val, already = new WeakMap()) {
 harden(pureCopy);
 export { pureCopy };
 
-/**
- * Special property name that indicates an encoding that needs special
- * decoding.
- */
-const QCLASS = '@qclass';
-export { QCLASS };
-
 const errorConstructors = new Map([
   ['Error', Error],
   ['EvalError', EvalError],
@@ -156,6 +152,13 @@ export function getErrorConstructor(name) {
 }
 
 /**
+ * For most of these classification tests, we do strict validity `assert`s,
+ * throwing if we detect something invalid. For errors, we need to remember
+ * the error itself exists to help us diagnose a bug that's likely more
+ * pressing than a validity bug in the error itself. Thus, whenever it is safe
+ * to do so, we prefer to let the error test succeed and to couch these
+ * complaints as notes on the error.
+ *
  * @param {Passable} val
  * @returns {boolean}
  */
@@ -168,9 +171,9 @@ function isPassByCopyError(val) {
   const { name } = val;
   const EC = getErrorConstructor(name);
   if (!EC || EC.prototype !== proto) {
-    assert.fail(
+    assert.note(
+      val,
       X`Errors must inherit from an error class .prototype ${val}`,
-      TypeError,
     );
   }
 
@@ -180,19 +183,25 @@ function isPassByCopyError(val) {
     stack: _optStackDesc,
     ...restDescs
   } = getOwnPropertyDescriptors(val);
-  const restKeys = ownKeys(restDescs);
-  assert(
-    restKeys.length === 0,
-    X`Unexpected own properties in error: ${q(restKeys)}`,
-    TypeError,
-  );
-  if (mDesc) {
-    assert.typeof(mDesc.value, 'string', X`Malformed error object: ${val}`);
-    assert(
-      !mDesc.enumerable,
-      X`An error's .message must not be enumerable`,
-      TypeError,
+  if (ownKeys(restDescs).length >= 1) {
+    assert.note(
+      val,
+      X`Passed Error has extra unpassed properties ${restDescs}`,
     );
+  }
+  if (mDesc) {
+    if (typeof mDesc.value !== 'string') {
+      assert.note(
+        val,
+        X`Passed Error "message" ${mDesc} must be a string-valued data property.`,
+      );
+    }
+    if (mDesc.enumerable) {
+      assert.note(
+        val,
+        X`Passed Error "message" ${mDesc} must not be enumerable`,
+      );
+    }
   }
   return true;
 }
@@ -240,21 +249,46 @@ function isPassByCopyArray(val) {
 }
 
 /**
+ * Everything having to do with a `dataProto` is a temporary kludge until
+ * we're on the other side of #2018. TODO remove.
+ */
+const dataProto = harden(
+  create(objectPrototype, {
+    [PASS_STYLE]: { value: 'copyRecord' },
+  }),
+);
+
+const isDataProto = proto => {
+  if (!isFrozen(proto)) {
+    return false;
+  }
+  if (getPrototypeOf(proto) !== objectPrototype) {
+    return false;
+  }
+  const {
+    // @ts-ignore
+    [PASS_STYLE]: passStyleDesc,
+    ...rest
+  } = getOwnPropertyDescriptors(proto);
+  return (
+    passStyleDesc &&
+    passStyleDesc.value === 'copyRecord' &&
+    ownKeys(rest).length === 0
+  );
+};
+
+/**
  * @param {Passable} val
  * @returns {boolean}
  */
 function isPassByCopyRecord(val) {
-  if (getPrototypeOf(val) !== objectPrototype) {
+  const proto = getPrototypeOf(val);
+  if (proto !== objectPrototype && !isDataProto(proto)) {
     return false;
   }
   const descs = getOwnPropertyDescriptors(val);
   const descKeys = ownKeys(descs);
-  if (descKeys.length === 0) {
-    // empty non-array objects are pass-by-remote, not pass-by-copy
-    // TODO Beware: Unmarked empty records will become pass-by-copy
-    // See https://github.com/Agoric/agoric-sdk/issues/2018
-    return false;
-  }
+
   for (const descKey of descKeys) {
     if (typeof descKey === 'symbol') {
       return false;
@@ -292,14 +326,24 @@ const makeRemotableProto = (oldProto, allegedName) => {
   );
   // Assign the arrow function to a variable to set its .name.
   const toString = () => `[${allegedName}]`;
-  return harden({
-    __proto__: oldProto,
-    [PASS_STYLE]: REMOTE_STYLE,
-    toString,
-    [Symbol.toStringTag]: allegedName,
-  });
+  return harden(
+    create(oldProto, {
+      [PASS_STYLE]: { value: REMOTE_STYLE },
+      toString: { value: toString },
+      [Symbol.toStringTag]: { value: allegedName },
+    }),
+  );
 };
 
+/**
+ * Throw if val is not the correct shape for the prototype of a Remotable.
+ *
+ * TODO: It would be nice to typedef this shape and then declare that this
+ * function asserts it, but we can't declare a type with PASS_STYLE from JSDoc.
+ *
+ * @param {{ [PASS_STYLE]: string, [Symbol.toStringTag]: string, toString: () =>
+ * void}} val the value to verify
+ */
 const assertRemotableProto = val => {
   assert.typeof(val, 'object', X`cannot serialize non-objects like ${val}`);
   assert(!Array.isArray(val), X`Arrays cannot be pass-by-remote`);
@@ -312,11 +356,9 @@ const assertRemotableProto = val => {
   );
   assert(isFrozen(val), X`The Remotable proto must be frozen`);
   const {
-    // @ts-ignore
     [PASS_STYLE]: { value: passStyleValue },
-    // @ts-ignore
     toString: { value: toStringValue },
-    // @ts-ignore
+    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
     [Symbol.toStringTag]: { value: toStringTagValue },
     ...rest
   } = getOwnPropertyDescriptors(val);
@@ -349,16 +391,21 @@ function assertCanBeRemotable(val) {
   const keys = ownKeys(descs); // enumerable-and-not, string-or-Symbol
   keys.forEach(key => {
     assert(
-      // @ts-ignore
-      !('get' in descs[key]),
+      // Typecast needed due to https://github.com/microsoft/TypeScript/issues/1863
+      !('get' in descs[/** @type {string} */ (key)]),
       X`cannot serialize objects with getters like ${q(String(key))} in ${val}`,
     );
     assert.typeof(
+      // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
       val[key],
       'function',
       X`cannot serialize objects with non-methods like ${q(
         String(key),
       )} in ${val}`,
+    );
+    assert(
+      key !== PASS_STYLE,
+      X`A pass-by-remote cannot shadow ${q(PASS_STYLE)}`,
     );
   });
 }
@@ -437,10 +484,6 @@ export function passStyleOf(val) {
       if (val === null) {
         return 'null';
       }
-      if (QCLASS in val) {
-        // TODO Hilbert hotel
-        assert.fail(X`property ${q(QCLASS)} reserved`);
-      }
       assert(
         isFrozen(val),
         X`Cannot pass non-frozen objects like ${val}. Use harden()`,
@@ -462,6 +505,8 @@ export function passStyleOf(val) {
         return 'copyRecord';
       }
       assertRemotable(val);
+      // console.log(`--- @@marshal: pass-by-ref object without Far/Remotable`);
+      // assert.fail(X`pass-by-ref object without Far/Remotable`);
       return REMOTE_STYLE;
     }
     case 'function': {
@@ -482,77 +527,11 @@ export function passStyleOf(val) {
 }
 
 /**
- * The ibid logic relies on
- *    * JSON.stringify on an array visiting array indexes from 0 to
- *      arr.length -1 in order, and not visiting anything else.
- *    * JSON.parse of a record (a plain object) creating an object on
- *      which a getOwnPropertyNames will enumerate properties in the
- *      same order in which they appeared in the parsed JSON string.
+ * Special property name that indicates an encoding that needs special
+ * decoding.
  */
-function makeReplacerIbidTable() {
-  const ibidMap = new Map();
-  let ibidCount = 0;
-
-  return harden({
-    has(obj) {
-      return ibidMap.has(obj);
-    },
-    get(obj) {
-      return ibidMap.get(obj);
-    },
-    add(obj) {
-      ibidMap.set(obj, ibidCount);
-      ibidCount += 1;
-    },
-  });
-}
-
-function makeReviverIbidTable(cyclePolicy) {
-  const ibids = [];
-  const unfinishedIbids = new WeakSet();
-
-  return harden({
-    get(allegedIndex) {
-      const index = Nat(allegedIndex);
-      assert(index < ibids.length, X`ibid out of range: ${index}`, RangeError);
-      const result = ibids[index];
-      if (unfinishedIbids.has(result)) {
-        switch (cyclePolicy) {
-          case 'allowCycles': {
-            break;
-          }
-          case 'warnOfCycles': {
-            console.log(`Warning: ibid cycle at ${index}`);
-            break;
-          }
-          case 'forbidCycles': {
-            assert.fail(X`Ibid cycle at ${q(index)}`, TypeError);
-          }
-          default: {
-            assert.fail(
-              X`Unrecognized cycle policy: ${q(cyclePolicy)}`,
-              TypeError,
-            );
-          }
-        }
-      }
-      return result;
-    },
-    register(obj) {
-      ibids.push(obj);
-      return obj;
-    },
-    start(obj) {
-      ibids.push(obj);
-      unfinishedIbids.add(obj);
-      return obj;
-    },
-    finish(obj) {
-      unfinishedIbids.delete(obj);
-      return obj;
-    },
-  });
-}
+const QCLASS = '@qclass';
+export { QCLASS };
 
 /**
  * @template Slot
@@ -572,9 +551,13 @@ const defaultSlotToValFn = (x, _) => x;
 export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
   convertSlotToVal = defaultSlotToValFn,
-  { marshalName = 'anon-marshal' } = {},
+  { marshalName = 'anon-marshal', errorTagging = 'on' } = {},
 ) {
   assert.typeof(marshalName, 'string');
+  assert(
+    errorTagging === 'on' || errorTagging === 'off',
+    X`The errorTagging option can only be "on" or "off" ${errorTagging}`,
+  );
   // Ascending numbers identifying the sending of errors relative to this
   // marshal instance.
   let errorCount = 0;
@@ -595,6 +578,7 @@ export function makeMarshal(
     let slotIndex;
     if (slotMap.has(val)) {
       slotIndex = slotMap.get(val);
+      assert.typeof(slotIndex, 'number');
     } else {
       const slot = convertValToSlot(val);
 
@@ -645,23 +629,17 @@ export function makeMarshal(
     const ibidTable = makeReplacerIbidTable();
 
     /**
-     * Just consists of data that rounds trips to plain data.
-     *
-     * @typedef {any} PlainJSONData
-     */
-
-    /**
      * Must encode `val` into plain JSON data *canonically*, such that
      * `sameStructure(v1, v2)` implies
      * `JSON.stringify(encode(v1)) === JSON.stringify(encode(v2))`
      * For each record, we only accept sortable property names
-     * (no anonymous symbols) and on the encoded form. The sort
+     * (no anonymous symbols). On the encoded form the sort
      * order of these names must be the same as their enumeration
      * order, so a `JSON.stringify` of the encoded form agrees with
      * a canonical-json stringify of the encoded form.
      *
      * @param {Passable} val
-     * @returns {PlainJSONData}
+     * @returns {Encoding}
      */
     const encode = val => {
       // First we handle all primitives. Some can be represented directly as
@@ -715,15 +693,35 @@ export function makeMarshal(
           // if we've seen this object before, serialize a backref
           if (ibidTable.has(val)) {
             // Backreference to prior occurrence
+            const index = ibidTable.get(val);
+            assert.typeof(index, 'number');
             return harden({
               [QCLASS]: 'ibid',
-              index: ibidTable.get(val),
+              index,
             });
           }
           ibidTable.add(val);
 
           switch (passStyle) {
             case 'copyRecord': {
+              if (QCLASS in val) {
+                // Hilbert hotel
+                const { [QCLASS]: qclassValue, ...rest } = val;
+                if (ownKeys(rest).length === 0) {
+                  return harden({
+                    [QCLASS]: 'hilbert',
+                    original: encode(qclassValue),
+                  });
+                } else {
+                  return harden({
+                    [QCLASS]: 'hilbert',
+                    original: encode(qclassValue),
+                    // This means the rest will get an ibid entry even
+                    // though it is not any of the original objects.
+                    rest: encode(harden(rest)),
+                  });
+                }
+              }
               // Currently copyRecord allows only string keys so this will
               // work. If we allow sortable symbol keys, this will need to
               // become more interesting.
@@ -742,20 +740,28 @@ export function makeMarshal(
               // identifier and include it in the message, to help
               // with the correlation.
 
-              const errorId = nextErrorId();
-              assert.note(val, X`Sent as ${errorId}`);
-              // TODO we need to instead log to somewhere hidden
-              // to be revealed when correlating with the received error.
-              // By sending this to `console.log`, under swingset this is
-              // enabled by `agoric start --reset -v` and not enabled without
-              // the `-v` flag.
-              console.log('Temporary logging of sent error', val);
-              return harden({
-                [QCLASS]: 'error',
-                errorId,
-                message: `${val.message}`,
-                name: `${val.name}`,
-              });
+              if (errorTagging === 'on') {
+                const errorId = nextErrorId();
+                assert.note(val, X`Sent as ${errorId}`);
+                // TODO we need to instead log to somewhere hidden
+                // to be revealed when correlating with the received error.
+                // By sending this to `console.log`, under swingset this is
+                // enabled by `agoric start --reset -v` and not enabled without
+                // the `-v` flag.
+                console.log('Temporary logging of sent error', val);
+                return harden({
+                  [QCLASS]: 'error',
+                  errorId,
+                  message: `${val.message}`,
+                  name: `${val.name}`,
+                });
+              } else {
+                return harden({
+                  [QCLASS]: 'error',
+                  message: `${val.message}`,
+                  name: `${val.name}`,
+                });
+              }
             }
             case REMOTE_STYLE: {
               const iface = getInterfaceOf(val);
@@ -786,44 +792,51 @@ export function makeMarshal(
     // ibid table is shared across recursive calls to fullRevive.
     const ibidTable = makeReviverIbidTable(cyclePolicy);
 
-    // We stay close to the algorithm at
-    // https://tc39.github.io/ecma262/#sec-json.parse , where
-    // fullRevive(JSON.parse(str)) is like JSON.parse(str, revive))
-    // for a similar reviver. But with the following differences:
-    //
-    // Rather than pass a reviver to JSON.parse, we first call a plain
-    // (one argument) JSON.parse to get rawTree, and then post-process
-    // the rawTree with fullRevive. The kind of revive function
-    // handled by JSON.parse only does one step in post-order, with
-    // JSON.parse doing the recursion. By contrast, fullParse does its
-    // own recursion, enabling it to interpret ibids in the same
-    // pre-order in which the replacer visited them, and enabling it
-    // to break cycles.
-    //
-    // In order to break cycles, the potentially cyclic objects are
-    // not frozen during the recursion. Rather, the whole graph is
-    // hardened before being returned. Error objects are not
-    // potentially recursive, and so may be harmlessly hardened when
-    // they are produced.
-    //
-    // fullRevive can produce properties whose value is undefined,
-    // which a JSON.parse on a reviver cannot do. If a reviver returns
-    // undefined to JSON.parse, JSON.parse will delete the property
-    // instead.
-    //
-    // fullRevive creates and returns a new graph, rather than
-    // modifying the original tree in place.
-    //
-    // fullRevive may rely on rawTree being the result of a plain call
-    // to JSON.parse. However, it *cannot* rely on it having been
-    // produced by JSON.stringify on the replacer above, i.e., it
-    // cannot rely on it being a valid marshalled
-    // representation. Rather, fullRevive must validate that.
-    return function fullRevive(rawTree) {
+    /**
+     * We stay close to the algorithm at
+     * https://tc39.github.io/ecma262/#sec-json.parse , where
+     * fullRevive(harden(JSON.parse(str))) is like JSON.parse(str, revive))
+     * for a similar reviver. But with the following differences:
+     *
+     * Rather than pass a reviver to JSON.parse, we first call a plain
+     * (one argument) JSON.parse to get rawTree, and then post-process
+     * the rawTree with fullRevive. The kind of revive function
+     * handled by JSON.parse only does one step in post-order, with
+     * JSON.parse doing the recursion. By contrast, fullParse does its
+     * own recursion, enabling it to interpret ibids in the same
+     * pre-order in which the replacer visited them, and enabling it
+     * to break cycles.
+     *
+     * In order to break cycles, the potentially cyclic objects are
+     * not frozen during the recursion. Rather, the whole graph is
+     * hardened before being returned. Error objects are not
+     * potentially recursive, and so may be harmlessly hardened when
+     * they are produced.
+     *
+     * fullRevive can produce properties whose value is undefined,
+     * which a JSON.parse on a reviver cannot do. If a reviver returns
+     * undefined to JSON.parse, JSON.parse will delete the property
+     * instead.
+     *
+     * fullRevive creates and returns a new graph, rather than
+     * modifying the original tree in place.
+     *
+     * fullRevive may rely on rawTree being the result of a plain call
+     * to JSON.parse. However, it *cannot* rely on it having been
+     * produced by JSON.stringify on the replacer above, i.e., it
+     * cannot rely on it being a valid marshalled
+     * representation. Rather, fullRevive must validate that.
+     *
+     * @param {Encoding} rawTree must be hardened
+     */
+    function fullRevive(rawTree) {
       if (Object(rawTree) !== rawTree) {
         // primitives pass through
         return rawTree;
       }
+      // Assertions of the above to narrow the type.
+      assert.typeof(rawTree, 'object');
+      assert(rawTree !== null);
       if (QCLASS in rawTree) {
         const qclass = rawTree[QCLASS];
         assert.typeof(
@@ -831,7 +844,11 @@ export function makeMarshal(
           'string',
           X`invalid qclass typeof ${q(typeof qclass)}`,
         );
-        switch (qclass) {
+        assert(!Array.isArray(rawTree));
+        // Switching on `encoded[QCLASS]` (or anything less direct, like
+        // `qclass`) does not discriminate rawTree in typescript@4.2.3 and
+        // earlier.
+        switch (rawTree['@qclass']) {
           // Encoding of primitives not handled by JSON
           case 'undefined': {
             return undefined;
@@ -846,70 +863,108 @@ export function makeMarshal(
             return -Infinity;
           }
           case 'bigint': {
+            const { digits } = rawTree;
             assert.typeof(
-              rawTree.digits,
+              digits,
               'string',
-              X`invalid digits typeof ${q(typeof rawTree.digits)}`,
+              X`invalid digits typeof ${q(typeof digits)}`,
             );
-            /* eslint-disable-next-line no-undef */
-            return BigInt(rawTree.digits);
+            return BigInt(digits);
           }
           case '@@asyncIterator': {
             return Symbol.asyncIterator;
           }
 
           case 'ibid': {
-            return ibidTable.get(rawTree.index);
+            const { index } = rawTree;
+            return ibidTable.get(index);
           }
 
           case 'error': {
+            const { name, message, errorId } = rawTree;
             assert.typeof(
-              rawTree.name,
+              name,
               'string',
-              X`invalid error name typeof ${q(typeof rawTree.name)}`,
+              X`invalid error name typeof ${q(typeof name)}`,
             );
             assert.typeof(
-              rawTree.message,
+              message,
               'string',
-              X`invalid error message typeof ${q(typeof rawTree.message)}`,
+              X`invalid error message typeof ${q(typeof message)}`,
             );
-            const EC = getErrorConstructor(`${rawTree.name}`) || Error;
-            const error = harden(new EC(`${rawTree.message}`));
+            const EC = getErrorConstructor(`${name}`) || Error;
+            const error = harden(new EC(`${message}`));
             ibidTable.register(error);
-            if (typeof rawTree.errorId === 'string') {
+            if (typeof errorId === 'string') {
               // errorId is a late addition so be tolerant of its absence.
-              assert.note(error, X`Received as ${rawTree.errorId}`);
+              assert.note(error, X`Received as ${errorId}`);
             }
             return error;
           }
 
           case 'slot': {
-            const slot = slots[Nat(rawTree.index)];
-            return ibidTable.register(convertSlotToVal(slot, rawTree.iface));
+            const { index, iface } = rawTree;
+            const slot = slots[Number(Nat(index))];
+            return ibidTable.register(convertSlotToVal(slot, iface));
+          }
+
+          case 'hilbert': {
+            const { original, rest } = rawTree;
+            assert(
+              'original' in rawTree,
+              X`Invalid Hilbert Hotel encoding ${rawTree}`,
+            );
+            const result = ibidTable.start({});
+            result[QCLASS] = fullRevive(original);
+            if ('rest' in rawTree) {
+              assert(
+                rest !== undefined,
+                X`Rest encoding must not be undefined`,
+              );
+              const restObj = fullRevive(rest);
+              // TODO really should assert that `passStyleOf(rest)` is
+              // `'copyRecord'` but we'd have to harden it and it is too
+              // early to do that.
+              assert(
+                !(QCLASS in restObj),
+                X`Rest must not contain its own definition of ${q(QCLASS)}`,
+              );
+              defineProperties(result, getOwnPropertyDescriptors(restObj));
+            }
+            return ibidTable.finish(result);
           }
 
           default: {
-            // TODO reverse Hilbert hotel
             assert.fail(X`unrecognized ${q(QCLASS)} ${q(qclass)}`, TypeError);
           }
         }
       } else if (Array.isArray(rawTree)) {
+        const { length } = rawTree;
         const result = ibidTable.start([]);
-        const len = rawTree.length;
-        for (let i = 0; i < len; i += 1) {
+        for (let i = 0; i < length; i += 1) {
           result[i] = fullRevive(rawTree[i]);
         }
         return ibidTable.finish(result);
       } else {
-        const result = ibidTable.start({});
+        let result = ibidTable.start({});
         const names = ownKeys(rawTree);
-        for (const name of names) {
-          assert.typeof(name, 'string');
-          result[name] = fullRevive(rawTree[name]);
+        if (names.length === 0) {
+          // eslint-disable-next-line no-use-before-define
+          result = Data(result);
+        } else {
+          for (const name of names) {
+            assert.typeof(
+              name,
+              'string',
+              X`Property ${name} of ${rawTree} must be a string`,
+            );
+            result[name] = fullRevive(rawTree[name]);
+          }
         }
         return ibidTable.finish(result);
       }
-    };
+    }
+    return fullRevive;
   }
 
   /**
@@ -957,7 +1012,7 @@ export function makeMarshal(
  * @param {object} [remotable={}] The object used as the remotable
  * @returns {object} remotable, modified for debuggability
  */
-function Remotable(iface = 'Remotable', props = undefined, remotable = {}) {
+const Remotable = (iface = 'Remotable', props = undefined, remotable = {}) => {
   // TODO unimplemented
   assert.typeof(
     iface,
@@ -987,6 +1042,8 @@ function Remotable(iface = 'Remotable', props = undefined, remotable = {}) {
       remotable[PASS_STYLE],
     )}`,
   );
+  // Ensure that the remotable isn't already frozen.
+  assert(!isFrozen(remotable), X`Remotable ${remotable} is already frozen`);
   const remotableProto = makeRemotableProto(
     getPrototypeOf(remotable),
     allegedName,
@@ -1011,7 +1068,7 @@ function Remotable(iface = 'Remotable', props = undefined, remotable = {}) {
   // We're committed, so keep the interface for future reference.
   assert(iface !== undefined); // To make TypeScript happy
   return remotable;
-}
+};
 
 harden(Remotable);
 export { Remotable };
@@ -1029,3 +1086,34 @@ const Far = (farName, remotable = {}) =>
 
 harden(Far);
 export { Far };
+
+/**
+ * Everything having to do with `Data` is a temporary kludge until
+ * we're on the other side of #2018. TODO remove.
+ *
+ * @param {Object} record
+ */
+const Data = record => {
+  // Ensure that the record isn't already marked.
+  assert(
+    !(PASS_STYLE in record),
+    X`Record ${record} is already marked as a ${q(record[PASS_STYLE])}`,
+  );
+  // Ensure that the record isn't already frozen.
+  assert(!isFrozen(record), X`Record ${record} is already frozen`);
+  assert(
+    getPrototypeOf(record) === objectPrototype,
+    X`A record ${record} must initially inherit from Object.prototype`,
+  );
+
+  setPrototypeOf(record, dataProto);
+  harden(record);
+  assert(
+    isPassByCopyRecord(record),
+    X`Data() can only be applied to otherwise pass-by-copy records`,
+  );
+  return record;
+};
+
+harden(Data);
+export { Data };

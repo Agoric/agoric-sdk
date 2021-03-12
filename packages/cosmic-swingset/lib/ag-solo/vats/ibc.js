@@ -8,6 +8,7 @@ import {
 import makeStore from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 import '@agoric/store/exported';
 import '@agoric/swingset-vat/src/vats/network/types';
@@ -176,7 +177,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
       onReceive = withChannelReceiveQueue(onReceive);
     }
 
-    return harden({
+    return Far('IBCConnectionHandler', {
       async onOpen(conn, localAddr, remoteAddr, _handler) {
         console.debug(
           'onOpen Remote IBC Connection',
@@ -244,7 +245,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   /**
    * @type {ProtocolHandler}
    */
-  const protocol = harden({
+  const protocol = Far('ProtocolHandler', {
     async onCreate(impl, _protocolHandler) {
       console.debug('IBC onCreate');
       protocolImpl = impl;
@@ -378,7 +379,7 @@ EOF
     },
   });
 
-  return harden({
+  return Far('IBCProtocolHandler', {
     ...protocol,
     async fromBridge(srcID, obj) {
       console.info('IBC fromBridge', srcID, obj);

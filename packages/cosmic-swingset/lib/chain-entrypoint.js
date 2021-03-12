@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* global module require process */
 
 const esmRequire = require('esm')(module);
 
@@ -12,6 +13,7 @@ const agcc = require('@agoric/cosmos');
 esmRequire('@agoric/install-metering-and-ses');
 
 const path = require('path');
+const os = require('os');
 
 esmRequire('./anylogger-agoric');
 const anylogger = require('anylogger');
@@ -22,6 +24,7 @@ const main = esmRequire('./chain-main.js').default;
 
 main(process.argv[1], process.argv.splice(2), {
   path,
+  homedir: os.homedir(),
   env: process.env,
   agcc,
 }).then(

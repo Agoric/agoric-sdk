@@ -4,6 +4,7 @@ import makeStore from '@agoric/store';
 import { makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E, HandledPromise } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import '@agoric/store/exported';
 
@@ -13,10 +14,10 @@ import '@agoric/store/exported';
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
-const DEFAULT_RESETTER = harden({ onReset: _ => {} });
+const DEFAULT_RESETTER = Far('resetter', { onReset: _ => {} });
 
 /** @type {{ walk: (pluginRootP: any) => any }} */
-const DEFAULT_WALKER = harden({ walk: pluginRootP => pluginRootP });
+const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
 
 /**
  * @template T
@@ -78,7 +79,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
 
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(
-    harden({
+    Far('receiver', {
       dispatch(index, obj) {
         const conn = modConnection.get(index);
         conn.dispatch(obj);
@@ -90,7 +91,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
     }),
   );
 
-  return harden({
+  return Far('plugin-manager', {
     getPluginDir() {
       return D(pluginDevice).getPluginDir();
     },
@@ -121,7 +122,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       // Register our stable callbacks for this connect index.
       modConnection.init(
         index,
-        harden({
+        Far('connection', {
           dispatch(obj) {
             if (obj.epoch !== currentEpoch) {
               return false;
@@ -172,7 +173,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         pluginRootPK.resolve(E(getBootstrap()).start(opts));
       };
 
-      const actions = harden({
+      const actions = Far('actions', {
         /**
          * Create a stable identity that just forwards to the current implementation.
          *
@@ -195,7 +196,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
               },
             });
           });
-          return pr;
+          return Far('stableForwarder', pr);
         },
       });
 

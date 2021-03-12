@@ -5,7 +5,7 @@ export default [
   {
     input: 'lib/bootstrap.js',
     output: {
-      file: `dist/bootstrap.umd.js`,
+      file: `dist/bundle-ses-boot.umd.js`,
       format: 'umd',
       name: 'Bootstrap',
     },

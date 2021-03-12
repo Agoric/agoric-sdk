@@ -1,3 +1,4 @@
+/* global require */
 import '@agoric/install-ses';
 import test from 'ava';
 import { buildVatController } from '../src/index';
@@ -40,7 +41,7 @@ test('bootstrap returns presence', async t => {
   await bootstrapSuccessfully(
     t,
     'presence',
-    '{"@qclass":"slot","index":0}',
+    '{"@qclass":"slot","iface":"Alleged: other","index":0}',
     ['ko25'],
   );
 });
@@ -109,7 +110,7 @@ test('extra message returns presence', async t => {
     t,
     'presence',
     'fulfilled',
-    '{"@qclass":"slot","index":0}',
+    '{"@qclass":"slot","iface":"Alleged: other","index":0}',
     ['ko25'],
   );
 });

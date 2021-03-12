@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sdk",
-  "version": "2.12.2",
+  "version": "2.13.0",
   "private": true,
   "useWorkspaces": true,
   "workspaces": [
@@ -42,7 +42,6 @@
     "packages/agoric-cli",
     "packages/deployment",
     "packages/notifier",
-    "packages/xs-vat-worker",
     "packages/xsnap",
     "packages/deploy-script-support"
   ],

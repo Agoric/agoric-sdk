@@ -4,6 +4,7 @@ SS := ../cosmic-swingset/
 VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 2>/dev/null)
 
 TAG := $(if $(VERSION),$(VERSION),latest)
+MODDABLE_COMMIT_HASH := $(firstword $(shell git submodule status ../xsnap/moddable))
 
 # Don't push alpha tags as ":$(TAG)".
 ifeq ($(TAG),latest)
@@ -22,8 +23,9 @@ docker-build: docker-build-sdk docker-build-solo \
 docker-build-sdk:
 	hash=`git rev-parse --short HEAD`; \
 	  dirty=`git diff --quiet || echo -dirty`; \
-	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt && \
-		docker build -t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
+	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
+	docker build --build-arg=MODDABLE_COMMIT_HASH=$(MODDABLE_COMMIT_HASH) \
+		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 
 docker-build-setup:
@@ -47,7 +49,7 @@ docker-push: docker-push-base docker-push-solo docker-push-setup \
 
 # ./docker is an emptyish directory.
 docker-build-ibc-alpha:
-	docker build --build-arg=SDK_TAG=$(TAG) -t $(REPOSITORY_SDK):ibc-alpha --file=Dockerfile.ibc-alpha ./docker
+	docker build --build-arg=MODDABLE_COMMIT_HASH=--build-arg=SDK_TAG=$(TAG) -t $(REPOSITORY_SDK):ibc-alpha --file=Dockerfile.ibc-alpha ./docker
 
 docker-push-ibc-alpha: docker-build-ibc-alpha
 	docker push $(REPOSITORY_SDK):ibc-alpha
@@ -66,4 +68,4 @@ docker-push-solo:
 
 docker-push-deployment:
 	$(DONT_PUSH_LATEST) docker push agoric/deployment:latest
-	docker push $(REPOSITORY)-solo:$(TAG)
+	docker push agoric/deployment:$(TAG)

@@ -1,3 +1,4 @@
+/* global globalThis __dirname */
 import path from 'path';
 import fs from 'fs';
 import process from 'process';
@@ -307,7 +308,7 @@ export async function main() {
   }
 
   if (forceGC) {
-    if (!global.gc) {
+    if (!globalThis.gc) {
       fail(
         'To use --forcegc you must start node with the --expose-gc command line option',
       );
@@ -590,7 +591,7 @@ export async function main() {
     }
     const blockEndTime = readClock();
     if (forceGC) {
-      global.gc();
+      globalThis.gc();
     }
     if (statLogger) {
       blockNumber += 1;

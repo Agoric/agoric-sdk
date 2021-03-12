@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { observeIteration, observeIterator } from '../src/index';
 
+import '@agoric/marshal/exported';
 import '../src/types';
 
 const obj = harden({});
@@ -270,6 +271,7 @@ export const bob = async asyncIterableP => {
  * @returns {Promise<Passable[]>}
  */
 export const carol = async subscriptionP => {
+  // @ts-ignore
   const subscriptionIteratorP = E(subscriptionP)[Symbol.asyncIterator]();
   const { promise: afterA, resolve: afterAResolve } = makePromiseKit();
 

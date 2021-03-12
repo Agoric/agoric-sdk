@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global require */
 
 // NOTE: Runs outside SES
 

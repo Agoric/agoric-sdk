@@ -13,7 +13,7 @@
  * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {() => Issuer} getLiquidityIssuer
- * @property {() => number} getLiquiditySupply get the current value of
+ * @property {() => bigint} getLiquiditySupply get the current value of
  * liquidity held by investors.
  * @property {(amountIn: Amount, brandOut: Brand) => Amount} getInputPrice
  * calculate the amount of brandOut that will be returned if the amountIn is
@@ -36,14 +36,14 @@
  * @typedef {Object} Pool
  * @property {(inputAmount: Amount, outputBrand: Brand) => PriceAmountPair } getPriceGivenAvailableInput
  * @property {(inputBrand: Brand, outputAmount: Amount) => PriceAmountPair } getPriceGivenRequiredOutput
- * @property {() => number} getLiquiditySupply
+ * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
- * @property {() => AmountMath} getAmountMath - get the amountMath for this
+ * @property {() => DeprecatedAmountMath} getAmountMath - get the amountMath for this
  * pool's secondary brand
- * @property {() => AmountMath} getCentralAmountMath
+ * @property {() => DeprecatedAmountMath} getCentralAmountMath
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
  */
@@ -65,7 +65,7 @@
  * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {(brand: Brand) => Issuer} getLiquidityIssuer
- * @property {(brand: Brand) => number} getLiquiditySupply get the current value of
+ * @property {(brand: Brand) => bigint} getLiquiditySupply get the current value of
  * liquidity in the pool for brand held by investors.
  * @property {(amountIn: Amount, brandOut: Brand) => Amount} getInputPrice
  * calculate the amount of brandOut that will be returned if the amountIn is

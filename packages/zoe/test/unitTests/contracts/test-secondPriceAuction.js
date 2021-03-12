@@ -1,9 +1,11 @@
+/* global __dirname */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -34,7 +36,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           Asset: moolaKit.issuer,
           Ask: simoleanKit.issuer,
         });
-        const terms = { timeAuthority: timer, closesAfter: 1 };
+        const terms = { timeAuthority: timer, closesAfter: 1n };
         const adminP = zoe.startInstance(
           installation,
           issuerKeywordRecord,
@@ -85,7 +87,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('bob', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
 
@@ -114,7 +116,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
         t.deepEqual(
           invitationValue.closesAfter,
-          1,
+          1n,
           `auction will be closed after 1 tick according to the timeAuthority`,
         );
 
@@ -157,7 +159,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeLosingBidder = (bidAmount, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return harden({
+    return Far('losing bidder', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
         const invitation = await invitationIssuer.claim(untrustedInvitation);
@@ -265,7 +267,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     Ask: simoleanR.issuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, closesAfter: 1 });
+  const terms = harden({ timeAuthority: timer, closesAfter: 1n });
   const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
@@ -379,10 +381,10 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   );
 
   // Assert that the correct refunds were received.
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 0);
-  t.is(aliceSimoleanPurse.getCurrentAmount().value, 8);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 0);
-  t.is(bobSimoleanPurse.getCurrentAmount().value, 11);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(aliceSimoleanPurse.getCurrentAmount().value, 8n);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(bobSimoleanPurse.getCurrentAmount().value, 11n);
 });
 
 // Three bidders with (fungible) moola bid for a CryptoCat
@@ -430,7 +432,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Ask: moolaIssuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, closesAfter: 1 });
+  const terms = harden({ timeAuthority: timer, closesAfter: 1n });
   const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
     installation,
     issuerKeywordRecord,
@@ -666,11 +668,11 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Carol: an empty CryptoCat purse and 7 moola
   // Dave: an empty CryptoCat purse and 5 moola
   t.deepEqual(aliceCcPurse.getCurrentAmount().value, []);
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 7);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 7n);
   t.deepEqual(bobCcPurse.getCurrentAmount().value, ['Felix']);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 4);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 4n);
   t.deepEqual(carolCcPurse.getCurrentAmount().value, []);
-  t.is(carolMoolaPurse.getCurrentAmount().value, 7);
+  t.is(carolMoolaPurse.getCurrentAmount().value, 7n);
   t.deepEqual(daveCcPurse.getCurrentAmount().value, []);
-  t.is(daveMoolaPurse.getCurrentAmount().value, 5);
+  t.is(daveMoolaPurse.getCurrentAmount().value, 5n);
 });

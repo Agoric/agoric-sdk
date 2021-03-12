@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeLocalAmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers';
@@ -67,7 +68,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
       want: { StrikePrice: simoleans(7) },
-      exit: { afterDeadline: { deadline: 1, timer } },
+      exit: { afterDeadline: { deadline: 1n, timer } },
     });
 
     const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
@@ -103,7 +104,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       want: { StrikePrice: simoleans(7) },
       exit: {
         afterDeadline: {
-          deadline: 100,
+          deadline: 100n,
           timer,
         },
       },
@@ -135,7 +136,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Ask: simoleanIssuer,
     });
     const now = await E(timer).getCurrentTimestamp();
-    const terms = harden({ timeAuthority: timer, closesAfter: now + 1 });
+    const terms = harden({ timeAuthority: timer, closesAfter: now + 1n });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
     ).startInstance(
@@ -464,7 +465,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       { Simolean: simoleans(4) },
       { Moola: moola(3) },
       timer,
-      1,
+      1n,
     );
 
     await E(bobP).doOTCDesk(bobInvitation);
@@ -504,7 +505,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
       want: { StrikePrice: simoleans(7) },
-      exit: { afterDeadline: { timer: {}, deadline: 1 } },
+      exit: { afterDeadline: { timer: Far({}), deadline: 1n } },
     });
 
     const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
@@ -532,7 +533,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  return harden({
+  return Far('build', {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {
@@ -577,7 +578,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 };
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
 }

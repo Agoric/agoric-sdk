@@ -22,14 +22,14 @@ function capargs(args, slots = []) {
 const slot0arg = { '@qclass': 'slot', index: 0 };
 
 function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, { rejected, data }]];
+  return [[promiseID, rejected, data]];
 }
 
 function checkPromises(t, kernel, expected) {
   // extract the kernel promise table and assert that the contents match the
   // expected list. This sorts on the promise ID, then does a t.deepEqual
   function comparePromiseIDs(a, b) {
-    return a.id - b.id;
+    return Number(a.id - b.id);
   }
 
   const got = Array.from(kernel.dump().promises);

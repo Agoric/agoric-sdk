@@ -7,6 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { MathKind } from '@agoric/ertp';
+import { Data } from '@agoric/marshal';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
 
@@ -408,7 +409,7 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
  * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
  * ZCF
  */
-export async function saveAllIssuers(zcf, issuerKeywordRecord = {}) {
+export async function saveAllIssuers(zcf, issuerKeywordRecord = Data({})) {
   const { issuers } = zcf.getTerms();
   const issuersPSaved = Object.entries(issuerKeywordRecord).map(
     ([keyword, issuer]) => {

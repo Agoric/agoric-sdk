@@ -6,17 +6,24 @@
     "plugin:@agoric/recommended"
   ],
   "parser": "@typescript-eslint/parser",
+  "processor": "@agoric/use-jessie",
   "env": {
-    "es6": true
+    "es6": true,
+    "node": false,
+    "commonjs": false
   },
   "globals": {
-    "globalThis": "readonly",
     "BigInt": "readonly",
     "assert": "readonly",
+    "console": "readonly",
     "harden": "readonly",
     "lockdown": "readonly",
     "Compartment": "readonly",
-    "StaticModuleRecord": "readonly"
+    "StaticModuleRecord": "readonly",
+    "TextDecoder": "readonly",
+    "TextEncoder": "readonly",
+    "URL": "readonly",
+    "URLSearchParams": "readonly"
   },
   "rules": {
     "quotes": [

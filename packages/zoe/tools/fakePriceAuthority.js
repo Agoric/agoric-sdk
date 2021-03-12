@@ -15,8 +15,8 @@ import '../exported';
 
 /**
  * @typedef {Object} FakePriceAuthorityOptions
- * @property {AmountMath} mathIn
- * @property {AmountMath} mathOut
+ * @property {DeprecatedAmountMath} mathIn
+ * @property {DeprecatedAmountMath} mathOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
@@ -39,8 +39,8 @@ export async function makeFakePriceAuthority(options) {
     priceList,
     tradeList,
     timer,
-    unitAmountIn = mathIn.make(1),
-    quoteInterval = 1,
+    unitAmountIn = mathIn.make(1n),
+    quoteInterval = 1n,
     quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
   } = options;
 
@@ -169,7 +169,7 @@ export async function makeFakePriceAuthority(options) {
         }
       },
     });
-    const repeater = E(timer).makeRepeater(0, quoteInterval);
+    const repeater = E(timer).makeRepeater(0n, quoteInterval);
     return E(repeater).schedule(handler);
   }
   await startTimer();
@@ -213,6 +213,7 @@ export async function makeFakePriceAuthority(options) {
       return makeNotifierFromAsyncIterable(generateQuotes(amountIn, brandOut));
     },
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
+      assert.typeof(timeStamp, 'bigint');
       assertBrands(amountIn.brand, brandOut);
       const { promise, resolve } = makePromiseKit();
       E(timer).setWakeup(

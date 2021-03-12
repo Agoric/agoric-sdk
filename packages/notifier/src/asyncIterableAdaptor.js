@@ -106,7 +106,7 @@ export const observeIterator = (asyncIteratorP, iterationObserver) => {
         ({ value, done }) => {
           if (done) {
             iterationObserver.finish && iterationObserver.finish(value);
-            ack();
+            ack(undefined);
           } else {
             iterationObserver.updateState &&
               iterationObserver.updateState(value);
@@ -115,7 +115,7 @@ export const observeIterator = (asyncIteratorP, iterationObserver) => {
         },
         reason => {
           iterationObserver.fail && iterationObserver.fail(reason);
-          ack();
+          ack(undefined);
         },
       );
     };
@@ -155,6 +155,16 @@ export const updateFromIterable = (iterationObserver, asyncIterableP) =>
  * are lossy, i.e., once a more recent state can be reported, less recent
  * states are assumed irrelevant and dropped.
  *
+ * @template T
+ * @param {ERef<Notifier<T>>} notifierP
+ * @param {Partial<IterationObserver<T>>} iterationObserver
+ * @returns {Promise<undefined>}
+ */
+export const observeNotifier = (notifierP, iterationObserver) =>
+  observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);
+
+/**
+ * @deprecated Use 'observeNotifier` instead.
  * @template T
  * @param {Partial<IterationObserver<T>>} iterationObserver
  * @param {ERef<Notifier<T>>} notifierP

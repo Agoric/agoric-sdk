@@ -1,5 +1,6 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
@@ -64,7 +65,7 @@ const start = async zcf => {
     issuer: liquidityIssuer,
     amountMath: liquidityMath,
   } = liquidityMint.getIssuerRecord();
-  let liqTokenSupply = 0;
+  let liqTokenSupply = 0n;
 
   // In order to get all the brands, we must call zcf.getTerms() after
   // we create the liquidityIssuer
@@ -83,8 +84,9 @@ const start = async zcf => {
    */
   const getPoolKeyword = brand => {
     assert(brandToKeyword.has(brand), 'getPoolKeyword: brand not found');
-    // @ts-ignore
-    return brandToKeyword.get(brand);
+    const keyword = brandToKeyword.get(brand);
+    assert.typeof(keyword, 'string');
+    return keyword;
   };
 
   const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
@@ -270,6 +272,7 @@ const start = async zcf => {
     // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
+    assert.typeof(liquidityValueIn, 'bigint');
 
     const newUserCentralAmount = centralMath.make(
       calcValueToRemove(
@@ -359,7 +362,7 @@ const start = async zcf => {
   const getPoolAllocation = poolSeat.getCurrentAllocation;
 
   /** @type {AutoswapPublicFacet} */
-  const publicFacet = harden({
+  const publicFacet = Far('publicFacet', {
     getInputPrice: getOutputForGivenInput,
     getOutputPrice: getInputForGivenOutput,
     getLiquidityIssuer: () => liquidityIssuer,

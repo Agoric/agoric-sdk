@@ -1,17 +1,19 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootDeviceNode({
   SO,
   testLog: log,
   getDeviceState,
   setDeviceState,
 }) {
-  return harden({
+  return Far('root', {
     method1(arg) {
       log(`method1 ${arg}`);
       return 'done';
     },
     method2() {
-      const d2 = harden({});
-      const d3 = harden({
+      const d2 = Far('empty', {});
+      const d3 = Far('d3', {
         method3(arg) {
           log(`method3 ${arg === d2}`);
           return harden({ key: 'value' });
@@ -26,7 +28,7 @@ export function buildRootDeviceNode({
     },
     method4(o) {
       log(`method4`);
-      const obj = harden({
+      const obj = Far('obj', {
         bar(arg) {
           log(`method4.bar ${arg}`);
         },

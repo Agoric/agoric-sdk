@@ -360,6 +360,15 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   }
 
   function queueMessage(targetSlot, prop, args, returnedP) {
+    if (typeof prop === 'symbol') {
+      if (prop === Symbol.asyncIterator) {
+        // special-case this Symbol for now, will be replaced in #2481
+        prop = 'Symbol.asyncIterator';
+      } else {
+        throw Error(`arbitrary Symbols cannot be used as method names`);
+      }
+    }
+
     const serArgs = m.serialize(harden(args));
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
@@ -458,6 +467,10 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     // should error-check cases that the kernel shouldn't do, like getting
     // the same vpid as a result= twice, or getting a result= for an exported
     // promise (for which we were already the decider).
+
+    if (method === 'Symbol.asyncIterator') {
+      method = Symbol.asyncIterator;
+    }
 
     const args = m.unserialize(argsdata);
 
@@ -561,8 +574,8 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     assert(didRoot);
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
-      const [vpid, vp] = resolution;
-      notifyOnePromise(vpid, vp.rejected, vp.data);
+      const [vpid, rejected, data] = resolution;
+      notifyOnePromise(vpid, rejected, data);
     }
     for (const resolution of resolutions) {
       const [vpid] = resolution;
@@ -605,7 +618,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
     );
     assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
-    const rootSlot = makeVatSlot('object', true, 0);
+    const rootSlot = makeVatSlot('object', true, 0n);
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, rootObject);
   }

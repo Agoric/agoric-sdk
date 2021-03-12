@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "parsers": {
     "js": "mjs"
@@ -11,16 +11,18 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "ava --verbose",
+    "test": "yarn test:node && yarn test:xs-unit",
+    "test:node": "ava --verbose",
     "test:nyc": "nyc ava",
+    "test:xs-unit": "ava-xs --verbose",
+    "test:xs-unit-debug": "ava-xs --debug",
+    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
+    "lint:types": "tsc -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -40,27 +42,27 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.1",
-    "@agoric/bundle-source": "^1.2.1",
-    "@agoric/ertp": "^0.9.1",
-    "@agoric/eventual-send": "^0.13.1",
-    "@agoric/import-bundle": "^0.2.1",
-    "@agoric/marshal": "^0.3.1",
-    "@agoric/nat": "^2.0.1",
-    "@agoric/notifier": "^0.3.1",
-    "@agoric/promise-kit": "^0.2.1",
-    "@agoric/same-structure": "^0.1.1",
-    "@agoric/store": "^0.4.1",
-    "@agoric/swingset-vat": "^0.12.0",
-    "@agoric/transform-metering": "^1.4.1"
+    "@agoric/assert": "^0.2.2",
+    "@agoric/bundle-source": "^1.2.2",
+    "@agoric/ertp": "^0.9.2",
+    "@agoric/eventual-send": "^0.13.2",
+    "@agoric/import-bundle": "^0.2.2",
+    "@agoric/marshal": "^0.3.2",
+    "@agoric/nat": "^4.0.0",
+    "@agoric/notifier": "^0.3.2",
+    "@agoric/promise-kit": "^0.2.2",
+    "@agoric/same-structure": "^0.1.2",
+    "@agoric/store": "^0.4.2",
+    "@agoric/swingset-vat": "^0.12.1",
+    "@agoric/transform-metering": "^1.4.2"
   },
   "devDependencies": {
-    "@agoric/install-metering-and-ses": "^0.2.1",
-    "@agoric/install-ses": "^0.5.1",
+    "@agoric/install-metering-and-ses": "^0.2.2",
+    "@agoric/install-ses": "^0.5.2",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0",
-    "ses": "^0.12.2"
+    "ses": "^0.12.3"
   },
   "files": [
     "bundles/",
@@ -70,6 +72,29 @@
     "exported.js",
     "NEWS.md"
   ],
+  "ava-xs": {
+    "exclude": [
+      "# eek! SIGSEGV in GC https://github.com/Moddable-OpenSource/moddable/issues/592",
+      "test-loan-e2e.js",
+      "# another SEGV, but not in --debug so I cannot get a stack trace",
+      "contracts/test-callSpread-calculation",
+      "# another SEGV; not investigated",
+      "loan/test-borrow.js",
+      "test-fakePriceAuthority.js",
+      "test-offerSafety",
+      "test-scriptedOracle",
+      "test-zoeHelpers",
+      "# multiple instances of automaticRefund for the same Zoe bad plan: 6 still to go",
+      "test-automaticRefund",
+      "test-secondPriceAuction.js",
+      "test-escrowToVote",
+      "test-coveredCall",
+      "# offerOk threw: \"instance\" not found: (an object)'",
+      "test-otcDesk.js",
+      "# We use WORKER_TYPE=xs ava to run these...",
+      "swingsetTests"
+    ]
+  },
   "ava": {
     "files": [
       "test/**/test-*.js"

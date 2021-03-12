@@ -3,7 +3,7 @@ import '../../../exported';
 import './types';
 
 import { E } from '@agoric/eventual-send';
-import { trade } from '../../contractSupport';
+import { trade, getAmountOut, multiplyBy } from '../../contractSupport';
 import { Position } from './position';
 import { calculateShares } from './calculateShares';
 
@@ -36,7 +36,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   function reallocateToSeat(seatPromise, sharePercent) {
     seatPromise.then(seat => {
       const totalCollateral = terms.settlementAmount;
-      const seatPortion = sharePercent.scale(totalCollateral);
+      const seatPortion = multiplyBy(totalCollateral, sharePercent);
       trade(
         zcf,
         { seat, gains: { Collateral: seatPortion } },
@@ -69,9 +69,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   function schedulePayoffs() {
     E(terms.priceAuthority)
       .quoteAtTime(terms.expiration, terms.underlyingAmount, strikeBrand)
-      .then(priceQuote =>
-        payoffOptions(priceQuote.quoteAmount.value[0].amountOut),
-      );
+      .then(priceQuote => payoffOptions(getAmountOut(priceQuote)));
   }
 
   /** @type {PayoffHandler} */

@@ -43,6 +43,7 @@ C_OPTIONS = $(C_OPTIONS) \
 !ELSE
 C_OPTIONS = $(C_OPTIONS) \
 	/D NDEBUG \
+	/D mxBoundsCheck=1 \
 	/Fp$(TMP_DIR_RLS)\ \
 	/O2 \
 	/W0

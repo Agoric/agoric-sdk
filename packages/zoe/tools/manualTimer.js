@@ -3,6 +3,8 @@
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
+import { Far } from '@agoric/marshal';
 
 import './types';
 import './internal-types';
@@ -15,20 +17,23 @@ import { makeNotifierKit } from '@agoric/notifier';
  * @param {Timestamp} [startValue=0]
  * @returns {ManualTimer}
  */
-export default function buildManualTimer(log, startValue = 0) {
-  let ticks = startValue;
+export default function buildManualTimer(log, startValue = 0n) {
+  let ticks = Nat(startValue);
 
-  /** @type {Store<Timestamp, Array<TimerWaker>>} */
+  /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
   const schedule = makeStore('Timestamp');
 
   const makeRepeater = (delaySecs, interval, timer) => {
-    /** @type {Array<TimerWaker> | null} */
+    assert.typeof(delaySecs, 'bigint');
+    assert.typeof(interval, 'bigint');
+    /** @type {Array<ERef<TimerWaker>> | null} */
     let wakers = [];
     let nextWakeup;
 
     /** @type {TimerWaker} */
     const repeaterWaker = {
       async wake(timestamp) {
+        assert.typeof(timestamp, 'bigint');
         if (!wakers) {
           return;
         }
@@ -39,7 +44,7 @@ export default function buildManualTimer(log, startValue = 0) {
     };
 
     /** @type {TimerRepeater} */
-    const repeater = {
+    const repeater = Far('TimerRepeater', {
       schedule(waker) {
         assert(wakers, X`Cannot schedule on a disabled repeater`);
         wakers.push(waker);
@@ -49,18 +54,17 @@ export default function buildManualTimer(log, startValue = 0) {
         wakers = null;
         timer.removeWakeup(repeaterWaker);
       },
-    };
-    harden(repeater);
+    });
     nextWakeup = ticks + delaySecs;
     timer.setWakeup(nextWakeup, repeaterWaker);
     return repeater;
   };
 
   /** @type {ManualTimer} */
-  const timer = {
+  const timer = Far('ManualTimer', {
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
-      ticks += 1;
+      ticks += 1n;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         const wakers = schedule.get(ticks);
@@ -77,6 +81,7 @@ export default function buildManualTimer(log, startValue = 0) {
       return ticks;
     },
     setWakeup(baseTime, waker) {
+      assert.typeof(baseTime, 'bigint');
       if (baseTime <= ticks) {
         log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
         E(waker).wake(ticks);
@@ -115,10 +120,13 @@ export default function buildManualTimer(log, startValue = 0) {
       return makeRepeater(delaySecs, interval, timer);
     },
     makeNotifier(delaySecs, interval) {
+      assert.typeof(delaySecs, 'bigint');
+      assert.typeof(interval, 'bigint');
       const { notifier, updater } = makeNotifierKit();
       /** @type {TimerWaker} */
       const repeaterWaker = {
         async wake(timestamp) {
+          assert.typeof(timestamp, 'bigint');
           updater.updateState(timestamp);
           timer.setWakeup(ticks + interval, repeaterWaker);
         },
@@ -126,7 +134,6 @@ export default function buildManualTimer(log, startValue = 0) {
       timer.setWakeup(ticks + delaySecs, repeaterWaker);
       return notifier;
     },
-  };
-  harden(timer);
+  });
   return timer;
 }

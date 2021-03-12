@@ -1,3 +1,4 @@
+/* global require */
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -27,7 +28,6 @@ test('install', async t => {
   };
 
   const board = makeBoard();
-  // @ts-ignore
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
   const resolvedPath = resolvePathForPackagedContract(

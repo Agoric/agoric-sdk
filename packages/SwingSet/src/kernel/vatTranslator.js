@@ -53,13 +53,13 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   function translatePromiseDescriptor(kp) {
     if (kp.state === 'fulfilled' || kp.state === 'rejected') {
-      return {
-        rejected: kp.state === 'rejected',
-        data: {
+      return [
+        kp.state === 'rejected',
+        {
           ...kp.data,
           slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
         },
-      };
+      ];
     } else if (kp.state === 'redirected') {
       // TODO unimplemented
       throw new Error('not implemented yet');
@@ -75,9 +75,9 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       const [kpid, p] = resolution;
       assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
       const vpid = mapKernelSlotToVatSlot(kpid);
-      const vres = translatePromiseDescriptor(p);
-      vResolutions.push([vpid, vres]);
-      kdebug(`notify ${idx} ${kpid}/${vpid} ${JSON.stringify(vres)}`);
+      const vres = [vpid, ...translatePromiseDescriptor(p)];
+      vResolutions.push(vres);
+      kdebug(`notify ${idx} ${kpid} ${JSON.stringify(vres)}`);
       idx += 1;
     }
     const vatDelivery = harden(['notify', vResolutions]);

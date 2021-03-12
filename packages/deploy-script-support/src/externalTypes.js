@@ -26,7 +26,7 @@
 /**
  * @callback GetLocalAmountMath
  * @param {Petname} petname
- * @returns {AmountMath}
+ * @returns {DeprecatedAmountMath}
  */
 
 /**

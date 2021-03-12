@@ -1,5 +1,7 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject(_vatPowers, vatParameters) {
-  const other = harden({
+  const other = Far('other', {
     something(arg) {
       return arg;
     },
@@ -16,7 +18,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
     return undefined;
   }
 
-  return harden({
+  return Far('root', {
     bootstrap(_vats) {
       return behave(vatParameters.argv[0]);
     },

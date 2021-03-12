@@ -1,3 +1,4 @@
+import { Far } from '@agoric/marshal';
 import { makeSharingService } from '@agoric/sharing-service';
 
 // This vat contains the sharing service for the demo.
@@ -9,5 +10,5 @@ export function buildRootObject(_vatPowers) {
     return sharingService;
   }
 
-  return harden({ getSharingService });
+  return Far('root', { getSharingService });
 }
