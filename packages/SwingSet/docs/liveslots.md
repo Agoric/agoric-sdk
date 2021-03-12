@@ -51,6 +51,8 @@ const p = E(target).foo('arg1');
 p.then(obj2 => E(obj2).bar('arg2'))
 ```
 
+The method name being invoked can be any string, or the special `Symbol.asyncIterator`. All other Symbol-named methods are currently rejected, but see #2612 for plans to accept anything that JavaScript will accept.
+
 All vats are subject to the "tildot transformation", which means these calls may also be written like:
 
 ```js
