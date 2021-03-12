@@ -6,7 +6,6 @@ import { Data, Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
 
-import '../../exported';
 import '../internal-types';
 
 /** @type {MakeZcfSeatAdminKit} */

@@ -1,7 +1,5 @@
 import { E } from '@agoric/eventual-send';
 
-import '../exported';
-
 export const assertPayoutAmount = async (
   t,
   issuer,

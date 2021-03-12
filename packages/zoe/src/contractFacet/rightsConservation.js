@@ -3,7 +3,6 @@
 import makeStore from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 
-import '../../exported';
 import '../internal-types';
 
 /**

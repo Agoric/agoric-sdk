@@ -2,7 +2,6 @@
 
 import { Far } from '@agoric/marshal';
 
-import '../../exported';
 
 /**
  * This is a very trivial contract to explain and test Zoe.

@@ -11,7 +11,6 @@ import '@agoric/ertp/exported';
 import '@agoric/store/exported';
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
-import '../../exported';
 import '../internal-types';
 
 import { Data, Far } from '@agoric/marshal';

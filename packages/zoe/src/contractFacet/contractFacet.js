@@ -28,7 +28,6 @@ import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
 import { makeHandle } from '../makeHandle';
 
-import '../../exported';
 import '../internal-types';
 
 export function buildRootObject(powers, _params, testJigSetter = undefined) {

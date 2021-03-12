@@ -6,7 +6,6 @@ import { E } from '@agoric/eventual-send';
 import { makeWeakStore } from '@agoric/store';
 import { makeAmountMath } from '@agoric/ertp';
 
-import '../exported';
 import './internal-types';
 
 /**
