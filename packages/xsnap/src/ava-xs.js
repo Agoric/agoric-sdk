@@ -9,10 +9,12 @@ const { promises } = require('fs');
 const path = require('path');
 const glob = require('glob');
 
-esmRequire('@agoric/install-ses');
-const bundleSource = esmRequire('@agoric/bundle-source').default;
+// eslint-disable-next-line no-global-assign
+require = esmRequire; // help vs-code navigate
+require('@agoric/install-ses');
+const bundleSource = require('@agoric/bundle-source').default;
 
-const { main, makeBundleResolve } = esmRequire('./avaXS');
+const { main, makeBundleResolve } = require('./avaXS');
 
 Promise.resolve()
   .then(_ =>

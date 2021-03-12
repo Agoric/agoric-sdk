@@ -337,9 +337,9 @@ function test(label, run, htestOpt) {
     const out = tapFormat(htest.send);
     const t = makeTester(htest, out);
     try {
-      out.diagnostic('start', label);
+      // out.diagnostic('start', label);
       await run(t);
-      out.diagnostic('end', label);
+      // out.diagnostic('end', label);
     } catch (ex) {
       console.log('FAIL (todo route console)', ex);
       t.fail(`${label} threw: ${ex.message}`);
