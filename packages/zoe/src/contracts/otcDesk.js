@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
-import { Data, Far } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import {
   trade,
   offerTo,
@@ -125,7 +125,7 @@ const start = zcf => {
      * @param {IssuerKeywordRecord=} issuerKeywordRecord
      * @returns {Promise<Payment>}
      */
-    makeAddInventoryInvitation: async (issuerKeywordRecord = Data({})) => {
+    makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {
       await saveAllIssuers(zcf, issuerKeywordRecord);
       return zcf.makeInvitation(addInventory, 'addInventory');
     },

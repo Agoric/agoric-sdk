@@ -3,7 +3,6 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { makeWeakStore } from '@agoric/store';
-import { Data } from '@agoric/marshal';
 import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
@@ -45,14 +44,14 @@ test('cleanProposal - all empty', t => {
   const getAmountMathForBrand = brandToAmountMath.get;
 
   const proposal = harden({
-    give: Data({}),
-    want: Data({}),
+    give: harden({}),
+    want: harden({}),
     exit: { waived: null },
   });
 
   const expected = harden({
-    give: Data({}),
-    want: Data({}),
+    give: harden({}),
+    want: harden({}),
     exit: { waived: null },
   });
 

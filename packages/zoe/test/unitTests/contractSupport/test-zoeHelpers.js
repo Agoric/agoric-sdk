@@ -2,7 +2,7 @@
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { Far, Data } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
@@ -48,7 +48,7 @@ test('ZoeHelpers satisfies blank proposal', t => {
   const { moolaR, moola } = setup();
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
-    getProposal: () => Data({}),
+    getProposal: () => harden({}),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
   mockZCFBuilder.addBrand(moolaR);

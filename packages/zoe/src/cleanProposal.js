@@ -1,7 +1,6 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { Data } from '@agoric/marshal';
 
 import '../exported';
 import './internal-types';
@@ -111,7 +110,7 @@ export const cleanProposal = (getAmountMath, proposal) => {
   assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.
-  let { want = Data({}), give = Data({}) } = proposal;
+  let { want = harden({}), give = harden({}) } = proposal;
   const { exit = harden({ onDemand: null }) } = proposal;
 
   want = coerceAmountKeywordRecord(getAmountMath, want);

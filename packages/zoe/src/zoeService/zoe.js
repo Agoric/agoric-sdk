@@ -14,7 +14,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import '../../exported';
 import '../internal-types';
 
-import { Data, Far } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
@@ -97,8 +97,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     },
     startInstance: async (
       installationP,
-      uncleanIssuerKeywordRecord = Data({}),
-      customTerms = Data({}),
+      uncleanIssuerKeywordRecord = harden({}),
+      customTerms = harden({}),
     ) => {
       /** @param {Issuer[]} issuers */
       const initIssuers = issuers =>
@@ -356,7 +356,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         zoeService,
         invitationIssuer,
         zoeInstanceAdminForZcf,
-        Data({ ...instanceRecord }),
+        harden({ ...instanceRecord }),
       );
 
       addSeatObjPromiseKit.resolve(addSeatObj);
@@ -395,8 +395,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     },
     offer: async (
       invitation,
-      uncleanProposal = Data({}),
-      paymentKeywordRecord = Data({}),
+      uncleanProposal = harden({}),
+      paymentKeywordRecord = harden({}),
     ) => {
       return invitationKit.issuer.burn(invitation).then(
         invitationAmount => {

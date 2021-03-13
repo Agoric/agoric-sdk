@@ -114,7 +114,7 @@ export function buildRootObject(vatPowers) {
         ...decentralObjects, // TODO: Remove; replaced by .agoric
         ...privateObjects, // TODO: Remove; replaced by .local
         ...handyObjects,
-        agoric: { ...decentralObjects }, // TODO: maybe needs Data()???
+        agoric: { ...decentralObjects },
         local: { ...privateObjects },
       };
 

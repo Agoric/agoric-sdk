@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { Data, Far } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
 
@@ -88,7 +88,7 @@ export const makeZcfSeatAdminKit = (
     },
     isOfferSafe: newAllocation => {
       assertExitedFalse();
-      const reallocation = Data({
+      const reallocation = harden({
         ...currentAllocation,
         ...newAllocation,
       });
@@ -98,7 +98,7 @@ export const makeZcfSeatAdminKit = (
     stage: newAllocation => {
       assertExitedFalse();
       // Check offer safety.
-      const allocation = Data({
+      const allocation = harden({
         ...currentAllocation,
         ...newAllocation,
       });
