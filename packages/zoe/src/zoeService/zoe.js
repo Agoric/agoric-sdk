@@ -49,15 +49,9 @@ function makeZoe(vatAdminSvc) {
 
         /** @type {InstanceAdmin} */
         return Far('instanceAdmin', {
-          addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
-          tellZCFToMakeSeat: (invitationHandle, zoeSeatAdmin) => {
-            return E(
-              /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
-            ).addSeat(invitationHandle, zoeSeatAdmin);
+          tellZCFToMakeSeat: invitationHandle => {
+            return E(addSeatObjPromiseKit.promise).addSeat(invitationHandle);
           },
-          hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
-          removeZoeSeatAdmin: zoeSeatAdmin =>
-            zoeSeatAdmins.delete(zoeSeatAdmin),
         });
       };
 
@@ -111,31 +105,18 @@ function makeZoe(vatAdminSvc) {
       const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
       const offerResultPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-      // This does not suppress any error messages.
+
       offerResultPromiseKit.promise.catch(_ => {});
       const exitObjPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-      // This does not suppress any error messages.
+
       exitObjPromiseKit.promise.catch(_ => {});
-
-      const doExit = zoeSeatAdmin => {
-        instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
-      };
-
-      const zoeSeatAdmin = Far('zoeSeatAdmin', {
-        exit: _reason => {
-          doExit(zoeSeatAdmin);
-        },
-      });
 
       const userSeat = Far('userSeat', {
         getOfferResult: async () => offerResultPromiseKit.promise,
       });
 
-      instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
       instanceAdmin
-        .tellZCFToMakeSeat(invitationHandle, zoeSeatAdmin)
+        .tellZCFToMakeSeat(invitationHandle)
         .then(({ offerResultP, exitObj }) => {
           offerResultPromiseKit.resolve(offerResultP);
           exitObjPromiseKit.resolve(exitObj);
