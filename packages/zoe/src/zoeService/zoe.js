@@ -16,7 +16,7 @@ function makeZoe(vatAdminSvc) {
   } = makeIssuerKit('Zoe Invitation', MathKind.SET);
 
   const installations = new WeakSet();
-  const instanceToInstanceAdmin = nonVOMakeWeakStore('instance');
+  const instanceToAddSeatPromise = nonVOMakeWeakStore('instance');
 
   const install = async bundle => {
     const installation = Far('Installation', {
@@ -38,23 +38,12 @@ function makeZoe(vatAdminSvc) {
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
+      instanceToAddSeatPromise.init(instance, addSeatObjPromiseKit.promise);
 
       addSeatObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
 
       publicFacetPromiseKit.promise.catch(_ => {});
-
-      const makeInstanceAdmin = () => {
-        /** @type {InstanceAdmin} */
-        return Far('instanceAdmin', {
-          tellZCFToMakeSeat: invitationHandle => {
-            return E(addSeatObjPromiseKit.promise).addSeat(invitationHandle);
-          },
-        });
-      };
-
-      const instanceAdmin = makeInstanceAdmin();
-      instanceToInstanceAdmin.init(instance, instanceAdmin);
 
       const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
         makeInvitation: (invitationHandle, description) => {
@@ -100,7 +89,6 @@ function makeZoe(vatAdminSvc) {
       const invitationAmount = await invitationIssuer.burn(invitation);
       const invitationHandle = invitationAmount.value[0].handle;
       const instance = invitationAmount.value[0].instance;
-      const instanceAdmin = instanceToInstanceAdmin.get(instance);
 
       const offerResultPromiseKit = makePromiseKit();
 
@@ -113,8 +101,9 @@ function makeZoe(vatAdminSvc) {
         getOfferResult: async () => offerResultPromiseKit.promise,
       });
 
-      instanceAdmin
-        .tellZCFToMakeSeat(invitationHandle)
+      const addSeatPromise = instanceToAddSeatPromise.get(instance);
+      E(addSeatPromise)
+        .addSeat(invitationHandle)
         .then(({ offerResultP, exitObj }) => {
           offerResultPromiseKit.resolve(offerResultP);
           exitObjPromiseKit.resolve(exitObj);
