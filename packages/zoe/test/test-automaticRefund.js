@@ -80,8 +80,12 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   const seat1 = await E(zoe).offer(aliceInvitation1);
   const seat2 = await E(zoe).offer(aliceInvitation2);
 
+  console.log('made offers');
+
   const offerResult1 = await E(seat1).getOfferResult();
   const offerResult2 = await E(seat2).getOfferResult();
+
+  console.log('got offer results');
 
   t.is(offerResult1, 'The offer was accepted');
   t.is(offerResult2, 'The offer was accepted');
