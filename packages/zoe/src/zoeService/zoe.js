@@ -45,8 +45,6 @@ function makeZoe(vatAdminSvc) {
       publicFacetPromiseKit.promise.catch(_ => {});
 
       const makeInstanceAdmin = () => {
-        const zoeSeatAdmins = new Set();
-
         /** @type {InstanceAdmin} */
         return Far('instanceAdmin', {
           tellZCFToMakeSeat: invitationHandle => {
