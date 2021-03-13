@@ -3,6 +3,7 @@ import { makeWeakStore as nonVOMakeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { evalContractBundle } from './evalContractCode';
+import { makeHandle } from '../makeHandle';
 
 export function buildRootObject(_powers, _params) {
   const executeContract = async (bundle, zoeInstanceAdmin) => {
@@ -10,7 +11,7 @@ export function buildRootObject(_powers, _params) {
 
     const zcf = Far('zcf', {
       makeInvitation: (offerHandler = () => {}, description) => {
-        const invitationHandle = Far('invitation', {});
+        const invitationHandle = makeHandle('Invitation');
         invitationHandleToHandler.init(invitationHandle, offerHandler);
 
         const invitationP = E(zoeInstanceAdmin).makeInvitation(

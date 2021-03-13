@@ -6,6 +6,7 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import { Far } from '@agoric/marshal';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
+import { makeHandle } from '../makeHandle';
 
 function makeZoe(vatAdminSvc) {
   const {
@@ -30,7 +31,7 @@ function makeZoe(vatAdminSvc) {
     startInstance: async installationP => {
       const installation = await Promise.resolve(installationP);
 
-      const instance = Far('instance', {});
+      const instance = makeHandle('Instance');
 
       const createVatResultP = E(vatAdminSvc).createVat(zcfContractBundle);
       const { root: zcfRoot } = await createVatResultP;
