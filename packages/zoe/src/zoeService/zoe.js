@@ -16,7 +16,7 @@ function makeZoe(vatAdminSvc) {
   } = makeIssuerKit('Zoe Invitation', MathKind.SET);
 
   const installations = new WeakSet();
-  const instanceToAddSeatPromise = nonVOMakeWeakStore('instance');
+  const instanceToCallOfferHandlerPromise = nonVOMakeWeakStore('instance');
 
   const install = async bundle => {
     const installation = Far('Installation', {
@@ -37,13 +37,13 @@ function makeZoe(vatAdminSvc) {
       const { root: zcfRoot } = await createVatResultP;
 
       const bundle = installation.getBundle();
-      const addSeatObjPromiseKit = makePromiseKit();
-      instanceToAddSeatPromise.init(instance, addSeatObjPromiseKit.promise);
+      const callOfferHandlerPromiseKit = makePromiseKit();
+      instanceToCallOfferHandlerPromise.init(
+        instance,
+        callOfferHandlerPromiseKit.promise,
+      );
 
-      addSeatObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
-
-      publicFacetPromiseKit.promise.catch(_ => {});
 
       const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
         makeInvitation: (invitationHandle, description) => {
@@ -64,26 +64,16 @@ function makeZoe(vatAdminSvc) {
       const {
         publicFacet = Far('emptyPublicFacet', {}),
         creatorInvitation: creatorInvitationP,
-        addSeatObj,
+        callOfferHandlerObj,
       } = await E(zcfRoot).executeContract(bundle, zoeInstanceAdminForZcf);
 
-      addSeatObjPromiseKit.resolve(addSeatObj);
+      callOfferHandlerPromiseKit.resolve(callOfferHandlerObj);
       publicFacetPromiseKit.resolve(publicFacet);
 
-      return Promise.allSettled([
-        creatorInvitationP,
-        invitationIssuer.isLive(creatorInvitationP),
-      ]).then(([invitationResult, _isLiveResult]) => {
-        let creatorInvitation;
-        if (invitationResult.status === 'fulfilled') {
-          creatorInvitation = invitationResult.value;
-        }
-
-        return {
-          creatorInvitation,
-          publicFacet,
-        };
-      });
+      return {
+        creatorInvitation: creatorInvitationP,
+        publicFacet,
+      };
     },
     offer: async invitation => {
       const invitationAmount = await invitationIssuer.burn(invitation);
@@ -98,12 +88,12 @@ function makeZoe(vatAdminSvc) {
         getOfferResult: async () => offerResultPromiseKit.promise,
       });
 
-      const addSeatPromise = instanceToAddSeatPromise.get(instance);
-      E(addSeatPromise)
-        .addSeat(invitationHandle)
-        .then(({ offerResultP }) => {
-          offerResultPromiseKit.resolve(offerResultP);
-        })
+      const callOfferHandlerPromise = instanceToCallOfferHandlerPromise.get(
+        instance,
+      );
+      E(callOfferHandlerPromise)
+        .callOfferHandler(invitationHandle)
+        .then(offerResult => offerResultPromiseKit.resolve(offerResult))
         .catch(() => {});
 
       return userSeat;

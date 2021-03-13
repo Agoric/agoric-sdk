@@ -9,47 +9,37 @@ export function buildRootObject(_powers, _params) {
   const executeContract = async (bundle, zoeInstanceAdmin) => {
     const invitationHandleToHandler = nonVOMakeWeakStore('invitationHandle');
 
-    const zcf = Far('zcf', {
-      makeInvitation: (offerHandler = () => {}, description) => {
-        const invitationHandle = makeHandle('Invitation');
-        invitationHandleToHandler.init(invitationHandle, offerHandler);
+    const makeInvitation = offerHandler => {
+      const invitationHandle = makeHandle('Invitation');
+      invitationHandleToHandler.init(invitationHandle, offerHandler);
+      return E(zoeInstanceAdmin).makeInvitation(invitationHandle);
+    };
 
-        const invitationP = E(zoeInstanceAdmin).makeInvitation(
-          invitationHandle,
-          description,
-        );
-        return invitationP;
-      },
+    const zcf = Far('zcf', {
+      makeInvitation,
     });
 
-    const addSeatObj = Far('addSeatObj', {
-      addSeat: invitationHandle => {
-        const offerHandler = invitationHandleToHandler.get(invitationHandle);
-        const offerResultP = E(offerHandler)();
-        return harden({ offerResultP });
-      },
+    const callOfferHandler = invitationHandle => {
+      const offerHandler = invitationHandleToHandler.get(invitationHandle);
+      return E(offerHandler)();
+    };
+
+    const callOfferHandlerObj = Far('callOfferHandlerObj', {
+      callOfferHandler,
     });
 
     const contractCode = evalContractBundle(bundle);
 
-    contractCode.catch(() => {});
-
     const result = E(contractCode)
       .start(zcf)
-      .then(
-        ({
-          publicFacet = Far('emptyPublicFacet', {}),
-          creatorInvitation = undefined,
-        }) => {
-          return harden({
-            publicFacet,
-            creatorInvitation,
-            addSeatObj,
-          });
-        },
-      );
+      .then(({ publicFacet, creatorInvitation }) => {
+        return harden({
+          publicFacet,
+          creatorInvitation,
+          callOfferHandlerObj,
+        });
+      });
 
-    result.catch(() => {});
     return result;
   };
 
