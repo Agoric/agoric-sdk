@@ -3,17 +3,9 @@
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
-export const makeZoeSeatAdminKit = (
-  initialAllocation,
-  instanceAdmin,
-  proposal,
-  brandToPurse,
-  exitObj,
-  offerResult,
-) => {
+export const makeZoeSeatAdminKit = (instanceAdmin, offerResult) => {
   const payoutPromiseKit = makePromiseKit();
-  // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-  // This does not suppress any error messages.
+
   payoutPromiseKit.promise.catch(_ => {});
 
   const doExit = zoeSeatAdmin => {

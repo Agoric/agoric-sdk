@@ -1,4 +1,3 @@
-import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeWeakStore } from '@agoric/store';
 import { Far, Data } from '@agoric/marshal';
@@ -13,24 +12,13 @@ export function buildRootObject(_powers, _params) {
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
 
     const zcf = Far('zcf', {
-      makeInvitation: (
-        offerHandler = () => {},
-        description,
-        customProperties = Data({}),
-      ) => {
-        assert.typeof(
-          description,
-          'string',
-          X`invitations must have a description string: ${description}`,
-        );
-
+      makeInvitation: (offerHandler = () => {}, description) => {
         const invitationHandle = makeHandle('Invitation');
         invitationHandleToHandler.init(invitationHandle, offerHandler);
         /** @type {Promise<Payment>} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(
           invitationHandle,
           description,
-          customProperties,
         );
         return invitationP;
       },

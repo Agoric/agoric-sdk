@@ -5,7 +5,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
-import { Data, Far } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { makeHandle } from '../makeHandle';
@@ -14,7 +14,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
   const installations = new WeakSet();
   const instanceToInstanceAdmin = makeWeakStore('instance');
-  const brandToPurse = makeWeakStore('brand');
   const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
 
   const install = async bundle => {
@@ -60,11 +59,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         /** @type {InstanceAdmin} */
         return Far('instanceAdmin', {
           addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
-          tellZCFToMakeSeat: (
-            invitationHandle,
-            zoeSeatAdmin,
-            seatHandle,
-          ) => {
+          tellZCFToMakeSeat: (invitationHandle, zoeSeatAdmin, seatHandle) => {
             return E(
               /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
             ).addSeat(invitationHandle, zoeSeatAdmin, seatHandle);
@@ -106,11 +101,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
-        makeInvitation: (invitationHandle, description, customProperties) => {
+        makeInvitation: (invitationHandle, description) => {
           const invitationAmount = invitationAmountMath.make(
             harden([
               {
-                ...customProperties,
                 description,
                 handle: invitationHandle,
                 instance,
@@ -185,19 +179,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       exitObjPromiseKit.promise.catch(_ => {});
       const seatHandle = makeHandle('SeatHandle');
 
-      const initialAllocation = harden({});
-      const proposal = harden({
-        want: Data({}),
-        give: Data({}),
-        exit: { onDemand: null },
-      });
-
       const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
-        initialAllocation,
         instanceAdmin,
-        proposal,
-        brandToPurse,
-        exitObjPromiseKit.promise,
         offerResultPromiseKit.promise,
       );
 

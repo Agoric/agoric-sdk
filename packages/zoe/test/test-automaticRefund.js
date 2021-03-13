@@ -10,9 +10,9 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
-import { evalContractBundle } from '../../../src/contractFacet/evalContractCode';
+import { evalContractBundle } from '../src/contractFacet/evalContractCode';
 
-import { makeZoe } from '../../../src/zoeService/zoe';
+import { makeZoe } from '../src/zoeService/zoe';
 
 function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
@@ -73,7 +73,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
 
 const fakeVatAdmin = makeFakeVatAdmin().admin;
 
-const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
+const automaticRefundRoot = `${__dirname}/../src/contracts/automaticRefund`;
 
 test('one instance', async t => {
   t.plan(2);
