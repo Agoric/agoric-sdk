@@ -9,7 +9,12 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { makeHandle } from '../makeHandle';
 
 function makeZoe(vatAdminSvc) {
-  const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
+  const {
+    issuer: invitationIssuer,
+    mint: invitationMint,
+    amountMath: invitationAmountMath,
+  } = makeIssuerKit('Zoe Invitation', MathKind.SET);
+
   const installations = new WeakSet();
   const instanceToInstanceAdmin = nonVOMakeWeakStore('instance');
   const seatHandleToZoeSeatAdmin = nonVOMakeWeakStore('seatHandle');
@@ -60,14 +65,6 @@ function makeZoe(vatAdminSvc) {
       const instanceAdmin = makeInstanceAdmin();
       instanceToInstanceAdmin.init(instance, instanceAdmin);
 
-      // Unpack the invitationKit.
-      const {
-        issuer: invitationIssuer,
-        mint: invitationMint,
-        amountMath: invitationAmountMath,
-      } = invitationKit;
-
-      /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
         makeInvitation: (invitationHandle, description) => {
           const invitationAmount = invitationAmountMath.make(
@@ -102,7 +99,6 @@ function makeZoe(vatAdminSvc) {
           creatorInvitation = invitationResult.value;
         }
 
-        // Actually returned to the user.
         return {
           creatorInvitation,
           publicFacet,
@@ -110,7 +106,7 @@ function makeZoe(vatAdminSvc) {
       });
     },
     offer: async invitation => {
-      const invitationAmount = await invitationKit.issuer.burn(invitation);
+      const invitationAmount = await invitationIssuer.burn(invitation);
       const invitationHandle = invitationAmount.value[0].handle;
       const instance = invitationAmount.value[0].instance;
       const instanceAdmin = instanceToInstanceAdmin.get(instance);
@@ -148,8 +144,6 @@ function makeZoe(vatAdminSvc) {
           offerResultPromiseKit.resolve(offerResultP);
           exitObjPromiseKit.resolve(exitObj);
         })
-        // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-        // This does not suppress any error messages.
         .catch(() => {});
 
       return userSeat;
