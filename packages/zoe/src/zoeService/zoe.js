@@ -63,12 +63,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           tellZCFToMakeSeat: (
             invitationHandle,
             zoeSeatAdmin,
-            seatData,
             seatHandle,
           ) => {
             return E(
               /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
-            ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
+            ).addSeat(invitationHandle, zoeSeatAdmin, seatHandle);
           },
           hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
           removeZoeSeatAdmin: zoeSeatAdmin =>
@@ -193,7 +192,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         exit: { onDemand: null },
       });
 
-      const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+      const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
         initialAllocation,
         instanceAdmin,
         proposal,
@@ -204,11 +203,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
 
-      const seatData = harden({ proposal, initialAllocation, notifier });
-
       instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
       instanceAdmin
-        .tellZCFToMakeSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle)
+        .tellZCFToMakeSeat(invitationHandle, zoeSeatAdmin, seatHandle)
         .then(({ offerResultP, exitObj }) => {
           offerResultPromiseKit.resolve(offerResultP);
           exitObjPromiseKit.resolve(exitObj);

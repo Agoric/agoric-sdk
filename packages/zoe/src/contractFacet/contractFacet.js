@@ -4,13 +4,10 @@ import { makeWeakStore } from '@agoric/store';
 import { Far, Data } from '@agoric/marshal';
 
 import { evalContractBundle } from './evalContractCode';
-import { makeZcfSeatAdminKit } from './seat';
-import { makeExitObj } from './exit';
 import { makeHandle } from '../makeHandle';
 
 export function buildRootObject(_powers, _params) {
   const executeContract = async (bundle, zoeInstanceAdmin) => {
-    /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
@@ -40,14 +37,24 @@ export function buildRootObject(_powers, _params) {
     });
 
     const addSeatObj = Far('addSeatObj', {
-      addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
-        const { zcfSeat } = makeZcfSeatAdminKit(zoeSeatAdmin);
+      addSeat: (invitationHandle, zoeSeatAdmin, seatHandle) => {
+        const zcfSeat = Far('zcfSeat', {
+          exit: completion => {
+            E(zoeSeatAdmin).exit(completion);
+          },
+        });
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           throw zcfSeat.fail(reason);
         });
-        const exitObj = makeExitObj();
+        const exitObj = Far('exitObj', {
+          exit: () => {
+            throw new Error(
+              `Only seats with the exit rule "onDemand" can exit at will`,
+            );
+          },
+        });
 
         return harden({ offerResultP, exitObj });
       },
