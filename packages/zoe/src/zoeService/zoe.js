@@ -1,4 +1,4 @@
-import { makeWeakStore } from '@agoric/store';
+import { makeWeakStore as nonVOMakeWeakStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -13,8 +13,8 @@ import { makeHandle } from '../makeHandle';
 function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
   const installations = new WeakSet();
-  const instanceToInstanceAdmin = makeWeakStore('instance');
-  const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
+  const instanceToInstanceAdmin = nonVOMakeWeakStore('instance');
+  const seatHandleToZoeSeatAdmin = nonVOMakeWeakStore('seatHandle');
 
   const install = async bundle => {
     assert(bundle, X`a bundle must be provided`);

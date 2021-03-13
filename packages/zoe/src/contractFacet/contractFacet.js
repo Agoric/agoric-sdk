@@ -1,15 +1,15 @@
 import { E } from '@agoric/eventual-send';
-import { makeWeakStore } from '@agoric/store';
-import { Far, Data } from '@agoric/marshal';
+import { makeWeakStore as nonVOMakeWeakStore } from '@agoric/store';
+import { Far } from '@agoric/marshal';
 
 import { evalContractBundle } from './evalContractCode';
 import { makeHandle } from '../makeHandle';
 
 export function buildRootObject(_powers, _params) {
   const executeContract = async (bundle, zoeInstanceAdmin) => {
-    const invitationHandleToHandler = makeWeakStore('invitationHandle');
+    const invitationHandleToHandler = nonVOMakeWeakStore('invitationHandle');
 
-    const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+    const zcfSeatToSeatHandle = nonVOMakeWeakStore('zcfSeat');
 
     const zcf = Far('zcf', {
       makeInvitation: (offerHandler = () => {}, description) => {
