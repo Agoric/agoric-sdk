@@ -17,7 +17,6 @@ function makeZoe(vatAdminSvc) {
 
   const installations = new WeakSet();
   const instanceToInstanceAdmin = nonVOMakeWeakStore('instance');
-  const seatHandleToZoeSeatAdmin = nonVOMakeWeakStore('seatHandle');
 
   const install = async bundle => {
     const installation = Far('Installation', {
@@ -51,10 +50,10 @@ function makeZoe(vatAdminSvc) {
         /** @type {InstanceAdmin} */
         return Far('instanceAdmin', {
           addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
-          tellZCFToMakeSeat: (invitationHandle, zoeSeatAdmin, seatHandle) => {
+          tellZCFToMakeSeat: (invitationHandle, zoeSeatAdmin) => {
             return E(
               /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
-            ).addSeat(invitationHandle, zoeSeatAdmin, seatHandle);
+            ).addSeat(invitationHandle, zoeSeatAdmin);
           },
           hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
           removeZoeSeatAdmin: zoeSeatAdmin =>
@@ -119,7 +118,6 @@ function makeZoe(vatAdminSvc) {
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
       exitObjPromiseKit.promise.catch(_ => {});
-      const seatHandle = makeHandle('SeatHandle');
 
       const doExit = zoeSeatAdmin => {
         instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
@@ -135,11 +133,9 @@ function makeZoe(vatAdminSvc) {
         getOfferResult: async () => offerResultPromiseKit.promise,
       });
 
-      seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-
       instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
       instanceAdmin
-        .tellZCFToMakeSeat(invitationHandle, zoeSeatAdmin, seatHandle)
+        .tellZCFToMakeSeat(invitationHandle, zoeSeatAdmin)
         .then(({ offerResultP, exitObj }) => {
           offerResultPromiseKit.resolve(offerResultP);
           exitObjPromiseKit.resolve(exitObj);
