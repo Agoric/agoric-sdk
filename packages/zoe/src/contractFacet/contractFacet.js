@@ -24,22 +24,9 @@ export function buildRootObject(_powers, _params) {
 
     const addSeatObj = Far('addSeatObj', {
       addSeat: invitationHandle => {
-        const zcfSeat = Far('zcfSeat', {
-          exit: () => {},
-        });
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
-        const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-          throw zcfSeat.fail(reason);
-        });
-        const exitObj = Far('exitObj', {
-          exit: () => {
-            throw new Error(
-              `Only seats with the exit rule "onDemand" can exit at will`,
-            );
-          },
-        });
-
-        return harden({ offerResultP, exitObj });
+        const offerResultP = E(offerHandler)();
+        return harden({ offerResultP });
       },
     });
 

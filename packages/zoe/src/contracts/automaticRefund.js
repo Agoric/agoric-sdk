@@ -5,9 +5,8 @@ import { Far } from '@agoric/marshal';
 const start = zcf => {
   let offersCount = 0n;
 
-  const refund = seat => {
+  const refund = _seat => {
     offersCount += 1n;
-    seat.exit();
     return `The offer was accepted`;
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
