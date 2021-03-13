@@ -14,7 +14,6 @@ const start = zcf => {
 
   const publicFacet = Far('publicFacet', {
     getOffersCount: () => offersCount,
-    makeInvitation: makeRefundInvitation,
   });
 
   const creatorInvitation = makeRefundInvitation();

@@ -1,24 +1,20 @@
 import { makeWeakStore as nonVOMakeWeakStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import { Far } from '@agoric/marshal';
-import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { makeHandle } from '../makeHandle';
 
-function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
+function makeZoe(vatAdminSvc) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
   const installations = new WeakSet();
   const instanceToInstanceAdmin = nonVOMakeWeakStore('instance');
   const seatHandleToZoeSeatAdmin = nonVOMakeWeakStore('seatHandle');
 
   const install = async bundle => {
-    assert(bundle, X`a bundle must be provided`);
-    /** @type {Installation} */
     const installation = Far('Installation', {
       getBundle: () => bundle,
     });
@@ -30,19 +26,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     install,
     startInstance: async installationP => {
       const installation = await Promise.resolve(installationP);
-      assert(
-        installations.has(installation),
-        X`${installation} was not a valid installation`,
-      );
 
       const instance = makeHandle('Instance');
 
-      const createVatResultP = zcfBundleName
-        ? E(vatAdminSvc).createVatByName(zcfBundleName)
-        : E(vatAdminSvc).createVat(zcfContractBundle);
-      const { adminNode, root } = await createVatResultP;
-
-      const zcfRoot = root;
+      const createVatResultP = E(vatAdminSvc).createVat(zcfContractBundle);
+      const { root: zcfRoot } = await createVatResultP;
 
       const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
@@ -54,7 +42,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const makeInstanceAdmin = () => {
         const zoeSeatAdmins = new Set();
-        let acceptingOffers = true;
 
         /** @type {InstanceAdmin} */
         return Far('instanceAdmin', {
@@ -67,30 +54,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
           removeZoeSeatAdmin: zoeSeatAdmin =>
             zoeSeatAdmins.delete(zoeSeatAdmin),
-          acceptingOffers: () => acceptingOffers,
-          exitAllSeats: completion => {
-            acceptingOffers = false;
-            zoeSeatAdmins.forEach(zoeSeatAdmin =>
-              zoeSeatAdmin.exit(completion),
-            );
-          },
-          failAllSeats: reason => {
-            acceptingOffers = false;
-            zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
-          },
-          stopAcceptingOffers: () => (acceptingOffers = false),
         });
       };
 
       const instanceAdmin = makeInstanceAdmin();
       instanceToInstanceAdmin.init(instance, instanceAdmin);
-
-      E(adminNode)
-        .done()
-        .then(
-          completion => instanceAdmin.exitAllSeats(completion),
-          reason => instanceAdmin.failAllSeats(reason),
-        );
 
       // Unpack the invitationKit.
       const {
@@ -114,16 +82,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           );
           return invitationMint.mintPayment(invitationAmount);
         },
-        exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
-        failAllSeats: reason => instanceAdmin.failAllSeats(reason),
-        stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
       });
 
-      // At this point, the contract will start executing. All must be
-      // ready
-
       const {
-        creatorFacet = Far('emptyCreatorFacet', {}),
         publicFacet = Far('emptyPublicFacet', {}),
         creatorInvitation: creatorInvitationP,
         addSeatObj,
@@ -132,34 +93,19 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       addSeatObjPromiseKit.resolve(addSeatObj);
       publicFacetPromiseKit.resolve(publicFacet);
 
-      // creatorInvitation can be undefined, but if it is defined,
-      // let's make sure it is an invitation.
       return Promise.allSettled([
         creatorInvitationP,
         invitationIssuer.isLive(creatorInvitationP),
-      ]).then(([invitationResult, isLiveResult]) => {
+      ]).then(([invitationResult, _isLiveResult]) => {
         let creatorInvitation;
         if (invitationResult.status === 'fulfilled') {
           creatorInvitation = invitationResult.value;
         }
-        if (creatorInvitation !== undefined) {
-          assert(
-            isLiveResult.status === 'fulfilled' && isLiveResult.value,
-            X`The contract did not correctly return a creatorInvitation`,
-          );
-        }
-        const adminFacet = Far('adminFacet', {
-          getVatShutdownPromise: () => E(adminNode).done(),
-          getVatStats: () => E(adminNode).adminData(),
-        });
 
         // Actually returned to the user.
         return {
-          creatorFacet,
           creatorInvitation,
-          instance,
           publicFacet,
-          adminFacet,
         };
       });
     },
@@ -179,10 +125,19 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       exitObjPromiseKit.promise.catch(_ => {});
       const seatHandle = makeHandle('SeatHandle');
 
-      const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
-        instanceAdmin,
-        offerResultPromiseKit.promise,
-      );
+      const doExit = zoeSeatAdmin => {
+        instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
+      };
+
+      const zoeSeatAdmin = Far('zoeSeatAdmin', {
+        exit: _reason => {
+          doExit(zoeSeatAdmin);
+        },
+      });
+
+      const userSeat = Far('userSeat', {
+        getOfferResult: async () => offerResultPromiseKit.promise,
+      });
 
       seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
 
