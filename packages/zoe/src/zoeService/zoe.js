@@ -93,9 +93,6 @@ function makeZoe(vatAdminSvc) {
       const offerResultPromiseKit = makePromiseKit();
 
       offerResultPromiseKit.promise.catch(_ => {});
-      const exitObjPromiseKit = makePromiseKit();
-
-      exitObjPromiseKit.promise.catch(_ => {});
 
       const userSeat = Far('userSeat', {
         getOfferResult: async () => offerResultPromiseKit.promise,
@@ -104,9 +101,8 @@ function makeZoe(vatAdminSvc) {
       const addSeatPromise = instanceToAddSeatPromise.get(instance);
       E(addSeatPromise)
         .addSeat(invitationHandle)
-        .then(({ offerResultP, exitObj }) => {
+        .then(({ offerResultP }) => {
           offerResultPromiseKit.resolve(offerResultP);
-          exitObjPromiseKit.resolve(exitObj);
         })
         .catch(() => {});
 
