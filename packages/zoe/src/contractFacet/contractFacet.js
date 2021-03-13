@@ -9,8 +9,6 @@ export function buildRootObject(_powers, _params) {
   const executeContract = async (bundle, zoeInstanceAdmin) => {
     const invitationHandleToHandler = nonVOMakeWeakStore('invitationHandle');
 
-    const zcfSeatToSeatHandle = nonVOMakeWeakStore('zcfSeat');
-
     const zcf = Far('zcf', {
       makeInvitation: (offerHandler = () => {}, description) => {
         const invitationHandle = makeHandle('Invitation');
@@ -25,13 +23,10 @@ export function buildRootObject(_powers, _params) {
     });
 
     const addSeatObj = Far('addSeatObj', {
-      addSeat: (invitationHandle, zoeSeatAdmin, seatHandle) => {
+      addSeat: invitationHandle => {
         const zcfSeat = Far('zcfSeat', {
-          exit: completion => {
-            E(zoeSeatAdmin).exit(completion);
-          },
+          exit: () => {},
         });
-        zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           throw zcfSeat.fail(reason);
@@ -56,12 +51,10 @@ export function buildRootObject(_powers, _params) {
       .start(zcf)
       .then(
         ({
-          creatorFacet = Far('emptyCreatorFacet', {}),
           publicFacet = Far('emptyPublicFacet', {}),
           creatorInvitation = undefined,
         }) => {
           return harden({
-            creatorFacet,
             publicFacet,
             creatorInvitation,
             addSeatObj,
