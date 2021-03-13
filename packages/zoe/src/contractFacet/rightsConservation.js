@@ -3,7 +3,6 @@
 import makeStore from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 
-import '../internal-types';
 
 /**
  * Iterate over the amounts and sum, storing the sums in a

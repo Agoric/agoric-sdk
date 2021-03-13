@@ -1,5 +1,3 @@
-import { assert, details as X, q } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
 /**
@@ -8,57 +6,12 @@ import { Far } from '@agoric/marshal';
  */
 
 /** @type {MakeExitObj} */
-export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
-  const [exitKind] = Object.getOwnPropertyNames(proposal.exit);
-
-  /** @type {ExitObj} */
-  let exitObj = Far('exitObj', {
+export const makeExitObj = () => {
+  return Far('exitObj', {
     exit: () => {
       throw new Error(
         `Only seats with the exit rule "onDemand" can exit at will`,
       );
     },
   });
-
-  const exitFn = () => {
-    zcfSeatAdmin.updateHasExited();
-    return E(zoeSeatAdmin).exit();
-  };
-
-  if (exitKind === 'afterDeadline') {
-    // Automatically exit the seat after deadline.
-    E(proposal.exit.afterDeadline.timer)
-      .setWakeup(
-        proposal.exit.afterDeadline.deadline,
-        Far('wakeObj', {
-          wake: exitFn,
-        }),
-      )
-      .catch(reason => {
-        console.error(
-          `The seat could not be made with the provided timer ${proposal.exit.afterDeadline.timer} and deadline ${proposal.exit.afterDeadline.deadline}`,
-        );
-        console.error(reason);
-        zcfSeatAdmin.updateHasExited();
-        E(zoeSeatAdmin).fail(reason);
-        throw reason;
-      });
-  } else if (exitKind === 'onDemand') {
-    // Allow the user to exit their seat on demand. Note: we must wrap
-    // it in an object to send it back to Zoe because our marshalling layer
-    // only allows two kinds of objects: records (no methods and only
-    // data) and presences (local proxies for objects that may have
-    // methods).
-    exitObj = Far('exitObj', {
-      exit: exitFn,
-    });
-  } else {
-    // if exitKind is 'waived' the user has no ability to exit their seat
-    // on demand
-    assert(
-      exitKind === 'waived',
-      X`exit kind was not recognized: ${q(exitKind)}`,
-    );
-  }
-  return exitObj;
 };

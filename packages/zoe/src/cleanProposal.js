@@ -3,7 +3,6 @@ import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
 import { Data } from '@agoric/marshal';
 
-import './internal-types';
 
 import { arrayToObj, assertSubset } from './objArrayConversion';
 

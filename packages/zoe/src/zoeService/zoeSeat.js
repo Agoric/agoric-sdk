@@ -7,9 +7,6 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { objectMap } from '../objArrayConversion';
 
-import '../types';
-import '../internal-types';
-
 /**
  * makeZoeSeatAdminKit makes an object that manages the state of a seat
  * participating in a Zoe contract and return its two facets.
