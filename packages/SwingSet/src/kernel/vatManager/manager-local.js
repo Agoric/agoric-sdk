@@ -19,8 +19,6 @@ export function makeLocalVatManagerFactory(tools) {
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
   const { WeakRef, FinalizationRegistry } = gcTools;
   const baseVP = {
-    Remotable: allVatPowers.Remotable,
-    getInterfaceOf: allVatPowers.getInterfaceOf,
     makeMarshal: allVatPowers.makeMarshal,
     transformTildot: allVatPowers.transformTildot,
   };

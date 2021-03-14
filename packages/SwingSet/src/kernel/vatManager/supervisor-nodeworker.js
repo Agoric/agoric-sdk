@@ -6,7 +6,7 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
+import { makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
@@ -95,8 +95,6 @@ parentPort.on('message', ([type, ...margs]) => {
     // transformTildot should be async and outsourced to the kernel
     // process/thread.
     const vatPowers = {
-      Remotable,
-      getInterfaceOf,
       makeMarshal,
       testLog,
     };
