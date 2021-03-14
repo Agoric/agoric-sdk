@@ -1,4 +1,3 @@
-import { Remotable, getInterfaceOf } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions';
@@ -188,17 +187,13 @@ export default function buildKernel(
 
   // These will eventually be provided by the in-worker supervisor instead.
 
-  // We need to give the vat the correct Remotable and getKernelPromise so
-  // that they can access our own @agoric/marshal, not a separate instance in
-  // a bundle. TODO: ideally the powerless ones (Remotable, getInterfaceOf,
-  // maybe transformMetering) are imported by the vat, not passed in an
-  // argument. The powerful one (makeGetMeter) should only be given to the
-  // root object, to share with (or withhold from) other objects as it sees
-  // fit. TODO: makeGetMeter and transformMetering will go away
+  // TODO: ideally the powerless ones (maybe transformMetering) are imported
+  // by the vat, not passed in an argument. The powerful one (makeGetMeter)
+  // should only be given to the root object, to share with (or withhold
+  // from) other objects as it sees fit. TODO: makeGetMeter and
+  // transformMetering will go away
 
   const allVatPowers = harden({
-    Remotable,
-    getInterfaceOf,
     makeGetMeter: meterManager.makeGetMeter,
     transformMetering: (...args) =>
       meterManager.runWithoutGlobalMeter(transformMetering, ...args),

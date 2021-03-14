@@ -63,8 +63,6 @@ A few vats do not use liveslots. The main one is the "comms vat", which performs
 
 Static vats currently receive the following objects in their `buildRootObject()`'s sole `vatPowers` argument:
 
-* `Remotable`
-* `getInterfaceOf`
 * `makeGetMeter`
 * `transformMetering`
 * `transformTildot`
@@ -72,14 +70,6 @@ Static vats currently receive the following objects in their `buildRootObject()`
 * `exitVatWithFailure`
 
 (dynamic vats do not get `makeGetMeter` or `transformMetering`)
-
-### marshalling: `Remotable` and `getInterfaceOf`
-
-Messages sent between vats include arguments (and return values) which are serialized with `@agoric/marshal`. This marshalling library makes a distinction between plain data, and "remotable objects". Data is merely copied, but remotables arrive as a *Presence*, to which messages can be sent, with e.g. `counter~.increment()`.
-
-Objects which are frozen, and whose enumerable properties are all functions, will automatically qualify as remotable. In addition, vats can use `Remotable()` to create new remotable objects with a particular "interface" name, as well as other properties. The interface name can be retrieved with `getInterfaceOf`.
-
-This functionality is still in development. See https://github.com/Agoric/agoric-sdk/issues/804 for details.
 
 ### metering: `makeGetMeter`, `transformMetering`
 

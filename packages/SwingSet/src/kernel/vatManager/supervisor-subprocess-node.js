@@ -6,7 +6,7 @@ import fs from 'fs';
 
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
+import { makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
 import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
 import {
@@ -115,8 +115,6 @@ fromParent.on('data', ([type, ...margs]) => {
     // transformTildot should be async and outsourced to the kernel
     // process/thread.
     const vatPowers = {
-      Remotable,
-      getInterfaceOf,
       makeMarshal,
       testLog,
     };

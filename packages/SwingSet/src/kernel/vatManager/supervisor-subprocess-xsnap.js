@@ -2,7 +2,7 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { Remotable, getInterfaceOf, makeMarshal } from '@agoric/marshal';
+import { makeMarshal } from '@agoric/marshal';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 
@@ -210,8 +210,6 @@ function makeWorker(port) {
     });
 
     const vatPowers = {
-      Remotable,
-      getInterfaceOf,
       makeMarshal,
       transformTildot,
       testLog: (...args) =>

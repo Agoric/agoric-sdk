@@ -2,8 +2,6 @@
 
 import {
   Remotable,
-  Far,
-  getInterfaceOf,
   passStyleOf,
   REMOTE_STYLE,
   makeMarshal,
@@ -669,9 +667,6 @@ export function makeLiveSlots(
 ) {
   const allVatPowers = {
     ...vatPowers,
-    getInterfaceOf,
-    Remotable,
-    Far,
     makeMarshal,
   };
   const r = build(syscall, forVatID, cacheSize, allVatPowers, vatParameters);
