@@ -13,6 +13,8 @@ export function buildRootObject() {
   const precD = makePromiseKit();
   const precE = makePromiseKit();
 
+  const dropMe = Far('dropMe', {});
+
   function checkResB(resB) {
     if (resB === callbackObj) {
       return 'B good';
@@ -61,6 +63,7 @@ export function buildRootObject() {
         precD.promise,
         precE.promise,
         devices.add,
+        dropMe,
       );
       const rp3 = E(vats.target).one();
       precD.resolve(callbackObj); // two

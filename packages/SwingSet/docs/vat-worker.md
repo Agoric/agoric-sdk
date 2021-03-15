@@ -56,6 +56,7 @@ The VatManager is given access to a `VatSyscallHandler` function. This takes a `
 * `['vatstoreGet', key]`
 * `['vatstoreSet', key, data]`
 * `['vatstoreDelete', key]`
+* `['dropImports', slots]`
 
 As with deliveries (but in reverse), the translator converts this from vat-centric identifiers into kernel-centric ones, and emits a `KernelSyscall` object, with one of these forms:
 

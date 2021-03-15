@@ -70,6 +70,10 @@ function build(
   /** Map vat slot strings -> in-vat object references. */
   const slotToVal = new Map();
 
+  /** Map disavowed Presences to the Error which kills the vat if you try to
+   * talk to them */
+  const disavowedPresences = new WeakMap();
+
   const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
   let nextPromiseID = 5;
@@ -82,9 +86,15 @@ function build(
 
     lsdebug(`makeImportedPresence(${slot})`);
     const fulfilledHandler = {
-      applyMethod(_o, prop, args, returnedP) {
+      applyMethod(o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
+        const err = disavowedPresences.get(o);
+        if (err) {
+          // eslint-disable-next-line no-use-before-define
+          exitVatWithFailure(err);
+          throw err;
+        }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
       },
@@ -263,6 +273,12 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
+        const err = disavowedPresences.get(val);
+        if (err) {
+          // eslint-disable-next-line no-use-before-define
+          exitVatWithFailure(err);
+          throw err; // cannot reference a disavowed object
+        }
         assert.equal(passStyleOf(val), REMOTE_STYLE);
         slot = exportPassByPresence();
       }
@@ -613,7 +629,23 @@ function build(
     syscall.exit(true, m.serialize(harden(reason)));
   }
 
-  function disavow(_presence) {}
+  function disavow(presence) {
+    if (!valToSlot.has(presence)) {
+      assert.fail(X`attempt to disavow unknown ${presence}`);
+    }
+    const slot = valToSlot.get(presence);
+    const { type, allocatedByVat } = parseVatSlot(slot);
+    assert.equal(type, 'object', X`attempt to disavow non-object ${presence}`);
+    // disavow() is only for imports: we'll use a different API to revoke
+    // exports, one which accepts an Error object
+    assert.equal(allocatedByVat, false, X`attempt to disavow an export`);
+    valToSlot.delete(presence);
+    slotToVal.delete(slot);
+    const err = harden(Error(`this Presence has been disavowed`));
+    disavowedPresences.set(presence, err);
+
+    syscall.dropImports([slot]);
+  }
 
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
   // (bootstrap, bridge, vat-http), swingset

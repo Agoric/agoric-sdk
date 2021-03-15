@@ -103,6 +103,7 @@ export function createSyscall(transcriptManager) {
     vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
     vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
     vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
+    dropImports: (...args) => doSyscall(['dropImports', ...args]),
   });
 
   return harden({ syscall, doSyscall, setVatSyscallHandler });

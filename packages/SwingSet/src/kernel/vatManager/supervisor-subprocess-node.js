@@ -116,6 +116,7 @@ fromParent.on('data', ([type, ...margs]) => {
       vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
       vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
       vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
+      dropImports: (...args) => doSyscall(['dropImports', ...args]),
     });
 
     const vatID = 'demo-vatID';
