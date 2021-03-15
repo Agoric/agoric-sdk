@@ -16,6 +16,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:xs": "exit 0",
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xs vat manager'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",

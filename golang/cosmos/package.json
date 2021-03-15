@@ -15,6 +15,7 @@
     "build:gyp": "make compile-gyp",
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test:nyc": "nyc ava",
+    "test:xs": "exit 0",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"

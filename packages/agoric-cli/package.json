@@ -14,6 +14,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava --config .ava-unit-test.config.js",
+    "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'"
