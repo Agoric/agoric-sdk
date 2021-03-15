@@ -87,6 +87,10 @@ parentPort.on('message', ([type, ...margs]) => {
       },
       subscribe: (...args) => doSyscall(['subscribe', ...args]),
       resolve: (...args) => doSyscall(['resolve', ...args]),
+      exit: (...args) => doSyscall(['exit', ...args]),
+      vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
+      vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
+      vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
     });
 
     const vatID = 'demo-vatID';
