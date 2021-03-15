@@ -1,5 +1,6 @@
 import { isPromise } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { getInterfaceOf, Remotable, Far } from '@agoric/marshal';
 
 import { Nat } from '@agoric/nat';
 import makeUIAgentMakers from './ui-agent';
@@ -8,7 +9,7 @@ import makeUIAgentMakers from './ui-agent';
 export function stringify(
   value,
   spaces,
-  getInterfaceOf,
+  gio = getInterfaceOf,
   inProgress = new WeakSet(),
   depth = 0,
 ) {
@@ -41,7 +42,7 @@ export function stringify(
 
   let ret = '';
   const spcs = spaces === undefined ? '' : ' '.repeat(spaces);
-  if (getInterfaceOf && getInterfaceOf(value) !== undefined) {
+  if (gio && gio(value) !== undefined) {
     ret += `${value}`;
   } else if (Array.isArray(value)) {
     ret += `[`;
@@ -52,7 +53,7 @@ export function stringify(
       if (spcs !== '') {
         ret += `\n${spcs.repeat(depth + 1)}`;
       }
-      ret += stringify(value[i], spaces, getInterfaceOf, inProgress, depth + 1);
+      ret += stringify(value[i], spaces, gio, inProgress, depth + 1);
       sep = ',';
     }
     if (sep !== '' && spcs !== '') {
@@ -70,7 +71,7 @@ export function stringify(
       ret += `\n${spcs.repeat(depth + 1)}`;
     }
     ret += `${JSON.stringify(key)}:${spaces > 0 ? ' ' : ''}`;
-    ret += stringify(value[key], spaces, getInterfaceOf, inProgress, depth + 1);
+    ret += stringify(value[key], spaces, gio, inProgress, depth + 1);
     sep = ',';
   }
   if (sep !== '' && spcs !== '') {
@@ -82,10 +83,10 @@ export function stringify(
 }
 
 export function getReplHandler(replObjects, send, vatPowers) {
-  // We use getInterfaceOf locally, and transformTildot is baked into the
-  // Compartment we use to evaluate REPL inputs. We provide getInterfaceOf
-  // and Remotable to REPL input code.
-  const { getInterfaceOf, Remotable, Far, transformTildot } = vatPowers;
+  // transformTildot is baked into the Compartment we use to evaluate REPL
+  // inputs. We provide getInterfaceOf and Remotable to REPL input code., but
+  // import them from @agoric/marshal directly
+  const { transformTildot } = vatPowers;
   let highestHistory = -1;
   const commands = {
     [highestHistory]: '',
