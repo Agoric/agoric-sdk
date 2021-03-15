@@ -229,13 +229,15 @@ function makeWorker(port) {
         ? virtualObjectCacheSize
         : undefined;
 
+    const gcTools = {}; // future expansion
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
       vatPowers,
       vatParameters,
       cacheSize,
-      // TODO: lsgc? API drift?
+      gcTools,
     );
 
     const endowments = {
