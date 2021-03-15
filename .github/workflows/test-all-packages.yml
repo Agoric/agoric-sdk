@@ -402,3 +402,41 @@ jobs:
       run: cd packages/zoe && yarn test
       env:
         ESM_DISABLE_CACHE: true
+
+  test-xs:
+    continue-on-error: true # XS failures won't block CI
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (xs)
+      timeout-minutes: 20
+      run: yarn test:xs
+      env:
+        ESM_DISABLE_CACHE: true
