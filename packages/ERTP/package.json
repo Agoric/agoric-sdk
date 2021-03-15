@@ -11,8 +11,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "yarn test:node && yarn test:xs",
-    "test:node": "ava",
+    "test": "ava",
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
     "test:xs-unit": "ava-xs",
     "test:xs-worker": "WORKER_TYPE=xs-worker ava",

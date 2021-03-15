@@ -23,7 +23,8 @@
     "lint:types": "tsc -p jsconfig.json",
     "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js'",
     "lint-check": "yarn lint",
-    "test": "ava"
+    "test": "ava",
+    "test:xs": "exit 0"
   },
   "dependencies": {
     "@agoric/assert": "^0.2.2-dev.0",

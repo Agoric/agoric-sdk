@@ -28,7 +28,8 @@
     "lint-fix": "eslint --fix '**/*.js'",
     "prepublish": "yarn clean && yarn build",
     "test": "ava",
-    "test:nyc": "nyc ava"
+    "test:nyc": "nyc ava",
+    "test:xs": "exit 0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.1.0",

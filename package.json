@@ -75,6 +75,7 @@
     "lint-check": "yarn workspaces run lint-check",
     "lint": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
+    "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build",
     "postinstall": "patch-package",
     "patch-package": "patch-package",

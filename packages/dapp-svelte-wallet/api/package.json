@@ -6,6 +6,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:xs": "exit 0",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",

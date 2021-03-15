@@ -13,6 +13,7 @@
     "build": "exit 0",
     "test": "ava",
     "test:nyc": "nyc ava",
+    "test:xs": "exit 0",
     "lint-fix": "yarn lint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
