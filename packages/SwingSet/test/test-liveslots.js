@@ -15,6 +15,10 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function caponeslot(slot) {
+  return capargs([{ '@qclass': 'slot', index: 0 }], [slot]);
+}
+
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, rejected, data]];
 }
@@ -37,7 +41,7 @@ function buildSyscall() {
   return { log, syscall };
 }
 
-function makeDispatch(syscall, build) {
+function makeDispatch(syscall, build, enableDisavow = false) {
   const gcTools = harden({ WeakRef, FinalizationRegistry });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
@@ -45,6 +49,7 @@ function makeDispatch(syscall, build) {
     {},
     {},
     undefined,
+    enableDisavow,
     gcTools,
   );
   setBuildRootObject(build);
@@ -551,5 +556,49 @@ test('liveslots vs symbols', async t => {
     type: 'resolve',
     resolutions: [[rp2, false, capargs(['caught', expErr])]],
   });
+  t.deepEqual(log, []);
+});
+
+test('disable disavow', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(vatPowers) {
+    return Far('root', {
+      one() {
+        log.push(!!vatPowers.disavow);
+      },
+    });
+  }
+  const dispatch = makeDispatch(syscall, build, false);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // root~.one() // sendOnly
+  dispatch.deliver(rootA, 'one', capargs([]), undefined);
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), false);
+  t.deepEqual(log, []);
+});
+
+test('disavow', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(vatPowers) {
+    return Far('root', {
+      one(pres1) {
+        vatPowers.disavow(pres1);
+        log.push('disavowed pres1');
+      },
+    });
+  }
+  const dispatch = makeDispatch(syscall, build, true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+  const import1 = 'o-1';
+
+  // root~.one(import1) // sendOnly
+  dispatch.deliver(rootA, 'one', caponeslot(import1), undefined);
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), 'disavowed pres1');
   t.deepEqual(log, []);
 });

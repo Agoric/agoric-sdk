@@ -57,6 +57,7 @@ export function makeVatManagerFactory({
       'setup',
       'bundle',
       'metered',
+      'enableDisavow',
       'enableSetup',
       'enableInternalMetering',
       'liveSlotsConsole',

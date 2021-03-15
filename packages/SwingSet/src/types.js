@@ -21,6 +21,7 @@
  *   managerType: 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker',
  *   metered?: boolean,
  *   enableInternalMetering?: boolean,
+ *   enableDisavow?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  * } & (HasBundle | HasSetup)} ManagerOptions

@@ -84,6 +84,7 @@ export function makeLocalVatManagerFactory(tools) {
   async function createFromBundle(vatID, bundle, managerOptions) {
     const {
       metered = false,
+      enableDisavow = false,
       enableSetup = false,
       enableInternalMetering = false,
       vatParameters = {},
@@ -110,6 +111,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatPowers,
       vatParameters,
       virtualObjectCacheSize,
+      enableDisavow,
       gcTools,
       liveSlotsConsole,
     );

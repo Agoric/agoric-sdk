@@ -44,7 +44,11 @@ export function makeXsSubprocessFactory({
    */
   async function createFromBundle(vatID, bundle, managerOptions) {
     parentLog(vatID, 'createFromBundle', { vatID });
-    const { vatParameters, virtualObjectCacheSize } = managerOptions;
+    const {
+      vatParameters,
+      virtualObjectCacheSize,
+      enableDisavow,
+    } = managerOptions;
     assert(!managerOptions.metered, 'xs-worker: metered not supported yet');
     assert(
       !managerOptions.enableSetup,
@@ -150,6 +154,7 @@ export function makeXsSubprocessFactory({
       bundle,
       vatParameters,
       virtualObjectCacheSize,
+      enableDisavow,
     ]);
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);

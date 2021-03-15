@@ -26,6 +26,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
+ * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {Console} console
@@ -35,12 +36,13 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * create a root object for the new vat The caller provided buildRootObject
  * function produces and returns the new vat's root object:
  *
- *     buildRootObject(vatPowers, vatParameters)
+ * buildRootObject(vatPowers, vatParameters)
  */
 function build(
   syscall,
   forVatID,
   cacheSize,
+  enableDisavow,
   vatPowers,
   vatParameters,
   console,
@@ -611,6 +613,8 @@ function build(
     syscall.exit(true, m.serialize(harden(reason)));
   }
 
+  function disavow(_presence) {}
+
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
   // (bootstrap, bridge, vat-http), swingset
 
@@ -623,9 +627,20 @@ function build(
     assert(!didRoot);
     didRoot = true;
 
+    const disavowPowers = {};
+    if (enableDisavow) {
+      disavowPowers.disavow = disavow;
+    }
+
     // here we finally invoke the vat code, and get back the root object
     const rootObject = buildRootObject(
-      harden({ D, exitVat, exitVatWithFailure, ...vatPowers }),
+      harden({
+        D,
+        exitVat,
+        exitVatWithFailure,
+        ...disavowPowers,
+        ...vatPowers,
+      }),
       harden(vatParameters),
     );
     assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
@@ -648,6 +663,7 @@ function build(
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
+ * @param {boolean} enableDisavow
  * @param {*} _gcTools
  * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
@@ -680,6 +696,7 @@ export function makeLiveSlots(
   vatPowers = harden({}),
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+  enableDisavow = false,
   _gcTools,
   liveSlotsConsole = console,
 ) {
@@ -691,6 +708,7 @@ export function makeLiveSlots(
     syscall,
     forVatID,
     cacheSize,
+    enableDisavow,
     allVatPowers,
     vatParameters,
     liveSlotsConsole,
