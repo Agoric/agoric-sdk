@@ -618,6 +618,13 @@ function build(
     }
   }
 
+  function dropExports(vrefs) {
+    assert(Array.isArray(vrefs));
+    vrefs.map(vref => insistVatType('object', vref));
+    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
+    console.log(`-- liveslots ignoring dropExports`);
+  }
+
   // TODO: when we add notifyForward, guard against cycles
 
   function exitVat(completion) {
@@ -676,7 +683,7 @@ function build(
     slotToVal.set(rootSlot, rootObject);
   }
 
-  const dispatch = harden({ deliver, notify });
+  const dispatch = harden({ deliver, notify, dropExports });
   return harden({ vatGlobals, setBuildRootObject, dispatch, m });
 }
 

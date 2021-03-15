@@ -64,6 +64,11 @@ function doNotify(resolutions) {
   return doProcess(['notify', resolutions], errmsg);
 }
 
+function doDropExports(vrefs) {
+  const errmsg = `vat.doDropExport failed`;
+  return doProcess(['dropExports', vrefs], errmsg);
+}
+
 const toParent = arrayEncoderStream();
 toParent
   .pipe(netstringEncoderStream())
@@ -163,6 +168,8 @@ fromParent.on('data', ([type, ...margs]) => {
       doMessage(...dargs).then(res => sendUplink(['deliverDone', ...res]));
     } else if (dtype === 'notify') {
       doNotify(...dargs).then(res => sendUplink(['deliverDone', ...res]));
+    } else if (dtype === 'dropExports') {
+      doDropExports(...dargs).then(res => sendUplink(['deliverDone', ...res]));
     } else {
       assert.fail(X`bad delivery type ${dtype}`);
     }

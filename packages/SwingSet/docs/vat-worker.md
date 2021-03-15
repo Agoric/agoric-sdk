@@ -24,6 +24,7 @@ The `Delivery` object is a hardened Array of data (Objects, Arrays, and Strings,
 
 * `['message', targetSlot, msg]`
 * `['notify', resolutions]`
+* `['dropExports', vrefs]`
 
 In the `message` form, `targetSlot` is a object/promise reference (a string like `o+13` or `p-24`), which identifies the object or promise to which the message is being sent. This target can be a promise if the message is being pipelined to the result of some earlier message.
 
