@@ -89,6 +89,11 @@ export function makeDeliver(tools, dispatch) {
     return doProcess(['notify', resolutions], errmsg);
   }
 
+  async function deliverOneDropExports(vrefs) {
+    const errmsg = `vat[${vatID}].dropExports failed`;
+    return doProcess(['dropExports', vrefs], errmsg);
+  }
+
   // vatDeliverObject is:
   //  ['message', target, msg]
   //   target is vid
@@ -109,6 +114,8 @@ export function makeDeliver(tools, dispatch) {
         return deliverOneMessage(...args);
       case 'notify':
         return deliverOneNotification(...args);
+      case 'dropExports':
+        return deliverOneDropExports(...args);
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }

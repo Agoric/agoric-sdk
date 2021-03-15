@@ -1,5 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
-import { makeVatSlot } from '../../parseVatSlots';
+import { makeVatSlot, insistVatType, parseVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
 import { makeState, makeStateKit } from './state';
 import { deliverToController } from './controller';
@@ -109,7 +109,14 @@ export function buildCommsDispatch(
     // comms vat version of it) here?
   }
 
-  const dispatch = harden({ deliver, notify });
+  function dropExports(vrefs) {
+    assert(Array.isArray(vrefs));
+    vrefs.map(vref => insistVatType('object', vref));
+    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
+    console.log(`-- comms ignoring dropExports`);
+  }
+
+  const dispatch = harden({ deliver, notify, dropExports });
   debugState.set(dispatch, { state, clistKit });
 
   return dispatch;

@@ -15,8 +15,17 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-function caponeslot(slot) {
-  return capargs([{ '@qclass': 'slot', index: 0 }], [slot]);
+function capdataOneSlot(slot) {
+  return capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [
+    slot,
+  ]);
+}
+
+function capargsOneSlot(slot) {
+  return capargs(
+    [{ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }],
+    [slot],
+  );
 }
 
 function oneResolution(promiseID, rejected, data) {
@@ -639,7 +648,7 @@ test('disavow', async t => {
   const import1 = 'o-1';
 
   // root~.one(import1) // sendOnly
-  dispatch.deliver(rootA, 'one', caponeslot(import1), undefined);
+  dispatch.deliver(rootA, 'one', capargsOneSlot(import1), undefined);
   await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
   t.deepEqual(log.shift(), 'disavowed pres1');
@@ -671,4 +680,38 @@ test('disavow', async t => {
   t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
   t.deepEqual(log.shift(), 'tried to send to disavowed');
   t.deepEqual(log, []);
+});
+
+test('dropExports', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(_vatPowers) {
+    const ex1 = Far('export', {});
+    const root = Far('root', {
+      one() {
+        return ex1;
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // rp1 = root~.one()
+  // ex1 = await rp1
+  const rp1 = 'p-1';
+  dispatch.deliver(rootA, 'one', capargs([]), rp1);
+  await waitUntilQuiescent();
+  const l1 = log.shift();
+  const ex1 = l1.resolutions[0][2].slots[0];
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+  });
+  t.deepEqual(log, []);
+
+  // now tell the vat to drop that export
+  dispatch.dropExports([ex1]);
+  // for now, all that we care about is that liveslots doesn't crash
 });

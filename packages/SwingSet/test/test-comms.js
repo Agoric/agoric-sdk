@@ -155,18 +155,19 @@ test('receive', t => {
     encodeArgs(`deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
+  const expectedAliceKernel = 'o+31';
   t.deepEqual(sends.shift(), [
     bobKernel,
     'bar',
-    capdata('argsbytes', ['o+31', bobKernel]),
+    capdata('argsbytes', [expectedAliceKernel, bobKernel]),
   ]);
   // if we were to send o+31/lo11, the other side should get ro+20, which is alice
   t.is(getRemoteForLocal(remoteID, 'lo11'), 'ro+20');
   t.is(getLocalForRemote(remoteID, 'ro-20'), 'lo11');
-  t.is(getKernelForLocal('lo11'), 'o+31');
-  t.is(getLocalForKernel('o+31'), 'lo11');
+  t.is(getKernelForLocal('lo11'), expectedAliceKernel);
+  t.is(getLocalForKernel(expectedAliceKernel), 'lo11');
 
-  // bob!bar(alice, bob)
+  // bob!bar(alice, bob), again, to test stability
   d.deliver(
     receiverID,
     'receive',
@@ -176,10 +177,11 @@ test('receive', t => {
   t.deepEqual(sends.shift(), [
     bobKernel,
     'bar',
-    capdata('argsbytes', ['o+31', bobKernel]),
+    capdata('argsbytes', [expectedAliceKernel, bobKernel]),
   ]);
 
   // bob!cat(alice, bob, ayana)
+  const expectedAyanaKernel = 'o+32';
   d.deliver(
     receiverID,
     'receive',
@@ -189,6 +191,9 @@ test('receive', t => {
   t.deepEqual(sends.shift(), [
     bobKernel,
     'cat',
-    capdata('argsbytes', ['o+31', bobKernel, 'o+32']),
+    capdata('argsbytes', [expectedAliceKernel, bobKernel, expectedAyanaKernel]),
   ]);
+
+  // make sure comms can tolerate dropExports, even if it's a no-op
+  d.dropExports([expectedAliceKernel, expectedAyanaKernel]);
 });

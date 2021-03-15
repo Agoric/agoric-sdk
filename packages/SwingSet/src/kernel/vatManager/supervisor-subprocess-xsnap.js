@@ -151,6 +151,12 @@ function makeWorker(port) {
     return doProcess(['notify', resolutions], errmsg);
   }
 
+  /** @type { (rs: unknown) => Promise<Tagged> } */
+  function doDropExports(vrefs) {
+    const errmsg = `vat.dropExports failed`;
+    return doProcess(['dropExports', vrefs], errmsg);
+  }
+
   /**
    * TODO: consider other methods per SES VirtualConsole.
    * See https://github.com/Agoric/agoric-sdk/issues/2146
@@ -277,6 +283,8 @@ function makeWorker(port) {
             return doMessage(dargs[0], dargs[1]);
           case 'notify':
             return doNotify(dargs[0]);
+          case 'dropExports':
+            return doDropExports(dargs[0]);
           default:
             assert.fail(X`bad delivery type ${dtype}`);
         }
