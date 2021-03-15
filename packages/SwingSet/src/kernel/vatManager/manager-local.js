@@ -17,7 +17,6 @@ export function makeLocalVatManagerFactory(tools) {
   } = tools;
 
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
-  const { WeakRef, FinalizationRegistry } = gcTools;
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
     transformTildot: allVatPowers.transformTildot,
@@ -101,10 +100,6 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters,
       testLog: allVatPowers.testLog,
     });
-    function vatDecref(vref, count) {
-      gcTools.decref(vatID, vref, count);
-    }
-    const lsgc = harden({ WeakRef, FinalizationRegistry, vatDecref });
 
     // we might or might not use this, depending upon whether the vat exports
     // 'buildRootObject' or a default 'setup' function
@@ -114,7 +109,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatPowers,
       vatParameters,
       virtualObjectCacheSize,
-      lsgc,
+      gcTools,
     );
 
     let meterRecord = null;

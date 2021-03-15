@@ -634,13 +634,14 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
+ * @param {*} _gcTools
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
  * function produces and returns the new vat's root object:
  *
- *     buildRootObject(vatPowers, vatParameters)
+ * buildRootObject(vatPowers, vatParameters)
  *
  * Within the vat, `import { E } from '@agoric/eventual-send'` will
  * provide the E wrapper. For any object x, E(x) returns a proxy object
@@ -664,6 +665,7 @@ export function makeLiveSlots(
   vatPowers = harden({}),
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+  _gcTools,
 ) {
   const allVatPowers = {
     ...vatPowers,
