@@ -88,6 +88,7 @@ export function makeLocalVatManagerFactory(tools) {
       enableInternalMetering = false,
       vatParameters = {},
       vatConsole,
+      liveSlotsConsole,
       virtualObjectCacheSize,
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
@@ -110,6 +111,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       gcTools,
+      liveSlotsConsole,
     );
 
     let meterRecord = null;

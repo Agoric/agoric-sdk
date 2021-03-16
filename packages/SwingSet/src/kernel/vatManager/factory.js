@@ -59,6 +59,7 @@ export function makeVatManagerFactory({
       'metered',
       'enableSetup',
       'enableInternalMetering',
+      'liveSlotsConsole',
       'notifyTermination',
       'virtualObjectCacheSize',
       'vatParameters',

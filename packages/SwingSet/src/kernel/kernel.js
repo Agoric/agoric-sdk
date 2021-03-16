@@ -146,8 +146,14 @@ export default function buildKernel(
   }
   harden(testLog);
 
-  function makeVatConsole(vatID) {
-    const origConsole = makeConsole(`${debugPrefix}SwingSet:${vatID}`);
+  function makeVatConsole(kind, vatID) {
+    const origConsole = makeConsole(`${debugPrefix}SwingSet:${kind}:${vatID}`);
+    if (kind === 'ls') {
+      // LiveSlots is not recorded to kernelSlog.
+      // The slog captures 1: what a vat is told to do, and
+      // 2: what a vat says about its activities
+      return origConsole;
+    }
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
