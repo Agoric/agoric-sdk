@@ -78,7 +78,7 @@ test('natMathHelpers coerce', t => {
 
 test('natMathHelpers coerce no brand', t => {
   t.throws(
-    // @ts-ignore
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(m.make(4n, mockBrand)),
     {
       message: "The brand (an undefined) doesn't look like a brand.",
@@ -94,7 +94,7 @@ test('natMathHelpers getValue', t => {
 
 test('natMathHelpers getValue no brand', t => {
   t.throws(
-    // @ts-ignore
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.getValue(m.make(4n, mockBrand)),
     {
       message: "The brand (an undefined) doesn't look like a brand.",
@@ -111,7 +111,7 @@ test('natMathHelpers makeEmpty', t => {
 
 test('natMathHelpers makeEmpty no brand', t => {
   t.throws(
-    // @ts-ignore
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.makeEmpty(MathKind.NAT),
     {
       message: "The brand (a string) doesn't look like a brand.",

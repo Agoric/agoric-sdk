@@ -336,8 +336,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
       want: { Asset: moola(2) },
       exit: { onDemand: null },
     });
+    assert(swapInvitationTwo);
     const aliceSwapTwoPayments = { Price: simoleansPayment };
-    // @ts-ignore
     const swapSeatTwo = await E(zoe).offer(
       swapInvitationTwo,
       swapTwoProposal,

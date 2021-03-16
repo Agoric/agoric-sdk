@@ -123,11 +123,11 @@ test('percentMath - larger than 100%', t => {
 test('percentMath - Nats only', t => {
   const { brand } = makeIssuerKit('moe');
 
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   t.throws(() => makePercent(10.1, brand), {
     message: '10.1 not a safe integer',
   });
 
-  // @ts-ignore
+  // @ts-ignore test with number even though deprecated
   t.notThrows(() => makePercent(47, brand));
 });

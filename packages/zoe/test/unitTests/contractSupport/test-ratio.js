@@ -153,7 +153,7 @@ test('ratio - larger than 100%', t => {
 test('ratio - Nats', t => {
   const { brand } = makeIssuerKit('moe');
 
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(10.1, brand), {
     message: '10.1 not a safe integer',
   });
@@ -186,11 +186,11 @@ test('ratio bad inputs', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
   const moe = value => amountMath.make(value, brand);
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(-3, brand), {
     message: '-3 is negative',
   });
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(3n, brand, 100.5), {
     message: '100.5 not a safe integer',
   });

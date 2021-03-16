@@ -45,6 +45,7 @@ export const makeZoeSeatAdminKit = (
     /** @type {PaymentPKeywordRecord} */
     const payout = objectMap(currentAllocation, ([keyword, payoutAmount]) => {
       const purse = brandToPurse.get(payoutAmount.brand);
+      // TODO: fix types of ObjectMap
       // @ts-ignore
       return [keyword, E(purse).withdraw(payoutAmount)];
     });

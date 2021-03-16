@@ -136,7 +136,7 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   // TODO: Port this to makeQuoteNotifier(amountIn, brandOut)
-  // @ts-ignore
+  // @ts-ignore fix needed
   const notifier = E(pa).getPriceNotifier(brandIn, brandOut);
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,

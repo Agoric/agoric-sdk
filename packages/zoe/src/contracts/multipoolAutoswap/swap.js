@@ -97,7 +97,7 @@ export const makeMakeSwapInvitation = (
         amountIn: reducedAmountIn,
         amountOut,
         // TODO: determine whether centralAmount will always exist
-        // @ts-ignore
+        // @ts-ignore If has Central, should not be typed as PriceAmountPair
         centralAmount: reducedCentralAmount,
       } = getPriceGivenAvailableInput(amountIn, brandOut);
 
@@ -212,7 +212,7 @@ export const makeMakeSwapInvitation = (
         amountIn,
         amountOut: improvedAmountOut,
         // TODO: determine whether centralAmount will always exist
-        // @ts-ignore
+        // @ts-ignore If has Central, should not be typed as PriceAmountPair
         centralAmount: improvedCentralAmount,
       } = getPriceGivenRequiredOutput(brandIn, amountOut);
       const brandInPool = getPool(brandIn);

@@ -274,7 +274,7 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3)) },
   );
 
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   t.throws(() => assertProposalShape(zcfSeat, []), {
     message: 'Expected must be an non-array object',
   });
@@ -512,7 +512,7 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3)) },
   );
 
-  // @ts-ignore
+  // @ts-ignore invalid arguments for testing
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3) } }), {
     message: `The value of the expected record must be null but was (an object)`,
   });

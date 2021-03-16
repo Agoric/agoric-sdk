@@ -183,7 +183,7 @@ const amountMath = {
   make: (allegedValue, brand) => {
     assertLooksLikeBrand(brand);
     assertLooksLikeValue(allegedValue);
-    // @ts-ignore
+    // @ts-ignore Needs better typing to express Value to Helpers relationship
     const value = getHelpersFromValue(allegedValue).doCoerce(allegedValue);
     return harden({ brand, value });
   },
@@ -212,23 +212,23 @@ const amountMath = {
     assertLooksLikeAmount(amount);
     optionalBrandCheck(amount, brand);
     const h = getHelpersFromAmount(amount);
-    // @ts-ignore
+    // @ts-ignore Needs better typing to express Value to Helpers relationship
     return h.doIsEmpty(h.doCoerce(amount.value));
   },
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore
+    // @ts-ignore Needs better typing to express Value to Helpers relationship
     return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
   },
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore
+    // @ts-ignore Needs better typing to express Value to Helpers relationship
     return h.doIsEqual(...coerceLR(h, leftAmount, rightAmount));
   },
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     return noCoerceMake(
-      // @ts-ignore
+      // @ts-ignore Needs better typing to express Value to Helpers relationship
       h.doAdd(...coerceLR(h, leftAmount, rightAmount)),
       leftAmount.brand,
     );
@@ -236,7 +236,7 @@ const amountMath = {
   subtract: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     return noCoerceMake(
-      // @ts-ignore
+      // @ts-ignore Needs better typing to express Value to Helpers relationship
       h.doSubtract(...coerceLR(h, leftAmount, rightAmount)),
       leftAmount.brand,
     );
