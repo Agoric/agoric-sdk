@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X } from '@agoric/assert';
-import { insistVatType, parseVatSlot } from '../../parseVatSlots';
+import { parseLocalSlot, insistLocalType } from './parseLocalSlots';
 import { makeUndeliverableError } from '../../makeUndeliverableError';
 import { insistCapData } from '../../capdata';
 import { insistRemoteType } from './parseRemoteSlot';
@@ -48,14 +48,25 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const slots = kdata.slots.map(slot =>
       provideLocalForKernel(slot, doNotSubscribeSet),
     );
-    return harden({ body: kdata.body, slots });
+    return harden({ slots, ...kdata });
   }
 
   // dispatch.deliver from kernel lands here (with message from local vat to
   // remote machine): translate to local, join with handleSend
-  function sendFromKernel(target, method, kargs, kresult) {
-    const result = provideLocalForKernelResult(kresult);
+  function sendFromKernel(ktarget, method, kargs, kresult) {
+    const target = provideLocalForKernel(ktarget);
     const args = mapDataFromKernel(kargs, null);
+    assert(
+      state.objectTable.has(target) || state.promiseTable.has(target),
+      X`unknown message target ${target}/${ktarget}`,
+    );
+    assert(
+      method.indexOf(':') === -1 && method.indexOf(';') === -1,
+      X`illegal method name ${method}`,
+    );
+    // TODO: if promise target not in PromiseTable: resolve result to error
+    //   this will happen if someone pipelines to our controller/receiver
+    const result = provideLocalForKernelResult(kresult);
     const localDelivery = harden({ target, method, result, args });
     handleSend(localDelivery);
   }
@@ -63,10 +74,14 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // dispatch.notify from kernel lands here (local vat resolving some
   // Promise, we need to notify remote machines): translate to local, join
   // with handleResolutions
-  function resolveFromKernel(resolutions, doNotSubscribeSet) {
+  function resolveFromKernel(resolutions) {
+    const willBeResolved = new Set();
     const localResolutions = [];
     for (const resolution of resolutions) {
-      const [vpid, rejected, data] = resolution;
+      const [kfpid, rejected, data] = resolution;
+      insistCapData(data);
+      const lpid = provideLocalForKernel(kfpid);
+      willBeResolved.add(lpid);
 
       // I *think* we should never get here for local promises, since the
       // controller only does sendOnly. But if we change that, we need to catch
@@ -83,13 +98,13 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // get a bogus dispatch.notify. Currently we throw an error, which is
       // currently ignored but might prompt a vat shutdown in the future.
 
-      insistPromiseIsUnresolved(vpid);
-      insistDeciderIsKernel(vpid);
-      changeDeciderFromKernelToComms(vpid);
+      insistPromiseIsUnresolved(lpid);
+      insistDeciderIsKernel(lpid);
+      changeDeciderFromKernelToComms(lpid);
       localResolutions.push([
-        vpid,
+        lpid,
         rejected,
-        mapDataFromKernel(data, doNotSubscribeSet),
+        mapDataFromKernel(data, willBeResolved),
       ]);
     }
     handleResolutions(localResolutions);
@@ -154,17 +169,17 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const remoteTarget = pieces[2];
       const remoteSlots = pieces.slice(3);
       insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
-      const vpid = getLocalForRemote(remoteID, remoteTarget);
+      const lpid = getLocalForRemote(remoteID, remoteTarget);
       // rp+NN maps to target=p-+NN and we look at the promiseTable to make
       // sure it's in the right state.
-      insistPromiseIsUnresolved(vpid);
-      insistDeciderIsRemote(vpid, remoteID);
+      insistPromiseIsUnresolved(lpid);
+      insistDeciderIsRemote(lpid, remoteID);
 
       const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
       const body = submsg.slice(sci + 1);
       const data = harden({ body, slots });
-      changeDeciderFromRemoteToComms(vpid, remoteID);
-      resolutions.push([vpid, rejected, data]);
+      changeDeciderFromRemoteToComms(lpid, remoteID);
+      resolutions.push([lpid, rejected, data]);
     }
     handleResolutions(harden(resolutions));
   }
@@ -181,7 +196,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     ) {
       if (data.slots.length === 1) {
         const slot = data.slots[0];
-        const { type } = parseVatSlot(slot);
+        const { type } = parseLocalSlot(slot);
         if (type === 'object') {
           return slot;
         }
@@ -194,18 +209,17 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // the destination (remote machine or kernel), or reject the result because
   // the destination is a brick wall (undeliverable target)
   function resolveTarget(target, method) {
-    const { type, allocatedByVat } = parseVatSlot(target);
+    const { type } = parseLocalSlot(target);
 
     if (type === 'object') {
       const remoteID = state.objectTable.get(target);
-      if (remoteID) {
-        assert(allocatedByVat);
-        // the target lives on a remote machine
-        return { send: target, kernel: false, remoteID };
-      } else {
-        assert(!allocatedByVat);
+      assert(remoteID);
+      if (remoteID === 'kernel') {
         // target lives in some other vat on this machine, send into the kernel
         return { send: target, kernel: true };
+      } else {
+        // the target lives on a remote machine
+        return { send: target, kernel: false, remoteID };
       }
     }
 
@@ -264,9 +278,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function sendToKernel(target, delivery) {
     const { method, args: localArgs, result: localResult } = delivery;
+    const kernelTarget = provideKernelForLocal(target);
     const kernelArgs = mapDataToKernel(localArgs);
     const kernelResult = provideKernelForLocalResult(localResult);
-    syscall.send(target, method, kernelArgs, kernelResult);
+    syscall.send(kernelTarget, method, kernelArgs, kernelResult);
     if (kernelResult) {
       syscall.subscribe(kernelResult);
     }
@@ -285,7 +300,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const remoteTarget = getRemoteForLocal(remoteID, target);
     let remoteResult = '';
     if (localResult) {
-      insistVatType('promise', localResult);
+      insistLocalType('promise', localResult);
       remoteResult = provideRemoteForLocalResult(remoteID, localResult);
     }
     const remoteSlots = localSlots.map(s => provideRemoteForLocal(remoteID, s));
@@ -301,21 +316,21 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function handleResolutions(resolutions) {
-    const [[primaryVpid]] = resolutions;
+    const [[primaryLpid]] = resolutions;
     const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(
-      primaryVpid,
+      primaryLpid,
     );
     for (const resolution of resolutions) {
-      const [vpid, rejected, data] = resolution;
+      const [lpid, rejected, data] = resolution;
       // rejected: boolean, data: capdata
       insistCapData(data);
-      insistVatType('promise', vpid);
-      insistPromiseIsUnresolved(vpid);
-      insistDeciderIsComms(vpid);
+      insistLocalType('promise', lpid);
+      insistPromiseIsUnresolved(lpid);
+      insistDeciderIsComms(lpid);
 
       // mark it as resolved in the promise table, so later messages to it will
       // be handled properly
-      markPromiseAsResolved(vpid, rejected, data);
+      markPromiseAsResolved(lpid, rejected, data);
     }
 
     // what remotes need to know?
@@ -329,22 +344,22 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
     if (kernelIsSubscribed) {
       resolveToKernel(resolutions);
-      // the kernel now forgets this vpid: the p.resolved flag in
-      // promiseTable reminds provideKernelForLocal to use a fresh VPID if we
+      // the kernel now forgets this lpid: the p.resolved flag in
+      // promiseTable reminds provideKernelForLocal to use a fresh LPID if we
       // ever reference it again in the future
     }
     for (const resolution of resolutions) {
-      const [vpid] = resolution;
-      markPromiseAsResolvedInKernel(vpid);
+      const [lpid] = resolution;
+      markPromiseAsResolvedInKernel(lpid);
     }
   }
 
   function resolveToRemote(remoteID, resolutions) {
     const msgs = [];
     for (const resolution of resolutions) {
-      const [vpid, rejected, data] = resolution;
+      const [lpid, rejected, data] = resolution;
 
-      const rpid = getRemoteForLocal(remoteID, vpid);
+      const rpid = getRemoteForLocal(remoteID, lpid);
       // rpid should be rp+NN
       insistRemoteType('promise', rpid);
       // assert(parseRemoteSlot(rpid).allocatedByRecipient, rpid); // rp+NN for them
@@ -367,8 +382,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   function resolveToKernel(localResolutions) {
     const resolutions = [];
     for (const localResolution of localResolutions) {
-      const [vpid, rejected, data] = localResolution;
-      resolutions.push([vpid, rejected, mapDataToKernel(data)]);
+      const [lpid, rejected, data] = localResolution;
+      const kfpid = provideKernelForLocal(lpid);
+      resolutions.push([kfpid, rejected, mapDataToKernel(data)]);
     }
     syscall.resolve(resolutions);
   }
@@ -377,7 +393,8 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     sendFromKernel,
     resolveFromKernel,
     messageFromRemote,
+    mapDataFromKernel,
     resolveToRemote,
-    resolveToKernel,
+    // XXX resolveToKernel,
   });
 }

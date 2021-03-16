@@ -76,9 +76,9 @@ export function makeCListKit(state, syscall, stateKit) {
     provideLocalForRemote,
   );
 
-  function setDeliveryKit(deliveryKit) {
-    kernel.setDeliveryKit(deliveryKit);
-  }
+  // function setDeliveryKit(deliveryKit) { XXX
+  //   kernel.setDeliveryKit(deliveryKit);
+  // }
 
   return harden({
     provideLocalForRemote,
@@ -97,6 +97,6 @@ export function makeCListKit(state, syscall, stateKit) {
     addEgress,
     addIngress,
 
-    setDeliveryKit,
+    // XXX setDeliveryKit,
   });
 }

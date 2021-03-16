@@ -1,5 +1,8 @@
 import '@agoric/install-ses';
-import test from 'ava';
+import rawTest from 'ava';
+import { wrapTest } from '@agoric/ses-ava';
+const test = wrapTest(rawTest);
+//import test from 'ava';
 import buildCommsDispatch from '../src/vats/comms';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 import { makeState, makeStateKit } from '../src/vats/comms/state';
