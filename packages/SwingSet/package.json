@@ -63,7 +63,8 @@
   "files": [
     "bin/vat",
     "src/**/*.js",
-    "exported.js"
+    "exported.js",
+    "tools"
   ],
   "repository": {
     "type": "git",

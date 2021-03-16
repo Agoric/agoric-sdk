@@ -2,6 +2,9 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/swingset-vat/tools/prepare-test-env';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 // eslint-disable-next-line import/no-extraneous-dependencies

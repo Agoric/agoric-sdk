@@ -1,6 +1,5 @@
-// Copyright (C) 2019 Agoric, under Apache License 2.0
-
 // @ts-check
+/* global makeWeakStore */
 
 import { assert, details as X } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
@@ -13,6 +12,7 @@ import { amountMath, MathKind } from './amountMath';
 import { makeAmountMath } from './deprecatedAmountMath';
 import { makeFarName, ERTPKind } from './interfaces';
 import { coerceDisplayInfo } from './displayInfo';
+import { makePaymentMaker } from './payment';
 
 import './types';
 
@@ -52,17 +52,10 @@ function makeIssuerKit(
   /** @type {Amount} */
   const emptyAmount = amountMath.makeEmpty(amountMathKind, brand);
 
-  const {
-    makeInstance: makePayment,
-    makeWeakStore: makePaymentWeakStore,
-  } = makeExternalStore('payment', () =>
-    Far(makeFarName(allegedName, ERTPKind.PAYMENT), {
-      getAllegedBrand: () => brand,
-    }),
-  );
+  const makePayment = makePaymentMaker(allegedName, brand);
 
   /** @type {WeakStore<Payment, Amount>} */
-  const paymentLedger = makePaymentWeakStore();
+  const paymentLedger = makeWeakStore('payment');
 
   function assertKnownPayment(payment) {
     assert(paymentLedger.has(payment), X`payment not found for ${allegedName}`);
@@ -167,12 +160,13 @@ function makeIssuerKit(
     // other uses.
 
     if (payments.length > 1) {
-      const paymentSet = new Set();
+      // TODO: replace with a Set that understands virtual objects
+      const antiAliasingStore = makeWeakStore('payment');
       payments.forEach(payment => {
-        if (paymentSet.has(payment)) {
+        if (antiAliasingStore.has(payment)) {
           throw new Error('same payment seen twice');
         }
-        paymentSet.add(payment);
+        antiAliasingStore.init(payment, undefined);
       });
     }
 
