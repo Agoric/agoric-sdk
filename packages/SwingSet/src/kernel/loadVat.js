@@ -209,7 +209,8 @@ export function makeVatLoader(stuff) {
         enablePipelining,
         enableInternalMetering: !isDynamic,
         notifyTermination,
-        vatConsole: makeVatConsole(vatID),
+        vatConsole: makeVatConsole('vat', vatID),
+        liveSlotsConsole: makeVatConsole('ls', vatID),
         vatParameters,
         virtualObjectCacheSize,
       };

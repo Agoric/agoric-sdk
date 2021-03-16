@@ -17,7 +17,7 @@ import { makeWithQueue } from './vats/queue';
 import { makeBatchedDeliver } from './batched-deliver';
 import { getMeterProvider } from '../kernel-stats';
 
-const log = anylogger('fake-chain');
+const console = anylogger('fake-chain');
 
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
@@ -66,7 +66,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     assert(!replay, X`Replay not implemented`);
   }
 
-  const meterProvider = getMeterProvider(log, process.env);
+  const meterProvider = getMeterProvider(console, process.env);
   const s = await launch(
     stateDBdir,
     mailboxStorage,
@@ -133,7 +133,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       thisBlock = [];
       blockTime += scaleBlockTime(Date.now() - actualStart);
     } catch (e) {
-      log.error(`error fake processing`, e);
+      console.error(`error fake processing`, e);
     }
 
     clearTimeout(nextBlockTimeout);
@@ -148,7 +148,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   let totalDeliveries = 0;
   async function deliver(newMessages, acknum) {
     totalDeliveries += 1;
-    console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
+    console.info(`delivering to ${GCI} (trips=${totalDeliveries})`);
 
     intoChain.push([newMessages, acknum]);
     if (!delay) {

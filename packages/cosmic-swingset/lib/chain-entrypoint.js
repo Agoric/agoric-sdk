@@ -12,6 +12,11 @@ const agcc = require('@agoric/cosmos');
 // (dep chain: temp->glob->minimatch->brace-expansion)
 esmRequire('@agoric/install-metering-and-ses');
 
+if (!process.env.DEBUG) {
+  // By default, disable debugging.
+  process.env.DEBUG = '';
+}
+
 const path = require('path');
 const os = require('os');
 

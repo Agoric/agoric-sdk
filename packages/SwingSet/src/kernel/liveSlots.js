@@ -28,6 +28,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
  * @param {*} vatPowers
  * @param {*} vatParameters
+ * @param {Console} console
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
@@ -36,7 +37,14 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  *
  *     buildRootObject(vatPowers, vatParameters)
  */
-function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
+function build(
+  syscall,
+  forVatID,
+  cacheSize,
+  vatPowers,
+  vatParameters,
+  console,
+) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -214,6 +222,12 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
   // eslint-disable-next-line no-use-before-define
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `liveSlots:${forVatID}`,
+    marshalSaveError: err =>
+      // By sending this to `console.log`, under cosmic-swingset this is
+      // controlled by the `console` option given to makeLiveSlots.  For Agoric,
+      // this output is enabled by `agoric start -v` and not enabled without the
+      // `-v` flag.
+      console.log('Logging sent error stack', err),
   });
 
   const {
@@ -635,6 +649,7 @@ function build(syscall, forVatID, cacheSize, vatPowers, vatParameters) {
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {*} _gcTools
+ * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
@@ -666,12 +681,20 @@ export function makeLiveSlots(
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   _gcTools,
+  liveSlotsConsole = console,
 ) {
   const allVatPowers = {
     ...vatPowers,
     makeMarshal,
   };
-  const r = build(syscall, forVatID, cacheSize, allVatPowers, vatParameters);
+  const r = build(
+    syscall,
+    forVatID,
+    cacheSize,
+    allVatPowers,
+    vatParameters,
+    liveSlotsConsole,
+  );
   const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
   return harden({ vatGlobals, dispatch, setBuildRootObject });
 }
