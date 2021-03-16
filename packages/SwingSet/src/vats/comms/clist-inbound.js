@@ -1,5 +1,4 @@
 import { assert, details as X } from '@agoric/assert';
-import { makeVatSlot } from '../../parseVatSlots';
 import {
   flipRemoteSlot,
   insistRemoteType,
@@ -14,6 +13,7 @@ function rname(remote) {
 
 export function makeInbound(state, stateKit) {
   const {
+    allocateLocalObjectID,
     allocateUnresolvedPromise,
     insistPromiseIsUnresolved,
     subscribeRemoteToPromise,
@@ -46,17 +46,16 @@ export function makeInbound(state, stateKit) {
     // So this must be a new import. Allocate a new vat object for it, which
     // will be the local machine's proxy for use by all other local vats, as
     // well as third party machines.
-    const vatoid = makeVatSlot('object', true, state.nextObjectIndex);
-    state.nextObjectIndex += 1;
+    const loid = allocateLocalObjectID();
 
     // remember who owns this object, to route messages later
-    state.objectTable.set(vatoid, remote.remoteID);
+    state.objectTable.set(loid, remote.remoteID);
 
     // they sent us ro-NN
-    remote.fromRemote.set(roid, vatoid);
+    remote.fromRemote.set(roid, loid);
     // when we send it back, we'll send ro+NN
-    remote.toRemote.set(vatoid, flipRemoteSlot(roid));
-    cdebug(`comms import ${remote.remoteID}/${remote.name} ${vatoid} ${roid}`);
+    remote.toRemote.set(loid, flipRemoteSlot(roid));
+    cdebug(`comms import ${remote.remoteID}/${remote.name} ${loid} ${roid}`);
   }
 
   function addLocalPromiseForRemote(remote, rpid) {
@@ -64,12 +63,12 @@ export function makeInbound(state, stateKit) {
       !parseRemoteSlot(rpid).allocatedByRecipient,
       `I don't remember giving ${rpid} to ${rname(remote)}`,
     );
-    // allocate a new p+NN, remember them as the decider, add to clist
-    const vpid = allocateUnresolvedPromise();
-    changeDeciderToRemote(vpid, remote.remoteID);
-    remote.fromRemote.set(rpid, vpid);
-    remote.toRemote.set(vpid, flipRemoteSlot(rpid));
-    cdebug(`comms import ${remote.remoteID}/${remote.name} ${vpid} ${rpid}`);
+    // allocate a new lpNN, remember them as the decider, add to clist
+    const lpid = allocateUnresolvedPromise();
+    changeDeciderToRemote(lpid, remote.remoteID);
+    remote.fromRemote.set(rpid, lpid);
+    remote.toRemote.set(lpid, flipRemoteSlot(rpid));
+    cdebug(`comms import ${remote.remoteID}/${remote.name} ${lpid} ${rpid}`);
   }
 
   function provideLocalForRemote(remoteID, rref) {
@@ -92,14 +91,14 @@ export function makeInbound(state, stateKit) {
 
   function provideLocalForRemoteResult(remoteID, result) {
     insistRemoteType('promise', result);
-    const vpid = provideLocalForRemote(remoteID, result);
-    // this asserts they had control over vpid, and that it wasn't already
+    const lpid = provideLocalForRemote(remoteID, result);
+    // this asserts they had control over lpid, and that it wasn't already
     // resolved. TODO: reject somehow rather than crash weirdly, we can't
     // keep them from trying either
-    insistPromiseIsUnresolved(vpid);
-    changeDeciderFromRemoteToComms(vpid, remoteID);
-    subscribeRemoteToPromise(vpid, remoteID); // auto-subscribe sender
-    return vpid;
+    insistPromiseIsUnresolved(lpid);
+    changeDeciderFromRemoteToComms(lpid, remoteID);
+    subscribeRemoteToPromise(lpid, remoteID); // auto-subscribe sender
+    return lpid;
   }
 
   return harden({

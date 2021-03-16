@@ -38,16 +38,19 @@ export function buildCommsDispatch(
     clistKit,
     stateKit,
   );
-  clistKit.setDeliveryKit(deliveryKit);
 
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
+  state.metaObjects.add(controller);
   cdebug(`comms controller is ${controller}`);
 
   function deliver(target, method, args, result) {
+    // console.debug(`comms.deliver ${target} r=${result}`);
+    // dumpState(state);
     insistCapData(args);
+
     if (target === controller) {
       return deliverToController(
         state,
@@ -58,15 +61,7 @@ export function buildCommsDispatch(
         syscall,
       );
     }
-    // console.debug(`comms.deliver ${target} r=${result}`);
-    // dumpState(state);
-    if (state.objectTable.has(target) || state.promiseTable.has(target)) {
-      assert(
-        method.indexOf(':') === -1 && method.indexOf(';') === -1,
-        X`illegal method name ${method}`,
-      );
-      return sendFromKernel(target, method, args, result);
-    }
+
     if (state.remoteReceivers.has(target)) {
       assert(method === 'receive', X`unexpected method ${method}`);
       // the vat-tp integrity layer is a regular vat, so when they send the
@@ -76,21 +71,17 @@ export function buildCommsDispatch(
       return messageFromRemote(remoteID, message);
     }
 
-    // TODO: if promise target not in PromiseTable: resolve result to error
-    //   this will happen if someone pipelines to our controller/receiver
-    assert.fail(X`unknown target ${target}`);
+    args.slots.map(s =>
+      assert(
+        !state.metaObjects.has(s),
+        X`comms meta-object ${s} not allowed in message args`,
+      ),
+    );
+    return sendFromKernel(target, method, args, result);
   }
 
   function notify(resolutions) {
-    const willBeResolved = new Set();
-    for (const resolution of resolutions) {
-      const [vpid, _rejected, data] = resolution;
-      willBeResolved.add(vpid);
-      insistCapData(data);
-      // console.debug(`comms.notify(${vpid}, ${rejected}, ${data})`);
-      // dumpState(state);
-    }
-    resolveFromKernel(resolutions, willBeResolved);
+    resolveFromKernel(resolutions);
 
     // XXX question: do we need to call retirePromiseIDIfEasy (or some special
     // comms vat version of it) here?

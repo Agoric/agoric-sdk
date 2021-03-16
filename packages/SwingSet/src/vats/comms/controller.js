@@ -24,7 +24,12 @@ export function deliverToController(
   result,
   syscall,
 ) {
-  const { addEgress, addIngress } = clistKit;
+  const {
+    addEgress,
+    addIngress,
+    provideKernelForLocal,
+    provideLocalForKernel,
+  } = clistKit;
 
   // We use a degenerate form of deserialization, just enough to handle the
   // handful of methods implemented by the commsController. 'args.body' can
@@ -78,7 +83,7 @@ export function deliverToController(
       args[2]['@qclass'] === 'slot' && args[2].index === 0,
       X`unexpected args for addEgress(): ${controllerArgs}`,
     );
-    const localRef = slots[args[2].index];
+    const localRef = provideLocalForKernel(slots[args[2].index]);
     addEgress(remoteID, remoteRefID, localRef);
     syscall.resolve([[result, false, UNDEFINED]]);
   }
@@ -95,7 +100,7 @@ export function deliverToController(
     const localRef = addIngress(remoteID, remoteRefID);
     const data = {
       body: '{"@qclass":"slot","index":0}',
-      slots: [localRef],
+      slots: [provideKernelForLocal(localRef)],
     };
     if (iface) {
       data.body = `{"@qclass":"slot","iface":"${iface}","index":0}`;

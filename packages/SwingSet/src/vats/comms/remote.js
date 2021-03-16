@@ -21,6 +21,7 @@ export function getRemote(state, remoteID) {
 export function addRemote(state, name, transmitterID) {
   insistVatType('object', transmitterID);
   assert(!state.names.has(name), X`remote name ${name} already in use`);
+  state.metaObjects.add(transmitterID);
 
   const remoteID = makeRemoteID(state.nextRemoteIndex);
   state.nextRemoteIndex += 1;
@@ -31,14 +32,14 @@ export function addRemote(state, name, transmitterID) {
   // clist.
 
   // fromRemote has:
-  // ro-NN -> o+NN (imported/importing from remote machine)
-  // ro+NN -> o-NN (previously exported to remote machine)
-  const fromRemote = new Map(); //    {ro/rp/rr+-NN} -> o+-NN/p+-NN/r+-NN
+  // ro-NN -> loNN (imported/importing from remote machine)
+  // ro+NN -> loNN (previously exported to remote machine)
+  const fromRemote = new Map(); //    {ro/rp+-NN} -> loNN/lpNN
 
   // toRemote has:
-  // o+NN -> ro+NN (previously imported from remote machine)
-  // o-NN -> ro-NN (exported/exporting to remote machine)
-  const toRemote = new Map(); // o/p/r+-NN -> ro/rp/rr+-NN
+  // loNN -> ro+NN (previously imported from remote machine)
+  // loNN -> ro-NN (exported/exporting to remote machine)
+  const toRemote = new Map(); // lo/lpNN -> ro/rp+-NN
 
   state.remotes.set(remoteID, {
     remoteID,
@@ -54,8 +55,9 @@ export function addRemote(state, name, transmitterID) {
   state.names.set(name, remoteID);
 
   // inbound messages will be directed at this exported object
-  const receiverID = makeVatSlot('object', true, state.nextObjectIndex);
-  state.nextObjectIndex += 1;
+  const receiverID = makeVatSlot('object', true, state.nextKernelObjectIndex);
+  state.nextKernelObjectIndex += 1;
+  state.metaObjects.add(receiverID);
   // remoteReceivers are our vat objects to which the transport layer will
   // send incoming messages. Each remote machine is assigned a separate
   // receiver object.
