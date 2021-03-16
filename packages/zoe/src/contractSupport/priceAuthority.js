@@ -58,9 +58,6 @@ export function makeOnewayPriceAuthorityKit(opts) {
     notifier,
   } = opts;
 
-  const paBrandIn = actualBrandIn;
-  const paBrandOut = actualBrandOut;
-
   let haveFirstQuote = false;
   notifier.getUpdateSince().then(_ => (haveFirstQuote = true));
 
@@ -150,13 +147,13 @@ export function makeOnewayPriceAuthorityKit(opts) {
   const assertBrands = (brandIn, brandOut) => {
     assert.equal(
       brandIn,
-      paBrandIn,
-      X`Desired brandIn ${brandIn} must match ${paBrandIn}`,
+      actualBrandIn,
+      X`Desired brandIn ${brandIn} must match ${actualBrandIn}`,
     );
     assert.equal(
       brandOut,
-      paBrandOut,
-      X`Desired brandOut ${brandOut} must match ${paBrandOut}`,
+      actualBrandOut,
+      X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
     );
   };
 
