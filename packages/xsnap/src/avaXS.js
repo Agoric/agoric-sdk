@@ -50,7 +50,7 @@ const { keys } = Object;
  * @param {string} pattern
  */
 function isMatch(specimen, pattern) {
-  return specimen.match(pattern.replace(/\*/g, '.*'));
+  return specimen.match(`^${pattern.replace(/\*/g, '.*')}$`);
 }
 
 /**

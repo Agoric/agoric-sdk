@@ -1,18 +1,22 @@
 #!/usr/bin/env node
+
+// We use cjs / require style because -r esm doesn't fit on the #! line.
+// https://unix.stackexchange.com/questions/399690/multiple-arguments-in-shebang
+
 /* global require, module */
 // @ts-check
-const esmRequire = require('esm')(module);
+// eslint-disable-next-line no-global-assign
+require = require('esm')(module);
+require('@agoric/install-ses');
 const process = require('process');
 const { spawn } = require('child_process');
 const { type: osType } = require('os');
-const { promises } = require('fs');
+const { promises: fsp } = require('fs');
 const path = require('path');
 const glob = require('glob');
+const bundleSource = require('@agoric/bundle-source').default;
 
-esmRequire('@agoric/install-ses');
-const bundleSource = esmRequire('@agoric/bundle-source').default;
-
-const { main, makeBundleResolve } = esmRequire('./avaXS');
+const { main, makeBundleResolve } = require('./avaXS');
 
 Promise.resolve()
   .then(_ =>
@@ -20,7 +24,7 @@ Promise.resolve()
       bundleSource,
       spawn,
       osType,
-      readFile: promises.readFile,
+      readFile: fsp.readFile,
       resolve: makeBundleResolve(path),
       dirname: path.dirname,
       glob,
