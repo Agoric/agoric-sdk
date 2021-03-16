@@ -30,7 +30,7 @@ function calculateShares(collateralBrand, price, strikePrice1, strikePrice2) {
 
   const denominator = amountMath.subtract(strikePrice2, strikePrice1);
   const numerator = amountMath.subtract(price, strikePrice1);
-  assert(isNat(numerator.value));
+  assert.typeof(numerator.value, 'bigint');
   assert.typeof(denominator.value, 'bigint');
   const longShare = makeRatio(
     numerator.value,
