@@ -1,11 +1,14 @@
+import { wrapTest } from '@agoric/ses-ava';
 import '@agoric/install-ses';
-import test from 'ava';
+import rawTest from 'ava';
 import buildCommsDispatch from '../src/vats/comms';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 import { makeState, makeStateKit } from '../src/vats/comms/state';
 import { makeCListKit } from '../src/vats/comms/clist';
 import { addRemote } from '../src/vats/comms/remote';
 import { debugState } from '../src/vats/comms/dispatch';
+
+const test = wrapTest(rawTest);
 
 test('provideRemoteForLocal', t => {
   const s = makeState(0);
@@ -15,12 +18,9 @@ test('provideRemoteForLocal', t => {
   const { provideRemoteForLocal } = clistKit;
   const { remoteID } = addRemote(s, 'remote1', 'o-1');
 
-  t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
-  t.is(provideRemoteForLocal(remoteID, 'o-4'), 'ro-20');
-  t.is(provideRemoteForLocal(remoteID, 'o-5'), 'ro-21');
-  t.throws(() => provideRemoteForLocal(remoteID, 'o+5'), {
-    message: /sending non-remote object "o\+5" to remote machine/,
-  });
+  t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, 'lo5'), 'ro-21');
 });
 
 function mockSyscall() {
@@ -49,16 +49,23 @@ test('transmit', t => {
   const { syscall, sends } = mockSyscall();
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(d);
-  const { provideLocalForRemote, getLocalForRemote } = clistKit;
+  const {
+    provideKernelForLocal,
+    provideLocalForKernel,
+    provideLocalForRemote,
+    getLocalForRemote,
+  } = clistKit;
   // add the remote, and an object to send at
   const transmitterID = 'o-1';
-  const alice = 'o-10';
+  const aliceKernel = 'o-10';
+  const aliceLocal = provideLocalForKernel(aliceKernel);
   const { remoteID } = addRemote(state, 'remote1', transmitterID);
-  const bob = provideLocalForRemote(remoteID, 'ro-23');
+  const bobLocal = provideLocalForRemote(remoteID, 'ro-23');
+  const bobKernel = provideKernelForLocal(bobLocal);
 
   // now tell the comms vat to send a message to a remote machine, the
   // equivalent of bob!foo()
-  d.deliver(bob, 'foo', capdata('argsbytes', []), null);
+  d.deliver(bobKernel, 'foo', capdata('argsbytes', []), null);
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
@@ -66,16 +73,26 @@ test('transmit', t => {
   ]);
 
   // bob!bar(alice, bob)
-  d.deliver(bob, 'bar', capdata('argsbytes', [alice, bob]), null);
+  d.deliver(
+    bobKernel,
+    'bar',
+    capdata('argsbytes', [aliceKernel, bobKernel]),
+    null,
+  );
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
     encodeArgs('deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
   // the outbound ro-20 should match an inbound ro+20, both represent 'alice'
-  t.is(getLocalForRemote(remoteID, 'ro+20'), alice);
+  t.is(getLocalForRemote(remoteID, 'ro+20'), aliceLocal);
   // do it again, should use same values
-  d.deliver(bob, 'bar', capdata('argsbytes', [alice, bob]), null);
+  d.deliver(
+    bobKernel,
+    'bar',
+    capdata('argsbytes', [aliceKernel, bobKernel]),
+    null,
+  );
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
@@ -84,7 +101,12 @@ test('transmit', t => {
 
   // bob!cat(alice, bob, ayana)
   const ayana = 'o-11';
-  d.deliver(bob, 'cat', capdata('argsbytes', [alice, bob, ayana]), null);
+  d.deliver(
+    bobKernel,
+    'cat',
+    capdata('argsbytes', [aliceKernel, bobKernel, ayana]),
+    null,
+  );
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
@@ -98,54 +120,67 @@ test('receive', t => {
   const { syscall, sends } = mockSyscall();
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(d);
-  const { provideRemoteForLocal, getRemoteForLocal } = clistKit;
+  const {
+    provideLocalForKernel,
+    provideRemoteForLocal,
+    getRemoteForLocal,
+  } = clistKit;
   // add the remote, and an object to send at
   const transmitterID = 'o-1';
-  const bob = 'o-10';
+  const bobKernel = 'o-5';
+  const bobLocal = provideLocalForKernel(bobKernel);
   const { remoteID, receiverID } = addRemote(state, 'remote1', transmitterID);
-  const remoteBob = flipRemoteSlot(provideRemoteForLocal(remoteID, bob));
-  t.is(remoteBob, 'ro+20');
+  const bobRemote = flipRemoteSlot(provideRemoteForLocal(remoteID, bobLocal));
+  t.is(bobRemote, 'ro+20');
 
   // now pretend the transport layer received a message from remote1, as if
   // the remote machine had performed bob!foo()
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${remoteBob}:foo:;argsbytes`),
+    encodeArgs(`deliver:${bobRemote}:foo:;argsbytes`),
     null,
   );
-  t.deepEqual(sends.shift(), [bob, 'foo', capdata('argsbytes')]);
+  t.deepEqual(sends.shift(), [bobKernel, 'foo', capdata('argsbytes')]);
 
   // bob!bar(alice, bob)
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${remoteBob}:bar::ro-20:${remoteBob};argsbytes`),
+    encodeArgs(`deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
-  t.deepEqual(sends.shift(), [bob, 'bar', capdata('argsbytes', ['o+11', bob])]);
+  t.deepEqual(sends.shift(), [
+    bobKernel,
+    'bar',
+    capdata('argsbytes', ['o+31', bobKernel]),
+  ]);
   // if we were to send o+11, the other side should get ro+20, which is alice
-  t.is(getRemoteForLocal(remoteID, 'o+11'), 'ro+20');
+  t.is(getRemoteForLocal(remoteID, 'lo11'), 'ro+20');
 
   // bob!bar(alice, bob)
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${remoteBob}:bar::ro-20:${remoteBob};argsbytes`),
+    encodeArgs(`deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
-  t.deepEqual(sends.shift(), [bob, 'bar', capdata('argsbytes', ['o+11', bob])]);
+  t.deepEqual(sends.shift(), [
+    bobKernel,
+    'bar',
+    capdata('argsbytes', ['o+31', bobKernel]),
+  ]);
 
   // bob!cat(alice, bob, ayana)
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${remoteBob}:cat::ro-20:${remoteBob}:ro-21;argsbytes`),
+    encodeArgs(`deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-21;argsbytes`),
     null,
   );
   t.deepEqual(sends.shift(), [
-    bob,
+    bobKernel,
     'cat',
-    capdata('argsbytes', ['o+11', bob, 'o+12']),
+    capdata('argsbytes', ['o+31', bobKernel, 'o+32']),
   ]);
 });

@@ -29,6 +29,13 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.0.0.tgz#330dcde37fcf8882dbc5012a3b2c4c135eee4930"
   integrity sha512-zlTe14g0PGfONO0+TdhLv8k4IZH040ojvBZuNrcQSV+l8HlFTZ/IKzI5HorlCVDDBU7riykAb/6MaTgMRbYp3w==
 
+"@agoric/ses-ava@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@agoric/ses-ava/-/ses-ava-0.1.0.tgz#e6e905167379b42ed6926b7f5bb9f64713c3a436"
+  integrity sha512-uQcXariKortUFD6AOb2LD5riJW2J1KLFuoIOtXgQcI4aVv33Q33WajNWr5HsY0stGvaqoDvfQ5heGjc3lovIbw==
+  dependencies:
+    ses "^0.12.3"
+
 "@agoric/transform-module@^0.4.1":
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/@agoric/transform-module/-/transform-module-0.4.1.tgz#9fb152364faf372e1bda535cb4ef89717724f57c"
