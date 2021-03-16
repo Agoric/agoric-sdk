@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.26.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.25.1...@agoric/cosmic-swingset@0.26.0) (2021-03-16)
+
+
+### Bug Fixes
+
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
+* **cosmic-swingset:** apply Far/Data as necessary ([#2567](https://github.com/Agoric/agoric-sdk/issues/2567)) ([92b63b6](https://github.com/Agoric/agoric-sdk/commit/92b63b6105c055b14bb5412c9ebf12f213896244)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018) [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+* better ocap discipline ([eef6540](https://github.com/Agoric/agoric-sdk/commit/eef654080e7e45d04e9783f08e5216fc9dad54b9))
+* don't rely on OS exec semantics for agoric-cli; fork instead ([4820958](https://github.com/Agoric/agoric-sdk/commit/4820958ebfab4d91ba3481f884926217a861967d))
+* make init-basedir more tolerant to paths ([a7e15ff](https://github.com/Agoric/agoric-sdk/commit/a7e15ffd27cdb8497dc9a881103113ce7a1938fd))
+* use os.homedir() to properly cope with Windows ([fcf93ad](https://github.com/Agoric/agoric-sdk/commit/fcf93ad6eb137d9a055995d1b369a0d23c925aff))
+
+
+### Features
+
+* allow fresh access tokens to override stale ones ([98acaee](https://github.com/Agoric/agoric-sdk/commit/98acaeed7f3d33a7f4631292b9187e3b4a1df7b6))
+* push metrics from autobench ([3efc212](https://github.com/Agoric/agoric-sdk/commit/3efc21206ab6693abe94a4b7d2946b50e29983a9))
+* silence the vat logs for ag-chain-cosmos ([16cf2bb](https://github.com/Agoric/agoric-sdk/commit/16cf2bb7105cd5659a89d2c6e690a416e88df5c4))
+
+
+
+
+
 ## [0.25.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.25.0...@agoric/cosmic-swingset@0.25.1) (2021-02-22)
 
 

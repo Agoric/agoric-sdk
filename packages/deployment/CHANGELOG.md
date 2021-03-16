@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.24.2...@agoric/deployment@1.25.0) (2021-03-16)
+
+
+### Bug Fixes
+
+* changes needed for ag-setup-cosmos to be usable again ([4767bf5](https://github.com/Agoric/agoric-sdk/commit/4767bf5de61f34b050ec0ba54e61c802fd0ef12c))
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
+* **deployment:** bump up minimum node size to 4GB RAM ([030357c](https://github.com/Agoric/agoric-sdk/commit/030357cef635508a94c92f9f34ea93df045c2625))
+* properly pin the Moddable SDK version ([58333e0](https://github.com/Agoric/agoric-sdk/commit/58333e069192267fc96e30bb5272edc03b3faa04))
+
+
+### Features
+
+* **deployment:** allow networks to init new placements ([13d6c2c](https://github.com/Agoric/agoric-sdk/commit/13d6c2ccc500cbc05c51790b09d218fa2e1f0f29))
+* push metrics from autobench ([3efc212](https://github.com/Agoric/agoric-sdk/commit/3efc21206ab6693abe94a4b7d2946b50e29983a9))
+
+
+
+
+
 ## [1.24.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.24.1...@agoric/deployment@1.24.2) (2021-02-22)
 
 

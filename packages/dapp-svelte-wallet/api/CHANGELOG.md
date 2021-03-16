@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.3...@agoric/dapp-svelte-wallet-api@0.6.0) (2021-03-16)
+
+
+### Bug Fixes
+
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric/issues/2647)
+* **dapp-svelte-wallet:** add Far/Data annotations ([a826805](https://github.com/Agoric/agoric/commit/a826805d8734f6b5a02c0437726a87781e9ff0be)), closes [#2018](https://github.com/Agoric/agoric/issues/2018)
+
+
+### Features
+
+* add static amountMath. Backwards compatible with old amountMath ([#2561](https://github.com/Agoric/agoric/issues/2561)) ([1620307](https://github.com/Agoric/agoric/commit/1620307ee1b45033032617cc14dfabfb338b0dc2))
+* default new purses to autodeposit ([b210b4b](https://github.com/Agoric/agoric/commit/b210b4b918e8e67ab241d5d0c8907b437e58fc6c))
+
+
+
+
+
 ## [0.5.3](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.2...@agoric/dapp-svelte-wallet-api@0.5.3) (2021-02-22)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-api

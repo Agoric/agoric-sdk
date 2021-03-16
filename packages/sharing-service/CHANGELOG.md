@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.2...@agoric/sharing-service@0.1.3) (2021-03-16)
+
+
+### Bug Fixes
+
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
+* **sharing-service:** add Far to all pass-by-reference objects ([fffd37e](https://github.com/Agoric/agoric-sdk/commit/fffd37e5b60f87f34331dfd813b0e99ea0b196ee)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+
+
+
+
+
 ## [0.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.1...@agoric/sharing-service@0.1.2) (2021-02-22)
 
 **Note:** Version bump only for package @agoric/sharing-service

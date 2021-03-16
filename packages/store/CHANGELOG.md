@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.2...@agoric/store@0.4.3) (2021-03-16)
+
+
+### Bug Fixes
+
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
+* **store:** reject empty-object keys which might not retain identity ([c38a4dc](https://github.com/Agoric/agoric-sdk/commit/c38a4dc8aca910d8a4ed5500f56f19ccdd3b43d1)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+
+
+
+
+
 ## [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.1...@agoric/store@0.4.2) (2021-02-22)
 
 **Note:** Version bump only for package @agoric/store

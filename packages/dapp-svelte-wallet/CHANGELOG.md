@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.6.2...@agoric/dapp-svelte-wallet@0.7.0) (2021-03-16)
+
+
+### Bug Fixes
+
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
+* **dapp-svelte-wallet:** add Far/Data annotations ([a826805](https://github.com/Agoric/agoric-sdk/commit/a826805d8734f6b5a02c0437726a87781e9ff0be)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+* upgrade ses to 0.12.3 to avoid console noise ([#2552](https://github.com/Agoric/agoric-sdk/issues/2552)) ([f59f5f5](https://github.com/Agoric/agoric-sdk/commit/f59f5f58d1567bb11710166b1dbc80f25c39a04f))
+* work around Firefox's lack of Error.stackTraceLimit ([94eaa4a](https://github.com/Agoric/agoric-sdk/commit/94eaa4a0caaa15f4c609ffd06afc3651e4d0d3bc))
+
+
+### Features
+
+* add static amountMath. Backwards compatible with old amountMath ([#2561](https://github.com/Agoric/agoric-sdk/issues/2561)) ([1620307](https://github.com/Agoric/agoric-sdk/commit/1620307ee1b45033032617cc14dfabfb338b0dc2))
+* allow fresh access tokens to override stale ones ([98acaee](https://github.com/Agoric/agoric-sdk/commit/98acaeed7f3d33a7f4631292b9187e3b4a1df7b6))
+* default new purses to autodeposit ([b210b4b](https://github.com/Agoric/agoric-sdk/commit/b210b4b918e8e67ab241d5d0c8907b437e58fc6c))
+
+
+
+
+
 ## [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.6.1...@agoric/dapp-svelte-wallet@0.6.2) (2021-02-22)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet
