@@ -1,5 +1,7 @@
 // @ts-check
 
+/* global makeKind makeWeakStore */
+
 import { importBundle } from '@agoric/import-bundle';
 import { assert } from '@agoric/assert';
 
@@ -13,6 +15,8 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const defaultEndowments = {
     console: louderConsole,
     assert,
+    makeKind,
+    makeWeakStore,
   };
 
   const fullEndowments = Object.create(null, {

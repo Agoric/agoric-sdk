@@ -1,6 +1,9 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/swingset-vat/tools/prepare-test-env';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { amountMath as m, MathKind } from '../../../src';
 import { mockBrand } from './mockBrand';

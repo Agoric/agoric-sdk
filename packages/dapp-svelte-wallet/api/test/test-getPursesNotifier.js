@@ -1,6 +1,6 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses'; // calls lockdown()
+import '@agoric/zoe/tools/prepare-test-env'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 

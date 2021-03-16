@@ -1,5 +1,5 @@
 // @ts-check
-import { makeWeakStore } from '@agoric/store';
+import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -39,16 +39,16 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const installations = new WeakSet();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
-  const instanceToInstanceAdmin = makeWeakStore('instance');
+  const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
 
   /** @type {GetAmountMath} */
   const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
 
   /** @type {WeakStore<Brand, ERef<Purse>>} */
-  const brandToPurse = makeWeakStore('brand');
+  const brandToPurse = makeNonVOWeakStore('brand');
 
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
-  const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
+  const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
 
   /**
    * Create an installation by permanently storing the bundle. It will be
