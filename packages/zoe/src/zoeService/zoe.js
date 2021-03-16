@@ -137,6 +137,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         issuerRecords.map(record => record.brand),
         keywords,
       );
+      const maths = arrayToObj(
+        issuerRecords.map(record => record.amountMath),
+        keywords,
+      );
 
       let instanceRecord = {
         installation,
@@ -144,6 +148,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           ...customTerms,
           issuers,
           brands,
+          maths,
         },
       };
 
@@ -166,6 +171,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             brands: {
               ...instanceRecord.terms.brands,
               [keyword]: issuerRecord.brand,
+            },
+            maths: {
+              ...instanceRecord.terms.maths,
+              [keyword]: issuerRecord.amountMath,
             },
           },
         };

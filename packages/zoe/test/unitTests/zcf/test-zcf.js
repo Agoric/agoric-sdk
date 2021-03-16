@@ -27,22 +27,40 @@ test(`zcf.getInvitationIssuer`, async t => {
   t.is(zcfInvitationIssuer, zoeInvitationIssuer);
 });
 
+const compareAmountMath = (t, actualMath, expectedMath) => {
+  t.is(actualMath.getAmountMathKind(), expectedMath.getAmountMathKind());
+  t.is(actualMath.getBrand(), expectedMath.getBrand());
+};
+
+const compareAmountMaths = (t, actualMaths, expectedMaths) => {
+  t.deepEqual(Object.keys(actualMaths), Object.keys(expectedMaths));
+  Object.entries(actualMaths).forEach(([keyword, math]) => {
+    const expectedMath = expectedMaths[keyword];
+    compareAmountMath(t, math, expectedMath);
+  });
+};
+
 const testTerms = async (t, zcf, expected) => {
   // Note that the amountMath are made locally within Zoe, so they
   // will not match the amountMath gotten from the setup code.
   const zcfTerms = zcf.getTerms();
-  t.deepEqual(zcfTerms, expected);
+  const zcfTermsMinusAmountMath = { ...zcfTerms, maths: {} };
+  const expectedMinusAmountMath = { ...expected, maths: {} };
+  t.deepEqual(zcfTermsMinusAmountMath, expectedMinusAmountMath);
+
+  compareAmountMaths(t, zcfTerms.maths, expected.maths);
 };
 
 test(`zcf.getTerms - empty`, async t => {
   const { zcf } = await setupZCFTest();
-  await testTerms(t, zcf, { brands: {}, issuers: {} });
+  await testTerms(t, zcf, { brands: {}, issuers: {}, maths: {} });
 });
 
 test(`zcf.getTerms - custom`, async t => {
   const expected = {
     brands: {},
     issuers: {},
+    maths: {},
     whatever: 'whatever',
   };
   const issuerKeywordRecord = undefined;
@@ -57,6 +75,7 @@ test(`zcf.getTerms - standard overwrites custom`, async t => {
   const expected = {
     brands: {},
     issuers: {},
+    maths: {},
   };
   const issuerKeywordRecord = undefined;
   const customTerms = {
@@ -71,6 +90,7 @@ test(`zcf.getTerms - standard with 2 issuers and custom`, async t => {
   const expected = {
     brands: { A: moolaKit.brand, B: simoleanKit.brand },
     issuers: { A: moolaKit.issuer, B: simoleanKit.issuer },
+    maths: { A: moolaKit.amountMath, B: simoleanKit.amountMath },
     whatever: 'whatever',
   };
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
@@ -86,6 +106,11 @@ test(`zcf.getTerms & zcf.saveIssuer`, async t => {
   const expected = {
     brands: { A: moolaKit.brand, B: simoleanKit.brand, C: bucksKit.brand },
     issuers: { A: moolaKit.issuer, B: simoleanKit.issuer, C: bucksKit.issuer },
+    maths: {
+      A: moolaKit.amountMath,
+      B: simoleanKit.amountMath,
+      C: bucksKit.amountMath,
+    },
     whatever: 'whatever',
   };
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
@@ -118,6 +143,20 @@ test(`zcf.getIssuerForBrand - from issuerKeywordRecord & zcf.saveIssuer`, async 
   t.is(zcf.getIssuerForBrand(bucksKit.brand), bucksKit.issuer);
 });
 
+test(`zcf.getAmountMath - from issuerKeywordRecord & zcf.saveIssuer`, async t => {
+  const { moolaKit, simoleanKit, bucksKit } = setup();
+  const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
+  const { zcf } = await setupZCFTest(issuerKeywordRecord);
+  compareAmountMath(t, zcf.getAmountMath(moolaKit.brand), moolaKit.amountMath);
+  compareAmountMath(
+    t,
+    zcf.getAmountMath(simoleanKit.brand),
+    simoleanKit.amountMath,
+  );
+  await zcf.saveIssuer(bucksKit.issuer, 'C');
+  compareAmountMath(t, zcf.getAmountMath(bucksKit.brand), bucksKit.amountMath);
+});
+
 test(`zcf.assertUniqueKeyword`, async t => {
   const { moolaKit, simoleanKit } = setup();
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
@@ -143,6 +182,11 @@ test(`zcf.saveIssuer & zoe.getTerms`, async t => {
   const expected = {
     brands: { A: moolaKit.brand, B: simoleanKit.brand, C: bucksKit.brand },
     issuers: { A: moolaKit.issuer, B: simoleanKit.issuer, C: bucksKit.issuer },
+    maths: {
+      A: moolaKit.amountMath,
+      B: simoleanKit.amountMath,
+      C: bucksKit.amountMath,
+    },
     whatever: 'whatever',
   };
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
@@ -157,7 +201,11 @@ test(`zcf.saveIssuer & zoe.getTerms`, async t => {
   await zcf.saveIssuer(bucksKit.issuer, 'C');
 
   const zoeTerms = await E(zoe).getTerms(instance);
-  t.deepEqual(zoeTerms, expected);
+  const zoeTermsMinusAmountMath = { ...zoeTerms, maths: {} };
+  const expectedMinusAmountMath = { ...expected, maths: {} };
+  t.deepEqual(zoeTermsMinusAmountMath, expectedMinusAmountMath);
+
+  compareAmountMaths(t, zoeTerms.maths, expected.maths);
 });
 
 test(`zcf.saveIssuer - bad issuer`, async t => {
@@ -335,10 +383,24 @@ test(`zcf.makeZCFMint - NAT`, async t => {
   const expected = {
     issuers: { A: issuerRecord.issuer },
     brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.mathKind, MathKind.NAT);
   t.is(issuerRecord.brand.getDisplayInfo(), undefined);
+});
+
+test(`zcf.makeZCFMint - STRING_SET`, async t => {
+  const { zcf } = await setupZCFTest();
+  const zcfMint = await zcf.makeZCFMint('A', MathKind.STRING_SET);
+  const issuerRecord = zcfMint.getIssuerRecord();
+  const expected = {
+    issuers: { A: issuerRecord.issuer },
+    brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
+  };
+  await testTerms(t, zcf, expected);
+  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.STRING_SET);
 });
 
 test(`zcf.makeZCFMint - SET`, async t => {
@@ -348,6 +410,7 @@ test(`zcf.makeZCFMint - SET`, async t => {
   const expected = {
     issuers: { A: issuerRecord.issuer },
     brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.mathKind, MathKind.SET);
@@ -519,6 +582,7 @@ test(`zcf.makeZCFMint - displayInfo`, async t => {
   const expected = {
     issuers: { A: issuerRecord.issuer },
     brands: { A: issuerRecord.brand },
+    maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.brand.getDisplayInfo().decimalPlaces, 3);
