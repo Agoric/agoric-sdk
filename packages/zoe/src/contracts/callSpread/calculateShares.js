@@ -3,7 +3,6 @@
 import '../../../exported';
 import './types';
 
-import { isNat } from '@agoric/nat';
 import { amountMath } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
 import { makeRatio } from '../../contractSupport';
