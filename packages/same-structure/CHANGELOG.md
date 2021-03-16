@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.2...@agoric/same-structure@0.1.3) (2021-03-16)
+
+
+### Bug Fixes
+
+* make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
+
+
+
+
+
 ## [0.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.1...@agoric/same-structure@0.1.2) (2021-02-22)
 
 **Note:** Version bump only for package @agoric/same-structure
