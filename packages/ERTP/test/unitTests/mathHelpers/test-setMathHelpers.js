@@ -107,7 +107,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   // makeEmpty
   t.deepEqual(
-    m.makeEmpty(MathKind.SET, mockBrand),
+    m.makeEmpty(mockBrand, MathKind.SET),
     { brand: mockBrand, value: [] },
     `empty is []`,
   );

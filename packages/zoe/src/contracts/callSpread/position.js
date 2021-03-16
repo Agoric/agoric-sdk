@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * Constants for long and short positions.
  *

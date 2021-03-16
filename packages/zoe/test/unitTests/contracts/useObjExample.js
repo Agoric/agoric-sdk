@@ -2,6 +2,8 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
+import { amountMath } from '@agoric/ertp';
+
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
@@ -18,7 +20,6 @@ const start = zcf => {
     brands: { Pixels: pixelBrand },
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, harden(['Pixels']));
-  const amountMath = zcf.getAmountMath(pixelBrand);
 
   const makeUseObj = seat => {
     assertProposalShape(seat, {
@@ -29,7 +30,7 @@ const start = zcf => {
        * (Pretend to) color some pixels.
        *
        * @param {string} color
-       * @param {Amount} amountToColor
+       * @param {Amount=} amountToColor
        */
       colorPixels: (color, amountToColor = undefined) => {
         // Throw if the offer is no longer active, i.e. the user has
@@ -41,6 +42,7 @@ const start = zcf => {
         if (amountToColor === undefined) {
           amountToColor = escrowedAmount;
         }
+        assert(amountToColor);
         // Ensure that the amount of pixels that we want to color is
         // covered by what is actually escrowed.
         assert(

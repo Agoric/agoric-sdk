@@ -1,3 +1,5 @@
+// @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -5,6 +7,7 @@ import test from 'ava';
 import { Far } from '@agoric/marshal';
 
 import makeStore from '@agoric/store';
+import { makeNotifier } from '@agoric/notifier';
 import { setup } from '../setupBasicMints';
 import { makeZcfSeatAdminKit } from '../../../src/contractFacet/seat';
 
@@ -24,17 +27,13 @@ test('ZoeHelpers messages', t => {
 function makeMockTradingZcfBuilder() {
   const offers = makeStore('offerHandle');
   const allocs = makeStore('offerHandle');
-  const amountMathToBrand = makeStore('amountMath');
   const reallocatedStagings = [];
 
   return Far('mockTradingZcfBuilder', {
     addOffer: (keyword, offer) => offers.init(keyword, offer),
     addAllocation: (keyword, alloc) => allocs.init(keyword, alloc),
-    addBrand: issuerRecord =>
-      amountMathToBrand.init(issuerRecord.brand, issuerRecord.amountMath),
     build: () =>
       Far('mockZCF', {
-        getAmountMath: amountMath => amountMathToBrand.get(amountMath),
         getZoeService: () => {},
         reallocate: (...seatStagings) => {
           reallocatedStagings.push(...seatStagings);
@@ -45,13 +44,12 @@ function makeMockTradingZcfBuilder() {
 }
 
 test('ZoeHelpers satisfies blank proposal', t => {
-  const { moolaR, moola } = setup();
+  const { moola } = setup();
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
     getProposal: () => harden({}),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
-  mockZCFBuilder.addBrand(moolaR);
   const mockZCF = mockZCFBuilder.build();
   t.truthy(
     satisfies(mockZCF, fakeZcfSeat, { Gift: moola(3) }),
@@ -60,13 +58,12 @@ test('ZoeHelpers satisfies blank proposal', t => {
 });
 
 test('ZoeHelpers satisfies simple proposal', t => {
-  const { moolaR, moola, simoleans } = setup();
+  const { moola, simoleans } = setup();
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10) }),
     getProposal: () => harden({ want: { Desire: moola(30) } }),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
-  mockZCFBuilder.addBrand(moolaR);
   const mockZCF = mockZCFBuilder.build();
   t.falsy(
     satisfies(mockZCF, fakeZcfSeat, { Desire: moola(3) }),
@@ -91,19 +88,16 @@ test('ZoeHelpers satisfies simple proposal', t => {
 });
 
 test('ZoeHelpers satisfies() with give', t => {
-  const { moolaR, moola, bucks, bucksR, simoleanR } = setup();
+  const { moola, bucks } = setup();
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Charge: moola(30) }),
     getProposal: () =>
       harden({ give: { Charge: moola(30) }, want: { Desire: bucks(5) } }),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
-  mockZCFBuilder.addBrand(moolaR);
-  mockZCFBuilder.addBrand(bucksR);
-  mockZCFBuilder.addBrand(simoleanR);
   const mockZCF = mockZCFBuilder.build();
   t.falsy(
-    satisfies(mockZCF, fakeZcfSeat, { Charge: moola(0), Desire: bucks(1) }),
+    satisfies(mockZCF, fakeZcfSeat, { Charge: moola(0n), Desire: bucks(1) }),
     `providing neither give nor want is not satisfying`,
   );
   t.falsy(
@@ -111,7 +105,7 @@ test('ZoeHelpers satisfies() with give', t => {
     `providing less than what's wanted is not satisfying`,
   );
   t.truthy(
-    satisfies(mockZCF, fakeZcfSeat, { Charge: moola(0), Desire: bucks(40) }),
+    satisfies(mockZCF, fakeZcfSeat, { Charge: moola(0n), Desire: bucks(40) }),
     `providing more than what's wanted is satisfying`,
   );
   t.truthy(
@@ -123,10 +117,11 @@ test('ZoeHelpers satisfies() with give', t => {
 const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
   const allSeatStagings = new WeakSet();
   const mockZoeSeatAdmin = Far('mockZoeSeatAdmin', {});
+  const notifier = makeNotifier();
   const { zcfSeat: actual } = makeZcfSeatAdminKit(
     allSeatStagings,
     mockZoeSeatAdmin,
-    { proposal, initialAllocation },
+    { proposal, initialAllocation, notifier },
     getAmountMath,
   );
   let hasExited = false;
@@ -144,19 +139,14 @@ const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
 };
 
 test('ZoeHelpers trade ok', t => {
-  const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
-  const getAmountMath = brand => amountMaths.get(brand.getAllegedName());
+  const { moola, simoleans } = setup();
   const leftProposal = {
     give: { Asset: moola(10) },
     want: { Bid: simoleans(4) },
     exit: { onDemand: null },
   };
   const leftAlloc = { Asset: moola(10) };
-  const leftZcfSeat = makeMockZcfSeatAdmin(
-    leftProposal,
-    leftAlloc,
-    getAmountMath,
-  );
+  const leftZcfSeat = makeMockZcfSeatAdmin(leftProposal, leftAlloc);
   const rightProposal = {
     give: { Money: simoleans(6) },
     want: { Items: moola(7) },
@@ -164,14 +154,8 @@ test('ZoeHelpers trade ok', t => {
   };
 
   const rightAlloc = { Money: simoleans(6) };
-  const rightZcfSeat = makeMockZcfSeatAdmin(
-    rightProposal,
-    rightAlloc,
-    getAmountMath,
-  );
+  const rightZcfSeat = makeMockZcfSeatAdmin(rightProposal, rightAlloc);
   const mockZCFBuilder = makeMockTradingZcfBuilder();
-  mockZCFBuilder.addBrand(moolaR);
-  mockZCFBuilder.addBrand(simoleanR);
   const mockZCF = mockZCFBuilder.build();
   t.notThrows(() =>
     trade(
@@ -204,23 +188,16 @@ test('ZoeHelpers trade ok', t => {
 });
 
 test('ZoeHelpers trade same seat', t => {
-  const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
-  const getAmountMath = brand => amountMaths.get(brand.getAllegedName());
+  const { moola, simoleans } = setup();
   const leftProposal = {
     give: { Asset: moola(10) },
     want: { Bid: simoleans(4) },
     exit: { onDemand: null },
   };
   const leftAlloc = { Asset: moola(10) };
-  const leftZcfSeat = makeMockZcfSeatAdmin(
-    leftProposal,
-    leftAlloc,
-    getAmountMath,
-  );
+  const leftZcfSeat = makeMockZcfSeatAdmin(leftProposal, leftAlloc);
 
   const mockZCFBuilder = makeMockTradingZcfBuilder();
-  mockZCFBuilder.addBrand(moolaR);
-  mockZCFBuilder.addBrand(simoleanR);
   const mockZCF = mockZCFBuilder.build();
   t.throws(
     () =>

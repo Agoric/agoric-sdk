@@ -19,7 +19,7 @@
  * @typedef {Object} ZoeSeatAdminKit
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
- * @property {Notifier} notifier
+ * @property {Notifier<Allocation>} notifier
  *
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
@@ -30,13 +30,25 @@
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<OfferResult>=} offerResult
  * @returns {ZoeSeatAdminKit}
- *
+ */
+
+/**
+ * @callback ZoeSeatAdminExit
+ * @param {Completion=} completion
+ * @returns {void}
+ */
+
+/**
  * @typedef {Object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
- * @property {(completion: Completion) => void} exit
+ * @property {ZoeSeatAdminExit} exit
  * @property {(reason: TerminationReason) => void} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Allocation} getCurrentAllocation
+ */
+
+/**
+ * @callback {(brand: Brand) => AmountMathKind} GetMathKind
  */
 
 /**
@@ -48,7 +60,7 @@
  * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
- * @param {GetAmountMath} getAmountMath
+ * @param {GetMathKind} getMathKind - get the mathKind given the brand
  * @returns {ZcfSeatAdminKit}
  */
 
@@ -106,11 +118,16 @@
  */
 
 /**
+ * @callback ZoeInstanceAdminMakeInvitation
+ * @param invitationHandle: InvitationHandle,
+ * @param description: string,
+ * @param customProperties: Record<string, any>=,
+ * @returns {Payment} payment
+ */
+
+/**
  * @typedef {Object} ZoeInstanceAdmin
- * @property {(invitationHandle: InvitationHandle,
- *             description: string,
- *             customProperties: Record<string, any>=,
- *            ) => Payment} makeInvitation
+ * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
  *            ) => Promise<void>} saveIssuer

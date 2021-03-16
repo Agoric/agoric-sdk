@@ -37,6 +37,7 @@
  * @property {Brand} brand
  * @property {Issuer} issuer
  * @property {DeprecatedAmountMath} amountMath
+ * @property {AmountMathKind} mathKind
  * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation

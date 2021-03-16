@@ -1,3 +1,5 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
@@ -335,6 +337,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       exit: { onDemand: null },
     });
     const aliceSwapTwoPayments = { Price: simoleansPayment };
+    // @ts-ignore
     const swapSeatTwo = await E(zoe).offer(
       swapInvitationTwo,
       swapTwoProposal,

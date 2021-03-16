@@ -68,6 +68,7 @@ const makeIssuerTable = () => {
         brand,
         issuer,
         amountMath,
+        mathKind: amountMathKind,
         displayInfo: { ...displayInfo, amountMathKind },
       });
       return issuerTable.getByBrand(brand);

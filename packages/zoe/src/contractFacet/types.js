@@ -11,6 +11,12 @@
  */
 
 /**
+ * @callback ZCFMakeEmptySeatKit
+ * @param {ExitRule=} exit
+ * @returns {ZCFSeatKit}
+ */
+
+/**
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -36,8 +42,9 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
+ * @property {(brand: Brand) => AmountMathKind} getMathKind
  * @property {MakeZCFMint} makeZCFMint
- * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
+ * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => void} stopAcceptingOffers
  */
@@ -61,11 +68,11 @@
  * change, overall rights will be unchanged, and a reallocation can
  * only effect offer safety for seats whose allocations change.
  *
- * @param  {SeatStaging} seatStaging
- * @param {SeatStaging} seatStaging
- * @param {SeatStaging=} seatStaging
- * @param {SeatStaging=} seatStaging
- * @param {SeatStaging=} seatStaging
+ * @param  {SeatStaging} seatStaging1
+ * @param {SeatStaging} seatStaging2
+ * @param {SeatStaging=} seatStaging3
+ * @param {SeatStaging=} seatStaging4
+ * @param {SeatStaging=} seatStaging5
  * @returns {void}
  */
 
@@ -100,12 +107,6 @@
  */
 
 /**
- * @callback GetAmountMath
- * @param {Brand} brand
- * @returns {DeprecatedAmountMath}
- */
-
-/**
  * @callback MakeZCFMint
  * @param {Keyword} keyword
  * @param {AmountMathKind=} amountMathKind
@@ -120,11 +121,16 @@
  */
 
 /**
+ * @callback ZCFMintMintGains
+ * @param {AmountKeywordRecord} mintGains
+ * @param {ZCFSeat=} zcfSeat
+ * @returns {ZCFSeat}
+ */
+
+/**
  * @typedef {Object} ZCFMint
  * @property {() => IssuerRecord} getIssuerRecord
- * @property {(gains: AmountKeywordRecord,
- *             zcfSeat: ZCFSeat=,
- *            ) => ZCFSeat} mintGains
+ * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
  * Add the gains to that seat's allocation.
@@ -149,19 +155,41 @@
  */
 
 /**
+ * @callback ZCFSeatFail
+ *
+ * fail called with the reason for this failure, where reason is
+ * normally an instanceof Error.
+ * @param {Error=} reason
+ * @returns {Error}
+ */
+/**
+ * @callback ZCFSeatKickOut
+ *
+ * called with the reason for this failure,
+ * where reason is normally an instanceof Error. This method is
+ * deprecated as of 0.9.1-dev.3 in favor of fail().
+ * @param {Error=} reason
+ * @returns {Error}
+ */
+
+/**
+ * @callback ZCFGetAmountAllocated
+ * The brand is used for filling in an empty amount if the `keyword`
+ * is not present in the allocation
+ * @param {Keyword} keyword
+ * @param {Brand=} brand
+ * @returns {Amount}
+ */
+
+/**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(reason: Error=) => Error} fail called with the reason for this
- * failure, where reason is normally an instanceof Error.
- * @property {(reason: Error=) => Error} kickOut called with the reason for
- * this failure, where reason is normally an instanceof Error. This method
- * is deprecated as of 0.9.1-dev.3 in favor of fail().
+ * @property {ZCFSeatFail} fail
+ * @property {ZCFSeatKickOut} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
- * @property {(keyword: Keyword, brand: Brand=) => Amount} getAmountAllocated
- * The brand is used for filling in an empty amount if the `keyword`
- * is not present in the allocation
+ * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
  * @property {(newAllocation: Allocation) => SeatStaging} stage

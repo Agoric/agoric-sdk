@@ -34,5 +34,5 @@ export function make100Percent(brand) {
 }
 
 export function make0Percent(brand) {
-  return makeRatio(0, brand);
+  return makeRatio(0n, brand);
 }

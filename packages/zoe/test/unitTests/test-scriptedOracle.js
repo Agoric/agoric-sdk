@@ -31,7 +31,7 @@ const bountyContractPath = `${__dirname}/bounty`;
  * @property {Installation} bountyInstallation
  * @property {Mint} moolaMint
  * @property {Issuer} moolaIssuer
- * @property {AmountMath['make']} moola
+ * @property {(value: Value) => Amount} moola
  *
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
@@ -87,7 +87,7 @@ test('pay bounty', async t => {
       deadline: 3n,
       condition: 'Succeeded',
       timer,
-      fee: moola(50),
+      fee: moola(50n),
     },
   );
 
@@ -96,34 +96,34 @@ test('pay bounty', async t => {
   const funderSeat = await E(zoe).offer(
     funderInvitation,
     harden({
-      give: { Bounty: moola(200) },
-      want: { Fee: moola(0) },
+      give: { Bounty: moola(200n) },
+      want: { Fee: moola(0n) },
     }),
     harden({
-      Bounty: moolaMint.mintPayment(moola(200)),
+      Bounty: moolaMint.mintPayment(moola(200n)),
     }),
   );
   const bountyInvitation = await funderSeat.getOfferResult();
-  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Fee'), moola(50));
-  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Bounty'), moola(0));
+  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Fee'), moola(50n));
+  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Bounty'), moola(0n));
 
   // Bob buys the bounty invitation
   const bountySeat = await E(zoe).offer(
     bountyInvitation,
     harden({
-      give: { Fee: moola(50) },
-      want: { Bounty: moola(0) },
+      give: { Fee: moola(50n) },
+      want: { Bounty: moola(0n) },
     }),
     harden({
-      Fee: moolaMint.mintPayment(moola(50)),
+      Fee: moolaMint.mintPayment(moola(50n)),
     }),
   );
-  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Fee'), moola(0));
+  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Fee'), moola(0n));
   assertPayoutAmount(
     t,
     moolaIssuer,
     bountySeat.getPayout('Bounty'),
-    moola(200),
+    moola(200n),
   );
 
   await E(timer).tick();
@@ -156,7 +156,7 @@ test('pay no bounty', async t => {
       deadline: 3n,
       condition: 'Succeeded',
       timer,
-      fee: moola(50),
+      fee: moola(50n),
     },
   );
 
@@ -165,37 +165,37 @@ test('pay no bounty', async t => {
   const funderSeat = await E(zoe).offer(
     funderInvitation,
     harden({
-      give: { Bounty: moola(200) },
-      want: { Fee: moola(0) },
+      give: { Bounty: moola(200n) },
+      want: { Fee: moola(0n) },
     }),
     harden({
-      Bounty: moolaMint.mintPayment(moola(200)),
+      Bounty: moolaMint.mintPayment(moola(200n)),
     }),
   );
   const bountyInvitation = await funderSeat.getOfferResult();
-  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Fee'), moola(50));
+  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Fee'), moola(50n));
   // Alice gets the funds back.
   assertPayoutAmount(
     t,
     moolaIssuer,
     funderSeat.getPayout('Bounty'),
-    moola(200),
+    moola(200n),
   );
 
   // Bob buys the bounty invitation
   const bountySeat = await E(zoe).offer(
     bountyInvitation,
     harden({
-      give: { Fee: moola(50) },
-      want: { Bounty: moola(0) },
+      give: { Fee: moola(50n) },
+      want: { Bounty: moola(0n) },
     }),
     harden({
-      Fee: moolaMint.mintPayment(moola(50)),
+      Fee: moolaMint.mintPayment(moola(50n)),
     }),
   );
-  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Fee'), moola(0));
+  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Fee'), moola(0n));
   // Bob doesn't receive the bounty
-  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Bounty'), moola(0));
+  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Bounty'), moola(0n));
 
   await E(timer).tick();
   await E(timer).tick();

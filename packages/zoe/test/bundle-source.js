@@ -1,3 +1,5 @@
+// @ts-check
+
 import bundleSource from '@agoric/bundle-source';
 
 // Use the new format.

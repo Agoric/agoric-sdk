@@ -3,12 +3,13 @@
 import { assert, details as X } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
-import { Nat, isNat } from '@agoric/nat';
+import { isNat } from '@agoric/nat';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
 import { makeAmountMath } from './deprecatedAmountMath';
+import { isSetValue, isNatValue } from './typeGuards';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
@@ -68,22 +69,34 @@ const helpers = {
 };
 
 /**
- * @type {(value: NatValue | SetValue) => SetMathHelpers | NatMathHelpers }
+ * @param {Value} value
+ * @returns {NatMathHelpers | SetMathHelpers}
  */
 const getHelpersFromValue = value => {
-  if (Array.isArray(value)) {
+  if (isSetValue(value)) {
     return setMathHelpers;
   }
-  assert(
-    typeof Nat(value) === 'bigint',
-    X`value ${value} must be a bigint or an array`,
-  );
-  return natMathHelpers;
+  if (isNatValue(value)) {
+    return natMathHelpers;
+  }
+  assert.fail(X`value ${value} must be a bigint or an array`);
 };
 
-/** @type {(amount: Amount ) => NatMathHelpers | SetMathHelpers} */
+/** @type {(amount: Amount) => AmountMathKind} */
+const getMathKind = amount => {
+  if (isSetValue(amount.value)) {
+    return 'set';
+  }
+  if (isNatValue(amount.value)) {
+    return 'nat';
+  }
+  assert.fail(X`value ${amount.value} must be a bigint or an array`);
+};
+
+/**
+ * @type {(amount: Amount ) => NatMathHelpers | SetMathHelpers }
+ */
 const getHelpersFromAmount = amount => {
-  // @ts-ignore
   return getHelpersFromValue(amount.value);
 };
 
@@ -122,16 +135,8 @@ const assertLooksLikeValue = value => {
   );
 };
 
-const brandMethods = ['isMyIssuer', 'getAllegedName', 'getDisplayInfo'];
-
 const checkBrand = (brand, msg) => {
   assert(passStyleOf(brand) === REMOTE_STYLE, msg);
-  const ownKeys = Reflect.ownKeys(brand);
-  const inBrandMethods = key => brandMethods.includes(key);
-  assert(
-    ownKeys.every(inBrandMethods),
-    X`The brand ${brand} doesn't look like a brand. It has these keys: ${ownKeys}`,
-  );
 };
 
 /** @type {(brand: Brand) => void} */
@@ -193,7 +198,7 @@ const amountMath = {
     return amountMath.make(allegedAmount.value, brand);
   },
   getValue: (amount, brand) => amountMath.coerce(amount, brand).value,
-  makeEmpty: (mathKind, brand) => {
+  makeEmpty: (brand, mathKind = MathKind.NAT) => {
     assert(
       helpers[mathKind],
       X`${mathKind} must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated`,
@@ -201,6 +206,8 @@ const amountMath = {
     assertLooksLikeBrand(brand);
     return noCoerceMake(helpers[mathKind].doMakeEmpty(), brand);
   },
+  makeEmptyFromAmount: amount =>
+    amountMath.makeEmpty(amount.brand, getMathKind(amount)),
   isEmpty: (amount, brand = undefined) => {
     assertLooksLikeAmount(amount);
     optionalBrandCheck(amount, brand);
@@ -237,4 +244,4 @@ const amountMath = {
 };
 harden(amountMath);
 
-export { amountMath, MathKind, makeAmountMath };
+export { amountMath, MathKind, getMathKind, makeAmountMath };

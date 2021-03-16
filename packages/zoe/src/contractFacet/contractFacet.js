@@ -14,7 +14,7 @@ import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
-import { makeAmountMath, MathKind } from '@agoric/ertp';
+import { MathKind, amountMath, makeAmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
@@ -45,6 +45,8 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     /** @type {IssuerTable} */
     const issuerTable = makeIssuerTable();
     const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
+
+    const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
 
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
@@ -151,7 +153,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
-      const proposal = cleanProposal(getAmountMath, harden({ exit }));
+      const proposal = cleanProposal(harden({ exit }));
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -173,7 +175,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         allSeatStagings,
         zoeSeatAdminPromiseKit.promise,
         seatData,
-        getAmountMath,
+        getMathKindByBrand,
       );
       zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
       zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
@@ -220,6 +222,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         brand: mintyBrand,
         issuer: mintyIssuer,
         amountMath: mintyAmountMath,
+        mathKind: amountMathKind,
       });
       registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
       issuerTable.initIssuerByRecord(mintyIssuerRecord);
@@ -239,18 +242,18 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
-          let totalToMint = mintyAmountMath.getEmpty();
+          let totalToMint = amountMath.makeEmpty(mintyBrand, amountMathKind);
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
             assert(
               totalToMint.brand === amountToAdd.brand,
               X`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
             );
-            totalToMint = mintyAmountMath.add(totalToMint, amountToAdd);
+            totalToMint = amountMath.add(totalToMint, amountToAdd);
             const oldAmount = oldAllocation[seatKeyword];
             // oldAmount being absent is equivalent to empty.
             const newAmount = oldAmount
-              ? mintyAmountMath.add(oldAmount, amountToAdd)
+              ? amountMath.add(oldAmount, amountToAdd)
               : amountToAdd;
             return [seatKeyword, newAmount];
           });
@@ -275,7 +278,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             X`losses ${losses} must be an amountKeywordRecord`,
           );
           assert(losses !== null, X`losses cannot be null`);
-          let totalToBurn = mintyAmountMath.getEmpty();
+          let totalToBurn = amountMath.makeEmpty(mintyBrand, amountMathKind);
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
             losses,
@@ -284,9 +287,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
                 totalToBurn.brand === amountToSubtract.brand,
                 X`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
               );
-              totalToBurn = mintyAmountMath.add(totalToBurn, amountToSubtract);
+              totalToBurn = amountMath.add(totalToBurn, amountToSubtract);
               const oldAmount = oldAllocation[seatKeyword];
-              const newAmount = mintyAmountMath.subtract(
+              const newAmount = amountMath.subtract(
                 oldAmount,
                 amountToSubtract,
               );
@@ -345,7 +348,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         );
         const newAmounts = flattenAllocations(newAllocations);
 
-        assertRightsConserved(getAmountMath, previousAmounts, newAmounts);
+        assertRightsConserved(previousAmounts, newAmounts);
 
         reallocateInternal(seatStagings);
       },
@@ -411,6 +414,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
       getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
       getAmountMath,
+      getMathKind: brand => issuerTable.getByBrand(brand).mathKind,
       /**
        * Provide a jig object for testing purposes only.
        *
@@ -444,7 +448,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           allSeatStagings,
           zoeSeatAdmin,
           seatData,
-          getAmountMath,
+          getMathKindByBrand,
         );
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);

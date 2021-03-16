@@ -1,4 +1,4 @@
-// ts-check
+// @ts-check
 
 import '../../../../exported';
 
@@ -6,6 +6,8 @@ import '../../../../exported';
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+
+import { amountMath } from '@agoric/ertp';
 
 import { doLiquidation } from '../../../../src/contracts/loan/liquidate';
 
@@ -27,7 +29,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     harden({}),
   );
 
-  const collateral = collateralKit.amountMath.make(10);
+  const collateral = amountMath.make(10n, collateralKit.brand);
   const {
     zcfSeat: collateralSeat,
     userSeat: collateralUserSeat,
@@ -37,7 +39,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     { Collateral: collateralKit.mint.mintPayment(collateral) },
   );
 
-  const loan1000 = loanKit.amountMath.make(1000);
+  const loan1000 = amountMath.make(1000n, loanKit.brand);
 
   // Setup fake autoswap
   const { zcfSeat: fakePoolSeat } = await makeSeatKit(
@@ -46,7 +48,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     { Central: loanKit.mint.mintPayment(loan1000) },
   );
 
-  const price = loanKit.amountMath.make(20);
+  const price = amountMath.make(20n, loanKit.brand);
 
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
@@ -77,7 +79,13 @@ test('test doLiquidation with mocked autoswap', async t => {
     makeSwapInInvitation: () => zcf.makeInvitation(swapHandler, 'swap'),
   });
 
-  await doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat);
+  await doLiquidation(
+    zcf,
+    collateralSeat,
+    autoswapPublicFacetP,
+    lenderSeat,
+    loanKit.brand,
+  );
 
   // Ensure collateralSeat exited
   t.truthy(collateralSeat.hasExited());
@@ -87,7 +95,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     t,
     lenderUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
-    { Loan: price, Collateral: collateralKit.amountMath.getEmpty() },
+    { Loan: price, Collateral: amountMath.makeEmpty(collateralKit.brand) },
     'lenderSeat',
   );
 
@@ -97,8 +105,8 @@ test('test doLiquidation with mocked autoswap', async t => {
     collateralUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: loanKit.amountMath.getEmpty(),
-      Collateral: collateralKit.amountMath.getEmpty(),
+      Loan: amountMath.makeEmpty(loanKit.brand),
+      Collateral: amountMath.makeEmpty(collateralKit.brand),
     },
     'collateralSeat',
   );
@@ -116,7 +124,7 @@ test('test with malfunctioning autoswap', async t => {
     harden({}),
   );
 
-  const collateral = collateralKit.amountMath.make(10);
+  const collateral = amountMath.make(10n, collateralKit.brand);
   const {
     zcfSeat: collateralSeat,
     userSeat: collateralUserSeat,
@@ -139,7 +147,14 @@ test('test with malfunctioning autoswap', async t => {
   });
 
   await t.throwsAsync(
-    () => doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat),
+    () =>
+      doLiquidation(
+        zcf,
+        collateralSeat,
+        autoswapPublicFacetP,
+        lenderSeat,
+        loanKit.brand,
+      ),
     { message: 'Pool not initialized' },
   );
 
@@ -152,7 +167,7 @@ test('test with malfunctioning autoswap', async t => {
     lenderUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: loanKit.amountMath.getEmpty(),
+      Loan: amountMath.makeEmpty(loanKit.brand),
       Collateral: collateral,
     },
     'lenderSeat',
@@ -164,8 +179,8 @@ test('test with malfunctioning autoswap', async t => {
     collateralUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: loanKit.amountMath.getEmpty(),
-      Collateral: collateralKit.amountMath.getEmpty(),
+      Loan: amountMath.makeEmpty(loanKit.brand),
+      Collateral: amountMath.makeEmpty(collateralKit.brand),
     },
     'collateralSeat',
   );

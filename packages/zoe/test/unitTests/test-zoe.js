@@ -224,7 +224,6 @@ test(`zoe.getTerms - none`, async t => {
   t.deepEqual(await E(zoe).getTerms(instance), {
     brands: {},
     issuers: {},
-    maths: {},
   });
 });
 
@@ -252,16 +251,10 @@ test(`zoe.getTerms`, async t => {
     brands: {
       Moola: moolaKit.brand,
     },
-    maths: { Moola: moolaKit.amountMath },
     someTerm: 2,
   };
 
-  t.deepEqual({ ...zoeTerms, maths: {} }, { ...expected, maths: {} });
-  t.is(
-    zoeTerms.maths.Moola.getAmountMathKind(),
-    moolaKit.amountMath.getAmountMathKind(),
-  );
-  t.is(zoeTerms.maths.Moola.getBrand(), moolaKit.amountMath.getBrand());
+  t.deepEqual(zoeTerms, expected);
 });
 
 test(`zoe.getTerms - no instance`, async t => {

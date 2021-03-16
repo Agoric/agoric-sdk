@@ -1,3 +1,5 @@
+// @ts-check
+
 import { assertProposalShape } from '../../contractSupport';
 
 import '../../../exported';

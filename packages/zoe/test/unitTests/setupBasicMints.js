@@ -1,4 +1,6 @@
-import { makeIssuerKit } from '@agoric/ertp';
+// @ts-check
+
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../src/contractFacet/fakeVatAdmin';
 
@@ -11,17 +13,40 @@ const setup = () => {
     simoleans: simoleanBundle,
     bucks: bucksBundle,
   };
-  const amountMaths = new Map();
+  /** @type {Map<string, Brand>} */
   const brands = new Map();
 
   for (const k of Object.getOwnPropertyNames(allBundles)) {
-    amountMaths.set(k, allBundles[k].amountMath);
     brands.set(k, allBundles[k].brand);
   }
 
   const zoe = makeZoe(fakeVatAdmin);
 
-  return harden({
+  const makeSimpleMake = brand => value => amountMath.make(value, brand);
+
+  /**
+   * @typedef {Object} BasicMints
+   * @property {Issuer} moolaIssuer
+   * @property {Mint} moolaMint
+   * @property {IssuerKit} moolaR
+   * @property {IssuerKit} moolaKit
+   * @property {Issuer} simoleanIssuer
+   * @property {Mint} simoleanMint
+   * @property {IssuerKit} simoleanR
+   * @property {IssuerKit} simoleanKit
+   * @property {Issuer} bucksIssuer
+   * @property {Mint} bucksMint
+   * @property {IssuerKit} bucksR
+   * @property {IssuerKit} bucksKit
+   * @property {Map<string, Brand>} brands
+   * @property {(value: any) => Amount} moola
+   * @property {(value: any) => Amount} simoleans
+   * @property {(value: any) => Amount} bucks
+   * @property {ZoeService} zoe
+   */
+
+  /** @type {BasicMints} */
+  const result = {
     moolaIssuer: moolaBundle.issuer,
     moolaMint: moolaBundle.mint,
     moolaR: moolaBundle,
@@ -34,13 +59,14 @@ const setup = () => {
     bucksMint: bucksBundle.mint,
     bucksR: bucksBundle,
     bucksKit: bucksBundle,
-    amountMaths,
     brands,
-    moola: moolaBundle.amountMath.make,
-    simoleans: simoleanBundle.amountMath.make,
-    bucks: bucksBundle.amountMath.make,
+    moola: makeSimpleMake(moolaBundle.brand),
+    simoleans: makeSimpleMake(simoleanBundle.brand),
+    bucks: makeSimpleMake(bucksBundle.brand),
     zoe,
-  });
+  };
+  harden(result);
+  return result;
 };
 harden(setup);
 export { setup };

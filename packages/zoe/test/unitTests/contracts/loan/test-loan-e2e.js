@@ -1,5 +1,5 @@
 /* global __dirname */
-// ts-check
+// @ts-check
 import '../../../../exported';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -7,7 +7,7 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
-
+import { amountMath } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 import { makeNotifierKit } from '@agoric/notifier';
 
@@ -52,28 +52,28 @@ test('loan - lend - exit before borrow', async t => {
   const timer = buildManualTimer(console.log);
 
   const priceAuthority = makeFakePriceAuthority({
-    mathIn: collateralKit.amountMath,
-    mathOut: loanKit.amountMath,
     priceList: [],
     timer,
+    actualBrandIn: collateralKit.brand,
+    actualBrandOut: loanKit.brand,
   });
 
   const { notifier: periodNotifier } = makeNotifierKit();
 
   const terms = {
-    mmr: makeRatio(150, loanKit.brand),
+    mmr: makeRatio(150n, loanKit.brand),
     autoswapInstance,
     priceAuthority,
     periodNotifier,
-    interestRate: 5,
-    interestPeriod: 10,
+    interestRate: 5n,
+    interestPeriod: 10n,
   };
 
   const { creatorInvitation: lendInvitation, instance } = await E(
     zoe,
   ).startInstance(installation, issuerKeywordRecord, terms);
 
-  const maxLoan = loanKit.amountMath.make(1000);
+  const maxLoan = amountMath.make(1000n, loanKit.brand);
 
   // Alice is willing to lend Loan tokens
   const proposal = harden({

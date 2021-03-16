@@ -1,6 +1,9 @@
 /* global __dirname */
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
+import { assert } from '@agoric/assert';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -25,5 +28,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     terms,
   );
   const { vatAdminState } = fakeVatAdmin;
+  // @ts-ignore
+  assert(zcf !== undefined);
   return { zoe, zcf, instance, installation, creatorFacet, vatAdminState };
 };

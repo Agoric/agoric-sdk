@@ -1,8 +1,10 @@
 // @ts-check
+
 import '../../../exported';
 import './types';
 
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 import { trade, getAmountOut, multiplyBy } from '../../contractSupport';
 import { Position } from './position';
 import { calculateShares } from './calculateShares';
@@ -16,8 +18,7 @@ import { calculateShares } from './calculateShares';
 function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   const terms = zcf.getTerms();
   const {
-    maths: { Collateral: collateralMath, Strike: strikeMath },
-    brands: { Strike: strikeBrand },
+    brands: { Strike: strikeBrand, Collateral: collateralBrand },
   } = terms;
   let seatsExited = 0;
 
@@ -45,7 +46,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
       seat.exit();
       seatsExited += 1;
       const remainder = collateralSeat.getAmountAllocated('Collateral');
-      if (collateralMath.isEmpty(remainder) && seatsExited === 2) {
+      if (amountMath.isEmpty(remainder, collateralBrand) && seatsExited === 2) {
         zcf.shutdown('contract has been settled');
       }
     });
@@ -55,8 +56,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
     const strike1 = terms.strikePrice1;
     const strike2 = terms.strikePrice2;
     const { longShare, shortShare } = calculateShares(
-      strikeMath,
-      collateralMath,
+      collateralBrand,
       quoteAmount,
       strike1,
       strike2,

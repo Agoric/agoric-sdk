@@ -26,7 +26,7 @@
  */
 
 /**
- * typedef {Object} PriceAmountPair
+ * @typedef {Object} PriceAmountPair
  *
  * @property {Amount} amountOut
  * @property {Amount} amountIn
@@ -41,9 +41,6 @@
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
- * @property {() => DeprecatedAmountMath} getAmountMath - get the amountMath for this
- * pool's secondary brand
- * @property {() => DeprecatedAmountMath} getCentralAmountMath
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
  */

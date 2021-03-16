@@ -105,7 +105,7 @@
  * @property {() => Promise<OfferResult>} getOfferResult
  * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
- * @property {() => Promise<Notifier>} getNotifier
+ * @property {() => Promise<Notifier<Allocation>>} getNotifier
  */
 
 /**
@@ -140,7 +140,8 @@
  * @typedef {Record<Keyword,Amount>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
- * { Asset: amountMath.make(5), Price: amountMath.make(9) }
+ * { Asset: amountMath.make(5n, assetBrand), Price:
+ * amountMath.make(9n, priceBrand) }
  */
 
 /**
@@ -158,10 +159,22 @@
  */
 
 /**
- * @typedef {Object} ExitRule
- * @property {null=} onDemand
- * @property {null=} waived
- * @property {{timer:Timer, deadline:Deadline}=} afterDeadline
+ * @typedef {Object} OnDemandExitRule
+ * @property {null} onDemand
+ */
+
+/**
+ * @typedef {Object} WaivedExitRule
+ * @property {null} waived
+ */
+
+/**
+ * @typedef {Object} AfterDeadlineExitRule
+ * @property {{timer:Timer, deadline:Deadline}} afterDeadline
+ */
+
+/**
+ * @typedef {OnDemandExitRule | WaivedExitRule | AfterDeadlineExitRule} ExitRule
  *
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` key.

@@ -1,3 +1,5 @@
+// @ts-check
+
 import { Far } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport

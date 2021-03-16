@@ -6,7 +6,7 @@ import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { MathKind } from '@agoric/ertp';
+import { MathKind, amountMath } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
 
@@ -22,7 +22,6 @@ const getKeysSorted = obj =>
  * entries in fromLosses are subtracted from 'from'. (If fromLosses
  * is not defined, toGains is subtracted from 'from'.)
  *
- * @param {ContractFacet} zcf
  * @param {FromToAllocations} allocations - the 'to' and 'from'
  * allocations
  * @param {AmountKeywordRecord} toGains - what should be gained in
@@ -37,15 +36,8 @@ const getKeysSorted = obj =>
  * @property {Allocation} from
  * @property {Allocation} to
  */
-const calcNewAllocations = (
-  zcf,
-  allocations,
-  toGains,
-  fromLosses = toGains,
-) => {
+const calcNewAllocations = (allocations, toGains, fromLosses = toGains) => {
   const subtract = (amount, amountToSubtract) => {
-    const { brand } = amount;
-    const amountMath = zcf.getAmountMath(brand);
     if (amountToSubtract !== undefined) {
       return amountMath.subtract(amount, amountToSubtract);
     }
@@ -54,8 +46,6 @@ const calcNewAllocations = (
 
   const add = (amount, amountToAdd) => {
     if (amount && amountToAdd) {
-      const { brand } = amount;
-      const amountMath = zcf.getAmountMath(brand);
       return amountMath.add(amount, amountToAdd);
     }
     return amount || amountToAdd;
@@ -118,7 +108,7 @@ export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = { ...currentAllocation, ...update };
   const proposal = seat.getProposal();
-  return satisfiesWant(zcf.getAmountMath, proposal, newAllocation);
+  return satisfiesWant(proposal, newAllocation);
 };
 
 /** @type {Trade} */
@@ -138,7 +128,6 @@ export const trade = (
     // for all the keywords and amounts in left.gains, transfer from
     // right to left
     ({ from: rightAllocation, to: leftAllocation } = calcNewAllocations(
-      zcf,
       { from: rightAllocation, to: leftAllocation },
       left.gains,
       right.losses,
@@ -146,7 +135,6 @@ export const trade = (
     // For all the keywords and amounts in right.gains, transfer from
     // left to right
     ({ from: leftAllocation, to: rightAllocation } = calcNewAllocations(
-      zcf,
       { from: leftAllocation, to: rightAllocation },
       right.gains,
       left.losses,
@@ -324,9 +312,8 @@ export const assertProposalShape = (seat, expected) => {
 
 /* Given a brand, assert that the issuer uses NAT amountMath. */
 export const assertUsesNatMath = (zcf, brand) => {
-  const amountMath = zcf.getAmountMath(brand);
   assert(
-    amountMath.getAmountMathKind() === MathKind.NAT,
+    zcf.getMathKind(brand) === MathKind.NAT,
     X`issuer must use NAT amountMath`,
   );
 };

@@ -1,4 +1,5 @@
 /* global __dirname */
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies

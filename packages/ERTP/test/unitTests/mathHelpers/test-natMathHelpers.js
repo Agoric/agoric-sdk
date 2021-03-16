@@ -106,7 +106,7 @@ test('natMathHelpers getValue no brand', t => {
 test('natMathHelpers makeEmpty', t => {
   const empty = m.make(0n, mockBrand);
 
-  t.deepEqual(m.makeEmpty(MathKind.NAT, mockBrand), empty, `empty is 0`);
+  t.deepEqual(m.makeEmpty(mockBrand), empty, `empty is 0`);
 });
 
 test('natMathHelpers makeEmpty no brand', t => {
@@ -114,9 +114,9 @@ test('natMathHelpers makeEmpty no brand', t => {
     // @ts-ignore
     () => m.makeEmpty(MathKind.NAT),
     {
-      message: "The brand (an undefined) doesn't look like a brand.",
+      message: "The brand (a string) doesn't look like a brand.",
     },
-    `brand is required in coerce`,
+    `make empty no brand`,
   );
 });
 

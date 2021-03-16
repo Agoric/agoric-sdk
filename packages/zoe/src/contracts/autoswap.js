@@ -2,6 +2,7 @@
 
 import { Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -63,16 +64,13 @@ const start = async zcf => {
 
   const {
     issuer: liquidityIssuer,
-    amountMath: liquidityMath,
+    brand: liquidityBrand,
   } = liquidityMint.getIssuerRecord();
   let liqTokenSupply = 0n;
 
   // In order to get all the brands, we must call zcf.getTerms() after
   // we create the liquidityIssuer
-  const {
-    brands,
-    maths: { Central: centralMath, Secondary: secondaryMath },
-  } = zcf.getTerms();
+  const { brands } = zcf.getTerms();
   Object.values(brands).forEach(brand => assertUsesNatMath(zcf, brand));
   /** @type {Map<Brand,Keyword>} */
   const brandToKeyword = new Map(
@@ -135,7 +133,7 @@ const start = async zcf => {
   const swapInHandler = swapSeat => {
     assertSwapProposal(swapSeat);
     assert(
-      !centralMath.isEmpty(getPoolAmount(brands.Central)),
+      !amountMath.isEmpty(getPoolAmount(brands.Central)),
       `Pool not initialized`,
     );
 
@@ -144,13 +142,14 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
+    assert.typeof(amountIn.value, 'bigint');
+
     const outputValue = getInputPrice(
       amountIn.value,
       getPoolAmount(amountIn.brand).value,
       getPoolAmount(wantedAmountOut.brand).value,
     );
-    const outAmountMath = zcf.getAmountMath(wantedAmountOut.brand);
-    const tradeAmountOut = outAmountMath.make(outputValue);
+    const tradeAmountOut = amountMath.make(outputValue, wantedAmountOut.brand);
     return consummate(amountIn, tradeAmountOut, swapSeat);
   };
 
@@ -164,7 +163,7 @@ const start = async zcf => {
   const swapOutHandler = swapSeat => {
     assertSwapProposal(swapSeat);
     assert(
-      !centralMath.isEmpty(getPoolAmount(brands.Central)),
+      !amountMath.isEmpty(getPoolAmount(brands.Central)),
       'Pool not initialized',
     );
 
@@ -173,14 +172,15 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
+    assert.typeof(wantedAmountOut.value, 'bigint');
+
     const tradePrice = getOutputPrice(
       wantedAmountOut.value,
       getPoolAmount(amountIn.brand).value,
       getPoolAmount(wantedAmountOut.brand).value,
     );
     assert(tradePrice <= amountIn.value, 'amountIn insufficient');
-    const inAmountMath = zcf.getAmountMath(amountIn.brand);
-    const tradeAmountIn = inAmountMath.make(tradePrice);
+    const tradeAmountIn = amountMath.make(tradePrice, amountIn.brand);
 
     return consummate(tradeAmountIn, wantedAmountOut, swapSeat);
   };
@@ -194,7 +194,10 @@ const start = async zcf => {
       centralIn,
       centralPool,
     );
-    const liquidityAmountOut = liquidityMath.make(liquidityValueOut);
+    const liquidityAmountOut = amountMath.make(
+      liquidityValueOut,
+      liquidityBrand,
+    );
     liquidityMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
     liqTokenSupply += liquidityValueOut;
 
@@ -203,7 +206,7 @@ const start = async zcf => {
       {
         seat: poolSeat,
         gains: {
-          Central: centralMath.make(centralIn),
+          Central: amountMath.make(centralIn, brands.Central),
           Secondary: secondaryAmount,
         },
       },
@@ -236,27 +239,31 @@ const start = async zcf => {
       give: { Central: null, Secondary: null },
       want: { Liquidity: null },
     });
-    if (centralMath.isEmpty(getPoolAmount(brands.Central))) {
+    if (amountMath.isEmpty(getPoolAmount(brands.Central))) {
       return initiateLiquidity(liqSeat);
     }
 
     const userAllocation = liqSeat.getCurrentAllocation();
     const secondaryIn = userAllocation.Secondary;
 
+    assert.typeof(userAllocation.Central.value, 'bigint');
+    assert.typeof(secondaryIn.value, 'bigint');
+
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
-    const secondaryOut = secondaryMath.make(
+    const secondaryOut = amountMath.make(
       calcSecondaryRequired(
         userAllocation.Central.value,
         getPoolAmount(brands.Central).value,
         getPoolAmount(brands.Secondary).value,
         secondaryIn.value,
       ),
+      secondaryIn.brand,
     );
 
     // Central was specified precisely so offer must provide enough secondary.
     assert(
-      secondaryMath.isGTE(secondaryIn, secondaryOut),
+      amountMath.isGTE(secondaryIn, secondaryOut),
       'insufficient Secondary deposited',
     );
 
@@ -274,19 +281,21 @@ const start = async zcf => {
     const liquidityValueIn = userAllocation.Liquidity.value;
     assert.typeof(liquidityValueIn, 'bigint');
 
-    const newUserCentralAmount = centralMath.make(
+    const newUserCentralAmount = amountMath.make(
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Central).value,
         liquidityValueIn,
       ),
+      brands.Central,
     );
-    const newUserSecondaryAmount = secondaryMath.make(
+    const newUserSecondaryAmount = amountMath.make(
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Secondary).value,
         liquidityValueIn,
       ),
+      brands.Secondary,
     );
 
     liqTokenSupply -= liquidityValueIn;
@@ -333,12 +342,13 @@ const start = async zcf => {
   const getOutputForGivenInput = (amountIn, brandOut) => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
     const outputReserve = getPoolAmount(brandOut).value;
+    assert.typeof(amountIn.value, 'bigint');
     const outputValue = getInputPrice(
       amountIn.value,
       inputReserve,
       outputReserve,
     );
-    return zcf.getAmountMath(brandOut).make(outputValue);
+    return amountMath.make(outputValue, brandOut);
   };
 
   /**
@@ -351,12 +361,13 @@ const start = async zcf => {
   const getInputForGivenOutput = (amountOut, brandIn) => {
     const inputReserve = getPoolAmount(brandIn).value;
     const outputReserve = getPoolAmount(amountOut.brand).value;
+    assert.typeof(amountOut.value, 'bigint');
     const outputValue = getOutputPrice(
       amountOut.value,
       inputReserve,
       outputReserve,
     );
-    return zcf.getAmountMath(brandIn).make(outputValue);
+    return amountMath.make(outputValue, brandIn);
   };
 
   const getPoolAllocation = poolSeat.getCurrentAllocation;

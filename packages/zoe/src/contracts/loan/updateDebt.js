@@ -4,6 +4,7 @@ import '../../../exported';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
 import { multiplyBy } from '../../contractSupport';
@@ -26,7 +27,6 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   const {
     calcInterestFn = calculateInterest,
     originalDebt,
-    loanMath,
     periodNotifier,
     interestRate,
     interestPeriod,
@@ -56,7 +56,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
       while (lastCalculationTimestamp + interestPeriod <= timestamp) {
         lastCalculationTimestamp += interestPeriod;
         const interest = calcInterestFn(debt, interestRate);
-        debt = loanMath.add(debt, interest);
+        debt = amountMath.add(debt, interest);
         updatedLoan = true;
       }
       if (updatedLoan) {

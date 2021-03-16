@@ -1,7 +1,9 @@
 // @ts-check
+
 import '../../../exported';
 
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 
 import { offerTo } from '../../contractSupport/zoeHelpers';
 
@@ -10,20 +12,15 @@ export const doLiquidation = async (
   collateralSeat,
   autoswapPublicFacetP,
   lenderSeat,
+  loanBrand,
 ) => {
-  const loanMath = zcf.getTerms().maths.Loan;
-
   const allCollateral = collateralSeat.getAmountAllocated('Collateral');
-
   const swapInvitation = E(autoswapPublicFacetP).makeSwapInInvitation();
-
   const toAmounts = harden({ In: allCollateral });
-
   const proposal = harden({
     give: toAmounts,
-    want: { Out: loanMath.getEmpty() },
+    want: { Out: amountMath.makeEmpty(loanBrand) },
   });
-
   const keywordMapping = harden({
     Collateral: 'In',
     Loan: 'Out',
@@ -68,12 +65,18 @@ export const doLiquidation = async (
  * @type {Liquidate}
  */
 export const liquidate = async (zcf, config) => {
-  const { collateralSeat, autoswapInstance, lenderSeat } = config;
+  const { collateralSeat, autoswapInstance, lenderSeat, loanBrand } = config;
 
   const zoeService = zcf.getZoeService();
 
   const autoswapPublicFacetP = E(zoeService).getPublicFacet(autoswapInstance);
 
   // For testing purposes, make it easier to mock the autoswap public facet.
-  return doLiquidation(zcf, collateralSeat, autoswapPublicFacetP, lenderSeat);
+  return doLiquidation(
+    zcf,
+    collateralSeat,
+    autoswapPublicFacetP,
+    lenderSeat,
+    loanBrand,
+  );
 };

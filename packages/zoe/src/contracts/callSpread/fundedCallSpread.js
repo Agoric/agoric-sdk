@@ -1,10 +1,12 @@
 // @ts-check
+
 import '../../../exported';
 import './types';
 
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
   depositToSeat,
@@ -56,16 +58,18 @@ import { Position } from './position';
 
 /** @type {ContractStartFn} */
 const start = async zcf => {
-  const terms = zcf.getTerms();
   const {
-    maths: { Collateral: collateralMath, Strike: strikeMath },
-  } = terms;
-  assertUsesNatMath(zcf, collateralMath.getBrand());
-  assertUsesNatMath(zcf, strikeMath.getBrand());
+    brands,
+    strikePrice1,
+    strikePrice2,
+    settlementAmount,
+  } = zcf.getTerms();
+  assertUsesNatMath(zcf, brands.Collateral);
+  assertUsesNatMath(zcf, brands.Strike);
   // notice that we don't assert that the Underlying is fungible.
 
   assert(
-    strikeMath.isGTE(terms.strikePrice2, terms.strikePrice1),
+    amountMath.isGTE(strikePrice2, strikePrice1),
     X`strikePrice2 must be greater than strikePrice1`,
   );
 
@@ -112,7 +116,7 @@ const start = async zcf => {
         zcf,
         {
           seat: collateralSeat,
-          gains: { Collateral: terms.settlementAmount },
+          gains: { Collateral: settlementAmount },
         },
         {
           seat: creatorSeat,

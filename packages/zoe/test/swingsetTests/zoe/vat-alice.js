@@ -1,7 +1,10 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeLocalAmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
+
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
@@ -320,8 +323,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
     );
     const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
-    const liquidity = liquidityAmountMath.make;
+    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    const liquidity = value => amountMath.make(value, liquidityBrand);
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -353,7 +356,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     // remove the liquidity
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
-      want: { Central: moola(0), Secondary: simoleans(0) },
+      want: { Central: moola(0n), Secondary: simoleans(0) },
     });
 
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
@@ -505,7 +508,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
       want: { StrikePrice: simoleans(7) },
-      exit: { afterDeadline: { timer: Far({}), deadline: 1n } },
+      exit: {
+        afterDeadline: {
+          timer: Far('timer', { setWakeup: () => {} }),
+          deadline: 1n,
+        },
+      },
     });
 
     const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
@@ -537,10 +545,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {
-          return doAutomaticRefund(bobP, carolP, daveP);
+          return doAutomaticRefund(bobP);
         }
         case 'coveredCallOk': {
-          return doCoveredCall(bobP, carolP, daveP);
+          return doCoveredCall(bobP);
         }
         case 'swapForOptionOk': {
           return doSwapForOption(bobP, carolP, daveP);
@@ -549,19 +557,19 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doSecondPriceAuction(bobP, carolP, daveP);
         }
         case 'atomicSwapOk': {
-          return doAtomicSwap(bobP, carolP, daveP);
+          return doAtomicSwap(bobP);
         }
         case 'simpleExchangeOk': {
-          return doSimpleExchange(bobP, carolP, daveP);
+          return doSimpleExchange(bobP);
         }
         case 'simpleExchangeNotifier': {
-          return doSimpleExchangeWithNotification(bobP, carolP, daveP);
+          return doSimpleExchangeWithNotification(bobP);
         }
         case 'autoswapOk': {
-          return doAutoswap(bobP, carolP, daveP);
+          return doAutoswap(bobP);
         }
         case 'sellTicketsOk': {
-          return doSellTickets(bobP, carolP, daveP);
+          return doSellTickets(bobP);
         }
         case 'otcDeskOk': {
           return doOTCDesk(bobP);

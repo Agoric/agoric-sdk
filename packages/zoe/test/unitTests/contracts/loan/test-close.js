@@ -1,4 +1,4 @@
-// ts-check
+// @ts-check
 import '../../../../exported';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -6,6 +6,7 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 
 import {
   setupLoanUnitTest,
@@ -25,7 +26,7 @@ test.todo(`repay - request too much collateral`);
 test('makeCloseLoanInvitation repay all', async t => {
   const { zcf, zoe, collateralKit, loanKit } = await setupLoanUnitTest();
 
-  const collateral = collateralKit.amountMath.make(10);
+  const collateral = amountMath.make(10n, collateralKit.brand);
 
   // Set up the collateral seat
   const { zcfSeat: collateralSeat } = await makeSeatKit(
@@ -42,9 +43,9 @@ test('makeCloseLoanInvitation repay all', async t => {
     userSeat: lenderUserSeatP,
   } = zcf.makeEmptySeatKit();
 
-  const borrowedAmount = loanKit.amountMath.make(20);
-  const interest = loanKit.amountMath.make(3);
-  const required = loanKit.amountMath.add(borrowedAmount, interest);
+  const borrowedAmount = amountMath.make(20n, loanKit.brand);
+  const interest = amountMath.make(3n, loanKit.brand);
+  const required = amountMath.add(borrowedAmount, interest);
   const getDebt = () => required;
 
   const config = {
@@ -59,7 +60,7 @@ test('makeCloseLoanInvitation repay all', async t => {
 
   const proposal = harden({
     give: { Loan: required },
-    want: { Collateral: collateralKit.amountMath.make(10) },
+    want: { Collateral: amountMath.make(10n, collateralKit.brand) },
   });
 
   const payments = harden({
@@ -78,8 +79,8 @@ test('makeCloseLoanInvitation repay all', async t => {
     seat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: loanKit.amountMath.getEmpty(),
-      Collateral: collateralKit.amountMath.make(10),
+      Loan: amountMath.makeEmpty(loanKit.brand),
+      Collateral: amountMath.make(10n, collateralKit.brand),
     },
     'repaySeat',
   );
@@ -95,7 +96,7 @@ test('makeCloseLoanInvitation repay all', async t => {
     { Loan: loanKit, Collateral: collateralKit },
     {
       Loan: required,
-      Collateral: collateralKit.amountMath.getEmpty(),
+      Collateral: amountMath.makeEmpty(collateralKit.brand),
     },
     'lenderSeat',
   );

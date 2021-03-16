@@ -38,5 +38,6 @@ export const calculateMedian = (samples, math) => {
   const secondIndex = sorted.length / 2;
   const sum = math.add(sorted[secondIndex - 1], sorted[secondIndex]);
 
+  // @ts-ignore
   return math.divide(sum, 2);
 };

@@ -1,15 +1,15 @@
 /* global __dirname */
+// @ts-check
+
 import '../../../../exported';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
 import { E } from '@agoric/eventual-send';
-
 import bundleSource from '@agoric/bundle-source';
+import { amountMath } from '@agoric/ertp';
 
-import { makeLocalAmountMath } from '@agoric/ertp';
 import { setup } from '../../setupBasicMints';
-
 import { setupZCFTest } from '../../zcf/setupZcfTest';
 import { makeRatio } from '../../../../src/contractSupport';
 
@@ -31,7 +31,7 @@ export const checkPayout = async (
 ) => {
   const payout = await E(seat).getPayout(keyword);
   const amount = await kit.issuer.getAmountOf(payout);
-  t.truthy(kit.amountMath.isEqual(amount, expected), message);
+  t.truthy(amountMath.isEqual(amount, expected), message);
   t.truthy(seat.hasExited(), message);
 };
 
@@ -80,7 +80,7 @@ export const checkPayouts = async (
     const expected = expectedKeywordRecord[keyword];
     t.deepEqual(amount, expected);
     t.truthy(
-      kit.amountMath.isEqual(amount, expected),
+      amountMath.isEqual(amount, expected),
       `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
     );
   });
@@ -177,8 +177,8 @@ export const performAddCollateral = async (
     seat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: loanKit.amountMath.getEmpty(),
-      Collateral: collateralKit.amountMath.getEmpty(),
+      Loan: amountMath.makeEmpty(loanKit.brand),
+      Collateral: amountMath.makeEmpty(collateralKit.brand),
     },
     'addCollateralSeat',
   );
@@ -204,11 +204,13 @@ export const makeAutoswapInstance = async (
   );
 
   const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-  const liquidityMath = await makeLocalAmountMath(liquidityIssuer);
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
 
   const proposal = harden({
     give: initialLiquidityKeywordRecord,
-    want: { Liquidity: liquidityMath.getEmpty() },
+    want: {
+      Liquidity: amountMath.makeEmpty(liquidityBrand),
+    },
   });
   const payment = harden({
     Central: loanKit.mint.mintPayment(initialLiquidityKeywordRecord.Central),

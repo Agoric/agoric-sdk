@@ -1,6 +1,14 @@
+// @ts-check
+
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
+import { amountMath } from '@agoric/ertp';
+import {
+  isOnDemandExitRule,
+  isWaivedExitRule,
+  isAfterDeadlineExitRule,
+} from './typeGuards';
 
 import '../exported';
 import './internal-types';
@@ -52,18 +60,16 @@ const cleanKeys = (allowedKeys, record) => {
 export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
-export const coerceAmountKeywordRecord = (
-  getAmountMath,
-  allegedAmountKeywordRecord,
-) => {
+export const coerceAmountKeywordRecord = allegedAmountKeywordRecord => {
   const keywords = getKeywords(allegedAmountKeywordRecord);
   keywords.forEach(assertKeywordName);
 
   const amounts = Object.values(allegedAmountKeywordRecord);
   // Check that each value can be coerced using the amountMath
   // indicated by brand. `AmountMath.coerce` throws if coercion fails.
+  // TODO: coercing with the amount's same brand is a bit weird. Fix this.
   const coercedAmounts = amounts.map(amount =>
-    getAmountMath(amount.brand).coerce(amount),
+    amountMath.coerce(amount, amount.brand),
   );
 
   // Recreate the amountKeywordRecord with coercedAmounts.
@@ -88,6 +94,57 @@ export const cleanKeywords = keywordRecord => {
   return keywords;
 };
 
+const assertAfterDeadlineExitRule = exit => {
+  const expectedAfterDeadlineKeys = ['timer', 'deadline'];
+  assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
+  assert(exit.afterDeadline.timer !== undefined, X`timer must be defined`);
+  assert(
+    typeof exit.afterDeadline.deadline === 'bigint' &&
+      isNat(exit.afterDeadline.deadline),
+    X`deadline must be a Nat BigInt`,
+  );
+  // timers must have a 'setWakeup' function which takes a deadline
+  // and an object as arguments.
+  // TODO: how to check methods on presences?
+};
+
+const assertExitValueNull = (exit, exitKey) =>
+  assert(exit[exitKey] === null, `exit value must be null for key ${exitKey}`);
+
+const assertExit = exit => {
+  assert(
+    Object.getOwnPropertyNames(exit).length === 1,
+    X`exit ${exit} should only have one key`,
+  );
+  // We expect the single exit key to be one of the following:
+  const allowedExitKeys = ['onDemand', 'afterDeadline', 'waived'];
+  const [exitKey] = cleanKeys(allowedExitKeys, exit);
+  if (isOnDemandExitRule(exit) || isWaivedExitRule(exit)) {
+    assertExitValueNull(exit, exitKey);
+  }
+  if (isAfterDeadlineExitRule(exit)) {
+    assertAfterDeadlineExitRule(exit);
+  }
+};
+
+/**
+ * check that keyword is not in both 'want' and 'give'.
+ *
+ * @param {Proposal["want"]} want
+ * @param {Proposal["give"]} give
+ */
+const assertKeywordNotInBoth = (want, give) => {
+  const wantKeywordSet = new Set(Object.getOwnPropertyNames(want));
+  const giveKeywords = Object.getOwnPropertyNames(give);
+
+  giveKeywords.forEach(keyword => {
+    assert(
+      !wantKeywordSet.has(keyword),
+      X`a keyword cannot be in both 'want' and 'give'`,
+    );
+  });
+};
+
 /**
  * cleanProposal checks the keys and values of the proposal, including
  * the keys and values of the internal objects. The proposal may have
@@ -100,62 +157,27 @@ export const cleanKeywords = keywordRecord => {
  * `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
  * :Timer, deadline :bigint } }
  *
- * @param {(brand: Brand) => DeprecatedAmountMath} getAmountMath
  * @param {Proposal} proposal
  * @returns {ProposalRecord}
  */
-export const cleanProposal = (getAmountMath, proposal) => {
+export const cleanProposal = proposal => {
   const rootKeysAllowed = ['want', 'give', 'exit'];
   mustBeComparable(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.
   let { want = harden({}), give = harden({}) } = proposal;
-  const { exit = harden({ onDemand: null }) } = proposal;
 
-  want = coerceAmountKeywordRecord(getAmountMath, want);
-  give = coerceAmountKeywordRecord(getAmountMath, give);
+  const {
+    /** @type {ExitRule} */ exit = harden({ onDemand: null }),
+  } = proposal;
 
-  // Check exit
-  assert(
-    Object.getOwnPropertyNames(exit).length === 1,
-    X`exit ${proposal.exit} should only have one key`,
-  );
-  // We expect the single exit key to be one of the following:
-  const allowedExitKeys = ['onDemand', 'afterDeadline', 'waived'];
-  const [exitKey] = cleanKeys(allowedExitKeys, exit);
-  if (exitKey === 'onDemand' || exitKey === 'waived') {
-    assert(
-      exit[exitKey] === null,
-      `exit value must be null for key ${exitKey}`,
-    );
-  }
-  if (exitKey === 'afterDeadline') {
-    const expectedAfterDeadlineKeys = ['timer', 'deadline'];
-    assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
-    assert(exit.afterDeadline.timer !== undefined, X`timer must be defined`);
-    assert(
-      typeof exit.afterDeadline.deadline === 'bigint' &&
-        isNat(exit.afterDeadline.deadline),
-      X`deadline must be a Nat BigInt`,
-    );
-    // timers must have a 'setWakeup' function which takes a deadline
-    // and an object as arguments.
-    // TODO: document timer interface
-    // https://github.com/Agoric/agoric-sdk/issues/751
-    // TODO: how to check methods on presences?
-  }
+  want = coerceAmountKeywordRecord(want);
+  give = coerceAmountKeywordRecord(give);
 
-  // check that keyword is not in both 'want' and 'give'.
-  const wantKeywordSet = new Set(Object.getOwnPropertyNames(want));
-  const giveKeywords = Object.getOwnPropertyNames(give);
+  assertExit(exit);
 
-  giveKeywords.forEach(keyword => {
-    assert(
-      !wantKeywordSet.has(keyword),
-      X`a keyword cannot be in both 'want' and 'give'`,
-    );
-  });
+  assertKeywordNotInBoth(want, give);
 
   return harden({ want, give, exit });
 };

@@ -1,19 +1,16 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
+import { assertSetValue } from '@agoric/ertp/src/typeGuards';
+
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
-  const {
-    moola,
-    simoleans,
-    bucks,
-    purses,
-    moolaAmountMath,
-    simoleanAmountMath,
-  } = await setupIssuers(zoe, issuers);
+  const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
   const [moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
@@ -94,13 +91,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
       );
       assert(
-        simoleanAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
@@ -160,14 +157,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
         X`wrong underlying asset`,
       );
       assert(
-        simoleanAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
@@ -463,7 +460,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Bob looks up how much moola he can get for 3 simoleans. It's 5
       const moolaProceeds = await E(publicFacet).getInputPrice(
         simoleans(3),
-        moola(0).brand,
+        moola(0n).brand,
       );
       log(`moola proceeds `, moolaProceeds);
 
@@ -506,16 +503,17 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const publicFacet = await E(zoe).getPublicFacet(instance);
       const terms = await E(zoe).getTerms(instance);
       const ticketIssuer = await E(publicFacet).getItemsIssuer();
-      const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
+      const ticketBrand = await E(ticketIssuer).getBrand();
 
       const availableTickets = await E(publicFacet).getAvailableItems();
       log('availableTickets: ', availableTickets);
       // find the value corresponding to ticket #1
+      assertSetValue(availableTickets.value);
       const ticket1Value = availableTickets.value.find(
         ticket => ticket.number === 1,
       );
       // make the corresponding amount
-      const ticket1Amount = ticketAmountMath.make(harden([ticket1Value]));
+      const ticket1Amount = amountMath.make([ticket1Value], ticketBrand);
       const proposal = harden({
         give: { Money: terms.pricePerItem },
         want: { Items: ticket1Amount },

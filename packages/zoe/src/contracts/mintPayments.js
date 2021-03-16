@@ -1,7 +1,7 @@
-/* eslint-disable no-use-before-define */
 // @ts-check
 
 import { Far } from '@agoric/marshal';
+import { amountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -28,10 +28,10 @@ const start = async zcf => {
 
   // Now that ZCF has saved the issuer, brand, and local amountMath, they
   // can be accessed synchronously.
-  const { amountMath, issuer } = zcfMint.getIssuerRecord();
+  const { issuer, brand } = zcfMint.getIssuerRecord();
 
-  const mintPayment = extent => seat => {
-    const amount = amountMath.make(extent);
+  const mintPayment = value => seat => {
+    const amount = amountMath.make(value, brand);
     // Synchronously mint and allocate amount to seat.
     zcfMint.mintGains({ Token: amount }, seat);
     // Exit the seat so that the user gets a payout.
@@ -44,8 +44,8 @@ const start = async zcf => {
   const creatorFacet = Far('creatorFacet', {
     // The creator of the instance can send invitations to anyone
     // they wish to.
-    makeInvitation: (extent = 1000) =>
-      zcf.makeInvitation(mintPayment(extent), 'mint a payment'),
+    makeInvitation: (value = 1000) =>
+      zcf.makeInvitation(mintPayment(value), 'mint a payment'),
     getTokenIssuer: () => issuer,
   });
 

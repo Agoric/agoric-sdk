@@ -11,7 +11,9 @@ const start = zcf => {
     return `The offer was accepted`;
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
-  // should be makeRefundInvitation(). Intentionally wrong to provoke an error.
+  // should be makeRefundInvitation(). Intentionally wrong to provoke
+  // an error.
+  // @ts-ignore
   return { creatorInvitation: makeRefundInvitation };
 };
 

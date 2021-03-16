@@ -1,6 +1,8 @@
 // @ts-check
+
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
+import { amountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -15,7 +17,6 @@ import { trade } from '../contractSupport';
  */
 const start = async zcf => {
   const feeBrand = zcf.getTerms().brands.Fee;
-  const feeMath = zcf.getTerms().maths.Fee;
 
   /** @type {OracleHandler} */
   let handler;
@@ -66,10 +67,10 @@ const start = async zcf => {
     async query(query) {
       try {
         assert(!revoked, revokedMsg);
-        const noFee = feeMath.getEmpty();
+        const noFee = amountMath.makeEmpty(feeBrand);
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
         assert(
-          !requiredFee || feeMath.isGTE(noFee, requiredFee),
+          !requiredFee || amountMath.isGTE(noFee, requiredFee),
           X`Oracle required a fee but the query had none`,
         );
         return reply;

@@ -1,3 +1,5 @@
+// @ts-check
+
 import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';

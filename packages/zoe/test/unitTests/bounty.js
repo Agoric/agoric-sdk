@@ -1,6 +1,9 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
 
 /**
  * This contract lets a funder endow a bounty that will pay out if an Oracle
@@ -14,10 +17,7 @@ import { assert, details as X } from '@agoric/assert';
 import { assertProposalShape } from '../../src/contractSupport';
 
 const start = async zcf => {
-  const { oracle, deadline, condition, timer, fee } = zcf.getTerms();
-  const {
-    maths: { Fee: feeMath, Bounty: bountyMath },
-  } = zcf.getTerms();
+  const { oracle, deadline, condition, timer, fee, brands } = zcf.getTerms();
 
   /** @type {OfferHandler} */
   function funder(funderSeat) {
@@ -28,7 +28,7 @@ const start = async zcf => {
 
     function payOffBounty(seat) {
       zcf.reallocate(
-        funderSeat.stage({ Bounty: bountyMath.getEmpty() }),
+        funderSeat.stage({ Bounty: amountMath.makeEmpty(brands.Bounty) }),
         seat.stage({ Bounty: funderSeat.getCurrentAllocation().Bounty }),
       );
       seat.exit();
@@ -51,14 +51,14 @@ const start = async zcf => {
       assertProposalShape(bountySeat, feeProposal);
       const feeAmount = bountySeat.getCurrentAllocation().Fee;
       assert(
-        feeMath.isGTE(feeAmount, fee),
+        amountMath.isGTE(feeAmount, fee),
         X`Fee was required to be at least ${fee}`,
       );
 
       // The funder gets the fee regardless of the outcome.
       zcf.reallocate(
         funderSeat.stage({ Fee: feeAmount }),
-        bountySeat.stage({ Fee: feeMath.getEmpty() }),
+        bountySeat.stage({ Fee: amountMath.makeEmpty(brands.Fee) }),
       );
 
       const wakeHandler = Far('wakeHandler', {

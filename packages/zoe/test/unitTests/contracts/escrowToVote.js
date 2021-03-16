@@ -3,6 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
+import { amountMath } from '@agoric/ertp';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
@@ -28,7 +29,6 @@ const start = zcf => {
   const {
     question,
     brands: { Assets: assetsBrand },
-    maths: { Assets: amountMath },
   } = zcf.getTerms();
   let electionOpen = true;
   assertIssuerKeywords(zcf, harden(['Assets']));
@@ -81,8 +81,8 @@ const start = zcf => {
       assert(electionOpen, 'the election is already closed');
       // YES | NO to Nat
       const tally = new Map();
-      tally.set('YES', amountMath.getEmpty());
-      tally.set('NO', amountMath.getEmpty());
+      tally.set('YES', amountMath.makeEmpty(assetsBrand));
+      tally.set('NO', amountMath.makeEmpty(assetsBrand));
 
       for (const [seat, response] of seatToResponse.entries()) {
         if (!seat.hasExited()) {
