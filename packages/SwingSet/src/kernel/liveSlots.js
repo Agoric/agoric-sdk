@@ -29,6 +29,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, vatDecref }
  * @param {Console} console
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
@@ -45,8 +46,10 @@ function build(
   enableDisavow,
   vatPowers,
   vatParameters,
+  gcTools,
   console,
 ) {
+  const { WeakRef, FinalizationRegistry } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -59,23 +62,96 @@ function build(
   const outstandingProxies = new WeakSet();
 
   /**
-   * Map in-vat object references -> vat slot strings.
+   * Map in-vat object/promise references to/from vat-format slot strings.
    *
-   * Uses a weak map so that vat objects can (in princple) be GC'd.  Note that
-   * they currently can't actually be GC'd because the slotToVal table keeps
-   * them alive, but that will have to be addressed by a different mechanism.
+   * Exports: pass-by-presence objects in the vat are exported as o+NN slots,
+   * as are the upcoming "virtual object" exports. Promises are exported as
+   * p+NN slots. We retain a strong reference to all exports via the
+   * `exported` Set until (TODO) the kernel tells us all external references
+   * have been dropped via dispatch.dropExports, or by some unilateral
+   * revoke-object operation executed by our user-level code.
+   *
+   * Imports: o-NN slots are represented as a Presence. p-NN slots are
+   * represented as an imported Promise, with the resolver held in a table to
+   * handle an incoming resolution message. We retain a weak reference to the
+   * Presence, and use a FinalizationRegistry to learn when the vat has
+   * dropped it, so we can notify the kernel. We retain strong references to
+   * Promises, for now, via the `exported` Set (whose name is not entirely
+   * accurate) until we figure out a better GC approach. When an import is
+   * added, the finalizer is added to `register`.
+   *
+   * slotToVal is like a python WeakValueDict: a `Map` whose values are
+   * WeakRefs. If the entry is present but wr.deref()===undefined (the
+   * weakref is dead), treat that as if the entry was not present. The same
+   * slotToVal table is used for both imports and returning exports. The
+   * subset of those which need to be held strongly (exported objects and
+   * promises, imported promises) are kept alive by `exported`.
+   *
+   * valToSlot is a WeakMap (like WeakKeyDict), and is used for both imports
+   * and exports.
+   *
+   * We use two weak maps plus the strong `exported` set, because it seems
+   * simpler than using four separate maps (import-vs-export times
+   * strong-vs-weak).
    */
-  const valToSlot = new WeakMap();
 
-  /** Map vat slot strings -> in-vat object references. */
-  const slotToVal = new Map();
+  const valToSlot = new WeakMap(); // object -> vref
+  const slotToVal = new Map(); // vref -> WeakRef(object)
+  const exported = new Set(); // objects
+  const deadSet = new Set(); // vrefs that are finalized but not yet reported
+
+  /*
+    Imports have 5 states: UNKNOWN, REACHABLE, UNREACHABLE, COLLECTED,
+    FINALIZED
+
+    * UKNOWN moves to REACHABLE when a crank introduces a new import
+    * userspace holds a reference only in REACHABLE
+    * REACHABLE moves to UNREACHABLE only during a userspace crank
+    * UNREACHABLE moves to COLLECTED when GC runs, which queues the finalizer
+    * COLLECTED moves to FINALIZED when a new turn runs the finalizer
+    * liveslots moves from FINALIZED to UNKNOWN by syscalling dropImports
+
+    convertSlotToVal either imports a vref for the first time, or
+    re-introduces a previously-seen vref. It transitions from:
+
+    * UNKNOWN to REACHABLE by creating a new Presence
+    * UNREACHABLE to REACHABLE by re-using the old Presence that userspace
+      forgot about
+    * COLLECTED/FINALIZED to REACHABLE by creating a new Presence
+
+    Our tracking tables hold data that depends on the current state:
+
+    * slotToVal holds a WeakRef in [REACHABLE, UNREACHABLE, COLLECTED]
+    * that WeakRef .deref()s into something in [REACHABLE, UNREACHABLE]
+    * deadSet holds the vref only in FINALIZED
+    * re-introduction must ensure the vref is not in the deadSet
+
+    Our finalizer callback is queued by the engine's transition from
+    UNREACHABLE to COLLECTED, but the vref might be re-introduced before the
+    callback has a chance to run. There might even be multiple copies of the
+    finalizer callback queued. So the callback must deduce the current state
+    and only perform cleanup (i.e. delete the slotToVal entry and add the
+    vref to the deadSet) in the COLLECTED state.
+
+  */
+
+  function finalizeDroppedImport(vref) {
+    const wr = slotToVal.get(vref);
+    if (wr && !wr.deref()) {
+      // we're in the COLLECTED state
+      deadSet.add(vref);
+      slotToVal.delete(vref);
+      // console.log(`-- adding ${vref} to deadSet`);
+    }
+  }
+  const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
 
   /** Remember disavowed Presences which will kill the vat if you try to talk
    * to them */
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 
-  const importedPromisesByPromiseID = new Map();
+  const importedPromisesByPromiseID = new Map(); // vpid -> { resolve, reject }
   let nextExportID = 1;
   let nextPromiseID = 5;
 
@@ -283,7 +359,9 @@ function build(
       }
       parseVatSlot(slot); // assertion
       valToSlot.set(val, slot);
-      slotToVal.set(slot, val);
+      slotToVal.set(slot, new WeakRef(val));
+      deadSet.delete(slot); // might have been dead before, but certainly not now
+      exported.add(val); // keep it alive until kernel tells us to release it
     }
     return valToSlot.get(val);
   }
@@ -299,7 +377,8 @@ function build(
   }
 
   function convertSlotToVal(slot, iface = undefined) {
-    let val = slotToVal.get(slot);
+    const wr = slotToVal.get(slot);
+    let val = wr && wr.deref();
     if (val) {
       return val;
     }
@@ -339,7 +418,8 @@ function build(
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }
-      slotToVal.set(slot, val);
+      slotToVal.set(slot, new WeakRef(val));
+      droppedRegistry.register(val, slot);
       valToSlot.set(val, slot);
     }
     return val;
@@ -353,7 +433,8 @@ function build(
       for (const slot of slots) {
         const { type } = parseVatSlot(slot);
         if (type === 'promise') {
-          const p = slotToVal.get(slot);
+          const wr = slotToVal.get(slot);
+          const p = wr && wr.deref();
           assert(p, X`should have a value for ${slot} but didn't`);
           const priorResolution = knownResolutions.get(p);
           if (priorResolution && !doneResolutions.has(slot)) {
@@ -432,7 +513,8 @@ function build(
     // them, we want the user-level code to get back that Promise, not 'p'.
 
     valToSlot.set(returnedP, resultVPID);
-    slotToVal.set(resultVPID, returnedP);
+    slotToVal.set(resultVPID, new WeakRef(returnedP));
+    exported.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
   }
@@ -540,8 +622,12 @@ function build(
   function retirePromiseID(promiseID) {
     lsdebug(`Retiring ${forVatID}:${promiseID}`);
     importedPromisesByPromiseID.delete(promiseID);
-    const p = slotToVal.get(promiseID);
-    valToSlot.delete(p);
+    const wr = slotToVal.get(promiseID);
+    const p = wr && wr.deref();
+    if (p) {
+      valToSlot.delete(p);
+      exported.delete(p);
+    }
     slotToVal.delete(promiseID);
   }
 
@@ -680,7 +766,8 @@ function build(
 
     const rootSlot = makeVatSlot('object', true, 0n);
     valToSlot.set(rootObject, rootSlot);
-    slotToVal.set(rootSlot, rootObject);
+    slotToVal.set(rootSlot, new WeakRef(rootObject));
+    exported.add(rootObject);
   }
 
   const dispatch = harden({ deliver, notify, dropExports });
@@ -697,7 +784,7 @@ function build(
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
- * @param {*} _gcTools
+ * @param {*} gcTools { WeakRef, FinalizationRegistry }
  * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
@@ -730,7 +817,7 @@ export function makeLiveSlots(
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   enableDisavow = false,
-  _gcTools,
+  gcTools,
   liveSlotsConsole = console,
 ) {
   const allVatPowers = {
@@ -744,6 +831,7 @@ export function makeLiveSlots(
     enableDisavow,
     allVatPowers,
     vatParameters,
+    gcTools,
     liveSlotsConsole,
   );
   const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
@@ -751,7 +839,16 @@ export function makeLiveSlots(
 }
 
 // for tests
-export function makeMarshaller(syscall) {
-  const { m } = build(syscall);
+export function makeMarshaller(syscall, gcTools) {
+  const { m } = build(
+    syscall,
+    'forVatID',
+    DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+    false,
+    {},
+    {},
+    gcTools,
+    console,
+  );
   return { m };
 }

@@ -1,4 +1,4 @@
-/* global globalThis */
+/* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
@@ -238,7 +238,7 @@ function makeWorker(port) {
         ? virtualObjectCacheSize
         : undefined;
 
-    const gcTools = {}; // future expansion
+    const gcTools = harden({ WeakRef, FinalizationRegistry });
 
     const ls = makeLiveSlots(
       syscall,
