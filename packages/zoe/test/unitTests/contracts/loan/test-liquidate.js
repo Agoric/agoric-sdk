@@ -7,7 +7,6 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { Data } from '@agoric/marshal';
 import { doLiquidation } from '../../../../src/contracts/loan/liquidate';
 
 import {
@@ -24,8 +23,8 @@ test('test doLiquidation with mocked autoswap', async t => {
   // Set up the lender seat. At this point the lender has nothing.
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
     zcf,
-    { give: Data({}) },
-    Data({}),
+    { give: harden({}) },
+    harden({}),
   );
 
   const collateral = collateralKit.amountMath.make(10);
@@ -113,8 +112,8 @@ test('test with malfunctioning autoswap', async t => {
   // Set up the lender seat. At this point the lender has nothing.
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
     zcf,
-    { give: Data({}) },
-    Data({}),
+    { give: harden({}) },
+    harden({}),
   );
 
   const collateral = collateralKit.amountMath.make(10);

@@ -17,7 +17,7 @@ import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
 
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal, passStyleOf, Far, Data } from '@agoric/marshal';
+import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -470,7 +470,7 @@ export function makeWallet({
     // Payments are made for the keywords in proposal.give.
     const keywords = [];
 
-    const paymentPs = Object.entries(proposal.give || Data({})).map(
+    const paymentPs = Object.entries(proposal.give || harden({})).map(
       ([keyword, amount]) => {
         const purse = purseKeywordRecord[keyword];
         assert(
@@ -491,7 +491,7 @@ export function makeWallet({
     // for the offer.
     const payments = await Promise.all(paymentPs);
 
-    const paymentKeywordRecord = Data(
+    const paymentKeywordRecord = harden(
       Object.fromEntries(keywords.map((keyword, i) => [keyword, payments[i]])),
     );
 
@@ -691,15 +691,15 @@ export function makeWallet({
 
   const compileProposal = proposalTemplate => {
     const {
-      want = Data({}),
-      give = Data({}),
+      want = harden({}),
+      give = harden({}),
       exit = { onDemand: null },
     } = proposalTemplate;
 
     const purseKeywordRecord = {};
 
     const compile = amountKeywordRecord => {
-      return Data(
+      return harden(
         Object.fromEntries(
           Object.entries(amountKeywordRecord).map(
             ([keyword, { pursePetname, value }]) => {

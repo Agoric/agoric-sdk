@@ -6,7 +6,7 @@ import '@agoric/swingset-vat/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { Far, Data } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 import { amountMath as m, MathKind } from '../../../src';
 import { mockBrand } from './mockBrand';
@@ -118,7 +118,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     `m.isEmpty([]) is true`,
   );
   t.throws(
-    () => m.isEmpty({ brand: mockBrand, value: Data({}) }),
+    () => m.isEmpty({ brand: mockBrand, value: harden({}) }),
     { message: `value (an object) must be a Nat or an array` },
     `m.isEmpty({}) throws`,
   );

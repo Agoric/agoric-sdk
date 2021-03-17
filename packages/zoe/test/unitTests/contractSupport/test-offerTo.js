@@ -7,7 +7,6 @@ import '@agoric/zoe/tools/prepare-test-env';
 import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
-import { Data } from '@agoric/marshal';
 import bundleSource from '@agoric/bundle-source';
 
 import { setup } from '../setupBasicMints';
@@ -98,7 +97,7 @@ test(`offerTo - basic usage`, async t => {
   const { zcfSeat: fromSeatContractA } = await makeOffer(
     zoe,
     zcfA,
-    harden({ want: Data({}), give: { TokenK: bucks(5) } }),
+    harden({ want: harden({}), give: { TokenK: bucks(5) } }),
     harden({ TokenK: bucksMint.mintPayment(bucks(5)) }),
   );
 
