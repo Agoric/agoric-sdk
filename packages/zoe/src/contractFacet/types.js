@@ -50,7 +50,8 @@
  */
 
 /**
- * @callback Reallocate
+ * @typedef {(seatStaging1: SeatStaging, seatStaging2: SeatStaging,
+ * ...seatStagingRest: Array<SeatStaging>) => void} Reallocate
  *
  * The contract can reallocate over seatStagings, which are
  * associations of seats with reallocations.
@@ -67,13 +68,6 @@
  * whose allocations will change. Since rights are conserved for the
  * change, overall rights will be unchanged, and a reallocation can
  * only effect offer safety for seats whose allocations change.
- *
- * @param {SeatStaging} seatStaging1
- * @param {SeatStaging} seatStaging2
- * @param {SeatStaging=} seatStaging3
- * @param {SeatStaging=} seatStaging4
- * @param {SeatStaging=} seatStaging5
- * @returns {void}
  */
 
 /**
