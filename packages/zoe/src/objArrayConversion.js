@@ -80,12 +80,12 @@ export const assertSubset = (whole, part) => {
  *
  * @template T, U
  * @template {keyof T} K
- * @param {Record<K, T>} original
- * @param {(pair: [K, T]) => [K, U]} mapPairFn
+ * @param {{ [K2 in keyof T]: T[K2] }} original
+ * @param {(pair: [K, T[K]]) => [K, U]} mapPairFn
  * @returns {Record<K, U>}
  */
 export const objectMap = (original, mapPairFn) => {
-  const ents = /** @type {[K, T][]} */ (Object.entries(original));
+  const ents = /** @type {[K, T[K]][]} */ (Object.entries(original));
   const mapEnts = ents.map(ent => mapPairFn(ent));
   return /** @type {Record<K, U>} */ (harden(Object.fromEntries(mapEnts)));
 };

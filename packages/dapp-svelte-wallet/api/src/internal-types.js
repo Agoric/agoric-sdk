@@ -79,7 +79,6 @@
  * @property {() => Promise<boolean>} getAmountOf
  */
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * We obtain the WalletAdminFacet from its implementation.  Ideally this facet
  * would not be necessary.  Once we have clarified and standardized its APIs we

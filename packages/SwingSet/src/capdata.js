@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 
-/* eslint-disable jsdoc/valid-types,jsdoc/require-returns-check */
+/* eslint-disable jsdoc/require-returns-check */
 /**
  * Assert function to ensure that something expected to be a capdata object
  * actually is.  A capdata object should have a .body property that's a string

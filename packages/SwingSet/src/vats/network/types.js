@@ -18,7 +18,6 @@
  * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * @typedef {Object} Port A port that has been bound to a protocol
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
@@ -27,7 +26,6 @@
  * @property {(acceptHandler: ListenHandler) => Promise<void>} removeListener Remove the currently-bound listener
  * @property {() => void} revoke Deallocate the port entirely, removing all listeners and closing all active connections
  */
-/* eslint-enable jsdoc/valid-types */
 
 /**
  * @typedef {Object} ListenHandler A handler for incoming connections
@@ -47,7 +45,6 @@
  * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
  */
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * @typedef {Object} ConnectionHandler A handler for a given Connection
  * @property {(connection: Connection, localAddr: Endpoint, remoteAddr: Endpoint, c: ConnectionHandler) => void} [onOpen] The connection has been opened
@@ -56,7 +53,6 @@
  *
  * @typedef {any?} CloseReason The reason a connection was closed
  */
-/* eslint-enable jsdoc/valid-types */
 
 /**
  * @typedef {Object} ProtocolHandler A handler for things the protocol implementation will invoke

@@ -56,7 +56,6 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  * @property {() => string} getPluginDir
  */
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * Create a handler that manages a promise interface to external modules.
  *
@@ -64,7 +63,6 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  * @param {{ [prop: string]: any, D: <T>(target: Device<T>) => T}} param1
  * @returns {PluginManager} admin facet for this handler
  */
-/* eslint-enable jsdoc/valid-types */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
    * @typedef {Object} AbortDispatch

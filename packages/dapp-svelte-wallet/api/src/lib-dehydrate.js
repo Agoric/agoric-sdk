@@ -4,14 +4,12 @@ import { makeMarshal } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * @typedef {string[]} Path
  * @typedef {{} & 'Strongname'} Strongname
  * @param {any} x
  * @returns {x is Path}
  */
-/* eslint-enable jsdoc/valid-types */
 export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
