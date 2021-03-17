@@ -397,11 +397,15 @@ export function makeVirtualObjectManager(
         for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
           Object.defineProperty(target, prop, {
             get: () => {
+              // TODO: ensureState has no arg
+              // @ts-ignore
               ensureState(innerSelf);
               return m.unserialize(innerSelf.rawData[prop]);
             },
             set: value => {
               const serializedValue = m.serialize(value);
+              // TODO: ensureState has no arg
+              // @ts-ignore
               ensureState(innerSelf);
               innerSelf.rawData[prop] = serializedValue;
               innerSelf.dirty = true;
