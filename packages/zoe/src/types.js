@@ -1,7 +1,6 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-// eslint-disable-next-line jsdoc/valid-types
 /**
  * @template {string} H - the name of the handle
  * @typedef {H & {}} Handle A type constructor for an opaque type
@@ -15,7 +14,7 @@
  * @typedef {Handle<'Invitation'>} InvitationHandle - an opaque handle for an invitation
  * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
  * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
- * @typedef {Record<Keyword, DeprecatedAmountMath} DeprecatedAmountMathKeywordRecord
+ * @typedef {Record<Keyword, DeprecatedAmountMath>} DeprecatedAmountMathKeywordRecord
  */
 
 /**

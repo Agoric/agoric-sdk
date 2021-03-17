@@ -270,14 +270,12 @@ export const swapExact = (
   return defaultAcceptanceMsg;
 };
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * @typedef ExpectedRecord
  * @property {Record<Keyword, null>} [want]
  * @property {Record<Keyword, null>} [give]
  * @property {Partial<Record<keyof ProposalRecord['exit'], null>>} [exit]
  */
-/* eslint-enable jsdoc/valid-types */
 
 /**
  * Check the seat's proposal against an `expected` record that says

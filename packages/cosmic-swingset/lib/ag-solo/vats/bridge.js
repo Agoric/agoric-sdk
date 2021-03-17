@@ -17,7 +17,6 @@ import { Far } from '@agoric/marshal';
  */
 
 /**
- *
  * @typedef {Object} BridgeHandler An object that can receive messages from the bridge device
  * @property {(srcId: string, obj: any) => Promise<void>} fromBridge Handle an inbound message
  *
@@ -27,7 +26,6 @@ import { Far } from '@agoric/marshal';
  * @property {(srcID: string, handler: BridgeHandler) => void} unregister
  */
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * Create a handler that demuxes/muxes the bridge device by its first argument.
  *
@@ -36,7 +34,6 @@ import { Far } from '@agoric/marshal';
  * @param {Device<BridgeDevice>} bridgeDevice The bridge to manage
  * @returns {BridgeManager} admin facet for this handler
  */
-/* eslint-enable jsdoc/valid-types */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
    * @type {Store<string, BridgeHandler>}

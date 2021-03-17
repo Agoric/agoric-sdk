@@ -10,14 +10,12 @@
  * @property {typeof console} console
  */
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * Create a set of UI agent makers.
  *
  * @param {UIAgentEndowments} param0
  * @returns {{[maker: string]: (petname: string, ext = {}) => UIAgent}}
  */
-/* eslint-enable jsdoc/valid-types */
 export default function makeAgentMakers({ console: agentConsole }) {
   return harden({
     /**
