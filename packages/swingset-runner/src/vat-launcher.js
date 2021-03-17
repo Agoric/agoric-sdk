@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { Far, Data } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 
 /*
  * Vat to launch other vats.
@@ -41,14 +41,14 @@ export function buildRootObject(_vatPowers, vatParameters) {
         // eslint-disable-next-line no-await-in-loop
         const vat = await E(vatMaker).createVatByName(
           bundleName,
-          { metered: vatParameters.metered, vatParameters: Data(subvatParameters) },
+          { metered: vatParameters.metered, vatParameters: harden(subvatParameters) },
         );
         vatRoots[vatName] = vat.root;
       }
       vatRoots.vatAdmin = vats.vatAdmin;
       bootstrapRoot = vatRoots[vatParameters.config.bootstrap];
       // prettier-ignore
-      return E(bootstrapRoot).bootstrap(Data(vatRoots), devices);
+      return E(bootstrapRoot).bootstrap(harden(vatRoots), devices);
     },
     runBenchmarkRound() {
       return E(bootstrapRoot).runBenchmarkRound();

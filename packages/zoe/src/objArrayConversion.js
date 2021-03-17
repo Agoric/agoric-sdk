@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Data } from '@agoric/marshal';
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
@@ -23,7 +22,7 @@ export const arrayToObj = (array, keys) => {
     /** @type {Record<U, T>} */
     ({});
   keys.forEach((key, i) => (obj[key] = array[i]));
-  return Data(obj);
+  return harden(obj);
 };
 
 /**
@@ -88,5 +87,5 @@ export const assertSubset = (whole, part) => {
 export const objectMap = (original, mapPairFn) => {
   const ents = /** @type {[K, T][]} */ (Object.entries(original));
   const mapEnts = ents.map(ent => mapPairFn(ent));
-  return /** @type {Record<K, U>} */ (Data(Object.fromEntries(mapEnts)));
+  return /** @type {Record<K, U>} */ (harden(Object.fromEntries(mapEnts)));
 };
