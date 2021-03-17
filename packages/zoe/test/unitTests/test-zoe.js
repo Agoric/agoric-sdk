@@ -1,9 +1,7 @@
-/* global __dirname */
+/* global __dirname test */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
