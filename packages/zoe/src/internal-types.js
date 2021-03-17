@@ -122,7 +122,7 @@
  * @param invitationHandle: InvitationHandle,
  * @param description: string,
  * @param customProperties: Record<string, any>=,
- * @returns {Payment} payment
+ * @returns {Payment}
  */
 
 /**

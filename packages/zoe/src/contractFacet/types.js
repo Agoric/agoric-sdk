@@ -68,7 +68,7 @@
  * change, overall rights will be unchanged, and a reallocation can
  * only effect offer safety for seats whose allocations change.
  *
- * @param  {SeatStaging} seatStaging1
+ * @param {SeatStaging} seatStaging1
  * @param {SeatStaging} seatStaging2
  * @param {SeatStaging=} seatStaging3
  * @param {SeatStaging=} seatStaging4
@@ -91,13 +91,13 @@
  * @callback MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
- * indicated by the `instance` in the extent of the invitation. Zoe
- * also puts the `installation` and a unique `handle` in the extent of
+ * indicated by the `instance` in the details of the invitation. Zoe
+ * also puts the `installation` and a unique `handle` in the details of
  * the invitation. The contract must provide a `description` for the
  * invitation and should include whatever information is
  * necessary for a potential buyer of the invitation to know what they are
  * getting in the `customProperties`. `customProperties` will be
- * placed in the extent of the invitation.
+ * placed in the details of the invitation.
  *
  * @param {OfferHandler=} offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
@@ -122,7 +122,7 @@
 
 /**
  * @callback ZCFMintMintGains
- * @param {AmountKeywordRecord} mintGains
+ * @param {AmountKeywordRecord} gains
  * @param {ZCFSeat=} zcfSeat
  * @returns {ZCFSeat}
  */
