@@ -1,6 +1,8 @@
 // @ts-check
 /* global makeWeakStore */
 
+'use jessie';
+
 import { assert, details as X } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
@@ -97,7 +99,7 @@ function makeIssuerKit(
     const purse = Far(makeFarName(allegedName, ERTPKind.PURSE), {
       deposit: (srcPayment, optAmount = undefined) => {
         if (isPromise(srcPayment)) {
-          throw new TypeError(
+          throw TypeError(
             `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
           );
         }
@@ -160,11 +162,10 @@ function makeIssuerKit(
     // other uses.
 
     if (payments.length > 1) {
-      // TODO: replace with a Set that understands virtual objects
       const antiAliasingStore = makeWeakStore('payment');
       payments.forEach(payment => {
         if (antiAliasingStore.has(payment)) {
-          throw new Error('same payment seen twice');
+          throw Error('same payment seen twice');
         }
         antiAliasingStore.init(payment, undefined);
       });
