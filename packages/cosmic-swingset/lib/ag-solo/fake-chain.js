@@ -148,7 +148,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   let totalDeliveries = 0;
   async function deliver(newMessages, acknum) {
     totalDeliveries += 1;
-    console.info(`delivering to ${GCI} (trips=${totalDeliveries})`);
+    console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
 
     intoChain.push([newMessages, acknum]);
     if (!delay) {
