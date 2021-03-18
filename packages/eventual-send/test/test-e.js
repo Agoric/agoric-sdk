@@ -143,8 +143,12 @@ test('E shortcuts', async t => {
     },
   };
   t.is(await E(x).hello('Hello'), 'Hello, buddy!', 'method call works');
-  t.is(await E(await E.G(await E.G(x).y).fn)(4), 8, 'anonymous method works');
-  t.is(await E.G(x).val, 123, 'property get');
+  t.is(
+    await E(await E.get(await E.get(x).y).fn)(4),
+    8,
+    'anonymous method works',
+  );
+  t.is(await E.get(x).val, 123, 'property get');
 });
 
 test('E.get', async t => {

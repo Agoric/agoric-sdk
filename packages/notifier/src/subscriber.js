@@ -44,8 +44,8 @@ const makeSubscriptionIterator = tailP => {
     subscribe: () => makeSubscription(tailP),
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(tailP),
     next: () => {
-      const resultP = E.G(tailP).head;
-      tailP = E.G(tailP).tail;
+      const resultP = E.get(tailP).head;
+      tailP = E.get(tailP).tail;
       return resultP;
     },
   });

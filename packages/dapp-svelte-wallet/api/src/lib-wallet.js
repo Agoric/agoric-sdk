@@ -1157,7 +1157,7 @@ export function makeWallet({
   );
   async function getDepositFacetId(_brandBoardId) {
     // Always return the generic deposit facet.
-    return E.G(selfContact).depositBoardId;
+    return E.get(selfContact).depositBoardId;
   }
 
   async function disableAutoDeposit(pursePetname) {
@@ -1195,7 +1195,7 @@ export function makeWallet({
       return pendingP;
     }
 
-    const boardIdP = E.G(selfContact).depositBoardId;
+    const boardIdP = E.get(selfContact).depositBoardId;
     pendingEnableAutoDeposits.init(brand, boardIdP);
     const boardId = await boardIdP;
     brandToDepositFacetId.init(brand, boardId);

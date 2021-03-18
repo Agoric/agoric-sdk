@@ -116,7 +116,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(seat)
       .getPayouts()
       .then(async swapPayout => {
-        const { Asset: swapMoolaPayout, Price: swapSimoleanPayout } = E.G(
+        const { Asset: swapMoolaPayout, Price: swapSimoleanPayout } = E.get(
           swapPayout,
         );
         E(moolaPurseP).deposit(await swapMoolaPayout);
@@ -158,7 +158,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(refundSeat)
       .getPayouts()
       .then(async refundPayout => {
-        const { Asset: swapMoolaPayout, Price: swapSimoleanPayout } = E.G(
+        const { Asset: swapMoolaPayout, Price: swapSimoleanPayout } = E.get(
           refundPayout,
         );
         E(moolaPurseP).deposit(await swapMoolaPayout);

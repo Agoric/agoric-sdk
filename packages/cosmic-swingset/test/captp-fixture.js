@@ -72,7 +72,7 @@ export async function makeFixture(noisy = false) {
         for (;;) {
           process.stdout.write('o');
           // eslint-disable-next-line no-await-in-loop
-          const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
+          const update = await E(E.get(bootP).loadingNotifier).getUpdateSince(
             lastUpdateCount,
           );
           if (
