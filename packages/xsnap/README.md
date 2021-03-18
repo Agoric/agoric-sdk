@@ -43,6 +43,8 @@ The parent and child communicate using "commands".
 - The Node.js parent can implement an asynchronous `handleCommand` function to
   respond to commands from the XS child.
 
+![state diagram](doc/xsnap-states.svg)
+
 # xsrepl
 
 With `xsnap` comes an `xsrepl` command line tool.
