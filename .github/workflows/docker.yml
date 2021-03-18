@@ -15,7 +15,9 @@ jobs:
     - name: Save SDK_VERSION
       run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
     - name: Save MODDABLE_COMMIT_HASH
-      run: set $(git submodule status); echo "MODDABLE_COMMIT_HASH=$1" >> $GITHUB_ENV
+      run: |
+        set $(git submodule status packages/xsnap/moddable)
+        echo "MODDABLE_COMMIT_HASH=$1" >> $GITHUB_ENV
     - name: Build SDK image
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
