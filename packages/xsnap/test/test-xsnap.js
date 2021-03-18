@@ -1,3 +1,5 @@
+/* global setTimeout, __filename */
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
@@ -401,5 +403,32 @@ test('heap exhaustion: orderly fail-stop', async t => {
     t.teardown(() => vat.terminate());
     // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(vat.evaluate(grow));
+  }
+});
+
+test('property name space exhaustion: orderly fail-stop', async t => {
+  const grow = qty => `
+  const objmap = {};
+  for (let ix = 0; ix < ${qty}; ix += 1) {
+    const key = \`k\${ix}\`;
+    objmap[key] = 1;
+    if (!(key in objmap)) {
+      throw Error(key);
+    }
+  }
+  `;
+  for (const debug of [false, true]) {
+    const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
+    t.teardown(() => vat.terminate());
+    console.log({ debug, qty: 31000 });
+    // eslint-disable-next-line no-await-in-loop
+    await t.notThrowsAsync(vat.evaluate(grow(31000)));
+    console.log({ debug, qty: 4000000000 });
+    // eslint-disable-next-line no-await-in-loop
+    await t.throwsAsync(
+      vat.evaluate(grow(4000000000)),
+      undefined,
+      'not enough keys',
+    );
   }
 });
