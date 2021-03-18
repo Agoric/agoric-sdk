@@ -271,6 +271,10 @@ jobs:
       run: cd packages/transform-metering && yarn test
       env:
         ESM_DISABLE_CACHE: true
+    - name: yarn test (deploy-script-support)
+      run: cd packages/deploy-script-support && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
 
 ##############
 # Long-running tests are executed individually.

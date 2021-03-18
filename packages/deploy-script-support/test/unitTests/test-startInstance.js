@@ -1,6 +1,7 @@
 /* global require */
 // @ts-check
 
+import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { makeZoe } from '@agoric/zoe';
