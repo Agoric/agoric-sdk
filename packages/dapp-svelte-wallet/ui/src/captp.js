@@ -3,7 +3,6 @@ import { makeCapTP, E } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 export function makeCapTPConnection(makeConnection, { onReset }) {
-
   // This is the internal state: a promise kit that doesn't
   // resolve until we are connected.  It is replaced by
   // a new promise kit when we reset our state.
@@ -18,7 +17,7 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
   }
 
   // Stable identity for the connection handler.
-  function onClose(_event)  {
+  function onClose(_event) {
     // Throw away our state.
     bootPK = makePromiseKit();
     onReset(bootPK.promise.then(_ => true));
@@ -27,15 +26,19 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
 
   // Stable identity for the connection handler.
   async function onOpen(event) {
-    const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } =
-      makeCapTP('@agoric/dapp-svelte-wallet-ui', sendMessage);
+    const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } = makeCapTP(
+      '@agoric/dapp-svelte-wallet-ui',
+      sendMessage,
+    );
     abort = ctpAbort;
     dispatch = ctpDispatch;
 
     // Wait for the wallet to finish loading.
     let lastUpdateCount;
     while (true) {
-      const update = await E(E.G(getBootstrap()).loadingNotifier).getUpdateSince(lastUpdateCount);
+      const update = await E(
+        E.get(getBootstrap()).loadingNotifier,
+      ).getUpdateSince(lastUpdateCount);
       console.log('waiting for wallet');
       lastUpdateCount = update.updateCount;
       if (!update.value.includes('wallet')) {

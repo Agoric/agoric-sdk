@@ -123,7 +123,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           // Wait for the notifier to report a new state.
           process.stdout.write(progressDot);
           console.debug('need:', stillLoading.join(', '));
-          const update = await E(E.G(bootP).loadingNotifier).getUpdateSince(
+          const update = await E(E.get(bootP).loadingNotifier).getUpdateSince(
             lastUpdateCount,
           );
           lastUpdateCount = update.updateCount;
@@ -159,7 +159,9 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         // Take a new copy, since the chain objects have been added to bootstrap.
         bootP = getBootstrap();
 
-        const pluginManager = await E.G(E.G(bootP).local).plugin.catch(_ => {});
+        const pluginManager = await E.get(
+          E.get(bootP).local,
+        ).plugin.catch(_ => {});
         const pluginDir = await E(pluginManager)
           .getPluginDir()
           .catch(_ => {});
@@ -207,7 +209,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
 
                 // Return the bootstrap object for this plugin.
                 console.info(`Loading plugin ${JSON.stringify(pluginFile)}`);
-                return E.G(E(pluginManager).load(pluginName, pluginOpts))
+                return E.get(E(pluginManager).load(pluginName, pluginOpts))
                   .pluginRoot;
               } catch (e) {
                 throw Error(
@@ -238,7 +240,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
 
         if (provide.length) {
           console.debug('provide:', provide.join(', '));
-          await E(E.G(E.G(bootP).local).http).doneLoading(provide);
+          await E(E.get(E.get(bootP).local).http).doneLoading(provide);
         }
 
         console.debug('Done!');

@@ -80,9 +80,9 @@ export { connected };
 // Get some properties of the bootstrap object as stable identites.
 /** @type {WalletAdminFacet} */
 export const walletP = makeStableForwarder(bootP =>
-  E(E.G(bootP).wallet).getAdminFacet(),
+  E(E.get(bootP).wallet).getAdminFacet(),
 );
-export const boardP = makeStableForwarder(bootP => E.G(bootP).board);
+export const boardP = makeStableForwarder(bootP => E.get(bootP).board);
 
 const resetAlls = [];
 
