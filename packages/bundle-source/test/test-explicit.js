@@ -1,13 +1,13 @@
 /* global __dirname */
 import '@agoric/install-ses';
 import test from 'ava';
-import bundleSource from '..';
 import { rollup } from 'rollup';
-import {resolve as pathResolve} from 'path';
+import { resolve as pathResolve } from 'path';
 import resolvePlugin from '@rollup/plugin-node-resolve';
+import bundleSource from '..';
 
 test('explicit authority', async t => {
-  const { moduleFormat: mf1, source: src1 } = await bundleSource(
+  const { moduleFormat } = await bundleSource(
     `${__dirname}/../demo/dir1`,
     'getExport',
     {
@@ -16,5 +16,5 @@ test('explicit authority', async t => {
       pathResolve,
     },
   );
-  t.is(mf1, 'getExport', 'module format is getExport');
+  t.is(moduleFormat, 'getExport', 'module format is getExport');
 });
