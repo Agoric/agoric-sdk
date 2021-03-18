@@ -19,7 +19,7 @@ const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 export const makeHelpers = async (homePromise, endowments) => {
-  const { zoe, wallet, board } = E.G(homePromise);
+  const { zoe, wallet, board } = E.get(homePromise);
 
   const walletAdmin = E(wallet).getAdminFacet();
   const installationManager = E(walletAdmin).getInstallationManager();

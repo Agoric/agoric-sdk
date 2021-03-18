@@ -20,7 +20,7 @@ test.before('setup', async t => {
 // =========================================
 
 test.serial('home.registry', async t => {
-  const { registry } = E.G(home);
+  const { registry } = E.get(home);
   const regVal = await E(registry).get('foolobr_19191');
   t.is(regVal, undefined, 'random registry name is undefined');
 
@@ -33,7 +33,7 @@ test.serial('home.registry', async t => {
 });
 
 test.serial('home.board', async t => {
-  const { board } = E.G(home);
+  const { board } = E.get(home);
   await t.throwsAsync(
     () => E(board).getValue('148'),
     { message: /board does not have id/ },
@@ -57,7 +57,7 @@ test.serial('home.board', async t => {
 });
 
 test.serial('home.wallet - receive zoe invite', async t => {
-  const { wallet, zoe, board } = E.G(home);
+  const { wallet, zoe, board } = E.get(home);
 
   // Setup contract in order to get an invite to use in tests
   const contractRoot = require.resolve(
@@ -105,7 +105,7 @@ test.serial('home.wallet - receive zoe invite', async t => {
 });
 
 test.serial('home.wallet - MOE setup', async t => {
-  const { wallet } = E.G(home);
+  const { wallet } = E.get(home);
 
   // Check that the wallet knows about the MOE issuer.
   const issuers = await E(wallet).getIssuers();
@@ -119,7 +119,7 @@ test.serial('home.wallet - MOE setup', async t => {
 });
 
 test.serial('home.localTimerService makeNotifier', async t => {
-  const { localTimerService } = E.G(home);
+  const { localTimerService } = E.get(home);
   const notifier = E(localTimerService).makeNotifier(1, 1);
   const update1 = await E(notifier).getUpdateSince();
   t.is(update1.updateCount, 2);
@@ -150,7 +150,7 @@ function makeHandler() {
 
 // TODO(2164): createRepeater was replaced by makeRepeater. Remove it pre-Beta
 test.serial('home.localTimerService createRepeater', async t => {
-  const { localTimerService } = E.G(home);
+  const { localTimerService } = E.get(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
   const repeater = E(localTimerService).createRepeater(1n, 1n);
   const handler = makeHandler();
@@ -163,7 +163,7 @@ test.serial('home.localTimerService createRepeater', async t => {
 });
 
 test.serial('home.localTimerService makeRepeater', async t => {
-  const { localTimerService } = E.G(home);
+  const { localTimerService } = E.get(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
   const repeater = E(localTimerService).makeRepeater(1, 1);
   const handler = makeHandler();
