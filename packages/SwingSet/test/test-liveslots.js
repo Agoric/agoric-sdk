@@ -15,6 +15,10 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function caponeslot(slot) {
+  return capargs([{ '@qclass': 'slot', index: 0 }], [slot]);
+}
+
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, rejected, data]];
 }
@@ -32,12 +36,18 @@ function buildSyscall() {
     resolve(resolutions) {
       log.push({ type: 'resolve', resolutions });
     },
+    dropImports(slots) {
+      log.push({ type: 'dropImports', slots });
+    },
+    exit(isFailure, info) {
+      log.push({ type: 'exit', isFailure, info });
+    },
   };
 
   return { log, syscall };
 }
 
-function makeDispatch(syscall, build) {
+function makeDispatch(syscall, build, enableDisavow = false) {
   const gcTools = harden({ WeakRef, FinalizationRegistry });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
@@ -45,6 +55,7 @@ function makeDispatch(syscall, build) {
     {},
     {},
     undefined,
+    enableDisavow,
     gcTools,
   );
   setBuildRootObject(build);
@@ -551,5 +562,113 @@ test('liveslots vs symbols', async t => {
     type: 'resolve',
     resolutions: [[rp2, false, capargs(['caught', expErr])]],
   });
+  t.deepEqual(log, []);
+});
+
+test('disable disavow', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(vatPowers) {
+    return Far('root', {
+      one() {
+        log.push(!!vatPowers.disavow);
+      },
+    });
+  }
+  const dispatch = makeDispatch(syscall, build, false);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // root~.one() // sendOnly
+  dispatch.deliver(rootA, 'one', capargs([]), undefined);
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), false);
+  t.deepEqual(log, []);
+});
+
+test('disavow', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(vatPowers) {
+    const root = Far('root', {
+      async one(pres1) {
+        vatPowers.disavow(pres1);
+        log.push('disavowed pres1');
+
+        try {
+          vatPowers.disavow(pres1);
+          log.push('oops duplicate disavow worked');
+        } catch (err) {
+          log.push(err); // forbidden to disavow twice
+        }
+        log.push('tried duplicate disavow');
+
+        try {
+          const pr = Promise.resolve();
+          vatPowers.disavow(pr);
+          log.push('oops disavow Promise worked');
+        } catch (err) {
+          log.push(err); // forbidden to disavow promises
+        }
+        log.push('tried to disavow Promise');
+
+        try {
+          vatPowers.disavow(root);
+          log.push('oops disavow export worked');
+        } catch (err) {
+          log.push(err); // forbidden to disavow exports
+        }
+        log.push('tried to disavow export');
+
+        const p1 = E(pres1).foo();
+        // this does a syscall.exit on a subsequent turn
+        try {
+          await p1;
+          log.push('oops send to disavowed worked');
+        } catch (err) {
+          log.push(err); // fatal to send to disavowed
+        }
+        log.push('tried to send to disavowed');
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+  const import1 = 'o-1';
+
+  // root~.one(import1) // sendOnly
+  dispatch.deliver(rootA, 'one', caponeslot(import1), undefined);
+  await waitUntilQuiescent();
+  t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
+  t.deepEqual(log.shift(), 'disavowed pres1');
+
+  function loggedError(re) {
+    const l = log.shift();
+    t.truthy(l instanceof Error);
+    t.truthy(re.test(l.message));
+  }
+  loggedError(/attempt to disavow unknown/);
+  t.deepEqual(log.shift(), 'tried duplicate disavow');
+  loggedError(/attempt to disavow unknown/);
+  t.deepEqual(log.shift(), 'tried to disavow Promise');
+  loggedError(/attempt to disavow an export/);
+  t.deepEqual(log.shift(), 'tried to disavow export');
+  t.deepEqual(log.shift(), {
+    type: 'exit',
+    isFailure: true,
+    info: {
+      body: JSON.stringify({
+        '@qclass': 'error',
+        errorId: 'error:liveSlots:vatA#1',
+        message: 'this Presence has been disavowed',
+        name: 'Error',
+      }),
+      slots: [],
+    },
+  });
+  t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
+  t.deepEqual(log.shift(), 'tried to send to disavowed');
   t.deepEqual(log, []);
 });

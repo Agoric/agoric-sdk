@@ -105,6 +105,12 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
+  function dropImports(koids) {
+    assert(Array.isArray(koids), X`dropImports given non-Array ${koids}`);
+    console.log(`-- kernel ignoring dropImports ${koids.join(',')}`);
+    return OKNULL;
+  }
+
   function doKernelSyscall(ksc) {
     const [type, ...args] = ksc;
     switch (type) {
@@ -124,6 +130,8 @@ export function makeKernelSyscallHandler(tools) {
         return vatstoreSet(...args);
       case 'vatstoreDelete':
         return vatstoreDelete(...args);
+      case 'dropImports':
+        return dropImports(...args);
       default:
         assert.fail(X`unknown vatSyscall type ${type}`);
     }

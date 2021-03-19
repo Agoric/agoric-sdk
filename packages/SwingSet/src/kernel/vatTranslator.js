@@ -182,6 +182,21 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['vatstoreDelete', vatID, key]);
   }
 
+  function translateDropImports(vrefs) {
+    assert(Array.isArray(vrefs), X`dropImport() given non-Array ${vrefs}`);
+    // We delete clist entries as we translate, which will (TODO) decref the
+    // krefs. When we're done with that loop, we hand the set of krefs to
+    // kernelSyscall so it can (TODO) check newly-decremented refcounts
+    // against zero, and maybe delete even more.
+    const krefs = vrefs.map(vref => {
+      insistVatType('object', vref);
+      const kref = mapVatSlotToKernelSlot(vref);
+      vatKeeper.deleteCListEntry(kref, vref);
+      return kref;
+    });
+    return harden(['dropImports', krefs]);
+  }
+
   function translateCallNow(target, method, args) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
@@ -257,6 +272,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateVatstoreSet(...args);
       case 'vatstoreDelete':
         return translateVatstoreDelete(...args);
+      case 'dropImports':
+        return translateDropImports(...args);
       default:
         assert.fail(X`unknown vatSyscall type ${type}`);
     }

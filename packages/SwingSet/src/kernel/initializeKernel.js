@@ -60,6 +60,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'enablePipelining',
         'metered',
         'managerType',
+        'enableDisavow',
         'enableSetup',
         'enableInternalMetering',
         'virtualObjectCacheSize',

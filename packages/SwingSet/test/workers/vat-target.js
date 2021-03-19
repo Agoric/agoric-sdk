@@ -28,15 +28,17 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   syscall.subscribe(pD)
   //   syscall.subscribe(pE)
   //   syscall.callNow(adder, args=[1, 2]) -> 3
+  //   syscall.dropImports([dropMe])
   //   syscall.send(callbackObj, method="callback", result=rp2, args=[11, 12]);
   //   syscall.subscribe(rp2)
   //   syscall.fulfillToData(pA, [pB, pC, 3]);
-  function zero(obj, pD, pE, adder) {
+  function zero(obj, pD, pE, adder, dropMe) {
     callbackObj = obj;
     const pF = E(callbackObj).callback(11, 12); // syscall.send
     ignore(pD);
     ignore(pE);
     const three = canCallNow ? vatPowers.D(adder).add(1, 2) : 3;
+    vatPowers.disavow(dropMe);
     return [precB.promise, precC.promise, pF, three]; // syscall.fulfillToData
   }
 

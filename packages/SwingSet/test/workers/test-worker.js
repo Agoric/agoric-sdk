@@ -7,7 +7,7 @@ const expected = [['B good', 'C good', 'F good', 'three good'], 'rp3 good'];
 
 async function makeController(managerType) {
   const config = await loadBasedir(__dirname);
-  config.vats.target.creationOptions = { managerType };
+  config.vats.target.creationOptions = { managerType, enableDisavow: true };
   const canCallNow = ['local', 'xs-worker'].indexOf(managerType) !== -1;
   config.vats.target.parameters = { canCallNow };
   config.devices = {

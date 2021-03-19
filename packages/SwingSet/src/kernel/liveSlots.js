@@ -26,6 +26,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
+ * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {Console} console
@@ -35,12 +36,13 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * create a root object for the new vat The caller provided buildRootObject
  * function produces and returns the new vat's root object:
  *
- *     buildRootObject(vatPowers, vatParameters)
+ * buildRootObject(vatPowers, vatParameters)
  */
 function build(
   syscall,
   forVatID,
   cacheSize,
+  enableDisavow,
   vatPowers,
   vatParameters,
   console,
@@ -68,6 +70,11 @@ function build(
   /** Map vat slot strings -> in-vat object references. */
   const slotToVal = new Map();
 
+  /** Remember disavowed Presences which will kill the vat if you try to talk
+   * to them */
+  const disavowedPresences = new WeakSet();
+  const disavowalError = harden(Error(`this Presence has been disavowed`));
+
   const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
   let nextPromiseID = 5;
@@ -80,9 +87,14 @@ function build(
 
     lsdebug(`makeImportedPresence(${slot})`);
     const fulfilledHandler = {
-      applyMethod(_o, prop, args, returnedP) {
+      applyMethod(o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
+        if (disavowedPresences.has(o)) {
+          // eslint-disable-next-line no-use-before-define
+          exitVatWithFailure(disavowalError);
+          throw disavowalError;
+        }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
       },
@@ -261,6 +273,11 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
+        if (disavowedPresences.has(val)) {
+          // eslint-disable-next-line no-use-before-define
+          exitVatWithFailure(disavowalError);
+          throw disavowalError; // cannot reference a disavowed object
+        }
         assert.equal(passStyleOf(val), REMOTE_STYLE);
         slot = exportPassByPresence();
       }
@@ -611,6 +628,23 @@ function build(
     syscall.exit(true, m.serialize(harden(reason)));
   }
 
+  function disavow(presence) {
+    if (!valToSlot.has(presence)) {
+      assert.fail(X`attempt to disavow unknown ${presence}`);
+    }
+    const slot = valToSlot.get(presence);
+    const { type, allocatedByVat } = parseVatSlot(slot);
+    assert.equal(type, 'object', X`attempt to disavow non-object ${presence}`);
+    // disavow() is only for imports: we'll use a different API to revoke
+    // exports, one which accepts an Error object
+    assert.equal(allocatedByVat, false, X`attempt to disavow an export`);
+    valToSlot.delete(presence);
+    slotToVal.delete(slot);
+    disavowedPresences.add(presence);
+
+    syscall.dropImports([slot]);
+  }
+
   // vats which use D are in: acorn-eventual-send, cosmic-swingset
   // (bootstrap, bridge, vat-http), swingset
 
@@ -623,11 +657,18 @@ function build(
     assert(!didRoot);
     didRoot = true;
 
+    const vpow = {
+      D,
+      exitVat,
+      exitVatWithFailure,
+      ...vatPowers,
+    };
+    if (enableDisavow) {
+      vpow.disavow = disavow;
+    }
+
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = buildRootObject(
-      harden({ D, exitVat, exitVatWithFailure, ...vatPowers }),
-      harden(vatParameters),
-    );
+    const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
     assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
     const rootSlot = makeVatSlot('object', true, 0n);
@@ -648,6 +689,7 @@ function build(
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
+ * @param {boolean} enableDisavow
  * @param {*} _gcTools
  * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
@@ -680,6 +722,7 @@ export function makeLiveSlots(
   vatPowers = harden({}),
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+  enableDisavow = false,
   _gcTools,
   liveSlotsConsole = console,
 ) {
@@ -691,6 +734,7 @@ export function makeLiveSlots(
     syscall,
     forVatID,
     cacheSize,
+    enableDisavow,
     allVatPowers,
     vatParameters,
     liveSlotsConsole,

@@ -91,7 +91,12 @@ fromParent.on('data', ([type, ...margs]) => {
     workerLog(`got start`);
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
-    const [bundle, vatParameters, virtualObjectCacheSize] = margs;
+    const [
+      bundle,
+      vatParameters,
+      virtualObjectCacheSize,
+      enableDisavow,
+    ] = margs;
 
     function testLog(...args) {
       sendUplink(['testLog', ...args]);
@@ -111,6 +116,7 @@ fromParent.on('data', ([type, ...margs]) => {
       vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
       vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
       vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
+      dropImports: (...args) => doSyscall(['dropImports', ...args]),
     });
 
     const vatID = 'demo-vatID';
@@ -129,6 +135,7 @@ fromParent.on('data', ([type, ...margs]) => {
       vatPowers,
       vatParameters,
       virtualObjectCacheSize,
+      enableDisavow,
       gcTools,
     );
 

@@ -142,3 +142,8 @@ not yet supported.
   level `setup()` API, which allows a vat to be defined independent of
   the liveslots framework (defaults to `false` if omitted).  (If you
   don't understand what this means, do not use this.)
+
+- `enableDisavow`, if true, adds `vatPowers.disavow()`, which allows vat code
+  to explicitly disavow interest in an imported Presence. This will trigger a
+  `syscall.dropImports` of the associated object ID. By default, this
+  function is not added to `vatPowers`.

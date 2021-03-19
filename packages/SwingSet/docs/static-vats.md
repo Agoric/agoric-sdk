@@ -68,6 +68,7 @@ Static vats currently receive the following objects in their `buildRootObject()`
 * `transformTildot`
 * `exitVat`
 * `exitVatWithFailure`
+* `disavow`, but only if `creationOptions.enableDisavow` was truthy
 
 (dynamic vats do not get `makeGetMeter` or `transformMetering`)
 
@@ -88,6 +89,14 @@ This is particularly useful for vats that implement a REPL, so operators can inc
 ### vat termination: `exitVat` and `exitVatWithFailure`
 
 A vat may signal to the kernel that it should be terminated at the end of its current crank.  Two powers are provided to do this: `exitVat(completion)` and `exitVatWithFailure(reason)`.  These powers will work in any vat but are primarily useful in dynamic vats.  The two differ in how the circumstances of termination are signalled to holders of the vat's `done` promise: `exitVat` fulfills that promise with the value provided in the `completion` parameter, whereas `exitVatWithFailure` rejects the promise with the value provided in the `reason` parameter.  Conventionally, `completion` will be a string and `reason` will be an `Error`, but any serializable object may be used for either.  After the crank in which either of these powers is invoked, no further messages will be delivered to the vat; instead, any such messages will be rejected with a `'vat terminated'` error.  Any outstanding promises for which the vat was the decider will also be rejected in the same way.  The vat and any resources it holds will become eligible for garbage collection.  However, the crank itself will end normally, meaning that any actions taken by the vat during the crank in which either exit power was invoked will become part of the persisted state of the swingset, including messages that were sent from the vat during that crank (including, notably, actions taken _after_ the exit power was invoked but before the crank finished).
+
+### explicitly dropping imported Presences: `disavow`
+
+If enabled, vat code can explicitly drop an imported Presence by calling `vatPowers.disavow(presence)`, which will cause liveslots to invoke `syscall.dropImports()` on the Presence's object ID. This is primarily for testing the GC syscalls without relying upon engine-level finalizers (which are non-trivial to force), especially before the finalization code is complete.
+
+Once disavowed, the Presence stops working. Any messages sent to it (with `E(disavowedPresence).method(args)`) or which reference it (`E(target).method(disavowedPresence)`) will be rejected with an error. Any promise resolutions that reference it will fail somewhat silently (just like unhandled rejected promises).
+
+It's not clear that `disavow` is a good idea: it may be removed once the GC implementation is complete.
 
 ## Configuring Vats
 

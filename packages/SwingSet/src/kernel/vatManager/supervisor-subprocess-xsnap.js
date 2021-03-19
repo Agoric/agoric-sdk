@@ -183,6 +183,7 @@ function makeWorker(port) {
    * @param {unknown} bundle
    * @param {unknown} vatParameters
    * @param {unknown} virtualObjectCacheSize
+   * @param {boolean} enableDisavow
    * @returns { Promise<Tagged> }
    */
   async function setBundle(
@@ -190,6 +191,7 @@ function makeWorker(port) {
     bundle,
     vatParameters,
     virtualObjectCacheSize,
+    enableDisavow,
   ) {
     /** @type { (item: Tagged) => unknown } */
     function doSyscall(vatSyscallObject) {
@@ -208,6 +210,7 @@ function makeWorker(port) {
       vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
       vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
       vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
+      dropImports: (...args) => doSyscall(['dropImports', ...args]),
     });
 
     const vatPowers = {
@@ -237,6 +240,7 @@ function makeWorker(port) {
       vatPowers,
       vatParameters,
       cacheSize,
+      enableDisavow,
       gcTools,
     );
 
@@ -260,9 +264,11 @@ function makeWorker(port) {
   async function handleItem([tag, ...args]) {
     workerLog('handleItem', tag, args.length);
     switch (tag) {
-      case 'setBundle':
+      case 'setBundle': {
         assert(!dispatch, 'cannot setBundle again');
-        return setBundle(args[0], args[1], args[2], args[3]);
+        const enableDisavow = !!args[4];
+        return setBundle(args[0], args[1], args[2], args[3], enableDisavow);
+      }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
         const [dtype, ...dargs] = args;
