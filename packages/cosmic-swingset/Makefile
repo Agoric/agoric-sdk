@@ -101,9 +101,10 @@ t1-start-ag-solo:
 #
 # If you still want the client/chain separation without delay,
 # then run: make scenario3-setup FAKE_CHAIN_DELAY=0
+VATWORKER=local
 scenario3-setup:
 	rm -rf t3
-	bin/ag-solo init t3 --egresses=fake --webport=$(BASE_PORT)
+	bin/ag-solo init t3 --egresses=fake --webport=$(BASE_PORT) --defaultManagerType=$(VATWORKER)
 	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
 # This runs both the client and the fake chain.

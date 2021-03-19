@@ -1,4 +1,4 @@
-/* global __dirname Buffer */
+/* global __dirname Buffer process */
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
@@ -18,8 +18,14 @@ export default function initBasedir(
   egresses,
   opts = {},
 ) {
-  const { wallet = DEFAULT_WALLET, ...options } = opts;
+  const { env = process.environment } = opts;
+  const {
+    wallet = DEFAULT_WALLET,
+    defaultManagerType = env.WORKER_TYPE || 'local',
+    ...options
+  } = opts;
   options.wallet = wallet;
+  options.defaultManagerType = defaultManagerType;
 
   const here = __dirname;
   // We either need a basedir with an initialised key, or no basedir.
