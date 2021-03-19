@@ -184,10 +184,10 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
 
   function translateDropImports(vrefs) {
     assert(Array.isArray(vrefs), X`dropImport() given non-Array ${vrefs}`);
-    // We delete clist entries as we translate, which will decref the krefs.
-    // When we're done with that loop, we hand the set of krefs to
-    // kernelSyscall so it can check newly-decremented refcounts against zero,
-    // and maybe delete even more.
+    // We delete clist entries as we translate, which will (TODO) decref the
+    // krefs. When we're done with that loop, we hand the set of krefs to
+    // kernelSyscall so it can (TODO) check newly-decremented refcounts
+    // against zero, and maybe delete even more.
     const krefs = vrefs.map(vref => {
       insistVatType('object', vref);
       const kref = mapVatSlotToKernelSlot(vref);

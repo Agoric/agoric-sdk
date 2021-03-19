@@ -70,9 +70,10 @@ function build(
   /** Map vat slot strings -> in-vat object references. */
   const slotToVal = new Map();
 
-  /** Map disavowed Presences to the Error which kills the vat if you try to
-   * talk to them */
-  const disavowedPresences = new WeakMap();
+  /** Remember disavowed Presences which will kill the vat if you try to talk
+   * to them */
+  const disavowedPresences = new WeakSet();
+  const disavowalError = harden(Error(`this Presence has been disavowed`));
 
   const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
@@ -89,11 +90,10 @@ function build(
       applyMethod(o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
-        const err = disavowedPresences.get(o);
-        if (err) {
+        if (disavowedPresences.has(o)) {
           // eslint-disable-next-line no-use-before-define
-          exitVatWithFailure(err);
-          throw err;
+          exitVatWithFailure(disavowalError);
+          throw disavowalError;
         }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
@@ -273,11 +273,10 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
-        const err = disavowedPresences.get(val);
-        if (err) {
+        if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
-          exitVatWithFailure(err);
-          throw err; // cannot reference a disavowed object
+          exitVatWithFailure(disavowalError);
+          throw disavowalError; // cannot reference a disavowed object
         }
         assert.equal(passStyleOf(val), REMOTE_STYLE);
         slot = exportPassByPresence();
@@ -641,8 +640,7 @@ function build(
     assert.equal(allocatedByVat, false, X`attempt to disavow an export`);
     valToSlot.delete(presence);
     slotToVal.delete(slot);
-    const err = harden(Error(`this Presence has been disavowed`));
-    disavowedPresences.set(presence, err);
+    disavowedPresences.add(presence);
 
     syscall.dropImports([slot]);
   }
@@ -659,22 +657,18 @@ function build(
     assert(!didRoot);
     didRoot = true;
 
-    const disavowPowers = {};
+    const vpow = {
+      D,
+      exitVat,
+      exitVatWithFailure,
+      ...vatPowers,
+    };
     if (enableDisavow) {
-      disavowPowers.disavow = disavow;
+      vpow.disavow = disavow;
     }
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = buildRootObject(
-      harden({
-        D,
-        exitVat,
-        exitVatWithFailure,
-        ...disavowPowers,
-        ...vatPowers,
-      }),
-      harden(vatParameters),
-    );
+    const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
     assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
     const rootSlot = makeVatSlot('object', true, 0n);
