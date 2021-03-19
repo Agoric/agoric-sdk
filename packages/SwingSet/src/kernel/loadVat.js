@@ -216,6 +216,7 @@ export function makeVatLoader(stuff) {
         liveSlotsConsole: makeVatConsole('ls', vatID),
         vatParameters,
         virtualObjectCacheSize,
+        name,
       };
       // TODO: We need to support within-vat metering (for the Spawner) until
       // #1343 is fixed, after which we can remove
