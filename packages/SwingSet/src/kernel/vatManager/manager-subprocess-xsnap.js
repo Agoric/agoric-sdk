@@ -48,6 +48,7 @@ export function makeXsSubprocessFactory({
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      name,
     } = managerOptions;
     assert(!managerOptions.metered, 'xs-worker: metered not supported yet');
     assert(
@@ -127,7 +128,7 @@ export function makeXsSubprocessFactory({
     }
 
     // start the worker and establish a connection
-    const { worker, bundles } = startXSnap(`${vatID}`, handleCommand);
+    const { worker, bundles } = startXSnap(`${vatID}:${name}`, handleCommand);
     for await (const [it, superCode] of Object.entries(bundles)) {
       parentLog(vatID, 'eval bundle', it);
       assert(

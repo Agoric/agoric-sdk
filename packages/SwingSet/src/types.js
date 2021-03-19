@@ -24,6 +24,7 @@
  *   enableDisavow?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
+ *   name?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
 
