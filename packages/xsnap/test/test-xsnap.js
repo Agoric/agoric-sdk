@@ -196,6 +196,23 @@ test('print - start compartment only', async t => {
   t.deepEqual(['no print in Compartment'], opts.messages);
 });
 
+test('gc - start compartment only', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  await vat.evaluate(`
+    gc();
+    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    print(123);
+    try {
+      (new Compartment()).evalate('gc()');
+    } catch (_err) {
+      send('no gc in Compartment');
+    }
+  `);
+  await vat.close();
+  t.deepEqual(['no gc in Compartment'], opts.messages);
+});
+
 test('run script until idle', async t => {
   const opts = options();
   const vat = xsnap(opts);
