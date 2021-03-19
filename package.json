@@ -43,7 +43,8 @@
     "packages/deployment",
     "packages/notifier",
     "packages/xsnap",
-    "packages/deploy-script-support"
+    "packages/deploy-script-support",
+    "packages/ui-components"
   ],
   "devDependencies": {
     "@typescript-eslint/parser": "^4.18.0",
