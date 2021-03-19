@@ -15,7 +15,8 @@ import { NatAmountInput } from '@agoric/ui-components';
 <NatAmountInput
   label={label} // the label
   value={amount && amount.value} // The value to display. Must be a Nat
-  displayInfo={purse.displayInfo} // the displayInfo to use to display the value
+  decimalPlaces={purse.displayInfo && purse.displayInfo.decimalPlaces}
+  placesToShow={2}
   disabled={disabled} // disable the input
   error={amountError} // any error to display
   onChange={onAmountChange} // a callback called on user input changing the value
@@ -26,5 +27,6 @@ import { NatAmountInput } from '@agoric/ui-components';
 ## Yarn Test
 
 ```sh
+yarn build
 yarn test
 ```
