@@ -1,8 +1,6 @@
 import path from 'path';
 import anylogger from 'anylogger';
 
-import { MeterProvider } from '@opentelemetry/metrics';
-
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -14,33 +12,21 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
-import { assert, details as X, quote } from '@agoric/assert';
-import makeStore from '@agoric/store';
+import { assert, details as X } from '@agoric/assert';
 import { getBestSwingStore } from './check-lmdb';
-import { exportKernelStats } from './kernel-stats';
+import {
+  DEFAULT_METER_PROVIDER,
+  exportKernelStats,
+  makeSlogCallbacks,
+} from './kernel-stats';
 
-const log = anylogger('launch-chain');
+const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
 // This is how many cranks we run per block, as per #2299.
 // TODO Make it dependent upon metering instead.
 const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
-
-export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = [
-  0.005,
-  0.01,
-  0.025,
-  0.05,
-  0.1,
-  0.25,
-  0.5,
-  1,
-  2.5,
-  5,
-  10,
-  Infinity,
-];
 
 async function buildSwingset(
   mailboxStorage,
@@ -97,9 +83,9 @@ export async function launch(
   vatsDir,
   argv,
   debugName = undefined,
-  meterProvider = new MeterProvider(),
+  meterProvider = DEFAULT_METER_PROVIDER,
 ) {
-  log.info('Launching SwingSet kernel');
+  console.info('Launching SwingSet kernel');
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
@@ -110,108 +96,16 @@ export async function launch(
     return doOutboundBridge(dstID, obj);
   }
 
-  const wrapDeltaMS = (finisher, useDeltaMS) => {
-    const startMS = Date.now();
-    return (...finishArgs) => {
-      try {
-        return finisher(...finishArgs);
-      } finally {
-        const deltaMS = Date.now() - startMS;
-        useDeltaMS(deltaMS, finishArgs);
-      }
-    };
-  };
-
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
   const METRIC_LABELS = { app: 'ag-chain-cosmos' };
 
-  const nameToBaseMetric = makeStore('metricName');
-  nameToBaseMetric.init(
-    'swingset_vat_startup',
-    metricMeter.createValueRecorder('swingset_vat_startup', {
-      description: 'Vat startup time (ms)',
-    }),
-  );
-  nameToBaseMetric.init(
-    'swingset_vat_delivery',
-    metricMeter.createValueRecorder('swingset_vat_delivery', {
-      description: 'Vat delivery time (ms)',
-    }),
-  );
-  nameToBaseMetric.init(
-    'swingset_meter_usage',
-    metricMeter.createValueRecorder('swingset_meter_usage', {
-      description: 'Vat meter usage',
-    }),
-  );
-  const vatToMetrics = makeStore();
+  const slogCallbacks = makeSlogCallbacks({
+    metricMeter,
+    labels: METRIC_LABELS,
+  });
 
-  /**
-   * This function reuses or creates per-vat named metrics.
-   *
-   * @param {string} vatID id of the vat to label the metric with
-   * @param {string} name name of the base metric
-   * @param {Record<string, string>} [labels] the metric statistic
-   * @returns {any} the labelled metric
-   */
-  const getVatMetric = (vatID, name, labels = {}) => {
-    let nameToMetric;
-    if (vatToMetrics.has(vatID)) {
-      nameToMetric = vatToMetrics.get(vatID);
-    } else {
-      nameToMetric = makeStore('metricName');
-      vatToMetrics.init(vatID, nameToMetric);
-    }
-    let metric;
-    const labeledName = `${name}:${quote(labels)}`;
-    if (nameToMetric.has(labeledName)) {
-      metric = nameToMetric.get(labeledName);
-    } else {
-      // Bind the base metric to the vatID label.
-      metric = nameToBaseMetric
-        .get(name)
-        .bind({ ...METRIC_LABELS, vatID, ...labels });
-      nameToMetric.init(labeledName, metric);
-    }
-    return metric;
-  };
-
-  /**
-   * Measure some interesting stats.  We currently do a per-vat recording of
-   * time spent in the vat for startup and delivery.
-   */
-  const slogCallbacks = {
-    startup(_method, [vatID], finisher) {
-      return wrapDeltaMS(finisher, deltaMS => {
-        getVatMetric(vatID, 'swingset_vat_startup').record(deltaMS);
-      });
-    },
-    delivery(_method, [vatID], finisher) {
-      return wrapDeltaMS(finisher, (deltaMS, [[_status, _problem, used]]) => {
-        if (used) {
-          // Add to aggregated metering stats.
-          const labels = {};
-          if (used.meterType) {
-            labels.meterType = used.meterType;
-          }
-          for (const [key, value] of Object.entries(used)) {
-            if (key === 'meterType') {
-              // eslint-disable-next-line no-continue
-              continue;
-            }
-            getVatMetric(vatID, `swingset_meter_usage`, {
-              ...labels,
-              stat: key,
-            }).record(value || 0);
-          }
-        }
-        getVatMetric(vatID, 'swingset_vat_delivery').record(deltaMS);
-      });
-    },
-  };
-
-  log.debug(`buildSwingset`);
+  console.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
     bridgeOutbound,
@@ -224,21 +118,15 @@ export async function launch(
     },
   );
 
-  exportKernelStats({ controller, metricMeter, log, labels: METRIC_LABELS });
-
-  const schedulerCrankTimeHistogram = metricMeter
-    .createValueRecorder('swingset_crank_processing_time', {
-      description: 'Processing time per crank (ms)',
-      boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
-    })
-    .bind(METRIC_LABELS);
-
-  const schedulerBlockTimeHistogram = metricMeter
-    .createValueRecorder('swingset_block_processing_seconds', {
-      description: 'Processing time per block',
-      boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
-    })
-    .bind(METRIC_LABELS);
+  const {
+    schedulerCrankTimeHistogram,
+    schedulerBlockTimeHistogram,
+  } = exportKernelStats({
+    controller,
+    metricMeter,
+    log: console,
+    labels: METRIC_LABELS,
+  });
 
   // ////////////////////////////
   // TODO: This is where we would add the scheduler.
@@ -276,7 +164,7 @@ export async function launch(
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
     }
-    log.debug(`mboxDeliver:   ADDED messages`);
+    console.debug(`mboxDeliver:   ADDED messages`);
   }
 
   async function doBridgeInbound(source, body) {
@@ -288,7 +176,7 @@ export async function launch(
 
   async function beginBlock(blockHeight, blockTime) {
     const addedToQueue = timer.poll(blockTime);
-    log.debug(
+    console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,
     );
