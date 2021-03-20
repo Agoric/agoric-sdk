@@ -1,6 +1,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../../message';
 
+const METER_TYPE = 'tame-metering-1';
 export function makeDeliver(tools, dispatch) {
   const {
     meterRecord,
@@ -51,16 +52,16 @@ export function makeDeliver(tools, dispatch) {
     await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
     stopGlobalMeter();
 
-    let status = ['ok'];
+    let status = ['ok', null, null];
     // refill this vat's meter, if any, accumulating its usage for stats
     if (meterRecord) {
       // note that refill() won't actually refill an exhausted meter
-      const used = meterRecord.refill();
+      status[2] = { ...meterRecord.refill(), meterType: METER_TYPE };
       const exhaustionError = meterRecord.isExhausted();
       if (exhaustionError) {
-        status = ['error', exhaustionError.message];
+        status = ['error', exhaustionError.message, status[2]];
       } else {
-        updateStats(used);
+        updateStats(status[2]);
       }
     }
 

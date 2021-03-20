@@ -22,7 +22,7 @@ function makeCallbackRegistry(callbacks) {
       const cb = callbacks[method];
       if (!cb) {
         // No registered callback, just use the implementation directly.
-        console.error('no registered callback for', method);
+        // console.error('no registered callback for', method);
         return impl;
       }
 
@@ -143,9 +143,9 @@ export function makeSlogger(slogCallbacks, writeObj) {
       syscallNum = 0;
 
       // dr: deliveryResult
-      function finish(dr, stats) {
+      function finish(dr) {
         assertOldState(DELIVERY, 'delivery-finish called twice?');
-        write({ type: 'deliver-result', ...when, dr, stats });
+        write({ type: 'deliver-result', ...when, dr });
         state = IDLE;
       }
       return harden(finish);

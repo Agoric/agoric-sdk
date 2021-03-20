@@ -109,7 +109,7 @@ function abbreviateReplacer(_, arg) {
 function runAndWait(f, errmsg) {
   Promise.resolve()
     .then(f)
-    .then(undefined, err => {
+    .catch(err => {
       workerLog(`doProcess: ${errmsg}:`, err.message);
     });
   return waitUntilQuiescent();

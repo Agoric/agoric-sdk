@@ -14,7 +14,7 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, quote } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import { getBestSwingStore } from './check-lmdb';
 import { exportKernelStats } from './kernel-stats';
@@ -139,9 +139,23 @@ export async function launch(
       description: 'Vat delivery time (ms)',
     }),
   );
+  nameToBaseMetric.init(
+    'swingset_meter_usage',
+    metricMeter.createValueRecorder('swingset_meter_usage', {
+      description: 'Vat meter usage',
+    }),
+  );
   const vatToMetrics = makeStore();
 
-  const getVatMetric = (vatID, name) => {
+  /**
+   * This function reuses or creates per-vat named metrics.
+   *
+   * @param {string} vatID id of the vat to label the metric with
+   * @param {string} name name of the base metric
+   * @param {Record<string, string>} [labels] the metric statistic
+   * @returns {any} the labelled metric
+   */
+  const getVatMetric = (vatID, name, labels = {}) => {
     let nameToMetric;
     if (vatToMetrics.has(vatID)) {
       nameToMetric = vatToMetrics.get(vatID);
@@ -150,12 +164,15 @@ export async function launch(
       vatToMetrics.init(vatID, nameToMetric);
     }
     let metric;
-    if (nameToMetric.has(name)) {
-      metric = nameToMetric.get(name);
+    const labeledName = `${name}:${quote(labels)}`;
+    if (nameToMetric.has(labeledName)) {
+      metric = nameToMetric.get(labeledName);
     } else {
       // Bind the base metric to the vatID label.
-      metric = nameToBaseMetric.get(name).bind({ ...METRIC_LABELS, vatID });
-      nameToMetric.init(name, metric);
+      metric = nameToBaseMetric
+        .get(name)
+        .bind({ ...METRIC_LABELS, vatID, ...labels });
+      nameToMetric.init(labeledName, metric);
     }
     return metric;
   };
@@ -171,8 +188,24 @@ export async function launch(
       });
     },
     delivery(_method, [vatID], finisher) {
-      return wrapDeltaMS(finisher, (deltaMS, [_dr, _stats]) => {
-        // console.info(vatID, 'delivery.finish', stats);
+      return wrapDeltaMS(finisher, (deltaMS, [[_status, _problem, used]]) => {
+        if (used) {
+          // Add to aggregated metering stats.
+          const labels = {};
+          if (used.meterType) {
+            labels.meterType = used.meterType;
+          }
+          for (const [key, value] of Object.entries(used)) {
+            if (key === 'meterType') {
+              // eslint-disable-next-line no-continue
+              continue;
+            }
+            getVatMetric(vatID, `swingset_meter_usage`, {
+              ...labels,
+              stat: key,
+            }).record(value || 0);
+          }
+        }
         getVatMetric(vatID, 'swingset_vat_delivery').record(deltaMS);
       });
     },
