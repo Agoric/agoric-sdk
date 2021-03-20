@@ -11,6 +11,8 @@ FAKE_CHAIN_DELAY = 0
 NUM_SOLOS?=1
 BASE_PORT?=8000
 
+OTEL_EXPORTER_PROMETHEUS_PORT = 9461
+
 # On a host machine.  Stay here.
 INSPECT_ADDRESS = 127.0.0.1
 
@@ -66,7 +68,7 @@ scenario2-setup-nobuild:
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
-	OTEL_EXPORTER_PROMETHEUS_PORT=9464 \
+	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
 # Provision and start a client.
@@ -108,9 +110,11 @@ scenario3-setup:
 scenario3-run-client: scenario3-run
 # Set the fake chain here in case the delay has changed.
 scenario3-run:
-	(cd t3 && \
-			../bin/ag-solo set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI)
-	cd t3 && OTEL_EXPORTER_PROMETHEUS_PORT=9464 ../bin/ag-solo start
+	cd t3 && \
+			../bin/ag-solo set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
+	cd t3 && \
+		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
+		../bin/ag-solo start
 
 docker-pull:
 	for f in '' -setup -solo; do \
