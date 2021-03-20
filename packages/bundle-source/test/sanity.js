@@ -62,7 +62,7 @@ export function makeSanityTests(stackFiltering) {
     const err = bundle.makeError('foo');
     // console.log(err.stack);
     t.assert(
-      stackContains(err.stack, 'encourage.js:3:'),
+      stackContains(err.stack, 'encourage.js:2:'),
       'bundled source is in stack trace with correct line number',
     );
 

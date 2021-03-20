@@ -23,6 +23,8 @@ const IMPORT_RE = new RegExp('\\b(import)(\\s*(?:\\(|/[/*]))', 'sg');
 const HTML_COMMENT_START_RE = new RegExp(`${'<'}!--`, 'g');
 const HTML_COMMENT_END_RE = new RegExp(`--${'>'}`, 'g');
 
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 const read = async location => fs.promises.readFile(new URL(location).pathname);
 
 export function tildotPlugin() {
@@ -111,11 +113,12 @@ function transformAst(ast, unmapLoc) {
   });
 }
 
-async function transformSource(code, { sourceMap, useLocationUnmap }) {
+async function transformSource(code, { sourceMap, useLocationUnmap, sourceType } = {}) {
   // Parse the rolled-up chunk with Babel.
   // We are prepared for different module systems.
   const ast = (babelParser.parse || babelParser)(code, {
     plugins: ['bigInt'],
+    sourceType,
   });
 
   let unmapLoc;
@@ -148,7 +151,18 @@ export default async function bundleSource(
     // individual package.jsons and driven by the compartment mapper.
     const base = new URL(`file://${process.cwd()}`).toString();
     const entry = new URL(startFilename, base).toString();
-    const bytes = await makeArchive(read, entry);
+    const bytes = await makeArchive(read, entry, {
+      moduleTransforms: {
+        async mjs(sourceBytes) {
+          const source = textDecoder.decode(sourceBytes);
+          const {code: object} = await transformSource(source, {
+            sourceType: 'module',
+          });
+          const objectBytes = textEncoder.encode(object);
+          return { bytes: objectBytes, parser: 'mjs' };
+        },
+      },
+    });
     const endoZipBase64 = encodeBase64(bytes);
     return { endoZipBase64, moduleFormat };
   }
