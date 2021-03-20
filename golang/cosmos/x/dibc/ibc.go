@@ -68,7 +68,7 @@ func NewPortHandler(ibcModule porttypes.IBCModule, keeper Keeper) portHandler {
 }
 
 func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret string, err error) {
-	fmt.Println("ibc.go downcall", str)
+	// fmt.Println("ibc.go downcall", str)
 	keeper := ch.keeper
 
 	msg := new(portMessage)
@@ -167,7 +167,7 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		err = fmt.Errorf("unrecognized method %s", msg.Method)
 	}
 
-	fmt.Println("ibc.go downcall reply", ret, err)
+	// fmt.Println("ibc.go downcall reply", ret, err)
 	return
 }
 
