@@ -15,6 +15,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
+import makeStore from '@agoric/store';
 import { getBestSwingStore } from './check-lmdb';
 import { exportKernelStats } from './kernel-stats';
 
@@ -47,7 +48,7 @@ async function buildSwingset(
   storage,
   vatsDir,
   argv,
-  debugName = undefined,
+  { debugName = undefined, slogCallbacks },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = loadSwingsetConfigFile(`${vatsDir}/chain-config.json`);
@@ -78,7 +79,9 @@ async function buildSwingset(
   if (!swingsetIsInitialized(storage)) {
     await initializeSwingset(config, argv, storage, { debugPrefix });
   }
-  const controller = await makeSwingsetController(storage, deviceEndowments);
+  const controller = await makeSwingsetController(storage, deviceEndowments, {
+    slogCallbacks,
+  });
 
   // We DON'T want to run the kernel yet, only when we're in the scheduler at
   // endBlock!
@@ -106,6 +109,75 @@ export async function launch(
     // console.error('would outbound bridge', dstID, obj);
     return doOutboundBridge(dstID, obj);
   }
+
+  const wrapDeltaMS = (finisher, useDeltaMS) => {
+    const startMS = Date.now();
+    return (...finishArgs) => {
+      try {
+        return finisher(...finishArgs);
+      } finally {
+        const deltaMS = Date.now() - startMS;
+        useDeltaMS(deltaMS, finishArgs);
+      }
+    };
+  };
+
+  // Not to be confused with the gas model, this meter is for OpenTelemetry.
+  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
+  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
+
+  const nameToBaseMetric = makeStore('metricName');
+  nameToBaseMetric.init(
+    'swingset_vat_startup',
+    metricMeter.createValueRecorder('swingset_vat_startup', {
+      description: 'Vat startup time (ms)',
+    }),
+  );
+  nameToBaseMetric.init(
+    'swingset_vat_delivery',
+    metricMeter.createValueRecorder('swingset_vat_delivery', {
+      description: 'Vat delivery time (ms)',
+    }),
+  );
+  const vatToMetrics = makeStore();
+
+  const getVatMetric = (vatID, name) => {
+    let nameToMetric;
+    if (vatToMetrics.has(vatID)) {
+      nameToMetric = vatToMetrics.get(vatID);
+    } else {
+      nameToMetric = makeStore('metricName');
+      vatToMetrics.init(vatID, nameToMetric);
+    }
+    let metric;
+    if (nameToMetric.has(name)) {
+      metric = nameToMetric.get(name);
+    } else {
+      // Bind the base metric to the vatID label.
+      metric = nameToBaseMetric.get(name).bind({ ...METRIC_LABELS, vatID });
+      nameToMetric.init(name, metric);
+    }
+    return metric;
+  };
+
+  /**
+   * Measure some interesting stats.  We currently do a per-vat recording of
+   * time spent in the vat for startup and delivery.
+   */
+  const slogCallbacks = {
+    startup(_method, [vatID], finisher) {
+      return wrapDeltaMS(finisher, deltaMS => {
+        getVatMetric(vatID, 'swingset_vat_startup').record(deltaMS);
+      });
+    },
+    delivery(_method, [vatID], finisher) {
+      return wrapDeltaMS(finisher, (deltaMS, [_dr, _stats]) => {
+        // console.info(vatID, 'delivery.finish', stats);
+        getVatMetric(vatID, 'swingset_vat_delivery').record(deltaMS);
+      });
+    },
+  };
+
   log.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
@@ -113,13 +185,12 @@ export async function launch(
     storage,
     vatsDir,
     argv,
-    debugName,
+    {
+      debugName,
+      slogCallbacks,
+    },
   );
 
-  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
-
-  // Not to be confused with the gas model, this meter is for OpenTelemetry.
-  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
   exportKernelStats({ controller, metricMeter, log, labels: METRIC_LABELS });
 
   const schedulerCrankTimeHistogram = metricMeter

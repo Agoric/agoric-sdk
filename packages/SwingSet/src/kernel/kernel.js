@@ -94,6 +94,7 @@ export default function buildKernel(
     hostStorage,
     debugPrefix,
     vatEndowments,
+    slogCallbacks = {},
     makeConsole,
     replaceGlobalMeter,
     transformMetering,
@@ -119,8 +120,8 @@ export default function buildKernel(
   );
 
   const kernelSlog = writeSlogObject
-    ? makeSlogger(writeSlogObject)
-    : makeDummySlogger(makeConsole);
+    ? makeSlogger(slogCallbacks, writeSlogObject)
+    : makeDummySlogger(slogCallbacks, makeConsole);
 
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer, kernelSlog);
 
