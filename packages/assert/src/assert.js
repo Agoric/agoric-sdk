@@ -11,6 +11,9 @@
 // To the extent that this `console` is considered a resource,
 // this module must be considered a resource module.
 
+// The assertions re-exported here are defined in
+// https://github.com/endojs/endo/blob/master/packages/ses/src/error/assert.js
+
 import './types';
 
 const { freeze } = Object;
