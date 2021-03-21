@@ -88,7 +88,7 @@ parentPort.on('message', ([type, ...margs]) => {
     }
 
     function doSyscall(vatSyscallObject) {
-      sendUplink(['syscall', ...vatSyscallObject]);
+      sendUplink(['syscall', vatSyscallObject]);
     }
     const syscall = harden({
       send: (...args) => doSyscall(['send', ...args]),

@@ -98,7 +98,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
         dispatchIsReady();
       } else if (type === 'syscall') {
         parentLog(`syscall`, args);
-        const vatSyscallObject = args;
+        const [vatSyscallObject] = args;
         handleSyscall(vatSyscallObject);
       } else if (type === 'testLog') {
         testLog(...args);

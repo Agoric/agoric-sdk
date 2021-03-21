@@ -76,8 +76,11 @@ export function makeXsSubprocessFactory({
       switch (type) {
         case 'syscall': {
           parentLog(vatID, `syscall`, args[0], args.length);
-          const [scTag, ...vatSyscallArgs] = args;
-          return handleSyscall([scTag, ...vatSyscallArgs]);
+          assert(Array.isArray(args[0]));
+          const [scTag, ...vatSyscallArgs] = args[0];
+          /** @type { Tagged } */
+          const vatSyscallObject = [scTag, ...vatSyscallArgs];
+          return handleSyscall(vatSyscallObject);
         }
         case 'console': {
           const [level, tag, ...rest] = args;

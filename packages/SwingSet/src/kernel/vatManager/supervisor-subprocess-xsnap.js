@@ -199,10 +199,10 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
   ) {
-    /** @type { (item: Tagged) => unknown } */
+    /** @type { (vso: Tagged) => unknown } */
     function doSyscall(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
-      const result = port.call(['syscall', ...vatSyscallObject]);
+      const result = port.call(['syscall', vatSyscallObject]);
       workerLog(' ... syscall result:', result);
       return result;
     }
