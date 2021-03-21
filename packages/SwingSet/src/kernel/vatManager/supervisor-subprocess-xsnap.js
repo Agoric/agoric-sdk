@@ -277,7 +277,8 @@ function makeWorker(port) {
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
-        const [dtype, ...dargs] = args;
+        assert(Array.isArray(args[0]));
+        const [[dtype, ...dargs]] = args;
         switch (dtype) {
           case 'message':
             return doMessage(dargs[0], dargs[1]);

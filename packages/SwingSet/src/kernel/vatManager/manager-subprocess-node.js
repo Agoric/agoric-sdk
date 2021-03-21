@@ -128,12 +128,12 @@ export function makeNodeSubprocessFactory(tools) {
       enableDisavow,
     ]);
 
-    function deliver(delivery) {
-      parentLog(`sending delivery`, delivery);
+    function deliver(vatDeliveryObject) {
+      parentLog(`sending delivery`, vatDeliveryObject);
       assert(!waiting, X`already waiting for delivery`);
       const pr = makePromiseKit();
       waiting = pr.resolve;
-      sendToWorker(['deliver', ...delivery]);
+      sendToWorker(['deliver', vatDeliveryObject]);
       return pr.promise;
     }
 

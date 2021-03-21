@@ -152,11 +152,11 @@ export function makeXsSubprocessFactory({
       assert.fail(X`failed to setBundle: ${bundleReply}`);
     }
 
-    /** @type { (item: Tagged) => Promise<Tagged> } */
-    async function deliver(delivery) {
-      parentLog(vatID, `sending delivery`, delivery);
-      transcriptManager.startDispatch(delivery);
-      const result = await issueTagged(['deliver', ...delivery]);
+    /** @type { (delivery: VatDeliveryObject) => Promise<Tagged> } */
+    async function deliver(vatDeliveryObject) {
+      parentLog(vatID, `sending delivery`, vatDeliveryObject);
+      transcriptManager.startDispatch(vatDeliveryObject);
+      const result = await issueTagged(['deliver', vatDeliveryObject]);
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       transcriptManager.finishDispatch();
 

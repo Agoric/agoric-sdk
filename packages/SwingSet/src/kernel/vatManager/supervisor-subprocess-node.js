@@ -163,7 +163,7 @@ fromParent.on('data', ([type, ...margs]) => {
       workerLog(`error: deliver before dispatchReady`);
       return;
     }
-    const [dtype, ...dargs] = margs;
+    const [[dtype, ...dargs]] = margs;
     if (dtype === 'message') {
       doMessage(...dargs).then(res => sendUplink(['deliverDone', ...res]));
     } else if (dtype === 'notify') {
