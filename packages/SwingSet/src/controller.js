@@ -112,7 +112,6 @@ export async function makeSwingsetController(
     debugPrefix = '',
     slogCallbacks,
     slogFile,
-    testTrackDecref,
     snapstorePath,
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
@@ -275,7 +274,7 @@ export async function makeSwingsetController(
     FinalizationRegistry,
   };
 
-  const kernelOptions = { verbose, testTrackDecref };
+  const kernelOptions = { verbose };
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -368,13 +367,11 @@ export async function buildVatController(
     kernelBundles,
     debugPrefix,
     slogCallbacks,
-    testTrackDecref,
     snapstorePath,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
-    testTrackDecref,
     slogCallbacks,
     snapstorePath,
   };
