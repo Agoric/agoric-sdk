@@ -132,9 +132,13 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       parentLog(`sending delivery`, vatDeliveryObject);
       assert(!waiting, X`already waiting for delivery`);
       const pr = makePromiseKit();
+      transcriptManager.startDispatch(vatDeliveryObject);
       waiting = pr.resolve;
       sendToWorker(['deliver', vatDeliveryObject]);
-      return pr.promise;
+      return pr.promise.then(vatDeliveryResults => {
+        transcriptManager.finishDispatch();
+        return vatDeliveryResults;
+      });
     }
 
     async function replayTranscript() {
