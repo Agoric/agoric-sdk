@@ -10,6 +10,7 @@ import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
+import { insistMessage } from '../message';
 import { makeVirtualObjectManager } from './virtualObjectManager';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
@@ -792,14 +793,38 @@ function build(
     const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
     assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
 
-    const rootSlot = makeVatSlot('object', true, 0n);
+    const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     // we do not use droppedRegistry for exports
     exported.add(rootObject);
   }
 
-  const dispatch = harden({ deliver, notify, dropExports });
+  function dispatch(vatDeliveryObject) {
+    const [type, ...args] = vatDeliveryObject;
+    switch (type) {
+      case 'message': {
+        const [targetSlot, msg] = args;
+        insistMessage(msg);
+        deliver(targetSlot, msg.method, msg.args, msg.result);
+        break;
+      }
+      case 'notify': {
+        const [resolutions] = args;
+        notify(resolutions);
+        break;
+      }
+      case 'dropExports': {
+        const [vrefs] = args;
+        dropExports(vrefs);
+        break;
+      }
+      default:
+        assert.fail(X`unknown delivery type ${type}`);
+    }
+  }
+  harden(dispatch);
+
   // we return 'deadSet' for unit tests
   return harden({ vatGlobals, setBuildRootObject, dispatch, m, deadSet });
 }

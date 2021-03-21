@@ -1,5 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { makeVatSlot, insistVatType, parseVatSlot } from '../../parseVatSlots';
+import { insistMessage } from '../../message';
 import { getRemote } from './remote';
 import { makeState, makeStateKit } from './state';
 import { deliverToController } from './controller';
@@ -121,7 +122,31 @@ export function buildCommsDispatch(
     console.log(`-- comms ignoring dropExports`);
   }
 
-  const dispatch = harden({ deliver, notify, dropExports });
+  function dispatch(vatDeliveryObject) {
+    const [type, ...args] = vatDeliveryObject;
+    switch (type) {
+      case 'message': {
+        const [targetSlot, msg] = args;
+        insistMessage(msg);
+        deliver(targetSlot, msg.method, msg.args, msg.result);
+        return;
+      }
+      case 'notify': {
+        const [resolutions] = args;
+        notify(resolutions);
+        return;
+      }
+      case 'dropExports': {
+        const [vrefs] = args;
+        dropExports(vrefs);
+        return;
+      }
+      default:
+        assert.fail(X`unknown delivery type ${type}`);
+    }
+  }
+  harden(dispatch);
+
   debugState.set(dispatch, { state, clistKit });
 
   return dispatch;

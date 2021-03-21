@@ -32,9 +32,10 @@ export function makeLocalVatManagerFactory(tools) {
     const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
     const { syscall, setVatSyscallHandler } = createSyscall(transcriptManager);
     function finish(dispatch, meterRecord) {
-      assert(
-        dispatch && dispatch.deliver,
-        `vat failed to return a 'dispatch' with .deliver: ${dispatch}`,
+      assert.equal(
+        typeof dispatch,
+        'function',
+        `vat failed to return a 'dispatch' function: ${dispatch}`,
       );
       const { deliver, replayTranscript } = makeDeliver(
         {

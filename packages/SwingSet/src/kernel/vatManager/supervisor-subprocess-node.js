@@ -15,6 +15,7 @@ import {
 } from '../../netstring';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
+import { summarizeDelivery } from './deliver';
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
@@ -41,32 +42,13 @@ function runAndWait(f, errmsg) {
 
 let dispatch;
 
-async function doProcess(dispatchRecord, errmsg) {
-  const dispatchOp = dispatchRecord[0];
-  const dispatchArgs = dispatchRecord.slice(1);
+async function deliver(vatDeliveryObject) {
   workerLog(`runAndWait`);
-  await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
+  const errmsg = summarizeDelivery(vatDeliveryObject);
+  await runAndWait(() => dispatch(vatDeliveryObject), errmsg);
   workerLog(`doProcess done`);
   const vatDeliveryResults = harden(['ok']);
   return vatDeliveryResults;
-}
-
-function doMessage(targetSlot, msg) {
-  const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
-  return doProcess(
-    ['deliver', targetSlot, msg.method, msg.args, msg.result],
-    errmsg,
-  );
-}
-
-function doNotify(resolutions) {
-  const errmsg = `vat.notify failed`;
-  return doProcess(['notify', resolutions], errmsg);
-}
-
-function doDropExports(vrefs) {
-  const errmsg = `vat.doDropExport failed`;
-  return doProcess(['dropExports', vrefs], errmsg);
 }
 
 const toParent = arrayEncoderStream();
@@ -163,22 +145,10 @@ fromParent.on('data', ([type, ...margs]) => {
       workerLog(`error: deliver before dispatchReady`);
       return;
     }
-    const [[dtype, ...dargs]] = margs;
-    if (dtype === 'message') {
-      doMessage(...dargs).then(vatDeliveryResults =>
-        sendUplink(['deliverDone', vatDeliveryResults]),
-      );
-    } else if (dtype === 'notify') {
-      doNotify(...dargs).then(vatDeliveryResults =>
-        sendUplink(['deliverDone', vatDeliveryResults]),
-      );
-    } else if (dtype === 'dropExports') {
-      doDropExports(...dargs).then(vatDeliveryResults =>
-        sendUplink(['deliverDone', vatDeliveryResults]),
-      );
-    } else {
-      assert.fail(X`bad delivery type ${dtype}`);
-    }
+    const [vatDeliveryObject] = margs;
+    deliver(vatDeliveryObject).then(vatDeliveryResults =>
+      sendUplink(['deliverDone', vatDeliveryResults]),
+    );
   } else {
     workerLog(`unrecognized downlink message ${type}`);
   }

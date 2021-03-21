@@ -1,3 +1,5 @@
+import { assert } from '@agoric/assert';
+
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');
   b = b.join(' ');
@@ -36,22 +38,33 @@ export function dumpKT(kernel) {
 export function buildDispatch(onDispatchCallback = undefined) {
   const log = [];
 
-  const dispatch = {
-    deliver(targetSlot, method, args, resultSlot) {
-      const d = { type: 'deliver', targetSlot, method, args, resultSlot };
+  function dispatch(vatDeliverObject) {
+    const [type, ...vdoargs] = vatDeliverObject;
+    if (type === 'message') {
+      const [target, msg] = vdoargs;
+      const { method, args, result } = msg;
+      const d = {
+        type: 'deliver',
+        targetSlot: target,
+        method,
+        args,
+        resultSlot: result,
+      };
       log.push(d);
       if (onDispatchCallback) {
         onDispatchCallback(d);
       }
-    },
-    notify(resolutions) {
+    } else if (type === 'notify') {
+      const [resolutions] = vdoargs;
       const d = { type: 'notify', resolutions };
       log.push(d);
       if (onDispatchCallback) {
         onDispatchCallback(d);
       }
-    },
-  };
+    } else {
+      throw Error(`unknown vatDeliverObject type ${type}`);
+    }
+  }
 
   return { log, dispatch };
 }
@@ -61,4 +74,56 @@ export function ignore(p) {
     () => 0,
     () => 0,
   );
+}
+
+export function extractMessage(vatDeliverObject) {
+  const [type, ...vdoargs] = vatDeliverObject;
+  assert.equal(type, 'message');
+  const [facetID, msg] = vdoargs;
+  const { method, args, result } = msg;
+  return { facetID, method, args, result };
+}
+
+function capdata(body, slots = []) {
+  return harden({ body, slots });
+}
+
+export function capargs(args, slots = []) {
+  return capdata(JSON.stringify(args), slots);
+}
+
+export function capdataOneSlot(slot) {
+  return capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [
+    slot,
+  ]);
+}
+
+export function capargsOneSlot(slot) {
+  return capargs(
+    [{ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }],
+    [slot],
+  );
+}
+
+export function makeMessage(target, method, args, result = undefined) {
+  const msg = { method, args, result };
+  const vatDeliverObject = harden(['message', target, msg]);
+  return vatDeliverObject;
+}
+
+export function makeResolve(target, result) {
+  const resolutions = [[target, false, result]];
+  const vatDeliverObject = harden(['notify', resolutions]);
+  return vatDeliverObject;
+}
+
+export function makeReject(target, result) {
+  const resolutions = [[target, true, result]];
+  const vatDeliverObject = harden(['notify', resolutions]);
+  return vatDeliverObject;
+}
+
+export function makeDropExports(...vrefs) {
+  const vatDeliverObject = harden(['dropExports', vrefs]);
+  return vatDeliverObject;
 }

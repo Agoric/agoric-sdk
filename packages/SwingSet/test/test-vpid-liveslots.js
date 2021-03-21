@@ -1,6 +1,3 @@
-// eslint-disable-next-line no-redeclare
-/* global setImmediate */
-
 import '@agoric/install-ses';
 import test from 'ava';
 
@@ -8,42 +5,9 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
-import { makeLiveSlots } from '../src/kernel/liveSlots';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
-
-function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, rejected, data]];
-}
-
-function buildSyscall() {
-  const log = [];
-
-  const syscall = {
-    send(targetSlot, method, args, resultSlot) {
-      log.push({ type: 'send', targetSlot, method, args, resultSlot });
-    },
-    subscribe(target) {
-      log.push({ type: 'subscribe', target });
-    },
-    resolve(resolutions) {
-      log.push({ type: 'resolve', resolutions });
-    },
-  };
-
-  return { log, syscall };
-}
-
-function endOfCrank() {
-  return new Promise(resolve => setImmediate(() => resolve()));
-}
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
+import { buildSyscall, makeDispatch } from './liveslots-helpers';
+import { makeMessage, makeResolve, makeReject, capargs } from './util';
 
 function hush(p) {
   p.then(
@@ -188,22 +152,6 @@ function resolutionOf(vpid, mode, targets) {
   return resolution;
 }
 
-function makeDispatch(syscall, build, vatID = 'vatA') {
-  function vatDecref() {}
-  const gcTools = harden({ WeakRef, FinalizationRegistry, vatDecref });
-  const { setBuildRootObject, dispatch } = makeLiveSlots(
-    syscall,
-    vatID,
-    {},
-    {},
-    undefined,
-    false,
-    gcTools,
-  );
-  setBuildRootObject(build);
-  return dispatch;
-}
-
 async function doVatResolveCase1(t, mode) {
   // case 1
   const { log, syscall } = buildSyscall();
@@ -234,12 +182,14 @@ async function doVatResolveCase1(t, mode) {
   const expectedP3 = 'p+7';
   const expectedP4 = 'p+8';
 
-  dispatch.deliver(
-    rootA,
-    'run',
-    capargs([slot0arg, slot1arg], [target1, target2]),
+  dispatch(
+    makeMessage(
+      rootA,
+      'run',
+      capargs([slot0arg, slot1arg], [target1, target2]),
+    ),
   );
-  await endOfCrank();
+  await waitUntilQuiescent();
 
   // The vat should send 'one' and subscribe to the result promise
   t.deepEqual(log.shift(), {
@@ -390,24 +340,26 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   const target2 = 'o-2';
 
   if (which === 2) {
-    dispatch.deliver(rootA, 'result', capargs([], []), p1);
-    dispatch.deliver(rootA, 'promise', capargs([slot0arg], [p1]));
+    dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
+    dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
   } else if (which === 3) {
-    dispatch.deliver(rootA, 'promise', capargs([slot0arg], [p1]));
-    dispatch.deliver(rootA, 'result', capargs([], []), p1);
+    dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
+    dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
   } else {
     assert.fail(X`bad which=${which}`);
   }
-  await endOfCrank();
+  await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log, []);
 
-  dispatch.deliver(
-    rootA,
-    'run',
-    capargs([slot0arg, slot1arg], [target1, target2]),
+  dispatch(
+    makeMessage(
+      rootA,
+      'run',
+      capargs([slot0arg, slot1arg], [target1, target2]),
+    ),
   );
-  await endOfCrank();
+  await waitUntilQuiescent();
 
   // At the end of the turn in which run() is executed, the promise queue
   // will contain deliveries one() and two() (specifically invocations of the
@@ -464,8 +416,8 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // `syscall.resolve(vpid1, stuff)` into the kernel, notifying any remote
   // subscribers that p1 has been resolved. Since the vat is also a subscriber,
   // thenResolve's callback must also invoke p1's resolver (which was stashed in
-  // importedPromisesByPromiseID), as if the kernel had call the vat's
-  // dispatch.notify. This causes the p1.then callback to be pushed to the back
+  // importedPromisesByPromiseID), as if the kernel had called the vat's
+  // dispatch(notify). This causes the p1.then callback to be pushed to the back
   // of the promise queue, which will set resolutionOfP1 after all the syscalls
   // have been made.
 
@@ -607,13 +559,13 @@ async function doVatResolveCase4(t, mode) {
   }
   const target2 = 'o-2';
 
-  dispatch.deliver(rootA, 'get', capargs([slot0arg], [p1]));
-  await endOfCrank();
+  dispatch(makeMessage(rootA, 'get', capargs([slot0arg], [p1])));
+  await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log, []);
 
-  dispatch.deliver(rootA, 'first', capargs([slot0arg], [target1]));
-  await endOfCrank();
+  dispatch(makeMessage(rootA, 'first', capargs([slot0arg], [target1])));
+  await waitUntilQuiescent();
 
   const expectedP2 = nextP();
   t.deepEqual(log.shift(), {
@@ -636,26 +588,28 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
   t.deepEqual(log, []);
 
+  let r;
   if (mode === 'presence') {
-    dispatch.notify(oneResolution(p1, false, capargs(slot0arg, [target2])));
+    r = makeResolve(p1, capargs(slot0arg, [target2]));
   } else if (mode === 'local-object') {
-    dispatch.notify(oneResolution(p1, false, capargs(slot0arg, [rootA])));
+    r = makeResolve(p1, capargs(slot0arg, [rootA]));
   } else if (mode === 'data') {
-    dispatch.notify(oneResolution(p1, false, capargs(4, [])));
+    r = makeResolve(p1, capargs(4, []));
   } else if (mode === 'promise-data') {
-    dispatch.notify(oneResolution(p1, false, capargs([slot0arg], [p1])));
+    r = makeResolve(p1, capargs([slot0arg], [p1]));
   } else if (mode === 'reject') {
-    dispatch.notify(oneResolution(p1, true, capargs('error', [])));
+    r = makeReject(p1, capargs('error', []));
   } else if (mode === 'promise-reject') {
-    dispatch.notify(oneResolution(p1, true, capargs([slot0arg], [p1])));
+    r = makeReject(p1, capargs([slot0arg], [p1]));
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }
-  await endOfCrank();
+  dispatch(r);
+  await waitUntilQuiescent();
   t.deepEqual(log, []);
 
-  dispatch.deliver(rootA, 'second', capargs([slot0arg], [target1]));
-  await endOfCrank();
+  dispatch(makeMessage(rootA, 'second', capargs([slot0arg], [target1])));
+  await waitUntilQuiescent();
 
   const expectedP4 = nextP();
   const expectedP5 = nextP();
@@ -734,16 +688,16 @@ test('inter-vat circular promise references', async t => {
   // const pbB = 'p-18';
   // const paB = 'p-19';
 
-  dispatchA.deliver(rootA, 'genPromise', capargs([], []), paA);
-  await endOfCrank();
+  dispatchA(makeMessage(rootA, 'genPromise', capargs([], []), paA));
+  await waitUntilQuiescent();
   t.deepEqual(log, []);
 
-  // dispatchB.deliver(rootB, 'genPromise', capargs([], []), pbB);
-  // await endOfCrank();
+  // dispatchB(makeMessage(rootB, 'genPromise', capargs([], []), pbB));
+  // await waitUntilQuiescent();
   // t.deepEqual(log, []);
 
-  dispatchA.deliver(rootA, 'usePromise', capargs([[slot0arg]], [pbA]));
-  await endOfCrank();
+  dispatchA(makeMessage(rootA, 'usePromise', capargs([[slot0arg]], [pbA])));
+  await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
   t.deepEqual(log.shift(), {
     type: 'resolve',
@@ -751,8 +705,8 @@ test('inter-vat circular promise references', async t => {
   });
   t.deepEqual(log, []);
 
-  // dispatchB.deliver(rootB, 'usePromise', capargs([[slot0arg]], [paB]));
-  // await endOfCrank();
+  // dispatchB(makeMessage(rootB, 'usePromise', capargs([[slot0arg]], [paB])));
+  // await waitUntilQuiescent();
   // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
   // t.deepEqual(log.shift(), {
   //   type: 'resolve',

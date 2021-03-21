@@ -5,8 +5,10 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
+import { insistVatDeliveryObject } from '../../message';
 
 import { makeLiveSlots } from '../liveSlots';
+import { summarizeDelivery } from './deliver';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -119,42 +121,20 @@ function runAndWait(f, errmsg) {
  * @param { ReturnType<typeof managerPort> } port
  */
 function makeWorker(port) {
-  /** @type { Record<string, (...args: unknown[]) => void> | null } */
+  /** @type { ((delivery: VatDeliveryObject) => void) | null } */
   let dispatch = null;
 
-  /** @type { (dr: Tagged, errmsg: string) => Promise<Tagged> } */
-  async function doProcess(dispatchRecord, errmsg) {
+  /** @type { (delivery: VatDeliveryObject) => Promise<Tagged> } */
+  async function deliver(delivery) {
     assert(dispatch);
     const theDispatch = dispatch;
-    const [dispatchOp, ...dispatchArgs] = dispatchRecord;
-    assert(typeof dispatchOp === 'string');
     workerLog(`runAndWait`);
-    await runAndWait(() => theDispatch[dispatchOp](...dispatchArgs), errmsg);
+    const errmsg = summarizeDelivery(delivery);
+    await runAndWait(() => theDispatch(delivery), errmsg);
     workerLog(`doProcess done`);
     /** @type { Tagged } */
     const vatDeliveryResults = harden(['ok']);
     return vatDeliveryResults;
-  }
-
-  /** @type { (ts: unknown, msg: any) => Promise<Tagged> } */
-  function doMessage(targetSlot, msg) {
-    const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
-    return doProcess(
-      ['deliver', targetSlot, msg.method, msg.args, msg.result],
-      errmsg,
-    );
-  }
-
-  /** @type { (rs: unknown) => Promise<Tagged> } */
-  function doNotify(resolutions) {
-    const errmsg = `vat.notify failed`;
-    return doProcess(['notify', resolutions], errmsg);
-  }
-
-  /** @type { (rs: unknown) => Promise<Tagged> } */
-  function doDropExports(vrefs) {
-    const errmsg = `vat.dropExports failed`;
-    return doProcess(['dropExports', vrefs], errmsg);
   }
 
   /**
@@ -277,18 +257,9 @@ function makeWorker(port) {
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
-        assert(Array.isArray(args[0]));
-        const [[dtype, ...dargs]] = args;
-        switch (dtype) {
-          case 'message':
-            return doMessage(dargs[0], dargs[1]);
-          case 'notify':
-            return doNotify(dargs[0]);
-          case 'dropExports':
-            return doDropExports(dargs[0]);
-          default:
-            assert.fail(X`bad delivery type ${dtype}`);
-        }
+        const [vatDeliveryObject] = args;
+        insistVatDeliveryObject(vatDeliveryObject);
+        return deliver(vatDeliveryObject);
       }
       default:
         workerLog('handleItem: bad tag', tag, args.length);

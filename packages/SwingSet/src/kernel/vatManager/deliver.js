@@ -1,5 +1,14 @@
-import { assert, details as X } from '@agoric/assert';
-import { insistMessage } from '../../message';
+/** @type { (delivery: VatDeliveryObject, prefix: string) => string } */
+function summarizeDelivery(vatDeliveryObject, prefix = 'vat') {
+  const [type, ...args] = vatDeliveryObject;
+  if (type === 'message') {
+    const [targetSlot, msg] = args[0];
+    return `${prefix}[${targetSlot}].${msg.method} dispatch failed`;
+  }
+  return `${prefix}.${type} failed`;
+}
+harden(summarizeDelivery);
+export { summarizeDelivery };
 
 export function makeDeliver(tools, dispatch) {
   const {
@@ -44,11 +53,25 @@ export function makeDeliver(tools, dispatch) {
     // TODO: accumulate used.allocate and used.compute into vatStats
   }
 
-  async function doProcess(dispatchRecord, errmsg) {
-    const dispatchOp = dispatchRecord[0];
-    const dispatchArgs = dispatchRecord.slice(1);
-    transcriptManager.startDispatch(dispatchRecord);
-    await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
+  // vatDeliveryObject is one of:
+  //  ['message', target, msg]
+  //   target is vref
+  //   msg is: { method, args (capdata), result }
+  //  ['notify', resolutions]
+  //   resolutions is an array of triplets: [vpid, rejected, value]
+  //    vpid is the id of the primary promise being resolved
+  //    rejected is a boolean flag indicating if vpid is being fulfilled or rejected
+  //    value is capdata describing the value the promise is being resolved to
+  //   The first entry in the resolutions array is the primary promise being
+  //     resolved, while the remainder (if any) are collateral promises it
+  //     references whose resolution was newly discovered at the time the
+  //     notification delivery was being generated
+  //   ['dropExports', vrefs]
+
+  async function deliver(vatDeliveryObject) {
+    const errmsg = summarizeDelivery(vatDeliveryObject, `vat[${vatID}]`);
+    transcriptManager.startDispatch(vatDeliveryObject);
+    await runAndWait(() => dispatch(vatDeliveryObject), errmsg);
     stopGlobalMeter();
 
     let status = ['ok', null, null];
@@ -75,59 +98,13 @@ export function makeDeliver(tools, dispatch) {
     return status;
   }
 
-  async function deliverOneMessage(targetSlot, msg) {
-    insistMessage(msg);
-    const errmsg = `vat[${vatID}][${targetSlot}].${msg.method} dispatch failed`;
-    return doProcess(
-      ['deliver', targetSlot, msg.method, msg.args, msg.result],
-      errmsg,
-    );
-  }
-
-  async function deliverOneNotification(resolutions) {
-    const errmsg = `vat[${vatID}].notify failed`;
-    return doProcess(['notify', resolutions], errmsg);
-  }
-
-  async function deliverOneDropExports(vrefs) {
-    const errmsg = `vat[${vatID}].dropExports failed`;
-    return doProcess(['dropExports', vrefs], errmsg);
-  }
-
-  // vatDeliverObject is:
-  //  ['message', target, msg]
-  //   target is vid
-  //   msg is: { method, args (capdata), result }
-  //  ['notify', resolutions]
-  //   resolutions is an array of triplets: [vpid, rejected, value]
-  //    vpid is the id of the primary promise being resolved
-  //    rejected is a boolean flag indicating if vpid is being fulfilled or rejected
-  //    value is capdata describing the value the promise is being resolved to
-  //   The first entry in the resolutions array is the primary promise being
-  //     resolved, while the remainder (if any) are collateral promises it
-  //     references whose resolution was newly discovered at the time the
-  //     notification delivery was being generated
-  async function deliver(vatDeliverObject) {
-    const [type, ...args] = vatDeliverObject;
-    switch (type) {
-      case 'message':
-        return deliverOneMessage(...args);
-      case 'notify':
-        return deliverOneNotification(...args);
-      case 'dropExports':
-        return deliverOneDropExports(...args);
-      default:
-        assert.fail(X`unknown delivery type ${type}`);
-    }
-  }
-
   async function replayTranscript() {
     transcriptManager.startReplay();
     for (const t of vatKeeper.getTranscript()) {
       transcriptManager.checkReplayError();
       transcriptManager.startReplayDelivery(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
-      await doProcess(t.d, null);
+      await deliver(t.d);
     }
     transcriptManager.checkReplayError();
     transcriptManager.finishReplay();
