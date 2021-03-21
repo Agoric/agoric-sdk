@@ -56,6 +56,7 @@ export async function makeSwingsetController(
   const {
     verbose,
     debugPrefix = '',
+    slogCallbacks,
     slogFile,
     testTrackDecref,
     defaultManagerType = env.WORKER_TYPE || 'local',
@@ -223,6 +224,7 @@ export async function makeSwingsetController(
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,
+    slogCallbacks,
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
@@ -320,6 +322,7 @@ export async function buildVatController(
     verbose,
     kernelBundles,
     debugPrefix,
+    slogCallbacks,
     testTrackDecref,
     defaultManagerType,
   } = runtimeOptions;
@@ -327,6 +330,7 @@ export async function buildVatController(
     verbose,
     debugPrefix,
     testTrackDecref,
+    slogCallbacks,
     defaultManagerType,
   };
   const initializationOptions = { verbose, kernelBundles };

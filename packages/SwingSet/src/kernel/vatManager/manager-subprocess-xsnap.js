@@ -169,7 +169,15 @@ export function makeXsSubprocessFactory({
       const result = await issueTagged(['deliver', ...delivery]);
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       transcriptManager.finishDispatch();
-      return result.reply;
+
+      // Attach the meterUsage to the deliver result.
+      /** @type {Tagged} */
+      const deliverResult = [
+        result.reply[0], // 'ok' or 'error'
+        result.reply[1] || null, // problem or null
+        result.meterUsage || null, // meter usage statistics or null
+      ];
+      return harden(deliverResult);
     }
 
     async function replayTranscript() {

@@ -1,8 +1,6 @@
 import path from 'path';
 import anylogger from 'anylogger';
 
-import { MeterProvider } from '@opentelemetry/metrics';
-
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -16,9 +14,13 @@ import {
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { getBestSwingStore } from './check-lmdb';
-import { exportKernelStats } from './kernel-stats';
+import {
+  DEFAULT_METER_PROVIDER,
+  exportKernelStats,
+  makeSlogCallbacks,
+} from './kernel-stats';
 
-const log = anylogger('launch-chain');
+const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
@@ -26,28 +28,13 @@ const SWING_STORE_META_KEY = 'cosmos/meta';
 // TODO Make it dependent upon metering instead.
 const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
 
-export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = [
-  0.005,
-  0.01,
-  0.025,
-  0.05,
-  0.1,
-  0.25,
-  0.5,
-  1,
-  2.5,
-  5,
-  10,
-  Infinity,
-];
-
 async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
   storage,
   vatsDir,
   argv,
-  debugName = undefined,
+  { debugName = undefined, slogCallbacks },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = loadSwingsetConfigFile(`${vatsDir}/chain-config.json`);
@@ -78,7 +65,9 @@ async function buildSwingset(
   if (!swingsetIsInitialized(storage)) {
     await initializeSwingset(config, argv, storage, { debugPrefix });
   }
-  const controller = await makeSwingsetController(storage, deviceEndowments);
+  const controller = await makeSwingsetController(storage, deviceEndowments, {
+    slogCallbacks,
+  });
 
   // We DON'T want to run the kernel yet, only when we're in the scheduler at
   // endBlock!
@@ -94,9 +83,9 @@ export async function launch(
   vatsDir,
   argv,
   debugName = undefined,
-  meterProvider = new MeterProvider(),
+  meterProvider = DEFAULT_METER_PROVIDER,
 ) {
-  log.info('Launching SwingSet kernel');
+  console.info('Launching SwingSet kernel');
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
@@ -106,35 +95,38 @@ export async function launch(
     // console.error('would outbound bridge', dstID, obj);
     return doOutboundBridge(dstID, obj);
   }
-  log.debug(`buildSwingset`);
+
+  // Not to be confused with the gas model, this meter is for OpenTelemetry.
+  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
+  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
+
+  const slogCallbacks = makeSlogCallbacks({
+    metricMeter,
+    labels: METRIC_LABELS,
+  });
+
+  console.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
     bridgeOutbound,
     storage,
     vatsDir,
     argv,
-    debugName,
+    {
+      debugName,
+      slogCallbacks,
+    },
   );
 
-  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
-
-  // Not to be confused with the gas model, this meter is for OpenTelemetry.
-  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
-  exportKernelStats({ controller, metricMeter, log, labels: METRIC_LABELS });
-
-  const schedulerCrankTimeHistogram = metricMeter
-    .createValueRecorder('swingset_crank_processing_time', {
-      description: 'Processing time per crank (ms)',
-      boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
-    })
-    .bind(METRIC_LABELS);
-
-  const schedulerBlockTimeHistogram = metricMeter
-    .createValueRecorder('swingset_block_processing_seconds', {
-      description: 'Processing time per block',
-      boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
-    })
-    .bind(METRIC_LABELS);
+  const {
+    schedulerCrankTimeHistogram,
+    schedulerBlockTimeHistogram,
+  } = exportKernelStats({
+    controller,
+    metricMeter,
+    log: console,
+    labels: METRIC_LABELS,
+  });
 
   // ////////////////////////////
   // TODO: This is where we would add the scheduler.
@@ -172,7 +164,7 @@ export async function launch(
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
     }
-    log.debug(`mboxDeliver:   ADDED messages`);
+    console.debug(`mboxDeliver:   ADDED messages`);
   }
 
   async function doBridgeInbound(source, body) {
@@ -184,7 +176,7 @@ export async function launch(
 
   async function beginBlock(blockHeight, blockTime) {
     const addedToQueue = timer.poll(blockTime);
-    log.debug(
+    console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,
     );

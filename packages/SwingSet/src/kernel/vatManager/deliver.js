@@ -51,16 +51,18 @@ export function makeDeliver(tools, dispatch) {
     await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
     stopGlobalMeter();
 
-    let status = ['ok'];
+    let status = ['ok', null, null];
     // refill this vat's meter, if any, accumulating its usage for stats
     if (meterRecord) {
       // note that refill() won't actually refill an exhausted meter
-      const used = meterRecord.refill();
+      const meterUsage = meterRecord.refill();
       const exhaustionError = meterRecord.isExhausted();
       if (exhaustionError) {
-        status = ['error', exhaustionError.message];
+        status = ['error', exhaustionError.message, meterUsage];
       } else {
-        updateStats(used);
+        // We will have ['ok', null, meterUsage]
+        status[2] = meterUsage;
+        updateStats(status[2]);
       }
     }
 

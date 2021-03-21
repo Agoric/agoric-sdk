@@ -1,10 +1,151 @@
 import { MeterProvider } from '@opentelemetry/metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
+import makeStore from '@agoric/store';
+
 import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics';
+
+export const DEFAULT_METER_PROVIDER = new MeterProvider();
+
+export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = [
+  0.005,
+  0.01,
+  0.025,
+  0.05,
+  0.1,
+  0.25,
+  0.5,
+  1,
+  2.5,
+  5,
+  10,
+  Infinity,
+];
+
+const wrapDeltaMS = (finisher, useDeltaMS) => {
+  const startMS = Date.now();
+  return (...finishArgs) => {
+    try {
+      return finisher(...finishArgs);
+    } finally {
+      const deltaMS = Date.now() - startMS;
+      useDeltaMS(deltaMS, finishArgs);
+    }
+  };
+};
+
+const recordToKey = record =>
+  JSON.stringify(
+    Object.entries(record).sort(([ka], [kb]) => (ka < kb ? -1 : 1)),
+  );
+
+export function makeSlogCallbacks({ metricMeter, labels }) {
+  const nameToBaseMetric = makeStore('baseMetricName');
+  nameToBaseMetric.init(
+    'swingset_vat_startup',
+    metricMeter.createValueRecorder('swingset_vat_startup', {
+      description: 'Vat startup time (ms)',
+    }),
+  );
+  nameToBaseMetric.init(
+    'swingset_vat_delivery',
+    metricMeter.createValueRecorder('swingset_vat_delivery', {
+      description: 'Vat delivery time (ms)',
+    }),
+  );
+  nameToBaseMetric.init(
+    'swingset_meter_usage',
+    metricMeter.createValueRecorder('swingset_meter_usage', {
+      description: 'Vat meter usage',
+    }),
+  );
+  const groupToMetrics = makeStore('metricGroup');
+
+  /**
+   * This function reuses or creates per-group named metrics.
+   *
+   * @param {string} name name of the base metric
+   * @param {Record<string, string>} [group] the labels to associate with a group
+   * @param {Record<string, string>} [instance] the specific metric labels
+   * @returns {any} the labelled metric
+   */
+  const getGroupedMetric = (name, group = {}, instance = {}) => {
+    let nameToMetric;
+    const groupKey = recordToKey(group);
+    const instanceKey = recordToKey(instance);
+    if (groupToMetrics.has(groupKey)) {
+      let oldInstanceKey;
+      [nameToMetric, oldInstanceKey] = groupToMetrics.get(groupKey);
+      if (instanceKey !== oldInstanceKey) {
+        for (const metric of nameToMetric.values()) {
+          // FIXME: Delete all the metrics of the old instance.
+          metric;
+        }
+        // Refresh the metric group.
+        nameToMetric = makeStore('metricName');
+        groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
+      }
+    } else {
+      nameToMetric = makeStore('metricName');
+      groupToMetrics.init(groupKey, [nameToMetric, instanceKey]);
+    }
+
+    let metric;
+    if (nameToMetric.has(name)) {
+      metric = nameToMetric.get(name);
+    } else {
+      // Bind the base metric to the group and instance labels.
+      metric = nameToBaseMetric
+        .get(name)
+        .bind({ ...labels, ...group, ...instance });
+      nameToMetric.init(name, metric);
+    }
+    return metric;
+  };
+
+  /**
+   * Measure some interesting stats.  We currently do a per-vat recording of
+   * time spent in the vat for startup and delivery.
+   */
+  const slogCallbacks = {
+    startup(_method, [vatID], finisher) {
+      return wrapDeltaMS(finisher, deltaMS => {
+        getGroupedMetric('swingset_vat_startup', { vatID }).record(deltaMS);
+      });
+    },
+    delivery(_method, [vatID], finisher) {
+      return wrapDeltaMS(
+        finisher,
+        (deltaMS, [[_status, _problem, meterUsage]]) => {
+          getGroupedMetric('swingset_vat_delivery', { vatID }).record(deltaMS);
+          if (meterUsage) {
+            // Add to aggregated metering stats.
+            const group = { vatID };
+            for (const [key, value] of Object.entries(meterUsage)) {
+              if (key === 'meterType') {
+                // eslint-disable-next-line no-continue
+                continue;
+              }
+              getGroupedMetric(`swingset_meter_usage`, group, {
+                // The meterType is an instance-specific label--a change in it
+                // will result in the old value being discarded.
+                ...(meterUsage.meterType && {
+                  meterType: meterUsage.meterType,
+                }),
+                stat: key,
+              }).record(value || 0);
+            }
+          }
+        },
+      );
+    },
+  };
+
+  return harden(slogCallbacks);
+}
 
 /**
  * @param {Object} param0
@@ -69,6 +210,22 @@ export function exportKernelStats({
     });
     batchObserverResult.observe(labels, observations);
   });
+
+  const schedulerCrankTimeHistogram = metricMeter
+    .createValueRecorder('swingset_crank_processing_time', {
+      description: 'Processing time per crank (ms)',
+      boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
+    })
+    .bind(labels);
+
+  const schedulerBlockTimeHistogram = metricMeter
+    .createValueRecorder('swingset_block_processing_seconds', {
+      description: 'Processing time per block',
+      boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
+    })
+    .bind(labels);
+
+  return { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram };
 }
 
 /**

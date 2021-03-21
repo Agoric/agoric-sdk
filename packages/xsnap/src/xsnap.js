@@ -18,10 +18,6 @@ import * as node from './node-stream';
 // This will need adjustment, but seems to be fine for a start.
 const DEFAULT_CRANK_METERING_LIMIT = 1e7;
 
-// The version identifier for our meter type.
-// TODO Bump this whenever there's a change to metering semantics.
-const METER_TYPE = 'xs-meter-1';
-
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
@@ -126,7 +122,7 @@ export function xsnap(options) {
    * @template T
    * @typedef {Object} RunResult
    * @property {T} reply
-   * @property {{ meterType: string, allocate: number|null, compute: number|null }} crankStats
+   * @property {{ meterType: string, allocate: number|null, compute: number|null }} meterUsage
    */
 
   /**
@@ -154,15 +150,17 @@ export function xsnap(options) {
           // For now it is just a number for the used compute meter.
           compute = JSON.parse(decoder.decode(meterData));
         }
-        const crankStats = {
-          meterType: METER_TYPE,
+        const meterUsage = {
+          // The version identifier for our meter type.
+          // TODO Bump this whenever there's a change to metering semantics.
+          meterType: 'xs-meter-1',
           allocate: null, // No allocation meter yet.
           compute,
         };
-        // console.log('have crankStats', crankStats);
+        // console.log('have meterUsage', meterUsage);
         return {
           reply: message.subarray(meterSeparator < 0 ? 1 : meterSeparator + 1),
-          crankStats,
+          meterUsage,
         };
       } else if (message[0] === ERROR) {
         throw new Error(

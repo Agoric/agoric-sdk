@@ -83,6 +83,11 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
     name: 'swingset_clist_entries',
     description: 'Number of entries in the kernel c-list',
   },
+  {
+    key: 'vats',
+    name: 'swingset_vats',
+    description: 'Number of active vats',
+  },
 ];
 
 export const KERNEL_STATS_METRICS = [

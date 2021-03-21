@@ -457,6 +457,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
           break;
         }
       }
+      decStat('vats');
     }
 
     return kernelPromisesToReject;
@@ -543,6 +544,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
 
   function allocateUnusedVatID() {
     const nextID = Nat(BigInt(getRequired(`vat.nextID`)));
+    incStat('vats');
     storage.set(`vat.nextID`, `${nextID + 1n}`);
     return makeVatID(nextID);
   }
