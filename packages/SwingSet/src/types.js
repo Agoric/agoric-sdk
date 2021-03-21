@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @typedef {CapData<string>} CapDataS
+ * @typedef {CapData<string>} SwingSetCapData
  */
 
 /**
@@ -52,4 +52,40 @@
  *   exitVat: unknown,
  *   exitVatWithFailure: unknown,
  * }} TerminationVatPowers
+ */
+
+/*
+ * `['message', targetSlot, msg]`
+ * msg is `{ method, args, result }`
+ * `['notify', resolutions]`
+ * `['dropExports', vrefs]`
+ */
+
+/**
+ * @typedef {{
+ * method: string,
+ * args: SwingSetCapData,
+ * result?: string,
+ * }} Message
+ *
+ * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
+ * @typedef { [tag: 'notify', resolutions: string[] ]} VatDeliveryNotify
+ * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
+ * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports } VatDeliveryObject
+ *
+ * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
+ * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
+ * @typedef { [tag: 'subscribe', vpid: string ]} VatSyscallSubscribe
+ * @typedef { [ vpid: string, rejected: boolean, data: SwingSetCapData ]} Resolutions
+ * @typedef { [tag: 'resolve', resolutions: Resolutions ]} VatSyscallResolve
+ * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
+ * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
+ * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
+ * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
+ *
+ * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
+ *    | VatSyscallResolve | VatSyscallVatstoreGet | VatSyscallVatstoreSet
+ *    | VatSyscallVatstoreDelete | VatSyscallDropImports
+ * } VatSyscallObject
+ *
  */

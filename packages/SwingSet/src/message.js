@@ -7,12 +7,12 @@ import { insistCapData } from './capdata';
  * string, a .args property that's a capdata object, and optionally a .result
  * property that, if present, must be a string.
  *
- * @param {any} message  The object to be tested
+ * @param {unknown} message  The object to be tested
  *
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @returns {void}
+ * @returns { asserts message is Message }
  */
 export function insistMessage(message) {
   assert.typeof(
@@ -28,4 +28,110 @@ export function insistMessage(message) {
       X`message has non-string non-null .result ${message.result}`,
     );
   }
+  return undefined;
+}
+
+/**
+ * @param {unknown} vdo
+ * @returns { asserts vdo is VatDeliveryObject }
+ */
+export function insistVatDeliveryObject(vdo) {
+  assert(Array.isArray(vdo));
+  const [type, ...rest] = vdo;
+  switch (type) {
+    case 'message': {
+      const [target, msg] = rest;
+      assert.typeof(target, 'string');
+      insistMessage(msg);
+      break;
+    }
+    case 'notify': {
+      const [resolutions] = rest;
+      assert(Array.isArray(resolutions));
+      for (const [vpid, rejected, data] of resolutions) {
+        assert.typeof(vpid, 'string');
+        assert.typeof(rejected, 'boolean');
+        insistCapData(data);
+      }
+      break;
+    }
+    case 'dropExports': {
+      const [slots] = rest;
+      assert(Array.isArray(slots));
+      for (const slot of slots) {
+        assert.typeof(slot, 'string');
+      }
+      break;
+    }
+    default:
+      assert.fail(`unknown syscall type ${type}`);
+  }
+  return undefined;
+}
+
+/**
+ *
+ * @param {unknown} vso
+ * @returns { asserts vso is VatSyscallObject }
+ */
+export function insistVatSyscallObject(vso) {
+  assert(Array.isArray(vso));
+  const [type, ...rest] = vso;
+  switch (type) {
+    case 'send': {
+      const [target, msg] = rest;
+      assert.typeof(target, 'string');
+      insistMessage(msg);
+      break;
+    }
+    case 'callNow': {
+      const [target, method, args] = rest;
+      assert.typeof(target, 'string');
+      assert.typeof(method, 'string');
+      insistCapData(args);
+      break;
+    }
+    case 'subscribe': {
+      const [vpid] = rest;
+      assert.typeof(vpid, 'string');
+      break;
+    }
+    case 'resolve': {
+      const [resolutions] = rest;
+      assert(Array.isArray(resolutions));
+      for (const [vpid, rejected, data] of resolutions) {
+        assert.typeof(vpid, 'string');
+        assert.typeof(rejected, 'boolean');
+        insistCapData(data);
+      }
+      break;
+    }
+    case 'vatstoreGet': {
+      const [key] = rest;
+      assert.typeof(key, 'string');
+      break;
+    }
+    case 'vatstoreSet': {
+      const [key, data] = rest;
+      assert.typeof(key, 'string');
+      assert.typeof(data, 'string');
+      break;
+    }
+    case 'vatstoreDelete': {
+      const [key] = rest;
+      assert.typeof(key, 'string');
+      break;
+    }
+    case 'dropImports': {
+      const [slots] = rest;
+      assert(Array.isArray(slots));
+      for (const slot of slots) {
+        assert.typeof(slot, 'string');
+      }
+      break;
+    }
+    default:
+      assert.fail(`unknown syscall type ${type}`);
+  }
+  return undefined;
 }
