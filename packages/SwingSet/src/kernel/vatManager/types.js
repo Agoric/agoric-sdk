@@ -1,6 +1,6 @@
 /**
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { meterType: string, allocate: number|null, compute: number|null } }
- * CrankStats
- * @typedef { { reply: Tagged, crankStats: CrankStats } } CrankResults
+ * MeterUsage
+ * @typedef { { reply: Tagged, meterUsage: MeterUsage } } CrankResults
  */

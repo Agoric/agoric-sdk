@@ -170,12 +170,12 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       transcriptManager.finishDispatch();
 
-      // Attach the crank stats to the deliver result.
+      // Attach the meterUsage to the deliver result.
       /** @type {Tagged} */
       const deliverResult = [
         result.reply[0], // 'ok' or 'error'
         result.reply[1] || null, // problem or null
-        result.crankStats || null, // meter usage statistics or null
+        result.meterUsage || null, // meter usage statistics or null
       ];
       return harden(deliverResult);
     }
