@@ -165,11 +165,17 @@ fromParent.on('data', ([type, ...margs]) => {
     }
     const [[dtype, ...dargs]] = margs;
     if (dtype === 'message') {
-      doMessage(...dargs).then(res => sendUplink(['deliverDone', ...res]));
+      doMessage(...dargs).then(vatDeliveryResults =>
+        sendUplink(['deliverDone', vatDeliveryResults]),
+      );
     } else if (dtype === 'notify') {
-      doNotify(...dargs).then(res => sendUplink(['deliverDone', ...res]));
+      doNotify(...dargs).then(vatDeliveryResults =>
+        sendUplink(['deliverDone', vatDeliveryResults]),
+      );
     } else if (dtype === 'dropExports') {
-      doDropExports(...dargs).then(res => sendUplink(['deliverDone', ...res]));
+      doDropExports(...dargs).then(vatDeliveryResults =>
+        sendUplink(['deliverDone', vatDeliveryResults]),
+      );
     } else {
       assert.fail(X`bad delivery type ${dtype}`);
     }

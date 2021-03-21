@@ -109,8 +109,8 @@ export function makeNodeSubprocessFactory(tools) {
         if (waiting) {
           const resolve = waiting;
           waiting = null;
-          const deliveryResult = args;
-          resolve(deliveryResult);
+          const [vatDeliveryResults] = args;
+          resolve(vatDeliveryResults);
         }
       } else {
         parentLog(`unrecognized uplink message ${type}`);
