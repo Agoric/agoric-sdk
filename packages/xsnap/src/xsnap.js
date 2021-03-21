@@ -18,10 +18,6 @@ import * as node from './node-stream';
 // This will need adjustment, but seems to be fine for a start.
 const DEFAULT_CRANK_METERING_LIMIT = 1e7;
 
-// The version identifier for our meter type.
-// TODO Bump this whenever there's a change to metering semantics.
-const METER_TYPE = 'xs-meter-1';
-
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
@@ -155,7 +151,9 @@ export function xsnap(options) {
           compute = JSON.parse(decoder.decode(meterData));
         }
         const crankStats = {
-          meterType: METER_TYPE,
+          // The version identifier for our meter type.
+          // TODO Bump this whenever there's a change to metering semantics.
+          meterType: 'xs-meter-1',
           allocate: null, // No allocation meter yet.
           compute,
         };

@@ -117,25 +117,30 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
       });
     },
     delivery(_method, [vatID], finisher) {
-      return wrapDeltaMS(finisher, (deltaMS, [[_status, _problem, usage]]) => {
-        getGroupedMetric('swingset_vat_delivery', { vatID }).record(deltaMS);
-        if (usage) {
-          // Add to aggregated metering stats.
-          const group = { vatID };
-          for (const [key, value] of Object.entries(usage)) {
-            if (key === 'meterType') {
-              // eslint-disable-next-line no-continue
-              continue;
+      return wrapDeltaMS(
+        finisher,
+        (deltaMS, [[_status, _problem, meterUsage]]) => {
+          getGroupedMetric('swingset_vat_delivery', { vatID }).record(deltaMS);
+          if (meterUsage) {
+            // Add to aggregated metering stats.
+            const group = { vatID };
+            for (const [key, value] of Object.entries(meterUsage)) {
+              if (key === 'meterType') {
+                // eslint-disable-next-line no-continue
+                continue;
+              }
+              getGroupedMetric(`swingset_meter_usage`, group, {
+                // The meterType is an instance-specific label--a change in it
+                // will result in the old value being discarded.
+                ...(meterUsage.meterType && {
+                  meterType: meterUsage.meterType,
+                }),
+                stat: key,
+              }).record(value || 0);
             }
-            getGroupedMetric(`swingset_meter_usage`, group, {
-              // The meterType is an instance-specific label--a change in it
-              // will result in the old value being discarded.
-              ...(usage.meterType && { meterType: usage.meterType }),
-              stat: key,
-            }).record(value || 0);
           }
-        }
-      });
+        },
+      );
     },
   };
 

@@ -39,17 +39,19 @@ export function makeMeterManager(replaceGlobalMeter) {
       // console.error(`-- METER REFILL`);
       // console.error(`   allocate used: ${FULL - refillFacet.getAllocateBalance()}`);
       // console.error(`   compute used : ${FULL - refillFacet.getComputeBalance()}`);
-      const used = harden({
+      const meterUsage = harden({
+        // TODO: Change this meterType whenever the semantics change.
+        meterType: 'tame-metering-1',
         allocate: FULL - refillFacet.getAllocateBalance(),
         compute: FULL - refillFacet.getComputeBalance(),
       });
       if (meter.isExhausted() && !refillIfExhausted) {
-        return used;
+        return meterUsage;
       }
       refillFacet.allocate();
       refillFacet.compute();
       refillFacet.stack();
-      return used;
+      return meterUsage;
     }
 
     if (refillEachCrank) {
