@@ -107,11 +107,7 @@ export default function buildKernel(
     FinalizationRegistry,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
-  const {
-    verbose,
-    testTrackDecref = false,
-    defaultManagerType = 'local',
-  } = kernelOptions;
+  const { verbose, defaultManagerType = 'local' } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
   insistStorageAPI(hostStorage);
@@ -156,17 +152,6 @@ export default function buildKernel(
       return origConsole;
     }
     return kernelSlog.vatConsole(vatID, origConsole);
-  }
-
-  const pendingDecrefs = [];
-  function decref(vatID, vref, count) {
-    assert(ephemeral.vats.has(vatID), X`unknown vatID ${vatID}`);
-    assert(count > 0, X`bad count ${count}`);
-    // TODO: decrement the clist import counter by 'count', then GC if zero
-    if (testTrackDecref) {
-      console.log(`kernel decref [${vatID}].${vref} -= ${count}`);
-      pendingDecrefs.push({ vatID, vref, count });
-    }
   }
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
@@ -587,7 +572,7 @@ export default function buildKernel(
     }
   }
 
-  const gcTools = harden({ WeakRef, FinalizationRegistry, decref });
+  const gcTools = harden({ WeakRef, FinalizationRegistry });
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
@@ -995,7 +980,7 @@ export default function buildKernel(
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replace). Logs are
       // not kept in the persistent state, only in ephemeral state.
-      return { log: ephemeral.log, pendingDecrefs, ...kernelKeeper.dump() };
+      return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
     kdebugEnable,
 

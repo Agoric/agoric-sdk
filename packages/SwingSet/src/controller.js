@@ -58,7 +58,6 @@ export async function makeSwingsetController(
     debugPrefix = '',
     slogCallbacks,
     slogFile,
-    testTrackDecref,
     defaultManagerType = env.WORKER_TYPE || 'local',
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
@@ -230,7 +229,7 @@ export async function makeSwingsetController(
     FinalizationRegistry,
   };
 
-  const kernelOptions = { verbose, testTrackDecref, defaultManagerType };
+  const kernelOptions = { verbose, defaultManagerType };
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -323,13 +322,11 @@ export async function buildVatController(
     kernelBundles,
     debugPrefix,
     slogCallbacks,
-    testTrackDecref,
     defaultManagerType,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
-    testTrackDecref,
     slogCallbacks,
     defaultManagerType,
   };
