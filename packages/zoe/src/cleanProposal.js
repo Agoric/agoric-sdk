@@ -102,8 +102,9 @@ export const cleanKeywords = keywordRecord => {
   return keywords;
 };
 
+const expectedAfterDeadlineKeys = harden(['timer', 'deadline']);
+
 const assertAfterDeadlineExitRule = exit => {
-  const expectedAfterDeadlineKeys = ['timer', 'deadline'];
   assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
   assert(exit.afterDeadline.timer !== undefined, X`timer must be defined`);
   assert(
@@ -116,13 +117,15 @@ const assertAfterDeadlineExitRule = exit => {
 const assertExitValueNull = (exit, exitKey) =>
   assert(exit[exitKey] === null, `exit value must be null for key ${exitKey}`);
 
+// We expect the single exit key to be one of the following:
+const allowedExitKeys = harden(['onDemand', 'afterDeadline', 'waived']);
+
 const assertExit = exit => {
   assert(
     Object.getOwnPropertyNames(exit).length === 1,
     X`exit ${exit} should only have one key`,
   );
-  // We expect the single exit key to be one of the following:
-  const allowedExitKeys = ['onDemand', 'afterDeadline', 'waived'];
+
   const [exitKey] = cleanKeys(allowedExitKeys, exit);
   if (isOnDemandExitRule(exit) || isWaivedExitRule(exit)) {
     assertExitValueNull(exit, exitKey);
