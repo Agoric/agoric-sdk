@@ -4,8 +4,8 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
 
 /**
  * @param {NatValue} natValue
- * @param {number=} decimalPlaces
- * @param {number=} placesToShow
+ * @param {number} [decimalPlaces]
+ * @param {number} [placesToShow]
  * @returns {string}
  */
 export const stringifyNat = (

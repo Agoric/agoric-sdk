@@ -1,8 +1,10 @@
 # UI Components
 
+Reusable UI Components for [Agoric](https://agoric.com) [Dapps](https://agoric.com/documentation/dapps/), built with [React](https://reactjs.org) and [MaterialUI](https://materialui.com).
+
 ## NatAmountInput
 
-A [MaterialUI TextField
+A [React](https://reactjs.org) [MaterialUI TextField
 Input](https://material-ui.com/api/text-field/) which allows the user
 to enter a `Nat`. Handles `decimalPlaces` appropriately. This is a
 controlled component.

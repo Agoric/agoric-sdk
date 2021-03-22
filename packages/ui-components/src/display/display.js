@@ -11,8 +11,8 @@ import { stringifySet } from './setValue/stringifySet';
 /**
  *
  * @param {string} str - string to parse as a value
- * @param {AmountMathKind=} mathKind - mathKind of the value
- * @param {number=} decimalPlaces - places to move the decimal to the left
+ * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {number} [decimalPlaces] - places to move the decimal to the left
  * @returns {Value}
  */
 export const parseAsValue = (
@@ -26,14 +26,14 @@ export const parseAsValue = (
   if (mathKind === MathKind.SET) {
     return parseAsSet(str);
   }
-  assert.fail(details`MathKind must be NAT or SET`);
+  assert.fail(details`MathKind ${mathKind} must be NAT or SET`);
 };
 
 /**
  * @param {string} str - string to parse as a value
  * @param {Brand} brand - brand to use in the amount
- * @param {AmountMathKind=} mathKind - mathKind of the value
- * @param {number=} decimalPlaces - places to move the decimal to the left
+ * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {number} [decimalPlaces] - places to move the decimal to the left
  * @returns {Amount}
  */
 export const parseAsAmount = (
@@ -48,10 +48,10 @@ export const parseAsAmount = (
 /**
  *
  * @param {Value} value - value to stringify
- * @param {AmountMathKind=} mathKind - mathKind of the value
- * @param {number=} decimalPlaces - places to move the decimal to the
+ * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
- * @param {number=} placesToShow - places after the decimal to show
+ * @param {number} [placesToShow] - places after the decimal to show
  * @returns {string}
  */
 export const stringifyValue = (
@@ -68,7 +68,7 @@ export const stringifyValue = (
     // @ts-ignore Value is a SetValue
     return stringifySet(value);
   }
-  assert.fail(details`MathKind must be NAT or SET`);
+  assert.fail(details`MathKind ${mathKind} must be NAT or SET`);
 };
 
 /**
@@ -92,10 +92,10 @@ export const stringifyPurseValue = purse => {
  * Stringify the value in an amount
  *
  * @param {Amount} amount
- * @param {AmountMathKind=} mathKind - mathKind of the value
- * @param {number=} decimalPlaces - places to move the decimal to the
+ * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
- * @param {number=} placesToShow - places after the decimal to show
+ * @param {number} [placesToShow] - places after the decimal to show
  * @returns {string}
  */
 export function stringifyAmountValue(
