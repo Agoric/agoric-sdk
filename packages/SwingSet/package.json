@@ -20,7 +20,7 @@
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xs vat manager'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
-    "lint-fix": "yarn lint --fix",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types&&yarn lint:eslint",
     "lint:types": "tsc -p jsconfig.json",
