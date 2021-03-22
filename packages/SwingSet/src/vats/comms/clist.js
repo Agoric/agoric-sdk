@@ -65,20 +65,19 @@ export function makeCListKit(state, syscall, stateKit) {
 
   const kernel = makeKernel(state, syscall, stateKit);
   const {
+    getKernelForLocal,
     provideKernelForLocal,
     provideKernelForLocalResult,
+    getLocalForKernel,
     provideLocalForKernel,
     provideLocalForKernelResult,
+    retireKernelPromiseID,
   } = kernel;
 
   const { addEgress, addIngress } = makeIngressEgress(
     state,
     provideLocalForRemote,
   );
-
-  function setDeliveryKit(deliveryKit) {
-    kernel.setDeliveryKit(deliveryKit);
-  }
 
   return harden({
     provideLocalForRemote,
@@ -89,14 +88,15 @@ export function makeCListKit(state, syscall, stateKit) {
     provideRemoteForLocal,
     provideRemoteForLocalResult,
 
+    getKernelForLocal,
     provideKernelForLocal,
     provideKernelForLocalResult,
+    getLocalForKernel,
     provideLocalForKernel,
     provideLocalForKernelResult,
+    retireKernelPromiseID,
 
     addEgress,
     addIngress,
-
-    setDeliveryKit,
   });
 }
