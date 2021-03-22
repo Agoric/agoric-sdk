@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { isNat, Nat } from '@agoric/nat';
+import { isNat } from '@agoric/nat';
 
 /**
  * Type guard for SetValue
