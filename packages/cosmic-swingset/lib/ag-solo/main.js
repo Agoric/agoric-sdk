@@ -85,7 +85,7 @@ start
       const basedir = subArgs[0] || AG_SOLO_BASEDIR;
       const subdir = subArgs[1];
       assert(basedir !== undefined, 'you must provide a BASEDIR');
-      initBasedir(
+      await initBasedir(
         basedir,
         webport,
         webhost,
@@ -145,7 +145,6 @@ start
         stdio: 'inherit',
       });
       process.exit(cp.status);
-      break;
     }
     default: {
       log.error(`unrecognized command ${argv[0]}`);

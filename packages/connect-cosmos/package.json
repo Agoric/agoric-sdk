@@ -1,0 +1,70 @@
+{
+  "name": "@agoric/connect-cosmos",
+  "version": "0.1.0",
+  "description": "Connect a client to the Cosmos-based Agoric chain",
+  "parsers": {
+    "js": "mjs"
+  },
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "exit 0",
+    "test:xs": "exit 0",
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/assert": "^0.2.3",
+    "@agoric/eventual-send": "^0.13.3",
+    "@agoric/notifier": "^0.3.3",
+    "@agoric/promise-kit": "^0.2.3",
+    "bip39": "^3.0.3",
+    "temp": "^0.9.1",
+    "ws": "^7.2.0"
+  },
+  "devDependencies": {
+    "ava": "^3.12.1",
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0"
+  },
+  "files": [
+    "src/"
+  ],
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "eslintIgnore": [
+    "bundle-*.js"
+  ],
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
+  }
+}

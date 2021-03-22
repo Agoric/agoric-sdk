@@ -6,11 +6,13 @@ import { execFileSync } from 'child_process';
 import { assert, details as X } from '@agoric/assert';
 import anylogger from 'anylogger';
 
+import { initBasedir as initCosmosBasedir } from '@agoric/connect-cosmos';
+
 const log = anylogger('ag-solo:init');
 
 const DEFAULT_WALLET = '@agoric/dapp-svelte-wallet';
 
-export default function initBasedir(
+export default async function initBasedir(
   basedir,
   webport,
   webhost,
@@ -90,50 +92,14 @@ export default function initBasedir(
 
   // cosmos-sdk keypair
   if (egresses.includes('cosmos')) {
-    const agchServerDir = path.join(basedir, 'ag-cosmos-helper-statedir');
-    if (!fs.existsSync(agchServerDir)) {
-      fs.mkdirSync(agchServerDir);
-      // we assume 'ag-cosmos-helper' is on $PATH for now, see chain-cosmos-sdk.js
-      const keyName = 'ag-solo';
-      // we suppress stderr because it displays the mnemonic phrase, but
-      // unfortunately that means errors are harder to diagnose
-      execFileSync(
-        'ag-cosmos-helper',
-        [
-          'keys',
-          'add',
-          '--keyring-backend=test',
-          keyName,
-          '--home',
-          agchServerDir,
-        ],
-        {
-          input: Buffer.from(''),
-          stdio: ['pipe', 'ignore', 'ignore'],
-        },
-      );
-      log('key generated, now extracting address');
-      const kout = execFileSync(
-        'ag-cosmos-helper',
-        [
-          'keys',
-          'show',
-          '--keyring-backend=test',
-          keyName,
-          '--address',
-          '--home',
-          agchServerDir,
-        ],
-        {
-          input: Buffer.from(''),
-          stdio: ['pipe', 'pipe', 'inherit'],
-        },
-      );
-      fs.writeFileSync(
-        path.join(basedir, 'ag-cosmos-helper-address'),
-        kout.toString(),
-      );
-    }
+    await initCosmosBasedir(
+      {
+        basedir,
+      },
+      {
+        console: anylogger('ag-solo:init:connect-cosmos'),
+      },
+    );
   }
 
   // this marker file is how we recognize ag-solo basedirs

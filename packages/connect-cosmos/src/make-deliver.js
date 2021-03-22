@@ -1,4 +1,5 @@
-/* global setTimeout */
+// @ts-check
+/* global globalThis setTimeout */
 import path from 'path';
 import fs from 'fs';
 import { execFile } from 'child_process';
@@ -6,14 +7,12 @@ import { open as tempOpen } from 'temp';
 
 import WebSocket from 'ws';
 
-import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeBatchedDeliver } from './batched-deliver';
 
-const log = anylogger('chain-cosmos-sdk');
+import { shuffle } from './utils';
 
 const HELPER = 'ag-cosmos-helper';
 const FAUCET_ADDRESS = '#faucet channel on Discord (https://discord.gg/9nKvca)';
@@ -42,13 +41,9 @@ const CANCEL_USE_DEFAULT = {
   },
 };
 
-export async function connectToChain(
-  basedir,
-  GCI,
-  rpcAddresses,
-  myAddr,
-  inbound,
-  chainID,
+export async function makeDeliver(
+  { GCI, rpcAddresses, myAddr, chainID },
+  { basedir, console = globalThis.console, inbound, makeBatchedDeliver },
 ) {
   // Each time we read our mailbox from the chain's state, and each time we
   // send an outbound message to the chain, we shell out to a one-shot copy
@@ -70,21 +65,17 @@ export async function connectToChain(
   // assume that 'ag-cosmos-helper' is on $PATH somewhere.
 
   // Shuffle our rpcAddresses, to help distribute load.
-  // Modern version of Fisher-Yates shuffle algorithm (in-place).
-  function shuffle(a) {
-    for (let i = a.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const x = a[i];
-      a[i] = a[j];
-      a[j] = x;
-    }
-  }
   shuffle(rpcAddresses);
 
   const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
 
   const queued = {};
 
+  /**
+   * @template T
+   * @param {(addr: string) => Promise<T | undefined>} tryOnce
+   * @returns {Promise<T>}
+   */
   async function retryRpcAddr(tryOnce) {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -105,11 +96,19 @@ export async function connectToChain(
     }
   }
 
+  /**
+   * @template T
+   * @param {Array<string>} args
+   * @param {(ret: { stdout: string, stderr: string }) => Promise<T> | T} parseReturn
+   * @param {Buffer | string} [stdin]
+   * @param {() => void | Promise<void>} [throwIfCancelled]
+   * @param {T | WAS_CANCELLED_EXCEPTION} [defaultIfCancelled]
+   */
   function retryHelper(
     args,
     parseReturn,
-    stdin,
-    throwIfCancelled = () => undefined,
+    stdin = undefined,
+    throwIfCancelled = () => {},
     defaultIfCancelled = WAS_CANCELLED_EXCEPTION,
   ) {
     return retryRpcAddr(async rpcAddr => {
@@ -121,7 +120,7 @@ export async function connectToChain(
         `--node=tcp://${rpcAddr}`,
         `--home=${helperDir}`,
       ];
-      log.debug(HELPER, ...fullArgs);
+      console.debug(HELPER, ...fullArgs);
       let ret;
       try {
         ret = await new Promise((resolve, reject) => {
@@ -136,13 +135,13 @@ export async function connectToChain(
               return resolve({ stdout, stderr });
             },
           );
-          if (stdin) {
+          if (stdin && proc.stdin) {
             proc.stdin.write(stdin);
             proc.stdin.end();
           }
         });
       } catch (e) {
-        log.error(`failed exec:`, e);
+        console.error(`failed exec:`, e);
       }
 
       await throwIfCancelled();
@@ -151,7 +150,7 @@ export async function connectToChain(
         try {
           return await parseReturn(ret);
         } catch (e) {
-          log.error(`Failed to parse return:`, e);
+          console.error(`Failed to parse return:`, e);
         }
       }
       return undefined;
@@ -168,24 +167,31 @@ export async function connectToChain(
     });
   }
 
+  /**
+   * @template T
+   * @param {string} name
+   * @param {number} maxQueued
+   * @param {Array<string>} args
+   * @param {(ret: { stdout: string, stderr: string }) => Promise<T> | T} parseReturn
+   * @param {Buffer | string} [stdin]
+   * @param {T | undefined} [defaultIfCancelled]
+   */
   async function queuedHelper(
     name,
     maxQueued,
     args,
     parseReturn,
-    stdin,
-    defaultIfCancelled,
+    stdin = undefined,
+    defaultIfCancelled = undefined,
   ) {
     const queue = queued[name] || [];
     queued[name] = queue;
-    if (maxQueued !== undefined) {
-      while (queue.length > 0 && queue.length >= maxQueued) {
-        // Cancel the excesses from most recent down to the currently-running.
-        // eslint-disable-next-line no-unused-vars
-        const [proceed, cancel] = queue.pop();
-        log.debug(`cancelling ${queue.length}`);
-        cancel();
-      }
+    while (queue.length > 0 && queue.length >= maxQueued) {
+      // Cancel the excesses from most recent down to the currently-running.
+      // eslint-disable-next-line no-unused-vars
+      const [proceed, cancel] = queue.pop();
+      console.debug(`cancelling ${queue.length}`);
+      cancel();
     }
     let cancelled = false;
     let resolveWait;
@@ -212,7 +218,7 @@ export async function connectToChain(
     });
 
     try {
-      return await retryHelper(
+      const ret = await retryHelper(
         args,
         parseReturn,
         stdin,
@@ -226,6 +232,7 @@ export async function connectToChain(
         },
         defaultIfCancelled,
       );
+      return ret;
     } finally {
       // Remove us from the queue.
       const i = queue.indexOf(qentry);
@@ -241,6 +248,9 @@ export async function connectToChain(
     }
   }
 
+  /**
+   * @returns {any}
+   */
   const getMailbox = () =>
     queuedHelper(
       'getMailbox',
@@ -251,15 +261,15 @@ export async function connectToChain(
         const { stdout, stderr } = ret;
         const errMsg = stderr.trimRight();
         if (errMsg) {
-          log.error(errMsg);
+          console.error(errMsg);
         }
         if (stdout) {
-          log.debug(`helper said: ${stdout}`);
+          console.debug(`helper said: ${stdout}`);
           try {
             // Try to parse the stdout.
             return JSON.parse(JSON.parse(stdout).value);
           } catch (e) {
-            log(`failed to parse output:`, e);
+            console.log(`failed to parse output:`, e);
           }
         }
       },
@@ -277,7 +287,7 @@ export async function connectToChain(
       `--node=tcp://${rpcAddr}`,
       `--home=${helperDir}`,
     ];
-    // log(HELPER, ...fullArgs);
+    // console.log(HELPER, ...fullArgs);
     const r = await new Promise(resolve => {
       execFile(HELPER, fullArgs, (error, stdout, stderr) => {
         resolve({ error, stdout, stderr });
@@ -333,7 +343,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
       // Open the WebSocket.
       const ws = new WebSocket(`ws://${rpcAddr}/websocket`);
       ws.addEventListener('error', e => {
-        log.debug('WebSocket error', e);
+        console.debug('WebSocket error', e);
       });
 
       // This magic identifier just distinguishes our subscription
@@ -393,7 +403,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
       .getUpdateSince(lastBlockUpdate)
       .then(({ updateCount, value }) => {
         assert(value, X`${GCI} unexpectedly finished!`);
-        log.debug(`new block on ${GCI}, fetching mailbox`);
+        console.debug(`new block on ${GCI}, fetching mailbox`);
         getMailbox()
           .then(ret => {
             if (!ret) {
@@ -403,9 +413,9 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
 
             const { outbox, ack } = ret;
             // console.debug('have outbox', outbox, ack);
-            inbound(GCI, outbox, ack);
+            inbound(outbox, ack);
           })
-          .catch(e => log.error(`Failed to fetch ${GCI} mailbox:`, e));
+          .catch(e => console.error(`Failed to fetch ${GCI} mailbox:`, e));
         recurseEachNewBlock(updateCount);
       });
   };
@@ -418,7 +428,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
     let tmpInfo;
     try {
       totalDeliveries += 1;
-      log(
+      console.log(
         `delivering to chain (trips=${totalDeliveries})`,
         GCI,
         newMessages,
@@ -449,7 +459,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
             if (err) {
               return reject(err);
             }
-            return resolve();
+            return resolve(undefined);
           });
         });
       } finally {
@@ -458,7 +468,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
             if (e) {
               return reject(e);
             }
-            return resolve();
+            return resolve(undefined);
           });
         });
       }
@@ -483,15 +493,14 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
       // others have finished.
       const qret = await queuedHelper(
         'deliver',
-        undefined, // allow the queue to grow unbounded, and never cancel deliveries
+        Infinity, // allow the queue to grow unbounded, and never cancel deliveries
         args,
-        ret => {
-          const { stderr, stdout } = ret;
+        ({ stderr, stdout }) => {
           const errMsg = stderr.trimRight();
           if (errMsg) {
-            log.error(errMsg);
+            console.error(errMsg);
           }
-          log.debug(`helper said: ${stdout}`);
+          console.debug(`helper said: ${stdout}`);
           const out = JSON.parse(stdout);
           if (Number(out.height) > 0) {
             // We submitted the transaction successfully.

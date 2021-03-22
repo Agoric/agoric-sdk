@@ -24,13 +24,16 @@ import {
   buildPlugin,
   buildTimer,
 } from '@agoric/swingset-vat';
+
+import { makeDeliver as makeCosmosDeliver } from '@agoric/connect-cosmos';
+
+import { makeBatchedDeliver } from './batched-deliver';
 import { getBestSwingStore } from '../check-lmdb';
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
 import { makeWithQueue } from './vats/queue';
 
-import { connectToChain } from './chain-cosmos-sdk';
 import { connectToFakeChain } from './fake-chain';
 
 const log = anylogger('start');
@@ -324,14 +327,14 @@ export default async function start(basedir, argv) {
             log(`adding follower/sender for GCI ${c.GCI}`);
             // c.rpcAddresses are strings of host:port for the RPC ports of several
             // chain nodes
-            const deliverator = await connectToChain(
+            const deliverator = await makeCosmosDeliver(c, {
               basedir,
-              c.GCI,
-              c.rpcAddresses,
-              c.myAddr,
-              deliverInboundToMbx,
-              c.chainID,
-            );
+              console: anylogger('connect-cosmos'),
+              inbound(outbox, ack) {
+                deliverInboundToMbx(c.GCI, outbox, ack);
+              },
+              makeBatchedDeliver,
+            });
             addDeliveryTarget(c.GCI, deliverator);
           }
           break;
