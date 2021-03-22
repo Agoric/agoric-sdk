@@ -432,3 +432,33 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     );
   }
 });
+
+(() => {
+  const challenges = [
+    'new Uint8Array(2_130_706_417)',
+    'new Uint16Array(1_065_353_209)',
+    'new Uint32Array(532_676_605)',
+    'new BigUint64Array(266_338_303);',
+    'new Array(66_584_576).fill(0)',
+    '(new Array(66_584_575).fill(0))[66_584_575] = 0;',
+  ];
+
+  for (const statement of challenges) {
+    test(`large sizes - abort cluster: ${statement}`, async t => {
+      const vat = xsnap(xsnapOptions);
+      t.teardown(() => vat.terminate());
+      // eslint-disable-next-line no-await-in-loop
+      await t.throwsAsync(
+        vat.evaluate(`
+        (() => {
+          try {
+            // can't catch memory full
+            ${statement}\n
+          } catch (ignore) {
+            // ignore
+          }
+        })()`),
+      );
+    });
+  }
+})();
