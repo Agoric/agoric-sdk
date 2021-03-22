@@ -7,7 +7,8 @@ function makeReadable(value, start = undefined) {
 }
 
 // Find a default url if we are running in dev mode.  FIXME: Make better.
-const base = location.port === '5000' ? 'http://localhost:8000' : location;
+const base =
+  window.location.port === '5000' ? 'http://localhost:8000' : window.location;
 
 export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
   const [connected, setConnected] = makeReadable(false);
@@ -23,6 +24,7 @@ export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
   let reopenTimeout;
   function reopen() {
     console.log(`Reconnecting in ${RECONNECT_BACKOFF_SECONDS} seconds`);
+    // eslint-disable-next-line no-use-before-define
     reopenTimeout = setTimeout(openSocket, RECONNECT_BACKOFF_SECONDS * 1000);
   }
 
@@ -69,7 +71,7 @@ export function makeWebSocket(path, { onOpen, onMessage, onClose }) {
     }
   }
 
-  const sendMessage = (obj) => {
+  const sendMessage = obj => {
     if (socket && socket.readyState <= 1) {
       socket.send(JSON.stringify(obj));
     }

@@ -31,6 +31,17 @@
     "svelte-awesome": "^2.3.0",
     "svelte-themer": "^0.1.4"
   },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ],
+    "env": {
+      "browser": true
+    },
+    "rules": {
+      "import/no-extraneous-dependencies": "off"
+    }
+  },
   "files": [
     "public"
   ],

@@ -12,6 +12,22 @@ import '../../api/src/types';
 let accessTokenParams;
 let hasAccessToken;
 
+const resetAlls = [];
+
+/**
+ * Like React useHook, return a store and a setter for it
+ *
+ * @template T
+ * @param {T} value
+ * @param {T} [reset=value]
+ * @returns {[any, (value: T) => void]}
+ */
+function makeReadable(value, reset = value) {
+  const store = writable(value);
+  resetAlls.push(() => store.set(reset));
+  return [{ subscribe: store.subscribe }, store.set];
+}
+
 function getAccessToken() {
   // Fetch the access token from the window's URL.
   accessTokenParams = `?${window.location.hash.slice(1)}`;
@@ -55,7 +71,8 @@ getAccessToken();
 if (!hasAccessToken) {
   // This is friendly advice to the user who doesn't know.
   if (
-    confirm(
+    // eslint-disable-next-line no-alert
+    window.confirm(
       `\
 You must open the Agoric wallet with the
       agoric open
@@ -72,6 +89,7 @@ See the documentation?`,
 // Create a connection so that we can derive presences from it.
 const { connected, makeStableForwarder } = makeCapTPConnection(
   handler => makeWebSocket(`/private/captp${accessTokenParams}`, handler),
+  // eslint-disable-next-line no-use-before-define
   { onReset },
 );
 
@@ -83,8 +101,6 @@ export const walletP = makeStableForwarder(bootP =>
   E(E.get(bootP).wallet).getAdminFacet(),
 );
 export const boardP = makeStableForwarder(bootP => E.get(bootP).board);
-
-const resetAlls = [];
 
 // We initialize as false, but reset to true on disconnects.
 const [ready, setReady] = makeReadable(false, true);
@@ -108,7 +124,13 @@ export {
 };
 
 function cmp(a, b) {
-  return a < b ? -1 : a === b ? 0 : 1;
+  if (a < b) {
+    return -1;
+  }
+  if (a > b) {
+    return 1;
+  }
+  return 0;
 }
 
 function kv(keyObj, val) {
@@ -186,18 +208,4 @@ function onReset(readyP) {
       );
     },
   });
-}
-
-/**
- * Like React useHook, return a store and a setter for it
- *
- * @template T
- * @param {T} value
- * @param {T} [reset=value]
- * @returns {[any, (value: T) => void]}
- */
-function makeReadable(value, reset = value) {
-  const store = writable(value);
-  resetAlls.push(() => store.set(reset));
-  return [{ subscribe: store.subscribe }, store.set];
 }

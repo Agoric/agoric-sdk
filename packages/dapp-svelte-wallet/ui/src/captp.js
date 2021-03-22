@@ -25,25 +25,23 @@ export function makeCapTPConnection(makeConnection, { onReset }) {
   }
 
   // Stable identity for the connection handler.
-  async function onOpen(event) {
+  async function onOpen(_event) {
     const { abort: ctpAbort, dispatch: ctpDispatch, getBootstrap } = makeCapTP(
       '@agoric/dapp-svelte-wallet-ui',
+      // eslint-disable-next-line no-use-before-define
       sendMessage,
     );
     abort = ctpAbort;
     dispatch = ctpDispatch;
 
     // Wait for the wallet to finish loading.
-    let lastUpdateCount;
-    while (true) {
-      const update = await E(
-        E.get(getBootstrap()).loadingNotifier,
-      ).getUpdateSince(lastUpdateCount);
+    const getLoadingUpdate = (...args) =>
+      E(E.get(getBootstrap()).loadingNotifier).getUpdateSince(...args);
+    let update = await getLoadingUpdate();
+    while (update.value.includes('wallet')) {
       console.log('waiting for wallet');
-      lastUpdateCount = update.updateCount;
-      if (!update.value.includes('wallet')) {
-        break;
-      }
+      // eslint-disable-next-line no-await-in-loop
+      update = await getLoadingUpdate(update.updateCount);
     }
 
     // Begin the flow of messages to our wallet, which
