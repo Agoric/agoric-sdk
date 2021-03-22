@@ -59,7 +59,7 @@
  */
 
 /**
- * @typedef NotifierInternals Purposely opaque. Will be shared between
+ * @typedef {any} NotifierInternals Purposely opaque. Will be shared between
  * machines, so it must be same to expose. But other software should avoid
  * depending on its internal structure.
  */
@@ -96,7 +96,7 @@
  */
 
 /**
- * @typedef SubscriptionInternals Purposely opaque. Will be shared between
+ * @typedef {any} SubscriptionInternals Purposely opaque. Will be shared between
  * machines, so it must be same to expose. But other software should avoid
  * depending on its internal structure.
  */
