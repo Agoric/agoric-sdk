@@ -18,7 +18,7 @@
     "test:xs-unit-debug": "ava-xs --debug",
     "test:xs-worker": "WORKER_TYPE=xs-worker ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
-    "lint-fix": "yarn lint --fix",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",

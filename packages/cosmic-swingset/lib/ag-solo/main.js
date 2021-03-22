@@ -146,6 +146,7 @@ start
       });
       process.exit(cp.status);
     }
+    // eslint-disable-next-line no-fallthrough
     default: {
       log.error(`unrecognized command ${argv[0]}`);
       log.error(`try one of: init, set-gci-ingress, start`);

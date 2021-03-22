@@ -14,7 +14,7 @@
     "test": "ava",
     "test:nyc": "nyc ava",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint --fix",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
