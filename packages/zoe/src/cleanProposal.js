@@ -3,7 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { amountMath, getMathKind } from '@agoric/ertp';
+import { amountMath, getMathKind, MathKind } from '@agoric/ertp';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
@@ -14,7 +14,6 @@ import '../exported';
 import './internal-types';
 
 import { arrayToObj, assertSubset } from './objArrayConversion';
-import { MathKind } from '@agoric/ertp/src/deprecatedAmountMath';
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
