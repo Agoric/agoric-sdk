@@ -61,7 +61,7 @@ const cleanKeys = (allowedKeys, record) => {
 export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
-export const coerceAmountKeywordRecord = allegedAmountKeywordRecord => {
+const coerceAmountKeywordRecord = allegedAmountKeywordRecord => {
   const keywords = getKeywords(allegedAmountKeywordRecord);
   keywords.forEach(assertKeywordName);
 
