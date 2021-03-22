@@ -38,9 +38,9 @@ export const getInputPrice = (
   outputReserve,
   feeBasisPoints = 30n,
 ) => {
-  Nat(inputValue);
-  Nat(inputReserve);
-  Nat(outputReserve);
+  inputValue = Nat(inputValue);
+  inputReserve = Nat(inputReserve);
+  outputReserve = Nat(outputReserve);
   assert(inputValue > 0n, X`inputValue ${inputValue} must be positive`);
   assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
   assert(
@@ -80,9 +80,10 @@ export const getOutputPrice = (
   outputReserve,
   feeBasisPoints = 30n,
 ) => {
-  Nat(outputValue);
-  Nat(inputReserve);
-  Nat(outputReserve);
+  outputValue = Nat(outputValue);
+  inputReserve = Nat(inputReserve);
+  outputReserve = Nat(outputReserve);
+
   assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
   assert(
     outputReserve > 0n,
@@ -112,9 +113,9 @@ export const calcLiqValueToMint = (
   inputValue,
   inputReserve,
 ) => {
-  Nat(liqTokenSupply);
-  Nat(inputValue);
-  Nat(inputReserve);
+  liqTokenSupply = Nat(liqTokenSupply);
+  inputValue = Nat(inputValue);
+  inputReserve = Nat(inputReserve);
 
   if (liqTokenSupply === 0n) {
     return inputValue;
@@ -140,6 +141,11 @@ export const calcSecondaryRequired = (
   secondaryPool,
   secondaryIn,
 ) => {
+  centralIn = Nat(centralIn);
+  centralPool = Nat(centralPool);
+  secondaryPool = Nat(secondaryPool);
+  secondaryIn = Nat(secondaryIn);
+
   if (centralPool === 0n || secondaryPool === 0n) {
     return secondaryIn;
   }
@@ -164,9 +170,9 @@ export const calcValueToRemove = (
   poolValue,
   liquidityValueIn,
 ) => {
-  Nat(liqTokenSupply);
-  Nat(liquidityValueIn);
-  Nat(poolValue);
+  liqTokenSupply = Nat(liqTokenSupply);
+  liquidityValueIn = Nat(liquidityValueIn);
+  poolValue = Nat(poolValue);
 
   return floorDivide(multiply(liquidityValueIn, poolValue), liqTokenSupply);
 };

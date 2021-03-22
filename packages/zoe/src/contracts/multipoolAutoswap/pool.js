@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { MathKind, amountMath } from '@agoric/ertp/src/amountMath';
+import { MathKind, amountMath, isNatValue } from '@agoric/ertp/';
 
 import {
   getInputPrice,
@@ -102,7 +102,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           inputAmount.brand,
           outputBrand,
         );
-        assert.typeof(inputAmount.value, 'bigint');
+        assert(isNatValue(inputAmount.value));
         const valueOut = getInputPrice(
           inputAmount.value,
           inputReserve,
@@ -125,7 +125,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           inputBrand,
           outputAmount.brand,
         );
-        assert.typeof(outputAmount.value, 'bigint');
+        assert(isNatValue(outputAmount.value));
         const valueIn = getOutputPrice(
           outputAmount.value,
           inputReserve,
@@ -147,10 +147,10 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         const secondaryIn = userAllocation.Secondary;
         const centralAmount = pool.getCentralAmount();
         const secondaryAmount = pool.getSecondaryAmount();
-        assert.typeof(userAllocation.Central.value, 'bigint');
-        assert.typeof(centralAmount.value, 'bigint');
-        assert.typeof(secondaryAmount.value, 'bigint');
-        assert.typeof(secondaryIn.value, 'bigint');
+        assert(isNatValue(userAllocation.Central.value));
+        assert(isNatValue(centralAmount.value));
+        assert(isNatValue(secondaryAmount.value));
+        assert(isNatValue(secondaryIn.value));
 
         // To calculate liquidity, we'll need to calculate alpha from the primary
         // token's value before, and the value that will be added to the pool
@@ -178,7 +178,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           liquidityBrand,
         );
         const liquidityValueIn = liquidityIn.value;
-        assert.typeof(liquidityValueIn, 'bigint');
+        assert(isNatValue(liquidityValueIn));
         const centralTokenAmountOut = amountMath.make(
           calcValueToRemove(
             liqTokenSupply,

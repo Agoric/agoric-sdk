@@ -2,7 +2,7 @@
 
 import { Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { amountMath, isNatValue } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -142,7 +142,7 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
-    assert.typeof(amountIn.value, 'bigint');
+    assert(isNatValue(amountIn.value));
 
     const outputValue = getInputPrice(
       amountIn.value,
@@ -172,7 +172,7 @@ const start = async zcf => {
       want: { Out: wantedAmountOut },
     } = swapSeat.getProposal();
 
-    assert.typeof(wantedAmountOut.value, 'bigint');
+    assert(isNatValue(wantedAmountOut.value));
 
     const tradePrice = getOutputPrice(
       wantedAmountOut.value,
@@ -246,8 +246,8 @@ const start = async zcf => {
     const userAllocation = liqSeat.getCurrentAllocation();
     const secondaryIn = userAllocation.Secondary;
 
-    assert.typeof(userAllocation.Central.value, 'bigint');
-    assert.typeof(secondaryIn.value, 'bigint');
+    assert(isNatValue(userAllocation.Central.value));
+    assert(isNatValue(secondaryIn.value));
 
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
@@ -279,7 +279,7 @@ const start = async zcf => {
     // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
     const liquidityValueIn = userAllocation.Liquidity.value;
-    assert.typeof(liquidityValueIn, 'bigint');
+    assert(isNatValue(liquidityValueIn));
 
     const newUserCentralAmount = amountMath.make(
       calcValueToRemove(
@@ -342,7 +342,7 @@ const start = async zcf => {
   const getOutputForGivenInput = (amountIn, brandOut) => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
     const outputReserve = getPoolAmount(brandOut).value;
-    assert.typeof(amountIn.value, 'bigint');
+    assert(isNatValue(amountIn.value));
     const outputValue = getInputPrice(
       amountIn.value,
       inputReserve,
@@ -361,7 +361,7 @@ const start = async zcf => {
   const getInputForGivenOutput = (amountOut, brandIn) => {
     const inputReserve = getPoolAmount(brandIn).value;
     const outputReserve = getPoolAmount(amountOut.brand).value;
-    assert.typeof(amountOut.value, 'bigint');
+    assert(isNatValue(amountOut.value));
     const outputValue = getOutputPrice(
       amountOut.value,
       inputReserve,
