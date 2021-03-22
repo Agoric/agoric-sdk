@@ -40,7 +40,7 @@ const isGT = (amount, amountLimit) => !amountMath.isGTE(amountLimit, amount);
 
 /**
  * @callback Trigger
- * @param {Function} createInstantQuote
+ * @param {PriceQuoteCreate} createInstantQuote
  * @returns {Promise<void>}
  */
 

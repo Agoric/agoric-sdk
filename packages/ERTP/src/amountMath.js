@@ -20,6 +20,7 @@ import { isSetValue, isNatValue } from './typeGuards';
 const MathKind = {
   NAT: 'nat',
   SET: 'set',
+  // Deprecated, to be removed in Beta
   STRING_SET: 'strSet',
 };
 harden(MathKind);
@@ -135,14 +136,14 @@ const assertLooksLikeValue = value => {
   );
 };
 
-const checkBrand = (brand, msg) => {
+const assertBrand = (brand, msg) => {
   assert(passStyleOf(brand) === REMOTE_STYLE, msg);
 };
 
 /** @type {(brand: Brand) => void} */
 const assertLooksLikeBrand = brand => {
   const msg = X`The brand ${brand} doesn't look like a brand.`;
-  checkBrand(brand, msg);
+  assertBrand(brand, msg);
 };
 
 /**
@@ -153,7 +154,7 @@ const assertLooksLikeBrand = brand => {
  */
 const assertLooksLikeAmountBrand = amount => {
   const msg = X`The amount ${amount} doesn't look like an amount. Did you pass a value instead?`;
-  checkBrand(amount.brand, msg);
+  assertBrand(amount.brand, msg);
 };
 
 const assertLooksLikeAmount = amount => {

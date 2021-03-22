@@ -5,8 +5,6 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority';
 export function buildRootObject(_vatPowers) {
   return Far('root', {
     makePriceAuthority: makePriceAuthorityRegistry,
-    async makeFakePriceAuthority(options) {
-      return makeFakePriceAuthority({ ...options });
-    },
+    makeFakePriceAuthority: async options => makeFakePriceAuthority(options),
   });
 }

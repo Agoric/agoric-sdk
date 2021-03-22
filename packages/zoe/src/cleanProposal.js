@@ -15,6 +15,8 @@ import './internal-types';
 
 import { arrayToObj, assertSubset } from './objArrayConversion';
 
+const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
+
 // We adopt simple requirements on keywords so that they do not accidentally
 // conflict with existing property names.
 // We require keywords to be strings, ascii identifiers beginning with an
@@ -26,7 +28,6 @@ import { arrayToObj, assertSubset } from './objArrayConversion';
 // lookup a keyword-named property no matter what `i` is.
 export const assertKeywordName = keyword => {
   assert.typeof(keyword, 'string');
-  const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
   assert(
     firstCapASCII.test(keyword),
     X`keyword ${q(
@@ -54,7 +55,7 @@ const assertKeysAllowed = (allowedKeys, record) => {
 
 const cleanKeys = (allowedKeys, record) => {
   assertKeysAllowed(allowedKeys, record);
-  return Object.getOwnPropertyNames(record);
+  return harden(Object.getOwnPropertyNames(record));
 };
 
 export const getKeywords = keywordRecord =>
@@ -103,9 +104,6 @@ const assertAfterDeadlineExitRule = exit => {
       isNat(exit.afterDeadline.deadline),
     X`deadline must be a Nat BigInt`,
   );
-  // timers must have a 'setWakeup' function which takes a deadline
-  // and an object as arguments.
-  // TODO: how to check methods on presences?
 };
 
 const assertExitValueNull = (exit, exitKey) =>
@@ -145,6 +143,8 @@ const assertKeywordNotInBoth = (want, give) => {
   });
 };
 
+const rootKeysAllowed = harden(['want', 'give', 'exit']);
+
 /**
  * cleanProposal checks the keys and values of the proposal, including
  * the keys and values of the internal objects. The proposal may have
@@ -161,7 +161,6 @@ const assertKeywordNotInBoth = (want, give) => {
  * @returns {ProposalRecord}
  */
 export const cleanProposal = proposal => {
-  const rootKeysAllowed = ['want', 'give', 'exit'];
   mustBeComparable(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
 

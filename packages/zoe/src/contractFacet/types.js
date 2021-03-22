@@ -17,6 +17,12 @@
  */
 
 /**
+ * @callback GetAmountMath
+ * @param {Brand} brand
+ * @returns {DeprecatedAmountMath}
+ */
+
+/**
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
