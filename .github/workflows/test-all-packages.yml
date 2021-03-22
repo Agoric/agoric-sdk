@@ -275,6 +275,10 @@ jobs:
       run: cd packages/deploy-script-support && yarn test
       env:
         ESM_DISABLE_CACHE: true
+    - name: yarn test (ui-components)
+      run: cd packages/ui-components && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
 
 ##############
 # Long-running tests are executed individually.
