@@ -2,7 +2,7 @@
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { captureNum } from '../../../src/display/natValue/captureNum';
+import { captureNum } from '../../../src/display/natValue/helpers/captureNum';
 
 test('captureNum', t => {
   t.deepEqual(captureNum('200'), { left: '200', right: '' });

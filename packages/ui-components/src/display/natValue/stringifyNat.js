@@ -1,4 +1,4 @@
-import { roundToDecimalPlaces } from './roundToDecimalPlaces';
+import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;
 

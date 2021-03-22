@@ -2,7 +2,7 @@
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { roundToDecimalPlaces as round } from '../../../src/display/natValue/roundToDecimalPlaces';
+import { roundToDecimalPlaces as round } from '../../../src/display/natValue/helpers/roundToDecimalPlaces';
 
 test('roundToDecimalPlaces', t => {
   t.deepEqual(round('00', 0), '');
