@@ -5,11 +5,11 @@ import { cdebug } from './cdebug';
 
 export function makeKernel(state, syscall, stateKit) {
   const {
-    trackUnresolvedPromise,
     allocateLocalObjectID,
-    allocateLocalPromiseID,
     allocateKernelObjectID,
     allocateKernelPromiseID,
+    allocateUnresolvedPromise,
+    insistPromiseIsUnresolved,
     subscribeKernelToPromise,
     unsubscribeKernelFromPromise,
     deciderIsKernel,
@@ -27,6 +27,12 @@ export function makeKernel(state, syscall, stateKit) {
   // subscription and tracking. We must also keep track of whether this vpid has
   // been retired or not, and create a new (short-lived) identifier to reference
   // resolved promises if necessary.
+
+  function getKernelForLocal(lref) {
+    const kfref = state.toKernel.get(lref);
+    assert(kfref, X`${lref} must already be mapped to a kernel-facing ID`);
+    return kfref;
+  }
 
   function provideKernelForLocal(lref) {
     if (!state.toKernel.has(lref)) {
@@ -70,36 +76,53 @@ export function makeKernel(state, syscall, stateKit) {
     return provideKernelForLocal(lpid);
   }
 
-  function kernelSlotToLocalSlot(kernelSlot) {
-    assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
-    if (!state.fromKernel.has(kernelSlot)) {
-      const { type } = parseVatSlot(kernelSlot);
-      let localSlot;
-      if (type === 'object') {
-        localSlot = allocateLocalObjectID();
-      } else if (type === 'promise') {
-        localSlot = allocateLocalPromiseID();
-      } else {
-        assert.fail(X`unknown type ${type}`);
-      }
-      state.fromKernel.set(kernelSlot, localSlot);
-      state.toKernel.set(localSlot, kernelSlot);
-      cdebug(`comms add mapping k->l ${kernelSlot}<=>${localSlot}`);
-    }
-    return state.fromKernel.get(kernelSlot);
-  }
-
   function retireKernelPromiseID(kfpid) {
     insistVatType('promise', kfpid);
     const lpid = state.fromKernel.get(kfpid);
     assert(lpid, X`unknown kernel promise ${kfpid}`);
     assert(state.toKernel.has(lpid), X`unmapped local promise ${lpid}`);
+    const p = state.promiseTable.get(lpid);
+    assert(
+      !p.kernelIsSubscribed,
+      X`attempt to retire subscribed promise ${kfpid}`,
+    );
     state.fromKernel.delete(kfpid);
     state.toKernel.delete(lpid);
     cdebug(`comms delete mapping l<->k ${kfpid}<=>${lpid}`);
   }
 
   // *-LocalForKernel: kernel sending in to comms vat
+
+  function getLocalForKernel(kfref) {
+    const lref = state.fromKernel.get(kfref);
+    assert(lref, X`${kfref} must already be mapped to a local ID`);
+    return lref;
+  }
+
+  function addLocalObjectForKernel(kfoid) {
+    assert(
+      !state.fromKernel.has(kfoid),
+      `I don't remember giving ${kfoid} to the kernel`,
+    );
+
+    const loid = allocateLocalObjectID();
+    state.objectTable.set(loid, 'kernel');
+    state.fromKernel.set(kfoid, loid);
+    state.toKernel.set(loid, kfoid);
+    cdebug(`comms import kernel ${loid} ${kfoid}`);
+  }
+
+  function addLocalPromiseForKernel(kfpid) {
+    assert(
+      !state.fromKernel.has(kfpid),
+      `I don't remember giving ${kfpid} to the kernel`,
+    );
+    const lpid = allocateUnresolvedPromise();
+    changeDeciderToKernel(lpid);
+    state.fromKernel.set(kfpid, lpid);
+    state.toKernel.set(lpid, kfpid);
+    cdebug(`comms import kernel ${lpid} ${kfpid}`);
+  }
 
   function provideLocalForKernel(kfref, doNotSubscribeSet) {
     const { type, allocatedByVat } = parseVatSlot(kfref);
@@ -108,81 +131,45 @@ export function makeKernel(state, syscall, stateKit) {
       // can't prevent vats from attempting this
       assert.fail(X`cannot accept type ${type} from kernel`);
     }
-    const lref = kernelSlotToLocalSlot(kfref);
-    if (type === 'object') {
-      if (allocatedByVat) {
-        assert(
-          state.objectTable.has(lref),
-          `I don't remember giving ${lref}/${kfref} to the kernel`,
-        );
-      }
-    } else if (type === 'promise') {
-      const vpid = kfref;
-      if (allocatedByVat) {
-        assert(
-          state.promiseTable.has(lref),
-          `I don't remember giving ${lref}/${vpid} to the kernel`,
-        );
+
+    if (!state.fromKernel.has(kfref)) {
+      if (type === 'object') {
+        addLocalObjectForKernel(kfref);
+      } else if (type === 'promise') {
+        addLocalPromiseForKernel(kfref);
       } else {
-        const p = state.promiseTable.get(lref);
-        if (p) {
-          // hey, we agreed to never speak of the resolved VPID again. maybe
-          // the kernel is recycling p-NN VPIDs, or is just confused
-          assert(!p.resolved, X`kernel sent retired ${lref}/${vpid}`);
-        } else {
-          // the kernel is telling us about a new promise, so it's the decider
-          trackUnresolvedPromise(lref);
-          changeDeciderToKernel(lref);
-          if (!doNotSubscribeSet || !doNotSubscribeSet.has(vpid)) {
-            syscall.subscribe(vpid);
-          }
+        assert.fail(X`cannot accept type ${type} from kernel`);
+      }
+    }
+
+    const lref = state.fromKernel.get(kfref);
+    if (type === 'promise') {
+      if (!allocatedByVat) {
+        if (!doNotSubscribeSet || !doNotSubscribeSet.has(kfref)) {
+          syscall.subscribe(kfref);
         }
       }
     }
     return lref;
   }
 
-  function provideLocalForKernelResult(vpid) {
-    if (!vpid) {
+  function provideLocalForKernelResult(kfpid) {
+    if (!kfpid) {
       return null;
     }
-    const { type, allocatedByVat } = parseVatSlot(vpid);
-    assert.equal(type, 'promise');
-    const lpid = kernelSlotToLocalSlot(vpid);
-    const p = state.promiseTable.get(lpid);
-    // regardless of who allocated it, we should not get told about a promise
-    // we know to be resolved. We agreed to never speak of the resolved VPID
-    // again. maybe the kernel is recycling p-NN VPIDs, or is just confused
-    if (p) {
-      assert(!p.resolved, X`kernel sent retired ${lpid}/${vpid}`);
-    }
-
-    // if we're supposed to have allocated the number, we better recognize it
-    if (allocatedByVat) {
-      assert(p, X`I don't remember giving ${lpid}/${vpid} to the kernel`);
-    }
-
-    if (p) {
-      // The kernel is using a pre-existing promise as the result. It had
-      // better already have control. TODO: if the decider was not already
-      // the kernel, somehow reject the message, rather than crashing
-      // weirdly, since we can't prevent low-level vats from using a 'result'
-      // promise that they don't actually control
-      changeDeciderFromKernelToComms(lpid);
-      // TODO: ideally we'd syscall.unsubscribe here, but that doesn't exist
-    } else {
-      // the kernel is telling us about a new promise, and new unresolved
-      // promises are born with us being the decider
-      trackUnresolvedPromise(lpid);
-    }
-    // either way, the kernel is going to want to know about the resolution
+    insistVatType('promise', kfpid);
+    const lpid = provideLocalForKernel(kfpid);
+    insistPromiseIsUnresolved(lpid);
+    changeDeciderFromKernelToComms(lpid);
     subscribeKernelToPromise(lpid);
     return lpid;
   }
 
   return harden({
+    getKernelForLocal,
     provideKernelForLocal,
     provideKernelForLocalResult,
+    getLocalForKernel,
     provideLocalForKernel,
     provideLocalForKernelResult,
     retireKernelPromiseID,

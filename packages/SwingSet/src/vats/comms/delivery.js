@@ -7,6 +7,11 @@ import { insistCapData } from '../../capdata';
 import { insistRemoteType } from './parseRemoteSlot';
 import { insistRemoteID } from './remote';
 
+const UNDEFINED = harden({
+  body: JSON.stringify({ '@qclass': 'undefined' }),
+  slots: [],
+});
+
 export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   const {
     getRemoteForLocal,
@@ -17,8 +22,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     provideLocalForRemote,
     provideLocalForRemoteResult,
 
+    getKernelForLocal,
     provideKernelForLocal,
     provideKernelForLocalResult,
+    getLocalForKernel,
     provideLocalForKernel,
     provideLocalForKernelResult,
     retireKernelPromiseID,
@@ -54,7 +61,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // dispatch.deliver from kernel lands here (with message from local vat to
   // remote machine): translate to local, join with handleSend
   function sendFromKernel(ktarget, method, kargs, kresult) {
-    const target = provideLocalForKernel(ktarget);
+    const target = getLocalForKernel(ktarget);
     const args = mapDataFromKernel(kargs, null);
     assert(
       state.objectTable.has(target) || state.promiseTable.has(target),
@@ -64,8 +71,6 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       method.indexOf(':') === -1 && method.indexOf(';') === -1,
       X`illegal method name ${method}`,
     );
-    // TODO: if promise target not in PromiseTable: resolve result to error
-    //   this will happen if someone pipelines to our controller/receiver
     const result = provideLocalForKernelResult(kresult);
     const localDelivery = harden({ target, method, result, args });
     handleSend(localDelivery);
@@ -83,7 +88,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     for (const resolution of resolutions) {
       const [kfpid, rejected, data] = resolution;
       insistCapData(data);
-      const lpid = provideLocalForKernel(kfpid, willBeResolved);
+      const lpid = getLocalForKernel(kfpid);
 
       // I *think* we should never get here for local promises, since the
       // controller only does sendOnly. But if we change that, we need to catch
@@ -120,7 +125,13 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // dispatch.deliver with msg from vattp lands here, containing a message
   // from some remote machine. figure out whether it's a deliver or a
   // resolve, parse, merge with handleSend/handleResolutions
-  function messageFromRemote(remoteID, message) {
+  function messageFromRemote(remoteID, message, result) {
+    if (result) {
+      // TODO: eventually, the vattp vat will be changed to send the 'receive'
+      // message as a one-way message.  When that happens, this code should be
+      // changed to assert here that the result parameter is null or undefined.
+      syscall.resolve([[result, false, UNDEFINED]]);
+    }
     const command = message.split(':', 1)[0];
     if (command === 'deliver') {
       return sendFromRemote(remoteID, message);
@@ -218,8 +229,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
     if (type === 'object') {
       const remoteID = state.objectTable.get(target);
-      if (remoteID === 'kernel' || !remoteID) {
-        // XXX TODO: set up remoteID 'kernel' for non-remote objects
+      if (remoteID === 'kernel') {
         // target lives in some other vat on this machine, send into the kernel
         return { send: target, kernel: true };
       } else {
@@ -332,7 +342,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function sendToKernel(target, delivery) {
     const { method, args: localArgs, result: localResult } = delivery;
-    const kernelTarget = provideKernelForLocal(target);
+    const kernelTarget = getKernelForLocal(target);
     const kernelArgs = mapDataToKernel(localArgs);
     const kernelResult = provideKernelForLocalResult(localResult);
     syscall.send(kernelTarget, method, kernelArgs, kernelResult);
@@ -433,7 +443,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const resolutions = [];
     for (const localResolution of localResolutions) {
       const [lpid, rejected, data] = localResolution;
-      const kfpid = provideKernelForLocal(lpid);
+      const kfpid = getKernelForLocal(lpid);
       resolutions.push([kfpid, rejected, mapDataToKernel(data)]);
     }
     syscall.resolve(resolutions);
