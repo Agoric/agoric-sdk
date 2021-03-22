@@ -18,6 +18,8 @@ test('provideRemoteForLocal', t => {
   const { provideRemoteForLocal } = clistKit;
   const { remoteID } = addRemote(s, 'remote1', 'o-1');
 
+  // n.b.: duplicated provideRemoteForLocal() call is not a cut-n-paste error
+  // but a test that translation is stable
   t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
   t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
   t.is(provideRemoteForLocal(remoteID, 'lo5'), 'ro-21');
@@ -122,8 +124,11 @@ test('receive', t => {
   const { state, clistKit } = debugState.get(d);
   const {
     provideLocalForKernel,
+    getKernelForLocal,
+    getLocalForKernel,
     provideRemoteForLocal,
     getRemoteForLocal,
+    getLocalForRemote,
   } = clistKit;
   // add the remote, and an object to send at
   const transmitterID = 'o-1';
@@ -155,8 +160,11 @@ test('receive', t => {
     'bar',
     capdata('argsbytes', ['o+31', bobKernel]),
   ]);
-  // if we were to send o+11, the other side should get ro+20, which is alice
+  // if we were to send o+31/lo11, the other side should get ro+20, which is alice
   t.is(getRemoteForLocal(remoteID, 'lo11'), 'ro+20');
+  t.is(getLocalForRemote(remoteID, 'ro-20'), 'lo11');
+  t.is(getKernelForLocal('lo11'), 'o+31');
+  t.is(getLocalForKernel('o+31'), 'lo11');
 
   // bob!bar(alice, bob)
   d.deliver(

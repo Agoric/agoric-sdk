@@ -68,8 +68,30 @@ export function buildCommsDispatch(
       // received message to us, it will be embedded in a JSON array
       const remoteID = state.remoteReceivers.get(target);
       const message = JSON.parse(args.body)[0];
-      return messageFromRemote(remoteID, message);
+      return messageFromRemote(remoteID, message, result);
     }
+
+    // If we get to this point, the message is not being delivered to a
+    // meta-object and so `sendFromKernel()` can proceed with translating the
+    // message into local space and processing it.  However, since a message to
+    // a meta-object never reaches this translation step, it means that neither
+    // a PromiseTable entry nor a local promise ID are ever allocated for such a
+    // message's `result` parameter.  If the kernel were to pipeline a
+    // subsequent message to that result, that message could, in principle,
+    // arrive at this point in the code without there being any local entity to
+    // deliver it *to*.  If this were to happen, `sendFromKernel()` would throw
+    // an exception when it fails to translate the message target, and
+    // consequently kill the vat.  Fortunately, we don't believe any special
+    // handling is required for this eventuality because it should never happen:
+    // (1) `messageFromRemote()` does not make use of the result parameter at
+    // all, and (2) `deliverToController()` always resolves the result with a
+    // direct `syscall.resolve()` call in the same crank, short-circuiting the
+    // kernel's pipeline delivery mechanism.  If such a case *does* happen, it
+    // can only be the result of a kernel bug (i.e., the pipeline short-circuit
+    // logic malfunctioned) or a bug in one of the comms controller object's
+    // method handlers (i.e., it failed to resolve the result in the same
+    // crank).  The resulting abrupt comms vat termination should serve as a
+    // diagnostic signal that we have a bug that must be corrected.
 
     args.slots.map(s =>
       assert(
