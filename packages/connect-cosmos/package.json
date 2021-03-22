@@ -29,6 +29,7 @@
   "dependencies": {
     "@agoric/assert": "^0.2.3",
     "@agoric/eventual-send": "^0.13.3",
+    "@agoric/marshal": "^0.4.0",
     "@agoric/notifier": "^0.3.3",
     "@agoric/promise-kit": "^0.2.3",
     "bip39": "^3.0.3",

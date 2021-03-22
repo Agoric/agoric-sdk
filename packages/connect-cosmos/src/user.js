@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import crypto from 'crypto';
 import * as bip39 from 'bip39';
 
 export const makeUser = ({ console }) => {
   let mnemonicP;
-  return harden({
+  return Far('@connect-cosmos/user', {
     async recoverOrGenerateMnemonic(user, entropyBits) {
       if (mnemonicP) {
         return mnemonicP;
