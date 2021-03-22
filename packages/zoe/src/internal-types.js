@@ -271,3 +271,13 @@
  * @param {(amount: Amount) => any} onFulfilled
  * @returns {any} the result of `onFulfilled`
  */
+
+/**
+ * @callback GetMathKindByBrand
+ * Get the mathKind for a brand known by Zoe
+ *
+ * To be deleted when brands have a property for mathKind
+ *
+ * @param {Brand} brand
+ * @returns {AmountMathKind}
+ */

@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { isNat, Nat } from '@agoric/nat';
 
 /**
  * Type guard for SetValue
@@ -15,26 +15,7 @@ export const isSetValue = value => Array.isArray(value);
  * @param {Value} value
  * @returns {value is NatValue}
  */
-export const isNatValue = value => {
-  if (isSetValue(value)) {
-    return false;
-  }
-  return typeof Nat(value) === 'bigint';
-};
-
-/**
- * @param {NatMathHelpers | SetMathHelpers } mathHelpers
- * @returns {mathHelpers is SetMathHelpers}
- */
-export const isSetMathHelpers = mathHelpers =>
-  isSetValue(mathHelpers.doMakeEmpty());
-
-/**
- * @param {NatMathHelpers | SetMathHelpers } mathHelpers
- * @returns {mathHelpers is NatMathHelpers}
- */
-export const isNatMathHelpers = mathHelpers =>
-  isNatValue(mathHelpers.doMakeEmpty());
+export const isNatValue = value => isNat(value);
 
 /**
  * @param {Value} value

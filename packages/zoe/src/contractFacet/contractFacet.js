@@ -153,7 +153,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
-      const proposal = cleanProposal(harden({ exit }));
+      const proposal = cleanProposal(harden({ exit }), getMathKindByBrand);
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();

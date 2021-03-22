@@ -5,6 +5,7 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import { MathKind } from '@agoric/ertp/src/deprecatedAmountMath';
 import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
@@ -23,7 +24,9 @@ test('cleanProposal test', t => {
     exit: { onDemand: null },
   });
 
-  const actual = cleanProposal(proposal);
+  const getMathKindByBrand = _brand => MathKind.NAT;
+
+  const actual = cleanProposal(proposal, getMathKindByBrand);
 
   t.deepEqual(actual, expected);
 });
@@ -41,8 +44,10 @@ test('cleanProposal - all empty', t => {
     exit: { waived: null },
   });
 
+  const getMathKindByBrand = _brand => MathKind.NAT;
+
   // cleanProposal no longer fills in empty keywords
-  t.deepEqual(cleanProposal(proposal), expected);
+  t.deepEqual(cleanProposal(proposal, getMathKindByBrand), expected);
 });
 
 test('cleanProposal - repeated brands', t => {
@@ -63,9 +68,30 @@ test('cleanProposal - repeated brands', t => {
     give: { Price2: moola(3) },
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
+
+  const getMathKindByBrand = _brand => MathKind.NAT;
+
   // cleanProposal no longer fills in empty keywords
-  const actual = cleanProposal(proposal);
+  const actual = cleanProposal(proposal, getMathKindByBrand);
   t.deepEqual(actual.want, expected.want);
   t.deepEqual(actual.give, expected.give);
   t.deepEqual(actual.exit, expected.exit);
+});
+
+test('cleanProposal - wrong mathKind', t => {
+  const { moola, simoleans } = setup();
+  const timer = buildManualTimer(console.log);
+
+  const proposal = harden({
+    want: { Asset2: simoleans(1) },
+    give: { Price2: moola(3) },
+    exit: { afterDeadline: { timer, deadline: 100n } },
+  });
+
+  const getMathKindByBrand = _brand => MathKind.SET;
+
+  t.throws(() => cleanProposal(proposal, getMathKindByBrand), {
+    message:
+      'The amount (an object) did not have the mathKind of the brand (a string)',
+  });
 });

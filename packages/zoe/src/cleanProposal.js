@@ -3,7 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { amountMath } from '@agoric/ertp';
+import { amountMath, getMathKind } from '@agoric/ertp';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
@@ -61,17 +61,24 @@ const cleanKeys = (allowedKeys, record) => {
 export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
-const coerceAmountKeywordRecord = allegedAmountKeywordRecord => {
+const coerceAmountKeywordRecord = (
+  allegedAmountKeywordRecord,
+  getMathKindByBrand,
+) => {
   const keywords = getKeywords(allegedAmountKeywordRecord);
   keywords.forEach(assertKeywordName);
 
   const amounts = Object.values(allegedAmountKeywordRecord);
   // Check that each value can be coerced using the amountMath
   // indicated by brand. `AmountMath.coerce` throws if coercion fails.
-  // TODO: coercing with the amount's same brand is a bit weird. Fix this.
-  const coercedAmounts = amounts.map(amount =>
-    amountMath.coerce(amount, amount.brand),
-  );
+  const coercedAmounts = amounts.map(amount => {
+    const brandMathKind = getMathKindByBrand(amount.brand);
+    assert(
+      getMathKind(amount) === brandMathKind,
+      X`The amount ${amount} did not have the mathKind of the brand ${brandMathKind}`,
+    );
+    return amountMath.coerce(amount, amount.brand);
+  });
 
   // Recreate the amountKeywordRecord with coercedAmounts.
   return arrayToObj(coercedAmounts, keywords);
@@ -158,9 +165,10 @@ const rootKeysAllowed = harden(['want', 'give', 'exit']);
  * :Timer, deadline :bigint } }
  *
  * @param {Proposal} proposal
+ * @param {GetMathKindByBrand} getMathKindByBrand
  * @returns {ProposalRecord}
  */
-export const cleanProposal = proposal => {
+export const cleanProposal = (proposal, getMathKindByBrand) => {
   mustBeComparable(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
 
@@ -171,8 +179,8 @@ export const cleanProposal = proposal => {
     /** @type {ExitRule} */ exit = harden({ onDemand: null }),
   } = proposal;
 
-  want = coerceAmountKeywordRecord(want);
-  give = coerceAmountKeywordRecord(give);
+  want = coerceAmountKeywordRecord(want, getMathKindByBrand);
+  give = coerceAmountKeywordRecord(give, getMathKindByBrand);
 
   assertExit(exit);
 

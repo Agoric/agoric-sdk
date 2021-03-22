@@ -52,6 +52,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
 
+  /** @type {GetMathKindByBrand} */
+  const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
+
   /**
    * Create an installation by permanently storing the bundle. It will be
    * evaluated each time it is used to make a new instance of a contract.
@@ -416,7 +419,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             `No further offers are accepted`,
           );
 
-          const proposal = cleanProposal(uncleanProposal);
+          const proposal = cleanProposal(uncleanProposal, getMathKindByBrand);
           const { give, want } = proposal;
           const giveKeywords = Object.keys(give);
           const wantKeywords = Object.keys(want);
