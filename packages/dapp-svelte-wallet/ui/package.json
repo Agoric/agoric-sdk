@@ -8,8 +8,9 @@
     "dev": "rollup -c -w",
     "start": "sirv public",
     "lint-check": "yarn lint",
-    "lint-fix": "exit 0",
-    "lint": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "yarn lint:eslint",
+    "lint:eslint": "eslint 'src/*.js'",
     "test": "exit 0",
     "test:xs": "exit 0"
   },
@@ -29,6 +30,17 @@
     "svelte": "^3.0.0",
     "svelte-awesome": "^2.3.0",
     "svelte-themer": "^0.1.4"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ],
+    "env": {
+      "browser": true
+    },
+    "rules": {
+      "import/no-extraneous-dependencies": "off"
+    }
   },
   "files": [
     "public"

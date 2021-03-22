@@ -47,7 +47,8 @@ export function parseValue(str, displayInfo) {
  * @returns {string}
  */
 export function stringifyValue(value, displayInfo = undefined) {
-  const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } = displayInfo || {};
+  const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } =
+    displayInfo || {};
 
   if (amountMathKind !== MathKind.NAT) {
     // Just return the size of the set.
@@ -66,7 +67,7 @@ export function stringifyValue(value, displayInfo = undefined) {
   const unitstr = `${bValue / bScale}`;
 
   // Find the remainder of the value divided by the scale.
-  const bDecimals = BigInt(bValue % bScale)
+  const bDecimals = BigInt(bValue % bScale);
 
   // Create the decimal string.
   const decstr = `${bDecimals}`
