@@ -6,7 +6,7 @@
  * for virtual objects: makeKind, makeWeakStore
  */
 
-import '@agoric/install-ses';
+import './install-ses-debug';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager';
 
 const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager(3);
