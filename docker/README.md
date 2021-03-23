@@ -15,11 +15,9 @@ already have `docker-compose` installed.
 ### Start `ag-solo` in the background and watch the logs
 
 Get
-[docker-compose.yml](https://raw.githubusercontent.com/Agoric/agoric-sdk/2697-docker-client/docker/docker-compose.yml)
-and enter the following commands:
+[docker-compose.yml](https://raw.githubusercontent.com/Agoric/agoric-sdk/2697-docker-client/docker/docker-compose.yml), make sure it's in the current directory of your terminal, and enter the following commands:
 
 ```sh
-ls docker-compose.yml  # it's in the current directory, right?
 docker-compose pull    # get the current image
 docker-compose up -d
 docker-compose logs -f --tail=50
