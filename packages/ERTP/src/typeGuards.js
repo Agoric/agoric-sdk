@@ -3,6 +3,9 @@ import { isNat } from '@agoric/nat';
 
 /**
  * Type guard for SetValue
+ * Used as a pre-validation check to select which validator
+ * (mathHelpers) to use, and also used with assert to satisfy
+ * Typescript checking
  *
  * @param {Value} value
  * @returns {value is SetValue}
@@ -10,23 +13,12 @@ import { isNat } from '@agoric/nat';
 export const isSetValue = value => Array.isArray(value);
 
 /**
- * Type guard for NatValue
+ * Type guard for NatValue.
+ * Used as a pre-validation check to select which validator
+ * (mathHelpers) to use, and also used with assert to satisfy
+ * Typescript checking
  *
  * @param {Value} value
  * @returns {value is NatValue}
  */
 export const isNatValue = value => isNat(value);
-
-/**
- * @param {Value} value
- * @returns {asserts SetValue}
- */
-export const assertSetValue = value =>
-  assert(isSetValue(value), `Must be a SetValue`);
-
-/**
- * @param {Value} value
- * @returns {asserts NatValue}
- */
-export const assertNatValue = value =>
-  assert(isNatValue(value), `Must be a NatValue`);

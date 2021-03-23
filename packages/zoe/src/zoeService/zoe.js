@@ -6,6 +6,11 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
+ *
+ * Within Zoe, the mathKind of validated amounts must be consistent
+ * with the brand's mathKind. This is stricter than the validation
+ * provided by amountMath currently. When the brand has a
+ * mathKind itself, amountMath will validate that.
  */
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';

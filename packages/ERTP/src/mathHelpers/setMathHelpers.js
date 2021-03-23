@@ -2,7 +2,7 @@
 
 import { passStyleOf } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { mustBeComparable, sameStructure } from '@agoric/same-structure';
 
 import '../types';
 
@@ -86,6 +86,7 @@ const hasElement = (buckets, elem) => {
 const setMathHelpers = harden({
   doCoerce: list => {
     harden(list);
+    mustBeComparable(list);
     assert(passStyleOf(list) === 'copyArray', 'list must be an array');
     checkForDupes(makeBuckets(list));
     return list;
