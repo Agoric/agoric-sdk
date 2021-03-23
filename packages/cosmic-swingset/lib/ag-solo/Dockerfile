@@ -2,7 +2,7 @@ ARG TAG=latest
 FROM agoric/agoric-sdk:$TAG
 
 WORKDIR /usr/src/app
-RUN ln -sf $PWD/bin/ag-solo /usr/local/bin/
+RUN ln -sf $PWD/bin/ag-solo $PWD/node_modules/.bin/agoric /usr/local/bin/
 COPY . lib/ag-solo/
 WORKDIR /usr/src/app/solo
 
