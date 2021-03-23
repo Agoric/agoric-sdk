@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
@@ -16,10 +16,10 @@ import { assert } from '@agoric/assert';
  * specification of what is being sold, such as:
  * {
  *   customValueProperties: { ...arbitrary },
- *   count: 3,
+ *   count: 3n,
  *   moneyIssuer: moolaIssuer,
  *   sellItemsInstallationHandle,
- *   pricePerItem: moolaAmountMath.make(20),
+ *   pricePerItem: amountMath.make(20n, moolaBrand),
  * }
  * The payouts are returned as an offerResult in the `outcome`, and an API that
  * allows selling the tickets that were produced. You can reuse the ticket maker
@@ -30,10 +30,7 @@ import { assert } from '@agoric/assert';
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();
   // Create the internal token mint
-  const { issuer, mint, amountMath: tokenMath } = makeIssuerKit(
-    tokenName,
-    MathKind.SET,
-  );
+  const { issuer, mint, brand } = makeIssuerKit(tokenName, MathKind.SET);
 
   const zoeService = zcf.getZoeService();
 
@@ -44,18 +41,17 @@ const start = zcf => {
     sellItemsInstallation,
     pricePerItem,
   }) => {
-    const tokenAmount = tokenMath.make(
-      harden(
-        Array(count)
-          .fill(undefined)
-          .map((_, i) => {
-            const tokenNumber = i + 1;
-            return {
-              ...customValueProperties,
-              number: tokenNumber,
-            };
-          }),
-      ),
+    const tokenAmount = amountMath.make(
+      Array(count)
+        .fill(undefined)
+        .map((_, i) => {
+          const tokenNumber = i + 1;
+          return {
+            ...customValueProperties,
+            number: tokenNumber,
+          };
+        }),
+      brand,
     );
     const tokenPayment = mint.mintPayment(harden(tokenAmount));
     // Note that the proposal `want` is empty

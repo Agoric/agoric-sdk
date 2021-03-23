@@ -7,10 +7,10 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
 
-import { makeLocalAmountMath } from '@agoric/ertp';
 import {
   setupLoanUnitTest,
   makeSeatKit,
@@ -30,36 +30,36 @@ import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addC
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
 import { makeRatio } from '../../../../src/contractSupport';
 
-const BASIS_POINTS = 10000;
+const BASIS_POINTS = 10000n;
 
 const setupBorrow = async (
-  maxLoanValue = 100,
+  maxLoanValue = 100n,
   timer = buildManualTimer(console.log),
 ) => {
   const setup = await setupLoanUnitTest();
   const { zcf, loanKit, collateralKit, zoe } = setup;
   // Set up the lender seat
-  const maxLoan = loanKit.amountMath.make(maxLoanValue);
+  const maxLoan = amountMath.make(maxLoanValue, loanKit.brand);
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
     zcf,
     { give: { Loan: maxLoan } },
     { Loan: loanKit.mint.mintPayment(maxLoan) },
   );
 
-  const mmr = makeRatio(150, loanKit.brand);
+  const mmr = makeRatio(150n, loanKit.brand);
   const priceList = [2, 1, 1, 1];
 
   const priceAuthority = await makeFakePriceAuthority({
-    mathIn: collateralKit.amountMath,
-    mathOut: loanKit.amountMath,
+    actualBrandIn: collateralKit.brand,
+    actualBrandOut: loanKit.brand,
     priceList,
     timer,
   });
   await timer.tick();
 
   const initialLiquidityKeywordRecord = {
-    Central: loanKit.amountMath.make(10000),
-    Secondary: collateralKit.amountMath.make(10000),
+    Central: amountMath.make(10000n, loanKit.brand),
+    Secondary: amountMath.make(10000n, collateralKit.brand),
   };
 
   const autoswapInstance = await makeAutoswapInstance(
@@ -76,7 +76,7 @@ const setupBorrow = async (
     notifier: periodNotifier,
   } = makeNotifierKit();
 
-  const interestRate = makeRatio(5, loanKit.brand, BASIS_POINTS);
+  const interestRate = makeRatio(5n, loanKit.brand, BASIS_POINTS);
 
   const config = {
     lenderSeat,
@@ -88,6 +88,8 @@ const setupBorrow = async (
     periodNotifier,
     interestRate,
     interestPeriod: 5n,
+    loanBrand: loanKit.brand,
+    collateralBrand: collateralKit.brand,
   };
   const borrowInvitation = makeBorrowInvitation(zcf, config);
   return {
@@ -102,11 +104,14 @@ const setupBorrow = async (
   };
 };
 
-const setupBorrowFacet = async (collateralValue = 1000, maxLoanValue = 100) => {
+const setupBorrowFacet = async (
+  collateralValue = 1000n,
+  maxLoanValue = 100n,
+) => {
   const setup = await setupBorrow(maxLoanValue);
   const { borrowInvitation, zoe, maxLoan, collateralKit } = setup;
 
-  const collateral = collateralKit.amountMath.make(collateralValue);
+  const collateral = amountMath.make(collateralValue, collateralKit.brand);
 
   const proposal = harden({
     want: { Loan: maxLoan },
@@ -146,7 +151,7 @@ test('borrow assert customProps', async t => {
 
 test('borrow not enough collateral', async t => {
   // collateral is 0
-  const { borrowSeat } = await setupBorrowFacet(0);
+  const { borrowSeat } = await setupBorrowFacet(0n);
   await t.throwsAsync(() => E(borrowSeat).getOfferResult(), {
     message:
       'The required margin is (a bigint)% but collateral only had value of (a bigint)',
@@ -154,7 +159,7 @@ test('borrow not enough collateral', async t => {
 });
 
 test('borrow just enough collateral', async t => {
-  const { borrowFacet, zoe } = await setupBorrowFacet(75);
+  const { borrowFacet, zoe } = await setupBorrowFacet(75n);
   const closeLoanInvitation = await E(borrowFacet).makeCloseLoanInvitation();
   await checkDescription(t, zoe, closeLoanInvitation, 'repayAndClose');
 });
@@ -193,16 +198,16 @@ test('borrow getLiquidationPromise', async t => {
     loanKit,
     priceAuthority,
     timer,
-  } = await setupBorrowFacet(100);
+  } = await setupBorrowFacet(100n);
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
-  const collateralGiven = collateralKit.amountMath.make(100);
+  const collateralGiven = amountMath.make(100n, collateralKit.brand);
 
   const quoteIssuer = E(priceAuthority).getQuoteIssuer(
     collateralKit.brand,
     loanKit.brand,
   );
-  const quoteAmountMath = await makeLocalAmountMath(quoteIssuer);
+  const quoteBrand = await E(quoteIssuer).getBrand();
 
   // According to the schedule, the value of the collateral moves from
   // 2x the loan brand to only 1x the loan brand at time 1.
@@ -214,15 +219,16 @@ test('borrow getLiquidationPromise', async t => {
   t.deepEqual(quoteAmount, quoteAmount2);
   t.deepEqual(
     quoteAmount,
-    quoteAmountMath.make(
-      harden([
+    amountMath.make(
+      [
         {
           amountIn: collateralGiven,
-          amountOut: loanKit.amountMath.make(100),
+          amountOut: amountMath.make(100n, loanKit.brand),
           timer,
           timestamp: 2n,
         },
-      ]),
+      ],
+      quoteBrand,
     ),
   );
 });
@@ -239,14 +245,14 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
     priceAuthority,
     timer,
     zcf,
-  } = await setupBorrowFacet(100);
+  } = await setupBorrowFacet(100n);
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
   const addCollateralInvitation = await E(
     borrowFacet,
   ).makeAddCollateralInvitation();
 
-  const addedAmount = collateralKit.amountMath.make(3);
+  const addedAmount = amountMath.make(3n, collateralKit.brand);
 
   await performAddCollateral(
     t,
@@ -257,43 +263,52 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
     addedAmount,
   );
 
-  const collateralGiven = collateralKit.amountMath.make(103);
+  const collateralGiven = amountMath.make(103n, collateralKit.brand);
 
   const quoteIssuer = await E(priceAuthority).getQuoteIssuer(
     collateralKit.brand,
     loanKit.brand,
   );
-  const quoteAmountMath = await makeLocalAmountMath(quoteIssuer);
 
   await timer.tick();
   await timer.tick();
 
   const { quoteAmount, quotePayment } = await liquidationPromise;
+
   const quoteAmount2 = await E(quoteIssuer).getAmountOf(quotePayment);
 
+  const quoteBrand = await E(quoteIssuer).getBrand();
+
   t.deepEqual(quoteAmount, quoteAmount2);
+
   t.deepEqual(
     quoteAmount,
-    quoteAmountMath.make(
-      harden([
+    amountMath.make(
+      [
         {
           amountIn: collateralGiven,
-          amountOut: loanKit.amountMath.make(103),
+          amountOut: amountMath.make(103n, loanKit.brand),
           timer,
           timestamp: 3n,
         },
-      ]),
+      ],
+      quoteBrand,
     ),
   );
+
   await checkPayouts(
     t,
     lenderUserSeat,
     { Collateral: collateralKit, Loan: loanKit },
     {
-      Collateral: collateralKit.amountMath.getEmpty(),
-      Loan: loanKit.amountMath.make(101),
+      Collateral: amountMath.makeEmpty(
+        collateralKit.brand,
+        collateralKit.amountMathKind,
+      ),
+      Loan: amountMath.make(101n, loanKit.brand),
     },
   );
+
   await checkNoNewOffers(t, zcf);
 });
 
@@ -304,7 +319,7 @@ test('getDebtNotifier with interest', async t => {
     periodUpdater,
     zoe,
     loanKit,
-  } = await setupBorrowFacet(100000, 40000);
+  } = await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0n);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -319,14 +334,14 @@ test('getDebtNotifier with interest', async t => {
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
-  t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
+  t.deepEqual(debtCompounded1, amountMath.make(40020n, loanKit.brand));
 
   periodUpdater.updateState(11);
 
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
     updateCount1,
   );
-  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40040));
+  t.deepEqual(debtCompounded2, amountMath.make(40040n, loanKit.brand));
 
   const closeLoanInvitation = E(borrowFacet).makeCloseLoanInvitation();
   await checkDescription(t, zoe, closeLoanInvitation, 'repayAndClose');
@@ -334,12 +349,12 @@ test('getDebtNotifier with interest', async t => {
   const collateral = await E(borrowFacet).getRecentCollateralAmount();
 
   const proposal = harden({
-    give: { Loan: loanKit.amountMath.make(40000) },
+    give: { Loan: amountMath.make(40000n, loanKit.brand) },
     want: { Collateral: collateral },
   });
 
   const payments = harden({
-    Loan: loanKit.mint.mintPayment(loanKit.amountMath.make(40000)),
+    Loan: loanKit.mint.mintPayment(amountMath.make(40000n, loanKit.brand)),
   });
 
   const seat = await E(zoe).offer(closeLoanInvitation, proposal, payments);
@@ -351,12 +366,12 @@ test('getDebtNotifier with interest', async t => {
 });
 
 test('borrow collateral just too low', async t => {
-  const { borrowSeat: borrowSeatGood } = await setupBorrowFacet(75);
+  const { borrowSeat: borrowSeatGood } = await setupBorrowFacet(75n);
   const offerResult = await E(borrowSeatGood).getOfferResult();
   const collateralAmount = await E(offerResult).getRecentCollateralAmount();
   t.is(collateralAmount.value, 75n);
 
-  const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74);
+  const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74n);
   await t.throwsAsync(() => E(borrowSeatBad).getOfferResult(), {
     message:
       'The required margin is (a bigint)% but collateral only had value of (a bigint)',
@@ -369,7 +384,7 @@ test('aperiodic interest', async t => {
     maxLoan,
     periodUpdater,
     loanKit,
-  } = await setupBorrowFacet(100000, 40000);
+  } = await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -384,7 +399,7 @@ test('aperiodic interest', async t => {
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
-  t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
+  t.deepEqual(debtCompounded1, amountMath.make(40020n, loanKit.brand));
 
   // skip ahead a notification
   periodUpdater.updateState(16);
@@ -394,20 +409,20 @@ test('aperiodic interest', async t => {
     debtNotifier,
   ).getUpdateSince(updateCount1);
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
-  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40060));
+  t.deepEqual(debtCompounded2, amountMath.make(40060n, loanKit.brand));
 
   periodUpdater.updateState(21);
   const { value: debtCompounded3 } = await E(debtNotifier).getUpdateSince(
     updateCount2,
   );
-  t.deepEqual(debtCompounded3, loanKit.amountMath.make(40080));
+  t.deepEqual(debtCompounded3, amountMath.make(40080n, loanKit.brand));
 });
 
 // Show that interest is charged from the time the loan was created.
 // setupBorrow() calls timer.tick(), so the basetime for the loan will be 4.
 test('interest starting from non-zero time', async t => {
-  const collateralValue = 100000;
-  const maxLoanValue = 40000;
+  const collateralValue = 100000n;
+  const maxLoanValue = 40000n;
   // The fakePriceAuthority pays attention to the fakeTimer
   const timer = buildManualTimer(console.log);
   timer.tick();
@@ -422,7 +437,7 @@ test('interest starting from non-zero time', async t => {
     periodUpdater,
     loanKit,
   } = setup;
-  const collateral = collateralKit.amountMath.make(collateralValue);
+  const collateral = amountMath.make(collateralValue, collateralKit.brand);
 
   const proposal = harden({
     want: { Loan: maxLoan },
@@ -448,7 +463,7 @@ test('interest starting from non-zero time', async t => {
   const { value: debtCompounded2 } = await E(debtNotifier).getUpdateSince(
     updateCount,
   );
-  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40020));
+  t.deepEqual(debtCompounded2, amountMath.make(40020n, loanKit.brand));
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 9n);
 });
 
@@ -461,7 +476,7 @@ test('short periods', async t => {
     maxLoan,
     periodUpdater,
     loanKit,
-  } = await setupBorrowFacet(100000, 40000);
+  } = await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -478,28 +493,28 @@ test('short periods', async t => {
   const { value: debtCompounded1, updateCount: updateCount1 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount);
-  t.deepEqual(debtCompounded1, loanKit.amountMath.make(40020));
+  t.deepEqual(debtCompounded1, amountMath.make(40020n, loanKit.brand));
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 6n);
 
   periodUpdater.updateState(14);
   const { value: debtCompounded2, updateCount: updateCount2 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount1);
-  t.deepEqual(debtCompounded2, loanKit.amountMath.make(40040));
+  t.deepEqual(debtCompounded2, amountMath.make(40040n, loanKit.brand));
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 11n);
 
   periodUpdater.updateState(17);
   const { value: debtCompounded3, updateCount: updateCount3 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount2);
-  t.deepEqual(debtCompounded3, loanKit.amountMath.make(40060));
+  t.deepEqual(debtCompounded3, amountMath.make(40060n, loanKit.brand));
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
 
   periodUpdater.updateState(21);
   const { value: debtCompounded4, updateCount: updateCount4 } = await E(
     debtNotifier,
   ).getUpdateSince(updateCount3);
-  t.deepEqual(debtCompounded4, loanKit.amountMath.make(40080));
+  t.deepEqual(debtCompounded4, amountMath.make(40080n, loanKit.brand));
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
 
   periodUpdater.updateState(25);
@@ -509,7 +524,7 @@ test('short periods', async t => {
   const { value: debtCompounded5 } = await E(debtNotifier).getUpdateSince(
     updateCount4,
   );
-  t.deepEqual(debtCompounded5, loanKit.amountMath.make(40100));
+  t.deepEqual(debtCompounded5, amountMath.make(40100n, loanKit.brand));
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 26n);
 });
 

@@ -3,6 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
+import { amountMath } from '@agoric/ertp';
 
 import { isOfferSafe } from './offerSafety';
 
@@ -14,7 +15,7 @@ export const makeZcfSeatAdminKit = (
   allSeatStagings,
   zoeSeatAdmin,
   seatData,
-  getAmountMath,
+  getMathKindByBrand,
 ) => {
   // The proposal and notifier are not reassigned.
   const { proposal, notifier } = seatData;
@@ -80,7 +81,8 @@ export const makeZcfSeatAdminKit = (
         brand,
         X`A brand must be supplied when the keyword is not defined`,
       );
-      return getAmountMath(brand).getEmpty();
+      const mathKind = getMathKindByBrand(brand);
+      return amountMath.makeEmpty(brand, mathKind);
     },
     getCurrentAllocation: () => {
       assertExitedFalse();
@@ -93,7 +95,7 @@ export const makeZcfSeatAdminKit = (
         ...newAllocation,
       });
 
-      return isOfferSafe(getAmountMath, proposal, reallocation);
+      return isOfferSafe(proposal, reallocation);
     },
     stage: newAllocation => {
       assertExitedFalse();
@@ -104,7 +106,7 @@ export const makeZcfSeatAdminKit = (
       });
 
       assert(
-        isOfferSafe(getAmountMath, proposal, allocation),
+        isOfferSafe(proposal, allocation),
         X`The reallocation was not offer safe`,
       );
 

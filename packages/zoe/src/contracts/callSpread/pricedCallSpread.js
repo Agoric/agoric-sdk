@@ -1,4 +1,5 @@
 // @ts-check
+
 import '../../../exported';
 import './types';
 
@@ -6,6 +7,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { amountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
   depositToSeat,
@@ -61,16 +63,18 @@ const BASIS_POINTS = 10000n;
 
 /** @type {ContractStartFn} */
 const start = zcf => {
-  const terms = zcf.getTerms();
   const {
-    maths: { Collateral: collateralMath, Strike: strikeMath },
-  } = terms;
-  assertUsesNatMath(zcf, collateralMath.getBrand());
-  assertUsesNatMath(zcf, strikeMath.getBrand());
+    brands,
+    strikePrice1,
+    strikePrice2,
+    settlementAmount,
+  } = zcf.getTerms();
+  assertUsesNatMath(zcf, brands.Collateral);
+  assertUsesNatMath(zcf, brands.Strike);
   // notice that we don't assert that the Underlying is fungible.
 
   assert(
-    strikeMath.isGTE(terms.strikePrice2, terms.strikePrice1),
+    amountMath.isGTE(strikePrice2, strikePrice1),
     X`strikePrice2 must be greater than strikePrice1`,
   );
 
@@ -104,7 +108,7 @@ const start = zcf => {
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
 
-    const required = multiplyBy(terms.settlementAmount, share);
+    const required = multiplyBy(settlementAmount, share);
 
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
@@ -121,7 +125,7 @@ const start = zcf => {
 
       // assert that the allocation includes the amount of collateral required
       assert(
-        collateralMath.isEqual(newCollateral, required),
+        amountMath.isEqual(newCollateral, required),
         X`Collateral required: ${required.value}`,
       );
 
@@ -156,7 +160,7 @@ const start = zcf => {
   function makeInvitationPair(longCollateralShare) {
     const longPercent = makeRatio(
       (longCollateralShare * BASIS_POINTS) / PERCENT_BASE,
-      collateralMath.getBrand(),
+      brands.Collateral,
       BASIS_POINTS,
     );
 

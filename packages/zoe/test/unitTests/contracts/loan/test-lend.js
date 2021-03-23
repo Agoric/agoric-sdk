@@ -1,4 +1,4 @@
-// ts-check
+// @ts-check
 import '../../../../exported';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -6,6 +6,7 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 
 import { setupLoanUnitTest, checkDescription } from './helpers';
 
@@ -16,13 +17,13 @@ test('makeLendInvitation', async t => {
   const { zcf, zoe, loanKit } = await setupLoanUnitTest();
 
   const config = {
-    mmr: makeRatio(150, loanKit.brand),
+    mmr: makeRatio(150n, loanKit.brand),
   };
   const lendInvitation = makeLendInvitation(zcf, config);
 
   await checkDescription(t, zoe, lendInvitation, 'lend');
 
-  const maxLoan = loanKit.amountMath.make(1000);
+  const maxLoan = amountMath.make(1000n, loanKit.brand);
 
   const proposal = harden({
     give: { Loan: maxLoan },

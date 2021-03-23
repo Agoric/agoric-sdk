@@ -79,10 +79,7 @@ test('issuer.makeEmptyPurse', async t => {
   };
 
   t.assert(
-    amountMath.isEqual(
-      purse.getCurrentAmount(),
-      amountMath.makeEmpty(MathKind.NAT, brand),
-    ),
+    amountMath.isEqual(purse.getCurrentAmount(), amountMath.makeEmpty(brand)),
     `empty purse is empty`,
   );
   await checkNotifier();
@@ -111,10 +108,7 @@ test('issuer.makeEmptyPurse', async t => {
       );
     });
     t.assert(
-      amountMath.isEqual(
-        purse.getCurrentAmount(),
-        amountMath.makeEmpty(MathKind.NAT, brand),
-      ),
+      amountMath.isEqual(purse.getCurrentAmount(), amountMath.makeEmpty(brand)),
       `the purse is empty again`,
     );
     await checkNotifier();
@@ -130,7 +124,7 @@ test('issuer.makeEmptyPurse', async t => {
 test('purse.deposit', async t => {
   t.plan(7);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
-  const fungible0 = amountMath.makeEmpty(MathKind.NAT, brand);
+  const fungible0 = amountMath.makeEmpty(brand);
   const fungible17 = amountMath.make(17n, brand);
   const fungible25 = amountMath.make(25n, brand);
   const fungibleSum = amountMath.add(fungible17, fungible25);

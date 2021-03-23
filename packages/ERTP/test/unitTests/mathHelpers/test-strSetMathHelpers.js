@@ -59,7 +59,7 @@ test('set with strings getValue', t => {
 
 test('set with strings makeEmpty', t => {
   t.deepEqual(
-    m.makeEmpty(MathKind.SET, mockBrand),
+    m.makeEmpty(mockBrand, MathKind.SET),
     { brand: mockBrand, value: [] },
     `empty is []`,
   );

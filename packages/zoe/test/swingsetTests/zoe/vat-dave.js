@@ -1,18 +1,14 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
+import { amountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
-  const {
-    moola,
-    simoleans,
-    bucks,
-    purses,
-    moolaAmountMath,
-    simoleanAmountMath,
-  } = await setupIssuers(zoe, issuers);
+  const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
@@ -118,14 +114,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
         X`wrong underlying asset`,
       );
       assert(
-        simoleanAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),

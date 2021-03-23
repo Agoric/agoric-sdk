@@ -11,6 +11,18 @@
  */
 
 /**
+ * @callback ZCFMakeEmptySeatKit
+ * @param {ExitRule=} exit
+ * @returns {ZCFSeatKit}
+ */
+
+/**
+ * @callback GetAmountMath
+ * @param {Brand} brand
+ * @returns {DeprecatedAmountMath}
+ */
+
+/**
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -36,14 +48,16 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAmountMath} getAmountMath
+ * @property {(brand: Brand) => AmountMathKind} getMathKind
  * @property {MakeZCFMint} makeZCFMint
- * @property {(exit: ExitRule=) => ZcfSeatKit} makeEmptySeatKit
+ * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => void} stopAcceptingOffers
  */
 
 /**
- * @callback Reallocate
+ * @typedef {(seatStaging1: SeatStaging, seatStaging2: SeatStaging,
+ * ...seatStagingRest: Array<SeatStaging>) => void} Reallocate
  *
  * The contract can reallocate over seatStagings, which are
  * associations of seats with reallocations.
@@ -60,13 +74,6 @@
  * whose allocations will change. Since rights are conserved for the
  * change, overall rights will be unchanged, and a reallocation can
  * only effect offer safety for seats whose allocations change.
- *
- * @param  {SeatStaging} seatStaging
- * @param {SeatStaging} seatStaging
- * @param {SeatStaging=} seatStaging
- * @param {SeatStaging=} seatStaging
- * @param {SeatStaging=} seatStaging
- * @returns {void}
  */
 
 /**
@@ -84,25 +91,19 @@
  * @callback MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
- * indicated by the `instance` in the extent of the invitation. Zoe
- * also puts the `installation` and a unique `handle` in the extent of
+ * indicated by the `instance` in the details of the invitation. Zoe
+ * also puts the `installation` and a unique `handle` in the details of
  * the invitation. The contract must provide a `description` for the
  * invitation and should include whatever information is
  * necessary for a potential buyer of the invitation to know what they are
  * getting in the `customProperties`. `customProperties` will be
- * placed in the extent of the invitation.
+ * placed in the details of the invitation.
  *
  * @param {OfferHandler=} offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
  * @param {Object=} customProperties
  * @returns {Promise<Invitation>}
- */
-
-/**
- * @callback GetAmountMath
- * @param {Brand} brand
- * @returns {DeprecatedAmountMath}
  */
 
 /**
@@ -120,11 +121,16 @@
  */
 
 /**
+ * @callback ZCFMintMintGains
+ * @param {AmountKeywordRecord} gains
+ * @param {ZCFSeat=} zcfSeat
+ * @returns {ZCFSeat}
+ */
+
+/**
  * @typedef {Object} ZCFMint
  * @property {() => IssuerRecord} getIssuerRecord
- * @property {(gains: AmountKeywordRecord,
- *             zcfSeat: ZCFSeat=,
- *            ) => ZCFSeat} mintGains
+ * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
  * Add the gains to that seat's allocation.
@@ -149,19 +155,41 @@
  */
 
 /**
+ * @callback ZCFSeatFail
+ *
+ * fail called with the reason for this failure, where reason is
+ * normally an instanceof Error.
+ * @param {Error=} reason
+ * @returns {Error}
+ */
+/**
+ * @callback ZCFSeatKickOut
+ *
+ * called with the reason for this failure,
+ * where reason is normally an instanceof Error. This method is
+ * deprecated as of 0.9.1-dev.3 in favor of fail().
+ * @param {Error=} reason
+ * @returns {Error}
+ */
+
+/**
+ * @callback ZCFGetAmountAllocated
+ * The brand is used for filling in an empty amount if the `keyword`
+ * is not present in the allocation
+ * @param {Keyword} keyword
+ * @param {Brand=} brand
+ * @returns {Amount}
+ */
+
+/**
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
- * @property {(reason: Error=) => Error} fail called with the reason for this
- * failure, where reason is normally an instanceof Error.
- * @property {(reason: Error=) => Error} kickOut called with the reason for
- * this failure, where reason is normally an instanceof Error. This method
- * is deprecated as of 0.9.1-dev.3 in favor of fail().
+ * @property {ZCFSeatFail} fail
+ * @property {ZCFSeatKickOut} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
- * @property {(keyword: Keyword, brand: Brand=) => Amount} getAmountAllocated
- * The brand is used for filling in an empty amount if the `keyword`
- * is not present in the allocation
+ * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
  * @property {(newAllocation: Allocation) => SeatStaging} stage

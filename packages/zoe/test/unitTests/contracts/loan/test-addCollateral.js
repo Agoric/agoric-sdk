@@ -1,4 +1,4 @@
-// ts-check
+// @ts-check
 
 import '../../../../exported';
 
@@ -6,6 +6,8 @@ import '../../../../exported';
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+
+import { amountMath } from '@agoric/ertp';
 
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
@@ -23,7 +25,7 @@ test.todo('makeAddCollateralInvitation - test bad proposal');
 test('makeAddCollateralInvitation', async t => {
   const { zcf, zoe, collateralKit, loanKit } = await setupLoanUnitTest();
 
-  const collateral = collateralKit.amountMath.make(10);
+  const collateral = amountMath.make(10n, collateralKit.brand);
 
   // Set up the collateral seat
   const { zcfSeat: collateralSeat } = await makeSeatKit(
@@ -39,14 +41,14 @@ test('makeAddCollateralInvitation', async t => {
   const timer = buildManualTimer(console.log);
 
   const priceAuthority = makeFakePriceAuthority({
-    mathIn: collateralKit.amountMath,
-    mathOut: loanKit.amountMath,
     priceList: [],
     timer,
+    actualBrandIn: collateralKit.brand,
+    actualBrandOut: loanKit.brand,
   });
 
   const autoswapInstance = {};
-  const getDebt = () => loanKit.amountMath.make(100);
+  const getDebt = () => amountMath.make(100n, loanKit.brand);
 
   const config = {
     collateralSeat,
@@ -54,11 +56,12 @@ test('makeAddCollateralInvitation', async t => {
     autoswapInstance,
     priceAuthority,
     getDebt,
-    mmr: makeRatio(150, loanKit.brand),
+    mmr: makeRatio(150n, loanKit.brand),
+    loanBrand: loanKit.brand,
   };
   const addCollateralInvitation = makeAddCollateralInvitation(zcf, config);
 
-  const addedAmount = collateralKit.amountMath.make(3);
+  const addedAmount = amountMath.make(3n, collateralKit.brand);
 
   await performAddCollateral(
     t,
@@ -72,6 +75,6 @@ test('makeAddCollateralInvitation', async t => {
   // Ensure the collSeat gets the added collateral
 
   t.deepEqual(collateralSeat.getCurrentAllocation(), {
-    Collateral: collateralKit.amountMath.add(collateral, addedAmount),
+    Collateral: amountMath.add(collateral, addedAmount),
   });
 });

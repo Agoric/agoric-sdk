@@ -6,9 +6,16 @@
  */
 
 /**
+ * @callback PriceAggregatorCreatorFacetInitOracle
+ * @param {Instance} oracleInstance
+ * @param {unknown=} query
+ * @returns {Promise<OracleAdmin>}
+ */
+
+/**
  * @typedef {Object} PriceAggregatorCreatorFacet
  * @property {(quoteMint: Mint) => Promise<void>} initializeQuoteMint
- * @property {(oracleInstance: Instance, query: any=) => Promise<OracleAdmin>} initOracle
+ * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
  */
 
 /**
@@ -31,11 +38,17 @@
  */
 
 /**
+ * @callback OracleCreatorFacetMakeWithdrawInvitation
+ * @param {boolean=} total
+ * @returns {ERef<Invitation>}
+ */
+
+/**
  * @typedef {Object} OracleCreatorFacet the private methods accessible from the
  * contract instance
  * @property {() => AmountKeywordRecord} getCurrentFees get the current
  * fee amounts
- * @property {(total: boolean=) => ERef<Invitation>}
+ * @property {OracleCreatorFacetMakeWithdrawInvitation}
  * makeWithdrawInvitation create an invitation to withdraw fees
  * @property {() => Promise<Invitation>} makeShutdownInvitation
  *   Make an invitation to withdraw all fees and shutdown

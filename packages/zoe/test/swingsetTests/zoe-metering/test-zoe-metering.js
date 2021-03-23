@@ -1,5 +1,8 @@
 /* global process __dirname */
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-metering-and-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';

@@ -1,4 +1,5 @@
 // @ts-check
+
 import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
@@ -55,18 +56,18 @@ import { makeLendInvitation } from './lend';
  */
 const start = async zcf => {
   assertIssuerKeywords(zcf, harden(['Collateral', 'Loan']));
-  const loanMath = zcf.getTerms().maths.Loan;
 
   // Rather than grabbing the terms each time we use them, let's set
   // some defaults and add them to a contract-wide config.
 
   const {
-    mmr = makeRatio(150n, loanMath), // Maintenance Margin Requirement
     autoswapInstance,
     priceAuthority,
     periodNotifier,
     interestRate,
     interestPeriod,
+    brands: { Loan: loanBrand, Collateral: collateralBrand },
+    mmr = makeRatio(150n, loanBrand), // Maintenance Margin Requirement
   } = zcf.getTerms();
 
   assert(autoswapInstance, X`autoswapInstance must be provided`);
@@ -82,6 +83,8 @@ const start = async zcf => {
     periodNotifier,
     interestRate,
     interestPeriod,
+    loanBrand,
+    collateralBrand,
   };
 
   const creatorInvitation = makeLendInvitation(zcf, harden(config));

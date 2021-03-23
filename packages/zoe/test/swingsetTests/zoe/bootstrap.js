@@ -1,6 +1,8 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
 const setupBasicMints = () => {
@@ -11,20 +13,22 @@ const setupBasicMints = () => {
   ];
   const mints = all.map(objs => objs.mint);
   const issuers = all.map(objs => objs.issuer);
-  const amountMaths = all.map(objs => objs.amountMath);
+  const brands = all.map(objs => objs.brand);
 
   return harden({
     mints,
     issuers,
-    amountMaths,
+    brands,
   });
 };
 
 const makeVats = (log, vats, zoe, installations, startingValues) => {
   const timer = buildManualTimer(log);
-  const { mints, issuers, amountMaths } = setupBasicMints();
+  const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
-    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(values[i])));
+    mints.map((mint, i) =>
+      mint.mintPayment(amountMath.make(values[i], brands[i])),
+    );
   const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 
   // Setup Alice

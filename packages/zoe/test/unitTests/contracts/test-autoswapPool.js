@@ -1,3 +1,5 @@
+// @ts-check
+
 // isolated unit test of price calculations in pool in multipoolAutoswap
 
 // eslint-disable-next-line import/no-extraneous-dependencies

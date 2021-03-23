@@ -1,9 +1,9 @@
-/* eslint-disable no-use-before-define */
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
+import { amountMath } from '@agoric/ertp';
 import {
   assertIssuerKeywords,
   trade,
@@ -37,11 +37,7 @@ import '../../exported';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  const {
-    pricePerItem,
-    issuers,
-    maths: { Money: moneyMath, Items: itemsMath },
-  } = zcf.getTerms();
+  const { pricePerItem, issuers, brands } = zcf.getTerms();
   const allKeywords = ['Items', 'Money'];
   assertIssuerKeywords(zcf, harden(allKeywords));
   assertUsesNatMath(zcf, pricePerItem.brand);
@@ -75,19 +71,20 @@ const start = zcf => {
     } = buyerSeat.getProposal();
 
     // Check that the wanted items are still for sale.
-    if (!itemsMath.isGTE(currentItemsForSale, wantedItems)) {
+    if (!amountMath.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
       throw buyerSeat.fail(new Error(rejectMsg));
     }
 
     // All items are the same price.
-    const totalCost = moneyMath.make(
+    const totalCost = amountMath.make(
       pricePerItem.value * Nat(wantedItems.value.length),
+      brands.Money,
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
     assert(
-      moneyMath.isGTE(providedMoney, totalCost),
+      amountMath.isGTE(providedMoney, totalCost),
       X`More money (${totalCost}) is required to buy these items`,
     );
 
@@ -104,7 +101,7 @@ const start = zcf => {
     // The buyer's offer has been processed.
     buyerSeat.exit();
 
-    if (itemsMath.isEmpty(publicFacet.getAvailableItems())) {
+    if (amountMath.isEmpty(publicFacet.getAvailableItems())) {
       zcf.shutdown('All items sold.');
     }
     return defaultAcceptanceMsg;
@@ -115,7 +112,7 @@ const start = zcf => {
     makeBuyerInvitation: () => {
       const itemsAmount = sellerSeat.getAmountAllocated('Items');
       assert(
-        sellerSeat && !itemsMath.isEmpty(itemsAmount),
+        sellerSeat && !amountMath.isEmpty(itemsAmount),
         X`no items are for sale`,
       );
       return zcf.makeInvitation(buy, 'buyer');

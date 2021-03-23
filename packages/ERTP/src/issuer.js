@@ -52,7 +52,7 @@ function makeIssuerKit(
   const isEqual = (left, right) => amountMath.isEqual(left, right, brand);
 
   /** @type {Amount} */
-  const emptyAmount = amountMath.makeEmpty(amountMathKind, brand);
+  const emptyAmount = amountMath.makeEmpty(brand, amountMathKind);
 
   const makePayment = makePaymentMaker(allegedName, brand);
 
@@ -285,6 +285,7 @@ function makeIssuerKit(
     issuer,
     amountMath: makeAmountMath(brand, amountMathKind),
     brand,
+    amountMathKind,
   });
 }
 

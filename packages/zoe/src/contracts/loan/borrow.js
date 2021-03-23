@@ -1,10 +1,12 @@
 // @ts-check
+
 import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { amountMath } from '@agoric/ertp';
 
 import {
   assertProposalShape,
@@ -43,8 +45,6 @@ export const makeBorrowInvitation = (zcf, config) => {
     const collateralGiven = borrowerSeat.getAmountAllocated('Collateral');
     const loanWanted = borrowerSeat.getProposal().want.Loan;
     const loanBrand = zcf.getTerms().brands.Loan;
-    const loanMath = zcf.getTerms().maths.Loan;
-    const collateralMath = zcf.getTerms().maths.Collateral;
 
     // The value of the collateral in the Loan brand
     const quote = await E(priceAuthority).quoteGiven(
@@ -57,7 +57,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // Assert the required collateral was escrowed.
     const requiredMargin = multiplyBy(loanWanted, mmr);
     assert(
-      loanMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
+      amountMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
       X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
 
@@ -65,7 +65,7 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert that the collateralGiven has not changed after the AWAIT
     assert(
-      collateralMath.isEqual(
+      amountMath.isEqual(
         collateralGiven,
         borrowerSeat.getAmountAllocated('Collateral'),
       ),
@@ -74,7 +74,7 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert that loanWanted <= maxLoan
     assert(
-      loanMath.isGTE(maxLoan, loanWanted),
+      amountMath.isGTE(maxLoan, loanWanted),
       X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
     );
 
@@ -112,7 +112,6 @@ export const makeBorrowInvitation = (zcf, config) => {
     const debtCalculatorConfig = {
       calcInterestFn: calculateInterest,
       originalDebt: loanWanted,
-      loanMath,
       periodNotifier,
       interestRate,
       interestPeriod,

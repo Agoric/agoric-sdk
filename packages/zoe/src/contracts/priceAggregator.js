@@ -1,9 +1,11 @@
 // @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import makeStore from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
+import { amountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
@@ -25,11 +27,11 @@ const start = async zcf => {
   const {
     timer: rawTimer,
     POLL_INTERVAL,
-    maths: { In: mathIn, Out: mathOut },
-    unitAmountIn = mathIn.make(1n),
+    brands: { In: brandIn, Out: brandOut },
+    unitAmountIn = amountMath.make(1n, brandIn),
   } = zcf.getTerms();
 
-  const unitIn = mathIn.getValue(unitAmountIn);
+  const unitIn = amountMath.getValue(unitAmountIn, brandIn);
 
   /** @type {TimerService} */
   const timer = rawTimer;
@@ -51,7 +53,7 @@ const start = async zcf => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
-    const quoteAmount = quoteKit.amountMath.make(harden(quote));
+    const quoteAmount = amountMath.make(quote, quoteKit.brand);
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };
@@ -116,9 +118,10 @@ const start = async zcf => {
        * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
-        const valueIn = mathIn.getValue(amountIn);
-        return mathOut.make(
+        const valueIn = amountMath.getValue(amountIn, brandIn);
+        return amountMath.make(
           floorDivide(multiply(valueIn, valueOutForUnitIn), unitIn),
+          brandOut,
         );
       };
 
@@ -127,9 +130,10 @@ const start = async zcf => {
        * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {
-        const valueOut = mathOut.getValue(amountOut);
-        return mathIn.make(
+        const valueOut = amountMath.getValue(amountOut, brandOut);
+        return amountMath.make(
           ceilDivide(multiply(valueOut, unitIn), valueOutForUnitIn),
+          brandIn,
         );
       };
 
@@ -144,8 +148,8 @@ const start = async zcf => {
         amountOut,
         timestamp: theirTimestamp = timestamp,
       } = quote;
-      mathIn.coerce(amountIn);
-      mathOut.coerce(amountOut);
+      amountMath.coerce(amountIn, brandIn);
+      amountMath.coerce(amountOut, brandOut);
       if (theirTimestamp !== undefined) {
         return authenticateQuote([
           { amountIn, amountOut, timer, timestamp: theirTimestamp },
@@ -173,7 +177,7 @@ const start = async zcf => {
       return;
     }
 
-    const amountOut = mathOut.make(median);
+    const amountOut = amountMath.make(median, brandOut);
 
     /** @type {PriceDescription} */
     const quote = {
@@ -217,11 +221,11 @@ const start = async zcf => {
 
       const paKit = makeOnewayPriceAuthorityKit({
         createQuote: makeCreateQuote(),
-        mathIn,
-        mathOut,
         notifier,
         quoteIssuer: quoteKit.issuer,
         timer,
+        actualBrandIn: brandIn,
+        actualBrandOut: brandOut,
       });
       ({ priceAuthority, adminFacet: priceAuthorityAdmin } = paKit);
     },

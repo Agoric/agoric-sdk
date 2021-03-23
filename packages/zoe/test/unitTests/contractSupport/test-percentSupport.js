@@ -4,7 +4,7 @@
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 
 import { multiplyBy, makeRatioFromAmounts } from '../../../src/contractSupport';
 import {
@@ -34,8 +34,8 @@ function amountsEqual(t, a1, a2, brand) {
 }
 
 test('ratio - ALL', t => {
-  const { amountMath, brand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
+  const { brand } = makeIssuerKit('moe');
+  const moe = value => amountMath.make(value, brand);
 
   amountsEqual(
     t,
@@ -46,20 +46,20 @@ test('ratio - ALL', t => {
 });
 
 test('ratio - NONE', t => {
-  const { amountMath, brand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
+  const { brand } = makeIssuerKit('moe');
+  const moe = value => amountMath.make(value, brand);
 
   amountsEqual(
     t,
-    amountMath.getEmpty(),
+    amountMath.makeEmpty(brand),
     multiplyBy(moe(100000), make0Percent(brand)),
     brand,
   );
 });
 
 test('ratio - complement', t => {
-  const { amountMath, brand } = makeIssuerKit('moe');
-  const moe = amountMath.make;
+  const { brand } = makeIssuerKit('moe');
+  const moe = value => amountMath.make(value, brand);
 
   const oneThird = makeRatioFromAmounts(moe(1), moe(3));
   const twoThirds = oneMinus(oneThird);

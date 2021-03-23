@@ -34,8 +34,11 @@
  * @property {Ratio} interestRate
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
- 
+ *
  * @property {RelativeTime} interestPeriod
+ *
+ * @property {Brand} loanBrand
+ * @property {Brand} collateralBrand
  */
 
 /**
@@ -63,7 +66,7 @@
  *
  *   A function to get the current debt
  *
- * @property {PromiseKit} liquidationPromiseKit
+ * @property {PromiseRecord<PriceQuote>} liquidationPromiseKit
  *
  *   PromiseKit that includes a promise that resolves to a PriceQuote
  *   when liquidation is triggered
@@ -77,7 +80,7 @@
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
  *
- * @property {PromiseKit} liquidationPromiseKit
+ * @property {PromiseRecord<PriceQuote>} liquidationPromiseKit
  *
  *   PromiseKit that includes a promise that resolves to a PriceQuote
  *   when liquidation is triggered
@@ -161,10 +164,6 @@
  *
  *   The debt at the start of the loan, in Loan brand
  *
- * @property {DeprecatedAmountMath} loanMath
- *
- *   AmountMath for the loan brand
- *
  * @property {PeriodNotifier} periodNotifier
  *
  *   The AsyncIterable to notify when a period has occurred
@@ -186,7 +185,7 @@
  * @property {ZCFSeat} collateralSeat
  * @property {PromiseRecord<any>} liquidationPromiseKit
  * @property {bigint} [mmr]
- * @property {InstanceHandle} autoswapInstance
+ * @property {Handle<'Instance'>} autoswapInstance
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {bigint} interestRate

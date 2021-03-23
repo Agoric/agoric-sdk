@@ -43,6 +43,13 @@ export const assertIsRatio = ratio => {
   Nat(ratio.denominator.value);
 };
 
+/**
+ * @param {NatValue} numerator
+ * @param {Brand} numeratorBrand
+ * @param {NatValue} denominator
+ * @param {Brand} denominatorBrand
+ * @returns {Ratio}
+ */
 export const makeRatio = (
   numerator,
   numeratorBrand,
@@ -51,7 +58,7 @@ export const makeRatio = (
 ) => {
   assert(
     denominator > 0n,
-    X`No infinite ratios! Denoninator was 0/${q(denominatorBrand)}`,
+    X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
   );
 
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring

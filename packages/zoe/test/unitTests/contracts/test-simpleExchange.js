@@ -1,4 +1,6 @@
 /* global __dirname */
+// @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
 
@@ -7,6 +9,7 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
 
+import { amountMath, MathKind } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 // noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
@@ -23,7 +26,6 @@ test('simpleExchange with valid offers', async t => {
     simoleanIssuer,
     moolaMint,
     simoleanMint,
-    amountMaths,
     moola,
     simoleans,
     zoe,
@@ -170,23 +172,21 @@ test('simpleExchange with valid offers', async t => {
 
   // Alice gets paid at least what she wanted
   t.truthy(
-    amountMaths
-      .get('simoleans')
-      .isGTE(
-        await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-        aliceSellOrderProposal.want.Price,
-      ),
+    amountMath.isGTE(
+      await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
+      aliceSellOrderProposal.want.Price,
+    ),
     `Alice got the simoleans she wanted`,
   );
 
   // Alice sold all of her moola
-  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0n));
 
   await Promise.all([
     part1,
     // 6: Alice deposits her payout to ensure she can
     // Alice had 0 moola and 4 simoleans.
-    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0)),
+    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0n)),
     assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4)),
 
     // 7: Bob deposits his original payments to ensure he can
@@ -305,9 +305,9 @@ test('simpleExchange with non-fungible assets', async t => {
     rpgMint,
     cryptoCats,
     rpgItems,
-    amountMaths,
     createRpgItem,
     zoe,
+    brands,
   } = setupNonFungible();
   const invitationIssuer = zoe.getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
@@ -393,12 +393,10 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // Alice gets paid at least what she wanted
   t.truthy(
-    amountMaths
-      .get('cc')
-      .isGTE(
-        await ccIssuer.getAmountOf(aliceCcPayout),
-        aliceSellOrderProposal.want.Price,
-      ),
+    amountMath.isGTE(
+      await ccIssuer.getAmountOf(aliceCcPayout),
+      aliceSellOrderProposal.want.Price,
+    ),
   );
 
   // Alice sold the Spell
@@ -410,8 +408,8 @@ test('simpleExchange with non-fungible assets', async t => {
   // Assert that the correct payout were received.
   // Alice has an empty RPG purse, and the Cheshire Cat.
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
-  const noCats = amountMaths.get('cc').getEmpty();
-  const noRpgItems = amountMaths.get('rpg').getEmpty();
+  const noCats = amountMath.makeEmpty(brands.get('cc'), MathKind.SET);
+  const noRpgItems = amountMath.makeEmpty(brands.get('rpg'), MathKind.SET);
   await assertPayoutAmount(t, rpgIssuer, aliceRpgPayout, noRpgItems);
   const cheshireCatAmount = cryptoCats(harden(['Cheshire Cat']));
   await assertPayoutAmount(t, ccIssuer, aliceCcPayout, cheshireCatAmount);

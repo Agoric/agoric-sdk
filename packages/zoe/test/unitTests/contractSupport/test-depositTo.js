@@ -1,4 +1,6 @@
 /* global __dirname */
+// @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -11,18 +13,9 @@ import { setup } from '../setupBasicMints';
 import { makeZoe } from '../../..';
 import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
 import { depositToSeat } from '../../../src/contractSupport/zoeHelpers';
+import { makeOffer } from '../makeOffer';
 
 const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
-
-const makeOffer = async (zoe, zcf, proposal, payments) => {
-  let zcfSeat;
-  const getSeat = seat => {
-    zcfSeat = seat;
-  };
-  const invitation = await zcf.makeInvitation(getSeat, 'seat');
-  const userSeat = await E(zoe).offer(invitation, proposal, payments);
-  return { zcfSeat, userSeat };
-};
 
 async function setupContract(moolaIssuer, bucksIssuer) {
   let testJig;
@@ -63,7 +56,7 @@ test(`depositToSeat - groundZero`, async t => {
   await depositToSeat(zcf, zcfSeat, { B: bucks(2) }, { B: newBucks });
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    { A: moola(0), B: bucks(7) },
+    { A: moola(0n), B: bucks(7n) },
     'should add deposit',
   );
 });
@@ -82,7 +75,7 @@ test(`depositToSeat - keyword variations`, async t => {
   await depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { C: newBucks });
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    { A: moola(0), B: bucks(5), C: bucks(2) },
+    { A: moola(0n), B: bucks(5), C: bucks(2) },
     'should add deposit',
   );
 });
@@ -107,7 +100,7 @@ test(`depositToSeat - mismatched keywords`, async t => {
   );
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    { A: moola(0), B: bucks(5) },
+    { A: moola(0n), B: bucks(5) },
     'should add deposit',
   );
 });

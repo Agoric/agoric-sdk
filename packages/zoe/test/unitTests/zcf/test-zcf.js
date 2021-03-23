@@ -4,9 +4,10 @@ import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import { MathKind } from '@agoric/ertp';
+import { MathKind, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { details as X } from '@agoric/assert';
+import { makeOffer } from '../makeOffer';
 
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -385,7 +386,7 @@ test(`zcf.makeZCFMint - NAT`, async t => {
     maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
-  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.NAT);
+  t.is(issuerRecord.mathKind, MathKind.NAT);
   t.is(issuerRecord.brand.getDisplayInfo(), undefined);
 });
 
@@ -412,7 +413,7 @@ test(`zcf.makeZCFMint - SET`, async t => {
     maths: { A: issuerRecord.amountMath },
   };
   await testTerms(t, zcf, expected);
-  t.is(issuerRecord.amountMath.getAmountMathKind(), MathKind.SET);
+  t.is(issuerRecord.mathKind, MathKind.SET);
 });
 
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
@@ -427,10 +428,13 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
 test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', MathKind.NAT);
-  const { amountMath, brand } = zcfMint.getIssuerRecord();
-  const zcfSeat = zcfMint.mintGains({ A: amountMath.make(4) });
+  const { brand } = zcfMint.getIssuerRecord();
+  const zcfSeat = zcfMint.mintGains({ A: amountMath.make(4n, brand) });
   t.truthy(zcfSeat);
-  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+  t.deepEqual(
+    zcfSeat.getAmountAllocated('A', brand),
+    amountMath.make(4n, brand),
+  );
 });
 
 test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
@@ -490,52 +494,79 @@ test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
   const { zcf } = await setupZCFTest();
 
   const zcfMint = await zcf.makeZCFMint('A');
-  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
+  const zcfSeat2 = zcfMint.mintGains(
+    { A: amountMath.make(4n, brand) },
+    zcfSeat,
+  );
   t.is(zcfSeat2, zcfSeat);
-  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+  t.deepEqual(
+    zcfSeat.getAmountAllocated('A', brand),
+    amountMath.make(4n, brand),
+  );
 });
 
 test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
   const { zcf } = await setupZCFTest();
 
   const zcfMint = await zcf.makeZCFMint('A');
-  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
+  const zcfSeat2 = zcfMint.mintGains(
+    { A: amountMath.make(4n, brand) },
+    zcfSeat,
+  );
   t.is(zcfSeat2, zcfSeat);
-  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+  t.deepEqual(
+    zcfSeat.getAmountAllocated('A', brand),
+    amountMath.make(4n, brand),
+  );
   // TODO: return a seat?
   // https://github.com/Agoric/agoric-sdk/issues/1709
-  const result = zcfMint.burnLosses({ A: amountMath.make(1) }, zcfSeat);
+  const result = zcfMint.burnLosses({ A: amountMath.make(1n, brand) }, zcfSeat);
   t.is(result, undefined);
-  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(3));
+  t.deepEqual(
+    zcfSeat.getAmountAllocated('A', brand),
+    amountMath.make(3n, brand),
+  );
 });
 
 test(`zcf.makeZCFMint - mintGains - seat exited`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A');
-  const { amountMath } = zcfMint.getIssuerRecord();
+  const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   zcfSeat.exit();
-  t.throws(() => zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat), {
-    message: `seat has been exited`,
-  });
+  t.throws(
+    () => zcfMint.mintGains({ A: amountMath.make(4n, brand) }, zcfSeat),
+    {
+      message: `seat has been exited`,
+    },
+  );
 });
 
 test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A');
-  const { amountMath, brand } = zcfMint.getIssuerRecord();
+  const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  const zcfSeat2 = zcfMint.mintGains({ A: amountMath.make(4) }, zcfSeat);
+  const zcfSeat2 = zcfMint.mintGains(
+    { A: amountMath.make(4n, brand) },
+    zcfSeat,
+  );
   t.is(zcfSeat2, zcfSeat);
-  t.deepEqual(zcfSeat.getAmountAllocated('A', brand), amountMath.make(4));
+  t.deepEqual(
+    zcfSeat.getAmountAllocated('A', brand),
+    amountMath.make(4n, brand),
+  );
   zcfSeat.exit();
-  t.throws(() => zcfMint.burnLosses({ A: amountMath.make(1) }, zcfSeat), {
-    message: `seat has been exited`,
-  });
+  t.throws(
+    () => zcfMint.burnLosses({ A: amountMath.make(1n, brand) }, zcfSeat),
+    {
+      message: `seat has been exited`,
+    },
+  );
 });
 
 test(`zcf.makeZCFMint - displayInfo`, async t => {
@@ -556,24 +587,6 @@ test(`zcf.makeZCFMint - displayInfo`, async t => {
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.brand.getDisplayInfo().decimalPlaces, 3);
 });
-
-/**
- * @param {ZoeService} zoe
- * @param {ContractFacet} zcf
- * @param {Proposal=} proposal
- * @param {PaymentPKeywordRecord=} payments
- * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
- */
-const makeOffer = async (zoe, zcf, proposal, payments) => {
-  let zcfSeat;
-  const getSeat = seat => {
-    zcfSeat = seat;
-  };
-  const invitation = await zcf.makeInvitation(getSeat, 'seat');
-  const userSeat = await E(zoe).offer(invitation, proposal, payments);
-  assert(zcfSeat);
-  return { zcfSeat, userSeat };
-};
 
 const similarToNormalZCFSeat = async (t, emptySeat, normalSeat) => {
   // Note: not exhaustive
@@ -691,7 +704,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
   // Anything is offer safe with no want or give
   // @ts-ignore deliberate invalid arguments for testing
   t.truthy(zcfSeat.isOfferSafe());
-  t.truthy(zcfSeat.isOfferSafe({ Moola: moola(0) }));
+  t.truthy(zcfSeat.isOfferSafe({ Moola: moola(0n) }));
   t.truthy(zcfSeat.isOfferSafe({ Moola: moola(10) }));
 });
 
@@ -704,8 +717,11 @@ const allocateEasy = async (
 ) => {
   // Mint some gains to change the allocation.
   const zcfMint = await zcf.makeZCFMint(zcfMintKeyword);
-  const { amountMath } = zcfMint.getIssuerRecord();
-  zcfMint.mintGains({ [gainsKeyword]: amountMath.make(gainsValue) }, zcfSeat);
+  const { brand } = zcfMint.getIssuerRecord();
+  zcfMint.mintGains(
+    { [gainsKeyword]: amountMath.make(gainsValue, brand) },
+    zcfSeat,
+  );
   return zcfMint.getIssuerRecord();
 };
 
@@ -828,19 +844,19 @@ test(`zcfSeat.stage, zcf.reallocate from zcf.makeEmptySeatKit`, async t => {
 
   const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6);
   const staging1 = zcfSeat1.stage({
-    A: issuerRecord1.amountMath.make(0),
+    A: amountMath.make(0n, issuerRecord1.brand),
   });
   const staging2 = zcfSeat2.stage({
-    B: issuerRecord1.amountMath.make(6),
+    B: amountMath.make(6n, issuerRecord1.brand),
   });
 
   zcf.reallocate(staging1, staging2);
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: issuerRecord1.amountMath.make(0),
+    A: amountMath.make(0n, issuerRecord1.brand),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: issuerRecord1.amountMath.make(6),
+    B: amountMath.make(6n, issuerRecord1.brand),
   });
 });
 
@@ -1107,7 +1123,7 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
 
   const staging1 = zcfSeat1.stage({
     A: simoleans(2),
-    B: moola(0),
+    B: moola(0n),
   });
 
   const staging2 = zcfSeat2.stage({
@@ -1123,7 +1139,7 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
   zcf.reallocate(staging1, staging2, staging3);
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
     A: simoleans(2),
-    B: moola(0),
+    B: moola(0n),
   });
 
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
@@ -1170,7 +1186,7 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
 
   const staging1 = zcfSeat1.stage({
     A: simoleans(100),
-    B: moola(0),
+    B: moola(0n),
   });
 
   const staging2 = zcfSeat2.stage({
@@ -1192,10 +1208,10 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
     B: moola(3),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Whatever: moola(0),
+    Whatever: moola(0n),
     Whatever2: simoleans(2),
   });
-  t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0) });
+  t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0n) });
 });
 
 test(`zcf.shutdown - userSeat exits`, async t => {

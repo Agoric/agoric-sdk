@@ -1,4 +1,6 @@
 /* global __dirname */
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import 'ses';
 import fs from 'fs';
 import process from 'process';
@@ -6,6 +8,8 @@ import bundleSource from '@agoric/bundle-source';
 
 async function writeSourceBundle(contractFilename, outputPath) {
   await bundleSource(contractFilename).then(bundle => {
+    // TODO: fix
+    // @ts-ignore mkdirSync believes it only accepts 2 arguments.
     fs.mkdirSync(`${__dirname}/../bundles`, { recursive: true }, err => {
       if (err) throw err;
     });

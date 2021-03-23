@@ -1,5 +1,5 @@
 // @ts-check
-import { makeIssuerKit, MathKind, makeLocalAmountMath } from '@agoric/ertp';
+import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   makeNotifierKit,
@@ -15,8 +15,8 @@ import '../exported';
 
 /**
  * @typedef {Object} FakePriceAuthorityOptions
- * @property {DeprecatedAmountMath} mathIn
- * @property {DeprecatedAmountMath} mathOut
+ * @property {Brand} actualBrandIn
+ * @property {Brand} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
@@ -34,12 +34,12 @@ import '../exported';
  */
 export async function makeFakePriceAuthority(options) {
   const {
-    mathIn,
-    mathOut,
+    actualBrandIn,
+    actualBrandOut,
     priceList,
     tradeList,
     timer,
-    unitAmountIn = mathIn.make(1n),
+    unitAmountIn = amountMath.make(1n, actualBrandIn),
     quoteInterval = 1n,
     quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
   } = options;
@@ -49,7 +49,7 @@ export async function makeFakePriceAuthority(options) {
     X`One of priceList or tradeList must be specified`,
   );
 
-  const unitValueIn = mathIn.getValue(unitAmountIn);
+  const unitValueIn = amountMath.getValue(unitAmountIn, actualBrandIn);
 
   const comparisonQueue = [];
 
@@ -64,24 +64,24 @@ export async function makeFakePriceAuthority(options) {
   }
 
   /**
-   * @param {Brand} brandIn
-   * @param {Brand} brandOut
+   * @param {Brand} allegedBrandIn
+   * @param {Brand} allegedBrandOut
    */
-  const assertBrands = (brandIn, brandOut) => {
+  const assertBrands = (allegedBrandIn, allegedBrandOut) => {
     assert.equal(
-      brandIn,
-      mathIn.getBrand(),
-      X`${brandIn} is not an expected input brand`,
+      allegedBrandIn,
+      actualBrandIn,
+      X`${allegedBrandIn} is not an expected input brand`,
     );
     assert.equal(
-      brandOut,
-      mathOut.getBrand(),
-      X`${brandOut} is not an expected output brand`,
+      allegedBrandOut,
+      actualBrandOut,
+      X`${allegedBrandOut} is not an expected output brand`,
     );
   };
 
   const quoteIssuer = E(quoteMint).getIssuer();
-  const quoteMath = await makeLocalAmountMath(quoteIssuer);
+  const quoteBrand = await E(quoteIssuer).getBrand();
 
   /**
    * @type {NotifierRecord<Timestamp>} We need to have a notifier driven by the
@@ -108,21 +108,22 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
     assertBrands(amountIn.brand, brandOut);
-    mathIn.coerce(amountIn);
+    amountMath.coerce(amountIn, actualBrandIn);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueOut = natSafeMath.floorDivide(
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
-    const quoteAmount = quoteMath.make(
-      harden([
+    const quoteAmount = amountMath.make(
+      [
         {
           amountIn,
-          amountOut: mathOut.make(valueOut),
+          amountOut: amountMath.make(valueOut, actualBrandOut),
           timer,
           timestamp: quoteTime,
         },
-      ]),
+      ],
+      quoteBrand,
     );
     const quote = harden({
       quotePayment: E(quoteMint).mintPayment(quoteAmount),
@@ -139,13 +140,17 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
     assertBrands(brandIn, amountOut.brand);
-    const valueOut = mathOut.getValue(amountOut);
+    const valueOut = amountMath.getValue(amountOut, actualBrandOut);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueIn = natSafeMath.ceilDivide(
       natSafeMath.multiply(valueOut, tradeValueIn),
       tradeValueOut,
     );
-    return priceInQuote(mathIn.make(valueIn), amountOut.brand, quoteTime);
+    return priceInQuote(
+      amountMath.make(valueIn, brandIn),
+      amountOut.brand,
+      quoteTime,
+    );
   }
 
   async function startTimer() {
@@ -162,7 +167,7 @@ export async function makeFakePriceAuthority(options) {
           // eslint-disable-next-line no-await-in-loop
           const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
           const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
-          if (req.operator(req.math, quotedOut)) {
+          if (req.operator(quotedOut)) {
             req.resolve(priceQuote);
             comparisonQueue.splice(comparisonQueue.indexOf(req), 1);
           }
@@ -179,7 +184,6 @@ export async function makeFakePriceAuthority(options) {
     const promiseKit = makePromiseKit();
     comparisonQueue.push({
       operator,
-      math: mathOut,
       amountIn,
       brandOut: amountOutLimit.brand,
       resolve: promiseKit.resolve,
@@ -237,19 +241,19 @@ export async function makeFakePriceAuthority(options) {
       return priceOutQuote(brandIn, amountOut, timestamp);
     },
     quoteWhenGTE: (amountIn, amountOutLimit) => {
-      const compareGTE = (math, amount) => math.isGTE(amount, amountOutLimit);
+      const compareGTE = amount => amountMath.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareGTE, amountIn, amountOutLimit);
     },
     quoteWhenGT: (amountIn, amountOutLimit) => {
-      const compareGT = (math, amount) => !math.isGTE(amountOutLimit, amount);
+      const compareGT = amount => !amountMath.isGTE(amountOutLimit, amount);
       return resolveQuoteWhen(compareGT, amountIn, amountOutLimit);
     },
     quoteWhenLTE: (amountIn, amountOutLimit) => {
-      const compareLTE = (math, amount) => math.isGTE(amountOutLimit, amount);
+      const compareLTE = amount => amountMath.isGTE(amountOutLimit, amount);
       return resolveQuoteWhen(compareLTE, amountIn, amountOutLimit);
     },
     quoteWhenLT: (amountIn, amountOutLimit) => {
-      const compareLT = (math, amount) => !math.isGTE(amount, amountOutLimit);
+      const compareLT = amount => !amountMath.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
     },
   };

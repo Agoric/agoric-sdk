@@ -1,8 +1,9 @@
-// ts-check
+// @ts-check
 
 import '../../../exported';
 
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 
 import { liquidate } from './liquidate';
 import { getAmountIn, multiplyBy } from '../../contractSupport';
@@ -25,8 +26,6 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
   // Formula: liquidationTriggerValue = (currentDebt * mmr)
   const liquidationTriggerValue = multiplyBy(currentDebt, mmr);
 
-  const collateralMath = zcf.getTerms().maths.Collateral;
-
   const allCollateral = collateralSeat.getAmountAllocated('Collateral');
 
   const internalLiquidationPromise = E(priceAuthority).quoteWhenLT(
@@ -42,7 +41,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       // collateral. If the amount is wrong, we will have already
       // scheduled another liquidation for the right amount.
       const currentCollateral = collateralSeat.getAmountAllocated('Collateral');
-      if (collateralMath.isEqual(amountIn, currentCollateral)) {
+      if (amountMath.isEqual(amountIn, currentCollateral)) {
         liquidationPromiseKit.resolve(priceQuote);
         liquidate(zcf, configWithBorrower);
       }

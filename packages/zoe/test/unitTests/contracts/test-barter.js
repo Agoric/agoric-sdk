@@ -1,9 +1,12 @@
 /* global __dirname */
+// @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '@agoric/ertp';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
@@ -18,7 +21,6 @@ test('barter with valid offers', async t => {
     simoleanIssuer,
     moolaMint,
     simoleanMint,
-    amountMaths,
     moola,
     simoleans,
     zoe,
@@ -103,20 +105,18 @@ test('barter with valid offers', async t => {
 
   // Alice gets paid at least what she wanted
   t.truthy(
-    amountMaths
-      .get('simoleans')
-      .isGTE(
-        await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-        aliceSellOrderProposal.want.Out,
-      ),
+    amountMath.isGTE(
+      await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
+      aliceSellOrderProposal.want.Out,
+    ),
   );
 
   // Alice sold all of her moola
-  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+  t.deepEqual(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0n));
 
   await Promise.all([
     // Alice had 0 moola and 4 simoleans.
-    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0)),
+    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0n)),
     assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4)),
 
     // Bob had 3 moola and 3 simoleans.

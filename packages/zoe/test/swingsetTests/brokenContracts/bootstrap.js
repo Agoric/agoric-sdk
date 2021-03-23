@@ -1,6 +1,8 @@
+// @ts-check
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 /* eslint-disable import/extensions, import/no-unresolved */
 import crashingAutoRefund from './bundle-crashingAutoRefund';
 /* eslint-enable import/extensions, import/no-unresolved */
@@ -13,25 +15,24 @@ const setupBasicMints = () => {
   ];
   const mints = all.map(objs => objs.mint);
   const issuers = all.map(objs => objs.issuer);
-  const amountMaths = all.map(objs => objs.amountMath);
+  const brands = all.map(objs => objs.brand);
 
   return harden({
     mints,
     issuers,
-    amountMaths,
+    brands,
   });
 };
 
 const makeVats = (log, vats, zoe, installations, startingValues) => {
-  const { mints, issuers, amountMaths } = setupBasicMints();
+  const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) => {
-      return mint.mintPayment(amountMaths[i].make(values[i]));
+      return mint.mintPayment(amountMath.make(values[i], brands[i]));
     });
 
   // Setup Alice
   const alicePayment = makePayments(startingValues);
-  // const alicePayment = mints[0].mintPayment(amountMaths[0].make(3));
   const aliceP = E(vats.alice).build(zoe, issuers, alicePayment, installations);
 
   log(`=> alice is set up`);

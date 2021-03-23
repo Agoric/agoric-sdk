@@ -164,17 +164,19 @@ export function buildRootObject(vatPowers, vatParameters) {
      * @param {Array<[number, number]>} tradeList
      */
     const makeFakePriceAuthority = async (issuerIn, issuerOut, tradeList) => {
-      const [brandIn, brandOut, pa] = await Promise.all([
+      const [brandIn, brandOut] = await Promise.all([
         E(issuerIn).getBrand(),
         E(issuerOut).getBrand(),
-        E(vats.priceAuthority).makeFakePriceAuthority({
-          issuerIn,
-          issuerOut,
-          tradeList,
-          timer: chainTimerService,
-          quoteInterval: QUOTE_INTERVAL,
-        }),
       ]);
+      const pa = await E(vats.priceAuthority).makeFakePriceAuthority({
+        issuerIn,
+        issuerOut,
+        actualBrandIn: brandIn,
+        actualBrandOut: brandOut,
+        tradeList,
+        timer: chainTimerService,
+        quoteInterval: QUOTE_INTERVAL,
+      });
       return E(priceAuthorityAdmin).registerPriceAuthority(
         pa,
         brandIn,
