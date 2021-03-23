@@ -71,7 +71,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('deliver:ro+23:foo:;argsbytes'),
+    encodeArgs('1:deliver:ro+23:foo:;argsbytes'),
   ]);
 
   // bob!bar(alice, bob)
@@ -84,7 +84,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
+    encodeArgs('2:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
   // the outbound ro-20 should match an inbound ro+20, both represent 'alice'
   t.is(getLocalForRemote(remoteID, 'ro+20'), aliceLocal);
@@ -98,7 +98,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
+    encodeArgs('3:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
 
   // bob!cat(alice, bob, ayana)
@@ -112,7 +112,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('deliver:ro+23:cat::ro-20:ro+23:ro-21;argsbytes'),
+    encodeArgs('4:deliver:ro+23:cat::ro-20:ro+23:ro-21;argsbytes'),
   ]);
 });
 
@@ -143,7 +143,7 @@ test('receive', t => {
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${bobRemote}:foo:;argsbytes`),
+    encodeArgs(`1:deliver:${bobRemote}:foo:;argsbytes`),
     null,
   );
   t.deepEqual(sends.shift(), [bobKernel, 'foo', capdata('argsbytes')]);
@@ -152,7 +152,7 @@ test('receive', t => {
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
+    encodeArgs(`2:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
   const expectedAliceKernel = 'o+31';
@@ -168,10 +168,11 @@ test('receive', t => {
   t.is(getLocalForKernel(expectedAliceKernel), 'lo11');
 
   // bob!bar(alice, bob), again, to test stability
+  // also test absent sequence number
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
+    encodeArgs(`:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
   t.deepEqual(sends.shift(), [
@@ -185,7 +186,9 @@ test('receive', t => {
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-21;argsbytes`),
+    encodeArgs(
+      `4:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-21;argsbytes`,
+    ),
     null,
   );
   t.deepEqual(sends.shift(), [
@@ -193,6 +196,18 @@ test('receive', t => {
     'cat',
     capdata('argsbytes', [expectedAliceKernel, bobKernel, expectedAyanaKernel]),
   ]);
+
+  // react to bad sequence number
+  t.throws(
+    () =>
+      d.deliver(
+        receiverID,
+        'receive',
+        encodeArgs(`47:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
+        null,
+      ),
+    { message: /unexpected recv seqNum \(a string\)/ },
+  );
 
   // make sure comms can tolerate dropExports, even if it's a no-op
   d.dropExports([expectedAliceKernel, expectedAyanaKernel]);

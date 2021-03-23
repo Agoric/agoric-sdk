@@ -18,7 +18,7 @@ export function buildCommsDispatch(
   _vatPowers,
   vatParameters = {},
 ) {
-  const { identifierBase = 0 } = vatParameters;
+  const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
   const state = makeState(identifierBase);
   const stateKit = makeStateKit(state);
   const clistKit = makeCListKit(state, syscall, stateKit);
@@ -27,7 +27,12 @@ export function buildCommsDispatch(
     const remote = getRemote(state, remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
     // encoded as JSON
-    const args = harden({ body: JSON.stringify([msg]), slots: [] });
+    const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum : '';
+    const args = harden({
+      body: JSON.stringify([`${seqNum}:${msg}`]),
+      slots: [],
+    });
+    remote.nextSendSeqNum += 1;
     syscall.send(remote.transmitterID, 'transmit', args); // sendOnly
   }
 
