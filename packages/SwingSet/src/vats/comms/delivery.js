@@ -5,7 +5,7 @@ import { parseLocalSlot, insistLocalType } from './parseLocalSlots';
 import { makeUndeliverableError } from '../../makeUndeliverableError';
 import { insistCapData } from '../../capdata';
 import { insistRemoteType } from './parseRemoteSlot';
-import { insistRemoteID } from './remote';
+import { insistRemoteID, getRemote } from './remote';
 
 const UNDEFINED = harden({
   body: JSON.stringify({ '@qclass': 'undefined' }),
@@ -132,14 +132,27 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // changed to assert here that the result parameter is null or undefined.
       syscall.resolve([[result, false, UNDEFINED]]);
     }
-    const command = message.split(':', 1)[0];
+    // The message is preceded by an optional sequence number:
+    // `$seqnum:$actualMessage` or `:actualMessage`
+    const colon = message.indexOf(':');
+    assert(colon >= 0, X`received message ${message} lacks seqNum delimiter`);
+    const seqNum = message.substring(0, colon);
+    const remote = getRemote(state, remoteID);
+    assert(
+      seqNum === '' || seqNum === `${remote.nextExpectedRecvSeqNum}`,
+      X`unexpected recv seqNum ${seqNum}`,
+    );
+    remote.nextExpectedRecvSeqNum += 1;
+
+    const msgBody = message.substring(colon + 1);
+    const command = msgBody.split(':', 1)[0];
     if (command === 'deliver') {
-      return sendFromRemote(remoteID, message);
+      return sendFromRemote(remoteID, msgBody);
     }
     if (command === 'resolve') {
-      return resolveFromRemote(remoteID, message);
+      return resolveFromRemote(remoteID, msgBody);
     }
-    assert.fail(X`unrecognized '${command}' in received message ${message}`);
+    assert.fail(X`unrecognized '${command}' in received message ${msgBody}`);
   }
 
   function sendFromRemote(remoteID, message) {

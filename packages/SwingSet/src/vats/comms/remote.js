@@ -50,6 +50,8 @@ export function addRemote(state, name, transmitterID) {
     nextResolverIndex: state.identifierBase + 30,
     nextPromiseIndex: state.identifierBase + 40,
     transmitterID,
+    nextSendSeqNum: 1,
+    nextExpectedRecvSeqNum: 1,
   });
   state.identifierBase += 1000;
   state.names.set(name, remoteID);
