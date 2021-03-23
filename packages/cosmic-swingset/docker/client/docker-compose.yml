@@ -1,0 +1,16 @@
+version: "2.2"
+# See .env for $VAR defaults
+services:
+  ag-solo:
+    image: agoric/cosmic-swingset-solo:latest
+    # ISSUE: 127.0.0.1? not a docker network?
+    ports:
+      - "$HOST_PORT:$PORT"
+    volumes:
+      - "ag-solo-state:/usr/src/app/solo"
+      - "$HOME/.agoric:/root/.agoric"
+    environment:
+      - "AG_SOLO_BASEDIR=$SOLO_HOME"
+    command: setup $NETCONFIG_URL
+volumes:
+  ag-solo-state:
