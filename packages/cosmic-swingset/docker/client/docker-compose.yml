@@ -1,16 +1,15 @@
 version: "2.2"
-# See .env for $VAR defaults
 services:
   ag-solo:
-    image: agoric/cosmic-swingset-solo:$SDK_TAG
+    image: agoric/cosmic-swingset-solo:${SDK_TAG:-latest}
     # ISSUE: 127.0.0.1? not a docker network?
     ports:
-      - "$HOST_PORT:$PORT"
+      - "${HOST_PORT:-8000}:${PORT:-8000}"
     volumes:
       - "ag-solo-state:/usr/src/app/solo"
       - "$HOME/.agoric:/root/.agoric"
     environment:
-      - "AG_SOLO_BASEDIR=$SOLO_HOME"
-    command: setup --netconfig=$NETCONFIG_URL
+      - "AG_SOLO_BASEDIR=${SOLO_HOME:-agoric}"
+    command: setup --netconfig=${NETCONFIG_URL:-https://devnet.agoric.net/network-config}
 volumes:
   ag-solo-state:
