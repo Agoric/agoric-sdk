@@ -62,33 +62,36 @@ function build(
   const outstandingProxies = new WeakSet();
 
   /**
-   * Map in-vat object/promise references to/from vat-format slot strings.
+   * Translation and tracking tables to map in-vat object/promise references
+   * to/from vat-format slot strings.
    *
-   * Exports: pass-by-presence objects in the vat are exported as o+NN slots,
-   * as are the upcoming "virtual object" exports. Promises are exported as
+   * Exports: pass-by-presence objects (Remotables) in the vat are exported
+   * as o+NN slots, as are "virtual object" exports. Promises are exported as
    * p+NN slots. We retain a strong reference to all exports via the
    * `exported` Set until (TODO) the kernel tells us all external references
    * have been dropped via dispatch.dropExports, or by some unilateral
    * revoke-object operation executed by our user-level code.
    *
    * Imports: o-NN slots are represented as a Presence. p-NN slots are
-   * represented as an imported Promise, with the resolver held in a table to
-   * handle an incoming resolution message. We retain a weak reference to the
-   * Presence, and use a FinalizationRegistry to learn when the vat has
-   * dropped it, so we can notify the kernel. We retain strong references to
-   * Promises, for now, via the `exported` Set (whose name is not entirely
-   * accurate) until we figure out a better GC approach. When an import is
-   * added, the finalizer is added to `register`.
+   * represented as an imported Promise, with the resolver held in an
+   * additional table (importedPromisesByPromiseID) to handle a future
+   * incoming resolution message. We retain a weak reference to the Presence,
+   * and use a FinalizationRegistry to learn when the vat has dropped it, so
+   * we can notify the kernel. We retain strong references to Promises, for
+   * now, via the `exported` Set (whose name is not entirely accurate) until
+   * we figure out a better GC approach. When an import is added, the
+   * finalizer is added to `droppedRegistry`.
    *
-   * slotToVal is like a python WeakValueDict: a `Map` whose values are
+   * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
    * weakref is dead), treat that as if the entry was not present. The same
    * slotToVal table is used for both imports and returning exports. The
    * subset of those which need to be held strongly (exported objects and
    * promises, imported promises) are kept alive by `exported`.
    *
-   * valToSlot is a WeakMap (like WeakKeyDict), and is used for both imports
-   * and exports.
+   * valToSlot is a WeakMap whose keys are Remotable/Presence/Promise
+   * objects, and the keys are (string) slot identifiers. This is used
+   * for both exports and returned imports.
    *
    * We use two weak maps plus the strong `exported` set, because it seems
    * simpler than using four separate maps (import-vs-export times
@@ -101,8 +104,11 @@ function build(
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
 
   /*
-    Imports have 5 states: UNKNOWN, REACHABLE, UNREACHABLE, COLLECTED,
-    FINALIZED
+    Imports are in one of 5 states: UNKNOWN, REACHABLE, UNREACHABLE,
+    COLLECTED, FINALIZED. Note that there's no actual state machine with those
+    values, and we can't observe all of the transitions from JavaScript, but
+    we can describe what operations could cause a transition, and what our
+    observations allow us to deduce about the state:
 
     * UKNOWN moves to REACHABLE when a crank introduces a new import
     * userspace holds a reference only in REACHABLE
@@ -137,8 +143,17 @@ function build(
 
   function finalizeDroppedImport(vref) {
     const wr = slotToVal.get(vref);
+    // The finalizer for a given Presence might run in any state:
+    // * COLLECTED: most common. Action: move to FINALIZED
+    // * REACHABLE/UNREACHABLE: after re-introduction. Action: ignore
+    // * FINALIZED: after re-introduction and subsequent finalizer invocation
+    //   (second finalizer executed for the same vref). Action: be idempotent
+    // * UNKNOWN: after re-introduction, multiple finalizer invocation,
+    //   and post-crank cleanup does dropImports and deletes vref from
+    //   deadSet. Action: ignore
+
     if (wr && !wr.deref()) {
-      // we're in the COLLECTED state
+      // we're in the COLLECTED state, or FINALIZED after a re-introduction
       deadSet.add(vref);
       slotToVal.delete(vref);
       // console.log(`-- adding ${vref} to deadSet`);
@@ -360,7 +375,7 @@ function build(
       parseVatSlot(slot); // assertion
       valToSlot.set(val, slot);
       slotToVal.set(slot, new WeakRef(val));
-      deadSet.delete(slot); // might have been dead before, but certainly not now
+      // we do not use droppedRegistry for exports
       exported.add(val); // keep it alive until kernel tells us to release it
     }
     return valToSlot.get(val);
@@ -419,7 +434,11 @@ function build(
         assert.fail(X`unrecognized slot type '${type}'`);
       }
       slotToVal.set(slot, new WeakRef(val));
-      droppedRegistry.register(val, slot);
+      if (type === 'object' || type === 'device') {
+        // we don't dropImports on promises, to avoid interaction with retire
+        droppedRegistry.register(val, slot);
+        deadSet.delete(slot); // might have been FINALIZED before, no longer
+      }
       valToSlot.set(val, slot);
     }
     return val;
@@ -514,6 +533,7 @@ function build(
 
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
+    // we do not use droppedRegistry for promises, even result promises
     exported.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
@@ -767,6 +787,7 @@ function build(
     const rootSlot = makeVatSlot('object', true, 0n);
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
+    // we do not use droppedRegistry for exports
     exported.add(rootObject);
   }
 
