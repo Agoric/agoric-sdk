@@ -433,6 +433,46 @@ test('property name space exhaustion: orderly fail-stop', async t => {
   }
 });
 
+test('parser buffer exhaustion: orderly fail-stop', async t => {
+  const grow = `
+  const send = it => issueCommand(ArrayBuffer.fromString(it));
+  let expr = '1+1';
+  for(;;) {
+    send(expr.length);
+    eval(expr);
+    expr = expr + ',' + expr;
+  }
+  `;
+  for (const debug of [false, true]) {
+    const opts = options();
+    const vat = xsnap({ ...opts, debug });
+    t.teardown(() => vat.terminate());
+    // eslint-disable-next-line no-await-in-loop
+    await t.throwsAsync(vat.evaluate(grow));
+    t.deepEqual(opts.messages.slice(0, 19), [
+      '3',
+      '7',
+      '15',
+      '31',
+      '63',
+      '127',
+      '255',
+      '511',
+      '1023',
+      '2047',
+      '4095',
+      '8191',
+      '16383',
+      '32767',
+      '65535',
+      '131071',
+      '262143',
+      '524287',
+      '1048575',
+    ]);
+  }
+});
+
 (() => {
   const challenges = [
     'new Uint8Array(2_130_706_417)',
