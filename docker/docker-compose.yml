@@ -10,6 +10,10 @@ services:
       - "$HOME/.agoric:/root/.agoric"
     environment:
       - "AG_SOLO_BASEDIR=${SOLO_HOME:-agoric}"
-    command: setup --netconfig=${NETCONFIG_URL:-https://devnet.agoric.net/network-config}
+    command:
+      - setup
+      - --webhost=0.0.0.0
+      - --webport=${PORT:-8000}
+      - --netconfig=${NETCONFIG_URL:-https://devnet.agoric.net/network-config}
 volumes:
   ag-solo-state:
