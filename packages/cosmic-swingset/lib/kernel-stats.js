@@ -8,22 +8,32 @@ import {
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics';
 
+/**
+ * TODO Would be nice somehow to label the vats individually, but it's too
+ * high cardinality for us unless we can somehow limit the number of active
+ * metrics (many more than 20 vats).
+ */
+const VAT_ID_IS_TOO_HIGH_CARDINALITY = true;
+
 export const DEFAULT_METER_PROVIDER = new MeterProvider();
 
-export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = [
-  0.005,
-  0.01,
-  0.025,
-  0.05,
-  0.1,
-  0.25,
-  0.5,
-  1,
-  2.5,
+export const HISTOGRAM_MS_LATENCY_BOUNDARIES = [
   5,
   10,
+  25,
+  50,
+  100,
+  250,
+  500,
+  1000,
+  2500,
+  5000,
+  10000,
   Infinity,
 ];
+export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = HISTOGRAM_MS_LATENCY_BOUNDARIES.map(
+  ms => ms / 1000,
+);
 
 const wrapDeltaMS = (finisher, useDeltaMS) => {
   const startMS = Date.now();
@@ -48,18 +58,21 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
     'swingset_vat_startup',
     metricMeter.createValueRecorder('swingset_vat_startup', {
       description: 'Vat startup time (ms)',
+      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
     }),
   );
   nameToBaseMetric.init(
     'swingset_vat_delivery',
     metricMeter.createValueRecorder('swingset_vat_delivery', {
       description: 'Vat delivery time (ms)',
+      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
     }),
   );
   nameToBaseMetric.init(
     'swingset_meter_usage',
     metricMeter.createValueRecorder('swingset_meter_usage', {
       description: 'Vat meter usage',
+      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
     }),
   );
   const groupToMetrics = makeStore('metricGroup');
@@ -72,21 +85,23 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
    * @param {Record<string, string>} [instance] the specific metric labels
    * @returns {any} the labelled metric
    */
-  const getGroupedMetric = (name, group = {}, instance = {}) => {
+  const getGroupedMetric = (name, group = undefined, instance = {}) => {
     let nameToMetric;
-    const groupKey = recordToKey(group);
+    const groupKey = group && recordToKey(group);
     const instanceKey = recordToKey(instance);
     if (groupToMetrics.has(groupKey)) {
       let oldInstanceKey;
       [nameToMetric, oldInstanceKey] = groupToMetrics.get(groupKey);
-      if (instanceKey !== oldInstanceKey) {
-        for (const metric of nameToMetric.values()) {
-          // FIXME: Delete all the metrics of the old instance.
-          metric;
+      if (group) {
+        if (instanceKey !== oldInstanceKey) {
+          for (const metric of nameToMetric.values()) {
+            // FIXME: Delete all the metrics of the old instance.
+            metric;
+          }
+          // Refresh the metric group.
+          nameToMetric = makeStore('metricName');
+          groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
         }
-        // Refresh the metric group.
-        nameToMetric = makeStore('metricName');
-        groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
       }
     } else {
       nameToMetric = makeStore('metricName');
@@ -107,23 +122,37 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
   };
 
   /**
+   * Return the vat metric group that should be reset when the stats change.
+   *
+   * @param {string} vatID
+   * @returns {Record<string,string> | undefined}
+   */
+  const getVatGroup = vatID => {
+    if (VAT_ID_IS_TOO_HIGH_CARDINALITY) {
+      return undefined;
+    }
+    return { vatID };
+  };
+
+  /**
    * Measure some interesting stats.  We currently do a per-vat recording of
    * time spent in the vat for startup and delivery.
    */
   const slogCallbacks = {
     startup(_method, [vatID], finisher) {
       return wrapDeltaMS(finisher, deltaMS => {
-        getGroupedMetric('swingset_vat_startup', { vatID }).record(deltaMS);
+        const group = getVatGroup(vatID);
+        getGroupedMetric('swingset_vat_startup', group).record(deltaMS);
       });
     },
     delivery(_method, [vatID], finisher) {
       return wrapDeltaMS(
         finisher,
         (deltaMS, [[_status, _problem, meterUsage]]) => {
-          getGroupedMetric('swingset_vat_delivery', { vatID }).record(deltaMS);
+          const group = getVatGroup(vatID);
+          getGroupedMetric('swingset_vat_delivery', group).record(deltaMS);
           if (meterUsage) {
             // Add to aggregated metering stats.
-            const group = { vatID };
             for (const [key, value] of Object.entries(meterUsage)) {
               if (key === 'meterType') {
                 // eslint-disable-next-line no-continue
