@@ -2,7 +2,7 @@
 /* global __dirname */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/swingset-vat/tools/prepare-test-env';
+import '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';

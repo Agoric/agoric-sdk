@@ -1,5 +1,6 @@
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';

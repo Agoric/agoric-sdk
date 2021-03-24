@@ -1,5 +1,5 @@
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../tools/prepare-test-env-ava';
+
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 
 // We don't test that WeakRefs actually work, we only make sure we can

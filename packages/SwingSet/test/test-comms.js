@@ -1,14 +1,11 @@
-import { wrapTest } from '@agoric/ses-ava';
-import '@agoric/install-ses';
-import rawTest from 'ava';
+import { test } from '../tools/prepare-test-env-ava';
+
 import buildCommsDispatch from '../src/vats/comms';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 import { makeState, makeStateKit } from '../src/vats/comms/state';
 import { makeCListKit } from '../src/vats/comms/clist';
 import { addRemote } from '../src/vats/comms/remote';
 import { debugState } from '../src/vats/comms/dispatch';
-
-const test = wrapTest(rawTest);
 
 test('provideRemoteForLocal', t => {
   const s = makeState(0);
@@ -206,7 +203,7 @@ test('receive', t => {
         encodeArgs(`47:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
         null,
       ),
-    { message: /unexpected recv seqNum \(a string\)/ },
+    { message: /unexpected recv seqNum .*/ },
   );
 
   // make sure comms can tolerate dropExports, even if it's a no-op

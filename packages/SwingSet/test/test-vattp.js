@@ -1,6 +1,7 @@
 /* global require */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../tools/prepare-test-env-ava';
+
+// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { initializeSwingset, makeSwingsetController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';

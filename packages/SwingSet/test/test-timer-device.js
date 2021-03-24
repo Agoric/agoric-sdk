@@ -1,5 +1,5 @@
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../tools/prepare-test-env-ava';
+
 import { makeTimerMap, curryPollFn } from '../src/devices/timer-src';
 
 test('multiMap multi store', t => {

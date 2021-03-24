@@ -1,5 +1,6 @@
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../tools/prepare-test-env-ava';
+
+// eslint-disable-next-line import/order
 import {
   initSwingStore,
   getAllState,

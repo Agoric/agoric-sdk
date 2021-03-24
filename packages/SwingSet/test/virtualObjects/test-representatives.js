@@ -1,7 +1,8 @@
 /* global __dirname */
-import '@agoric/install-ses';
+import { test } from '../../tools/prepare-test-env-ava';
+
+// eslint-disable-next-line import/order
 import path from 'path';
-import test from 'ava';
 import { buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
 

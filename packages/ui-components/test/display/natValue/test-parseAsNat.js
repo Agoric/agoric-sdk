@@ -1,7 +1,7 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env';
+import '@agoric/zoe/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { parseAsNat } from '../../../src/display/natValue/parseAsNat';

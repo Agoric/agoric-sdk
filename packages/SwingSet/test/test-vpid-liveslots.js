@@ -1,8 +1,7 @@
 // eslint-disable-next-line no-redeclare
 /* global setImmediate */
-
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';

@@ -1,6 +1,6 @@
 /* global require __dirname */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../../tools/prepare-test-env-ava';
+
 import { loadBasedir, buildVatController } from '../../src/index';
 
 const expected = [['B good', 'C good', 'F good', 'three good'], 'rp3 good'];
