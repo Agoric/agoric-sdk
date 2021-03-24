@@ -3,11 +3,14 @@
   "version": "0.0.1",
   "description": "Reusable UI Components for Agoric Dapps, built with React and MaterialUI",
   "main": "src/index.js",
-  "peerDependencies": {
+  "dependencies": {
     "@agoric/assert": "^0.2.3",
     "@agoric/ertp": "^0.10.0",
     "@agoric/eventual-send": "^0.13.3",
     "@agoric/install-ses": "^0.5.3",
+    "@agoric/nat": "^4.0.0"
+  },
+  "peerDependencies": {
     "@material-ui/core": "^4.11.3",
     "react": "^16.14.0",
     "react-dom": "^16.8.0"
@@ -102,8 +105,5 @@
     "dist",
     "NEWS.md",
     "exported.js"
-  ],
-  "dependencies": {
-    "@agoric/nat": "^4.0.0"
-  }
+  ]
 }
