@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/registrar@0.2.3...@agoric/registrar@0.2.4) (2021-03-24)
+
+**Note:** Version bump only for package @agoric/registrar
+
+
+
+
+
 ## [0.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/registrar@0.2.2...@agoric/registrar@0.2.3) (2021-03-16)
 
 

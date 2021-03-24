@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.1.0...@agoric/deploy-script-support@0.1.1) (2021-03-24)
+
+
+### Bug Fixes
+
+* deploy-script-support tests ([#2677](https://github.com/Agoric/agoric-sdk/issues/2677)) ([0d1b1de](https://github.com/Agoric/agoric-sdk/commit/0d1b1deaffba124457ab50377e781b2185cc3098))
+
+
+
+
+
 # [0.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.0.3...@agoric/deploy-script-support@0.1.0) (2021-03-16)
 
 

@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.26.0...@agoric/cosmic-swingset@0.27.0) (2021-03-24)
+
+
+### Bug Fixes
+
+* **kernel-stats:** don't record Prometheus vatID labels ([9af77d1](https://github.com/Agoric/agoric-sdk/commit/9af77d18e8072c71e0ca814fbf38e667c1e7b407))
+* downgrade the sim-chain trip log severity ([49f4f0a](https://github.com/Agoric/agoric-sdk/commit/49f4f0a94fdd695416a6a259c5673cf41051f6d4))
+* remove use of Data() from all packages ([540d917](https://github.com/Agoric/agoric-sdk/commit/540d917b20ae74e44752210524f6ffcb27708892)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+
+
+### Features
+
+* agoric client docker-compose config ([#2701](https://github.com/Agoric/agoric-sdk/issues/2701)) ([c9ae4fd](https://github.com/Agoric/agoric-sdk/commit/c9ae4fdb5218a80db9225785279daeb152510af1))
+* generalise the grouped metrics and refactor ([877ffac](https://github.com/Agoric/agoric-sdk/commit/877ffac1cf1dcf5500a69644acb617df35db54ec))
+* **SwingSet:** track the meter usage in deliverResults[2] ([c1a2388](https://github.com/Agoric/agoric-sdk/commit/c1a23887ca016007ff5ab38f77b8d9f560ce43a8))
+* introduce Makefile variable $(OTEL_EXPORTER_PROMETHEUS_PORT) ([6cc2e4f](https://github.com/Agoric/agoric-sdk/commit/6cc2e4f36f7bb13fc7493021fe33a2962368b0b2))
+* introduce slogCallbacks for the host to handle slog calls ([e2eb92e](https://github.com/Agoric/agoric-sdk/commit/e2eb92e1833b0623045b25b8de7a971cc8c9eba4))
+
+
+
+
+
 # [0.26.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.25.1...@agoric/cosmic-swingset@0.26.0) (2021-03-16)
 
 
