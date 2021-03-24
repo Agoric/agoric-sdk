@@ -94,15 +94,20 @@ async function makeLocationUnmapper({ sourceMap, ast }) {
 function transformAst(ast, unmapLoc) {
   babelTraverse(ast, {
     enter(p) {
-      const { loc, leadingComments, trailingComments } = p.node;
-      if (p.node.comments) {
-        p.node.comments = [];
-      }
+      const {
+        loc,
+        comments,
+        leadingComments,
+        innerComments,
+        trailingComments,
+      } = p.node;
+      (comments || []).forEach(node => rewriteComment(node, unmapLoc));
       // Rewrite all comments.
       (leadingComments || []).forEach(node => rewriteComment(node, unmapLoc));
       if (p.node.type.startsWith('Comment')) {
         rewriteComment(p.node, unmapLoc);
       }
+      (innerComments || []).forEach(node => rewriteComment(node, unmapLoc));
       // If not a comment, and we are unmapping the source maps,
       // then do it for this location.
       if (unmapLoc) {
@@ -113,7 +118,10 @@ function transformAst(ast, unmapLoc) {
   });
 }
 
-async function transformSource(code, { sourceMap, useLocationUnmap, sourceType } = {}) {
+async function transformSource(
+  code,
+  { sourceMap, useLocationUnmap, sourceType } = {},
+) {
   // Parse the rolled-up chunk with Babel.
   // We are prepared for different module systems.
   const ast = (babelParser.parse || babelParser)(code, {
@@ -155,7 +163,7 @@ export default async function bundleSource(
       moduleTransforms: {
         async mjs(sourceBytes) {
           const source = textDecoder.decode(sourceBytes);
-          const {code: object} = await transformSource(source, {
+          const { code: object } = await transformSource(source, {
             sourceType: 'module',
           });
           const objectBytes = textEncoder.encode(object);
