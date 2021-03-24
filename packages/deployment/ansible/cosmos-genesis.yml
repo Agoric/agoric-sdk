@@ -12,6 +12,6 @@
     - STAKER: ag-staker
     - STAKER_TOKENS: 10000000000000000000000000uagstake
     - STAKER_AMOUNT: 50000000uagstake
-    - STAKER_NODE: node0
+    - STAKER_NODE: validator0
   roles:
     - cosmos-genesis

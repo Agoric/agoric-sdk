@@ -4,6 +4,8 @@ import { assert, details as X } from '@agoric/assert';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup';
 import { shellEscape } from './run';
 
+export const AVAILABLE_ROLES = ['validator', 'peer', 'seed'];
+
 const calculateTotal = placement =>
   (placement ? Object.values(placement) : []).reduce(
     (prior, cur) => prior + cur,
@@ -42,7 +44,6 @@ const tfStringify = obj => {
   return ret;
 };
 
-/** @param {Powers} arg0 */
 const genericAskApiKey = ({ env, inquirer }) => async (provider, myDetails) => {
   const questions = [
     {
@@ -149,6 +150,7 @@ module "${PLACEMENT}" {
     CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
     OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
     SSH_KEY_FILE     = "\${var.SSH_KEY_FILE}"
+    ROLE             = "\${var.ROLES["${PLACEMENT}"]}"
     SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
     VOLUMES          = "\${var.VOLUMES["${PLACEMENT}"]}"
 }
@@ -184,6 +186,7 @@ module "${PLACEMENT}" {
     CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
     OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
     REGIONS          = "\${var.DATACENTERS["${PLACEMENT}"]}"
+    ROLE             = "\${var.ROLES["${PLACEMENT}"]}"
     SSH_KEY_FILE     = "\${var.SSH_KEY_FILE}"
     DO_API_TOKEN     = "\${var.API_KEYS["${PLACEMENT}"]}"
     SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
@@ -193,7 +196,7 @@ module "${PLACEMENT}" {
   },
 });
 
-const askPlacement = ({ inquirer }) => PLACEMENTS => {
+const askPlacement = ({ inquirer }) => async (PLACEMENTS, ROLES) => {
   let total = 0;
   PLACEMENTS.forEach(
     ([_PLACEMENT, placement]) => (total += calculateTotal(placement)),
@@ -211,13 +214,28 @@ const askPlacement = ({ inquirer }) => PLACEMENTS => {
         DONE,
         NEW,
         ...PLACEMENTS.map(([place, placement]) => ({
-          name: `${place}${nodeCount(calculateTotal(placement))}`,
+          name: `${ROLES[place]} - ${place}${nodeCount(
+            calculateTotal(placement),
+          )}`,
           value: place,
         })),
       ],
     },
   ];
-  return inquirer.prompt(questions);
+
+  const first = await inquirer.prompt(questions);
+
+  const roleQuestions = [
+    {
+      name: 'ROLE',
+      type: 'list',
+      message: `Role for the ${first.PLACEMENT} placement?`,
+      choices: AVAILABLE_ROLES,
+    },
+  ];
+  const second = first.PLACEMENT ? await inquirer.prompt(roleQuestions) : {};
+
+  return { ...first, ...second };
 };
 
 const askProvider = ({ inquirer }) => PROVIDERS => {
@@ -280,23 +298,27 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
         SSH_PRIVATE_KEY_FILE: `id_${SSH_TYPE}`,
         DETAILS: {},
         OFFSETS: {},
+        ROLES: {},
         DATACENTERS: {},
         PROVIDER_NEXT_INDEX: {},
       };
   config.NETWORK_NAME = overrideNetworkName;
 
-  let instance = 0;
-
   // eslint-disable-next-line no-constant-condition
   while (true) {
     // eslint-disable-next-line no-await-in-loop
-    let { PLACEMENT } = await askPlacement({ inquirer })(config.PLACEMENTS);
+    const { ROLE, ...rest } = await askPlacement({ inquirer })(
+      config.PLACEMENTS,
+      config.ROLES,
+    );
+    let { PLACEMENT } = rest;
     if (!PLACEMENT) {
       break;
     }
     let provider;
     let myDetails = {};
     if (PLACEMENT !== 'NEW') {
+      config.ROLES[PLACEMENT] = ROLE;
       const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
       provider = PROVIDERS[PROVIDER];
     } else {
@@ -320,6 +342,7 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
         }
         idx[PROVIDER] += 1;
         PLACEMENT = `${PROVIDER}${idx[PROVIDER]}`;
+        config.ROLES[PLACEMENT] = ROLE;
         config.PLACEMENT_PROVIDER[PLACEMENT] = PROVIDER;
       };
 
@@ -354,6 +377,7 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
       provider.datacenters &&
       // eslint-disable-next-line no-await-in-loop
       (await provider.datacenters(provider, PLACEMENT, myDetails));
+    config.ROLES;
     const [_p, placement] = config.PLACEMENTS.find(
       ([p]) => p === PLACEMENT,
     ) || [PLACEMENT, {}];
@@ -412,7 +436,12 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
   }
 
   // Collate the placement information.
+  const ROLE_INSTANCE = {};
+  Object.values(config.ROLES).forEach(role => {
+    ROLE_INSTANCE[role] = 0;
+  });
   for (const [PLACEMENT, placement] of config.PLACEMENTS) {
+    let instance = ROLE_INSTANCE[config.ROLES[PLACEMENT]];
     const offset = instance;
     config.DATACENTERS[PLACEMENT] = [];
     for (const dc of Object.keys(placement).sort()) {
@@ -433,10 +462,14 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
     }
 
     // Commit the final details.
+    ROLE_INSTANCE[config.ROLES[PLACEMENT]] = instance;
     config.OFFSETS[PLACEMENT] = offset;
   }
 
-  assert(instance !== 0, X`Aborting due to no nodes configured!`);
+  assert(
+    Object.values(ROLE_INSTANCE).some(i => i > 0),
+    X`Aborting due to no nodes configured!`,
+  );
 
   await wr.createFile(
     `vars.tf`,
@@ -459,6 +492,10 @@ variable "OFFSETS" {
   default = ${tfStringify(config.OFFSETS)}
 }
 
+variable "ROLES" {
+  default = ${tfStringify(config.ROLES)}
+}
+
 ${Object.keys(config.DETAILS)
   .sort()
   .map(
@@ -473,7 +510,7 @@ variable ${JSON.stringify(vname)} {
   );
 
   // Go and create the specific files.
-  const clusterPrefix = 'ag-chain-cosmos-';
+  const clusterPrefix = 'ag-';
   for (const PLACEMENT of Object.keys(config.PLACEMENT_PROVIDER).sort()) {
     const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
     const provider = PROVIDERS[PROVIDER];
@@ -491,6 +528,10 @@ ${Object.keys(config.DATACENTERS)
   .map(p => `    ${p} = "\${module.${p}.public_ips}"`)
   .join('\n')}
   }
+}
+
+output "roles" {
+  value = "\${var.ROLES}"
 }
 
 output "offsets" {
@@ -535,4 +576,4 @@ pipelining = True
   await wr.createFile(networkTxt, config.NETWORK_NAME);
 };
 
-export default doInit;
+export { doInit };
