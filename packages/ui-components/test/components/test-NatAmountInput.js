@@ -1,15 +1,18 @@
 // @ts-check
 
 import '@agoric/install-ses';
+import React from 'react';
+import { TextField } from '@material-ui/core';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { shallow, render } from 'enzyme';
 
 // @ts-ignore path is correct for compiled output
-import { NatAmountInput } from '../../../dist'; // eslint-disable-line import/no-unresolved
+import { makeNatAmountInput } from '../../../dist'; // eslint-disable-line import/no-unresolved
+
+const NatAmountInput = makeNatAmountInput(React, TextField);
 
 const makeShallowNatAmountInput = ({
   label = 'myLabel',

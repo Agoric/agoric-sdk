@@ -1,12 +1,9 @@
-import React from 'react';
-import { TextField } from '@material-ui/core';
-
 import { parseAsNat } from '../display/natValue/parseAsNat';
 import { stringifyNat } from '../display/natValue/stringifyNat';
 
 // https://material-ui.com/api/text-field/
 
-const NatAmountInput = ({
+const makeNatAmountInput = (react, textfield) => ({
   label,
   value,
   decimalPlaces = 0,
@@ -27,20 +24,19 @@ const NatAmountInput = ({
     }
   };
 
-  return (
-    <TextField
-      label={label}
-      type="number"
-      variant="outlined"
-      fullWidth
-      InputProps={noNegativeValues}
-      onChange={ev => onChange(parseAsNat(ev.target.value, decimalPlaces))}
-      onKeyPress={preventSubtractChar}
-      value={stringifyNat(value, decimalPlaces, placesToShow)}
-      disabled={disabled}
-      error={error}
-    />
-  );
+  return react.createElement(textfield, {
+    label,
+    type: 'number',
+    variant: 'outlined',
+    fullWidth: true,
+    InputProps: noNegativeValues,
+    onChange: ev => onChange(parseAsNat(ev.target.value, decimalPlaces)),
+    onKeyPress: preventSubtractChar,
+    value:
+      value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
+    disabled,
+    error,
+  });
 };
 
-export default NatAmountInput;
+export default makeNatAmountInput;

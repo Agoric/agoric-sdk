@@ -1,2 +1,2 @@
-export { default as NatAmountInput } from './components/NatAmountInput';
+export { default as makeNatAmountInput } from './components/NatAmountInput';
 export * from './display/display';
