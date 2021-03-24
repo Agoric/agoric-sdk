@@ -16,7 +16,8 @@ import { makeBatchedDeliver } from './batched-deliver';
 const log = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
-const FAUCET_ADDRESS = '#faucet channel on Discord (https://discord.gg/9nKvca)';
+const FAUCET_ADDRESS =
+  '#faucet channel on Discord (https://agoric.com/discord)';
 
 const adviseEgress = myAddr =>
   `\
