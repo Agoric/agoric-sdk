@@ -1,7 +1,8 @@
 version: "2.2"
 services:
   ag-solo:
-    image: agoric/cosmic-swingset-solo:${SDK_TAG:-latest}
+    # This tag needs to be the SDK used by the $NETCONFIG_URL
+    image: agoric/cosmic-swingset-solo:${SDK_TAG:-2.14.0}
     # ISSUE: 127.0.0.1? not a docker network?
     ports:
       - "${HOST_PORT:-8000}:${PORT:-8000}"

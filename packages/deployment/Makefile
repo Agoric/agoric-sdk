@@ -4,7 +4,8 @@ SS := ../cosmic-swingset/
 VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 2>/dev/null)
 
 TAG := $(if $(VERSION),$(VERSION),latest)
-MODDABLE_COMMIT_HASH := $(firstword $(shell git submodule status ../xsnap/moddable))
+MODDABLE_COMMIT_HASH := $(shell git submodule status ../xsnap/moddable | \
+	sed -ne 's/^.\([^ ]*\).*/\1/p')
 
 # Don't push alpha tags as ":$(TAG)".
 ifeq ($(TAG),latest)

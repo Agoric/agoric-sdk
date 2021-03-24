@@ -3,6 +3,8 @@ import TOML from '@iarna/toml';
 
 export const MINT_DENOM = 'uag';
 export const STAKING_DENOM = 'uagstake';
+export const STAKING_MAX_VALIDATORS = 150;
+
 export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
@@ -108,6 +110,7 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.ibc = initState.ibc;
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
+  genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
