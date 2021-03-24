@@ -132,6 +132,14 @@ function build(
     * deadSet holds the vref only in FINALIZED
     * re-introduction must ensure the vref is not in the deadSet
 
+    Each state thus has a set of perhaps-measurable properties:
+
+    * UNKNOWN: slotToVal[vref] is missing, vref not in deadSet
+    * REACHABLE: slotToVal has live weakref, userspace can reach
+    * UNREACHABLE: slotToVal has live weakref, userspace cannot reach
+    * COLLECTED: slotToVal[vref] has dead weakref
+    * FINALIZED: slotToVal[vref] is missing, vref is in deadSet
+
     Our finalizer callback is queued by the engine's transition from
     UNREACHABLE to COLLECTED, but the vref might be re-introduced before the
     callback has a chance to run. There might even be multiple copies of the
@@ -792,7 +800,8 @@ function build(
   }
 
   const dispatch = harden({ deliver, notify, dropExports });
-  return harden({ vatGlobals, setBuildRootObject, dispatch, m });
+  // we return 'deadSet' for unit tests
+  return harden({ vatGlobals, setBuildRootObject, dispatch, m, deadSet });
 }
 
 /**
@@ -855,8 +864,8 @@ export function makeLiveSlots(
     gcTools,
     liveSlotsConsole,
   );
-  const { vatGlobals, dispatch, setBuildRootObject } = r; // omit 'm'
-  return harden({ vatGlobals, dispatch, setBuildRootObject });
+  const { vatGlobals, dispatch, setBuildRootObject, deadSet } = r; // omit 'm'
+  return harden({ vatGlobals, dispatch, setBuildRootObject, deadSet });
 }
 
 // for tests
