@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.14.0...@agoric/sdk@2.15.0) (2021-03-24)
+
+
+### Bug Fixes
+
+* **kernel-stats:** don't record Prometheus vatID labels ([9af77d1](https://github.com/Agoric/agoric-sdk/commit/9af77d18e8072c71e0ca814fbf38e667c1e7b407))
+* **swingset:** add dummy dispatch.dropExports to liveslots/comms/managers ([5108ad6](https://github.com/Agoric/agoric-sdk/commit/5108ad61459d0ac885489959586b0afe3c49ff71)), closes [#2653](https://github.com/Agoric/agoric-sdk/issues/2653)
+* **ui-components:** add dummy test:xs target ([1e4faa9](https://github.com/Agoric/agoric-sdk/commit/1e4faa92eba36c38435ba4d8243e89bbf66b9a10))
+* correct minor found by typechecking ([342c851](https://github.com/Agoric/agoric-sdk/commit/342c851609bac5de64c3a4cbe1e05a246fb2abcf))
+* deploy-script-support tests ([#2677](https://github.com/Agoric/agoric-sdk/issues/2677)) ([0d1b1de](https://github.com/Agoric/agoric-sdk/commit/0d1b1deaffba124457ab50377e781b2185cc3098))
+* downgrade the sim-chain trip log severity ([49f4f0a](https://github.com/Agoric/agoric-sdk/commit/49f4f0a94fdd695416a6a259c5673cf41051f6d4))
+* remove use of Data() from all packages ([540d917](https://github.com/Agoric/agoric-sdk/commit/540d917b20ae74e44752210524f6ffcb27708892)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+* rename crankStats -> meterUsage ([e0fa380](https://github.com/Agoric/agoric-sdk/commit/e0fa380220a9b0bbc555e55c1d6481c9e48add9b))
+* silence some noisy Go logs ([6ef8a69](https://github.com/Agoric/agoric-sdk/commit/6ef8a69b5c7845a33d1ec7bfeb6c74ece2fbab0f))
+* use WeakSet for disavowals, improve comments, tidy vatPowers ([f9b5133](https://github.com/Agoric/agoric-sdk/commit/f9b5133ba48f389af0ecd9c20db9d0447e3db32d))
+* **marshal:** remove Data ([81dd9a4](https://github.com/Agoric/agoric-sdk/commit/81dd9a492bd70f63e71647a29356eb890063641d)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+* **swingset:** add vatOptions.enableDisavow, dummy vatPowers.disavow ([4f43a5c](https://github.com/Agoric/agoric-sdk/commit/4f43a5cb62c838b25a5c59f178b902467da94fb9)), closes [#2635](https://github.com/Agoric/agoric-sdk/issues/2635)
+* **swingset:** partially implement syscall.dropImports and disavow ([2490de5](https://github.com/Agoric/agoric-sdk/commit/2490de58643ffdc7e40f77294829ea7ed04e42ee)), closes [#2646](https://github.com/Agoric/agoric-sdk/issues/2646) [#2635](https://github.com/Agoric/agoric-sdk/issues/2635) [#2636](https://github.com/Agoric/agoric-sdk/issues/2636)
+
+
+### Features
+
+* add message sequence number to comms protocol ([d58cfa4](https://github.com/Agoric/agoric-sdk/commit/d58cfa416ad3b8ad3d5cef4c4616c1557a8efd6c))
+* add ui-components package ([#2321](https://github.com/Agoric/agoric-sdk/issues/2321)) ([770542e](https://github.com/Agoric/agoric-sdk/commit/770542e3e3baa505c0edb245e03df15a18380fc7))
+* agoric client docker-compose config ([#2701](https://github.com/Agoric/agoric-sdk/issues/2701)) ([c9ae4fd](https://github.com/Agoric/agoric-sdk/commit/c9ae4fdb5218a80db9225785279daeb152510af1))
+* generalise the grouped metrics and refactor ([877ffac](https://github.com/Agoric/agoric-sdk/commit/877ffac1cf1dcf5500a69644acb617df35db54ec))
+* introduce separate roles for deployment placements ([a395571](https://github.com/Agoric/agoric-sdk/commit/a395571e7f8a06a4a5b7561bbcbfdcf3259454fa))
+* **SwingSet:** track the meter usage in deliverResults[2] ([c1a2388](https://github.com/Agoric/agoric-sdk/commit/c1a23887ca016007ff5ab38f77b8d9f560ce43a8))
+* introduce Makefile variable $(OTEL_EXPORTER_PROMETHEUS_PORT) ([6cc2e4f](https://github.com/Agoric/agoric-sdk/commit/6cc2e4f36f7bb13fc7493021fe33a2962368b0b2))
+* introduce slogCallbacks for the host to handle slog calls ([e2eb92e](https://github.com/Agoric/agoric-sdk/commit/e2eb92e1833b0623045b25b8de7a971cc8c9eba4))
+* **xsnap:** enable gc() in the start compartment ([e407fa2](https://github.com/Agoric/agoric-sdk/commit/e407fa2393dfc8b06111d5353123afd92cd6cab6)), closes [#2682](https://github.com/Agoric/agoric-sdk/issues/2682) [#2660](https://github.com/Agoric/agoric-sdk/issues/2660) [#2615](https://github.com/Agoric/agoric-sdk/issues/2615)
+
+
+
+
+
 # [2.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.13.0...@agoric/sdk@2.14.0) (2021-03-16)
 
 

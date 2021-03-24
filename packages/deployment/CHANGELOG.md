@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.26.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.25.0...@agoric/deployment@1.26.0) (2021-03-24)
+
+
+### Features
+
+* introduce separate roles for deployment placements ([a395571](https://github.com/Agoric/agoric-sdk/commit/a395571e7f8a06a4a5b7561bbcbfdcf3259454fa))
+
+
+
+
+
 # [1.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.24.2...@agoric/deployment@1.25.0) (2021-03-16)
 
 

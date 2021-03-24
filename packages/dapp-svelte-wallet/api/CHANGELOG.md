@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.1](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.6.0...@agoric/dapp-svelte-wallet-api@0.6.1) (2021-03-24)
+
+
+### Bug Fixes
+
+* remove use of Data() from all packages ([540d917](https://github.com/Agoric/agoric/commit/540d917b20ae74e44752210524f6ffcb27708892)), closes [#2018](https://github.com/Agoric/agoric/issues/2018)
+
+
+
+
+
 # [0.6.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.5.3...@agoric/dapp-svelte-wallet-api@0.6.0) (2021-03-16)
 
 

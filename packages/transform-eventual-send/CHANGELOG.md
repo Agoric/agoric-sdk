@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.4.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.4.3...@agoric/transform-eventual-send@1.4.4) (2021-03-24)
+
+**Note:** Version bump only for package @agoric/transform-eventual-send
+
+
+
+
+
 ## [1.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.4.2...@agoric/transform-eventual-send@1.4.3) (2021-03-16)
 
 

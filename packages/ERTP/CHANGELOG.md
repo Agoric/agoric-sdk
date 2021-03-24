@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.10.0...@agoric/ertp@0.10.1) (2021-03-24)
+
+
+### Bug Fixes
+
+* remove use of Data() from all packages ([540d917](https://github.com/Agoric/agoric-sdk/commit/540d917b20ae74e44752210524f6ffcb27708892)), closes [#2018](https://github.com/Agoric/agoric-sdk/issues/2018)
+
+
+
+
+
 # [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.9.2...@agoric/ertp@0.10.0) (2021-03-16)
 
 
