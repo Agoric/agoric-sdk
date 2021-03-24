@@ -13,10 +13,33 @@ import '@agoric/eventual-send/shim';
 lockdown({
   // The default `{errorTaming: 'safe'}` setting, if possible, redacts the
   // stack trace info from the error instances, so that it is not available
-  // merely by saying `errorInstance.stack`. However, some tools will look
-  // for the stack there and become much less useful if it is missing.
+  // merely by saying `errorInstance.stack`. However, some tools, such as
+  // Ava, will look for the stack there and become much less useful if it is
+  // missing.
+  //
+  // NOTE TO REVIEWERS: If you see the following line commented out,
+  // this may be a development accident that should be fixed before merging.
   //
   errorTaming: 'unsafe',
+
+  // The default `{stackFiltering: 'concise'}` setting usually makes for a
+  // better debugging experience, by severely reducing the noisy distractions
+  // of the normal verbose stack traces. Which is why you may want to comment
+  // out the `'verbose'` setting is commented out below. However, some
+  // tools, such as Ava, look for the full filename that it expects in order
+  // to fetch the source text for diagnostics, which is why this file
+  // sets it to `'verbose'`.
+  //
+  // Another reason for not commenting it out: The cause
+  // of the bug may be anywhere, so the `'noise'` thrown out by the default
+  // `'concise'` setting may also contain the signal you need. To see it,
+  // uncomment out the following line. But please do not commit it in that
+  // state.
+  //
+  // NOTE TO REVIEWERS: If you see the following line commented out,
+  // this may be a development accident that should be fixed before merging.
+  //
+  stackFiltering: 'verbose',
 
   // The default `{overrideTaming: 'moderate'}` setting does not hurt the
   // debugging experience much. But it will introduce noise into, for example,
@@ -25,21 +48,10 @@ lockdown({
   // setting reduces debugging noise yet further, by turning fewer inherited
   // properties into accessors.
   //
-  overrideTaming: 'min',
-
-  // The default `{stackFiltering: 'concise'}` setting usually makes for a
-  // better debugging experience, but severely reducing the noisy distractions
-  // of the normal verbose stack traces. Which is why the alternative
-  // `'verbose'` setting is commented out below. However, the actual cause
-  // of the bug may be anywhere, so the `'noise'` thrown out by the default
-  // `'concise'` setting may also contain the signal you need. To see it,
-  // uncomment out the following line. But please do not commit it in that
-  // state.
-  //
-  // NOTE TO REVIEWERS: If you see the following line *not* commented out,
+  // NOTE TO REVIEWERS: If you see the following line commented out,
   // this may be a development accident that should be fixed before merging.
   //
-  // stackFiltering: 'verbose',
+  overrideTaming: 'min',
 
   // The default `{consoleTaming: 'safe'}` setting usually makes for a
   // better debugging experience, by wrapping the original `console` with
@@ -47,6 +59,9 @@ lockdown({
   // errors, expecially those thrown by the `assert` system. However,
   // in case the SES `console` is getting in the way, we provide the
   // `'unsafe'` option for leaving the original `console` in place.
+  //
+  // NOTE TO REVIEWERS: If you see the following line *not* commented out,
+  // this may be a development accident that should be fixed before merging.
   //
   // consoleTaming: 'unsafe',
 });
